@@ -39,11 +39,16 @@ public sealed class LazyScoreRenderer : IDisposable
 
     public int Generation => Volatile.Read(ref _generation);
 
-    /// <summary>Lays out the score for the given tracks. <paramref name="prepare"/> runs first on the worker (styling, transposition display).</summary>
+    /// <summary>
+    /// Lays out the score for the given tracks. <paramref name="prepare"/> runs first on the worker (styling, transposition display).
+    /// <paramref name="width"/>, the result and its bounds are in view units (DIPs); the pages are drawn at
+    /// <paramref name="pixelScale"/> pixels per unit (the display's scale, 1.5 at 150 %), so they stay sharp when shown at their size in units.
+    /// </summary>
     public Task<ScoreLayout> LayoutAsync(Score score, IReadOnlyList<int> tracks, double width, double scale, LayoutMode mode, Action<Score>? prepare = null,
-        Review.UncertaintyPalette? theme = null, int barsPerRow = -1)
+        Review.UncertaintyPalette? theme = null, int barsPerRow = -1, double pixelScale = 1)
     {
         int generation = Interlocked.Increment(ref _generation);
+        double px = double.IsFinite(pixelScale) ? Math.Clamp(pixelScale, 1, 4) : 1;
         return Run(() =>
         {
             prepare?.Invoke(score);
@@ -52,33 +57,75 @@ public sealed class LazyScoreRenderer : IDisposable
             settings.Core.Engine = _engine;
             settings.Core.EnableLazyLoading = true;
             settings.Core.IncludeNoteBounds = true;
-            settings.Display.Scale = Math.Clamp(scale, 0.5, 4.0);
+            settings.Display.Scale = Math.Clamp(scale, 0.5, 4.0) * px;
             settings.Display.LayoutMode = mode;
             settings.Display.BarsPerRow = barsPerRow; // the music stand fixes bars per system; -1 lets alphaTab choose
             settings.Player.EnableCursor = false;
             if (theme is not null) ScoreStyler.ApplyTheme(settings, theme);
             ScoreStyler.HideHeader(settings); // the screen shows the title itself
-            var renderer = new ScoreRenderer(settings) { Width = width };
+            // The page padding is in pixels, not scaled with the notation: keep it the same in view units.
+            if (px != 1 && settings.Display.Padding is { } padding)
+                settings.Display.Padding = padding.Select(p => p * px).ToList();
+            var renderer = new ScoreRenderer(settings) { Width = width * px };
             var pages = new List<ScorePageSlot>();
             double totalW = 0, totalH = 0;
             Exception? error = null;
             renderer.PartialLayoutFinished.On((RenderFinishedEventArgs e) =>
-                pages.Add(new ScorePageSlot(e.Id, e.X, e.Y, e.Width, e.Height, (int)e.FirstMasterBarIndex, (int)e.LastMasterBarIndex)));
+                pages.Add(new ScorePageSlot(e.Id, e.X / px, e.Y / px, e.Width / px, e.Height / px, (int)e.FirstMasterBarIndex, (int)e.LastMasterBarIndex)));
             renderer.PartialRenderFinished.On((RenderFinishedEventArgs e) =>
             {
                 if (e.RenderResult is not null) _results[e.Id] = e.RenderResult;
             });
             renderer.RenderFinished.On((RenderFinishedEventArgs e) =>
             {
-                totalW = e.TotalWidth;
-                totalH = e.TotalHeight;
+                totalW = e.TotalWidth / px;
+                totalH = e.TotalHeight / px;
             });
             renderer.Error.On((Exception e) => error = e);
             renderer.RenderScore(score, tracks.Select(i => (double)i).ToList(), null!);
             if (error is not null) throw new InvalidOperationException("alphaTab could not lay out the score", error);
             _renderer = renderer;
+            if (renderer.BoundsLookup is { } bounds && px != 1) ScaleBounds(bounds, 1 / px);
             return new ScoreLayout(generation, totalW, totalH, pages, renderer.BoundsLookup);
         });
+    }
+
+    /// <summary>Every rectangle of a bounds lookup times <paramref name="factor"/> (pixels to view units), each one once.</summary>
+    internal static void ScaleBounds(BoundsLookup lookup, double factor)
+    {
+        var done = new HashSet<Bounds>(ReferenceEqualityComparer.Instance);
+        void S(Bounds? b)
+        {
+            if (b is null || !done.Add(b)) return;
+            b.X *= factor;
+            b.Y *= factor;
+            b.W *= factor;
+            b.H *= factor;
+        }
+        foreach (var system in lookup.StaffSystems)
+        {
+            S(system.VisualBounds);
+            S(system.RealBounds);
+            foreach (var master in system.Bars)
+            {
+                S(master.VisualBounds);
+                S(master.RealBounds);
+                S(master.LineAlignedBounds);
+                foreach (var bar in master.Bars)
+                {
+                    S(bar.VisualBounds);
+                    S(bar.RealBounds);
+                    foreach (var beat in bar.Beats)
+                    {
+                        S(beat.VisualBounds);
+                        S(beat.RealBounds);
+                        beat.OnNotesX *= factor;
+                        if (beat.Notes is null) continue;
+                        foreach (var note in beat.Notes) S(note.NoteHeadBounds);
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>

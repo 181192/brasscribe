@@ -19,6 +19,7 @@ public sealed class BufferedSynthOutput : ISynthOutput
     private bool _playing;
     private float[] _fade = [];
     private int _fadeAt;
+    private bool _drainedSaid;
 
     /// <summary>How long a pause or stop takes to fade out: short enough to feel immediate, long enough not to click.</summary>
     public const double StopFadeMs = 80;
@@ -52,11 +53,28 @@ public sealed class BufferedSynthOutput : ISynthOutput
 
     public void Activate() { }
 
+    /// <summary>
+    /// Playing starts: the audio device should be open. Raised on the thread that called Play; the device
+    /// can open a moment later, as the samples wait in the buffer.
+    /// </summary>
+    public event EventHandler? PlayRequested;
+
+    /// <summary>
+    /// Paused or stopped, and the stop fade has been played out: the audio device can close, so an idle app
+    /// keeps no audio stream open (which would keep the PC awake). Raised once per pause, on the audio thread.
+    /// </summary>
+    public event EventHandler? Drained;
+
     public void Play()
     {
-        lock (_gate) _fade = [];
+        lock (_gate)
+        {
+            _fade = [];
+            _drainedSaid = false;
+        }
         _playing = true;
         RequestIfLow();
+        PlayRequested?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -120,12 +138,16 @@ public sealed class BufferedSynthOutput : ISynthOutput
         if (!_playing)
         {
             destination.Clear();
+            bool drained;
             lock (_gate)
             {
                 int n = Math.Min(destination.Length, _fade.Length - _fadeAt);
                 if (n > 0) _fade.AsSpan(_fadeAt, n).CopyTo(destination);
                 _fadeAt += Math.Max(0, n);
+                drained = n <= 0 && !_drainedSaid;
+                if (drained) _drainedSaid = true;
             }
+            if (drained) Drained?.Invoke(this, EventArgs.Empty);
             return destination.Length;
         }
         RequestIfLow(destination.Length);
@@ -154,10 +176,18 @@ public sealed class BufferedSynthOutput : ISynthOutput
             lock (_gate) count = _count;
             if (count >= Math.Max(_lowWater, wanted)) return;
             int before = count;
-            lock (SyncRoot) ((Emitter)SampleRequest).Trigger();
+            // Never wait long behind the player's lock (a SoundFont load holds it for seconds, and alphaTab keeps
+            // its SoundFont parser internal, so it can't be parsed outside it): play what is buffered, and render
+            // on the next pull.
+            if (!Monitor.TryEnter(SyncRoot, LockWait)) return;
+            try { ((Emitter)SampleRequest).Trigger(); }
+            finally { Monitor.Exit(SyncRoot); }
             lock (_gate) if (_count == before) return; // the synth has nothing more to give
         }
     }
+
+    /// <summary>How long a pull waits for the player's lock: well inside the device's 80 ms buffer.</summary>
+    private static readonly TimeSpan LockWait = TimeSpan.FromMilliseconds(10);
 
     private void Grow(int needed)
     {

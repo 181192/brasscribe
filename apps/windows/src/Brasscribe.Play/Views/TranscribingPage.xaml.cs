@@ -37,7 +37,7 @@ public sealed partial class TranscribingPage : Page, IScreenPage
             CloseButtonText = strings["CancelDialog_Keep"],
             DefaultButton = ContentDialogButton.Close,
         };
-        var result = await dialog.ShowAsync();
+        var result = await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
         if (result == ContentDialogResult.Primary) await ViewModel.CancelCommand.ExecuteAsync(null);
         else
         {

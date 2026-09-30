@@ -34,9 +34,18 @@ public sealed class ThemeController
         _settings = settings;
         _queue = queue;
         _override = forced switch { "dark" => RootTheme.Dark, "light" => RootTheme.Light, _ => null };
-        _settings.HighContrast = _accessibility.HighContrast;
-        // Raised off the UI thread.
-        _accessibility.HighContrastChanged += (s, _) => _queue.TryEnqueue(() => _settings.HighContrast = s.HighContrast);
+        // Some Windows setups (a service account, a PC without a signed-in desktop session) refuse the contrast
+        // setting or its change event: the app then starts without following a contrast theme, rather than not at all.
+        try
+        {
+            _settings.HighContrast = _accessibility.HighContrast;
+            // Raised off the UI thread.
+            _accessibility.HighContrastChanged += (s, _) => _queue.TryEnqueue(() => _settings.HighContrast = s.HighContrast);
+        }
+        catch (System.Runtime.InteropServices.COMException e)
+        {
+            System.Diagnostics.Trace.TraceWarning($"Contrast theme changes can't be followed: {e.Message}");
+        }
         _settings.PropertyChanged += OnSettingsChanged;
         ApplyPalette();
     }

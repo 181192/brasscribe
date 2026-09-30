@@ -201,20 +201,29 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
             if (folder is null) return;
             foreach (var (format, part, fileName) in plan)
             {
-                await using var stream = File.Create(Path.Combine(folder, fileName));
+                // Files already in the folder are kept: a new name "Title (2).pdf" instead of writing over them.
+                await using var stream = new FileStream(UniquePath(folder, fileName), FileMode.CreateNew);
                 await exports.ExportAsync(format, _sources, stream, part, _settings);
             }
             Done(s.Format("Export_DoneMany", plan.Count, folder));
         }
         catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
         {
-            Done(s.Format("Export_Failed", e is EngineException ee ? EngineErrors.Message(ee, s) : e.Message));
+            Done(s.Format("Export_Failed", Reason(e)));
         }
         finally
         {
             IsExporting = false;
         }
     }
+
+    /// <summary>Why an export failed, in the player's words where the app has them.</summary>
+    private string Reason(Exception e) => e switch
+    {
+        EngineException ee => EngineErrors.Message(ee, s),
+        InvalidOperationException { Message: var key } when key.StartsWith("Export_Reason_", StringComparison.Ordinal) => s[key],
+        _ => e.Message,
+    };
 
     private bool CanPrint() => CanPrintNow && !IsExporting;
 
@@ -237,6 +246,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
 
             string dir = Path.Combine(Path.GetTempPath(), "Brasscribe", "print");
             Directory.CreateDirectory(dir);
+            PruneOldPrints(dir);
             foreach (var (format, part, fileName) in plan)
             {
                 string path = Path.Combine(dir, fileName);
@@ -248,7 +258,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         }
         catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
         {
-            Done(s.Format("Export_Failed", e is EngineException ee ? EngineErrors.Message(ee, s) : e.Message));
+            Done(s.Format("Export_Failed", Reason(e)));
         }
         finally
         {
@@ -272,9 +282,43 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         _ => "TalkingScore",
     };
 
-    private static string Sanitize(string name)
+    /// <summary>
+    /// A file name Windows accepts: no reserved characters, no trailing dots or spaces, and not a device
+    /// name (a score called "Con" would be saved as "CON.pdf", which Windows refuses).
+    /// </summary>
+    internal static string Sanitize(string name)
     {
         var bad = Path.GetInvalidFileNameChars().Concat(['\\', '/', ':', '*', '?', '"', '<', '>', '|']).ToHashSet();
-        return new string(name.Select(c => bad.Contains(c) ? '-' : c).ToArray()).Trim();
+        string clean = new string(name.Select(c => bad.Contains(c) || char.IsControl(c) ? '-' : c).ToArray()).Trim().TrimEnd('.', ' ');
+        if (clean.Length == 0) return "score";
+        return IsDeviceName(clean) ? clean + "_" : clean;
+    }
+
+    private static bool IsDeviceName(string name)
+    {
+        string stem = name.Split('.')[0].TrimEnd(' ').ToUpperInvariant();
+        return stem is "CON" or "PRN" or "AUX" or "NUL" or "CONIN$" or "CONOUT$"
+               || stem.Length == 4 && (stem.StartsWith("COM", StringComparison.Ordinal) || stem.StartsWith("LPT", StringComparison.Ordinal))
+                  && stem[3] is >= '0' and <= '9' or '¹' or '²' or '³';
+    }
+
+    /// <summary>The path in <paramref name="folder"/> for <paramref name="fileName"/>, numbered when that name is taken.</summary>
+    internal static string UniquePath(string folder, string fileName)
+    {
+        string path = Path.Combine(folder, fileName);
+        string stem = Path.GetFileNameWithoutExtension(fileName), ext = Path.GetExtension(fileName);
+        for (int n = 2; File.Exists(path); n++) path = Path.Combine(folder, $"{stem} ({n}){ext}");
+        return path;
+    }
+
+    /// <summary>PDFs sent to the printer before today: the print app has long read them.</summary>
+    private static void PruneOldPrints(string dir)
+    {
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(dir))
+                if (File.GetLastWriteTimeUtc(file) < DateTime.UtcNow.AddDays(-1)) File.Delete(file);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 }

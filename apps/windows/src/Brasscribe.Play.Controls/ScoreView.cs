@@ -539,16 +539,27 @@ public sealed partial class ScoreView : UserControl
         else _viewModel.Stand.PreviousPage();
     }
 
-    /// <summary>The mouse wheel turns pages in the stand.</summary>
+    private int _wheel;
+
+    /// <summary>
+    /// The mouse wheel turns pages in the stand: one page per notch (120). A touchpad sends many small
+    /// deltas, which add up to a notch, so one swipe does not turn several pages.
+    /// </summary>
     private void OnStandWheel(object sender, PointerRoutedEventArgs e)
     {
         if (!IsStand || _viewModel is null) return;
         int delta = e.GetCurrentPoint(this).Properties.MouseWheelDelta;
         if (delta == 0) return;
         e.Handled = true;
+        if (Math.Sign(delta) != Math.Sign(_wheel)) _wheel = 0; // a change of direction starts afresh
+        _wheel += delta;
+        if (Math.Abs(_wheel) < WheelNotch) return;
+        _wheel = 0;
         if (delta < 0) _viewModel.Stand.NextPage();
         else _viewModel.Stand.PreviousPage();
     }
+
+    private const int WheelNotch = 120;
 
 
     protected override AutomationPeer OnCreateAutomationPeer() => _peer = new ScoreViewAutomationPeer(this);

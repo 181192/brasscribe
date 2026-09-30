@@ -826,6 +826,24 @@ add("Output_KeyOnYourPart", "{0} on your part", "{0} på stemmen din")
 add("Output_OldComputer", "Brasscribe on your computer is too old to write for your instrument. Update it to use this.",
     "Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.")
 
+# ---- problems the app recovers from ----
+add("Error_RecordingUnreadable_Title", "The recording can't be read", "Opptaket kan ikke leses")
+add("Error_RecordingUnreadable_Reason", "Brasscribe couldn't open the recording on this PC. It may have been moved or deleted, or another app is using it.",
+    "Brasscribe fikk ikke åpnet opptaket på denne PC-en. Det kan være flyttet eller slettet, eller en annen app bruker det.")
+add("Error_RecordingUnreadable_Step1", "Close other apps that use the file, then choose Try again.", "Lukk andre apper som bruker filen, og velg Prøv igjen.")
+add("Error_RecordingUnreadable_Step2", "Or choose another recording.", "Eller velg et annet opptak.")
+add("Notice_Problem", "Something went wrong, but your work is safe. If it happens again, restart Brasscribe Play.",
+    "Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.")
+add("Score_RenderFailed", "The notes can't be drawn. Try another zoom or part, or open the score again.",
+    "Notene kan ikke tegnes. Prøv en annen zoom eller stemme, eller åpne partituret på nytt.")
+add("Start_Notice_Interrupted", "Recording stopped by itself: the device was disconnected, or the disk is full. Choose Stop to keep what was recorded.",
+    "Opptaket stoppet av seg selv: enheten ble koblet fra, eller disken er full. Velg Stopp for å beholde det som ble tatt opp.")
+add("Library_SaveFailed", "Your change couldn't be saved on this PC. Check that the disk isn't full, then try again.",
+    "Endringen kunne ikke lagres på denne PC-en. Sjekk at disken ikke er full, og prøv igjen.")
+add("Library_Unavailable", "Not found. Connect the drive it's on to open it.", "Finnes ikke. Koble til disken den ligger på, for å åpne den.")
+add("Start_Error_NeedsCodec", "Windows couldn't read {0}. Files like this may need Web Media Extensions from the Microsoft Store. Try an MP3, WAV or MP4 file, or record it instead.",
+    "Windows kunne ikke lese {0}. Slike filer kan trenge Webmedieutvidelser fra Microsoft Store. Prøv en MP3-, WAV- eller MP4-fil, eller ta det opp i stedet.")
+
 
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):

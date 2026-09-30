@@ -407,7 +407,7 @@ public sealed partial class OutputOptionsViewModel(ICoreBridge core, IAnnouncer 
         {
             StatusText = s["Output_Rearranging"];
             announcer.Announce(StatusText);
-            Applied = Options;
+            // Applied follows once the engine's score arrives (ShowingMade); a failed or cancelled run leaves the score as it was.
             RearrangeRequested?.Invoke(this, Options);
             return;
         }

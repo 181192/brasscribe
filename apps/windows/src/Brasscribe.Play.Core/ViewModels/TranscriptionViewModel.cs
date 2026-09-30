@@ -22,7 +22,7 @@ public sealed partial class TranscriptionStep(string key, string label) : Observ
 }
 
 /// <summary>Why making a score stopped, so the error screen can say what to do next.</summary>
-public enum TranscriptionFailure { None, ComputerUnreachable, Failed }
+public enum TranscriptionFailure { None, ComputerUnreachable, Failed, RecordingUnreadable }
 
 /// <summary>A finished transcription. <c>SeatFellBack</c>: the engine refused the seat and wrote the job for <see cref="EngineSeats.Fallback"/>'s seat.</summary>
 public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source,
@@ -209,7 +209,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
 
             if (audioId is null)
             {
-                await using var file = File.OpenRead(source.WavPath);
+                await using var file = OpenRecording(source.WavPath);
                 audioId = (await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct)).AudioId;
             }
 
@@ -277,11 +277,33 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         {
             Fail(e);
         }
+        catch (UnreadableRecordingException e)
+        {
+            // The recording on this PC was moved, deleted or is locked by another app: nothing was sent.
+            ErrorText = _s["Error_RecordingUnreadable_Title"];
+            ErrorDetail = e.InnerException?.Message;
+            Failure = TranscriptionFailure.RecordingUnreadable;
+            _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
+            FailedWith?.Invoke(this, Failure);
+        }
+        catch (IOException e)
+        {
+            // The connection broke off while a download was read.
+            Fail(new EngineException("The connection to the engine broke off.", null, e));
+        }
         finally
         {
             IsRunning = false;
             _jobId = null;
         }
+    }
+
+    private sealed class UnreadableRecordingException(Exception inner) : Exception(inner.Message, inner);
+
+    private static FileStream OpenRecording(string path)
+    {
+        try { return File.OpenRead(path); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { throw new UnreadableRecordingException(e); }
     }
 
     /// <summary>
