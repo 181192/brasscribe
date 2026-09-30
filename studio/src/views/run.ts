@@ -1,5 +1,5 @@
 // One run: live stage graph over SSE and the stage inspector.
-import { api, fetchBytes, fetchText, isAbort, subscribe } from "../api/client";
+import { api, fetchBytes, fetchText, isAbort, subscribe, type StreamState } from "../api/client";
 import type { Composition, FileRef, Job, Manifest, Reference, StageFiles, ValidationIssue } from "../api/types";
 import { audioPanel, type AudioSource } from "../components/audio";
 import { BeatView } from "../components/beats";
@@ -41,6 +41,8 @@ interface Ctx {
 export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSearchParams): () => void {
   const heading = h("h1", {}, t("run.title"));
   const header = h("div", {}, loading());
+  // While the progress stream is down: the browser reconnects by itself, or (once it gives up) Try again.
+  const streamNote = h("div", { class: "hint", role: "status", hidden: true });
   const graph = h("bs-stage-graph", {}) as StageGraph;
   const stageInfo = h("div", {});
   const inspectorH = h("h2", { id: "inspector-h", class: "visually-hidden" }, t("run.inspector"));
@@ -62,7 +64,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     stageInfo);
   clear(root,
     h("a", { class: "back-link", href: "#/runs" }, icon("back"), t("run.back")),
-    h("div", { class: "view-head" }, h("div", { class: "view-title" }, heading, header), actions),
+    h("div", { class: "view-head" }, h("div", { class: "view-title" }, heading, header, streamNote), actions),
     inspector,
     h("section", { "aria-labelledby": "graph-h", class: "stages-section" }, stagesBox));
   let stagesOpened = false;
@@ -172,7 +174,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
           stop = null;
           void load(); // reload outputs and the inspector
         } else renderHeader({ ...job, status: view.status as Job["status"] }, m);
-      });
+      }, (s) => showStream(s));
     }
     const ctx: Ctx = {
       id, job, stages: st,
@@ -196,6 +198,19 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     });
     selectTab = (sel) => tabsEl?.querySelector<HTMLButtonElement>(`[role=tab][data-id="${sel}"]`)?.click();
     clear(inspector, inspectorH, tabsEl);
+  };
+  const showStream = (s: StreamState) => {
+    streamNote.hidden = s === "open";
+    if (s === "reconnecting") clear(streamNote, t("run.reconnecting"));
+    else if (s === "closed") {
+      stop?.();
+      stop = null;
+      clear(streamNote, h("p", {}, t("run.streamLost")),
+        h("p", {}, h("button", { type: "button", class: "ghost", onclick: () => {
+          streamNote.hidden = true;
+          void load();
+        } }, t("err.retry"))));
+    }
   };
   const load = () => start().catch((e) => {
     if (!signal.aborted && !isAbort(e)) clear(header, errorNotice(e));

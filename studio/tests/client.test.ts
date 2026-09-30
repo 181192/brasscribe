@@ -1,5 +1,37 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { anySignal, api, isAbort, TimedOut } from "../src/api/client";
+import { anySignal, api, isAbort, subscribe, TimedOut, type StreamState } from "../src/api/client";
+import type { JobEvent } from "../src/api/types";
+
+/** The browser's EventSource, driven by hand. */
+class FakeEventSource extends EventTarget {
+  static readonly CONNECTING = 0;
+  static readonly OPEN = 1;
+  static readonly CLOSED = 2;
+  static last: FakeEventSource;
+  readyState = 0;
+  closed = 0;
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  constructor(readonly url: string) {
+    super();
+    FakeEventSource.last = this;
+  }
+  close(): void {
+    this.closed++;
+    this.readyState = 2;
+  }
+  open(): void {
+    this.readyState = 1;
+    this.onopen?.();
+  }
+  send(type: string, e: Partial<JobEvent>): void {
+    this.dispatchEvent(new MessageEvent(type, { data: JSON.stringify(e) }));
+  }
+  drop(giveUp = false): void {
+    this.readyState = giveUp ? 2 : 0;
+    this.onerror?.();
+  }
+}
 
 /** A fetch that never answers and rejects the way a browser does when its signal aborts. */
 function hangingFetch(seen: { signal?: AbortSignal | null } = {}) {
@@ -62,5 +94,36 @@ describe("cancelling requests", () => {
     } finally {
       AbortSignal.any = any;
     }
+  });
+});
+
+describe("following a run", () => {
+  it("keeps the stream open through a dropped connection and says it is reconnecting", () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const events: number[] = [];
+    const states: StreamState[] = [];
+    const stop = subscribe("r1", (e) => events.push(e.id), (s) => states.push(s));
+    const es = FakeEventSource.last;
+    es.open();
+    es.send("stage", { id: 1, type: "stage" });
+    es.drop();
+    expect(es.closed).toBe(0);
+    expect(states).toEqual(["reconnecting"]);
+    // The browser reconnects and the engine resumes; an event seen twice is dropped.
+    es.open();
+    es.send("stage", { id: 1, type: "stage" });
+    es.send("log", { id: 2, type: "log" });
+    expect(events).toEqual([1, 2]);
+    expect(states).toEqual(["reconnecting", "open"]);
+    stop();
+    expect(es.closed).toBe(1);
+  });
+
+  it("reports when the browser gives up", () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const states: StreamState[] = [];
+    subscribe("r1", () => undefined, (s) => states.push(s));
+    FakeEventSource.last.drop(true);
+    expect(states).toEqual(["closed"]);
   });
 });

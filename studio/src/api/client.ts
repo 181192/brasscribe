@@ -192,21 +192,41 @@ export const api = {
   sources: () => get<Source[]>("/v1/sources", "GET /v1/sources"),
 };
 
-/** Subscribe to a job's progress. Returns a function that closes the stream. */
-export function subscribe(id: string, onEvent: (e: JobEvent) => void, onEnd?: () => void): () => void {
+/** The stream's state: connected, trying to reconnect after a drop, or given up by the browser. */
+export type StreamState = "open" | "reconnecting" | "closed";
+
+/**
+ * Subscribe to a job's progress. Returns a function that closes the stream.
+ *
+ * A dropped connection is left to the browser to reopen: the engine resumes after the last event
+ * id it sent (Last-Event-ID), and an event seen twice is dropped here. The caller closes the stream
+ * when the job ends.
+ */
+export function subscribe(id: string, onEvent: (e: JobEvent) => void, onState?: (s: StreamState) => void): () => void {
   const es = new EventSource(api.eventsUrl(id));
+  let last = -Infinity;
+  let state: StreamState = "open";
+  const set = (s: StreamState) => {
+    if (s === state) return;
+    state = s;
+    onState?.(s);
+  };
   const handler = (m: MessageEvent) => {
+    let e: JobEvent;
     try {
-      onEvent(JSON.parse(m.data) as JobEvent);
+      e = JSON.parse(m.data) as JobEvent;
     } catch {
-      /* ignore malformed lines */
+      return; // ignore malformed lines
     }
+    set("open");
+    if (typeof e.id === "number") {
+      if (e.id <= last) return;
+      last = e.id;
+    }
+    onEvent(e);
   };
   for (const t of ["message", "job", "stage", "log"]) es.addEventListener(t, handler as EventListener);
-  es.onerror = () => {
-    // The engine closes the stream once the job is finished.
-    es.close();
-    onEnd?.();
-  };
+  es.onopen = () => set("open");
+  es.onerror = () => set(es.readyState === EventSource.CLOSED ? "closed" : "reconnecting");
   return () => es.close();
 }
