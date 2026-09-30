@@ -188,7 +188,8 @@ class AdapterRegistry:
             cmd = [str(self.script(name)), str(src), str(dst)]
         else:
             raise AdapterError(f"no run_adapter.py or {self.script(name)}")
-        full_env = child_env({**dict(a.env), **(env or {})})
+        # The adapter reads its weights from the folder the engine hashes for the manifest.
+        full_env = child_env({**dict(a.env), **(env or {}), "BRASSCRIBE_MODELS": str(self.models_dir)})
         t0 = time.time()
 
         def call():

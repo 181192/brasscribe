@@ -160,3 +160,15 @@ def test_programs_the_engine_starts_do_not_get_its_credentials(settings, audio, 
     env = json.loads((tmp_path / "env.json").read_text())
     assert not set(config.CREDENTIAL_ENV) & set(env) and env["BRASSCRIBE_DEVICE"] == "cpu"
     assert not set(config.CREDENTIAL_ENV) & set(config.child_env({"X": "1"}))
+
+
+def test_adapters_read_the_models_folder_the_engine_hashes(settings, audio, tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.delenv("BRASSCRIBE_MODELS", raising=False)
+    (settings.data_dir / "models").mkdir()
+    (settings.adapters_dir / "run_adapter.py").write_text(ENV_DUMP)
+    _, adapters = session(settings)
+    adapters.run("swift-f0", audio, tmp_path / "env.json")
+    env = json.loads((tmp_path / "env.json").read_text())
+    assert env["BRASSCRIBE_MODELS"] == str(settings.data_dir / "models") == str(adapters.models_dir)
