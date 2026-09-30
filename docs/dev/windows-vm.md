@@ -194,7 +194,10 @@ What it covers of [windows-checklist.md](windows-checklist.md):
 ## Troubleshooting
 
 - **Where is setup?** `scripts/win-vm.sh screen` saves the VM's display as a PNG. It works headless,
-  at any point, Windows setup included.
+  but from Windows' boot manager until `firstlogon.ps1` has installed the display driver it shows
+  only "Display output is not active": the firmware's virtio-gpu GOP is blit-only, and Windows can't
+  draw on it. While the screen is blank, the growth of `base.qcow2` (`du -h`) shows that setup is
+  copying files.
 - **No SSH after setup.** Look at the screen first. If Windows is at the desktop, `C:\firstlogon.log`
   in the VM says what failed. The usual causes are:
   - the network driver did not install (no network, so no OpenSSH either)

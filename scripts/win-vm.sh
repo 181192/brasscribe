@@ -240,7 +240,7 @@ setup_iso() {
   [ -n "$(ls "$stage/drivers")" ] || { echo "error: no ARM64 drivers in $VIRTIO" >&2; exit 1; }
   rm -f "$SETUP_ISO"
   hdiutil makehybrid -quiet -iso -joliet -default-volume-name BCSETUP -o "$SETUP_ISO" "$stage"
-  rm -rf "$stage"
+  chmod -R u+w "$stage"; rm -rf "$stage"   # the drivers come read-only off the CD
 }
 
 # Install Windows into the base disk, then the toolchain. Each stage is skipped when it is done.
