@@ -121,11 +121,13 @@ jobs:
     if: always()
     runs-on: ubuntu-24.04
     steps:
+      # A skipped CodeQL counts only when the change detection itself succeeded and chose nothing.
       - env:
+          CHANGES: ${{ needs.changes.result }}
           RESULT: ${{ needs.codeql.result }}
         run: |
-          echo "CodeQL: $RESULT"
-          [ "$RESULT" = success ] || [ "$RESULT" = skipped ]
+          echo "changes: $CHANGES, CodeQL: $RESULT"
+          [ "$CHANGES" = success ] && { [ "$RESULT" = success ] || [ "$RESULT" = skipped ]; }
 
   dependency-review:
     name: dependency review
