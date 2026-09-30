@@ -300,6 +300,37 @@ public sealed class PairViewModelTests
     }
 
     [Fact]
+    public async Task A_code_the_engine_forgot_is_replaced_by_a_fresh_one()
+    {
+        var vm = Make();
+        await vm.OpenAsync();
+        string first = vm.Code;
+        await vm.TickAsync();
+        Assert.Single(_engine.Opens);
+
+        _engine.PairingOpen = false; // the engine restarted: its pairing window is gone, nothing paired
+        await vm.TickAsync();
+        Assert.Equal(2, _engine.Opens.Count);
+        Assert.True(vm.IsOpen);
+        Assert.NotEqual(first, vm.Code);
+        Assert.Equal(CodeText.Display(vm.Code), vm.CodeDisplay);
+        Assert.False(vm.HasPaired);
+    }
+
+    [Fact]
+    public async Task A_window_closed_because_a_phone_just_paired_is_not_reopened()
+    {
+        var vm = Make();
+        await vm.OpenAsync();
+        _engine.PairingOpen = false;
+        _engine.Devices.Add(new("new", "Kari's iPhone", "ios", "x", "2026-09-27T12:00:00Z"));
+        await vm.TickAsync();
+        Assert.Single(_engine.Opens);
+        Assert.True(vm.HasPaired);
+        Assert.False(vm.IsOpen);
+    }
+
+    [Fact]
     public async Task A_code_with_an_expiry_is_extended_in_the_background()
     {
         _engine.ExpiresAt = _time.GetUtcNow().AddMinutes(10).ToString("O");

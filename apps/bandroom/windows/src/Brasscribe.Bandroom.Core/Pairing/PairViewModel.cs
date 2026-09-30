@@ -172,7 +172,20 @@ public sealed partial class PairViewModel : ObservableObject
             }
             // The spent single-use code (the engine closes it) and the wrong-code lockout.
             var current = await api.GetPairingAsync(ct);
-            if (HasPaired) IsOpen = current.Open && current.Code is not null;
+            bool open = current.Open && current.Code is not null;
+            if (HasPaired) IsOpen = open;
+            else if (IsOpen && !open)
+            {
+                // Closed with nothing paired (the engine restarted, say): the code on screen no longer works. Ask for
+                // a new one, unless a phone paired in between (the next poll shows it); a failure shows the error.
+                var now = await api.GetDevicesAsync(ct);
+                if (_knownDevices is null || now.All(d => _knownDevices.Contains(d.DeviceId)))
+                {
+                    await OpenAsync();
+                    return;
+                }
+            }
+            else if (IsOpen && current.Code != Code) Show(current);
             ShowLockout(current);
             _knownDevices = devices.Select(d => d.DeviceId).ToHashSet();
 
