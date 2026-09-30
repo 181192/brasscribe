@@ -3,6 +3,7 @@ name: android
 # Brasscribe Play for Android. Checks: unit tests, lint and a debug build (Kotlin fallback core,
 # stub audio tier). With `release`: the Rust core and sfizz are built in, and the release APKs are
 # signed with the release key (secrets of the `release` environment) and uploaded as dist-android.
+# The `release` environment only admits v* tags, so the signed build runs from a release tag only.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
 # every push gets the fast Linux checks in ci.yml instead.
 on:
@@ -137,6 +138,7 @@ jobs:
           [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] || { echo "release signing secrets are missing" >&2; exit 1; }
           BT="$ANDROID_HOME/build-tools/35.0.0"
           ks="$RUNNER_TEMP/release.jks"
+          trap 'rm -f "$ks"' EXIT
           echo "$KEYSTORE_B64" | base64 -d > "$ks"
           mkdir -p "$RUNNER_TEMP/out"
           for a in arm64-v8a universal; do
@@ -147,10 +149,12 @@ jobs:
             "$BT/apksigner" verify --print-certs "$out" | grep -q "SHA-256 digest: $RELEASE_CERT_SHA256" \
               || { echo "$out is not signed with the release certificate" >&2; exit 1; }
           done
-          rm -f "$ks" "$RUNNER_TEMP/aligned.apk" "$RUNNER_TEMP"/out/*.idsig
+          rm -f "$RUNNER_TEMP/aligned.apk" "$RUNNER_TEMP"/out/*.idsig
 
       - uses: actions/upload-artifact@v4
         with:
           name: dist-android
           path: ${{ runner.temp }}/out/*.apk
           if-no-files-found: error
+          # Signed with the release key: kept only until release.yml attaches it to the release.
+          retention-days: 1

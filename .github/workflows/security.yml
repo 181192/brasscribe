@@ -4,6 +4,7 @@ name: security
 # requests. Findings land in the repository's Security tab; the dependency review fails a pull
 # request that adds a dependency with a known high-severity vulnerability.
 # Swift is not analysed: CodeQL needs a full Xcode build for it (the apple workflow builds the apps).
+# Kotlin and the Android native audio code (C++) are analysed from the Android debug build.
 # On pull requests only the languages whose files changed are analysed, and dependencies are reviewed
 # only when a manifest or lockfile changed; pushes to main and the weekly run analyse everything.
 on:
@@ -42,17 +43,18 @@ jobs:
           filters: |
             actions: ['.github/**']
             python: ['**/*.py', '**/pyproject.toml', 'pixi.toml', 'pixi.lock']
-            javascript-typescript: ['studio/**', 'site/**/*.js', '**/*.ts', '**/*.js', '**/*.mjs']
+            javascript-typescript: ['studio/**', '**/*.ts', '**/*.js', '**/*.mjs', '**/*.html']
             rust: ['core/**/*.rs', 'core/**/Cargo.toml', 'core/Cargo.lock']
             csharp: ['apps/windows/**', 'apps/bandroom/windows/**', 'core/dotnet/**']
             java-kotlin: ['apps/android/**', 'core/android/**', 'design/dist/android/**']
+            c-cpp: ['apps/android/audio/src/main/cpp/**', 'apps/android/audio/build.gradle.kts']
             dependencies: ['**/Cargo.toml', '**/Cargo.lock', '**/package.json', '**/package-lock.json', '**/*.gradle.kts', 'apps/android/gradle/**', '**/*.csproj', '**/Directory.Packages.props', '**/Package.swift', '**/Package.resolved', 'pixi.toml', 'pixi.lock', '**/pyproject.toml', '**/requirements*.txt', '.github/**']
       - id: pick
         env:
           EVENT: ${{ github.event_name }}
           CHANGES: ${{ steps.filter.outputs.changes }}
         run: |
-          all='["actions","python","javascript-typescript","rust","csharp","java-kotlin"]'
+          all='["actions","python","javascript-typescript","rust","csharp","java-kotlin","c-cpp"]'
           if [ "$EVENT" = pull_request ]; then
             langs=$(jq -c --argjson all "$all" '[.[] | select(. as $l | $all | index($l))]' <<<"${CHANGES:-[]}")
           else
@@ -70,45 +72,60 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
     strategy:
       fail-fast: false
       matrix:
         language: ${{ fromJSON(needs.changes.outputs.languages) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          # Kotlin is only analysed from a real build: the Android debug build below (Kotlin
-          # fallback core, no Rust needed). The rest are analysed from source alone.
-          build-mode: ${{ matrix.language == 'java-kotlin' && 'manual' || 'none' }}
+          # Kotlin and the native audio code (C++, JNI) are only analysed from a real build: the
+          # Android debug build below (Kotlin fallback core, no Rust needed). The rest from source alone.
+          build-mode: ${{ (matrix.language == 'java-kotlin' || matrix.language == 'c-cpp') && 'manual' || 'none' }}
           queries: security-extended
 
       - uses: actions/setup-java@v4
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' || matrix.language == 'c-cpp'
         with:
           distribution: temurin
           java-version: "21"
 
       # The versions pinned in build.gradle.kts, as the android workflow installs them.
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' || matrix.language == 'c-cpp'
         with:
           packages: platform-tools ndk;28.2.13676358 cmake;3.31.6
 
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' || matrix.language == 'c-cpp'
 
       - name: Build the Android app (debug)
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' || matrix.language == 'c-cpp'
         working-directory: apps/android
         run: ./gradlew assembleDebug --no-build-cache --stacktrace
 
       - uses: github/codeql-action/analyze@v3
         with:
           category: /language:${{ matrix.language }}
+
+  # One check that is always reported, whichever languages ran: the one to make required. The
+  # per-language jobs are named from the matrix and don't exist when a pull request skips them.
+  codeql-result:
+    name: CodeQL result
+    needs: [changes, codeql]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          RESULT: ${{ needs.codeql.result }}
+        run: |
+          echo "CodeQL: $RESULT"
+          [ "$RESULT" = success ] || [ "$RESULT" = skipped ]
 
   dependency-review:
     name: dependency review

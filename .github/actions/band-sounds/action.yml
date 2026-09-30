@@ -17,7 +17,7 @@ runs:
         path: data/sounds/band
         key: band-sounds-${{ runner.os }}-${{ hashFiles('sounds/band-sounds.json') }}-${{ inputs.files }}
 
-    # gh reads GH_TOKEN; the job's token needs contents: read for a release of this private repository.
+    # gh reads GH_TOKEN; the job's token needs contents: read to read the pinned sound pack release.
     - name: Fetch and verify the band sounds
       shell: bash
       working-directory: ${{ github.workspace }}
