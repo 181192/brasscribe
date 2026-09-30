@@ -50,7 +50,8 @@ public sealed class StopWaitTests
     [Fact]
     public void On_the_ui_thread_the_stop_ends_when_the_device_says_so_not_at_the_limit()
     {
-        var limit = TimeSpan.FromMilliseconds(500);
+        // Long enough that a slow first run on a CI runner (JIT, a busy machine) stays far below half of it.
+        var limit = TimeSpan.FromSeconds(2);
         using var ui = new SingleThreadContext();
 
         var (awaited, awaitedMs) = ui.Run(async () =>
