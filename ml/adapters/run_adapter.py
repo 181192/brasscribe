@@ -142,10 +142,11 @@ def beat_this(src: Path, dst: Path) -> None:
 
 
 def muscriptor(src: Path, dst: Path) -> None:
+    # MuScriptor downmixes and resamples to 16 kHz itself. Its greedy decoding changes with the resampler,
+    # so it gets the original samples (the committed eval fixtures were made that way); ffmpeg only
+    # decodes what libsndfile cannot read.
     with tempfile.TemporaryDirectory() as tmp:
-        audio = Path(tmp) / "input.wav"
-        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-ar", "16000", "-ac", "1",
-                        str(audio)], check=True)
+        audio = readable(src, tmp)
         with atomic(dst) as part:
             cmd = ["muscriptor", "transcribe", str(audio), "-m", os.environ.get("MUSCRIPTOR_MODEL", "medium"),
                    "-o", str(part), "--detect-tempo", "false"]
