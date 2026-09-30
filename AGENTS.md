@@ -17,7 +17,7 @@ on memory or on this file.
 | What CI runs | `.github/workflows/` |
 | Design rules and tokens | [design/README.md](design/README.md) and `design/tokens/` |
 | Why the architecture is as it is | [docs/research/00-summary.md](docs/research/00-summary.md) |
-| Per-app build and toolchain | the README in each `apps/*` directory |
+| Per-app build and toolchain | the README in the app's directory (`apps/<app>/`, `apps/bandroom/<os>/`) |
 | Licences of what is bundled | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 
 ## How to work
@@ -28,10 +28,11 @@ on memory or on this file.
 - **Change one thing per branch**, on a branch or worktree, never directly on `main` unless told to.
 - **Follow the surrounding code.** Each part has its own language and idioms (Python, Rust, Swift,
   Kotlin, C#, TypeScript); match the file you are in, its naming and its comment density.
-- **The Python reference is the spec.** Music rules are written once in Python (`music/`) and ported
-  to the Rust core; the conformance suite checks they agree. Change the reference first, then the port.
-- **Goldens change deliberately.** Reference outputs are promoted on purpose with a reason in the
-  commit, never regenerated just to make a test pass.
+- **The Python reference is the spec.** Music rules are written once in Python and ported to the Rust
+  core; the conformance suite checks they agree. [core/README.md](core/README.md) says what counts as
+  the reference. Change the reference first, then the port.
+- **Goldens change deliberately.** Reference outputs are promoted at merge, never from a branch and
+  never just to make a test pass: follow [docs/dev/release.md](docs/dev/release.md) §10.
 - **Keep docs true.** If your change makes a doc wrong, fix the doc in the same branch. Don't add
   numbers or lists to docs that a script can print instead.
 
@@ -39,9 +40,8 @@ on memory or on this file.
 
 - [Conventional Commits](https://www.conventionalcommits.org): `type(scope): summary`. The scope is
   the app or part (`android`, `apple`, `windows`, `bandroom-mac`, `studio`, `engine`, `core`, …).
-- **Commit messages become the release notes** (`cliff.toml`): `feat` and `fix` are listed for users,
-  so write the summary for someone who uses the app, in plain words. `docs`, `test`, `ci`, `build`,
-  `refactor` and `chore` are folded away.
+- **Commit messages become the release notes** (`cliff.toml` decides what is listed for users and what
+  is folded away): write `feat` and `fix` summaries for someone who uses the app, in plain words.
 - Don't mention agents, sessions, task ids or tools in commits, code comments or docs. Describe what
   the change does.
 - Fill in the pull request template, including the verification and the AI-assistance section.

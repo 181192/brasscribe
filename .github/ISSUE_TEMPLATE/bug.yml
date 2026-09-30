@@ -27,7 +27,7 @@ body:
     attributes:
       label: Version
       description: In the app's About screen, or the release you downloaded.
-      placeholder: e.g. 0.3.1
+      placeholder: e.g. 1.2.3
     validations: { required: true }
   - type: textarea
     id: steps
@@ -54,7 +54,7 @@ body:
     id: logs
     attributes:
       label: Logs or crash report
-      description: Optional. Bandroom's logs are in its data folder; remove anything personal first.
+      description: Optional. In Bandroom, Show logs opens them; remove anything personal first.
       render: text
   - type: dropdown
     id: frequency

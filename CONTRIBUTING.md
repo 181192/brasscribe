@@ -17,8 +17,8 @@ with AI coding tools, as long as you've checked it.
 3. Work in small steps and run `make check-fast`; run `make check` before opening the pull request.
    [docs/dev/verify.md](docs/dev/verify.md) explains the tiers and when device or UI checks are needed.
 4. Commit with [Conventional Commits](https://www.conventionalcommits.org): `type(scope): summary`.
-   `feat` and `fix` commits become the [release notes](CHANGELOG.md), so write them for the people
-   who use the apps.
+   The commits become the [release notes](CHANGELOG.md) (`cliff.toml` says how), so write `feat` and
+   `fix` summaries for the people who use the apps.
 5. Open a pull request and fill in the template, including what you verified and how AI was used.
 
 ## Using AI coding agents
