@@ -74,16 +74,18 @@ note the step number and what you saw, and stop at the first crash.
    activate). On the fifth, "🎺 Pink unlocked" shows for a few seconds and Narrator says it once.
    Appearance does **not** change by itself.
 3. Pause 2 s between presses on a fresh profile: nothing unlocks.
-4. Appearance now lists **Pink** last. Choose it: the chrome turns blush with plum text and a
-   raspberry primary, and the caption glyphs are plum. The notation stays ink on paper, and the ?
-   marks, the loop and the cursor keep their colours.
-5. With Pink chosen, switch Windows between light and dark mode (Settings › Personalisation ›
-   Colours): the app follows with Pink dark (bubblegum primary, coral errors).
+4. Appearance now lists **Pink light** and **Pink dark** last. Choose Pink light: the chrome turns
+   blush with plum text and a raspberry primary, and the caption glyphs are plum. The notation stays
+   ink on paper, and the ? marks, the loop and the cursor keep their colours.
+5. Choose Pink dark: the app turns Pink dark (bubblegum primary, coral errors) at once, whatever
+   Windows' mode (Settings › Personalisation › Colours). Switching Windows' mode changes neither.
 6. Turn on a Windows contrast theme (Aquatic, Desert): the app uses the system colours at once, and
    the contrast note shows. Turn it off: Pink comes back.
-7. Quit with Pink chosen and start the app again: it opens in Pink, caption buttons included.
+7. Quit with Pink dark chosen and start the app again: it opens in Pink dark, caption buttons
+   included. A settings.json from an earlier version with `"Appearance": "pink"` opens in Pink light
+   or Pink dark to match Windows' mode, and is rewritten.
 8. Choose Light: Pink leaves every surface, including open flyouts, with no leftover pink brushes.
-   Restart the app: Pink is still listed.
+   Restart the app: Pink light and Pink dark are still listed.
 9. Check Home, the score, the stand, Review, "Choose what to make", Share or print and Settings in
    Pink light and Pink dark. Look for unreadable text and for surfaces left in the old palette.
    Radio buttons, checks and toggles keep the ink accent; that is expected.

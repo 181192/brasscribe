@@ -239,8 +239,9 @@ prop("AppearanceBox", "Header", "Appearance", "Utseende")
 prop("AppearanceSystem", "Content", "Match system", "Følg systemet")
 prop("AppearanceLight", "Content", "Light", "Lyst")
 prop("AppearanceDark", "Content", "Dark", "Mørkt")
-# The hidden Pink palette (design/system.md §10): its item is added in code, last, once it is unlocked from About.
-add("Appearance_Pink", "Pink", "Rosa")
+# The hidden Pink palette (design/system.md §10): its two items are added in code, last, once it is unlocked from About.
+add("Appearance_PinkLight", "Pink light", "Rosa lys")
+add("Appearance_PinkDark", "Pink dark", "Rosa mørk")
 add("Pink_Unlocked", "🎺 Pink unlocked", "🎺 Rosa låst opp")
 add("Settings_AppVersion", "Version {0}", "Versjon {0}")
 prop("AppearanceContrastNote", "Text", "Your contrast theme is on, so Windows chooses the colours.", "Kontrasttemaet ditt er på, så Windows velger fargene.")

@@ -15,8 +15,9 @@ namespace Brasscribe.Play.Services;
 /// (Application.RequestedTheme cannot change after start-up), on open dialogs and flyouts (they live in the
 /// popup layer and don't inherit it), and on the caption buttons. A Windows contrast theme always wins:
 /// the roots then ask for Default and the choice is kept for later.
-/// Pink is a palette, not a theme: its generated dictionary (Light and Dark roles) is merged after the
-/// Brasscribe theme while it is chosen, and the roots flip their theme once so every ThemeResource looks again.
+/// Pink is a palette on top of a theme: Pink light asks for Light and Pink dark for Dark, and the palette's generated
+/// dictionary (Light and Dark roles) is merged after the Brasscribe theme while either is chosen; the roots flip their
+/// theme once so every ThemeResource looks again.
 /// </summary>
 public sealed class ThemeController
 {
@@ -25,15 +26,18 @@ public sealed class ThemeController
     private readonly AccessibilitySettings _accessibility = new();
     private readonly List<Window> _windows = [];
     private readonly RootTheme? _override;
+    private readonly bool _overridePink;
     private const string PinkSource = "ms-appx:///Themes/BrasscribePinkTheme.xaml";
     private ResourceDictionary? _pink;
 
-    /// <param name="forced">"--theme light|dark" for screenshots: wins over the stored choice (not over contrast).</param>
+    /// <param name="forced">"--theme light|dark|pink-light|pink-dark" for screenshots: wins over the stored choice (not over contrast).</param>
     public ThemeController(SettingsViewModel settings, DispatcherQueue queue, string? forced)
     {
         _settings = settings;
         _queue = queue;
-        _override = forced switch { "dark" => RootTheme.Dark, "light" => RootTheme.Light, _ => null };
+        var choice = AppearanceSetting.Parse(forced);
+        _override = choice == Appearance.System ? null : AppearanceSetting.Resolve(choice, false);
+        _overridePink = AppearanceSetting.IsPink(choice);
         // Some Windows setups (a service account, a PC without a signed-in desktop session) refuse the contrast
         // setting or its change event: the app then starts without following a contrast theme, rather than not at all.
         try
@@ -49,6 +53,9 @@ public sealed class ThemeController
         _settings.PropertyChanged += OnSettingsChanged;
         ApplyPalette();
     }
+
+    /// <summary>The Pink palette is on the chrome now: the forced theme's, or the setting's; a contrast theme still wins.</summary>
+    private bool UsesPink => _override is null ? _settings.UsesPink : _overridePink && !_settings.HighContrast;
 
     /// <summary>The theme roots and popups ask for now.</summary>
     public ElementTheme Current => (ElementTheme)(_settings.HighContrast ? RootTheme.Default : _override ?? _settings.RootTheme);
@@ -77,7 +84,7 @@ public sealed class ThemeController
     private bool ApplyPalette()
     {
         var merged = Application.Current.Resources.MergedDictionaries;
-        bool want = _settings.UsesPink;
+        bool want = UsesPink;
         bool has = _pink is not null && merged.Contains(_pink);
         if (want == has) return false;
         if (want)
@@ -115,7 +122,7 @@ public sealed class ThemeController
 
     /// <summary>A colour of the Pink palette for the root's light or dark, while Pink is in use.</summary>
     private Windows.UI.Color? PinkColor(string key, bool dark) =>
-        _settings.UsesPink && _pink?.ThemeDictionaries.TryGetValue(dark ? "Dark" : "Light", out var d) == true
+        UsesPink && _pink?.ThemeDictionaries.TryGetValue(dark ? "Dark" : "Light", out var d) == true
         && d is ResourceDictionary themed && themed.TryGetValue(key, out var v) && v is Windows.UI.Color c ? c : null;
 
     /// <summary>The minimise/maximise/close glyphs follow the root's theme; a contrast theme keeps the system's.</summary>

@@ -125,6 +125,14 @@ jobs:
           -Score ../fixtures/old-hundredth/brass-band.musicxml
           -Out "$env:RUNNER_TEMP/screenshots"
 
+      # The hidden Pink appearance (design/system.md §10) in Pink light and Pink dark, on Home and the score.
+      - name: Screenshots in Pink
+        if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
+        run: >
+          ./tools/Screenshots/capture.ps1 -Exe "${{ steps.exe.outputs.path }}"
+          -Score ../fixtures/old-hundredth/brass-band.musicxml
+          -Out "$env:RUNNER_TEMP/screenshots" -Scenes home,score -Themes pink-light,pink-dark
+
       # What made the app exit, if it did (App writes unhandled exceptions to crash.log).
       - name: Crash log
         if: ${{ !inputs.release && failure() }}

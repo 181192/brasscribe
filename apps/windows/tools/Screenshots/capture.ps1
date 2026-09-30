@@ -1,4 +1,5 @@
 # Screenshots of every screen of Brasscribe Play, light and dark, to compare with design/mockups/png.
+# -Themes also takes pink-light and pink-dark (the hidden Pink appearance).
 # Starts the app once per screen with --show NAME (sample content, see PreviewScenes), waits for the
 # window to settle and captures it with PrintWindow (the whole window, even when partly off screen).
 #

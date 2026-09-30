@@ -75,8 +75,11 @@
   <data name="AppearanceSystem.Content" xml:space="preserve">
     <value>Følg systemet</value>
   </data>
-  <data name="Appearance_Pink" xml:space="preserve">
-    <value>Rosa</value>
+  <data name="Appearance_PinkDark" xml:space="preserve">
+    <value>Rosa mørk</value>
+  </data>
+  <data name="Appearance_PinkLight" xml:space="preserve">
+    <value>Rosa lys</value>
   </data>
   <data name="AskComputerButton.Content" xml:space="preserve">
     <value>Spør på datamaskinen i stedet</value>

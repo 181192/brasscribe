@@ -31,7 +31,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     private CancellationTokenSource? _ask;
 
     public SettingsViewModel(ISettingsStore store, IAnnouncer announcer, IStrings strings, IEngineDiscovery? discovery = null,
-        ISecretVault? vault = null, Func<Uri, string?, IEngineClient>? clients = null, TimeProvider? time = null)
+        ISecretVault? vault = null, Func<Uri, string?, IEngineClient>? clients = null, TimeProvider? time = null,
+        bool? systemDark = null)
     {
         _store = store;
         _announcer = announcer;
@@ -40,8 +41,17 @@ public sealed partial class SettingsViewModel : ObservableObject
         _clients = clients ?? ((uri, token) => new EngineClient(new HttpClient(), uri) { Token = token });
         _time = time ?? TimeProvider.System;
         Language = store.Get(nameof(Language), "system");
-        Appearance = AppearanceSetting.Parse(store.Get<string?>(AppearanceSetting.Key, null));
-        _pinkUnlock = new PinkUnlock(store.Get(AppearanceSetting.PinkUnlockedKey, false) || Appearance == Appearance.Pink, _time);
+        // An earlier version's "pink" becomes Pink light or Pink dark by Windows' mode now (systemDark), and the unlock is
+        // written down, so an earlier version (which reads the new value as Match system) still lists Pink.
+        string? appearance = store.Get<string?>(AppearanceSetting.Key, null);
+        if (AppearanceSetting.Migrate(appearance, systemDark) is { } migrated)
+        {
+            store.Set(AppearanceSetting.PinkUnlockedKey, true);
+            store.Set(AppearanceSetting.Key, migrated);
+            appearance = migrated;
+        }
+        Appearance = AppearanceSetting.Parse(appearance);
+        _pinkUnlock = new PinkUnlock(store.Get(AppearanceSetting.PinkUnlockedKey, false) || AppearanceSetting.IsPink(Appearance), _time);
         SingleKeyShortcuts = store.Get(nameof(SingleKeyShortcuts), true);
         ReduceMotion = store.Get(nameof(ReduceMotion), false);
         StandKeepControls = store.Get(nameof(StandKeepControls), false);
@@ -106,7 +116,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }
-    /// <summary>Match system, Light, Dark or (once unlocked) Pink, for this PC only (design/system.md §10).</summary>
+    /// <summary>Match system, Light, Dark or (once unlocked) Pink light or Pink dark, for this PC only (design/system.md §10).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
     public partial Appearance Appearance { get; set; }
@@ -127,7 +137,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Pink is in the Appearance list: unlocked on this PC, or chosen.</summary>
     public bool PinkUnlocked => _pinkUnlock.IsUnlocked;
 
-    /// <summary>The Appearance box's choices, in order (Pink last once unlocked).</summary>
+    /// <summary>The Appearance box's choices, in order (Pink light and Pink dark last once unlocked).</summary>
     public IReadOnlyList<Appearance> AppearanceChoices => AppearanceSetting.Choices(PinkUnlocked);
 
     /// <summary>Raised once, when the version in About unlocks Pink.</summary>
