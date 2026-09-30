@@ -14,7 +14,7 @@
 <!-- What you ran and the result: paste the summary (the timing table of `make check`).
      Say what skipped (tests without `data/` or models skip themselves) and what you did not run. -->
 
-- [ ] `make check` for the areas above
+- [ ] `make check` for the areas above (paths outside its areas: the tests their README names)
 - [ ] Tier 3 (devices, simulators, VMs) if it changes a screen, audio or a device behaviour; screenshots below
 - [ ] Docs updated where this change made them wrong
 

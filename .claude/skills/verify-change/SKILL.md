@@ -14,7 +14,10 @@ The tiers, the areas and what each runs are defined by `scripts/check.sh` and
 3. **Before handing off:** `make check` (the full suites, as CI runs them).
 4. **Device, audio or UI changes:** tier 3 in docs/dev/verify.md (emulators, simulators, VMs). Never
    drive UI tests on the host desktop; the docs say where they run.
-5. **Report:** say which commands you ran and paste the summary lines (the timing table at the end).
+5. **Paths no area covers:** `scripts/check.sh` maps changed paths to areas; a change only outside
+   them (for example Bandroom for Windows, `site/`, `sounds/`, `design/`, `.github/`) makes it print
+   "nothing changed" and run nothing. Then run the tests the README of that directory names, and say so.
+6. **Report:** say which commands you ran and paste the summary lines (the timing table at the end).
    Tests that skip because `data/` or models are missing are expected; say they skipped, don't
    count them as passing. If a check failed and you didn't fix it, say so plainly.
 

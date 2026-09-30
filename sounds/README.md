@@ -5,7 +5,7 @@ Sample fetching, brass-band instrument building, seating and room placement, and
 ## Band sounds for the apps
 
 The apps bundle the band SoundFont at build time; users never download it. The files are not in git.
-`band-sounds.json` pins one sound pack: a pre-release of this (private) repository, currently `sounds-2026.10.01`,
+`band-sounds.json` pins one sound pack: a pre-release of this repository (the `version` field names it),
 with the size and sha256 of each file.
 
 ```sh

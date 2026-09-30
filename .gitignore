@@ -19,10 +19,10 @@ site/_site/
 # local build output (scripts/mac-vm.sh results)
 /build/
 
-# Agent worktrees and notes, signing keys and local secrets
-# Local agent state and worktrees; the repo skills are shared.
-.claude/*
-!.claude/skills/
+# Agent state, worktrees and notes (at any depth), signing keys and local secrets. The repo skills
+# in the top-level .claude/skills/ are shared.
+**/.claude/*
+!/.claude/skills/
 .remember/
 *.jks
 *.keystore

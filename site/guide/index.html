@@ -63,7 +63,7 @@
       <p class="overline">User guide</p>
       <h1>Get started</h1>
       <p class="lead">Brasscribe Play turns a recording into a score for your brass band. This guide walks through it once, from the recording to the printed parts.</p>
-      <p>Brasscribe Play runs on iPhone, iPad, Mac, Android and Windows. It is in early testing, so there is no store listing yet. Android phones and Macs can <a href="#download">download it</a>; on iPhone, iPad and Windows, the band's tech person builds it from the <a href="https://github.com/181192/brasscribe#readme">source code on GitHub</a>.</p>
+      <p>Brasscribe Play runs on iPhone, iPad, Mac, Android and Windows. It is in early testing, so there is no store listing yet. Android phones, Macs and Windows PCs can <a href="#download">download it</a> (Windows as a preview); on iPhone and iPad, the band's tech person builds it from the <a href="https://github.com/181192/brasscribe#readme">source code on GitHub</a>.</p>
       <p>The first time you open the app, it shows three points and <strong>Get started</strong>, then asks <a href="#instrument">what you play</a>. It asks for the microphone only when you first record.</p>
       <div class="note">
         <p><strong>Solo or full band?</strong> A single instrument can be written down on your phone. For a full band, Brasscribe on your computer does the work. See <a href="#computer">Brasscribe on your computer</a>.</p>
@@ -83,8 +83,10 @@
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-macos-arm64.zip"><code>brasscribe-play-macos-arm64.zip</code></a></th><td>Brasscribe Play for a Mac with Apple silicon</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-macos-arm64.zip"><code>brasscribe-bandroom-macos-arm64.zip</code></a></th><td>Brasscribe Bandroom for a Mac with Apple silicon: <a href="#computer">your computer</a> does the heavy work for a full band</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-windows-x64.zip"><code>brasscribe-bandroom-windows-x64.zip</code></a></th><td>Brasscribe Bandroom for Windows (x64): <a href="#computer">your computer</a> does the heavy work for a full band</td></tr>
-            <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-windows-x64.zip"><code>brasscribe-play-windows-x64.zip</code></a></th><td>Brasscribe Play for Windows (x64), a preview: not yet tried on many Windows PCs</td></tr>
+            <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-windows-x64.zip"><code>brasscribe-play-windows-x64.zip</code></a></th><td>Brasscribe Play for Windows (x64), a preview: not yet tried by hand on a Windows PC</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-core-macos-arm64.tar.gz"><code>brasscribe-core-macos-arm64.tar.gz</code></a></th><td>The <code>brasscribe-core</code> command-line tool, for the tech person</td></tr>
+            <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-core-linux-x86_64.tar.gz"><code>brasscribe-core-linux-x86_64.tar.gz</code></a></th><td>The <code>brasscribe-core</code> command-line tool for Linux (x86-64)</td></tr>
+            <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-core-windows-x86_64.zip"><code>brasscribe-core-windows-x86_64.zip</code></a></th><td>The <code>brasscribe-core</code> command-line tool for Windows (x64)</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/SHA256SUMS"><code>SHA256SUMS</code></a></th><td>Checksums to check the downloads</td></tr>
           </tbody>
         </table>
@@ -92,10 +94,11 @@
       <ul>
         <li><strong>Android:</strong> allow installs from your browser or file manager, then open the APK. It updates an earlier version in place, and your scores stay.</li>
         <li><strong>Mac:</strong> the apps are not notarised yet. Unzip, move the app to Applications and open it once. macOS stops it; open <strong>System Settings › Privacy &amp; Security</strong>, choose <strong>Open Anyway</strong> and confirm. To update, replace the old app in Applications; your scores and settings stay.</li>
+        <li><strong>Windows:</strong> the apps are not signed yet. Unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>. To update, replace the folder; your scores and settings stay.</li>
         <li><strong>iPhone and iPad:</strong> no download yet. They need an Apple Developer account, so the tech person builds them from the source.</li>
       </ul>
       <div class="note">
-        <p><strong>Windows:</strong> Bandroom for Windows is in the table above. It is built on Windows for every release, but has not been tried on many Windows PCs yet, so reports are welcome. Brasscribe Play for Windows is in the table as a preview: it is still in testing, and it has the music stand, the Appearance setting and <em>What do you play?</em>.</p>
+        <p><strong>Windows:</strong> Bandroom for Windows is in the table above. It is built on Windows for every release, but has not been tried by hand on a Windows PC yet, so reports are welcome. Brasscribe Play for Windows is in the table as a preview: it is still in testing, and it has the music stand, the Appearance setting and <em>What do you play?</em>.</p>
       </div>
     </section>
 
@@ -313,11 +316,11 @@
           </picture>
         </div>
       </figure>
-      <p>On a Mac with Apple silicon, install <strong>Brasscribe Bandroom</strong> from the <a href="#download">download</a>. It runs quietly in the menu bar; look for the Brasscribe mark at the top of the screen.</p>
+      <p>On a Mac with Apple silicon or a Windows PC (x64), install <strong>Brasscribe Bandroom</strong> from the <a href="#download">download</a>. It runs quietly in the background; look for the Brasscribe mark in the menu bar at the top of a Mac's screen, or in the notification area of the Windows taskbar.</p>
       <ul>
         <li>The first run downloads what Brasscribe needs, about 10 GB, so keep about 15 GB free. The internet is needed only for these downloads.</li>
-        <li>It asks for an access key from Hugging Face, to download the band writer. That model is free for non-commercial use only (CC BY-NC 4.0): accept its licence with your own Hugging Face account. Bandroom keeps the key in your Keychain.</li>
-        <li>After you update Bandroom, macOS asks once whether it may use its saved key. Enter your Mac password and choose <strong>Always Allow</strong>. Bandroom waits until you answer, then brings its engine up to date by itself.</li>
+        <li>It asks for an access key from Hugging Face, to download the band writer. That model is free for non-commercial use only (CC BY-NC 4.0): accept its licence with your own Hugging Face account. Bandroom keeps the key in your Keychain on a Mac, and in Credential Manager on Windows.</li>
+        <li>On a Mac, after you update Bandroom, macOS asks once whether it may use its saved key. Enter your Mac password and choose <strong>Always Allow</strong>. Bandroom waits until you answer, then brings its engine up to date by itself.</li>
       </ul>
       <p>Then connect your phone:</p>
       <ol>
@@ -330,7 +333,7 @@
       <p>The app says <em>Connected</em> and shows the computer's name. You do this once for each phone or tablet: it stays paired, also when the computer restarts or gets a new address.</p>
       <details>
         <summary>Details for the band's tech person</summary>
-        <p>Without Bandroom (on Windows, or on a Mac you'd rather run by hand), start the engine from a copy of the repository:</p>
+        <p>Without Bandroom (to run the engine by hand on a Mac or PC), start the engine from a copy of the repository:</p>
         <pre tabindex="0"><code>pixi install
 pixi run serve-lan</code></pre>
         <p>It listens on port 8765 on every network interface, prints the LAN address and the pairing code, and announces itself over Bonjour/mDNS as <code>_brasscribe._tcp</code>. Paired phones stay paired when the engine restarts.</p>
