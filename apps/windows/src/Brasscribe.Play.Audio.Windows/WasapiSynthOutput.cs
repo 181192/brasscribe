@@ -36,8 +36,9 @@ public sealed class WasapiSynthOutput : IAudioOutput
             foreach (var work in _work.GetConsumingEnumerable())
             {
                 try { work(); }
-                catch (Exception e) when (e is COMException or InvalidOperationException or ArgumentException)
+                catch (Exception e)
                 {
+                    // A thread of our own: nothing above it would catch this, and no audio must never mean no app.
                     System.Diagnostics.Trace.TraceWarning($"Audio output: {e.Message}");
                 }
             }
