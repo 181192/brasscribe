@@ -102,6 +102,8 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var musicXML = Data("<score-partwise/>".utf8)
     /// The bodies of the job uploads, in order (the request's body stream can be read only once).
     nonisolated(unsafe) static var uploads: [String] = []
+    /// Requests that were answered after a delay (a cancelled request is not).
+    nonisolated(unsafe) static var answered: [String] = []
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -113,6 +115,24 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
             return
         }
         let path = request.url!.path
+        if request.httpMethod == "DELETE", path == "/v1/jobs/j9" {
+            // answered a moment later, like a real computer: a request cancelled on the way never gets an answer
+            let url = request.url!
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.05) { [self] in
+                guard !stopped else { return }
+                Self.answered.append("DELETE \(path)")
+                client?.urlProtocol(self, didReceive: HTTPURLResponse(url: url, statusCode: 204, httpVersion: "HTTP/1.1", headerFields: [:])!,
+                                    cacheStoragePolicy: .notAllowed)
+                client?.urlProtocolDidFinishLoading(self)
+            }
+            return
+        }
+        if path == "/v1/jobs/j9/events" {
+            // a job that keeps running: the stream opens and nothing more comes
+            let resp = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "text/event-stream"])!
+            client?.urlProtocol(self, didReceive: resp, cacheStoragePolicy: .notAllowed)
+            return
+        }
         let (code, body, type): (Int, Data, String) = {
             switch (request.httpMethod ?? "GET", path) {
             case ("GET", "/v1/health") where request.url?.host() == "loop.local":
@@ -137,6 +157,8 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
             // An engine from before the trumpet seat refuses it (the seat enum), with no refusal code.
             case ("POST", "/v1/jobs/upload") where { Self.uploads.append(request.bodyStreamData); return Self.uploads.last!.contains("\r\n\r\ntrumpet\r\n") }():
                 return (422, Data(#"{"detail":[{"loc":["body","seat"],"msg":"Input should be 'soprano-cornet', ..."}]}"#.utf8), "application/json")
+            case ("POST", "/v1/jobs/upload") where Self.uploads.last?.contains("\r\n\r\nslow\r\n") == true:
+                return (200, Data(#"{"id":"j9","profile":"solo","status":"running","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("POST", "/v1/jobs/upload"):
                 return (200, Data(#"{"id":"j1","profile":"solo","status":"queued","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("GET", "/v1/jobs/j1/events"):
@@ -172,7 +194,8 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
         client?.urlProtocolDidFinishLoading(self)
     }
 
-    override func stopLoading() {}
+    nonisolated(unsafe) private var stopped = false
+    override func stopLoading() { stopped = true }
 }
 
 extension URLRequest {
@@ -254,6 +277,30 @@ extension URLRequest {
         #expect(upload.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("multipart/form-data; boundary=") == true)
         #expect(try await svc.artifact(.brailleBRF, jobID: "j1") == Data("#A BRF".utf8))
         #expect(try await svc.artifact(.talkingScore, jobID: "j1") == Data("Bar 1".utf8))
+    }
+
+    /// Stopping a transcription stops the job on the computer too.
+    @Test func stoppingATranscriptionCancelsTheJobOnTheComputer() async throws {
+        StubEngine.requests = []
+        StubEngine.uploads = []
+        StubEngine.answered = []
+        let svc = service()
+        try await svc.pair(code: "123456", deviceName: "test", platform: "macos")
+        let audio = FileManager.default.temporaryDirectory.appending(path: "t.wav")
+        try Data(repeating: 1, count: 3000).write(to: audio)
+        let consumer = Task {
+            for try await ev in svc.transcribe(.init(audioURL: audio, profile: .solo, title: "slow")) { _ = ev }
+        }
+        func seen(_ method: String, _ path: String) -> Bool {
+            StubEngine.requests.contains { $0.httpMethod == method && $0.url?.path == path }
+        }
+        var waited = 0
+        while !seen("GET", "/v1/jobs/j9/events"), waited < 500 { try await Task.sleep(for: .milliseconds(10)); waited += 1 }
+        #expect(seen("GET", "/v1/jobs/j9/events"))
+        consumer.cancel()
+        waited = 0
+        while !StubEngine.answered.contains("DELETE /v1/jobs/j9"), waited < 500 { try await Task.sleep(for: .milliseconds(10)); waited += 1 }
+        #expect(StubEngine.answered.contains("DELETE /v1/jobs/j9"))
     }
 
     /// An older engine refuses the trumpet seat: the job goes once more as solo-cornet (the same notes).

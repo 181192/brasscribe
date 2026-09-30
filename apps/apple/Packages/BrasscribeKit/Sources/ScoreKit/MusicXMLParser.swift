@@ -17,8 +17,13 @@ public enum MusicXMLError: Error, Equatable, CustomStringConvertible {
 /// Covers what the brasscribe arranger writes and common exports: multiple parts,
 /// `<chord>`, `<backup>`/`<forward>`, ties, transposing instruments
 /// (`<chromatic>` + `<octave-change>`), unpitched percussion, per-part `<divisions>`
-/// and `<sound tempo>`. Grace notes and cue notes are skipped. Dynamic marks, hairpins and accents
-/// give each note its velocity (`Dynamics`).
+/// and `<sound tempo>`. Grace notes and cue notes are not played (cue notes still take their time).
+/// Dynamic marks, hairpins and accents give each note its velocity (`Dynamics`).
+///
+/// Values that would make the score unplayable (a non-finite or huge alteration, a beat type that is not
+/// a power of two, more than 255 beats in a bar, huge divisions or durations, a part with no bars) throw
+/// `.malformed`, so a broken file is refused on import instead of crashing playback or export. Tempo marks
+/// outside `tempoRange` are ignored.
 public enum MusicXMLParser {
     public static func parse(_ data: Data) throws -> Score {
         let d = Delegate()
@@ -34,6 +39,15 @@ public enum MusicXMLParser {
     }
 
     public static func parse(url: URL) throws -> Score { try parse(Data(contentsOf: url)) }
+
+    /// Tempo marks (quarter notes per minute) the parser keeps; others are ignored.
+    public static let tempoRange: ClosedRange<Double> = 4...1000
+    /// Largest `<divisions>` accepted.
+    static let maxDivisions = 1_000_000
+    /// Longest note, forward or backup, in quarter notes.
+    static let maxDurationQuarters = 1024
+    /// Longest part, in quarter notes.
+    static let maxScoreQuarters = 100_000
 
     /// Semitones from a trilled note up to its auxiliary: the next letter up, with the accidental-mark's
     /// alteration, else the key signature's (accidentals earlier in the bar are not read, as the arranger writes it).
@@ -169,7 +183,9 @@ private final class Delegate: NSObject, XMLParserDelegate {
         case "forward": inForward = true; moveDuration = 0
         case "transpose": inTranspose = true; chromatic = 0; octaveChange = 0
         case "sound":
-            if let t = a["tempo"], let v = Double(t), v > 0, tempos[currentTick] == nil { tempos[currentTick] = v }
+            if let t = a["tempo"], let v = Double(t), MusicXMLParser.tempoRange.contains(v), tempos[currentTick] == nil {
+                tempos[currentTick] = v
+            }
         case _ where Dynamics.isMark(name) && stack.dropLast().last == "dynamics":
             if let part = curPart {
                 partDynamics[part, default: [:]][note == nil ? currentTick : partTick + toTicks(note!.isChord ? lastNoteStart : pos)] = name
@@ -208,7 +224,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
             case "part-abbreviation": info.abbreviation = t
             case "instrument-name": if info.instrumentName.isEmpty { info.instrumentName = t }
             case "instrument-sound": if info.instrumentSound.isEmpty { info.instrumentSound = t }
-            case "midi-program": info.midiProgram = Int(t)
+            case "midi-program": info.midiProgram = Int(t).flatMap { (1...128).contains($0) ? $0 : nil }
             case "midi-channel": info.midiChannel = Int(t) ?? 1
             case "midi-unpitched": if let id = info.midiInstrument, let k = Int(t) { info.unpitched[id] = k }
             case "score-part":
@@ -226,35 +242,63 @@ private final class Delegate: NSObject, XMLParserDelegate {
         case "rehearsal" where curPart == firstPart && !t.isEmpty:
             directions.append(.init(tick: currentTick, kind: .rehearsal, text: t))
         case "movement-title": movementTitle = t
-        case "divisions": divisions = max(1, Int(t) ?? 1)
+        case "divisions":
+            let d = Int(t) ?? 1
+            guard d <= MusicXMLParser.maxDivisions else { return fail(parser, "divisions \(t)") }
+            divisions = max(1, d)
         case "fifths":
             fifths = Int(t) ?? 0
             if let p = curPart, partFifths[p] == nil { partFifths[p] = fifths }
         case "beats":
-            let b = t.split(separator: "+").compactMap { Int($0) }.reduce(0, +)
+            let terms = t.split(separator: "+").compactMap { Int($0) }
+            guard terms.allSatisfy({ (0...255).contains($0) }) else { return fail(parser, "beats \(t)") }
+            let b = terms.reduce(0, +)
+            guard b <= 255 else { return fail(parser, "beats \(t)") }
             beats = b > 0 ? b : 4
-        case "beat-type": beatType = Int(t) ?? 4
-        case "chromatic": if inTranspose { chromatic = Int(t) ?? 0 }
-        case "octave-change": if inTranspose { octaveChange = Int(t) ?? 0 }
+        case "beat-type":
+            // a note value: 1, 2, 4, 8, …
+            let bt = Int(t) ?? 4
+            guard (1...1024).contains(bt), bt & (bt - 1) == 0 else { return fail(parser, "beat-type \(t)") }
+            beatType = bt
+        case "chromatic":
+            guard inTranspose else { break }
+            let c = Int(t) ?? 0
+            guard (-48...48).contains(c) else { return fail(parser, "chromatic \(t)") }
+            chromatic = c
+        case "octave-change":
+            guard inTranspose else { break }
+            let o = Int(t) ?? 0
+            guard (-8...8).contains(o) else { return fail(parser, "octave-change \(t)") }
+            octaveChange = o
         case "transpose": inTranspose = false
         case "sign": if t == "percussion", let p = curPart { partPercussion[p] = true }
         case "step": if parent == "pitch" { note?.step = t }
-        case "alter": if parent == "pitch" { note?.alter = Int(Double(t)?.rounded() ?? 0) }
-        case "octave": if parent == "pitch" { note?.octave = Int(t) ?? 4 }
+        case "alter" where parent == "pitch":
+            let v = Double(t) ?? 0
+            guard v.isFinite, abs(v) <= 2 else { return fail(parser, "alter \(t)") }
+            note?.alter = Int(v.rounded())
+        case "octave" where parent == "pitch":
+            let o = Int(t) ?? 4
+            guard (0...9).contains(o) else { return fail(parser, "octave \(t)") }
+            note?.octave = o
         case "accidental-mark" where parent == "ornaments": note?.trillAccidental = t
         case "display-step": note?.displayStep = t
         case "display-octave": note?.displayOctave = Int(t) ?? 4
         case "notehead": note?.notehead = t
         case "type": if parent == "note" { note?.type = t }
         case "duration":
-            if inBackup || inForward { moveDuration = Int(t) ?? 0 } else { note?.duration = Int(t) ?? 0 }
+            let d = Int(t) ?? 0
+            guard d >= 0, d <= divisions * MusicXMLParser.maxDurationQuarters else { return fail(parser, "duration \(t)") }
+            if inBackup || inForward { moveDuration = d } else { note?.duration = d }
         case "backup":
             pos = max(0, pos - moveDuration); inBackup = false
         case "forward":
             pos += moveDuration; measure.maxPos = max(measure.maxPos, pos); inForward = false
+            guard pos <= divisions * MusicXMLParser.maxScoreQuarters else { return fail(parser, "bar too long") }
         case "note":
             if let n = note { addNote(n) }
             note = nil
+            guard pos <= divisions * MusicXMLParser.maxScoreQuarters else { return fail(parser, "bar too long") }
         case "attributes":
             measure.beats = beats; measure.beatType = beatType; measure.fifths = fifths
             if let p = curPart { partTranspose[p] = chromatic + 12 * octaveChange }
@@ -265,6 +309,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
                 let nominal = beats * divisions * 4 / max(1, beatType)
                 let len = measure.maxPos > 0 ? measure.maxPos : nominal
                 partTick += toTicks(len)
+                guard partTick <= MusicXMLParser.maxScoreQuarters * Score.ticksPerQuarter else { return fail(parser, "score too long") }
             }
         case "part": curPart = nil
         default: break
@@ -273,14 +318,22 @@ private final class Delegate: NSObject, XMLParserDelegate {
 
     func toTicks(_ d: Int) -> Int { d * Score.ticksPerQuarter / divisions }
 
+    /// Stops the parse with `.malformed`; the first failure wins.
+    func fail(_ parser: XMLParser, _ why: String) {
+        if error == nil { error = .malformed(why) }
+        parser.abortParsing()
+    }
+
     func addNote(_ n: RawNote) {
-        guard let p = curPart, !n.isGrace, !n.isCue else { return }
+        guard let p = curPart, !n.isGrace else { return }
         let start = n.isChord ? lastNoteStart : pos
         if !n.isChord {
             lastNoteStart = pos
             pos += n.duration
             measure.maxPos = max(measure.maxPos, pos)
         }
+        // a cue note takes its time in the bar but is not played
+        if n.isCue { return }
         let kind: ScoreNote.Kind
         var midi: Int?
         if n.isRest {
@@ -341,6 +394,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
     func build() throws -> Score {
         let ids = partOrder.filter { partMeasures[$0] != nil } + partMeasures.keys.filter { !partOrder.contains($0) }.sorted()
         guard let first = ids.first, let raw = partMeasures[first] else { throw MusicXMLError.malformed("no parts") }
+        guard !raw.isEmpty else { throw MusicXMLError.malformed("no bars") }
         var measures: [Measure] = []
         for (i, m) in raw.enumerated() {
             let next = i + 1 < raw.count ? raw[i + 1].start : nil

@@ -39,7 +39,10 @@ struct TalkingScoreView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .onAppear { if partID.isEmpty { partID = model.shownPart ?? model.myPart ?? model.score.parts.first?.id ?? "" } }
         }
+        #if os(macOS)
+        // an iPhone or Slide Over sheet is narrower than this
         .frame(minWidth: 480, minHeight: 560)
+        #endif
     }
 }
 
@@ -392,8 +395,9 @@ struct ExportView: View {
             let marks = self.marks
             let parts: [Part?] = scope == .conductor ? [nil] : partsInScope.map { Optional($0) }
             var out: [URL] = []
+            let stems = ExportFileNames.stems(title: title, parts: parts.compactMap { $0 } + (myPart.map { [$0] } ?? []))
             func name(_ part: Part?, _ ext: String) -> URL {
-                dir.appending(path: part.map { "\(title) – \($0.displayName).\(ext)" } ?? "\(title).\(ext)")
+                dir.appending(path: "\(part.flatMap { stems.parts[$0.id] } ?? stems.score).\(ext)")
             }
             for f in Format.allCases where kinds.contains(f) && unavailable(f) == nil {
                 switch f {
@@ -489,3 +493,27 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
 }
 #endif
+
+/// File names for exported files: "Title – Part.pdf", safe for every file system (no "/" or ":") and one
+/// per part, also when two parts have the same name.
+enum ExportFileNames {
+    static func stems(title: String, parts: [Part]) -> (score: String, parts: [String: String]) {
+        let score = safe(title).isEmpty ? "Score" : safe(title)
+        var out: [String: String] = [:]
+        var used: Set<String> = [score.lowercased()]
+        for p in parts where out[p.id] == nil {
+            let base = "\(score) – \(safe(p.displayName).isEmpty ? p.id : safe(p.displayName))"
+            var stem = base, n = 2
+            while used.contains(stem.lowercased()) { stem = "\(base) (\(n))"; n += 1 }
+            used.insert(stem.lowercased())
+            out[p.id] = stem
+        }
+        return (score, out)
+    }
+
+    /// No path separators, no leading dot (a hidden file), no control characters.
+    static func safe(_ s: String) -> String {
+        let cleaned = String(s.map { "/\\:".contains($0) || $0.isNewline || ($0.asciiValue.map { $0 < 32 } ?? false) ? "-" : $0 })
+        return cleaned.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "."))
+    }
+}

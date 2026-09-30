@@ -346,7 +346,7 @@ struct OutputView: View {
         busy = true
         defer { busy = false }
         do {
-            try app.rearrange(piece, composition: comp, output: choice)
+            try await app.rearrangeInBackground(piece, composition: comp, output: choice)
         } catch {
             failure = ErrorWords.specific(error) ?? String(localized: "The score couldn't be arranged this way. Try another choice.")
         }

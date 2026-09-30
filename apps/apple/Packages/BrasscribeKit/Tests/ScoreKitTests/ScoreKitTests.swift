@@ -340,3 +340,11 @@ struct Reference: Decodable {
         .events(part: score.parts[0], measureIndex: 0)
     #expect(nb[0].hasSuffix("svært usikker"))
 }
+
+@Test func scoreLanguageFollowsTheAppsLocalization() {
+    #expect(ScoreLanguage.from(localization: "nb") == .norwegian)
+    #expect(ScoreLanguage.from(localization: "nb-NO") == .norwegian)
+    #expect(ScoreLanguage.from(localization: "en") == .english)
+    #expect(ScoreLanguage.from(localization: "da") == .english)
+    #expect(ScoreLanguage.from(localization: nil) == .english)
+}

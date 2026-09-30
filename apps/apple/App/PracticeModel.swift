@@ -21,6 +21,8 @@ final class PracticeModel {
     private(set) var pages: [ScoreRenderer.Page] = []
     private(set) var loadError: String?
     private(set) var engraving = false
+    /// The notation engine could not lay the score out: the pages say so instead of waiting for ever.
+    private(set) var layoutFailed = false
     private(set) var layoutVersion = 0
     private var layoutGeneration = 0
 
@@ -249,8 +251,14 @@ final class PracticeModel {
         }
     }
 
+    /// One engine is made at a time: the AUSampler aborts when two threads load sound banks at once
+    /// (Review and its Change note preview, or several scores opening together).
+    nonisolated private static let engineLock = NSLock()
+
     nonisolated private static func makeEngine(piece: Piece, score: Score, composition: Composition?) throws -> PlaybackEngine {
-        try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
+        try engineLock.withLock {
+            try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
+        }
     }
 
     /// The "sound can't play" alert was closed: the score stays open to read, without sound.
@@ -258,10 +266,46 @@ final class PracticeModel {
 
     private func adopt(_ made: Result<PlaybackEngine, Error>) {
         switch made {
-        case .success(let e): engine = e
+        case .success(let e):
+            engine = e
+            e.onMediaServicesReset = { [weak self] in MainActor.assumeIsolated { self?.rebuildEngine() } }
         case .failure(let error): loadError = error.localizedDescription
         }
         startTimer()
+    }
+
+    /// The system's media services were reset (iOS) and took the engine with them: a new one is made off
+    /// the main actor, with the same practice settings, at the same place.
+    private func rebuildEngine() {
+        guard let old = engine else { return }
+        let at = old.position
+        let ids = score.parts.map(\.id)
+        let mutes = ids.filter(old.isMuted), solos = ids.filter(old.isSoloed)
+        let loop = old.loop
+        old.onMediaServicesReset = nil
+        engine = nil
+        let (piece, score, composition) = (piece, score, composition)
+        Task {
+            MediaTools.configureSession(recording: false)
+            let made = await Task.detached(priority: .userInitiated) {
+                Opened.Engine(made: Result { try PracticeModel.makeEngine(piece: piece, score: score, composition: composition) })
+            }.value
+            guard engine == nil else { return }
+            adopt(made.made)
+            guard let e = engine else { return }
+            e.rate = speedPercent / 100
+            e.transposeSemitones = transpose
+            e.metronomeOn = metronome
+            e.countInBars = countIn ? 1 : 0
+            e.roomOn = room
+            for id in mutes { e.setMuted(id, true) }
+            for id in solos { e.setSoloed(id, true) }
+            e.setLoop(loop)
+            if hearOriginal { e.setSource(.original) }
+            e.seek(toBeat: at)
+            mixVersion += 1
+            tick()
+        }
     }
 
     private func startTimer() {
@@ -304,7 +348,15 @@ final class PracticeModel {
         // Pages appear one by one so the first system is readable while the rest engrave;
         // a newer layout request abandons this one.
         Task.detached(priority: .userInitiated) { [r] in
-            guard r.apply(layout) else { return }
+            guard r.apply(layout) else {
+                await MainActor.run {
+                    guard self.layoutGeneration == gen else { return }
+                    self.engraving = false
+                    self.layoutFailed = true
+                }
+                return
+            }
+            await MainActor.run { if self.layoutGeneration == gen { self.layoutFailed = false } }
             let n = r.pageCount
             for i in 1...max(1, n) {
                 guard await self.layoutGeneration == gen else { return }

@@ -9,8 +9,12 @@ public enum PitchMode: String, Sendable, CaseIterable {
 public enum ScoreLanguage: String, Sendable, CaseIterable {
     case english = "en", norwegian = "nb"
 
-    public static var current: ScoreLanguage {
-        let code = Locale.preferredLanguages.first?.prefix(2) ?? "en"
+    /// The language the app's screens are in: the first of the user's languages the app has, not the
+    /// first of the user's languages (Danish then Norwegian shows Norwegian screens, and speaks Norwegian).
+    public static var current: ScoreLanguage { from(localization: Bundle.main.preferredLocalizations.first) }
+
+    static func from(localization: String?) -> ScoreLanguage {
+        let code = localization?.prefix(2) ?? "en"
         return (code == "nb" || code == "no" || code == "nn") ? .norwegian : .english
     }
 }

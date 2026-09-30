@@ -14,9 +14,19 @@ func onDeviceRef() -> URL? {
     return FileManager.default.fileExists(atPath: r.appending(path: "solo/brass-band.musicxml").path) ? r : nil
 }
 
-let convertedModels = URL(fileURLWithPath: "/Users/k/private/brasscribe/models/converted")
+/// The converted Core ML models: `BRASSCRIBE_MODELS`, else models/converted found by walking up from this file.
+let convertedModels: URL? = {
+    if let e = ProcessInfo.processInfo.environment["BRASSCRIBE_MODELS"] { return URL(fileURLWithPath: e) }
+    var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    for _ in 0..<8 {
+        let c = dir.appending(path: "models/converted")
+        if FileManager.default.fileExists(atPath: c.path) { return c }
+        dir = dir.deletingLastPathComponent()
+    }
+    return nil
+}()
 
-@Test(.enabled(if: onDeviceRef() != nil && FileManager.default.fileExists(atPath: convertedModels.path)))
+@Test(.enabled(if: onDeviceRef() != nil && convertedModels != nil))
 func beatThisOnThisPlatform() async throws {
     let clip = try #require(onDeviceRef()).deletingLastPathComponent().appending(path: "entertainer-tpt1-30s.wav")
     let store = ModelStore(cache: FileManager.default.temporaryDirectory.appending(path: "bc-models"), localSource: convertedModels)
@@ -43,7 +53,7 @@ func soloF1(_ a: [PlaybackNote], _ b: [PlaybackNote]) -> Double {
 /// Recorded solo (30 s URMP trumpet part) → readable part, fully on the device: Core ML
 /// models plus the Rust core. Compared with the Python pipeline (SwiftF0 + Basic Pitch +
 /// Beat This small0 → brasscribe_eval.arrange_solo) on the same clip.
-@Test(.enabled(if: onDeviceRef() != nil && FileManager.default.fileExists(atPath: convertedModels.path)))
+@Test(.enabled(if: onDeviceRef() != nil && convertedModels != nil))
 func offlineSoloMatchesThePythonPipeline() async throws {
     let ref = try #require(onDeviceRef())
     let clip = ref.deletingLastPathComponent().appending(path: "entertainer-tpt1-30s.wav")

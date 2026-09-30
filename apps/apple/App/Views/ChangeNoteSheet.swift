@@ -177,10 +177,14 @@ final class NotePreview {
     private var madeFor: Int?
     /// A model is being made for a press; a second press meanwhile stops it before it plays.
     private(set) var preparing = false
+    /// Bumped by every press, stop and close: only the latest press's model may play.
+    private var request = 0
 
     var isPlaying: Bool { preparing || model?.listening != nil }
 
     func play(piece: Piece, xml: String, target: ReviewItem, pitch: SpelledPitch, bars: ClosedRange<Int>) async {
+        request += 1
+        let mine = request
         if model == nil || madeFor != pitch.midi {
             model?.stopAll()
             model = nil
@@ -188,7 +192,8 @@ final class NotePreview {
             guard let candidate = try? MusicXMLNoteEditor.replacingPitch(in: xml, partID: target.partID, noteIndex: target.noteIndex, with: pitch),
                   let score = try? MusicXMLParser.parse(Data(candidate.utf8)) else { preparing = false; return }
             let m = await PracticeModel.open(piece, score: score, composition: piece.loadComposition())
-            guard preparing else { m.stopAll(); return }  // stopped while it was being made
+            // stopped, or another pitch pressed, while it was being made: a slower older build never plays
+            guard preparing, mine == request else { m.stopAll(); return }
             preparing = false
             model = m
             madeFor = pitch.midi
@@ -197,12 +202,14 @@ final class NotePreview {
     }
 
     func stop(announce: Bool = false) {
+        request += 1
         preparing = false
         model?.stopListening(announce: announce)
     }
 
     /// The sheet has gone: the preview's engine goes with it.
     func close() {
+        request += 1
         preparing = false
         model?.stopAll()
         model = nil

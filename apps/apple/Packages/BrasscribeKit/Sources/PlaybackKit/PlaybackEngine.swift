@@ -82,6 +82,15 @@ public final class PlaybackEngine {
     private var originalStartSeconds: Double = 0
     private var countInTimer: DispatchSourceTimer?
     private var pendingStartBeat: Double?
+    /// Bumped by every count-in and every pause, so a count-in's queued start never plays after a
+    /// pause, seek or stop that came in the meantime.
+    private var countInGeneration = 0
+
+    /// Called on the main queue when the system's media services were reset (iOS): every audio
+    /// object, this engine included, is gone. The owner makes a new engine.
+    public var onMediaServicesReset: (() -> Void)?
+    private var observers: [NSObjectProtocol] = []
+    private var resumeAfterInterruption = false
 
     /// - Parameters:
     ///   - offlineFormat: when set, the engine runs in offline manual-rendering mode
@@ -253,7 +262,75 @@ public final class PlaybackEngine {
         if let originalURL, offlineFormat == nil {
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in self?.levelOriginal(url: originalURL) }
         }
+        if offlineFormat == nil { observeAudioSystem() }
     }
+
+    // MARK: audio system events
+
+    /// Keeps `state` true to what is heard when the system takes the audio away: another output
+    /// device (AVAudioEngineConfigurationChange stops the engine), a call or alarm, unplugged
+    /// headphones, a media-services reset. The handlers run on the main queue, where the owner uses
+    /// the engine.
+    private func observeAudioSystem() {
+        let nc = NotificationCenter.default
+        observers.append(nc.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            self?.configurationChanged()
+        })
+        #if os(iOS)
+        let session = AVAudioSession.sharedInstance()
+        observers.append(nc.addObserver(forName: AVAudioSession.interruptionNotification, object: session, queue: .main) { [weak self] n in
+            self?.interrupted(n)
+        })
+        observers.append(nc.addObserver(forName: AVAudioSession.routeChangeNotification, object: session, queue: .main) { [weak self] n in
+            self?.routeChanged(n)
+        })
+        observers.append(nc.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: session, queue: .main) { [weak self] _ in
+            guard let self else { return }
+            self.stopForLostAudio()
+            self.onMediaServicesReset?()
+        })
+        #endif
+    }
+
+    /// The output device or its format changed and the engine stopped itself: stop, so the next
+    /// play starts the engine again on the new device.
+    private func configurationChanged() {
+        guard !engine.isRunning else { return }
+        stopForLostAudio()
+    }
+
+    /// Stops without the fade (the engine may no longer render) and keeps the position.
+    private func stopForLostAudio() {
+        guard state != .stopped else { return }
+        pause()
+        cancelFade()
+    }
+
+    #if os(iOS)
+    private func interrupted(_ n: Notification) {
+        guard let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+        switch type {
+        case .began:
+            resumeAfterInterruption = state != .stopped
+            stopForLostAudio()
+        case .ended:
+            let opts = (n.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt).map(AVAudioSession.InterruptionOptions.init) ?? []
+            defer { resumeAfterInterruption = false }
+            guard resumeAfterInterruption, opts.contains(.shouldResume) else { return }
+            try? AVAudioSession.sharedInstance().setActive(true)
+            try? play()
+        @unknown default: break
+        }
+    }
+
+    /// Headphones unplugged (or a Bluetooth device gone): pause rather than play out of the speaker.
+    private func routeChanged(_ n: Notification) {
+        guard let raw = n.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              AVAudioSession.RouteChangeReason(rawValue: raw) == .oldDeviceUnavailable else { return }
+        stopForLostAudio()
+    }
+    #endif
 
     /// Registers the in-process audio units (the output stage and the convolution reverb). The app
     /// calls it at launch on the main thread; every engine calls it again before it makes the units,
@@ -274,6 +351,7 @@ public final class PlaybackEngine {
     }
 
     deinit {
+        for o in observers { NotificationCenter.default.removeObserver(o) }
         countInTimer?.cancel()
         sequencer?.stop()
         engine.stop()
@@ -395,6 +473,7 @@ public final class PlaybackEngine {
     public func pause() {
         let p = position
         countInTimer?.cancel(); countInTimer = nil
+        countInGeneration += 1
         pendingStartBeat = nil
         sequencer.stop()
         if source == .original && state == .playing && !engine.isInManualRenderingMode {
@@ -463,6 +542,8 @@ public final class PlaybackEngine {
         let clicks = m.beats * countInBars
         let interval = 60 / (score.tempo(atTick: Int(beat * Double(Score.ticksPerQuarter))) * rate) * 4 / Double(m.beatType)
         var n = 0
+        countInGeneration += 1
+        let generation = countInGeneration
         pendingStartBeat = beat
         state = .countingIn(beat: 1)
         let t = DispatchSource.makeTimerSource(flags: .strict, queue: .global(qos: .userInteractive))
@@ -471,13 +552,19 @@ public final class PlaybackEngine {
             guard let self else { return }
             if n == clicks {
                 t.cancel()
-                DispatchQueue.main.async { try? self.startNow(at: beat) }
+                DispatchQueue.main.async {
+                    // a pause, seek or stop since the count-in began cancels the start
+                    guard self.countInGeneration == generation, case .countingIn = self.state else { return }
+                    try? self.startNow(at: beat)
+                }
                 return
             }
             let key = UInt8(n % m.beats == 0 ? MIDIWriter.metronomeHigh : MIDIWriter.metronomeLow)
             self.metronome.startNote(key, withVelocity: n % m.beats == 0 ? 110 : 80, onChannel: 9)
             let beatNo = n % m.beats + 1
-            DispatchQueue.main.async { if case .countingIn = self.state { self.state = .countingIn(beat: beatNo) } }
+            DispatchQueue.main.async {
+                if self.countInGeneration == generation, case .countingIn = self.state { self.state = .countingIn(beat: beatNo) }
+            }
             n += 1
         }
         countInTimer = t

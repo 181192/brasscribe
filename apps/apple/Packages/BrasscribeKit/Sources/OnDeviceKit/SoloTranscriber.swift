@@ -33,8 +33,10 @@ public struct SoloTranscriber: Sendable {
         let sf0 = try await store.model(.swiftF0)
         let bp = try await store.model(.basicPitch)
         let bt = try await store.model(.beatThis)
-        let a16 = try timed("decode16k") { try MonoAudio.load(url, sampleRate: SwiftF0.sampleRate) }
-        let a22 = try timed("decode22k") { try MonoAudio.load(url, sampleRate: BasicPitch.sampleRate) }
+        // decoded once; each model gets its own sample rate from the same mono samples
+        let mono = try timed("decode") { try MonoAudio.decode(url) }
+        let a16 = try timed("resample16k") { try mono.resampled(to: SwiftF0.sampleRate) }
+        let a22 = try timed("resample22k") { try mono.resampled(to: BasicPitch.sampleRate) }
         progress?(.pitch, 0.1)
         let track = try timed("swiftf0") { try SwiftF0.detect(a16, model: sf0) }
         let sw = timed("segment") { SwiftF0.segmentNotes(track) }
