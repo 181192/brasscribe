@@ -38,6 +38,9 @@ changed_areas() {
       music/*|eval/*) add engine; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/dotnet/*) add core-dotnet ;;
       core/conformance/*) add conformance ;;
+      # The C ABI and the generated bindings: the .NET wrapper calls them too.
+      core/brasscribe-ffi/*|core/bindings/*) add core; add core-dotnet
+                         { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
       apps/apple/*|capture/*) add apple ;;

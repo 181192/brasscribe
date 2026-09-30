@@ -107,7 +107,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -122,9 +122,24 @@ jobs:
           cargo test --release
           cargo build --release -p brasscribe-ffi
 
+      - name: Install cbindgen
+        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2
+        with:
+          tool: cbindgen
+
+      - name: Committed bindings are up to date
+        working-directory: core
+        run: |
+          scripts/bindings.sh >/dev/null
+          git diff --exit-code -- bindings swift android \
+            || { echo "::error::Bindings are stale; run core/scripts/bindings.sh and commit the result."; exit 1; }
+
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: apps/windows/global.json
+
+      - name: .NET wrapper of the core (C ABI)
+        run: dotnet test core/dotnet/Brasscribe.Core.Tests
 
       - name: Play for Windows core logic
         run: dotnet test apps/windows/tests/Brasscribe.Play.Core.Tests

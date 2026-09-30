@@ -13,7 +13,8 @@ change touches a device or the UI.
 `origin/main`, plus uncommitted and untracked files). `AREAS="engine core"` picks areas, and
 `make check-all` runs tier 2 everywhere. Both print a timing table at the end. Areas: `engine`,
 `core`, `conformance`, `studio`, `apple`, `android`, `windows`, `core-dotnet`, `bandroom-mac`.
-Changes under `music/` or `eval/` count as `engine` (and `conformance`), `capture/` as `apple`, and
+Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/brasscribe-ffi/` and
+`core/bindings/` as `core` and `core-dotnet`, `capture/` as `apple`, and
 `apps/bandroom/macos/` as `bandroom-mac`. `scripts/check.sh fast|full [area...]` is the same without make.
 
 ## A new worktree
