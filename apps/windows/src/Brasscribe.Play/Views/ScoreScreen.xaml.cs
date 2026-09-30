@@ -54,6 +54,14 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             QueueRender();
         };
         Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
+        // Pages are drawn at the display's scale: moved to a screen with another scale, they are drawn again.
+        Loaded += (_, _) =>
+        {
+            if (XamlRoot is not { } root) return;
+            _pixelScale = root.RasterizationScale;
+            root.Changed += OnXamlRootChanged;
+        };
+        Unloaded += (_, _) => { if (XamlRoot is { } root) root.Changed -= OnXamlRootChanged; };
 
         // The music stand.
         Notation.StandTapped += OnStandTapped;
@@ -303,6 +311,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     private void OnChooseOutput(object sender, RoutedEventArgs e) => Main?.ChooseOutputCommand.Execute(null);
 
+    private double _pixelScale = 1;
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    {
+        if (Math.Abs(sender.RasterizationScale - _pixelScale) < 0.01) return;
+        _pixelScale = sender.RasterizationScale;
+        QueueRender();
+    }
+
     /// <summary>Renders once per UI turn however many settings changed.</summary>
     private void QueueRender()
     {
@@ -356,7 +373,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
                 foreach (var staff in s.Tracks[index].Staves)
                     staff.DisplayTranspositionPitch = concert ? 0 : transposition;
             ScoreStyler.ApplyUncertainty(s, doc, palette);
-        }, palette);
+        }, palette, pixelScale: _pixelScale);
         if (layout.Generation != _renderer.Generation) return; // a newer render is on its way
 
         _layout = layout;
@@ -510,7 +527,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
                 foreach (var staff in s.Tracks[index].Staves)
                     staff.DisplayTranspositionPitch = concert ? 0 : transposition;
             ScoreStyler.ApplyUncertainty(s, doc, palette);
-        }, palette, bars);
+        }, palette, bars, _pixelScale);
 
         var layout = await Layout(_standScale);
         if (layout.Generation != _renderer.Generation || layout.Bounds is null) return;
@@ -709,6 +726,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             VideoView.SetMediaPlayer(media.Player);
             ViewMenuButton.Focus(FocusState.Programmatic);
         };
+        // The picture-in-picture window goes with the main window: closing the app closes it too.
+        if (App.MainWindowInstance is { } main) main.Closed += (_, _) => _pip?.Close();
         _pip.Activate();
     }
 }

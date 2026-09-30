@@ -136,7 +136,7 @@ public sealed class JsonSettingsStore : ISettingsStore
         Directory.CreateDirectory(dir);
         _path = Path.Combine(dir, "settings.json");
         try { _values = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(_path)) ?? []; }
-        catch (Exception e) when (e is IOException or JsonException) { _values = []; }
+        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { _values = []; }
     }
 
     public static string WorkDirectory =>
@@ -152,8 +152,14 @@ public sealed class JsonSettingsStore : ISettingsStore
     public void Set<T>(string key, T value)
     {
         _values[key] = JsonSerializer.SerializeToElement(value);
-        try { File.WriteAllText(_path, JsonSerializer.Serialize(_values)); }
-        catch (IOException) { }
+        // Written to a temporary file and swapped in, so a crash or a full disk mid-write never leaves half a file.
+        string temp = _path + ".tmp";
+        try
+        {
+            File.WriteAllText(temp, JsonSerializer.Serialize(_values));
+            File.Move(temp, _path, overwrite: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 }
 
@@ -187,13 +193,21 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
     /// <summary>A range played once reached its end ("Listen to this bar" goes back to Listen).</summary>
     public event EventHandler? RangeEnded;
 
+    /// <summary>
+    /// Called on the media player's own threads (position, end of media): the fade state is the UI thread's,
+    /// so the work moves there first.
+    /// </summary>
     private void EndRange()
     {
+        if (_queue is { HasThreadAccess: false } queue)
+        {
+            queue.TryEnqueue(EndRange);
+            return;
+        }
         if (_stopAt is null) return;
         _stopAt = null;
         FadeThenPause();
-        if (_queue is null) RangeEnded?.Invoke(this, EventArgs.Empty);
-        else _queue.TryEnqueue(() => RangeEnded?.Invoke(this, EventArgs.Empty));
+        RangeEnded?.Invoke(this, EventArgs.Empty);
     }
 
     public MediaPlayer Player => _player;

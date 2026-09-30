@@ -34,7 +34,7 @@ public sealed partial class MainWindow : Window
         _s = strings;
         InitializeComponent();
         Title = strings["AppWindowTitle"];
-        AppWindow.SetIcon("Assets/AppIcon.ico");
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico")); // not the working directory: "Open with" starts elsewhere
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1440, 900));
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(DragRegion);
