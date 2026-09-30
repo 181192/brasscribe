@@ -1350,7 +1350,12 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 while (System.currentTimeMillis() < until) {
                     delay(ASK_POLL_MS)
                     val r = try { client.pollPairingRequest(info.requestId) } catch (e: EngineException) {
-                        if (e.status == 404) break else throw e
+                        if (e.status == 404) break
+                        if (e.status == 0) continue else throw e
+                    } catch (e: java.io.IOException) {
+                        // A moment without Wi-Fi does not end the wait: the computer is asked again next time.
+                        android.util.Log.i(TAG, "pairing request poll: $e")
+                        continue
                     }
                     when (r.status) {
                         "approved" -> {
