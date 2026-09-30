@@ -1,8 +1,8 @@
 name: android
 
 # Brasscribe Play for Android. Checks: unit tests, lint and a debug build (Kotlin fallback core,
-# stub audio tier). With `release`: the Rust core and sfizz are built in and an unsigned release
-# APK is uploaded as dist-android.
+# stub audio tier). With `release`: the Rust core and sfizz are built in, and the release APKs are
+# signed with the release key (secrets of the `release` environment) and uploaded as dist-android.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
 # every push gets the fast Linux checks in ci.yml instead.
 on:
@@ -88,20 +88,69 @@ jobs:
         with:
           files: brasscribe-band-mobile.sf2
 
-      - name: Release APK (unsigned)
+      - name: Release APKs (unsigned)
         if: ${{ inputs.release }}
         run: |
           ./gradlew assembleRelease --stacktrace
-          for apk in app/build/outputs/apk/release/*.apk; do
+          mkdir -p "$RUNNER_TEMP/unsigned"
+          for a in arm64-v8a universal; do
+            apk="app/build/outputs/apk/release/app-$a-release-unsigned.apk"
             unzip -l "$apk" | grep -q "assets/sounds/brasscribe-band-mobile.sf2" || { echo "$apk has no band SoundFont" >&2; exit 1; }
+            cp "$apk" "$RUNNER_TEMP/unsigned/"
           done
-          mkdir -p "$RUNNER_TEMP/out"
-          cp app/build/outputs/apk/release/*.apk "$RUNNER_TEMP/out/brasscribe-play-android-unsigned.apk"
 
       - uses: actions/upload-artifact@v4
         if: ${{ inputs.release }}
         with:
+          name: android-unsigned
+          path: ${{ runner.temp }}/unsigned/*.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  # Only this job gets the release key: it runs in the `release` environment, whose secrets hold the
+  # keystore (base64) and its password. The key must stay the same across releases, or the APK will
+  # not install over the previous one; the certificate is checked against RELEASE_CERT_SHA256.
+  sign:
+    name: sign the release APKs
+    if: ${{ inputs.release }}
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: release
+    env:
+      RELEASE_CERT_SHA256: 008dc03426b4036e04e334ee542a394e26d66b95423ac146257abdf70b960233
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-unsigned
+          path: unsigned
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: build-tools;35.0.0
+
+      - name: Align and sign
+        working-directory: .
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] || { echo "release signing secrets are missing" >&2; exit 1; }
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          ks="$RUNNER_TEMP/release.jks"
+          echo "$KEYSTORE_B64" | base64 -d > "$ks"
+          mkdir -p "$RUNNER_TEMP/out"
+          for a in arm64-v8a universal; do
+            out="$RUNNER_TEMP/out/brasscribe-play-android-$a.apk"
+            "$BT/zipalign" -f -p 4 "unsigned/app-$a-release-unsigned.apk" "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" sign --ks "$ks" --ks-key-alias brasscribe --ks-pass env:KEYSTORE_PASSWORD \
+              --out "$out" "$RUNNER_TEMP/aligned.apk"
+            "$BT/apksigner" verify --print-certs "$out" | grep -q "SHA-256 digest: $RELEASE_CERT_SHA256" \
+              || { echo "$out is not signed with the release certificate" >&2; exit 1; }
+          done
+          rm -f "$ks" "$RUNNER_TEMP/aligned.apk" "$RUNNER_TEMP"/out/*.idsig
+
+      - uses: actions/upload-artifact@v4
+        with:
           name: dist-android
           path: ${{ runner.temp }}/out/*.apk
           if-no-files-found: error
-

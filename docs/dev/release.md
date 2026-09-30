@@ -1,8 +1,12 @@
 # Cutting a release
 
-Releases are built by hand on an Apple silicon Mac and published with `gh`. CI does not build them:
-a `v*` tag starts `.github/workflows/release.yml`, but on this account it stops within seconds with
-every job skipped (billing), so the tag is harmless. v0.1.0 and v0.2.0 were made this way.
+Releases are built by CI: `.github/workflows/release.yml` runs the checks, builds each platform and
+publishes a GitHub release with the files. A pushed `vX.Y.Z` tag starts it; when it does not (tags
+pushed in bulk never do), start it by hand on the tag: `gh workflow run release.yml --ref vX.Y.Z`.
+The Android APKs are signed in CI with the release key, held in the secrets of the `release`
+environment (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`); the job checks the certificate
+against the one every earlier release used. The sections below are the local build, kept for when CI
+cannot be used; v0.1.0 to v0.3.0 were made that way.
 
 What a release ships:
 
