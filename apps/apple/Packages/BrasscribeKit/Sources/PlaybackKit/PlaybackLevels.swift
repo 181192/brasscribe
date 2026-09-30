@@ -15,7 +15,7 @@ public enum PlaybackLevels {
     public static let windowsPhraseLUFS = -12.80
     public static let phraseToleranceLU = 1.1
     /// A whole arrangement played with its dynamics: the Mikkel golden score as Windows plays it.
-    public static let bandArrangementLUFS = -14.44
+    public static let bandArrangementLUFS = -14.50
     /// Make-up gain on the band before the limiter: fitted so the golden and Old Hundredth land where Windows plays
     /// them (the largest deviation, the golden's, 1 LU).
     public static let bandGainDB = 29.55

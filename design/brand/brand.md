@@ -27,6 +27,7 @@ The mark is drawn on a 64-unit grid as a single even-odd path, so every platform
 | `logo/mark-white.svg` | Monochrome contexts: Android themed icons, embossing |
 | `logo/wordmark.svg`, `logo/wordmark-on-dark.svg` | "Brasscribe" set in Instrument Serif, converted to outlines |
 | `logo/lockup-play*.svg`, `logo/lockup-studio*.svg` | Mark + wordmark + product name in brass italic |
+| `social/social-preview.png` (and `.svg`) | Link previews, 1280 × 640: the repository's social preview on GitHub, and chat apps |
 
 **Rules**
 - **Clear space:** keep at least the width of the mark's stem (9/64 of its height) free on every side.

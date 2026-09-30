@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         if: github.event_name == 'pull_request'
         with:
@@ -61,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
+      - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
         with:
           pixi-version: v0.81.0
           environments: default
@@ -83,7 +83,7 @@ jobs:
       # ChoraleBricks annotations (CC-BY 4.0) read from the Zenodo archive with range
       # requests and checked against eval/fixtures/choralebricks-pins.json, plus our own
       # committed model outputs from eval/fixtures. No dataset audio is downloaded.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ci-data
           key: ci-data-${{ hashFiles('eval/fixtures/**', 'eval/brasscribe_eval/ci_data.py', 'eval/brasscribe_eval/choralebricks.py') }}
@@ -96,7 +96,7 @@ jobs:
         env:
           BRASSCRIBE_DATA: ci-data
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: bench-ci
@@ -118,6 +118,9 @@ jobs:
 
       - name: Rust core tests (and the host library the .NET tests load)
         working-directory: core
+        # Optimised like a release, but an integer overflow panics instead of wrapping silently.
+        env:
+          CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS: "true"
         run: |
           cargo test --release
           cargo build --release -p brasscribe-ffi
@@ -134,7 +137,7 @@ jobs:
           git diff --exit-code -- bindings swift android \
             || { echo "::error::Bindings are stale; run core/scripts/bindings.sh and commit the result."; exit 1; }
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: apps/windows/global.json
 
@@ -156,7 +159,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm

@@ -81,7 +81,7 @@ pub fn choose_level(beat_times: &[f64], onsets: &[f64]) -> Vec<f64> {
     let diffs: Vec<f64> = beat_times.windows(2).map(|w| w[1] - w[0]).collect();
     let bpm = 60.0 / py::median(&diffs);
     let mut on: Vec<f64> = onsets.iter().map(|&x| py::np_round(x, 2)).collect();
-    on.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    on.sort_by(py::fcmp);
     on.dedup();
     let bm = BeatMap::new(beat_times).expect("two beats");
     let ob: Vec<f64> = on.iter().map(|&x| bm.to_beats(x)).collect();
@@ -89,7 +89,7 @@ pub fn choose_level(beat_times: &[f64], onsets: &[f64]) -> Vec<f64> {
     if !ioi.is_empty() && bpm < 90.0 && py::median(&ioi) <= 0.3 {
         let mut out = beat_times.to_vec();
         out.extend(beat_times.windows(2).map(|w| (w[0] + w[1]) / 2.0));
-        out.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        out.sort_by(py::fcmp);
         return out;
     }
     beat_times.to_vec()
@@ -162,7 +162,7 @@ fn lost(f: &[f64], g: i64, next_head: Option<&Vec<f64>>) -> i64 {
     let gf = g as f64;
     let mut slots: Vec<f64> = f.iter().map(|&x| (x * gf).round_ties_even()).collect();
     let on_next = slots.iter().any(|&s| s == gf);
-    slots.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    slots.sort_by(py::fcmp);
     slots.dedup();
     let mut n = (f.len() - slots.len()) as i64;
     if let Some(h) = next_head {
@@ -338,7 +338,7 @@ pub fn quantize_with(
         })
         .collect();
     if dense {
-        out.sort_by(|a, b| a.start.cmp(&b.start).then(a.onset_s.partial_cmp(&b.onset_s).unwrap()).then(b.pitch.cmp(&a.pitch)));
+        out.sort_by(|a, b| a.start.cmp(&b.start).then(py::fcmp(&a.onset_s, &b.onset_s)).then(b.pitch.cmp(&a.pitch)));
         return monophonize_dense(out, &grids);
     }
     out.sort_by_key(|q| (q.start, -q.pitch));

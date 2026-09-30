@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
@@ -54,7 +54,7 @@ jobs:
         if: ${{ !inputs.release }}
         run: ./gradlew testDebugUnitTest lint assembleDebug --stacktrace
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !inputs.release && failure() }}
         with:
           name: android-test-and-lint-reports
@@ -100,7 +100,7 @@ jobs:
             cp "$apk" "$RUNNER_TEMP/unsigned/"
           done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}
         with:
           name: android-unsigned
@@ -151,7 +151,7 @@ jobs:
           done
           rm -f "$RUNNER_TEMP/aligned.apk" "$RUNNER_TEMP"/out/*.idsig
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-android
           path: ${{ runner.temp }}/out/*.apk

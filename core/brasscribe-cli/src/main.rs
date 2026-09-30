@@ -148,7 +148,9 @@ fn contour(p: &Path) -> R<Contour> {
     let t = a.remove("t").ok_or("contour without t")?;
     let hz = a.remove("pitch_hz").ok_or("contour without pitch_hz")?;
     let db = a.remove("loudness_db").ok_or("contour without loudness_db")?;
-    Ok(Contour::from_hz(t, &hz, db).with_confidence(a.remove("confidence")))
+    let c = Contour::from_hz(t, &hz, db).with_confidence(a.remove("confidence"));
+    c.check().map_err(|e| format!("{}: {e}", p.display()))?;
+    Ok(c)
 }
 
 fn out_band(dir: &Path, r: &pipeline::BandResult) -> R<()> {

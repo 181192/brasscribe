@@ -83,7 +83,7 @@ jobs:
             tar -czf "$RUNNER_TEMP/out/$name.tar.gz" -C target/release brasscribe-core
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}
         with:
           name: ${{ matrix.artifact }}

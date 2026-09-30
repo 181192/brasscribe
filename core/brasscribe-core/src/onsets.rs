@@ -143,7 +143,8 @@ fn without_glides(pl: &[Plateau]) -> Vec<Plateau> {
         }
         if 0 < k && k < pl.len() && len(&pl[k - 1]) > 2 * GLIDE_FRAMES {
             let steps: Vec<i64> = pl[k - 1..].windows(2).map(|w| w[1].2 - w[0].2).collect();
-            let span = pl[pl.len() - 1].1 - pl[k].0;
+            // Negative on the reversed pass (the chain's last plateau comes first), as in the reference.
+            let span = pl[pl.len() - 1].1 as i64 - pl[k].0 as i64;
             let dwell = pl[k..].iter().map(len).sum::<usize>() as f64 / span.max(1) as f64;
             let small = steps.iter().all(|&d| 0 < d.abs() && d.abs() <= GLIDE_STEP);
             let one_way = steps.iter().all(|&d| d > 0) || steps.iter().all(|&d| d < 0);
@@ -333,4 +334,18 @@ pub fn contour_notes(notes: &[RawNote], c: Option<&Contour>, others: &[RawNote])
         carry = None;
     }
     kept.iter().flat_map(|n| split_note(n, c, tau, &ok)).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_leading_whole_tone_chain_is_kept_as_the_reference_keeps_it() {
+        // Reversed, the chain's span is negative; the reference divides by max(1, span).
+        let pl = vec![(0, 2, 58), (2, 4, 60), (4, 6, 62), (6, 30, 64)];
+        assert_eq!(without_glides(&pl), pl);
+        // A semitone scoop into the held note is still a glide.
+        assert_eq!(without_glides(&[(0, 2, 62), (2, 4, 63), (4, 30, 64)]), vec![(4, 30, 64)]);
+    }
 }

@@ -161,7 +161,7 @@ pub const MAX_GROUP_BARS: i64 = 2;
 /// MAX_GROUP_BARS bars.
 pub fn review_groups(notes: &[(i64, i64, f64)], bar: i64, mark_below: f64, very_below: f64) -> Vec<ReviewGroup> {
     let mut notes = notes.to_vec();
-    notes.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)).then(a.2.partial_cmp(&b.2).unwrap()));
+    notes.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)).then(py::fcmp(&a.2, &b.2)));
     let mut groups: Vec<ReviewGroup> = Vec::new();
     let mut unmarked = 0;
     let mut phrase_break = false;

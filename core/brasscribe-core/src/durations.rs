@@ -63,6 +63,19 @@ impl Contour {
         self.confidence = confidence;
         self
     }
+
+    /// Err unless every array has one value per frame (one time each).
+    pub fn check(&self) -> Result<(), String> {
+        let n = self.t.len();
+        let mut lens = vec![("pitch", self.midi.len()), ("loudness", self.loudness_db.len())];
+        if let Some(c) = &self.confidence {
+            lens.push(("confidence", c.len()));
+        }
+        match lens.into_iter().find(|&(_, l)| l != n) {
+            Some((what, l)) => Err(format!("the contour has {n} times but {l} {what} values")),
+            None => Ok(()),
+        }
+    }
 }
 
 fn searchsorted_left(a: &[f64], v: f64) -> usize {
