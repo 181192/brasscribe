@@ -1390,7 +1390,7 @@ export interface components {
         };
         /**
          * JobCreate
-         * @description Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory).
+         * @description Exactly one of audio_id (an upload), source_id (from listSources) or path (an audio file in the data directory).
          */
         JobCreate: {
             /**
@@ -1433,7 +1433,7 @@ export interface components {
             muscriptor: boolean;
             /**
              * Path
-             * @description audio file path; must lie inside the engine's data directory
+             * @description audio file under uploads/, captures/ or eval/, relative to the engine's data directory ('/'-separated); not for paired devices
              */
             path?: string | null;
             /**

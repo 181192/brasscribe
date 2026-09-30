@@ -43,7 +43,7 @@ from . import schemas as m
 from .adapters import host_device
 from .config import Settings
 from .jobs import TERMINAL, Job, JobManager
-from .names import valid_id, valid_relpath
+from .names import is_audio, valid_id, valid_relpath
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 # Studio's own files keep their names across releases, so the browser revalidates them on every load
@@ -397,22 +397,35 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         d = json.loads(meta.read_text())
         return settings.uploads_dir / d["path"], d
 
-    def job_input(body: m.JobCreate) -> tuple[Path, str]:
+    def input_allowed(p: Path, anywhere: bool = False) -> bool:
+        """Jobs read audio (or video) from the engine's own audio folders: uploads, captures and eval sets.
+        `anywhere`: an existing run's input may lie elsewhere (`brasscribe run <file>`), for the owner."""
+        roots = (settings.uploads_dir, settings.data_dir / "captures", settings.datasets_dir)
+        return is_audio(p) and (anywhere or any(inspection.inside(r, p) for r in roots)) and p.is_file()
+
+    def is_device(request: Request) -> bool:
+        return getattr(request.state, "device", None) is not None
+
+    def job_input(body: m.JobCreate, request: Request) -> tuple[Path, str]:
         given = [x for x in (body.audio_id, body.source_id, body.path) if x]
         if len(given) != 1:
             raise HTTPException(422, "give exactly one of audio_id, source_id, path")
         if body.audio_id:
             path, meta = audio_path(body.audio_id)
+            if not input_allowed(path):
+                raise HTTPException(404, f"no audio {body.audio_id}")
             return path, meta["filename"]
         if body.source_id:
             p = inspection.resolve_source(settings, body.source_id)
-            if not p:
+            if not p or not input_allowed(p):
                 raise HTTPException(404, f"no source {body.source_id}")
             return p, p.parent.name + ".wav" if p.name == "mix.wav" else p.name
-        p = Path(body.path)
-        p = p if p.is_absolute() else settings.data_dir / p
-        if not inspection.inside(settings.data_dir, p) or not p.is_file():
-            raise HTTPException(404, "path must be an existing file inside the data directory")
+        if is_device(request):
+            raise HTTPException(403, "paired devices start jobs from an upload (audio_id) or a source (source_id)")
+        p = settings.data_dir / body.path if valid_relpath(body.path) else None
+        if p is None or not input_allowed(p):
+            raise HTTPException(404, "path must be an audio file under uploads/, captures/ or eval/ in the data "
+                                     "directory, relative to it")
         return p, p.name
 
     @app.post("/v1/jobs", response_model=m.Job, status_code=202, operation_id="createJob", tags=["jobs"],
@@ -420,7 +433,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def create_job(body: m.JobCreate, request: Request) -> m.Job:
         if body.profile not in profiles.PROFILES:
             raise HTTPException(422, f"unknown profile {body.profile}; choose from {', '.join(profiles.PROFILES)}")
-        path, filename = job_input(body)
+        path, filename = job_input(body, request)
         title = body.title or profiles.default_title(body.profile, Path(filename))
         params = {"audio": body.render_audio, "lineup": body.lineup, "difficulty": body.difficulty,
                   "key": body.key, "transpose": body.transpose, "seat": body.seat, "reads": body.reads, "lead": body.lead}
@@ -438,12 +451,15 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.post("/v1/jobs/{job_id}/rerun", response_model=m.Job, status_code=202, operation_id="rerunJob", tags=["jobs"],
               dependencies=[Depends(auth)])
-    def rerun_job(job_id: str, body: m.RerunRequest | None = None) -> m.Job:
+    def rerun_job(job_id: str, request: Request, body: m.RerunRequest | None = None) -> m.Job:
         """Run a job again from its manifest (same input, profile, title and parameters)."""
         old = job_or_404(job_id)
         body = body or m.RerunRequest()
         if not old.audio_path.exists():
             raise HTTPException(409, f"input {old.audio_path} no longer exists")
+        if not input_allowed(old.audio_path, anywhere=not is_device(request)):
+            raise HTTPException(409, "the input is not an audio file in the engine's audio folders "
+                                     "(uploads, captures, eval)")
         job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
                           allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
                           device_name=old.device_name)
@@ -691,11 +707,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/jobs/{job_id}/input", operation_id="getJobInput", tags=["inspection"], dependencies=[Depends(auth)],
              response_class=FileResponse, responses={200: {"content": {"audio/wav": {}}}})
-    def get_input(job_id: str):
+    def get_input(job_id: str, request: Request):
         """The job's original input audio (for A/B listening)."""
         job = job_or_404(job_id)
-        if not job.audio_path.is_file():
-            raise HTTPException(404, "input audio no longer exists")
+        if not input_allowed(job.audio_path, anywhere=not is_device(request)):
+            raise HTTPException(404, "input audio no longer exists, or is not in the engine's audio folders")
         return FileResponse(job.audio_path, media_type=media_type(job.audio_path.name), filename=job.audio_path.name)
 
     @app.get("/v1/jobs/{job_id}/stages", response_model=list[m.StageArtifacts], operation_id="listJobStages",

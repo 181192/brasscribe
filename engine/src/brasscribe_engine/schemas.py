@@ -146,11 +146,12 @@ class AudioRef(BaseModel):
 
 
 class JobCreate(BaseModel):
-    """Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory)."""
+    """Exactly one of audio_id (an upload), source_id (from listSources) or path (an audio file in the data directory)."""
 
     audio_id: str | None = None
     source_id: str | None = None
-    path: str | None = Field(None, description="audio file path; must lie inside the engine's data directory")
+    path: str | None = Field(None, description="audio file under uploads/, captures/ or eval/, relative to the engine's "
+                                               "data directory ('/'-separated); not for paired devices")
     profile: str = "orchestra-with-soloist"
     title: str | None = None
     render_audio: bool = Field(True, description="also render an MP3 of the score")
