@@ -13,7 +13,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .config import REPO_ROOT
+from .config import REPO_ROOT, child_env
 
 PROJECT = REPO_ROOT / "core" / "conformance"
 LOG_TAIL_LINES = 40
@@ -58,7 +58,7 @@ class ConformanceRunner:
         try:
             with log.open("w") as f:
                 code = subprocess.run(self.state.command, cwd=self.project, stdin=subprocess.DEVNULL, stdout=f,
-                                      stderr=subprocess.STDOUT).returncode
+                                      stderr=subprocess.STDOUT, env=child_env()).returncode
         except OSError as e:
             log.write_text(f"could not start: {e}\n")
             code = -1

@@ -20,6 +20,7 @@ from pathlib import Path
 import brasscribe_eval
 import brasscribe_music
 
+from .config import child_env
 from .dag import StageContext, StageFailed
 
 MUSIC_SRC = Path(brasscribe_music.__file__).resolve().parent
@@ -32,7 +33,7 @@ SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS, THIS.with_name("compare.py")) + ((PA
 
 def _python(ctx: StageContext, module: str, *args: str) -> None:
     proc = subprocess.run([sys.executable, "-W", "ignore", "-m", module, *args], stdin=subprocess.DEVNULL,
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, env=child_env())
     if proc.stdout.strip():
         for line in proc.stdout.strip().splitlines()[-20:]:
             ctx.log(line)

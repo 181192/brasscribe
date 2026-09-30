@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
+from .config import child_env
 from .gpulock import default_path, file_lock
 from .hashing import HashIndex, sha256_bytes
 
@@ -187,7 +188,7 @@ class AdapterRegistry:
             cmd = [str(self.script(name)), str(src), str(dst)]
         else:
             raise AdapterError(f"no run_adapter.py or {self.script(name)}")
-        full_env = {**os.environ, **dict(a.env), **(env or {})}
+        full_env = child_env({**dict(a.env), **(env or {})})
         t0 = time.time()
 
         def call():

@@ -47,6 +47,18 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_GPU_LOCK = default_path()
 
 
+# Credentials the engine reads from its environment. Programs it starts (adapters, arrangers, MuseScore, the
+# conformance suite) never get them: child_env() leaves them out, and `brasscribe serve` removes them from its
+# own environment once the app has read them.
+CREDENTIAL_ENV = ("BRASSCRIBE_ADMIN_TOKEN", "BRASSCRIBE_ADMIN_TOKEN_FILE", "BRASSCRIBE_TOKEN")
+
+
+def child_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """The environment for a program the engine starts: its own, without the credentials, plus `extra`."""
+    env = {k: v for k, v in os.environ.items() if k not in CREDENTIAL_ENV}
+    return {**env, **(extra or {})}
+
+
 def _env_flag(name: str, default: bool) -> bool:
     value = os.environ.get(name, "").strip().lower()
     return default if not value else value not in ("0", "false", "no", "off")
