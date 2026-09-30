@@ -129,6 +129,9 @@ scikit-learn = "<=1.5.1"
 
 [feature.basic-pitch.target.osx-arm64.pypi-dependencies]
 basic-pitch = { version = ">=0.4.0", extras = ["coreml"] }
+# scipy 1.15 wheels do not load on macOS 27 (dyld rejects their __thread_bss section);
+# 1.14 is the newest that does and still supports Python 3.10.
+scipy = "<1.15"
 
 [feature.basic-pitch.target.linux-64.pypi-dependencies]
 basic-pitch = { version = ">=0.4.0", extras = ["onnx"] }
