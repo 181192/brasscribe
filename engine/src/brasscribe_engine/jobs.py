@@ -24,6 +24,10 @@ from .names import valid_id
 from .config import Settings
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
+# Finished jobs stay in memory, events and all, for this long and at most this many; after that they are read
+# back from their run directory when asked for. (A job that failed before it had one is then forgotten.)
+KEEP_FINISHED_S = 600.0
+KEEP_FINISHED = 50
 
 
 @dataclass
@@ -93,6 +97,7 @@ class JobManager:
                   device_name)
         for s in pipeline.stages:
             job.stages[s.name] = {"name": s.name, "kind": s.kind, "status": "pending"}
+        self._evict()
         with self.lock:
             self.jobs[job.id] = job
         job.add_event({"type": "job", "status": "queued"})
@@ -107,9 +112,20 @@ class JobManager:
         try:
             runner.run(self.settings, job.audio_path, job.profile, title=job.title, params=job.params,
                        allow_heavy=job.allow_heavy, cold=job.cold, run_id=job.id, emit=job.add_event,
-                       cancel=job.cancel, previous_run_id=job.previous_run_id)
+                       cancel=job.cancel, previous_run_id=job.previous_run_id, audio_id=job.audio_id,
+                       device_name=job.device_name)
         except Exception as e:  # noqa: BLE001 - reported as a failed job
             job.add_event({"type": "job", "status": "failed", "error": f"{type(e).__name__}: {e}"})
+
+    def _evict(self) -> None:
+        """Forget finished jobs past KEEP_FINISHED_S or KEEP_FINISHED; an open event stream keeps its own."""
+        now = time.time()
+        with self.lock:
+            done = sorted((j for j in self.jobs.values() if j.status in TERMINAL and j.finished is not None),
+                          key=lambda j: j.finished, reverse=True)
+            for i, j in enumerate(done):
+                if i >= KEEP_FINISHED or now - j.finished > KEEP_FINISHED_S:
+                    del self.jobs[j.id]
 
     def get(self, job_id: str) -> Job | None:
         if not valid_id(job_id):
@@ -119,6 +135,7 @@ class JobManager:
         return job or self._from_disk(job_id)
 
     def list(self) -> list[Job]:
+        self._evict()
         with self.lock:
             live = dict(self.jobs)
         seen: set[str] = set()
@@ -262,9 +279,10 @@ class JobManager:
             created = datetime.fromisoformat(m["created"]).timestamp()
         except (KeyError, TypeError, ValueError):  # manifests before the field
             created = mpath.stat().st_ctime
-        job = Job(m["run_id"], m["profile"], m.get("title"), None, Path(m["input"]["path"]), m.get("params", {}),
-                  m.get("options", {}).get("allow_heavy", True), set(m.get("options", {}).get("cold", [])),
-                  m.get("previous_run_id"), status=m.get("status", "unknown"),
+        job = Job(m["run_id"], m["profile"], m.get("title"), m.get("audio_id"), Path(m["input"]["path"]),
+                  m.get("params", {}), m.get("options", {}).get("allow_heavy", True),
+                  set(m.get("options", {}).get("cold", [])), m.get("previous_run_id"), m.get("device_name"),
+                  status=m.get("status", "unknown"),
                   created=created, error=m.get("error"))
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],

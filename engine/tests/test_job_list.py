@@ -64,3 +64,42 @@ def test_renaming_a_run_keeps_its_place_in_the_list(settings):
         listed = c.get("/v1/jobs").json()
         assert [j["id"] for j in listed] == ["run-new", "run-old"]
         assert listed[1]["created"] == datetime.fromisoformat("2026-01-01T10:00:00+00:00").timestamp()
+
+
+def test_finished_jobs_leave_memory_and_come_back_from_disk(settings, audio, monkeypatch):
+    import time
+
+    from brasscribe_engine import jobs as J
+
+    jobs = JobManager(settings)
+    job = jobs.submit(audio, "test", audio_id="abc123", title="Evening", device_name="Kari's iPhone")
+    end = time.time() + 30
+    while job.status not in J.TERMINAL and time.time() < end:
+        time.sleep(0.02)
+    assert job.status == "succeeded" and job.id in jobs.jobs
+    jobs.list()
+    assert job.id in jobs.jobs  # recently finished: still in memory
+
+    monkeypatch.setattr(J, "KEEP_FINISHED_S", 0.0)
+    time.sleep(0.01)
+    assert job.id in {j.id for j in jobs.list()} and job.id not in jobs.jobs
+    again = jobs.get(job.id)
+    assert again is not job
+    assert (again.status, again.title, again.audio_id, again.device_name) == \
+        ("succeeded", "Evening", "abc123", "Kari's iPhone")
+    assert again.events[-1]["status"] == "succeeded"
+
+
+def test_only_the_latest_finished_jobs_stay_in_memory(settings, audio, monkeypatch):
+    from brasscribe_engine import jobs as J
+
+    monkeypatch.setattr(J, "KEEP_FINISHED", 2)
+    jobs = JobManager(settings)
+    for i in range(4):
+        job = J.Job(f"run-{i}", "test", None, None, audio, {})
+        job.add_event({"type": "job", "status": "failed", "error": "x"})
+        jobs.jobs[job.id] = job
+    running = J.Job("run-live", "test", None, None, audio, {}, status="running")
+    jobs.jobs[running.id] = running
+    jobs.list()
+    assert set(jobs.jobs) == {"run-2", "run-3", "run-live"}
