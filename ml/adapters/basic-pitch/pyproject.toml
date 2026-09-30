@@ -5,8 +5,11 @@ requires-python = ">=3.10,<3.11"
 dependencies = [
     "basic-pitch[coreml]>=0.4.0",
     "scikit-learn<=1.5.1",
-    "setuptools<81",
 ]
 
 [tool.uv]
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
+# basic-pitch caps resampy below 0.4.3, but 0.4.2 imports pkg_resources, which setuptools 82
+# dropped (and setuptools below 83 has an advisory). 0.4.3 loads its filters with
+# importlib.resources instead and keeps the same API, so no setuptools pin is needed.
+override-dependencies = ["resampy>=0.4.3"]
