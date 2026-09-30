@@ -48,7 +48,7 @@ jobs:
         with:
           global-json-file: apps/windows/global.json
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('apps/windows/Directory.Packages.props', 'apps/windows/**/*.csproj') }}
@@ -251,7 +251,7 @@ jobs:
         with:
           global-json-file: apps/bandroom/windows/global.json
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .nuget/packages
           key: nuget-bandroom-${{ runner.os }}-${{ hashFiles('apps/bandroom/windows/Directory.Packages.props', 'apps/bandroom/windows/**/*.csproj') }}
