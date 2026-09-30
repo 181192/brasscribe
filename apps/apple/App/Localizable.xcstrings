@@ -461,6 +461,16 @@
         }
       }
     },
+    "A brass band gets a quick draft here when your computer isn't there; your computer makes a better score.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et brassband får et raskt utkast her når datamaskinen ikke er der; datamaskinen lager et bedre partitur."
+          }
+        }
+      }
+    },
     "A file you own, or a recording with the microphone, always works.": {
       "localizations": {
         "nb": {
@@ -477,6 +487,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "En merknad nederst på hver side forklarer dem"
+          }
+        }
+      }
+    },
+    "A quick draft made on this device. Your computer makes a better score, and results on the device can differ slightly from the computer's.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et raskt utkast laget på denne enheten. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen."
+          }
+        }
+      }
+    },
+    "A quick draft on this device. Your computer makes a better score.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et raskt utkast på denne enheten. Datamaskinen lager et bedre partitur."
           }
         }
       }
@@ -1451,6 +1481,16 @@
         }
       }
     },
+    "Draft": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utkast"
+          }
+        }
+      }
+    },
     "Drop a recording here": {
       "localizations": {
         "nb": {
@@ -1861,6 +1901,16 @@
         }
       }
     },
+    "Keep Brasscribe open until the draft is ready.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold Brasscribe åpen til utkastet er klart."
+          }
+        }
+      }
+    },
     "Keep checking": {
       "localizations": {
         "nb": {
@@ -2167,6 +2217,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lages på denne Macen. Ingenting sendes til nettet."
+          }
+        }
+      }
+    },
+    "Make band drafts on this device": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lag bandutkast på denne enheten"
+          }
+        }
+      }
+    },
+    "Make the full score": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lag hele partituret"
           }
         }
       }
@@ -2711,6 +2781,16 @@
         }
       }
     },
+    "On this device, as a draft.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På denne enheten, som utkast."
+          }
+        }
+      }
+    },
     "On this device. Nothing goes online.": {
       "localizations": {
         "nb": {
@@ -2857,6 +2937,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bare denne: hør bare denne stemmen."
+          }
+        }
+      }
+    },
+    "Open Brasscribe on your computer to make the full score from the same recording.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne Brasscribe på datamaskinen for å lage hele partituret fra det samme opptaket."
           }
         }
       }
@@ -4771,6 +4861,16 @@
         }
       }
     },
+    "Too long for a draft on this device": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For langt for et utkast på denne enheten"
+          }
+        }
+      }
+    },
     "Treble clef": {
       "localizations": {
         "nb": {
@@ -4807,6 +4907,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Trompet"
+          }
+        }
+      }
+    },
+    "Try a shorter recording, or make the score on your computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøv et kortere opptak, eller lag partituret på datamaskinen."
           }
         }
       }

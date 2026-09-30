@@ -17,6 +17,7 @@ enum ErrorWords {
         case TranscriptionError.unreachable: return unreachable
         case TranscriptionError.jobFailed: return String(localized: "Brasscribe on your computer couldn't finish the score. Try again.")
         case TranscriptionError.http(let status, let body): return http(status, code: engineCode(body))
+        case is DraftTooLong: return String(localized: "Try a shorter recording, or make the score on your computer.")
         case let e as URLError:
             return e.code == .timedOut ? String(localized: "Your computer took too long to answer. Try again.") : unreachable
         default:
@@ -25,6 +26,11 @@ enum ErrorWords {
             }
             return nil
         }
+    }
+
+    /// A title more specific than "The score couldn't be made", when there is one.
+    static func title(_ error: Error) -> String? {
+        error is DraftTooLong ? String(localized: "Too long for a draft on this device") : nil
     }
 
     /// The words for `error`, a generic line when nothing more is known.

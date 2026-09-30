@@ -28,6 +28,11 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     /// The player's seat for this score (`SeatChoice.encoded`), kept from the first time it was
     /// opened: a new answer in Settings leaves the scores you already have on the part you chose.
     var seat: String? = nil
+    /// A quick draft made on this device without the computer (a brass band recording); the computer
+    /// can make the full score from the kept recording.
+    var draft: Bool? = nil
+
+    var isDraft: Bool { draft == true }
 
     static var libraryURL: URL {
         // unit tests keep their scores out of the user's library
@@ -84,10 +89,11 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
 
     /// Store a finished transcription with its source media.
     static func create(title: String, profile: SourceProfile?, result: TranscriptionResult,
-                       original: URL?, video: URL?, fixtureDirectory: URL?, output: OutputChoice? = nil) throws -> Piece {
+                       original: URL?, video: URL?, fixtureDirectory: URL?, output: OutputChoice? = nil, draft: Bool = false) throws -> Piece {
         var p = Piece(id: UUID(), title: title, created: Date(), profile: profile, originalFile: nil, videoFile: nil,
                       remoteJobID: result.jobID, remoteArtifacts: Array(result.available), fixtureDirectory: fixtureDirectory?.path,
                       output: output)
+        if draft { p.draft = true }
         let fm = FileManager.default
         try fm.createDirectory(at: p.folder, withIntermediateDirectories: true)
         try result.musicXML.write(to: p.scoreURL)
@@ -207,6 +213,7 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         var bits: [String] = []
         if let lineup = madeLineup(nil) { bits.append(lineup.shortTitle) }
         else if let profile { bits.append(profile.shortTitle) }
+        if isDraft { bits.append(String(localized: "Draft")) }
         if let bars { bits.append(String(localized: "\(bars) bars")) }
         bits.append(ScoreTitles.day(created))
         if let toCheck, toCheck > 0 { bits.append(String(localized: "\(toCheck) to check")) }

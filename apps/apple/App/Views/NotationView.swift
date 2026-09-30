@@ -26,6 +26,7 @@ struct NotationView: View {
                     LazyVStack(spacing: BrasscribeDesign.Space.s3) {
                         // the part view's header scrolls with the music, so it never takes the score's room
                         VStack(alignment: .leading, spacing: 0) {
+                            if model.piece.isDraft { DraftNotice(piece: model.piece) }
                             if hsize == .compact {
                                 StatusLine(model: model, toCheck: model.toCheck, wide: false) { app.path.append(.review(model.piece)) }
                             }

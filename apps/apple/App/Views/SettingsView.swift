@@ -42,6 +42,8 @@ struct SettingsView: View {
 
                 Section {
                     Toggle(isOn: $app.soloOnDevice) { Text("Write down solos on this device") }
+                    Toggle(isOn: $app.bandDraftOnDevice) { Text("Make band drafts on this device") }
+                        .accessibilityIdentifier("settingBandDraft")
                     LabeledContent { Text(modelStatus) } label: { Text("Listening files") }
                     Button("Download the listening files") { Task { await downloadModels() } }
                         .disabled(busy || ModelStore.shared.missing.isEmpty)
@@ -54,6 +56,7 @@ struct SettingsView: View {
                     } label: { Text("Details for the band's tech person") }
                 } header: { Text("On this device") } footer: {
                     Text("One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.")
+                    + Text(verbatim: " ") + Text("A brass band gets a quick draft here when your computer isn't there; your computer makes a better score.")
                 }
 
                 Section {

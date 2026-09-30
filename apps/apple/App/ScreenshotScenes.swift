@@ -29,6 +29,16 @@ enum ScreenshotScenes {
             try? fixture.save()
             app.refresh()
             app.path = []
+        case "source-draft":
+            // Brass band with no computer: the draft line (the scene's device counts as having the listening files)
+            app.assumeModelsReady = true
+            app.ask(PendingSource(audioURL: app.originalForFixture ?? sceneRecording, title: "Band practice", name: "Band practice.m4a"))
+        case "score-draft":
+            guard var p = openScore() else { return }
+            p.draft = true
+            try? p.save()
+            app.refresh()
+            app.path = [.score(p)]
         case "source":
             // a file name only: the scenes never read the recording
             app.ask(PendingSource(audioURL: app.originalForFixture ?? sceneRecording, title: "Band practice", name: "Band practice.m4a"))
