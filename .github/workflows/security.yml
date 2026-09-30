@@ -4,6 +4,7 @@ name: security
 # requests. Findings land in the repository's Security tab; the dependency review fails a pull
 # request that adds a dependency with a known high-severity vulnerability.
 # Swift is not analysed: CodeQL needs a full Xcode build for it (the apple workflow builds the apps).
+# Kotlin is analysed from the Android debug build; the other languages from source alone.
 on:
   push:
     branches: [main]
@@ -31,16 +32,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [actions, python, javascript-typescript, rust, java-kotlin, csharp]
+        include:
+          - { language: actions, build-mode: none }
+          - { language: python, build-mode: none }
+          - { language: javascript-typescript, build-mode: none }
+          - { language: rust, build-mode: none }
+          - { language: csharp, build-mode: none }
+          # Kotlin is only analysed from a real build: the Android debug build (Kotlin fallback core,
+          # no Rust or NDK needed), as the android workflow's checks build it.
+          - { language: java-kotlin, build-mode: manual }
     steps:
       - uses: actions/checkout@v4
 
-      # Every language here is analysed from source without building it.
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: none
+          build-mode: ${{ matrix.build-mode }}
           queries: security-extended
+
+      - uses: actions/setup-java@v4
+        if: matrix.language == 'java-kotlin'
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: matrix.language == 'java-kotlin'
+
+      - name: Build the Android app (debug)
+        if: matrix.language == 'java-kotlin'
+        working-directory: apps/android
+        run: ./gradlew assembleDebug --no-build-cache --stacktrace
 
       - uses: github/codeql-action/analyze@v3
         with:
