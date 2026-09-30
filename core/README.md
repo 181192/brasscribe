@@ -34,6 +34,7 @@ brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   notation/        measures, accidentals, ties, tuplets, beams, stems, transposition, MusicXML
 brasscribe-ffi/    UniFFI exports + `bc_*` C ABI
 brasscribe-cli/    `brasscribe-core` binary: the same entry points as the Python scripts, file based
+target-fretted/    tab fingering: a string and fret for every note on guitar, bass, ukulele, mandolin
 bindings/          generated Swift, Kotlin and C header (scripts/bindings.sh)
 swift/BrasscribeCore  SwiftPM package (binaryTarget XCFramework + generated Swift)
 android/           Android library (AAR) with jniLibs per ABI, JVM smoke test

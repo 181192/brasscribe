@@ -410,3 +410,42 @@ fn json_round_trip_matches_the_direct_call() {
     assert!(solve_json(r#"{"instrument": {"preset": "guitar-standard"}, "notes": [], "options": {"tempo_bpm": 0}}"#).is_err());
     assert!(solve_json(r#"{"instrument": {"preset": "guitar-standard"}, "notes": [], "options": {"pins": [{"note": 3, "string": 1}]}}"#).is_err());
 }
+
+#[test]
+fn json_rejects_unknown_keys_with_a_clear_error() {
+    let notes = r#""notes": [{"pitch": 64, "start": 0, "dur": 24}]"#;
+    let err = |body: String| solve_json(&body).unwrap_err();
+
+    let e = err(format!(r#"{{"instrument": {{"preset": "guitar-standard", "frets": 5}}, {notes}}}"#));
+    assert!(e.contains("instrument preset") && e.contains("frets"), "{e}");
+    let e = err(format!(r#"{{"instrument": {{"preset": "guitar-standard"}}, {notes}, "extra": 1}}"#));
+    assert!(e.contains("extra"), "{e}");
+    let e = err(format!(r#"{{"instrument": {{"preset": "guitar-standard"}}, {notes}, "options": {{"stlye": "lead"}}}}"#));
+    assert!(e.contains("stlye"), "{e}");
+    let e = err(format!(r#"{{"instrument": {{"preset": "guitar-standard"}}, {notes}, "options": {{"hand": {{"max": 150}}}}}}"#));
+    assert!(e.contains("max"), "{e}");
+    let e = err(format!(r#"{{"instrument": {{"preset": "guitar-standard"}}, {notes}, "options": {{"pins": [{{"note": 0, "string": 1, "fret": 0}}]}}}}"#));
+    assert!(e.contains("fret"), "{e}");
+
+    // A malformed custom instrument names the missing or unknown field.
+    let mut g = serde_json::to_value(preset("guitar-standard").unwrap()).unwrap();
+    g.as_object_mut().unwrap().remove("frets");
+    let e = err(format!(r#"{{"instrument": {g}, {notes}}}"#));
+    assert!(e.contains("custom instrument") && e.contains("frets") && !e.contains("untagged"), "{e}");
+    let mut g = serde_json::to_value(preset("guitar-standard").unwrap()).unwrap();
+    g["tuning"]["strings"][0]["open"] = 64.into();
+    let e = err(format!(r#"{{"instrument": {g}, {notes}}}"#));
+    assert!(e.contains("custom instrument") && e.contains("open"), "{e}");
+    let e = err(format!(r#"{{"instrument": "guitar-standard", {notes}}}"#));
+    assert!(e.contains("preset"), "{e}");
+}
+
+#[test]
+fn json_accepts_partial_hand_limits() {
+    let body = r#"{"instrument": {"preset": "guitar-standard"}, "notes": [{"pitch": 64, "start": 0, "dur": 24}],
+                   "options": {"hand": {"max_mm": 160}}}"#;
+    let req: Request = serde_json::from_str(body).unwrap();
+    assert_eq!(req.options.hand.max_mm, 160.0);
+    assert_eq!(req.options.hand.comfortable_mm, target_fretted::HandLimits::default().comfortable_mm);
+    assert!(solve_json(body).is_ok());
+}

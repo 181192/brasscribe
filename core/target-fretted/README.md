@@ -71,6 +71,15 @@ tries three things in order and uses the first that gives any voicings:
 2. voicings with every note placed, whatever the span;
 3. voicings that place as many notes as possible. This happens when more notes start together
    than there are strings.
+   - The span limit stays on here: the solver leaves a note without a string rather than stretch
+     past the limit.
+   - It only drops the limit when no note at all can be placed within it.
+
+**Limits on very large clusters.** The search stops after 50,000 complete voicings per step
+(`LEAF_CAP`). It tries strings in order, string 1 first. So on a very large cluster, the voicings
+it finds favour the low-numbered (high-sounding) strings, and a cheaper voicing that leans on the
+other strings may never be seen. Ordinary chords come nowhere near the cap. Of the voicings found,
+the 64 cheapest are kept.
 
 Each voicing is paired with a **hand position**, the neck fret under the index finger. The position
 may sit up to three frets below the lowest fretted note, as long as the reach to the highest fretted
@@ -152,8 +161,13 @@ violations.
  "options": {"style": "open-position", "tempo_bpm": 96, "pins": [{"note": 0, "string": 2}]}}
 ```
 
-`instrument` can also be a full `Instrument` object. `options` and each of its fields may be left
-out.
+`instrument` can also be a full `Instrument` object. A `preset` object takes only `capo`
+alongside it.
+
+`options` may be left out, and so may each of its fields, including each field of `hand`.
+
+Unknown keys are errors, anywhere in the request. A malformed instrument is reported with the
+field that is missing or unknown.
 
 ## Not modelled yet
 

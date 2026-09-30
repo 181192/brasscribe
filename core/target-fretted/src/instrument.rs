@@ -14,6 +14,7 @@ pub const MAX_STRINGS: usize = 12;
 
 /// One string (or course of paired strings) as it sounds open.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StringSpec {
     /// Concert MIDI pitch of the open string without a capo.
     pub open_pitch: i32,
@@ -31,6 +32,7 @@ impl StringSpec {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Tuning {
     pub name: String,
     /// String 1 first: the highest line in tab.
@@ -45,6 +47,7 @@ impl Tuning {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Instrument {
     pub name: String,
     pub tuning: Tuning,
@@ -59,6 +62,7 @@ pub struct Instrument {
 
 /// Where a note is played: string (1 = highest tab line) and fret relative to the capo (0 = open).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Position {
     pub string: u8,
     pub fret: u8,

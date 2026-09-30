@@ -29,6 +29,7 @@ pub enum Style {
 
 /// Hand span limits, measured between the lowest and highest fretted note in millimetres.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct HandLimits {
     /// Spans up to this are free.
     pub comfortable_mm: f64,
@@ -44,6 +45,7 @@ impl Default for HandLimits {
 
 /// Fix the string of one note; the solver treats it as a hard constraint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Pin {
     /// Index of the note in the input.
     pub note: usize,
@@ -51,7 +53,7 @@ pub struct Pin {
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Options {
     pub style: Style,
     /// Tempo for turning ticks into seconds; None counts in beats (as at 120 BPM).

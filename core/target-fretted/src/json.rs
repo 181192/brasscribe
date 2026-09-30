@@ -16,7 +16,7 @@ use crate::check::{check, Violation};
 use crate::instrument::{preset, Instrument};
 use crate::solve::{assign, Fingering, Options};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum InstrumentChoice {
     Preset {
@@ -25,6 +25,32 @@ pub enum InstrumentChoice {
         capo: u8,
     },
     Custom(Instrument),
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PresetChoice {
+    preset: String,
+    #[serde(default)]
+    capo: u8,
+}
+
+/// An object with a `preset` key is a preset (only `capo` may go with it); any other object is a
+/// full instrument. Either way an error names what was wrong rather than "no variant matched".
+impl<'de> Deserialize<'de> for InstrumentChoice {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        use serde::de::Error;
+        let v = serde_json::Value::deserialize(d)?;
+        if !v.is_object() {
+            return Err(D::Error::custom("instrument: expected a preset ({\"preset\": ...}) or an instrument object"));
+        }
+        if v.get("preset").is_some() {
+            let p = PresetChoice::deserialize(v).map_err(|e| D::Error::custom(format!("instrument preset: {e}")))?;
+            Ok(InstrumentChoice::Preset { preset: p.preset, capo: p.capo })
+        } else {
+            Instrument::deserialize(v).map(InstrumentChoice::Custom).map_err(|e| D::Error::custom(format!("custom instrument: {e}")))
+        }
+    }
 }
 
 impl InstrumentChoice {
@@ -37,6 +63,7 @@ impl InstrumentChoice {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Request {
     pub instrument: InstrumentChoice,
     pub notes: Vec<Note>,
