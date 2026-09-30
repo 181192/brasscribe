@@ -48,7 +48,12 @@ public static class EnvironmentPlan
     };
 }
 
-public sealed record BootstrapProgress(int Step, int Steps, string Environment, string ItemKey)
+/// <summary>
+/// One step of setup. <c>EngineCurrent</c>: the app's own workspace is in place and its engine environment installed,
+/// so the engine can start while the adapters still install. Worked out as setup goes, so the progress handler (on the
+/// UI thread) never hashes.
+/// </summary>
+public sealed record BootstrapProgress(int Step, int Steps, string Environment, string ItemKey, bool EngineCurrent = false)
 {
     public double Fraction => Steps == 0 ? 1 : (double)Step / Steps;
 }
@@ -221,7 +226,8 @@ public sealed class Bootstrapper
             foreach (var item in pending)
             {
                 ct.ThrowIfCancellationRequested();
-                progress?.Report(new BootstrapProgress(step, pending.Count, item, EnvironmentPlan.ItemKey(item)));
+                bool engineCurrent = !pending.Skip(step).Any(p => p is "workspace" or "default");
+                progress?.Report(new BootstrapProgress(step, pending.Count, item, EnvironmentPlan.ItemKey(item), engineCurrent));
                 if (item == "workspace")
                 {
                     var stamp = BundleStamp;
@@ -255,7 +261,7 @@ public sealed class Bootstrapper
             }
             throw;
         }
-        progress?.Report(new BootstrapProgress(pending.Count, pending.Count, "", ""));
+        progress?.Report(new BootstrapProgress(pending.Count, pending.Count, "", "", EngineCurrent: true));
     }
 }
 

@@ -149,11 +149,13 @@ public static class Problems
 
     /// <summary>
     /// Full-band scores need one more step: says which components are missing ("The soloist separator and the
-    /// band writer aren't downloaded yet."); none named means Brasscribe's own tools. The details list the files.
+    /// band writer aren't downloaded yet."); none named means Brasscribe's own tools. The details list the files, or
+    /// say why setup stopped (<paramref name="stopped"/>) when it did.
     /// </summary>
-    public static Problem MissingDownload(IStrings s, IReadOnlyList<ModelComponent> missing, IReadOnlyList<string>? files = null) =>
+    public static Problem MissingDownload(IStrings s, IReadOnlyList<ModelComponent> missing, IReadOnlyList<string>? files = null, string? stopped = null) =>
         new(ProblemKind.MissingDownload, s["Download_Title"], DownloadText.NotDownloaded(s, missing), s["Primary_FinishSetup"],
-            files is { Count: > 0 } ? "Missing: " + string.Join(", ", files)
+            stopped is not null ? "Setup stopped: " + stopped
+            : files is { Count: > 0 } ? "Missing: " + string.Join(", ", files)
             : missing.Count > 0 ? "Missing: " + string.Join(", ", missing)
             : "The tool environments aren't installed.");
 

@@ -17,9 +17,14 @@ mockups are `design/mockups/png/server-win-flyout-*`, `server-pair-*`.
 ```powershell
 dotnet test tests/Brasscribe.Bandroom.Core.Tests
 dotnet build src/Brasscribe.Bandroom -p:Platform=x64 -p:RuntimeIdentifier=win-x64 -p:BandroomBundleWorkspace=true
-# A development run against this checkout, with pixi on PATH:
-$env:BRASSCRIBE_BANDROOM_WORKSPACE = "C:\src\brasscribe"; .\src\Brasscribe.Bandroom\bin\x64\Debug\...\BrasscribeBandroom.exe
+# A development run against this checkout, with pixi on PATH (installs from the workspace\ the build put next to it):
+.\src\Brasscribe.Bandroom\bin\x64\Debug\...\BrasscribeBandroom.exe
 ```
+
+`-p:BandroomBundleWorkspace=true` copies the pixi workspace from this checkout next to the exe (`workspace\`: the
+same files a release bundles), and Bandroom installs from there. `BRASSCRIBE_BANDROOM_WORKSPACE` points it at
+another folder laid out the same way. Never point it at the checkout itself: Bandroom copies and hashes the whole
+folder, `.git`, `.pixi` and `data` included.
 
 The build puts the band sounds Studio plays under `band\` next to the exe (`brasscribe-band.sf2`, the phone
 build, with `mapping.json` and `NOTICE.txt`), from `data/sounds/band`: run `pixi run fetch-sounds` at the

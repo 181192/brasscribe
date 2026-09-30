@@ -51,6 +51,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private EngineLog? _log;
     private bool _cuda;
     private ModelDownloader? _downloads;
+    /// <summary>Setup and updates: one at a time.</summary>
+    private readonly SingleFlight _setup = new();
     private string _hub = "";
     private EngineLaunchConfig? _config;
     private ComputerNameStore? _nameStore;
@@ -219,18 +221,39 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     private async Task RunAsync()
     {
-        // Hashes pixi.lock and the bundled workspace: off the UI thread, before the first snapshot.
-        var bootstrap = _bootstrap!;
-        await Task.Run(bootstrap.RecoverInterruptedUpdate);
-        bool complete = await bootstrap.IsCompleteAsync(_cuda);
-        _controller!.WorkspaceStamp = await Task.Run(() => bootstrap.BundleStamp.Short);
-        // An engine that ran before, with another build of the workspace: the app was updated (§3.8).
-        bool update = !complete && bootstrap.IsUpdate;
-        _controller.SetupComplete = complete || update;
-        _ = _controller.RunAsync(_quit.Token);
-        if (update) await UpdateAsync();
-        else if (!complete) await SetupAsync();
-        else await _supervisor!.StartAsync();
+        var controller = _controller!;
+        bool polling = false;
+        try
+        {
+            // Hashes pixi.lock and the bundled workspace: off the UI thread, before the first snapshot.
+            var bootstrap = _bootstrap!;
+            await Task.Run(bootstrap.RecoverInterruptedUpdate);
+            bool complete = await bootstrap.IsCompleteAsync(_cuda);
+            controller.WorkspaceStamp = await Task.Run(() => bootstrap.BundleStamp.Short);
+            // An engine that ran before, with another build of the workspace: the app was updated (§3.8).
+            bool update = !complete && await Task.Run(() => bootstrap.IsUpdate);
+            controller.SetupComplete = complete || update;
+            _ = controller.RunAsync(_quit.Token);
+            polling = true;
+            if (update) await _setup.RunAsync(UpdateAsync);
+            else if (!complete) await _setup.RunAsync(SetupAsync);
+            else await _supervisor!.StartAsync();
+        }
+        catch (OperationCanceledException) when (_quit.IsCancellationRequested) { }
+        catch (Exception e)
+        {
+            SetupStopped(e);
+            if (!polling) _ = controller.RunAsync(_quit.Token);
+        }
+    }
+
+    /// <summary>Setup or an update stopped on something unexpected: logged, and shown as a problem with Finish setting up.</summary>
+    private void SetupStopped(Exception e)
+    {
+        _log?.Write("bandroom: setup stopped: " + e);
+        if (_controller is not { } controller) return;
+        controller.SetupFailure = e.Message;
+        controller.Publish();
     }
 
     /// <summary>
@@ -242,6 +265,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         if (_controller is not { } controller || _supervisor is not { } supervisor || _bootstrap is not { } bootstrap) return;
         controller.Updating = true;
         controller.UpdateFailure = null;
+        controller.SetupFailure = null;
         controller.SetupFraction = 0;
         controller.Publish();
         await supervisor.StopAsync();
@@ -249,8 +273,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             controller.SetupFraction = p.Fraction;
             // The engine environment is in: start it while the adapters update.
-            if (p.Environment != "default" && p.Environment != "workspace" && bootstrap.EngineReady && bootstrap.WorkspaceCurrent
-                && supervisor.State == EngineState.Stopped)
+            if (p.EngineCurrent && supervisor.State == EngineState.Stopped)
             {
                 controller.Updating = false;
                 _ = supervisor.StartAsync();
@@ -262,27 +285,27 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             await Task.Run(() => bootstrap.RunAsync(_cuda, progress, _quit.Token));
             _log?.Write("bandroom: engine workspace updated to " + controller.WorkspaceStamp);
         }
-        catch (Exception e) when (e is BootstrapException or IOException or UnauthorizedAccessException
-                                      or System.ComponentModel.Win32Exception or DirectoryNotFoundException)
-        {
-            _log?.Write("bandroom: update stopped: " + e.Message);
-            // Still the old workspace: say so. A new one whose adapters stopped resumes like setup does.
-            if (!bootstrap.WorkspaceCurrent) controller.UpdateFailure = e.Message;
-        }
         catch (OperationCanceledException) { return; }
+        catch (Exception e)
+        {
+            _log?.Write("bandroom: update stopped: " + e);
+            // Still the old workspace: say so. A new one whose adapters stopped resumes like setup does.
+            if (!await Task.Run(() => bootstrap.WorkspaceCurrent)) controller.UpdateFailure = e.Message;
+        }
         finally { controller.Updating = false; }
-        if (bootstrap.EngineReady) await supervisor.StartAsync();
+        if (await Task.Run(() => bootstrap.EngineReady)) await supervisor.StartAsync();
         controller.Publish();
     }
 
     /// <summary>First run: the engine environment first, then start it, then the adapters in the background.</summary>
     private async Task SetupAsync()
     {
+        _controller!.SetupFailure = null;
         var progress = new Progress<BootstrapProgress>(p =>
         {
             _controller!.SetupFraction = p.Fraction;
             _controller.Publish();
-            if (p.Environment != "default" && p.Environment != "workspace" && _bootstrap!.EngineReady && _supervisor!.State == EngineState.Stopped)
+            if (p.EngineCurrent && _supervisor!.State == EngineState.Stopped)
                 _ = _supervisor.StartAsync();
         });
         try
@@ -293,12 +316,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             // The environments don't hold the model weights: fetch those now.
             StartMissingDownloads();
         }
-        catch (Exception e) when (e is BootstrapException or IOException or System.ComponentModel.Win32Exception or DirectoryNotFoundException)
-        {
-            _log?.Write("bandroom: setup stopped: " + e.Message);
-            if (_bootstrap!.EngineReady) await _supervisor!.StartAsync();
-        }
         catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            SetupStopped(e);
+            if (await Task.Run(() => _bootstrap!.EngineReady)) await _supervisor!.StartAsync();
+        }
         _controller!.Publish();
     }
 
@@ -511,18 +534,25 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
     }
 
-    /// <summary>The environments first if they aren't all installed; else only the model downloads still missing.</summary>
+    /// <summary>
+    /// The environments first if they aren't all installed; else only the model downloads still missing. While setup
+    /// or an update runs, asking again joins it.
+    /// </summary>
     public void FinishSetup()
     {
-        if (_bootstrap is null || _controller is null) return;
-        _ = FinishSetupAsync(_bootstrap);
+        if (_bootstrap is not { } bootstrap || _controller is null) return;
+        _ = _setup.RunAsync(() => FinishSetupAsync(bootstrap));
     }
 
     private async Task FinishSetupAsync(Bootstrapper bootstrap)
     {
-        if (await bootstrap.IsCompleteAsync(_cuda)) StartMissingDownloads();
-        else if (bootstrap.IsUpdate) await UpdateAsync();
-        else await SetupAsync();
+        try
+        {
+            if (await bootstrap.IsCompleteAsync(_cuda)) StartMissingDownloads();
+            else if (await Task.Run(() => bootstrap.IsUpdate)) await UpdateAsync();
+            else await SetupAsync();
+        }
+        catch (Exception e) when (e is not OperationCanceledException) { SetupStopped(e); }
     }
 
     /// <summary>

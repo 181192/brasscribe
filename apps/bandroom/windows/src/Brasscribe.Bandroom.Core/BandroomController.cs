@@ -68,6 +68,8 @@ public sealed class BandroomController
     public bool Updating { get; set; }
     /// <summary>Why the last engine update failed; the previous engine runs meanwhile.</summary>
     public string? UpdateFailure { get; set; }
+    /// <summary>Why setup stopped (details for the tech person); Finish setting up tries again.</summary>
+    public string? SetupFailure { get; set; }
     /// <summary>The app's own workspace stamp, for the tech-person details.</summary>
     public string? WorkspaceStamp { get; set; }
     /// <summary>Where a check that went wrong is written (engine.log).</summary>
@@ -209,6 +211,7 @@ public sealed class BandroomController
         var problems = new List<Problem>();
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
         if (UpdateFailure is { } failure && !Updating) problems.Add(Problems.UpdateFailed(_s, failure));
+        if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
         string? downloading = null;
         if (SetupComplete && _health is { ModelsReady: false })
