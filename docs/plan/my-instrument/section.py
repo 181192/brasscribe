@@ -14,8 +14,9 @@ import numpy as np
 import pretty_midi
 
 from brasscribe_eval.lead_sheet import line
+from brasscribe_eval.paths import DATA
 
-EV = Path("/Users/k/private/brasscribe/data/eval/choralebricks-brass4")
+EV = DATA / "eval" / "choralebricks-brass4"
 TOL = 0.10
 RANGE = {"S": (52, 82), "A": (52, 82), "T": (40, 70), "B": (24, 72)}
 

@@ -257,7 +257,10 @@ def main(size: str) -> None:
             notes = transcribe(tm, c, work / backend / f"{c.name.replace('/', '__')}.mid")
             per_clip[c.name] = P.note_match(ref_notes[c.name], notes)
             chunks = list(zip(ref_tokens[c.name], rec.calls))
-            token_match[c.name] = {"chunks": len(chunks), "identical_chunks": sum(a == b for a, b in chunks),
+            # zip stops at the shorter list: the chunk counts must agree too, or missing chunks would pass
+            token_match[c.name] = {"chunks": len(chunks), "chunks_ref": len(ref_tokens[c.name]),
+                                   "chunks_converted": len(rec.calls),
+                                   "identical_chunks": sum(a == b for a, b in chunks),
                                    "tokens_ref": sum(len(a) for a, _ in chunks),
                                    "first_divergence": next(([i, next(j for j, (x, y) in enumerate(zip(a, b)) if x != y)
                                                               if any(x != y for x, y in zip(a, b)) else min(len(a), len(b))]
@@ -266,7 +269,9 @@ def main(size: str) -> None:
         results[backend] = {"note_f1": P.pool(per_clip), "per_clip_f1": {k: round(v["f1"], 4) for k, v in per_clip.items()},
                             "tokens": token_match}
         # Gate: every chunk's token sequence identical to PyTorch (note F1 is reported alongside).
-        gate[backend] = all(t["identical_chunks"] == t["chunks"] for t in token_match.values())
+        gate[backend] = bool(token_match) and all(
+            t["chunks"] > 0 and t["chunks_ref"] == t["chunks_converted"] == t["identical_chunks"]
+            for t in token_match.values())
         print(backend, json.dumps(results[backend]["note_f1"]), json.dumps(token_match), flush=True)
     benches = {b: P.run_isolated([sys.executable, "-W", "ignore", __file__, "bench", b, size, "30"])
                for b in ["torch-cpu"] + BACKENDS}

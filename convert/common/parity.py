@@ -24,9 +24,24 @@ from pathlib import Path
 import numpy as np
 
 REPO = Path(__file__).resolve().parents[2]
-MAIN = Path("/Users/k/private/brasscribe")
-DATA = MAIN / "data"
-MODELS = MAIN / "models"
+
+
+def _main_checkout() -> Path:
+    """The main checkout, which holds data/, models/ and the adapters' environments (BRASSCRIBE_MAIN overrides
+    it, as in scripts/worktree-setup.sh); a worktree finds it through git's common directory."""
+    if os.environ.get("BRASSCRIBE_MAIN"):
+        return Path(os.environ["BRASSCRIBE_MAIN"]).resolve()
+    try:
+        common = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                                check=True, capture_output=True, text=True).stdout.strip()
+        return Path(common).parent
+    except (OSError, subprocess.CalledProcessError):
+        return REPO
+
+
+MAIN = _main_checkout()
+DATA = Path(os.environ.get("BRASSCRIBE_DATA") or MAIN / "data")
+MODELS = Path(os.environ.get("BRASSCRIBE_MODELS") or MAIN / "models")
 CONVERTED = MODELS / "converted"
 REPORTS = REPO / "convert" / "reports"
 ADAPTERS = MAIN / "ml" / "adapters"
