@@ -96,7 +96,7 @@ jobs:
           java-version: "21"
 
       # The versions pinned in build.gradle.kts, as the android workflow installs them.
-      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         if: matrix.language == 'java-kotlin' || matrix.language == 'c-cpp'
         with:
           packages: platform-tools ndk;28.2.13676358 cmake;3.31.6
