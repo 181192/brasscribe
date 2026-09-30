@@ -1,5 +1,5 @@
 // Score viewer: open a MusicXML file from disk (or a run's score) and play it.
-import { fetchText } from "../api/client";
+import { fetchText, isEnginePath } from "../api/client";
 import { t } from "../i18n";
 import { announce, clear, errorNotice, filePicker, h, viewHead } from "../ui/dom";
 
@@ -63,7 +63,7 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
     holder);
 
   const src = params.get("src");
-  if (src) {
+  if (src && isEnginePath(src)) {  // only the engine's own files (a job's MusicXML, a reference)
     fetchText(src).then((txt) => open(params.get("name") ?? src, txt)).catch((e) => clear(holder, errorNotice(e)));
   }
 }

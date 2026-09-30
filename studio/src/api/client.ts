@@ -90,6 +90,11 @@ export async function fetchBytes(path: string, endpoint = path): Promise<ArrayBu
   return r.arrayBuffer();
 }
 
+/** A path to one of the engine's own API resources (`/v1/...`), not a URL somewhere else. */
+export function isEnginePath(path: string): boolean {
+  return path.startsWith("/v1/") && !/[\\\s]/.test(path);
+}
+
 export async function fetchText(path: string, endpoint = path): Promise<string> {
   const r = await request(path, {}, 120);
   if (!r.ok) return fail(r, endpoint);
