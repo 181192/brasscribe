@@ -2,7 +2,7 @@
 import { api } from "../api/client";
 import type { BenchRun, SuiteInfo, SuiteResult, SuiteRun } from "../api/types";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, infoTip, loading, pill, table, token, viewHead } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, infoTip, loading, pill, rebuild, table, token, viewHead } from "../ui/dom";
 
 export function benchView(root: HTMLElement): void {
   const suitesEl = h("div", {}, loading());
@@ -16,8 +16,12 @@ export function benchView(root: HTMLElement): void {
 
   let hist: SuiteRun[] = [];
   let suites: SuiteInfo[] = [];
-  const renderSuites = () => clear(suitesEl, suiteTable(suites, hist, async (name, mode, btn) => {
-    btn.disabled = true;
+  // One suite runs at a time; while it does, every Run button is disabled, whenever the table is redrawn.
+  let running = false;
+  const renderSuites = () => rebuild([suitesEl], () => clear(suitesEl, suiteTable(suites, hist, running, async (name, mode) => {
+    if (running) return;
+    running = true;
+    renderSuites();
     clear(lastEl, h("section", { "aria-labelledby": "last-h" }, h("h2", { id: "last-h" }, t("bench.latest")), loading(t("bench.running", { name, mode }))));
     try {
       const run = await api.runSuite(name, mode);
@@ -27,9 +31,10 @@ export function benchView(root: HTMLElement): void {
     } catch (e) {
       clear(lastEl, errorNotice(e));
     } finally {
-      btn.disabled = false;
+      running = false;
+      renderSuites();
     }
-  }));
+  })));
   const loadTrend = () => api.suiteHistory().then((hh) => {
     hist = hh;
     clear(trendEl, trend(hh));
@@ -42,12 +47,10 @@ export function benchView(root: HTMLElement): void {
   void loadTrend();
 }
 
-function suiteTable(suites: SuiteInfo[], hist: SuiteRun[], run: (name: string, mode: "cached" | "live", btn: HTMLButtonElement) => void): HTMLElement {
-  const btn = (name: string, mode: "cached" | "live", label?: string, cls = "ghost") => {
-    const b: HTMLButtonElement = h("button", { type: "button", class: cls, "aria-label": label ? null : mode === "cached" ? t("bench.runName", { name }) : t("bench.runLiveName", { name }), onclick: () => run(name, mode, b) },
+function suiteTable(suites: SuiteInfo[], hist: SuiteRun[], running: boolean, run: (name: string, mode: "cached" | "live") => void): HTMLElement {
+  const btn = (name: string, mode: "cached" | "live", label?: string, cls = "ghost") =>
+    h("button", { type: "button", class: cls, "data-key": `run:${name}:${mode}`, "aria-disabled": running ? "true" : null, "aria-label": label ? null : mode === "cached" ? t("bench.runName", { name }) : t("bench.runLiveName", { name }), onclick: () => run(name, mode) },
       label ?? (mode === "cached" ? t("bench.run") : t("bench.runLive")));
-    return b;
-  };
   const latest = (name: string) => [...hist].filter((r) => r.suite === name).sort((a, b) => b.time - a.time)[0];
   const rows = (list: SuiteInfo[]) => list.map((s) => {
     const last = latest(s.name);

@@ -15,7 +15,7 @@ import { stageTime, waitNote } from "../lib/stagetime";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName, validateScore } from "../lib/validate";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, infoTip, loading, menu, more, panel, pill, table, tabs } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, infoTip, loading, menu, more, panel, pill, rebuild, table, tabs } from "../ui/dom";
 import { icon } from "../ui/icons";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
@@ -78,14 +78,38 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   let tabsEl: HTMLElement | null = null;
   let selectTab: ((id: string) => void) | null = null;
 
+  // The progress line changes with every stage; the rest of the header and the actions only when
+  // the run's status or outputs do, so a control someone is using stays where it is.
+  const summary = h("p", { class: "run-summary" });
+  const headRest = h("div", {});
+  // What went wrong with an action (Re-run), apart from the rest so it survives the next update.
+  const actionNote = h("div", {});
+  let restKey = "";
   const renderHeader = (job: Job, m: Manifest | null) => {
     heading.textContent = runTitle(job);
     const tot = view ? totals(view) : null;
     // Essentials first: status and progress; ids, git and devices sit behind "Run details".
-    clear(header,
-      h("p", { class: "run-summary" }, pill(job.status),
-        tot ? h("span", {}, t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })) : null,
-        tot && !TERMINAL.has(job.status) ? h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }) : null),
+    clear(summary, pill(job.status),
+      tot ? h("span", {}, t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })) : null,
+      tot && !TERMINAL.has(job.status) ? h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }) : null);
+    if (tot) stagesCount.textContent = ` · ${t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })}`;
+    if (header.firstChild !== summary) clear(header, summary, headRest, actionNote);
+    const key = JSON.stringify([job.id, job.status, job.error ?? null, job.outputs ?? [], job.previous_run_id ?? null, m?.run_id ?? null]);
+    if (key !== restKey) {
+      restKey = key;
+      rebuild([headRest, actions], () => renderRest(job, m));
+    }
+    // Open the stages on failure, with the failing stage selected (once, so a user's choice stands).
+    if (!stagesOpened && job.status !== "succeeded") {
+      stagesOpened = true;
+      stagesBox.open = true;
+      const bad = view?.stages.find((s) => s.status === "failed");
+      if (bad) queueMicrotask(() => showStage(bad.name, false));
+    }
+  };
+
+  const renderRest = (job: Job, m: Manifest | null) => {
+    clear(headRest,
       job.error ? errorSummary(job.error) : null,
       job.previous_run_id ? h("p", {}, h("a", { href: `#/compare?a=${encodeURIComponent(job.previous_run_id)}&b=${encodeURIComponent(job.id)}` }, t("run.compareRerun"))) : null,
       more(t("run.details"), h("dl", { class: "kv run-details" },
@@ -107,13 +131,14 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     const rerun = TERMINAL.has(job.status) ? h("button", { type: "button", class: job.status === "succeeded" ? "ghost" : "primary", onclick: async (e: Event) => {
       const b = e.currentTarget as HTMLButtonElement;
       b.disabled = true;
+      clear(actionNote);
       try {
         const j = await api.rerun(job.id, { allow_heavy: false, cold: [] });
         announce(t("manifest.rerunStarted", { id: j.id }));
         location.hash = `#/runs/${encodeURIComponent(j.id)}`;
       } catch (x) {
         b.disabled = false;
-        clear(header, errorNotice(x));
+        clear(actionNote, errorNotice(x));
       }
     } }, icon("retry"), t("manifest.rerunBtn")) : null;
     clear(actions,
@@ -123,14 +148,6 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       compare("wide-only"),
       rerun,
       TERMINAL.has(job.status) ? menu(t("run.moreActions"), [...downloads("narrow-only"), compare("narrow-only"), deleteButton(job.id)]) : null);
-    if (tot) stagesCount.textContent = ` · ${t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })}`;
-    // Open the stages on failure, with the failing stage selected (once, so a user's choice stands).
-    if (!stagesOpened && job.status !== "succeeded") {
-      stagesOpened = true;
-      stagesBox.open = true;
-      const bad = view?.stages.find((s) => s.status === "failed");
-      if (bad) queueMicrotask(() => showStage(bad.name, false));
-    }
   };
 
   const showStage = (name: string, switchTab = true) => {
@@ -173,7 +190,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
           stop?.();
           stop = null;
           void load(); // reload outputs and the inspector
-        } else renderHeader({ ...job, status: view.status as Job["status"] }, m);
+        } else if (e.type !== "log") renderHeader({ ...job, status: view.status as Job["status"] }, m);
       }, (s) => showStream(s));
     }
     const ctx: Ctx = {

@@ -183,6 +183,50 @@ export function more(summary: string, content: Child, opts: { count?: number | s
     content);
 }
 
+const FOCUSABLE = "a[href], button, input, select, textarea, summary, [tabindex]";
+
+/** What identifies a control or a disclosure across a rebuild: its data-key, else its tag and text. */
+function keyOf(el: Element): string {
+  const d = (el as HTMLElement).dataset?.key;
+  if (d) return d;
+  const text = el.tagName === "DETAILS" ? el.querySelector(":scope > summary")?.textContent : el.textContent;
+  return `${el.tagName}:${(text ?? "").trim()}`;
+}
+
+/** Elements matched by key, the n-th with the same key to the n-th. */
+function keyed(els: Element[]): Map<string, Element[]> {
+  const m = new Map<string, Element[]>();
+  for (const el of els) (m.get(keyOf(el)) ?? m.set(keyOf(el), []).get(keyOf(el))!).push(el);
+  return m;
+}
+
+/**
+ * Rebuild part of a page without losing the reader's place: the disclosures that were open stay
+ * open, and the control that had focus (the same data-key, or the same tag and text) gets it back.
+ */
+export function rebuild(containers: Element[], render: () => void): void {
+  const open = new Map<string, boolean[]>();
+  for (const [k, ds] of keyed(containers.flatMap((c) => Array.from(c.querySelectorAll("details"))))) open.set(k, ds.map((d) => (d as HTMLDetailsElement).open));
+  const active = document.activeElement;
+  let focus: { key: string; n: number } | null = null;
+  if (active && containers.some((c) => c !== active && c.contains(active))) {
+    const key = keyOf(active);
+    const same = containers.flatMap((c) => Array.from(c.querySelectorAll(FOCUSABLE))).filter((el) => keyOf(el) === key);
+    focus = { key, n: Math.max(0, same.indexOf(active)) };
+  }
+  render();
+  for (const [k, ds] of keyed(containers.flatMap((c) => Array.from(c.querySelectorAll("details"))))) {
+    const was = open.get(k);
+    ds.forEach((d, i) => {
+      if (was?.[i] !== undefined) (d as HTMLDetailsElement).open = was[i];
+    });
+  }
+  if (focus && !containers.some((c) => c.contains(document.activeElement))) {
+    const same = containers.flatMap((c) => Array.from(c.querySelectorAll<HTMLElement>(FOCUSABLE))).filter((el) => keyOf(el) === focus!.key);
+    same[Math.min(focus.n, same.length - 1)]?.focus();
+  }
+}
+
 export function loading(label?: string): HTMLElement {
   return h("p", { class: "loading", role: "status" }, label ?? t("common.loading"));
 }
