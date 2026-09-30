@@ -1,5 +1,5 @@
 // One run: live stage graph over SSE and the stage inspector.
-import { api, fetchBytes, fetchText, subscribe } from "../api/client";
+import { api, fetchBytes, fetchText, isAbort, subscribe } from "../api/client";
 import type { Composition, FileRef, Job, Manifest, Reference, StageFiles, ValidationIssue } from "../api/types";
 import { audioPanel, type AudioSource } from "../components/audio";
 import { BeatView } from "../components/beats";
@@ -68,6 +68,9 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   let stagesOpened = false;
 
   let stop: (() => void) | null = null;
+  // Leaving the page cancels what is still loading; nothing is shown or subscribed after that.
+  const ctl = new AbortController();
+  const { signal } = ctl;
   let view: RunView | null = null;
   let stages: StageFiles[] | Error = new Error("not loaded");
   let tabsEl: HTMLElement | null = null;
@@ -151,10 +154,12 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   graph.addEventListener("select", (e) => showStage((e as CustomEvent<string>).detail));
 
   const start = async () => {
-    const job = await api.job(id);
+    const job = await api.job(id, { signal });
+    if (signal.aborted) return;
     view = fromJob(job);
     graph.update(view);
-    const [m, st] = await Promise.all([api.manifest(id).catch(() => null), api.stages(id).catch((e) => e as Error)]);
+    const [m, st] = await Promise.all([api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error)]);
+    if (signal.aborted) return;
     stages = st;
     renderHeader(job, m);
     if (!TERMINAL.has(job.status)) {
@@ -164,14 +169,15 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         if (e.type === "job" && e.status && TERMINAL.has(e.status)) {
           announce(t("run.ended", { status: t(`status.${e.status}`) }));
           stop?.();
-          void start(); // reload outputs and the inspector
+          stop = null;
+          void load(); // reload outputs and the inspector
         } else renderHeader({ ...job, status: view.status as Job["status"] }, m);
       });
     }
     const ctx: Ctx = {
       id, job, stages: st,
-      composition: api.composition(id),
-      musicxml: fetchText(`/v1/jobs/${encodeURIComponent(id)}/musicxml`),
+      composition: api.composition(id, { signal }),
+      musicxml: fetchText(`/v1/jobs/${encodeURIComponent(id)}/musicxml`, undefined, { signal }),
     };
     ctx.composition.catch(() => undefined);
     ctx.musicxml.catch(() => undefined);
@@ -191,8 +197,15 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     selectTab = (sel) => tabsEl?.querySelector<HTMLButtonElement>(`[role=tab][data-id="${sel}"]`)?.click();
     clear(inspector, inspectorH, tabsEl);
   };
-  start().catch((e) => clear(header, errorNotice(e)));
-  return () => stop?.();
+  const load = () => start().catch((e) => {
+    if (!signal.aborted && !isAbort(e)) clear(header, errorNotice(e));
+  });
+  void load();
+  return () => {
+    ctl.abort();
+    stop?.();
+    stop = null;
+  };
 }
 
 /** A failed run: the first line of the error in words; the traceback behind "Full error". */
@@ -403,8 +416,13 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   const groups = [...new Set([...transcribes.map(({ stage }) => stage.stage.split(".")[1] ?? "all"), ...comp.voices.map((v) => layerGroup(v.layer ?? v.id))])];
   const sel = h("select", { id: "roll-group" }, groups.map((g) => h("option", { value: g }, g)));
   const holder = h("div", {});
+  let pending: AbortController | null = null;
   const show = async () => {
     const g = sel.value;
+    // A newer choice cancels the files still loading for the one before.
+    pending?.abort();
+    const ctl = new AbortController();
+    pending = ctl;
     clear(holder, loading());
     const layers: RollLayer[] = comp.voices.filter((v) => layerGroup(v.layer ?? v.id) === g).map((v) => ({
       id: v.id, label: t("roll.final", { id: v.id, role: v.role }), colour: "ink", style: "block" as const,
@@ -419,13 +437,15 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
       const model = stage.stage.split(".").slice(2).join(".") || file.name;
       const st = MODEL_STYLE[model] ?? { colour: "m4", style: "outline" as const, label: model };
       try {
-        const midi = parseMidi(await fetchBytes(file.url));
+        const midi = parseMidi(await fetchBytes(file.url, undefined, { signal: ctl.signal }));
         layers.push({ id: stage.stage, label: `${st.label} (${file.name})`, colour: st.colour, style: st.style,
           notes: midi.notes.map((n) => ({ pitch: n.pitch, start: n.start, end: n.end })) });
       } catch {
         /* skip unreadable files */
       }
+      if (ctl.signal.aborted) return;
     }
+    if (ctl.signal.aborted) return;
     const roll = h("bs-pianoroll", {}) as PianoRoll;
     roll.data = layers;
     clear(holder, roll);

@@ -49,10 +49,25 @@ export function conformanceView(root: HTMLElement): () => void {
     runner,
     el);
   let timer = 0;
-  const load = () => api.conformance().then((reports) => clear(el, render(reports))).catch((e) => clear(el, errorNotice(e, { retry: load })));
+  // Leaving the page cancels what is loading and stops the polling.
+  const ctl = new AbortController();
+  const { signal } = ctl;
+  const load = () => api.conformance({ signal }).then((reports) => {
+    if (!signal.aborted) clear(el, render(reports));
+  }).catch((e) => {
+    if (!signal.aborted) clear(el, errorNotice(e, { retry: load }));
+  });
+  const poll = () => api.conformanceRun({ signal }).then((r) => {
+    if (!signal.aborted) showRun(r);
+    return r;
+  }, () => {
+    if (!signal.aborted) showRun(null);
+    return null;
+  });
   // "Run conformance" when the engine can start the core's conformance run; otherwise the command is shown.
   const showRun = (r: ConformanceRun | null) => {
     window.clearTimeout(timer);
+    if (signal.aborted) return;
     if (!r || !r.available) {
       clear(runner);
       return;
@@ -64,7 +79,7 @@ export function conformanceView(root: HTMLElement): () => void {
         showRun(await api.startConformanceRun());
         announce(t("conf.started"));
       } catch (e) {
-        clear(runner, errorNotice(e, { retry: () => void api.conformanceRun().then(showRun).catch(() => showRun(null)) }));
+        if (!signal.aborted) clear(runner, errorNotice(e, { retry: () => void poll() }));
       }
     } }, icon("retry"), running ? t("conf.running") : t("conf.run"));
     const state = r.status === "idle" ? null : h("span", { class: "hint", role: "status" },
@@ -73,18 +88,20 @@ export function conformanceView(root: HTMLElement): () => void {
     clear(runner, h("div", { class: "row" }, btn, state),
       r.log_tail ? more(t("conf.log"), h("pre", { class: "json", tabindex: 0 }, r.log_tail)) : null);
     if (running) {
-      timer = window.setTimeout(() => void api.conformanceRun().then((n) => {
-        showRun(n);
-        if (n.status !== "running") {
+      timer = window.setTimeout(() => void poll().then((n) => {
+        if (n && !signal.aborted && n.status !== "running") {
           announce(t(n.status === "succeeded" ? "conf.finished" : "conf.failedShort"));
           void load();
         }
-      }).catch(() => showRun(null)), 3000);
+      }), 3000);
     }
   };
   void load();
-  api.conformanceRun().then(showRun).catch(() => showRun(null));
-  return () => window.clearTimeout(timer);
+  void poll();
+  return () => {
+    ctl.abort();
+    window.clearTimeout(timer);
+  };
 }
 
 interface CaseRow {
