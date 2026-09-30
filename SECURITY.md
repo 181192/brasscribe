@@ -17,7 +17,9 @@ The latest release is the one that gets fixes.
 
 ## How the project checks itself
 
-- CodeQL analyses the code and the workflows on every push and pull request (`security.yml`).
+- CodeQL analyses the code and the workflows on every push to `main`, weekly, and on pull requests
+  for the languages the pull request changes (`security.yml`). Pushes to other branches are not scanned
+  until they are in a pull request.
 - Dependabot opens updates for vulnerable and outdated dependencies (`.github/dependabot.yml`), and
   pull requests that add a dependency with a known high-severity vulnerability fail.
 - GitHub secret scanning with push protection blocks committed keys and tokens.

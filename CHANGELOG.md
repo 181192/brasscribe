@@ -92,7 +92,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Playback:** Refit the arrangement level and band estimate on the golden without held notes
 - **iPhone, iPad and Mac:** Level the band kit drum by drum and fit the band gain on arrangements
 
-<details><summary>Under the hood (43 changes: docs, tests, CI, build, refactoring)</summary>
+<details><summary>Under the hood (46 changes: docs, tests, CI, build, refactoring)</summary>
 
 
 - Cover Bandroom for macOS in the check tiers
@@ -114,8 +114,11 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Site:** Download 0.2.0, What do you play?, sound credits, correct pairing
 - Refusal codes, device installs in the release, reviewer wording
 - Mac install uses Open Anyway, since right-click › Open no longer bypasses Gatekeeper
+- Music stand for Windows Play
 - **Design:** Appearance setting spec (Match system, Light, Dark)
 - **Design:** Name the contrast setting per platform
+- Appearance setting for Windows Play
+- My instrument for Windows Play
 - **Windows:** Manual checklist for the Windows parity run
 - License the project under MIT OR Apache-2.0
 - Rewrite the root README for a public audience, add engine and Bandroom Mac READMEs
@@ -624,7 +627,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 
 - **Windows:** Lay out and draw notation off the UI thread, page by page
 
-<details><summary>Under the hood (120 changes: docs, tests, CI, build, refactoring)</summary>
+<details><summary>Under the hood (135 changes: docs, tests, CI, build, refactoring)</summary>
 
 
 - Add model research reports and architecture summary
@@ -670,6 +673,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - Video import extracts audio and keeps the picture
 - IPad screenshot with the synced video inset
 - **Band sounds:** Band SoundFont alphaTab checks follow the banked golden score; drums measured where they enter
+- **Core:** Composition dynamics and sections
 - Merge master
 - **Core:** Regenerate duration fixtures from the current reference
 - Conversion README with method, results and blockers; fix >2 GB ONNX export
@@ -681,18 +685,32 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - Ignore SwiftPM's local Xcode state in core/swift
 - **Design:** Design system, brand and voice guide, per-app implementation checklist
 - Usability review of the design mockups for non-technical players
+- Restyle in progress
+- Restyle screens onto the design system
+- **Windows:** Design system theme, overlay primitives, review and library view models
+- **Windows:** Fluent shell, the design screens and copy
 - Second usability review on restyled Android and Studio screens
 - Fix failing workflows and split checks from release builds
+- Review triage, bar on a staff, change note, key labels, nb part names
 - **Site:** Explain the transcription pipeline and design choices
+- Studio error states
 - **Studio:** Regenerate API types for evidence and run-edit endpoints
 - **iPhone, iPad and Mac:** Screenshots of every key screen, light and dark, on iPhone, iPad and Mac
 - Studio usability and accessibility review
 - Correct the registry path finding in the Studio review
+- **Android:** Notation overlay for the uncertainty marks and the ad-lib tint
+- **Android:** Share or print scope
+- **Android:** Review triage and the bar on a staff
+- **Android:** Keys, large text, status snackbar, nb part names, settings and help
+- **Android:** Tests for my part and conductor's score
+- **Android:** Lint and fixture test for part files
 - Third usability review on Android
 - Third usability review, Apple section
 - Re-save Mikkel golden output with calibrated confidence
 - Third usability review, Studio section and remaining P1s
+- **Windows:** Score titles, very unsure first, keep the rest of the bar
 - **Android:** The core keeps the review groups; drop the JSON workaround
+- Review layout for the third usability review
 - **iPhone, iPad and Mac:** Screenshots for the third review: populated Home, the new review, Norwegian main screens
 - Final usability pass, all P1s closed
 - **Site:** Refresh screenshots with Norwegian iPhone shots and the 83-place review; alt text follows
