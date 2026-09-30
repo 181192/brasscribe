@@ -296,6 +296,7 @@
           "title": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1291,6 +1292,7 @@
           "title": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1814,6 +1816,8 @@
           "ttl_s": {
             "anyOf": [
               {
+                "maximum": 86400.0,
+                "minimum": 30.0,
                 "type": "number"
               },
               {

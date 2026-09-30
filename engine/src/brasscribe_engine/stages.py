@@ -138,7 +138,7 @@ def arrange_layered(ctx: StageContext) -> None:
         # The footer on arranged parts is in the job's language when it has one (en otherwise).
         lang = ["--lang", ctx.params["lang"]] if ctx.params.get("lang") else []
         _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
-                "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render", *lang,
+                "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render", *lang,
                 *_arrangement_flags(ctx, "brasscribe_eval.arrange_layers_song"))
     _stable_musicxml(ctx)
 
@@ -148,7 +148,7 @@ def arrange_band(ctx: StageContext) -> None:
     i = ctx.inputs
     harmony = [str(v) for k, v in sorted(i.items()) if k.startswith("harmony")]
     args = ["--beats", str(i["beats"]), "--melody", str(i["melody"]), "--bass", str(i["bass"]),
-            "--harmony", *harmony, "--out", str(ctx.out), "--title", ctx.params["title"], "--no-render"]
+            "--harmony", *harmony, "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render"]
     if "melody_support" in i:
         args[4:4] = ["--melody-support", str(i["melody_support"])]
     _python(ctx, "brasscribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "brasscribe_eval.arrange_song"))

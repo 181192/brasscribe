@@ -482,7 +482,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.post("/v1/jobs/upload", response_model=m.Job, status_code=202, operation_id="createJobFromUpload",
               tags=["jobs"], dependencies=[Depends(auth)])
     def create_job_from_upload(request: Request, file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
-                               title: str | None = Form(None), render_audio: bool = Form(True),
+                               title: str | None = Form(None, max_length=200), render_audio: bool = Form(True),
                                lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
                                key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11),
                                seat: m.Seat | None = Form(None), reads: m.Reads | None = Form(None),
