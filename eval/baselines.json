@@ -458,11 +458,11 @@
       }
     },
     "quartet-audio": {
-      "source": "10-benchmark-results.md: Quartet arrangement, from recordings",
+      "source": "10-benchmark-results.md: Quartet arrangement, from recordings; alto and tenor recall since the melody is left out of the harmony by onset tolerance instead of rounded onsets",
       "metrics": {
         "mus.melody_kept": 0.848,
-        "mus.alto_recall_pc": 0.553,
-        "mus.tenor_recall_pc": 0.409,
+        "mus.alto_recall_pc": 0.534,
+        "mus.tenor_recall_pc": 0.426,
         "mus.bass_kept": 0.922,
         "mus.parallels_per_100": {
           "value": 5.42,
