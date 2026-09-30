@@ -32,7 +32,6 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Core:** Collision-aware quantization for the solo line
 - **Core:** Pitch-change onsets from the SwiftF0 contour for the solo line
 - **Design:** Add the hidden Pink palette to the tokens
-- **Eval:** Measure where fast notes and two-note alternations are lost
 - **Notation:** Write sustained two-note alternations as trills
 - **Playback:** A percussion part's midi-program picks the pop kit on every player
 - **Band sounds:** Fetch the trumpet vibrato sustains and concert percussion from VSCO 2 CE
@@ -71,7 +70,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Engine:** Braille for measures longer than a braille line
 - **Engine:** The rendered MP3 plays at the band's loudness under the apps' ceiling
 - **MusicXML:** Number every tie the writers write
-- **Pipeline:** Estimate a beat grid for takes with under two tracked beats
+- **Engine:** Estimate a beat grid for takes with under two tracked beats
 - **Play:** Pair alphaTab's ties and trills from the MusicXML
 - **Playback:** A drier hall on Apple and level parity with the new band sounds
 - **Playback:** Levels for the even velocity curve, and Apple seat trims
@@ -92,7 +91,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Windows:** Keep a changed note's original pitch with the score
 - Keep the fast-notes data out of data/eval, document the contour parameters
 
-<details><summary>Under the hood (46 changes: docs, tests, CI, build, refactoring)</summary>
+<details><summary>Under the hood (47 changes: docs, tests, CI, build, refactoring)</summary>
 
 
 - **Android:** Pin the band estimate to the promoted fast-notes golden
@@ -108,13 +107,14 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Design:** Describe the hidden Pink appearance
 - **Design:** Appearance setting spec (Match system, Light, Dark)
 - **Design:** Name the contrast setting per platform
-- **Dev:** The release process, bandroom-mac in the tiers, the VM's full-suite rule
+- **Developer tools:** The release process, bandroom-mac in the tiers, the VM's full-suite rule
+- **Eval:** Measure where fast notes and two-note alternations are lost
 - **Eval:** Fast-notes traps, real vibrato, separated and URMP sets, readability
 - **Eval:** Freeze the new controls and separated clips into the fast-notes suite
-- **Fast-notes:** Follow-up results; gate trills in the fast-notes suite
-- **Fast-notes:** Note the on-device reference change from tuplet runs
-- **Plan:** Fast-notes results, gates and the bars for the owner to check
-- **Plan,research:** Status lines checked against main
+- **Fast notes:** Follow-up results; gate trills in the fast-notes suite
+- **Fast notes:** Note the on-device reference change from tuplet runs
+- **Research:** Fast-notes results, gates and the bars for the owner to check
+- **Research:** Status lines checked against main
 - **Research:** The trumpet and fast-notes critiques, with the range and contour tests
 - **Site:** Download 0.2.0, What do you play?, sound credits, correct pairing
 - **Site:** Refresh the screenshots, with a Norwegian Mac shot, and the alt text follows
@@ -138,7 +138,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - License the project under MIT OR Apache-2.0
 - Rewrite the root README for a public audience, add engine and Bandroom Mac READMEs
 - Rerun readability baseline, difficulty table and conformance totals on the current golden
-- Drop the work email from the music package metadata
+- Tidy the music package metadata
 - Point the on-device reference at its sibling for the tuplet-run change
 - Merge the pop kit style signal into the sound follow-ups
 
@@ -169,7 +169,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Engine:** Optional bounded stage parallelism
 - **Engine:** Report the running build in /v1/health
 - **Engine:** Give each refused job option a code the apps can word
-- **Ffi:** Part_name_nb over UniFFI, the C ABI and .NET
+- **Core:** Part_name_nb over UniFFI, the C ABI and .NET
 - **Playback:** Play the recording at the band's loudness for the score
 - **Band sounds:** One playback loudness target and shared output-stage vectors
 - **Studio:** Keep Light or Dark under more contrast
@@ -177,7 +177,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 
 ### Fixes
 
-- **Adapters:** Decode m4a/mp4/mov with ffmpeg for swift-f0, basic-pitch and separator
+- **Engine:** Decode m4a/mp4/mov with ffmpeg for swift-f0, basic-pitch and separator
 - **Android:** The score shows on first open, not only after the music stand
 - **Android:** A phone on its side keeps the score in view
 - **Android:** The job event stream outlasts a quiet stage
@@ -216,14 +216,12 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Bandroom:** Plain Norwegian for the tools and separator lines
 - **Bandroom:** Make the workspace swap's commit point the journal delete
 - **Bandroom for Mac:** Update the installed engine workspace after an app update
-- **Bandroom-win:** Replace the engine workspace atomically after an app update
-- **Check:** Test against the current core and the branch's own files
+- **Bandroom for Windows:** Replace the engine workspace atomically after an app update
 - **Core:** Write a seat's mapped part in its own default clef
 - **Core:** Refuse a solo take for the percussion seat
 - **Core:** Label parts left without notes as empty, with no footer
 - **Core:** Keep a soloist phrase's contour when it goes past the solo range
 - **Core:** Split a soloist phrase past the range inside the solo range
-- **Core-artifacts:** Build from a fixed copy of the sources
 - **Engine:** Event streams wait in their own threads
 - **Engine:** GPU mutex that a crashed holder cannot leave locked
 - **Engine:** Processes sharing the file-hash index no longer collide
@@ -239,14 +237,11 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Studio:** Name the empty part source
 - **Studio:** Show the band a run is actually made for
 - **Studio:** Announce a Trumpet part as a trumpet, not by its transposition
-- **Test:** Report golden tests as skipped when their data is missing
 - **Windows:** Keep a marked note with the uncertain tune when linking the golden
 - **Windows:** Offer the full band only where it is made
 - **Windows:** Say «Demp stemmen min» for mute my part
 - **Windows:** Say engine and core failures in plain en and nb
 - **Windows:** Stay on the note after Change note → Save
-- Set the VM display mode, reach xcodegen over SSH, copy Xcode without a share
-- Stop a VM test run when the host build fails
 - Rerun the Python conformance side when its sources changed
 
 ### Performance
@@ -260,8 +255,8 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Bandroom:** Check setup off the UI thread and remember when it is complete
 - **Core:** Separation check without copies of the stems
 - **Engine:** List jobs from cached manifest summaries
-- **Ffi:** Move the stems into the band arrangement instead of cloning them
-- **Ffi:** Borrow the caller's stems and contour in the band arrangement
+- **Core:** Move the stems into the band arrangement instead of cloning them
+- **Core:** Borrow the caller's stems and contour in the band arrangement
 - **Studio:** One synthesizer and SoundFont per page
 - **Studio:** Keep the band SoundFont across visits
 - **Windows:** Read the band SoundFont in the background, not before the first frame
@@ -270,7 +265,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Windows:** Read cached layer stems off the UI thread
 - Build the UI tests on the host and split them over two VMs
 
-<details><summary>Under the hood (40 changes: docs, tests, CI, build, refactoring)</summary>
+<details><summary>Under the hood (45 changes: docs, tests, CI, build, refactoring)</summary>
 
 
 - **Android:** Landscape screenshots with the controls group in the ⋯ sheet
@@ -282,13 +277,15 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **iPhone, iPad and Mac:** Read the stand's position as the Mac reports it, skip tooltips in the audit
 - **iPhone, iPad and Mac:** Read the change-note card's words as label or value on macOS
 - **Apps:** Pin the empty source, the default reading and «Demp» wording
-- **Check:** Compare only the Rust side of the Mikkel cases in the fast tier
-- **Mac-vm:** Keep the VM Dock's height fixed, document the UI test findings
-- **Perf:** Probes for the performance audit
-- **Plan:** Trumpet as a soloist and a seat, with instrument facts from the core
-- **Plan:** Trumpet plan scoped to the soloist range and a trumpet seat
-- **Plan:** Trumpet plan with the soloist rule as built and the owner defaults
-- **Plan:** Trumpet plan with the step 2 and 3 review answers
+- **Checks:** Compare only the Rust side of the reference cases in the fast tier
+- **Checks:** Test against the current core and the branch's own files
+- **Core:** Build from a fixed copy of the sources
+- **Mac VM:** Keep the VM Dock's height fixed, document the UI test findings
+- **Performance:** Probes for the performance audit
+- **Research:** Trumpet as a soloist and a seat, with instrument facts from the core
+- **Research:** Trumpet plan scoped to the soloist range and a trumpet seat
+- **Research:** Trumpet plan with the soloist rule as built and the owner defaults
+- **Research:** Trumpet plan with the step 2 and 3 review answers
 - **Research:** Performance audit across engine, core, Studio and apps
 - **Research:** Start-up per app, network and FFI payloads in the performance audit
 - **Research:** Engine job list, GPU wait and stage parallelism results
@@ -298,6 +295,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Site:** Link How it works from every page's menu
 - **Band sounds:** Playback loudness target, per-app stages and measured levels
 - **Studio:** Rebuild the static bundle
+- **Tests:** Report golden tests as skipped when their data is missing
 - **Windows:** Golden note count after the cornet-limit golden update
 - **Windows:** Mark the three multi-second golden tests Category=Slow
 - **Windows:** A Trumpet part plays the Solo Cornet's sound without a mapping
@@ -308,9 +306,11 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - Point each README at the test tiers
 - Describe the verification tiers, worktree setup and measurements
 - Run the macOS UI tests in a headless Tart VM
+- Set the VM display mode, reach xcodegen over SSH, copy Xcode without a share
 - Place the macOS VM UI tests in tier 3 of the verify guide
 - Queue macOS VM runs on one lock and keep the full suite for releases
 - Cover a changed note staying open, and remember it across launches
+- Stop a VM test run when the host build fails
 - Save the soloist golden next to the current one
 - Promote the soloist golden
 
@@ -342,7 +342,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Android:** Stoppable listen-to-bar, connection status, pair once
 - **Android:** Band sounds by default, one resolver for every part, no chopped notes
 - **Android:** Say when the band sounds are missing, and fade out on stop and pause
-- **Android:** **Breaking:** Remove the built-in Mikkel demo
+- **Android:** **Breaking:** Remove the built-in reference demo
 - **Android:** Offer the brass quartet as a third output
 - **Android:** Music stand with pages, a hiding control layer and rotation that keeps playing
 - **Android:** Appearance setting (Match system, Light, Dark)
@@ -355,7 +355,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **iPhone, iPad and Mac:** Keychain credentials, pairing link and connection state machine
 - **iPhone, iPad and Mac:** Stoppable Listen to this bar, connection status row and pair once
 - **iPhone, iPad and Mac:** Say above the player when the band sounds are missing
-- **iPhone, iPad and Mac:** **Breaking:** Remove the built-in Mikkel demo
+- **iPhone, iPad and Mac:** **Breaking:** Remove the built-in reference demo
 - **iPhone, iPad and Mac:** Offer the brass quartet as a third output
 - **iPhone, iPad and Mac:** Bundle the phone band SoundFont on iOS
 - **iPhone, iPad and Mac:** Band output stage with make-up gain and a soft limiter
@@ -367,11 +367,10 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Bandroom:** Show the wrong-code lockout in Pair a phone on Windows
 - **Bandroom:** Bundle the band SoundFont and serve it to Studio
 - **Bandroom for Mac:** Add Remove Brasscribe from this Mac to the More menu
-- **Bandroom-macos:** Appearance setting (Match system, Light, Dark)
-- **Bandroom-win:** Download the models, name what's missing, name shown to phones
+- **Bandroom for Mac:** Appearance setting (Match system, Light, Dark)
+- **Bandroom for Windows:** Download the models, name what's missing, name shown to phones
 - **Bandroom for Windows:** Appearance setting (Match system, Light, Dark)
-- **Bindings:** Regenerate Swift, Kotlin and C bindings; platform tests for humanization and the talking score
-- **Ci:** Add build/test workflows and semver-tag release pipeline
+- **Core:** Regenerate Swift, Kotlin and C bindings; platform tests for humanization and the talking score
 - **Core:** Rust port of the symbolic pipeline with a conformance runner
 - **Core:** UniFFI and C bindings with Swift, Android and .NET packages
 - **Core:** Port beat cleanup, key plans, dynamics, rehearsal marks, energy gate and part splitting
@@ -385,19 +384,15 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Design:** Play and Studio mockups rendered from the generated tokens
 - **Design:** Apply the usability review to the spec, tokens and mockups
 - **Design:** Bandroom mockups, state icons and panel components
-- **Dotnet:** Band arrangement with stems, humanization and talking score; vector tests
+- **Windows:** Band arrangement with stems, humanization and talking score; vector tests
 - **Engine:** Pair each device once with its own long-lived credential
 - **Engine:** Name the engine after the computer's user-visible name
 - **Engine:** Device presence, /v1/status, computer name and local-trust switch
 - **Engine:** Name the paired device that started each job
 - **Engine:** Report the wrong-code lockout in the pairing state
-- **Ffi:** Stems-aware band arrangement, humanization and talking score
-- **Ffi:** Arrangement options (lineup, difficulty, key, transposition) over UniFFI and the C ABI
-- **Ffi:** Contour voicing confidence over UniFFI, the C ABI and .NET; regenerate bindings
-- **QA:** MusicXML readability heuristics with CI gate
-- **QA:** Report accidental density and mixed sharp/flat bars
-- **QA:** Colour tokens with WCAG contrast and CVD check
-- **QA:** Count a "?" words direction at a note's onset as uncertainty shape encoding
+- **Core:** Stems-aware band arrangement, humanization and talking score
+- **Core:** Arrangement options (lineup, difficulty, key, transposition) over UniFFI and the C ABI
+- **Core:** Contour voicing confidence over UniFFI, the C ABI and .NET; regenerate bindings
 - **Site:** Bilingual promotion page and user guide for GitHub Pages
 - **Site:** Show real app screenshots in device and window frames
 - **Site:** Use the restyled iPhone, iPad and macOS screenshots
@@ -451,7 +446,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - Add brass-band instrument model with range validation; record melody extraction results
 - Ps13 pitch spelling with key estimation, gap filling, confidence-flagged melody line
 - Canonical score model, minimal deterministic arranger, transposing band export with round-trip test
-- Harmony reduction and end-to-end song arrangement; first Mikkel brass-band draft
+- Harmony reduction and end-to-end song arrangement; first reference brass-band draft
 - Write instrument-sound ids, MuseScore round-trip gate, safer tick origin and key in composition
 - Layered solo-with-band arrangement for full brass band with percussion
 - SwiftF0 adapter and three-way solo vote; SwiftF0-spine rule for solo lines
@@ -567,15 +562,12 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Bandroom:** Tray icon on a hidden tool window, Enter only opens the flyout
 - **Bandroom:** Bundle every pyproject.toml; recopy the workspace when the app's sources change
 - **Bandroom for Mac:** Download the models, name what is missing, find a hidden menu-bar mark
-- **Bandroom-macos:** Name the settings pickers once, by their section
+- **Bandroom for Mac:** Name the settings pickers once, by their section
 - **Build:** Change trigger branch to main
-- **Ci:** Run Apple tests on the newest iPhone Pro simulator with Xcode 26.6 selected
-- **Conformance:** Meter reference cases use the module numpy; regenerate bindings
 - **Core:** Reproduce NumPy's argsort order in pitch spelling
 - **Design:** 20% cursor tint as specified, DTCG colour objects for shadows, counts
 - **Engine:** Keep the rotating token valid until its replacement is used
-- **Ml:** Transcode beat_this/muscriptor input to wav via ffmpeg
-- **QA:** Make the talking-score grammar produce every vector; add readability baseline
+- **Engine:** Transcode beat_this/muscriptor input to wav via ffmpeg
 - **Site:** Float guide phone shots beside the text and keep nb percentages together
 - **Site:** Qualify record-what's-playing by platform and match copy to the shots
 - **Site:** Correct the research article after fact-check
@@ -627,7 +619,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 
 - **Windows:** Lay out and draw notation off the UI thread, page by page
 
-<details><summary>Under the hood (135 changes: docs, tests, CI, build, refactoring)</summary>
+<details><summary>Under the hood (145 changes: docs, tests, CI, build, refactoring)</summary>
 
 
 - **Accessibility:** WCAG 2.2 AA and EN 301 549 checklist for Play and Studio
@@ -664,6 +656,9 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Bandroom:** Model downloads, hidden menu-bar mark and the name shown to phones
 - **Bandroom for Mac:** Ship pinned MSST code for Mega-53, bokmål for the new strings
 - **Bandroom for Windows:** Use Old Hundredth as the sample job title
+- **CI:** Add build/test workflows and semver-tag release pipeline
+- **CI:** Run Apple tests on the newest iPhone Pro simulator with Xcode 26.6 selected
+- **Conformance:** Meter reference cases use the module numpy; regenerate bindings
 - **Core:** Unit fixtures from the Python reference for spelling, quantize, argsort and durations
 - **Core:** Free-time and duration fixtures, composition read-back checks, options in the C ABI
 - **Core:** Composition dynamics and sections
@@ -679,11 +674,16 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Design:** Apply the music stand review
 - **Design:** Appearance setting spec (Match system, Light, Dark)
 - **Design:** Name the contrast setting per platform
-- **Plan:** Pairing once per device, and reaching the engine from outside
-- **Plan:** Name changes by what they do; rotation grace, tailnet and Windows migration notes
+- **Research:** Pairing once per device, and reaching the engine from outside
+- **Research:** Name changes by what they do; rotation grace, tailnet and Windows migration notes
+- **QA:** MusicXML readability heuristics with CI gate
+- **QA:** Report accidental density and mixed sharp/flat bars
+- **QA:** Colour tokens with WCAG contrast and CVD check
 - **QA:** Screen-reader and keyboard acceptance scripts for Play and Studio
-- **QA:** Readability review of the Mikkel golden output
+- **QA:** Readability review of the reference golden output
 - **QA:** Tighten horn range wording
+- **QA:** Make the talking-score grammar produce every vector; add readability baseline
+- **QA:** Count a "?" words direction at a note's onset as uncertainty shape encoding
 - **Research:** Overlapping instruments and in-between tones
 - **Site:** Explain the transcription pipeline and design choices
 - **Site:** Refresh screenshots with Norwegian iPhone shots and the 83-place review; alt text follows
@@ -710,18 +710,18 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - Add model research reports and architecture summary
 - Verify eval dataset and checkpoints, add recognition/embedding picks
 - Record architecture decision from benchmark evidence
-- Record Mikkel performance setup from live video
+- Record reference performance setup from live video
 - Add build plan for the Studio workbench and Play musician apps
 - Revise app plan for native per-platform apps and non-commercial licensing; add external comparison
 - Confirm app names and Linux coverage via Studio
 - Turn capture into a Swift package with a reusable process-tap recorder
-- App unit tests, UI test that plays a bar of Mikkel, and accessibility audit
+- App unit tests, UI test that plays a bar of reference, and accessibility audit
 - WKWebView side of the notation spike, hosted in the macOS app
 - Pixi workspace for the engine and every model adapter
 - Free-time benchmark and composition diff
 - Correct amendment history of the universal design regulation
 - Linux-aarch64 platform, conda-forge torchaudio/torchvision and a Linux Docker image
-- Re-save Mikkel golden output after free-time, duration and readability changes
+- Re-save reference golden output after free-time, duration and readability changes
 - DeleteRun path-traversal check accepts router rejection
 - Check the re-saved golden rewrites byte-identical; keep the legacy-format check on the previous golden
 - Lower URMP uncomfortable-note baseline to the measured 1.0
@@ -735,6 +735,8 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - Conversion README with method, results and blockers; fix >2 GB ONNX export
 - Record free-time, duration, bar-line, difficulty, readability, conformance and sound results
 - Sound, room, offline solo and video notes in the Apple README
+- Revert "Merge solo meter inference and bar-phase tracking"
+- Reapply "Merge solo meter inference and bar-phase tracking"
 - Document how to build and run every component
 - Ignore SwiftPM's local Xcode state in core/swift
 - Usability review of the design mockups for non-technical players
@@ -748,7 +750,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - Correct the registry path finding in the Studio review
 - Third usability review on Android
 - Third usability review, Apple section
-- Re-save Mikkel golden output with calibrated confidence
+- Re-save reference golden output with calibrated confidence
 - Third usability review, Studio section and remaining P1s
 - Review layout for the third usability review
 - Final usability pass, all P1s closed
@@ -762,7 +764,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - List the quartet lineup and arrange_musicxml_with in the READMEs
 - Add the Old Hundredth screenshot fixture, arranged by the core
 - Use Old Hundredth as the example title and drop the demo from design, QA and site
-- Re-save the Mikkel golden output with the cornet's playable top
+- Re-save the reference golden output with the cornet's playable top
 - Run only fast Linux checks on push; platform builds on release or by hand
 - A release tag runs the checks once, inside the release
 
