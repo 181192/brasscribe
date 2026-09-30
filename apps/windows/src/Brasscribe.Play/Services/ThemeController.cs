@@ -23,6 +23,7 @@ public sealed class ThemeController
     private readonly SettingsViewModel _settings;
     private readonly DispatcherQueue _queue;
     private readonly AccessibilitySettings _accessibility = new();
+    private readonly UISettings _ui = new();
     private readonly List<Window> _windows = [];
     private readonly RootTheme? _override;
     private const string PinkSource = "ms-appx:///Themes/BrasscribePinkTheme.xaml";
@@ -35,8 +36,10 @@ public sealed class ThemeController
         _queue = queue;
         _override = forced switch { "dark" => RootTheme.Dark, "light" => RootTheme.Light, _ => null };
         _settings.HighContrast = _accessibility.HighContrast;
-        // Raised off the UI thread.
-        _accessibility.HighContrastChanged += (s, _) => _queue.TryEnqueue(() => _settings.HighContrast = s.HighContrast);
+        // AccessibilitySettings.HighContrastChanged throws "Element not found" in an unpackaged app on
+        // current Windows 11; UISettings.ColorValuesChanged also fires when a contrast theme is turned on
+        // or off. Raised off the UI thread.
+        _ui.ColorValuesChanged += (_, _) => _queue.TryEnqueue(() => _settings.HighContrast = _accessibility.HighContrast);
         _settings.PropertyChanged += OnSettingsChanged;
         ApplyPalette();
     }

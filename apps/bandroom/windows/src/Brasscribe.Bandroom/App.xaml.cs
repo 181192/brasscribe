@@ -38,6 +38,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private PairWindow? _pairWindow;
     private SettingsWindow? _settingsWindow;
     private Windows.UI.ViewManagement.AccessibilitySettings _accessibility = null!;
+    private Windows.UI.ViewManagement.UISettings _uiSettings = null!;
     private AppearanceViewModel _appearance = null!;
     private ThemedWindows _themes = null!;
     private DemoEngine? _demoEngine;
@@ -141,7 +142,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _appearance = new AppearanceViewModel(_s, store, _accessibility.HighContrast, forced);
         _themes = new ThemedWindows(_appearance.Resolved);
         _appearance.ThemeChanged += _themes.Set;
-        _accessibility.HighContrastChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast);
+        // AccessibilitySettings.HighContrastChanged throws "Element not found" in an unpackaged app on
+        // current Windows 11; UISettings.ColorValuesChanged also fires when a contrast theme is turned on or off.
+        _uiSettings = new Windows.UI.ViewManagement.UISettings();
+        _uiSettings.ColorValuesChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast);
     }
 
     // ----- Real mode -----
