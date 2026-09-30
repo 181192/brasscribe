@@ -14,7 +14,7 @@ from the preview: a `feat` since the last release means a minor bump, only fixes
 
 The pushed tag starts `.github/workflows/release.yml`: the checks, a build per platform, then a
 GitHub release with the files, `SHA256SUMS` and notes generated from the commits (new features and
-fixes by app, the rest folded away, first-time contributors named). The commit messages are the
+fixes sorted and labelled by app, the rest folded away, first-time contributors named). The commit messages are the
 release notes, so write them for the people who use the apps. If a tag push does not start the
 workflow, start it on the tag: `gh workflow run release.yml --ref vX.Y.Z`.
 

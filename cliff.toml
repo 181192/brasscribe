@@ -2,7 +2,8 @@
 #   git cliff --unreleased                 what the next release would say
 #   git cliff --latest --strip header      the notes of the latest release (what CI publishes)
 #   git cliff -o CHANGELOG.md              the whole changelog
-# Features and fixes come first, grouped by the scope in the commit (the app or part it touches);
+# Features and fixes come first, sorted by the scope in the commit (the app or part it touches) and
+# labelled with it; commits without a scope come last;
 # housekeeping (docs, tests, CI, build, refactors) is folded away at the end.
 
 [remote.github]
@@ -27,7 +28,7 @@ body = """
 {%- endmacro -%}
 
 {%- macro commit_line(commit) -%}
-- {% if commit.scope %}**{{ self::scope_label(scope=commit.scope) }}:** {% endif %}\
+- {% if commit.scope and commit.scope != "~" %}**{{ self::scope_label(scope=commit.scope) }}:** {% endif %}\
 {% if commit.breaking %}**Breaking:** {% endif %}\
 {{ commit.message | split(pat="\n") | first | trim | upper_first }}\
 {% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/181192/brasscribe/pull/{{ commit.remote.pr_number }})){% endif %}\
@@ -43,7 +44,7 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 {%- if group in main_groups %}
 ### {{ group | striptags | trim }}
-{% for commit in commits %}
+{% for commit in commits | sort(attribute="scope") %}
 {{ self::commit_line(commit=commit) }}
 {%- endfor %}
 {% endif -%}
@@ -52,7 +53,7 @@ body = """
 {% if other | length > 0 %}
 <details><summary>Under the hood ({{ other | length }} change{{ other | length | pluralize }}: docs, tests, CI, build, refactoring)</summary>
 
-{% for commit in other %}
+{% for commit in other | sort(attribute="scope") %}
 {{ self::commit_line(commit=commit) }}
 {%- endfor %}
 
@@ -81,10 +82,10 @@ sort_commits = "oldest"
 commit_parsers = [
   { message = "^chore\\(release\\)", skip = true },
   { message = "^Merge ", skip = true },
-  { message = "^feat", group = "<!-- 0 -->New features" },
-  { message = "^fix", group = "<!-- 1 -->Fixes" },
-  { message = "^perf", group = "<!-- 2 -->Performance" },
-  { message = "^(docs|test|ci|build|refactor|style|chore|revert)", group = "<!-- 9 -->Under the hood" },
+  { message = "^feat", group = "<!-- 0 -->New features", default_scope = "~" },
+  { message = "^fix", group = "<!-- 1 -->Fixes", default_scope = "~" },
+  { message = "^perf", group = "<!-- 2 -->Performance", default_scope = "~" },
+  { message = "^(docs|test|ci|build|refactor|style|chore|revert)", group = "<!-- 9 -->Under the hood", default_scope = "~" },
   # Any other Conventional Commit type (e.g. `deps`) is folded away too, never dropped.
-  { message = ".*", group = "<!-- 9 -->Under the hood" },
+  { message = ".*", group = "<!-- 9 -->Under the hood", default_scope = "~" },
 ]
