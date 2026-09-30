@@ -13,6 +13,7 @@
 
 use crate::midi::RawNote;
 use crate::model::Note;
+use crate::py;
 
 pub const MIN_NOTES: usize = 7;
 pub const MAX_IOI: f64 = 0.15;
@@ -72,7 +73,7 @@ pub fn runs(pitches: &[i32], linked: &[bool], held: &[bool]) -> Vec<(usize, usiz
 /// The median IOI of notes i..=j (the upper one of an even count) is at most MAX_IOI.
 pub fn fast(onsets: &[f64], i: usize, j: usize) -> bool {
     let mut d: Vec<f64> = (i..j).map(|k| onsets[k + 1] - onsets[k]).collect();
-    d.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    d.sort_by(py::fcmp);
     d[d.len() / 2] <= MAX_IOI
 }
 
@@ -90,7 +91,7 @@ pub fn timed_runs(pitches: &[i32], onsets: &[f64], offsets: &[f64]) -> Vec<(usiz
 /// the run stay.
 pub fn with_trills(line: &[RawNote], split: &[RawNote]) -> Vec<RawNote> {
     let mut s = split.to_vec();
-    s.sort_by(|a, b| a.onset.partial_cmp(&b.onset).unwrap().then(a.pitch.cmp(&b.pitch)));
+    s.sort_by(|a, b| py::fcmp(&a.onset, &b.onset).then(a.pitch.cmp(&b.pitch)));
     let p: Vec<i32> = s.iter().map(|n| n.pitch).collect();
     let on: Vec<f64> = s.iter().map(|n| n.onset).collect();
     let off: Vec<f64> = s.iter().map(|n| n.offset).collect();
@@ -128,7 +129,7 @@ pub fn with_trills(line: &[RawNote], split: &[RawNote]) -> Vec<RawNote> {
         out.extend(pieces);
     }
     out.extend(spans);
-    out.sort_by(|a, b| a.onset.partial_cmp(&b.onset).unwrap().then(a.pitch.cmp(&b.pitch)));
+    out.sort_by(|a, b| py::fcmp(&a.onset, &b.onset).then(a.pitch.cmp(&b.pitch)));
     out
 }
 

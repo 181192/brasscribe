@@ -1,5 +1,6 @@
 <!-- Title: a Conventional Commit, e.g. `fix(android): keep the stand page when rotating`.
-     `feat` and `fix` titles become release notes: write them for the people who use the apps. -->
+     The pull request is squash-merged: the title becomes the commit on main and a line in the release
+     notes, so write `feat` and `fix` titles for the people who use the apps. -->
 
 ## What and why
 

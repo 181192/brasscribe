@@ -29,7 +29,7 @@ pub fn harmony_slots_beat(notes: &[Note], end_tick: i64, max_pcs: usize, rel_thr
             Vec::new()
         } else {
             let mut ranked: Vec<usize> = (0..12).collect();
-            ranked.sort_by(|&a, &b| (-w[a]).partial_cmp(&-w[b]).unwrap());
+            ranked.sort_by(|&a, &b| crate::py::fcmp(&-w[a], &-w[b]));
             let mut v: Vec<i32> = ranked.iter().take(max_pcs).filter(|&&pc| w[pc] >= rel_threshold * top).map(|&pc| pc as i32).collect();
             v.sort();
             v

@@ -977,7 +977,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_song() and 0xFFFF) != 47821) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() and 0xFFFF) != 1449) {
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() and 0xFFFF) != 53243) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_core_version() and 0xFFFF) != 61046) {
@@ -1010,7 +1010,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_brasscribe_ffi_checksum_func_seats() and 0xFFFF) != 38330) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 24205) {
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 55508) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_humanize_part() and 0xFFFF) != 14286) {
@@ -4677,9 +4677,11 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
 
         /**
          * Beat times at the notated metrical level (doubled when the tracker locked onto half notes).
-         */ fun `chooseMetricalLevel`(`beatTimes`: List<kotlin.Double>, `onsets`: List<kotlin.Double>): List<kotlin.Double> {
+         * Invalid when a beat time or onset is not a number or the beat times do not increase.
+         */
+    @Throws(CoreException::class) fun `chooseMetricalLevel`(`beatTimes`: List<kotlin.Double>, `onsets`: List<kotlin.Double>): List<kotlin.Double> {
             return FfiConverterSequenceDouble.lift(
-    uniffiRustCall() { _status ->
+    uniffiRustCallWithError(CoreException) { _status ->
     UniffiLib.uniffi_brasscribe_ffi_fn_func_choose_metrical_level(
     
         
@@ -4840,10 +4842,12 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     
 
         /**
-         * Spell MIDI pitches (ps13) from their context; onsets in beats.
-         */ fun `spellPitches`(`onsetsBeats`: List<kotlin.Double>, `pitches`: List<kotlin.Int>): List<SpelledPitch> {
+         * Spell MIDI pitches (ps13) from their context; onsets in beats, one per pitch. Invalid when
+         * the lists differ in length or an onset is not a number.
+         */
+    @Throws(CoreException::class) fun `spellPitches`(`onsetsBeats`: List<kotlin.Double>, `pitches`: List<kotlin.Int>): List<SpelledPitch> {
             return FfiConverterSequenceTypeSpelledPitch.lift(
-    uniffiRustCall() { _status ->
+    uniffiRustCallWithError(CoreException) { _status ->
     UniffiLib.uniffi_brasscribe_ffi_fn_func_spell_pitches(
     
         

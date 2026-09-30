@@ -3917,9 +3917,10 @@ public func arrangeSong(melody: Data, melodySupport: Data?, bass: Data, harmony:
 }
 /**
  * Beat times at the notated metrical level (doubled when the tracker locked onto half notes).
+ * Invalid when a beat time or onset is not a number or the beat times do not increase.
  */
-public func chooseMetricalLevel(beatTimes: [Double], onsets: [Double]) -> [Double]  {
-    return try!  FfiConverterSequenceDouble.lift(try! rustCall() {
+public func chooseMetricalLevel(beatTimes: [Double], onsets: [Double])throws  -> [Double]  {
+    return try  FfiConverterSequenceDouble.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
     uniffi_brasscribe_ffi_fn_func_choose_metrical_level(
         FfiConverterSequenceDouble.lower(beatTimes),
@@ -4043,10 +4044,11 @@ public func seats() -> [SeatInfo]  {
 })
 }
 /**
- * Spell MIDI pitches (ps13) from their context; onsets in beats.
+ * Spell MIDI pitches (ps13) from their context; onsets in beats, one per pitch. Invalid when
+ * the lists differ in length or an onset is not a number.
  */
-public func spellPitches(onsetsBeats: [Double], pitches: [Int32]) -> [SpelledPitch]  {
-    return try!  FfiConverterSequenceTypeSpelledPitch.lift(try! rustCall() {
+public func spellPitches(onsetsBeats: [Double], pitches: [Int32])throws  -> [SpelledPitch]  {
+    return try  FfiConverterSequenceTypeSpelledPitch.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
     uniffi_brasscribe_ffi_fn_func_spell_pitches(
         FfiConverterSequenceDouble.lower(onsetsBeats),
@@ -4137,7 +4139,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_brasscribe_ffi_checksum_func_arrange_song() != 47821) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() != 1449) {
+    if (uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() != 53243) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_core_version() != 61046) {
@@ -4170,7 +4172,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_brasscribe_ffi_checksum_func_seats() != 38330) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_spell_pitches() != 24205) {
+    if (uniffi_brasscribe_ffi_checksum_func_spell_pitches() != 55508) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_humanize_part() != 14286) {

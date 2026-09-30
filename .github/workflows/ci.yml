@@ -61,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
+      - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
         with:
           pixi-version: v0.81.0
           environments: default
@@ -83,7 +83,7 @@ jobs:
       # ChoraleBricks annotations (CC-BY 4.0) read from the Zenodo archive with range
       # requests and checked against eval/fixtures/choralebricks-pins.json, plus our own
       # committed model outputs from eval/fixtures. No dataset audio is downloaded.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ci-data
           key: ci-data-${{ hashFiles('eval/fixtures/**', 'eval/brasscribe_eval/ci_data.py', 'eval/brasscribe_eval/choralebricks.py') }}
@@ -118,6 +118,9 @@ jobs:
 
       - name: Rust core tests (and the host library the .NET tests load)
         working-directory: core
+        # Optimised like a release, but an integer overflow panics instead of wrapping silently.
+        env:
+          CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS: "true"
         run: |
           cargo test --release
           cargo build --release -p brasscribe-ffi

@@ -2,7 +2,7 @@
 // bindings (src/main/kotlin, from core/scripts/bindings.sh) and the native
 // libraries per ABI (src/main/jniLibs, from core/scripts/build-all.sh).
 plugins {
-    id("com.android.library") version "9.3.3"
+    id("com.android.library") version "9.4.1"
 }
 
 android {
@@ -22,5 +22,5 @@ android {
 
 dependencies {
     // UniFFI's Kotlin bindings call the native library through JNA.
-    implementation("net.java.dev.jna:jna:5.17.0@aar")
+    implementation("net.java.dev.jna:jna:5.19.1@aar")
 }

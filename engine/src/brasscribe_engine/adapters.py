@@ -140,9 +140,10 @@ def kill_tree(proc: subprocess.Popen) -> None:
             pass
         proc.kill()
     else:
-        # Stop the whole tree first, so nothing in it starts another process while it is being killed.
+        # Stop the whole tree first, so nothing in it starts another process while it is being killed: walk it
+        # again until a walk finds nothing new (a process started just before its parent stopped).
         stopped: set[int] = set()
-        for _ in range(3):
+        for _ in range(10):
             new = [p for p in [proc.pid, *_descendants(proc.pid)] if p not in stopped]
             if not new:
                 break
@@ -253,6 +254,8 @@ class AdapterRegistry:
         """Run an adapter; returns wall-clock seconds, including any wait for the GPU mutex, which is
         also reported to `waited` (heavy adapters only). Setting `cancel` stops it (AdapterCancelled)."""
         a = self.get(name)
+        if cancel is not None and cancel.is_set():
+            raise AdapterCancelled(f"{name} not started: the job was cancelled")
         if a.heavy and not allow_heavy:
             raise HeavyRunRefused(f"{name} would run on {src.name}, but heavy runs are disabled (cache miss)")
         runner = self.root / "run_adapter.py"
