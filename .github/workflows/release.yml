@@ -67,6 +67,9 @@ jobs:
           pattern: dist-*
           merge-multiple: true
 
+      - name: Checksums
+        run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
+
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
