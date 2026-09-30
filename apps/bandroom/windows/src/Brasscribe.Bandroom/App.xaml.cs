@@ -601,12 +601,18 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         else if (problem is ProblemKind.MissingDownload or ProblemKind.UpdateFailed) FinishSetup();
     }
 
-    public async Task RemoveDeviceAsync(string deviceId)
+    public async Task<bool> RemoveDeviceAsync(string deviceId)
     {
-        if (CurrentApi is { } api)
+        if (CurrentApi is not { } api) return false;
+        try
         {
-            try { await api.RemoveDeviceAsync(deviceId); }
-            catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException) { _log?.Write(e.Message); }
+            await api.RemoveDeviceAsync(deviceId);
+            return true;
+        }
+        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            _log?.Write("bandroom: removing a device: " + e.Message);
+            return false;
         }
     }
 

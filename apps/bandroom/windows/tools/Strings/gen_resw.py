@@ -56,6 +56,7 @@ ROWS = [
     ("Devices_Remove", "Remove", "Fjern"),
     ("Devices_Remove_A11y", "Remove {0}", "Fjern {0}"),  # (+) the button's accessible name
     ("Devices_Removed", "{0} is removed.", "{0} er fjernet."),  # (+) announced
+    ("Devices_Remove_Failed", "{0} couldn't be removed. Try again.", "{0} ble ikke fjernet. Prøv igjen."),  # (+)
     ("Devices_Empty", "No phones yet. Pair a phone to make full-band scores from it.", "Ingen telefoner ennå. Koble til en telefon for å lage partitur for fullt band fra den."),
     ("Back", "Back", "Tilbake"),
     ("Close", "Close", "Lukk"),  # (+)

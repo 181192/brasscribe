@@ -60,7 +60,9 @@ internal sealed class FakeActions : IBandroomActions
     public void CopyText(string text) => Calls.Add("copy:" + text);
     public void FinishSetup() => Calls.Add("setup");
     public void Fix(ProblemKind problem) => Calls.Add("fix:" + problem);
-    public Task RemoveDeviceAsync(string deviceId) { Calls.Add("remove:" + deviceId); return Task.CompletedTask; }
+    /// <summary>What removing a device answers: true (removed) unless a test says otherwise.</summary>
+    public bool RemoveSucceeds { get; set; } = true;
+    public Task<bool> RemoveDeviceAsync(string deviceId) { Calls.Add("remove:" + deviceId); return Task.FromResult(RemoveSucceeds); }
 }
 
 internal sealed class RecordingAnnouncer : IAnnouncer

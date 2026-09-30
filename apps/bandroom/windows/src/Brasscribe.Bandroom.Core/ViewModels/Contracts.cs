@@ -20,7 +20,8 @@ public interface IBandroomActions
     void CopyText(string text);
     void FinishSetup();
     void Fix(ProblemKind problem);
-    Task RemoveDeviceAsync(string deviceId);
+    /// <summary>False when the device couldn't be removed (it stays paired).</summary>
+    Task<bool> RemoveDeviceAsync(string deviceId);
 }
 
 public sealed class NullAnnouncer : IAnnouncer

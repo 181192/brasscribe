@@ -173,6 +173,57 @@ public sealed class FlyoutViewModelTests
     }
 
     [Fact]
+    public async Task A_removal_that_fails_keeps_the_row_and_says_so()
+    {
+        var vm = Make();
+        vm.Apply(Snap());
+        var now = _time.GetUtcNow();
+        vm.ApplyDevices([
+            new DeviceInfo("d1", "Kari's iPhone", "ios", "2026-09-01T10:00:00Z", now.ToString("O"), null, true),
+            new DeviceInfo("d2", "Band iPad", "ios", "2026-09-01T10:00:00Z", now.ToString("O"), null, false),
+        ], now);
+        var foci = new List<string>();
+        vm.FocusRequested += foci.Add;
+        vm.ShowDevicesCommand.Execute(null);
+        _actions.RemoveSucceeds = false;
+
+        vm.RemoveDeviceCommand.Execute(vm.Devices[1]);
+        await vm.ConfirmPrimaryCommand.ExecuteAsync(null);
+        Assert.Equal(2, vm.Devices.Count);
+        Assert.Equal(FlyoutView.Devices, vm.View);
+        Assert.Equal("Row:1", foci[^1]);
+        Assert.True(vm.HasDevicesNotice);
+        Assert.Equal("Band iPad couldn't be removed. Try again.", vm.DevicesNotice);
+        Assert.DoesNotContain("Band iPad is removed.", _said.Said);
+        Assert.Contains("Band iPad couldn't be removed. Try again.", _said.Said);
+
+        // It works the second time: the line goes.
+        _actions.RemoveSucceeds = true;
+        vm.RemoveDeviceCommand.Execute(vm.Devices[1]);
+        await vm.ConfirmPrimaryCommand.ExecuteAsync(null);
+        Assert.Single(vm.Devices);
+        Assert.False(vm.HasDevicesNotice);
+        Assert.Equal("Row:0", foci[^1]);
+    }
+
+    [Fact]
+    public async Task A_row_a_refresh_took_away_meanwhile_focuses_the_first_row()
+    {
+        var vm = Make();
+        vm.Apply(Snap());
+        var now = _time.GetUtcNow();
+        DeviceInfo D(string id, string name) => new(id, name, "ios", "2026-09-01T10:00:00Z", now.ToString("O"), null, true);
+        vm.ApplyDevices([D("d1", "Kari's iPhone"), D("d2", "Band iPad")], now);
+        var foci = new List<string>();
+        vm.FocusRequested += foci.Add;
+        vm.ShowDevicesCommand.Execute(null);
+        vm.RemoveDeviceCommand.Execute(vm.Devices[0]);
+        vm.ApplyDevices([D("d2", "Band iPad")], now); // removed from another place while the confirmation was up
+        await vm.ConfirmPrimaryCommand.ExecuteAsync(null);
+        Assert.Equal("Row:0", foci[^1]);
+    }
+
+    [Fact]
     public void Escape_leaves_a_sub_view_first()
     {
         var vm = Make();

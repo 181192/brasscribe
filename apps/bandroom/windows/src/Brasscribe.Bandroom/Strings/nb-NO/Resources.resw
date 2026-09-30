@@ -140,6 +140,9 @@
   <data name="Devices_Removed" xml:space="preserve">
     <value>{0} er fjernet.</value>
   </data>
+  <data name="Devices_Remove_Failed" xml:space="preserve">
+    <value>{0} ble ikke fjernet. Prøv igjen.</value>
+  </data>
   <data name="Devices_Empty" xml:space="preserve">
     <value>Ingen telefoner ennå. Koble til en telefon for å lage partitur for fullt band fra den.</value>
   </data>

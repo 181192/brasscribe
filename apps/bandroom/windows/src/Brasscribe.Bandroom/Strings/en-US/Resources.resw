@@ -140,6 +140,9 @@
   <data name="Devices_Removed" xml:space="preserve">
     <value>{0} is removed.</value>
   </data>
+  <data name="Devices_Remove_Failed" xml:space="preserve">
+    <value>{0} couldn't be removed. Try again.</value>
+  </data>
   <data name="Devices_Empty" xml:space="preserve">
     <value>No phones yet. Pair a phone to make full-band scores from it.</value>
   </data>
