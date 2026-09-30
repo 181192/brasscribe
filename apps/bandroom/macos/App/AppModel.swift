@@ -89,6 +89,7 @@ final class AppModel {
         do {
             token = try AdminToken.loadOrCreate(at: paths.adminToken)
         } catch {
+            logger.write("admin token: \(error); using a new one for this session only")
             token = AdminToken.generate()
         }
         let source = EngineConfiguration.resolveSource(environment: env, defaults: .standard, paths: paths, bundle: .main)
