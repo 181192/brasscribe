@@ -9,6 +9,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -474,12 +476,13 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     fun importUri(uri: Uri) {
         val ctx = getApplication<Application>()
-        val name = displayName(uri, "recording")
-        if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return }
         busy.value = true
-        importProgress.value = 0f
-        say(R.string.reading_file, name)
         viewModelScope.launch {
+            // Asking the provider for the name can block on its process: not on the main thread.
+            val name = withContext(Dispatchers.IO) { displayName(uri, "recording") }
+            if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return@launch }
+            importProgress.value = 0f
+            say(R.string.reading_file, name)
             try {
                 // Never the whole file in memory: a video's sound is taken out on disk, the PCM decoded a buffer at a time.
                 val imported = withContext(Dispatchers.IO) {
@@ -511,12 +514,16 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     private fun displayName(uri: Uri, fallback: String): String =
-        getApplication<Application>().contentResolver
-            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
-            ?: uri.lastPathSegment ?: fallback
+        runCatching {
+            getApplication<Application>().contentResolver
+                .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+        }.getOrNull() ?: uri.lastPathSegment ?: fallback
 
-    fun openScoreUri(uri: Uri) = openScore(uri, displayName(uri, "score"))
+    fun openScoreUri(uri: Uri) {
+        busy.value = true
+        viewModelScope.launch { openScore(uri, withContext(Dispatchers.IO) { displayName(uri, "score") }) }
+    }
 
     /**
      * Opens a MusicXML score with no transcription behind it: straight to the score, so Play is also
@@ -622,8 +629,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         // A drummer's solo take is no drum part: refused before anything is transcribed (the screen says so too).
         if (p == Profile.SOLO && percussionSeat(container.seat, container.seats)) { say(R.string.percussion_solo_refused); return }
         navigate(Screen.TRANSCRIBE)
-        job?.cancel()
+        val previous = job
+        previous?.cancel()
         job = viewModelScope.launch {
+            // A run that was cancelled stops at its next step; the new one starts after it, never beside it.
+            previous?.join()
             try {
                 val r = if (where.value == Where.DEVICE && canTranscribeOnDevice()) transcribeOnDevice(s) else transcribeWithEngine(s, p)
                 val ignored = seatIgnored(r)
@@ -660,14 +670,18 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         transcribe.value = TranscribeState(true, Step.DECODE, 0.0, 0, steps.size, estimateDeviceSeconds(audio), res.getString(R.string.transcribe_where_device), steps = steps)
         val title = ScoreTitles.withoutExtension(s.name)
         return withContext(Dispatchers.Default) {
+            // The models run as plain blocking calls: Cancel is checked between their stages.
+            val running = coroutineContext.job
             // The core takes the WAV as bytes and the take keeps them for re-arranging, so only a take that fits.
             val wav = s.file?.takeIf { it.extension.equals("wav", true) && it.length() <= MAX_CORE_WAV_BYTES }?.readBytes()
             container.openSoloPipeline().use { pipeline ->
                 val (take, stats) = pipeline.pipeline.listen(audio.samples, audio.sampleRate, title, wav) { stage ->
+                    running.ensureActive()
                     val step = steps[stage.ordinal.coerceAtMost(steps.size - 1)]
                     transcribe.update { it.copy(step = step, stepIndex = stage.ordinal, fraction = stage.ordinal / steps.size.toDouble(),
                         etaSeconds = ((1 - stage.ordinal / steps.size.toDouble()) * estimateDeviceSeconds(audio)).toInt()) }
                 }
+                running.ensureActive()
                 transcribe.update { it.copy(step = Step.ARRANGE, stepIndex = 4, fraction = 0.9) }
                 val a0 = System.nanoTime()
                 // A solo take has no harmony for a quartet: the full band then, as the Output screen shows it.
@@ -1028,22 +1042,42 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         return (arranged?.first ?: updatedComposition) to xml
     }
 
-    fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
-        val current = result.value ?: return false
-        val (finalComposition, xml) = changedScore(current, voiceId, start, pitch, semitones) ?: return false
-        val newPitch = (pitch + semitones).coerceIn(0, 127)
-        // The evidence follows the note: the musician's pitch is now the written one each transcriber is compared to.
-        val evidence = current.evidence?.let { e ->
-            e.copy(notes = e.notes.map { n ->
-                if (n.voice == voiceId && n.start == start && n.pitch == pitch)
-                    n.copy(pitch = newPitch, models = n.models.map { it.copy(agrees = it.pitch == newPitch) }) else n
-            })
+    /** A note is being changed: the score is arranged again in the background, and Save waits for it. */
+    val changingNote = MutableStateFlow(false)
+
+    /**
+     * Moves the note and arranges the score again, off the main thread (the core's arranger takes a
+     * moment on a full band). Once done, and only if the score on screen is still the one it started
+     * from, [changes] become the Review changes, the score is shown and saved, and [onDone] hears true.
+     */
+    private fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int, changes: Map<String, Int>, onDone: (Boolean) -> Unit) {
+        val current = result.value ?: return onDone(false)
+        if (changingNote.value) return onDone(false)
+        changingNote.value = true
+        viewModelScope.launch {
+            val updated = try {
+                withContext(Dispatchers.Default) {
+                    val (finalComposition, xml) = changedScore(current, voiceId, start, pitch, semitones) ?: return@withContext null
+                    val newPitch = (pitch + semitones).coerceIn(0, 127)
+                    // The evidence follows the note: the musician's pitch is now the written one each transcriber is compared to.
+                    val evidence = current.evidence?.let { e ->
+                        e.copy(notes = e.notes.map { n ->
+                            if (n.voice == voiceId && n.start == start && n.pitch == pitch)
+                                n.copy(pitch = newPitch, models = n.models.map { it.copy(agrees = it.pitch == newPitch) }) else n
+                        })
+                    }
+                    current.copy(composition = finalComposition, musicXml = xml,
+                        compositionJson = container.core.encodeComposition(finalComposition), evidence = evidence, changedOnPhone = true)
+                }
+            } finally {
+                changingNote.value = false
+            }
+            if (updated == null || result.value !== current) { onDone(false); return@launch }
+            reviewChanges.value = changes
+            result.value = updated
+            saveCurrentScore(updated)
+            onDone(true)
         }
-        val updated = current.copy(composition = finalComposition, musicXml = xml,
-            compositionJson = container.core.encodeComposition(finalComposition), evidence = evidence, changedOnPhone = true)
-        result.value = updated
-        saveCurrentScore(updated)
-        return true
     }
 
     /**
@@ -1077,29 +1111,28 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      * Review's Save: the note at [start] moves from [pitch] by [semitones], is written to the score
      * and stays open. Moving it back to what Brasscribe wrote clears the change.
      */
-    fun changeReviewNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
-        if (semitones == 0) return false
+    fun changeReviewNote(voiceId: String, start: Int, pitch: Int, semitones: Int, onDone: (Boolean) -> Unit = {}) {
+        if (semitones == 0) return onDone(false)
         val key = changeKey(voiceId, start)
         val was = reviewChanges.value[key] ?: pitch
         stopListening(announce = false)
-        val before = reviewChanges.value
         val now = (pitch + semitones).coerceIn(0, 127)
-        // Set first, so the score is saved with it.
-        reviewChanges.update { if (now == was) it - key else it + (key to was) }
-        if (!correctNote(voiceId, start, pitch, semitones)) { reviewChanges.value = before; return false }
-        return true
+        val changes = reviewChanges.value.let { if (now == was) it - key else it + (key to was) }
+        correctNote(voiceId, start, pitch, semitones, changes, onDone)
     }
 
     /** Review's "Undo change": the note at [start], now [pitch], goes back to what Brasscribe wrote. */
-    fun undoReviewChange(voiceId: String, start: Int, pitch: Int): Boolean {
+    fun undoReviewChange(voiceId: String, start: Int, pitch: Int, onDone: (Boolean) -> Unit = {}) {
         val key = changeKey(voiceId, start)
-        val was = reviewChanges.value[key] ?: return false
+        val was = reviewChanges.value[key] ?: return onDone(false)
         stopListening(announce = false)
-        val before = reviewChanges.value
-        reviewChanges.update { it - key }
-        if (was == pitch) { result.value?.let(::saveCurrentScore); return true }
-        if (!correctNote(voiceId, start, pitch, was - pitch)) { reviewChanges.value = before; return false }
-        return true
+        val changes = reviewChanges.value - key
+        if (was == pitch) {
+            reviewChanges.value = changes
+            result.value?.let(::saveCurrentScore)
+            return onDone(true)
+        }
+        correctNote(voiceId, start, pitch, was - pitch, changes, onDone)
     }
 
     /** Keeps several notes at once ("Keep the rest of this bar"). */

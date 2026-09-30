@@ -86,8 +86,8 @@ class ScoreController(
      * ([BandSoundFontFile]), and only without both does alphaTab keep its General MIDI SoundFont.
      */
     private val bandSoundFont: java.io.File? = null,
-    /** The Composition the score came from, for humanization. */
-    private val compositionJson: String? = null,
+    /** The Composition the score came from, for humanization; asked for off the main thread, when the realistic sound starts. */
+    private val compositionJson: () -> String? = { null },
 ) {
     val view: AlphaTabView = AlphaTabView(context, null)
     private var channels = IntArray(0)
@@ -676,7 +676,7 @@ class ScoreController(
             val installed = playing.size
             val t0 = System.nanoTime()
             val skip = percussion.indices.map { it !in playing }
-            val count = runCatching { humanized.prepare(s, channels, skip, compositionJson) }
+            val count = runCatching { humanized.prepare(s, channels, skip, compositionJson()) }
                 .onFailure { android.util.Log.w("BrasscribePlay", "humanization unavailable", it) }.getOrDefault(0)
             humanizedReady = count > 0
             android.util.Log.i("BrasscribePlay", "realistic tier: %d parts with installed instruments, %d humanized notes in %d ms, channels %s"
