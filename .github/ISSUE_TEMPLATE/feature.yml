@@ -1,0 +1,35 @@
+name: Feature request
+description: An idea for Brasscribe
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do as a player, band leader or arranger, and what gets in the way?
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help
+      description: How you imagine it working. A sketch or a screenshot of a similar feature is welcome.
+    validations: { required: true }
+  - type: dropdown
+    id: app
+    attributes:
+      label: Where
+      multiple: true
+      options: [Brasscribe Play, Bandroom, Studio (browser), brasscribe-core (command line), The engine / transcription, The site]
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: How we'd know it's done
+      description: A few concrete checks, e.g. "On Android, tapping X shows Y". These become the tests.
+      placeholder: |
+        - [ ] …
+        - [ ] …
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered

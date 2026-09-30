@@ -1,0 +1,63 @@
+name: Bug report
+description: Something in Brasscribe doesn't work as it should
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Each field below is something a person or a coding agent needs to
+        reproduce the problem without asking back. Please don't attach recordings or scores of
+        copyrighted music; describe the passage or use a public-domain piece.
+  - type: dropdown
+    id: app
+    attributes:
+      label: App
+      options: [Brasscribe Play, Bandroom, Studio (browser), brasscribe-core (command line), The engine / transcription, The site, Not sure]
+    validations: { required: true }
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options: [Android, iPhone or iPad, Mac, Windows, Linux, Browser]
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: In the app's About screen, or the release you downloaded.
+      placeholder: e.g. 0.3.1
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, from opening the app. Include the instrument or lineup chosen, if any.
+      placeholder: |
+        1. Open …
+        2. Choose …
+        3. …
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations: { required: true }
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Include the exact text of any message, and a screenshot if it's about what you see.
+    validations: { required: true }
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or crash report
+      description: Optional. Bandroom's logs are in its data folder; remove anything personal first.
+      render: text
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often
+      options: [Every time, Sometimes, Once]

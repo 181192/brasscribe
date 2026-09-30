@@ -20,7 +20,9 @@ site/_site/
 /build/
 
 # Agent worktrees and notes, signing keys and local secrets
-.claude/
+# Local agent state and worktrees; the repo skills are shared.
+.claude/*
+!.claude/skills/
 .remember/
 *.jks
 *.keystore
