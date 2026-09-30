@@ -48,6 +48,11 @@ public sealed class ResourceStrings : IStrings
 {
     private readonly ResourceLoader _loader = new();
 
+    /// <summary>The language the strings come in: the in-app choice when there is one, else Windows' display language.</summary>
+    public string Language =>
+        Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride is { Length: > 0 } chosen ? chosen
+        : Microsoft.Windows.Globalization.ApplicationLanguages.Languages.FirstOrDefault() ?? System.Globalization.CultureInfo.CurrentUICulture.Name;
+
     public string this[string key]
     {
         get

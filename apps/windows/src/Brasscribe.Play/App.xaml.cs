@@ -28,7 +28,20 @@ public partial class App : Application
         var settings = new JsonSettingsStore();
         string language = Option("--lang") ?? settings.Get("Language", "system");
         if (language != "system")
+        {
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
+            // .NET formats with its own culture: the chosen language also decides key and pitch names, dates and
+            // percentages, or a Norwegian app on an English Windows would mix the two.
+            try
+            {
+                var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
+                System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
+                System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+                System.Globalization.CultureInfo.CurrentCulture = culture;
+                System.Globalization.CultureInfo.CurrentUICulture = culture;
+            }
+            catch (System.Globalization.CultureNotFoundException) { }
+        }
         InitializeComponent();
         Settings = settings;
     }
