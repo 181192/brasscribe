@@ -116,8 +116,7 @@ struct StatusPanel: View {
                         tint: Color.Brasscribe.warning)
             if app.isBusy, let job = app.monitor.job { NowCard(job: job) }
         case .error:
-            ProblemCard(title: String(localized: "Brasscribe stopped unexpectedly"),
-                        why: String(localized: "It tried to start three times. Recordings on your phones are safe."),
+            ProblemCard(title: Strings.failureTitle(app.failure), why: Strings.failureWhy(app.failure),
                         symbol: "xmark.circle.fill", tint: Color.Brasscribe.error)
         }
     }

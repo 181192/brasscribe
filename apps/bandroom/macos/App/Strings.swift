@@ -32,6 +32,26 @@ enum Strings {
         }
     }
 
+    /// Why the engine was given up on (Error, and the notification): three failed starts, or a start that
+    /// couldn't happen at all.
+    static func failureTitle(_ why: LaunchFailure?) -> String {
+        switch why {
+        case nil: String(localized: "Brasscribe stopped unexpectedly")
+        case .spawn: problemTitle(.noFreePort)
+        case .noFreePort: problemTitle(.noFreePort)
+        case .notInstalled: problemTitle(.missingDownload([]))
+        }
+    }
+
+    static func failureWhy(_ why: LaunchFailure?) -> String {
+        switch why {
+        case nil: String(localized: "It tried to start three times. Recordings on your phones are safe.")
+        case .spawn: String(localized: "It couldn't be started. Recordings on your phones are safe.")
+        case .noFreePort: problemWhy(.noFreePort)
+        case .notInstalled: problemWhy(.missingDownload([]))
+        }
+    }
+
     static func problemTitle(_ p: Problem) -> String {
         switch p {
         case .lowDisk: String(localized: "Space is running low")

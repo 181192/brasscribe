@@ -128,7 +128,7 @@ final class AppModel {
         downloader.log = { log.write($0) }
         downloader.onFinished = { [weak self] in self?.downloadsFinished() }
         supervisor.onHealthy = { [weak self] client in self?.engineAnswered(client) }
-        supervisor.onFailure = { [weak self] _ in self?.notifyFailure() }
+        supervisor.onFailure = { [weak self] why in self?.notifyFailure(why) }
         supervisor.onPhaseChange = { [weak self] phase in
             if phase != .running { self?.engineLeftRunning() }
         }
@@ -591,9 +591,13 @@ final class AppModel {
         Notifier.pairRequest(r)
     }
 
-    private func notifyFailure() {
-        Notifier.post(id: "engine-error", title: String(localized: "Brasscribe stopped unexpectedly"),
-                      body: String(localized: "It tried to start three times. Recordings on your phones are safe."))
+    private func notifyFailure(_ why: LaunchFailure?) {
+        Notifier.post(id: "engine-error", title: Strings.failureTitle(why), body: Strings.failureWhy(why))
+    }
+
+    /// Why the engine was given up on, while it is.
+    var failure: LaunchFailure? {
+        if case .failed(let why) = phase { why } else { nil }
     }
 
     // MARK: jobs

@@ -658,6 +658,7 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | port.why | Another program on this computer is in the way. | Et annet program på denne datamaskinen står i veien. |
 | error.title | Brasscribe stopped unexpectedly | Brasscribe stoppet uventet |
 | error.why | It tried to start three times. Recordings on your phones are safe. | Den prøvde å starte tre ganger. Opptakene på telefonene er trygge. |
+| error.spawn.why | It couldn't be started. Recordings on your phones are safe. | Den kunne ikke startes. Opptakene på telefonene er trygge. |
 | error.copy | Copy details for the tech person | Kopier detaljer til den tekniske i bandet |
 | notify.ready | Brasscribe is ready. Phones and tablets can make full-band scores now. | Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå. |
 

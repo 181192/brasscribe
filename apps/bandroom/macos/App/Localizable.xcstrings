@@ -1061,6 +1061,16 @@
         }
       }
     },
+    "It couldn't be started. Recordings on your phones are safe.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den kunne ikke startes. Opptakene på telefonene er trygge."
+          }
+        }
+      }
+    },
     "It runs quietly in the menu bar. Look for the Brasscribe mark at the top of the screen.": {
       "localizations": {
         "nb": {
