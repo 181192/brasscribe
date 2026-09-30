@@ -489,6 +489,71 @@ pub fn arrange_song(
     Ok(SongOutput { composition_json: r.composition.to_json_string(), musicxml: r.musicxml })
 }
 
+/// Options of [`arrange_song_with`]: the ones the engine's brass-band profile passes to the song
+/// arranger. Difficulty and key are not among them: the apps apply those afterwards by arranging
+/// the Composition again ([`arrange_musicxml_with`]).
+#[derive(Debug, Clone, Default, uniffi::Record)]
+pub struct SongArrangeOptions {
+    /// "minimal" (8 parts; also when empty) or "quartet".
+    #[uniffi(default = "")]
+    pub lineup: String,
+    /// The player's seat (`seats()` ids): their part; with `lead` "seat", the tune's.
+    #[uniffi(default = None)]
+    pub seat: Option<String>,
+    /// "treble" or "bass": the clef the seat's part is written in; None: the band's.
+    #[uniffi(default = None)]
+    pub reads: Option<String>,
+    /// Who plays the tune: "lineup" (None) or "seat".
+    #[uniffi(default = None)]
+    pub lead: Option<String>,
+}
+
+/// [`arrange_song`] for a lineup and a seat: a whole-band recording's melody, optional melody
+/// support, bass and harmony transcriptions arranged for the minimal band or the quartet, as the
+/// engine's brass-band profile does. Invalid when an option is unknown or does not fit the lineup.
+#[uniffi::export]
+pub fn arrange_song_with(
+    melody: Vec<u8>,
+    melody_support: Option<Vec<u8>>,
+    bass: Vec<u8>,
+    harmony: Vec<Vec<u8>>,
+    beats_text: String,
+    title: String,
+    options: SongArrangeOptions,
+) -> Result<SongOutput, CoreError> {
+    use brasscribe_core::instruments::{check_reads, lead_lineup, lineup_by_name, seat_by_id, LEADS};
+
+    let lineup = if options.lineup.is_empty() { "minimal" } else { options.lineup.as_str() };
+    if !["minimal", "quartet"].contains(&lineup) {
+        return Err(invalid(format!("lineup must be minimal or quartet, not {lineup}")));
+    }
+    let lead = options.lead.as_deref().filter(|l| !l.is_empty()).unwrap_or("lineup");
+    if !LEADS.contains(&lead) {
+        return Err(invalid(format!("lead must be one of {LEADS:?}")));
+    }
+    if let Some(s) = &options.seat {
+        seat_by_id(s).map_err(invalid)?;
+    }
+    check_reads(options.seat.as_deref(), options.reads.as_deref()).map_err(invalid)?;
+    match (&options.seat, lead) {
+        (Some(s), "seat") => {
+            lead_lineup(lineup_by_name(lineup).map_err(invalid)?, s).map_err(invalid)?;
+        }
+        (None, "seat") => return Err(invalid("lead seat needs a seat")),
+        _ => {}
+    }
+    let inp = SongInputs {
+        melody: midi(&melody)?,
+        melody_support: melody_support.map(|b| midi(&b)).transpose()?,
+        bass: midi(&bass)?,
+        harmony: harmony.iter().map(|b| midi(b)).collect::<Result<_, _>>()?,
+    };
+    let beats = Beats::parse(&beats_text).map_err(invalid)?;
+    let opts = pipeline::SongOptions { lineup: lineup.into(), seat: options.seat, reads: options.reads, lead: lead.into(), kit: String::new() };
+    let r = pipeline::arrange_song_opts(&inp, &beats, &title, &opts).map_err(failed)?;
+    Ok(SongOutput { composition_json: r.composition.to_json_string(), musicxml: r.musicxml })
+}
+
 /// A performed note (seconds).
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct PerformedNote {

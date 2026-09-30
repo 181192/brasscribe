@@ -2622,6 +2622,97 @@ public func FfiConverterTypeSoloContour_lower(_ value: SoloContour) -> RustBuffe
 
 
 /**
+ * Options of [`arrange_song_with`]: the ones the engine's brass-band profile passes to the song
+ * arranger. Difficulty and key are not among them: the apps apply those afterwards by arranging
+ * the Composition again ([`arrange_musicxml_with`]).
+ */
+public struct SongArrangeOptions: Equatable, Hashable {
+    /**
+     * "minimal" (8 parts; also when empty) or "quartet".
+     */
+    public var lineup: String
+    /**
+     * The player's seat (`seats()` ids): their part; with `lead` "seat", the tune's.
+     */
+    public var seat: String?
+    /**
+     * "treble" or "bass": the clef the seat's part is written in; None: the band's.
+     */
+    public var reads: String?
+    /**
+     * Who plays the tune: "lineup" (None) or "seat".
+     */
+    public var lead: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * "minimal" (8 parts; also when empty) or "quartet".
+         */lineup: String = "", 
+        /**
+         * The player's seat (`seats()` ids): their part; with `lead` "seat", the tune's.
+         */seat: String? = nil, 
+        /**
+         * "treble" or "bass": the clef the seat's part is written in; None: the band's.
+         */reads: String? = nil, 
+        /**
+         * Who plays the tune: "lineup" (None) or "seat".
+         */lead: String? = nil) {
+        self.lineup = lineup
+        self.seat = seat
+        self.reads = reads
+        self.lead = lead
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension SongArrangeOptions: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSongArrangeOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SongArrangeOptions {
+        return
+            try SongArrangeOptions(
+                lineup: FfiConverterString.read(from: &buf), 
+                seat: FfiConverterOptionString.read(from: &buf), 
+                reads: FfiConverterOptionString.read(from: &buf), 
+                lead: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SongArrangeOptions, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.lineup, into: &buf)
+        FfiConverterOptionString.write(value.seat, into: &buf)
+        FfiConverterOptionString.write(value.reads, into: &buf)
+        FfiConverterOptionString.write(value.lead, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSongArrangeOptions_lift(_ buf: RustBuffer) throws -> SongArrangeOptions {
+    return try FfiConverterTypeSongArrangeOptions.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSongArrangeOptions_lower(_ value: SongArrangeOptions) -> RustBuffer {
+    return FfiConverterTypeSongArrangeOptions.lower(value)
+}
+
+
+/**
  * Composition and MusicXML of one arrangement.
  */
 public struct SongOutput: Equatable, Hashable {
@@ -3916,6 +4007,25 @@ public func arrangeSong(melody: Data, melodySupport: Data?, bass: Data, harmony:
 })
 }
 /**
+ * [`arrange_song`] for a lineup and a seat: a whole-band recording's melody, optional melody
+ * support, bass and harmony transcriptions arranged for the minimal band or the quartet, as the
+ * engine's brass-band profile does. Invalid when an option is unknown or does not fit the lineup.
+ */
+public func arrangeSongWith(melody: Data, melodySupport: Data?, bass: Data, harmony: [Data], beatsText: String, title: String, options: SongArrangeOptions)throws  -> SongOutput  {
+    return try  FfiConverterTypeSongOutput_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_arrange_song_with(
+        FfiConverterData.lower(melody),
+        FfiConverterOptionData.lower(melodySupport),
+        FfiConverterData.lower(bass),
+        FfiConverterSequenceData.lower(harmony),
+        FfiConverterString.lower(beatsText),
+        FfiConverterString.lower(title),
+        FfiConverterTypeSongArrangeOptions_lower(options),uniffiCallStatus
+    )
+})
+}
+/**
  * Beat times at the notated metrical level (doubled when the tracker locked onto half notes).
  * Invalid when a beat time or onset is not a number or the beat times do not increase.
  */
@@ -4137,6 +4247,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_arrange_song() != 47821) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_arrange_song_with() != 27927) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() != 53243) {

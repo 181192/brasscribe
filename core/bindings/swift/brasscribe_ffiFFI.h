@@ -358,6 +358,11 @@ RustBuffer uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(RustBuffer compos
 RustBuffer uniffi_brasscribe_ffi_fn_func_arrange_song(RustBuffer melody, RustBuffer melody_support, RustBuffer bass, RustBuffer harmony, RustBuffer beats_text, RustBuffer title, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_ARRANGE_SONG_WITH
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_ARRANGE_SONG_WITH
+RustBuffer uniffi_brasscribe_ffi_fn_func_arrange_song_with(RustBuffer melody, RustBuffer melody_support, RustBuffer bass, RustBuffer harmony, RustBuffer beats_text, RustBuffer title, RustBuffer options, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_CHOOSE_METRICAL_LEVEL
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_CHOOSE_METRICAL_LEVEL
 RustBuffer uniffi_brasscribe_ffi_fn_func_choose_metrical_level(RustBuffer beat_times, RustBuffer onsets, RustCallStatus *_Nonnull out_status
@@ -730,6 +735,12 @@ uint16_t uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_SONG
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_SONG
 uint16_t uniffi_brasscribe_ffi_checksum_func_arrange_song(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_SONG_WITH
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_ARRANGE_SONG_WITH
+uint16_t uniffi_brasscribe_ffi_checksum_func_arrange_song_with(void
     
 );
 #endif
