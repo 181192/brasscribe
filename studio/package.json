@@ -22,7 +22,7 @@
     "esbuild": "^0.28.2",
     "happy-dom": "^20.14.5",
     "openapi-typescript": "^7.13.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "^5.0.2"
   },
   "private": true,
