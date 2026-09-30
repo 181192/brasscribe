@@ -42,6 +42,7 @@ from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdenti
 from . import schemas as m
 from .adapters import host_device
 from .config import Settings
+from .guard import RequestGuard
 from .jobs import TERMINAL, Job, JobManager
 from .names import is_audio, valid_id, valid_relpath
 
@@ -123,9 +124,13 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     app.state.pair_requests = PairRequests()
     app.state.hosts = []  # ip:port the engine is reachable on; set by `brasscribe serve`
 
-    def is_trusted(request: Request) -> bool:
-        host = request.client.host if request.client else ""
+    def trusted_address(host: str) -> bool:
         return app.state.trust_loopback and host in LOOPBACK | {"testclient"}
+
+    def is_trusted(request: Request) -> bool:
+        return trusted_address(request.client.host if request.client else "")
+
+    app.add_middleware(RequestGuard, trusted=trusted_address, allowed_hosts=settings.allowed_hosts)
 
     def bearer(authorization: str | None) -> str | None:
         return authorization[7:].strip() if authorization and authorization.lower().startswith("bearer ") else None

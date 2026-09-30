@@ -259,6 +259,7 @@ By default the engine trusts loopback. A client on the same computer (Studio, th
 - **Who never gets owner rights.** Device tokens and the static `BRASSCRIBE_TOKEN` never grant owner rights.
 - **What Bandroom does.** The desktop helper generates a 256-bit token at first run. It passes the token as `BRASSCRIBE_ADMIN_TOKEN` when it starts the engine, and sends it on every owner call. Local trust stays on at home, so Studio in the browser keeps working without a token.
 - **Remote mode.** Anyone who puts the engine behind a proxy on the same machine sets `BRASSCRIBE_TRUST_LOCAL=0` and an admin token.
+- **Web pages in a browser on the computer.** Local trust is for programs on the computer, not for whatever page a browser has open. A POST, PUT, PATCH or DELETE whose `Origin` names another site, or whose `Sec-Fetch-Site` is `cross-site` or `same-site`, gets 403. A request trusted by its address must name the engine in `Host` by an IP address, `localhost`, a `.local` name, the computer's host name or a name in `BRASSCRIBE_ALLOWED_HOSTS`, else it gets 400 (`engine/src/brasscribe_engine/guard.py`). Studio is served by the engine and the native apps send no `Origin`, so neither is affected.
 
 ## 5. The same engine, reachable from outside
 
