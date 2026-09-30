@@ -33,7 +33,8 @@ The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
 
 Bandroom's first run downloads the engine and its models (about 10 GB on a Mac). The band writer model
 is licensed for non-commercial use only; Bandroom asks you to accept its licence with a free Hugging
-Face account.
+Face account. Its makers add one condition: only have Brasscribe write down music you have the rights
+to, and you take responsibility for that.
 
 iPhone and iPad builds need an Apple Developer account and are not distributed.
 

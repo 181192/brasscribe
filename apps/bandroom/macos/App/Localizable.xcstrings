@@ -611,6 +611,16 @@
         }
       }
     },
+    "By downloading it, you confirm you have the rights to the music you have Brasscribe write down. Its makers ask you to take responsibility for that.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når du laster den ned, bekrefter du at du har rettighetene til musikken du lar Brasscribe skrive ned. De som laget den, ber deg ta ansvaret for det."
+          }
+        }
+      }
+    },
     "Calm": {
       "localizations": {
         "nb": {
@@ -1017,6 +1027,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hugging Face godtok ikke tilgangsnøkkelen"
+          }
+        }
+      }
+    },
+    "I'll use it only non-commercially, and only for music I have the rights to.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeg bruker den bare ikke-kommersielt, og bare til musikk jeg har rettighetene til."
           }
         }
       }
@@ -1581,12 +1601,12 @@
         }
       }
     },
-    "Read the licence": {
+    "Read the full terms": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les lisensen"
+            "value": "Les alle vilkårene"
           }
         }
       }
@@ -2031,12 +2051,12 @@
         }
       }
     },
-    "The band writer, MuScriptor, is shared by its makers for non-commercial use (CC BY-NC 4.0). Each person accepts it with their own free Hugging Face account.": {
+    "The band writer, MuScriptor, is free for non-commercial use (CC BY-NC 4.0). Each person accepts its licence with their own Hugging Face account.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bandskriveren, MuScriptor, deles av dem som laget den, til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen gratis Hugging Face-konto."
+            "value": "Bandskriveren, MuScriptor, er gratis til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen Hugging Face-konto."
           }
         }
       }

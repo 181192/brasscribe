@@ -545,6 +545,18 @@
   <data name="Setup_3_Disk_Why" xml:space="preserve">
     <value>Sjekk at det er plass på disken, og prøv igjen.</value>
   </data>
+  <data name="Setup_2_Body" xml:space="preserve">
+    <value>Bandskriveren, MuScriptor, er gratis til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen Hugging Face-konto.</value>
+  </data>
+  <data name="Setup_2_Terms" xml:space="preserve">
+    <value>Når du laster den ned, bekrefter du at du har rettighetene til musikken du lar Brasscribe skrive ned. De som laget den, ber deg ta ansvaret for det.</value>
+  </data>
+  <data name="Setup_2_Agree" xml:space="preserve">
+    <value>Jeg bruker den bare ikke-kommersielt, og bare til musikk jeg har rettighetene til.</value>
+  </data>
+  <data name="Setup_2_Read" xml:space="preserve">
+    <value>Les alle vilkårene</value>
+  </data>
   <data name="Setup_2_Key_Label" xml:space="preserve">
     <value>Tilgangsnøkkel fra Hugging Face</value>
   </data>

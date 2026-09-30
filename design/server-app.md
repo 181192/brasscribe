@@ -88,6 +88,7 @@ This is one window, not a wizard of dialogs, and it has **one decision per step*
    - Primary: **Sign in with Hugging Face**. It opens the browser. The user accepts the MuScriptor licence there, and the app gets a read-only key back through a loopback redirect.
    - **Verify** that a Hugging Face OAuth app with a loopback redirect gets a token that can read a gated repo the user has accepted. If it can't, **Paste an access key** becomes the primary, with a button that opens the "new read token" page.
    - Fallback: **Paste an access key instead** reveals a labelled field. It allows paste (WCAG 3.3.8) and has a **Paste** button.
+   - **The terms, and a box to tick.** Under the key: "By downloading it, you confirm you have the rights to the music you have Brasscribe write down. Its makers ask you to take responsibility for that." Then a checkbox: "I'll use it only non-commercially, and only for music I have the rights to." **Continue** stays disabled until it is ticked, with a new key or a saved one, because the band writer downloads next. On Windows, where the key is entered in Settings (Hugging Face access), the same text and checkbox sit on that card, and **Save** stays disabled until it is ticked.
    - **Skip for now** (plain) says what is lost: "Without it, Brasscribe can't write down a full band. You can add it later."
    - The key is stored in the macOS Keychain or the Windows Credential Manager, never in a file.
    - Reading the key never holds up the app or the engine. On macOS the saved key is read in the background at launch; the engine waits at most two seconds for it, then starts without it and restarts with it when it comes (after the score being made, if one is). An ad-hoc-signed Bandroom is a new app to the Keychain after every update, so macOS may ask before handing the key over. If the answer is Deny, Bandroom runs without the key and the panel says so, with **Try again** and **Enter the key again** (setup, at this step). Suppressing the prompt (`kSecUseAuthenticationUIFail`) would lose the key without a word after every update. The data-protection Keychain, which wouldn't prompt, needs a Team ID entitlement that ad-hoc signing lacks (Apple TN3137), so it waits for Developer ID signing. On Windows, `CredRead` never shows UI, so there is nothing to wait for.
@@ -112,7 +113,8 @@ This is one window, not a wizard of dialogs, and it has **one decision per step*
 Voice rule 4 says model names belong in Studio. The licence step is the **one exception**: the user accepts a licence that names MuScriptor on Hugging Face, so the app must name it too, or the browser page makes no sense.
 - The name appears once, with what it does: "Band writer (MuScriptor)".
 - The name is never used anywhere else in Bandroom except the About window's attributions (apps-plan §7).
-- **The licence is shown, not paraphrased away:** "Its makers share it for non-commercial use (CC BY-NC 4.0)." The full text is behind **Read the licence**.
+- **The licence is shown, not paraphrased away:** "The band writer, MuScriptor, is free for non-commercial use (CC BY-NC 4.0)."
+- **So are its makers' conditions.** The model card adds to the licence: no music may be put in and written down without the rights to it, and the user indemnifies its makers (Kyutai and Mirelo). The app says this in plain words (setup.2.terms), and the user ticks setup.2.agree before anything downloads. The full text is behind **Read the full terms**, which opens the model card.
 
 ### 3.3 Running in the background
 - **Supervision:** the Bandroom app is the login item, and it **starts and supervises the engine** as a child process (§5.1).
@@ -591,14 +593,16 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | setup.1.internet | Internet: needed once, for the downloads | Internett: trengs én gang, til nedlastingene |
 | setup.continue | Continue | Fortsett |
 | setup.2.title | Accept one licence | Godta én lisens |
-| setup.2.body | The band writer, MuScriptor, is shared by its makers for non-commercial use (CC BY-NC 4.0). Each person accepts it with their own free Hugging Face account. | Bandskriveren, MuScriptor, deles av dem som laget den, til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen gratis Hugging Face-konto. |
+| setup.2.body | The band writer, MuScriptor, is free for non-commercial use (CC BY-NC 4.0). Each person accepts its licence with their own Hugging Face account. | Bandskriveren, MuScriptor, er gratis til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen Hugging Face-konto. |
 | setup.2.step1 | Sign in and choose **Agree** on the MuScriptor page. | Logg inn og velg **Agree** på MuScriptor-siden. |
 | setup.2.step2 | Come back here. Brasscribe downloads it for you. | Kom tilbake hit. Brasscribe laster den ned for deg. |
 | setup.2.signin | Sign in with Hugging Face | Logg inn med Hugging Face |
 | setup.2.paste | Paste an access key instead | Lim inn en tilgangsnøkkel i stedet |
 | setup.2.key.label | Access key from Hugging Face | Tilgangsnøkkel fra Hugging Face |
 | setup.2.key.paste | Paste | Lim inn |
-| setup.2.read | Read the licence | Les lisensen |
+| setup.2.terms | By downloading it, you confirm you have the rights to the music you have Brasscribe write down. Its makers ask you to take responsibility for that. | Når du laster den ned, bekrefter du at du har rettighetene til musikken du lar Brasscribe skrive ned. De som laget den, ber deg ta ansvaret for det. |
+| setup.2.agree | I'll use it only non-commercially, and only for music I have the rights to. | Jeg bruker den bare ikke-kommersielt, og bare til musikk jeg har rettighetene til. |
+| setup.2.read | Read the full terms | Les alle vilkårene |
 | setup.2.skip | Skip for now | Hopp over nå |
 | setup.2.skip.note | Without it, Brasscribe can't write down a full band. You can add it later. | Uten den kan ikke Brasscribe skrive ned et fullt band. Du kan legge den til senere. |
 | setup.2.signed-in | Signed in as {user}. Licence accepted. | Logget inn som {user}. Lisensen er godtatt. |

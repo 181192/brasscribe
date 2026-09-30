@@ -545,6 +545,18 @@
   <data name="Setup_3_Disk_Why" xml:space="preserve">
     <value>Check that there's room on the drive, then try again.</value>
   </data>
+  <data name="Setup_2_Body" xml:space="preserve">
+    <value>The band writer, MuScriptor, is free for non-commercial use (CC BY-NC 4.0). Each person accepts its licence with their own Hugging Face account.</value>
+  </data>
+  <data name="Setup_2_Terms" xml:space="preserve">
+    <value>By downloading it, you confirm you have the rights to the music you have Brasscribe write down. Its makers ask you to take responsibility for that.</value>
+  </data>
+  <data name="Setup_2_Agree" xml:space="preserve">
+    <value>I'll use it only non-commercially, and only for music I have the rights to.</value>
+  </data>
+  <data name="Setup_2_Read" xml:space="preserve">
+    <value>Read the full terms</value>
+  </data>
   <data name="Setup_2_Key_Label" xml:space="preserve">
     <value>Access key from Hugging Face</value>
   </data>

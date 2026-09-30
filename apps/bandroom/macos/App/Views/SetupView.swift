@@ -17,6 +17,8 @@ struct SetupView: View {
     /// Came from "Enter the key again" on a finished setup: saving the key is all there is to do.
     @State private var reenteringKey = false
     @State private var startAtLogin = true
+    /// The box under the band writer's terms; nothing downloads it until it's ticked.
+    @State private var termsAccepted = false
 
     /// From the key read at launch, never a Keychain read here (it can wait for a prompt).
     private var keySaved: Bool { app.savedKey.state == .found }
@@ -115,15 +117,15 @@ struct SetupView: View {
     private var licence: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Accept one licence").brFont(.display)
-            Text("The band writer, MuScriptor, is shared by its makers for non-commercial use (CC BY-NC 4.0). Each person accepts it with their own free Hugging Face account.")
+            Text("The band writer, MuScriptor, is free for non-commercial use (CC BY-NC 4.0). Each person accepts its licence with their own Hugging Face account.")
                 .brFont(.body).fixedSize(horizontal: false, vertical: true)
             Text("1. Sign in and choose **Agree** on the MuScriptor page.").brFont(.body)
             Text("2. Come back here. Brasscribe downloads it for you.").brFont(.body)
             Text("Brasscribe uses the key only to download the band writer from Hugging Face, and keeps it in your Keychain.")
                 .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
-                Button { NSWorkspace.shared.open(URL(string: "https://huggingface.co/MuScriptor/muscriptor-medium")!) } label: {
-                    Text("Read the licence")
+                Button { NSWorkspace.shared.open(LicenceStep.termsPage) } label: {
+                    Text("Read the full terms")
                 }
                 .buttonStyle(.brPlain)
                 Button { NSWorkspace.shared.open(URL(string: "https://huggingface.co/settings/tokens/new?tokenType=read")!) } label: {
@@ -152,6 +154,15 @@ struct SetupView: View {
                     Label("Your Keychain didn't let Brasscribe read the saved key. Paste it here again.", systemImage: "key")
                         .brFont(.callout).fixedSize(horizontal: false, vertical: true)
                 }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("By downloading it, you confirm you have the rights to the music you have Brasscribe write down. Its makers ask you to take responsibility for that.")
+                    .brFont(.body).fixedSize(horizontal: false, vertical: true)
+                Toggle(isOn: $termsAccepted) {
+                    Text("I'll use it only non-commercially, and only for music I have the rights to.")
+                        .brFont(.bodyStrong).fixedSize(horizontal: false, vertical: true)
+                }
+                .toggleStyle(.checkbox)
             }
             Spacer()
             HStack(alignment: .bottom) {
@@ -182,7 +193,7 @@ struct SetupView: View {
                 } label: { Text("Continue") }
                     .buttonStyle(BRButtonStyle(kind: .primary, height: 40))
                     .keyboardShortcut(.defaultAction)
-                    .disabled((key.isEmpty && !keySaved) || saving)
+                    .disabled(!LicenceStep.canContinue(key: key, keySaved: keySaved, saving: saving, termsAccepted: termsAccepted))
             }
         }
     }
