@@ -66,12 +66,8 @@ Set-ItemProperty $cc DisableCloudOptimizedContent 1 -Type DWord
 Step "disk: no reserved storage, long paths, a small pagefile"
 DISM /Online /Set-ReservedStorageState /State:Disabled /NoRestart | Out-Null
 Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" LongPathsEnabled 1 -Type DWord
-$cs = Get-CimInstance Win32_ComputerSystem
-if ($cs.AutomaticManagedPagefile) {
-    Set-CimInstance -InputObject $cs -Property @{ AutomaticManagedPagefile = $false }
-    Get-CimInstance Win32_PageFileSetting | Remove-CimInstance -ErrorAction SilentlyContinue
-    New-CimInstance -ClassName Win32_PageFileSetting -Property @{ Name = "C:\pagefile.sys"; InitialSize = [uint32]2048; MaximumSize = [uint32]4096 } | Out-Null
-}
+# 2–4 GB (the value the System control panel writes; New-CimInstance Win32_PageFileSetting fails here)
+Set-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" PagingFiles @("C:\pagefile.sys 2048 4096") -Type MultiString
 
 Step "Defender: skip the build folders"
 New-Item -ItemType Directory -Force -Path C:\b | Out-Null
