@@ -134,7 +134,7 @@ jobs:
 
       - name: Upload screenshots
         if: ${{ !inputs.release && !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-screenshots
           path: ${{ runner.temp }}/screenshots
@@ -143,7 +143,7 @@ jobs:
 
       - name: Upload test and scan results
         if: ${{ !inputs.release && !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-results
           path: |
@@ -172,7 +172,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
           Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-play-windows-x64.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}
         with:
           name: dist-windows-x64
@@ -226,7 +226,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
           Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-bandroom-windows-x64.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-windows-bandroom-x64
           path: ${{ runner.temp }}/out/*.zip
@@ -374,7 +374,7 @@ jobs:
 
       - name: Upload screenshots
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bandroom-windows-screenshots
           path: ${{ runner.temp }}/bandroom-screenshots
@@ -383,7 +383,7 @@ jobs:
 
       - name: Upload test and scan results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bandroom-windows-results
           path: |
