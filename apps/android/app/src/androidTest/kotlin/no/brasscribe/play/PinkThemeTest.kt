@@ -24,8 +24,7 @@ import java.io.File
 
 /**
  * The hidden Pink palette end to end: hidden in Appearance, five activations of the version on About
- * unlock it with a confirmation, then it is chosen and the app turns pink, light and dark with the
- * phone. Screenshots go to the app's files, pink/.
+ * unlock it with a confirmation, then Pink light and Pink dark are chosen and the app turns pink. Screenshots go to the app's files, pink/.
  */
 @RunWith(AndroidJUnit4::class)
 class PinkThemeTest {
@@ -82,7 +81,8 @@ class PinkThemeTest {
 
         // Hidden until unlocked.
         openSettingsDialog()
-        assertTrue(rule.onAllNodesWithTag("appearance-pink").fetchSemanticsNodes().isEmpty())
+        assertTrue(rule.onAllNodesWithTag("appearance-pink-light").fetchSemanticsNodes().isEmpty())
+        assertTrue(rule.onAllNodesWithTag("appearance-pink-dark").fetchSemanticsNodes().isEmpty())
         rule.onNodeWithTag("appearance-light").performClick()
 
         // The version is a button (TalkBack and keyboards reach it); five presses unlock Pink once.
@@ -98,25 +98,30 @@ class PinkThemeTest {
         rule.waitUntil(5_000) { rule.onAllNodesWithText(confirmation).fetchSemanticsNodes().isNotEmpty() }
         shot("about-unlocked-pink")
 
-        // Now listed; choosing it turns the app pink.
+        // Now listed as Pink light and Pink dark, each a radio row named by its label.
         openSettingsDialog()
         shot("settings-dialog-light")
-        rule.onNodeWithTag("appearance-pink").performClick()
-        assertEquals(Appearance.PINK, container.appearance)
+        for ((tag, label) in listOf("appearance-pink-light" to R.string.appearance_pink_light, "appearance-pink-dark" to R.string.appearance_pink_dark)) {
+            val row = rule.onNodeWithTag(tag).fetchSemanticsNode()
+            assertEquals(Role.RadioButton, row.config.getOrNull(SemanticsProperties.Role))
+            assertEquals(rule.activity.getString(label), row.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text })
+        }
+        rule.onNodeWithTag("appearance-pink-light").performClick()
+        assertEquals(Appearance.PINK_LIGHT, container.appearance)
         shot("settings-pink")
         openScore()
         shot("score-pink")
 
-        // Pink follows the phone into dark.
-        shell("cmd uimode night yes")
-        rule.waitForIdle()
-        shot("score-pink-dark")
-        rule.runOnUiThread { vm.navigate(Screen.SETTINGS) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-appearance").fetchSemanticsNodes().isNotEmpty() }
+        // Pink dark is dark whatever the phone says.
+        openSettingsDialog()
+        rule.onNodeWithTag("appearance-pink-dark").performClick()
+        assertEquals(Appearance.PINK_DARK, container.appearance)
         shot("settings-pink-dark")
+        openScore()
+        shot("score-pink-dark")
 
         // Switching it off is choosing another option; Pink stays listed.
-        rule.onNodeWithTag("setting-appearance").performScrollTo().performClick()
+        openSettingsDialog()
         rule.onNodeWithTag("appearance-system").performClick()
         assertEquals(Appearance.SYSTEM, container.appearance)
         assertTrue(container.pinkUnlocked)

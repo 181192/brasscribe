@@ -1,6 +1,7 @@
 package no.brasscribe.play
 
 import android.content.Context
+import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Build
@@ -86,7 +87,7 @@ class AppContainer(private val context: Context) {
     private val appearanceStore = AppearanceStore(PrefsStore(context.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE)))
 
     /** Settings › Display › Appearance. Compose state, so the theme changes at once when it is set. */
-    var appearance: Appearance by androidx.compose.runtime.mutableStateOf(appearanceStore.load())
+    var appearance: Appearance by androidx.compose.runtime.mutableStateOf(appearanceStore.also { it.migrate(systemDark()) }.load())
         private set
 
     fun updateAppearance(value: Appearance) {
@@ -106,9 +107,16 @@ class AppContainer(private val context: Context) {
     /** Hides Pink again, so device tests can walk the unlock from the start. */
     @androidx.annotation.VisibleForTesting
     fun forgetPink() {
-        if (appearance == Appearance.PINK) updateAppearance(Appearance.SYSTEM)
+        if (appearance.isPink) updateAppearance(Appearance.SYSTEM)
         appearanceStore.forgetPink()
         pinkUnlocked = false
+    }
+
+    /** Whether the phone is in dark theme now; null when it doesn't say. */
+    private fun systemDark(): Boolean? = when (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
+        Configuration.UI_MODE_NIGHT_YES -> true
+        Configuration.UI_MODE_NIGHT_NO -> false
+        else -> null
     }
 
     private val seatStore = SeatStore(PrefsStore(context.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE)))

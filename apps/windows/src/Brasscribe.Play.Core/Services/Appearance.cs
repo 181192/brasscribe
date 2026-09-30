@@ -1,10 +1,11 @@
 namespace Brasscribe.Play.Core.Services;
 
 /// <summary>
-/// Settings › Display › Appearance (design/system.md §10). Match system is the default. <see cref="Pink"/> is the
-/// hidden palette: listed only once it is unlocked from About, and it follows the system's light or dark.
+/// Settings › Display › Appearance (design/system.md §10). Match system is the default. <see cref="PinkLight"/> and
+/// <see cref="PinkDark"/> are Light and Dark in the hidden Pink palette, listed only once it is unlocked from About.
+/// The order is the Appearance box's.
 /// </summary>
-public enum Appearance { System, Light, Dark, Pink }
+public enum Appearance { System, Light, Dark, PinkLight, PinkDark }
 
 /// <summary>The theme a window's root asks for. <see cref="Default"/> lets Windows decide; it maps 1:1 to ElementTheme.</summary>
 public enum RootTheme { Default, Light, Dark }
@@ -21,11 +22,16 @@ public static class AppearanceSetting
     /// <summary>The settings.json key of the Pink unlock (this PC only, like the choice).</summary>
     public const string PinkUnlockedKey = "PinkUnlocked";
 
+    /// <summary>The one Pink choice of earlier versions, which followed the system's light or dark.</summary>
+    public const string LegacyPink = "pink";
+
+    /// <summary>An unknown value is Match system, so an earlier version reads "pink-light" and "pink-dark" as its default.</summary>
     public static Appearance Parse(string? value) => value?.Trim().ToLowerInvariant() switch
     {
         "light" => Appearance.Light,
         "dark" => Appearance.Dark,
-        "pink" => Appearance.Pink,
+        "pink-light" => Appearance.PinkLight,
+        "pink-dark" => Appearance.PinkDark,
         _ => Appearance.System,
     };
 
@@ -33,24 +39,36 @@ public static class AppearanceSetting
     {
         Appearance.Light => "light",
         Appearance.Dark => "dark",
-        Appearance.Pink => "pink",
+        Appearance.PinkLight => "pink-light",
+        Appearance.PinkDark => "pink-dark",
         _ => "system",
     };
 
-    /// <summary>The window root's requested theme: Default under a contrast theme, for Match system and for Pink.</summary>
+    /// <summary>
+    /// What an earlier version's "pink" becomes: Pink dark while Windows is dark, else Pink light (also when that is
+    /// unknown). Null for every other value.
+    /// </summary>
+    public static string? Migrate(string? stored, bool? systemDark) =>
+        stored?.Trim().ToLowerInvariant() == LegacyPink ? Serialise(systemDark == true ? Appearance.PinkDark : Appearance.PinkLight) : null;
+
+    public static bool IsPink(Appearance choice) => choice is Appearance.PinkLight or Appearance.PinkDark;
+
+    /// <summary>The window root's requested theme: Default under a contrast theme and for Match system.</summary>
     public static RootTheme Resolve(Appearance choice, bool highContrast) => highContrast ? RootTheme.Default : choice switch
     {
-        Appearance.Light => RootTheme.Light,
-        Appearance.Dark => RootTheme.Dark,
+        Appearance.Light or Appearance.PinkLight => RootTheme.Light,
+        Appearance.Dark or Appearance.PinkDark => RootTheme.Dark,
         _ => RootTheme.Default,
     };
 
     /// <summary>The Pink palette is in use: chosen, and no contrast theme on (that still wins).</summary>
-    public static bool UsesPink(Appearance choice, bool highContrast) => choice == Appearance.Pink && !highContrast;
+    public static bool UsesPink(Appearance choice, bool highContrast) => IsPink(choice) && !highContrast;
 
-    /// <summary>The choices the Appearance box lists, in order: Pink last, only once it is unlocked.</summary>
+    /// <summary>The choices the Appearance box lists, in order: Pink light and Pink dark last, only once Pink is unlocked.</summary>
     public static IReadOnlyList<Appearance> Choices(bool pinkUnlocked) =>
-        pinkUnlocked ? [Appearance.System, Appearance.Light, Appearance.Dark, Appearance.Pink] : [Appearance.System, Appearance.Light, Appearance.Dark];
+        pinkUnlocked
+            ? [Appearance.System, Appearance.Light, Appearance.Dark, Appearance.PinkLight, Appearance.PinkDark]
+            : [Appearance.System, Appearance.Light, Appearance.Dark];
 }
 
 /// <summary>

@@ -48,33 +48,40 @@ struct BrasscribePlayApp: App {
 }
 
 /// Settings → Appearance: match the system (the default), or always light or dark. Stored per
-/// device. Increase Contrast still applies on top of either. Pink (design/system.md §10) is hidden
-/// until it is unlocked from About; it follows the system's light or dark with the Pink palette.
+/// device. Increase Contrast still applies on top of either. Pink light and Pink dark (design/system.md
+/// §10) are hidden until Pink is unlocked from About; they are Light and Dark with the Pink palette.
 enum AppearanceSetting: String, CaseIterable, Identifiable {
-    case system, light, dark, pink
+    case system, light, dark
+    case pinkLight = "pink-light"
+    case pinkDark = "pink-dark"
     static let key = "appearance"
+    /// The one Pink choice of earlier versions, which followed the system's light or dark.
+    static let legacyPink = "pink"
     var id: String { rawValue }
 
     var colorScheme: ColorScheme? {
         switch self {
-        case .system, .pink: nil
-        case .light: .light
-        case .dark: .dark
+        case .system: nil
+        case .light, .pinkLight: .light
+        case .dark, .pinkDark: .dark
         }
     }
+
+    var isPink: Bool { self == .pinkLight || self == .pinkDark }
 
     var title: String {
         switch self {
         case .system: String(localized: "Match system")
         case .light: String(localized: "Light")
         case .dark: String(localized: "Dark")
-        case .pink: String(localized: "Pink")
+        case .pinkLight: String(localized: "Pink light")
+        case .pinkDark: String(localized: "Pink dark")
         }
     }
 
-    /// The options the picker lists: Pink only once it is unlocked.
+    /// The options the picker lists: Pink light and Pink dark only once Pink is unlocked.
     static func options(pinkUnlocked: Bool) -> [AppearanceSetting] {
-        pinkUnlocked ? allCases : allCases.filter { $0 != .pink }
+        pinkUnlocked ? allCases : allCases.filter { !$0.isPink }
     }
 
     /// The scheme to apply: a test's `-appearance` wins, then the setting.
@@ -86,17 +93,29 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
     /// Whether the Pink palette applies: a test's `-appearance` wins, then the setting.
     static func isPink(stored: String?) -> Bool {
         if let forced = LaunchOptions.appearance { return forced.pink }
-        return stored == AppearanceSetting.pink.rawValue
+        return storedIsPink(stored)
+    }
+
+    /// Whether a stored value is a Pink choice, the earlier single "pink" included.
+    static func storedIsPink(_ stored: String?) -> Bool {
+        stored == legacyPink || stored.flatMap(AppearanceSetting.init(rawValue:))?.isPink == true
+    }
+
+    /// What an earlier version's "pink" becomes: Pink dark while the system is dark, else Pink light;
+    /// nil for every other value. An earlier version reads the new values as Match system.
+    static func migrated(stored: String?, systemDark: Bool?) -> String? {
+        guard stored == legacyPink else { return nil }
+        return (systemDark == true ? AppearanceSetting.pinkDark : .pinkLight).rawValue
     }
 }
 
-/// Unlocking Pink from About. The flag is kept on this device next to `appearance`; a stored "pink"
-/// counts as unlocked, so the choice is never left without its option.
+/// Unlocking Pink from About. The flag is kept on this device next to `appearance`; a stored Pink
+/// choice counts as unlocked, so the choice is never left without its option.
 enum PinkUnlock {
     static let key = "pinkUnlocked"
 
     static func isUnlocked(_ defaults: UserDefaults = .standard) -> Bool {
-        defaults.bool(forKey: key) || defaults.string(forKey: AppearanceSetting.key) == AppearanceSetting.pink.rawValue
+        defaults.bool(forKey: key) || AppearanceSetting.storedIsPink(defaults.string(forKey: AppearanceSetting.key))
     }
 
     static func unlock(_ defaults: UserDefaults = .standard) { defaults.set(true, forKey: key) }
@@ -134,14 +153,22 @@ struct UnlockCounter {
 }
 
 /// Applies the Appearance setting to a window or a sheet; it changes at once when the setting does.
-/// The tint is set here too, so it follows the palette.
+/// The tint is set here too, so it follows the palette. An earlier version's "pink" follows the
+/// system until it is shown, then becomes Pink light or Pink dark to match it.
 struct AppAppearance: ViewModifier {
     @AppStorage(AppearanceSetting.key) private var stored = AppearanceSetting.system.rawValue
+    @Environment(\.colorScheme) private var systemScheme
     func body(content: Content) -> some View {
         content
             .tint(Color.Brasscribe.primary)
             .preferredColorScheme(AppearanceSetting.scheme(stored: stored))
             .onChange(of: stored, initial: true) { _, value in
+                // the old "pink" asks for no scheme, so the one seen here is still the system's
+                if let migrated = AppearanceSetting.migrated(stored: value, systemDark: systemScheme == .dark) {
+                    PinkUnlock.unlock()
+                    stored = migrated
+                    return
+                }
                 let pink = AppearanceSetting.isPink(stored: value)
                 if BrasscribePalette.shared.isPink != pink { BrasscribePalette.shared.isPink = pink }
             }
@@ -156,7 +183,7 @@ extension View {
 enum LaunchOptions {
     static let args = ProcessInfo.processInfo.arguments
 
-    /// `-appearance light|dark|pink|pink-dark`: the scheme, and whether the Pink palette applies.
+    /// `-appearance light|dark|pink-light|pink-dark`: the scheme, and whether the Pink palette applies.
     static var appearance: (scheme: ColorScheme, pink: Bool)? {
         guard let i = args.firstIndex(of: "-appearance"), i + 1 < args.count else { return nil }
         return parseAppearance(args[i + 1])
@@ -165,7 +192,7 @@ enum LaunchOptions {
     static func parseAppearance(_ value: String) -> (scheme: ColorScheme, pink: Bool) {
         switch value {
         case "dark": (.dark, false)
-        case "pink": (.light, true)
+        case "pink-light", "pink": (.light, true)
         case "pink-dark": (.dark, true)
         default: (.light, false)
         }

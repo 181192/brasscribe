@@ -75,8 +75,11 @@
   <data name="AppearanceSystem.Content" xml:space="preserve">
     <value>Match system</value>
   </data>
-  <data name="Appearance_Pink" xml:space="preserve">
-    <value>Pink</value>
+  <data name="Appearance_PinkDark" xml:space="preserve">
+    <value>Pink dark</value>
+  </data>
+  <data name="Appearance_PinkLight" xml:space="preserve">
+    <value>Pink light</value>
   </data>
   <data name="AskComputerButton.Content" xml:space="preserve">
     <value>Ask on the computer instead</value>

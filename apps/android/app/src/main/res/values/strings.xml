@@ -480,7 +480,8 @@
     <string name="appearance_system">Match system</string>
     <string name="appearance_light">Light</string>
     <string name="appearance_dark">Dark</string>
-    <string name="appearance_pink">Pink</string>
+    <string name="appearance_pink_light">Pink light</string>
+    <string name="appearance_pink_dark">Pink dark</string>
     <string name="pink_unlocked">🎺 Pink unlocked</string>
     <string name="about_version">Version %1$s</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Brasscribe uses its high-contrast colours.</string>

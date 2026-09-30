@@ -19,7 +19,7 @@ public sealed partial class SettingsDialog : ContentDialog
         ConnectionStatus.Show(viewModel.Connection);
         LanguageBox.SelectedIndex = viewModel.Language switch { "en-US" => 1, "nb-NO" => 2, _ => 0 };
         VerbosityBox.SelectedIndex = (int)viewModel.Verbosity;
-        if (viewModel.PinkUnlocked) AddPinkChoice();
+        if (viewModel.PinkUnlocked) AddPinkChoices();
         AppearanceBox.SelectedIndex = (int)viewModel.Appearance;
         AppVersion.Content = App.Strings.Format("Settings_AppVersion", AppVersionText());
         viewModel.PinkUnlockedNow += OnPinkUnlocked;
@@ -94,10 +94,10 @@ public sealed partial class SettingsDialog : ContentDialog
 
     private void OnVersion(object sender, RoutedEventArgs e) => ViewModel.ActivateVersion();
 
-    /// <summary>Pink goes last in Appearance (nothing switches), and a small note says so for a few seconds.</summary>
+    /// <summary>Pink light and Pink dark go last in Appearance (nothing switches), and a small note says so for a few seconds.</summary>
     private void OnPinkUnlocked(object? sender, EventArgs e)
     {
-        AddPinkChoice();
+        AddPinkChoices();
         PinkNote.Text = App.Strings["Pink_Unlocked"];
         PinkNote.Visibility = Visibility.Visible;
         var timer = DispatcherQueue.CreateTimer();
@@ -107,9 +107,12 @@ public sealed partial class SettingsDialog : ContentDialog
         timer.Start();
     }
 
-    private void AddPinkChoice()
+    /// <summary>The items follow the enum's order, so an item's index is its <see cref="Appearance"/>.</summary>
+    private void AddPinkChoices()
     {
-        if (AppearanceBox.Items.Count <= (int)Appearance.Pink) AppearanceBox.Items.Add(new ComboBoxItem { Content = App.Strings["Appearance_Pink"] });
+        if (AppearanceBox.Items.Count > (int)Appearance.PinkLight) return;
+        AppearanceBox.Items.Add(new ComboBoxItem { Content = App.Strings["Appearance_PinkLight"] });
+        AppearanceBox.Items.Add(new ComboBoxItem { Content = App.Strings["Appearance_PinkDark"] });
     }
 
     /// <summary>Applies at once: the app's theme controller re-themes every window and this dialog; focus stays here.</summary>

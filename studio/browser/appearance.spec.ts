@@ -39,47 +39,76 @@ test("forced colours still drop the pinned theme", async ({ page }) => {
   expect(await theme(page)).toBeNull();
 });
 
-// Pink, the hidden palette: follows the system's light or dark, and steps aside for more contrast.
+// Pink, the hidden palette: Pink light and Pink dark pick their own light or dark, and the palette
+// steps aside for more contrast.
 const palette = (page: Page) => page.evaluate(() => document.documentElement.getAttribute("data-palette"));
 
-for (const [system, expected] of [["light", "#FFF6F9"], ["dark", "#1B1017"]] as const) {
-  test(`Pink on a ${system} system uses pink ${system}`, async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("brasscribe.studio.theme", "pink"));
+for (const [choice, mode, system, expected] of [
+  ["pink-light", "light", "dark", "#FFF6F9"],
+  ["pink-dark", "dark", "light", "#1B1017"],
+] as const) {
+  test(`${choice} on a ${system} system uses pink ${mode}`, async ({ page }) => {
+    await page.addInitScript((v) => localStorage.setItem("brasscribe.studio.theme", v), choice);
     await page.emulateMedia({ colorScheme: system, contrast: "no-preference" });
     await page.goto("/#/viewer");
     expect(await palette(page)).toBe("pink");
-    expect(await theme(page)).toBeNull();
+    expect(await theme(page)).toBe(mode);
     expect(await bg(page)).toBe(expected);
-    expect(await scheme(page)).toBe(system);
-    await expect(page.locator("#theme-select")).toHaveValue("pink");
+    expect(await scheme(page)).toBe(mode);
+    await expect(page.locator("#theme-select")).toHaveValue(choice);
   });
 }
 
-test("more contrast wins over Pink", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("brasscribe.studio.theme", "pink"));
+for (const [system, migrated, expected] of [["light", "pink-light", "#FFF6F9"], ["dark", "pink-dark", "#1B1017"]] as const) {
+  test(`an earlier Pink on a ${system} system becomes ${migrated}`, async ({ page }) => {
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem("seeded")) localStorage.setItem("brasscribe.studio.theme", "pink");
+      sessionStorage.setItem("seeded", "1");
+    });
+    await page.emulateMedia({ colorScheme: system, contrast: "no-preference" });
+    await page.goto("/#/viewer");
+    expect(await palette(page)).toBe("pink");
+    expect(await bg(page)).toBe(expected);
+    await expect(page.locator("#theme-select")).toHaveValue(migrated);
+    expect(await page.evaluate(() => [localStorage.getItem("brasscribe.studio.theme"), localStorage.getItem("brasscribe.studio.pink")])).toEqual([migrated, "1"]);
+    // Kept once migrated: the system's mode no longer matters.
+    await page.emulateMedia({ colorScheme: system === "light" ? "dark" : "light" });
+    await page.reload();
+    expect(await bg(page)).toBe(expected);
+  });
+}
+
+test("more contrast wins over the Pink palette and keeps its light or dark", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("brasscribe.studio.theme", "pink-dark"));
   await page.emulateMedia({ colorScheme: "light", contrast: "more" });
   await page.goto("/#/viewer");
   expect(await palette(page)).toBeNull();
-  expect(await bg(page)).toBe("#FFFFFF");
+  expect(await theme(page)).toBe("dark");
+  expect(await bg(page)).toBe("#000000");
 });
 
-test("five activations of the lockup unlock Pink, from the keyboard too", async ({ page }) => {
+test("five activations of the lockup unlock Pink light and Pink dark, from the keyboard too", async ({ page }) => {
   // On Runs, the lockup's own page, so activating it does not move focus to a new view.
   await page.goto("/#/runs");
-  const pink = page.locator('#theme-select option[value="pink"]');
+  const options = page.locator("#theme-select option");
+  const pink = page.locator('#theme-select option[value^="pink"]');
   await expect(pink).toHaveCount(0);
   await page.locator("#brand").focus();
   for (let i = 0; i < 5; i++) await page.keyboard.press("Enter");
-  await expect(pink).toHaveCount(1);
-  await expect(pink).toHaveText("Pink");
+  // Listed after Match system, Light and Dark, each named by its label.
+  await expect(options).toHaveText(["Match system", "Light", "Dark", "Pink light", "Pink dark"]);
   await expect(page.locator("#announcer")).toHaveText("🎺 Pink unlocked");
   await expect(page.locator(".pink-note")).toBeVisible();
-  await page.selectOption("#theme-select", "pink");
+  await expect(page.getByLabel("Appearance")).toBeVisible();
+  await page.selectOption("#theme-select", "pink-dark");
   expect(await palette(page)).toBe("pink");
+  expect(await theme(page)).toBe("dark");
+  await page.selectOption("#theme-select", "pink-light");
+  expect(await theme(page)).toBe("light");
   await page.reload();
-  await expect(pink).toHaveCount(1);
+  await expect(pink).toHaveCount(2);
   // Switching it off: any other choice.
   await page.selectOption("#theme-select", "system");
   expect(await palette(page)).toBeNull();
-  await expect(pink).toHaveCount(1);
+  await expect(pink).toHaveCount(2);
 });

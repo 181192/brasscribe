@@ -1,26 +1,52 @@
 /** Appearance (design/system.md §10): Match system, Light or Dark, stored per browser, and the
- *  hidden Pink once it is unlocked (activate the Brasscribe Studio lockup five times in a row).
- *  The choice becomes data-theme on <html>; brasscribe.css reads it. Pink sets data-palette="pink"
- *  instead and follows the system's light or dark. With more contrast (prefers-contrast: more)
- *  the choice stays and brasscribe.css swaps in the light or dark high-contrast palette for it;
- *  Pink steps aside. Forced colours (Windows contrast themes) always win: the attributes are
- *  removed and the system decides. index.html repeats `apply` inline so the first paint already
- *  has the right theme. */
+ *  hidden Pink light and Pink dark once Pink is unlocked (activate the Brasscribe Studio lockup five
+ *  times in a row). The choice becomes data-theme on <html>; brasscribe.css reads it. Pink light and
+ *  Pink dark also set data-palette="pink". With more contrast (prefers-contrast: more) the choice
+ *  stays and brasscribe.css swaps in the light or dark high-contrast palette for it; the Pink palette
+ *  steps aside. Forced colours (Windows contrast themes) always win: the attributes are removed and
+ *  the system decides. index.html repeats `apply` inline so the first paint already has the right
+ *  theme. */
 
-export type ThemeChoice = "system" | "light" | "dark" | "pink";
+export type ThemeChoice = "system" | "light" | "dark" | "pink-light" | "pink-dark";
 export type Contrast = "forced" | "more" | null;
 
 export const THEME_STORE = "brasscribe.studio.theme";
 export const PINK_STORE = "brasscribe.studio.pink";
 const CONTRAST_QUERIES = ["(forced-colors: active)", "(prefers-contrast: more)"] as const;
 
+/** The one Pink choice of earlier versions, which followed the system's light or dark. */
+export const LEGACY_PINK = "pink";
+
+/** An unknown value is Match system, so an earlier version reads "pink-light" and "pink-dark" as its default. */
 export function parseChoice(v: unknown): ThemeChoice {
-  return v === "light" || v === "dark" || v === "pink" ? v : "system";
+  return v === "light" || v === "dark" || v === "pink-light" || v === "pink-dark" ? v : "system";
 }
 
+export function isPink(c: ThemeChoice): boolean {
+  return c === "pink-light" || c === "pink-dark";
+}
+
+/** What an earlier version's "pink" becomes: Pink dark while the system is dark, else Pink light
+ *  (also when that is unknown). Null for every other value. */
+export function migrateChoice(v: unknown, systemDark: boolean | null): ThemeChoice | null {
+  if (v !== LEGACY_PINK) return null;
+  return systemDark ? "pink-dark" : "pink-light";
+}
+
+function systemDark(): boolean | null {
+  return typeof matchMedia === "function" ? matchMedia("(prefers-color-scheme: dark)").matches : null;
+}
+
+/** The stored choice. An earlier "pink" is rewritten once, with the unlock, so an earlier version
+ *  (which reads the new value as Match system) still lists Pink. */
 export function loadChoice(): ThemeChoice {
   try {
-    return parseChoice(localStorage.getItem(THEME_STORE));
+    const stored = localStorage.getItem(THEME_STORE);
+    const migrated = migrateChoice(stored, systemDark());
+    if (!migrated) return parseChoice(stored);
+    localStorage.setItem(PINK_STORE, "1");
+    localStorage.setItem(THEME_STORE, migrated);
+    return migrated;
   } catch {
     return "system"; /* storage may be blocked */
   }
@@ -45,13 +71,13 @@ export function contrast(): Contrast {
 
 /** The data-theme value for a choice; null means "let the system decide". Only forced colours override the choice. */
 export function resolveTheme(choice: ThemeChoice, c: Contrast): "light" | "dark" | null {
-  if (c === "forced" || choice === "system" || choice === "pink") return null;
-  return choice;
+  if (c === "forced" || choice === "system") return null;
+  return choice === "light" || choice === "pink-light" ? "light" : "dark";
 }
 
-/** The data-palette value: "pink" for Pink, unless a system contrast setting wins. */
+/** The data-palette value: "pink" for Pink light and Pink dark, unless a system contrast setting wins. */
 export function resolvePalette(choice: ThemeChoice, c: Contrast): "pink" | null {
-  return choice === "pink" && !c ? "pink" : null;
+  return isPink(choice) && !c ? "pink" : null;
 }
 
 let current: ThemeChoice = loadChoice();
@@ -63,9 +89,9 @@ export function choice(): ThemeChoice {
   return current;
 }
 
-/** Whether Pink is listed under Appearance: unlocked in this browser, or already chosen. */
+/** Whether Pink light and Pink dark are listed under Appearance: unlocked in this browser, or already chosen. */
 export function pinkUnlocked(): boolean {
-  if (current === "pink" || unlockedHere) return true;
+  if (isPink(current) || unlockedHere) return true;
   try {
     return localStorage.getItem(PINK_STORE) === "1";
   } catch {

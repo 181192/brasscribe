@@ -4,23 +4,24 @@ import no.brasscribe.play.connection.KeyValueStore
 
 /**
  * Settings › Display › Appearance (design/system.md §10): follow the phone, or force light or dark.
- * [PINK] is the hidden palette, listed only once it is unlocked from About; it follows the phone's
- * light or dark. It is kept on this phone only (excluded from backup and device transfer).
+ * [PINK_LIGHT] and [PINK_DARK] are the hidden palette, listed only once it is unlocked from About.
+ * It is kept on this phone only (excluded from backup and device transfer).
  */
 enum class Appearance(val key: String) {
     SYSTEM("system"),
     LIGHT("light"),
     DARK("dark"),
-    PINK("pink");
+    PINK_LIGHT("pink-light"),
+    PINK_DARK("pink-dark");
 
     /** Whether the app draws dark, given whether the phone is in dark theme. */
     fun isDark(systemDark: Boolean): Boolean = when (this) {
-        SYSTEM, PINK -> systemDark
-        LIGHT -> false
-        DARK -> true
+        SYSTEM -> systemDark
+        LIGHT, PINK_LIGHT -> false
+        DARK, PINK_DARK -> true
     }
 
-    val isPink: Boolean get() = this == PINK
+    val isPink: Boolean get() = this == PINK_LIGHT || this == PINK_DARK
 
     companion object {
         /** An unknown or missing value is "Match system", the default. */
@@ -32,12 +33,23 @@ enum class Appearance(val key: String) {
 class AppearanceStore(private val store: KeyValueStore) {
     fun load(): Appearance = Appearance.fromKey(store.get(KEY))
 
+    /**
+     * Earlier versions stored one "pink" that followed the phone. It becomes Pink light or Pink dark to
+     * match the phone now ([systemDark]; Pink light when that is unknown), and the unlock is written
+     * down, so an earlier version (which reads the new value as Match system) still lists Pink.
+     */
+    fun migrate(systemDark: Boolean?) {
+        if (store.get(KEY) != LEGACY_PINK) return
+        unlockPink()
+        save(migrated(systemDark))
+    }
+
     fun save(value: Appearance) {
         if (value == Appearance.SYSTEM) store.remove(KEY) else store.put(KEY, value.key)
     }
 
     /** Whether Pink has been unlocked on this phone. A stored Pink choice counts as unlocked. */
-    fun pinkUnlocked(): Boolean = store.get(PINK_KEY) == "true" || load() == Appearance.PINK
+    fun pinkUnlocked(): Boolean = store.get(PINK_KEY) == "true" || load().isPink || store.get(KEY) == LEGACY_PINK
 
     fun unlockPink() = store.put(PINK_KEY, "true")
 
@@ -48,10 +60,16 @@ class AppearanceStore(private val store: KeyValueStore) {
         const val PINK_KEY = "pinkUnlocked"
         /** Its own preferences file, so the backup rules can leave it out. */
         const val PREFS = "device"
+        /** The one Pink choice of earlier versions, which followed the phone's light or dark. */
+        const val LEGACY_PINK = "pink"
 
-        /** The choices the Appearance dialog lists: Pink only once it is unlocked. */
+        /** What a stored "pink" becomes: Pink dark on a phone in dark theme, else Pink light. */
+        fun migrated(systemDark: Boolean?): Appearance =
+            if (systemDark == true) Appearance.PINK_DARK else Appearance.PINK_LIGHT
+
+        /** The choices the Appearance dialog lists: Pink light and Pink dark only once it is unlocked. */
         fun choices(pinkUnlocked: Boolean): List<Appearance> =
-            Appearance.entries.filter { it != Appearance.PINK || pinkUnlocked }
+            Appearance.entries.filter { !it.isPink || pinkUnlocked }
     }
 }
 

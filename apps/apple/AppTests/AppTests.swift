@@ -297,37 +297,53 @@ func testVideo() -> URL? {
 }
 
 /// Settings → Appearance: Match system (the default and anything unknown) leaves the scheme to the
-/// system; Light and Dark force it.
+/// system; Light and Pink light are light, Dark and Pink dark are dark.
 @Test @MainActor func appearanceSettingMapsToAColorScheme() {
     guard LaunchOptions.colorScheme == nil else { return }  // a test run with -appearance overrides the setting
     #expect(AppearanceSetting.scheme(stored: "system") == nil)
     #expect(AppearanceSetting.scheme(stored: "light") == .light)
     #expect(AppearanceSetting.scheme(stored: "dark") == .dark)
+    #expect(AppearanceSetting.scheme(stored: "pink-light") == .light)
+    #expect(AppearanceSetting.scheme(stored: "pink-dark") == .dark)
     #expect(AppearanceSetting.scheme(stored: "something else") == nil)
-    #expect(AppearanceSetting.scheme(stored: "pink") == nil)  // Pink follows the system's light or dark
-    #expect(AppearanceSetting.allCases.map(\.rawValue) == ["system", "light", "dark", "pink"])
+    #expect(AppearanceSetting.scheme(stored: "pink") == nil)  // the earlier Pink follows the system until it is migrated
+    #expect(AppearanceSetting.allCases.map(\.rawValue) == ["system", "light", "dark", "pink-light", "pink-dark"])
     #expect(AppearanceSetting.allCases.map(\.title).allSatisfy { !$0.isEmpty })
+    #expect(Set(AppearanceSetting.allCases.map(\.title)).count == AppearanceSetting.allCases.count)
 }
 
-/// Pink is listed only once it is unlocked, and only the "pink" choice turns the Pink palette on.
+/// Pink light and Pink dark are listed after Match system, Light and Dark only once Pink is unlocked,
+/// and only a Pink choice (the earlier "pink" too) turns the Pink palette on.
 @Test @MainActor func pinkIsHiddenUntilUnlockedAndDrivesThePalette() {
     #expect(AppearanceSetting.options(pinkUnlocked: false) == [.system, .light, .dark])
-    #expect(AppearanceSetting.options(pinkUnlocked: true) == [.system, .light, .dark, .pink])
+    #expect(AppearanceSetting.options(pinkUnlocked: true) == [.system, .light, .dark, .pinkLight, .pinkDark])
     guard LaunchOptions.appearance == nil else { return }
-    #expect(AppearanceSetting.isPink(stored: "pink"))
+    for pink in ["pink-light", "pink-dark", "pink"] { #expect(AppearanceSetting.isPink(stored: pink)) }
     for other in ["system", "light", "dark", "something else"] { #expect(!AppearanceSetting.isPink(stored: other)) }
     #expect(!AppearanceSetting.isPink(stored: nil))
 }
 
-/// `-appearance` for the harness and screenshots: pink and pink-dark pick the scheme and the palette.
+/// An earlier version's "pink" becomes Pink dark while the system is dark, else Pink light (also when
+/// the system's mode is unknown); nothing else is touched.
+@Test func earlierPinkIsMigratedByTheSystemsMode() {
+    #expect(AppearanceSetting.migrated(stored: "pink", systemDark: true) == "pink-dark")
+    #expect(AppearanceSetting.migrated(stored: "pink", systemDark: false) == "pink-light")
+    #expect(AppearanceSetting.migrated(stored: "pink", systemDark: nil) == "pink-light")
+    for other in [nil, "system", "light", "dark", "pink-light", "pink-dark", "sepia"] {
+        #expect(AppearanceSetting.migrated(stored: other, systemDark: true) == nil)
+    }
+}
+
+/// `-appearance` for the harness and screenshots: pink-light and pink-dark pick the scheme and the palette.
 @Test func launchAppearanceParsesPink() {
+    #expect(LaunchOptions.parseAppearance("pink-light") == (.light, true))
     #expect(LaunchOptions.parseAppearance("pink") == (.light, true))
     #expect(LaunchOptions.parseAppearance("pink-dark") == (.dark, true))
     #expect(LaunchOptions.parseAppearance("dark") == (.dark, false))
     #expect(LaunchOptions.parseAppearance("light") == (.light, false))
 }
 
-/// The unlock flag is kept per device; a stored "pink" counts as unlocked even without it.
+/// The unlock flag is kept per device; a stored Pink choice counts as unlocked even without it.
 @Test func pinkUnlockPersists() throws {
     let defaults = try #require(UserDefaults(suiteName: "pink-unlock-\(UUID().uuidString)"))
     #expect(!PinkUnlock.isUnlocked(defaults))
@@ -336,8 +352,10 @@ func testVideo() -> URL? {
     #expect(defaults.bool(forKey: PinkUnlock.key))
 
     let chosen = try #require(UserDefaults(suiteName: "pink-chosen-\(UUID().uuidString)"))
-    chosen.set("pink", forKey: AppearanceSetting.key)
-    #expect(PinkUnlock.isUnlocked(chosen))
+    for pink in ["pink-light", "pink-dark", "pink"] {
+        chosen.set(pink, forKey: AppearanceSetting.key)
+        #expect(PinkUnlock.isUnlocked(chosen))
+    }
     chosen.set("dark", forKey: AppearanceSetting.key)
     #expect(!PinkUnlock.isUnlocked(chosen))
 }

@@ -10,7 +10,7 @@ const out = process.env.PINK_SHOTS;
 for (const system of ["light", "dark"] as const) {
   test(`Pink score viewer, ${system}`, async ({ page }) => {
     test.skip(!out, "set PINK_SHOTS to write the screenshots");
-    await page.addInitScript(() => localStorage.setItem("brasscribe.studio.theme", "pink"));
+    await page.addInitScript((v) => localStorage.setItem("brasscribe.studio.theme", v), `pink-${system}`);
     await page.emulateMedia({ colorScheme: system, contrast: "no-preference" });
     await page.goto("/#/viewer");
     await page.setInputFiles("#open-musicxml", fixture);

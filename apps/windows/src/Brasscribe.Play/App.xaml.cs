@@ -127,8 +127,9 @@ public partial class App : Application
         };
         // Heartbeats and pairing share one client with short timeouts; the credential is in the Credential Locker.
         var shortHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(4) }) { Timeout = TimeSpan.FromSeconds(15) };
+        // RequestedTheme is never set by the app, so it is Windows' app mode at start-up.
         var settingsVm = new SettingsViewModel(Settings, announcer, Strings, vault: CredentialLockerVault.Create(),
-            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token });
+            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token }, systemDark: RequestedTheme == ApplicationTheme.Dark);
 
         // No overall timeout (the event stream stays open for the whole job), but a LAN address that
         // drops packets must fail within seconds rather than hang on connect.
@@ -153,7 +154,7 @@ public partial class App : Application
             LayerCacheRoot = System.IO.Path.Combine(JsonSettingsStore.WorkDirectory, "layers"),
         };
 
-        // --theme light|dark: a fixed theme for screenshots; otherwise the Appearance setting decides.
+        // --theme light|dark|pink-light|pink-dark: a fixed theme for screenshots; otherwise the Appearance setting decides.
         Theme = new ThemeController(settingsVm, queue, Option("--theme"));
         _window = new MainWindow(main, Strings);
         Theme.Attach(_window);

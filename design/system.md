@@ -178,7 +178,7 @@ The score alone, for reading from a stand: one part, in pages, with a control la
 
 Settings › Display has one row, **Appearance** / «Utseende», that forces light or dark on this device.
 
-- **Options:** **Match system** / «Følg systemet» (the default), **Light** / «Lyst», **Dark** / «Mørkt», and **Pink** / «Rosa» once it is unlocked (see Pink below). No description line.
+- **Options:** **Match system** / «Følg systemet» (the default), **Light** / «Lyst», **Dark** / «Mørkt», and, once Pink is unlocked, **Pink light** / «Rosa lyst» and **Pink dark** / «Rosa mørkt» (see Pink below). No description line.
 - **One choice, native picker.** It is never ink-filled or a row of toggles. The selected option shows the platform's ✓ or radio, and screen readers announce the row as a choice with its current value ("Appearance, Dark").
 
   | SwiftUI | Compose | WinUI 3 | Studio HTML |
@@ -204,17 +204,18 @@ Settings › Display has one row, **Appearance** / «Utseende», that forces lig
 
 ### Pink (hidden)
 
-A fourth Appearance option, **Pink** / «Rosa», that nobody sees until they find it. It is a small present for the players who poke around, not a feature to explain, so it is never mentioned in onboarding, help or release notes.
+Two more Appearance options, **Pink light** / «Rosa lyst» and **Pink dark** / «Rosa mørkt», that nobody sees until they find them. Pink is a small present for the players who poke around, not a feature to explain, so it is never mentioned in onboarding, help or release notes.
 
-- **What it is.** A playful palette for the chrome: blush paper, plum text, a raspberry primary (bubblegum on dark), rose tonal fills. It follows the system's light or dark, like Match system. It is the one exception to rule 2 ("UI chrome stays neutral"): the chrome may be pink, but **the notation keeps its own colours**. Noteheads and staff stay ink on near-white paper (paper tones on dark), and uncertain, very uncertain, loop and cursor keep their hues. Brass stays the brand colour. Pink dark moves `error` to coral so it stays apart from the pink primary.
-- **System contrast still wins.** Increase Contrast, a high contrast level and `prefers-contrast: more` give the high-contrast palette, and Windows contrast themes and forced colours give the system's. Pink stays chosen for when contrast is turned off. PDFs, printouts and the pairing QR code stay light, as for every choice.
+- **What it is.** A playful palette for the chrome: blush paper, plum text, a raspberry primary (bubblegum on dark), rose tonal fills. Pink light is Light in this palette and Pink dark is Dark in it: each keeps its mode whatever the system's is. It is the one exception to rule 2 ("UI chrome stays neutral"): the chrome may be pink, but **the notation keeps its own colours**. Noteheads and staff stay ink on near-white paper (paper tones on dark), and uncertain, very uncertain, loop and cursor keep their hues. Brass stays the brand colour. Pink dark moves `error` to coral so it stays apart from the pink primary.
+- **System contrast still wins.** Increase Contrast, a high contrast level and `prefers-contrast: more` give the high-contrast palette, and Windows contrast themes and forced colours give the system's. Pink light or Pink dark stays chosen for when contrast is turned off, and more contrast keeps its light or dark. PDFs, printouts and the pairing QR code stay light, as for every choice.
 - **How to find it.** In About, activate the version five times in a row, each within 1.5 s of the one before (a longer pause starts again). In Studio, which has no About, it is the Brasscribe Studio lockup in the header, activated on its own page (Runs).
   - Any activation counts: a tap, a click, Space or Enter, a VoiceOver or TalkBack double tap, Switch Control. The target is an ordinary button or link, so it is reachable from the keyboard, and nothing about it hints that it does more.
   - On the Mac, an Option-click (or Option with the keyboard activation) on the version unlocks at once.
-  - On unlock, a small note says **🎺 Pink unlocked** / **🎺 Rosa låst opp** for a few seconds, and screen readers announce it once. Pink then appears last in the Appearance picker. Nothing switches by itself.
-- **Staying unlocked.** The unlock is kept on the device (never synced or backed up), like the choice itself. A device that has Pink chosen counts as unlocked. To switch it off, choose any other option; Pink stays in the list.
+  - On unlock, a small note says **🎺 Pink unlocked** / **🎺 Rosa låst opp** for a few seconds, and screen readers announce it once. Pink light and Pink dark then appear last in the Appearance picker, after Match system, Light and Dark. Each is an ordinary option named by its label. Nothing switches by itself.
+- **Staying unlocked.** The unlock is kept on the device (never synced or backed up), like the choice itself. A device that has Pink light or Pink dark chosen counts as unlocked. To switch it off, choose any other option; both stay in the list.
+- **Earlier versions.** They had one Pink that followed the system. The first time an updated app starts, that choice becomes Pink light or Pink dark to match the system's mode at that moment (Pink light if the app cannot tell), and the unlock is written down. The new choices are stored as `pink-light` and `pink-dark`, which an earlier version reads as Match system while still listing its Pink.
 - **Where.** Play on Android, iOS, iPadOS, macOS and Windows, and Studio. Not in Bandroom yet.
-- **Tokens.** `color.pink` and `color.pink-dark` in [`tokens/tokens.json`](tokens/tokens.json). Compose: `BrasscribeTheme(pink = true)`; SwiftUI: `BrasscribePalette.shared.isPink` switches `Color.Brasscribe.*` to the `BrasscribePink/` colour sets; web: `data-palette="pink"` on the root; WinUI: `BrasscribePinkTheme.xaml` merged after the Brasscribe theme (Windows Play's `ThemeController`).
+- **Tokens.** `color.pink` and `color.pink-dark` in [`tokens/tokens.json`](tokens/tokens.json). Compose: `BrasscribeTheme(pink = true)`; SwiftUI: `BrasscribePalette.shared.isPink` switches `Color.Brasscribe.*` to the `BrasscribePink/` colour sets; web: `data-palette="pink"` on the root, with `data-theme` for light or dark; WinUI: `BrasscribePinkTheme.xaml` merged after the Brasscribe theme (Windows Play's `ThemeController`). In every app the mode comes from the choice, as for Light and Dark.
 
 #### Palette
 

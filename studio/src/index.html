@@ -12,8 +12,10 @@
 try {
   var bcTheme = localStorage.getItem("brasscribe.studio.theme");
   var bcForced = matchMedia("(forced-colors: active)").matches;
-  if ((bcTheme === "light" || bcTheme === "dark") && !bcForced) document.documentElement.setAttribute("data-theme", bcTheme);
-  if (bcTheme === "pink" && !bcForced && !matchMedia("(prefers-contrast: more)").matches) document.documentElement.setAttribute("data-palette", "pink");
+  var bcMode = bcTheme === "pink-light" ? "light" : bcTheme === "pink-dark" ? "dark" : bcTheme;
+  if ((bcMode === "light" || bcMode === "dark") && !bcForced) document.documentElement.setAttribute("data-theme", bcMode);
+  // "pink" is an earlier version's Pink, which follows the system until theme.ts rewrites it.
+  if ((bcTheme === "pink-light" || bcTheme === "pink-dark" || bcTheme === "pink") && !bcForced && !matchMedia("(prefers-contrast: more)").matches) document.documentElement.setAttribute("data-palette", "pink");
 } catch (e) { /* storage may be blocked */ }
 </script>
 <link rel="stylesheet" href="assets/studio-style.css">

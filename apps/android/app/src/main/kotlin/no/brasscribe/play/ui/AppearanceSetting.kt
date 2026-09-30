@@ -40,7 +40,8 @@ fun appearanceLabel(a: Appearance): String = stringResource(
         Appearance.SYSTEM -> R.string.appearance_system
         Appearance.LIGHT -> R.string.appearance_light
         Appearance.DARK -> R.string.appearance_dark
-        Appearance.PINK -> R.string.appearance_pink
+        Appearance.PINK_LIGHT -> R.string.appearance_pink_light
+        Appearance.PINK_DARK -> R.string.appearance_pink_dark
     },
 )
 
