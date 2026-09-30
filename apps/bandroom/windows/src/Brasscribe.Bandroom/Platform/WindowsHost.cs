@@ -173,35 +173,50 @@ internal sealed class StartupRegistration
 
 /// <summary>
 /// Starts the engine inside a job object that kills the whole tree (pixi, python, adapters) when the job
-/// closes: on Stop, on Restart and when Bandroom itself exits or crashes.
+/// closes: on Stop, on Restart and when Bandroom itself exits or crashes. The process joins the job as soon as it
+/// has started, so what it starts from then on belongs to the job too. Every Windows call is checked: when one fails the engine still
+/// runs, and engine.log says it may outlive Bandroom.
 /// </summary>
 internal sealed class JobObjectLauncher : IProcessLauncher, IDisposable
 {
     private readonly SystemProcessLauncher _inner = new();
     private readonly IntPtr _job;
+    private readonly Action<string> _log;
 
-    public JobObjectLauncher()
+    public JobObjectLauncher(Action<string> log)
     {
+        _log = log;
         _job = Native.CreateJobObject(IntPtr.Zero, null);
+        if (_job == IntPtr.Zero)
+        {
+            _log($"bandroom: no job object (error {Marshal.GetLastWin32Error()}): the engine may outlive Bandroom");
+            return;
+        }
         var info = new Native.JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
         info.BasicLimitInformation.LimitFlags = Native.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-        Native.SetInformationJobObject(_job, Native.JobObjectExtendedLimitInformation, ref info, Marshal.SizeOf(info));
+        if (!Native.SetInformationJobObject(_job, Native.JobObjectExtendedLimitInformation, ref info, Marshal.SizeOf(info)))
+            _log($"bandroom: job object limits refused (error {Marshal.GetLastWin32Error()}): the engine may outlive Bandroom");
     }
 
     public IEngineProcess Start(ProcessSpec spec, Action<string> output)
     {
         var p = _inner.Start(spec, output);
+        if (_job == IntPtr.Zero) return p;
         try
         {
             using var proc = Process.GetProcessById(p.Id);
-            Native.AssignProcessToJobObject(_job, proc.Handle);
+            if (!Native.AssignProcessToJobObject(_job, proc.Handle))
+                _log($"bandroom: process {p.Id} couldn't join the job object (error {Marshal.GetLastWin32Error()}): it may outlive Bandroom");
         }
         catch (ArgumentException) { } // exited already
         catch (InvalidOperationException) { }
         return p;
     }
 
-    public void Dispose() => Native.CloseHandle(_job);
+    public void Dispose()
+    {
+        if (_job != IntPtr.Zero) Native.CloseHandle(_job);
+    }
 }
 
 /// <summary>Keeps the PC from idle-sleeping while a score is made; never blocks lid-close or a chosen sleep.</summary>

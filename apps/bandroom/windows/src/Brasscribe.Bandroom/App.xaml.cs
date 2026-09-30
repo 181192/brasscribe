@@ -196,7 +196,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             _controller?.Publish();
         });
 
-        _launcher = new JobObjectLauncher();
+        _launcher = new JobObjectLauncher(_log.Write);
         _bootstrap = new Bootstrapper(_paths, bundled, pixi, _launcher, _log);
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
         IEngineApi ApiFor(int port) => new EngineApi(http, new Uri($"http://127.0.0.1:{port}/"), token);
