@@ -52,22 +52,30 @@ have() {
 sources() {
   # Everything that goes into the library: the crates' sources and manifests (not their tests),
   # the lock file, the cargo config and the Swift header/modulemap packed into the xcframework.
+  # A tracked file deleted in the working tree is still listed by git, but is not a source.
   git -C "$ROOT" ls-files -co --exclude-standard -z -- \
     core/Cargo.toml core/Cargo.lock core/.cargo \
     core/brasscribe-core core/brasscribe-ffi core/brasscribe-cli core/tools \
     core/bindings/swift/brasscribe_ffiFFI.h core/bindings/swift/brasscribe_ffiFFI.modulemap \
-    ':(exclude)core/*/tests/*'
+    ':(exclude)core/*/tests/*' \
+    | while IFS= read -r -d '' f; do [ -e "$ROOT/$f" ] && printf '%s\0' "$f"; done
 }
 sources_hash() { (cd "$ROOT" && sources | xargs -0 shasum -a 256); }
 
 # Builds run on a copy of the sources at one fixed path, $CACHE/core-src. Cargo decides freshness
 # by mtime, so building different checkouts into one target dir directly could reuse another
 # checkout's objects. rsync -c without -t rewrites only the files whose content differs, with a new
-# mtime, and leaves the rest alone: cargo then rebuilds exactly what changed.
+# mtime, and leaves the rest alone: cargo then rebuilds exactly what changed. rsync --files-from
+# never deletes, so files that are not sources of this checkout (deleted here, or left by another
+# checkout) are removed afterwards: the copy holds exactly this checkout's sources.
 sync_sources() {
-  local src="$CACHE/core-src"
-  mkdir -p "$src"
-  (cd "$ROOT" && sources | tr '\0' '\n' | rsync -rc --files-from=- ./ "$src/")
+  local src="$CACHE/core-src" list
+  mkdir -p "$src" || return 1
+  list=$(sources | tr '\0' '\n' | LC_ALL=C sort) || return 1
+  [ -n "$list" ] || return 1
+  printf '%s\n' "$list" | rsync -rc --files-from=- "$ROOT/" "$src/" || return 1
+  (cd "$src" && find . -type f | sed 's|^\./||' | LC_ALL=C sort | LC_ALL=C comm -23 - <(printf '%s\n' "$list") \
+    | while IFS= read -r f; do rm -f "$f"; done && find . -mindepth 1 -type d -empty -delete) || return 1
   echo "$src/core"
 }
 
@@ -100,50 +108,66 @@ lock() {
 }
 unlock() { rm -rf "$STORE/.build.lock"; trap - EXIT; }
 
+# Called as a condition, where set -e does not apply, so every step checks its own status: a failed
+# cargo build must not go on to copy the previous build's library out of the shared target directory.
 build() {
-  local comp="$1" out="$2"
-  mkdir -p "$out"
-  cd "$(sync_sources)"
+  local comp="$1" out="$2" src
+  mkdir -p "$out" || return 1
+  src=$(sync_sources) || { log "copying the sources to $CACHE/core-src failed"; return 1; }
+  cd "$src" || return 1
   case "$comp" in
     host)
-      cargo build --release -q --locked -p brasscribe-ffi
+      cargo build --release -q --locked -p brasscribe-ffi || return 1
       local ext=so; [ "$(uname -s)" = Darwin ] && ext=dylib
-      cp "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.$ext" "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.a" "$out/"
+      cp "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.$ext" "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.a" "$out/" || return 1
       ;;
     apple)
       local t
       for t in aarch64-apple-darwin aarch64-apple-ios aarch64-apple-ios-sim; do
-        env $APPLE_ENV cargo build --release -q --locked -p brasscribe-ffi --target "$t"
-        mkdir -p "$out/lib/$t"; cp "$CARGO_TARGET_DIR/$t/release/libbrasscribe_ffi.a" "$out/lib/$t/"
+        env $APPLE_ENV cargo build --release -q --locked -p brasscribe-ffi --target "$t" || return 1
+        mkdir -p "$out/lib/$t" && cp "$CARGO_TARGET_DIR/$t/release/libbrasscribe_ffi.a" "$out/lib/$t/" || return 1
       done
       local hdr="$out/headers"
-      mkdir -p "$hdr"
-      cp bindings/swift/brasscribe_ffiFFI.h "$hdr/"
-      cp bindings/swift/brasscribe_ffiFFI.modulemap "$hdr/module.modulemap"
+      mkdir -p "$hdr" || return 1
+      cp bindings/swift/brasscribe_ffiFFI.h "$hdr/" || return 1
+      cp bindings/swift/brasscribe_ffiFFI.modulemap "$hdr/module.modulemap" || return 1
       xcodebuild -create-xcframework \
         -library "$out/lib/aarch64-apple-darwin/libbrasscribe_ffi.a" -headers "$hdr" \
         -library "$out/lib/aarch64-apple-ios/libbrasscribe_ffi.a" -headers "$hdr" \
         -library "$out/lib/aarch64-apple-ios-sim/libbrasscribe_ffi.a" -headers "$hdr" \
-        -output "$out/BrasscribeFFI.xcframework" >/dev/null
+        -output "$out/BrasscribeFFI.xcframework" >/dev/null || return 1
       ;;
     android)
-      cargo ndk -t arm64-v8a -t x86_64 -P 29 -o "$out/jniLibs" build --release -q --locked -p brasscribe-ffi
+      cargo ndk -t arm64-v8a -t x86_64 -P 29 -o "$out/jniLibs" build --release -q --locked -p brasscribe-ffi || return 1
       ;;
   esac
 }
 
-# The entry for a component, built if missing. Prints its directory.
+# Whether an entry holds every file of its component.
+built() {
+  local d="$2"
+  case "$1" in
+    host) [ -f "$d/libbrasscribe_ffi.a" ] && { [ -f "$d/libbrasscribe_ffi.so" ] || [ -f "$d/libbrasscribe_ffi.dylib" ]; } ;;
+    apple) [ -f "$d/BrasscribeFFI.xcframework/Info.plist" ] ;;
+    android) [ -f "$d/jniLibs/arm64-v8a/libbrasscribe_ffi.so" ] && [ -f "$d/jniLibs/x86_64/libbrasscribe_ffi.so" ] ;;
+  esac
+}
+
+# The entry for a component, built if missing or incomplete. Prints its directory. It runs in a
+# command substitution, where set -e does not apply: failures exit explicitly.
 entry() {
   local comp="$1" k dir
-  k=$(key "$comp")
+  k=$(key "$comp") || die "$comp: computing the cache key failed"
   dir="$STORE/$comp-$k"
-  if [ ! -f "$dir/.complete" ]; then
+  if [ ! -f "$dir/.complete" ] || ! built "$comp" "$dir"; then
     lock
-    if [ ! -f "$dir/.complete" ]; then
+    if [ ! -f "$dir/.complete" ] || ! built "$comp" "$dir"; then
       local tmp="$STORE/.tmp-$comp-$$" s=$SECONDS
       rm -rf "$STORE"/.tmp-*   # left by an interrupted build; only the lock holder builds
       log "building $comp ($k) from $CORE"
-      build "$comp" "$tmp"
+      if ! build "$comp" "$tmp" || ! built "$comp" "$tmp"; then
+        rm -rf "$tmp"; unlock; die "build of $comp failed; nothing was cached or installed"
+      fi
       touch "$tmp/.complete"
       rm -rf "$dir"; mv "$tmp" "$dir"
       log "built $comp in $((SECONDS - s)) s"
@@ -197,7 +221,8 @@ case "$cmd" in
   ensure)
     for c in $(components "$@"); do
       have "$c" || die "$c: toolchain not installed"
-      install "$c" "$(entry "$c")"
+      dir=$(entry "$c") || exit 1
+      install "$c" "$dir"
     done
     ;;
   key) for c in $(components "$@"); do echo "$c-$(key "$c")"; done ;;

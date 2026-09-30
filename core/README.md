@@ -92,7 +92,9 @@ Tenor Horn and Euphonium, one player each.
 `conformance/` runs each case through the Python entry point and the CLI and
 compares the outputs:
 
-- **composition.json**: parsed JSON, floats bit-equal (the bytes are identical too).
+- **composition.json** and the other JSON outputs: byte-equal. Where they differ, the report names
+  the first value that differs when parsed, strictly: types (`1` is not `1.0`, `true` is not `1`),
+  floats bit for bit (`-0.0` is not `0.0`) and key order.
 - **MusicXML**: canonicalised, then byte-equal. Canonicalisation only drops
   comments, whitespace between elements, `<encoding-date>` and `<software>`,
   renumbers `id` attributes in order of first appearance, and writes C14N.
@@ -107,7 +109,11 @@ JSON, text and HTML under four settings) and humanization (every voice as a
 part, on and off its ticks, two players, score and performed timing, with and
 without the Composition) against their Python references. The Mikkel case is
 compared file by file with `data/golden/mikkel-arranged-band`, parts and
-talking score included; braille (`.brf`, music21's translator) is not ported.
+talking score included; braille (`.brf`, music21's translator) is not ported. A case
+whose golden output is missing fails, and so does a run that selects no case. The Rust
+side, and the reference whenever it runs, write into emptied directories, so no file left
+by an earlier run is compared.
+`uv run python -m unittest discover -s tests` checks the comparisons themselves.
 The talking score also passes every vector in
 `docs/accessibility/talking-score-vectors.json` (`cargo test`, and the .NET
 tests through the C ABI). Results go to `data/runs/core-conformance/report.json`.

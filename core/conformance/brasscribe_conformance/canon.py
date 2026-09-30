@@ -9,8 +9,8 @@ randomises or stamps per run. Canonicalisation therefore
 and serialises the result as C14N (attribute order normalised, child order kept).
 The XML declaration and DOCTYPE lines are compared verbatim.
 
-Composition JSON: compared as parsed JSON with exact float equality, and also
-byte for byte (reported separately).
+Composition JSON: compared as parsed JSON, strictly (same types, bit-equal floats,
+keys in the same order), and byte for byte (reported separately).
 """
 
 from __future__ import annotations
@@ -66,12 +66,27 @@ def musicxml_equal(a: Path, b: Path) -> tuple[bool, str]:
 
 
 def json_equal(a: Path, b: Path) -> tuple[bool, bool, str]:
-    """(parsed-equal, byte-equal, detail)."""
+    """(parsed-equal, byte-equal, detail). Parsed-equal is strict: see `same_json`."""
     ra, rb = a.read_bytes(), b.read_bytes()
     ja, jb = json.loads(ra), json.loads(rb)
-    same = ja == jb
+    same = same_json(ja, jb)
     detail = "" if same else _first_json_diff(ja, jb, "$")
     return same, ra == rb, detail
+
+
+def same_json(a, b) -> bool:
+    """Parsed JSON equal in type, value and order: 1 is not 1.0, true is not 1, floats are compared
+    bit for bit (-0.0 is not 0.0) and object keys must come in the same order. Python's == allows
+    all of these."""
+    if type(a) is not type(b):
+        return False
+    if isinstance(a, float):
+        return a.hex() == b.hex()
+    if isinstance(a, dict):
+        return list(a) == list(b) and all(same_json(a[k], b[k]) for k in a)
+    if isinstance(a, list):
+        return len(a) == len(b) and all(same_json(x, y) for x, y in zip(a, b))
+    return a == b
 
 
 def _first_json_diff(a, b, path: str) -> str:
@@ -81,12 +96,14 @@ def _first_json_diff(a, b, path: str) -> str:
         if list(a) != list(b):
             return f"{path}: keys {list(a)} != {list(b)}"
         for k in a:
-            if a[k] != b[k]:
+            if not same_json(a[k], b[k]):
                 return _first_json_diff(a[k], b[k], f"{path}.{k}")
     elif isinstance(a, list):
         if len(a) != len(b):
             return f"{path}: len {len(a)} != {len(b)}"
         for i, (x, y) in enumerate(zip(a, b)):
-            if x != y:
+            if not same_json(x, y):
                 return _first_json_diff(x, y, f"{path}[{i}]")
+    elif isinstance(a, float):
+        return f"{path}: {a!r} != {b!r} ({a.hex()} vs {b.hex()})"
     return f"{path}: {a!r} != {b!r}"
