@@ -7,6 +7,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 import no.brasscribe.play.model.ArrangeOptions
 import no.brasscribe.play.model.Arranged
+import no.brasscribe.play.model.BandTake
 import no.brasscribe.play.model.BarLines
 import no.brasscribe.play.model.BrasscribeJson
 import no.brasscribe.play.model.Composition
@@ -18,6 +19,7 @@ import no.brasscribe.play.model.MidiWriter
 import no.brasscribe.play.model.PartSpec
 import no.brasscribe.play.model.PitchMode
 import no.brasscribe.play.model.SoloTake
+import no.brasscribe.play.model.songLineup
 import no.brasscribe.play.model.SpelledPitch
 import no.brasscribe.play.model.TalkingScoreDoc
 import no.brasscribe.play.model.TimedNote
@@ -31,7 +33,9 @@ import uniffi.brasscribe_ffi.LayerStems
 import uniffi.brasscribe_ffi.Performance
 import uniffi.brasscribe_ffi.SoloContour
 import uniffi.brasscribe_ffi.TalkingSettings
+import uniffi.brasscribe_ffi.SongArrangeOptions
 import uniffi.brasscribe_ffi.arrangeLayersBand
+import uniffi.brasscribe_ffi.arrangeSongWith
 import uniffi.brasscribe_ffi.arrangeMusicxml
 import uniffi.brasscribe_ffi.arrangeMusicxmlWith
 import uniffi.brasscribe_ffi.coreVersion
@@ -89,6 +93,15 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
         }
         val out = arrangeLayersBand(layers, LayerStems(solo = take.wav), take.beatsText, take.title, opts)
         return Arranged(CompositionJson.decode(out.compositionJson), out.compositionJson, out.musicxml, out.parts.map { it.fileName to it.musicxml })
+    }
+
+    override fun arrangeSong(take: BandTake, options: ArrangeOptions): Arranged {
+        val bp = MidiWriter.write(take.basicPitch, tpq = MidiWriter.BASIC_PITCH_TPQ)
+        // The engine's brass-band profile without MuScriptor: Basic Pitch on the mix fills every slot, and the
+        // melody has no second model to confirm it.
+        val opts = SongArrangeOptions(lineup = songLineup(options.lineup), seat = options.seat, reads = options.reads, lead = options.lead)
+        val out = arrangeSongWith(bp, null, bp, listOf(bp), take.beatsText, take.title, opts)
+        return Arranged(CompositionJson.decode(out.compositionJson), out.compositionJson, out.musicxml, emptyList())
     }
 
     override fun estimateKey(composition: Composition): Int {

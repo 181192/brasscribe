@@ -61,7 +61,7 @@ import java.util.zip.ZipInputStream
 enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE }
+enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG }
 
 enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SCORE }
 
@@ -127,6 +127,8 @@ data class TranscriptionResult(
     val evidence: no.brasscribe.play.engine.Evidence? = null,
     /** A note was changed on the phone: the engine's PDF, braille and audio still show the old one. */
     val changedOnPhone: Boolean = false,
+    /** A quick band draft made on the phone: the computer can make the full score from its recording. */
+    val draft: Boolean = false,
 )
 
 /** What the core wants beside the MusicXML: null is fine, and is all an opened score can give. */
@@ -617,11 +619,16 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     fun chooseProfile(p: Profile) {
         profile.value = p
-        // A solo is transcribed offline on the phone by default; everything else needs the engine.
-        where.value = if (canTranscribeOnDevice()) Where.DEVICE else Where.COMPANION
+        // A solo is made on the phone by default; a brass band goes to the computer when it is there and is
+        // otherwise a draft on the phone; the other choices need the computer (OnDeviceRouting).
+        where.value = OnDeviceRouting.defaultWhere(p, canTranscribeOnDevice(), computerThere())
     }
 
-    fun canTranscribeOnDevice(): Boolean = profile.value == Profile.SOLO && container.hasPitchModel && source.value?.audio != null
+    fun canTranscribeOnDevice(): Boolean = OnDeviceRouting.canRunOnDevice(profile.value, container.hasPitchModel,
+        container.hasBandModels, source.value?.audio != null)
+
+    /** The computer is there to make a score (the fixture engine of the UI tests always is). */
+    fun computerThere(): Boolean = container.usingFixture || OnDeviceRouting.computerThere(connection.state.value)
 
     fun startTranscription() {
         val p = profile.value ?: return
@@ -635,7 +642,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             // A run that was cancelled stops at its next step; the new one starts after it, never beside it.
             previous?.join()
             try {
-                val r = if (where.value == Where.DEVICE && canTranscribeOnDevice()) transcribeOnDevice(s) else transcribeWithEngine(s, p)
+                val r = when {
+                    where.value != Where.DEVICE || !canTranscribeOnDevice() -> transcribeWithEngine(s, p)
+                    p == Profile.BRASS_BAND -> transcribeBandDraft(s)
+                    else -> transcribeOnDevice(s)
+                }
                 val ignored = seatIgnored(r)
                 reviewChanges.value = emptyMap()
                 result.value = r
@@ -650,6 +661,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             } catch (e: OutOfMemoryError) {
                 transcribe.update { it.copy(running = false, error = e.toString()) }
                 showProblem(Problem.TOO_LARGE, e.toString())
+            } catch (e: DraftTooLongException) {
+                transcribe.update { it.copy(running = false, error = e.message) }
+                showProblem(Problem.DRAFT_TOO_LONG, e.message)
             } catch (e: Exception) {
                 transcribe.update { it.copy(running = false, error = e.message ?: e.javaClass.simpleName) }
                 showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString(),
@@ -714,6 +728,70 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     /** The last on-device take, kept so Output options re-arrange it without listening again. */
     private var soloTake: SoloTake? = null
+
+    /**
+     * A band draft on the phone: the engine's brass-band profile without MuScriptor (Basic Pitch on the mix,
+     * Beat This! small, the core's song arranger), in a foreground service so it goes on when the player
+     * leaves the app. A take longer than free memory holds is refused before anything runs.
+     */
+    private suspend fun transcribeBandDraft(s: Source): TranscriptionResult {
+        val audio = s.audio!!
+        val app = getApplication<Application>()
+        val memory = android.app.ActivityManager.MemoryInfo().also { app.getSystemService(android.app.ActivityManager::class.java).getMemoryInfo(it) }
+        if (!no.brasscribe.play.pitch.BandDraftPipeline.fits(audio.seconds, memory.availMem))
+            throw DraftTooLongException("%.0f s, %d MB free".format(audio.seconds, memory.availMem shr 20))
+        val steps = listOf(Step.TRANSCRIBE, Step.BEATS, Step.ARRANGE)
+        val eta = estimateDeviceSeconds(audio)
+        transcribe.value = TranscribeState(true, steps[0], 0.0, 0, steps.size, eta,
+            res.getString(OnDeviceRouting.transcribingWhere(draft = true)), steps = steps)
+        val title = ScoreTitles.withoutExtension(s.name)
+        // A band draft is re-arranged from its Composition (Output), never from a solo take.
+        soloTake = null
+        DraftService.start(app)
+        try {
+            return withContext(Dispatchers.Default) {
+                // The models run as plain blocking calls: Cancel is checked between their stages.
+                val running = coroutineContext.job
+                container.openBandDraftPipeline().use { open ->
+                    val (take, stats) = open.pipeline.listen(audio.samples, audio.sampleRate, title) { stage ->
+                        running.ensureActive()
+                        transcribe.update { it.copy(step = steps[stage.ordinal], stepIndex = stage.ordinal, fraction = stage.ordinal / steps.size.toDouble(),
+                            etaSeconds = ((1 - stage.ordinal / steps.size.toDouble()) * eta).toInt()) }
+                    }
+                    running.ensureActive()
+                    transcribe.update { it.copy(step = Step.ARRANGE, stepIndex = 2, fraction = 0.9) }
+                    val a0 = System.nanoTime()
+                    val arranged = requireNotNull(open.pipeline.arrange(take, output.value.toCore())) { "the core is not available" }
+                    android.util.Log.i(TAG, "on-device band draft: %.1f s audio, Basic Pitch %d notes, beats %d, downbeats %d, stages %s ms, arrange %d ms"
+                        .format(stats.audioSeconds, stats.basicPitchNotes, stats.beats, stats.downbeats,
+                            stats.ms.entries.joinToString { "${it.key.name.lowercase()} ${it.value}" }, (System.nanoTime() - a0) / 1_000_000))
+                    TranscriptionResult(arranged.composition, arranged.musicXml, Profile.BRASS_BAND, onDevice = true,
+                        compositionJson = arranged.compositionJson, draft = true,
+                        evidence = NoteEvidenceBuilder.build(arranged.composition,
+                            listOf(NoteEvidenceBuilder.ModelNotes("basic-pitch", "Basic Pitch", take.basicPitch))))
+                }
+            }
+        } finally {
+            DraftService.stop(app)
+        }
+    }
+
+    /**
+     * "Make the full score": the draft's kept recording goes to the computer as a brass band score. It becomes a
+     * new score; the draft stays in Your scores.
+     */
+    fun makeFullScore() {
+        val id = currentSavedScoreId ?: return
+        val r = result.value?.takeIf { it.draft } ?: return
+        viewModelScope.launch {
+            val recording = withContext(storage) { scoreLibrary.recordingFile(id) } ?: return@launch
+            val title = source.value?.name ?: r.composition?.title.orEmpty()
+            setSource(Source(title, SourceKind.FILE, 0.0, audio = null, file = recording))
+            profile.value = Profile.BRASS_BAND
+            where.value = Where.COMPANION
+            startTranscription()
+        }
+    }
 
     /**
      * Applies the Output options: on-device results are re-arranged by the core; engine results
@@ -868,12 +946,15 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val part = myPartOverride.value
         val noticeSeen = mappedNoticeSeen.value
         val changes = reviewChanges.value
+        // A draft keeps its recording for "Make the full score" (copied on its first save).
+        val recording = if (r.draft) source.value?.file else null
         viewModelScope.launch {
             val list = withContext(storage) {
                 runCatching {
                     scoreLibrary.save(id, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
                         jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
-                        checked = checkedNow, part = part, noticeSeen = noticeSeen, changedOnPhone = r.changedOnPhone, reviewChanges = changes)
+                        checked = checkedNow, part = part, noticeSeen = noticeSeen, changedOnPhone = r.changedOnPhone, reviewChanges = changes,
+                        draft = r.draft, recording = recording)
                 }.onFailure { android.util.Log.w(TAG, "score not saved", it) }
                 scoreLibrary.list()
             }
@@ -978,6 +1059,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 runCatching { no.brasscribe.play.model.BrasscribeJson.decodeFromString(no.brasscribe.play.engine.Evidence.serializer(), it) }.getOrNull()
             },
             changedOnPhone = saved.changedOnPhone,
+            draft = saved.draft,
         )
         checked.value = saved.checked.mapNotNull { key ->
             key.substringAfterLast(':').toIntOrNull()?.let { key.substringBeforeLast(':') to it }
@@ -995,7 +1077,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     val composition = content.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
                     val compositionJson = composition?.let(container.core::encodeComposition)
                     val xml = MusicXmlTitleEditor.replaceTitle(content.musicXml, cleaned)
-                    scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, content.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone, saved.reviewChanges)
+                    scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, content.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone, saved.reviewChanges, saved.draft)
                     Triple(saved.jobId, composition to compositionJson, xml)
                 }.onFailure { android.util.Log.w(TAG, "score not renamed", it) }.getOrNull()
             }

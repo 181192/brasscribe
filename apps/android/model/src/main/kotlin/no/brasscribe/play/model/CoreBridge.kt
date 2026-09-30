@@ -96,6 +96,22 @@ data class SoloTake(
     val wav: ByteArray? = null,
 )
 
+/**
+ * A whole-band recording listened to on the device (a band draft): Basic Pitch's notes on the mix and the
+ * beat table. The engine's brass-band profile without MuScriptor has the same inputs.
+ */
+data class BandTake(
+    val title: String,
+    val basicPitch: List<TimedNote>,
+    val beatsText: String,
+)
+
+/**
+ * The song arranger's lineup for [lineup] (a whole-band take has no layers): the quartet stays the quartet,
+ * everything else is the minimal band, as the engine's `made_lineup` decides for its brass-band profile.
+ */
+fun songLineup(lineup: String): String = if (lineup == "quartet") "quartet" else "minimal"
+
 /** A band arrangement: the Composition, the full score and one MusicXML per part. */
 data class Arranged(val composition: Composition, val compositionJson: String, val musicXml: String, val parts: List<Pair<String, String>>)
 
@@ -136,6 +152,13 @@ interface CoreBridge {
 
     /** A solo take arranged for brass band on the device: SwiftF0 spine confirmed by Basic Pitch. */
     fun arrangeSolo(take: SoloTake, options: ArrangeOptions): Arranged? = null
+
+    /**
+     * A band draft: [take]'s Basic Pitch notes in the melody, bass and harmony slots of the song arranger, for
+     * the minimal band or the quartet ([songLineup]) and the seat. Difficulty and key are not applied here: the
+     * Output screen arranges the Composition again for those.
+     */
+    fun arrangeSong(take: BandTake, options: ArrangeOptions): Arranged? = null
 
     /** Estimated major key (circle-of-fifths position) of the notes in [composition]. */
     fun estimateKey(composition: Composition): Int

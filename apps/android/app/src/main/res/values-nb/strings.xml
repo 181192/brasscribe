@@ -130,7 +130,10 @@
     <string name="where_title">Hvor partituret lages</string>
     <string name="where_device">På telefonen</string>
     <string name="where_device_desc">Bare ett instrument. Ingenting forlater telefonen.</string>
-    <string name="where_device_solo_only">Bare for ett instrument.</string>
+    <string name="where_device_solo_only">Bare for ett instrument eller et brassband.</string>
+    <string name="where_device_draft">På telefonen: et raskt utkast</string>
+    <string name="where_device_draft_desc">Datamaskinen lager et bedre partitur.</string>
+    <string name="where_device_draft_card">Et raskt utkast. Ingenting forlater telefonen.</string>
     <string name="where_companion">På datamaskinen din</string>
     <string name="where_companion_desc">%1$s · ingenting sendes til nettet</string>
     <string name="where_device_unavailable">Denne versjonen kan ikke lage partitur på telefonen.</string>
@@ -173,6 +176,16 @@
     <string name="transcribe_failed">Partituret kunne ikke lages: %1$s</string>
     <string name="transcribe_done">Partituret er klart</string>
     <string name="transcribe_where_device">På telefonen</string>
+    <string name="transcribe_where_device_draft">På telefonen, som utkast</string>
+    <string name="draft_notice">Et raskt utkast laget på denne enheten. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen.</string>
+    <string name="draft_notice_short">Et raskt utkast laget på denne enheten.</string>
+    <string name="draft_make_full">Lag hele partituret</string>
+    <string name="draft_no_computer">Åpne Brasscribe på datamaskinen for å lage hele partituret fra det samme opptaket.</string>
+    <string name="draft_label">Utkast</string>
+    <string name="draft_too_long_title">For langt for et utkast på denne enheten</string>
+    <string name="draft_too_long_body">Prøv et kortere opptak, eller lag partituret på datamaskinen.</string>
+    <string name="notif_draft_channel">Bandutkast</string>
+    <string name="notif_draft">Lager et bandutkast</string>
     <string name="transcribe_where_companion">På %1$s</string>
     <string name="transcribe_progress_label">Framdrift</string>
 

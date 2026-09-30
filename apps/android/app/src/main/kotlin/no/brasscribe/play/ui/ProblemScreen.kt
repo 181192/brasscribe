@@ -44,6 +44,7 @@ private val COPY = mapOf(
     Problem.RECORDING_FAILED to ProblemCopy(R.string.problem_record_title, R.string.problem_record_body, listOf(R.string.problem_record_reason), null),
     Problem.SCORE_FAILED to ProblemCopy(R.string.problem_score_title, R.string.problem_score_body, emptyList(), R.string.problem_score_kept),
     Problem.TOO_LARGE to ProblemCopy(R.string.problem_too_large_title, R.string.problem_too_large_body, listOf(R.string.problem_too_large_reason), null),
+    Problem.DRAFT_TOO_LONG to ProblemCopy(R.string.draft_too_long_title, R.string.draft_too_long_body, emptyList(), null),
 )
 
 /**

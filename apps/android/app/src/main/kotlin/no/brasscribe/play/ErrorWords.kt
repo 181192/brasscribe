@@ -9,6 +9,9 @@ class EngineJobFailedException(message: String) : Exception(message)
 /** The app has no computer to send the job to. */
 class NoCompanionException : Exception("no computer paired")
 
+/** The take is longer than the phone's free memory holds for a band draft. */
+class DraftTooLongException(detail: String) : Exception(detail)
+
 /**
  * The player's words for what went wrong: the engine's refusal codes, the connection, the core's
  * refusals. The engine's and the core's own text is English; it stays in the problem screen's details

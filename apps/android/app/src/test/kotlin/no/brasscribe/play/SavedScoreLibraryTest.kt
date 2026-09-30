@@ -62,4 +62,29 @@ class SavedScoreLibraryTest {
             root.deleteRecursively()
         }
     }
+
+    @Test
+    fun aDraftKeepsItsFlagAndRecordingThroughSavesAndRenames() {
+        val root = Files.createTempDirectory("brasscribe-library").toFile()
+        try {
+            val library = SavedScoreLibrary(root)
+            val take = java.io.File(root.parentFile, "take-${System.nanoTime()}.wav").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val saved = library.save(null, "Band", "brass-band", "<x/>", "{}", draft = true, recording = take)
+            take.delete()
+            assertEquals(true, saved.draft)
+            assertEquals("recording.wav", saved.recording)
+            // A later save (a checked note) has no recording to give: the kept one stays.
+            library.save(saved.id, "Band", "brass-band", "<x/>", "{}", checked = setOf("melody:1"), draft = true)
+            val renamed = library.rename(saved.id, "Band 2")!!
+            assertEquals(true, renamed.draft)
+            assertEquals(listOf(1, 2, 3), library.recordingFile(saved.id)!!.readBytes().map { it.toInt() })
+            assertEquals(true, library.list().single().draft)
+            // A score from before drafts reads as no draft, with no recording.
+            val plain = library.save(null, "Solo", "solo", "<x/>", null)
+            assertEquals(false, library.get(plain.id)!!.draft)
+            assertNull(library.recordingFile(plain.id))
+        } finally {
+            root.deleteRecursively()
+        }
+    }
 }

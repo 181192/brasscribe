@@ -120,7 +120,8 @@ fun scoreSubtitle(entry: ScoreEntry): String {
     } ?: profile
     val bars = facts?.bars?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_bars, it, it) }
     val left = facts?.left?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_to_check, it, it) }
-    return listOfNotNull(band, bars, date, left, if (entry.onComputer) stringResource(R.string.on_your_computer) else null).joinToString(" · ")
+    val draft = if (entry.saved?.draft == true) stringResource(R.string.draft_label) else null
+    return listOfNotNull(band, draft, bars, date, left, if (entry.onComputer) stringResource(R.string.on_your_computer) else null).joinToString(" · ")
 }
 
 /** Parts, bars, review items left and the recorded lineup of a saved score. */

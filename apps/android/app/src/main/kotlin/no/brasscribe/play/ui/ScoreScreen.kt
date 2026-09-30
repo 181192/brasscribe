@@ -102,7 +102,7 @@ import no.brasscribe.play.score.ScoreUiState
 /** Index of the part a player most likely wants first: the lineup's lead (Solo Cornet, 1st Cornet in a quartet), else the first part. */
 fun defaultPart(parts: List<String>, lineup: no.brasscribe.play.Lineup? = null): Int = no.brasscribe.play.leadPartIndex(parts, lineup)
 
-private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE, MAPPED, SOURCE }
+private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE, MAPPED, SOURCE, DRAFT }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -179,6 +179,9 @@ fun ScoreScreen(vm: PlayViewModel) {
         }
     }
     val grouped = r.composition?.review?.isNotEmpty() == true
+    // A band draft made on the phone: said above the score, with the way to the computer's full score.
+    val connectionState by vm.connection.state.collectAsState()
+    val computerThere = vm.container.usingFixture || no.brasscribe.play.OnDeviceRouting.computerThere(connectionState)
     // The part on screen: where it came from, and when it is yours in a lineup without your seat, which part it is.
     val shownIndex = st.shown.singleOrNull()
     val shownSource = shownIndex?.let { st.parts.getOrNull(it) }?.let { sources[it.replace('\u00A0', ' ').trim()] }
@@ -398,6 +401,11 @@ fun ScoreScreen(vm: PlayViewModel) {
                 if (!uprightLarge) shownSource?.let { SourceLabel(it, compact = true, onExplain = { sheet = Sheet.SOURCE }) }
             }
         }
+        // A draft says so before anything else about the score, so it is never the line that moves to the ⋯ sheet.
+        if (r.draft) add { inSheet ->
+            if (inSheet) DraftNotice(computerThere, { sheet = null; vm.makeFullScore() })
+            else NoticeLine(stringResource(R.string.draft_notice_short), { sheet = Sheet.DRAFT }, Modifier.padding(horizontal = ScreenMargin))
+        }
         // At large text the pill is a line of its own, so the part picker alone is always there.
         if (uprightLarge && shownSource != null) add { inSheet ->
             SourceLabel(shownSource, if (inSheet) Modifier else Modifier.padding(horizontal = ScreenMargin), compact = true, onExplain = { sheet = Sheet.SOURCE })
@@ -514,6 +522,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     color = c.textMuted, modifier = Modifier.weight(1f))
                 PlainButton(stringResource(R.string.check_them), { vm.navigate(Screen.REVIEW) })
             }
+            if (r.draft) DraftNotice(computerThere, vm::makeFullScore, Modifier.padding(horizontal = ScreenMargin))
             }
             // More above the score than its share: it fades out over a hairline, so it reads as scrolling, not cut.
             if (topScroll.canScrollForward) {
@@ -590,6 +599,10 @@ fun ScoreScreen(vm: PlayViewModel) {
                         PracticeChip(pluralStringResource(if (grouped) R.plurals.score_marked_places else R.plurals.score_marked, toCheck, toCheck),
                             false, { sheet = null; vm.navigate(Screen.REVIEW) }, role = Role.Button, trailingIcon = R.drawable.ic_bc_choose)
                     }
+                    if (r.draft) add { inSheet ->
+                        if (inSheet) DraftNotice(computerThere, { sheet = null; vm.makeFullScore() })
+                        else NoticeLine(stringResource(R.string.draft_notice_short), { sheet = Sheet.DRAFT })
+                    }
                     if (st.basicTier) add { inSheet ->
                         // In the More sheet there is room for the notice in full.
                         if (inSheet) BandSoundsMissing(st.bandSoundsExpected)
@@ -625,6 +638,7 @@ fun ScoreScreen(vm: PlayViewModel) {
             PracticeChips(controller, st, myPart, onSpeed = { sheet = Sheet.SPEED }, onLoop = { sheet = Sheet.LOOP })
         }
         Sheet.MAPPED -> BottomSheet({ sheet = null }) { mappedLine?.let { InfoNote(it, boxed = false) } }
+        Sheet.DRAFT -> BottomSheet({ sheet = null }) { DraftNotice(computerThere, { sheet = null; vm.makeFullScore() }) }
         Sheet.SOURCE -> BottomSheet({ sheet = null }) {
             shownSource?.let { SubHeading(stringResource(sourceWords(it))); Text(stringResource(explainOf(it)), style = MaterialTheme.typography.bodyLarge) }
         }
@@ -981,5 +995,18 @@ private fun FitColumn(maxHeight: androidx.compose.ui.unit.Dp, gap: androidx.comp
             var y = 0
             for (i in 0 until shown) { placeables[i].placeRelative(0, y); y += placeables[i].height + gapPx }
         }
+    }
+}
+
+/**
+ * A band draft made on the phone (system.md §3): what it is, then "Make the full score" (secondary: Play is
+ * the primary here) when the computer is there, or how to get the full score when it is not.
+ */
+@Composable
+private fun DraftNotice(computerThere: Boolean, onMakeFull: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth().semantics { testTag = "draft-notice" }, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        InfoNote(stringResource(R.string.draft_notice), boxed = false)
+        if (computerThere) SecondaryButton(stringResource(R.string.draft_make_full), onMakeFull, fill = false)
+        else Text(stringResource(R.string.draft_no_computer), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
     }
 }

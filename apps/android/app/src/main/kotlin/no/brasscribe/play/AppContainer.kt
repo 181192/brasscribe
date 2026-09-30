@@ -269,6 +269,23 @@ class AppContainer(private val context: Context) {
         return OpenPipeline(SoloPipeline(sw, bp, bt, core), listOfNotNull(sw, bp, bt))
     }
 
+    /** Basic Pitch and Beat This! small are bundled: the phone can make a band draft. */
+    val hasBandModels: Boolean by lazy {
+        listOf(BASIC_PITCH_ASSET, BEAT_THIS_ASSET).all { runCatching { context.assets.open(it).close() }.isSuccess }
+    }
+
+    /** Basic Pitch on the whole mix and Beat This! small, for a band draft ([hasBandModels] must be true). */
+    class OpenBandPipeline(val pipeline: no.brasscribe.play.pitch.BandDraftPipeline, private val models: List<AutoCloseable>) : AutoCloseable {
+        override fun close() = models.forEach { it.close() }
+    }
+
+    fun openBandDraftPipeline(): OpenBandPipeline {
+        val bp = BasicPitch(requireNotNull(asset(BASIC_PITCH_ASSET)) { "Basic Pitch is not bundled" })
+        val bt = runCatching { BeatThis(requireNotNull(asset(BEAT_THIS_ASSET)) { "Beat This! is not bundled" }) }
+            .onFailure { bp.close() }.getOrThrow()
+        return OpenBandPipeline(no.brasscribe.play.pitch.BandDraftPipeline(bp, bt, core), listOf(bp, bt))
+    }
+
     /** Band SoundFont presets and balance per part (assets/sounds/mapping.json). */
     val bandSoundMap: no.brasscribe.play.score.BandSoundMap? by lazy {
         asset("sounds/mapping.json")?.let { runCatching { no.brasscribe.play.score.BandSoundMap.parse(String(it)) }.getOrNull() }
