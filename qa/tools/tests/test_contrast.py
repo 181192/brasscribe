@@ -1,3 +1,4 @@
+import json
 import sys
 from pathlib import Path
 
@@ -30,3 +31,17 @@ def test_dtcg_tokens_load_and_pass():
     for theme in data["themes"].values():
         for fg, bg, minimum, _ in data["pairs"]:
             assert c.contrast(theme[fg], theme[bg]) + 1e-9 >= minimum, (fg, bg)
+
+
+def test_dtcg_extension_namespace_is_not_fixed(tmp_path):
+    token = {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0, 0, 0], "hex": "#000000"}}
+    paper = {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1, 1, 1], "hex": "#FFFFFF"}}
+    raw = {"$extensions": {"org.example.other": {"note": "not ours"},
+                           "no.example": {"modes": ["light"],
+                                          "contrast": {"pairs": [["ink", "bg", 4.5, "1.4.3"]], "distinguish": []}}},
+           "color": {"light": {"ink": token, "bg": paper}}}
+    path = tmp_path / "tokens.json"
+    path.write_text(json.dumps(raw))
+    data = c.load_dtcg(path)
+    assert data["themes"] == {"light": {"ink": "#000000", "bg": "#FFFFFF"}}
+    assert data["pairs"] == [["ink", "bg", 4.5, "1.4.3"]]
