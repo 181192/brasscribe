@@ -47,10 +47,14 @@ sed -i.bak -E "s/^( *versionCode = )[0-9]+/\1$build/; s/^( *versionName = )\"[^\
 for y in apps/apple/project.yml apps/bandroom/macos/project.yml; do
   sed -i.bak -E "s/^( *MARKETING_VERSION: )\"[^\"]*\"/\1\"$version\"/; s/^( *CURRENT_PROJECT_VERSION: )\"[^\"]*\"/\1\"$build\"/" "$y"
 done
+win_props="apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
+for x in $win_props; do
+  sed -i.bak -E "s#<Version>[^<]*</Version>#<Version>$version</Version>#" "$x" && rm -f "$x.bak"
+done
 rm -f "$gradle.bak" apps/apple/project.yml.bak apps/bandroom/macos/project.yml.bak
 
 git-cliff --tag "$tag" -o CHANGELOG.md 2>/dev/null
-git add "$gradle" apps/apple/project.yml apps/bandroom/macos/project.yml CHANGELOG.md
+git add "$gradle" apps/apple/project.yml apps/bandroom/macos/project.yml $win_props CHANGELOG.md
 git diff --cached --stat
 git commit -q -m "chore(release): $version"
 git tag "$tag"
