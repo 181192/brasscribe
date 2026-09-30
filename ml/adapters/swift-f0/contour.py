@@ -10,5 +10,6 @@ from swift_f0 import SwiftF0
 
 src, dst = sys.argv[1], sys.argv[2]
 r = SwiftF0().detect_file(src)
-np.savez_compressed(dst, t=r.timestamps, pitch_hz=r.pitch_hz, confidence=r.confidence, loudness_db=r.loudness_db)
+with open(dst, "wb") as f:  # a file, not a name: savez would add ".npz" to a name without it
+    np.savez_compressed(f, t=r.timestamps, pitch_hz=r.pitch_hz, confidence=r.confidence, loudness_db=r.loudness_db)
 print(f"{len(r.timestamps)} frames -> {dst}")
