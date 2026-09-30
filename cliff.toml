@@ -37,7 +37,7 @@ body = """
 {% if commit.breaking %}**Breaking:** {% endif %}\
 {{ commit.message | split(pat="\n") | first | trim | upper_first }}\
 {% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/181192/brasscribe/pull/{{ commit.remote.pr_number }})){% endif %}\
-{% if commit.remote.username and commit.remote.username != "181192" %} by @{{ commit.remote.username }}{% endif %}
+{% if commit.remote.username and commit.remote.username != "181192" and not commit.remote.username is ending_with("[bot]") %} by @{{ commit.remote.username }}{% endif %}
 {%- endmacro -%}
 
 {% if version %}
@@ -91,6 +91,8 @@ sort_commits = "oldest"
 # Public wording: the reference recording used in development is a copyrighted piece and is not
 # named in the notes; one old entry would point at personal data that is no longer there.
 commit_preprocessors = [
+  # Squash merges end the subject with "(#123)"; the notes link the pull request themselves.
+  { pattern = '(?m)[ \t]*\(#[0-9]+\)$', replace = "" },
   { pattern = "(?i)\\bmikkel\\b", replace = "reference" },
   { pattern = "(?i)drop the work email from the music package metadata", replace = "tidy the music package metadata" },
 ]
