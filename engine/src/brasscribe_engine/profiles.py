@@ -78,6 +78,19 @@ def option_error_code(e: ValueError) -> str:
     return getattr(e, "code", INVALID_OPTIONS_CODE)
 
 
+def option_error_message(code: str) -> str:
+    """The fixed English message a 422 carries for `code`. The exception's own text stays in the engine's
+    log: an unexpected ValueError could say more about the engine than a client should see."""
+    from brasscribe_music.instruments import PERCUSSION_SOLO
+
+    return {
+        QUARTET_NEEDS_GROUP_CODE: QUARTET_NEEDS_GROUP,
+        PERCUSSION_SOLO_CODE: PERCUSSION_SOLO,
+        SEAT_NO_TUNE_CODE: "the seat's part can't carry the tune in this lineup: choose another lead",
+        READS_NOT_OFFERED_CODE: "the seat's part is not offered in that clef",
+    }.get(code, "these job options don't fit together; the engine's log says which one")
+
+
 def arrangement_options(params: dict) -> dict:
     """The job's arrangement options that differ from the defaults (so a default job keeps its cache keys)."""
     opts = {k: params.get(k) for k in ARRANGEMENT_DEFAULTS if params.get(k) not in (None, ARRANGEMENT_DEFAULTS[k])}

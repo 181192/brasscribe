@@ -85,3 +85,16 @@ def test_seat_options_over_the_api(settings, audio):
         src = c.get(f"/v1/jobs/{job.json()['id']}/part-sources")
         assert src.status_code == 200 and src.json()["parts"]["Solo Cornet"] == "recording"
         assert c.get("/v1/jobs/nope/part-sources").status_code == 404
+
+
+def test_option_refusal_keeps_the_exception_in_the_log(settings, audio, monkeypatch, capsys):
+    def fail(profile, params):
+        raise ValueError("internal detail /somewhere/engine.py")
+
+    monkeypatch.setattr(profiles, "job_options", fail)
+    with TestClient(create_app(settings)) as c:
+        ref = c.post("/v1/audio", files={"file": ("a.wav", audio.read_bytes())}).json()
+        r = c.post("/v1/jobs", json={"audio_id": ref["audio_id"], "profile": "test"})
+    assert r.status_code == 422 and r.json()["code"] == "invalid_options"
+    assert "internal detail" not in r.text and r.json()["detail"] == profiles.option_error_message("invalid_options")
+    assert "internal detail /somewhere/engine.py" in capsys.readouterr().err

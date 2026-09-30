@@ -2,10 +2,13 @@ name: dependencies
 
 # Sends the Android dependencies (Gradle, resolved) to GitHub's dependency graph, so they get
 # Dependabot alerts and the dependency review like the ecosystems GitHub reads from lockfiles.
+# Only what ships: the release runtime classpaths, the libraries packed into the APK and the core's
+# AAR. The build's own classpath (the Android Gradle plugin, Kotlin, lint, the test platform) and the
+# test classpaths run on developer and CI machines only, and are left out.
 on:
   push:
     branches: [main]
-    paths: ["apps/android/**", "core/android/**"]
+    paths: ["apps/android/**", "core/android/**", ".github/workflows/dependencies.yml"]
   workflow_dispatch:
 
 permissions:
@@ -39,3 +42,5 @@ jobs:
         with:
           build-root-directory: ${{ matrix.project }}
           gradle-version: ${{ matrix.project == 'core/android' && steps.gradle.outputs.version || '' }}
+          dependency-graph-include-configurations: ".*[Rr]eleaseRuntimeClasspath"
+          dependency-graph-exclude-configurations: "classpath|.*[Tt]est.*"
