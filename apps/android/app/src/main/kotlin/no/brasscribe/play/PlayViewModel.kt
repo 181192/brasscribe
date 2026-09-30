@@ -43,6 +43,7 @@ import no.brasscribe.play.connection.ConnectionMonitor
 import no.brasscribe.play.connection.Credential
 import no.brasscribe.play.connection.CredentialStore
 import no.brasscribe.play.connection.EngineConnection
+import no.brasscribe.play.connection.mayBeSentTo
 import no.brasscribe.play.connection.ServerNames
 import no.brasscribe.play.capture.CaptureController
 import no.brasscribe.play.engine.EngineException
@@ -1271,10 +1272,16 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      */
     private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.brasscribe.play.engine.Health, code: String): Boolean {
         val store = container.credentials
-        if (!health.authRequired) { connected(url, health.serverId, health.serverName); return true }
+        // Only this phone itself or the emulator's host is let in without pairing; any other address that
+        // says so pairs all the same.
+        if (!health.authRequired && no.brasscribe.play.engine.LocalHosts.hostOf(url)?.let(no.brasscribe.play.engine.LocalHosts::isTrusted) == true) {
+            connected(url, health.serverId, health.serverName)
+            return true
+        }
         // A token from an earlier version belongs to the address it was used with.
         store.get(CredentialStore.LEGACY_ID)?.takeIf { it.lastAddress == url }?.let { store.adopt(health.serverId, health.serverName) }
-        val held = store.get(health.serverId)
+        // A credential goes only to the address it was paired at: at another one, this phone pairs again.
+        val held = store.get(health.serverId)?.takeIf { it.mayBeSentTo(url) }
         if (held != null) {
             client.token = held.token
             val valid = try { client.thisDevice(); true } catch (e: EngineException) { if (e.status == 401) false else throw e }

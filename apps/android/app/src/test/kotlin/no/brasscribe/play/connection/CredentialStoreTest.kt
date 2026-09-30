@@ -79,4 +79,17 @@ class CredentialStoreTest {
         assertNull(CredentialStore(backing, cipher).get("s1"))
         assertTrue(backing.map.isEmpty())
     }
+
+    @Test
+    fun aCredentialGoesOnlyToTheHostItWasPairedAt() {
+        val c = Credential("s1", "tok", lastAddress = "http://192.168.1.20:8765")
+        assertTrue(c.mayBeSentTo("http://192.168.1.20:8765"))
+        // The same computer on another port is still that computer.
+        assertTrue(c.mayBeSentTo("http://192.168.1.20:9000/"))
+        assertFalse(c.mayBeSentTo("http://192.168.1.21:8765"))
+        assertFalse(c.mayBeSentTo("http://203.0.113.9:8765"))
+        assertFalse(c.mayBeSentTo("not a url"))
+        assertFalse("no address recorded", c.copy(lastAddress = null).mayBeSentTo("http://192.168.1.20:8765"))
+        assertTrue(Credential("s2", "t", lastAddress = "http://[fd00::5]:8765").mayBeSentTo("http://[FD00::5]:8765"))
+    }
 }

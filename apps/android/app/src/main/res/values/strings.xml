@@ -553,6 +553,8 @@
     <string name="pair_scan_unavailable">This phone can\'t scan codes here. Type the code from the computer instead.</string>
     <string name="pair_link_invalid">That code isn\'t from Brasscribe on a computer.</string>
     <string name="pair_link_title">Connect to %1$s?</string>
+    <string name="pair_link_address">Address on your network: %1$s</string>
+    <string name="pair_link_address_by_name">Brasscribe looks for it on your network by name.</string>
     <string name="pair_link_unreachable">Couldn\'t find %1$s. Check that the phone and the computer are on the same Wi-Fi.</string>
     <string name="pair_needs_update">Update Brasscribe Play to connect to this computer.</string>
     <string name="pair_code_needed">Type the code the computer shows, or ask on the computer instead.</string>
