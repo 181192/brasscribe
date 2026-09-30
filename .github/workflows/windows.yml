@@ -55,9 +55,9 @@ jobs:
           restore-keys: nuget-${{ runner.os }}-
 
       # The Rust core as brasscribe_ffi.dll (MSVC host build). The app build copies it next to the exe.
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: core
           save-if: ${{ github.ref == 'refs/heads/main' }}
@@ -204,7 +204,7 @@ jobs:
         with:
           files: brasscribe-band-mobile.sf2
 
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
         with:
           pixi-version: v0.81.0
           run-install: false
@@ -309,7 +309,7 @@ jobs:
 
       # The engine for real: the first run installs the engine environment from pixi.lock (no torch, about
       # 0.5 GB), Bandroom starts it in its job object, and the owner endpoints answer with the admin bearer.
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@ba3bb36eb2066252b2363392b7739741bb777659 # v0.8.1
         with:
           pixi-version: v0.81.0
           run-install: false
