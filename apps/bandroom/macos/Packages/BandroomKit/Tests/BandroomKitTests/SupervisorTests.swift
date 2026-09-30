@@ -140,7 +140,7 @@ import Testing
         try? FileManager.default.createDirectory(at: checkout, withIntermediateDirectories: true)
         FileManager.default.createFile(atPath: checkout.appending(path: "pixi.toml").path, contents: Data())
         let config = EngineConfiguration(source: .checkout(checkout), pixi: URL(fileURLWithPath: "/usr/bin/true"), paths: paths,
-                                         computerName: "Kalli's MacBook", adminToken: "secret")
+                                         computerName: "Kari's MacBook", adminToken: "secret")
         let sup = EngineSupervisor(configuration: config, launcher: launcher, makeClient: { _, _ in engine },
                                    sleep: { _ in await Task.yield() }, now: { clock.now }, pickPort: { port },
                                    baseEnvironment: ["HOME": "/Users/test", "PATH": "/nowhere"])
@@ -160,7 +160,7 @@ import Testing
         #expect(Array(plan.arguments.suffix(5)) == ["brasscribe", "serve", "--lan", "--port", "8765"])
         #expect(plan.arguments.contains("--frozen"))
         #expect(plan.environment["BRASSCRIBE_ADMIN_TOKEN"] == "secret")
-        #expect(plan.environment["BRASSCRIBE_COMPUTER_NAME"] == "Kalli's MacBook")
+        #expect(plan.environment["BRASSCRIBE_COMPUTER_NAME"] == "Kari's MacBook")
         #expect(plan.environment["PATH"]?.hasPrefix("/usr/bin") == true)
         #expect(plan.environment["BRASSCRIBE_TOKEN"] == nil)
         #expect(plan.environment["BRASSCRIBE_BAND_SOUNDS_DIR"] == nil)

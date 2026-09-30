@@ -583,19 +583,19 @@ public sealed class ModelCheckTests : IDisposable
 public sealed class ComputerNameTests
 {
     [Theory]
-    [InlineData("DDPW3GWFDK")]
-    [InlineData("C02XK1ZJJG5H")]
-    [InlineData("DESKTOP-4F2K9QZ")]
-    [InlineData("LAPTOP-8KD2M1QX")]
+    [InlineData("ABCD1234EF")]
+    [InlineData("C02AB12CD3EF")]
+    [InlineData("DESKTOP-ABC1234")]
+    [InlineData("LAPTOP-ABCD1234")]
     public void Serial_like_names_are_machine_generated(string name) => Assert.True(ComputerName.LooksMachineGenerated(name));
 
     [Theory]
-    [InlineData("Kalli's PC")]
+    [InlineData("Kari's PC")]
     [InlineData("Surface Pro")]
     [InlineData("Studio")]
     [InlineData("BANDROOM")]
     [InlineData("PC-2")]
-    [InlineData("Kallis-PC")]
+    [InlineData("Karis-PC")]
     [InlineData("M3PRO")]
     [InlineData("korps-pc-01")]
     public void Names_people_chose_are_kept(string name) => Assert.False(ComputerName.LooksMachineGenerated(name));
@@ -603,17 +603,17 @@ public sealed class ComputerNameTests
     [Fact]
     public void The_shown_name_defaults_to_the_computer_name()
     {
-        Assert.Equal("DESKTOP-4F2K9QZ", ComputerName.Shown("DESKTOP-4F2K9QZ", null));
-        Assert.Equal("DESKTOP-4F2K9QZ", ComputerName.Shown("DESKTOP-4F2K9QZ", "  "));
-        Assert.Equal("Øvingslokalet", ComputerName.Shown("DESKTOP-4F2K9QZ", " Øvingslokalet "));
+        Assert.Equal("DESKTOP-ABC1234", ComputerName.Shown("DESKTOP-ABC1234", null));
+        Assert.Equal("DESKTOP-ABC1234", ComputerName.Shown("DESKTOP-ABC1234", "  "));
+        Assert.Equal("Øvingslokalet", ComputerName.Shown("DESKTOP-ABC1234", " Øvingslokalet "));
     }
 
     [Fact]
     public void Settings_offers_the_field_for_machine_names_or_once_set()
     {
-        Assert.True(ComputerName.OffersCustomName("DESKTOP-4F2K9QZ", null));
-        Assert.False(ComputerName.OffersCustomName("Kalli's PC", null));
-        Assert.True(ComputerName.OffersCustomName("Kalli's PC", "Korpset"));
+        Assert.True(ComputerName.OffersCustomName("DESKTOP-ABC1234", null));
+        Assert.False(ComputerName.OffersCustomName("Kari's PC", null));
+        Assert.True(ComputerName.OffersCustomName("Kari's PC", "Korpset"));
     }
 
     [Fact]

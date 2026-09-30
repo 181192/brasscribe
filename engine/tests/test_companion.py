@@ -28,7 +28,7 @@ def lan(settings, **kw) -> TestClient:
     return TestClient(create_app(settings, trust_loopback=False, **kw))
 
 
-def pair(c: TestClient, name: str = "Kalli's iPhone", **headers) -> dict:
+def pair(c: TestClient, name: str = "Kari's iPhone", **headers) -> dict:
     r = c.post("/v1/pair", json={"code": c.app.state.pairing.code, "device_name": name, "platform": "ios"},
                headers=headers)
     assert r.status_code == 200, r.text
@@ -115,7 +115,7 @@ def test_devices_me_rotate_and_unpair(settings):
     with lan(settings) as c:
         p = pair(c)
         me = c.get("/v1/devices/me", headers=bearer(p["token"])).json()
-        assert me["device_id"] == p["device_id"] and me["name"] == "Kalli's iPhone" and me["platform"] == "ios"
+        assert me["device_id"] == p["device_id"] and me["name"] == "Kari's iPhone" and me["platform"] == "ios"
         assert me["rotate_after"] > me["paired_at"] and me["expires_if_idle_after"] > me["last_seen"]
 
         new = c.post("/v1/devices/me/rotate", headers=bearer(p["token"])).json()
@@ -249,13 +249,13 @@ def test_pairing_window_is_single_use_and_expires(settings):
 
 def test_pairing_payload_uri(settings):
     with lan(settings) as c:
-        c.app.state.hosts = ["192.168.1.20:8765", "10.0.0.5:8765"]
+        c.app.state.hosts = ["192.0.2.20:8765", "198.51.100.5:8765"]
         with as_owner(c):
             st = c.get("/v1/pairing").json()
     u = urlsplit(st["uri"])
     q = {k: v[0] for k, v in parse_qs(u.query).items()}
     assert (u.scheme, u.netloc) == ("brasscribe", "pair")
-    assert q == {"v": "1", "id": st["server_id"], "name": st["server_name"], "h": "192.168.1.20:8765,10.0.0.5:8765",
+    assert q == {"v": "1", "id": st["server_id"], "name": st["server_name"], "h": "192.0.2.20:8765,198.51.100.5:8765",
                  "code": st["code"]}
     assert st["fingerprint"] is None
     assert "fp=" in pairing_uri("abc", "Brasscribe on x", [], None, fingerprint="Zm9v")
@@ -265,8 +265,8 @@ def test_serve_banner_records_hosts_for_the_payload(settings):
     from brasscribe_engine.cli import serve_banner
 
     app = create_app(settings)
-    _, lines = serve_banner(app, "0.0.0.0", 8765, ips=["192.168.1.20"])
-    assert app.state.hosts == ["192.168.1.20:8765"]
+    _, lines = serve_banner(app, "0.0.0.0", 8765, ips=["192.0.2.20"])
+    assert app.state.hosts == ["192.0.2.20:8765"]
     assert any(app.state.pairing.code in line for line in lines)
 
 
@@ -380,7 +380,7 @@ def test_requests_expire():
 
 
 @pytest.mark.parametrize("raw, shown", [
-    ("  Kalli's\niPhone\t", "Kalli's iPhone"),
+    ("  Kari's\niPhone\t", "Kari's iPhone"),
     ("\x1b[31mred\x07", "[31mred"),
     ("", "Unnamed device"),
     (None, "Unnamed device"),

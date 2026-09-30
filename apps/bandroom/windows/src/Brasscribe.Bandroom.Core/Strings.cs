@@ -54,6 +54,6 @@ public static class CodeText
         return d.Length == 6 ? s.Format("Pair_Code_A11y", d) : code;
     }
 
-    /// <summary>"192.168.1.20" read as "192 dot 168 dot 1 dot 20".</summary>
+    /// <summary>"192.0.2.20" read as "192 dot 0 dot 2 dot 20".</summary>
     public static string SpokenAddress(IStrings s, string ip) => ip.Replace(".", " " + s["Dot"] + " ", StringComparison.Ordinal);
 }

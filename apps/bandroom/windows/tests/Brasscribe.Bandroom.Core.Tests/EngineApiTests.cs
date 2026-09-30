@@ -7,8 +7,8 @@ namespace Brasscribe.Bandroom.Core.Tests;
 public sealed class EngineApiTests
 {
     private const string Pairing = """
-        {"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"3f9c2a7e11","server_name":"Brasscribe on Kalli's PC",
-         "hosts":["192.168.1.20:8765"],"fingerprint":null,"uri":"brasscribe://pair?v=1&id=3f9c2a7e11&code=482913"}
+        {"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"3f9c2a7e11","server_name":"Brasscribe on Kari's PC",
+         "hosts":["192.0.2.20:8765"],"fingerprint":null,"uri":"brasscribe://pair?v=1&id=3f9c2a7e11&code=482913"}
         """;
 
     private static (EngineApi Api, StubHandler Handler) Make()
@@ -29,7 +29,7 @@ public sealed class EngineApiTests
         Assert.Equal("admin-token", req.Headers.Authorization.Parameter);
         Assert.Equal("482913", state.Code);
         Assert.Null(state.ExpiresAt);
-        Assert.Equal(["192.168.1.20:8765"], state.Hosts);
+        Assert.Equal(["192.0.2.20:8765"], state.Hosts);
     }
 
     [Fact]
@@ -37,11 +37,11 @@ public sealed class EngineApiTests
     {
         var (api, h) = Make();
         h.Routes["GET /v1/status"] = (HttpStatusCode.OK, """
-            {"server_id":"3f9c2a7e11","server_name":"Brasscribe on Kalli's PC","version":"0.9.4","online_devices":2,
+            {"server_id":"3f9c2a7e11","server_name":"Brasscribe on Kari's PC","version":"0.9.4","online_devices":2,
              "paired_devices":3,"pairing_open":false,"jobs_running":1,"jobs_queued":1}
             """);
         var s = await api.GetStatusAsync();
-        Assert.Equal(new StatusInfo("3f9c2a7e11", "Brasscribe on Kalli's PC", "0.9.4", 2, 3, false, 1, 1), s);
+        Assert.Equal(new StatusInfo("3f9c2a7e11", "Brasscribe on Kari's PC", "0.9.4", 2, 3, false, 1, 1), s);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class EngineApiTests
     {
         var (api, h) = Make();
         h.Routes["GET /v1/health"] = (HttpStatusCode.OK, """
-            {"status":"ok","version":"0.9.3","device":"cpu","auth_required":false,"server_id":"abc","server_name":"Brasscribe on Kalli's PC"}
+            {"status":"ok","version":"0.9.3","device":"cpu","auth_required":false,"server_id":"abc","server_name":"Brasscribe on Kari's PC"}
             """);
         h.Routes["GET /v1/devices"] = (HttpStatusCode.OK, """
             [{"device_id":"d1","name":"Kari's iPhone","platform":"ios","paired_at":"2026-09-01T10:00:00Z","last_seen":"2026-09-27T11:59:30Z","rotated_at":null},
@@ -60,7 +60,7 @@ public sealed class EngineApiTests
              {"id":"j2","profile":"p","title":null,"status":"queued","created":3,"started":null,"finished":null,"progress":0,"stages":[]}]
             """);
         var s = await api.GetStatusAsync();
-        Assert.Equal(new StatusInfo("abc", "Brasscribe on Kalli's PC", "0.9.3", 1, 2, false, 1, 1), s);
+        Assert.Equal(new StatusInfo("abc", "Brasscribe on Kari's PC", "0.9.3", 1, 2, false, 1, 1), s);
         // Only asks once for /v1/status.
         await api.GetStatusAsync();
         Assert.Single(h.Seen, x => x.Request.RequestUri!.AbsolutePath == "/v1/status");

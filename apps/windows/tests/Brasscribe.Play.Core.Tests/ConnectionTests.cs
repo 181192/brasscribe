@@ -115,8 +115,8 @@ internal sealed class Said : IAnnouncer
 public class ConnectionMonitorTests
 {
     private const string StudioId = "0123456789abcdef0123456789abcdef";
-    private static readonly Uri Old = new("http://192.168.1.20:8765/");
-    private static readonly Uri New = new("http://192.168.1.44:8765/");
+    private static readonly Uri Old = new("http://192.0.2.20:8765/");
+    private static readonly Uri New = new("http://192.0.2.44:8765/");
 
     internal static IStrings Strings(string lang = "en-US") => new ReswStrings(ReswStrings.Parse(XDocument.Load(
         Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", lang, "Resources.resw"))));
@@ -240,14 +240,14 @@ public class ConnectionMonitorTests
         // DHCP gave the computer a new address; an unrelated engine is also on the network.
         rig.Lan.At.Remove(Old);
         rig.Lan.At[New] = studio;
-        rig.OnNetwork.Add(new DiscoveredEngine("Brasscribe on Other", new Uri("http://192.168.1.9:8765/"), "ffffffffffffffffffffffffffffffff", "Other"));
+        rig.OnNetwork.Add(new DiscoveredEngine("Brasscribe on Other", new Uri("http://192.0.2.9:8765/"), "ffffffffffffffffffffffffffffffff", "Other"));
         rig.OnNetwork.Add(new DiscoveredEngine("Brasscribe on Studio PC (2)", New, StudioId, "Studio PC"));
 
         Assert.Equal(ConnectionState.Connected, await rig.Monitor.CheckAsync());
         Assert.Equal(New, rig.Address);
         Assert.Equal("tok-1", rig.Credentials.Get(StudioId)!.Token);
         Assert.Equal(New.ToString(), rig.Credentials.Get(StudioId)!.LastAddress);
-        Assert.DoesNotContain(rig.Lan.Requests, r => r.Address.Host == "192.168.1.9");
+        Assert.DoesNotContain(rig.Lan.Requests, r => r.Address.Host == "192.0.2.9");
     }
 
     [Fact]
@@ -372,7 +372,7 @@ public class EngineCredentialsTests
     {
         var settings = new InMemorySettings();
         settings.Set("EngineToken", "tok-old");
-        settings.Set("EngineAddress", "http://192.168.1.20:8765/");
+        settings.Set("EngineAddress", "http://192.0.2.20:8765/");
         var vault = new InMemorySecretVault();
 
         var credentials = new EngineCredentials(vault, settings);
@@ -380,7 +380,7 @@ public class EngineCredentialsTests
         var legacy = credentials.Current!;
         Assert.Equal(EngineCredentials.LegacyKey, legacy.ServerId);
         Assert.Equal("tok-old", legacy.Token);
-        Assert.Equal("http://192.168.1.20:8765/", legacy.LastAddress);
+        Assert.Equal("http://192.0.2.20:8765/", legacy.LastAddress);
         Assert.Contains(EngineCredentials.LegacyKey, vault.Keys(EngineCredentials.Resource));
 
         // Again: nothing changes.
@@ -439,13 +439,13 @@ public class PairingLinkTests
     public void Parses_the_link_the_computer_shows()
     {
         // As companion.py writes it: urlencode(quote_via=quote, safe=":,").
-        var text = $"brasscribe://pair?v=1&id={Id}&name=Brasscribe%20on%20Kalli%E2%80%99s%20Mac&h=192.168.1.20:8765,[fe80::1]:8765&code=482913";
+        var text = $"brasscribe://pair?v=1&id={Id}&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.0.2.20:8765,[fe80::1]:8765&code=482913";
         Assert.Equal(PairingLinkProblem.None, PairingLink.TryParse(text, out var link));
         Assert.Equal(Id.ToLowerInvariant(), link!.ServerId);
-        Assert.Equal("Brasscribe on Kalli’s Mac", link.ServerName);
-        Assert.Equal([new Uri("http://192.168.1.20:8765/"), new Uri("http://[fe80::1]:8765/")], link.Hosts);
+        Assert.Equal("Brasscribe on Kari’s Mac", link.ServerName);
+        Assert.Equal([new Uri("http://192.0.2.20:8765/"), new Uri("http://[fe80::1]:8765/")], link.Hosts);
         Assert.Equal("482913", link.Code);
-        Assert.Equal("Kalli’s Mac", ServerNames.ComputerName(link.ServerName));
+        Assert.Equal("Kari’s Mac", ServerNames.ComputerName(link.ServerName));
     }
 
     [Fact]
@@ -473,10 +473,10 @@ public class PairingLinkTests
     }
 
     [Theory]
-    [InlineData("10.0.0.2:8765", "http://10.0.0.2:8765/")]
+    [InlineData("198.51.100.2:8765", "http://198.51.100.2:8765/")]
     [InlineData("[::1]:9000", "http://[::1]:9000/")]
-    [InlineData("10.0.0.2", null)]
-    [InlineData("10.0.0.2:0", null)]
+    [InlineData("198.51.100.2", null)]
+    [InlineData("198.51.100.2:0", null)]
     [InlineData("fe80::1:8765", null)]
     public void Host_addresses(string text, string? expected) =>
         Assert.Equal(expected, PairingLink.HostAddress(text)?.ToString());
@@ -492,8 +492,8 @@ public class PairingLinkTests
 public class PairOnceTests
 {
     private const string StudioId = "0123456789abcdef0123456789abcdef";
-    private static readonly Uri Old = new("http://192.168.1.20:8765/");
-    private static readonly Uri New = new("http://192.168.1.44:8765/");
+    private static readonly Uri Old = new("http://192.0.2.20:8765/");
+    private static readonly Uri New = new("http://192.0.2.44:8765/");
 
     private static (SettingsViewModel Vm, FakeLan Lan, FakeLan.Engine Studio, InMemorySettings Settings, FakeTimeProvider Time, List<DiscoveredEngine> Network) Make()
     {
@@ -652,8 +652,8 @@ public class PairOnceTests
         var (vm, lan, studio, _, _, _) = Make();
         lan.At.Remove(Old);
         lan.At[New] = studio;
-        lan.At[new Uri("http://10.0.0.5:8765/")] = new FakeLan.Engine("ffffffffffffffffffffffffffffffff", "Other");
-        var link = $"brasscribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&h=10.0.0.5:8765,192.168.1.44:8765&code=482913";
+        lan.At[new Uri("http://198.51.100.5:8765/")] = new FakeLan.Engine("ffffffffffffffffffffffffffffffff", "Other");
+        var link = $"brasscribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&h=198.51.100.5:8765,192.0.2.44:8765&code=482913";
 
         Assert.True(await vm.PairFromLinkAsync(link));
         Assert.Equal(New.ToString(), vm.EngineAddress);
@@ -680,7 +680,7 @@ public class PairOnceTests
         var (vm, lan, _, _, _, _) = Make();
         Assert.False(await vm.PairFromLinkAsync($"brasscribe://pair?v=2&id={StudioId}"));
         Assert.Equal("That link is from a newer Brasscribe. Update this app, then try again.", vm.EngineStatus);
-        Assert.False(await vm.PairFromLinkAsync($"brasscribe://pair?v=1&id={StudioId}&h=192.168.1.20:8765&code=482913&fp=abc"));
+        Assert.False(await vm.PairFromLinkAsync($"brasscribe://pair?v=1&id={StudioId}&h=192.0.2.20:8765&code=482913&fp=abc"));
         Assert.Empty(lan.Requests);
     }
 

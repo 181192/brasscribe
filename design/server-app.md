@@ -27,7 +27,7 @@ This spec follows [`system.md`](system.md), [`brand/brand.md`](brand/brand.md) a
   - the About window
   - the store or download page
 - **Inside the app:**
-  - The header names the computer, exactly as phones see it: **Brasscribe on Kalli's MacBook** / **Brasscribe på Kallis MacBook**.
+  - The header names the computer, exactly as phones see it: **Brasscribe on Kari's MacBook** / **Brasscribe på Karis MacBook**.
   - The glossary phrase **Brasscribe on your computer / Brasscribe på datamaskinen** stays the name for this helper in Play.
 - **Lockup:** "Brasscribe *Bandroom*": the mark, the wordmark and the product name in brass italic, like the Play and Studio lockups. It is used in the installer and the About window only.
 - **Considered and dropped:**
@@ -134,7 +134,7 @@ The model: each phone pairs **once** and gets its own long-lived credential, whi
 The **Pair a phone** window offers three ways, easiest first. They all end in the same place.
 
 1. **Choose this computer on the phone, then allow it here.** No code at all: this is the WCAG 3.3.8 path, and it also works for VoiceOver and TalkBack users.
-   - The phone lists "Brasscribe on Kalli's MacBook", found over the local network (mDNS, `_brasscribe._tcp`).
+   - The phone lists "Brasscribe on Kari's MacBook", found over the local network (mDNS, `_brasscribe._tcp`).
    - The user taps it, and the computer asks **Allow Kari's iPhone?**
    - The dialog shows a four-digit match number that the phone also shows. The user compares the numbers but never copies one.
    - A request waits 2 minutes, and at most three can wait at once (a phone that asks again replaces its own waiting request). If it lapses, the dialog says "This request has expired. Choose this computer on the phone again."
@@ -156,7 +156,7 @@ The **Pair a phone** window offers three ways, easiest first. They all end in th
 
 **When the phone doesn't list the computer:** under **Phone doesn't show this computer?** (a disclosure, not tech-only):
 - "Check that both are on the same Wi-Fi."
-- "Or type this address in Brasscribe on the phone: 192.168.1.20, port 8765." It is spoken as "192 dot 168 dot 1 dot 20, port 8765".
+- "Or type this address in Brasscribe on the phone: 192.0.2.20, port 8765." It is spoken as "192 dot 0 dot 2 dot 20, port 8765".
 
 ### 3.5 Play on the same computer
 Play for macOS and Windows uses Bandroom over loopback, where it is **trusted and needs no pairing** (`api.py`).
@@ -270,7 +270,7 @@ WantedBy=default.target
 | `BRASSCRIBE_ADAPTERS` | `Brasscribe Bandroom.app/Contents/Resources/adapters` | `<package>\adapters` |
 | `BRASSCRIBE_GPU_LOCK` | default (`/tmp/brasscribe-gpu-<uid>.lock`) | default (temp folder) |
 | `BRASSCRIBE_TOKEN` | unset: per-device credentials replace it (§11) | unset |
-| `BRASSCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kalli's MacBook"; Settings › Name shown to phones replaces it when it looks machine-made ("DDPW3GWFDK") | the device name from Settings › System › About; the same setting for "DESKTOP-4F2K9QZ" |
+| `BRASSCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kari's MacBook"; Settings › Name shown to phones replaces it when it looks machine-made ("ABCD1234EF") | the device name from Settings › System › About; the same setting for "DESKTOP-ABC1234" |
 
 - **Environments** go in `<data>/envs`, as a pixi workspace copied from the app, with `PIXI_CACHE_DIR=<data>/cache/pixi`.
 - **Engine command:** `pixi run -e <env> brasscribe serve --lan --port <p>`. The first free port from 8765 to 8775 is used. mDNS advertises the actual port, so phones find it.
@@ -357,7 +357,7 @@ Notifications are sparse. They respect Focus and Do Not Disturb, and Windows Foc
 Mockups: `mockups/png/server-mac-popover-*` and `mockups/png/server-win-flyout-*`. The content, top to bottom, is also the reading and focus order:
 
 1. **Header:**
-   - The mark (ink, 20 px) and **Brasscribe on Kalli's MacBook** as the heading.
+   - The mark (ink, 20 px) and **Brasscribe on Kari's MacBook** as the heading.
    - Below it, the **status line**: an icon (check circle, triangle, square, dots) and the word (Running, Needs attention, Stopped, Starting).
    - A **More** (⋯) menu button at the right, holding:
      - Open Studio
@@ -695,7 +695,7 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
   - `server_name` in `/v1/health`, `/v1/pair`, `/v1/status`, the pairing state, the QR `name` and the mDNS instance name is always exactly "Brasscribe on <name>". The popover header uses that string as it is.
   - The engine cleans the name: control characters and "." become spaces, whitespace collapses, and the name is cut to fit one DNS label (about 49 bytes). If nothing is left, it falls back to the short host name.
   - The mDNS TXT record carries `host=<name>` and `id=<server id>`. Phones build "Brasscribe på <host>" from `host`. They never show the mDNS instance name, because a name collision can add " (2)" to it.
-  - The SRV target stays the DNS-safe host name (`Kallis-MacBook-Pro.local.`).
+  - The SRV target stays the DNS-safe host name (`Karis-MacBook-Pro.local.`).
 
 ## 12. Copy that has to change elsewhere
 These still tell people to type a command, or use other words.

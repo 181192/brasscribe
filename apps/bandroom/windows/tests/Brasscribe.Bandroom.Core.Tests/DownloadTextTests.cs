@@ -98,7 +98,7 @@ public sealed class DownloadTextTests
     public void The_engine_gets_the_shown_name_the_key_and_the_hub_cache()
     {
         var vars = new Dictionary<string, string?> { ["PATH"] = "/bin", ["HF_HUB_CACHE"] = @"D:\hub" };
-        var config = new EngineLaunchConfig(new BandroomPaths(@"C:\data"), "pixi.exe", ComputerName.Shown("DESKTOP-4F2K9QZ", "Korpset"), "t", false)
+        var config = new EngineLaunchConfig(new BandroomPaths(@"C:\data"), "pixi.exe", ComputerName.Shown("DESKTOP-ABC1234", "Korpset"), "t", false)
         {
             HuggingFaceToken = () => "hf_saved",
             Variable = n => vars.GetValueOrDefault(n),

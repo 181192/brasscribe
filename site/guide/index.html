@@ -339,7 +339,7 @@ pixi run serve-lan</code></pre>
         <p>It listens on port 8765 on every network interface, prints the LAN address and the pairing code, and announces itself over Bonjour/mDNS as <code>_brasscribe._tcp</code>. Paired phones stay paired when the engine restarts.</p>
         <ul>
           <li>Allow incoming connections when the firewall asks (macOS: System Settings › Network › Firewall; Windows: private networks).</li>
-          <li>Guest and office Wi-Fi often block devices from seeing each other. Type the address instead, for example <code>http://192.168.1.20:8765</code>.</li>
+          <li>Guest and office Wi-Fi often block devices from seeing each other. Type the address instead, for example <code>http://192.0.2.20:8765</code>.</li>
           <li>After five wrong codes in a row, pairing locks for a while, from 30 seconds up to 15 minutes. The code itself doesn't change.</li>
           <li><code>--no-advertise</code> turns off the announcement. The Docker image does this by default.</li>
         </ul>

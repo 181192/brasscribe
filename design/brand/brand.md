@@ -6,7 +6,7 @@
 - The products are **Brasscribe Play**, the musician app, **Brasscribe Studio**, the workbench, and **Brasscribe Bandroom**, which runs the engine on a Mac or PC in the background (spec: [`../server-app.md`](../server-app.md)).
   - Inside the apps, say "Brasscribe": "Brasscribe wasn't sure about these notes".
   - Use the product name only where the products appear together: store listings, About, the docs, installers, and the app lists (Applications, Start, Login Items).
-  - Inside Bandroom, the header names the computer, as phones see it: "Brasscribe on Kalli's MacBook" / "Brasscribe på Kallis MacBook".
+  - Inside Bandroom, the header names the computer, as phones see it: "Brasscribe on Kari's MacBook" / "Brasscribe på Karis MacBook".
 - The names are the same in Norwegian. They are not translated or inflected ("Brasscribes partitur" is wrong; write "partituret fra Brasscribe").
 
 ## Mark

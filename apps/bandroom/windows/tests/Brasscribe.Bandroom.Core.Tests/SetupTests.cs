@@ -60,7 +60,7 @@ public sealed class SetupTests
             var sup = new EngineSupervisor(new FakeLauncher(), new FakePorts(), (_, _) => Task.FromResult<HealthInfo?>(null),
                 _ => new ProcessSpec("pixi", [], dir, new Dictionary<string, string>()), new EngineLog(null));
             var ctl = new BandroomController(sup, _ => new FakeEngine(), new Metrics(), Strings.En, new BandroomPaths(dir),
-                new MachineInfo("Kalli's PC", "Health_Speed_Cpu", "CPU", []))
+                new MachineInfo("Kari's PC", "Health_Speed_Cpu", "CPU", []))
             {
                 SetupComplete = false,
             };

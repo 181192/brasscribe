@@ -178,7 +178,7 @@ enum LayoutFixtures {
         app.pieces = []
         let record = connection == .offline ? nil
             : EngineRecord(serverID: "7f3a9c2e", serverName: "Brasscribe on Studio Mac", deviceID: "d-41b2", token: "staged",
-                           lastAddress: "http://192.168.1.20:8765", lastOK: Date().addingTimeInterval(-12))
+                           lastAddress: "http://192.0.2.20:8765", lastOK: Date().addingTimeInterval(-12))
         app.connection.stage(connection, record: record)
         return app
     }

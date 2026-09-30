@@ -1225,7 +1225,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     // ---- Companion ------------------------------------------------------------------------------------
 
-    /** The engine's name in this language: "Brasscribe on Kalli's Mac" / "Brasscribe på Kalli's Mac". */
+    /** The engine's name in this language: "Brasscribe on Kari's Mac" / "Brasscribe på Kari's Mac". */
     fun serverDisplayName(serverName: String): String =
         ServerNames.display(serverName, { res.getString(R.string.server_name_format, it) }, res.getString(R.string.companion_title))
 

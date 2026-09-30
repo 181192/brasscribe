@@ -31,14 +31,14 @@ internal sealed class DemoEngine : IEngineApi
         ];
     }
 
-    private PairingState State() => new(_open, _open ? _code.ToString() : null, null, true, "3f9c2a7e5d1b", "Brasscribe on Kalli's PC",
-        ["192.168.1.20:8765"], null,
-        $"brasscribe://pair?v=1&id=3f9c2a7e5d1b&name=Brasscribe%20on%20Kalli%27s%20PC&h=192.168.1.20:8765&code={_code}");
+    private PairingState State() => new(_open, _open ? _code.ToString() : null, null, true, "3f9c2a7e5d1b", "Brasscribe on Kari's PC",
+        ["192.0.2.20:8765"], null,
+        $"brasscribe://pair?v=1&id=3f9c2a7e5d1b&name=Brasscribe%20on%20Kari%27s%20PC&h=192.0.2.20:8765&code={_code}");
 
     public Task<HealthInfo> GetHealthAsync(CancellationToken ct = default) =>
-        Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e5d1b", "Brasscribe on Kalli's PC"));
+        Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e5d1b", "Brasscribe on Kari's PC"));
     public Task<StatusInfo> GetStatusAsync(CancellationToken ct = default) =>
-        Task.FromResult(new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kalli's PC", "0.9.4", 2, Devices.Count, _open, 0, 0));
+        Task.FromResult(new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kari's PC", "0.9.4", 2, Devices.Count, _open, 0, 0));
     public Task<IReadOnlyList<DeviceInfo>> GetDevicesAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<DeviceInfo>>(Devices.ToList());
     public Task RemoveDeviceAsync(string deviceId, CancellationToken ct = default) { Devices.RemoveAll(d => d.DeviceId == deviceId); return Task.CompletedTask; }
     public Task<PairingState> GetPairingAsync(CancellationToken ct = default) => Task.FromResult(State());
@@ -75,7 +75,7 @@ internal sealed class DemoEngine : IEngineApi
         switch (state)
         {
             case "busy": job = new JobView("Old Hundredth", "Step_Notes", 0.62, 3); break;
-            case "attention": problems.Add(Problems.LowDisk(s, 2_100_000_000, @"C:\Users\Kalli\AppData\Local\Brasscribe")); break;
+            case "attention": problems.Add(Problems.LowDisk(s, 2_100_000_000, @"C:\Users\Kari\AppData\Local\Brasscribe")); break;
             case "stopped": engine = EngineState.Stopped; break;
             case "error": engine = EngineState.Error; break;
             case "starting": engine = EngineState.Starting; break;
@@ -84,12 +84,12 @@ internal sealed class DemoEngine : IEngineApi
         var running = engine == EngineState.Running;
         return new BandroomSnapshot(
             new StateInputs(engine, setup, 0.32, false, problems, job?.Fraction, running ? 2 : 0),
-            s.Format("Header", "Kalli's PC"),
-            running ? new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kalli's PC", "0.9.4", 2, 3, false, job is null ? 0 : 1, job is null ? 0 : 1) : null,
+            s.Format("Header", "Kari's PC"),
+            running ? new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kari's PC", "0.9.4", 2, 3, false, job is null ? 0 : 1, job is null ? 0 : 1) : null,
             job,
             new HealthSnapshot(job is null ? 18 : 91, 0.2, state == "attention" ? 2_100_000_000 : 86_400_000_000, setup ? [] : [ModelComponent.BandWriter]),
             "Health_Speed_Nvidia",
-            new TechDetails(running ? ["192.168.1.20:8765", "10.0.0.4:8765"] : [], running ? 8765 : null, "0.9.4",
-                "CUDA 12 · NVIDIA GeForce RTX 4070", "3f9c2a7e5d1b", @"C:\Users\Kalli\AppData\Local\Brasscribe"));
+            new TechDetails(running ? ["192.0.2.20:8765", "198.51.100.4:8765"] : [], running ? 8765 : null, "0.9.4",
+                "CUDA 12 · NVIDIA GeForce RTX 4070", "3f9c2a7e5d1b", @"C:\Users\Kari\AppData\Local\Brasscribe"));
     }
 }

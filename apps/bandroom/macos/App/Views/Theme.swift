@@ -27,7 +27,7 @@ extension EnvironmentValues {
 }
 
 enum BRStyle {
-    /// Popover heading: "Brasscribe on Kalli's MacBook".
+    /// Popover heading: "Brasscribe on Kari's MacBook".
     case heading
     case body
     case bodyStrong

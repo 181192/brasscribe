@@ -4,7 +4,7 @@ namespace Brasscribe.Bandroom.Core;
 public static class ComputerName
 {
     /// <summary>
-    /// A name nobody chose: Windows' default ("DESKTOP-4F2K9QZ") or a serial-like hostname. Capital letters and
+    /// A name nobody chose: Windows' default ("DESKTOP-ABC1234") or a serial-like hostname. Capital letters and
     /// digits (and hyphens), at least 8 characters, no spaces, with at least one digit.
     /// </summary>
     public static bool LooksMachineGenerated(string name)

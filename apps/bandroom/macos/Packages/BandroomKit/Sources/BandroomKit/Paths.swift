@@ -41,14 +41,14 @@ public struct BandroomPaths: Sendable, Equatable {
     }
 }
 
-/// The name people know this Mac by (System Settings › General › About), e.g. "Kalli's MacBook".
+/// The name people know this Mac by (System Settings › General › About), e.g. "Kari's MacBook".
 public enum ComputerName {
     public static func current() -> String {
         if let name = SCDynamicStoreCopyComputerName(nil, nil) as String?, !name.isEmpty { return name }
         return Host.current().localizedName ?? ProcessInfo.processInfo.hostName
     }
 
-    /// A name nobody chose: a serial-like hostname ("DDPW3GWFDK") or Windows' default ("DESKTOP-4F2K9QZ").
+    /// A name nobody chose: a serial-like hostname ("ABCD1234EF") or Windows' default ("DESKTOP-ABC1234").
     /// Capital letters and digits (and hyphens), at least 8 characters, no spaces, with at least one digit.
     public static func looksMachineGenerated(_ name: String) -> Bool {
         let n = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -71,7 +71,7 @@ public enum ComputerName {
     /// UserDefaults key for the name shown to phones (BRASSCRIBE_COMPUTER_NAME).
     public static let customNameKey = "computerNameShown"
 
-    /// "Brasscribe on Kalli's MacBook" → "Kalli's MacBook". Norwegian puts the name in its own sentence.
+    /// "Brasscribe on Kari's MacBook" → "Kari's MacBook". Norwegian puts the name in its own sentence.
     public static func host(fromServerName name: String) -> String {
         let prefix = "Brasscribe on "
         return name.hasPrefix(prefix) ? String(name.dropFirst(prefix.count)) : name

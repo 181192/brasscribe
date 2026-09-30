@@ -25,7 +25,7 @@ class EngineDiscoveryTest {
 
     @Test
     fun prefersPrivateIpv4() {
-        assertEquals("http://192.168.10.95:8765", EngineDiscovery.engineUrl(listOf(ip("fe80::1"), ip("100.64.0.1"), ip("192.168.10.95")), 8765))
+        assertEquals("http://192.168.0.2:8765", EngineDiscovery.engineUrl(listOf(ip("fe80::1"), ip("100.64.0.1"), ip("192.168.0.2")), 8765))
         assertEquals("http://100.64.0.1:8765", EngineDiscovery.engineUrl(listOf(ip("fe80::1"), ip("100.64.0.1")), 8765))
     }
 
@@ -37,7 +37,7 @@ class EngineDiscoveryTest {
     @Test
     fun skipsLinkLocalOnlyAndMissingPort() {
         assertNull(EngineDiscovery.engineUrl(listOf(ip("fe80::1")), 8765))
-        assertNull(EngineDiscovery.engineUrl(listOf(ip("192.168.10.95")), 0))
+        assertNull(EngineDiscovery.engineUrl(listOf(ip("192.168.0.2")), 0))
         assertNull(EngineDiscovery.engineUrl(emptyList(), 8765))
     }
 }

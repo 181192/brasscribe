@@ -27,7 +27,7 @@ public sealed class ControllerResilienceTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         _sup = new EngineSupervisor(new FakeLauncher(), new FakePorts(),
-            (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cpu", false, "3f9c2a7e11", "Brasscribe on Kalli's PC")),
+            (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cpu", false, "3f9c2a7e11", "Brasscribe on Kari's PC")),
             _ => new ProcessSpec("pixi", [], _dir, new Dictionary<string, string>()), new EngineLog(null));
         await _sup.StartAsync();
         for (int i = 0; i < 400 && _sup.State != EngineState.Running; i++) await Task.Delay(5);
@@ -42,7 +42,7 @@ public sealed class ControllerResilienceTests : IAsyncLifetime
 
     private BandroomController Make(IHostMetrics? metrics = null, TimeProvider? time = null) =>
         new(_sup, _ => _engine, metrics ?? new Metrics(), Strings.En, new BandroomPaths(_dir),
-            new MachineInfo("Kalli's PC", "Health_Speed_Cpu", "CPU", []), time)
+            new MachineInfo("Kari's PC", "Health_Speed_Cpu", "CPU", []), time)
         {
             Log = line => { lock (_log) _log.Add(line); },
         };

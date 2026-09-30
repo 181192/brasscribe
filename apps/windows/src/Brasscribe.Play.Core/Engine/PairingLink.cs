@@ -45,7 +45,7 @@ public sealed record PairingLink(string ServerId, string ServerName, IReadOnlyLi
         return PairingLinkProblem.None;
     }
 
-    /// <summary>"192.168.1.20:8765" or "[fe80::1]:8765" as an http base address.</summary>
+    /// <summary>"192.0.2.20:8765" or "[fe80::1]:8765" as an http base address.</summary>
     public static Uri? HostAddress(string hostPort)
     {
         string host;

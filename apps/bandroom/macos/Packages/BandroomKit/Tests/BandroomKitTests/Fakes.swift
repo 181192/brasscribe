@@ -7,14 +7,14 @@ final class FakeEngine: EngineAPI, @unchecked Sendable {
     private var _calls: [String] = []
     var calls: [String] { lock.withLock { _calls } }
 
-    var healthValue = Health(version: "0.9.4", device: "mps", serverId: "3f9c2a7e00000000000000000000abcd", serverName: "Brasscribe on Kalli's MacBook")
-    var statusValue = EngineStatus(serverId: "3f9c2a7e00000000000000000000abcd", serverName: "Brasscribe on Kalli's MacBook",
+    var healthValue = Health(version: "0.9.4", device: "mps", serverId: "3f9c2a7e00000000000000000000abcd", serverName: "Brasscribe on Kari's MacBook")
+    var statusValue = EngineStatus(serverId: "3f9c2a7e00000000000000000000abcd", serverName: "Brasscribe on Kari's MacBook",
                                    version: "0.9.4", onlineDevices: 2, pairedDevices: 3, pairingOpen: false, jobsRunning: 0, jobsQueued: 0)
     var devicesValue: [DeviceInfo] = []
     var jobsValue: [Job] = []
     var requestsValue: [PairRequestInfo] = []
     var pairingValue = PairingState(open: false, code: nil, serverId: "3f9c2a7e00000000000000000000abcd",
-                                    serverName: "Brasscribe on Kalli's MacBook", hosts: ["192.168.1.20:8765"],
+                                    serverName: "Brasscribe on Kari's MacBook", hosts: ["192.0.2.20:8765"],
                                     uri: "brasscribe://pair?v=1&id=3f9c")
     var opened: [PairingOpen] = []
     var decideError: EngineError?

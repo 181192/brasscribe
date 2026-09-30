@@ -336,7 +336,7 @@ pixi run serve-lan</code></pre>
         <p>Den lytter på port 8765 på alle nettverkskort, skriver ut LAN-adressen og paringskoden, og kunngjør seg over Bonjour/mDNS som <code>_brasscribe._tcp</code>. Tilkoblede telefoner forblir tilkoblet når motoren starter på nytt.</p>
         <ul>
           <li>Tillat innkommende tilkoblinger når brannmuren spør (macOS: Systeminnstillinger › Nettverk › Brannmur; Windows: private nettverk).</li>
-          <li>Gjestenett og kontornett hindrer ofte enheter i å se hverandre. Skriv inn adressen i stedet, for eksempel <code>http://192.168.1.20:8765</code>.</li>
+          <li>Gjestenett og kontornett hindrer ofte enheter i å se hverandre. Skriv inn adressen i stedet, for eksempel <code>http://192.0.2.20:8765</code>.</li>
           <li>Etter fem feil koder på rad låses paringen en stund, fra 30 sekunder opp til 15 minutter. Selve koden endres ikke.</li>
           <li><code>--no-advertise</code> slår av kunngjøringen. Docker-bildet gjør det som standard.</li>
         </ul>

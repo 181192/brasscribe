@@ -9,9 +9,9 @@ class ServerNamesTest {
 
     @Test
     fun norwegianBuildsItsOwnPhraseFromTheComputerName() {
-        assertEquals("Brasscribe på Kallis MacBook", nb("Brasscribe on Kallis MacBook"))
-        assertEquals("Brasscribe på Kallis MacBook", nb("Brasscribe on Kallis MacBook (2)"))
-        assertEquals("Brasscribe on Kallis MacBook", en("Brasscribe on Kallis MacBook"))
+        assertEquals("Brasscribe på Karis MacBook", nb("Brasscribe on Karis MacBook"))
+        assertEquals("Brasscribe på Karis MacBook", nb("Brasscribe on Karis MacBook (2)"))
+        assertEquals("Brasscribe on Karis MacBook", en("Brasscribe on Karis MacBook"))
     }
 
     @Test

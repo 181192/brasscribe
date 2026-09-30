@@ -5,33 +5,33 @@ import Testing
 
 @Suite struct ComputerNameTests {
     @Test func serialLikeNamesAreMachineGenerated() {
-        for name in ["DDPW3GWFDK", "C02XK1ZJJG5H", "DESKTOP-4F2K9QZ", "LAPTOP-8KD2M1QX"] {
+        for name in ["ABCD1234EF", "C02AB12CD3EF", "DESKTOP-ABC1234", "LAPTOP-ABCD1234"] {
             #expect(ComputerName.looksMachineGenerated(name), "\(name)")
         }
     }
 
     @Test func namesPeopleChoseAreKept() {
-        for name in ["Kalli's MacBook", "MacBook Pro", "Studio", "BANDROOM", "iMac-2", "Kallis-MBP", "M3PRO", "korps-mac-01"] {
+        for name in ["Kari's MacBook", "MacBook Pro", "Studio", "BANDROOM", "iMac-2", "Karis-MBP", "M3PRO", "korps-mac-01"] {
             #expect(!ComputerName.looksMachineGenerated(name), "\(name)")
         }
     }
 
     @Test func theShownNameDefaultsToTheComputerName() {
-        #expect(ComputerName.shown(system: "DDPW3GWFDK", custom: nil) == "DDPW3GWFDK")
-        #expect(ComputerName.shown(system: "DDPW3GWFDK", custom: "  ") == "DDPW3GWFDK")
-        #expect(ComputerName.shown(system: "DDPW3GWFDK", custom: " Øvingslokalet ") == "Øvingslokalet")
+        #expect(ComputerName.shown(system: "ABCD1234EF", custom: nil) == "ABCD1234EF")
+        #expect(ComputerName.shown(system: "ABCD1234EF", custom: "  ") == "ABCD1234EF")
+        #expect(ComputerName.shown(system: "ABCD1234EF", custom: " Øvingslokalet ") == "Øvingslokalet")
     }
 
     @Test func settingsOffersTheFieldForMachineNamesOrOnceSet() {
-        #expect(ComputerName.offersCustomName(system: "DDPW3GWFDK", custom: nil))
-        #expect(!ComputerName.offersCustomName(system: "Kalli's MacBook", custom: nil))
-        #expect(ComputerName.offersCustomName(system: "Kalli's MacBook", custom: "Korpset"))
+        #expect(ComputerName.offersCustomName(system: "ABCD1234EF", custom: nil))
+        #expect(!ComputerName.offersCustomName(system: "Kari's MacBook", custom: nil))
+        #expect(ComputerName.offersCustomName(system: "Kari's MacBook", custom: "Korpset"))
     }
 
     @Test func theEngineGetsTheShownName() {
         let paths = BandroomPaths(data: URL(fileURLWithPath: "/tmp/d"), logs: URL(fileURLWithPath: "/tmp/l"))
         let config = EngineConfiguration(source: .checkout(URL(fileURLWithPath: "/tmp/c")), pixi: nil, paths: paths,
-                                         computerName: ComputerName.shown(system: "DDPW3GWFDK", custom: "Korpset"), adminToken: "t")
+                                         computerName: ComputerName.shown(system: "ABCD1234EF", custom: "Korpset"), adminToken: "t")
         #expect(config.environment(base: [:])["BRASSCRIBE_COMPUTER_NAME"] == "Korpset")
         #expect(config.environment(base: ["HF_HUB_CACHE": "/h"])["HF_HUB_CACHE"] == "/h")
     }
