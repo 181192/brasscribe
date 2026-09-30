@@ -281,6 +281,27 @@ public class BrasscribeCoreTests
         }
     }
 
+    // A sustained alternation of C5 and D5 in 16ths (6 ticks each).
+    private const string Alternation = """
+        {"title": "Trill", "voices": [
+          {"id": "melody", "role": "melody", "notes": [
+            {"pitch": 72, "start": 0, "dur": 6}, {"pitch": 74, "start": 6, "dur": 6}, {"pitch": 72, "start": 12, "dur": 6},
+            {"pitch": 74, "start": 18, "dur": 6}, {"pitch": 72, "start": 24, "dur": 6}, {"pitch": 74, "start": 30, "dur": 6},
+            {"pitch": 72, "start": 36, "dur": 6}, {"pitch": 74, "start": 42, "dur": 6}, {"pitch": 72, "start": 48, "dur": 48}]},
+          {"id": "bass", "role": "bass", "notes": [{"pitch": 48, "start": 0, "dur": 96}]}],
+         "meters": [{"tick": 0, "beats": 4}], "keys": [{"tick": 0, "fifths": 0}]}
+        """;
+
+    [Fact]
+    public void ArrangesWithTrillsOnRequest()
+    {
+        Assert.DoesNotContain("<trill-mark", BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal"));
+        Assert.Contains("<trill-mark", BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", trills: true));
+        Assert.DoesNotContain("<trill-mark",
+            BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard", trills: false));
+        Assert.Contains("<trill-mark", BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard"));
+    }
+
     [Fact]
     public void SpellsPitches()
     {

@@ -35,9 +35,11 @@ public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]
 /// <param name="Reads">"treble" or "bass" (the seat's part at concert pitch in bass clef); null: the band part's own clef.</param>
 /// <param name="Lead">"lineup" (null) or "seat": the tune on the seat's part (band lineups only).</param>
 /// <param name="Lang">Language of the footer on the arranged parts: "en" (null) or "nb".</param>
+/// <param name="Trills">Faithful: write sustained two-note alternations as trills (standard and easier always do).</param>
 public sealed record LayersSongOptions(SoloContour? SoloContour = null, bool FreeTime = true, double? FreeTempo = null,
     bool Gate = true, bool BeatCleanup = true, bool KeyChanges = true, string Lineup = "band", string Difficulty = "faithful",
-    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null, string? Lang = null);
+    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null, string? Lang = null,
+    bool Trills = false);
 
 /// <summary>The player's part in a lineup for their seat.</summary>
 /// <param name="Part">The lineup's part name, or null when the lineup has none (percussion outside the band).</param>
@@ -184,10 +186,12 @@ public static class BrasscribeCore
     /// <param name="seat">The player's seat, or null (see <see cref="LayersSongOptions"/>).</param>
     /// <param name="reads">"treble", "bass" or null.</param>
     /// <param name="lead">"lineup" (null) or "seat".</param>
+    /// <param name="trills">Write sustained two-note alternations as trills, or not; null: as the composition records it
+    /// (arrangement.trills), else the difficulty's default (faithful writes them out, standard and easier trill).</param>
     public static string ArrangeMusicXmlWith(string compositionJson, string lineup = "band", string difficulty = "faithful",
-        string? key = null, int? transpose = null, string? seat = null, string? reads = null, string? lead = null)
+        string? key = null, int? transpose = null, string? seat = null, string? reads = null, string? lead = null, bool? trills = null)
     {
-        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose, seat, reads, lead });
+        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose, seat, reads, lead, trills });
         return Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_with(compositionJson, options, out o, out e));
     }
 
@@ -249,6 +253,7 @@ public static class BrasscribeCore
             reads = o.Reads,
             lead = o.Lead,
             lang = o.Lang,
+            trills = o.Trills,
         });
         var pins = new List<GCHandle>();
         IntPtr Pin(Array? a)
