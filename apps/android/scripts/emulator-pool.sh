@@ -28,7 +28,7 @@ EMULATOR="$SDK/emulator/emulator"
 AVD="${BRASSCRIBE_AVD:-bc36}"
 POOL_AVD="$AVD-pool"
 MAX="${BRASSCRIBE_EMULATORS_MAX:-4}"
-PHONE="${BRASSCRIBE_PHONE_SERIAL:-RFCY9141XEF}"
+PHONE="${BRASSCRIBE_PHONE_SERIAL:-}"
 POOL="${BRASSCRIBE_CACHE:-$HOME/.cache/brasscribe}/emulators"
 BOOT_TIMEOUT="${BRASSCRIBE_EMULATOR_BOOT_TIMEOUT:-300}"
 mkdir -p "$POOL"
@@ -151,6 +151,7 @@ acquire() {
   done
 
   if [ $phone = 1 ]; then
+    [ -n "$PHONE" ] || die "set BRASSCRIBE_PHONE_SERIAL to the phone's adb serial"
     "$ADB" devices | grep -q "^$PHONE[[:space:]]*device$" || die "phone $PHONE is not attached"
     mkdir "$POOL/$PHONE" 2>/dev/null || die "phone $PHONE is leased by $(field "$PHONE" owner)"
     lease "$PHONE" "$owner" "$ttl"

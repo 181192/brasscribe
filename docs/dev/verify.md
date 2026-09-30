@@ -136,7 +136,7 @@ fail instead of skipping.
   - Leases expire after `--ttl` minutes (default 120) and are reaped by the next `acquire`.
   - At most four run at once (`BRASSCRIBE_EMULATORS_MAX`).
   - `emulator-5554` is the interactive one. The pool never starts, stops or hands it out.
-- **The phone (Galaxy S25, `RFCY9141XEF`).** It may be used for device tests when it is connected.
+- **The phone (Galaxy S25, adb serial in `BRASSCRIBE_PHONE_SERIAL`).** It may be used for device tests when it is connected.
   - `emulator-pool.sh acquire --phone` leases it when it is attached and free.
   - Afterwards, install the current debug build again (`./gradlew installDebug`).
   - Never uninstall the app: that deletes the user's scores.

@@ -201,7 +201,8 @@ billing like the other workflows, so the site is published by hand:
 ```sh
 bash site/build.sh                                            # site/_site
 git clone --depth 1 -b gh-pages https://github.com/181192/brasscribe.git "$S/ghpages"
-cd "$S/ghpages" && find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+cd "$S/ghpages" && git config user.email k@kalli.no
+find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 cp -R "$W/site/_site/." . && git add -A
 git commit -m "docs(site): …" && git push origin gh-pages     # never force: other site updates land here too
 gh api repos/181192/brasscribe/pages/builds/latest

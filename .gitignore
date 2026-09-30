@@ -18,3 +18,13 @@ site/_site/
 
 # local build output (scripts/mac-vm.sh results)
 /build/
+
+# Agent worktrees and notes, signing keys and local secrets
+.claude/
+.remember/
+*.jks
+*.keystore
+*.p12
+keystore-password.txt
+.env
+.env.*

@@ -475,7 +475,7 @@ The engine title stays "… solo cornet & brass band (draft)" (`profiles.py:251`
 6. **Picking Trumpet.** "What do you play?" on Android and Apple offers Trumpet, en and nb, and "Who plays the tune?" isn't offered for it. Windows gets the same when `feat/my-instrument-windows` lands.
 7. **The checks pass.** `make check` is green for every touched area, conformance included.
    - Apple UI tests run only through `scripts/mac-vm.sh` when on `main`, never on the host.
-   - The phone RFCY9141XEF is checked for the tile and notice through `emulator-pool.sh acquire --phone`. The current debug build is reinstalled afterwards, and nothing is uninstalled.
+   - The phone is checked for the tile and notice through `emulator-pool.sh acquire --phone`. The current debug build is reinstalled afterwards, and nothing is uninstalled.
 
 ---
 
