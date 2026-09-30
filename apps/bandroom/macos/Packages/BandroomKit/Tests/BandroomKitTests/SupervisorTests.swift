@@ -230,6 +230,40 @@ import Testing
         #expect(PortPicker.firstFree(isFree: { $0 >= 8767 }) == 8767)
         #expect(PortPicker.firstFree(isFree: { _ in false }) == nil)
     }
+
+    /// A listening socket on `address` at a port the system picks; returns the descriptor and the port.
+    private func listen(on address: in_addr_t, reuse: Bool) throws -> (fd: Int32, port: Int) {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        try #require(fd >= 0)
+        var one: Int32 = 1
+        if reuse { setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<Int32>.size)) }
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_addr = in_addr(s_addr: address)
+        var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let bound = withUnsafeMutablePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, len) == 0 && Darwin.listen(fd, 4) == 0 && getsockname(fd, $0, &len) == 0 }
+        }
+        try #require(bound)
+        return (fd, Int(UInt16(bigEndian: addr.sin_port)))
+    }
+
+    @Test(arguments: [true, false])
+    func aPortAnotherProgramListensOnIsBusy(reuse: Bool) throws {
+        let loopback = UInt32(0x7f00_0001).bigEndian
+        for address in [loopback, INADDR_ANY] {
+            let (fd, port) = try listen(on: address, reuse: reuse)
+            #expect(!PortPicker.isFree(port), "listening on \(address == INADDR_ANY ? "all addresses" : "127.0.0.1")")
+            close(fd)
+        }
+    }
+
+    @Test func aPortNobodyUsesIsFree() throws {
+        let (fd, port) = try listen(on: INADDR_ANY, reuse: true)
+        close(fd)
+        #expect(PortPicker.isFree(port))
+    }
 }
 
 @Suite struct BandSoundsTests {

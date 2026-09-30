@@ -126,22 +126,54 @@ public enum PortPicker {
         range.first(where: isFree)
     }
 
+    /// Free when the engine's own bind would work and nothing answers on 127.0.0.1, where Bandroom, Studio and
+    /// Play on this Mac reach the engine. The bind alone isn't enough: with SO_REUSEADDR a wildcard bind succeeds
+    /// on macOS while another program listens on 127.0.0.1 at the same port, which would then get that traffic.
     public static func isFree(_ port: Int) -> Bool {
+        canBind(port) && !answersOnLoopback(port)
+    }
+
+    /// As the engine's own listener binds, so a port in TIME_WAIT after a restart counts as free.
+    static func canBind(_ port: Int) -> Bool {
         let fd = socket(AF_INET, SOCK_STREAM, 0)
         guard fd >= 0 else { return false }
         defer { close(fd) }
-        // As the engine's own listener does, so a port in TIME_WAIT after a restart counts as free.
         var one: Int32 = 1
         setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, socklen_t(MemoryLayout<Int32>.size))
-        var addr = sockaddr_in()
-        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
-        addr.sin_family = sa_family_t(AF_INET)
-        addr.sin_port = in_port_t(UInt16(port).bigEndian)
-        addr.sin_addr = in_addr(s_addr: INADDR_ANY)
+        var addr = socketAddress(port, INADDR_ANY)
         let rc = withUnsafePointer(to: &addr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
         }
         return rc == 0
+    }
+
+    /// Something accepts connections on 127.0.0.1:`port` (waits at most `timeout` for an answer).
+    static func answersOnLoopback(_ port: Int, timeout: Int32 = 200) -> Bool {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else { return false }
+        defer { close(fd) }
+        _ = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK)
+        var addr = socketAddress(port, UInt32(0x7f00_0001).bigEndian)
+        let rc = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
+        }
+        if rc == 0 { return true }
+        guard errno == EINPROGRESS else { return false }
+        var p = pollfd(fd: fd, events: Int16(POLLOUT), revents: 0)
+        guard poll(&p, 1, timeout) == 1 else { return false }
+        var err: Int32 = 0
+        var len = socklen_t(MemoryLayout<Int32>.size)
+        getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len)
+        return err == 0
+    }
+
+    private static func socketAddress(_ port: Int, _ address: in_addr_t) -> sockaddr_in {
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_port = in_port_t(UInt16(port).bigEndian)
+        addr.sin_addr = in_addr(s_addr: address)
+        return addr
     }
 }
 
