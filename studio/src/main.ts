@@ -238,4 +238,9 @@ window.addEventListener("studio:retry", () => {
   route(true);
 });
 window.addEventListener("hashchange", () => route());
+// The skip link moves focus to the page's content; as a plain "#main" link it would go through the router.
+document.querySelector<HTMLAnchorElement>(".skip-link")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  document.getElementById("main")?.focus();
+});
 route(true);
