@@ -2,7 +2,8 @@
 
     <data>/runs/<run-id>/
         manifest.json    what ran: profile, params, input hash, git SHA, host, device,
-                         per-stage cache key / status / adapter version / model hashes
+                         per-stage cache key / status / adapter version / model hashes,
+                         the recording's tuning offset where it was measured
         events.jsonl     progress events as streamed over SSE
         stages/<stage>/  each stage's files (hardlinks into the cache)
         outputs/         final files: composition.json, brass-band.musicxml/.pdf/.mid/.mp3
@@ -156,6 +157,10 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         manifest["finished"] = datetime.now(timezone.utc).isoformat()
         manifest["seconds"] = round(time.time() - t0, 3)
         manifest["devices"] = sorted({r.adapter["device"] for r in partial.values() if r.adapter})
+        # Each retuned transcription's measured offset from A = 440 (tuning.py), by stage.
+        tuning = {r.stage: r.derived for r in partial.values() if "tuning_cents" in r.derived}
+        if tuning:
+            manifest["tuning"] = tuning
         cache.hashes.save()
         (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
         if out is not None and manifest["status"] == "succeeded":

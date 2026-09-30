@@ -87,6 +87,7 @@ export type Manifest = Record<string, unknown> & {
   host?: Record<string, string>;
   seconds?: number;
   devices?: string[];
+  tuning?: Record<string, { tuning_cents: number; concentration?: number; retuned?: boolean; shift_cents?: number }>;
   stages?: ManifestStage[];
   options?: Record<string, unknown>;
   params?: Record<string, unknown>;

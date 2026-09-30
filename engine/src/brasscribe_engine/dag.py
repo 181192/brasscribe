@@ -50,6 +50,9 @@ class Stage:
     code: tuple[Path, ...] = ()
     outputs: tuple[str, ...] = ()  # expected output files (glob patterns)
     reuse_subdir: str | None = None  # where the outputs sit in a song-pipeline output directory
+    # Parameters computed from the inputs when the stage is keyed, and facts for the manifest:
+    # derive(inputs) -> (params, facts). Empty params leave the stage's key as it would be without them.
+    derive: Callable[[dict[str, Path]], tuple[dict, dict]] | None = None
 
 
 @dataclass
@@ -79,6 +82,7 @@ class StageResult:
     provenance: dict = field(default_factory=dict)
     matches_cache: bool | None = None
     error: str | None = None
+    derived: dict = field(default_factory=dict)  # the facts of Stage.derive
 
     @property
     def run_s(self) -> float:
@@ -95,6 +99,8 @@ class StageResult:
             d["provenance"] = self.provenance
         if self.matches_cache is not None:
             d["matches_cache"] = self.matches_cache
+        if self.derived:
+            d["derived"] = self.derived
         if self.error:
             d["error"] = self.error
         return d
@@ -116,10 +122,11 @@ class StageContext:
     out: Path
     inputs: dict[str, Path]
     executor: Executor
+    derived: dict = field(default_factory=dict)  # parameters from Stage.derive
 
     @property
     def params(self) -> dict:
-        return self.stage.params
+        return {**self.stage.params, **self.derived} if self.derived else self.stage.params
 
     def log(self, message: str) -> None:
         self.executor.emit({"type": "log", "stage": self.stage.name, "message": message})
@@ -169,9 +176,10 @@ class Executor:
             self._fingerprints[stage.code] = source_fingerprint(*stage.code) if stage.code else ""
         return self._fingerprints[stage.code]
 
-    def key(self, stage: Stage, input_digests: dict[str, str]) -> str:
+    def key(self, stage: Stage, input_digests: dict[str, str], derived: dict | None = None) -> str:
         return sha256_json({
-            "schema": CACHE_SCHEMA, "stage": stage.name, "kind": stage.kind, "params": stage.params,
+            "schema": CACHE_SCHEMA, "stage": stage.name, "kind": stage.kind,
+            "params": {**stage.params, **derived} if derived else stage.params,
             "inputs": input_digests, "code": self._code(stage),
             "adapter": self.adapters.fingerprint(stage.adapter) if stage.adapter else None,
         })
@@ -279,14 +287,15 @@ class Executor:
                 inputs[name], digests[name] = up.out_dir / inp.file, up.files[inp.file]
             else:
                 inputs[name], digests[name] = up.out_dir, digest_of_files(up.files)
-        key = self.key(stage, digests)
+        derived, facts = stage.derive(inputs) if stage.derive else ({}, {})
+        key = self.key(stage, digests, derived)
         out = stages_dir / stage.name
         adapter = self.adapters.describe(stage.adapter) if stage.adapter else None
         with self._emit_lock:
             started_fraction = round(self._done / total, 4)
         self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "started", "key": key,
                    "fraction": started_fraction})
-        res = StageResult(stage.name, stage.kind, "failed", key, out, {}, inputs=digests, adapter=adapter)
+        res = StageResult(stage.name, stage.kind, "failed", key, out, {}, inputs=digests, adapter=adapter, derived=facts)
         t0 = time.time()
         try:
             entry = self.cache.lookup(key)
@@ -295,14 +304,15 @@ class Executor:
                 self._materialize(entry, out)
                 res.status, res.files, res.provenance = "cached", entry.files, entry.provenance
             else:
-                cand = None if cold or entry else self._reuse_candidate(stage, pipeline, results, source_digest)
+                # A song-pipeline directory holds outputs made without derived parameters.
+                cand = None if cold or entry or derived else self._reuse_candidate(stage, pipeline, results, source_digest)
                 if cand:
                     base, files = cand
                     entry = self.cache.store(key, stage.name, base, files, {"imported_from": str(base)})
                     self._materialize(entry, out)
                     res.status, res.files, res.provenance = "imported", entry.files, entry.provenance
                 else:
-                    res.files = self._execute(stage, out, inputs)
+                    res.files = self._execute(stage, out, inputs, derived)
                     res.status = "ran"
                     if entry:
                         res.matches_cache = self._equivalent(out, res.files, entry)
@@ -357,11 +367,11 @@ class Executor:
             shutil.rmtree(out)
         self.cache.materialize(entry, out)
 
-    def _execute(self, stage: Stage, out: Path, inputs: dict[str, Path]) -> dict[str, str]:
+    def _execute(self, stage: Stage, out: Path, inputs: dict[str, Path], derived: dict | None = None) -> dict[str, str]:
         if out.exists():
             shutil.rmtree(out)
         out.mkdir(parents=True)
-        stage.run(StageContext(stage, out, inputs, self))
+        stage.run(StageContext(stage, out, inputs, self, derived or {}))
         files = {p.relative_to(out).as_posix(): self.cache.hashes.file(p) for p in sorted(out.rglob("*")) if p.is_file()}
         if not files:
             raise StageFailed(stage.name, "stage produced no output files")

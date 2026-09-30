@@ -10,6 +10,9 @@
   orchestra-with-soloist  layered solo-with-band: Mega-53 solo/bass/drums, the
                           orchestra as residual, 18-part brass band (layered)
 
+In brass-band, Basic Pitch hears the recording retuned to A = 440 when it is out of
+tune (tuning.py).
+
 Only orchestra-with-soloist is checked end to end against a golden output
 (data/golden/mikkel-arranged-band); the other three are wired from the same
 reference modules but have no end-to-end gate yet.
@@ -21,6 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import stages as S
+from . import tuning
 from .dag import SOURCE, Input, Pipeline, Stage
 from .stages import EVAL_SRC, SYMBOLIC_CODE, THIS
 
@@ -162,9 +166,18 @@ def _beats() -> Stage:
                  outputs=("mix.beats",), reuse_subdir=".")
 
 
-def _transcribe(layer: str, tool: str, suffix: str, src: Input, reuse_subdir: str | None) -> Stage:
-    return Stage(f"transcribe.{layer}.{tool}", "transcribe", {"audio": src}, S.transcribe, adapter=tool,
-                 params={"output": f"{layer}-{suffix}.mid"}, outputs=(f"{layer}-{suffix}.mid",), reuse_subdir=reuse_subdir)
+# The transcribers that are retuned to A = 440 first (tuning.py), and only on a whole recording. MuScriptor
+# gains on average but loses badly on single pieces (its greedy decoding flips on a few cents); estimates on
+# separated stems are unreliable (a stem of an in-tune song can read 30 cents off); and SwiftF0, which
+# Basic Pitch confirms in solo and orchestra-with-soloist, is not retuned yet.
+RETUNED = ("basic-pitch",)
+
+
+def _transcribe(layer: str, tool: str, suffix: str, src: Input, reuse_subdir: str | None, retune: bool = False) -> Stage:
+    retune = retune and tool in RETUNED
+    return Stage(f"transcribe.{layer}.{tool}", "transcribe", {"audio": src}, tuning.transcribe if retune else S.transcribe,
+                 adapter=tool, params={"output": f"{layer}-{suffix}.mid"}, outputs=(f"{layer}-{suffix}.mid",),
+                 reuse_subdir=reuse_subdir, derive=tuning.derive if retune else None)
 
 
 def _export(arrange: str, audio: bool) -> Stage:
@@ -233,7 +246,8 @@ def layered(title: str, params: dict) -> Pipeline:
 
 def brass_band(title: str, params: dict) -> Pipeline:
     mix = Input(SOURCE)
-    st = [_beats(), _transcribe("mix", "muscriptor", "mus", mix, None), _transcribe("mix", "basic-pitch", "bp", mix, None)]
+    st = [_beats(), _transcribe("mix", "muscriptor", "mus", mix, None),
+          _transcribe("mix", "basic-pitch", "bp", mix, None, retune=True)]
     st.append(Stage("arrange", "arrange", {
         "beats": Input("beats", "mix.beats"), "melody": Input("transcribe.mix.muscriptor", "mix-mus.mid"),
         "melody_support": Input("transcribe.mix.basic-pitch", "mix-bp.mid"),
