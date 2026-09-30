@@ -2811,6 +2811,16 @@
         }
       }
     },
+    "Only pair with a computer you know. The recordings you send go to it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble bare til en datamaskin du kjenner. Opptakene du sender, går til den."
+          }
+        }
+      }
+    },
     "Only this": {
       "localizations": {
         "nb": {
@@ -2947,6 +2957,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Koble til telefonen på nytt"
+          }
+        }
+      }
+    },
+    "Pair with %@ at %@?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til %1$@ på adressen %2$@?"
           }
         }
       }
@@ -4557,6 +4577,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Disse filene kunne ikke lages. Prøv færre formater, eller prøv igjen."
+          }
+        }
+      }
+    },
+    "This device is paired with %@. If you pair with %@, this device uses it instead.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne enheten er koblet til %1$@. Hvis du kobler til %2$@, bruker enheten den i stedet."
           }
         }
       }

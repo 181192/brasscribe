@@ -626,6 +626,9 @@ NB = {
     "pages %lld–%lld of %lld": "side %1$lld–%2$lld av %3$lld",
     "No microphone was found. Connect one and try again.": "Fant ingen mikrofon. Koble til en og prøv igjen.",
     "%@ (playing)": "%@ (spiller)",
+    "Pair with %@ at %@?": "Koble til %1$@ på adressen %2$@?",
+    "This device is paired with %@. If you pair with %@, this device uses it instead.": "Denne enheten er koblet til %1$@. Hvis du kobler til %2$@, bruker enheten den i stedet.",
+    "Only pair with a computer you know. The recordings you send go to it.": "Koble bare til en datamaskin du kjenner. Opptakene du sender, går til den.",
 }
 
 INFO_NB = {

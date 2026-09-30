@@ -133,8 +133,8 @@ final class AppModel {
         #endif
     }
 
-    /// A `brasscribe://pair` link opened from the camera, a QR scan or a paste: pair, or ask the computer
-    /// to allow this device when the link has no code. Settings shows how it went.
+    /// A `brasscribe://pair` link opened from outside the app (the camera, another app): Settings asks
+    /// before it pairs, or asks the computer to allow this device when the link has no code.
     var pendingLink: PairingLink?
 
     func openPairingLink(_ link: PairingLink) {

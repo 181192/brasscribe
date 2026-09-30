@@ -35,6 +35,8 @@ import Testing
     #expect(PairingLink(string: "brasscribe://pair?v=1&h=10.0.0.2:8765") == nil)           // no server id
     #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n") == nil)               // no address
     #expect(PairingLink(string: "482913") == nil)
+    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=203.0.113.9:8765") == nil)    // not on the local network
+    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=example.com:8765") == nil)
     #expect(PairingLink(string: "") == nil)
 }
 
@@ -212,4 +214,31 @@ private func freshDefaults() -> UserDefaults {
 
 @Test func connectionBackoffSequence() {
     #expect((1...7).map(ConnectionMachine.backoff(attempt:)) == [2, 4, 8, 16, 30, 30, 30])
+}
+
+@Test(arguments: ["10.0.0.2", "172.16.0.1", "172.31.255.255", "192.168.1.20", "169.254.3.4", "127.0.0.1", "100.101.1.2",
+                  "::1", "fe80::1", "fe80::1%en0", "fd7a:115c:a1e0::1", "::ffff:192.168.0.1", "studio.local", "Studio.local.", "localhost"])
+func localNetworkHostsAreAccepted(host: String) {
+    #expect(PairingLink.isLocalNetwork(host))
+}
+
+@Test(arguments: ["8.8.8.8", "172.32.0.1", "192.169.0.1", "100.128.0.1", "203.0.113.9", "2001:db8::1", "::ffff:8.8.8.8",
+                  "example.com", "local", ".local", "evil.local.example.com", "134744072", "0x08080808", ""])
+func otherHostsAreRefused(host: String) {
+    #expect(!PairingLink.isLocalNetwork(host))
+}
+
+@Test func onlyTheLocalAddressesOfALinkAreKept() throws {
+    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n&h=203.0.113.9:8765,192.168.1.20:8765,[fe80::1]:8765&code=1"))
+    #expect(link.hosts == ["192.168.1.20:8765", "[fe80::1]:8765"])
+    #expect(link.displayHost == "192.168.1.20")
+}
+
+@Test func anAddressIsCheckedAsItIsConnectedTo() {
+    #expect(PairingLink.host(of: "[fe80::1]:8765") == "fe80::1")
+    #expect(PairingLink.host(of: "studio.local:8765") == "studio.local")
+    // what a URL would connect to is example.com, whatever the text around it says
+    #expect(PairingLink.host(of: "example.com#.local:8765") == nil)
+    #expect(PairingLink.host(of: "192.168.1.2@example.com:8765") == nil)
+    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=example.com%23.local:8765") == nil)
 }
