@@ -1,0 +1,35 @@
+name: dependencies
+
+# Sends the Android dependencies (Gradle, resolved) to GitHub's dependency graph, so they get
+# Dependabot alerts and the dependency review like the ecosystems GitHub reads from lockfiles.
+on:
+  push:
+    branches: [main]
+    paths: ["apps/android/**", "core/android/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gradle:
+    name: submit the Gradle dependency graph
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        project: [apps/android, core/android]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/dependency-submission@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        with:
+          build-root-directory: ${{ matrix.project }}
