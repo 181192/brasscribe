@@ -389,7 +389,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Manifest */
+        /**
+         * Get Manifest
+         * @description What ran: profile, parameters, input, stages. Paired devices get paths relative to the data folder,
+         *     and no git or host details.
+         */
         get: operations["getJobManifest"];
         put?: never;
         post?: never;
@@ -807,6 +811,7 @@ export interface paths {
         /**
          * List Datasets
          * @description Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.
+         *     Paired devices get paths relative to the data folder.
          */
         get: operations["listDatasets"];
         put?: never;
@@ -836,7 +841,8 @@ export interface paths {
         head?: never;
         /**
          * Update Run
-         * @description Rename a finished score: the title in its manifest, Composition and MusicXML.
+         * @description Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML and
+         *     the talking score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.
          */
         patch: operations["updateRun"];
         trace?: never;
@@ -851,6 +857,7 @@ export interface paths {
         /**
          * List Sources
          * @description Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).
+         *     Paired devices get paths relative to the data folder.
          */
         get: operations["listSources"];
         put?: never;
@@ -1629,6 +1636,12 @@ export interface components {
             match_code: string;
             /** Name */
             name: string;
+            /**
+             * Name In Use
+             * @description a device already paired with this engine has the same name (ignoring case): the owner can't tell the two apart by name, so the apps can suggest another one
+             * @default false
+             */
+            name_in_use: boolean;
             /** Platform */
             platform: string;
             /** Request Id */
