@@ -61,6 +61,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The whole history, for the notes: git-cliff reads the commits since the previous vX.Y.Z tag.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -70,8 +75,29 @@ jobs:
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
 
+      # Release notes from the Conventional Commits since the last release (cliff.toml): new features
+      # and fixes by app, the rest folded away, first-time contributors named.
+      - name: Release notes
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: ${{ runner.temp }}/notes.md
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Downloads note
+        run: |
+          cat >> "$RUNNER_TEMP/notes.md" <<'EOF'
+
+          ---
+          Which file to download, and how to install it: [the guide](https://kalli.no/brasscribe/guide/#download).
+          Check a download against `SHA256SUMS`.
+          EOF
+
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/notes.md
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: dist/*

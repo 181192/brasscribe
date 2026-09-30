@@ -1,12 +1,28 @@
 # Cutting a release
 
-Releases are built by CI: `.github/workflows/release.yml` runs the checks, builds each platform and
-publishes a GitHub release with the files. A pushed `vX.Y.Z` tag starts it; when it does not (tags
-pushed in bulk never do), start it by hand on the tag: `gh workflow run release.yml --ref vX.Y.Z`.
+Releases are built by CI. On an up-to-date `main`:
+
+```sh
+scripts/release.sh --preview          # the notes the next release would get
+scripts/release.sh X.Y.Z --push       # bump, CHANGELOG.md, `chore(release): X.Y.Z`, tag vX.Y.Z, push
+```
+
+The script bumps the version everywhere it lives (Android `versionName` and `versionCode`, the Apple and
+Bandroom `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`; the build number is `versionCode`, one up
+per release), regenerates `CHANGELOG.md` with git-cliff (`cliff.toml`) and tags. Pick the version
+from the preview: a `feat` since the last release means a minor bump, only fixes a patch bump.
+
+The pushed tag starts `.github/workflows/release.yml`: the checks, a build per platform, then a
+GitHub release with the files, `SHA256SUMS` and notes generated from the commits (new features and
+fixes by app, the rest folded away, first-time contributors named). The commit messages are the
+release notes, so write them for the people who use the apps. If a tag push does not start the
+workflow, start it on the tag: `gh workflow run release.yml --ref vX.Y.Z`.
+
 The Android APKs are signed in CI with the release key, held in the secrets of the `release`
 environment (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`); the job checks the certificate
-against the one every earlier release used. The sections below are the local build, kept for when CI
-cannot be used; v0.1.0 to v0.3.0 were made that way.
+against the one every earlier release used. The Mac apps are re-signed ad hoc (there is no Apple
+Developer ID), and the Windows builds are not signed. The sections below are the local build, kept
+for when CI cannot be used; v0.1.0 to v0.3.0 were made that way.
 
 What a release ships:
 
@@ -200,21 +216,9 @@ Hugging Face key). See `gh release view v0.2.0` for the shape.
 
 ## 8. The site
 
-The site is served from the `gh-pages` branch (Pages in legacy branch mode, `gh-pages` at `/`, at
-kalli.no/brasscribe). `.github/workflows/pages.yml` would deploy it on a push to main, but it stops on
-billing like the other workflows, so the site is published by hand:
-
-```sh
-bash site/build.sh                                            # site/_site
-git clone --depth 1 -b gh-pages https://github.com/181192/brasscribe.git "$S/ghpages"
-cd "$S/ghpages" && git config user.email k@kalli.no
-find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-cp -R "$W/site/_site/." . && git add -A
-git commit -m "docs(site): …" && git push origin gh-pages     # never force: other site updates land here too
-gh api repos/181192/brasscribe/pages/builds/latest
-```
-
-`$W` is the release worktree. The site and the READMEs never name a version: they link to
+`.github/workflows/pages.yml` builds `site/` and deploys it with GitHub Pages (source: GitHub
+Actions, at kalli.no/brasscribe) on every push to main that touches the site; start it by hand with
+`gh workflow run pages.yml`. The site and the READMEs never name a version: they link to
 `releases/latest` and to `releases/latest/download/<file>`, so a release needs no text changes there.
 Keep the asset file names stable (no version in them) for those links to keep working.
 `site/build.sh` fails if a pinned release link or version number creeps back in.

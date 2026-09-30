@@ -1,0 +1,88 @@
+# Changelog and release notes from the Conventional Commits history (https://git-cliff.org).
+#   git cliff --unreleased                 what the next release would say
+#   git cliff --latest --strip header      the notes of the latest release (what CI publishes)
+#   git cliff -o CHANGELOG.md              the whole changelog
+# Features and fixes come first, grouped by the scope in the commit (the app or part it touches);
+# housekeeping (docs, tests, CI, build, refactors) is folded away at the end.
+
+[remote.github]
+owner = "181192"
+repo = "brasscribe"
+
+[changelog]
+header = """
+# Changelog
+
+Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
+"""
+body = """
+{%- macro scope_label(scope) -%}
+{%- if scope == "android" %}Android{% elif scope == "apple" %}iPhone, iPad and Mac{% elif scope == "ios" %}iPhone and iPad\
+{% elif scope == "macos" %}Mac{% elif scope == "windows" %}Windows{% elif scope == "bandroom" %}Bandroom\
+{% elif scope == "studio" %}Studio{% elif scope == "engine" %}Engine{% elif scope == "core" %}Core\
+{% elif scope == "music" %}Music library{% elif scope == "playback" %}Playback{% elif scope == "notation" %}Notation\
+{% elif scope == "sounds" %}Band sounds{% elif scope == "site" %}Site{% elif scope == "design" %}Design{% elif scope == "qa" %}QA{% elif scope == "bandroom-mac" %}Bandroom for Mac\
+{% elif scope == "bandroom-windows" %}Bandroom for Windows{% elif scope == "musicxml" %}MusicXML{% elif scope == "quantize" %}Quantization\
+{% else %}{{ scope | upper_first }}{% endif -%}
+{%- endmacro -%}
+
+{%- macro commit_line(commit) -%}
+- {% if commit.scope %}**{{ self::scope_label(scope=commit.scope) }}:** {% endif %}\
+{% if commit.breaking %}**Breaking:** {% endif %}\
+{{ commit.message | split(pat="\n") | first | trim | upper_first }}\
+{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/181192/brasscribe/pull/{{ commit.remote.pr_number }})){% endif %}\
+{% if commit.remote.username and commit.remote.username != "181192" %} by @{{ commit.remote.username }}{% endif %}
+{%- endmacro -%}
+
+{% if version %}
+## {{ version | trim_start_matches(pat="v") }} ({{ timestamp | date(format="%Y-%m-%d") }})
+{% else %}
+## Unreleased
+{% endif %}
+{%- set main_groups = ["<!-- 0 -->New features", "<!-- 1 -->Fixes", "<!-- 2 -->Performance"] -%}
+{% for group, commits in commits | group_by(attribute="group") %}
+{%- if group in main_groups %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+{{ self::commit_line(commit=commit) }}
+{%- endfor %}
+{% endif -%}
+{% endfor %}
+{%- set other = commits | filter(attribute="group", value="<!-- 9 -->Under the hood") -%}
+{% if other | length > 0 %}
+<details><summary>Under the hood ({{ other | length }} change{{ other | length | pluralize }}: docs, tests, CI, build, refactoring)</summary>
+
+{% for commit in other %}
+{{ self::commit_line(commit=commit) }}
+{%- endfor %}
+
+</details>
+{% endif -%}
+
+{%- if github.contributors | filter(attribute="is_first_time", value=true) | length > 0 %}
+### New contributors
+{% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
+- @{{ contributor.username }} made their first contribution{% if contributor.pr_number %} in [#{{ contributor.pr_number }}](https://github.com/181192/brasscribe/pull/{{ contributor.pr_number }}){% endif %}
+{%- endfor %}
+{% endif %}
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+protect_breaking_commits = true
+filter_commits = false
+# Releases of the apps only: the band sound packs (sounds-*) are separate pre-releases.
+tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+sort_commits = "oldest"
+commit_parsers = [
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^Merge ", skip = true },
+  { message = "^feat", group = "<!-- 0 -->New features" },
+  { message = "^fix", group = "<!-- 1 -->Fixes" },
+  { message = "^perf", group = "<!-- 2 -->Performance" },
+  { message = "^(docs|test|ci|build|refactor|style|chore|revert)", group = "<!-- 9 -->Under the hood" },
+]
