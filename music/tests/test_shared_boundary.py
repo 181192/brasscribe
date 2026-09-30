@@ -21,6 +21,8 @@ def imported_modules(tree: ast.AST) -> set[str]:
                 found.add(node.module.split(".")[0])
             elif node.level == 1:
                 found.update(alias.name for alias in node.names)
+            elif node.module == "brasscribe_music":
+                found.update(alias.name for alias in node.names)
             elif node.module and node.module.startswith("brasscribe_music."):
                 found.add(node.module.split(".")[1])
         elif isinstance(node, ast.Import):
@@ -40,8 +42,9 @@ def test_shared_modules_do_not_import_instrument_knowledge():
 
 
 def test_the_import_scanner_sees_inline_and_grouped_imports():
-    tree = ast.parse("def f():\n    from .instruments import BRASS_BAND\nfrom . import arranger, quantize\n")
-    assert imported_modules(tree) == {"instruments", "arranger", "quantize"}
+    tree = ast.parse("def f():\n    from .instruments import BRASS_BAND\nfrom . import arranger, quantize\n"
+                     "from brasscribe_music import difficulty\nimport brasscribe_music.musicxml as mx\n")
+    assert imported_modules(tree) == {"instruments", "arranger", "quantize", "difficulty", "musicxml"}
 
 
 def test_every_instrument_aware_module_exists():
