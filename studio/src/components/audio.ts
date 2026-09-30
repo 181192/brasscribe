@@ -142,13 +142,17 @@ export class AudioAB extends HTMLElement {
     const node = ac.createBufferSource();
     node.buffer = l.buffer;
     node.connect(ac.destination);
-    const start = Math.max(0, Math.min(at, l.buffer.duration - 0.01));
+    // Play from the end means play again from the start.
+    const start = playFrom(at, l.buffer.duration);
     node.start(0, start);
     node.onended = () => {
+      // Played to the end (a pause or a seek stops a node that is no longer this.node).
       if (this.node === node) {
-        this.offset = this.position();
-        this.node = null;
+        this.stopPlayback();
+        this.offset = 0;
         this.playBtn.textContent = t("score.play");
+        this.wave.redraw();
+        this.updateStatus();
       }
     };
     this.node = node;
@@ -326,6 +330,11 @@ export class AudioAB extends HTMLElement {
     c.fillText("0", 4, plotH - 4);
     timeAxis(c, w, plotH, this.viewStart, this.viewStart + this.window, token("text-muted"));
   }
+}
+
+/** Where playback starts when asked for `at`: from the start once `at` is at (or past) the end. */
+export function playFrom(at: number, duration: number): number {
+  return at >= duration - 0.05 ? 0 : Math.max(0, at);
 }
 
 /** Viridis colour map (perceptually uniform, colour-blind safe), 0..1 -> RGB. */

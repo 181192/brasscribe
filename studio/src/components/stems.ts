@@ -3,7 +3,7 @@
 import { energy, mixdown } from "../lib/dsp";
 import { t } from "../i18n";
 import { announce, clear, fmt, h, token } from "../ui/dom";
-import { audioContext, decode } from "./audio";
+import { audioContext, decode, playFrom } from "./audio";
 import { plot, timeAxis } from "./canvas";
 
 export interface StemSource {
@@ -130,16 +130,28 @@ export class StemsMixer extends HTMLElement {
       return;
     }
     const when = ac.currentTime + 0.05;
+    // Play from the end of the longest stem means play again from the start.
+    const from = playFrom(at, Math.max(...loaded.map((r) => r.buffer!.duration)));
+    const nodes: AudioBufferSourceNode[] = [];
+    let playing = loaded.length;
     for (const r of loaded) {
       const n = ac.createBufferSource();
       n.buffer = r.buffer!;
       r.gain = ac.createGain();
       n.connect(r.gain).connect(ac.destination);
-      n.start(when, Math.min(at, r.buffer!.duration - 0.01));
-      this.nodes.push(n);
+      n.start(when, Math.min(from, r.buffer!.duration - 0.01));
+      // Once every stem has played to the end, the next Play starts from the beginning.
+      n.onended = () => {
+        if (--playing > 0 || this.nodes !== nodes) return;
+        this.nodes = [];
+        this.offset = 0;
+        this.playBtn.textContent = t("stems.play");
+      };
+      nodes.push(n);
     }
+    this.nodes = nodes;
     this.applyGains();
-    this.offset = at;
+    this.offset = from;
     this.startedAt = when;
     this.playBtn.textContent = t("score.pause");
   }
