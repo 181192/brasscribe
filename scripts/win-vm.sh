@@ -110,20 +110,25 @@ start() {
   running && return
   check_disk
   mkdir -p "$OUT"
-  local media=()
+  # The install boots the ISO only while the disk is still empty: the disk comes first in the boot
+  # order, so Setup's reboot starts Windows from the disk instead of Setup again. Setup's display is
+  # ramfb (a plain framebuffer Windows can draw on without a driver); afterwards it is virtio-gpu,
+  # driven by viogpudo from firstlogon.ps1, at $SCREEN.
+  local media=() display=(-device "virtio-gpu-pci,xres=${SCREEN%x*},yres=${SCREEN#*x}")
   if [ -n "$install" ]; then
-    media=(-drive "if=none,id=cd0,media=cdrom,readonly=on,file=$ISO" -device "usb-storage,drive=cd0,removable=on,bootindex=0"
+    media=(-drive "if=none,id=cd0,media=cdrom,readonly=on,file=$ISO" -device "usb-storage,drive=cd0,removable=on,bootindex=1"
            -drive "if=none,id=cd1,media=cdrom,readonly=on,file=$SETUP_ISO" -device "usb-storage,drive=cd1,removable=on")
+    display=(-device ramfb)
   fi
   rm -f "$QMP"
   log "starting the VM headless ($CPUS CPUs, $MEMORY_MB MB, no window, no host input)"
   "$QEMU" -name brasscribe-win \
     -machine virt,highmem=on,gic-version=3 -accel hvf -cpu host -smp "$CPUS" -m "$MEMORY_MB" \
     -drive "if=pflash,format=raw,readonly=on,file=$FW/edk2-aarch64-code.fd" -drive "if=pflash,format=raw,file=$vars" \
-    -device "virtio-gpu-pci,xres=${SCREEN%x*},yres=${SCREEN#*x}" \
+    "${display[@]}" \
     -device qemu-xhci,id=xhci -device usb-kbd -device usb-tablet \
     -drive "if=none,id=disk,file=$disk,format=qcow2,discard=unmap,detect-zeroes=unmap,cache=writeback" \
-    -device nvme,drive=disk,serial=brasscribe,bootindex=1 \
+    -device nvme,drive=disk,serial=brasscribe,bootindex=0 \
     -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:$PORT-:22" -device virtio-net-pci,netdev=net0 \
     ${media[@]+"${media[@]}"} \
     -rtc base=localtime -display none -monitor none -serial none \

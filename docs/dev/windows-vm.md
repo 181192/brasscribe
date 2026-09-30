@@ -194,10 +194,12 @@ What it covers of [windows-checklist.md](windows-checklist.md):
 ## Troubleshooting
 
 - **Where is setup?** `scripts/win-vm.sh screen` saves the VM's display as a PNG. It works headless,
-  but from Windows' boot manager until `firstlogon.ps1` has installed the display driver it shows
-  only "Display output is not active": the firmware's virtio-gpu GOP is blit-only, and Windows can't
-  draw on it. While the screen is blank, the growth of `base.qcow2` (`du -h`) shows that setup is
-  copying files.
+  During setup the VM's display is `ramfb` at 800 × 600, a plain framebuffer that Windows draws on
+  without a driver. After setup it is virtio-gpu, which Windows can only draw on with the `viogpudo`
+  driver: the firmware's virtio-gpu GOP is blit-only, so without the driver the screen shows "Display
+  output is not active".
+- **Setup is slow.** It reads the ISO over emulated USB storage (Windows PE has no virtio driver),
+  a few MB/s, so copying the image takes most of the setup time. `du -h base.qcow2` shows it growing.
 - **No SSH after setup.** Look at the screen first. If Windows is at the desktop, `C:\firstlogon.log`
   in the VM says what failed. The usual causes are:
   - the network driver did not install (no network, so no OpenSSH either)
