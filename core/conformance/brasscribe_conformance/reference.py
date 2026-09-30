@@ -8,6 +8,7 @@ symbolic output under test.
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 import warnings
 from pathlib import Path
@@ -44,7 +45,9 @@ def _main(mod, argv: list[str]) -> None:
 
 
 def run(case: Case, out: Path) -> None:
-    out.mkdir(parents=True, exist_ok=True)
+    """Writes the case's reference outputs into an emptied `out`, so none is left from an earlier run."""
+    shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True)
     a = case.args
     if case.kind == "meter":
         from brasscribe_music.beats import meter_of

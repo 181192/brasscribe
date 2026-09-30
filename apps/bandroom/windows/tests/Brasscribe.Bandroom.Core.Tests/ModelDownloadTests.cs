@@ -185,6 +185,48 @@ public sealed class ModelDownloadTests : IDisposable
         Assert.Equal([ModelComponent.BandWriter], ModelCheck.Check(ModelsDir, HubDir, Catalog()).Missing);
     }
 
+    private const string ChecksUrl = "https://example.org/lists/download_checks.json";
+    private static readonly byte[] ChecksJson = "{\"roformer_download_list\": {}}"u8.ToArray();
+
+    [Fact]
+    public async Task A_file_upstream_edits_is_fetched_whole_and_must_be_json()
+    {
+        var catalog = (ModelComponent c) => c == ModelComponent.SoloistSeparator
+            ? (IReadOnlyList<ModelFile>)[new("download_checks.json", new Uri(ChecksUrl), 0)]
+            : [];
+        string file = Path.Combine(ModelsDir, "separator", "download_checks.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        // A sign-in page answered in its place.
+        _web.Set(ChecksUrl, new() { Body = "<html>Sign in to the Wi-Fi</html>"u8.ToArray() });
+        using (var d = new ModelDownloader(ModelsDir, HubDir, () => null, _web, _ => long.MaxValue, catalog))
+        {
+            d.Start([ModelComponent.SoloistSeparator]);
+            await Settle(d);
+            Assert.Equal(DownloadPhase.Failed, d.Phase);
+            Assert.IsType<DownloadError.ChecksumMismatch>(d.Error);
+        }
+        Assert.False(File.Exists(file));
+        Assert.False(File.Exists(file + ".part"));
+
+        // Part of an earlier copy is left: never resumed, the whole file comes again.
+        File.WriteAllBytes(file + ".part", "{\"old\":"u8.ToArray());
+        _web.Set(ChecksUrl, new() { Body = ChecksJson });
+        using (var d = new ModelDownloader(ModelsDir, HubDir, () => null, _web, _ => long.MaxValue, catalog))
+        {
+            d.Start([ModelComponent.SoloistSeparator]);
+            await Settle(d);
+            Assert.Equal(DownloadPhase.Done, d.Phase);
+        }
+        Assert.Equal(ChecksJson, File.ReadAllBytes(file));
+        Assert.All(_web.Requests(ChecksUrl).Where(r => r.Method == "GET"), r => Assert.Null(r.Range));
+        Assert.True(ModelCheck.IsPresent(ModelComponent.SoloistSeparator, ModelsDir, HubDir, catalog(ModelComponent.SoloistSeparator)));
+
+        // One that isn't JSON in place (saved by something else) counts as missing.
+        File.WriteAllText(file, "<html>Sign in</html>");
+        File.SetLastWriteTimeUtc(file, DateTime.UtcNow.AddMinutes(1));
+        Assert.False(ModelCheck.IsPresent(ModelComponent.SoloistSeparator, ModelsDir, HubDir, catalog(ModelComponent.SoloistSeparator)));
+    }
+
     [Fact]
     public async Task A_dropped_connection_resumes_with_Range()
     {
@@ -395,13 +437,21 @@ public sealed class ModelCheckTests : IDisposable
         f.SetLength(size);
     }
 
+    /// <summary>A stand-in of <paramref name="size"/> bytes; one with no size known is some bytes, and a .json is JSON.</summary>
+    private static void Place(string path, long size)
+    {
+        if (size > 0) { Sparse(path, size); return; }
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, path.EndsWith(".json", StringComparison.Ordinal) ? "{}" : "x");
+    }
+
     /// <summary>As huggingface_hub leaves it: a link to the blob, or (without symlink rights) the file itself.</summary>
     private static void Fill(ModelComponent c, string models, string hub)
     {
         switch (c.Home())
         {
             case ModelHome.Models m:
-                foreach (var f in ModelCatalog.Files(c)) Sparse(Path.Combine(models, m.Folder, f.Name), Math.Max(f.Size, 1));
+                foreach (var f in ModelCatalog.Files(c)) Place(Path.Combine(models, m.Folder, f.Name), f.Size);
                 break;
             case ModelHome.Hub h:
                 string folder = ModelCatalog.HubRepoFolder(h.Repo, hub);
@@ -460,7 +510,7 @@ public sealed class ModelCheckTests : IDisposable
     public void A_newer_revision_in_refs_main_counts_when_its_files_are_there()
     {
         string folder = ModelCatalog.HubRepoFolder(ModelCatalog.MuscriptorRepo, HubDir);
-        foreach (var f in ModelCatalog.Files(ModelComponent.BandWriter)) Sparse(Path.Combine(folder, "snapshots", "newer", f.Name), 10);
+        foreach (var f in ModelCatalog.Files(ModelComponent.BandWriter)) Place(Path.Combine(folder, "snapshots", "newer", f.Name), 0);
         Directory.CreateDirectory(Path.Combine(folder, "refs"));
         File.WriteAllText(Path.Combine(folder, "refs", "main"), "newer\n");
         Assert.DoesNotContain(ModelComponent.BandWriter, ModelCheck.Check(ModelsDir, HubDir).Missing);

@@ -311,7 +311,8 @@ fun ReviewScreen(vm: PlayViewModel) {
                         title = cardTitle, very = group?.very,
                         changed = if (note != null && was != null) stringResource(R.string.review_changed_from, label(note.pitch), label(was)) else null,
                         undo = {
-                            if (note != null && was != null && vm.undoReviewChange(voiceId, note.start, note.pitch)) {
+                            if (note != null && was != null) vm.undoReviewChange(voiceId, note.start, note.pitch) { done ->
+                                if (!done) return@undoReviewChange
                                 picked = current.index
                                 vm.say(R.string.review_change_undone, label(was))
                                 focusCard = true
@@ -350,8 +351,10 @@ fun ReviewScreen(vm: PlayViewModel) {
                             changing = false
                             val before = was ?: note.pitch
                             val now = note.pitch + shift
-                            if (vm.changeReviewNote(voiceId, note.start, note.pitch, shift)) {
-                                picked = current.index
+                            val at = current.index
+                            vm.changeReviewNote(voiceId, note.start, note.pitch, shift) { done ->
+                                if (!done) return@changeReviewNote
+                                picked = at
                                 if (now == before) vm.say(R.string.review_change_undone, label(before))
                                 else vm.say(R.string.review_changed_from, label(now), label(before))
                                 focusCard = true

@@ -67,13 +67,15 @@ function workerOf(player: SynthLike): Worker | null {
 interface Owner {
   api: ApiLike;
   onRelease: () => void;
+  onError?: (e: unknown) => void;
 }
 
 export class SharedSynth {
   private player: SynthLike | null = null;
   private url: string | null = null;
   private owner: Owner | null = null;
-  private readonly patched = new WeakSet<ApiLike>();
+  /** Each patched api's own createWorkerPlayer, as alphaTab set it up. */
+  private readonly creators = new WeakMap<ApiLike, () => SynthLike | null>();
   /** How many times a SoundFont was sent to a synth (for tests and the probe). */
   soundFontLoads = 0;
   /** How many synths were created (for tests and the probe). */
@@ -90,23 +92,27 @@ export class SharedSynth {
    * Give the page's synth to `api`, creating it on first use with the SoundFont at `url`.
    * The previous owner loses it (its `onRelease` runs). The api must have been built with
    * `playerMode: "disabled"`, so that alphaTab did not start a synth of its own.
+   *
+   * If the SoundFont can't be loaded, `onError` runs and the synth is dropped, so the next
+   * `attach` starts over with a new one.
    */
-  attach(api: ApiLike, url: string, onRelease: () => void): void {
+  attach(api: ApiLike, url: string, onRelease: () => void, onError?: (e: unknown) => void): void {
     if (this.owner?.api === api) return;
     if (this.player && this.url !== url) this.dispose();
     this.detachOwner(true);
-    this.owner = { api, onRelease };
-    if (!this.patched.has(api)) {
+    this.owner = { api, onRelease, onError };
+    const create = this.creators.get(api);
+    if (!create) {
       // The first time: alphaTab sets the player up itself (cursors included), asking the ui
       // facade for a synth, which is the shared one.
-      this.patched.add(api);
-      const create = api.uiFacade.createWorkerPlayer.bind(api.uiFacade);
-      api.uiFacade.createWorkerPlayer = () => this.ensure(url, create);
+      const own = api.uiFacade.createWorkerPlayer.bind(api.uiFacade);
+      this.creators.set(api, own);
+      api.uiFacade.createWorkerPlayer = () => this.ensure(url, own);
       api.settings.player.playerMode = ENABLED_SYNTHESIZER;
       api.updateSettings();
       return;
     }
-    const player = this.ensure(url, api.uiFacade.createWorkerPlayer);
+    const player = this.ensure(url, create);
     if (player) playerWrapper(api).instance = player;
   }
 
@@ -157,8 +163,24 @@ export class SharedSynth {
         const worker = workerOf(player);
         if (worker) worker.postMessage({ cmd: "alphaSynth.loadSoundFontBytes", data, append: false }, [buf]);
         else player.loadSoundFont(data, false);
-      }, (e: unknown) => console.warn(`SoundFont ${url} could not be loaded`, e));
+      }, (e: unknown) => this.failed(player, url, e));
     });
     return player;
+  }
+
+  /** The SoundFont didn't load: drop the synth (the next attach makes a new one) and tell its owner. */
+  private failed(player: SynthLike, url: string, e: unknown): void {
+    console.warn(`SoundFont ${url} could not be loaded`, e);
+    if (this.player !== player) return;
+    const o = this.owner;
+    this.owner = null;
+    if (o) {
+      const w = playerWrapper(o.api);
+      if (w.instance === player) w.instance = undefined;
+    }
+    this.player = null;
+    this.url = null;
+    player.destroy();
+    o?.onError?.(e);
   }
 }

@@ -160,6 +160,9 @@ class AppContainer(private val context: Context) {
         prefs.edit().remove("stand_on_turn").apply()
     }
 
+    /** The scores kept on this phone ("Your scores"). */
+    val scoreLibrary = SavedScoreLibrary(java.io.File(context.filesDir, "scores"))
+
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
     val core: CoreBridge = (RustCoreBridge.load() ?: KotlinCoreBridge).also { c -> no.brasscribe.play.ui.PartNames.nb = c::partNameNb }
 
@@ -177,17 +180,31 @@ class AppContainer(private val context: Context) {
 
     private var cachedEngine: Pair<String, EngineApi>? = null
 
+    /**
+     * The client for the paired engine: one per address and network, kept while they stay the same. The
+     * token is not part of it: each call hands the current one to the client, so a rotated token or a new
+     * pairing needs no new connection pool. A client that is replaced is closed.
+     */
+    @Synchronized
     fun engine(): EngineApi? {
-        val network = lanNetwork(settings.url)
-        val key = if (usingFixture) "fixture" else "${settings.url}|${settings.token}|${settings.paired}|${network?.networkHandle}"
-        cachedEngine?.takeIf { it.first == key }?.let { return it.second }
-        val api: EngineApi = when {
-            usingFixture -> FixtureEngineApi(fixtureSource!!, stageSeconds = 0.7)
-            settings.paired -> KtorEngineApi(settings.url, httpEngine(network), settings.token)
-            else -> return null
+        if (!usingFixture && !settings.paired) { dropEngine(); return null }
+        val network = if (usingFixture) null else lanNetwork(settings.url)
+        val key = if (usingFixture) "fixture" else "${settings.url}|${network?.networkHandle}"
+        val api = cachedEngine?.takeIf { it.first == key }?.second ?: run {
+            dropEngine()
+            val created: EngineApi = if (usingFixture) FixtureEngineApi(fixtureSource!!, stageSeconds = 0.7)
+            else KtorEngineApi(settings.url, httpEngine(network))
+            cachedEngine = key to created
+            created
         }
-        cachedEngine = key to api
+        (api as? KtorEngineApi)?.token = settings.token
         return api
+    }
+
+    private fun dropEngine() {
+        // Requests already under way finish; the client takes no new ones.
+        (cachedEngine?.second as? AutoCloseable)?.let { runCatching { it.close() } }
+        cachedEngine = null
     }
 
     fun newEngineClient(url: String, token: String? = null): KtorEngineApi = KtorEngineApi(url, httpEngine(lanNetwork(url)), token)

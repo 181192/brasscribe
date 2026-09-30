@@ -9,6 +9,7 @@ import "./components/stagegraph";
 import "./components/stems";
 import type { ScoreElement } from "./components/score";
 import { lang, onLangChange, setLang, t, type Lang } from "./i18n";
+import { parseHash } from "./lib/route";
 import { choice, contrast, onThemeChange, parseChoice, pinkUnlocked, setChoice, TapCounter, unlockPink, watchContrast } from "./theme";
 import { announce, clear, h, wireMenus } from "./ui/dom";
 import { lockup } from "./ui/icons";
@@ -24,7 +25,7 @@ import { viewerView } from "./views/viewer";
 type Route = { name: string; title: () => string; render: (root: HTMLElement, args: string[], q: URLSearchParams) => void | (() => void) };
 
 const routes: Route[] = [
-  { name: "runs", title: () => t("nav.runs"), render: (r, a, q) => (a[0] ? runView(r, decodeURIComponent(a[0]), a[1], q) : runsView(r)) },
+  { name: "runs", title: () => t("nav.runs"), render: (r, a, q) => (a[0] ? runView(r, a[0], a[1], q) : runsView(r)) },
   { name: "viewer", title: () => t("nav.viewer"), render: (r, _a, q) => viewerView(r, q) },
   { name: "compare", title: () => t("title.compare"), render: (r, _a, q) => compareView(r, q) },
   { name: "bench", title: () => t("nav.bench"), render: (r) => benchView(r) },
@@ -46,9 +47,7 @@ wireMenus();
 
 function route(initial = false): void {
   const main = document.getElementById("main")!;
-  const raw = location.hash.replace(/^#\/?/, "") || "runs";
-  const [path, query = ""] = raw.split("?");
-  const [name, ...args] = path.split("/");
+  const { name, args, query } = parseHash(location.hash);
   const r = routes.find((x) => x.name === name) ?? routes[0];
   for (const a of Array.from(document.querySelectorAll<HTMLAnchorElement>(".app-nav a"))) {
     if (a.dataset.route === r.name) a.setAttribute("aria-current", "page");
@@ -61,7 +60,7 @@ function route(initial = false): void {
   if (typeof cleanup === "function") cleanup();
   clear(main);
   document.title = `${r.title()} – Brasscribe Studio`;
-  cleanup = r.render(main, args, new URLSearchParams(query));
+  cleanup = r.render(main, args, query);
   // Move focus to the new view so keyboard and screen-reader users start there.
   const heading = main.querySelector("h1");
   if (heading && !initial) {
@@ -239,4 +238,9 @@ window.addEventListener("studio:retry", () => {
   route(true);
 });
 window.addEventListener("hashchange", () => route());
+// The skip link moves focus to the page's content; as a plain "#main" link it would go through the router.
+document.querySelector<HTMLAnchorElement>(".skip-link")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  document.getElementById("main")?.focus();
+});
 route(true);

@@ -225,6 +225,38 @@ func sha256Hex(_ d: Data) -> String { SHA256.hash(data: d).map { String(format: 
         #expect(!FileManager.default.fileExists(atPath: models.appending(path: "separator/BS-Roformer-SW.ckpt.part").path))
     }
 
+    /// download_checks.json: upstream edits it, so it has no size or checksum.
+    func checksDownloader() -> ModelDownloader {
+        ModelDownloader(models: models, hub: hub, configuration: StubWeb.configuration, token: { nil }, freeSpace: { _ in 100_000_000_000 },
+                        catalog: { c in c == .soloistSeparator ? [ModelFile(name: "download_checks.json", url: URL(string: Self.checksURL)!, size: 0)] : [] })
+    }
+
+    nonisolated static let checksURL = "https://example.org/filelists/download_checks.json"
+
+    @Test func aFileWithoutAPublishedSizeStartsAfreshAndMustParse() async throws {
+        let json = Data(#"{"models": ["BS-Roformer-SW.ckpt"]}"#.utf8)
+        StubWeb.set(Self.checksURL, .init(body: json))
+        let folder = models.appending(path: "separator", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // Left from an earlier version of the file.
+        try Data("{\"old\": tr".utf8).write(to: folder.appending(path: "download_checks.json.part"))
+        let d = checksDownloader()
+        d.start([.soloistSeparator])
+        await settled(d)
+        #expect(d.phase == .done)
+        #expect(StubWeb.requests(to: Self.checksURL).last?.value(forHTTPHeaderField: "Range") == nil)
+        #expect(try Data(contentsOf: folder.appending(path: "download_checks.json")) == json)
+    }
+
+    @Test func aBrokenJSONFileIsNotKept() async throws {
+        StubWeb.set(Self.checksURL, .init(body: Data("<html>rate limited</html>".utf8)))
+        let d = checksDownloader()
+        d.start([.soloistSeparator])
+        await settled(d)
+        #expect(d.phase == .failed(.checksumMismatch(file: "download_checks.json")))
+        #expect(!FileManager.default.fileExists(atPath: models.appending(path: "separator/download_checks.json").path))
+    }
+
     @Test func notEnoughSpaceStopsBeforeAnyDownload() async {
         serveSeparator()
         let d = downloader(free: 2_000_000)

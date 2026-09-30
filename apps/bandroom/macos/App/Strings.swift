@@ -32,12 +32,33 @@ enum Strings {
         }
     }
 
+    /// Why the engine was given up on (Error, and the notification): three failed starts, or a start that
+    /// couldn't happen at all.
+    static func failureTitle(_ why: LaunchFailure?) -> String {
+        switch why {
+        case nil: String(localized: "Brasscribe stopped unexpectedly")
+        case .spawn: problemTitle(.noFreePort)
+        case .noFreePort: problemTitle(.noFreePort)
+        case .notInstalled: problemTitle(.missingDownload([]))
+        }
+    }
+
+    static func failureWhy(_ why: LaunchFailure?) -> String {
+        switch why {
+        case nil: String(localized: "It tried to start three times. Recordings on your phones are safe.")
+        case .spawn: String(localized: "It couldn't be started. Recordings on your phones are safe.")
+        case .noFreePort: problemWhy(.noFreePort)
+        case .notInstalled: problemWhy(.missingDownload([]))
+        }
+    }
+
     static func problemTitle(_ p: Problem) -> String {
         switch p {
         case .lowDisk: String(localized: "Space is running low")
         case .missingDownload: String(localized: "Full-band scores need one more step")
         case .noFreePort: String(localized: "Brasscribe can't start")
         case .updateFailed: String(localized: "Brasscribe couldn't finish updating")
+        case .notResponding: String(localized: "Brasscribe isn't answering")
         }
     }
 
@@ -48,6 +69,7 @@ enum Strings {
         case .missingDownload: String(localized: "full-band scores need one more step")
         case .noFreePort: String(localized: "Brasscribe can't start")
         case .updateFailed: String(localized: "Brasscribe couldn't finish updating")
+        case .notResponding: String(localized: "Brasscribe isn't answering")
         }
     }
 
@@ -57,6 +79,7 @@ enum Strings {
         case .missingDownload(let missing): notDownloaded(missing)
         case .noFreePort: String(localized: "Another program on this computer is in the way.")
         case .updateFailed: String(localized: "The previous version is still running, so phones can keep sending recordings.")
+        case .notResponding: String(localized: "It is running but hasn't answered for a while. Restarting it usually helps.")
         }
     }
 
@@ -66,6 +89,7 @@ enum Strings {
         case .missingDownload: String(localized: "Finish setting up")
         case .noFreePort: String(localized: "Restart")
         case .updateFailed: String(localized: "Try again")
+        case .notResponding: String(localized: "Restart")
         }
     }
 

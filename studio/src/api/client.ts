@@ -32,11 +32,39 @@ export class TimedOut extends Error {
 /** Default time to wait for an answer; long reads (audio, scores) pass their own. */
 const TIMEOUT_S = 60;
 
+/** A request a view no longer needs was cancelled (it left, or asked again). Not an error to show. */
+export function isAbort(e: unknown): boolean {
+  return e instanceof DOMException && e.name === "AbortError";
+}
+
+/** Aborts when any of `signals` does (AbortSignal.any, where the browser lacks it). */
+export function anySignal(signals: AbortSignal[]): AbortSignal {
+  if (typeof AbortSignal.any === "function") return AbortSignal.any(signals);
+  const c = new AbortController();
+  for (const s of signals) {
+    if (s.aborted) {
+      c.abort(s.reason);
+      break;
+    }
+    s.addEventListener("abort", () => c.abort(s.reason), { once: true });
+  }
+  return c.signal;
+}
+
+/** Options a call takes: `signal` cancels the request, which then rejects with an AbortError (see isAbort). */
+export interface CallOptions {
+  signal?: AbortSignal;
+}
+
 async function request(path: string, init: RequestInit = {}, timeoutS = TIMEOUT_S): Promise<Response> {
+  const timeout = AbortSignal.timeout(timeoutS * 1000);
+  const own = init.signal ?? null;
   try {
-    return await fetch(url(path), { ...init, signal: AbortSignal.timeout(timeoutS * 1000) });
+    return await fetch(url(path), { ...init, signal: own ? anySignal([own, timeout]) : timeout });
   } catch (e) {
-    if (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) throw new TimedOut(timeoutS);
+    // The caller's own cancel is passed on as an AbortError; only our deadline is a time-out.
+    if (own?.aborted) throw new DOMException("The request was cancelled.", "AbortError");
+    if (timeout.aborted) throw new TimedOut(timeoutS);
     throw new Unreachable(e instanceof Error ? e.message : String(e));
   }
 }
@@ -65,33 +93,37 @@ async function fail(r: Response, endpoint: string): Promise<never> {
   throw new ApiError(r.status, msg);
 }
 
-async function get<T>(path: string, endpoint = path, timeoutS = TIMEOUT_S): Promise<T> {
-  const r = await request(path, { headers: { Accept: "application/json" } }, timeoutS);
+async function get<T>(path: string, endpoint = path, timeoutS = TIMEOUT_S, opts: CallOptions = {}): Promise<T> {
+  const r = await request(path, { headers: { Accept: "application/json" }, signal: opts.signal }, timeoutS);
   if (!r.ok) return fail(r, endpoint);
   return (await r.json()) as T;
 }
 
-async function send<T>(method: string, path: string, body?: unknown, endpoint = path): Promise<T> {
+/** Sends may start long work (MuseScore); give them longer than reads. */
+const SEND_TIMEOUT_S = 600;
+/** A benchmark suite answers only when it has finished, which with live models can take long. */
+export const SUITE_TIMEOUT_S = 3 * 60 * 60;
+
+async function send<T>(method: string, path: string, body?: unknown, endpoint = path, timeoutS = SEND_TIMEOUT_S): Promise<T> {
   const init: RequestInit = { method, headers: { Accept: "application/json" } };
   if (body instanceof FormData) init.body = body;
   else if (body !== undefined) {
     init.body = JSON.stringify(body);
     init.headers = { ...init.headers, "Content-Type": "application/json" };
   }
-  // Sends may start long work (a benchmark suite, MuseScore); give them longer.
-  const r = await request(path, init, 600);
+  const r = await request(path, init, timeoutS);
   if (!r.ok) return fail(r, endpoint);
   return (await r.json()) as T;
 }
 
-export async function fetchBytes(path: string, endpoint = path): Promise<ArrayBuffer> {
-  const r = await request(path, {}, 300);
+export async function fetchBytes(path: string, endpoint = path, opts: CallOptions = {}): Promise<ArrayBuffer> {
+  const r = await request(path, { signal: opts.signal }, 300);
   if (!r.ok) return fail(r, endpoint);
   return r.arrayBuffer();
 }
 
-export async function fetchText(path: string, endpoint = path): Promise<string> {
-  const r = await request(path, {}, 120);
+export async function fetchText(path: string, endpoint = path, opts: CallOptions = {}): Promise<string> {
+  const r = await request(path, { signal: opts.signal }, 120);
   if (!r.ok) return fail(r, endpoint);
   return r.text();
 }
@@ -102,9 +134,9 @@ export const api = {
   health: () => get<Health>("/v1/health"),
   profiles: () => get<ProfileInfo[]>("/v1/profiles"),
   jobs: () => get<Job[]>("/v1/jobs"),
-  job: (id: string) => get<Job>(`/v1/jobs/${enc(id)}`),
-  manifest: (id: string) => get<Manifest>(`/v1/jobs/${enc(id)}/manifest`, "GET /v1/jobs/{id}/manifest"),
-  composition: (id: string) => get<Composition>(`/v1/jobs/${enc(id)}/composition`),
+  job: (id: string, opts?: CallOptions) => get<Job>(`/v1/jobs/${enc(id)}`, undefined, undefined, opts),
+  manifest: (id: string, opts?: CallOptions) => get<Manifest>(`/v1/jobs/${enc(id)}/manifest`, "GET /v1/jobs/{id}/manifest", undefined, opts),
+  composition: (id: string, opts?: CallOptions) => get<Composition>(`/v1/jobs/${enc(id)}/composition`, undefined, undefined, opts),
   musicxmlUrl: (id: string) => url(`/v1/jobs/${enc(id)}/musicxml`),
   renderedAudioUrl: (id: string) => url(`/v1/jobs/${enc(id)}/audio`),
   midiUrl: (id: string) => url(`/v1/jobs/${enc(id)}/midi`),
@@ -134,17 +166,17 @@ export const api = {
   eventsUrl: (id: string, after = -1) => url(`/v1/jobs/${enc(id)}/events?after=${after}`),
   suites: () => get<SuiteInfo[]>("/v1/suites"),
   runSuite: (name: string, mode: "cached" | "live" = "cached") =>
-    send<BenchRun>("POST", `/v1/suites/${enc(name)}/run?mode=${mode}`),
+    send<BenchRun>("POST", `/v1/suites/${enc(name)}/run?mode=${mode}`, undefined, "POST /v1/suites/{name}/run", SUITE_TIMEOUT_S),
 
   // Inspection, comparison, benchmarks, registry.
-  stages: (id: string) => get<StageFiles[]>(`/v1/jobs/${enc(id)}/stages`, "GET /v1/jobs/{id}/stages"),
+  stages: (id: string, opts?: CallOptions) => get<StageFiles[]>(`/v1/jobs/${enc(id)}/stages`, "GET /v1/jobs/{id}/stages", undefined, opts),
   stageFileUrl: (id: string, stage: string, name: string) =>
     url(`/v1/jobs/${enc(id)}/stages/${enc(stage)}/files/${enc(name)}`),
   references: () => get<Reference[]>("/v1/references", "GET /v1/references"),
   referenceFileUrl: (ref: string, name: string) => url(`/v1/references/${enc(ref)}/files/${enc(name)}`),
-  compare: (id: string, against: { reference: string } | { job: string }) => {
+  compare: (id: string, against: { reference: string } | { job: string }, opts?: CallOptions) => {
     const q = "reference" in against ? `reference=${enc(against.reference)}` : `job=${enc(against.job)}`;
-    return get<Comparison>(`/v1/jobs/${enc(id)}/compare?${q}`, "GET /v1/jobs/{id}/compare");
+    return get<Comparison>(`/v1/jobs/${enc(id)}/compare?${q}`, "GET /v1/jobs/{id}/compare", undefined, opts);
   },
   rerun: (id: string, body: { allow_heavy: boolean; cold?: string[] } = { allow_heavy: true }) =>
     send<Job>("POST", `/v1/jobs/${enc(id)}/rerun`, body, "POST /v1/jobs/{id}/rerun"),
@@ -158,27 +190,47 @@ export const api = {
   datasets: () => get<DatasetInfo[]>("/v1/registry/datasets", "GET /v1/registry/datasets"),
   parity: () => get<ParityReport[]>("/v1/parity", "GET /v1/parity"),
   // The summary report only: the full dump of every case's files is far too large for a page.
-  conformance: () => get<ConformanceReport[]>("/v1/conformance", "GET /v1/conformance", 20),
-  conformanceRun: () => get<ConformanceRun>("/v1/conformance/run", "GET /v1/conformance/run"),
+  conformance: (opts?: CallOptions) => get<ConformanceReport[]>("/v1/conformance", "GET /v1/conformance", 20, opts),
+  conformanceRun: (opts?: CallOptions) => get<ConformanceRun>("/v1/conformance/run", "GET /v1/conformance/run", undefined, opts),
   startConformanceRun: () => send<ConformanceRun>("POST", "/v1/conformance/run", undefined, "POST /v1/conformance/run"),
   sources: () => get<Source[]>("/v1/sources", "GET /v1/sources"),
 };
 
-/** Subscribe to a job's progress. Returns a function that closes the stream. */
-export function subscribe(id: string, onEvent: (e: JobEvent) => void, onEnd?: () => void): () => void {
+/** The stream's state: connected, trying to reconnect after a drop, or given up by the browser. */
+export type StreamState = "open" | "reconnecting" | "closed";
+
+/**
+ * Subscribe to a job's progress. Returns a function that closes the stream.
+ *
+ * A dropped connection is left to the browser to reopen: the engine resumes after the last event
+ * id it sent (Last-Event-ID), and an event seen twice is dropped here. The caller closes the stream
+ * when the job ends.
+ */
+export function subscribe(id: string, onEvent: (e: JobEvent) => void, onState?: (s: StreamState) => void): () => void {
   const es = new EventSource(api.eventsUrl(id));
+  let last = -Infinity;
+  let state: StreamState = "open";
+  const set = (s: StreamState) => {
+    if (s === state) return;
+    state = s;
+    onState?.(s);
+  };
   const handler = (m: MessageEvent) => {
+    let e: JobEvent;
     try {
-      onEvent(JSON.parse(m.data) as JobEvent);
+      e = JSON.parse(m.data) as JobEvent;
     } catch {
-      /* ignore malformed lines */
+      return; // ignore malformed lines
     }
+    set("open");
+    if (typeof e.id === "number") {
+      if (e.id <= last) return;
+      last = e.id;
+    }
+    onEvent(e);
   };
   for (const t of ["message", "job", "stage", "log"]) es.addEventListener(t, handler as EventListener);
-  es.onerror = () => {
-    // The engine closes the stream once the job is finished.
-    es.close();
-    onEnd?.();
-  };
+  es.onopen = () => set("open");
+  es.onerror = () => set(es.readyState === EventSource.CLOSED ? "closed" : "reconnecting");
   return () => es.close();
 }

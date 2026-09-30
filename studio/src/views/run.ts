@@ -1,5 +1,5 @@
 // One run: live stage graph over SSE and the stage inspector.
-import { api, fetchBytes, fetchText, subscribe } from "../api/client";
+import { api, fetchBytes, fetchText, isAbort, subscribe, type StreamState } from "../api/client";
 import type { Composition, FileRef, Job, Manifest, Reference, StageFiles, ValidationIssue } from "../api/types";
 import { audioPanel, type AudioSource } from "../components/audio";
 import { BeatView } from "../components/beats";
@@ -9,13 +9,14 @@ import { stageLabel, StageGraph } from "../components/stagegraph";
 import { StemsMixer } from "../components/stems";
 import { runTitle } from "./runs";
 import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../lib/beats";
+import { maxOf, minOf } from "../lib/extent";
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
 import { stageTime, waitNote } from "../lib/stagetime";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName, validateScore } from "../lib/validate";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, infoTip, loading, menu, more, panel, pill, table, tabs } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, infoTip, loading, menu, more, panel, pill, rebuild, table, tabs } from "../ui/dom";
 import { icon } from "../ui/icons";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
@@ -41,6 +42,8 @@ interface Ctx {
 export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSearchParams): () => void {
   const heading = h("h1", {}, t("run.title"));
   const header = h("div", {}, loading());
+  // While the progress stream is down: the browser reconnects by itself, or (once it gives up) Try again.
+  const streamNote = h("div", { class: "hint", role: "status", hidden: true });
   const graph = h("bs-stage-graph", {}) as StageGraph;
   const stageInfo = h("div", {});
   const inspectorH = h("h2", { id: "inspector-h", class: "visually-hidden" }, t("run.inspector"));
@@ -62,25 +65,54 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     stageInfo);
   clear(root,
     h("a", { class: "back-link", href: "#/runs" }, icon("back"), t("run.back")),
-    h("div", { class: "view-head" }, h("div", { class: "view-title" }, heading, header), actions),
+    h("div", { class: "view-head" }, h("div", { class: "view-title" }, heading, header, streamNote), actions),
     inspector,
     h("section", { "aria-labelledby": "graph-h", class: "stages-section" }, stagesBox));
   let stagesOpened = false;
 
   let stop: (() => void) | null = null;
+  // Leaving the page cancels what is still loading; nothing is shown or subscribed after that.
+  const ctl = new AbortController();
+  const { signal } = ctl;
   let view: RunView | null = null;
   let stages: StageFiles[] | Error = new Error("not loaded");
   let tabsEl: HTMLElement | null = null;
+  // The inspector tab last chosen; the inspector is rebuilt on it when the run finishes.
+  let currentTab = tab ?? "score";
   let selectTab: ((id: string) => void) | null = null;
 
+  // The progress line changes with every stage; the rest of the header and the actions only when
+  // the run's status or outputs do, so a control someone is using stays where it is.
+  const summary = h("p", { class: "run-summary" });
+  const headRest = h("div", {});
+  // What went wrong with an action (Re-run), apart from the rest so it survives the next update.
+  const actionNote = h("div", {});
+  let restKey = "";
   const renderHeader = (job: Job, m: Manifest | null) => {
     heading.textContent = runTitle(job);
     const tot = view ? totals(view) : null;
     // Essentials first: status and progress; ids, git and devices sit behind "Run details".
-    clear(header,
-      h("p", { class: "run-summary" }, pill(job.status),
-        tot ? h("span", {}, t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })) : null,
-        tot && !TERMINAL.has(job.status) ? h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }) : null),
+    clear(summary, pill(job.status),
+      tot ? h("span", {}, t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })) : null,
+      tot && !TERMINAL.has(job.status) ? h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }) : null);
+    if (tot) stagesCount.textContent = ` · ${t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })}`;
+    if (header.firstChild !== summary) clear(header, summary, headRest, actionNote);
+    const key = JSON.stringify([job.id, job.status, job.error ?? null, job.outputs ?? [], job.previous_run_id ?? null, m?.run_id ?? null]);
+    if (key !== restKey) {
+      restKey = key;
+      rebuild([headRest, actions], () => renderRest(job, m));
+    }
+    // Open the stages on failure, with the failing stage selected (once, so a user's choice stands).
+    if (!stagesOpened && job.status !== "succeeded") {
+      stagesOpened = true;
+      stagesBox.open = true;
+      const bad = view?.stages.find((s) => s.status === "failed");
+      if (bad) queueMicrotask(() => showStage(bad.name, false));
+    }
+  };
+
+  const renderRest = (job: Job, m: Manifest | null) => {
+    clear(headRest,
       job.error ? errorSummary(job.error) : null,
       job.previous_run_id ? h("p", {}, h("a", { href: `#/compare?a=${encodeURIComponent(job.previous_run_id)}&b=${encodeURIComponent(job.id)}` }, t("run.compareRerun"))) : null,
       more(t("run.details"), h("dl", { class: "kv run-details" },
@@ -102,30 +134,35 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     const rerun = TERMINAL.has(job.status) ? h("button", { type: "button", class: job.status === "succeeded" ? "ghost" : "primary", onclick: async (e: Event) => {
       const b = e.currentTarget as HTMLButtonElement;
       b.disabled = true;
+      clear(actionNote);
       try {
         const j = await api.rerun(job.id, { allow_heavy: false, cold: [] });
         announce(t("manifest.rerunStarted", { id: j.id }));
         location.hash = `#/runs/${encodeURIComponent(j.id)}`;
       } catch (x) {
         b.disabled = false;
-        clear(header, errorNotice(x));
+        clear(actionNote, errorNotice(x));
       }
     } }, icon("retry"), t("manifest.rerunBtn")) : null;
     clear(actions,
-      !TERMINAL.has(job.status) ? h("button", { type: "button", class: "ghost", onclick: async () => { await api.cancel(job.id); announce(t("run.cancelRequested")); } }, icon("close"), t("run.cancel")) : null,
+      !TERMINAL.has(job.status) ? h("button", { type: "button", class: "ghost", onclick: async (e: Event) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.disabled = true;
+        clear(actionNote);
+        try {
+          await api.cancel(job.id);
+          announce(t("run.cancelRequested"));
+        } catch (x) {
+          clear(actionNote, errorNotice(x));
+        } finally {
+          b.disabled = false;
+        }
+      } }, icon("close"), t("run.cancel")) : null,
       // Below 600 px the row is Re-run and More only; Download and Compare move into More.
       downloads().length ? menu([icon("export"), t("run.download")], downloads(), { className: "wide-only" }) : null,
       compare("wide-only"),
       rerun,
       TERMINAL.has(job.status) ? menu(t("run.moreActions"), [...downloads("narrow-only"), compare("narrow-only"), deleteButton(job.id)]) : null);
-    if (tot) stagesCount.textContent = ` · ${t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })}`;
-    // Open the stages on failure, with the failing stage selected (once, so a user's choice stands).
-    if (!stagesOpened && job.status !== "succeeded") {
-      stagesOpened = true;
-      stagesBox.open = true;
-      const bad = view?.stages.find((s) => s.status === "failed");
-      if (bad) queueMicrotask(() => showStage(bad.name, false));
-    }
   };
 
   const showStage = (name: string, switchTab = true) => {
@@ -151,10 +188,12 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   graph.addEventListener("select", (e) => showStage((e as CustomEvent<string>).detail));
 
   const start = async () => {
-    const job = await api.job(id);
+    const job = await api.job(id, { signal });
+    if (signal.aborted) return;
     view = fromJob(job);
     graph.update(view);
-    const [m, st] = await Promise.all([api.manifest(id).catch(() => null), api.stages(id).catch((e) => e as Error)]);
+    const [m, st] = await Promise.all([api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error)]);
+    if (signal.aborted) return;
     stages = st;
     renderHeader(job, m);
     if (!TERMINAL.has(job.status)) {
@@ -164,14 +203,15 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         if (e.type === "job" && e.status && TERMINAL.has(e.status)) {
           announce(t("run.ended", { status: t(`status.${e.status}`) }));
           stop?.();
-          void start(); // reload outputs and the inspector
-        } else renderHeader({ ...job, status: view.status as Job["status"] }, m);
-      });
+          stop = null;
+          void load(); // reload outputs and the inspector
+        } else if (e.type !== "log") renderHeader({ ...job, status: view.status as Job["status"] }, m);
+      }, (s) => showStream(s));
     }
     const ctx: Ctx = {
       id, job, stages: st,
-      composition: api.composition(id),
-      musicxml: fetchText(`/v1/jobs/${encodeURIComponent(id)}/musicxml`),
+      composition: api.composition(id, { signal }),
+      musicxml: fetchText(`/v1/jobs/${encodeURIComponent(id)}/musicxml`, undefined, { signal }),
     };
     ctx.composition.catch(() => undefined);
     ctx.musicxml.catch(() => undefined);
@@ -185,14 +225,35 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       { id: "musicxml", label: t("tab.musicxml"), render: (p: HTMLElement) => musicxmlTab(p, ctx) },
       { id: "manifest", label: t("tab.manifest"), render: (p: HTMLElement) => manifestTab(p, ctx, m) },
     ];
-    tabsEl = tabs(t("run.inspectorViews"), items, tab ?? "score", (sel) => {
+    tabsEl = tabs(t("run.inspectorViews"), items, currentTab, (sel) => {
+      currentTab = sel;
       history.replaceState(null, "", `#/runs/${encodeURIComponent(id)}/${sel}`);
     });
     selectTab = (sel) => tabsEl?.querySelector<HTMLButtonElement>(`[role=tab][data-id="${sel}"]`)?.click();
     clear(inspector, inspectorH, tabsEl);
   };
-  start().catch((e) => clear(header, errorNotice(e)));
-  return () => stop?.();
+  const showStream = (s: StreamState) => {
+    streamNote.hidden = s === "open";
+    if (s === "reconnecting") clear(streamNote, t("run.reconnecting"));
+    else if (s === "closed") {
+      stop?.();
+      stop = null;
+      clear(streamNote, h("p", {}, t("run.streamLost")),
+        h("p", {}, h("button", { type: "button", class: "ghost", onclick: () => {
+          streamNote.hidden = true;
+          void load();
+        } }, t("err.retry"))));
+    }
+  };
+  const load = () => start().catch((e) => {
+    if (!signal.aborted && !isAbort(e)) clear(header, errorNotice(e));
+  });
+  void load();
+  return () => {
+    ctl.abort();
+    stop?.();
+    stop = null;
+  };
 }
 
 /** A failed run: the first line of the error in words; the traceback behind "Full error". */
@@ -323,8 +384,8 @@ async function renderChecks(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: Sco
   const lines = [...groups.values()].sort((a, b) => b.length - a.length).map((g) => {
     const r = g[0];
     const bars = g.map((x) => x.bar ?? 0).filter(Boolean);
-    const lo = Math.min(...bars);
-    const hi = Math.max(...bars);
+    const lo = minOf(bars, (b) => b);
+    const hi = maxOf(bars, (b) => b);
     const who = r.kind === "crossing" && r.upper ? t("checks.above", { lower: r.part ?? "?", upper: r.upper }) : r.part ?? "–";
     const kind = t(`checks.kind.${r.kind}${g.length === 1 ? "1" : ""}`) === `checks.kind.${r.kind}${g.length === 1 ? "1" : ""}` ? r.kind : t(`checks.kind.${r.kind}${g.length === 1 ? "1" : ""}`);
     const range = !bars.length ? "" : lo === hi ? t("checks.bar", { n: lo }) : t("checks.bars", { a: lo, b: hi });
@@ -403,8 +464,13 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   const groups = [...new Set([...transcribes.map(({ stage }) => stage.stage.split(".")[1] ?? "all"), ...comp.voices.map((v) => layerGroup(v.layer ?? v.id))])];
   const sel = h("select", { id: "roll-group" }, groups.map((g) => h("option", { value: g }, g)));
   const holder = h("div", {});
+  let pending: AbortController | null = null;
   const show = async () => {
     const g = sel.value;
+    // A newer choice cancels the files still loading for the one before.
+    pending?.abort();
+    const ctl = new AbortController();
+    pending = ctl;
     clear(holder, loading());
     const layers: RollLayer[] = comp.voices.filter((v) => layerGroup(v.layer ?? v.id) === g).map((v) => ({
       id: v.id, label: t("roll.final", { id: v.id, role: v.role }), colour: "ink", style: "block" as const,
@@ -419,13 +485,15 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
       const model = stage.stage.split(".").slice(2).join(".") || file.name;
       const st = MODEL_STYLE[model] ?? { colour: "m4", style: "outline" as const, label: model };
       try {
-        const midi = parseMidi(await fetchBytes(file.url));
+        const midi = parseMidi(await fetchBytes(file.url, undefined, { signal: ctl.signal }));
         layers.push({ id: stage.stage, label: `${st.label} (${file.name})`, colour: st.colour, style: st.style,
           notes: midi.notes.map((n) => ({ pitch: n.pitch, start: n.start, end: n.end })) });
       } catch {
         /* skip unreadable files */
       }
+      if (ctl.signal.aborted) return;
     }
+    if (ctl.signal.aborted) return;
     const roll = h("bs-pianoroll", {}) as PianoRoll;
     roll.data = layers;
     clear(holder, roll);
@@ -487,7 +555,7 @@ async function voicesTab(p: HTMLElement, ctx: Ctx): Promise<void> {
           const conf = v.notes.map((n) => n.confidence ?? 1);
           const srcs = [...new Set(v.notes.flatMap((n) => n.sources ?? []))];
           return [v.id, v.role, v.layer ?? "–", v.instrument_hint ?? "–", String(v.notes.length),
-            ps.length ? `${Math.min(...ps)}–${Math.max(...ps)}` : "–",
+            ps.length ? `${minOf(ps, (p) => p)}–${maxOf(ps, (p) => p)}` : "–",
             conf.length ? fmt.num(conf.reduce((a, b) => a + b, 0) / conf.length, 2) : "–",
             String(conf.filter((x) => x < 0.7).length), srcs.join(", ") || "–"];
         })),
@@ -553,7 +621,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
         xml.parts.map((pt) => {
           const w = pt.notes.map((n) => n.written);
           return [pt.name, pt.transpose ? t("mx.semitones", { n: `${pt.transpose > 0 ? "+" : ""}${pt.transpose}` }) : t("mx.concert"), String(pt.bars), String(pt.notes.length),
-            String(pt.notes.filter((n) => n.color).length), pt.percussion ? t("mx.unpitched") : w.length ? `${pitchName(Math.min(...w))}–${pitchName(Math.max(...w))}` : "–"];
+            String(pt.notes.filter((n) => n.color).length), pt.percussion ? t("mx.unpitched") : w.length ? `${pitchName(minOf(w, (p) => p))}–${pitchName(maxOf(w, (p) => p))}` : "–"];
         })));
   } catch (e) {
     clear(parts, h("h3", { id: "parts-h" }, t("mx.partsTitle")), errorNotice(e));
@@ -595,7 +663,7 @@ function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
     h("dl", { class: "kv" },
       kv(t("manifest.kv.run"), m.run_id, true), kv(t("manifest.kv.profile"), `${m.profile} (${m.pipeline ?? "?"})`), kv(t("manifest.kv.status"), m.status),
       kv(t("manifest.kv.input"), m.input ? `${fmt.path(m.input.path)} (${fmt.bytes(m.input.bytes)})` : undefined),
-      kv(t("manifest.kv.git"), m.git ? `${m.git.sha.slice(0, 12)}${m.git.branch ? ` on ${m.git.branch}` : ""}${m.git.dirty ? ", dirty" : ""}` : undefined),
+      kv(t("manifest.kv.git"), m.git ? `${m.git.branch ? t("manifest.gitOn", { sha: m.git.sha.slice(0, 12), branch: m.git.branch }) : m.git.sha.slice(0, 12)}${m.git.dirty ? t("run.dirty") : ""}` : undefined),
       kv(t("manifest.kv.time"), fmt.seconds(m.seconds))),
     more(t("manifest.moreDetails"), h("dl", { class: "kv" },
       kv(t("manifest.kv.inputSha"), m.input?.sha256, true),

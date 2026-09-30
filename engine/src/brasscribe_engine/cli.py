@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -154,6 +155,8 @@ def cmd_serve(args, open_browser: bool = False) -> int:
     except (OSError, ValueError) as e:  # an unusable admin token file
         print(f"cannot start: {e}", file=sys.stderr)
         return 2
+    for name in config.CREDENTIAL_ENV:  # read by create_app; nothing the engine starts inherits them
+        os.environ.pop(name, None)
     url, lines = serve_banner(app, host, args.port)
     print("\n".join(lines), flush=True)
     if open_browser:

@@ -85,6 +85,12 @@ class ReviewChangeNoteTest {
         rule.onNodeWithText("Change note…").performScrollTo().performClick()
         rule.onNodeWithText("Up a semitone").performClick()
         rule.onNodeWithText("Save").performScrollTo().performClick()
+        changeLanded()
+    }
+
+    /** The score is arranged again in the background after Save and Undo. */
+    private fun changeLanded() {
+        rule.waitUntil(20_000) { !vm.changingNote.value }
         rule.waitForIdle()
     }
 
@@ -100,8 +106,9 @@ class ReviewChangeNoteTest {
         changeUp()
         val changed = changedText()
         assertNotNull(changed)
+        // Saved in the background.
+        rule.waitUntil(10_000) { vm.savedScores.value.firstOrNull()?.reviewChanges?.size == 1 }
         val saved = vm.savedScores.value.first()
-        assertEquals(1, saved.reviewChanges.size)
 
         rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
         rule.waitUntil(20_000) { changedText() != null }
@@ -110,11 +117,12 @@ class ReviewChangeNoteTest {
         rule.onRoot().tryPerformAccessibilityChecks()
 
         rule.onNodeWithTag("undo-change").performScrollTo().performClick()
-        rule.waitForIdle()
+        changeLanded()
         assertEquals(null, changedText())
         assertEquals(pitchesBefore, melodyPitches())
-        assertTrue(vm.savedScores.value.first { it.id == saved.id }.reviewChanges.isEmpty())
+        rule.waitUntil(10_000) { vm.savedScores.value.first { it.id == saved.id }.reviewChanges.isEmpty() }
         rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
+        rule.waitUntil(10_000) { vm.openingScore.value == null }
         rule.waitForIdle()
         assertEquals(null, changedText())
     }
@@ -209,7 +217,7 @@ class ReviewChangeNoteTest {
 
         // Undo: back to the transcription, still this note, still open.
         rule.onNodeWithTag("undo-change").performScrollTo().performClick()
-        rule.waitForIdle()
+        changeLanded()
         assertEquals(null, changedText())
         assertEquals(pitchesBefore, melodyPitches())
         assertEquals(before, position())

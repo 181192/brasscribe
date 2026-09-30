@@ -60,7 +60,9 @@ internal sealed class FakeActions : IBandroomActions
     public void CopyText(string text) => Calls.Add("copy:" + text);
     public void FinishSetup() => Calls.Add("setup");
     public void Fix(ProblemKind problem) => Calls.Add("fix:" + problem);
-    public Task RemoveDeviceAsync(string deviceId) { Calls.Add("remove:" + deviceId); return Task.CompletedTask; }
+    /// <summary>What removing a device answers: true (removed) unless a test says otherwise.</summary>
+    public bool RemoveSucceeds { get; set; } = true;
+    public Task<bool> RemoveDeviceAsync(string deviceId) { Calls.Add("remove:" + deviceId); return Task.FromResult(RemoveSucceeds); }
 }
 
 internal sealed class RecordingAnnouncer : IAnnouncer
@@ -123,4 +125,45 @@ internal sealed class StubHandler : HttpMessageHandler
         var (status, json) = Routes.TryGetValue(key, out var r) ? r : (HttpStatusCode.NotFound, "{\"detail\":\"Not Found\"}");
         return new HttpResponseMessage(status) { Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json") };
     }
+}
+
+/// <summary>
+/// <see cref="FakeEngine"/> with hooks: a hook that throws makes that call fail the way a real engine can (a 500, a
+/// timeout, a body that isn't JSON); one that awaits holds the call until the test lets it go.
+/// </summary>
+internal sealed class FlakyEngine(FakeEngine inner) : IEngineApi
+{
+    public FakeEngine Inner { get; } = inner;
+    public Func<Task>? OnStatus { get; set; }
+    public Func<Task>? OnPairRequests { get; set; }
+    public Func<Task>? OnDecide { get; set; }
+    public int StatusCalls;
+    public int PairRequestCalls;
+
+    private static Task Run(Func<Task>? hook) => hook?.Invoke() ?? Task.CompletedTask;
+
+    public Task<HealthInfo> GetHealthAsync(CancellationToken ct = default) => Inner.GetHealthAsync(ct);
+    public async Task<StatusInfo> GetStatusAsync(CancellationToken ct = default)
+    {
+        Interlocked.Increment(ref StatusCalls);
+        await Run(OnStatus);
+        return await Inner.GetStatusAsync(ct);
+    }
+    public Task<IReadOnlyList<DeviceInfo>> GetDevicesAsync(CancellationToken ct = default) => Inner.GetDevicesAsync(ct);
+    public Task RemoveDeviceAsync(string deviceId, CancellationToken ct = default) => Inner.RemoveDeviceAsync(deviceId, ct);
+    public Task<PairingState> GetPairingAsync(CancellationToken ct = default) => Inner.GetPairingAsync(ct);
+    public Task<PairingState> OpenPairingAsync(PairingOpenRequest request, CancellationToken ct = default) => Inner.OpenPairingAsync(request, ct);
+    public Task<PairingState> ClosePairingAsync(CancellationToken ct = default) => Inner.ClosePairingAsync(ct);
+    public async Task<IReadOnlyList<PairRequestInfo>> GetPairRequestsAsync(CancellationToken ct = default)
+    {
+        Interlocked.Increment(ref PairRequestCalls);
+        await Run(OnPairRequests);
+        return await Inner.GetPairRequestsAsync(ct);
+    }
+    public async Task<PairRequestInfo> DecidePairRequestAsync(string requestId, bool approve, CancellationToken ct = default)
+    {
+        await Run(OnDecide);
+        return await Inner.DecidePairRequestAsync(requestId, approve, ct);
+    }
+    public Task<IReadOnlyList<JobInfo>> GetJobsAsync(CancellationToken ct = default) => Inner.GetJobsAsync(ct);
 }

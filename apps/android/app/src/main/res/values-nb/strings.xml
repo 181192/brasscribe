@@ -306,6 +306,7 @@
     <string name="sound_baseline">Standard</string>
     <string name="sound_realistic">Realistisk</string>
     <string name="sound_realistic_unavailable">Ikke med i denne versjonen av appen.</string>
+    <string name="sound_realistic_loading">Laster inn instrumentene …</string>
     <string name="sound_realistic_test_tone">Ingen realistiske instrumenter er installert ennå: du hører bandlydene.</string>
     <plurals name="sound_pack_parts">
         <item quantity="one">%d stemme spiller et ekte instrument.</item>
@@ -551,6 +552,8 @@
     <string name="pair_scan_unavailable">Telefonen kan ikke skanne koder her. Skriv inn koden fra datamaskinen i stedet.</string>
     <string name="pair_link_invalid">Den koden er ikke fra Brasscribe på en datamaskin.</string>
     <string name="pair_link_title">Koble til %1$s?</string>
+    <string name="pair_link_address">Adresse på nettverket ditt: %1$s</string>
+    <string name="pair_link_address_by_name">Brasscribe leter etter den på nettverket ditt etter navn.</string>
     <string name="pair_link_unreachable">Fant ikke %1$s. Sjekk at telefonen og datamaskinen er på samme wifi.</string>
     <string name="pair_needs_update">Oppdater Brasscribe Play for å koble til denne datamaskinen.</string>
     <string name="pair_code_needed">Skriv inn koden datamaskinen viser, eller spør på datamaskinen i stedet.</string>

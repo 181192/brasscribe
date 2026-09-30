@@ -25,8 +25,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import no.brasscribe.play.audio.RealisticSynth
 
@@ -52,6 +54,8 @@ data class ScoreUiState(
     val concertPitch: Boolean = false,
     val zoom: Int = 100,
     val realistic: Boolean = false,
+    /** The realistic instruments are being loaded (it takes a few seconds for a band). */
+    val realisticLoading: Boolean = false,
     val keyShift: Int = 0,
     /** Parts playing a real instrument from the sound pack in the realistic tier. */
     val soundPackParts: Int = 0,
@@ -86,8 +90,8 @@ class ScoreController(
      * ([BandSoundFontFile]), and only without both does alphaTab keep its General MIDI SoundFont.
      */
     private val bandSoundFont: java.io.File? = null,
-    /** The Composition the score came from, for humanization. */
-    private val compositionJson: String? = null,
+    /** The Composition the score came from, for humanization; asked for off the main thread, when the realistic sound starts. */
+    private val compositionJson: () -> String? = { null },
 ) {
     val view: AlphaTabView = AlphaTabView(context, null)
     private var channels = IntArray(0)
@@ -126,6 +130,7 @@ class ScoreController(
         view.api.playerStateChanged.on { e ->
             val playing = e.state == PlayerState.Playing
             _state.value = _state.value.copy(playing = playing)
+            view.post { if (!released) followFocus(playing) }
             if (_state.value.realistic && humanizedReady) {
                 if (playing) humanized.start(::channelAudible) else humanized.stop()
             } else if (!playing) RealisticSynth.fadeOut()
@@ -658,42 +663,113 @@ class ScoreController(
      */
     fun setRealistic(on: Boolean): Boolean {
         val s = score ?: return false
-        if (on && !RealisticSynth.start()) return false
-        if (on) {
-            val pack = SoundPack(view.context)
-            val playing = HashSet<Int>()
-            for (i in 0 until s.tracks.length.toInt()) {
-                if (percussion.getOrElse(i) { false }) continue
-                val ch = channels[i]
-                // One SFZ per part sounds one target: single_voice_gain_db, not the layered preset's gain.
-                RealisticSynth.setGain(ch, (sounds.getOrNull(i)?.singleVoiceGain ?: gains.getOrElse(i) { 1.0 }).toFloat())
-                if (RealisticSynth.regions(ch) > 0) { playing += i; continue }
-                // A part without an installed SFZ stays on the band SoundFont (never a test tone).
-                val sfz = sounds.getOrNull(i)?.let { pack.sfzFor(it) }
-                if (sfz != null && RealisticSynth.load(ch, sfz)) playing += i
-            }
-            sfizzParts = playing
-            val installed = playing.size
-            val t0 = System.nanoTime()
-            val skip = percussion.indices.map { it !in playing }
-            val count = runCatching { humanized.prepare(s, channels, skip, compositionJson) }
-                .onFailure { android.util.Log.w("BrasscribePlay", "humanization unavailable", it) }.getOrDefault(0)
-            humanizedReady = count > 0
-            android.util.Log.i("BrasscribePlay", "realistic tier: %d parts with installed instruments, %d humanized notes in %d ms, channels %s"
-                .format(installed, count, (System.nanoTime() - t0) / 1_000_000, channels.toList()))
-            view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn, MidiEventType.NoteOff)
-            _state.value = _state.value.copy(realistic = true, soundPackParts = installed, humanized = humanizedReady)
-            if (_state.value.playing && humanizedReady) humanized.start(::channelAudible)
-        } else {
+        realisticWanted = on
+        realisticJob?.cancel()
+        realisticJob = null
+        if (!on) {
             humanized.stop()
             view.api.midiEventsPlayedFilter = alphaTab.collections.List()
-            RealisticSynth.allOff(); RealisticSynth.stop()
             sfizzParts = emptySet()
-            _state.value = _state.value.copy(realistic = false, humanized = false)
+            _state.value = _state.value.copy(realistic = false, humanized = false, realisticLoading = false)
+            applyVolumes()
+            // After any load still running: the lifecycle thread takes them in order. The instruments stay
+            // loaded while the score is open, so turning it on again is quick.
+            RealisticSynth.post { RealisticSynth.allOff(); RealisticSynth.stop() }
+            return true
         }
-        applyVolumes()
+        // Loading a band's instruments and humanizing every note takes seconds: in the background, with the
+        // choice shown as loading meanwhile. alphaTab is only touched here, on the main thread.
+        val channels = channels.copyOf()
+        val percussion = percussion
+        val sounds = sounds
+        val gains = gains
+        val context = view.context.applicationContext
+        _state.value = _state.value.copy(realisticLoading = true)
+        realisticJob = scope.launch {
+            val ready = try {
+                withContext(RealisticSynth.lifecycle) {
+                    if (!RealisticSynth.start()) return@withContext null
+                    val pack = SoundPack(context)
+                    val playing = HashSet<Int>()
+                    for (i in 0 until s.tracks.length.toInt()) {
+                        ensureActive()
+                        if (percussion.getOrElse(i) { false }) continue
+                        val ch = channels[i]
+                        // One SFZ per part sounds one target: single_voice_gain_db, not the layered preset's gain.
+                        RealisticSynth.setGain(ch, (sounds.getOrNull(i)?.singleVoiceGain ?: gains.getOrElse(i) { 1.0 }).toFloat())
+                        // A part without an installed SFZ stays on the band SoundFont (never a test tone).
+                        val sfz = sounds.getOrNull(i)?.let { pack.sfzFor(it) }
+                        if (sfz != null && RealisticSynth.load(ch, sfz)) playing += i
+                    }
+                    ensureActive()
+                    val t0 = System.nanoTime()
+                    val skip = percussion.indices.map { it !in playing }
+                    val count = runCatching { humanized.prepare(s, channels, skip, compositionJson()) }
+                        .onFailure { android.util.Log.w("BrasscribePlay", "humanization unavailable", it) }.getOrDefault(0)
+                    android.util.Log.i("BrasscribePlay", "realistic tier: %d parts with installed instruments, %d humanized notes in %d ms, channels %s"
+                        .format(playing.size, count, (System.nanoTime() - t0) / 1_000_000, channels.toList()))
+                    playing to count
+                }
+            } finally {
+                _state.value = _state.value.copy(realisticLoading = false)
+            }
+            if (ready == null || released || !realisticWanted || score !== s) return@launch
+            val (playing, count) = ready
+            sfizzParts = playing
+            humanizedReady = count > 0
+            view.api.midiEventsPlayedFilter = alphaTab.collections.List(MidiEventType.NoteOn, MidiEventType.NoteOff)
+            _state.value = _state.value.copy(realistic = true, soundPackParts = playing.size, humanized = humanizedReady)
+            if (_state.value.playing && humanizedReady) humanized.start(::channelAudible)
+            applyVolumes()
+        }
         return true
     }
+
+    private val appContext: Context = context.applicationContext
+    private val audio: android.media.AudioManager? = appContext.getSystemService(android.media.AudioManager::class.java)
+
+    /** A call, another player or a voice assistant takes the sound: the score pauses, as a music player does. */
+    private val focusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
+        .setAudioAttributes(android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC).build())
+        .setOnAudioFocusChangeListener({ change ->
+            if (change == android.media.AudioManager.AUDIOFOCUS_LOSS || change == android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) pauseForSystem()
+        }, android.os.Handler(android.os.Looper.getMainLooper()))
+        .build()
+
+    /** Headphones pulled out (or Bluetooth gone): pause rather than play on through the speaker. */
+    private val noisy = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: android.content.Intent) {
+            if (intent.action == android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY) pauseForSystem()
+        }
+    }
+    private var focusHeld = false
+
+    /** Holds the audio focus and listens for unplugged headphones while the score plays; lets both go when it stops. */
+    private fun followFocus(playing: Boolean) {
+        if (playing == focusHeld) return
+        focusHeld = playing
+        if (playing) {
+            val granted = audio?.requestAudioFocus(focusRequest) != android.media.AudioManager.AUDIOFOCUS_REQUEST_FAILED
+            androidx.core.content.ContextCompat.registerReceiver(appContext, noisy,
+                android.content.IntentFilter(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+            // During a phone call the focus is refused: the score does not play over it.
+            if (!granted) pauseForSystem()
+        } else {
+            audio?.abandonAudioFocusRequest(focusRequest)
+            runCatching { appContext.unregisterReceiver(noisy) }
+        }
+    }
+
+    private fun pauseForSystem() {
+        if (!released && _state.value.playing) togglePlay()
+    }
+
+    /** Main-thread work for the controller: cancelled when it is released. */
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Main.immediate)
+    private var realisticJob: kotlinx.coroutines.Job? = null
+    /** The realistic sound was last asked for (on) or turned off. */
+    private var realisticWanted = false
 
     /** Standard MIDI file of the loaded score, generated by alphaTab. */
     fun midiBytes(): ByteArray? = midiSource()?.bytes()
@@ -713,9 +789,14 @@ class ScoreController(
     fun release() {
         released = true
         afterSoundFont = null
+        realisticJob?.cancel()
+        scope.cancel()
         humanized.release()
-        RealisticSynth.allOff()
+        followFocus(playing = false)
         runCatching { view.api.stop() }
+        // The output stream closes and the instruments (about 100 MB for a band) are freed: after any load
+        // still running for this score, and before the next score's, on the tier's own thread.
+        RealisticSynth.post { RealisticSynth.allOff(); RealisticSynth.stop(); RealisticSynth.unloadAll() }
     }
 }
 

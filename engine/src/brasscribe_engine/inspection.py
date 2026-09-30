@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 
 from .config import Settings
+from .names import valid_id
 
 # Licences as recorded in docs/plan/apps-plan.md §7 and docs/research/00-summary.md §0/§3.
 DATASETS = {
@@ -60,30 +61,29 @@ def sources(settings: Settings) -> list[dict]:
 
     out = []
     cap = settings.data_dir / "captures"
-    for p in sorted(cap.glob("*.wav")) if cap.is_dir() else []:
+    for p in sorted(p for p in cap.glob("*.wav") if valid_id(p.name) and inside(cap, p)) if cap.is_dir() else []:
         out.append({"kind": "capture", "id": f"capture:{p.name}", "name": p.stem, "path": str(p), "dataset": None,
                     "duration_s": duration(p)})
     root = settings.datasets_dir
-    for ds in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+    for ds in sorted(p for p in root.iterdir() if valid_id(p.name) and p.is_dir()) if root.is_dir() else []:
         for item in sorted(ds.iterdir()):
             mix = item / "mix.wav"
-            if mix.exists():
+            if valid_id(item.name) and inside(root, mix) and mix.exists():
                 out.append({"kind": "dataset", "id": f"dataset:{ds.name}/{item.name}", "name": item.name,
                             "path": str(mix), "dataset": ds.name, "duration_s": duration(mix)})
     return out
 
 
 def resolve_source(settings: Settings, source_id: str) -> Path | None:
+    """The file behind an id from sources(): capture:<file> or dataset:<set>/<item>, each part a valid id."""
     kind, _, rest = source_id.partition(":")
-    if ".." in rest or rest.startswith("/"):
-        return None
-    if kind == "capture":
-        p = settings.data_dir / "captures" / rest
-    elif kind == "dataset":
-        p = settings.datasets_dir / rest / "mix.wav"
+    if kind == "capture" and valid_id(rest):
+        root, p = settings.data_dir / "captures", settings.data_dir / "captures" / rest
+    elif kind == "dataset" and rest.count("/") == 1 and all(map(valid_id, rest.split("/"))):
+        root, p = settings.datasets_dir, settings.datasets_dir / rest / "mix.wav"
     else:
         return None
-    return p if p.is_file() else None
+    return p if inside(root, p) and p.is_file() else None
 
 
 def inside(root: Path, path: Path) -> bool:

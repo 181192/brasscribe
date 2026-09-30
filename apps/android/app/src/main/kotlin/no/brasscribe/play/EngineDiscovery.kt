@@ -125,14 +125,28 @@ class EngineDiscovery(context: Context) {
      * discovery session, so a screen that starts and stops [engines] does not end it.
      */
     suspend fun find(serverId: String, timeoutMs: Long = 6_000): String? {
-        start()
+        // Several finds at once (the heartbeat and a pairing link) share the session: the last one out stops it.
+        finders.acquire()
         return try {
             kotlinx.coroutines.withTimeoutOrNull(timeoutMs) {
                 engines.first { list -> list.any { it.id == serverId } }.first { it.id == serverId }.url
             }
         } finally {
-            stop()
+            finders.release()
         }
+    }
+
+    private val finders = SharedSession(::start, ::stop)
+
+    /** Starts on the first [acquire] and stops on the matching last [release]. */
+    internal class SharedSession(private val start: () -> Unit, private val stop: () -> Unit) {
+        private var users = 0
+
+        @Synchronized
+        fun acquire() { if (users++ == 0) start() }
+
+        @Synchronized
+        fun release() { if (users > 0 && --users == 0) stop() }
     }
 
     companion object {

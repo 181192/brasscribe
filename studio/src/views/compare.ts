@@ -1,7 +1,7 @@
 // Compare two runs (or a run and a reference such as data/golden): note-level
 // diff, both scores side by side with the differing notes marked, a
 // piano-roll overlay and metric deltas.
-import { api, fetchText } from "../api/client";
+import { api, fetchText, isAbort } from "../api/client";
 import type { Composition, Job, Reference } from "../api/types";
 import { PianoRoll, type RollLayer, type RollNote } from "../components/pianoroll";
 import { tokenColour, type NoteMark } from "../components/score";
@@ -23,7 +23,7 @@ interface Side {
   xml: XmlScore | null;
 }
 
-async function loadSide(key: string, jobs: Job[]): Promise<Side> {
+async function loadSide(key: string, jobs: Job[], signal: AbortSignal): Promise<Side> {
   const parse = (x: string | null) => {
     try {
       return x ? parseMusicXml(x) : null;
@@ -34,19 +34,22 @@ async function loadSide(key: string, jobs: Job[]): Promise<Side> {
   if (key.startsWith("ref:")) {
     const name = key.slice(4);
     const [c, x] = await Promise.all([
-      fetchText(api.referenceFileUrl(name, "composition.json")).then((s) => JSON.parse(s) as Composition),
-      fetchText(api.referenceFileUrl(name, "brass-band.musicxml")).catch(() => null),
+      fetchText(api.referenceFileUrl(name, "composition.json"), undefined, { signal }).then((s) => JSON.parse(s) as Composition),
+      fetchText(api.referenceFileUrl(name, "brass-band.musicxml"), undefined, { signal }).catch(() => null),
     ]);
     return { key, label: t("cmp.reference", { name }), composition: c, xmlText: x, xml: parse(x) };
   }
   const job = jobs.find((j) => j.id === key);
-  const [c, x] = await Promise.all([api.composition(key), fetchText(api.musicxmlUrl(key)).catch(() => null)]);
+  const [c, x] = await Promise.all([api.composition(key, { signal }), fetchText(api.musicxmlUrl(key), undefined, { signal }).catch(() => null)]);
   return { key, label: job ? runTitle(job) : key, composition: c, xmlText: x, xml: parse(x) };
 }
 
-export function compareView(root: HTMLElement, q: URLSearchParams): void {
+export function compareView(root: HTMLElement, q: URLSearchParams): () => void {
   const form = h("div", {}, loading());
   const out = h("div", {});
+  // One comparison at a time: a new one (or leaving the page) cancels the one still loading.
+  let pending: AbortController | null = null;
+  let disposed = false;
   clear(root, viewHead(t("title.compare"), [t("cmp.purpose"), " ", infoTip(t("cmp.how"), t("cmp.intro"))]), form, out);
 
   Promise.all([api.jobs(), api.references().catch(() => [] as Reference[])]).then(([jobs, refs]) => {
@@ -70,20 +73,33 @@ export function compareView(root: HTMLElement, q: URLSearchParams): void {
     });
     clear(form, f);
     const run = async (ka: string, kb: string, tolerance: number) => {
+      pending?.abort();
+      const ctl = new AbortController();
+      pending = ctl;
+      const { signal } = ctl;
       clear(out, loading(t("cmp.loading")));
       try {
-        const [sa, sb] = await Promise.all([loadSide(ka, jobs), loadSide(kb, jobs)]);
+        const [sa, sb] = await Promise.all([loadSide(ka, jobs, signal), loadSide(kb, jobs, signal)]);
         const diff = diffCompositions(sa.composition, sb.composition, tolerance);
         const engine = !ka.startsWith("ref:")
-          ? await api.compare(ka, kb.startsWith("ref:") ? { reference: kb.slice(4) } : { job: kb }).catch((x) => x as Error)
+          ? await api.compare(ka, kb.startsWith("ref:") ? { reference: kb.slice(4) } : { job: kb }, { signal }).catch((x) => x as Error)
           : null;
+        if (signal.aborted) return;
         clear(out, renderDiff(sa, sb, diff, engine, tolerance));
       } catch (x) {
+        if (signal.aborted || isAbort(x)) return;
         clear(out, errorNotice(x));
       }
     };
+    if (disposed) return;
     if (a.value && b.value && (q.get("a") || q.get("b"))) void run(a.value, b.value, 1);
-  }).catch((e) => clear(form, errorNotice(e)));
+  }).catch((e) => {
+    if (!disposed) clear(form, errorNotice(e));
+  });
+  return () => {
+    disposed = true;
+    pending?.abort();
+  };
 }
 
 const KINDS: ChangeKind[] = ["same", "added", "removed", "moved", "octave"];

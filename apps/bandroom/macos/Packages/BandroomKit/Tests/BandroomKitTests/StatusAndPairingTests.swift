@@ -77,6 +77,21 @@ import Testing
         #expect(running == [0, 1])
     }
 
+    @Test func withoutAnEngineNothingIsBeingMade() async {
+        let engine = FakeEngine()
+        engine.statusValue.jobsRunning = 1
+        engine.jobsValue = [Job(id: "j1", profile: "solo", title: "Old Hundredth", status: "running", created: 0, started: 0,
+                                progress: 0.5, stages: [])]
+        let m = StatusMonitor(sleep: { _ in })
+        m.client = engine
+        await m.refresh()
+        #expect(m.status?.jobsRunning == 1)
+        #expect(m.job != nil)
+        m.client = nil
+        #expect(m.status == nil)
+        #expect(m.job == nil)
+    }
+
     @Test func unreachableEngineIsNotReachable() async {
         let engine = FakeEngine()
         engine.failAll = true
@@ -85,6 +100,26 @@ import Testing
         await m.refresh()
         #expect(!m.reachable)
         #expect(m.status == nil)
+    }
+
+    @Test func anEngineThatStopsAnsweringIsUnresponsiveAfterThreeChecks() async {
+        let engine = FakeEngine()
+        let m = StatusMonitor(sleep: { _ in })
+        m.client = engine
+        await m.refresh()
+        engine.failAll = true
+        await m.refresh()
+        await m.refresh()
+        #expect(!m.isUnresponsive, "two missed checks can be a busy moment")
+        await m.refresh()
+        #expect(m.isUnresponsive)
+        engine.failAll = false
+        await m.refresh()
+        #expect(!m.isUnresponsive, "an answer clears it")
+        engine.failAll = true
+        for _ in 0..<3 { await m.refresh() }
+        m.client = nil
+        #expect(!m.isUnresponsive, "a new engine starts afresh")
     }
 
     @Test func connectedDevicesFirstThenByLastUse() {
@@ -118,12 +153,12 @@ import Testing
 
 @MainActor
 @Suite struct PairingModelTests {
-    @Test func opensWithNoExpiryAndShowsTheCode() async {
+    @Test func opensForTenMinutesAndShowsTheCode() async {
         let engine = FakeEngine()
         let p = PairingModel(client: engine, sleep: { _ in try? await Task.sleep(for: .seconds(3600)) })
         await p.open()
         #expect(p.phase == .open)
-        #expect(engine.opened.first == PairingOpen(ttlSeconds: nil, singleUse: true, extend: false))
+        #expect(engine.opened.first == PairingOpen(ttlSeconds: 600, singleUse: true, extend: false))
         #expect(p.code == "482913")
         #expect(p.displayCode == "482 913")
         #expect(p.host == "Kalli's MacBook")
@@ -154,13 +189,15 @@ import Testing
         await p.close()
     }
 
-    @Test func extendsAFixedLifetimeWindowBeforeItRunsOut() async {
+    @Test func extendsTheWindowBeforeItRunsOut() async {
         let engine = FakeEngine(), clock = TestClock()
-        clock.now = ISO8601DateFormatter().date(from: "2026-09-27T12:09:00Z")!
+        clock.now = ISO8601DateFormatter().date(from: "2026-09-27T12:00:00Z")!
         let p = PairingModel(client: engine, now: { clock.now }, sleep: { _ in try? await Task.sleep(for: .seconds(3600)) })
         await p.open()
-        // An engine that ignored "no expiry" and set 10 minutes.
-        engine.pairingValue.expiresAt = "2026-09-27T12:10:00+00:00"
+        #expect(engine.pairingValue.expiresAt == "2026-09-27T12:10:00+00:00")
+        await p.poll()
+        #expect(!engine.calls.contains("extend"), "plenty of time left")
+        clock.now = ISO8601DateFormatter().date(from: "2026-09-27T12:09:00Z")!
         await p.poll()
         #expect(engine.calls.contains("extend"))
         #expect(engine.opened.last == PairingOpen(ttlSeconds: 600, singleUse: true, extend: true))
@@ -188,6 +225,33 @@ import Testing
         await p.open()
         await p.close()
         #expect(engine.calls.last == "close")
+        #expect(p.phase == .idle)
+    }
+
+    @Test func closingWhileTheCodeIsBeingMadeClosesTheEnginesWindowAfterwards() async {
+        let engine = FakeEngine(), gate = Gate()
+        engine.beforeOpen = { await gate.wait() }
+        let p = PairingModel(client: engine, sleep: { _ in try? await Task.sleep(for: .seconds(3600)) })
+        let opening = Task { await p.open() }
+        while !engine.calls.contains("open") { await Task.yield() }
+        // The window closes while the engine is still making the code: its close arrives first.
+        await p.close()
+        #expect(engine.calls.last == "close")
+        gate.open()
+        await opening.value
+        #expect(!engine.pairingValue.open, "the code made after the close must not stay open")
+        #expect(engine.calls.last == "close")
+        #expect(p.phase == .idle)
+        #expect(p.code == nil)
+    }
+
+    @Test func aPollInFlightWhenTheWindowClosesChangesNothing() async {
+        let engine = FakeEngine()
+        let p = PairingModel(client: engine, sleep: { _ in try? await Task.sleep(for: .seconds(3600)) })
+        await p.open()
+        await p.close()
+        await p.poll()
+        #expect(!engine.calls.contains("pairing"))
         #expect(p.phase == .idle)
     }
 

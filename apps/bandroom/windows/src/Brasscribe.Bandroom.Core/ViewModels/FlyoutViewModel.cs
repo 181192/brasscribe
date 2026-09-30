@@ -116,11 +116,16 @@ public sealed partial class FlyoutViewModel : ObservableObject
     [ObservableProperty] public partial string ConfirmSecondaryLabel { get; set; } = "";
     [ObservableProperty] public partial string ConfirmTertiaryLabel { get; set; } = "";
     [ObservableProperty] public partial bool HasConfirmTertiary { get; set; }
+    /// <summary>Under Phones and tablets: a removal that didn't go through.</summary>
+    [ObservableProperty] public partial string DevicesNotice { get; set; } = "";
 
     public bool IsMainView => View == FlyoutView.Main;
     public bool IsDevicesView => View == FlyoutView.Devices;
     public bool IsConfirmView => View == FlyoutView.Confirm;
     public bool HasNoDevices => !HasDevices;
+    public bool HasDevicesNotice => DevicesNotice.Length > 0;
+
+    partial void OnDevicesNoticeChanged(string value) => OnPropertyChanged(nameof(HasDevicesNotice));
 
     partial void OnViewChanged(FlyoutView value)
     {
@@ -286,6 +291,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
     [RelayCommand]
     private void ShowDevices()
     {
+        DevicesNotice = "";
         View = FlyoutView.Devices;
         FocusRequested?.Invoke("Back");
     }
@@ -356,16 +362,26 @@ public sealed partial class FlyoutViewModel : ObservableObject
                 Back();
                 break;
             case ConfirmKind.RemoveDevice when _removing is { } row:
+                bool removed = await _actions.RemoveDeviceAsync(row.Id);
                 int index = Devices.IndexOf(row);
-                await _actions.RemoveDeviceAsync(row.Id);
-                Devices.Remove(row);
-                HasDevices = Devices.Count > 0;
-                _announcer.Announce(_s.Format("Devices_Removed", row.Name));
                 _removing = null;
                 Confirm = ConfirmKind.None;
                 View = FlyoutView.Devices;
-                // Focus the next row, or the heading when the list is now empty (§8).
-                FocusRequested?.Invoke(Devices.Count == 0 ? "DevicesHeading" : "Row:" + Math.Min(index, Devices.Count - 1));
+                if (!removed)
+                {
+                    // Still paired: the row stays, with a line that says so, and focus goes back to it.
+                    DevicesNotice = _s.Format("Devices_Remove_Failed", row.Name);
+                    _announcer.Announce(DevicesNotice);
+                    FocusRequested?.Invoke(index >= 0 ? "Row:" + index : "DevicesHeading");
+                    break;
+                }
+                DevicesNotice = "";
+                Devices.Remove(row);
+                HasDevices = Devices.Count > 0;
+                _announcer.Announce(_s.Format("Devices_Removed", row.Name));
+                // Focus the next row, or the heading when the list is now empty (§8). A row the list lost meanwhile
+                // (a refresh) counts as the first.
+                FocusRequested?.Invoke(Devices.Count == 0 ? "DevicesHeading" : "Row:" + Math.Clamp(index, 0, Devices.Count - 1));
                 break;
         }
     }

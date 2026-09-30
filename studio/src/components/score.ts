@@ -11,7 +11,7 @@ import { soundFontBytes } from "../lib/soundfontstore";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, percussionKits, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
-import { announce, clear, h, menu, nextId, prefersReducedMotion } from "../ui/dom";
+import { announce, clear, h, menu, nextId, onPanelHidden, prefersReducedMotion } from "../ui/dom";
 import { icon } from "../ui/icons";
 
 declare const alphaTab: typeof AT;
@@ -138,8 +138,17 @@ export class ScoreElement extends HTMLElement {
   private loadSeq = 0;
   /** What Play or Play bar asked for while the synth was moving here. */
   private pendingPlay: (() => void) | null = null;
+  /** The player's sounds failed to load; Play tries again. */
+  private playerFailed = false;
+
+  private offHidden: (() => void) | null = null;
 
   connectedCallback(): void {
+    // Another tab chosen: pause, so the score doesn't play on under a panel no one sees.
+    this.offHidden?.();
+    this.offHidden = onPanelHidden(this, () => {
+      if (this.playing) this.api?.pause();
+    });
     if (this.view) return;
     const id = nextId("score");
     this.classList.add("score-shell");
@@ -211,6 +220,8 @@ export class ScoreElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.offHidden?.();
+    this.offHidden = null;
     this.loadSeq++;
     this.dropApi();
     this.themeWatch?.();
@@ -590,8 +601,17 @@ export class ScoreElement extends HTMLElement {
     holder = this;
     this.ownsPlayer = true;
     this.ready = false;
-    synth.attach(this.api as unknown as ApiLike, this.soundFontUrl, () => this.playerLost());
+    this.playerFailed = false;
+    synth.attach(this.api as unknown as ApiLike, this.soundFontUrl, () => this.playerLost(), () => this.playerBroke());
     this.updateStatus();
+  }
+
+  /** The player's sounds could not be loaded: say so; the next Play starts the player again. */
+  private playerBroke(): void {
+    this.playerLost();
+    this.playerFailed = true;
+    this.updateStatus();
+    announce(t("score.status.playerFailed"));
   }
 
   /** Another score took the synthesizer. */
@@ -936,6 +956,7 @@ export class ScoreElement extends HTMLElement {
       t("score.status.bar", { n: this.current + 1, total: this.bars.length || "–" }),
       `${mmss(this.position.time)} / ${mmss(this.position.endTime)}`,
       this.playing ? t("score.status.playing") : this.ready ? t("score.status.stopped")
+        : this.playerFailed ? t("score.status.playerFailed")
         : this.api && !this.ownsPlayer ? t("score.status.playerElsewhere") : t("score.status.loadingPlayer"),
       this.api && this.band === null ? t("score.status.basicSounds") : "",
       t("score.status.speed", { v: this.speedOut?.textContent ?? "100%" }),

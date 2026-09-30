@@ -29,7 +29,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from .gpulock import file_lock
+from .config import child_env
+from .gpulock import default_path, file_lock
 from .hashing import HashIndex, sha256_bytes
 
 
@@ -105,7 +106,7 @@ class AdapterRegistry:
     root: Path
     models_dir: Path
     hashes: HashIndex
-    gpu_lock: Path = Path("/tmp/brasscribe-gpu.lock")
+    gpu_lock: Path = field(default_factory=default_path)
     _fingerprints: dict[str, str] = field(default_factory=dict)
 
     def get(self, name: str) -> Adapter:
@@ -187,7 +188,7 @@ class AdapterRegistry:
             cmd = [str(self.script(name)), str(src), str(dst)]
         else:
             raise AdapterError(f"no run_adapter.py or {self.script(name)}")
-        full_env = {**os.environ, **dict(a.env), **(env or {})}
+        full_env = child_env({**dict(a.env), **(env or {})})
         t0 = time.time()
 
         def call():

@@ -36,6 +36,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private FlyoutWindow? _flyout;
     private PanelWindow? _window;
     private PairWindow? _pairWindow;
+    /// <summary>Allow windows of their own (the Pair window closed), by request id: told when a request lapses.</summary>
+    private readonly Dictionary<string, AllowRequestViewModel> _allowWindows = [];
     private SettingsWindow? _settingsWindow;
     private Windows.UI.ViewManagement.AccessibilitySettings _accessibility = null!;
     private AppearanceViewModel _appearance = null!;
@@ -51,6 +53,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private EngineLog? _log;
     private bool _cuda;
     private ModelDownloader? _downloads;
+    /// <summary>Setup and updates: one at a time.</summary>
+    private readonly SingleFlight _setup = new();
     private string _hub = "";
     private EngineLaunchConfig? _config;
     private ComputerNameStore? _nameStore;
@@ -62,7 +66,18 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     public App()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrash(e.ExceptionObject as Exception);
-        UnhandledException += (_, e) => WriteCrash(e.Exception);
+        // An exception on the UI thread would end the app, and with it the engine in the middle of a score: log it
+        // and carry on, unless the process can't.
+        UnhandledException += (_, e) =>
+        {
+            WriteCrash(e.Exception);
+            e.Handled = !IsFatal(e.Exception);
+        };
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            WriteCrash(e.Exception);
+            e.SetObserved();
+        };
         // Themes are set per window (ThemedWindows), never here: Application.RequestedTheme can't change later.
         _theme = Option("--theme");
         _demo = _args.Contains("--demo") || Option("--show") is not null;
@@ -76,6 +91,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         int i = Array.IndexOf(_args, name);
         return i >= 0 && i + 1 < _args.Length ? _args[i + 1] : null;
     }
+
+    private static bool IsFatal(Exception? e) =>
+        e is OutOfMemoryException or StackOverflowException or AccessViolationException or AppDomainUnloadedException
+            or System.Runtime.InteropServices.SEHException or BadImageFormatException or InvalidProgramException;
 
     private static void WriteCrash(Exception? e)
     {
@@ -141,7 +160,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _appearance = new AppearanceViewModel(_s, store, _accessibility.HighContrast, forced);
         _themes = new ThemedWindows(_appearance.Resolved);
         _appearance.ThemeChanged += _themes.Set;
-        _accessibility.HighContrastChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast);
+        // Some sessions (a service desktop, a CI runner) have no contrast-theme notifications: Windows says "not
+        // found". The theme read above still applies; only a change while Bandroom runs goes unnoticed there.
+        try { _accessibility.HighContrastChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast); }
+        catch (System.Runtime.InteropServices.COMException e) { Debug.WriteLine("bandroom: contrast theme changes won't be noticed: " + e.Message); }
     }
 
     // ----- Real mode -----
@@ -177,7 +199,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             _controller?.Publish();
         });
 
-        _launcher = new JobObjectLauncher();
+        _launcher = new JobObjectLauncher(_log.Write);
         _bootstrap = new Bootstrapper(_paths, bundled, pixi, _launcher, _log);
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
         IEngineApi ApiFor(int port) => new EngineApi(http, new Uri($"http://127.0.0.1:{port}/"), token);
@@ -191,11 +213,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             CheckModels = () => ModelCheck.Check(_paths.Models, _hub),
             Downloads = _downloads,
+            Log = _log.Write,
         };
         _controller.SnapshotReady += snap => _ui.TryEnqueue(() => ApplySnapshot(snap));
         _controller.DevicesChanged += list => _ui.TryEnqueue(() => _vm.ApplyDevices(list, DateTimeOffset.UtcNow));
         _controller.Requests.Arrived += r => _ui.TryEnqueue(() => OnPairRequest(r));
-        _controller.Requests.Gone += id => _ui.TryEnqueue(() => _pairWindow?.Vm.RequestGone(id));
+        _controller.Requests.Gone += id => _ui.TryEnqueue(() => OnPairRequestGone(id));
 
         FirstRunDefaults();
         _ = RunAsync();
@@ -203,18 +226,39 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     private async Task RunAsync()
     {
-        // Hashes pixi.lock and the bundled workspace: off the UI thread, before the first snapshot.
-        var bootstrap = _bootstrap!;
-        await Task.Run(bootstrap.RecoverInterruptedUpdate);
-        bool complete = await bootstrap.IsCompleteAsync(_cuda);
-        _controller!.WorkspaceStamp = await Task.Run(() => bootstrap.BundleStamp.Short);
-        // An engine that ran before, with another build of the workspace: the app was updated (§3.8).
-        bool update = !complete && bootstrap.IsUpdate;
-        _controller.SetupComplete = complete || update;
-        _ = _controller.RunAsync(_quit.Token);
-        if (update) await UpdateAsync();
-        else if (!complete) await SetupAsync();
-        else await _supervisor!.StartAsync();
+        var controller = _controller!;
+        bool polling = false;
+        try
+        {
+            // Hashes pixi.lock and the bundled workspace: off the UI thread, before the first snapshot.
+            var bootstrap = _bootstrap!;
+            await Task.Run(bootstrap.RecoverInterruptedUpdate);
+            bool complete = await bootstrap.IsCompleteAsync(_cuda);
+            controller.WorkspaceStamp = await Task.Run(() => bootstrap.BundleStamp.Short);
+            // An engine that ran before, with another build of the workspace: the app was updated (§3.8).
+            bool update = !complete && await Task.Run(() => bootstrap.IsUpdate);
+            controller.SetupComplete = complete || update;
+            _ = controller.RunAsync(_quit.Token);
+            polling = true;
+            if (update) await _setup.RunAsync(UpdateAsync);
+            else if (!complete) await _setup.RunAsync(SetupAsync);
+            else await _supervisor!.StartAsync();
+        }
+        catch (OperationCanceledException) when (_quit.IsCancellationRequested) { }
+        catch (Exception e)
+        {
+            SetupStopped(e);
+            if (!polling) _ = controller.RunAsync(_quit.Token);
+        }
+    }
+
+    /// <summary>Setup or an update stopped on something unexpected: logged, and shown as a problem with Finish setting up.</summary>
+    private void SetupStopped(Exception e)
+    {
+        _log?.Write("bandroom: setup stopped: " + e);
+        if (_controller is not { } controller) return;
+        controller.SetupFailure = e.Message;
+        controller.Publish();
     }
 
     /// <summary>
@@ -226,6 +270,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         if (_controller is not { } controller || _supervisor is not { } supervisor || _bootstrap is not { } bootstrap) return;
         controller.Updating = true;
         controller.UpdateFailure = null;
+        controller.SetupFailure = null;
         controller.SetupFraction = 0;
         controller.Publish();
         await supervisor.StopAsync();
@@ -233,8 +278,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             controller.SetupFraction = p.Fraction;
             // The engine environment is in: start it while the adapters update.
-            if (p.Environment != "default" && p.Environment != "workspace" && bootstrap.EngineReady && bootstrap.WorkspaceCurrent
-                && supervisor.State == EngineState.Stopped)
+            if (p.EngineCurrent && supervisor.State == EngineState.Stopped)
             {
                 controller.Updating = false;
                 _ = supervisor.StartAsync();
@@ -246,27 +290,27 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             await Task.Run(() => bootstrap.RunAsync(_cuda, progress, _quit.Token));
             _log?.Write("bandroom: engine workspace updated to " + controller.WorkspaceStamp);
         }
-        catch (Exception e) when (e is BootstrapException or IOException or UnauthorizedAccessException
-                                      or System.ComponentModel.Win32Exception or DirectoryNotFoundException)
-        {
-            _log?.Write("bandroom: update stopped: " + e.Message);
-            // Still the old workspace: say so. A new one whose adapters stopped resumes like setup does.
-            if (!bootstrap.WorkspaceCurrent) controller.UpdateFailure = e.Message;
-        }
         catch (OperationCanceledException) { return; }
+        catch (Exception e)
+        {
+            _log?.Write("bandroom: update stopped: " + e);
+            // Still the old workspace: say so. A new one whose adapters stopped resumes like setup does.
+            if (!await Task.Run(() => bootstrap.WorkspaceCurrent)) controller.UpdateFailure = e.Message;
+        }
         finally { controller.Updating = false; }
-        if (bootstrap.EngineReady) await supervisor.StartAsync();
+        if (await Task.Run(() => bootstrap.EngineReady)) await supervisor.StartAsync();
         controller.Publish();
     }
 
     /// <summary>First run: the engine environment first, then start it, then the adapters in the background.</summary>
     private async Task SetupAsync()
     {
+        _controller!.SetupFailure = null;
         var progress = new Progress<BootstrapProgress>(p =>
         {
             _controller!.SetupFraction = p.Fraction;
             _controller.Publish();
-            if (p.Environment != "default" && p.Environment != "workspace" && _bootstrap!.EngineReady && _supervisor!.State == EngineState.Stopped)
+            if (p.EngineCurrent && _supervisor!.State == EngineState.Stopped)
                 _ = _supervisor.StartAsync();
         });
         try
@@ -277,12 +321,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             // The environments don't hold the model weights: fetch those now.
             StartMissingDownloads();
         }
-        catch (Exception e) when (e is BootstrapException or IOException or System.ComponentModel.Win32Exception or DirectoryNotFoundException)
-        {
-            _log?.Write("bandroom: setup stopped: " + e.Message);
-            if (_bootstrap!.EngineReady) await _supervisor!.StartAsync();
-        }
         catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            SetupStopped(e);
+            if (await Task.Run(() => _bootstrap!.EngineReady)) await _supervisor!.StartAsync();
+        }
         _controller!.Publish();
     }
 
@@ -452,9 +496,9 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     /// <summary>A phone chose this computer: in the Pair window if it is open, else in its own Allow window.</summary>
     private void OnPairRequest(PairRequestInfo r)
     {
-        Task<bool> Decide(string id, bool ok) => _demoEngine is not null
-            ? _demoEngine.DecidePairRequestAsync(id, ok).ContinueWith(t => true, TaskScheduler.Default)
-            : CurrentApi is { } api && _controller is not null ? _controller.Requests.DecideAsync(api, id, ok) : Task.FromResult(false);
+        Task<PairDecision> Decide(string id, bool ok) => _demoEngine is not null
+            ? _demoEngine.DecidePairRequestAsync(id, ok).ContinueWith(t => PairDecision.Done, TaskScheduler.Default)
+            : CurrentApi is { } api && _controller is not null ? _controller.Requests.DecideAsync(api, id, ok) : Task.FromResult(PairDecision.Failed);
 
         if (_pairWindow is not null)
         {
@@ -462,11 +506,21 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             _pairWindow.Activate();
             return;
         }
+        if (_allowWindows.ContainsKey(r.RequestId)) return;
         var pair = new PairViewModel(_s, () => CurrentApi, this);
         var vm = pair.AddRequest(r, Decide);
         var w = new AllowWindow(vm, vm.Title, _themes);
+        _allowWindows[r.RequestId] = vm;
+        w.Closed += (_, _) => _allowWindows.Remove(r.RequestId);
         w.Activate();
         Announce(_s.Format("Notify_PairRequest", r.Name));
+    }
+
+    /// <summary>A request lapsed or was answered elsewhere: whichever window shows it says so.</summary>
+    private void OnPairRequestGone(string id)
+    {
+        _pairWindow?.Vm.RequestGone(id);
+        if (_allowWindows.TryGetValue(id, out var vm) && vm.IsActive) vm.MarkExpired();
     }
 
     // ----- IBandroomActions -----
@@ -495,18 +549,32 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
     }
 
-    /// <summary>The environments first if they aren't all installed; else only the model downloads still missing.</summary>
+    /// <summary>
+    /// The environments first if they aren't all installed; else only the model downloads still missing. While setup
+    /// or an update runs, asking again joins it.
+    /// </summary>
     public void FinishSetup()
     {
-        if (_bootstrap is null || _controller is null) return;
-        _ = FinishSetupAsync(_bootstrap);
+        if (_bootstrap is not { } bootstrap || _controller is null) return;
+        _ = _setup.RunAsync(() => FinishSetupAsync(bootstrap));
     }
 
     private async Task FinishSetupAsync(Bootstrapper bootstrap)
     {
-        if (await bootstrap.IsCompleteAsync(_cuda)) StartMissingDownloads();
-        else if (bootstrap.IsUpdate) await UpdateAsync();
-        else await SetupAsync();
+        try
+        {
+            if (_controller is { } controller) controller.SetupFailure = null;
+            if (await bootstrap.IsCompleteAsync(_cuda))
+            {
+                // Setup is done but the start may have stopped short: start it (nothing happens if it runs).
+                await _supervisor!.StartAsync();
+                StartMissingDownloads();
+                _controller?.Publish();
+            }
+            else if (await Task.Run(() => bootstrap.IsUpdate)) await UpdateAsync();
+            else await SetupAsync();
+        }
+        catch (Exception e) when (e is not OperationCanceledException) { SetupStopped(e); }
     }
 
     /// <summary>
@@ -526,6 +594,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     public void Fix(ProblemKind problem)
     {
+        // Setup stopped: Finish setting up runs it again, whatever a download says meanwhile.
+        if (problem == ProblemKind.MissingDownload && _controller?.SetupFailure is not null) { FinishSetup(); return; }
         string? uri = problem switch
         {
             ProblemKind.LowDisk => "ms-settings:storagesense",
@@ -543,12 +613,18 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         else if (problem is ProblemKind.MissingDownload or ProblemKind.UpdateFailed) FinishSetup();
     }
 
-    public async Task RemoveDeviceAsync(string deviceId)
+    public async Task<bool> RemoveDeviceAsync(string deviceId)
     {
-        if (CurrentApi is { } api)
+        if (CurrentApi is not { } api) return false;
+        try
         {
-            try { await api.RemoveDeviceAsync(deviceId); }
-            catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException) { _log?.Write(e.Message); }
+            await api.RemoveDeviceAsync(deviceId);
+            return true;
+        }
+        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            _log?.Write("bandroom: removing a device: " + e.Message);
+            return false;
         }
     }
 

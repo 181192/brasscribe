@@ -308,6 +308,7 @@
     <string name="sound_baseline">Standard</string>
     <string name="sound_realistic">Realistic</string>
     <string name="sound_realistic_unavailable">Not in this version of the app.</string>
+    <string name="sound_realistic_loading">Loading the instruments…</string>
     <string name="sound_realistic_test_tone">No realistic instruments installed yet: you hear the band sounds.</string>
     <plurals name="sound_pack_parts">
         <item quantity="one">%d part plays a real instrument.</item>
@@ -553,6 +554,8 @@
     <string name="pair_scan_unavailable">This phone can\'t scan codes here. Type the code from the computer instead.</string>
     <string name="pair_link_invalid">That code isn\'t from Brasscribe on a computer.</string>
     <string name="pair_link_title">Connect to %1$s?</string>
+    <string name="pair_link_address">Address on your network: %1$s</string>
+    <string name="pair_link_address_by_name">Brasscribe looks for it on your network by name.</string>
     <string name="pair_link_unreachable">Couldn\'t find %1$s. Check that the phone and the computer are on the same Wi-Fi.</string>
     <string name="pair_needs_update">Update Brasscribe Play to connect to this computer.</string>
     <string name="pair_code_needed">Type the code the computer shows, or ask on the computer instead.</string>

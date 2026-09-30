@@ -55,7 +55,7 @@ export class PianoRoll extends HTMLElement {
   }
 
   private get duration(): number {
-    return Math.max(1, ...this.layers.flatMap((l) => l.notes.map((n) => n.end)));
+    return Math.max(1, maxOf(this.layers, (l) => maxOf(l.notes, (n) => n.end)));
   }
 
   private render(): void {

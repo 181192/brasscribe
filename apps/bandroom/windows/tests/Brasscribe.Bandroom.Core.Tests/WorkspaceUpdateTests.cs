@@ -231,6 +231,43 @@ public sealed class WorkspaceUpdateTests : IDisposable
     }
 
     [Fact]
+    public async Task A_journal_that_cannot_be_read_keeps_the_old_copy()
+    {
+        await Installed(Bundle("v1", "old studio"));
+        var v2 = Bundle("v2", "fixed studio");
+        var swap = WorkspaceSwap.Install(v2, _paths.Workspace, WorkspaceStamp.Compute(v2)); // never committed
+        File.WriteAllText(swap.Journal, "[{\"Name\":\"engi"); // damaged
+        var log = new List<string>();
+
+        WorkspaceSwap.Recover(_paths.Workspace, log.Add);
+        // Nothing guessed at: the replaced files stay where they were moved to, so they can still be put back.
+        Assert.Equal("old studio", Read(Path.Combine(swap.Backup, "engine", "src", "brasscribe_engine", "static", "assets", "studio.js")));
+        Assert.True(File.Exists(swap.Journal));
+        Assert.Contains(log, l => l.Contains("can't be read", StringComparison.Ordinal));
+
+        // A later update still goes through, and leaves that folder be.
+        var v3 = Bundle("v3", "newer studio");
+        WorkspaceSwap.Install(v3, _paths.Workspace, WorkspaceStamp.Compute(v3)).Commit();
+        Assert.Equal("newer studio", Read(Studio));
+        Assert.True(Directory.Exists(swap.Backup));
+        UserDataIsIntact();
+    }
+
+    [Fact]
+    public async Task A_journal_cut_short_before_anything_moved_is_cleared()
+    {
+        await Installed(Bundle("v1", "old studio"));
+        var work = Path.Combine(_paths.Workspace, WorkspaceSwap.WorkDir, "cut");
+        Write(Path.Combine(work, "new", "engine", "x.py"), "# staged\n");
+        Directory.CreateDirectory(Path.Combine(work, "old"));
+        Write(Path.Combine(work, "journal.json"), "[{\"Na");
+
+        WorkspaceSwap.Recover(_paths.Workspace);
+        Assert.False(Directory.Exists(Path.Combine(_paths.Workspace, WorkspaceSwap.WorkDir)));
+        Assert.Equal("old studio", Read(Studio));
+    }
+
+    [Fact]
     public async Task Old_files_left_after_a_commit_never_come_back()
     {
         // The journal went (the commit) but files the old engine still held couldn't be removed.

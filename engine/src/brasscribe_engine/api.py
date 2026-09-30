@@ -42,7 +42,9 @@ from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdenti
 from . import schemas as m
 from .adapters import host_device
 from .config import Settings
+from .guard import BodyLimit, RequestGuard
 from .jobs import TERMINAL, Job, JobManager
+from .names import is_audio, valid_id, valid_relpath
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 # Studio's own files keep their names across releases, so the browser revalidates them on every load
@@ -122,9 +124,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     app.state.pair_requests = PairRequests()
     app.state.hosts = []  # ip:port the engine is reachable on; set by `brasscribe serve`
 
-    def is_trusted(request: Request) -> bool:
-        host = request.client.host if request.client else ""
+    def trusted_address(host: str) -> bool:
         return app.state.trust_loopback and host in LOOPBACK | {"testclient"}
+
+    def is_trusted(request: Request) -> bool:
+        return trusted_address(request.client.host if request.client else "")
+
+    app.add_middleware(BodyLimit, max_bytes=settings.max_upload_bytes)
+    app.add_middleware(RequestGuard, trusted=trusted_address, allowed_hosts=settings.allowed_hosts)
 
     def bearer(authorization: str | None) -> str | None:
         return authorization[7:].strip() if authorization and authorization.lower().startswith("bearer ") else None
@@ -200,6 +207,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     def output_file(job_id: str, name: str) -> FileResponse:
         job = job_or_404(job_id)
+        if not valid_relpath(name):
+            raise HTTPException(404, f"{name} not available for job {job_id}")
         root = jobs.run_dir(job.id) if name == "manifest.json" else jobs.run_dir(job.id) / "outputs"
         p = (root / name).resolve()
         if not inspection.inside(root, p) or not p.is_file():
@@ -217,11 +226,12 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.post("/v1/pair", response_model=m.PairResponse, operation_id="pairDevice", tags=["session"],
               responses={403: {"description": "wrong pairing code, or pairing is closed"},
                          429: {"description": "too many wrong codes; retry after Retry-After seconds"}})
-    def pair(body: m.PairRequest, authorization: str | None = Header(None)) -> m.PairResponse:
-        result = app.state.pairing.check(body.code)
+    def pair(body: m.PairRequest, request: Request, authorization: str | None = Header(None)) -> m.PairResponse:
+        client = request.client.host if request.client else ""
+        result = app.state.pairing.check(body.code, client)
         if result == "locked":
             raise HTTPException(429, "too many wrong codes; wait and try again",
-                                {"Retry-After": str(int(app.state.pairing.retry_after()) + 1)})
+                                {"Retry-After": str(int(app.state.pairing.retry_after(client)) + 1)})
         if result == "closed":
             raise HTTPException(403, "pairing is closed: open it on the computer")
         if result != "ok":
@@ -235,10 +245,12 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.post("/v1/pair/requests", response_model=m.PairRequestInfo, status_code=202, operation_id="requestPairing",
               tags=["session"], responses={429: {"description": "too many requests are waiting"}})
-    def request_pairing(body: m.PairRequestCreate) -> m.PairRequestInfo:
+    def request_pairing(body: m.PairRequestCreate, request: Request) -> m.PairRequestInfo:
         """Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;
-        poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes)."""
-        r = app.state.pair_requests.create(body.device_name, body.platform)
+        poll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).
+        A new request from the same address replaces the one it has waiting."""
+        r = app.state.pair_requests.create(body.device_name, body.platform,
+                                           request.client.host if request.client else "")
         if r is None:
             raise HTTPException(429, "too many pairing requests are waiting", {"Retry-After": "30"})
         return m.PairRequestInfo(**r.public())
@@ -374,40 +386,60 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                 f.write(chunk)
         digest = h.hexdigest()
         name = Path(file.filename or "audio.wav").name
-        suffix = Path(name).suffix.lower() or ".wav"
+        # The client's name is only shown; the stored file keeps an audio suffix, never one like .json.
+        suffix = Path(name).suffix.lower() if is_audio(name) else ".wav"
         audio_id = digest[:16]
         dst = up / f"{audio_id}{suffix}"
         if dst.exists():
             tmp.unlink()
         else:
             shutil.move(tmp, dst)
-        (up / f"{audio_id}.json").write_text(json.dumps({"audio_id": audio_id, "sha256": digest, "filename": name,
+        (up / f"{audio_id}.meta.json").write_text(json.dumps({"audio_id": audio_id, "sha256": digest, "filename": name,
                                                          "bytes": size, "path": dst.name}))
         return m.AudioRef(audio_id=audio_id, sha256=digest, filename=name, bytes=size)
 
     def audio_path(audio_id: str) -> tuple[Path, dict]:
-        meta = settings.uploads_dir / f"{audio_id}.json"
-        if "/" in audio_id or ".." in audio_id or not meta.exists():
-            raise HTTPException(404, f"no audio {audio_id}")
-        d = json.loads(meta.read_text())
-        return settings.uploads_dir / d["path"], d
+        """An upload and its metadata: <id>.meta.json, or <id>.json as engines before it wrote it."""
+        if valid_id(audio_id):
+            for meta in (settings.uploads_dir / f"{audio_id}.meta.json", settings.uploads_dir / f"{audio_id}.json"):
+                try:
+                    d = json.loads(meta.read_text())
+                    stored = d["path"]
+                except (OSError, ValueError, KeyError, TypeError):
+                    continue
+                if isinstance(stored, str) and valid_id(stored) and is_audio(stored):
+                    return settings.uploads_dir / stored, d
+        raise HTTPException(404, f"no audio {audio_id}")
 
-    def job_input(body: m.JobCreate) -> tuple[Path, str]:
+    def input_allowed(p: Path, anywhere: bool = False) -> bool:
+        """Jobs read audio (or video) from the engine's own audio folders: uploads, captures and eval sets.
+        `anywhere`: an existing run's input may lie elsewhere (`brasscribe run <file>`), for the owner."""
+        roots = (settings.uploads_dir, settings.data_dir / "captures", settings.datasets_dir)
+        return is_audio(p) and (anywhere or any(inspection.inside(r, p) for r in roots)) and p.is_file()
+
+    def is_device(request: Request) -> bool:
+        return getattr(request.state, "device", None) is not None
+
+    def job_input(body: m.JobCreate, request: Request) -> tuple[Path, str]:
         given = [x for x in (body.audio_id, body.source_id, body.path) if x]
         if len(given) != 1:
             raise HTTPException(422, "give exactly one of audio_id, source_id, path")
         if body.audio_id:
             path, meta = audio_path(body.audio_id)
+            if not input_allowed(path):
+                raise HTTPException(404, f"no audio {body.audio_id}")
             return path, meta["filename"]
         if body.source_id:
             p = inspection.resolve_source(settings, body.source_id)
-            if not p:
+            if not p or not input_allowed(p):
                 raise HTTPException(404, f"no source {body.source_id}")
             return p, p.parent.name + ".wav" if p.name == "mix.wav" else p.name
-        p = Path(body.path)
-        p = p if p.is_absolute() else settings.data_dir / p
-        if not inspection.inside(settings.data_dir, p) or not p.is_file():
-            raise HTTPException(404, "path must be an existing file inside the data directory")
+        if is_device(request):
+            raise HTTPException(403, "paired devices start jobs from an upload (audio_id) or a source (source_id)")
+        p = settings.data_dir / body.path if valid_relpath(body.path) else None
+        if p is None or not input_allowed(p):
+            raise HTTPException(404, "path must be an audio file under uploads/, captures/ or eval/ in the data "
+                                     "directory, relative to it")
         return p, p.name
 
     @app.post("/v1/jobs", response_model=m.Job, status_code=202, operation_id="createJob", tags=["jobs"],
@@ -415,7 +447,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def create_job(body: m.JobCreate, request: Request) -> m.Job:
         if body.profile not in profiles.PROFILES:
             raise HTTPException(422, f"unknown profile {body.profile}; choose from {', '.join(profiles.PROFILES)}")
-        path, filename = job_input(body)
+        path, filename = job_input(body, request)
         title = body.title or profiles.default_title(body.profile, Path(filename))
         params = {"audio": body.render_audio, "lineup": body.lineup, "difficulty": body.difficulty,
                   "key": body.key, "transpose": body.transpose, "seat": body.seat, "reads": body.reads, "lead": body.lead}
@@ -433,12 +465,15 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.post("/v1/jobs/{job_id}/rerun", response_model=m.Job, status_code=202, operation_id="rerunJob", tags=["jobs"],
               dependencies=[Depends(auth)])
-    def rerun_job(job_id: str, body: m.RerunRequest | None = None) -> m.Job:
+    def rerun_job(job_id: str, request: Request, body: m.RerunRequest | None = None) -> m.Job:
         """Run a job again from its manifest (same input, profile, title and parameters)."""
         old = job_or_404(job_id)
         body = body or m.RerunRequest()
         if not old.audio_path.exists():
             raise HTTPException(409, f"input {old.audio_path} no longer exists")
+        if not input_allowed(old.audio_path, anywhere=not is_device(request)):
+            raise HTTPException(409, "the input is not an audio file in the engine's audio folders "
+                                     "(uploads, captures, eval)")
         job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
                           allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
                           device_name=old.device_name)
@@ -447,7 +482,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.post("/v1/jobs/upload", response_model=m.Job, status_code=202, operation_id="createJobFromUpload",
               tags=["jobs"], dependencies=[Depends(auth)])
     def create_job_from_upload(request: Request, file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
-                               title: str | None = Form(None), render_audio: bool = Form(True),
+                               title: str | None = Form(None, max_length=200), render_audio: bool = Form(True),
                                lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
                                key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11),
                                seat: m.Seat | None = Form(None), reads: m.Reads | None = Form(None),
@@ -677,6 +712,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                          url=url, sha256=sha256)
 
     def safe_file(root: Path, rel: str) -> Path:
+        if not valid_relpath(rel):
+            raise HTTPException(404, f"{rel} not found")
         p = (root / rel).resolve()
         if not inspection.inside(root, p) or p == root.resolve() or not p.is_file():
             raise HTTPException(404, f"{rel} not found")
@@ -684,11 +721,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/jobs/{job_id}/input", operation_id="getJobInput", tags=["inspection"], dependencies=[Depends(auth)],
              response_class=FileResponse, responses={200: {"content": {"audio/wav": {}}}})
-    def get_input(job_id: str):
+    def get_input(job_id: str, request: Request):
         """The job's original input audio (for A/B listening)."""
         job = job_or_404(job_id)
-        if not job.audio_path.is_file():
-            raise HTTPException(404, "input audio no longer exists")
+        if not input_allowed(job.audio_path, anywhere=not is_device(request)):
+            raise HTTPException(404, "input audio no longer exists, or is not in the engine's audio folders")
         return FileResponse(job.audio_path, media_type=media_type(job.audio_path.name), filename=job.audio_path.name)
 
     @app.get("/v1/jobs/{job_id}/stages", response_model=list[m.StageArtifacts], operation_id="listJobStages",
@@ -725,7 +762,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              responses={200: {"content": {"application/octet-stream": {}}}})
     def get_stage_file(job_id: str, stage: str, name: str):
         job = job_or_404(job_id)
-        if stage not in job.stages:
+        if not valid_id(stage) or stage not in job.stages:
             raise HTTPException(404, f"no stage {stage} in job {job_id}")
         p = safe_file(jobs.run_dir(job.id) / "stages" / stage, name)
         return FileResponse(p, media_type=media_type(name), filename=p.name)
@@ -736,7 +773,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         """Reference outputs under <data>/golden (read only)."""
         root = settings.golden_dir
         out = []
-        for d in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+        for d in sorted(p for p in root.iterdir() if valid_id(p.name) and p.is_dir()) if root.is_dir() else []:
             out.append(m.Reference(name=d.name, files=[
                 file_ref(f, f.name, f"/v1/references/{d.name}/files/{f.name}") for f in sorted(d.iterdir()) if f.is_file()]))
         return out
@@ -745,7 +782,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              dependencies=[Depends(auth)], response_class=FileResponse,
              responses={200: {"content": {"application/octet-stream": {}}}})
     def get_reference_file(name: str, file: str):
-        if "/" in name or name in ("", ".", "..") or not (settings.golden_dir / name).is_dir():
+        if not valid_id(name) or not (settings.golden_dir / name).is_dir():
             raise HTTPException(404, f"no reference {name}")
         p = safe_file(settings.golden_dir / name, file)
         return FileResponse(p, media_type=media_type(file), filename=p.name)
@@ -760,9 +797,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         this = jobs.run_dir(job_or_404(job_id).id) / "outputs"
         if bool(reference) == bool(job):
             raise HTTPException(422, "give exactly one of reference, job")
-        other = settings.golden_dir / reference if reference else jobs.run_dir(job_or_404(job).id) / "outputs"
-        if reference and ("/" in reference or reference in (".", "..") or not other.is_dir()):
+        if reference and not (valid_id(reference) and (settings.golden_dir / reference).is_dir()):
             raise HTTPException(404, f"no reference {reference}")
+        other = settings.golden_dir / reference if reference else jobs.run_dir(job_or_404(job).id) / "outputs"
         for d in (this, other):
             if not (d / "composition.json").exists() or not (d / "brass-band.musicxml").exists():
                 raise HTTPException(404, f"no score output in {d.name}")

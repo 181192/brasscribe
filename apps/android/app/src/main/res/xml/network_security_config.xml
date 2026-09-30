@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The companion engine runs on the user's own computer on the local network and serves plain HTTP
-  (pairing code plus bearer token). Cleartext is allowed for that; everything else stays HTTPS-only.
-  Android's domain matching cannot express "any private address", so cleartext is on in the base
-  config and the app itself only ever connects to the address the user types in.
+  (pairing code plus bearer token). Android's domain matching cannot express "any private address",
+  so cleartext is permitted for every host in the base config. The app keeps to the local network
+  itself: it connects only to the address the user types in, one a pairing link names on the local
+  network, or one found there by mDNS.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">

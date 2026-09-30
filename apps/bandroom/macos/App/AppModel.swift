@@ -89,6 +89,7 @@ final class AppModel {
         do {
             token = try AdminToken.loadOrCreate(at: paths.adminToken)
         } catch {
+            logger.write("admin token: \(error); using a new one for this session only")
             token = AdminToken.generate()
         }
         let source = EngineConfiguration.resolveSource(environment: env, defaults: .standard, paths: paths, bundle: .main)
@@ -128,7 +129,10 @@ final class AppModel {
         downloader.log = { log.write($0) }
         downloader.onFinished = { [weak self] in self?.downloadsFinished() }
         supervisor.onHealthy = { [weak self] client in self?.engineAnswered(client) }
-        supervisor.onFailure = { [weak self] _ in self?.notifyFailure() }
+        supervisor.onFailure = { [weak self] why in self?.notifyFailure(why) }
+        supervisor.onPhaseChange = { [weak self] phase in
+            if phase != .running { self?.engineLeftRunning() }
+        }
         monitor.onNewRequest = { [weak self] r in self?.pairRequestArrived(r) }
         monitor.onJobsChanged = { [weak self] n in self?.jobsChanged(n) }
         savedKey.onChange = { [weak self] _ in self?.huggingFaceKeyChanged() }
@@ -193,6 +197,8 @@ final class AppModel {
 
     func quit() {
         monitor.stop()
+        bootstrapper.cancel()
+        updater.cancel()
         supervisor.shutdown()
         releaseSleep()
     }
@@ -270,6 +276,13 @@ final class AppModel {
         }
     }
 
+    /// Stopped, restarting or gone: its client and any score it was making go with it, and the Mac may sleep again.
+    private func engineLeftRunning() {
+        monitor.client = nil
+        pairing.client = nil
+        releaseSleep()
+    }
+
     private func startSampling() {
         sampleTask?.cancel()
         let sampler = sampler, paths = paths
@@ -285,19 +298,17 @@ final class AppModel {
         }
     }
 
+    /// The folder the engine reads its models from (`EngineSource.modelsFolder`).
     nonisolated static func modelsDir(_ paths: BandroomPaths) -> URL {
-        let env = ProcessInfo.processInfo.environment
-        if let checkout = env["BRASSCRIBE_CHECKOUT"] ?? UserDefaults.standard.string(forKey: "engineCheckout"), !checkout.isEmpty,
-           !FileManager.default.fileExists(atPath: paths.models.path) {
-            return URL(fileURLWithPath: (checkout as NSString).expandingTildeInPath).appending(path: "models")
-        }
-        return paths.models
+        EngineConfiguration.resolveSource(environment: ProcessInfo.processInfo.environment, defaults: .standard, paths: paths,
+                                          bundle: .main).modelsFolder(paths: paths)
     }
 
     // MARK: state
 
     var problems: [Problem] {
         var list: [Problem] = []
+        if case .running = phase, monitor.isUnresponsive { list.append(.notResponding) }
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
         if updateFailure != nil, !updater.isUpdating { list.append(.updateFailed) }
         if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }
@@ -397,7 +408,7 @@ final class AppModel {
         if let port = supervisor.port { lines.append("Port: \(port)") }
         lines.append("Addresses: \(addresses.joined(separator: ", "))")
         if let h = monitor.health { lines.append("Runs on: \(h.device)") }
-        if let last = supervisor.lastExitStatus { lines.append("Last exit status: \(last)") }
+        if let last = supervisor.lastExitStatus { lines.append("Last exit: \(ExitStatus.describe(last))") }
         lines.append("Data: \(paths.data.path)")
         lines.append("Logs: \(paths.logs.path)")
         if !models.missing.isEmpty {
@@ -432,7 +443,7 @@ final class AppModel {
 
     /// The downloads folder in GB, when there is one to keep or delete.
     func downloadsGB() -> Double? {
-        Uninstaller(paths: paths).downloadsSize().map { Double($0) / 1_000_000_000 }
+        Uninstaller(paths: paths, hub: downloader.hub).downloadsSize().map { Double($0) / 1_000_000_000 }
     }
 
     /// Stops the engine, unregisters the login item, deletes the data folder (all of it, or all but
@@ -442,11 +453,13 @@ final class AppModel {
         logger.write("removing Brasscribe from this Mac (delete downloads: \(deleteDownloads))")
         if demo { NSApp.terminate(nil); return }
         monitor.stop()
+        bootstrapper.cancel()
+        updater.cancel()
         supervisor.shutdown()
         releaseSleep()
         try? SMAppService.mainApp.unregister()
         do {
-            try Uninstaller(paths: paths).remove(keepDownloads: !deleteDownloads)
+            try Uninstaller(paths: paths, hub: downloader.hub).remove(keepDownloads: !deleteDownloads)
         } catch {
             logger.write("remove: \(error)")
         }
@@ -577,9 +590,13 @@ final class AppModel {
         Notifier.pairRequest(r)
     }
 
-    private func notifyFailure() {
-        Notifier.post(id: "engine-error", title: String(localized: "Brasscribe stopped unexpectedly"),
-                      body: String(localized: "It tried to start three times. Recordings on your phones are safe."))
+    private func notifyFailure(_ why: LaunchFailure?) {
+        Notifier.post(id: "engine-error", title: Strings.failureTitle(why), body: Strings.failureWhy(why))
+    }
+
+    /// Why the engine was given up on, while it is.
+    var failure: LaunchFailure? {
+        if case .failed(let why) = phase { why } else { nil }
     }
 
     // MARK: jobs
