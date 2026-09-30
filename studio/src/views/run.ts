@@ -663,7 +663,7 @@ function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
     h("dl", { class: "kv" },
       kv(t("manifest.kv.run"), m.run_id, true), kv(t("manifest.kv.profile"), `${m.profile} (${m.pipeline ?? "?"})`), kv(t("manifest.kv.status"), m.status),
       kv(t("manifest.kv.input"), m.input ? `${fmt.path(m.input.path)} (${fmt.bytes(m.input.bytes)})` : undefined),
-      kv(t("manifest.kv.git"), m.git ? `${m.git.sha.slice(0, 12)}${m.git.branch ? ` on ${m.git.branch}` : ""}${m.git.dirty ? ", dirty" : ""}` : undefined),
+      kv(t("manifest.kv.git"), m.git ? `${m.git.branch ? t("manifest.gitOn", { sha: m.git.sha.slice(0, 12), branch: m.git.branch }) : m.git.sha.slice(0, 12)}${m.git.dirty ? t("run.dirty") : ""}` : undefined),
       kv(t("manifest.kv.time"), fmt.seconds(m.seconds))),
     more(t("manifest.moreDetails"), h("dl", { class: "kv" },
       kv(t("manifest.kv.inputSha"), m.input?.sha256, true),

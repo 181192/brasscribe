@@ -27,7 +27,7 @@ function isComposition(x: unknown): x is Composition {
 }
 
 export function comparePair(p: Pair): { status: "pass" | "fail" | "missing"; detail: string } {
-  if (!p.py || !p.rust) return { status: "missing", detail: p.py ? "no Rust output" : "no Python reference" };
+  if (!p.py || !p.rust) return { status: "missing", detail: p.py ? t("conf.detail.noRust") : t("conf.detail.noPython") };
   const strip = (o: ConformanceReport) => {
     const { _file: _, ...rest } = o;
     return rest;
@@ -36,10 +36,13 @@ export function comparePair(p: Pair): { status: "pass" | "fail" | "missing"; det
     const d = diffCompositions(p.py, p.rust, 0);
     const changed = d.totals.added + d.totals.removed + d.totals.moved + d.totals.octave;
     const same = JSON.stringify(strip(p.py)) === JSON.stringify(strip(p.rust));
-    return { status: same ? "pass" : "fail", detail: same ? `${d.totals.same} notes identical` : `${changed} notes differ (${d.totals.added} added, ${d.totals.removed} removed, ${d.totals.moved} moved, ${d.totals.octave} octave)${changed ? "" : "; other fields differ"}` };
+    const detail = same ? t("conf.detail.notesSame", { n: d.totals.same })
+      : changed ? t("conf.detail.notesDiffer", { n: changed, added: d.totals.added, removed: d.totals.removed, moved: d.totals.moved, octave: d.totals.octave })
+      : t("conf.detail.fieldsDiffer");
+    return { status: same ? "pass" : "fail", detail };
   }
   const same = JSON.stringify(strip(p.py)) === JSON.stringify(strip(p.rust));
-  return { status: same ? "pass" : "fail", detail: same ? "identical" : "JSON differs" };
+  return { status: same ? "pass" : "fail", detail: same ? t("conf.detail.identical") : t("conf.detail.jsonDiffers") };
 }
 
 export function conformanceView(root: HTMLElement): () => void {
