@@ -103,6 +103,7 @@ Brasscribe talks like a **good section leader**: calm, specific and on your side
 | Export scope | Solo Cornet (you) / Every part / Conductor's score | Solokornett (deg) / Alle stemmer / Dirigentpartitur | My part, All parts, Full score |
 | Choose output | How should the score be? · Which band? · How hard? (Easier / As played) · Key | Hvordan skal partituret bli? · Hvilket band? · Hvor vanskelig? (Enklere / Som spilt) · Toneart | lineup, difficulty, faithful |
 | Where it runs | Made on this Mac. Nothing goes online. | Lages på denne Macen. Ingenting sendes til nettet. | Transcribed on this Mac |
+| A band score made on the device, without the computer | a quick draft · Make the full score (on the computer, from the same recording) | et raskt utkast · Lag hele partituret | preview, lite, beta, low quality |
 | Streaming blocked | Streaming apps usually block recording. | Strømmeapper stopper som regel opptak. | DRM, protected stream |
 | Technical details | Details for the band's tech person | Detaljer for den tekniske i bandet | commands in body text |
 

@@ -75,11 +75,47 @@ flowchart LR
   P --> X
   H -->|open a score| S
   S -. talking score .-> TS[Talking score<br/>text view]
+  S -->|a draft · Make the full score| T
 ```
 
 **Focus rules**
 - When transcription finishes, focus moves to the "Check N notes" heading and the change is announced.
 - When a sheet closes, focus goes back to the button that opened it.
+
+### A band draft on the device
+
+A brass band recording can be written down on the phone, tablet or Mac without the computer: a **draft**. It is quicker and rougher than the computer's score (the tune and the bass are right less often), so it is always called a draft, and the computer can make the full score from the same recording later. Play on iPhone, iPad, Mac and Android; not Windows yet.
+
+**Where it runs.** Only for **Brass band** in What is this?. The other band choices still need the computer.
+- The computer counts as there when one is paired and its connection is **Connected** or **Reconnecting**. Then Brass band goes to the computer, as before.
+- With no computer paired, or one that is **Offline** or needs pairing again, Brass band is made on the device as a draft.
+- The player can choose the draft anyway: Android's **Change** sheet in What is this? has it as a card; on Apple, **Change** opens Settings, which has the switch **Make band drafts on this device** («Lag bandutkast på denne enheten»).
+- The where-it-runs row says it is a draft before anything starts. It is not a second primary: **Continue** stays the one primary.
+
+**Words** (the voice rules in [`brand/brand.md`](brand/brand.md) apply; say *draft* / *utkast*, never preview, lite or beta):
+
+| Where | English | Norsk |
+|---|---|---|
+| What is this?, where-it-runs row (Apple, one line) | A quick draft on this device. Your computer makes a better score. | Et raskt utkast på denne enheten. Datamaskinen lager et bedre partitur. |
+| What is this?, where-it-runs row (Android title · subtitle) | On this phone: a quick draft · Your computer makes a better score. | På telefonen: et raskt utkast · Datamaskinen lager et bedre partitur. |
+| Change sheet, the device card for a band (Android) | A quick draft. Nothing leaves the phone. | Et raskt utkast. Ingenting forlater telefonen. |
+| Change sheet, a choice the device can't make (pop, soloist) | Only for one instrument or a brass band. | Bare for ett instrument eller et brassband. |
+| Transcribing, where it runs | On this phone, as a draft | På telefonen, som utkast |
+| Transcribing, iPhone and iPad only | Keep Brasscribe open until the draft is ready. | Hold Brasscribe åpen til utkastet er klart. |
+| Score, the draft notice (top of the score, an info note) | A quick draft made on this device. Your computer makes a better score, and results on the device can differ slightly from the computer's. | Et raskt utkast laget på denne enheten. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen. |
+| Score, the draft notice's action (secondary, only when the computer is there) | Make the full score | Lag hele partituret |
+| Score, the draft notice without the computer | Open Brasscribe on your computer to make the full score from the same recording. | Åpne Brasscribe på datamaskinen for å lage hele partituret fra det samme opptaket. |
+| Your scores, the row's subtitle | Brass band · Draft · 32 bars | Brassband · Utkast · 32 takter |
+| Too long for the device (error title · body) | Too long for a draft on this device · Try a shorter recording, or make the score on your computer. | For langt for et utkast på denne enheten · Prøv et kortere opptak, eller lag partituret på datamaskinen. |
+
+**Draft now, better later.**
+- A draft keeps its recording, so **Make the full score** sends that recording to the computer as a Brass band score. It runs like any other score (Transcribing, then Check the notes) and becomes a new score in Your scores; the draft stays until the player deletes it.
+- Notes checked or changed in the draft do not carry over: the computer writes the notes afresh.
+- **Make the full score** is a secondary (tonal) button in the notice, never the primary: on the score, the round Play button is the primary.
+
+**Memory and time.**
+- The device refuses a recording longer than its free memory can hold, before anything is written down (the same rule as a solo take), with the too-long words above.
+- It runs in the foreground on iPhone and iPad (the models need the graphics chip, which the system stops in the background). On Android it runs in a foreground service with a notification, so it keeps going when the player leaves the app. Cancel works at every step.
 
 ## 4. Navigation per platform
 
