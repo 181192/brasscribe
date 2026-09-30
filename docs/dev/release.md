@@ -67,6 +67,7 @@ workspace stamp records the commit it was built from:
 
 - `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName`
 - `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
+- `apps/windows/Directory.Build.props` and `apps/bandroom/windows/Directory.Build.props`: `<Version>`
 - Leave the core's Cargo version alone: the fixtures embed `brasscribe-core 0.1.0` in their MusicXML.
 
 Commit as `chore(release): X.Y.Z` and merge it through a pull request (`scripts/release.sh X.Y.Z` does this part).

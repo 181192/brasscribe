@@ -61,8 +61,9 @@ git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "$tag already exist
 git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1 && die "$branch already exists on origin"
 
 # The release commit carries the author's and committer's email into the public history: both must
-# be the one the previous release was made with, so a clone with another default identity (or a
-# GIT_AUTHOR_EMAIL in the environment) can't slip in.
+# be the email the previous release was authored with, so a clone with another default identity (or
+# a GIT_AUTHOR_EMAIL in the environment) can't slip in. The previous release's author is the
+# reference, not its committer: GitHub becomes the committer when it merges the release pull request.
 previous=$(git log -1 --format=%ae --grep='^chore(release): ' || true)
 for who in GIT_AUTHOR_IDENT GIT_COMMITTER_IDENT; do
   email=$(git var "$who" | sed -E 's/.*<([^>]*)>.*/\1/')
