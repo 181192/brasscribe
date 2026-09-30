@@ -17,6 +17,18 @@ public enum EngineSource: Equatable, Sendable {
 
     public var manifest: URL { workspace.appending(path: "pixi.toml") }
 
+    /// The models folder: the one Bandroom checks and downloads into, and the one the engine and its adapters read
+    /// (BRASSCRIBE_MODELS), so they always agree. The data folder's `models`; for a checkout without one, the
+    /// checkout's own `models`.
+    public func modelsFolder(paths: BandroomPaths) -> URL {
+        switch self {
+        case .checkout(let url) where !FileManager.default.fileExists(atPath: paths.models.path):
+            url.appending(path: "models", directoryHint: .isDirectory)
+        default:
+            paths.models
+        }
+    }
+
     /// Whether `pixi install` has already made the engine environment.
     public var isEnvironmentReady: Bool {
         FileManager.default.fileExists(atPath: workspace.appending(path: ".pixi/envs/default/bin/brasscribe").path)
@@ -84,12 +96,12 @@ public struct EngineConfiguration: Equatable, Sendable {
         env["PYTHONUNBUFFERED"] = "1"
         env.removeValue(forKey: "BRASSCRIBE_TOKEN")
         if let bandSounds { env["BRASSCRIBE_BAND_SOUNDS_DIR"] = bandSounds.path }
+        env["BRASSCRIBE_MODELS"] = source.modelsFolder(paths: paths).path
         switch source {
         case .checkout:
-            // A checkout brings its own models/ and ml/adapters; the engine finds them from its repo root.
+            // A checkout brings its own ml/adapters; the engine finds them from its repo root.
             break
         case .installed(_, let adapters):
-            env["BRASSCRIBE_MODELS"] = paths.models.path
             if let adapters { env["BRASSCRIBE_ADAPTERS"] = adapters.path }
             env["PIXI_CACHE_DIR"] = paths.pixiCache.path
         }

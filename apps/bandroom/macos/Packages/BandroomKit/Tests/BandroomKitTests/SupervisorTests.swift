@@ -291,6 +291,29 @@ import Testing
     }
 }
 
+@Suite struct ModelsFolderTests {
+    @Test func bandroomAndTheEngineReadTheSameModelsFolder() throws {
+        let root = tempDir()
+        let paths = BandroomPaths(data: root.appending(path: "data"), logs: root.appending(path: "logs"))
+        let checkout = root.appending(path: "checkout", directoryHint: .isDirectory)
+        func engineModels(_ source: EngineSource) -> String? {
+            EngineConfiguration(source: source, pixi: nil, paths: paths, computerName: "Mac", adminToken: "t")
+                .environment(base: [:])["BRASSCRIBE_MODELS"]
+        }
+        // A checkout, and no models in the data folder: the checkout's.
+        #expect(EngineSource.checkout(checkout).modelsFolder(paths: paths).path == checkout.appending(path: "models").path)
+        #expect(engineModels(.checkout(checkout)) == checkout.appending(path: "models").path)
+        // Models in the data folder (downloaded there earlier): both use those, adapters included.
+        try FileManager.default.createDirectory(at: paths.models, withIntermediateDirectories: true)
+        #expect(EngineSource.checkout(checkout).modelsFolder(paths: paths).path == paths.models.path)
+        #expect(engineModels(.checkout(checkout)) == paths.models.path)
+        // Installed: always the data folder's.
+        let installed = EngineSource.installed(workspace: paths.workspace, adapters: nil)
+        #expect(installed.modelsFolder(paths: paths).path == paths.models.path)
+        #expect(engineModels(installed) == paths.models.path)
+    }
+}
+
 @Suite struct BandSoundsTests {
     @Test func theBundledBandSoundsReachTheEngine() throws {
         let resources = tempDir()

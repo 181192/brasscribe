@@ -298,13 +298,10 @@ final class AppModel {
         }
     }
 
+    /// The folder the engine reads its models from (`EngineSource.modelsFolder`).
     nonisolated static func modelsDir(_ paths: BandroomPaths) -> URL {
-        let env = ProcessInfo.processInfo.environment
-        if let checkout = env["BRASSCRIBE_CHECKOUT"] ?? UserDefaults.standard.string(forKey: "engineCheckout"), !checkout.isEmpty,
-           !FileManager.default.fileExists(atPath: paths.models.path) {
-            return URL(fileURLWithPath: (checkout as NSString).expandingTildeInPath).appending(path: "models")
-        }
-        return paths.models
+        EngineConfiguration.resolveSource(environment: ProcessInfo.processInfo.environment, defaults: .standard, paths: paths,
+                                          bundle: .main).modelsFolder(paths: paths)
     }
 
     // MARK: state
