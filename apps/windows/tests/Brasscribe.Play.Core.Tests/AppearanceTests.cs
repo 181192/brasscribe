@@ -219,7 +219,7 @@ public class AppearanceTests
 
     [Theory]
     [InlineData("en-US", "Pink light", "Pink dark", "🎺 Pink unlocked", "Version 1.2")]
-    [InlineData("nb-NO", "Rosa lys", "Rosa mørk", "🎺 Rosa låst opp", "Versjon 1.2")]
+    [InlineData("nb-NO", "Rosa lyst", "Rosa mørkt", "🎺 Rosa låst opp", "Versjon 1.2")]
     public void Pink_copy_follows_the_design_system(string lang, string pinkLight, string pinkDark, string unlocked, string version)
     {
         IStrings s = new ReswStrings(ReswStrings.Parse(XDocument.Load(Resw(lang))));

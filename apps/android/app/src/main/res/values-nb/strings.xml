@@ -478,8 +478,8 @@
     <string name="appearance_system">Følg systemet</string>
     <string name="appearance_light">Lyst</string>
     <string name="appearance_dark">Mørkt</string>
-    <string name="appearance_pink_light">Rosa lys</string>
-    <string name="appearance_pink_dark">Rosa mørk</string>
+    <string name="appearance_pink_light">Rosa lyst</string>
+    <string name="appearance_pink_dark">Rosa mørkt</string>
     <string name="pink_unlocked">🎺 Rosa låst opp</string>
     <string name="about_version">Versjon %1$s</string>
     <string name="appearance_contrast_note">Kontrastinnstillingen din er på, så Brasscribe bruker høykontrastfargene.</string>

@@ -199,7 +199,7 @@ describe("appearance", () => {
 
   it("has the §10 copy in both languages", () => {
     expect([messages.en["app.theme.pinkLight"], messages.en["app.theme.pinkDark"]]).toEqual(["Pink light", "Pink dark"]);
-    expect([messages.nb["app.theme.pinkLight"], messages.nb["app.theme.pinkDark"]]).toEqual(["Rosa lys", "Rosa mørk"]);
+    expect([messages.nb["app.theme.pinkLight"], messages.nb["app.theme.pinkDark"]]).toEqual(["Rosa lyst", "Rosa mørkt"]);
     expect(messages.nb["app.theme.pinkUnlocked"]).toBe("🎺 Rosa låst opp");
     expect(messages.en["app.theme.system"]).toBe("Match system");
     expect(messages.nb["app.theme.system"]).toBe("Følg systemet");

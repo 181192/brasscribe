@@ -178,7 +178,7 @@ The score alone, for reading from a stand: one part, in pages, with a control la
 
 Settings › Display has one row, **Appearance** / «Utseende», that forces light or dark on this device.
 
-- **Options:** **Match system** / «Følg systemet» (the default), **Light** / «Lyst», **Dark** / «Mørkt», and, once Pink is unlocked, **Pink light** / «Rosa lys» and **Pink dark** / «Rosa mørk» (see Pink below). No description line.
+- **Options:** **Match system** / «Følg systemet» (the default), **Light** / «Lyst», **Dark** / «Mørkt», and, once Pink is unlocked, **Pink light** / «Rosa lyst» and **Pink dark** / «Rosa mørkt» (see Pink below). No description line.
 - **One choice, native picker.** It is never ink-filled or a row of toggles. The selected option shows the platform's ✓ or radio, and screen readers announce the row as a choice with its current value ("Appearance, Dark").
 
   | SwiftUI | Compose | WinUI 3 | Studio HTML |
@@ -204,7 +204,7 @@ Settings › Display has one row, **Appearance** / «Utseende», that forces lig
 
 ### Pink (hidden)
 
-Two more Appearance options, **Pink light** / «Rosa lys» and **Pink dark** / «Rosa mørk», that nobody sees until they find them. Pink is a small present for the players who poke around, not a feature to explain, so it is never mentioned in onboarding, help or release notes.
+Two more Appearance options, **Pink light** / «Rosa lyst» and **Pink dark** / «Rosa mørkt», that nobody sees until they find them. Pink is a small present for the players who poke around, not a feature to explain, so it is never mentioned in onboarding, help or release notes.
 
 - **What it is.** A playful palette for the chrome: blush paper, plum text, a raspberry primary (bubblegum on dark), rose tonal fills. Pink light is Light in this palette and Pink dark is Dark in it: each keeps its mode whatever the system's is. It is the one exception to rule 2 ("UI chrome stays neutral"): the chrome may be pink, but **the notation keeps its own colours**. Noteheads and staff stay ink on near-white paper (paper tones on dark), and uncertain, very uncertain, loop and cursor keep their hues. Brass stays the brand colour. Pink dark moves `error` to coral so it stays apart from the pink primary.
 - **System contrast still wins.** Increase Contrast, a high contrast level and `prefers-contrast: more` give the high-contrast palette, and Windows contrast themes and forced colours give the system's. Pink light or Pink dark stays chosen for when contrast is turned off, and more contrast keeps its light or dark. PDFs, printouts and the pairing QR code stay light, as for every choice.
