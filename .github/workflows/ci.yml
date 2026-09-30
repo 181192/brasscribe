@@ -50,7 +50,7 @@ jobs:
           filters: |
             python: ['engine/**', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.github/workflows/ci.yml']
             core: ['core/**', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
-            studio: ['studio/**', 'design/**', '.github/workflows/ci.yml']
+            studio: ['studio/**', 'design/**', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -153,6 +153,18 @@ jobs:
           npm ci
           npm test
           npm run typecheck
+
+      # The engine serves the committed bundle, so it must be what the sources build.
+      - name: Studio bundle up to date
+        working-directory: studio
+        run: |
+          npm run build
+          static=../engine/src/brasscribe_engine/static
+          if ! git diff --quiet -- "$static" || [ -n "$(git status --porcelain -- "$static")" ]; then
+            git status --short -- "$static"
+            echo "::error::The committed Studio bundle is out of date: run 'npm run build' in studio/ and commit engine/src/brasscribe_engine/static."
+            exit 1
+          fi
 
   # One check that is always reported, whichever jobs ran: the one to make required.
   result:
