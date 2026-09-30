@@ -2,6 +2,7 @@
 // playback that keeps the position when switching sources.
 import { fetchBytes } from "../api/client";
 import { mixdown, peaks, spectrogram } from "../lib/dsp";
+import { SizedLru } from "../lib/lru";
 import { t } from "../i18n";
 import { announce, clear, errorNotice, fmt, h, loading, nextId, token } from "../ui/dom";
 import { plot, timeAxis, type Plot } from "./canvas";
@@ -12,16 +13,15 @@ export function audioContext(): AudioContext {
   return ctx;
 }
 
-const cache = new Map<string, Promise<AudioBuffer>>();
-/** Fetch and decode a file once per page. */
+/**
+ * Decoded audio is large (a few minutes of stereo take about 100 MB), so only the most recently
+ * used files are kept for switching back and forth; a player holds on to the ones it plays itself.
+ */
+const DECODED_BUDGET = 256 * 1024 * 1024;
+const cache = new SizedLru<string, AudioBuffer>(DECODED_BUDGET, (b) => b.length * b.numberOfChannels * 4);
+/** Fetch and decode a file, reusing a recent decode of it. */
 export function decode(url: string): Promise<AudioBuffer> {
-  let p = cache.get(url);
-  if (!p) {
-    p = fetchBytes(url).then((b) => audioContext().decodeAudioData(b));
-    p.catch(() => cache.delete(url));
-    cache.set(url, p);
-  }
-  return p;
+  return cache.get(url, () => fetchBytes(url).then((b) => audioContext().decodeAudioData(b)));
 }
 
 export interface AudioSource {
