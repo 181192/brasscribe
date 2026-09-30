@@ -3,12 +3,30 @@ import { fetchText } from "../api/client";
 import { t } from "../i18n";
 import { announce, clear, errorNotice, filePicker, h, viewHead } from "../ui/dom";
 
+/**
+ * The engine path a `?src=` link may open: a path on this engine under /v1/ (a run's or a
+ * reference's score). Anything else (another site, another part of this one) gives null.
+ */
+export function engineScorePath(src: string, origin: string): string | null {
+  if (!src.startsWith("/v1/") || src.includes("\\")) return null;
+  let u: URL;
+  try {
+    u = new URL(src, origin);
+  } catch {
+    return null;
+  }
+  if (u.origin !== new URL(origin).origin || !u.pathname.startsWith("/v1/")) return null;
+  return u.pathname + u.search;
+}
+
 export function viewerView(root: HTMLElement, params: URLSearchParams): void {
   const input = h("input", { type: "file", id: "open-musicxml", accept: ".musicxml,.xml,.mxl,application/vnd.recordare.musicxml+xml,application/xml" });
   const status = h("p", { class: "hint", id: "viewer-status", role: "status" });
   const score = h("bs-score", {});
   // Until a score is open, an empty state (drop zone and the one primary) stands in for the player.
   const holder = h("div", { hidden: true }, score);
+  // Why a score could not be opened; beside the score, never in its place.
+  const notice = h("div", {});
   const picker = filePicker(input, { primary: true, label: t("viewer.open") });
   const drop = h("div", { class: "drop-zone" },
     h("p", {}, h("strong", {}, t("viewer.dropTitle"))),
@@ -60,10 +78,18 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
     viewHead(t("viewer.title"), t("viewer.purpose")),
     drop,
     status,
+    notice,
     holder);
 
   const src = params.get("src");
   if (src) {
-    fetchText(src).then((txt) => open(params.get("name") ?? src, txt)).catch((e) => clear(holder, errorNotice(e)));
+    const path = engineScorePath(src, location.origin);
+    if (!path) {
+      clear(notice, h("div", { class: "notice notice-error", role: "alert" },
+        h("p", { class: "notice-title" }, h("strong", {}, t("viewer.notEngine"))),
+        h("p", {}, t("viewer.notEngineBody"))));
+      return;
+    }
+    fetchText(path).then((txt) => open(params.get("name") ?? path, txt)).catch((e) => clear(holder, errorNotice(e)));
   }
 }

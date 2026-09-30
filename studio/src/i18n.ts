@@ -342,6 +342,8 @@ const en = {
   "viewer.done": "{name}: {bars} bars, {parts} parts (rendered in {ms} ms).",
   "viewer.opened": "{name} opened",
   "viewer.failed": "Could not open {name}.",
+  "viewer.notEngine": "This link doesn't point to a score in Brasscribe.",
+  "viewer.notEngineBody": "The score viewer opens links only to the runs and reference scores of Brasscribe on this computer. Open the file from disk instead.",
 
   "cmp.intro": "Pick a base (A) and another run or a reference (B). Notes are matched voice by voice: identical, octave shift, moved (same pitch within a beat) or added and removed.",
   "cmp.a": "A (base)", "cmp.b": "B", "cmp.tol": "Moved within (beats)", "cmp.go": "Compare",
@@ -896,6 +898,8 @@ const nb: Record<Key, string> = {
   "viewer.done": "{name}: {bars} takter, {parts} stemmer (tegnet på {ms} ms).",
   "viewer.opened": "{name} åpnet",
   "viewer.failed": "Kunne ikke åpne {name}.",
+  "viewer.notEngine": "Denne lenken peker ikke til et partitur i Brasscribe.",
+  "viewer.notEngineBody": "Notevisningen åpner bare lenker til kjøringene og referansepartiturene i Brasscribe på denne maskinen. Åpne filen fra disken i stedet.",
 
   "cmp.intro": "Velg et utgangspunkt (A) og en annen kjøring eller en referanse (B). Notene sammenlignes stemme for stemme: identisk, oktavforskjøvet, flyttet (samme tone innenfor ett slag) eller lagt til og fjernet.",
   "cmp.a": "A (utgangspunkt)", "cmp.b": "B", "cmp.tol": "Flyttet innenfor (slag)", "cmp.go": "Sammenlign",
