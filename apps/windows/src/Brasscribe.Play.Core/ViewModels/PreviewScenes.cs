@@ -11,7 +11,7 @@ namespace Brasscribe.Play.Core.ViewModels;
 public static class PreviewScenes
 {
     public static readonly string[] Names =
-        ["first-run", "home", "home-offline", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "export", "error"];
+        ["first-run", "what-do-you-play", "home", "home-offline", "settings", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "stand", "export", "error"];
 
     /// <summary>The computer in the sample scenes.</summary>
     public const string SampleServer = "Brasscribe on Studio PC";
@@ -24,7 +24,7 @@ public static class PreviewScenes
     {
         // A made-up file for the "What is this?" screen: the scenes never read it.
         var sample = new SourceAudio(Path.Combine(Path.GetTempPath(), "Band practice.m4a"), "Band practice.m4a", new TimeSpan(0, 3, 5), null, false);
-        if (scene != "first-run") main.Settings.FirstRunDone = true;
+        if (scene is not ("first-run" or "what-do-you-play")) main.Settings.FirstRunDone = true;
         // A fixed connection row: the scenes never talk to a computer.
         main.Settings.Connection.Show(scene == "home-offline" ? Engine.ConnectionState.Offline : Engine.ConnectionState.Connected, SampleServer);
         switch (scene)
@@ -32,7 +32,12 @@ public static class PreviewScenes
             case "first-run":
                 main.Screen = Screen.FirstRun;
                 return true;
-            case "home" or "home-offline":
+            case "what-do-you-play":
+                // "Get started" on a profile with no instrument chosen asks the question (when the core has the seats)
+                main.GetStartedCommand.Execute(null);
+                return true;
+            case "home" or "home-offline" or "settings":
+                // the shell opens Settings over Home for "settings"
                 main.Screen = Screen.Start;
                 return true;
             case "what-is-this":
@@ -70,7 +75,7 @@ public static class PreviewScenes
             case "part":
                 main.Score.SelectedPartIndex = 0;
                 break;
-            case "score" or "export":
+            case "score" or "export" or "stand":
                 if (main.Score.Player.BarCount >= 2)
                 {
                     main.Score.Player.LoopStart = 2;

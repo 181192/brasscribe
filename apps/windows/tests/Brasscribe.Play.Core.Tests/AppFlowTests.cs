@@ -326,6 +326,8 @@ public class AppFlowTests
     [InlineData("score", Screen.Score)]
     [InlineData("part", Screen.Score)]
     [InlineData("export", Screen.Score)]
+    [InlineData("stand", Screen.Score)]
+    [InlineData("settings", Screen.Start)]
     public void Screenshot_scenes_show_their_screen(string scene, Screen expected)
     {
         var (main, _) = Build(Engine(""), firstRun: true);
@@ -348,6 +350,15 @@ public class AppFlowTests
             Assert.Equal("62\u00A0%", Screens.Percent(62, "nb-NO"));
         }
         Assert.All(PreviewScenes.Names, n => Assert.Contains(n, PreviewScenes.Names));
+    }
+
+    [Fact]
+    public void The_what_do_you_play_scene_asks_when_the_core_has_the_seats()
+    {
+        var (main, _) = Build(Engine(""), firstRun: true);
+        Assert.True(PreviewScenes.Show(main, "what-do-you-play", null));
+        Assert.Equal(main.Seats.IsAvailable ? Screen.WhatDoYouPlay : Screen.Start, main.Screen);
+        Assert.True(main.Settings.FirstRunDone);
     }
 
     [Fact]

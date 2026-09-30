@@ -145,11 +145,13 @@ public partial class App : Application
         // --show NAME [--score FILE]: one screen with sample content, for screenshots (see PreviewScenes).
         if (Option("--show") is { } scene)
         {
-            if (PreviewScenes.Show(main, scene, Option("--score")) && scene == "export")
+            if (PreviewScenes.Show(main, scene, Option("--score")) && scene is "export" or "stand" or "settings")
                 _window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
                 {
                     await Task.Delay(1500);
-                    await _window.ShowExportAsync();
+                    if (scene == "stand") main.Score.Stand.Enter(screenReader: false);
+                    else if (scene == "settings") await _window.OpenSettingsAsync();
+                    else await _window.ShowExportAsync();
                 });
             return;
         }
