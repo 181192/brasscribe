@@ -160,7 +160,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _appearance = new AppearanceViewModel(_s, store, _accessibility.HighContrast, forced);
         _themes = new ThemedWindows(_appearance.Resolved);
         _appearance.ThemeChanged += _themes.Set;
-        _accessibility.HighContrastChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast);
+        // Some sessions (a service desktop, a CI runner) have no contrast-theme notifications: Windows says "not
+        // found". The theme read above still applies; only a change while Bandroom runs goes unnoticed there.
+        try { _accessibility.HighContrastChanged += (_, _) => _ui.TryEnqueue(() => _appearance.HighContrast = _accessibility.HighContrast); }
+        catch (System.Runtime.InteropServices.COMException e) { Debug.WriteLine("bandroom: contrast theme changes won't be noticed: " + e.Message); }
     }
 
     // ----- Real mode -----
