@@ -30,7 +30,10 @@ describe("appearance", () => {
     expect(th.choice()).toBe("system");
     expect(th.parseChoice("dark")).toBe("dark");
     expect(th.parseChoice("light")).toBe("light");
+    expect(th.parseChoice("pink-light")).toBe("pink-light");
+    expect(th.parseChoice("pink-dark")).toBe("pink-dark");
     expect(th.parseChoice("sepia")).toBe("system");
+    expect(th.parseChoice("pink")).toBe("system"); // an earlier version's value, migrated on load
     expect(th.parseChoice(null)).toBe("system");
   });
 
@@ -106,11 +109,30 @@ describe("appearance", () => {
     expect(th.pinkUnlocked()).toBe(true);
   });
 
-  it("counts a stored Pink as unlocked", async () => {
-    localStorage.setItem("brasscribe.studio.theme", "pink");
+  it("counts a stored Pink light or Pink dark as unlocked", async () => {
+    for (const v of ["pink-light", "pink-dark"]) {
+      localStorage.clear();
+      localStorage.setItem("brasscribe.studio.theme", v);
+      const th = await fresh();
+      expect(th.choice()).toBe(v);
+      expect(th.pinkUnlocked()).toBe(true);
+    }
+  });
+
+  it("turns an earlier Pink into Pink light or Pink dark by the system, and keeps it unlocked", async () => {
+    for (const [dark, expected] of [[true, "pink-dark"], [false, "pink-light"]] as const) {
+      localStorage.clear();
+      localStorage.setItem("brasscribe.studio.theme", "pink");
+      stubMedia(dark ? ["(prefers-color-scheme: dark)"] : []);
+      const th = await fresh();
+      expect(th.choice()).toBe(expected);
+      expect(localStorage.getItem(th.THEME_STORE)).toBe(expected);
+      // Written down, so an earlier version, which reads the new value as Match system, still lists Pink.
+      expect(localStorage.getItem(th.PINK_STORE)).toBe("1");
+    }
     const th = await fresh();
-    expect(th.choice()).toBe("pink");
-    expect(th.pinkUnlocked()).toBe(true);
+    expect(th.migrateChoice("pink", null)).toBe("pink-light");
+    for (const v of [null, "system", "light", "dark", "pink-light", "pink-dark", "sepia"]) expect(th.migrateChoice(v, true)).toBeNull();
   });
 
   it("tells listeners when Pink is unlocked", async () => {
@@ -122,31 +144,41 @@ describe("appearance", () => {
     expect(calls).toBe(1);
   });
 
-  it("sets data-palette for Pink, follows the system's light or dark, and can be switched off", async () => {
+  it("sets data-palette and data-theme for Pink light and Pink dark, and can be switched off", async () => {
     const th = await fresh();
-    th.setChoice("dark");
-    th.setChoice("pink");
     const root = document.documentElement;
+    th.setChoice("pink-light");
     expect(root.getAttribute("data-palette")).toBe("pink");
-    expect(root.hasAttribute("data-theme")).toBe(false);
-    expect(localStorage.getItem(th.THEME_STORE)).toBe("pink");
+    expect(root.getAttribute("data-theme")).toBe("light");
+    expect(localStorage.getItem(th.THEME_STORE)).toBe("pink-light");
+    th.setChoice("pink-dark");
+    expect(root.getAttribute("data-palette")).toBe("pink");
+    expect(root.getAttribute("data-theme")).toBe("dark");
+    expect(localStorage.getItem(th.THEME_STORE)).toBe("pink-dark");
     th.setChoice("light");
     expect(root.hasAttribute("data-palette")).toBe(false);
     expect(root.getAttribute("data-theme")).toBe("light");
   });
 
-  it("lets more contrast and forced colours win over Pink", async () => {
+  it("lets more contrast and forced colours win over the Pink palette", async () => {
     const th = await fresh();
-    expect(th.resolvePalette("pink", null)).toBe("pink");
-    expect(th.resolvePalette("pink", "more")).toBeNull();
-    expect(th.resolvePalette("pink", "forced")).toBeNull();
+    for (const pink of ["pink-light", "pink-dark"] as const) {
+      expect(th.resolvePalette(pink, null)).toBe("pink");
+      expect(th.resolvePalette(pink, "more")).toBeNull();
+      expect(th.resolvePalette(pink, "forced")).toBeNull();
+      expect(th.resolveTheme(pink, "forced")).toBeNull();
+    }
     expect(th.resolvePalette("dark", null)).toBeNull();
-    expect(th.resolveTheme("pink", null)).toBeNull();
+    expect(th.resolveTheme("pink-light", null)).toBe("light");
+    expect(th.resolveTheme("pink-dark", null)).toBe("dark");
+    // More contrast keeps the light or dark, so the matching high-contrast palette applies.
+    expect(th.resolveTheme("pink-dark", "more")).toBe("dark");
 
     stubMedia(["(prefers-contrast: more)"]);
-    th.setChoice("pink");
+    th.setChoice("pink-dark");
     expect(document.documentElement.hasAttribute("data-palette")).toBe(false);
-    expect(th.choice()).toBe("pink");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(th.choice()).toBe("pink-dark");
     stubMedia([]);
     th.apply();
     expect(document.documentElement.getAttribute("data-palette")).toBe("pink");
@@ -166,8 +198,8 @@ describe("appearance", () => {
   });
 
   it("has the §10 copy in both languages", () => {
-    expect(messages.en["app.theme.pink"]).toBe("Pink");
-    expect(messages.nb["app.theme.pink"]).toBe("Rosa");
+    expect([messages.en["app.theme.pinkLight"], messages.en["app.theme.pinkDark"]]).toEqual(["Pink light", "Pink dark"]);
+    expect([messages.nb["app.theme.pinkLight"], messages.nb["app.theme.pinkDark"]]).toEqual(["Rosa lys", "Rosa mørk"]);
     expect(messages.nb["app.theme.pinkUnlocked"]).toBe("🎺 Rosa låst opp");
     expect(messages.en["app.theme.system"]).toBe("Match system");
     expect(messages.nb["app.theme.system"]).toBe("Følg systemet");
