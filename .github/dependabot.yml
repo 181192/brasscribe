@@ -3,8 +3,6 @@
 # request per ecosystem and directory.
 # Python (pixi.lock) is not a Dependabot ecosystem: update it with `pixi update` and the checks.
 # Swift has no remote packages (all local), and engine/Dockerfile's base image is updated by hand.
-# ml/adapters and convert/ pin their ML stacks on purpose (torch for coremltools, TensorFlow 2.15);
-# only security updates reach them, and each needs the model's parity check.
 version: 2
 
 updates:
