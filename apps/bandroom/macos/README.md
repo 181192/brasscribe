@@ -45,7 +45,8 @@ make strings      # rebuild App/Localizable.xcstrings (en + nb) from the last bu
 Against a checkout (`BRASSCRIBE_CHECKOUT`, or the `engineCheckout` setting), Bandroom runs the engine
 with `pixi run` in that checkout instead of installing its own copy; the checkout needs `pixi install`
 first. `scripts/run-dev.sh` launches the built app the way Finder does, with options for the data
-folder, appearance, language and canned demo states for screenshots.
+folder (its own under `build/dev` by default, so it never shares the installed Bandroom's), appearance, language
+and canned demo states for screenshots.
 
 `scripts/check.sh fast bandroom-mac` runs the unit tests, `full bandroom-mac` also builds the app.
 Release builds are made by hand: [docs/dev/release.md](../../../docs/dev/release.md) §4.

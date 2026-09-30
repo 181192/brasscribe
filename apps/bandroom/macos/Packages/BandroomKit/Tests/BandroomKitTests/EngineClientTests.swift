@@ -174,6 +174,19 @@ let pairingJSON = """
         #expect(try AdminToken.loadOrCreate(at: url) == a)
     }
 
+    @Test(arguments: ["", "abc\n"])
+    func aFileCutShortIsReplacedOnce(content: String) throws {
+        let dir = tempDir()
+        let url = dir.appending(path: "admin-token")
+        FileManager.default.createFile(atPath: url.path, contents: Data(content.utf8), attributes: [.posixPermissions: 0o600])
+        let a = try AdminToken.loadOrCreate(at: url)
+        #expect(a.count == 64)
+        #expect(try AdminToken.loadOrCreate(at: url) == a, "the new one was kept")
+        let mode = try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int
+        #expect(mode == 0o600)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path) == ["admin-token"], "no temporary file left")
+    }
+
     @Test func narrowsAWidenedFile() throws {
         let url = tempDir().appending(path: "admin-token")
         let a = try AdminToken.loadOrCreate(at: url)

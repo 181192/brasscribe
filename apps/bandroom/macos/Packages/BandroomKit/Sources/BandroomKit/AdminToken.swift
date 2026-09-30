@@ -34,8 +34,27 @@ public enum AdminToken {
             guard chmod(url.path, 0o600) == 0 else { throw Failure.insecurePermissions(mode) }
         }
         let text = try String(contentsOf: url, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard text.count >= 32 else { throw Failure.unreadable("token too short") }
+        // Empty or cut short (Bandroom stopped between creating the file and writing it): make a new one in its
+        // place, so the next launch doesn't have to.
+        guard text.count >= 32 else { return try replace(at: url) }
         return text
+    }
+
+    /// A new token written beside `url` and renamed over it, so the file is never seen half written.
+    static func replace(at url: URL) throws -> String {
+        let temp = url.deletingLastPathComponent().appending(path: ".\(url.lastPathComponent).\(UUID().uuidString)")
+        let fd = open(temp.path, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { throw Failure.unreadable(String(cString: strerror(errno))) }
+        let token = generate()
+        let bytes = Array((token + "\n").utf8)
+        let written = bytes.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
+        let synced = fsync(fd) == 0
+        close(fd)
+        guard written == bytes.count, synced, rename(temp.path, url.path) == 0 else {
+            try? FileManager.default.removeItem(at: temp)
+            throw Failure.unreadable("could not replace \(url.path)")
+        }
+        return token
     }
 
     /// 32 random bytes, hex.

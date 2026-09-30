@@ -60,6 +60,7 @@ NB = {
     "Brasscribe is ready. Phones and tablets can make full-band scores now.":
         "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå.",
     "Brasscribe isn't running. Start it from the menu bar, then pair.": "Brasscribe kjører ikke. Start den fra menylinjen, og koble til etterpå.",
+    "Brasscribe isn't answering": "Brasscribe svarer ikke",
     "Brasscribe needs attention: %@": "Brasscribe må sjekkes: %@",
     "Brasscribe on %@": "Brasscribe på %@",
     "Brasscribe on this Mac": "Brasscribe på denne Macen",
@@ -126,6 +127,9 @@ NB = {
         "Den kan sende opptak til denne datamaskinen og få partitur tilbake. Du kan fjerne den når som helst.",
     "It can't send recordings here until it is paired again. Scores already on it stay.":
         "Den kan ikke sende opptak hit før den kobles til igjen. Partitur som allerede ligger på den, blir liggende.",
+    "It couldn't be started. Recordings on your phones are safe.": "Den kunne ikke startes. Opptakene på telefonene er trygge.",
+    "It is running but hasn't answered for a while. Restarting it usually helps.":
+        "Den kjører, men har ikke svart på en stund. Som regel hjelper det å starte den på nytt.",
     "It runs quietly in the menu bar. Look for the Brasscribe mark at the top of the screen.":
         "Den kjører i det stille i menylinjen. Se etter Brasscribe-merket øverst på skjermen.",
     "It tried to start three times. Recordings on your phones are safe.": "Den prøvde å starte tre ganger. Opptakene på telefonene er trygge.",
