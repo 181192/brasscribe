@@ -61,6 +61,7 @@ JNIEXPORT void JNICALL FN(sfizzNoteOff)(JNIEnv*, jobject, jint ch, jint note) { 
 JNIEXPORT void JNICALL FN(sfizzNoteAt)(JNIEnv*, jobject, jint ch, jint note, jint vel, jdouble delay) { sfizz_bridge::noteAt(ch, note, vel, delay); }
 JNIEXPORT jdouble JNICALL FN(sfizzPosition)(JNIEnv*, jobject) { return sfizz_bridge::positionSeconds(); }
 JNIEXPORT void JNICALL FN(sfizzAllOff)(JNIEnv*, jobject) { sfizz_bridge::allOff(); }
+JNIEXPORT void JNICALL FN(sfizzUnloadAll)(JNIEnv*, jobject) { sfizz_bridge::unloadAll(); }
 JNIEXPORT void JNICALL FN(sfizzReleaseAll)(JNIEnv*, jobject) { sfizz_bridge::releaseAll(); }
 JNIEXPORT void JNICALL FN(sfizzFadeOut)(JNIEnv*, jobject, jdouble seconds) { sfizz_bridge::fadeOut(seconds); }
 JNIEXPORT void JNICALL FN(sfizzSetGain)(JNIEnv*, jobject, jint ch, jfloat gain) { sfizz_bridge::setGain(ch, gain); }

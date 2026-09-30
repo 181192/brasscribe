@@ -50,13 +50,18 @@ class BarListening(
         // The button turns to Stop at once, so a second press during a download stops it.
         _playing.value = bar
         job = scope.launch {
-            val c = load()
-            if (c.clips.isEmpty()) {
+            // A clip that cannot be loaded or played (no audio output, a render that failed) says so; it never
+            // takes the app down.
+            val c = try { load() } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { Clips(emptyList(), false) }
+            val ms = if (c.clips.isEmpty()) 0L else try { output.play(c.clips) } catch (e: Exception) {
+                runCatching { output.stop() }
+                0L
+            }
+            if (ms <= 0L) {
                 _playing.value = null
                 onEvent(Event.Unavailable)
                 return@launch
             }
-            val ms = output.play(c.clips)
             onEvent(Event.Started(bar, c.withRecording))
             delay(ms)
             output.stop()

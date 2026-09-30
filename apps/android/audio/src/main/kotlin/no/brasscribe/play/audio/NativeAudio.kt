@@ -24,6 +24,7 @@ internal object NativeAudio {
     external fun sfizzNoteAt(channel: Int, note: Int, velocity: Int, delaySeconds: Double)
     external fun sfizzPosition(): Double
     external fun sfizzAllOff()
+    external fun sfizzUnloadAll()
     external fun sfizzReleaseAll()
     external fun sfizzFadeOut(seconds: Double)
     external fun sfizzSetGain(channel: Int, gain: Float)

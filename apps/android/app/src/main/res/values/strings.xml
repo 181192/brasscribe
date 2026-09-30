@@ -308,6 +308,7 @@
     <string name="sound_baseline">Standard</string>
     <string name="sound_realistic">Realistic</string>
     <string name="sound_realistic_unavailable">Not in this version of the app.</string>
+    <string name="sound_realistic_loading">Loading the instruments…</string>
     <string name="sound_realistic_test_tone">No realistic instruments installed yet: you hear the band sounds.</string>
     <plurals name="sound_pack_parts">
         <item quantity="one">%d part plays a real instrument.</item>

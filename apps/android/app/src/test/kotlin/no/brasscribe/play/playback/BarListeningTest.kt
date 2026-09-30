@@ -36,6 +36,24 @@ class BarListeningTest {
     }
 
     @Test
+    fun aClipThatCannotPlaySaysSoInsteadOfCrashing() = runTest {
+        val broken = object : ClipOutput {
+            var stops = 0
+            override fun play(clips: List<PcmAudio>): Long = throw IllegalStateException("AudioTrack not initialized")
+            override fun stop() { stops++ }
+        }
+        val events = mutableListOf<BarListening.Event>()
+        val l = BarListening(backgroundScope, broken) { events += it }
+        l.toggle(5) { both }; runCurrent()
+        assertNull(l.playing.value)
+        assertEquals(BarListening.Event.Unavailable, events.last())
+        // A load that fails (the score's audio could not be fetched) is the same.
+        l.toggle(6) { error("download failed") }; runCurrent()
+        assertNull(l.playing.value)
+        assertEquals(listOf(BarListening.Event.Unavailable, BarListening.Event.Unavailable), events)
+    }
+
+    @Test
     fun returnsToListenWhenTheBarEnds() = runTest {
         val out = FakeOutput()
         val events = mutableListOf<BarListening.Event>()

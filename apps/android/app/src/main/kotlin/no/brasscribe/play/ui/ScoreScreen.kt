@@ -669,7 +669,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                 }
                 InfoNote(stringResource(R.string.written_tip))
             }
-            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont || (st.loaded && !st.basicTier)) { on -> controller.setRealistic(on) } }
+            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont || (st.loaded && !st.basicTier), st.realisticLoading) { on -> controller.setRealistic(on) } }
         null -> Unit
     }
 }
@@ -824,7 +824,7 @@ private fun LoopControl(total: Int, loop: IntRange?, onSet: (Int, Int) -> Unit, 
 }
 
 @Composable
-private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, bandSoundFont: Boolean, onChange: (Boolean) -> Boolean) {
+private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, bandSoundFont: Boolean, loading: Boolean, onChange: (Boolean) -> Boolean) {
     val available = RealisticSynth.available
     val c = BrasscribeTheme.colors
     SubHeading(stringResource(R.string.sound))
@@ -834,6 +834,7 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
             stringResource(R.string.sound_realistic),
             when {
                 !available -> stringResource(R.string.sound_realistic_unavailable)
+                loading -> stringResource(R.string.sound_realistic_loading)
                 realistic && packParts > 0 -> pluralStringResource(R.plurals.sound_pack_parts, packParts, packParts) +
                     if (humanized) " " + stringResource(R.string.sound_humanized) else ""
                 else -> stringResource(R.string.sound_realistic_test_tone)
