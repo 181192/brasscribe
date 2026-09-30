@@ -9,7 +9,7 @@
 //!    beats at a local tempo, rounded to whole bars so the strict grid resumes on
 //!    a bar line at the first stable downbeat.
 
-use crate::model::{FreeRegion, Note, TICKS_PER_BEAT};
+use crate::model::{FreeRegion, Note, MAX_BEATS, TICKS_PER_BEAT};
 use crate::py;
 
 pub const RATIO_TOL: f64 = 0.25;
@@ -86,7 +86,7 @@ pub fn unstable_runs(t: &[f64]) -> Vec<(usize, usize)> {
 /// BPM at which the median gap between distinct onsets in [t0, t1) is TARGET_IOI_BEATS, clamped to TEMPO_RANGE.
 pub fn local_tempo(onsets: &[f64], t0: f64, t1: f64) -> f64 {
     let mut on: Vec<f64> = onsets.to_vec();
-    on.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    on.sort_by(py::fcmp);
     let mut on: Vec<f64> = on.iter().map(|&x| py::np_round(x, 2)).collect();
     on.dedup();
     let on: Vec<f64> = on.into_iter().filter(|&x| x >= t0 && x < t1).collect();
@@ -194,13 +194,18 @@ pub fn plan_free_time(
         let s0 = if at_start && !onsets.is_empty() { t[a].min(on_min) } else { t[a] };
         let s1 = t[r];
         let bpm = tempo.unwrap_or_else(|| local_tempo(tempo_onsets.unwrap_or(onsets), s0, s1));
-        out.extend_from_slice(&t[cursor..a]);
-        let start_idx = out.len();
+        let start_idx = out.len() + (a - cursor);
         // Whole bars, plus the rest of the bar the region starts in when that is not on a bar line (a
         // region inside the pickup bar), so the grid resumes on a bar line.
         let rest = if at_start { 0 } else { py::pymod(new_first - start_idx as i64, beats_per_bar) };
-        let bars = ((((s1 - s0) * bpm / 60.0 - rest as f64) / beats_per_bar as f64).ceil() as i64).max(if rest > 0 { 0 } else { 1 });
-        let n = (rest + bars * beats_per_bar) as usize;
+        let bars = (((s1 - s0) * bpm / 60.0 - rest as f64) / beats_per_bar as f64).ceil().max(if rest > 0 { 0.0 } else { 1.0 });
+        let beats = rest as f64 + bars * beats_per_bar as f64;
+        if beats > MAX_BEATS as f64 {
+            // Longer than any piece the core arranges (a beat table spanning years): left on the grid.
+            continue;
+        }
+        let n = beats as usize;
+        out.extend_from_slice(&t[cursor..a]);
         let bpm = n as f64 * 60.0 / (s1 - s0);
         for k in 0..n {
             out.push(s0 + (k as f64 * (s1 - s0)) / n as f64);
@@ -267,6 +272,33 @@ pub fn mark_fermatas(notes: &mut [Note], regions: &[FreeRegion]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Steady beats, a free-time passage with these intervals, steady beats.
+    fn beats(free: &[f64]) -> Vec<f64> {
+        let mut t: Vec<f64> = (0..20).map(|i| i as f64 * 0.5).collect();
+        for d in free.iter().chain([0.5; 12].iter()) {
+            t.push(t[t.len() - 1] + d);
+        }
+        t
+    }
+
+    #[test]
+    fn a_free_passage_gets_beats_at_the_given_tempo() {
+        let t = beats(&[3.0, 1.1, 2.7, 1.9]);
+        let p = plan_free_time(&t, &[], 4, 0, None, Some(60.0), None);
+        assert_eq!(p.spans.len(), 1);
+        assert_eq!(p.notation, "tempo");
+    }
+
+    #[test]
+    fn a_passage_longer_than_any_piece_stays_on_the_grid() {
+        // A passage of 10^7 s (or any passage at an absurd tempo) would need millions of beats.
+        for (free, tempo) in [(vec![3.0, 1e7, 7.0, 2.2], Some(100.0)), (vec![3.0, 1.1, 2.7, 1.9], Some(1e9)), (vec![3.0, 1.1, 2.7, 1.9], Some(f64::INFINITY))] {
+            let t = beats(&free);
+            let p = plan_free_time(&t, &[], 4, 0, None, tempo, None);
+            assert!(p.spans.is_empty() && p.beat_times == t, "{free:?} at {tempo:?}");
+        }
+    }
 
     #[test]
     fn region_inside_the_pickup_bar_resumes_on_a_bar_line() {

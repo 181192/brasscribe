@@ -128,6 +128,7 @@ pub fn arrange_musicxml_with(composition_json: String, options: ArrangeOptions) 
 
 pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> Result<String, CoreError> {
     use brasscribe_core::instruments::{check_reads, lead_lineup, lineup_by_name, lineup_key, seat_by_id, LEADS};
+    use brasscribe_core::model::check_transpose;
 
     let mut comp = Composition::from_json_str(composition_json).map_err(invalid)?;
     let key = lineup_key(&o.lineup).map_err(invalid)?;
@@ -150,7 +151,13 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
         None => {}
     }
     check_reads(o.seat.as_deref(), o.reads.as_deref()).map_err(invalid)?;
-    let before = comp.arrangement.as_ref().and_then(|a| a.get("transpose_semitones")).and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    if let Some(t) = o.transpose {
+        check_transpose(t as i64).map_err(invalid)?;
+    }
+    let before = match comp.arrangement.as_ref().and_then(|a| a.get("transpose_semitones")) {
+        Some(v) => check_transpose(v.as_i64().ok_or_else(|| invalid("arrangement.transpose_semitones is not a whole number"))?).map_err(invalid)?,
+        None => 0,
+    };
     let shift = match (&o.transpose, &o.key) {
         (Some(t), _) => *t - before,
         (None, Some(k)) => {
@@ -160,7 +167,7 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
         _ => 0,
     };
     if shift != 0 {
-        comp = comp.transposed(shift);
+        comp = comp.transposed(shift).map_err(invalid)?;
     }
     let layered = comp.voices.iter().any(|v| v.layer.is_some());
     // Only the layered arranger writes the full band.
@@ -381,23 +388,11 @@ pub(crate) fn band_impl(layers: &LayerMidi, stems: &LayerStems, beats_text: &str
 }
 
 /// [`band_impl`] on borrowed inputs, with the solo contour already built (`o.solo_contour` is not read).
+/// The options and the contour are checked before any input is read: a bad one is invalid input.
 pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: LayersSongOptions, contour: Option<Contour>) -> Result<BandOutput, CoreError> {
-    let [solo_sw, solo_mus, solo_bp, bass, orchestra, drums] = b.midi;
-    let [solo_audio, bass_audio, drums_audio, orchestra_audio] = b.stems;
-    let l = Layers {
-        solo_sw: midi(solo_sw)?,
-        solo_mus: midi(solo_mus)?,
-        solo_bp: midi(solo_bp)?,
-        bass: midi(bass)?,
-        orchestra: midi(orchestra)?,
-        drums: midi(drums)?,
-        solo_audio: stem(solo_audio)?,
-        bass_audio: stem(bass_audio)?,
-        drums_audio: stem(drums_audio)?,
-        orchestra_audio: stem(orchestra_audio)?,
-    };
-    // Under two beats is not an error here: the layered song estimates a grid from the onsets.
-    let beats = Beats::parse_any(beats_text).map_err(invalid)?;
+    if let Some(c) = &contour {
+        c.check().map_err(invalid)?;
+    }
     let opts = LayersOptions {
         solo_contour: contour,
         no_free_time: !o.free_time,
@@ -417,6 +412,23 @@ pub(crate) fn band_bytes(b: &LayerBytes, beats_text: &str, title: &str, o: Layer
         // On device only solo takes are arranged: the band kit.
         kit: String::new(),
     };
+    pipeline::check_layers_options(&opts).map_err(invalid)?;
+    let [solo_sw, solo_mus, solo_bp, bass, orchestra, drums] = b.midi;
+    let [solo_audio, bass_audio, drums_audio, orchestra_audio] = b.stems;
+    let l = Layers {
+        solo_sw: midi(solo_sw)?,
+        solo_mus: midi(solo_mus)?,
+        solo_bp: midi(solo_bp)?,
+        bass: midi(bass)?,
+        orchestra: midi(orchestra)?,
+        drums: midi(drums)?,
+        solo_audio: stem(solo_audio)?,
+        bass_audio: stem(bass_audio)?,
+        drums_audio: stem(drums_audio)?,
+        orchestra_audio: stem(orchestra_audio)?,
+    };
+    // Under two beats is not an error here: the layered song estimates a grid from the onsets.
+    let beats = Beats::parse_any(beats_text).map_err(invalid)?;
     let r = pipeline::arrange_layers_song(&l, &beats, title, &opts).map_err(failed)?;
     Ok(BandOutput {
         composition_json: r.composition.to_json_string(),
@@ -502,6 +514,10 @@ pub fn quantize_notes(notes: Vec<PerformedNote>, beat_times: Vec<f64>, monophoni
     if beat_times.len() < 2 {
         return Err(invalid("need at least two beats"));
     }
+    check_beat_times(&beat_times)?;
+    if notes.iter().any(|n| !n.onset.is_finite() || !n.offset.is_finite() || n.confidence.is_some_and(|c| !c.is_finite())) {
+        return Err(invalid("note times and confidences must be numbers"));
+    }
     let raw: Vec<RawNote> = notes.iter().map(|n| RawNote { pitch: n.pitch, onset: n.onset, offset: n.offset, confidence: n.confidence, split: false, trill: 0 }).collect();
     let mut q = quantize(&raw, &beat_times, monophonic, auto_level);
     if fill_gap_ticks > 0 {
@@ -510,13 +526,26 @@ pub fn quantize_notes(notes: Vec<PerformedNote>, beat_times: Vec<f64>, monophoni
     Ok(q.into_iter().map(|x| GridNote { pitch: x.pitch, start: x.start, end: x.end, confidence: x.confidence }).collect())
 }
 
-/// Beat times at the notated metrical level (doubled when the tracker locked onto half notes).
-#[uniffi::export]
-pub fn choose_metrical_level(beat_times: Vec<f64>, onsets: Vec<f64>) -> Vec<f64> {
-    if beat_times.len() < 2 {
-        return beat_times;
+/// Err unless the beat times are numbers that increase.
+fn check_beat_times(beat_times: &[f64]) -> Result<(), CoreError> {
+    if beat_times.iter().any(|t| !t.is_finite()) || beat_times.windows(2).any(|w| w[1] <= w[0]) {
+        return Err(invalid("beat times must be numbers that increase"));
     }
-    choose_level(&beat_times, &onsets)
+    Ok(())
+}
+
+/// Beat times at the notated metrical level (doubled when the tracker locked onto half notes).
+/// Invalid when a beat time or onset is not a number or the beat times do not increase.
+#[uniffi::export]
+pub fn choose_metrical_level(beat_times: Vec<f64>, onsets: Vec<f64>) -> Result<Vec<f64>, CoreError> {
+    check_beat_times(&beat_times)?;
+    if onsets.iter().any(|t| !t.is_finite()) {
+        return Err(invalid("onsets must be numbers"));
+    }
+    if beat_times.len() < 2 {
+        return Ok(beat_times);
+    }
+    Ok(choose_level(&beat_times, &onsets))
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -527,13 +556,20 @@ pub struct SpelledPitch {
     pub octave: i32,
 }
 
-/// Spell MIDI pitches (ps13) from their context; onsets in beats.
+/// Spell MIDI pitches (ps13) from their context; onsets in beats, one per pitch. Invalid when
+/// the lists differ in length or an onset is not a number.
 #[uniffi::export]
-pub fn spell_pitches(onsets_beats: Vec<f64>, pitches: Vec<i32>) -> Vec<SpelledPitch> {
-    brasscribe_core::spelling::spell(&onsets_beats, &pitches)
+pub fn spell_pitches(onsets_beats: Vec<f64>, pitches: Vec<i32>) -> Result<Vec<SpelledPitch>, CoreError> {
+    if onsets_beats.len() != pitches.len() {
+        return Err(invalid(format!("{} onsets for {} pitches", onsets_beats.len(), pitches.len())));
+    }
+    if onsets_beats.iter().any(|t| !t.is_finite()) {
+        return Err(invalid("onsets must be numbers"));
+    }
+    Ok(brasscribe_core::spelling::spell(&onsets_beats, &pitches)
         .into_iter()
         .map(|s| SpelledPitch { step: s.step.to_string(), alter: s.alter, octave: s.octave })
-        .collect()
+        .collect())
 }
 
 #[derive(Debug, Clone, uniffi::Record)]

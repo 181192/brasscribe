@@ -91,7 +91,7 @@ pub fn concert_key(written_fifths: i64, transpose: Option<&Value>) -> i64 {
     if shift > 6 {
         shift -= 12;
     }
-    let k = written_fifths + shift;
+    let k = written_fifths.saturating_add(shift);
     if k > 7 {
         k - 12
     } else if k < -7 {
@@ -194,10 +194,11 @@ fn reduce(num: i64, den: i64) -> (i64, i64) {
 }
 
 fn key_alters(step: &str, fifths: i64) -> bool {
+    let n = fifths.unsigned_abs().min(7) as usize;
     if fifths > 0 {
-        return "FCGDAEB"[..fifths.min(7) as usize].contains(step);
+        return "FCGDAEB"[..n].contains(step);
     }
-    fifths < 0 && "BEADGCF"[..(-fifths).min(7) as usize].contains(step)
+    fifths < 0 && "BEADGCF"[..n].contains(step)
 }
 
 fn fmt_num(x: &Value) -> String {
@@ -531,13 +532,13 @@ impl Lex {
             } else if f > 0 {
                 format!("{f} kryss")
             } else {
-                format!("{} b", -f)
+                format!("{} b", f.unsigned_abs())
             };
         }
         if f == 0 {
             return "no sharps or flats".into();
         }
-        let n = f.abs();
+        let n = f.unsigned_abs();
         format!("key {n} {}{}", if f > 0 { "sharp" } else { "flat" }, if n == 1 { "" } else { "s" })
     }
 
@@ -1030,7 +1031,7 @@ struct Chain {
     count: i64,
 }
 
-fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percussion: bool, transpose: &Value, tuplet_count: &mut i64) -> Option<Value> {
+fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percussion: bool, transpose: &Value, tuplet_count: &mut i64) -> Result<Option<Value>, String> {
     let typ = findtext(el, "type");
     let mut ev = Map::new();
     ev.insert("kind".into(), json!("note"));
@@ -1063,12 +1064,15 @@ fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percu
             ev.insert("kind".into(), json!("rest"));
         }
         type_or(&mut ev);
-        return Some(Value::Object(ev));
+        return Ok(Some(Value::Object(ev)));
     }
     type_or(&mut ev);
     if let Some(tm) = find(el, "time-modification") {
         let (actual, normal) = (el_int(find(tm, "actual-notes"), 3), el_int(find(tm, "normal-notes"), 2));
-        ev.insert("tuplet".into(), json!({"actual": actual, "normal": normal, "index": tuplet_count.rem_euclid(actual) + 1}));
+        if actual == 0 {
+            return Err("a tuplet of 0 notes (<actual-notes>0</actual-notes>)".into());
+        }
+        ev.insert("tuplet".into(), json!({"actual": actual, "normal": normal, "index": crate::py::pymod(*tuplet_count, actual) + 1}));
         *tuplet_count += 1;
     } else {
         *tuplet_count = 0;
@@ -1097,9 +1101,9 @@ fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percu
         ev.insert("kind".into(), json!("unpitched"));
         ev.insert("instruments".into(), json!([en]));
         ev.insert("instruments_nb".into(), json!([nb]));
-        return Some(Value::Object(ev));
+        return Ok(Some(Value::Object(ev)));
     }
-    let p = find(el, "pitch")?;
+    let Some(p) = find(el, "pitch") else { return Ok(None) };
     let written = read_pitch(p);
     let concert = if percussion { written.clone() } else { to_concert(&written, transpose) };
     ev.insert("written".into(), written);
@@ -1109,7 +1113,7 @@ fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percu
             ev.insert("confidence".into(), json!(0.3));
         }
     }
-    Some(Value::Object(ev))
+    Ok(Some(Value::Object(ev)))
 }
 
 fn read_pitch(p: Node) -> Value {
@@ -1197,6 +1201,9 @@ pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, Strin
                 match el.tag_name().name() {
                     "attributes" => {
                         divisions = el_int(find(el, "divisions"), divisions);
+                        if divisions == 0 {
+                            return Err("MusicXML <divisions> of 0".into());
+                        }
                         fifths = el_int(find(el, "key/fifths"), fifths);
                         if find(el, "time").is_some() {
                             time = json!({"beats": el_int(find(el, "time/beats"), 4), "beat_type": el_int(find(el, "time/beat-type"), 4)});
@@ -1249,7 +1256,7 @@ pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, Strin
                             }
                             continue;
                         }
-                        let Some(mut ev) = read_note(el, start, dur, divisions, &time, percussion, &transpose, &mut tuplet_count) else { continue };
+                        let Some(mut ev) = read_note(el, start, dur, divisions, &time, percussion, &transpose, &mut tuplet_count)? else { continue };
                         let kind = gs(&ev, "kind").unwrap_or("").to_string();
                         if pending_dyn.is_some() && kind != "rest" && kind != "bar-rest" {
                             ev["dynamic"] = json!(pending_dyn.take());
@@ -1458,9 +1465,10 @@ pub fn part_of(doc: &Value, part_index: usize) -> Part {
 
 /// The announcer's view of bar `b` (index) of a part, arriving from `ctx`.
 pub fn bar_of(doc: &Value, part_index: usize, b: usize, ctx: &Context) -> Bar {
-    let bars = doc["parts"][part_index]["bars"].as_array().unwrap();
-    let bar = &bars[b];
-    let prev = if b > 0 { Some(&bars[b - 1]) } else { None };
+    let bars = bars_of(doc, part_index);
+    // A bar the document does not have reads as an empty one.
+    let bar = bars.get(b).unwrap_or(&Value::Null);
+    let prev = if b > 0 { bars.get(b - 1) } else { None };
     let number = gi(bar, "number", b as i64 + 1);
     let region = region_at(doc, number);
     let prev_region = ctx.bar.and_then(|cb| region_at(doc, cb));
@@ -1507,7 +1515,7 @@ fn plain_bar(b: &Bar) -> Bar {
 pub fn part_lines(doc: &Value, part_index: usize, s: &Settings) -> Vec<(String, Vec<String>)> {
     let l = Lex::of(s);
     let ap = part_of(doc, part_index);
-    let bars = doc["parts"][part_index]["bars"].as_array().unwrap();
+    let bars = bars_of(doc, part_index);
     let mut ctx = Context::default();
     let mut out = Vec::new();
     let here = |ctx: &mut Context, number: i64| {
@@ -1575,10 +1583,12 @@ fn part_title(doc: &Value, i: usize, s: &Settings) -> String {
     }
 }
 
+/// The parts to export: those asked for that the document has (in the order asked), or all.
 fn part_indices(doc: &Value, parts: Option<&[usize]>) -> Vec<usize> {
+    let n = doc["parts"].as_array().map(|a| a.len()).unwrap_or(0);
     match parts {
-        Some(p) => p.to_vec(),
-        None => (0..doc["parts"].as_array().map(|a| a.len()).unwrap_or(0)).collect(),
+        Some(p) => p.iter().copied().filter(|&i| i < n).collect(),
+        None => (0..n).collect(),
     }
 }
 
@@ -1682,7 +1692,7 @@ pub fn navigate(doc: &Value, c: Cursor, unit: Unit, forward: bool) -> Option<Cur
     let nparts = doc["parts"].as_array().map(|a| a.len()).unwrap_or(0);
     match unit {
         Unit::Part => {
-            let p = if forward { c.part + 1 } else { c.part.checked_sub(1)? };
+            let p = if forward { c.part.checked_add(1)? } else { c.part.checked_sub(1)? };
             if p >= nparts {
                 return None;
             }
@@ -1694,7 +1704,7 @@ pub fn navigate(doc: &Value, c: Cursor, unit: Unit, forward: bool) -> Option<Cur
         }
         Unit::Bar => {
             let bars = bars_of(doc, c.part);
-            let b = if forward { c.bar + 1 } else { c.bar.checked_sub(1)? };
+            let b = if forward { c.bar.checked_add(1)? } else { c.bar.checked_sub(1)? };
             (b < bars.len()).then_some(Cursor { part: c.part, bar: b, event: 0 })
         }
         Unit::Note | Unit::Uncertain => {

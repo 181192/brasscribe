@@ -22,7 +22,7 @@ use crate::harmony::{harmony_slots, slots_to_notes};
 use crate::keys::{key_plan, CHANGE_PENALTY};
 use crate::lines::{line, MIN_DUR};
 use crate::midi::{MidiFile, RawNote};
-use crate::model::{Composition, Dynamic, KeySig, Meter, Note, Section, Voice, VoiceRole, TICKS_PER_BEAT};
+use crate::model::{check_bar_beats, check_span, Composition, Dynamic, KeySig, Meter, Note, Section, Voice, VoiceRole, TICKS_PER_BEAT};
 use crate::musicxml::{band_score, write_score, PartSpec, ScoreSpec};
 use crate::notation::score::write_score_with_parts;
 use crate::py;
@@ -63,6 +63,12 @@ impl Beats {
             }
             let t: f64 = cols[0].parse().map_err(|e| format!("beats line {}: {e}", i + 1))?;
             let p: f64 = cols[1].parse().map_err(|e| format!("beats line {}: {e}", i + 1))?;
+            if !t.is_finite() || !p.is_finite() {
+                return Err(format!("beats line {}: not a number", i + 1));
+            }
+            if times.last().is_some_and(|&last| t <= last) {
+                return Err(format!("beats line {}: the beat times must increase", i + 1));
+            }
             times.push(t);
             positions.push(p.trunc() as i64);
         }
@@ -95,6 +101,11 @@ impl Beats {
     }
 }
 
+/// Err when a voice reaches further from tick 0 than a Composition may.
+fn check_notes(notes: &[Note]) -> Result<(), String> {
+    notes.iter().try_for_each(|n| check_span(n.start, n.end()))
+}
+
 /// `n` doubles `line`: the same pitch within the consensus onset tolerance of one of its notes.
 fn doubles(line: &[RawNote], n: &RawNote) -> bool {
     line.iter().any(|m| m.pitch == n.pitch && (m.onset - n.onset).abs() <= crate::consensus::ONSET_TOL)
@@ -119,10 +130,29 @@ fn grid(beats: &Beats, onsets: &[f64]) -> Result<(Vec<f64>, i64, i64), String> {
     }
     let min_on = onsets.iter().cloned().fold(f64::INFINITY, f64::min);
     let earliest = BeatMap::new(&times)?.to_beats(min_on);
+    let first_down = downbeat_at_or_before(first_down, bpb, earliest)?;
+    Ok((times, bpb, first_down))
+}
+
+/// The bar line at or before beat `earliest` (the first note), stepping back from the downbeat
+/// `first_down` by bars of `bpb` beats. A note far before the first beat is reached in one jump
+/// rather than a step per bar; the last steps are the same as before, so is the result.
+fn downbeat_at_or_before(first_down: i64, bpb: i64, earliest: f64) -> Result<i64, String> {
+    if earliest.is_nan() || earliest == f64::NEG_INFINITY || bpb < 1 {
+        return Err("the notes cannot be placed on the beat grid".into());
+    }
+    let mut first_down = first_down;
+    let bars = ((first_down as f64 - (earliest + 1e-6)) / bpb as f64).floor() - 1.0;
+    if bars > 0.0 {
+        if bars * bpb as f64 > 1e15 {
+            return Err("the notes start too long before the first beat".into());
+        }
+        first_down -= bars as i64 * bpb;
+    }
     while first_down as f64 > earliest + 1e-6 {
         first_down -= bpb;
     }
-    Ok((times, bpb, first_down))
+    Ok(first_down)
 }
 
 fn tonal_key(notes: &[&Note]) -> i32 {
@@ -270,12 +300,20 @@ fn separation(l: &Layers) -> Option<String> {
 /// confidence is the calibrated probability that it is right (confidence.rs).
 /// The orchestra residual is split by what the notes do: short notes attacked
 /// together with two or more others are brass-choir hits, the rest strings.
-pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &LayersOptions) -> Result<BandResult, String> {
+/// Free-time passages may be notated at a tempo from this range (BPM).
+pub const FREE_TEMPO_RANGE: (f64, f64) = (20.0, 400.0);
+
+/// Err when an option of [`arrange_layers_song`] has no meaning (an unknown lineup, difficulty,
+/// seat, clef, lead, language, kit or key, a key and a transposition together, a transposition
+/// beyond [`MAX_TRANSPOSE`](crate::model::MAX_TRANSPOSE) semitones, a free-time tempo outside
+/// [`FREE_TEMPO_RANGE`]). Checked before anything is read, so the apps can tell a bad option
+/// from a recording that could not be arranged.
+pub fn check_layers_options(opts: &LayersOptions) -> Result<(), String> {
     let difficulty = if opts.difficulty.is_empty() { "faithful" } else { opts.difficulty.as_str() };
     if !crate::difficulty::MODES.contains(&difficulty) {
         return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
     }
-    let lineup_name = crate::instruments::lineup_key(&opts.lineup)?;
+    crate::instruments::lineup_key(&opts.lineup)?;
     let lang = if opts.lang.is_empty() { "en" } else { opts.lang.as_str() };
     if !crate::arranger::FOOTER_LANGS.contains(&lang) {
         return Err(format!("lang must be one of {:?}", crate::arranger::FOOTER_LANGS));
@@ -293,6 +331,28 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     if opts.key.is_some() && opts.transpose.is_some() {
         return Err("give a key or a transposition, not both".into());
     }
+    if let Some(k) = &opts.key {
+        // The key's syntax; the shift itself depends on the key the music turns out to be in.
+        crate::keys::semitones_to(&KeySig { tick: 0, fifths: 0, mode: "major".into() }, k)?;
+    }
+    if let Some(t) = opts.transpose {
+        crate::model::check_transpose(t as i64)?;
+    }
+    if let Some(bpm) = opts.free_tempo {
+        if !(FREE_TEMPO_RANGE.0..=FREE_TEMPO_RANGE.1).contains(&bpm) {
+            return Err(format!("the free-time tempo must be {} to {} BPM", FREE_TEMPO_RANGE.0, FREE_TEMPO_RANGE.1));
+        }
+    }
+    crate::instruments::kit_program(&opts.kit)?;
+    Ok(())
+}
+
+pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &LayersOptions) -> Result<BandResult, String> {
+    check_layers_options(opts)?;
+    let difficulty = if opts.difficulty.is_empty() { "faithful" } else { opts.difficulty.as_str() };
+    let lineup_name = crate::instruments::lineup_key(&opts.lineup)?;
+    let lang = if opts.lang.is_empty() { "en" } else { opts.lang.as_str() };
+    let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
     let solo_mus = layers.solo_mus.pitched();
     let solo_bp = layers.solo_bp.pitched();
     let mut bass_raw = layers.bass.pitched();
@@ -321,6 +381,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     // Most common gap between labelled downbeats (1 when there are none).
     let label_bpb = beats.beats_per_bar().ok();
     let mut bpb = label_bpb.unwrap_or(1);
+    check_bar_beats(bpb)?;
     let mut down: Vec<bool> = beats.positions.iter().map(|&p| p == 1).collect();
     let mut raw_times = beats.times.clone();
     let mut first_down;
@@ -377,9 +438,8 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     let coarse = coarse.as_deref();
     let min_on = onsets.iter().cloned().fold(f64::INFINITY, f64::min);
     let earliest = BeatMap::new(&times)?.to_beats(min_on);
-    while first_down as f64 > earliest + 1e-6 {
-        first_down -= bpb;
-    }
+    first_down = downbeat_at_or_before(first_down, bpb, earliest)?;
+    check_bar_beats(bpb)?;
     let pickup = first_down * TICKS_PER_BEAT;
     let half = TICKS_PER_BEAT / 2;
 
@@ -418,7 +478,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     // confidence, not two; the clustering is unchanged.
     let key_set = |v: &[RawNote]| {
         let mut k: Vec<(f64, i32)> = v.iter().map(|n| (n.onset, n.pitch)).collect();
-        k.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then(a.1.cmp(&b.1)));
+        k.sort_by(|a, b| py::fcmp(&a.0, &b.0).then(a.1.cmp(&b.1)));
         k
     };
     let mus_is_bp = key_set(&solo_mus) == key_set(&solo_bp);
@@ -493,6 +553,9 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         clip_to_regions(v, &regions);
     }
     mark_fermatas(&mut solo, &regions);
+    for v in [&solo, &bass, &lines, &hits, &drums] {
+        check_notes(v)?;
+    }
 
     let voice = |id: &str, role, notes: Vec<Note>, hint: &str, layer: &str| Voice {
         id: id.into(),
@@ -562,7 +625,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         _ => 0,
     };
     if shift != 0 {
-        comp = comp.transposed(shift);
+        comp = comp.transposed(shift)?;
     }
     let kit = if crate::instruments::kit_program(&opts.kit)? == 0 { "band" } else { opts.kit.as_str() };
     if lineup_name != "band" || difficulty != "faithful" || shift != 0 || opts.seat.is_some() || opts.trills || kit != "band" {
@@ -735,6 +798,10 @@ pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &So
     // the melody as the harmony stems play it too: not part of the harmony
     let acc: Vec<RawNote> = harm_all.iter().flatten().filter(|n| 40 <= n.pitch && n.pitch <= 84 && !doubles(&mel_raw, n)).cloned().collect();
     let acc_q = to_notes(&quantize(&acc, &times, false, false), pickup, "accompaniment");
+    check_bar_beats(bpb)?;
+    for v in [&melody, &bass, &acc_q] {
+        check_notes(v)?;
+    }
     let end = melody.iter().chain(bass.iter()).chain(acc_q.iter()).map(|n| n.end()).max().ok_or("no notes")?;
     let harm = slots_to_notes(&harmony_slots(&acc_q, end, 4, 0.35), 0.8);
 
@@ -773,6 +840,10 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
     let cand = melody_votes(melody, support);
     let mel = fill_gaps(quantize(&line(&cand, 52, 86, true, MIN_DUR), &beats.times, true, true), half, 0.0);
     let bas = fill_gaps(quantize(&line(&bass.pitched(), 28, 55, false, MIN_DUR), &beats.times, true, true), half, 0.0);
+    check_bar_beats(bpb)?;
+    for q in mel.iter().chain(bas.iter()) {
+        check_span(q.start.saturating_sub(pickup), q.end.saturating_sub(pickup))?;
+    }
     let spec = ScoreSpec {
         parts: vec![PartSpec::concert("Melody", mel, "treble"), PartSpec::concert("Bass", bas, "bass")],
         beats_per_bar: bpb,
@@ -840,7 +911,7 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
     let beats = ts.and_then(|t| t.split('/').next().and_then(|x| x.trim().parse::<i64>().ok())).unwrap_or(4);
     let all: Vec<&Note> = voices.iter().flat_map(|v| v.notes.iter()).collect();
     let fifths = tonal_key(&all);
-    Ok(Composition {
+    let comp = Composition {
         title: title.into(),
         voices,
         meters: vec![Meter { tick: 0, beats, beat_unit: 4 }],
@@ -854,7 +925,9 @@ pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Comp
         review: Vec::new(),
         arrangement: None,
         tempo_estimated: false,
-    })
+    };
+    comp.validate()?;
+    Ok(comp)
 }
 
 /// Arranger benchmark path: reference -> Composition -> minimal band score.
@@ -940,6 +1013,50 @@ mod tests {
             }
         }
         check_stem(&take(s).mono(), &mix.mono(), s.sample_rate, SEPARATION_FAIL_DB).to_json_string()
+    }
+
+    #[test]
+    fn beat_tables_must_be_numbers_that_increase() {
+        assert!(Beats::parse("0.5 1\n1.0 2\n1.5 3").is_ok());
+        for bad in ["nan 1\n1.0 2", "0.5 1\ninf 2", "0.5 1\n1.0 NaN", "0.5 1\n0.5 2\n1.0 3", "1.0 1\n0.5 2", "-inf 1\n0 2"] {
+            let e = Beats::parse(bad).unwrap_err();
+            assert!(e.starts_with("beats line"), "{bad:?}: {e}");
+        }
+    }
+
+    #[test]
+    fn the_downbeat_jump_lands_where_stepping_does() {
+        let stepped = |mut fd: i64, bpb: i64, earliest: f64| {
+            while fd as f64 > earliest + 1e-6 {
+                fd -= bpb;
+            }
+            fd
+        };
+        for bpb in 1..=12 {
+            for fd in -5..40 {
+                for k in -4000..400 {
+                    let earliest = k as f64 * 0.37 + 1e-7 * (k % 3) as f64;
+                    assert_eq!(downbeat_at_or_before(fd, bpb, earliest).unwrap(), stepped(fd, bpb, earliest), "{fd} {bpb} {earliest}");
+                }
+                for earliest in [fd as f64, fd as f64 - 1e-6, fd as f64 + 1e-6, f64::INFINITY] {
+                    assert_eq!(downbeat_at_or_before(fd, bpb, earliest).unwrap(), stepped(fd, bpb, earliest));
+                }
+            }
+        }
+        // A note a hundred million bars before the first beat: one jump, not a step per bar.
+        assert_eq!(downbeat_at_or_before(0, 4, -4e8), Ok(-400_000_000));
+        assert!(downbeat_at_or_before(0, 4, f64::NEG_INFINITY).is_err());
+        assert!(downbeat_at_or_before(0, 4, f64::NAN).is_err());
+        assert!(downbeat_at_or_before(0, 4, -1e300).is_err());
+    }
+
+    #[test]
+    fn a_reference_with_a_huge_bar_or_note_is_refused() {
+        let r = |ts: &str, quarter: f64| serde_json::json!({"notes": [{"part": "S", "pitch": 60, "quarter": quarter, "dur_quarter": 1.0, "time_sig": ts}]});
+        assert!(composition_from_reference(&r("4/4", 0.0), "t").is_ok());
+        assert!(composition_from_reference(&r("100000/4", 0.0), "t").unwrap_err().contains("beats"));
+        assert!(composition_from_reference(&r("-3/4", 0.0), "t").is_err());
+        assert!(composition_from_reference(&r("4/4", 1e9), "t").unwrap_err().contains("longer"));
     }
 
     #[test]

@@ -149,7 +149,7 @@ fn fold(notes: &[Note], lo: i32, hi: i32) -> Vec<Note> {
         if !(lo <= p && p <= hi) {
             let r = prev.map(|x| x as f64).unwrap_or((lo + hi) as f64 / 2.0);
             let opts = (0..11).map(|k| p.rem_euclid(12) + 12 * k).filter(|&x| lo <= x && x <= hi);
-            if let Some(best) = opts.min_by(|x, y| ((*x as f64 - r).abs(), *x).partial_cmp(&((*y as f64 - r).abs(), *y)).unwrap()) {
+            if let Some(best) = opts.min_by(|x, y| crate::py::fcmp(&(*x as f64 - r).abs(), &(*y as f64 - r).abs()).then(x.cmp(y))) {
                 p = best;
             }
         }

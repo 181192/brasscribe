@@ -55,46 +55,57 @@ fn ok(a: i64, b: i64, bar: i64) -> bool {
     mid.map_or(true, |m| a == 0 || !(a < m && m < b))
 }
 
-fn in_bar(a: i64, b: i64, bar: i64) -> Vec<(i64, i64)> {
+/// How [`in_bar`] treats one span: written as it is, or split in two at a tick.
+enum Step {
+    Whole,
+    Split(i64),
+}
+
+fn step(a: i64, b: i64, bar: i64) -> Step {
     if ok(a, b, bar) {
-        return vec![(a, b)];
+        return Step::Whole;
     }
     if let Some(m) = middle(bar) {
         if a < m && m < b && a != 0 {
-            let mut v = in_bar(a, m, bar);
-            v.extend(in_bar(m, b, bar));
-            return v;
+            return Step::Split(m);
         }
     }
     if a.rem_euclid(BEAT) != 0 {
         let nxt = (floordiv(a, BEAT) + 1) * BEAT;
         if nxt < b {
-            let mut v = in_bar(a, nxt, bar);
-            v.extend(in_bar(nxt, b, bar));
-            return v;
+            return Step::Split(nxt);
         }
         // Inside one beat but not a single value: largest value that fits.
         let mut all: Vec<i64> = SINGLE.iter().chain(TRIPLET.iter()).copied().collect();
         all.sort_unstable_by(|x, y| y.cmp(x));
         all.dedup();
-        for n in all {
-            if n < b - a {
-                let mut v = in_bar(a, a + n, bar);
-                v.extend(in_bar(a + n, b, bar));
-                return v;
-            }
-        }
-        return vec![(a, b)];
+        return match all.into_iter().find(|&n| n < b - a) {
+            Some(n) => Step::Split(a + n),
+            None => Step::Whole,
+        };
     }
     // On a beat: the longest allowed value from here, then the rest.
-    for &n in SINGLE.iter().rev() {
-        if n < b - a && ok(a, a + n, bar) {
-            let mut v = vec![(a, a + n)];
-            v.extend(in_bar(a + n, b, bar));
-            return v;
+    match SINGLE.iter().rev().find(|&&n| n < b - a && ok(a, a + n, bar)) {
+        Some(&n) => Step::Split(a + n),
+        None => Step::Whole,
+    }
+}
+
+/// The pieces of [a, b) inside one bar, left to right. A work list instead of recursion: a long bar
+/// would otherwise nest one call per beat.
+fn in_bar(a: i64, b: i64, bar: i64) -> Vec<(i64, i64)> {
+    let mut out = Vec::new();
+    let mut todo = vec![(a, b)];
+    while let Some((a, b)) = todo.pop() {
+        match step(a, b, bar) {
+            Step::Whole => out.push((a, b)),
+            Step::Split(m) => {
+                todo.push((m, b));
+                todo.push((a, m));
+            }
         }
     }
-    vec![(a, b)]
+    out
 }
 
 /// Readable (start, end) pieces of [start, end) in ticks from the first bar line.
@@ -120,5 +131,71 @@ mod tests {
         assert_eq!(pieces(24, 72, 96), vec![(24, 48), (48, 72)]);
         assert_eq!(pieces(12, 36, 96), vec![(12, 36)]);
         assert_eq!(pieces(6, 30, 96), vec![(6, 24), (24, 30)]);
+    }
+
+    /// The recursive form the work list replaced.
+    fn recursive(a: i64, b: i64, bar: i64) -> Vec<(i64, i64)> {
+        if ok(a, b, bar) {
+            return vec![(a, b)];
+        }
+        if let Some(m) = middle(bar) {
+            if a < m && m < b && a != 0 {
+                let mut v = recursive(a, m, bar);
+                v.extend(recursive(m, b, bar));
+                return v;
+            }
+        }
+        if a.rem_euclid(BEAT) != 0 {
+            let nxt = (floordiv(a, BEAT) + 1) * BEAT;
+            if nxt < b {
+                let mut v = recursive(a, nxt, bar);
+                v.extend(recursive(nxt, b, bar));
+                return v;
+            }
+            // Inside one beat but not a single value: largest value that fits.
+            let mut all: Vec<i64> = SINGLE.iter().chain(TRIPLET.iter()).copied().collect();
+            all.sort_unstable_by(|x, y| y.cmp(x));
+            all.dedup();
+            for n in all {
+                if n < b - a {
+                    let mut v = recursive(a, a + n, bar);
+                    v.extend(recursive(a + n, b, bar));
+                    return v;
+                }
+            }
+            return vec![(a, b)];
+        }
+        // On a beat: the longest allowed value from here, then the rest.
+        for &n in SINGLE.iter().rev() {
+            if n < b - a && ok(a, a + n, bar) {
+                let mut v = vec![(a, a + n)];
+                v.extend(recursive(a + n, b, bar));
+                return v;
+            }
+        }
+        vec![(a, b)]
+    }
+
+    #[test]
+    fn work_list_splits_as_the_recursion_did() {
+        for beats in 1..=8 {
+            let bar = beats * BEAT;
+            for a in 0..bar {
+                for b in a + 1..=bar {
+                    assert_eq!(in_bar(a, b, bar), recursive(a, b, bar), "[{a}, {b}) in a bar of {beats}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_very_long_bar_fits_a_small_stack() {
+        // 512 KiB: the stack of a secondary thread on iOS.
+        let bar = 100_000 * BEAT;
+        for start in [0, 6] {
+            let p = std::thread::Builder::new().stack_size(512 * 1024).spawn(move || pieces(start, bar, bar)).unwrap().join().unwrap();
+            assert_eq!((p[0].0, p[p.len() - 1].1), (start, bar));
+            assert!(p.windows(2).all(|w| w[0].1 == w[1].0));
+        }
     }
 }

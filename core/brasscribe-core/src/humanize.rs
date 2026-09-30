@@ -172,7 +172,8 @@ impl Performance {
                         .map(|a| a.iter().any(|x| x.as_str() == Some("staccato")))
                         .unwrap_or(false),
                 };
-                if let Some(dev) = perf.deviation(&pn) {
+                // A deviation that is not a number (beat times at the ends of the float range) says nothing.
+                if let Some(dev) = perf.deviation(&pn).filter(|d| d.is_finite()) {
                     let i = *dev_idx.entry(start).or_insert_with(|| {
                         devs.push((start, Vec::new()));
                         devs.len() - 1
@@ -183,7 +184,7 @@ impl Performance {
             }
         }
         for (t, mut v) in devs {
-            v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            v.sort_by(crate::py::fcmp);
             let n = v.len();
             let med = if n % 2 == 1 { v[n / 2] } else { (v[n / 2 - 1] + v[n / 2]) / 2.0 };
             perf.tick_dev.insert(t, clip(med, MAX_DEV_S));
@@ -365,5 +366,19 @@ mod tests {
         assert_eq!(fnv1a64(k.as_bytes()), 0xee216da0d3be2b6a);
         assert_eq!(splitmix64(0xee216da0d3be2b6a), 0xc0c340d7787c06ac);
         assert_eq!(tri(k), -0.7633896560002583);
+    }
+
+    #[test]
+    fn deviations_that_are_not_numbers_are_left_out() {
+        // Beat times at the ends of the float range: the beat length overflows, the deviations are NaN.
+        let note = |start: i64, onset: f64| serde_json::json!({"start": start, "pitch": 60, "dur": 24, "onset_s": onset});
+        let comp = serde_json::json!({
+            "beat_times": [-1e308, 1e308],
+            "voices": [{"id": "melody", "role": "melody", "notes": [note(0, 0.1), note(0, 0.2), note(0, 0.3)]}],
+        });
+        let p = Performance::from_value(&comp).unwrap();
+        assert!(p.tick_dev.is_empty());
+        let n = ScoreNote { tick: 0, dur_tick: 24, start_s: 0.0, end_s: 0.5, pitch: 60, velocity: 80 };
+        assert!(humanize(&[n], "Solo Cornet", 0, "brasscribe", Some(&p), Timing::Score).is_ok());
     }
 }

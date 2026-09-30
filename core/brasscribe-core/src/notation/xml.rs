@@ -75,14 +75,31 @@ impl El {
     }
 }
 
+/// Escaped text; characters XML 1.0 cannot hold at all (C0 controls other than tab, line feed and
+/// carriage return, U+FFFE, U+FFFF) are left out, so a title typed with one still gives a readable file.
 fn escape(s: &str, attr: bool, out: &mut String) {
     for c in s.chars() {
         match c {
+            '\t' | '\n' | '\r' => out.push(c),
+            '\u{0}'..='\u{1F}' | '\u{FFFE}' | '\u{FFFF}' => {}
             '&' => out.push_str("&amp;"),
             '<' => out.push_str("&lt;"),
             '>' => out.push_str("&gt;"),
             '"' if attr => out.push_str("&quot;"),
             c => out.push(c),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn text_xml_cannot_hold_is_left_out() {
+        let mut out = String::new();
+        El::text("work-title", "bell\u{1}\u{7} & <co>\t\"x\"\u{FFFF}").attr("n", "a\u{0}\"b\"").write(0, &mut out);
+        assert_eq!(out, "<work-title n=\"a&quot;b&quot;\">bell &amp; &lt;co&gt;\t\"x\"</work-title>\n");
+        assert!(roxmltree::Document::parse(&out).is_ok());
     }
 }
