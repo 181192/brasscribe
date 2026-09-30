@@ -19,6 +19,11 @@ export function engineScorePath(src: string, origin: string): string | null {
   return u.pathname + u.search;
 }
 
+/** Example scores that ship with Studio (public domain), opened with `#/viewer?example=<id>`. */
+export const EXAMPLES: Record<string, { path: string; name: string }> = {
+  "old-hundredth": { path: "examples/old-hundredth.musicxml", name: "Old Hundredth" },
+};
+
 export function viewerView(root: HTMLElement, params: URLSearchParams): void {
   const input = h("input", { type: "file", id: "open-musicxml", accept: ".musicxml,.xml,.mxl,application/vnd.recordare.musicxml+xml,application/xml" });
   const status = h("p", { class: "hint", id: "viewer-status", role: "status" });
@@ -37,6 +42,7 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
 
   const open = async (name: string, data: ArrayBuffer | string) => {
     status.textContent = t("viewer.rendering", { name });
+    clear(notice);
     holder.hidden = false;
     // Once a score is open, Play is the primary; the chooser steps back.
     picker.querySelector(".button")?.classList.replace("primary", "ghost");
@@ -49,9 +55,17 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
       announce(t("viewer.opened", { name }));
       score.focusScore();
     } catch (e) {
-      clear(holder, errorNotice(e), score);
+      clear(notice, errorNotice(e));
       status.textContent = t("viewer.failed", { name });
     }
+  };
+  /** Open a score the engine serves; a failure is shown beside the (still usable) viewer. */
+  const openUrl = (path: string, name: string) => {
+    status.textContent = t("viewer.rendering", { name });
+    fetchText(path).then((txt) => open(name, txt)).catch((e) => {
+      clear(notice, errorNotice(e));
+      status.textContent = t("viewer.failed", { name });
+    });
   };
   const openFile = async (f: File) => {
     // Compressed MusicXML (.mxl) goes to alphaTab as bytes.
@@ -81,6 +95,12 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
     notice,
     holder);
 
+  const ex = params.get("example");
+  const example = ex && Object.hasOwn(EXAMPLES, ex) ? EXAMPLES[ex] : null;
+  if (example) {
+    openUrl(example.path, example.name);
+    return;
+  }
   const src = params.get("src");
   if (src) {
     const path = engineScorePath(src, location.origin);
@@ -90,6 +110,6 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
         h("p", {}, t("viewer.notEngineBody"))));
       return;
     }
-    fetchText(path).then((txt) => open(params.get("name") ?? path, txt)).catch((e) => clear(holder, errorNotice(e)));
+    openUrl(path, params.get("name") ?? path);
   }
 }

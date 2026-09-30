@@ -58,7 +58,7 @@ export function runsView(root: HTMLElement): void {
       clear(listEl, h("div", { class: "empty" },
         h("p", {}, h("strong", {}, t("runs.none"))),
         h("p", { class: "hint" }, t("runs.noneBody")),
-        h("p", {}, h("a", { class: "button primary", href: `#/viewer?src=${encodeURIComponent(api.referenceFileUrl("mikkel-arranged-band", "brass-band.musicxml"))}&name=${encodeURIComponent("Mikkel")}` }, t("runs.demo")))));
+        h("p", {}, h("a", { class: "button primary", href: "#/viewer?example=old-hundredth" }, t("runs.demo")))));
       formEl.querySelector("button[type=submit]")?.classList.remove("primary");
       return;
     }
