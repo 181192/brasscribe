@@ -43,7 +43,8 @@ case "${1:-}" in
     git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "$tag already exists"
     # The release commit as merged: rebase and squash put it on main's first-parent line; a merge
     # commit keeps it on the side, and then the merge commit itself is what main released.
-    commit=$(git log -1 --format=%H --grep="^chore(release): $version\$" main)
+    # A squash merge appends the pull request number to the subject: "chore(release): X.Y.Z (#45)".
+    commit=$(git log -1 --format=%H -E --grep="^chore\(release\): ${version//./\\.}( \(#[0-9]+\))?\$" main)
     [ -n "$commit" ] || die "no 'chore(release): $version' commit on main; merge the release pull request and pull first"
     if ! git rev-list --first-parent main | grep -qx "$commit"; then
       commit=$(git rev-list --first-parent --ancestry-path "$commit..main" | tail -1)
