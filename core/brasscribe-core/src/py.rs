@@ -170,10 +170,19 @@ pub fn interp(x: f64, xp: &[f64], fp: &[f64]) -> f64 {
     r
 }
 
+/// Sort order of two floats: as `<` orders them (-0.0 and 0.0 are equal, so a stable sort keeps
+/// their order), with NaN after every number as NumPy sorts it. A total order, so a sort never
+/// panics on a NaN.
+pub fn fcmp<T: PartialOrd>(a: &T, b: &T) -> std::cmp::Ordering {
+    #[allow(clippy::eq_op)]
+    let nan = |x: &T| x != x;
+    a.partial_cmp(b).unwrap_or_else(|| nan(a).cmp(&nan(b)))
+}
+
 /// `np.median` of a slice (mean of the two middle values for even lengths).
 pub fn median(v: &[f64]) -> f64 {
     let mut s = v.to_vec();
-    s.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    s.sort_by(fcmp);
     let n = s.len();
     if n % 2 == 1 {
         s[n / 2]

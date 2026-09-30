@@ -63,7 +63,7 @@ pub fn cluster(sources: &Sources) -> Vec<Candidate> {
     let mut events: Vec<(f64, i32, f64, &str)> =
         sources.iter().flat_map(|(s, notes)| notes.iter().map(move |n| (n.onset, n.pitch, n.offset, s.as_str()))).collect();
     events.sort_by(|a, b| {
-        a.0.partial_cmp(&b.0).unwrap().then(a.1.cmp(&b.1)).then(a.2.partial_cmp(&b.2).unwrap()).then(a.3.cmp(b.3))
+        crate::py::fcmp(&a.0, &b.0).then(a.1.cmp(&b.1)).then(crate::py::fcmp(&a.2, &b.2)).then(a.3.cmp(b.3))
     });
     let mut done: Vec<Candidate> = Vec::new();
     // open candidates per pitch, as indices into `done`
@@ -127,6 +127,6 @@ pub fn consensus(sources: &Sources, precision: &[(&str, f64)], threshold: f64) -
             alternatives.push(note);
         }
     }
-    accepted.sort_by(|a, b| a.onset.partial_cmp(&b.onset).unwrap().then(a.pitch.cmp(&b.pitch)));
+    accepted.sort_by(|a, b| crate::py::fcmp(&a.onset, &b.onset).then(a.pitch.cmp(&b.pitch)));
     (accepted, alternatives)
 }

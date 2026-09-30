@@ -14,7 +14,7 @@ pub fn line(notes: &[RawNote], lo: i32, hi: i32, top: bool, min_dur: f64) -> Vec
         .iter()
         .filter(|n| lo <= n.pitch && n.pitch <= hi && n.offset - n.onset >= if n.split { SPLIT_MIN_DUR } else { min_dur })
         .collect();
-    cand.sort_by(|a, b| a.onset.partial_cmp(&b.onset).unwrap());
+    cand.sort_by(|a, b| crate::py::fcmp(&a.onset, &b.onset));
     let mut out: Vec<RawNote> = Vec::new();
     for n in cand {
         if let Some(last) = out.last_mut() {

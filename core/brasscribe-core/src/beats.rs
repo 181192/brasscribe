@@ -110,7 +110,7 @@ fn has_onset(on: &[f64], t0: f64, d: f64, k: i64) -> bool {
 pub fn clean_beats(times: &[f64], downbeat: Option<&[bool]>, skip: &[(usize, usize)], onsets: Option<&[f64]>) -> CleanBeats {
     let on: Option<Vec<f64>> = onsets.map(|o| {
         let mut v = o.to_vec();
-        v.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        v.sort_by(crate::py::fcmp);
         v
     });
     let mut t: Vec<f64> = times.to_vec();
@@ -564,7 +564,7 @@ pub const FALLBACK_MIN_IOI: f64 = 0.05;
 /// (beat times, positions 1-4) for a take with fewer than two tracked beats.
 pub fn fallback_beats(tracked: &[f64], onsets: &[f64]) -> (Vec<f64>, Vec<i64>) {
     let mut on: Vec<f64> = onsets.iter().map(|&x| py::np_round(x, 3)).collect();
-    on.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    on.sort_by(crate::py::fcmp);
     on.dedup();
     let ioi: Vec<f64> = on.windows(2).map(|w| w[1] - w[0]).filter(|&d| d > FALLBACK_MIN_IOI).collect();
     let mut period = FALLBACK_PREFERRED;
@@ -574,7 +574,7 @@ pub fn fallback_beats(tracked: &[f64], onsets: &[f64]) -> (Vec<f64>, Vec<i64>) {
             .iter()
             .map(|m| base * m)
             .filter(|&p| FALLBACK_BEAT.0 <= p && p <= FALLBACK_BEAT.1)
-            .min_by(|a, b| ((a - FALLBACK_PREFERRED).abs(), *a).partial_cmp(&((b - FALLBACK_PREFERRED).abs(), *b)).unwrap());
+            .min_by(|a, b| crate::py::fcmp(&(a - FALLBACK_PREFERRED).abs(), &(b - FALLBACK_PREFERRED).abs()).then(crate::py::fcmp(a, b)));
         if let Some(p) = best {
             period = p;
         }
