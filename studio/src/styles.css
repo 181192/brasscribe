@@ -140,11 +140,11 @@ button, .button {
 button.primary, .button.primary { box-shadow: none; }
 /* The hit area is 44 px (touch-min) around a 40 px control. */
 button::after, .button::after { content: ""; position: absolute; inset: calc((var(--bc-control-min) - var(--bc-touch-min)) / 2) 0; }
-button:hover:not(:disabled), .button:hover { background: color-mix(in srgb, var(--bc-secondary) 80%, var(--bc-text) 8%); }
-button:disabled { opacity: 0.55; cursor: not-allowed; }
+button:hover:not(:disabled, [aria-disabled="true"]), .button:hover { background: color-mix(in srgb, var(--bc-secondary) 80%, var(--bc-text) 8%); }
+button:disabled, button[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
 /* The one primary button per screen: ink on light, paper on dark. */
 button.primary, .button.primary { background: var(--bc-primary); color: var(--bc-on-primary); }
-button.primary:hover:not(:disabled), .button.primary:hover { background: color-mix(in srgb, var(--bc-primary) 88%, var(--bc-bg)); }
+button.primary:hover:not(:disabled, [aria-disabled="true"]), .button.primary:hover { background: color-mix(in srgb, var(--bc-primary) 88%, var(--bc-bg)); }
 button.ghost, .button.ghost { background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
 button.danger { background: transparent; color: var(--bc-error); box-shadow: inset 0 0 0 1px currentColor; }
 button.danger.confirm { background: var(--bc-error); color: var(--bc-bg); }

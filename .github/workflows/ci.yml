@@ -50,7 +50,7 @@ jobs:
           filters: |
             python: ['engine/**', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.github/workflows/ci.yml']
             core: ['core/**', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
-            studio: ['studio/**', 'design/**', '.github/workflows/ci.yml']
+            studio: ['studio/**', 'design/**', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -107,7 +107,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -122,9 +122,24 @@ jobs:
           cargo test --release
           cargo build --release -p brasscribe-ffi
 
+      - name: Install cbindgen
+        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2
+        with:
+          tool: cbindgen
+
+      - name: Committed bindings are up to date
+        working-directory: core
+        run: |
+          scripts/bindings.sh >/dev/null
+          git diff --exit-code -- bindings swift android \
+            || { echo "::error::Bindings are stale; run core/scripts/bindings.sh and commit the result."; exit 1; }
+
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: apps/windows/global.json
+
+      - name: .NET wrapper of the core (C ABI)
+        run: dotnet test core/dotnet/Brasscribe.Core.Tests
 
       - name: Play for Windows core logic
         run: dotnet test apps/windows/tests/Brasscribe.Play.Core.Tests
@@ -153,6 +168,18 @@ jobs:
           npm ci
           npm test
           npm run typecheck
+
+      # The engine serves the committed bundle, so it must be what the sources build.
+      - name: Studio bundle up to date
+        working-directory: studio
+        run: |
+          npm run build
+          static=../engine/src/brasscribe_engine/static
+          if ! git diff --quiet -- "$static" || [ -n "$(git status --porcelain -- "$static")" ]; then
+            git status --short -- "$static"
+            echo "::error::The committed Studio bundle is out of date: run 'npm run build' in studio/ and commit engine/src/brasscribe_engine/static."
+            exit 1
+          fi
 
   # One check that is always reported, whichever jobs ran: the one to make required.
   result:

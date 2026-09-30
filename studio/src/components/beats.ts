@@ -1,6 +1,7 @@
 // Beat inspector: the tracker's beats and downbeats against the beat grid the
 // Composition was written on, with free-time and irregular-tempo regions.
 import { irregularRegions, summarise, type Beat, type Region } from "../lib/beats";
+import { maxOf } from "../lib/extent";
 import { t } from "../i18n";
 import { clear, fmt, h, table, token } from "../ui/dom";
 import { plot, timeAxis } from "./canvas";
@@ -32,7 +33,7 @@ export class BeatView extends HTMLElement {
       chart.setLabel(t("beats.label", { from: fmt.seconds(this.t0), to: fmt.seconds(this.t0 + this.span), rows: this.rows.map((r) => r.label).join(", ") }));
       chart.redraw();
     };
-    const dur = Math.max(1, ...this.rows.flatMap((r) => r.beats.map((b) => b.time)));
+    const dur = Math.max(1, maxOf(this.rows, (r) => maxOf(r.beats, (b) => b.time)));
     const nav = h("div", { class: "row" },
       h("button", { type: "button", onclick: () => { this.t0 = Math.max(0, this.t0 - this.span * 0.8); update(); } }, t("common.earlier")),
       h("button", { type: "button", onclick: () => { this.t0 = Math.min(dur - 5, this.t0 + this.span * 0.8); update(); } }, t("common.later")),

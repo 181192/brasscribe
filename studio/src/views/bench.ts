@@ -1,8 +1,9 @@
 // Benchmarks: run suites, see the regression gate and the trend per metric.
-import { api } from "../api/client";
+import { api, TimedOut } from "../api/client";
 import type { BenchRun, SuiteInfo, SuiteResult, SuiteRun } from "../api/types";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, infoTip, loading, pill, table, token, viewHead } from "../ui/dom";
+import { maxOf, minOf } from "../lib/extent";
+import { announce, clear, errorNotice, fmt, h, infoTip, loading, pill, rebuild, table, token, viewHead } from "../ui/dom";
 
 export function benchView(root: HTMLElement): void {
   const suitesEl = h("div", {}, loading());
@@ -16,8 +17,12 @@ export function benchView(root: HTMLElement): void {
 
   let hist: SuiteRun[] = [];
   let suites: SuiteInfo[] = [];
-  const renderSuites = () => clear(suitesEl, suiteTable(suites, hist, async (name, mode, btn) => {
-    btn.disabled = true;
+  // One suite runs at a time; while it does, every Run button is disabled, whenever the table is redrawn.
+  let running = false;
+  const renderSuites = () => rebuild([suitesEl], () => clear(suitesEl, suiteTable(suites, hist, running, async (name, mode) => {
+    if (running) return;
+    running = true;
+    renderSuites();
     clear(lastEl, h("section", { "aria-labelledby": "last-h" }, h("h2", { id: "last-h" }, t("bench.latest")), loading(t("bench.running", { name, mode }))));
     try {
       const run = await api.runSuite(name, mode);
@@ -25,11 +30,16 @@ export function benchView(root: HTMLElement): void {
       announce(t("bench.gateAnnounce", { name, state: run.passed ? t("bench.passed") : t("bench.failed") }));
       await loadTrend();
     } catch (e) {
-      clear(lastEl, errorNotice(e));
+      // Studio stopped waiting, but the engine carries on: the result lands in the history.
+      clear(lastEl, e instanceof TimedOut ? h("div", { class: "notice", role: "status" },
+        h("p", { class: "notice-title" }, h("strong", {}, t("bench.stillRunning", { name }))),
+        h("p", {}, t("bench.stillRunningBody", { min: Math.round(e.seconds / 60) }))) : errorNotice(e));
+      if (e instanceof TimedOut) void loadTrend();
     } finally {
-      btn.disabled = false;
+      running = false;
+      renderSuites();
     }
-  }));
+  })));
   const loadTrend = () => api.suiteHistory().then((hh) => {
     hist = hh;
     clear(trendEl, trend(hh));
@@ -42,12 +52,10 @@ export function benchView(root: HTMLElement): void {
   void loadTrend();
 }
 
-function suiteTable(suites: SuiteInfo[], hist: SuiteRun[], run: (name: string, mode: "cached" | "live", btn: HTMLButtonElement) => void): HTMLElement {
-  const btn = (name: string, mode: "cached" | "live", label?: string, cls = "ghost") => {
-    const b: HTMLButtonElement = h("button", { type: "button", class: cls, "aria-label": label ? null : mode === "cached" ? t("bench.runName", { name }) : t("bench.runLiveName", { name }), onclick: () => run(name, mode, b) },
+function suiteTable(suites: SuiteInfo[], hist: SuiteRun[], running: boolean, run: (name: string, mode: "cached" | "live") => void): HTMLElement {
+  const btn = (name: string, mode: "cached" | "live", label?: string, cls = "ghost") =>
+    h("button", { type: "button", class: cls, "data-key": `run:${name}:${mode}`, "aria-disabled": running ? "true" : null, "aria-label": label ? null : mode === "cached" ? t("bench.runName", { name }) : t("bench.runLiveName", { name }), onclick: () => run(name, mode) },
       label ?? (mode === "cached" ? t("bench.run") : t("bench.runLive")));
-    return b;
-  };
   const latest = (name: string) => [...hist].filter((r) => r.suite === name).sort((a, b) => b.time - a.time)[0];
   const rows = (list: SuiteInfo[]) => list.map((s) => {
     const last = latest(s.name);
@@ -120,8 +128,8 @@ function sparkline(metric: string, runs: SuiteRun[]): HTMLElement {
   const H = 40;
   const vals = pts.map((p) => p.c!.value!);
   const base = pts.find((p) => p.c!.baseline !== null)?.c;
-  const lo = Math.min(...vals, base?.baseline != null ? base.baseline - base.tolerance : Infinity);
-  const hi = Math.max(...vals, base?.baseline != null ? base.baseline + base.tolerance : -Infinity);
+  const lo = Math.min(minOf(vals, (v) => v), base?.baseline != null ? base.baseline - base.tolerance : Infinity);
+  const hi = Math.max(maxOf(vals, (v) => v), base?.baseline != null ? base.baseline + base.tolerance : -Infinity);
   const pad = (hi - lo) * 0.15 || 0.01;
   const y = (v: number) => H - 4 - ((v - (lo - pad)) / (hi - lo + 2 * pad)) * (H - 8);
   const x = (i: number) => (pts.length === 1 ? W / 2 : 8 + (i / (pts.length - 1)) * (W - 16));

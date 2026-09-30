@@ -153,6 +153,68 @@ class KtorEngineApiTest {
     }
 
     @Test
+    fun anEngineThatCannotBeReachedAfterTheStreamEndsIsRetriedThenGivenUp() = runTest {
+        val requests = mutableListOf<String>()
+        val engine = MockEngine { req ->
+            requests += req.url.encodedPath
+            throw java.io.IOException("connection refused")
+        }
+        val e = runCatching { KtorEngineApi("http://host", engine).events("r1").toList() }.exceptionOrNull()
+        assertTrue("$e", e is EngineException && e.status == 0)
+        // Each attempt is one stream request; the status check is never reached, and never escapes the retries.
+        assertEquals(List(6) { "/v1/jobs/r1/events" }, requests)
+    }
+
+    @Test
+    fun aLostStatusCheckCountsAsALostStreamAndTheStreamResumes() = runTest {
+        val done = "id: 3\nevent: job\ndata: {\"id\":3,\"type\":\"job\",\"status\":\"succeeded\",\"time\":5.0}\n\n"
+        val first = "id: 2\nevent: stage\ndata: {\"id\":2,\"type\":\"stage\",\"stage\":\"beats\",\"status\":\"ran\",\"time\":3.0}\n\n"
+        var streams = 0
+        var statusChecks = 0
+        val afters = mutableListOf<String?>()
+        val engine = MockEngine { req ->
+            when (req.url.encodedPath) {
+                "/v1/jobs/r1/events" -> {
+                    afters += req.url.parameters["after"]
+                    // The first stream ends early; the next one has the job's end.
+                    respond(if (streams++ == 0) first else done, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/event-stream"))
+                }
+                // The engine drops out for the status check right after the first stream.
+                "/v1/jobs/r1" -> { statusChecks++; throw java.io.IOException("unreachable") }
+                else -> respond("", HttpStatusCode.NotFound)
+            }
+        }
+        val events = KtorEngineApi("http://host", engine).events("r1").toList()
+        assertEquals(listOf(2, 3), events.map { it.id })
+        assertEquals(1, statusChecks)
+        assertEquals(listOf("-1", "2"), afters)
+    }
+
+    @Test
+    fun anErrorFromTheEngineEndsTheStreamAtOnce() = runTest {
+        var requests = 0
+        val engine = MockEngine { requests++; respond("""{"detail":"no such job"}""", HttpStatusCode.NotFound, json) }
+        val e = runCatching { KtorEngineApi("http://host", engine).events("r1").toList() }.exceptionOrNull()
+        assertTrue("$e", e is EngineException && e.status == 404)
+        assertEquals(1, requests)
+    }
+
+    @Test
+    fun theCollectorsOwnFailureIsNotRetried() = runTest {
+        var requests = 0
+        val stream = "id: 0\nevent: job\ndata: {\"id\":0,\"type\":\"job\",\"status\":\"queued\",\"time\":1.0}\n\n"
+        val engine = MockEngine { requests++; respond(stream, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/event-stream")) }
+        val e = runCatching { KtorEngineApi("http://host", engine).events("r1").collect { error("collector failed") } }.exceptionOrNull()
+        assertEquals("collector failed", e?.message)
+        assertEquals(1, requests)
+    }
+
+    @Test
+    fun reconnectsWaitLongerAfterEachFailure() {
+        assertEquals(listOf(1000L, 1000L, 2000L, 4000L, 8000L, 8000L), (0..5).map { KtorEngineApi.reconnectDelay(it) })
+    }
+
+    @Test
     fun sseParserJoinsMultilineData() {
         val p = SseParser()
         listOf("id: 7", "data: a", "data: b").forEach { assertEquals(null, p.feed(it)) }

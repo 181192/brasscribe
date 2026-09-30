@@ -1,7 +1,28 @@
 // Score viewer: open a MusicXML file from disk (or a run's score) and play it.
-import { fetchText, isEnginePath } from "../api/client";
+import { fetchText } from "../api/client";
 import { t } from "../i18n";
 import { announce, clear, errorNotice, filePicker, h, viewHead } from "../ui/dom";
+
+/**
+ * The engine path a `?src=` link may open: a path on this engine under /v1/ (a run's or a
+ * reference's score). Anything else (another site, another part of this one) gives null.
+ */
+export function engineScorePath(src: string, origin: string): string | null {
+  if (!src.startsWith("/v1/") || src.includes("\\")) return null;
+  let u: URL;
+  try {
+    u = new URL(src, origin);
+  } catch {
+    return null;
+  }
+  if (u.origin !== new URL(origin).origin || !u.pathname.startsWith("/v1/")) return null;
+  return u.pathname + u.search;
+}
+
+/** Example scores that ship with Studio (public domain), opened with `#/viewer?example=<id>`. */
+export const EXAMPLES: Record<string, { path: string; name: string }> = {
+  "old-hundredth": { path: "examples/old-hundredth.musicxml", name: "Old Hundredth" },
+};
 
 export function viewerView(root: HTMLElement, params: URLSearchParams): void {
   const input = h("input", { type: "file", id: "open-musicxml", accept: ".musicxml,.xml,.mxl,application/vnd.recordare.musicxml+xml,application/xml" });
@@ -9,6 +30,8 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
   const score = h("bs-score", {});
   // Until a score is open, an empty state (drop zone and the one primary) stands in for the player.
   const holder = h("div", { hidden: true }, score);
+  // Why a score could not be opened; beside the score, never in its place.
+  const notice = h("div", {});
   const picker = filePicker(input, { primary: true, label: t("viewer.open") });
   const drop = h("div", { class: "drop-zone" },
     h("p", {}, h("strong", {}, t("viewer.dropTitle"))),
@@ -19,6 +42,7 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
 
   const open = async (name: string, data: ArrayBuffer | string) => {
     status.textContent = t("viewer.rendering", { name });
+    clear(notice);
     holder.hidden = false;
     // Once a score is open, Play is the primary; the chooser steps back.
     picker.querySelector(".button")?.classList.replace("primary", "ghost");
@@ -31,9 +55,17 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
       announce(t("viewer.opened", { name }));
       score.focusScore();
     } catch (e) {
-      clear(holder, errorNotice(e), score);
+      clear(notice, errorNotice(e));
       status.textContent = t("viewer.failed", { name });
     }
+  };
+  /** Open a score the engine serves; a failure is shown beside the (still usable) viewer. */
+  const openUrl = (path: string, name: string) => {
+    status.textContent = t("viewer.rendering", { name });
+    fetchText(path).then((txt) => open(name, txt)).catch((e) => {
+      clear(notice, errorNotice(e));
+      status.textContent = t("viewer.failed", { name });
+    });
   };
   const openFile = async (f: File) => {
     // Compressed MusicXML (.mxl) goes to alphaTab as bytes.
@@ -60,10 +92,24 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
     viewHead(t("viewer.title"), t("viewer.purpose")),
     drop,
     status,
+    notice,
     holder);
 
+  const ex = params.get("example");
+  const example = ex && Object.hasOwn(EXAMPLES, ex) ? EXAMPLES[ex] : null;
+  if (example) {
+    openUrl(example.path, example.name);
+    return;
+  }
   const src = params.get("src");
-  if (src && isEnginePath(src)) {  // only the engine's own files (a job's MusicXML, a reference)
-    fetchText(src).then((txt) => open(params.get("name") ?? src, txt)).catch((e) => clear(holder, errorNotice(e)));
+  if (src) {
+    const path = engineScorePath(src, location.origin);
+    if (!path) {
+      clear(notice, h("div", { class: "notice notice-error", role: "alert" },
+        h("p", { class: "notice-title" }, h("strong", {}, t("viewer.notEngine"))),
+        h("p", {}, t("viewer.notEngineBody"))));
+      return;
+    }
+    openUrl(path, params.get("name") ?? path);
   }
 }

@@ -316,7 +316,9 @@ public sealed class ModelDownloader : IDisposable
         try { Directory.CreateDirectory(Path.GetDirectoryName(dest)!); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { throw new DownloadException(new DownloadError.Disk(e.Message)); }
 
-        long offset = SizeOf(part) ?? 0;
+        // A file upstream edits (no size or checksum) is fetched whole every time: resuming it could splice two
+        // versions, or an error page, into one.
+        long offset = f.Size > 0 ? SizeOf(part) ?? 0 : 0;
         using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);
         idle.CancelAfter(IdleTimeout);
         Log?.Invoke($"models: fetching {f.Url}");
@@ -486,6 +488,8 @@ public sealed class ModelDownloader : IDisposable
             ok = f.Size <= 0 || size == f.Size;
             if (ok && f.Sha256 is { } sha) ok = Sha256Hex(part) == sha;
             else if (ok && f.GitBlob is { } blob) ok = GitBlobId(part) == blob;
+            // Nothing upstream to compare with: a .json must at least be JSON (not a Wi-Fi sign-in page).
+            else if (ok && f.Size <= 0) ok = ModelCheck.IsUsable(part, f.Name);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { throw new DownloadException(new DownloadError.Disk(e.Message)); }
         if (ok) return;

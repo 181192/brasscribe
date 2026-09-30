@@ -144,7 +144,7 @@ The **Pair a phone** window offers three ways, easiest first. They all end in th
 
 **Time limits (WCAG 2.2.1):**
 - The code works **while the Pair window is open**, and each code works **once**. The window says exactly that: "This code works while this window is open, and only once."
-- Behind the scenes, the app opens the engine's pairing window with no expiry while the window is open, and closes it when the window closes. If a fixed lifetime is ever needed, the app extends the 10-minute window in the background instead. Either way, the user never sees a timer or races one.
+- Behind the scenes, the app opens the engine's pairing window while the window is open, and closes it when the window closes. Windows opens it with no expiry. The Mac opens it for 10 minutes and extends it in the background while the window stays open, so a code can't outlive a Bandroom that quit or crashed with the window open. Either way, the user never sees a timer or races one.
 - **Pair another phone** in the window issues the next code.
 - The code never changes under the user. After 5 wrong codes from one address, the engine locks code entry for that address for 30 s, and the lock grows up to 15 min; after 20 from all addresses together it locks entry for everyone the same way. A new code lifts every lock. The window then says, politely: "Too many wrong codes. Wait a moment, or allow the phone here." Way 1 still works during a lockout, so a stranger on the network can't block pairing.
 
@@ -208,7 +208,7 @@ Play for macOS and Windows uses Bandroom over loopback, where it is **trusted an
   - ☑ "Also delete the downloads (9.8 GB)", on by default.
   - "Scores on your phones stay."
   - [Cancel] [**Remove**]
-  - It unregisters the login item, deletes the data folder and moves the app to the Bin.
+  - It unregisters the login item, deletes the data folder and moves the app to the Bin. The downloads are the models folder and the band writer in the Hugging Face cache. A data or logs folder moved elsewhere (`BRASSCRIBE_DATA`, `BRASSCRIBE_LOGS`) loses only what Brasscribe put there.
   - Dragging the app to the Bin also works. macOS drops the login item, but the data folder (`~/Library/Application Support/Brasscribe`) stays, and the download page says so.
 - **Windows:** Settings › Apps › Installed apps › Brasscribe Bandroom › Uninstall. MSIX removes the package and its redirected app data (§5.3). The More menu has the same **Remove Brasscribe from this PC…**, which opens that Settings page.
 
@@ -335,6 +335,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 | Missing download or licence | Full-band scores need one more step | Names what is missing: "The soloist separator isn't downloaded yet.", "The soloist separator and the band writer aren't downloaded yet." (the band writer, the soloist separator, the instrument separator) | **Finish setting up** (only the missing downloads) | – | the missing files, the models folder and the Hugging Face cache path, the last download error |
 | Access key refused | Hugging Face didn't accept the access key | The key may have been deleted or expired. | **Sign in again** | Paste a new key | "HTTP 401 from huggingface.co for MuScriptor/muscriptor-medium." |
 | No free port | Brasscribe can't start | Another program on this computer is in the way. | **Restart** | – | "Ports 8765–8775 in use (8765: pid 4121 node)." |
+| Engine not answering (Mac) | Brasscribe isn't answering | It is running but hasn't answered for a while. Restarting it usually helps. | **Restart** | – | the state and the last exit; shown after three status checks in a row get no answer |
 
 - The warning thresholds for low disk: warn under **10 GB** free, and stop taking new jobs under **3 GB**. Phones get the error "Your computer is out of space."
 - A busy port is fixed **silently**: the next free port is used and advertised. It only becomes a problem when all ten are taken.
@@ -656,8 +657,12 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | key.paste | Paste a new key | Lim inn en ny nøkkel |
 | port.title | Brasscribe can't start | Brasscribe kan ikke starte |
 | port.why | Another program on this computer is in the way. | Et annet program på denne datamaskinen står i veien. |
+| hung.title | Brasscribe isn't answering | Brasscribe svarer ikke |
+| hung.why | It is running but hasn't answered for a while. Restarting it usually helps. | Den kjører, men har ikke svart på en stund. Som regel hjelper det å starte den på nytt. |
+| hung.fix | Restart | Start på nytt |
 | error.title | Brasscribe stopped unexpectedly | Brasscribe stoppet uventet |
 | error.why | It tried to start three times. Recordings on your phones are safe. | Den prøvde å starte tre ganger. Opptakene på telefonene er trygge. |
+| error.spawn.why | It couldn't be started. Recordings on your phones are safe. | Den kunne ikke startes. Opptakene på telefonene er trygge. |
 | error.copy | Copy details for the tech person | Kopier detaljer til den tekniske i bandet |
 | notify.ready | Brasscribe is ready. Phones and tablets can make full-band scores now. | Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå. |
 
@@ -668,7 +673,7 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
 - **Status:** `GET /v1/status` returns `server_id`, `server_name`, `version`, `online_devices`, `paired_devices`, `pairing_open`, `jobs_running` and `jobs_queued`. Bandroom polls it every 5 s while the popover or flyout is open, and every 30 s otherwise. A device is online when it was seen in the last 60 s. Paired phones send a heartbeat every 20 s while the app is open.
 
 - **The pairing window:** `POST /v1/pairing {ttl_s, single_use, extend}` returns the state: `open`, `code`, `expires_at`, `server_id`, `server_name`, `hosts`, `fingerprint` and `uri`.
-  - `ttl_s: null` means no expiry. Bandroom uses that while the Pair window is open.
+  - `ttl_s: null` means no expiry. Bandroom for Windows uses that while the Pair window is open; Bandroom for Mac sends 600 and extends it.
   - `extend: true` keeps the code and moves the expiry.
   - `GET /v1/pairing` reads the state; `DELETE /v1/pairing` closes it when the window closes.
   - The engine ignores spaces, so "482 913" can be typed as shown.

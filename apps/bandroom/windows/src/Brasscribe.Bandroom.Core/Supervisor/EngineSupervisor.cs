@@ -31,6 +31,13 @@ public sealed record SupervisorOptions
     /// <summary>How long Starting may take before the attempt counts as a failure (first start imports torch).</summary>
     public TimeSpan StartTimeout { get; init; } = TimeSpan.FromMinutes(3);
     public TimeSpan StopTimeout { get; init; } = TimeSpan.FromSeconds(10);
+    /// <summary>How often a running engine is asked whether it still answers.</summary>
+    public TimeSpan LivenessInterval { get; init; } = TimeSpan.FromSeconds(30);
+    /// <summary>
+    /// Unanswered checks in a row before a running engine counts as stuck and is restarted. Generous: an engine busy
+    /// with a score may answer slowly.
+    /// </summary>
+    public int LivenessFailures { get; init; } = 4;
     public int MaxFailures { get; init; } = 3;
     public TimeSpan FailureWindow { get; init; } = TimeSpan.FromMinutes(5);
     public TimeSpan FirstBackoff { get; init; } = TimeSpan.FromSeconds(2);
@@ -41,7 +48,8 @@ public sealed record SupervisorOptions
 
 /// <summary>
 /// Starts the engine as a child process and keeps it running: picks the first free port, waits for
-/// /v1/health, restarts it with a growing back-off when it exits unexpectedly, and gives up (Error)
+/// /v1/health, asks it again every <see cref="SupervisorOptions.LivenessInterval"/> while it runs, restarts it with a
+/// growing back-off when it exits unexpectedly or stops answering, and gives up (Error)
 /// after <see cref="SupervisorOptions.MaxFailures"/> failures within <see cref="SupervisorOptions.FailureWindow"/>.
 /// An exit while starting because the port was taken moves to the next port and is not a failure.
 /// </summary>
@@ -198,12 +206,24 @@ public sealed class EngineSupervisor : IAsyncDisposable
         var exit = proc.WaitForExitAsync();
         var deadline = _time.GetUtcNow() + _o.StartTimeout;
         bool reachedRunning = false;
+        int misses = 0;
         while (!exit.IsCompleted && !ct.IsCancellationRequested)
         {
             HealthInfo? h = null;
             try { h = await _health(port, ct).ConfigureAwait(false); }
             catch (Exception e) when (e is HttpRequestException or TaskCanceledException or OperationCanceledException or EngineHttpException or JsonException) { }
-            if (h is not null)
+            if (reachedRunning)
+            {
+                // Running: a process that is there but no longer answers (stuck) is restarted like one that exited.
+                if (h is not null) misses = 0;
+                else if (!ct.IsCancellationRequested && ++misses >= _o.LivenessFailures)
+                {
+                    _log.Write($"bandroom: the engine stopped answering ({misses} checks in a row), restarting it");
+                    proc.Kill();
+                    break;
+                }
+            }
+            else if (h is not null)
             {
                 await _gate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
                 try
@@ -217,15 +237,14 @@ public sealed class EngineSupervisor : IAsyncDisposable
                 }
                 finally { _gate.Release(); }
                 Raise();
-                break;
             }
-            if (_time.GetUtcNow() > deadline)
+            else if (_time.GetUtcNow() > deadline)
             {
                 _log.Write($"bandroom: the engine did not answer within {_o.StartTimeout.TotalSeconds:0} s");
                 proc.Kill();
                 break;
             }
-            try { await Task.WhenAny(exit, Task.Delay(_o.HealthInterval, _time, ct)).ConfigureAwait(false); }
+            try { await Task.WhenAny(exit, Task.Delay(reachedRunning ? _o.LivenessInterval : _o.HealthInterval, _time, ct)).ConfigureAwait(false); }
             catch (OperationCanceledException) { }
         }
         int code;
