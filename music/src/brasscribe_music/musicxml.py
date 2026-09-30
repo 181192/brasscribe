@@ -98,10 +98,22 @@ def _notatable_end(start: int, end: int) -> int:
     return min(cands, key=lambda c: (abs(c - end), c))
 
 
+def _clean_piece(x: int, y: int) -> bool:
+    """A plain or dotted value on the 32nd grid of its beat, or a triplet value on the triplet-16th grid.
+
+    A plain value and a triplet value can then only meet on an 8th (a multiple of 12 ticks), so the triplet
+    values of a beat fill whole triplet groups and every tuplet bracket is complete."""
+    d, bx, by = y - x, x % TICKS_PER_BEAT, (y - 1) % TICKS_PER_BEAT + 1
+    if d in _SINGLE:
+        return bx % 3 == 0 and by % 3 == 0
+    return d in _TRIPLET and bx % 4 == 0 and by % 4 == 0
+
+
 def _clean_span(a: int, b: int) -> bool:
-    """[a, b) splits into plain, dotted or triplet values within each beat (no 2-tick fragments, which
-    music21 can only write as nested tuplets that MuseScore rejects)."""
-    return b > a and all((y - x) in _SINGLE | _TRIPLET for x, y in _pieces(a, b, TICKS_PER_BEAT))
+    """[a, b) splits into plain, dotted or triplet values within each beat, each on its own grid (no 2-tick
+    fragments, which music21 can only write as nested tuplets that MuseScore rejects, and no triplet value
+    next to a plain one inside a triplet group, which leaves an incomplete tuplet)."""
+    return b > a and all(_clean_piece(x, y) for x, y in _pieces(a, b, TICKS_PER_BEAT))
 
 
 def _clean_end(start: int, end: int, nxt: int | None) -> int:

@@ -164,19 +164,17 @@ def run_clip(clip: Path, beats: str, work: Path, argv_extra: list[str] | None = 
         with contextlib.redirect_stdout(io.StringIO()):
             arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty=d)
         out[f"lead:{d}"] = lead_notes(arr, times, pickup)
-    try:
-        with contextlib.redirect_stdout(io.StringIO()):
-            arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty="faithful", trills=True)
-        out["lead:faithful+tr"] = lead_notes(arr, times, pickup)
-    except TypeError:  # before trill notation
-        out["lead:faithful+tr"] = out["lead:faithful"]
+    with contextlib.redirect_stdout(io.StringIO()):
+        arr = arrange_layers(comp, composition_lineup(comp)[0], difficulty="faithful", trills=True)
+    out["lead:faithful+tr"] = lead_notes(arr, times, pickup)
     for d in ("standard", "easier"):
         tr: dict = {}
         try:
             with contextlib.redirect_stdout(io.StringIO()):
                 _, arr = A.build(A.parse_args([*argv, "--difficulty", d]), tr)
-        except (ValueError, IndexError, SystemExit):
+        except (ValueError, IndexError, SystemExit) as e:
             out[f"built:{d}"] = []
+            out.setdefault("_errors", []).append(f"built:{d}: {type(e).__name__}: {e}")
             continue
         out[f"built:{d}"] = lead_notes(arr, tr["times"], tr["pickup"])
     return out
@@ -280,8 +278,10 @@ def group_of(spec: dict) -> str:
 
 
 def evaluate(root: Path | None = None, beats=("oracle", "small0"), only: str | None = None,
-             argv_extra: list[str] | None = None, seg=None, per_clip: dict | None = None) -> dict:
-    """Mean metrics per (beats, group, stage)."""
+             argv_extra: list[str] | None = None, seg=None, per_clip: dict | None = None,
+             errors: dict | None = None) -> dict:
+    """Mean metrics per (beats, group, stage). `errors` counts, per beat source, the clips and builds that
+    failed: a failed stage scores as an empty one, which a control clip would count as perfect."""
     rows: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     with tempfile.TemporaryDirectory() as tmp:
         for clip in clips(root):
@@ -294,8 +294,11 @@ def evaluate(root: Path | None = None, beats=("oracle", "small0"), only: str | N
                 try:
                     est = run_clip(clip, b, Path(tmp), argv_extra, seg, ref_doc["notes"])
                 except (ValueError, IndexError, SystemExit) as e:  # e.g. a beat track with under two beats
-                    print(f"{clip.name} ({b} beats): {type(e).__name__}: {e}")
-                    est = {}
+                    est = {"_errors": [f"{type(e).__name__}: {e}"]}
+                for err in est.get("_errors", []):
+                    print(f"{clip.name} ({b} beats): {err}")
+                if errors is not None:
+                    errors[b] = errors.get(b, 0) + len(est.get("_errors", []))
                 sc = score_clip(ref_doc, est, clip)
                 if per_clip is not None:
                     per_clip[(b, clip.name)] = sc
@@ -563,10 +566,13 @@ SUITE_STAGES = ("sw", "line", "quantized", "written", "lead:easier")
 
 def suite_metrics(root: Path | None = None) -> dict[str, float]:
     """The bench suite's metrics on the frozen fixtures: per beat source, figure recall and note F1 per stage over
-    all figure clips, alternations kept, and extra notes on each control (lower is better)."""
-    res = evaluate(root)
+    all figure clips, alternations kept, and extra notes on each control (lower is better), and the clips and
+    builds that failed (must stay 0)."""
+    errors: dict = {}
+    res = evaluate(root, errors=errors)
     out = {}
     for b, G in res.items():
+        out[f"{b}.errors"] = float(errors.get(b, 0))
         for s in SUITE_STAGES:
             out[f"{b}.{s}.fig_recall"] = G["all"][f"{s}|fig_recall"]
         out[f"{b}.written.note_f1"] = G["all"]["written|note_f1"]

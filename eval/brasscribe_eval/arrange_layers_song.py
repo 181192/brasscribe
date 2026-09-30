@@ -45,7 +45,7 @@ from brasscribe_music.score_model import Dynamic, ReviewItem, Section, Articulat
 from brasscribe_music.spelling import key_of
 
 from .arrange_song import to_notes
-from .consensus import cluster
+from .consensus import cluster, doubles
 from .lead_sheet import line
 
 
@@ -164,6 +164,8 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
 
     b = np.loadtxt(args.beats, ndmin=2) if args.beats.read_text().strip() else np.empty((0, 2))
     onsets = np.array([n["onset"] for n in pitched(L / "solo-sw.mid") + bass_raw + orch_raw])
+    if not len(onsets):
+        raise SystemExit("no notes in the solo, bass or orchestra layers: nothing to arrange")
     # Under two tracked beats (a short, fast take): a grid from the onsets, and the score says so.
     tempo_estimated = len(b) < 2
     if tempo_estimated:
@@ -284,8 +286,8 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     bass = written_line(quantize(line(bass_raw, 24, 55, top=False), times, monophonic=True, auto_level=False, coarse=coarse),
                         times, pickup, "bass")
 
-    solo_keys = {(round(n["onset"], 1), n["pitch"]) for n in solo_line}
-    orch = [n for n in orch_raw if 36 <= n["pitch"] <= 88 and (round(n["onset"], 1), n["pitch"]) not in solo_keys]
+    in_solo = doubles(solo_line)  # the solo as the orchestra stem plays it too: not part of the orchestra
+    orch = [n for n in orch_raw if 36 <= n["pitch"] <= 88 and not in_solo(n)]
     orch_q = [n for n in to_notes(quantize(orch, times, auto_level=False, coarse=coarse), pickup, "orchestra") if n.start >= 0]
     hits, lines = split_orchestra(orch_q)
 

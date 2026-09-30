@@ -26,9 +26,9 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from common.parity import CONVERTED, MODELS  # noqa: E402
+from common.parity import ADAPTERS, CONVERTED, MODELS  # noqa: E402
 
-MSST = Path("/Users/k/private/brasscribe/ml/adapters/mega53/msst")
+MSST = ADAPTERS / "mega53" / "msst"
 sys.path.insert(0, str(MSST))
 
 SPECS = {

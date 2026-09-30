@@ -1,8 +1,8 @@
 """Model adapters: subprocesses behind the `<input> <output>` contract.
 
-Each adapter lives in `<adapters_dir>/<name>/` with its own environment (uv
-project, or the pixi environment of the same name when
-BRASSCRIBE_ADAPTER_RUNNER=pixi). The engine never imports model code; it runs
+Each adapter lives in `<adapters_dir>/<name>/` with its own environment (the uv
+project on Apple silicon Macs; elsewhere, or with BRASSCRIBE_ADAPTER_RUNNER=pixi,
+the pixi environment of the same name). The engine never imports model code; it runs
 `<adapters_dir>/run_adapter.py <name> <input> <output>` with its own Python (the
 same runner every run.sh delegates to, so it works on Windows too; an adapter
 dir without the runner falls back to run.sh) and records what ran:

@@ -65,8 +65,12 @@ def _fifths(name: str) -> int:
     major = {"C": 0, "G": 1, "D": 2, "A": 3, "E": 4, "B": 5, "F#": 6, "C#": 7, "F": -1, "Bb": -2, "Eb": -3,
              "Ab": -4, "Db": -5, "Gb": -6, "Cb": -7}
     if name.endswith("m"):
-        return major.get(name[:-1], 0) - 3
+        # G#, D# and A# minor: `major` has no G#, D# or A# (they are Ab, Eb and Bb there).
+        return _SHARP_MINOR.get(name[:-1], major.get(name[:-1], 0) - 3)
     return major.get(name, 0)
+
+
+_SHARP_MINOR = {"G#": 5, "D#": 6, "A#": 7}
 
 
 def name(step: str, alter: int, octave: int) -> str:

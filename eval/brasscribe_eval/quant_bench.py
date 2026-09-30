@@ -42,8 +42,9 @@ def evaluate(song: Path, source: str | None, beats_file: str = "beat-this.beats"
 
     pairs = [(r, e) for r, e in pairs if "quarter" in r]  # a few performed notes have no score counterpart
     q = quantize([e for _, e in pairs], beats)
-    by_onset = {(round(x.onset_s, 6), x.pitch): x for x in q}
-    est_q = [by_onset[(round(e["onset"], 6), e["pitch"])] for _, e in pairs]
+    # (onset, pitch, offset): parts in unison on one onset keep their own lengths
+    by_onset = {(round(x.onset_s, 6), x.pitch, round(x.offset_s, 6)): x for x in q}
+    est_q = [by_onset[(round(e["onset"], 6), e["pitch"], round(e["offset"], 6))] for _, e in pairs]
     ref_ticks = [int(round(r["quarter"] * TICKS_PER_BEAT)) for r, _ in pairs]
 
     shift = Counter(rt - x.start for rt, x in zip(ref_ticks, est_q) if (rt - x.start) % TICKS_PER_BEAT == 0).most_common(1)

@@ -194,10 +194,14 @@ pub fn plan_free_time(
         let s0 = if at_start && !onsets.is_empty() { t[a].min(on_min) } else { t[a] };
         let s1 = t[r];
         let bpm = tempo.unwrap_or_else(|| local_tempo(tempo_onsets.unwrap_or(onsets), s0, s1));
-        let n = ((((s1 - s0) * bpm / 60.0 / beats_per_bar as f64).ceil() as i64).max(1) * beats_per_bar) as usize;
-        let bpm = n as f64 * 60.0 / (s1 - s0);
         out.extend_from_slice(&t[cursor..a]);
         let start_idx = out.len();
+        // Whole bars, plus the rest of the bar the region starts in when that is not on a bar line (a
+        // region inside the pickup bar), so the grid resumes on a bar line.
+        let rest = if at_start { 0 } else { py::pymod(new_first - start_idx as i64, beats_per_bar) };
+        let bars = ((((s1 - s0) * bpm / 60.0 - rest as f64) / beats_per_bar as f64).ceil() as i64).max(if rest > 0 { 0 } else { 1 });
+        let n = (rest + bars * beats_per_bar) as usize;
+        let bpm = n as f64 * 60.0 / (s1 - s0);
         for k in 0..n {
             out.push(s0 + (k as f64 * (s1 - s0)) / n as f64);
         }
@@ -257,5 +261,25 @@ pub fn mark_fermatas(notes: &mut [Note], regions: &[FreeRegion]) {
                 notes[i].articulations.push("fermata".into());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn region_inside_the_pickup_bar_resumes_on_a_bar_line() {
+        // a pickup of three beats (bar 1 at beat 3), free time from beat 1
+        let mut t = vec![0.0];
+        for ibi in [0.5, 1.9, 0.9, 3.1, 1.3].into_iter().chain([0.5; 16]) {
+            t.push(t[t.len() - 1] + ibi);
+        }
+        let plan = plan_free_time(&t, &t, 4, 3, None, None, None);
+        let s = &plan.spans[..];
+        assert_eq!((s.len(), s[0].start, plan.first_downbeat), (1, 1, 3));
+        assert_eq!((s[0].end as i64 - plan.first_downbeat).rem_euclid(4), 0);
+        let resume = t.iter().position(|&x| x == s[0].end_s).unwrap();
+        assert_eq!(&plan.beat_times[s[0].end..], &t[resume..]);
     }
 }

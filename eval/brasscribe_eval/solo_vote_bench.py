@@ -28,15 +28,17 @@ EVAL = EVAL_SETS
 TOOLS = {"mus": "muscriptor", "bp": "basic-pitch", "sw": "swift-f0"}
 
 
-def cases() -> list[tuple[str, Path, list[dict]]]:
+def cases(data: Path | None = None) -> list[tuple[str, Path, list[dict]]]:
+    """(name, stem directory, reference notes) per case; `data` is the data directory (default DATA)."""
+    ev, stems = (EVAL, STEMS) if data is None else (data / "eval", data / "mega53-out-bench")
     out = []
-    for d in sorted((EVAL / "choralebricks-brass4").iterdir()):
+    for d in sorted((ev / "choralebricks-brass4").iterdir()):
         if (d / "reference.json").exists():
             ref = [n for n in load_notes(d / "reference.json") if n["part"] == "S"]
-            out.append((f"chorale:{d.name[:14]}", STEMS / f"cb_{d.name}", ref))
+            out.append((f"chorale:{d.name[:14]}", stems / f"cb_{d.name}", ref))
     for t, part in (("Track00006", "S02-Trumpet"), ("Track00014", "S00-Trumpet")):
-        ref = [n for n in load_notes(EVAL / "slakh-trumpet" / t / "reference.json") if n["part"] == part]
-        out.append((f"slakh:{t}", STEMS / f"slakh_{t}", ref))
+        ref = [n for n in load_notes(ev / "slakh-trumpet" / t / "reference.json") if n["part"] == part]
+        out.append((f"slakh:{t}", stems / f"slakh_{t}", ref))
     return out
 
 

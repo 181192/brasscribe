@@ -24,7 +24,7 @@ from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fil
 from brasscribe_music.spelling import key_of
 from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
-from .consensus import consensus
+from .consensus import consensus, doubles
 from .lead_sheet import line
 from .score import load_notes
 
@@ -36,12 +36,19 @@ def to_notes(qnotes, pickup: int, source: str) -> list[Note]:
 def song_composition(beats: Path, melody: Path, melody_support: Path | None, bass_mid: Path, harmony: list[Path],
                      title: str, melody_window: tuple[int, int] = (52, 88)) -> Composition:
     """Melody, bass and harmony voices of a transcribed song on its beat grid (tick 0 = first downbeat)."""
-    b = np.loadtxt(beats)
+    b = np.loadtxt(beats, ndmin=2)
+    if len(b) < 2:
+        raise SystemExit(f"only {len(b)} beat(s) tracked in {beats.name}; the recording is too short to notate")
     pos = b[:, 1].astype(int)
-    beats_per_bar = Counter(np.diff(np.where(pos == 1)[0])).most_common(1)[0][0]
+    downs = np.where(pos == 1)[0]
+    if len(downs) < 2:
+        raise SystemExit(f"fewer than two downbeats in {beats.name}: no bars to write")
+    beats_per_bar = Counter(np.diff(downs)).most_common(1)[0][0]
     first_down = int(np.argmax(pos == 1))
     # Fix the metrical level once from all transcribed onsets, then quantize every stream on that grid.
     all_onsets = np.array([n["onset"] for f in [melody, bass_mid, *harmony] for n in load_notes(f)])
+    if not len(all_onsets):
+        raise SystemExit("no notes in the melody, bass or harmony: nothing to arrange")
     times = choose_level(b[:, 0], all_onsets)
     if len(times) != len(b):
         beats_per_bar *= 2
@@ -61,10 +68,11 @@ def song_composition(beats: Path, melody: Path, melody_support: Path | None, bas
     bass = to_notes(fill_gaps(quantize(line(load_notes(bass_mid), 28, 55, top=False), times, monophonic=True, auto_level=False),
                               TICKS_PER_BEAT // 2), pickup, "bass")
 
-    mel_keys = {(round(n["onset"], 2), n["pitch"]) for n in mel_raw}
-    acc = [n for f in harmony for n in load_notes(f)
-           if 40 <= n["pitch"] <= 84 and (round(n["onset"], 2), n["pitch"]) not in mel_keys]
+    in_melody = doubles(mel_raw)  # the melody as the harmony stems play it too: not part of the harmony
+    acc = [n for f in harmony for n in load_notes(f) if 40 <= n["pitch"] <= 84 and not in_melody(n)]
     acc_q = to_notes(quantize(acc, times, auto_level=False), pickup, "accompaniment")
+    if not (melody or bass or acc_q):  # every note outside the parts' ranges
+        raise SystemExit("no notes in the melody, bass or harmony ranges: nothing to arrange")
     end = max(n.end for n in melody + bass + acc_q)
     harm = slots_to_notes(harmony_slots(acc_q, end), confidence=0.8)
 
