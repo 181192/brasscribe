@@ -30,6 +30,7 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 - **Studio:** Fix stale results, lost focus, stuck playback and silent failures ([#20](https://github.com/181192/brasscribe/pull/20))
 - **Windows:** Give Play and Bandroom for Windows the release version
 - **Windows:** Stay open through errors, follow audio devices and keep your files safe ([#24](https://github.com/181192/brasscribe/pull/24))
+- **Windows:** Build Play for Windows again with the last ONNX Runtime that has DirectML ([#49](https://github.com/181192/brasscribe/pull/49))
 - Music rules, benchmark gates, adapter downloads and conversion parity ([#23](https://github.com/181192/brasscribe/pull/23))
 
 <details><summary>Under the hood (41 changes: docs, tests, CI, build, refactoring)</summary>
