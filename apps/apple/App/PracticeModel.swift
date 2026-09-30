@@ -258,10 +258,46 @@ final class PracticeModel {
 
     private func adopt(_ made: Result<PlaybackEngine, Error>) {
         switch made {
-        case .success(let e): engine = e
+        case .success(let e):
+            engine = e
+            e.onMediaServicesReset = { [weak self] in MainActor.assumeIsolated { self?.rebuildEngine() } }
         case .failure(let error): loadError = error.localizedDescription
         }
         startTimer()
+    }
+
+    /// The system's media services were reset (iOS) and took the engine with them: a new one is made off
+    /// the main actor, with the same practice settings, at the same place.
+    private func rebuildEngine() {
+        guard let old = engine else { return }
+        let at = old.position
+        let ids = score.parts.map(\.id)
+        let mutes = ids.filter(old.isMuted), solos = ids.filter(old.isSoloed)
+        let loop = old.loop
+        old.onMediaServicesReset = nil
+        engine = nil
+        let (piece, score, composition) = (piece, score, composition)
+        Task {
+            MediaTools.configureSession(recording: false)
+            let made = await Task.detached(priority: .userInitiated) {
+                Opened.Engine(made: Result { try PracticeModel.makeEngine(piece: piece, score: score, composition: composition) })
+            }.value
+            guard engine == nil else { return }
+            adopt(made.made)
+            guard let e = engine else { return }
+            e.rate = speedPercent / 100
+            e.transposeSemitones = transpose
+            e.metronomeOn = metronome
+            e.countInBars = countIn ? 1 : 0
+            e.roomOn = room
+            for id in mutes { e.setMuted(id, true) }
+            for id in solos { e.setSoloed(id, true) }
+            e.setLoop(loop)
+            if hearOriginal { e.setSource(.original) }
+            e.seek(toBeat: at)
+            mixVersion += 1
+            tick()
+        }
     }
 
     private func startTimer() {
