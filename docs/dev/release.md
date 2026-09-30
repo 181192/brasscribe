@@ -18,8 +18,8 @@ halfway, `git switch main`, delete the local `release/vX.Y.Z` branch, and start 
 The pushed tag starts `.github/workflows/release.yml`: the checks, a build per platform, then a
 GitHub release with the files, `SHA256SUMS` and notes generated from the commits since the previous
 release (new features and fixes sorted and labelled by scope, the rest folded away, first-time
-contributors named). The commit messages are the release notes, so write them for the people who
-use the apps. If a tag push does not start the workflow, start it on the tag:
+contributors named). Pull requests are squash-merged, so each pull request's title is one entry in
+the notes: write them for the people who use the apps. If a tag push does not start the workflow, start it on the tag:
 `gh workflow run release.yml --ref vX.Y.Z`.
 
 The Android APKs are signed in CI with the release key, held in the secrets of the `release`

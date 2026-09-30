@@ -40,8 +40,10 @@ on memory or on this file.
 
 - [Conventional Commits](https://www.conventionalcommits.org): `type(scope): summary`. The scope is
   the app or part (`android`, `apple`, `windows`, `bandroom-mac`, `studio`, `engine`, `core`, …).
-- **Commit messages become the release notes** (`cliff.toml` decides what is listed for users and what
-  is folded away): write `feat` and `fix` summaries for someone who uses the app, in plain words.
+- **Pull request titles become the release notes.** Pull requests are squash-merged, and the title
+  becomes the commit on `main` (`cliff.toml` decides what is listed for users and what is folded
+  away). Give each pull request a Conventional Commit title, and write `feat` and `fix` titles for
+  someone who uses the app, in plain words. One pull request is one entry in the notes.
 - Describe what the change does. Don't refer to agents, sessions or task ids in commit messages, code
   comments or docs. A `Co-Authored-By` trailer that credits an AI assistant is fine: it is the
   disclosure the pull request template asks for.
