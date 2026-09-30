@@ -2169,6 +2169,9 @@
   <data name="Start_Level_TooLoud" xml:space="preserve">
     <value>Inngangsnivå, for høyt</value>
   </data>
+  <data name="Start_Notice_Interrupted" xml:space="preserve">
+    <value>Opptaket stoppet av seg selv: enheten ble koblet fra, eller disken er full. Velg Stopp for å beholde det som ble tatt opp.</value>
+  </data>
   <data name="Start_Notice_NothingPlaying" xml:space="preserve">
     <value>Det kommer bare stillhet. Sjekk at noe spiller. Strømmeapper stopper som regel opptak.</value>
   </data>

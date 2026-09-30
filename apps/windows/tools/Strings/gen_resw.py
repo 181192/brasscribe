@@ -836,6 +836,8 @@ add("Notice_Problem", "Something went wrong, but your work is safe. If it happen
     "Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.")
 add("Score_RenderFailed", "The notes can't be drawn. Try another zoom or part, or open the score again.",
     "Notene kan ikke tegnes. Prøv en annen zoom eller stemme, eller åpne partituret på nytt.")
+add("Start_Notice_Interrupted", "Recording stopped by itself: the device was disconnected, or the disk is full. Choose Stop to keep what was recorded.",
+    "Opptaket stoppet av seg selv: enheten ble koblet fra, eller disken er full. Velg Stopp for å beholde det som ble tatt opp.")
 add("Library_SaveFailed", "Your change couldn't be saved on this PC. Check that the disk isn't full, then try again.",
     "Endringen kunne ikke lagres på denne PC-en. Sjekk at disken ikke er full, og prøv igjen.")
 add("Library_Unavailable", "Not found. Connect the drive it's on to open it.", "Finnes ikke. Koble til disken den ligger på, for å åpne den.")

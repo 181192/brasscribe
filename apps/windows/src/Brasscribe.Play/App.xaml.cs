@@ -100,12 +100,10 @@ public partial class App : Application
         var synthOut = new BufferedSynthOutput();
         var player = new AlphaTabScorePlayer(synthOut);
         LoadSoundFonts(player);
+        // The output device opens when the band plays, and follows Windows' default device. Without one the
+        // app still works for reading and exports, and playing starts once a device appears.
         _audioOut = new WasapiSynthOutput();
-        try { _audioOut.Start(synthOut); }
-        catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException)
-        {
-            // No output device: the app still works for reading and exports.
-        }
+        _audioOut.Start(synthOut);
 
         var original = new MediaPlayerOriginal(queue);
         var playerVm = new PlayerViewModel(player, announcer, Strings, ui);

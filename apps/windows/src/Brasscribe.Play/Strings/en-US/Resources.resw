@@ -2169,6 +2169,9 @@
   <data name="Start_Level_TooLoud" xml:space="preserve">
     <value>Input level, too loud</value>
   </data>
+  <data name="Start_Notice_Interrupted" xml:space="preserve">
+    <value>Recording stopped by itself: the device was disconnected, or the disk is full. Choose Stop to keep what was recorded.</value>
+  </data>
   <data name="Start_Notice_NothingPlaying" xml:space="preserve">
     <value>Only silence is arriving. Check that something is playing. Streaming apps usually block recording.</value>
   </data>
