@@ -42,8 +42,9 @@ on memory or on this file.
   the app or part (`android`, `apple`, `windows`, `bandroom-mac`, `studio`, `engine`, `core`, …).
 - **Commit messages become the release notes** (`cliff.toml` decides what is listed for users and what
   is folded away): write `feat` and `fix` summaries for someone who uses the app, in plain words.
-- Don't mention agents, sessions, task ids or tools in commits, code comments or docs. Describe what
-  the change does.
+- Describe what the change does. Don't refer to agents, sessions or task ids in commit messages, code
+  comments or docs. A `Co-Authored-By` trailer that credits an AI assistant is fine: it is the
+  disclosure the pull request template asks for.
 - Fill in the pull request template, including the verification and the AI-assistance section.
 
 ## This repository is public
