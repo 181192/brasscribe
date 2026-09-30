@@ -26,6 +26,18 @@ public enum SupervisorPhase: Equatable, Sendable {
     case failed(LaunchFailure?)
 
     public enum AfterStop: Equatable, Sendable { case stop, restart, fail }
+
+    /// Stopped on purpose: Start brings it back. Decided by the engine's phase, not by what the panel shows, so a
+    /// Needs-attention note (low disk space) never hides the button.
+    public var offersStart: Bool { self == .stopped }
+
+    /// Running, or on its way there: Restart and Stop apply.
+    public var offersStop: Bool {
+        switch self {
+        case .starting, .running, .waitingToRetry, .stopping(then: .restart): true
+        default: false
+        }
+    }
 }
 
 public enum SupervisorEvent: Equatable, Sendable {

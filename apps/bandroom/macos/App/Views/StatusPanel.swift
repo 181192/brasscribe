@@ -207,15 +207,28 @@ struct StatusPanel: View {
 
     // MARK: actions
 
+    /// Start, Restart and Stop follow the engine's phase, so a Needs-attention note never hides them. Not while
+    /// setting up or updating: those start the engine themselves.
+    private var showsEngineControls: Bool {
+        switch state {
+        case .settingUp, .updating: false
+        default: true
+        }
+    }
+
     private var actions: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if app.isRunning || state == .starting {
+            if showsEngineControls && app.phase.offersStop {
                 HStack(spacing: 8) {
                     Button { requestRestart() } label: { Label("Restart", systemImage: "arrow.clockwise") }
                         .buttonStyle(.brOutline)
                     Button { requestStop() } label: { Label("Stop", systemImage: "power") }
                         .buttonStyle(.brOutline)
                 }
+            } else if showsEngineControls && app.phase.offersStart && state != .stopped {
+                // When Stopped is what the panel shows, Start is already the primary button.
+                Button { app.start() } label: { Text("Start Brasscribe") }
+                    .buttonStyle(.brOutline)
             }
             if app.isRunning {
                 Button { app.openStudio() } label: { Label("Open Studio", systemImage: "arrow.up.forward.square") }

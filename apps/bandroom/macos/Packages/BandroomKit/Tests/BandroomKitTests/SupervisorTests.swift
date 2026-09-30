@@ -13,6 +13,16 @@ import Testing
         #expect(m.phase == .running)
     }
 
+    @Test func startAndStopFollowThePhase() {
+        let all: [SupervisorPhase] = [.idle, .starting, .running, .stopping(then: .stop), .stopping(then: .restart),
+                                      .stopping(then: .fail), .stopped, .waitingToRetry(attempt: 1, delay: 2), .failed(nil)]
+        #expect(all.filter(\.offersStart) == [.stopped])
+        #expect(all.filter(\.offersStop) == [.starting, .running, .stopping(then: .restart), .waitingToRetry(attempt: 1, delay: 2)])
+        // Low disk space outranks Stopped in what the panel shows; the phase still offers Start.
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .stopped, updating: false, problems: [.lowDisk(freeGB: 2)], jobPercent: nil)
+                == .attention(.lowDisk(freeGB: 2)))
+    }
+
     @Test func backoffDoublesAndCaps() {
         #expect((1...6).map(SupervisorMachine.backoff(attempt:)) == [2, 4, 8, 16, 30, 30])
     }
