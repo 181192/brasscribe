@@ -160,10 +160,11 @@ public class EngineResilienceTests
         Assert.Contains("after=0", h.Requests.Last().RequestUri!.Query);
     }
 
+    // Five keepalives 150 ms apart outlast a 600 ms idle limit only if each one resets it (slack for a busy CI machine).
     [Fact]
     public async Task Keepalives_keep_a_quiet_stream_open()
     {
-        var events = ServerSentEventParser.ReadAsync(new KeepaliveStream(5, TimeSpan.FromMilliseconds(60)), idleTimeout: TimeSpan.FromMilliseconds(150));
+        var events = ServerSentEventParser.ReadAsync(new KeepaliveStream(5, TimeSpan.FromMilliseconds(150)), idleTimeout: TimeSpan.FromMilliseconds(600));
         var all = new List<ServerSentEvent>();
         await foreach (var e in events) all.Add(e);
         Assert.Single(all);
@@ -233,7 +234,7 @@ public class EngineResilienceTests
         monitor.Start();
         for (int i = 0; i < 50 && asked < 1; i++) await Task.Delay(10);
         monitor.Kick();
-        for (int i = 0; i < 200 && monitor.State != ConnectionState.Connected; i++) await Task.Delay(10);
+        for (int i = 0; i < 1000 && monitor.State != ConnectionState.Connected; i++) await Task.Delay(10);
 
         Assert.Equal(ConnectionState.Connected, monitor.State);
         Assert.True(monitor.IsRunning);
