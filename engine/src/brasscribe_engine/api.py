@@ -523,7 +523,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                dependencies=[Depends(auth)],
                responses={404: {"description": "unknown run"}, 409: {"description": "run is queued or running"}})
     def update_run(job_id: str, body: m.RunUpdate) -> m.Job:
-        """Rename a finished score: the title in its manifest, Composition and MusicXML."""
+        """Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML and
+        the talking score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with."""
         title = body.title.strip()
         if not title:
             raise HTTPException(422, "title must not be blank")

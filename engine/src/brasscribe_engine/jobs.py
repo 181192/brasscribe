@@ -209,7 +209,9 @@ class JobManager:
         return "deleted"
 
     def rename(self, job_id: str, title: str) -> str:
-        """Retitle a finished run in its manifest, Composition and MusicXML. Returns "renamed", "unknown" or "active"."""
+        """Retitle a finished run: its manifest, Composition, the score's and parts' MusicXML and the talking
+        score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.
+        Returns "renamed", "unknown" or "active"."""
         if not valid_id(job_id):
             return "unknown"
         job = self.get(job_id)
@@ -217,34 +219,32 @@ class JobManager:
             return "unknown"
         if job.status not in TERMINAL:
             return "active"
-        from xml.sax.saxutils import escape
-
         d = self.run_dir(job_id)
+        out = d / "outputs"
         mpath = d / "manifest.json"
         if mpath.exists():
             m = json.loads(mpath.read_text())
             m["title"] = title
             _write(mpath, json.dumps(m, indent=2))
-        comp = d / "outputs" / "composition.json"
+        comp = out / "composition.json"
         if comp.exists():
             c = json.loads(comp.read_text())
             c["title"] = title
             _write(comp, json.dumps(c))
-        xml = d / "outputs" / "brass-band.musicxml"
-        if xml.exists():
-            import re
+        for xml in [out / "brass-band.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
+            if xml.exists():
+                _write(xml, _retitle_musicxml(xml.read_text(), title))
+        talking = out / "talking-score.json"
+        if talking.exists():
+            from . import talking_score
 
-            text = xml.read_text()
-            tag = re.compile(r"(<work-title>)[\s\S]*?(</work-title>)")
-            work = f"<work><work-title>{escape(title)}</work-title></work>"
-            if tag.search(text):
-                text = tag.sub(lambda mt: mt.group(1) + escape(title) + mt.group(2), text, count=1)
-            elif re.search(r"<score-partwise\b[^>]*/>", text):
-                text = re.sub(r"<score-partwise\b([^>]*)/>", lambda mt: f"<score-partwise{mt.group(1)}>{work}</score-partwise>",
-                              text, count=1)
-            else:
-                text = re.sub(r"(<score-partwise\b[^>]*>)", lambda mt: mt.group(1) + work, text, count=1)
-            _write(xml, text)
+            doc = json.loads(talking.read_text())
+            doc["title"] = title
+            _write(talking, json.dumps(doc, ensure_ascii=False, indent=1))
+            en = talking_score.Settings()  # as the export stage writes them
+            for name, render in (("talking-score.html", talking_score.to_html), ("talking-score.txt", talking_score.to_text)):
+                if (out / name).exists():
+                    _write(out / name, render(doc, en))
         job.title = title
         return "renamed"
 
@@ -286,6 +286,21 @@ def _list_outputs(d: Path) -> list[str]:
         prefix = "" if rel == "." else rel.replace(os.sep, "/") + "/"
         out.extend(prefix + f for f in files)
     return sorted(out)
+
+
+def _retitle_musicxml(text: str, title: str) -> str:
+    """MusicXML with its work title set to `title` (added when the score has none)."""
+    import re
+    from xml.sax.saxutils import escape
+
+    tag = re.compile(r"(<work-title>)[\s\S]*?(</work-title>)")
+    work = f"<work><work-title>{escape(title)}</work-title></work>"
+    if tag.search(text):
+        return tag.sub(lambda mt: mt.group(1) + escape(title) + mt.group(2), text, count=1)
+    if re.search(r"<score-partwise\b[^>]*/>", text):
+        return re.sub(r"<score-partwise\b([^>]*)/>", lambda mt: f"<score-partwise{mt.group(1)}>{work}</score-partwise>",
+                      text, count=1)
+    return re.sub(r"(<score-partwise\b[^>]*>)", lambda mt: mt.group(1) + work, text, count=1)
 
 
 def _write(path: Path, text: str) -> None:

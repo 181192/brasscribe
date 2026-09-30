@@ -62,3 +62,21 @@ def test_rename_replaces_outputs_that_are_read_only_links_into_the_cache(setting
     assert r.status_code == 200
     assert client.get("/v1/jobs/run-a/composition").json()["title"] == "New"
     assert json.loads(cached.read_text()) == {"title": "Old"}
+
+
+def test_rename_retitles_the_parts_and_the_talking_score(settings, client):
+    from brasscribe_engine import talking_score
+
+    doc = {"version": 1, "title": "Old", "total_bars": 0, "parts": []}
+    finished_run(settings, "run-a", {
+        "parts/01-solo-cornet.musicxml": "<score-partwise><work><work-title>Old</work-title></work></score-partwise>",
+        "talking-score.json": json.dumps(doc), "talking-score.html": talking_score.to_html(doc),
+        "talking-score.txt": talking_score.to_text(doc), "brass-band.brf": "OLD"})
+    assert client.patch("/v1/runs/run-a", json={"title": "Psalm <100>"}).status_code == 200
+    out = settings.runs_dir / "run-a" / "outputs"
+    assert "<work-title>Psalm &lt;100&gt;</work-title>" in (out / "parts" / "01-solo-cornet.musicxml").read_text()
+    assert json.loads((out / "talking-score.json").read_text())["title"] == "Psalm <100>"
+    assert "<h1>Psalm &lt;100&gt;</h1>" in (out / "talking-score.html").read_text()
+    assert (out / "talking-score.txt").read_text().startswith("Psalm <100>")
+    assert "<h1>Psalm &lt;100&gt;</h1>" in client.get("/v1/jobs/run-a/talking-score").text
+    assert (out / "brass-band.brf").read_text() == "OLD"  # renders keep the title they were made with

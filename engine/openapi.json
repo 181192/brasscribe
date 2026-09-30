@@ -5862,7 +5862,7 @@
         ]
       },
       "patch": {
-        "description": "Rename a finished score: the title in its manifest, Composition and MusicXML.",
+        "description": "Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML and\nthe talking score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.",
         "operationId": "updateRun",
         "parameters": [
           {
