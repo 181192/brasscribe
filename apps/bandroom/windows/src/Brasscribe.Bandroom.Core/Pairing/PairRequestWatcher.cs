@@ -3,6 +3,17 @@ using Brasscribe.Bandroom.Core.Engine;
 
 namespace Brasscribe.Bandroom.Core.Pairing;
 
+/// <summary>How an Allow or Don't allow went.</summary>
+public enum PairDecision
+{
+    /// <summary>The engine took the answer.</summary>
+    Done,
+    /// <summary>The request had lapsed, or was answered elsewhere.</summary>
+    Lapsed,
+    /// <summary>The answer didn't get through; the request is still waiting.</summary>
+    Failed,
+}
+
 /// <summary>
 /// Phones that chose this computer and wait to be allowed (§3.4 way 1). Polled every few seconds
 /// whether or not the Pair window is open: a request lapses after two minutes and someone is waiting.
@@ -49,19 +60,27 @@ public sealed class PairRequestWatcher
 
     public bool IsExpired(PairRequestInfo r, DateTimeOffset now) => r.CreatedAtTime is { } t && now - t >= Lifetime;
 
-    /// <summary>Allow or don't allow. Returns false when the request had already lapsed (404 or no longer pending).</summary>
-    public async Task<bool> DecideAsync(IEngineApi api, string requestId, bool approve, CancellationToken ct = default)
+    /// <summary>
+    /// Allow or don't allow. <see cref="PairDecision.Lapsed"/> when the request had already lapsed (404, or no longer
+    /// pending); <see cref="PairDecision.Failed"/> when the answer didn't get through (no answer in time, an error
+    /// answer): the request stays, so the person can try again.
+    /// </summary>
+    public async Task<PairDecision> DecideAsync(IEngineApi api, string requestId, bool approve, CancellationToken ct = default)
     {
         try
         {
             var r = await api.DecidePairRequestAsync(requestId, approve, ct).ConfigureAwait(false);
             Forget(requestId);
-            return r.Status == (approve ? "approved" : "denied");
+            return r.Status == (approve ? "approved" : "denied") ? PairDecision.Done : PairDecision.Lapsed;
         }
         catch (EngineHttpException e) when (e.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone or HttpStatusCode.Conflict)
         {
             Forget(requestId);
-            return false;
+            return PairDecision.Lapsed;
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or EngineHttpException or System.Text.Json.JsonException)
+        {
+            return PairDecision.Failed;
         }
     }
 

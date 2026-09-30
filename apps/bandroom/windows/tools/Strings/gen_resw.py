@@ -169,6 +169,7 @@ ROWS = [
     ("Allow_Match", "The phone shows the number:", "Telefonen viser tallet:"),
     ("Allow_Match_A11y", "The phone shows the number: {0}", "Telefonen viser tallet: {0}"),
     ("Allow_Expired", "This request has expired. Choose this computer on the phone again.", "Forespørselen er utløpt. Velg denne datamaskinen på telefonen igjen."),
+    ("Allow_Failed", "That didn't go through. Try again.", "Det gikk ikke. Prøv igjen."),  # (+) the answer didn't get through
     ("Allow_Ok", "Allow", "Godkjenn"),
     ("Allow_No", "Don't allow", "Ikke godkjenn"),
     ("Notify_PairRequest", "{0} wants to use this computer.", "{0} vil bruke denne datamaskinen."),

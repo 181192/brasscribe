@@ -62,7 +62,18 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     public App()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrash(e.ExceptionObject as Exception);
-        UnhandledException += (_, e) => WriteCrash(e.Exception);
+        // An exception on the UI thread would end the app, and with it the engine in the middle of a score: log it
+        // and carry on, unless the process can't.
+        UnhandledException += (_, e) =>
+        {
+            WriteCrash(e.Exception);
+            e.Handled = !IsFatal(e.Exception);
+        };
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            WriteCrash(e.Exception);
+            e.SetObserved();
+        };
         // Themes are set per window (ThemedWindows), never here: Application.RequestedTheme can't change later.
         _theme = Option("--theme");
         _demo = _args.Contains("--demo") || Option("--show") is not null;
@@ -76,6 +87,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         int i = Array.IndexOf(_args, name);
         return i >= 0 && i + 1 < _args.Length ? _args[i + 1] : null;
     }
+
+    private static bool IsFatal(Exception? e) =>
+        e is OutOfMemoryException or StackOverflowException or AccessViolationException or AppDomainUnloadedException
+            or System.Runtime.InteropServices.SEHException or BadImageFormatException or InvalidProgramException;
 
     private static void WriteCrash(Exception? e)
     {
@@ -453,9 +468,9 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     /// <summary>A phone chose this computer: in the Pair window if it is open, else in its own Allow window.</summary>
     private void OnPairRequest(PairRequestInfo r)
     {
-        Task<bool> Decide(string id, bool ok) => _demoEngine is not null
-            ? _demoEngine.DecidePairRequestAsync(id, ok).ContinueWith(t => true, TaskScheduler.Default)
-            : CurrentApi is { } api && _controller is not null ? _controller.Requests.DecideAsync(api, id, ok) : Task.FromResult(false);
+        Task<PairDecision> Decide(string id, bool ok) => _demoEngine is not null
+            ? _demoEngine.DecidePairRequestAsync(id, ok).ContinueWith(t => PairDecision.Done, TaskScheduler.Default)
+            : CurrentApi is { } api && _controller is not null ? _controller.Requests.DecideAsync(api, id, ok) : Task.FromResult(PairDecision.Failed);
 
         if (_pairWindow is not null)
         {

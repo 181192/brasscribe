@@ -470,6 +470,9 @@
   <data name="Allow_Expired" xml:space="preserve">
     <value>Forespørselen er utløpt. Velg denne datamaskinen på telefonen igjen.</value>
   </data>
+  <data name="Allow_Failed" xml:space="preserve">
+    <value>Det gikk ikke. Prøv igjen.</value>
+  </data>
   <data name="Allow_Ok" xml:space="preserve">
     <value>Godkjenn</value>
   </data>

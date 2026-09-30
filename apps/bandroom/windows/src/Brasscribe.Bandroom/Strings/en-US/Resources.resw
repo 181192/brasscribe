@@ -470,6 +470,9 @@
   <data name="Allow_Expired" xml:space="preserve">
     <value>This request has expired. Choose this computer on the phone again.</value>
   </data>
+  <data name="Allow_Failed" xml:space="preserve">
+    <value>That didn't go through. Try again.</value>
+  </data>
   <data name="Allow_Ok" xml:space="preserve">
     <value>Allow</value>
   </data>

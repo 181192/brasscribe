@@ -404,6 +404,48 @@ public sealed class PairViewModelTests
         await req.AllowCommand.ExecuteAsync(null);
         Assert.True(req.IsExpired);
     }
+
+    [Theory]
+    [InlineData("timeout")]
+    [InlineData("500")]
+    [InlineData("401")]
+    [InlineData("network")]
+    public async Task An_answer_that_does_not_get_through_can_be_tried_again(string failure)
+    {
+        var flaky = new FlakyEngine(_engine);
+        var watcher = new PairRequestWatcher(_time);
+        var vm = Make();
+        int arrived = 0;
+        watcher.Arrived += r => { arrived++; vm.AddRequest(r, (id, ok) => watcher.DecideAsync(flaky, id, ok)); };
+        _engine.Requests.Add(new("r1", "Kari's iPhone", "ios", "4719", _time.GetUtcNow().ToString("O"), "pending"));
+        await watcher.PollAsync(flaky);
+        var req = Assert.Single(vm.Requests);
+
+        flaky.OnDecide = failure switch
+        {
+            "timeout" => () => throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout of 4 seconds elapsing."),
+            "500" => () => throw new EngineHttpException(System.Net.HttpStatusCode.InternalServerError, "oops"),
+            "401" => () => throw new EngineHttpException(System.Net.HttpStatusCode.Unauthorized, "who are you"),
+            _ => () => throw new HttpRequestException("connection refused"),
+        };
+        await req.AllowCommand.ExecuteAsync(null);
+        await req.DenyCommand.ExecuteAsync(null);
+        Assert.True(req.HasFailed);
+        Assert.True(req.IsActive); // Allow and Don't allow stay
+        Assert.Same(req, Assert.Single(vm.Requests));
+        Assert.Contains("That didn't go through. Try again.", _said.Said);
+
+        // Still waiting, so the next poll doesn't bring it up a second time.
+        await watcher.PollAsync(flaky);
+        Assert.Equal(1, arrived);
+
+        flaky.OnDecide = null;
+        await req.AllowCommand.ExecuteAsync(null);
+        Assert.False(req.HasFailed);
+        Assert.True(req.IsDecided);
+        Assert.Empty(vm.Requests);
+        Assert.Empty(_engine.Requests);
+    }
 }
 
 public sealed class ControllerTests
