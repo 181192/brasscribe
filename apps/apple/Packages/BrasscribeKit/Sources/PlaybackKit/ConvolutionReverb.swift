@@ -52,6 +52,8 @@ public final class ConvolutionReverbAU: AUAudioUnit {
         let kernel = self.kernel
         return { _, timestamp, frameCount, _, outputData, _, pullInputBlock in
             guard let pull = pullInputBlock else { return kAudioUnitErr_NoConnection }
+            // the input buffers hold maximumFramesToRender frames
+            guard Int(frameCount) <= kernel.maxFrames else { return kAudioUnitErr_TooManyFramesToProcess }
             var flags = AudioUnitRenderActionFlags()
             kernel.resetInput(frames: Int(frameCount))
             let status = pull(&flags, timestamp, frameCount, 0, kernel.inputList)
@@ -82,9 +84,9 @@ final class ConvolutionKernel: @unchecked Sendable {
     private var fifoFill = 0
     private var accRe = [Float](), accIm = [Float](), work = [Float]()
     private var inBuffers: [UnsafeMutablePointer<Float>] = []
-    private var abl: UnsafeMutableAudioBufferListPointer!
-    var inputList: UnsafeMutablePointer<AudioBufferList> { abl.unsafeMutablePointer }
-    private var maxFrames = 4096
+    private var abl: UnsafeMutableAudioBufferListPointer?
+    var inputList: UnsafeMutablePointer<AudioBufferList> { abl!.unsafeMutablePointer }
+    private(set) var maxFrames = 0
     private var rawIR: [[Float]] = [], rawRate: Double = 0
     private var sampleRate: Double = 44_100
 
@@ -140,14 +142,18 @@ final class ConvolutionKernel: @unchecked Sendable {
         accRe = [Float](repeating: 0, count: half); accIm = accRe; work = [Float](repeating: 0, count: n)
         for p in inBuffers { p.deallocate() }
         inBuffers = (0..<channels).map { _ in UnsafeMutablePointer<Float>.allocate(capacity: maxFrames) }
-        abl = AudioBufferList.allocate(maximumBuffers: channels)
+        // AudioBufferList.allocate's memory is freed with free()
+        if let old = abl { free(old.unsafeMutablePointer) }
+        let list = AudioBufferList.allocate(maximumBuffers: channels)
         for c in 0..<channels {
-            abl[c] = AudioBuffer(mNumberChannels: 1, mDataByteSize: UInt32(maxFrames * 4), mData: UnsafeMutableRawPointer(inBuffers[c]))
+            list[c] = AudioBuffer(mNumberChannels: 1, mDataByteSize: UInt32(maxFrames * 4), mData: UnsafeMutableRawPointer(inBuffers[c]))
         }
+        abl = list
     }
 
     deinit {
         for p in inBuffers { p.deallocate() }
+        if let abl { free(abl.unsafeMutablePointer) }
         if let fft { vDSP_destroy_fftsetup(fft) }
     }
 
@@ -169,6 +175,7 @@ final class ConvolutionKernel: @unchecked Sendable {
     }
 
     func resetInput(frames: Int) {
+        guard let abl else { return }
         for c in 0..<channels {
             abl[c].mData = UnsafeMutableRawPointer(inBuffers[c])
             abl[c].mDataByteSize = UInt32(frames * 4)
