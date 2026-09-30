@@ -121,6 +121,9 @@ class PairRequestInfo(BaseModel):
     match_code: str = Field(description="four digits shown on both screens so the owner can tell which device asks")
     created_at: str
     status: Literal["pending", "approved", "denied"]
+    name_in_use: bool = Field(False, description="a device already paired with this engine has the same name "
+                                                 "(ignoring case): the owner can't tell the two apart by name, so "
+                                                 "the apps can suggest another one")
 
 
 class PairRequestResult(BaseModel):

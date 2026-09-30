@@ -33,17 +33,19 @@ def entries(settings: Settings, suite: str | None = None, limit: int = 1000) -> 
     d = settings.bench_history_dir
     rows: list[dict] = []
     for p in sorted(d.glob("*.json"), reverse=True) if d.is_dir() else []:
-        run = json.loads(p.read_text())
-        t = datetime.fromisoformat(run["created"]).timestamp()
-        for s in run["suites"]:
-            if suite and s["suite"] != suite:
-                continue
-            rows.append({"time": t, "run_id": run["id"], "target": run["target"], "suite": s["suite"],
-                         "status": s["status"], "reason": s.get("reason"), "metrics": s.get("metrics", {}),
-                         "checks": s.get("checks", []), "manifest": str(p), "git_sha": run.get("git_sha"),
-                         "device": run.get("device")})
-            if len(rows) >= limit:
-                return rows
+        try:  # a file that cannot be read or lacks a field is left out, not an error for the whole history
+            run = json.loads(p.read_text())
+            t = datetime.fromisoformat(run["created"]).timestamp()
+            found = [{"time": t, "run_id": run["id"], "target": run["target"], "suite": s["suite"],
+                      "status": s["status"], "reason": s.get("reason"), "metrics": s.get("metrics", {}),
+                      "checks": s.get("checks", []), "manifest": str(p), "git_sha": run.get("git_sha"),
+                      "device": run.get("device")}
+                     for s in run["suites"] if not suite or s["suite"] == suite]
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            continue
+        rows.extend(found[: limit - len(rows)])
+        if len(rows) >= limit:
+            return rows
     return rows
 
 

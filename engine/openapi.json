@@ -1676,6 +1676,12 @@
             "title": "Name",
             "type": "string"
           },
+          "name_in_use": {
+            "default": false,
+            "description": "a device already paired with this engine has the same name (ignoring case): the owner can't tell the two apart by name, so the apps can suggest another one",
+            "title": "Name In Use",
+            "type": "boolean"
+          },
           "platform": {
             "title": "Platform",
             "type": "string"
@@ -4324,6 +4330,7 @@
     },
     "/v1/jobs/{job_id}/manifest": {
       "get": {
+        "description": "What ran: profile, parameters, input, stages. Paired devices get paths relative to the data folder,\nand no git or host details.",
         "operationId": "getJobManifest",
         "parameters": [
           {
@@ -5752,7 +5759,7 @@
     },
     "/v1/registry/datasets": {
       "get": {
-        "description": "Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.",
+        "description": "Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.\nPaired devices get paths relative to the data folder.",
         "operationId": "listDatasets",
         "parameters": [
           {
@@ -5862,7 +5869,7 @@
         ]
       },
       "patch": {
-        "description": "Rename a finished score: the title in its manifest, Composition and MusicXML.",
+        "description": "Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML and\nthe talking score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.",
         "operationId": "updateRun",
         "parameters": [
           {
@@ -5937,7 +5944,7 @@
     },
     "/v1/sources": {
       "get": {
-        "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).",
+        "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).\nPaired devices get paths relative to the data folder.",
         "operationId": "listSources",
         "parameters": [
           {

@@ -8,6 +8,8 @@ environments) or an installed package.
     BRASSCRIBE_MODELS       model weights (default: <data>/models, else <repo>/models)
     BRASSCRIBE_ADAPTERS     adapter directory with <name>/run.sh (default: <repo>/ml/adapters)
     BRASSCRIBE_GPU_LOCK     mutex for heavy model runs (default: /tmp/brasscribe-gpu-<uid>.lock; gpulock.py)
+    BRASSCRIBE_ADAPTER_TIMEOUT_S  seconds one model run may take before it is stopped (default: 3 hours for
+                                  heavy models, 1 hour for the others; adapters.py)
     BRASSCRIBE_TOKEN        optional static bearer token for scripts; Play apps pair and get their own token
     BRASSCRIBE_STATE        companion state: server id and paired devices (default: <data>/companion)
     BRASSCRIBE_DEVICE_IDLE_DAYS  forget a paired device not seen for this many days (default: 180)
@@ -86,6 +88,8 @@ class Settings:
                                           if os.environ.get("BRASSCRIBE_ADMIN_TOKEN_FILE") else None)
     # Stages of one job that may run at once when their inputs are ready (at most one on the GPU); 1 runs
     # them one after another in pipeline order.
+    # Seconds one model run may take; None: the limit adapters.py sets for heavy and light models.
+    adapter_timeout_s: float | None = field(default_factory=lambda: float(os.environ.get("BRASSCRIBE_ADAPTER_TIMEOUT_S") or 0) or None)
     stage_parallelism: int = field(default_factory=lambda: max(1, int(os.environ.get("BRASSCRIBE_STAGE_PARALLELISM") or 1)))
     band_sounds_dir: Path | None = field(default_factory=lambda: _env_path("BRASSCRIBE_BAND_SOUNDS_DIR", Path())
                                          if os.environ.get("BRASSCRIBE_BAND_SOUNDS_DIR") else None)

@@ -126,7 +126,8 @@ class StageContext:
 
     def adapter(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None) -> float:
         return self.executor.adapters.run(name, src, dst, env=env, allow_heavy=self.executor.allow_heavy, log=self.log,
-                                          waited=lambda s: self.executor.add_wait(self.stage.name, s))
+                                          waited=lambda s: self.executor.add_wait(self.stage.name, s),
+                                          cancel=self.executor.cancel)
 
 
 class Executor:
@@ -316,6 +317,8 @@ class Executor:
                 results[stage.name] = res
             self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "failed",
                        "error": res.error, "trace": traceback.format_exc(limit=5)})
+            if self.cancel.is_set():  # stopped because the job was cancelled, not because the stage broke
+                raise Cancelled("cancelled") from e
             raise StageFailed(stage.name, res.error) from e
         res.seconds = time.time() - t0
         res.queue_wait_s = min(self._take_wait(stage.name), res.seconds)
