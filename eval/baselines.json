@@ -726,7 +726,7 @@
       }
     },
     "fast-notes": {
-      "source": "docs/plan/fast-notes.md §7-§8: the solo path on the frozen fast-notes clips (real trumpet samples dry, in a hall and through Mega-53, with the must-stay-one-note controls), after contour onsets, dense quantization and trill notation at standard and easier",
+      "source": "docs/plan/fast-notes.md §7-§8: the solo path on the frozen fast-notes clips (real trumpet samples dry, in a hall and through Mega-53, with the must-stay-one-note controls), after contour onsets, dense quantization and trill notation at standard and easier; errors: clips and builds that failed (a failed stage would score as empty, which a control counts as perfect)",
       "metrics": {
         "oracle.built:easier.trill_kept": 0.481,
         "oracle.ctl-ampvib.extra": {
@@ -794,6 +794,11 @@
         "oracle.written.fig_recall": 0.552,
         "oracle.written.note_f1": 0.649,
         "oracle.written.onset25_f1": 0.665,
+        "oracle.errors": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
         "small0.built:easier.trill_kept": 0.481,
         "small0.ctl-ampvib.extra": {
           "value": 0.05,
@@ -859,7 +864,12 @@
         "small0.written.alt_kept": 0.269,
         "small0.written.fig_recall": 0.469,
         "small0.written.note_f1": 0.574,
-        "small0.written.onset25_f1": 0.511
+        "small0.written.onset25_f1": 0.511,
+        "small0.errors": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        }
       }
     }
   }

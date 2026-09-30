@@ -84,8 +84,9 @@ def evaluate(song: Path) -> dict:
 
     def run(beats, coarse):
         q = quantize(ref, beats, auto_level=False, coarse=coarse)
-        by_key = {(round(x.onset_s, 6), x.pitch): x for x in q}
-        return [(r, by_key[(round(r["onset"], 6), r["pitch"])]) for r in ref]
+        # (onset, pitch, offset): parts in unison on one onset keep their own lengths
+        by_key = {(round(x.onset_s, 6), x.pitch, round(x.offset_s, 6)): x for x in q}
+        return [(r, by_key[(round(r["onset"], 6), r["pitch"], round(r["offset"], 6))]) for r in ref]
 
     variants = {"grid": run(grid, None), "free": run(plan.beat_times, plan.beat_ranges or None)}
     inside = lambda r: any(s0 <= r["onset"] < s1 for s0, s1 in spans_s)  # noqa: E731
@@ -102,6 +103,10 @@ def evaluate(song: Path) -> dict:
     return out
 
 
+def _num(x: float | None) -> str:
+    return "-" if x is None else f"{x:.3f}"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("eval_dirs", type=Path, nargs="+")
@@ -115,8 +120,8 @@ def main() -> None:
             print(f"{r['piece']:40s} regions={r['regions']} inside={r['n_inside']:4d} "
                   f"strict pos {g['position']:.3f}->{f['position']:.3f} sub {g['subdivision']:.3f}->{f['subdivision']:.3f} "
                   f"dur {g['duration']:.3f}->{f['duration']:.3f}"
-                  + (f" | inside shape {g['inside_shape']:.3f}->{f['inside_shape']:.3f} ({f['inside_pairs']} IOIs)"
-                     if f["inside_shape"] is not None else ""))
+                  + (f" | inside shape {_num(g['inside_shape'])}->{_num(f['inside_shape'])} ({f['inside_pairs']} IOIs)"
+                     if f["inside_shape"] is not None or g["inside_shape"] is not None else ""))
     summary = {}
     for v in ("grid", "free"):
         summary[v] = {k: round(float(np.mean([r[v][k] for r in rows])), 3) for k in ("position", "subdivision", "duration")}

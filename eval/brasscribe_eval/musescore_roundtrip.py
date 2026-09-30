@@ -40,7 +40,7 @@ def _merge_ties(part) -> list[int]:
 def check(xml: Path, comp_json: Path) -> bool:
     re_xml = xml.with_name(xml.stem + ".mscore.musicxml")
     if not musescore.convert(xml, re_xml):
-        raise SystemExit("MuseScore did not re-export the file")
+        raise RuntimeError("MuseScore did not re-export the file")
     raw = re_xml.read_text()
     sounds = dict(zip([norm(n) for n in re.findall(r"<part-name>([^<]*)</part-name>", raw)],
                       re.findall(r"<instrument-sound>([^<]+)</instrument-sound>", raw)))
@@ -48,7 +48,11 @@ def check(xml: Path, comp_json: Path) -> bool:
     arr = arrange_composition(comp)
     want = {norm(k): [n.pitch for n in sorted(v, key=lambda n: n.start)] for k, v in arr.parts.items()}
     back = converter.parse(re_xml).toSoundingPitch()
-    ok = True
+    # Every part must come back: a part MuseScore dropped has no pitches to compare.
+    missing = sorted(set(want) - {norm(p.partName) for p in back.parts} - {"Percussion"})
+    for name in missing:
+        print(f"{name:14s} sound=-                      notes=   0 MISSING")
+    ok = not missing
     for p in back.parts:
         name = norm(p.partName)
         if name == "Percussion":
@@ -67,7 +71,11 @@ def main() -> None:
     ap.add_argument("musicxml", type=Path)
     ap.add_argument("composition", type=Path)
     args = ap.parse_args()
-    print("ALL MATCH" if check(args.musicxml, args.composition) else "MISMATCH")
+    try:
+        ok = check(args.musicxml, args.composition)
+    except RuntimeError as e:
+        raise SystemExit(str(e)) from e
+    print("ALL MATCH" if ok else "MISMATCH")
 
 
 if __name__ == "__main__":

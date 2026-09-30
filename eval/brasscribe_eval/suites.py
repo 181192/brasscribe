@@ -226,7 +226,7 @@ def _solo_vote(data: Path, mode: str) -> dict[str, float]:
     alone, vote2 = defaultdict(list), []
     combo = defaultdict(lambda: [0, 0])
     stems = data / "mega53-out-bench"
-    for name, _, ref in B.cases():
+    for name, _, ref in B.cases(data):
         stem_dir = stems / _.name
         if not (stem_dir / "trumpet.flac").exists():
             raise SkipSuite(f"missing {stem_dir.name}/trumpet.flac")
@@ -607,7 +607,7 @@ def run_suite(name: str, mode: str = "cached", data: Path | None = None) -> dict
                 "seconds": round(time.time() - t0, 2)}
     except SkipSuite as e:
         return {"suite": name, "status": "skipped", "reason": str(e), "metrics": {}, "seconds": round(time.time() - t0, 2)}
-    except Exception as e:  # noqa: BLE001 - a broken suite is a failure, not a crash of the whole run
+    except (Exception, SystemExit) as e:  # noqa: BLE001 - a broken suite is a failure, not a crash of the whole run
         return {"suite": name, "status": "error", "reason": f"{type(e).__name__}: {e}", "metrics": {},
                 "seconds": round(time.time() - t0, 2)}
 
@@ -639,6 +639,8 @@ def gate(results: list[dict], baselines: dict | None = None, allow_improved: boo
                 tol = spec.get("tolerance", default_tol)
                 higher = spec.get("higher_is_better", True)
                 v = r["metrics"].get(metric)
+                if v is not None and not np.isfinite(v):
+                    v = None  # NaN or inf: nothing was measured
                 if v is None and (metric.split(".")[0] in r.get("skipped_parts", []) or metric in r.get("skipped_parts", [])):
                     status = "skipped"
                 elif v is None:
