@@ -60,6 +60,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      # git-cliff reads the merged pull requests for their links and first-time contributors.
+      pull-requests: read
     steps:
       # The whole history, for the notes: git-cliff reads the commits since the previous vX.Y.Z tag.
       - uses: actions/checkout@v4
@@ -76,7 +78,7 @@ jobs:
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
 
       # Release notes from the Conventional Commits since the last release (cliff.toml): new features
-      # and fixes by app, the rest folded away, first-time contributors named.
+      # and fixes labelled by app, the rest folded away, first-time contributors named.
       - name: Release notes
         uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4
         with:

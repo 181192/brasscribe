@@ -45,8 +45,8 @@ jobs:
             javascript-typescript: ['studio/**', 'site/**/*.js', '**/*.ts', '**/*.js', '**/*.mjs']
             rust: ['core/**/*.rs', 'core/**/Cargo.toml', 'core/Cargo.lock']
             csharp: ['apps/windows/**', 'apps/bandroom/windows/**', 'core/dotnet/**']
-            java-kotlin: ['apps/android/**', 'core/android/**']
-            dependencies: ['**/Cargo.lock', '**/package-lock.json', '**/*.gradle.kts', 'apps/android/gradle/**', '**/*.csproj', '**/Directory.Packages.props', '**/Package.resolved', '**/Package.swift', 'pixi.lock', '**/pyproject.toml', '**/requirements*.txt', '.github/**']
+            java-kotlin: ['apps/android/**', 'core/android/**', 'design/dist/android/**']
+            dependencies: ['**/Cargo.toml', '**/Cargo.lock', '**/package.json', '**/package-lock.json', '**/*.gradle.kts', 'apps/android/gradle/**', '**/*.csproj', '**/Directory.Packages.props', '**/Package.swift', '**/Package.resolved', 'pixi.toml', 'pixi.lock', '**/pyproject.toml', '**/requirements*.txt', '.github/**']
       - id: pick
         env:
           EVENT: ${{ github.event_name }}
