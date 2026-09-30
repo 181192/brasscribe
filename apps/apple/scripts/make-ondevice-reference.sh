@@ -8,7 +8,8 @@
 # Light models on a short clip: no GPU lock needed.
 # Usage: scripts/make-ondevice-reference.sh clip.wav out-dir
 set -euo pipefail
-ROOT=/Users/k/private/brasscribe
+# the repository: BRASSCRIBE_REPO, else the checkout this script is in
+ROOT="${BRASSCRIBE_REPO:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 IN="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 OUT="$2"; mkdir -p "$OUT"; OUT="$(cd "$OUT" && pwd)"
 "$ROOT/ml/adapters/swift-f0/run.sh" "$IN" "$OUT/sw.mid"

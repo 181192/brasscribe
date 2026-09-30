@@ -35,9 +35,11 @@ public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]
 /// <param name="Reads">"treble" or "bass" (the seat's part at concert pitch in bass clef); null: the band part's own clef.</param>
 /// <param name="Lead">"lineup" (null) or "seat": the tune on the seat's part (band lineups only).</param>
 /// <param name="Lang">Language of the footer on the arranged parts: "en" (null) or "nb".</param>
+/// <param name="Trills">Faithful: write sustained two-note alternations as trills (standard and easier always do).</param>
 public sealed record LayersSongOptions(SoloContour? SoloContour = null, bool FreeTime = true, double? FreeTempo = null,
     bool Gate = true, bool BeatCleanup = true, bool KeyChanges = true, string Lineup = "band", string Difficulty = "faithful",
-    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null, string? Lang = null);
+    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null, string? Lang = null,
+    bool Trills = false);
 
 /// <summary>The player's part in a lineup for their seat.</summary>
 /// <param name="Part">The lineup's part name, or null when the lineup has none (percussion outside the band).</param>
@@ -82,20 +84,42 @@ public sealed record TalkingContext(string? Part = null, long? Bar = null, strin
 /// <summary>Indices of part, bar and event in a talking score.</summary>
 public readonly record struct TalkingCursor(int Part, int Bar, int Event);
 
-/// <summary>A talking score (spec §6), built once per score. Dispose to release the native document.</summary>
+/// <summary>
+/// The native talking-score document. The runtime counts the calls using it, so it is freed exactly once, and only after
+/// the last call has returned, whichever thread disposes it.
+/// </summary>
+internal sealed class TalkingScoreHandle : SafeHandle
+{
+    public TalkingScoreHandle() : base(IntPtr.Zero, ownsHandle: true) { }
+
+    public override bool IsInvalid => handle == IntPtr.Zero;
+
+    protected override bool ReleaseHandle()
+    {
+        BrasscribeCore.NativeTalkingFree(handle);
+        return true;
+    }
+}
+
+/// <summary>A talking score (spec §6), built once per score. Dispose to release the native document; it is safe to call
+/// from any thread, also while another thread uses the score.</summary>
 public sealed class TalkingScore : IDisposable
 {
-    private IntPtr _handle;
+    private readonly TalkingScoreHandle _handle;
 
     /// <summary>From partwise MusicXML plus the Composition JSON when known.</summary>
     public TalkingScore(string musicXml, string? compositionJson = null)
     {
         int code = BrasscribeCore.NativeTalkingNew(musicXml, compositionJson, out _handle, out var err);
-        if (code != 0) throw BrasscribeCore.Error(code, err);
+        if (code != 0)
+        {
+            _handle.Dispose();
+            throw BrasscribeCore.Error(code, err);
+        }
     }
 
     /// <summary>The document as JSON.</summary>
-    public string Json => BrasscribeCore.CallTalking(this, (IntPtr h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingJson(h, out o, out e));
+    public string Json => BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingJson(h, out o, out e));
 
     /// <summary>The announcement at a cursor and the context it leaves behind.</summary>
     public (string Text, TalkingContext Context) Announce(TalkingCursor cursor, TalkingContext? context = null, TalkingSettings? settings = null, bool byBar = false)
@@ -107,7 +131,7 @@ public sealed class TalkingScore : IDisposable
             settings = BrasscribeCore.SettingsJson(settings ?? new TalkingSettings()),
             by_bar = byBar,
         });
-        var json = BrasscribeCore.CallTalking(this, (IntPtr h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingAnnounce(h, request, out o, out e));
+        var json = BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingAnnounce(h, request, out o, out e));
         using var doc = JsonDocument.Parse(json);
         var c = doc.RootElement.GetProperty("context");
         return (doc.RootElement.GetProperty("text").GetString()!,
@@ -118,7 +142,7 @@ public sealed class TalkingScore : IDisposable
     public TalkingCursor? Navigate(TalkingCursor cursor, string unit = "note", bool forward = true)
     {
         var request = JsonSerializer.Serialize(new { cursor = new { part = cursor.Part, bar = cursor.Bar, @event = cursor.Event }, unit, forward });
-        var json = BrasscribeCore.CallTalking(this, (IntPtr h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingNavigate(h, request, out o, out e));
+        var json = BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingNavigate(h, request, out o, out e));
         using var doc = JsonDocument.Parse(json);
         var r = doc.RootElement;
         if (r.ValueKind == JsonValueKind.Null) return null;
@@ -129,22 +153,12 @@ public sealed class TalkingScore : IDisposable
     public string Export(string format = "text", TalkingSettings? settings = null)
     {
         var s = JsonSerializer.Serialize(BrasscribeCore.SettingsJson(settings ?? new TalkingSettings()));
-        return BrasscribeCore.CallTalking(this, (IntPtr h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingExport(h, format, s, out o, out e));
+        return BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingExport(h, format, s, out o, out e));
     }
 
-    internal IntPtr Handle => _handle == IntPtr.Zero ? throw new ObjectDisposedException(nameof(TalkingScore)) : _handle;
+    internal TalkingScoreHandle Handle => _handle.IsClosed ? throw new ObjectDisposedException(nameof(TalkingScore)) : _handle;
 
-    public void Dispose()
-    {
-        if (_handle != IntPtr.Zero)
-        {
-            BrasscribeCore.NativeTalkingFree(_handle);
-            _handle = IntPtr.Zero;
-        }
-        GC.SuppressFinalize(this);
-    }
-
-    ~TalkingScore() => Dispose();
+    public void Dispose() => _handle.Dispose();
 }
 
 /// <summary>Managed API over the brasscribe_ffi C ABI.</summary>
@@ -172,10 +186,12 @@ public static class BrasscribeCore
     /// <param name="seat">The player's seat, or null (see <see cref="LayersSongOptions"/>).</param>
     /// <param name="reads">"treble", "bass" or null.</param>
     /// <param name="lead">"lineup" (null) or "seat".</param>
+    /// <param name="trills">Write sustained two-note alternations as trills, or not; null: as the composition records it
+    /// (arrangement.trills), else the difficulty's default (faithful writes them out, standard and easier trill).</param>
     public static string ArrangeMusicXmlWith(string compositionJson, string lineup = "band", string difficulty = "faithful",
-        string? key = null, int? transpose = null, string? seat = null, string? reads = null, string? lead = null)
+        string? key = null, int? transpose = null, string? seat = null, string? reads = null, string? lead = null, bool? trills = null)
     {
-        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose, seat, reads, lead });
+        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose, seat, reads, lead, trills });
         return Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_with(compositionJson, options, out o, out e));
     }
 
@@ -237,6 +253,7 @@ public static class BrasscribeCore
             reads = o.Reads,
             lead = o.Lead,
             lang = o.Lang,
+            trills = o.Trills,
         });
         var pins = new List<GCHandle>();
         IntPtr Pin(Array? a)
@@ -308,22 +325,23 @@ public static class BrasscribeCore
 
     internal static BrasscribeException Error(int code, IntPtr err) => new(code, TakeString(err) ?? $"brasscribe core error {code}");
 
-    internal delegate int TalkingCall(IntPtr handle, out IntPtr output, out IntPtr error);
+    internal delegate int TalkingCall(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
 
+    /// <summary>A call on the score's document; the marshaller keeps the handle alive until it returns and throws
+    /// <see cref="ObjectDisposedException"/> once it is disposed.</summary>
     internal static string CallTalking(TalkingScore ts, TalkingCall call)
     {
         int code = call(ts.Handle, out var output, out var error);
-        GC.KeepAlive(ts);
         if (code != 0) throw Error(code, error);
         return TakeString(output) ?? "";
     }
 
-    internal static int NativeTalkingNew(string xml, string? comp, out IntPtr handle, out IntPtr err) => Native.bc_talking_score_new(xml, comp, out handle, out err);
+    internal static int NativeTalkingNew(string xml, string? comp, out TalkingScoreHandle handle, out IntPtr err) => Native.bc_talking_score_new(xml, comp, out handle, out err);
     internal static void NativeTalkingFree(IntPtr h) => Native.bc_talking_score_free(h);
-    internal static int NativeTalkingJson(IntPtr h, out IntPtr o, out IntPtr e) => Native.bc_talking_score_json(h, out o, out e);
-    internal static int NativeTalkingAnnounce(IntPtr h, string req, out IntPtr o, out IntPtr e) => Native.bc_talking_score_announce(h, req, out o, out e);
-    internal static int NativeTalkingNavigate(IntPtr h, string req, out IntPtr o, out IntPtr e) => Native.bc_talking_score_navigate(h, req, out o, out e);
-    internal static int NativeTalkingExport(IntPtr h, string format, string settings, out IntPtr o, out IntPtr e) => Native.bc_talking_score_export(h, format, settings, out o, out e);
+    internal static int NativeTalkingJson(TalkingScoreHandle h, out IntPtr o, out IntPtr e) => Native.bc_talking_score_json(h, out o, out e);
+    internal static int NativeTalkingAnnounce(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.bc_talking_score_announce(h, req, out o, out e);
+    internal static int NativeTalkingNavigate(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.bc_talking_score_navigate(h, req, out o, out e);
+    internal static int NativeTalkingExport(TalkingScoreHandle h, string format, string settings, out IntPtr o, out IntPtr e) => Native.bc_talking_score_export(h, format, settings, out o, out e);
 
     /// <summary>Spell MIDI pitches from their context (ps13); onsets in beats.</summary>
     /// <summary>Which part of a lineup ("band", "minimal", "quartet") is the player's, for their seat.</summary>
@@ -436,20 +454,20 @@ public static class BrasscribeCore
 
         [DllImport(Lib)]
         public static extern int bc_talking_score_new([MarshalAs(UnmanagedType.LPUTF8Str)] string musicXml,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string? compositionJson, out IntPtr handle, out IntPtr error);
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? compositionJson, out TalkingScoreHandle handle, out IntPtr error);
 
         [DllImport(Lib)] public static extern void bc_talking_score_free(IntPtr handle);
 
-        [DllImport(Lib)] public static extern int bc_talking_score_json(IntPtr handle, out IntPtr output, out IntPtr error);
+        [DllImport(Lib)] public static extern int bc_talking_score_json(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
-        public static extern int bc_talking_score_announce(IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int bc_talking_score_announce(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
-        public static extern int bc_talking_score_navigate(IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int bc_talking_score_navigate(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
-        public static extern int bc_talking_score_export(IntPtr handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string format,
+        public static extern int bc_talking_score_export(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string format,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? settingsJson, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]

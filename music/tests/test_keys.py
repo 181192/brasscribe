@@ -43,3 +43,13 @@ def test_key_changes_and_very_uncertain_marks_are_written(tmp_path):
     assert "<fifths>5</fifths>" in xml  # A major concert = B major on a B♭ cornet
     assert 'enclosure="rectangle"' in xml and xml.count(">?</words>") >= 2
     assert "#B04A00" in xml.upper() and "#0063A6" in xml.upper()
+
+
+def test_sharp_minor_keys_get_their_sharps():
+    from brasscribe_music.spelling import key_of
+
+    for tonic, name, fifths in ((68, "G#m", 5), (63, "D#m", 6)):
+        # harmonic minor up and the tonic triad
+        ps = [tonic + i for i in (0, 2, 3, 5, 7, 8, 11, 12, 7, 3, 0)] + [tonic - 12, tonic + 3, tonic + 7] * 3
+        du = [4.0] + [1.0] * (len(ps) - 1)
+        assert key_of(list(range(len(ps))), du, ps) == (name, fifths)

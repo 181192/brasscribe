@@ -184,11 +184,23 @@ public sealed class EngineClient : IEngineClient
 
     public Task<AudioRef> UploadAudioAsync(Stream audio, string filename, CancellationToken ct = default)
     {
-        var form = new MultipartFormDataContent();
+        // The name goes as UTF-8 in a quoted filename, as browsers send it (RFC 7578 §4.2). .NET would
+        // otherwise encode a name like "Kjærlighet.wav" as "=?utf-8?B?…?=", which the engine takes
+        // literally, and the run's title and the file's extension come from it.
+        var form = new MultipartFormDataContent { HeaderEncodingSelector = (_, _) => System.Text.Encoding.UTF8 };
         var file = new StreamContent(audio);
         file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-        form.Add(file, "file", filename);
+        file.Headers.TryAddWithoutValidation("Content-Disposition", $"form-data; name=\"file\"; filename=\"{QuotedFileName(filename)}\"");
+        form.Add(file);
         return SendJsonAsync(HttpMethod.Post, "v1/audio", form, EngineJsonContext.Default.AudioRef, ct);
+    }
+
+    /// <summary>A file name that is safe inside a quoted header parameter: no line breaks, quotes or backslashes.</summary>
+    internal static string QuotedFileName(string name)
+    {
+        var b = new System.Text.StringBuilder(name.Length);
+        foreach (char c in name) b.Append(c is '"' or '\\' || char.IsControl(c) ? '_' : c);
+        return b.Length == 0 ? "audio.wav" : b.ToString();
     }
 
     public Task<Job> CreateJobAsync(JobCreate request, CancellationToken ct = default) =>
@@ -254,9 +266,9 @@ public sealed class EngineClient : IEngineClient
         {
             resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
         }
-        catch (HttpRequestException e)
+        catch (Exception e) when (IsTransport(e, ct))
         {
-            throw new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
+            throw Transport(e);
         }
         using (resp) await EnsureSuccessAsync(resp, ct).ConfigureAwait(false);
     }
@@ -264,6 +276,9 @@ public sealed class EngineClient : IEngineClient
     /// <summary>
     /// Streams a job's events. When the connection drops before the job ends, it reconnects with
     /// ?after=&lt;last id&gt; so no event is lost or repeated. Ends after the terminal job event.
+    /// A stream with nothing on it (not even the engine's keepalive) for <see cref="StreamIdleTimeout"/>
+    /// counts as dropped. Failed attempts in a row wait longer each time (<see cref="ReconnectDelay"/>);
+    /// after <see cref="MaxReconnects"/> of them the stream ends with an <see cref="EngineException"/>.
     /// </summary>
     public async IAsyncEnumerable<JobEvent> StreamEventsAsync(string jobId, int after = -1,
         [EnumeratorCancellation] CancellationToken ct = default)
@@ -273,64 +288,97 @@ public sealed class EngineClient : IEngineClient
         while (true)
         {
             ct.ThrowIfCancellationRequested();
-            var req = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseAddress, $"v1/jobs/{Uri.EscapeDataString(jobId)}/events?after={last}"));
+            using var req = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseAddress, $"v1/jobs/{Uri.EscapeDataString(jobId)}/events?after={last}"));
             req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             if (last >= 0) req.Headers.TryAddWithoutValidation("Last-Event-ID", last.ToString(System.Globalization.CultureInfo.InvariantCulture));
             Authorize(req);
 
             HttpResponseMessage? resp = null;
             Stream? body = null;
+            Exception? dropped = null;
             try
             {
                 resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
                 await EnsureSuccessAsync(resp, ct).ConfigureAwait(false);
                 body = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
             }
-            catch (HttpRequestException) when (++failures <= 5)
+            catch (Exception e) when (IsTransport(e, ct))
             {
                 resp?.Dispose();
-                await Task.Delay(TimeSpan.FromMilliseconds(250 * failures), ct).ConfigureAwait(false);
-                continue;
+                dropped = e;
             }
 
-            bool terminal = false;
-            await using (body)
-            using (resp)
+            if (body is not null)
             {
-                var events = ServerSentEventParser.ReadAsync(body, ct: ct).GetAsyncEnumerator(ct);
-                while (true)
+                bool terminal = false;
+                await using (body)
+                using (resp)
                 {
-                    bool more;
-                    try { more = await events.MoveNextAsync().ConfigureAwait(false); }
-                    catch (IOException) when (!ct.IsCancellationRequested) { more = false; }
-                    catch (HttpRequestException) when (!ct.IsCancellationRequested) { more = false; }
-                    if (!more) break;
-
-                    var sse = events.Current;
-                    JobEvent? ev;
-                    try { ev = JsonSerializer.Deserialize(sse.Data, EngineJsonContext.Default.JobEvent); }
-                    catch (JsonException) { continue; }
-                    if (ev is null || ev.Id <= last) continue;
-                    last = ev.Id;
-                    failures = 0;
-                    yield return ev;
-                    if (ev.Type == "job" && ev.Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled)
+                    var events = ServerSentEventParser.ReadAsync(body, ct: ct, idleTimeout: StreamIdleTimeout).GetAsyncEnumerator(ct);
+                    while (true)
                     {
-                        terminal = true;
-                        break;
-                    }
-                }
-                await events.DisposeAsync().ConfigureAwait(false);
-            }
-            if (terminal) yield break;
+                        bool more;
+                        try { more = await events.MoveNextAsync().ConfigureAwait(false); }
+                        catch (Exception e) when (IsTransport(e, ct)) { more = false; dropped = e; }
+                        if (!more) break;
 
-            // The stream closed without a terminal event: ask for the job state before reconnecting.
-            var job = await GetJobAsync(jobId, ct).ConfigureAwait(false);
-            if (job.IsTerminal) yield break;
-            if (++failures > 20) throw new EngineException("Lost the connection to the engine.");
-            await Task.Delay(TimeSpan.FromMilliseconds(200), ct).ConfigureAwait(false);
+                        var sse = events.Current;
+                        JobEvent? ev;
+                        try { ev = JsonSerializer.Deserialize(sse.Data, EngineJsonContext.Default.JobEvent); }
+                        catch (JsonException) { continue; }
+                        if (ev is null || ev.Id <= last) continue;
+                        last = ev.Id;
+                        failures = 0;
+                        yield return ev;
+                        if (ev.Type == "job" && ev.Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled)
+                        {
+                            terminal = true;
+                            break;
+                        }
+                    }
+                    try { await events.DisposeAsync().ConfigureAwait(false); }
+                    catch (Exception e) when (IsTransport(e, ct)) { }
+                }
+                if (terminal) yield break;
+
+                // The stream closed without a terminal event: ask for the job state before reconnecting.
+                // An engine that cannot be reached right now counts as one more failed attempt.
+                Job? job = null;
+                try { job = await GetJobAsync(jobId, ct).ConfigureAwait(false); }
+                catch (EngineException e) when (e.Status is null) { dropped = e; }
+                if (job?.IsTerminal == true) yield break;
+            }
+
+            if (++failures > MaxReconnects)
+                throw dropped switch
+                {
+                    EngineException e => e,
+                    null => new EngineException("Lost the connection to the engine."),
+                    _ => Transport(dropped),
+                };
+            await Task.Delay(ReconnectDelay(failures), ct).ConfigureAwait(false);
         }
     }
+
+    /// <summary>A job's event stream with nothing on it for this long is reconnected (the engine sends a keepalive every 15 s).</summary>
+    public TimeSpan StreamIdleTimeout { get; init; } = TimeSpan.FromSeconds(45);
+
+    /// <summary>Failed attempts in a row before the event stream gives up: about half a minute with the default delays.</summary>
+    public int MaxReconnects { get; init; } = 10;
+
+    /// <summary>The wait before reconnect attempt n (from 1): 250 ms, doubling, at most 5 s.</summary>
+    public Func<int, TimeSpan> ReconnectDelay { get; init; } =
+        n => TimeSpan.FromMilliseconds(Math.Min(5000, 250 << Math.Clamp(n - 1, 0, 5)));
+
+    /// <summary>A failure of the connection or the transfer, as opposed to the engine's answer or the caller's Cancel.</summary>
+    private static bool IsTransport(Exception e, CancellationToken ct) =>
+        e is HttpRequestException or IOException or TimeoutException
+        || (e is OperationCanceledException && !ct.IsCancellationRequested);
+
+    /// <summary>A transport failure as an <see cref="EngineException"/>: a timeout (HttpClient.Timeout, idle stream) or no connection.</summary>
+    private EngineException Transport(Exception e) => e is OperationCanceledException or TimeoutException
+        ? new EngineException($"The engine at {BaseAddress} did not answer in time.", null, e, EngineException.Timeout)
+        : new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
 
     private void Authorize(HttpRequestMessage req)
     {
@@ -347,16 +395,28 @@ public sealed class EngineClient : IEngineClient
         {
             resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
         }
-        catch (HttpRequestException e)
+        catch (Exception e) when (IsTransport(e, ct))
         {
-            throw new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
+            throw Transport(e);
         }
         using (resp)
         {
             await EnsureSuccessAsync(resp, ct).ConfigureAwait(false);
-            await using var s = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-            return await JsonSerializer.DeserializeAsync(s, type, ct).ConfigureAwait(false)
-                   ?? throw new EngineException($"Empty response from {path}.");
+            T? value;
+            try
+            {
+                await using var s = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+                value = await JsonSerializer.DeserializeAsync(s, type, ct).ConfigureAwait(false);
+            }
+            catch (Exception e) when (IsTransport(e, ct))
+            {
+                throw Transport(e);
+            }
+            catch (JsonException e)
+            {
+                throw new EngineException($"The engine's answer to {path} could not be read.", resp.StatusCode, e);
+            }
+            return value ?? throw new EngineException($"Empty response from {path}.", resp.StatusCode);
         }
     }
 
@@ -369,12 +429,20 @@ public sealed class EngineClient : IEngineClient
         {
             resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         }
-        catch (HttpRequestException e)
+        catch (Exception e) when (IsTransport(e, ct))
         {
-            throw new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
+            throw Transport(e);
         }
         await EnsureSuccessAsync(resp, ct).ConfigureAwait(false);
-        return await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        try
+        {
+            return await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception e) when (IsTransport(e, ct))
+        {
+            resp.Dispose();
+            throw Transport(e);
+        }
     }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage resp, CancellationToken ct)
@@ -382,7 +450,7 @@ public sealed class EngineClient : IEngineClient
         if (resp.IsSuccessStatusCode) return;
         string detail = "";
         try { detail = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false); }
-        catch (HttpRequestException) { }
+        catch (Exception e) when (IsTransport(e, ct)) { }
         resp.Dispose();
         string message = resp.StatusCode switch
         {

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Brasscribe.Play.Core.Capture;
 using NAudio.CoreAudioApi;
@@ -9,7 +10,10 @@ namespace Brasscribe.Play.Audio.Windows;
 /// <summary>
 /// <see cref="ICaptureService"/> on WASAPI: microphone (shared-mode capture), everything the default
 /// output plays (endpoint loopback) and one app (process loopback, build 20348+). Writes a WAV file
-/// and reports peak level per buffer for the meter and the silence watch.
+/// and reports peak level per buffer for the meter and the silence watch. Loopback gets no audio
+/// while nothing plays, so silence is written for those stretches (<see cref="LoopbackGap"/>). A
+/// recording that stops by itself (device unplugged, disk full) is said at once, and what was
+/// recorded until then is kept.
 /// </summary>
 [SupportedOSPlatform("windows10.0.19041")]
 public sealed class WasapiCaptureService : ICaptureService, IDisposable
@@ -21,6 +25,9 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
     private string? _path;
     private CaptureNotice? _lastNotice;
     private Task<CaptureResult>? _stopping;
+    private TaskCompletionSource? _stopped;
+    private Timer? _gapTimer;
+    private WaveFormat? _gapFormat;
     private readonly object _gate = new();
 
     public bool SupportsAppCapture => ProcessLoopback.IsSupported;
@@ -75,55 +82,145 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         _stopping = null;
         _path = request.OutputPath;
         _lastNotice = null;
-        switch (request.Kind)
+        _stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
         {
-            case CaptureKind.Microphone:
+            switch (request.Kind)
             {
-                MMDevice? device = null;
-                if (request.DeviceId is { } id)
+                case CaptureKind.Microphone:
                 {
-                    using var enumerator = new MMDeviceEnumerator();
-                    device = enumerator.GetDevice(id);
+                    MMDevice? device = null;
+                    if (request.DeviceId is { } id)
+                    {
+                        using var enumerator = new MMDeviceEnumerator();
+                        device = enumerator.GetDevice(id);
+                    }
+                    var mic = device is null ? new WasapiCapture() : new WasapiCapture(device);
+                    Attach(mic);
+                    break;
                 }
-                var mic = device is null ? new WasapiCapture() : new WasapiCapture(device);
-                Attach(mic);
-                break;
+                case CaptureKind.SystemAudio:
+                    Attach(new WasapiLoopbackCapture());
+                    StartGapFill(_waveIn!.WaveFormat);
+                    break;
+                case CaptureKind.App:
+                {
+                    if (!ProcessLoopback.IsSupported)
+                        throw new InvalidOperationException("Recording one app needs Windows 11 or Windows Server 2022 (build 20348).");
+                    if (request.ProcessId is not { } pid) throw new ArgumentException("No process chosen", nameof(request));
+                    var capture = new ProcessLoopbackCapture(pid);
+                    var format = capture.WaveFormat;
+                    _process = capture;
+                    _writer = new WaveFileWriter(_path, format);
+                    capture.BufferCaptured += (buffer, count, silent) => OnData(buffer, count, silent, format);
+                    capture.Stopped += e =>
+                    {
+                        _stopped?.TrySetResult();
+                        if (e is null) return;
+                        StopGapFill(); // nothing more is recorded: no silence after the end
+                        // The app closing ends its audio (a COM error); anything else stopped the recording itself.
+                        Say(e is COMException ? CaptureNoticeKind.NothingPlaying : CaptureNoticeKind.Interrupted);
+                    };
+                    _clock = Stopwatch.StartNew();
+                    await capture.StartAsync(ct).ConfigureAwait(false);
+                    StartGapFill(format);
+                    break;
+                }
             }
-            case CaptureKind.SystemAudio:
-                Attach(new WasapiLoopbackCapture());
-                break;
-            case CaptureKind.App:
-            {
-                if (!ProcessLoopback.IsSupported)
-                    throw new InvalidOperationException("Recording one app needs Windows 11 or Windows Server 2022 (build 20348).");
-                if (request.ProcessId is not { } pid) throw new ArgumentException("No process chosen", nameof(request));
-                var capture = new ProcessLoopbackCapture(pid);
-                var format = capture.WaveFormat;
-                _writer = new WaveFileWriter(_path, format);
-                capture.BufferCaptured += (buffer, count, silent) => OnData(buffer, count, silent, format);
-                capture.Stopped += e => { if (e is not null) Notice?.Invoke(this, new CaptureNotice(CaptureNoticeKind.NothingPlaying, _clock.Elapsed)); };
-                _process = capture;
-                _clock = Stopwatch.StartNew();
-                await capture.StartAsync(ct).ConfigureAwait(false);
-                break;
-            }
+        }
+        catch
+        {
+            // Nothing is recording: close what was opened and leave no empty file behind.
+            Abandon();
+            throw;
         }
         IsCapturing = true;
     }
 
     private void Attach(WasapiCapture capture)
     {
+        _waveIn = capture;
         _writer = new WaveFileWriter(_path!, capture.WaveFormat);
         capture.DataAvailable += (_, e) => OnData(e.Buffer, e.BytesRecorded, false, capture.WaveFormat);
-        _waveIn = capture;
+        // Also when the device goes away mid-take: then it comes with the reason, and is said at once.
+        capture.RecordingStopped += (_, e) =>
+        {
+            _stopped?.TrySetResult();
+            if (e.Exception is null) return;
+            StopGapFill(); // nothing more is recorded: no silence after the end
+            Say(CaptureNoticeKind.Interrupted);
+        };
         _clock = Stopwatch.StartNew();
         capture.StartRecording();
+    }
+
+    private void Say(CaptureNoticeKind kind)
+    {
+        var notice = new CaptureNotice(kind, _clock.Elapsed);
+        _lastNotice = notice;
+        Notice?.Invoke(this, notice);
+    }
+
+    /// <summary>A start that failed: every device object and the file are released, and the file deleted.</summary>
+    private void Abandon()
+    {
+        StopGapFill();
+        try { _waveIn?.Dispose(); }
+        catch (Exception e) when (e is COMException or InvalidOperationException) { }
+        _waveIn = null;
+        if (_process is not null && ProcessLoopback.IsSupported) _process.Dispose();
+        _process = null;
+        lock (_gate)
+        {
+            _writer?.Dispose();
+            _writer = null;
+        }
+        try { if (_path is not null) File.Delete(_path); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        _stopped = null;
     }
 
     private void OnData(byte[] buffer, int count, bool silent, WaveFormat format)
     {
         lock (_gate) _writer?.Write(buffer, 0, count);
         Level?.Invoke(this, new CaptureLevel(_clock.Elapsed, Peak(buffer, count, format), silent));
+    }
+
+    private void StartGapFill(WaveFormat format)
+    {
+        _gapFormat = format;
+        _gapTimer = new Timer(_ => FillGap(), null, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100));
+    }
+
+    private void StopGapFill()
+    {
+        Interlocked.Exchange(ref _gapTimer, null)?.Dispose();
+    }
+
+    /// <summary>On a timer: silence for the time loopback delivered nothing, and a silent level for the meter and the silence watch.</summary>
+    private void FillGap()
+    {
+        TimeSpan at;
+        try
+        {
+            lock (_gate)
+            {
+                if (_writer is null || _gapFormat is not { } format) return;
+                at = _clock.Elapsed;
+                long frames = LoopbackGap.FramesToFill(at, _writer.Length / format.BlockAlign, format.SampleRate);
+                if (frames <= 0) return;
+                var zeros = new byte[Math.Min(frames, format.SampleRate) * format.BlockAlign];
+                for (long left = frames; left > 0; left -= zeros.Length / format.BlockAlign)
+                    _writer.Write(zeros, 0, (int)Math.Min(zeros.Length, left * format.BlockAlign));
+            }
+        }
+        catch (Exception e) when (e is IOException or ObjectDisposedException or UnauthorizedAccessException)
+        {
+            StopGapFill();
+            Say(CaptureNoticeKind.Interrupted);
+            return;
+        }
+        Level?.Invoke(this, new CaptureLevel(at, 0, true));
     }
 
     private static float Peak(byte[] buffer, int count, WaveFormat format)
@@ -153,15 +250,16 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         var process = _process;
         _waveIn = null;
         _process = null;
+        StopGapFill();
         WaveFormat? format = null;
         if (waveIn is not null)
         {
-            var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            waveIn.RecordingStopped += (_, _) => done.TrySetResult();
+            var done = _stopped?.Task ?? Task.CompletedTask;
             format = waveIn.WaveFormat;
-            waveIn.StopRecording();
+            // Stopped already when the device went away mid-take: then there is nothing to wait for.
+            if (!done.IsCompleted) waveIn.StopRecording();
             // RecordingStopped comes through the UI thread's context: wait without holding that thread.
-            await StopWait.WithinAsync(done.Task, StopWait.Limit, ct).ConfigureAwait(false);
+            await StopWait.WithinAsync(done, StopWait.Limit, ct).ConfigureAwait(false);
             waveIn.Dispose();
         }
         if (process is not null && ProcessLoopback.IsSupported)

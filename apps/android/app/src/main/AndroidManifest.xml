@@ -27,13 +27,14 @@
         android:theme="@style/Theme.BrasscribePlay"
         tools:targetApi="36">
 
-        <!-- A turn, a new window size or a page turner (a keyboard) connecting must not restart the
-             score: Compose lays itself out again, and the alphaTab view and its player keep going. -->
+        <!-- A turn, a new window size, a page turner (a keyboard) connecting or the phone switching to
+             dark mode must not restart the score: Compose lays itself out and themes itself again
+             (MainActivity follows the system's dark mode), and the alphaTab view and its player keep going. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|uiMode"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

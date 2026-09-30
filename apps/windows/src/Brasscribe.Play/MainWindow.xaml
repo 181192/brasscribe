@@ -133,6 +133,10 @@
             <Frame x:Name="ContentFrame" IsNavigationStackEnabled="False" />
         </NavigationView>
 
+        <!-- Something failed that the app carries on from (see MainWindow.ShowProblem). -->
+        <InfoBar x:Name="ProblemBar" Grid.Row="1" Severity="Warning" IsOpen="False" IsClosable="True"
+                 HorizontalAlignment="Center" VerticalAlignment="Bottom" MaxWidth="640" Margin="16" />
+
         <!-- Status line. The announcer raises UIA notifications from this element; it is not a live region itself. -->
         <TextBlock x:Name="StatusText" Grid.Row="2" Padding="16,2" Style="{StaticResource MutedStyle}" FontSize="12"
                    Text="{x:Bind ViewModel.Score.Player.PositionText, Mode=OneWay}" />

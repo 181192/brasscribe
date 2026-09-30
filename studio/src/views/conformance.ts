@@ -27,7 +27,7 @@ function isComposition(x: unknown): x is Composition {
 }
 
 export function comparePair(p: Pair): { status: "pass" | "fail" | "missing"; detail: string } {
-  if (!p.py || !p.rust) return { status: "missing", detail: p.py ? "no Rust output" : "no Python reference" };
+  if (!p.py || !p.rust) return { status: "missing", detail: p.py ? t("conf.detail.noRust") : t("conf.detail.noPython") };
   const strip = (o: ConformanceReport) => {
     const { _file: _, ...rest } = o;
     return rest;
@@ -36,10 +36,13 @@ export function comparePair(p: Pair): { status: "pass" | "fail" | "missing"; det
     const d = diffCompositions(p.py, p.rust, 0);
     const changed = d.totals.added + d.totals.removed + d.totals.moved + d.totals.octave;
     const same = JSON.stringify(strip(p.py)) === JSON.stringify(strip(p.rust));
-    return { status: same ? "pass" : "fail", detail: same ? `${d.totals.same} notes identical` : `${changed} notes differ (${d.totals.added} added, ${d.totals.removed} removed, ${d.totals.moved} moved, ${d.totals.octave} octave)${changed ? "" : "; other fields differ"}` };
+    const detail = same ? t("conf.detail.notesSame", { n: d.totals.same })
+      : changed ? t("conf.detail.notesDiffer", { n: changed, added: d.totals.added, removed: d.totals.removed, moved: d.totals.moved, octave: d.totals.octave })
+      : t("conf.detail.fieldsDiffer");
+    return { status: same ? "pass" : "fail", detail };
   }
   const same = JSON.stringify(strip(p.py)) === JSON.stringify(strip(p.rust));
-  return { status: same ? "pass" : "fail", detail: same ? "identical" : "JSON differs" };
+  return { status: same ? "pass" : "fail", detail: same ? t("conf.detail.identical") : t("conf.detail.jsonDiffers") };
 }
 
 export function conformanceView(root: HTMLElement): () => void {
@@ -49,10 +52,25 @@ export function conformanceView(root: HTMLElement): () => void {
     runner,
     el);
   let timer = 0;
-  const load = () => api.conformance().then((reports) => clear(el, render(reports))).catch((e) => clear(el, errorNotice(e, { retry: load })));
+  // Leaving the page cancels what is loading and stops the polling.
+  const ctl = new AbortController();
+  const { signal } = ctl;
+  const load = () => api.conformance({ signal }).then((reports) => {
+    if (!signal.aborted) clear(el, render(reports));
+  }).catch((e) => {
+    if (!signal.aborted) clear(el, errorNotice(e, { retry: load }));
+  });
+  const poll = () => api.conformanceRun({ signal }).then((r) => {
+    if (!signal.aborted) showRun(r);
+    return r;
+  }, () => {
+    if (!signal.aborted) showRun(null);
+    return null;
+  });
   // "Run conformance" when the engine can start the core's conformance run; otherwise the command is shown.
   const showRun = (r: ConformanceRun | null) => {
     window.clearTimeout(timer);
+    if (signal.aborted) return;
     if (!r || !r.available) {
       clear(runner);
       return;
@@ -64,7 +82,7 @@ export function conformanceView(root: HTMLElement): () => void {
         showRun(await api.startConformanceRun());
         announce(t("conf.started"));
       } catch (e) {
-        clear(runner, errorNotice(e, { retry: () => void api.conformanceRun().then(showRun).catch(() => showRun(null)) }));
+        if (!signal.aborted) clear(runner, errorNotice(e, { retry: () => void poll() }));
       }
     } }, icon("retry"), running ? t("conf.running") : t("conf.run"));
     const state = r.status === "idle" ? null : h("span", { class: "hint", role: "status" },
@@ -73,18 +91,20 @@ export function conformanceView(root: HTMLElement): () => void {
     clear(runner, h("div", { class: "row" }, btn, state),
       r.log_tail ? more(t("conf.log"), h("pre", { class: "json", tabindex: 0 }, r.log_tail)) : null);
     if (running) {
-      timer = window.setTimeout(() => void api.conformanceRun().then((n) => {
-        showRun(n);
-        if (n.status !== "running") {
+      timer = window.setTimeout(() => void poll().then((n) => {
+        if (n && !signal.aborted && n.status !== "running") {
           announce(t(n.status === "succeeded" ? "conf.finished" : "conf.failedShort"));
           void load();
         }
-      }).catch(() => showRun(null)), 3000);
+      }), 3000);
     }
   };
   void load();
-  api.conformanceRun().then(showRun).catch(() => showRun(null));
-  return () => window.clearTimeout(timer);
+  void poll();
+  return () => {
+    ctl.abort();
+    window.clearTimeout(timer);
+  };
 }
 
 interface CaseRow {

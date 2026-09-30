@@ -18,11 +18,20 @@ import argparse
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 import pretty_midi
 
 ONSET_TOL = 0.10
+
+
+def doubles(line: list[dict], tol: float = ONSET_TOL) -> Callable[[dict], bool]:
+    """A test for notes that double `line`: the same pitch within `tol` seconds of one of its onsets."""
+    by_pitch: dict[int, list[float]] = {}
+    for n in line:
+        by_pitch.setdefault(n["pitch"], []).append(n["onset"])
+    return lambda n: any(abs(o - n["onset"]) <= tol for o in by_pitch.get(n["pitch"], ()))
 
 
 @dataclass

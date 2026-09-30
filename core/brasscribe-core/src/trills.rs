@@ -13,6 +13,7 @@
 
 use crate::midi::RawNote;
 use crate::model::Note;
+use crate::py;
 
 pub const MIN_NOTES: usize = 7;
 pub const MAX_IOI: f64 = 0.15;
@@ -72,7 +73,7 @@ pub fn runs(pitches: &[i32], linked: &[bool], held: &[bool]) -> Vec<(usize, usiz
 /// The median IOI of notes i..=j (the upper one of an even count) is at most MAX_IOI.
 pub fn fast(onsets: &[f64], i: usize, j: usize) -> bool {
     let mut d: Vec<f64> = (i..j).map(|k| onsets[k + 1] - onsets[k]).collect();
-    d.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    d.sort_by(py::fcmp);
     d[d.len() / 2] <= MAX_IOI
 }
 
@@ -90,7 +91,7 @@ pub fn timed_runs(pitches: &[i32], onsets: &[f64], offsets: &[f64]) -> Vec<(usiz
 /// the run stay.
 pub fn with_trills(line: &[RawNote], split: &[RawNote]) -> Vec<RawNote> {
     let mut s = split.to_vec();
-    s.sort_by(|a, b| a.onset.partial_cmp(&b.onset).unwrap().then(a.pitch.cmp(&b.pitch)));
+    s.sort_by(|a, b| py::fcmp(&a.onset, &b.onset).then(a.pitch.cmp(&b.pitch)));
     let p: Vec<i32> = s.iter().map(|n| n.pitch).collect();
     let on: Vec<f64> = s.iter().map(|n| n.onset).collect();
     let off: Vec<f64> = s.iter().map(|n| n.offset).collect();
@@ -101,7 +102,8 @@ pub fn with_trills(line: &[RawNote], split: &[RawNote]) -> Vec<RawNote> {
     let spans: Vec<RawNote> = found
         .iter()
         .map(|&(i, j)| {
-            let (lo, hi) = (s[i].pitch.min(s[i + 1].pitch), s[i].pitch.max(s[i + 1].pitch));
+            // the run's two pitches (its first two notes can be one turn on the same pitch)
+            let (lo, hi) = s[i..=j].iter().fold((i32::MAX, i32::MIN), |(lo, hi), n| (lo.min(n.pitch), hi.max(n.pitch)));
             RawNote { pitch: lo, onset: s[i].onset, offset: s[j].offset, confidence: None, split: false, trill: hi - lo }
         })
         .collect();
@@ -127,7 +129,7 @@ pub fn with_trills(line: &[RawNote], split: &[RawNote]) -> Vec<RawNote> {
         out.extend(pieces);
     }
     out.extend(spans);
-    out.sort_by(|a, b| a.onset.partial_cmp(&b.onset).unwrap().then(a.pitch.cmp(&b.pitch)));
+    out.sort_by(|a, b| py::fcmp(&a.onset, &b.onset).then(a.pitch.cmp(&b.pitch)));
     out
 }
 
@@ -169,7 +171,8 @@ pub fn collapse_trills_indexed(notes: &[Note]) -> Option<Vec<(Note, Option<usize
         out.extend(ns[at..i].iter().map(|x| (x.1.clone(), Some(x.0))));
         let run: Vec<&Note> = ns[i..=j].iter().map(|x| x.1).collect();
         let (first, last) = (run[0], run[run.len() - 1]);
-        let (lo, hi) = (first.pitch.min(run[1].pitch), first.pitch.max(run[1].pitch));
+        // a first turn can repeat one pitch
+        let (lo, hi) = run.iter().fold((i32::MAX, i32::MIN), |(lo, hi), n| (lo.min(n.pitch), hi.max(n.pitch)));
         let conf = run.iter().map(|n| n.confidence).fold(f64::NEG_INFINITY, f64::max);
         let performed = match (first.performed_dur, last.performed_dur) {
             (Some(_), Some(p)) => Some(last.start + p - first.start),
@@ -199,5 +202,27 @@ pub fn collapse_trills(notes: &[Note]) -> Vec<Note> {
     match collapse_trills_indexed(notes) {
         Some(v) => v.into_iter().map(|(n, _)| n).collect(),
         None => notes.to_vec(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // C C D C D C D C: the first two Cs are one turn (a dropped note), the trill is C to D
+    const PITCHES: [i32; 8] = [60, 60, 62, 60, 62, 60, 62, 60];
+
+    #[test]
+    fn a_first_turn_on_one_pitch_still_names_both_pitches() {
+        let written: Vec<Note> = PITCHES.iter().enumerate().map(|(i, &p)| Note::new(p, i as i64 * 6, 6, 1.0, vec![])).collect();
+        let out = collapse_trills(&written);
+        assert_eq!(out.iter().map(|n| (n.pitch, n.start, n.dur, n.trill)).collect::<Vec<_>>(), [(60, 0, 48, Some(2))]);
+        let performed: Vec<RawNote> = PITCHES
+            .iter()
+            .enumerate()
+            .map(|(i, &p)| RawNote { pitch: p, onset: 1.0 + i as f64 * 0.1, offset: 1.1 + i as f64 * 0.1, confidence: None, split: false, trill: 0 })
+            .collect();
+        let out = with_trills(&performed, &performed);
+        assert_eq!(out.iter().map(|n| (n.pitch, n.trill)).collect::<Vec<_>>(), [(60, 2)]);
     }
 }

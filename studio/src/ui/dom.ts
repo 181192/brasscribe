@@ -183,6 +183,50 @@ export function more(summary: string, content: Child, opts: { count?: number | s
     content);
 }
 
+const FOCUSABLE = "a[href], button, input, select, textarea, summary, [tabindex]";
+
+/** What identifies a control or a disclosure across a rebuild: its data-key, else its tag and text. */
+function keyOf(el: Element): string {
+  const d = (el as HTMLElement).dataset?.key;
+  if (d) return d;
+  const text = el.tagName === "DETAILS" ? el.querySelector(":scope > summary")?.textContent : el.textContent;
+  return `${el.tagName}:${(text ?? "").trim()}`;
+}
+
+/** Elements matched by key, the n-th with the same key to the n-th. */
+function keyed(els: Element[]): Map<string, Element[]> {
+  const m = new Map<string, Element[]>();
+  for (const el of els) (m.get(keyOf(el)) ?? m.set(keyOf(el), []).get(keyOf(el))!).push(el);
+  return m;
+}
+
+/**
+ * Rebuild part of a page without losing the reader's place: the disclosures that were open stay
+ * open, and the control that had focus (the same data-key, or the same tag and text) gets it back.
+ */
+export function rebuild(containers: Element[], render: () => void): void {
+  const open = new Map<string, boolean[]>();
+  for (const [k, ds] of keyed(containers.flatMap((c) => Array.from(c.querySelectorAll("details"))))) open.set(k, ds.map((d) => (d as HTMLDetailsElement).open));
+  const active = document.activeElement;
+  let focus: { key: string; n: number } | null = null;
+  if (active && containers.some((c) => c !== active && c.contains(active))) {
+    const key = keyOf(active);
+    const same = containers.flatMap((c) => Array.from(c.querySelectorAll(FOCUSABLE))).filter((el) => keyOf(el) === key);
+    focus = { key, n: Math.max(0, same.indexOf(active)) };
+  }
+  render();
+  for (const [k, ds] of keyed(containers.flatMap((c) => Array.from(c.querySelectorAll("details"))))) {
+    const was = open.get(k);
+    ds.forEach((d, i) => {
+      if (was?.[i] !== undefined) (d as HTMLDetailsElement).open = was[i];
+    });
+  }
+  if (focus && !containers.some((c) => c.contains(document.activeElement))) {
+    const same = containers.flatMap((c) => Array.from(c.querySelectorAll<HTMLElement>(FOCUSABLE))).filter((el) => keyOf(el) === focus!.key);
+    same[Math.min(focus.n, same.length - 1)]?.focus();
+  }
+}
+
 export function loading(label?: string): HTMLElement {
   return h("p", { class: "loading", role: "status" }, label ?? t("common.loading"));
 }
@@ -266,6 +310,17 @@ export function table(caption: string, head: string[], rows: Child[][], opts: { 
         h("tr", {}, h("td", { colspan: head.length }, t("common.nothing"))))));
 }
 
+/** Sent to a tab panel when another tab is chosen, so what plays in it can stop. */
+export const PANEL_HIDDEN = "studio:panel-hidden";
+
+/** Run `f` when the tab panel `el` sits in is hidden. Returns a function that stops listening. */
+export function onPanelHidden(el: Element, f: () => void): () => void {
+  const panel = el.closest("[role=tabpanel]");
+  if (!panel) return () => undefined;
+  panel.addEventListener(PANEL_HIDDEN, f);
+  return () => panel.removeEventListener(PANEL_HIDDEN, f);
+}
+
 /** Accessible tabs with a roving tabindex (WAI-ARIA tabs pattern, manual activation). */
 export function tabs(label: string, items: { id: string; label: string; render: (panel: HTMLElement) => void }[], selected: string, onSelect?: (id: string) => void): HTMLElement {
   const base = nextId("tabs");
@@ -274,7 +329,10 @@ export function tabs(label: string, items: { id: string; label: string; render: 
   const buttons: HTMLButtonElement[] = [];
   const rendered = new Set<string>();
   const panelEls = new Map<string, HTMLElement>();
+  let current: string | null = null;
   const select = (id: string, focus = false) => {
+    const was = current;
+    current = id;
     for (const b of buttons) {
       const on = b.dataset.id === id;
       b.setAttribute("aria-selected", String(on));
@@ -282,6 +340,7 @@ export function tabs(label: string, items: { id: string; label: string; render: 
       if (on && focus) b.focus();
     }
     for (const [pid, p] of panelEls) p.hidden = pid !== id;
+    if (was !== null && was !== id) panelEls.get(was)?.dispatchEvent(new Event(PANEL_HIDDEN));
     if (!rendered.has(id)) {
       rendered.add(id);
       items.find((i) => i.id === id)?.render(panelEls.get(id)!);

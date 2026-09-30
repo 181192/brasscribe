@@ -107,6 +107,18 @@ def test_registry_history_and_reports(settings, monkeypatch, tmp_path):
         assert c.get("/v1/conformance").json() == []
 
 
+def test_history_skips_files_it_cannot_read(settings):
+    history.save(settings, {"passed": True, "suites": [{"suite": "arrange", "status": "pass", "metrics": {},
+                                                          "checks": []}]}, "arrange", "cached")
+    d = settings.bench_history_dir
+    (d / "99990101T000000000000Z.json").write_text("{not json")
+    (d / "99990102T000000000000Z.json").write_text(json.dumps({"id": "x", "suites": []}))  # no "created"
+    (d / "99990103T000000000000Z.json").write_text("[]")
+    with TestClient(create_app(settings)) as c:
+        r = c.get("/v1/suites/history")
+        assert r.status_code == 200 and [h["suite"] for h in r.json()] == ["arrange"]
+
+
 def test_rename_run_updates_title_everywhere(settings, audio):
     with TestClient(create_app(settings)) as c:
         job = run_job(c, audio)

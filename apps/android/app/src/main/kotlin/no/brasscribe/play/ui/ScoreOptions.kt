@@ -100,12 +100,14 @@ fun scoreSubtitle(entry: ScoreEntry): String {
     val date = android.text.format.DateUtils.getRelativeTimeSpanString(entry.updated, System.currentTimeMillis(),
         android.text.format.DateUtils.DAY_IN_MILLIS).toString()
     // "Full band · 132 bars · Today · 83 to check" for the phone's scores (review 3).
-    val core = androidx.compose.ui.platform.LocalContext.current.let { (it.applicationContext as no.brasscribe.play.PlayApplication).container.core }
+    val container = androidx.compose.ui.platform.LocalContext.current.let { (it.applicationContext as no.brasscribe.play.PlayApplication).container }
     val saved = entry.saved
-    // Worked out off the main thread: decoding and grouping a full band takes a moment per score.
+    // Worked out off the main thread: reading, decoding and grouping a full band takes a moment per score.
     val facts by androidx.compose.runtime.produceState<ScoreFacts?>(null, saved?.id, saved?.updated) {
         saved ?: return@produceState
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { factsOf(saved, core) }
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            container.scoreLibrary.content(saved.id)?.let { factsOf(saved, it, container.core) }
+        }
     }
     // The label comes from the lineup the score was arranged for; the part count only tells a band from a solo.
     val band = facts?.let { f ->
@@ -124,14 +126,14 @@ fun scoreSubtitle(entry: ScoreEntry): String {
 /** Parts, bars, review items left and the recorded lineup of a saved score. */
 private data class ScoreFacts(val parts: Int, val bars: Int, val left: Int?, val lineup: no.brasscribe.play.Lineup?)
 
-private fun factsOf(saved: no.brasscribe.play.SavedScore, core: no.brasscribe.play.model.CoreBridge): ScoreFacts {
+private fun factsOf(saved: no.brasscribe.play.SavedScore, content: no.brasscribe.play.SavedScoreContent, core: no.brasscribe.play.model.CoreBridge): ScoreFacts {
     run {
-        val parts = no.brasscribe.play.model.MusicXmlParts.names(saved.musicXml)
-        val bars = Regex("""<part\s+id="[^"]+"\s*>(.*?)</part>""", RegexOption.DOT_MATCHES_ALL).find(saved.musicXml)
+        val parts = no.brasscribe.play.model.MusicXmlParts.names(content.musicXml)
+        val bars = Regex("""<part\s+id="[^"]+"\s*>(.*?)</part>""", RegexOption.DOT_MATCHES_ALL).find(content.musicXml)
             ?.groupValues?.get(1)?.let { Regex("<measure\\b").findAll(it).count() } ?: 0
         val checked = saved.checked.mapNotNull { k -> k.substringBefore(':').let { v -> k.substringAfter(':').toIntOrNull()?.let { v to it } } }
             .groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
-        val composition = saved.compositionJson?.let { j -> runCatching { core.decodeComposition(j) }.getOrNull() }
+        val composition = content.compositionJson?.let { j -> runCatching { core.decodeComposition(j) }.getOrNull() }
         val left = composition?.let { runCatching { itemsToCheck(it, checked, core) }.getOrNull() }
         val lineup = no.brasscribe.play.Lineup.recorded(composition) ?: no.brasscribe.play.Lineup.ofParts(parts)
         return ScoreFacts(parts.size, bars, left, lineup)

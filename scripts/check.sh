@@ -38,6 +38,9 @@ changed_areas() {
       music/*|eval/*) add engine; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/dotnet/*) add core-dotnet ;;
       core/conformance/*) add conformance ;;
+      # The C ABI and the generated bindings: the .NET wrapper calls them too.
+      core/brasscribe-ffi/*|core/bindings/*) add core; add core-dotnet
+                         { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
       apps/apple/*|capture/*) add apple ;;
@@ -81,10 +84,12 @@ run_area() {
     fast:conformance) stamp=$(py_ref_stamp)
                       if [ -d core/target/conformance/mikkel ] && [ "$(cat "$PY_REF_STAMP" 2>/dev/null)" = "$stamp" ]; then
                         conf=(--skip-python --no-extras); else conf=(); fi
-                      (cd core/conformance && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
+                      (cd core/conformance && uv run python -m unittest discover -s tests -q \
+                         && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
                          --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" ;;
     full:conformance) stamp=$(py_ref_stamp)
-                      (cd core/conformance && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
+                      (cd core/conformance && uv run python -m unittest discover -s tests -q \
+                         && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
                         && echo "$stamp" > "$PY_REF_STAMP" ;;
     fast:studio) need_node_modules && (cd studio && npx vitest run) ;;
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \

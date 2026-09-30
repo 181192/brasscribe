@@ -17,8 +17,9 @@ import pretty_midi
 sys.path.insert(0, str(Path(__file__).parent))
 from measure import f1, midi_notes, vote  # noqa: E402
 from brasscribe_music.instruments import INSTRUMENTS  # noqa: E402
+from brasscribe_eval.paths import DATA  # noqa: E402
 
-U = Path("/Users/k/private/brasscribe/data/urmp/Dataset")
+U = DATA / "urmp" / "Dataset"
 MID = Path(__file__).parent / "urmp"
 MAP = {"tpt": ("Trumpet", "bb-cornet", (55, 90)), "hn": ("French horn", "eb-tenor-horn", (40, 80)),
        "tbn": ("Trombone", "tenor-trombone", (34, 72)), "tba": ("Tuba", "eb-bass", (20, 60))}

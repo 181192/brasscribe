@@ -118,8 +118,8 @@ public class EngineClientTests
         var r = await c.UploadAudioAsync(new MemoryStream([1, 2, 3, 4]), "m.wav");
         Assert.Equal("a1", r.AudioId);
         Assert.Equal("multipart/form-data", h.Requests[0].Request.Content!.Headers.ContentType!.MediaType);
-        Assert.Contains("name=file", h.Requests[0].Body);
-        Assert.Contains("filename=m.wav", h.Requests[0].Body);
+        Assert.Contains("name=\"file\"", h.Requests[0].Body);
+        Assert.Contains("filename=\"m.wav\"", h.Requests[0].Body);
     }
 
     [Fact]

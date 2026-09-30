@@ -22,8 +22,9 @@ class TakeSink(
     val sampleRate: Int,
     val maxInMemory: Int = AudioDecoder.maxSamplesInMemory,
     val maxSamples: Long = MAX_TAKE_SECONDS * sampleRate,
+    output: WavOutput? = null,
 ) {
-    private val wav = WavWriter(file, sampleRate)
+    private val wav = output?.let { WavWriter(it, sampleRate) } ?: WavWriter(file, sampleRate)
     private var pcm: FloatBuilder? = FloatBuilder(minOf(maxInMemory, 1 shl 16).coerceAtLeast(1))
 
     @Volatile var samples = 0L
@@ -51,10 +52,14 @@ class TakeSink(
         return keep
     }
 
-    /** Closes the WAV (its header gets the sizes) and hands the take over. */
+    /**
+     * Closes the WAV (its header gets the sizes) and hands the take over. After a failed write the take
+     * is what reached the disk: the samples the file holds, in memory too.
+     */
     fun finish(): CapturedTake {
         runCatching { wav.close() }.onFailure { failed = true }
-        val audio = pcm?.let { PcmAudio(it.toArray(), sampleRate) }
+        if (failed) samples = minOf(samples, wav.samples)
+        val audio = pcm?.let { p -> PcmAudio(p.toArray().let { if (it.size > samples) it.copyOf(samples.toInt()) else it }, sampleRate) }
         pcm = null
         return CapturedTake(file, sampleRate, samples, audio)
     }

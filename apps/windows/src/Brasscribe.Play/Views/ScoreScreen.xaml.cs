@@ -54,6 +54,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             QueueRender();
         };
         Notation.ViewportChanged += (_, viewport) => RequestVisiblePages(viewport);
+        // Pages are drawn at the display's scale: moved to a screen with another scale, they are drawn again.
+        Loaded += (_, _) =>
+        {
+            if (XamlRoot is not { } root) return;
+            root.Changed -= OnXamlRootChanged;
+            root.Changed += OnXamlRootChanged;
+            OnXamlRootChanged(root, null);
+        };
+        Unloaded += (_, _) => { if (XamlRoot is { } root) root.Changed -= OnXamlRootChanged; };
 
         // The music stand.
         Notation.StandTapped += OnStandTapped;
@@ -158,7 +167,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     public async Task ShowGoToBarAsync()
     {
         var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Bar is { } bar)
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && dialog.Bar is { } bar)
         {
             ViewModel.GoToBar(bar);
         }
@@ -180,7 +189,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             CloseButtonText = strings["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Primary,
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -303,6 +312,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     private void OnChooseOutput(object sender, RoutedEventArgs e) => Main?.ChooseOutputCommand.Execute(null);
 
+    private double _pixelScale = 1;
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs? args)
+    {
+        if (Math.Abs(sender.RasterizationScale - _pixelScale) < 0.01) return;
+        _pixelScale = sender.RasterizationScale;
+        QueueRender();
+    }
+
     /// <summary>Renders once per UI turn however many settings changed.</summary>
     private void QueueRender()
     {
@@ -311,7 +329,19 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
         {
             _renderQueued = false;
-            await RenderAsync();
+            try
+            {
+                await RenderAsync();
+            }
+            catch (Exception e) when (e is not OutOfMemoryException)
+            {
+                // alphaTab could not lay out this score (or this part at this zoom): no notes rather than no app.
+                System.Diagnostics.Trace.TraceWarning($"Score layout failed: {e}");
+                _layout = null;
+                _requested.Clear();
+                Notation.SetPageSlots([], 0, 0);
+                App.MainWindowInstance?.ShowProblem(App.Strings["Score_RenderFailed"]);
+            }
         });
     }
 
@@ -344,7 +374,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
                 foreach (var staff in s.Tracks[index].Staves)
                     staff.DisplayTranspositionPitch = concert ? 0 : transposition;
             ScoreStyler.ApplyUncertainty(s, doc, palette);
-        }, palette);
+        }, palette, pixelScale: _pixelScale);
         if (layout.Generation != _renderer.Generation) return; // a newer render is on its way
 
         _layout = layout;
@@ -498,7 +528,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
                 foreach (var staff in s.Tracks[index].Staves)
                     staff.DisplayTranspositionPitch = concert ? 0 : transposition;
             ScoreStyler.ApplyUncertainty(s, doc, palette);
-        }, palette, bars);
+        }, palette, bars, _pixelScale);
 
         var layout = await Layout(_standScale);
         if (layout.Generation != _renderer.Generation || layout.Bounds is null) return;
@@ -566,7 +596,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     private async Task LoadPageAsync(int generation, string id)
     {
-        var png = await _renderer.RenderPageAsync(generation, id);
+        byte[]? png;
+        try { png = await _renderer.RenderPageAsync(generation, id); }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            // One page that cannot be drawn stays blank; it is asked for again when it scrolls back into view.
+            System.Diagnostics.Trace.TraceWarning($"Score page {id} failed: {e}");
+            _requested.Remove(id);
+            return;
+        }
         if (png is null || generation != _renderer.Generation) return;
         var bitmap = new BitmapImage();
         using var stream = new InMemoryRandomAccessStream();
@@ -689,6 +727,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             VideoView.SetMediaPlayer(media.Player);
             ViewMenuButton.Focus(FocusState.Programmatic);
         };
+        // The picture-in-picture window goes with the main window: closing the app closes it too.
+        if (App.MainWindowInstance is { } main) main.Closed += (_, _) => _pip?.Close();
         _pip.Activate();
     }
 }

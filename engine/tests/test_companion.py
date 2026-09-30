@@ -289,15 +289,83 @@ def test_approve_on_the_computer(settings):
         assert c.get(f"/v1/pair/requests/{rid}").status_code == 404  # the token is handed out once
 
 
-def test_denied_and_capped_requests(settings):
+def test_a_request_with_the_name_of_a_paired_device_says_so(settings):
     with lan(settings) as c:
-        ids = [c.post("/v1/pair/requests", json={"device_name": f"p{i}"}).json()["request_id"] for i in range(3)]
-        assert c.post("/v1/pair/requests", json={"device_name": "p3"}).status_code == 429
+        pair(c, "Pixel 9")
+        req = c.post("/v1/pair/requests", json={"device_name": "pixel 9", "platform": "android"}).json()
+        assert req["name_in_use"] is True
         with as_owner(c):
-            assert c.post(f"/v1/pairing/requests/{ids[0]}/deny").json()["status"] == "denied"
-            assert c.post(f"/v1/pairing/requests/{ids[0]}/approve").status_code == 404
-        r = c.get(f"/v1/pair/requests/{ids[0]}").json()
-        assert r == {"status": "denied", "token": None, "device_id": None, "server_id": None, "server_name": None}
+            [shown] = c.get("/v1/pairing/requests").json()
+            assert shown["name_in_use"] is True
+            assert c.post(f"/v1/pairing/requests/{req['request_id']}/approve").json()["name_in_use"] is True
+        other = TestClient(c.app, client=("192.0.2.9", 50000))
+        assert other.post("/v1/pair/requests", json={"device_name": "Pixel 10"}).json()["name_in_use"] is False
+
+
+def test_an_approved_request_does_not_count_its_own_device(settings):
+    with lan(settings) as c:
+        req = c.post("/v1/pair/requests", json={"device_name": "Pixel 9"}).json()
+        with as_owner(c):
+            assert c.post(f"/v1/pairing/requests/{req['request_id']}/approve").json()["name_in_use"] is False
+
+
+def test_denied_and_capped_requests(settings):
+    app = create_app(settings, trust_loopback=False)
+    phones = [TestClient(app, client=(f"192.0.2.{i}", 50000)) for i in range(companion.MAX_PENDING + 1)]
+    ids = [p.post("/v1/pair/requests", json={"device_name": f"p{i}"}).json()["request_id"]
+           for i, p in enumerate(phones[:-1])]
+    assert phones[-1].post("/v1/pair/requests", json={"device_name": "one more"}).status_code == 429
+    app.state.trust_loopback = True  # the owner, on this computer; the phones are not
+    owner = TestClient(app)
+    assert owner.post(f"/v1/pairing/requests/{ids[0]}/deny").json()["status"] == "denied"
+    assert owner.post(f"/v1/pairing/requests/{ids[0]}/approve").status_code == 404
+    r = phones[0].get(f"/v1/pair/requests/{ids[0]}").json()
+    assert r == {"status": "denied", "token": None, "device_id": None, "server_id": None, "server_name": None}
+
+
+def test_a_new_request_from_the_same_address_replaces_the_waiting_one(settings):
+    with lan(settings) as c:
+        first = c.post("/v1/pair/requests", json={"device_name": "Phone"}).json()["request_id"]
+        again = c.post("/v1/pair/requests", json={"device_name": "Phone"}).json()["request_id"]
+        assert [r.request_id for r in c.app.state.pair_requests.pending()] == [again]
+        assert c.get(f"/v1/pair/requests/{first}").status_code == 404
+        assert c.get(f"/v1/pair/requests/{again}").json()["status"] == "pending"
+
+
+def test_wrong_codes_from_one_address_do_not_lock_out_another(settings):
+    app = create_app(settings, trust_loopback=False)
+    guesser, phone = (TestClient(app, client=(ip, 50000)) for ip in ("192.0.2.7", "192.0.2.8"))
+    code = app.state.pairing.code
+    wrong = "000000" if code != "000000" else "111111"
+    statuses = [guesser.post("/v1/pair", json={"code": wrong}).status_code for _ in range(companion.LOCK_AFTER + 1)]
+    assert statuses == [403] * companion.LOCK_AFTER + [429]
+    assert guesser.post("/v1/pair", json={"code": code}).status_code == 429
+    assert phone.post("/v1/pair", json={"code": code, "device_name": "Phone"}).status_code == 200
+    assert app.state.pairing.retry_after() == 0  # not locked for everyone: the computer shows no lock
+
+
+def test_many_wrong_codes_from_many_addresses_lock_everyone_until_a_new_code(settings):
+    app = create_app(settings, trust_loopback=False)
+    code = app.state.pairing.code
+    wrong = "000000" if code != "000000" else "111111"
+    for i in range(companion.LOCK_AFTER_ALL):
+        guesser = TestClient(app, client=(f"198.51.100.{i}", 50000))
+        assert guesser.post("/v1/pair", json={"code": wrong}).status_code == 403
+    phone = TestClient(app, client=("192.0.2.8", 50000))
+    assert phone.post("/v1/pair", json={"code": code}).status_code == 429
+    owner = TestClient(app)
+    app.state.trust_loopback = True
+    state = owner.get("/v1/pairing").json()
+    assert state["locked_until"] and state["code"] == code
+    new = owner.post("/v1/pairing", json={}).json()
+    assert new["locked_until"] is None
+    assert phone.post("/v1/pair", json={"code": new["code"], "device_name": "Phone"}).status_code == 200
+
+
+@pytest.mark.parametrize("host, key", [("192.0.2.1", "192.0.2.1"), ("2001:db8:1:2:0:0:0:6", "2001:db8:1:2::6"),
+                                       ("::ffff:192.0.2.1", "192.0.2.1"), ("testclient", "testclient"), (None, "")])
+def test_client_key(host, key):
+    assert companion.client_key(host) == key
 
 
 def test_requests_expire():
@@ -329,9 +397,9 @@ def test_lockout_backs_off():
     waits = []
     for _ in range(3):
         for _ in range(companion.LOCK_AFTER):
-            assert w.check(wrong) == "wrong"
-        assert w.check(w.code) == "locked"
-        waits.append(w.retry_after())
-        clock.t = w.locked_until
+            assert w.check(wrong, "192.0.2.1") == "wrong"
+        assert w.check(w.code, "192.0.2.1") == "locked"
+        waits.append(w.retry_after("192.0.2.1"))
+        clock.t += w.retry_after("192.0.2.1")
     assert waits == [30.0, 60.0, 120.0]
-    assert w.check(w.code) == "ok"
+    assert w.check(w.code, "192.0.2.1") == "ok"

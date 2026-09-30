@@ -21,6 +21,8 @@ public struct PairingLink: Equatable, Sendable {
 
     /// Parses the link from a QR code, a pasted string or an opened URL. Surrounding whitespace is ignored.
     /// Returns nil for anything that is not a version-1 pairing link with a server id and an address.
+    /// Only addresses on the local network are kept (`isLocalNetwork`): the app talks plain HTTP to its
+    /// computer, which App Transport Security allows only there.
     public init?(string: String) {
         let text = string.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let c = URLComponents(string: text), c.scheme?.lowercased() == "brasscribe",
@@ -30,7 +32,8 @@ public struct PairingLink: Equatable, Sendable {
         for item in c.queryItems ?? [] where q[item.name] == nil { q[item.name] = item.value ?? "" }
         guard let v = Int(q["v"] ?? ""), v == Self.supportedVersion,
               let id = q["id"], !id.isEmpty else { return nil }
-        let hosts = (q["h"] ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        let hosts = (q["h"] ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && Self.host(of: $0).map(Self.isLocalNetwork) == true }
         guard !hosts.isEmpty else { return nil }
         let code = q["code"].map { $0.filter(\.isNumber) }.flatMap { $0.isEmpty ? nil : $0 }
         self.init(version: v, serverID: id, serverName: q["name"] ?? "", hosts: hosts, code: code,
@@ -41,6 +44,49 @@ public struct PairingLink: Equatable, Sendable {
 
     /// Base URLs to try, in order. Plain HTTP until the engine serves TLS.
     public var baseURLs: [URL] { hosts.compactMap { URL(string: "http://\($0)") } }
+
+    /// The address to show before pairing: the first host, without its port.
+    public var displayHost: String { hosts.first.flatMap(Self.host(of:)) ?? "" }
+
+    /// The host of an `ip:port` entry as a URL reads it, or nil when the entry is more than a host and a
+    /// port (a path, a user, a fragment), so what is checked is what is connected to.
+    public static func host(of entry: String) -> String? {
+        guard let c = URLComponents(string: "http://\(entry)"), let h = c.host, !h.isEmpty,
+              c.user == nil, c.password == nil, c.path.isEmpty, c.query == nil, c.fragment == nil else { return nil }
+        return h.hasPrefix("[") && h.hasSuffix("]") ? String(h.dropFirst().dropLast()) : h
+    }
+
+    /// Hosts on the local network, as App Transport Security's local-networking exception has them:
+    /// loopback, private and link-local addresses (IPv4 and IPv6), the shared address space tailnets use
+    /// (100.64.0.0/10), `localhost` and `.local` names.
+    public static func isLocalNetwork(_ host: String) -> Bool {
+        var h = host.lowercased()
+        if h.hasPrefix("["), h.hasSuffix("]") { h = String(h.dropFirst().dropLast()) }
+        if let zone = h.firstIndex(of: "%") { h = String(h[..<zone]) }   // fe80::1%en0
+        if h.hasSuffix(".") { h.removeLast() }
+        var v4 = in_addr()
+        if inet_pton(AF_INET, h, &v4) == 1 {
+            let b = withUnsafeBytes(of: v4.s_addr) { Array($0) }   // network byte order
+            return isLocal(ipv4: b)
+        }
+        var v6 = in6_addr()
+        if inet_pton(AF_INET6, h, &v6) == 1 {
+            let b = withUnsafeBytes(of: v6) { Array($0) }
+            if b[0..<15].allSatisfy({ $0 == 0 }) && b[15] == 1 { return true }                     // ::1
+            if b[0] == 0xFE && b[1] & 0xC0 == 0x80 { return true }                                  // fe80::/10
+            if b[0] & 0xFE == 0xFC { return true }                                                 // fc00::/7
+            if b[0..<10].allSatisfy({ $0 == 0 }) && b[10] == 0xFF && b[11] == 0xFF { return isLocal(ipv4: Array(b[12..<16])) }
+            return false
+        }
+        return h == "localhost" || (h.hasSuffix(".local") && h.count > ".local".count)
+    }
+
+    private static func isLocal(ipv4 b: [UInt8]) -> Bool {
+        switch (b[0], b[1]) {
+        case (10, _), (127, _), (172, 16...31), (192, 168), (169, 254), (100, 64...127): return true
+        default: return false
+        }
+    }
 }
 
 /// What this device remembers about one engine it paired with (docs/plan/pairing-and-remote-access.md §4.5).

@@ -9,6 +9,21 @@ class EngineDiscoveryTest {
     private fun ip(s: String) = InetAddress.getByName(s)
 
     @Test
+    fun overlappingFindsShareOneSession() {
+        val calls = mutableListOf<String>()
+        val s = EngineDiscovery.SharedSession({ calls += "start" }, { calls += "stop" })
+        s.acquire()
+        s.acquire()
+        s.release()
+        assertEquals("the second find keeps it going", listOf("start"), calls)
+        s.release()
+        assertEquals(listOf("start", "stop"), calls)
+        s.release()
+        s.acquire()
+        assertEquals(listOf("start", "stop", "start"), calls)
+    }
+
+    @Test
     fun prefersPrivateIpv4() {
         assertEquals("http://192.168.10.95:8765", EngineDiscovery.engineUrl(listOf(ip("fe80::1"), ip("100.64.0.1"), ip("192.168.10.95")), 8765))
         assertEquals("http://100.64.0.1:8765", EngineDiscovery.engineUrl(listOf(ip("fe80::1"), ip("100.64.0.1")), 8765))

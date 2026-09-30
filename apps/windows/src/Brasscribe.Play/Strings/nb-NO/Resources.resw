@@ -306,6 +306,18 @@
   <data name="Error_ReadsNotOffered" xml:space="preserve">
     <value>Stemmen din skrives ikke med den nøkkelen. Velg nøkkel på nytt i Innstillinger, Hva du spiller.</value>
   </data>
+  <data name="Error_RecordingUnreadable_Reason" xml:space="preserve">
+    <value>Brasscribe fikk ikke åpnet opptaket på denne PC-en. Det kan være flyttet eller slettet, eller en annen app bruker det.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step1" xml:space="preserve">
+    <value>Lukk andre apper som bruker filen, og velg Prøv igjen.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step2" xml:space="preserve">
+    <value>Eller velg et annet opptak.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Title" xml:space="preserve">
+    <value>Opptaket kan ikke leses</value>
+  </data>
   <data name="Error_ScoreFailed_Reason" xml:space="preserve">
     <value>Opptaket ditt er trygt. Noe stoppet Brasscribe på datamaskinen mens den arbeidet.</value>
   </data>
@@ -720,6 +732,9 @@
   <data name="Library_RecordingTitle" xml:space="preserve">
     <value>Opptak, {0}</value>
   </data>
+  <data name="Library_SaveFailed" xml:space="preserve">
+    <value>Endringen kunne ikke lagres på denne PC-en. Sjekk at disken ikke er full, og prøv igjen.</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Lite band</value>
   </data>
@@ -734,6 +749,9 @@
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>I dag</value>
+  </data>
+  <data name="Library_Unavailable" xml:space="preserve">
+    <value>Finnes ikke. Koble til disken den ligger på, for å åpne den.</value>
   </data>
   <data name="Library_Yesterday" xml:space="preserve">
     <value>I går</value>
@@ -860,6 +878,9 @@
   </data>
   <data name="NextBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Neste takt</value>
+  </data>
+  <data name="Notice_Problem" xml:space="preserve">
+    <value>Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.</value>
   </data>
   <data name="OutputBackButton.Content" xml:space="preserve">
     <value>Tilbake</value>
@@ -1424,6 +1445,9 @@
   </data>
   <data name="Score_RenameFailed" xml:space="preserve">
     <value>Kunne ikke endre navn på {0}</value>
+  </data>
+  <data name="Score_RenderFailed" xml:space="preserve">
+    <value>Notene kan ikke tegnes. Prøv en annen zoom eller stemme, eller åpne partituret på nytt.</value>
   </data>
   <data name="Score_SaveTitle" xml:space="preserve">
     <value>Lagre</value>
@@ -2118,6 +2142,9 @@
   <data name="Start_Error_MicrophonePermission" xml:space="preserve">
     <value>Brasscribe har ikke lov til å bruke mikrofonen. Gi tilgang i Windows-innstillinger, Personvern, Mikrofon.</value>
   </data>
+  <data name="Start_Error_NeedsCodec" xml:space="preserve">
+    <value>Windows kunne ikke lese {0}. Slike filer kan trenge Webmedieutvidelser fra Microsoft Store. Prøv en MP3-, WAV- eller MP4-fil, eller ta det opp i stedet.</value>
+  </data>
   <data name="Start_Error_Score" xml:space="preserve">
     <value>{0} kan ikke åpnes som partitur.</value>
   </data>
@@ -2141,6 +2168,9 @@
   </data>
   <data name="Start_Level_TooLoud" xml:space="preserve">
     <value>Inngangsnivå, for høyt</value>
+  </data>
+  <data name="Start_Notice_Interrupted" xml:space="preserve">
+    <value>Opptaket stoppet av seg selv: enheten ble koblet fra, eller disken er full. Velg Stopp for å beholde det som ble tatt opp.</value>
   </data>
   <data name="Start_Notice_NothingPlaying" xml:space="preserve">
     <value>Det kommer bare stillhet. Sjekk at noe spiller. Strømmeapper stopper som regel opptak.</value>

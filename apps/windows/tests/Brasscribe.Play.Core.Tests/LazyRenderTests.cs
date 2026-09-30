@@ -30,6 +30,37 @@ public class LazyRenderTests(ITestOutputHelper log)
         Assert.NotNull(await renderer.RenderPageAsync(newer.Generation, newer.Pages[0].Id));
     }
 
+    [Fact]
+    public async Task At_150_percent_display_scale_pages_have_more_pixels_and_the_same_layout()
+    {
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        player.LoadScore(File.ReadAllBytes(TestPaths.Fixture("two-parts.musicxml")));
+        using var renderer = new LazyScoreRenderer();
+        var plain = await renderer.LayoutAsync(player.Score!, [0, 1, 2], 900, 1.0, AlphaTab.LayoutMode.Page);
+        var plainPng = (await renderer.RenderPageAsync(plain.Generation, plain.Pages[0].Id))!;
+        var head = plain.Bounds!.FindMasterBarByIndex(1)!.VisualBounds;
+        (double X, double Y, double W) plainBar = (head.X, head.Y, head.W);
+
+        var sharp = await renderer.LayoutAsync(player.Score!, [0, 1, 2], 900, 1.0, AlphaTab.LayoutMode.Page, pixelScale: 1.5);
+        var before = sharp.Bounds!.FindMasterBarByIndex(1)!.VisualBounds;
+        (double X, double Y, double W) beforePaint = (before.X, before.Y, before.W);
+        var sharpPng = (await renderer.RenderPageAsync(sharp.Generation, sharp.Pages[0].Id))!;
+
+        // The same page in view units, drawn with 1.5 times the pixels.
+        Assert.Equal(plain.Pages.Count, sharp.Pages.Count);
+        Assert.InRange(sharp.Width, plain.Width - 2, plain.Width + 2);
+        Assert.InRange(sharp.Pages[0].Height, plain.Pages[0].Height - 2, plain.Pages[0].Height + 2);
+        var bar = sharp.Bounds!.FindMasterBarByIndex(1)!.VisualBounds;
+        Assert.Equal(beforePaint, (bar.X, bar.Y, bar.W)); // painting a page adds no bounds in pixels
+        // Bounds come back in view units, on the same system; alphaTab's spacing may differ by a few units.
+        double tolerance = plain.Width * 0.05;
+        Assert.InRange(bar.X, plainBar.X - tolerance, plainBar.X + tolerance);
+        Assert.InRange(bar.Y, plainBar.Y - 2, plainBar.Y + 2);
+        Assert.InRange(bar.W, plainBar.W - tolerance, plainBar.W + tolerance);
+        static int PngWidth(byte[] png) => png[16] << 24 | png[17] << 16 | png[18] << 8 | png[19];
+        Assert.InRange(PngWidth(sharpPng), PngWidth(plainPng) * 1.4, PngWidth(plainPng) * 1.6);
+    }
+
     [SkippableFact]
     public async Task Golden_full_score_at_200_percent_keeps_every_caller_step_short()
     {

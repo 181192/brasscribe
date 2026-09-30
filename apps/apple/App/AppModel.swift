@@ -133,8 +133,8 @@ final class AppModel {
         #endif
     }
 
-    /// A `brasscribe://pair` link opened from the camera, a QR scan or a paste: pair, or ask the computer
-    /// to allow this device when the link has no code. Settings shows how it went.
+    /// A `brasscribe://pair` link opened from outside the app (the camera, another app): Settings asks
+    /// before it pairs, or asks the computer to allow this device when the link has no code.
     var pendingLink: PairingLink?
 
     func openPairingLink(_ link: PairingLink) {
@@ -290,8 +290,13 @@ final class AppModel {
             }
             return
         }
-        if type?.conforms(to: .xml) == true || ["musicxml", "xml"].contains(url.pathExtension.lowercased()) {
+        if type?.conforms(to: .xml) == true || ["musicxml", "xml", "mxl"].contains(url.pathExtension.lowercased()) {
             await openScoreFile(url, title: title)
+            return
+        }
+        // a PDF, an image, a document: not something to listen to
+        if let type, !type.conforms(to: .audiovisualContent) {
+            show(.cantOpenFile(String(localized: "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).")))
             return
         }
         let asset = AVURLAsset(url: url)
@@ -327,7 +332,12 @@ final class AppModel {
 
     private func openScoreFile(_ url: URL, title: String) async {
         do {
-            let xml = try Data(contentsOf: url)
+            // a score file is small; a huge one is refused before it is read
+            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            guard size <= CompressedMusicXML.defaultMaxBytes else { throw MusicXMLError.malformed("the file is too large") }
+            var xml = try Data(contentsOf: url)
+            // compressed MusicXML (.mxl): the score inside the archive is what is kept
+            if CompressedMusicXML.isZip(xml) { xml = try CompressedMusicXML.musicXML(from: xml) }
             _ = try MusicXMLParser.parse(xml)
             let result = TranscriptionResult(jobID: "import", composition: nil, musicXML: xml, available: [.musicXML])
             let p = try Piece.create(title: title, profile: nil, result: result, original: nil, video: nil, fixtureDirectory: nil)
@@ -385,10 +395,26 @@ final class AppModel {
     /// The engine's PDF and braille no longer match, so those are made on this device too.
     @discardableResult
     func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws -> Piece {
+        try save(Self.arrange(comp, output: output, core: core), for: piece, composition: comp, output: output, open: andOpen)
+    }
+
+    /// `rearrange`, with the arranging off the main actor so the screen stays live and shows that it is busy.
+    @discardableResult
+    func rearrangeInBackground(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) async throws -> Piece {
+        let core = self.core
+        let xml = try await Task.detached(priority: .userInitiated) { try Self.arrange(comp, output: output, core: core) }.value
+        return try save(xml, for: piece, composition: comp, output: output, open: andOpen)
+    }
+
+    nonisolated private static func arrange(_ comp: Composition, output: OutputChoice, core: CoreBridge) throws -> Data {
         guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths,
                                          seat: output.seatOptions) else {
             throw TranscriptionError.artifactUnavailable(.musicXML)
         }
+        return xml
+    }
+
+    private func save(_ xml: Data, for piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool) throws -> Piece {
         try xml.write(to: piece.scoreURL)
         var p = piece
         p.output = output

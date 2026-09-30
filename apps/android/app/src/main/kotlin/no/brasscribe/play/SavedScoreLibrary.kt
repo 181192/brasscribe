@@ -4,16 +4,14 @@ import java.io.File
 import java.util.Properties
 import java.util.UUID
 
+/** A score in "Your scores": its details only. The score itself is read when it is opened ([SavedScoreLibrary.content]). */
 data class SavedScore(
     val id: String,
     val title: String,
     val profile: String,
-    val musicXml: String,
-    val compositionJson: String?,
     val updated: Long,
     /** The computer's run this score came from, if any. */
     val jobId: String? = null,
-    val evidenceJson: String? = null,
     /** Review events the musician kept, as "voice:index". */
     val checked: Set<String> = emptySet(),
     /** "Make this my part": the part picked for this score (its English name), or null for the seat's. */
@@ -29,10 +27,29 @@ data class SavedScore(
     val reviewChanges: Map<String, Int> = emptyMap(),
 )
 
-/** App-owned score copies: MusicXML is the editable score, with its transcription beside it. */
+/** What a saved score holds beside its details: the MusicXML and, for a transcription, what it came from. */
+data class SavedScoreContent(val musicXml: String, val compositionJson: String?, val evidenceJson: String?)
+
+/**
+ * App-owned score copies: MusicXML is the editable score, with its transcription beside it. [list] reads
+ * only the details (the library is listed after every save); [content] reads one score when it is opened.
+ */
 class SavedScoreLibrary(private val root: File) {
     fun list(): List<SavedScore> = root.listFiles()?.mapNotNull(::read)
         ?.sortedByDescending { it.updated }.orEmpty()
+
+    fun get(id: String): SavedScore? = folder(id)?.let(::read)
+
+    /** The score and its transcription, or null when it is gone or unreadable. */
+    fun content(id: String): SavedScoreContent? = folder(id)?.let { folder ->
+        runCatching {
+            SavedScoreContent(
+                musicXml = File(folder, "score.musicxml").readText(),
+                compositionJson = File(folder, "composition.json").takeIf(File::isFile)?.readText(),
+                evidenceJson = File(folder, "evidence.json").takeIf(File::isFile)?.readText(),
+            )
+        }.getOrNull()
+    }
 
     fun save(
         id: String?, title: String, profile: String, musicXml: String, compositionJson: String?,
@@ -61,17 +78,20 @@ class SavedScoreLibrary(private val root: File) {
         val temporary = File(folder, "score.properties.tmp")
         temporary.outputStream().use { metadata.store(it, null) }
         check(temporary.renameTo(File(folder, "score.properties"))) { "couldn't save score details" }
-        return SavedScore(key, title, profile, musicXml, compositionJson, updated, jobId, evidenceJson, checked, part, noticeSeen, changedOnPhone, reviewChanges)
+        return SavedScore(key, title, profile, updated, jobId, checked, part, noticeSeen, changedOnPhone, reviewChanges)
     }
 
     fun rename(id: String, title: String): SavedScore? {
-        val current = list().firstOrNull { it.id == id } ?: return null
-        return save(id, title, current.profile, current.musicXml, current.compositionJson, current.jobId, current.evidenceJson, current.checked, current.part, current.noticeSeen, current.changedOnPhone, current.reviewChanges)
+        val current = get(id) ?: return null
+        val content = content(id) ?: return null
+        return save(id, title, current.profile, content.musicXml, content.compositionJson, current.jobId, content.evidenceJson, current.checked, current.part, current.noticeSeen, current.changedOnPhone, current.reviewChanges)
     }
 
     fun delete(id: String) {
         File(root, id).takeIf { it.parentFile == root }?.deleteRecursively()
     }
+
+    private fun folder(id: String): File? = File(root, id).takeIf { it.parentFile == root && it.isDirectory }
 
     private fun read(folder: File): SavedScore? = runCatching {
         val metadata = Properties().apply { File(folder, "score.properties").inputStream().use(::load) }
@@ -79,11 +99,8 @@ class SavedScoreLibrary(private val root: File) {
             id = folder.name,
             title = metadata.getProperty("title") ?: return null,
             profile = metadata.getProperty("profile") ?: "brass-band",
-            musicXml = File(folder, "score.musicxml").readText(),
-            compositionJson = File(folder, "composition.json").takeIf(File::isFile)?.readText(),
             updated = metadata.getProperty("updated")?.toLongOrNull() ?: 0L,
             jobId = metadata.getProperty("job"),
-            evidenceJson = File(folder, "evidence.json").takeIf(File::isFile)?.readText(),
             checked = metadata.getProperty("checked")?.split(',')?.filter(String::isNotBlank)?.toSet().orEmpty(),
             part = metadata.getProperty("part"),
             noticeSeen = metadata.getProperty("notice_seen") == "true",

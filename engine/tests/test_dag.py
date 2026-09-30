@@ -138,3 +138,37 @@ def test_profiles_build_valid_dags(tmp_path):
         assert all(stage in seen for stage, _ in p.outputs.values())
     assert profiles.default_title("orchestra-with-soloist", tmp_path / "mikkel.wav") == \
         "Mikkel — solo cornet & brass band (draft)"
+
+
+ENV_DUMP = """import json, os, sys
+name, src, dst = sys.argv[1:4]
+open(dst, "w").write(json.dumps(dict(os.environ)))
+"""
+
+
+def test_programs_the_engine_starts_do_not_get_its_credentials(settings, audio, tmp_path, monkeypatch):
+    import json
+
+    from brasscribe_engine import config
+
+    for name in config.CREDENTIAL_ENV:
+        monkeypatch.setenv(name, "owner-only")
+    monkeypatch.setenv("BRASSCRIBE_DEVICE", "cpu")
+    (settings.adapters_dir / "run_adapter.py").write_text(ENV_DUMP)
+    _, adapters = session(settings)
+    adapters.run("swift-f0", audio, tmp_path / "env.json")
+    env = json.loads((tmp_path / "env.json").read_text())
+    assert not set(config.CREDENTIAL_ENV) & set(env) and env["BRASSCRIBE_DEVICE"] == "cpu"
+    assert not set(config.CREDENTIAL_ENV) & set(config.child_env({"X": "1"}))
+
+
+def test_adapters_read_the_models_folder_the_engine_hashes(settings, audio, tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.delenv("BRASSCRIBE_MODELS", raising=False)
+    (settings.data_dir / "models").mkdir()
+    (settings.adapters_dir / "run_adapter.py").write_text(ENV_DUMP)
+    _, adapters = session(settings)
+    adapters.run("swift-f0", audio, tmp_path / "env.json")
+    env = json.loads((tmp_path / "env.json").read_text())
+    assert env["BRASSCRIBE_MODELS"] == str(settings.data_dir / "models") == str(adapters.models_dir)

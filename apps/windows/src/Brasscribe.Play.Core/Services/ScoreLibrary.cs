@@ -18,7 +18,15 @@ public sealed record LibraryEntry(
     string? JobId = null,
     string? EvidencePath = null,
     string? Lineup = null,
-    string? MyPart = null);
+    string? MyPart = null)
+{
+    /// <summary>
+    /// The file was there when "Your scores" was read. An opened file on a drive that is not connected stays listed, and
+    /// opens again once it is back. Checked once, not on every refresh: a missing network share can take seconds to answer.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsAvailable { get; init; } = true;
+}
 
 /// <summary>
 /// A note changed in Review: how far it has moved since Brasscribe wrote it, and what Brasscribe wrote, as
@@ -34,7 +42,9 @@ internal sealed partial class LibraryJsonContext : JsonSerializerContext;
 /// <summary>
 /// "Your scores": finished scores and opened score files, newest first, kept as a JSON index in the
 /// work directory. Scores made by Brasscribe are copied into the library folder (MusicXML plus the
-/// Composition behind it); opened files are referenced where they are. Nothing leaves the computer.
+/// Composition behind it); opened files are referenced where they are until the first change (a
+/// corrected note, a new title), which goes to a copy in the library: the player's own file is never
+/// written. Nothing leaves the computer.
 /// </summary>
 public sealed class ScoreLibrary
 {
@@ -166,10 +176,26 @@ public sealed class ScoreLibrary
         Save();
     }
 
+    /// <summary>
+    /// An opened file moves into the library before it is changed: the entry points at a copy from now on,
+    /// and the file where the player keeps it stays as it was.
+    /// </summary>
+    private void OwnCopy(int i)
+    {
+        var entry = _entries[i];
+        if (IsInside(entry.MusicXmlPath)) return;
+        string dir = Path.Combine(_root, Safe(entry.Id));
+        Directory.CreateDirectory(dir);
+        string copy = Path.Combine(dir, "score.musicxml");
+        File.Copy(entry.MusicXmlPath, copy, overwrite: true);
+        _entries[i] = entry with { MusicXmlPath = copy };
+    }
+
     public void SaveMusicXml(string id, string musicXml, string? compositionJson = null, string? lineup = null)
     {
         int i = _entries.FindIndex(e => e.Id == id);
         if (i < 0) return;
+        OwnCopy(i);
         WriteAtomically(_entries[i].MusicXmlPath, musicXml);
         if (compositionJson is not null && _entries[i].CompositionPath is { } compositionPath)
         {
@@ -185,6 +211,7 @@ public sealed class ScoreLibrary
     {
         int i = _entries.FindIndex(e => e.Id == id);
         if (i < 0) return;
+        OwnCopy(i);
         var entry = _entries[i];
         WriteAtomically(entry.MusicXmlPath, MusicXmlNoteEditor.ReplaceTitle(File.ReadAllText(entry.MusicXmlPath), title));
         if (entry.CompositionPath is { } compositionPath && File.Exists(compositionPath))
@@ -231,7 +258,9 @@ public sealed class ScoreLibrary
         {
             if (!File.Exists(IndexPath)) return [];
             var list = JsonSerializer.Deserialize(File.ReadAllText(IndexPath), LibraryJsonContext.Default.ListLibraryEntry) ?? [];
-            return list.Where(e => File.Exists(e.MusicXmlPath)).OrderByDescending(e => e.Updated).ToList();
+            // A score gone from the library folder is gone; an opened file may be on a drive that is not connected now.
+            return list.Select(e => e with { IsAvailable = File.Exists(e.MusicXmlPath) })
+                .Where(e => e.IsAvailable || !IsInside(e.MusicXmlPath)).OrderByDescending(e => e.Updated).ToList();
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {

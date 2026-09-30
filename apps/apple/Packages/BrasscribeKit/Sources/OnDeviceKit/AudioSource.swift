@@ -28,26 +28,49 @@ public struct MonoAudio: Sendable {
     /// Decode any file AVFoundation reads, mix to mono and resample with AVAudioConverter
     /// (mastering-quality sample-rate conversion).
     public static func load(_ url: URL, sampleRate: Double) throws -> MonoAudio {
+        try decode(url).resampled(to: sampleRate)
+    }
+
+    /// Frames read from the file at a time.
+    static let chunkFrames: AVAudioFrameCount = 65_536
+
+    /// Decode any file AVFoundation reads and mix it to mono at its own sample rate, a chunk at a time,
+    /// so only the mono samples are held in memory. Decode once and resample for each model.
+    public static func decode(_ url: URL) throws -> MonoAudio {
         let file: AVAudioFile
         do { file = try AVAudioFile(forReading: url) } catch { throw OnDeviceError.audio("\(url.lastPathComponent): \(error.localizedDescription)") }
         let inFormat = file.processingFormat
-        guard let inBuf = AVAudioPCMBuffer(pcmFormat: inFormat, frameCapacity: AVAudioFrameCount(file.length)) else {
+        // AVAudioFrameCount is 32-bit: longer files (hours of audio) cannot be resampled in one piece
+        guard file.length < AVAudioFramePosition(UInt32.max / 4) else {
+            throw OnDeviceError.audio("\(url.lastPathComponent): the recording is too long")
+        }
+        guard let buf = AVAudioPCMBuffer(pcmFormat: inFormat, frameCapacity: chunkFrames) else {
             throw OnDeviceError.audio("buffer")
         }
-        try file.read(into: inBuf)
-        // mix to mono at the source rate
-        let n = Int(inBuf.frameLength)
-        var mono = [Float](repeating: 0, count: n)
         let ch = Int(inFormat.channelCount)
-        if let d = inBuf.floatChannelData {
-            for c in 0..<ch { for i in 0..<n { mono[i] += d[c][i] } }
-            if ch > 1 { let s = 1 / Float(ch); for i in 0..<n { mono[i] *= s } }
+        let scale = ch > 1 ? 1 / Float(ch) : 1
+        var mono: [Float] = []
+        mono.reserveCapacity(Int(max(0, file.length)))
+        while file.framePosition < file.length {
+            do { try file.read(into: buf, frameCount: chunkFrames) } catch {
+                throw OnDeviceError.audio("\(url.lastPathComponent): \(error.localizedDescription)")
+            }
+            let n = Int(buf.frameLength)
+            if n == 0 { break }
+            guard let d = buf.floatChannelData else { throw OnDeviceError.audio("not float audio") }
+            let start = mono.count
+            mono.append(contentsOf: UnsafeBufferPointer(start: d[0], count: n))
+            for c in 1..<max(1, ch) { for i in 0..<n { mono[start + i] += d[c][i] } }
+            if ch > 1 { for i in start..<(start + n) { mono[i] *= scale } }
         }
-        return try MonoAudio(samples: mono, sampleRate: inFormat.sampleRate).resampled(to: sampleRate)
+        return MonoAudio(samples: mono, sampleRate: inFormat.sampleRate)
     }
 
     public func resampled(to rate: Double) throws -> MonoAudio {
         if rate == sampleRate { return self }
+        guard Double(samples.count) * max(1, rate / sampleRate) + 4096 < Double(UInt32.max) else {
+            throw OnDeviceError.audio("the recording is too long")
+        }
         let src = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false)!
         let dst = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: rate, channels: 1, interleaved: false)!
         guard let conv = AVAudioConverter(from: src, to: dst),

@@ -21,7 +21,9 @@ public sealed partial class SeatPickerView : UserControl
     public SeatPickerView()
     {
         InitializeComponent();
-        _ui.TextScaleFactorChanged += (_, _) => DispatcherQueue.TryEnqueue(Layout);
+        // Sessions without these notifications (see ThemeController) keep the text size read at start.
+        try { _ui.TextScaleFactorChanged += (_, _) => DispatcherQueue.TryEnqueue(Layout); }
+        catch (System.Runtime.InteropServices.COMException) { }
     }
 
     public SeatPickerViewModel? ViewModel { get; private set; }

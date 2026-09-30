@@ -54,6 +54,8 @@ if (bandSf2) {
 }
 
 cpSync(join(here, "src", "index.html"), join(out, "index.html"));
+// An example score for the viewer (public domain, arranged by the core: apps/fixtures/make-old-hundredth.py).
+cpSync(join(here, "..", "apps", "fixtures", "old-hundredth", "brass-band.musicxml"), join(out, "examples", "old-hundredth.musicxml"));
 // Brand icons from the design system (design/dist/icons/web), rendered by design/brand/build.py.
 const icons = join(here, "..", "design", "dist", "icons", "web");
 for (const f of ["favicon.svg", "favicon.ico", "favicon-32.png", "apple-touch-icon.png", "icon-192.png"]) {

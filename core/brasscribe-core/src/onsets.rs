@@ -321,6 +321,10 @@ pub fn contour_notes(notes: &[RawNote], c: Option<&Contour>, others: &[RawNote])
         if (touch_prev || touch_next) && glide(n, c, tau, &ok, if toward != 0 { Some(toward) } else { None }) {
             if touch_next {
                 carry = carry.or(Some(n.onset));
+            } else if let Some(start) = carry.take() {
+                // glides that lead into no note (the one before this is itself a glide): one note on the
+                // pitch they reach, from where they start; the last note kept is not next to them
+                kept.push(RawNote { onset: start, ..n.clone() });
             } else if let Some(last) = kept.last_mut() {
                 last.offset = n.offset;
             }

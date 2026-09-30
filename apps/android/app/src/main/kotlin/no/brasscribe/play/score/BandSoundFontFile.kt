@@ -8,11 +8,12 @@ import java.io.File
  *  1. a sideloaded file in the app's external files under sounds/ (brasscribe-band-mobile.sf2,
  *     -16bit.sf2 or .sf2), so a tester can try another build without reinstalling;
  *  2. the phone SoundFont bundled in the APK (assets/sounds/brasscribe-band-mobile.sf2, present when
- *     data/sounds/band held it at build time), copied once to the app's files;
+ *     data/sounds/band held it at build time), copied once to the app's files that are not backed up;
  *  3. none: the explicit basic tier, alphaTab's General MIDI SoundFont, logged and shown as such.
  */
 object BandSoundFontFile {
     const val ASSET = "sounds/brasscribe-band-mobile.sf2"
+    private const val COPY = "brasscribe-band-mobile.sf2"
     private const val TAG = "BrasscribePlay"
     private val SIDELOAD = listOf("brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "brasscribe-band.sf2")
 
@@ -32,7 +33,9 @@ object BandSoundFontFile {
             android.util.Log.i(TAG, "basic tier: no band SoundFont bundled or sideloaded, alphaTab plays General MIDI")
             return null
         }
-        val out = File(context.filesDir, "sounds/brasscribe-band-mobile.sf2")
+        // Out of the backup: at 68 MB it is past the cloud backup's quota, and then no score would be backed up.
+        File(context.filesDir, "sounds/$COPY").takeIf { it.isFile }?.delete()
+        val out = File(context.noBackupFilesDir, "sounds/$COPY")
         val size = runCatching { context.assets.openFd(ASSET).use { it.length } }.getOrDefault(-1L)
         if (out.isFile && (size < 0 || out.length() == size)) return out
         return runCatching {

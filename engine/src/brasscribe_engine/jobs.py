@@ -16,12 +16,18 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 
 from . import profiles, runner
+from .names import valid_id
 from .config import Settings
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
+# Finished jobs stay in memory, events and all, for this long and at most this many; after that they are read
+# back from their run directory when asked for. (A job that failed before it had one is then forgotten.)
+KEEP_FINISHED_S = 600.0
+KEEP_FINISHED = 50
 
 
 @dataclass
@@ -91,6 +97,7 @@ class JobManager:
                   device_name)
         for s in pipeline.stages:
             job.stages[s.name] = {"name": s.name, "kind": s.kind, "status": "pending"}
+        self._evict()
         with self.lock:
             self.jobs[job.id] = job
         job.add_event({"type": "job", "status": "queued"})
@@ -105,16 +112,30 @@ class JobManager:
         try:
             runner.run(self.settings, job.audio_path, job.profile, title=job.title, params=job.params,
                        allow_heavy=job.allow_heavy, cold=job.cold, run_id=job.id, emit=job.add_event,
-                       cancel=job.cancel, previous_run_id=job.previous_run_id)
+                       cancel=job.cancel, previous_run_id=job.previous_run_id, audio_id=job.audio_id,
+                       device_name=job.device_name)
         except Exception as e:  # noqa: BLE001 - reported as a failed job
             job.add_event({"type": "job", "status": "failed", "error": f"{type(e).__name__}: {e}"})
 
+    def _evict(self) -> None:
+        """Forget finished jobs past KEEP_FINISHED_S or KEEP_FINISHED; an open event stream keeps its own."""
+        now = time.time()
+        with self.lock:
+            done = sorted((j for j in self.jobs.values() if j.status in TERMINAL and j.finished is not None),
+                          key=lambda j: j.finished, reverse=True)
+            for i, j in enumerate(done):
+                if i >= KEEP_FINISHED or now - j.finished > KEEP_FINISHED_S:
+                    del self.jobs[j.id]
+
     def get(self, job_id: str) -> Job | None:
+        if not valid_id(job_id):
+            return None
         with self.lock:
             job = self.jobs.get(job_id)
         return job or self._from_disk(job_id)
 
     def list(self) -> list[Job]:
+        self._evict()
         with self.lock:
             live = dict(self.jobs)
         seen: set[str] = set()
@@ -123,7 +144,7 @@ class JobManager:
         except FileNotFoundError:
             entries = []
         for d in entries:
-            if d.name in live or not d.is_dir():
+            if d.name in live or not valid_id(d.name) or not d.is_dir():
                 continue
             j = self._summary(d.name)
             if j:
@@ -183,7 +204,7 @@ class JobManager:
         """Remove a finished run's directory and forget the job; the artifact cache is untouched.
 
         Returns "deleted", "unknown" or "active" (queued or running: not deleted)."""
-        if not job_id or "/" in job_id or "\\" in job_id or ".." in job_id:
+        if not valid_id(job_id):
             return "unknown"
         job = self.get(job_id)
         if job is None:
@@ -205,42 +226,42 @@ class JobManager:
         return "deleted"
 
     def rename(self, job_id: str, title: str) -> str:
-        """Retitle a finished run in its manifest, Composition and MusicXML. Returns "renamed", "unknown" or "active"."""
-        if not job_id or "/" in job_id or "\\" in job_id or ".." in job_id:
+        """Retitle a finished run: its manifest, Composition, the score's and parts' MusicXML and the talking
+        score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.
+        Returns "renamed", "unknown" or "active"."""
+        if not valid_id(job_id):
             return "unknown"
         job = self.get(job_id)
         if job is None:
             return "unknown"
         if job.status not in TERMINAL:
             return "active"
-        from xml.sax.saxutils import escape
-
         d = self.run_dir(job_id)
+        out = d / "outputs"
         mpath = d / "manifest.json"
         if mpath.exists():
             m = json.loads(mpath.read_text())
             m["title"] = title
             _write(mpath, json.dumps(m, indent=2))
-        comp = d / "outputs" / "composition.json"
+        comp = out / "composition.json"
         if comp.exists():
             c = json.loads(comp.read_text())
             c["title"] = title
             _write(comp, json.dumps(c))
-        xml = d / "outputs" / "brass-band.musicxml"
-        if xml.exists():
-            import re
+        for xml in [out / "brass-band.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
+            if xml.exists():
+                _write(xml, _retitle_musicxml(xml.read_text(), title))
+        talking = out / "talking-score.json"
+        if talking.exists():
+            from . import talking_score
 
-            text = xml.read_text()
-            tag = re.compile(r"(<work-title>)[\s\S]*?(</work-title>)")
-            work = f"<work><work-title>{escape(title)}</work-title></work>"
-            if tag.search(text):
-                text = tag.sub(lambda mt: mt.group(1) + escape(title) + mt.group(2), text, count=1)
-            elif re.search(r"<score-partwise\b[^>]*/>", text):
-                text = re.sub(r"<score-partwise\b([^>]*)/>", lambda mt: f"<score-partwise{mt.group(1)}>{work}</score-partwise>",
-                              text, count=1)
-            else:
-                text = re.sub(r"(<score-partwise\b[^>]*>)", lambda mt: mt.group(1) + work, text, count=1)
-            _write(xml, text)
+            doc = json.loads(talking.read_text())
+            doc["title"] = title
+            _write(talking, json.dumps(doc, ensure_ascii=False, indent=1))
+            en = talking_score.Settings()  # as the export stage writes them
+            for name, render in (("talking-score.html", talking_score.to_html), ("talking-score.txt", talking_score.to_text)):
+                if (out / name).exists():
+                    _write(out / name, render(doc, en))
         job.title = title
         return "renamed"
 
@@ -248,14 +269,21 @@ class JobManager:
         return self.settings.runs_dir / job_id
 
     def _from_disk(self, job_id: str, *, events: bool = True) -> Job | None:
+        if not valid_id(job_id):
+            return None
         mpath = self.run_dir(job_id) / "manifest.json"
-        if "/" in job_id or ".." in job_id or not mpath.exists():
+        if not mpath.exists():
             return None
         m = json.loads(mpath.read_text())
-        job = Job(m["run_id"], m["profile"], m.get("title"), None, Path(m["input"]["path"]), m.get("params", {}),
-                  m.get("options", {}).get("allow_heavy", True), set(m.get("options", {}).get("cold", [])),
-                  m.get("previous_run_id"), status=m.get("status", "unknown"),
-                  created=mpath.stat().st_ctime, error=m.get("error"))
+        try:  # renaming or finishing a run rewrites its manifest, so the file's own times say nothing
+            created = datetime.fromisoformat(m["created"]).timestamp()
+        except (KeyError, TypeError, ValueError):  # manifests before the field
+            created = mpath.stat().st_ctime
+        job = Job(m["run_id"], m["profile"], m.get("title"), m.get("audio_id"), Path(m["input"]["path"]),
+                  m.get("params", {}), m.get("options", {}).get("allow_heavy", True),
+                  set(m.get("options", {}).get("cold", [])), m.get("previous_run_id"), m.get("device_name"),
+                  status=m.get("status", "unknown"),
+                  created=created, error=m.get("error"))
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],
                                        "seconds": st.get("seconds"), "queue_wait_s": st.get("queue_wait_s"),
@@ -278,7 +306,30 @@ def _list_outputs(d: Path) -> list[str]:
     return sorted(out)
 
 
+def _retitle_musicxml(text: str, title: str) -> str:
+    """MusicXML with its work title set to `title` (added when the score has none)."""
+    import re
+    from xml.sax.saxutils import escape
+
+    tag = re.compile(r"(<work-title>)[\s\S]*?(</work-title>)")
+    work = f"<work><work-title>{escape(title)}</work-title></work>"
+    if tag.search(text):
+        return tag.sub(lambda mt: mt.group(1) + escape(title) + mt.group(2), text, count=1)
+    if re.search(r"<score-partwise\b[^>]*/>", text):
+        return re.sub(r"<score-partwise\b([^>]*)/>", lambda mt: f"<score-partwise{mt.group(1)}>{work}</score-partwise>",
+                      text, count=1)
+    return re.sub(r"(<score-partwise\b[^>]*>)", lambda mt: mt.group(1) + work, text, count=1)
+
+
 def _write(path: Path, text: str) -> None:
+    """Replace `path` with `text`. Outputs are read-only hardlinks into the artifact cache: replacing the name
+    leaves the cache's copy as it was, but Windows refuses to replace a read-only file, so there the flag is
+    cleared first. The flag belongs to the file, not the name, so the cache's copy loses it too (its content
+    is unchanged, and the cache checks content by hash)."""
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(text)
-    os.replace(tmp, path)
+    try:
+        os.replace(tmp, path)
+    except PermissionError:
+        os.chmod(path, path.stat().st_mode | stat.S_IWUSR)
+        os.replace(tmp, path)

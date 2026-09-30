@@ -22,6 +22,8 @@
                     Content="{x:Bind Vm.AllowLabel}" Command="{x:Bind Vm.AllowCommand}" Visibility="{x:Bind Vm.IsActive, Mode=OneWay}" />
             <Button Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Stretch"
                     Content="{x:Bind Vm.DenyLabel}" Command="{x:Bind Vm.DenyCommand}" Visibility="{x:Bind Vm.IsActive, Mode=OneWay}" />
+            <TextBlock Text="{x:Bind Vm.FailedText}" Style="{StaticResource BodyStyle}" TextAlignment="Center"
+                       Visibility="{x:Bind Vm.HasFailed, Mode=OneWay}" />
             <TextBlock Text="{x:Bind Vm.ExpiredText}" Style="{StaticResource BodyStyle}" TextAlignment="Center"
                        Visibility="{x:Bind Vm.IsExpired, Mode=OneWay}" />
             <Button x:Name="CloseButton" Style="{StaticResource SecondaryButtonStyle}" HorizontalAlignment="Stretch"

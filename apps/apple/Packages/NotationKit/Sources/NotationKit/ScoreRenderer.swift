@@ -169,12 +169,13 @@ public final class ScoreRenderer: @unchecked Sendable {
     /// system or page breaks.
     public static func breakingSystems(every n: Int, in xml: String) -> String {
         var s = xml.replacingOccurrences(of: #"\snew-(system|page)="yes""#, with: "", options: .regularExpression)
-        guard n > 0, let re = try? NSRegularExpression(pattern: #"<part\b[^>]*>|<measure\b[^>/]*>"#) else { return s }
+        guard n > 0, let re = try? NSRegularExpression(pattern: #"<part(\s[^>]*)?>|<measure\b[^>/]*>"#) else { return s }
         var out = "", last = s.startIndex, bar = 0
         for m in re.matches(in: s, range: NSRange(s.startIndex..., in: s)) {
             guard let r = Range(m.range, in: s) else { continue }
             out += s[last..<r.upperBound]
             last = r.upperBound
+            // a new <part> (not <part-list>, <part-symbol>, <part-clef> …) counts from its own first bar
             if s[r].hasPrefix("<part") { bar = 0; continue }
             if bar > 0, bar % n == 0 { out += #"<print new-system="yes"/>"# }
             bar += 1
