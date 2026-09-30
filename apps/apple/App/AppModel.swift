@@ -385,10 +385,26 @@ final class AppModel {
     /// The engine's PDF and braille no longer match, so those are made on this device too.
     @discardableResult
     func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws -> Piece {
+        try save(Self.arrange(comp, output: output, core: core), for: piece, composition: comp, output: output, open: andOpen)
+    }
+
+    /// `rearrange`, with the arranging off the main actor so the screen stays live and shows that it is busy.
+    @discardableResult
+    func rearrangeInBackground(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) async throws -> Piece {
+        let core = self.core
+        let xml = try await Task.detached(priority: .userInitiated) { try Self.arrange(comp, output: output, core: core) }.value
+        return try save(xml, for: piece, composition: comp, output: output, open: andOpen)
+    }
+
+    nonisolated private static func arrange(_ comp: Composition, output: OutputChoice, core: CoreBridge) throws -> Data {
         guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths,
                                          seat: output.seatOptions) else {
             throw TranscriptionError.artifactUnavailable(.musicXML)
         }
+        return xml
+    }
+
+    private func save(_ xml: Data, for piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool) throws -> Piece {
         try xml.write(to: piece.scoreURL)
         var p = piece
         p.output = output

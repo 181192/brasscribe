@@ -21,6 +21,8 @@ final class PracticeModel {
     private(set) var pages: [ScoreRenderer.Page] = []
     private(set) var loadError: String?
     private(set) var engraving = false
+    /// The notation engine could not lay the score out: the pages say so instead of waiting for ever.
+    private(set) var layoutFailed = false
     private(set) var layoutVersion = 0
     private var layoutGeneration = 0
 
@@ -249,8 +251,14 @@ final class PracticeModel {
         }
     }
 
+    /// One engine is made at a time: the AUSampler aborts when two threads load sound banks at once
+    /// (Review and its Change note preview, or several scores opening together).
+    nonisolated private static let engineLock = NSLock()
+
     nonisolated private static func makeEngine(piece: Piece, score: Score, composition: Composition?) throws -> PlaybackEngine {
-        try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
+        try engineLock.withLock {
+            try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
+        }
     }
 
     /// The "sound can't play" alert was closed: the score stays open to read, without sound.
@@ -340,7 +348,15 @@ final class PracticeModel {
         // Pages appear one by one so the first system is readable while the rest engrave;
         // a newer layout request abandons this one.
         Task.detached(priority: .userInitiated) { [r] in
-            guard r.apply(layout) else { return }
+            guard r.apply(layout) else {
+                await MainActor.run {
+                    guard self.layoutGeneration == gen else { return }
+                    self.engraving = false
+                    self.layoutFailed = true
+                }
+                return
+            }
+            await MainActor.run { if self.layoutGeneration == gen { self.layoutFailed = false } }
             let n = r.pageCount
             for i in 1...max(1, n) {
                 guard await self.layoutGeneration == gen else { return }

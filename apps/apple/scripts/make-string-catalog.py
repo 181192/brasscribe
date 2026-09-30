@@ -629,6 +629,8 @@ NB = {
     "Pair with %@ at %@?": "Koble til %1$@ på adressen %2$@?",
     "This device is paired with %@. If you pair with %@, this device uses it instead.": "Denne enheten er koblet til %1$@. Hvis du kobler til %2$@, bruker enheten den i stedet.",
     "Only pair with a computer you know. The recordings you send go to it.": "Koble bare til en datamaskin du kjenner. Opptakene du sender, går til den.",
+    "Couldn't lay out the score": "Klarte ikke å sette partituret",
+    "The notes are still here: Read aloud and playback work.": "Notene er her fortsatt: Les opp og avspilling virker.",
 }
 
 INFO_NB = {

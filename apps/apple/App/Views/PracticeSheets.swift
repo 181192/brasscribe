@@ -39,7 +39,10 @@ struct TalkingScoreView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .onAppear { if partID.isEmpty { partID = model.shownPart ?? model.myPart ?? model.score.parts.first?.id ?? "" } }
         }
+        #if os(macOS)
+        // an iPhone or Slide Over sheet is narrower than this
         .frame(minWidth: 480, minHeight: 560)
+        #endif
     }
 }
 

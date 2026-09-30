@@ -205,7 +205,7 @@ struct MusicStandView: View {
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: stand.pageIndex)
         .frame(width: size.width, height: size.height)
         .clipped()
-        .overlay { if model.pages.isEmpty { ProgressView(String(localized: "Laying out the pages…")) } }
+        .overlay { if model.pages.isEmpty { PagesPlaceholder(model: model) } }
         .contentShape(Rectangle())
         .onTapGesture { toggleLayer() }
         .gesture(DragGesture(minimumDistance: 24, coordinateSpace: .global).onEnded(swipe))

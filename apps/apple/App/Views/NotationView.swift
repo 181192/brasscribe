@@ -88,9 +88,7 @@ struct NotationView: View {
         // the score scrolls; it never asks the window to be as tall (or wide) as a page
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
         .overlay {
-            if model.pages.isEmpty {
-                ProgressView(String(localized: "Laying out the pages…"))
-            }
+            if model.pages.isEmpty { PagesPlaceholder(model: model) }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Score"))
@@ -308,5 +306,18 @@ private struct StaffElement: View {
             .accessibilityAction(named: Text("Listen to the original")) { model.listen(toBar: bar, original: true) }
             .accessibilityRotorEntry(id: "\(bar)-\(partIndex)", in: rotorNS)
             .accessibilityIdentifier("staff-\(bar)-\(partIndex)")
+    }
+}
+
+/// Instead of the pages: the spinner while they are laid out, or why there are none.
+struct PagesPlaceholder: View {
+    let model: PracticeModel
+    var body: some View {
+        if model.layoutFailed {
+            ContentUnavailableView("Couldn't lay out the score", systemImage: "exclamationmark.triangle",
+                                   description: Text("The notes are still here: Read aloud and playback work."))
+        } else {
+            ProgressView(String(localized: "Laying out the pages…"))
+        }
     }
 }

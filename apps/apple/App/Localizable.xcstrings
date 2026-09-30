@@ -1281,6 +1281,16 @@
         }
       }
     },
+    "Couldn't lay out the score": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klarte ikke å sette partituret"
+          }
+        }
+      }
+    },
     "Couldn't save the note": {
       "localizations": {
         "nb": {
@@ -4367,6 +4377,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kvartetten har ingen %1$@ — viser %2$@"
+          }
+        }
+      }
+    },
+    "The notes are still here: Read aloud and playback work.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notene er her fortsatt: Les opp og avspilling virker."
           }
         }
       }

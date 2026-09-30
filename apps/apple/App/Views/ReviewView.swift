@@ -12,6 +12,8 @@ struct ReviewView: View {
     let piece: Piece
 
     @State private var model: PracticeModel?
+    /// Bumped by every load, so a slower earlier load never replaces a newer one.
+    @State private var loadGeneration = 0
     @State private var xml = ""
     @State private var items: [ReviewItem] = []
     @State private var checked: Set<String> = []
@@ -124,7 +126,7 @@ struct ReviewView: View {
             }
             .appAppearance()
         }
-        .task { load() }
+        .task { if model == nil { await load() } }
         // choosing another note stops the bar that is playing
         .onChange(of: item?.id) { _, _ in model?.stopListening(announce: false) }
         .onDisappear { model?.stopAll() }
@@ -487,11 +489,15 @@ struct ReviewView: View {
 
     // MARK: data
 
-    private func load() {
-        guard model == nil else { return }
+    /// Opens the piece off the main thread (the MusicXML parse and the playback engine), then fills the
+    /// review from it.
+    private func load() async {
+        loadGeneration += 1
+        let generation = loadGeneration
         do {
-            let m = try PracticeModel(piece: piece)
-            m.start()
+            let m = try await PracticeModel.open(piece)
+            guard generation == loadGeneration else { m.stopAll(); return }
+            model?.stopAll()
             model = m
             xml = try piece.musicXML()
             composition = piece.loadComposition()
@@ -511,6 +517,7 @@ struct ReviewView: View {
             // screenshots: the button as it looks while the bar plays
             if LaunchOptions.screen == "review-listening", let it = item { m.holdListening(bars: bars(it)) }
         } catch {
+            guard generation == loadGeneration else { return }
             loadError = error.localizedDescription
         }
     }
@@ -519,7 +526,11 @@ struct ReviewView: View {
     /// player can listen, change it again or undo. "was" stays what Brasscribe wrote.
     private func changed(_ target: ReviewItem, from: SpelledPitch, to: SpelledPitch) {
         let was = self.was(target) ?? from
-        reload(keeping: target)
+        Task { await changedReloaded(target, was: was, from: from, to: to) }
+    }
+
+    private func changedReloaded(_ target: ReviewItem, was: SpelledPitch, from: SpelledPitch, to: SpelledPitch) async {
+        await reload(keeping: target)
         if let item = items.first(where: { $0.id == target.id }) ?? current.flatMap({ id in items.first { $0.id == id } }),
            let ref = changeRef(item) {
             // Stored as the Composition's pitch (or the written one without it), so another band or key reads it right.
@@ -543,10 +554,12 @@ struct ReviewView: View {
             AccessibilityNotifier.announce(error.localizedDescription)
             return
         }
-        reload(keeping: it)
-        if let key { changes[key] = nil }
-        piece.saveReviewChanges(changes)
-        AccessibilityNotifier.announce(Self.undoneWords(ReviewWords.name(was) + "\(was.octave)"))
+        Task {
+            await reload(keeping: it)
+            if let key { changes[key] = nil }
+            piece.saveReviewChanges(changes)
+            AccessibilityNotifier.announce(Self.undoneWords(ReviewWords.name(was) + "\(was.octave)"))
+        }
     }
 
     static func undoneWords(_ was: String) -> String { String(localized: "Back to \(was), as Brasscribe wrote it") }
@@ -559,10 +572,10 @@ struct ReviewView: View {
         }
     }
 
-    private func reload(keeping target: ReviewItem) {
+    /// The score changed: the review shows the old one until the new one is open.
+    private func reload(keeping target: ReviewItem) async {
         model?.stopAll()
-        model = nil
-        load()
+        await load()
         current = items.first { $0.partID == target.partID && $0.tick == target.tick }?.id ?? open.first?.id
     }
 
@@ -750,7 +763,10 @@ struct BarSnippet: View {
             .task(id: "\(partID)-\(bar)-\(lastBar)-\(noteTick)-\(Int(geo.size.width))") {
                 let first = max(1, bar + 1), last = min(score.measures.count, max(lastBar + 1, bar + 2))
                 let xml = PartNames.localized(self.xml), partID = self.partID, width = geo.size.width
-                page = await Task.detached { ScoreRenderer.snippet(musicXML: xml, partID: partID, bars: first...last, width: width) }.value
+                let made = await Task.detached { ScoreRenderer.snippet(musicXML: xml, partID: partID, bars: first...last, width: width) }.value
+                // another note or width was asked for meanwhile: its own task shows it
+                guard !Task.isCancelled else { return }
+                page = made
             }
         }
         .frame(height: 108)
@@ -767,7 +783,8 @@ struct BarSnippet: View {
 }
 
 enum ReviewWords {
-    static var norwegian: Bool { ["nb", "no", "nn"].contains(Locale.current.language.languageCode?.identifier ?? "") }
+    /// The screens' language, as the talking score has it.
+    static var norwegian: Bool { ScoreLanguage.current == .norwegian }
 
     /// "B♭" in English; the German-derived Norwegian names in Norwegian (B♭ = B, B = H, E♭ = Ess, F♯ = Fiss).
     static func name(_ p: SpelledPitch) -> String {
