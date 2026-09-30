@@ -196,12 +196,16 @@ public class ScoreEditingTests
         string work = TempDir();
         string takes = Path.Combine(work, "takes");
         Directory.CreateDirectory(takes);
-        File.WriteAllText(Path.Combine(takes, "left-from-last-time.wav"), "");
+        string old = Path.Combine(takes, "left-from-last-time.wav"), other = Path.Combine(takes, "another-window.wav");
+        File.WriteAllText(old, "");
+        File.SetLastWriteTimeUtc(old, DateTime.UtcNow - StartViewModel.PruneAge - TimeSpan.FromHours(1));
+        File.WriteAllText(other, ""); // a take another window of the app works with now
         try
         {
             var said = new Said();
             var start = new StartViewModel(new NoCapture(), new FakeDecoder(), new NoDialogs(), said, ConnectionMonitorTests.Strings(), new Inline(), work);
-            Assert.Empty(Directory.EnumerateFiles(takes));
+            Assert.Equal([other], Directory.EnumerateFiles(takes));
+            File.Delete(other);
 
             var ready = new List<SourceAudio>();
             start.SourceReady += (_, s) => ready.Add(s);

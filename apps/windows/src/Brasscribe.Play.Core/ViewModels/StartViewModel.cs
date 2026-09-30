@@ -36,7 +36,7 @@ public sealed partial class StartViewModel : ObservableObject
         _dialogs = dialogs;
         _announcer = announcer;
         _s = strings;
-        // Takes live in their own folder, emptied at start: nothing refers to a take once the app has closed
+        // Takes live in their own folder, cleared of old ones at start: nothing refers to a take once the app has closed
         // (the engine keeps its own copy, and "Your scores" keeps the score, not the recording).
         _workDir = Path.Combine(workDir, "takes");
         Directory.CreateDirectory(_workDir);
@@ -183,15 +183,23 @@ public sealed partial class StartViewModel : ObservableObject
         _take = path;
     }
 
-    /// <summary>Takes left by an earlier run of the app.</summary>
+    /// <summary>
+    /// Takes left by an earlier run of the app. Only old ones: another Brasscribe Play window may be working with a
+    /// take of its own right now.
+    /// </summary>
     private static void Prune(string dir)
     {
         try
         {
-            foreach (var file in Directory.EnumerateFiles(dir)) Delete(file);
+            var before = DateTime.UtcNow - PruneAge;
+            foreach (var file in Directory.EnumerateFiles(dir))
+                if (File.GetLastWriteTimeUtc(file) < before) Delete(file);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
+
+    /// <summary>A take this old at start-up is no longer anyone's.</summary>
+    public static readonly TimeSpan PruneAge = TimeSpan.FromHours(12);
 
     /// <summary>Best effort: a file still open elsewhere (the media player) goes the next time the app starts.</summary>
     private static void Delete(string path)

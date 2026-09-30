@@ -116,8 +116,10 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
                     capture.Stopped += e =>
                     {
                         _stopped?.TrySetResult();
+                        if (e is null) return;
+                        StopGapFill(); // nothing more is recorded: no silence after the end
                         // The app closing ends its audio (a COM error); anything else stopped the recording itself.
-                        if (e is not null) Say(e is COMException ? CaptureNoticeKind.NothingPlaying : CaptureNoticeKind.Interrupted);
+                        Say(e is COMException ? CaptureNoticeKind.NothingPlaying : CaptureNoticeKind.Interrupted);
                     };
                     _clock = Stopwatch.StartNew();
                     await capture.StartAsync(ct).ConfigureAwait(false);
@@ -144,7 +146,9 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         capture.RecordingStopped += (_, e) =>
         {
             _stopped?.TrySetResult();
-            if (e.Exception is not null) Say(CaptureNoticeKind.Interrupted);
+            if (e.Exception is null) return;
+            StopGapFill(); // nothing more is recorded: no silence after the end
+            Say(CaptureNoticeKind.Interrupted);
         };
         _clock = Stopwatch.StartNew();
         capture.StartRecording();
@@ -190,8 +194,7 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
 
     private void StopGapFill()
     {
-        _gapTimer?.Dispose();
-        _gapTimer = null;
+        Interlocked.Exchange(ref _gapTimer, null)?.Dispose();
     }
 
     /// <summary>On a timer: silence for the time loopback delivered nothing, and a silent level for the meter and the silence watch.</summary>

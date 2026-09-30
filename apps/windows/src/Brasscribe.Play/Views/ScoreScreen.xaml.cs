@@ -58,8 +58,9 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         Loaded += (_, _) =>
         {
             if (XamlRoot is not { } root) return;
-            _pixelScale = root.RasterizationScale;
+            root.Changed -= OnXamlRootChanged;
             root.Changed += OnXamlRootChanged;
+            OnXamlRootChanged(root, null);
         };
         Unloaded += (_, _) => { if (XamlRoot is { } root) root.Changed -= OnXamlRootChanged; };
 
@@ -313,7 +314,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     private double _pixelScale = 1;
 
-    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs? args)
     {
         if (Math.Abs(sender.RasterizationScale - _pixelScale) < 0.01) return;
         _pixelScale = sender.RasterizationScale;

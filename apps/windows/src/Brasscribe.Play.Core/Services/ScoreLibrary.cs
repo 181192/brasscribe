@@ -20,9 +20,12 @@ public sealed record LibraryEntry(
     string? Lineup = null,
     string? MyPart = null)
 {
-    /// <summary>The file is there now. An opened file on a drive that is not connected stays listed, and opens again once it is back.</summary>
+    /// <summary>
+    /// The file was there when "Your scores" was read. An opened file on a drive that is not connected stays listed, and
+    /// opens again once it is back. Checked once, not on every refresh: a missing network share can take seconds to answer.
+    /// </summary>
     [JsonIgnore]
-    public bool IsAvailable => File.Exists(MusicXmlPath);
+    public bool IsAvailable { get; init; } = true;
 }
 
 /// <summary>
@@ -256,7 +259,8 @@ public sealed class ScoreLibrary
             if (!File.Exists(IndexPath)) return [];
             var list = JsonSerializer.Deserialize(File.ReadAllText(IndexPath), LibraryJsonContext.Default.ListLibraryEntry) ?? [];
             // A score gone from the library folder is gone; an opened file may be on a drive that is not connected now.
-            return list.Where(e => File.Exists(e.MusicXmlPath) || !IsInside(e.MusicXmlPath)).OrderByDescending(e => e.Updated).ToList();
+            return list.Select(e => e with { IsAvailable = File.Exists(e.MusicXmlPath) })
+                .Where(e => e.IsAvailable || !IsInside(e.MusicXmlPath)).OrderByDescending(e => e.Updated).ToList();
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {
