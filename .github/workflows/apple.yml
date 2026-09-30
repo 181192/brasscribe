@@ -1,7 +1,8 @@
 name: apple
 
 # Brasscribe Play for macOS, iOS and iPadOS. Checks: Swift package tests plus macOS and iPhone
-# simulator app tests. With `release`: a Release build of the macOS app uploaded as dist-macos.
+# simulator app tests. With `release`: Release builds of Play for Mac and of Bandroom for Mac (which
+# installs and runs the engine), both re-signed ad hoc, uploaded as dist-macos.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
 # every push gets the fast Linux checks in ci.yml instead.
 on:
@@ -93,7 +94,10 @@ jobs:
         uses: ./.github/actions/band-sounds
 
       # Zipped with ditto here: artifact uploads drop the framework symlinks inside the .app.
-      - name: Release build of the macOS app
+      # There is no signing identity, so the app is re-signed ad hoc without the hardened runtime,
+      # inside out (Verovio first, then the app, keeping its entitlements): under the hardened runtime
+      # an ad-hoc signature has no Team ID and library validation rejects Verovio at launch.
+      - name: Release build of Play for Mac
         if: ${{ inputs.release }}
         run: |
           make project
@@ -101,9 +105,42 @@ jobs:
             -scheme BrasscribePlay-macOS -configuration Release -destination 'generic/platform=macOS' build
           app=$(find build/DerivedData/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
           [ -n "$app" ] || { echo "no .app under build/DerivedData/Build/Products/Release" >&2; exit 1; }
-          [ -s "$app/Contents/Resources/Sounds/brasscribe-band-16bit.sf2" ] || { echo "the app has no band SoundFont" >&2; exit 1; }
+          stage="$RUNNER_TEMP/stage-play"; P="$stage/Brasscribe Play.app"
+          mkdir -p "$stage" && ditto "$app" "$P"
+          [ -s "$P/Contents/Resources/Sounds/brasscribe-band-16bit.sf2" ] || { echo "the app has no band SoundFont" >&2; exit 1; }
+          codesign -d --entitlements - --xml "$P" > "$RUNNER_TEMP/play.entitlements"
+          for f in "$P"/Contents/Frameworks/* "$P"/Contents/PlugIns/*; do
+            [ -e "$f" ] && codesign --force --sign - "$f"
+          done
+          codesign --force --sign - --entitlements "$RUNNER_TEMP/play.entitlements" "$P"
+          codesign --verify --deep --strict "$P"
+          codesign -d --entitlements - "$P" 2>&1 | grep -q app-sandbox
           mkdir -p "$RUNNER_TEMP/out"
-          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/out/brasscribe-play-macos-arm64.zip"
+          (cd "$stage" && ditto -c -k --keepParent "Brasscribe Play.app" "$RUNNER_TEMP/out/brasscribe-play-macos-arm64.zip")
+
+      # Bandroom is how the engine is distributed: its post-build scripts stage the engine workspace
+      # (with the workspace stamp of this commit) and the band SoundFont, and it bundles pixi so a Mac
+      # without it can install the engine. Re-signed ad hoc, pixi first, then the app.
+      - name: Release build of Bandroom for Mac
+        if: ${{ inputs.release }}
+        working-directory: apps/bandroom/macos
+        run: |
+          brew install pixi
+          xcodegen generate
+          xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
+            -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData build
+          stage="$RUNNER_TEMP/stage-band"; B="$stage/Brasscribe Bandroom.app"
+          mkdir -p "$stage" && ditto "build/DerivedData/Build/Products/Release/Brasscribe Bandroom.app" "$B"
+          [ -s "$B/Contents/Resources/band/brasscribe-band.sf2" ] || { echo "Bandroom has no band SoundFont" >&2; exit 1; }
+          stamp="$B/Contents/Resources/workspace/.brasscribe-workspace.json"
+          grep -q "$(git rev-parse --short HEAD)" "$stamp" || { echo "the workspace stamp is not from $(git rev-parse --short HEAD)" >&2; cat "$stamp" >&2; exit 1; }
+          mkdir -p "$B/Contents/Resources/bin"
+          cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
+          codesign -d --entitlements - --xml "$B" > "$RUNNER_TEMP/band.entitlements"
+          codesign --force --sign - "$B/Contents/Resources/bin/pixi"
+          codesign --force --sign - --entitlements "$RUNNER_TEMP/band.entitlements" "$B"
+          codesign --verify --deep --strict "$B"
+          (cd "$stage" && ditto -c -k --keepParent "Brasscribe Bandroom.app" "$RUNNER_TEMP/out/brasscribe-bandroom-macos-arm64.zip")
 
       - uses: actions/upload-artifact@v4
         if: ${{ inputs.release }}

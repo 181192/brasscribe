@@ -16,11 +16,13 @@ What a release ships:
 | `brasscribe-play-android-universal.apk` | Play for Android, all CPU types |
 | `brasscribe-play-macos-arm64.zip` | Play for Mac (Apple silicon), ad-hoc signed |
 | `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` inside |
-| `brasscribe-core-macos-arm64.zip` | the `brasscribe-core` command-line tool |
+| `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` inside |
+| `brasscribe-play-windows-x64.zip` | Play for Windows, self-contained (preview) |
+| `brasscribe-core-*` | the `brasscribe-core` command-line tool, per OS |
 | `SHA256SUMS` | checksums of the files above |
 
-No Windows or iPhone/iPad build yet: Windows Play still lacks the music stand, the Appearance setting
-and "What do you play?", and iOS needs an Apple Developer account.
+Bandroom is how the engine is installed: it bundles the engine workspace and `pixi`, and the first run
+sets up the engine. There is no iPhone/iPad build yet: iOS needs an Apple Developer account.
 
 Below, `$S` is a scratch directory (DerivedData, staging) and `$OUT` the directory of finished assets.
 Disk is tight on the build Mac: keep DerivedData in `$S`, and delete staging directories and unshipped

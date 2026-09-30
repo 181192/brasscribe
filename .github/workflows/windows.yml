@@ -179,6 +179,59 @@ jobs:
           path: ${{ runner.temp }}/out/*.zip
           if-no-files-found: error
 
+  # Bandroom for Windows as a download: how the engine is distributed on Windows. Self-contained x64 with
+  # the engine workspace (its stamp from this commit) and the band SoundFont next to the exe, and pixi
+  # bundled at pixi\pixi.exe (FindPixi looks there first), so the first run can install the engine
+  # without anything installed beforehand.
+  bandroom-release:
+    name: bandroom release build
+    if: ${{ inputs.release }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: apps/bandroom/windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: apps/bandroom/windows/global.json
+
+      - name: Band sounds (mobile SoundFont, for Studio in the browser)
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-mobile.sf2
+
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.81.0
+          run-install: false
+
+      - name: Release build (self-contained, x64, pixi bundled)
+        run: |
+          $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
+          dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
+          if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
+          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2")) {
+            if (-not (Test-Path (Join-Path $out $f))) { throw "$f is not next to the exe" }
+          }
+          $stamp = Get-Content "$out/workspace/.brasscribe-workspace.json" -Raw
+          $commit = git rev-parse --short HEAD
+          if ($stamp -notmatch $commit) { throw "the workspace stamp is not from $commit`: $stamp" }
+          $pixi = (Get-Command pixi).Source
+          New-Item -ItemType Directory -Force -Path "$out/pixi" | Out-Null
+          Copy-Item $pixi "$out/pixi/pixi.exe"
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
+          Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-bandroom-windows-x64.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows-bandroom-x64
+          path: ${{ runner.temp }}/out/*.zip
+          if-no-files-found: error
+
   # Brasscribe Bandroom for Windows (apps/bandroom/windows): Core tests, the WinUI 3 tray app build, a smoke
   # test of the real start (admin credential, data folder, window form), an Axe.Windows scan of every view
   # and screenshots to compare with design/mockups/png/server-*.
