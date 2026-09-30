@@ -96,9 +96,11 @@ public final class PosixLauncher: ProcessLauncher, @unchecked Sendable {
         }
     }
 
-    /// Stops an engine left behind by an earlier Bandroom that didn't get to stop it (engine.json).
-    public static func killStrayGroup(pid: Int32) {
-        guard pid > 0, kill(-pid, 0) == 0 else { return }
+    /// Stops an engine left behind by an earlier Bandroom that didn't get to stop it (engine.json, written at
+    /// `recordedAt`). Only when that pid is still the process the file names: one that started after the file was
+    /// written got the number later and is somebody else's.
+    public static func killStrayGroup(pid: Int32, recordedAt: Date) {
+        guard pid > 0, kill(-pid, 0) == 0, isRecordedProcess(pid: pid, recordedAt: recordedAt) else { return }
         var name = [CChar](repeating: 0, count: 256)
         proc_name(pid, &name, UInt32(name.count))
         let proc = String(cString: name).lowercased()
@@ -106,6 +108,20 @@ public final class PosixLauncher: ProcessLauncher, @unchecked Sendable {
         kill(-pid, SIGTERM)
         for _ in 0..<50 where kill(-pid, 0) == 0 { usleep(100_000) }
         if kill(-pid, 0) == 0 { kill(-pid, SIGKILL) }
+    }
+
+    /// `pid` is running and started no later than `recordedAt` (with a second's slack for the clock's rounding).
+    static func isRecordedProcess(pid: Int32, recordedAt: Date) -> Bool {
+        guard let started = startTime(of: pid) else { return false }
+        return started <= recordedAt.addingTimeInterval(1)
+    }
+
+    /// When `pid` started, or nil when there is no such process.
+    static func startTime(of pid: Int32) -> Date? {
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return nil }
+        return Date(timeIntervalSince1970: Double(info.pbi_start_tvsec) + Double(info.pbi_start_tvusec) / 1_000_000)
     }
 }
 

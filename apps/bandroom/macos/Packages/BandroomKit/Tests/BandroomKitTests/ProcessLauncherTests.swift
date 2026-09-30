@@ -40,6 +40,14 @@ private final class ExitBox: @unchecked Sendable {
         #expect(eventually { kill(child, 0) != 0 }, "the child left in the group is gone")
     }
 
+    @Test func aStrayEngineIsOnlyTheProcessThatWasRunningWhenEngineJSONWasWritten() {
+        let me = getpid()
+        #expect(PosixLauncher.isRecordedProcess(pid: me, recordedAt: Date()))
+        // A file older than the process: the number was handed to this process later.
+        #expect(!PosixLauncher.isRecordedProcess(pid: me, recordedAt: Date(timeIntervalSince1970: 0)))
+        #expect(!PosixLauncher.isRecordedProcess(pid: 99_999_999, recordedAt: Date()), "no such process")
+    }
+
     @Test func exitStatusInWords() {
         #expect(ExitStatus.describe(0) == "exit code 0")
         #expect(ExitStatus.describe(256) == "exit code 1")

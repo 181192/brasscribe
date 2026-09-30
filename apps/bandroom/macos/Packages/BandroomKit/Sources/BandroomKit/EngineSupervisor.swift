@@ -79,9 +79,11 @@ public final class EngineSupervisor {
 
     /// Stops an engine an earlier, crashed Bandroom left running, using engine.json.
     public func reapStrayEngine() {
-        guard let old = EngineStatusFile.read(configuration.paths.engineStatus) else { return }
+        let file = configuration.paths.engineStatus
+        guard let old = EngineStatusFile.read(file) else { return }
+        let written = (try? FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate]) as? Date ?? .distantPast
         log("stopping an engine left from an earlier session (pid \(old.pid))")
-        PosixLauncher.killStrayGroup(pid: old.pid)
+        PosixLauncher.killStrayGroup(pid: old.pid, recordedAt: written)
         try? FileManager.default.removeItem(at: configuration.paths.engineStatus)
     }
 
