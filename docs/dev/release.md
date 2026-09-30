@@ -1,25 +1,30 @@
 # Cutting a release
 
-Releases are built by CI. On an up-to-date `main`:
+Releases are built by CI. `main` takes changes only through pull requests, so a release takes two
+steps, both in `scripts/release.sh` (on an up-to-date `main`):
 
 ```sh
 scripts/release.sh --preview          # the notes the next release would get
-scripts/release.sh X.Y.Z --push       # bump, CHANGELOG.md, `chore(release): X.Y.Z`, tag vX.Y.Z, push
+scripts/release.sh X.Y.Z              # bump every app version, CHANGELOG.md, open the release pull request
+scripts/release.sh --tag X.Y.Z        # once it is merged and pulled: tag the release commit and push the tag
 ```
 
-The script bumps the version everywhere it lives (Android `versionName` and `versionCode`, the Apple and
-Bandroom `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`; the build number is `versionCode`, one up
-per release), regenerates `CHANGELOG.md` with git-cliff (`cliff.toml`) and tags. Pick the version
-from the preview: a `feat` since the last release means a minor bump, only fixes a patch bump.
+The script bumps every app version and the build number (the list of files is in the script), and
+regenerates `CHANGELOG.md` with git-cliff (`cliff.toml`). Pick the version from the preview: a
+`feat` since the last release means a minor bump, only fixes a patch bump. Pre-releases
+(`vX.Y.Z-beta.N`) are tagged by hand on `main`; the script makes only `X.Y.Z`. If a run stops
+halfway, `git switch main`, delete the local `release/vX.Y.Z` branch, and start again.
 
 The pushed tag starts `.github/workflows/release.yml`: the checks, a build per platform, then a
-GitHub release with the files, `SHA256SUMS` and notes generated from the commits (new features and
-fixes sorted and labelled by app, the rest folded away, first-time contributors named). The commit messages are the
-release notes, so write them for the people who use the apps. If a tag push does not start the
-workflow, start it on the tag: `gh workflow run release.yml --ref vX.Y.Z`.
+GitHub release with the files, `SHA256SUMS` and notes generated from the commits since the previous
+release (new features and fixes sorted and labelled by scope, the rest folded away, first-time
+contributors named). The commit messages are the release notes, so write them for the people who
+use the apps. If a tag push does not start the workflow, start it on the tag:
+`gh workflow run release.yml --ref vX.Y.Z`.
 
 The Android APKs are signed in CI with the release key, held in the secrets of the `release`
-environment (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`); the job checks the certificate
+environment (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`), which only `v*` tags may use; the
+job checks the certificate
 against the one every earlier release used. The Mac apps are re-signed ad hoc (there is no Apple
 Developer ID), and the Windows builds are not signed. The sections below are the local build, kept
 for when CI cannot be used; v0.1.0 to v0.3.0 were made that way.
@@ -64,7 +69,7 @@ workspace stamp records the commit it was built from:
 - `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
 - Leave the core's Cargo version alone: the fixtures embed `brasscribe-core 0.1.0` in their MusicXML.
 
-Commit as `chore(release): X.Y.Z` and `git push origin HEAD:main`.
+Commit as `chore(release): X.Y.Z` and merge it through a pull request (`scripts/release.sh X.Y.Z` does this part).
 
 Recommended before building: tier 2 (`make check-all`, [verify.md](verify.md)) and, once per release, the
 full macOS UI suite in the VM: `MAC_VM_FULL=1 scripts/mac-vm.sh test-ui` ([macos-vm.md](macos-vm.md)).
@@ -180,13 +185,13 @@ start with the release commit. Its `version` is the engine API version, not the 
 
 ```sh
 cd core && cargo build --release --locked -p brasscribe-cli
-(cd target/release && zip -q "$OUT/brasscribe-core-macos-arm64.zip" brasscribe-core)
+tar -czf "$OUT/brasscribe-core-macos-arm64.tar.gz" -C target/release brasscribe-core
 ```
 
 ## 6. Checksums and the GitHub release
 
 ```sh
-(cd "$OUT" && shasum -a 256 *.apk *.zip > SHA256SUMS)
+(cd "$OUT" && shasum -a 256 -- * > SHA256SUMS)
 ```
 
 Just before publishing, check that `git rev-parse origin/main` is still the commit you built. If main
@@ -239,8 +244,8 @@ pinned in `sounds/band-sounds.json` ([sounds/README.md](../../sounds/README.md))
 4. Commit the pin, with the sources and licences in [sounds/LICENSES.md](../../sounds/LICENSES.md).
    Every checkout then runs `pixi run fetch-sounds` (or `band_sounds.py fetch`) to get the new pack.
 
-The current pack is `sounds-2026.09.30`. An app release bundles whatever pack is pinned on the commit it
-is built from.
+The current pack is the `version` in `sounds/band-sounds.json`. An app release bundles whatever pack is
+pinned on the commit it is built from.
 
 ## 10. Goldens are promoted at merge, never before
 
