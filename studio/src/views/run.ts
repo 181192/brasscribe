@@ -142,7 +142,19 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       }
     } }, icon("retry"), t("manifest.rerunBtn")) : null;
     clear(actions,
-      !TERMINAL.has(job.status) ? h("button", { type: "button", class: "ghost", onclick: async () => { await api.cancel(job.id); announce(t("run.cancelRequested")); } }, icon("close"), t("run.cancel")) : null,
+      !TERMINAL.has(job.status) ? h("button", { type: "button", class: "ghost", onclick: async (e: Event) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        b.disabled = true;
+        clear(actionNote);
+        try {
+          await api.cancel(job.id);
+          announce(t("run.cancelRequested"));
+        } catch (x) {
+          clear(actionNote, errorNotice(x));
+        } finally {
+          b.disabled = false;
+        }
+      } }, icon("close"), t("run.cancel")) : null,
       // Below 600 px the row is Re-run and More only; Download and Compare move into More.
       downloads().length ? menu([icon("export"), t("run.download")], downloads(), { className: "wide-only" }) : null,
       compare("wide-only"),
