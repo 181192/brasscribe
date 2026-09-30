@@ -55,6 +55,7 @@ public static class TalkingScoreExport
         var indexes = partIndexes?.ToList() ?? Enumerable.Range(0, doc.Parts.Count).ToList();
         foreach (int p in indexes)
         {
+            if (p < 0 || p >= doc.Parts.Count || doc.Parts[p].Bars.Count == 0) continue; // nothing to read out
             var nav = new ScoreNavigator(doc, settings);
             nav.GoToPart(p);
             nav.FirstBar();

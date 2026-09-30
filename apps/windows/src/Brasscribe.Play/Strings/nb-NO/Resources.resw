@@ -306,6 +306,18 @@
   <data name="Error_ReadsNotOffered" xml:space="preserve">
     <value>Stemmen din skrives ikke med den nøkkelen. Velg nøkkel på nytt i Innstillinger, Hva du spiller.</value>
   </data>
+  <data name="Error_RecordingUnreadable_Reason" xml:space="preserve">
+    <value>Brasscribe fikk ikke åpnet opptaket på denne PC-en. Det kan være flyttet eller slettet, eller en annen app bruker det.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step1" xml:space="preserve">
+    <value>Lukk andre apper som bruker filen, og velg Prøv igjen.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step2" xml:space="preserve">
+    <value>Eller velg et annet opptak.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Title" xml:space="preserve">
+    <value>Opptaket kan ikke leses</value>
+  </data>
   <data name="Error_ScoreFailed_Reason" xml:space="preserve">
     <value>Opptaket ditt er trygt. Noe stoppet Brasscribe på datamaskinen mens den arbeidet.</value>
   </data>
@@ -860,6 +872,9 @@
   </data>
   <data name="NextBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Neste takt</value>
+  </data>
+  <data name="Notice_Problem" xml:space="preserve">
+    <value>Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.</value>
   </data>
   <data name="OutputBackButton.Content" xml:space="preserve">
     <value>Tilbake</value>
@@ -1424,6 +1439,9 @@
   </data>
   <data name="Score_RenameFailed" xml:space="preserve">
     <value>Kunne ikke endre navn på {0}</value>
+  </data>
+  <data name="Score_RenderFailed" xml:space="preserve">
+    <value>Notene kan ikke tegnes. Prøv en annen zoom eller stemme, eller åpne partituret på nytt.</value>
   </data>
   <data name="Score_SaveTitle" xml:space="preserve">
     <value>Lagre</value>

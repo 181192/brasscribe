@@ -826,6 +826,17 @@ add("Output_KeyOnYourPart", "{0} on your part", "{0} på stemmen din")
 add("Output_OldComputer", "Brasscribe on your computer is too old to write for your instrument. Update it to use this.",
     "Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.")
 
+# ---- problems the app recovers from ----
+add("Error_RecordingUnreadable_Title", "The recording can't be read", "Opptaket kan ikke leses")
+add("Error_RecordingUnreadable_Reason", "Brasscribe couldn't open the recording on this PC. It may have been moved or deleted, or another app is using it.",
+    "Brasscribe fikk ikke åpnet opptaket på denne PC-en. Det kan være flyttet eller slettet, eller en annen app bruker det.")
+add("Error_RecordingUnreadable_Step1", "Close other apps that use the file, then choose Try again.", "Lukk andre apper som bruker filen, og velg Prøv igjen.")
+add("Error_RecordingUnreadable_Step2", "Or choose another recording.", "Eller velg et annet opptak.")
+add("Notice_Problem", "Something went wrong, but your work is safe. If it happens again, restart Brasscribe Play.",
+    "Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.")
+add("Score_RenderFailed", "The notes can't be drawn. Try another zoom or part, or open the score again.",
+    "Notene kan ikke tegnes. Prøv en annen zoom eller stemme, eller åpne partituret på nytt.")
+
 
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):

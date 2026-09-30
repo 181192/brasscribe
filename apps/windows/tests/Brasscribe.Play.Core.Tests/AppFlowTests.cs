@@ -538,6 +538,24 @@ public class AppFlowTests
     }
 
     [Fact]
+    public async Task A_recording_gone_from_the_pc_says_so_instead_of_closing_the_app()
+    {
+        var (main, said) = Build(Engine(""));
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        File.Delete(main.Kind.Source!.WavPath);
+        main.Kind.Selected = main.Kind.Options[0];
+        main.Kind.ContinueCommand.Execute(null);
+
+        await Until(() => main.Screen == Screen.Error);
+        Assert.False(main.Transcription.IsRunning);
+        Assert.Equal(ErrorKind.RecordingUnreadable, main.Error.Kind);
+        Assert.Equal("The recording can't be read", main.Error.Title);
+        Assert.NotEmpty(main.Error.Steps);
+        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Important && a.Text.StartsWith("Stopped:"));
+    }
+
+    [Fact]
     public async Task Cancelled_job_returns_to_the_choice()
     {
         var (main, said) = Build(Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"cancelled\"}\n\n"));

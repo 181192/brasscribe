@@ -132,8 +132,12 @@ public sealed partial class MainViewModel : ObservableObject
         Error.Alternative += (_, _) => Screen = Screen.Start;
         Transcription.FailedWith += (_, failure) =>
         {
-            Error.Show(failure == TranscriptionFailure.ComputerUnreachable ? ErrorKind.ComputerUnreachable : ErrorKind.ScoreFailed,
-                Transcription.ErrorDetail);
+            Error.Show(failure switch
+            {
+                TranscriptionFailure.ComputerUnreachable => ErrorKind.ComputerUnreachable,
+                TranscriptionFailure.RecordingUnreadable => ErrorKind.RecordingUnreadable,
+                _ => ErrorKind.ScoreFailed,
+            }, Transcription.ErrorDetail);
             Screen = Screen.Error;
         };
 

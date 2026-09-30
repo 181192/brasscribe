@@ -208,13 +208,21 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         }
         catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
         {
-            Done(s.Format("Export_Failed", e is EngineException ee ? EngineErrors.Message(ee, s) : e.Message));
+            Done(s.Format("Export_Failed", Reason(e)));
         }
         finally
         {
             IsExporting = false;
         }
     }
+
+    /// <summary>Why an export failed, in the player's words where the app has them.</summary>
+    private string Reason(Exception e) => e switch
+    {
+        EngineException ee => EngineErrors.Message(ee, s),
+        InvalidOperationException { Message: var key } when key.StartsWith("Export_Reason_", StringComparison.Ordinal) => s[key],
+        _ => e.Message,
+    };
 
     private bool CanPrint() => CanPrintNow && !IsExporting;
 
@@ -248,7 +256,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
         }
         catch (Exception e) when (e is IOException or EngineException or InvalidOperationException or UnauthorizedAccessException)
         {
-            Done(s.Format("Export_Failed", e is EngineException ee ? EngineErrors.Message(ee, s) : e.Message));
+            Done(s.Format("Export_Failed", Reason(e)));
         }
         finally
         {

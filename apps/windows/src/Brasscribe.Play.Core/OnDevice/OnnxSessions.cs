@@ -11,11 +11,12 @@ public enum ExecutionTarget { Cpu, DirectMl }
 /// </summary>
 public static class OnnxSessions
 {
+    /// <remarks>The session keeps what it needs from its options, so they are released once it exists.</remarks>
     public static (InferenceSession Session, ExecutionTarget Target) Create(string modelPath, bool preferGpu = true, int deviceId = 0)
     {
         if (preferGpu && OperatingSystem.IsWindows())
         {
-            var dml = new SessionOptions
+            using var dml = new SessionOptions
             {
                 // DirectML requires sequential execution and no memory pattern.
                 ExecutionMode = ExecutionMode.ORT_SEQUENTIAL,
@@ -29,10 +30,10 @@ public static class OnnxSessions
             }
             catch (Exception e) when (e is OnnxRuntimeException or EntryPointNotFoundException or DllNotFoundException or NotSupportedException)
             {
-                dml.Dispose();
+                // No DirectML here: the CPU provider below.
             }
         }
-        var cpu = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
+        using var cpu = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
         return (new InferenceSession(modelPath, cpu), ExecutionTarget.Cpu);
     }
 }

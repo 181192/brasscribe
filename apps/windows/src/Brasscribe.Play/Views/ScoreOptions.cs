@@ -60,7 +60,7 @@ internal static class ScoreOptions
             DefaultButton = ContentDialogButton.Primary,
         };
         input.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = input.Text.Trim().Length > 0;
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) await main.RenameLibraryItemAsync(item, input.Text);
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.RenameLibraryItemAsync(item, input.Text);
     }
 
     private static async Task DeleteAsync(MainViewModel main, LibraryItem item, XamlRoot root)
@@ -76,7 +76,7 @@ internal static class ScoreOptions
             CloseButtonText = s["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) await main.DeleteLibraryItemAsync(item);
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.DeleteLibraryItemAsync(item);
     }
 
     private static string Glyph(string key) => (string)Application.Current.Resources[key];

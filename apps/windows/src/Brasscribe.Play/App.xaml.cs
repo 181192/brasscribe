@@ -19,7 +19,12 @@ public partial class App : Application
     public App()
     {
         AppDomain.CurrentDomain.UnhandledException += (_, e) => WriteCrash(e.ExceptionObject as Exception);
-        UnhandledException += (_, e) => WriteCrash(e.Exception);
+        UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            WriteCrash(e.Exception);
+            e.SetObserved();
+        };
         var settings = new JsonSettingsStore();
         string language = Option("--lang") ?? settings.Get("Language", "system");
         if (language != "system")
@@ -27,6 +32,23 @@ public partial class App : Application
         InitializeComponent();
         Settings = settings;
     }
+
+    /// <summary>
+    /// The last line of defence for an exception nothing else caught (an event handler, a command, an
+    /// async void): it is logged, and unless the process is in a state it cannot go on from, the app
+    /// stays open and says that something went wrong.
+    /// </summary>
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        WriteCrash(e.Exception);
+        if (IsFatal(e.Exception)) return;
+        e.Handled = true;
+        _window?.DispatcherQueue.TryEnqueue(() => _window?.ShowProblem());
+    }
+
+    private static bool IsFatal(Exception? e) =>
+        e is null or OutOfMemoryException or AccessViolationException or StackOverflowException or InvalidProgramException
+            or BadImageFormatException or System.Runtime.InteropServices.SEHException;
 
     /// <summary>An unhandled exception, appended to crash.log next to settings.json (read by the CI smoke test).</summary>
     private static void WriteCrash(Exception? e)

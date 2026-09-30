@@ -129,7 +129,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
             CloseButtonText = strings["FinishLater_Keep"],
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) ViewModel.ConfirmFinishCommand.Execute(null);
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) ViewModel.ConfirmFinishCommand.Execute(null);
         else
         {
             ViewModel.CancelFinishCommand.Execute(null);
@@ -189,7 +189,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         };
         Update();
         // Save stays on the note: focus goes to "Changed to …" (the change is also announced), else back to Change note….
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && ViewModel.ChangeNote(shift) && ViewModel.IsChanged)
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && ViewModel.ChangeNote(shift) && ViewModel.IsChanged)
             ChangedLine.Focus(FocusState.Programmatic);
         else ChangeNoteButton.Focus(FocusState.Programmatic);
     }

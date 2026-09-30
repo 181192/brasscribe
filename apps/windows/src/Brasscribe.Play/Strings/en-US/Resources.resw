@@ -306,6 +306,18 @@
   <data name="Error_ReadsNotOffered" xml:space="preserve">
     <value>Your part isn't written in that clef. Choose the clef again in Settings, What you play.</value>
   </data>
+  <data name="Error_RecordingUnreadable_Reason" xml:space="preserve">
+    <value>Brasscribe couldn't open the recording on this PC. It may have been moved or deleted, or another app is using it.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step1" xml:space="preserve">
+    <value>Close other apps that use the file, then choose Try again.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step2" xml:space="preserve">
+    <value>Or choose another recording.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Title" xml:space="preserve">
+    <value>The recording can't be read</value>
+  </data>
   <data name="Error_ScoreFailed_Reason" xml:space="preserve">
     <value>Your recording is safe. Something stopped Brasscribe on your computer while it worked.</value>
   </data>
@@ -860,6 +872,9 @@
   </data>
   <data name="NextBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Next bar</value>
+  </data>
+  <data name="Notice_Problem" xml:space="preserve">
+    <value>Something went wrong, but your work is safe. If it happens again, restart Brasscribe Play.</value>
   </data>
   <data name="OutputBackButton.Content" xml:space="preserve">
     <value>Back</value>
@@ -1424,6 +1439,9 @@
   </data>
   <data name="Score_RenameFailed" xml:space="preserve">
     <value>Couldn't rename {0}</value>
+  </data>
+  <data name="Score_RenderFailed" xml:space="preserve">
+    <value>The notes can't be drawn. Try another zoom or part, or open the score again.</value>
   </data>
   <data name="Score_SaveTitle" xml:space="preserve">
     <value>Save</value>

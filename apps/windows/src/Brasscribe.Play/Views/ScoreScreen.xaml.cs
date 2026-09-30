@@ -158,7 +158,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     public async Task ShowGoToBarAsync()
     {
         var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary && dialog.Bar is { } bar)
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && dialog.Bar is { } bar)
         {
             ViewModel.GoToBar(bar);
         }
@@ -180,7 +180,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
             CloseButtonText = strings["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Primary,
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
+        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -311,7 +311,19 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
         {
             _renderQueued = false;
-            await RenderAsync();
+            try
+            {
+                await RenderAsync();
+            }
+            catch (Exception e) when (e is not OutOfMemoryException)
+            {
+                // alphaTab could not lay out this score (or this part at this zoom): no notes rather than no app.
+                System.Diagnostics.Trace.TraceWarning($"Score layout failed: {e}");
+                _layout = null;
+                _requested.Clear();
+                Notation.SetPageSlots([], 0, 0);
+                App.MainWindowInstance?.ShowProblem(App.Strings["Score_RenderFailed"]);
+            }
         });
     }
 
@@ -566,7 +578,15 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     private async Task LoadPageAsync(int generation, string id)
     {
-        var png = await _renderer.RenderPageAsync(generation, id);
+        byte[]? png;
+        try { png = await _renderer.RenderPageAsync(generation, id); }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            // One page that cannot be drawn stays blank; it is asked for again when it scrolls back into view.
+            System.Diagnostics.Trace.TraceWarning($"Score page {id} failed: {e}");
+            _requested.Remove(id);
+            return;
+        }
         if (png is null || generation != _renderer.Generation) return;
         var bitmap = new BitmapImage();
         using var stream = new InMemoryRandomAccessStream();

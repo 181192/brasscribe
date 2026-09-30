@@ -252,13 +252,17 @@ public sealed partial class MainWindow : Window
         if (!ViewModel.OpenExportCommand.CanExecute(null)) return;
         ViewModel.OpenExportCommand.Execute(null);
         var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
-        await dialog.ShowAsync();
+        await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
         ExportButton.Focus(FocusState.Programmatic);
     }
 
     private bool _settingsOpen;
+    private string? _waitingLink;
 
-    /// <summary>Settings; with a brasscribe://pair link it pairs from the link while the dialog shows the progress.</summary>
+    /// <summary>
+    /// Settings; with a brasscribe://pair link it pairs from the link while the dialog shows the progress.
+    /// A link that arrives while another dialog is open waits until that dialog closes.
+    /// </summary>
     public async Task OpenSettingsAsync(string? pairingLink = null)
     {
         if (_settingsOpen)
@@ -266,22 +270,52 @@ public sealed partial class MainWindow : Window
             if (pairingLink is not null) await ViewModel.Settings.PairFromLinkAsync(pairingLink);
             return;
         }
+        if (Brasscribe.Play.Services.DialogGate.IsOpen)
+        {
+            if (pairingLink is null) return;
+            if (_waitingLink is null) Brasscribe.Play.Services.DialogGate.Closed += OnDialogClosed;
+            _waitingLink = pairingLink;
+            return;
+        }
         _settingsOpen = true;
         try
         {
             var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
             if (pairingLink is not null) dialog.Opened += async (_, _) => await ViewModel.Settings.PairFromLinkAsync(pairingLink);
-            await dialog.ShowAsync();
+            await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
             ViewModel.Settings.CancelAsk();
         }
         finally { _settingsOpen = false; }
         SettingsButton.Focus(FocusState.Programmatic);
     }
 
+    private void OnDialogClosed(object? sender, EventArgs e)
+    {
+        Brasscribe.Play.Services.DialogGate.Closed -= OnDialogClosed;
+        // After the closing dialog has gone from the screen.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+        {
+            if (_waitingLink is not { } link) return;
+            _waitingLink = null;
+            await OpenSettingsAsync(link);
+        });
+    }
+
+    /// <summary>
+    /// Something failed that the app could carry on from: a bar at the bottom of the window says so
+    /// (read out by screen readers as it opens) instead of the app closing.
+    /// </summary>
+    public void ShowProblem(string? message = null)
+    {
+        ProblemBar.Message = message ?? _s["Notice_Problem"];
+        ProblemBar.IsOpen = false; // a second problem is announced again
+        ProblemBar.IsOpen = true;
+    }
+
     private async Task ShowShortcutsAsync()
     {
         var dialog = new ShortcutsDialog { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
-        await dialog.ShowAsync();
+        await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
         HelpButton.Focus(FocusState.Programmatic);
     }
 }
