@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Pinned to the last ONNX Runtime release with a DirectML build: the managed API must match the native binary. -->
-    <OnnxRuntimeVersion>1.30.0</OnnxRuntimeVersion>
+    <OnnxRuntimeVersion>1.24.4</OnnxRuntimeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
