@@ -56,7 +56,7 @@ public final class Bootstrapper {
             }
             phase = .installing
             let (status, log) = try await install(configuration, base: base)
-            phase = status == 0 ? .done : .failed("pixi install exited with status \(status); see \(log.path)")
+            phase = status == 0 ? .done : .failed("pixi install stopped with \(ExitStatus.describe(status)); see \(log.path)")
         } catch {
             phase = .failed(String(describing: error))
         }
@@ -83,7 +83,7 @@ public final class Bootstrapper {
                 }
                 if result.status != 0 {
                     try? swap.rollback()
-                    phase = .failed("pixi install exited with status \(result.status); see \(result.log.path)")
+                    phase = .failed("pixi install stopped with \(ExitStatus.describe(result.status)); see \(result.log.path)")
                     return false
                 }
             }

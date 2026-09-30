@@ -409,7 +409,7 @@ final class AppModel {
         if let port = supervisor.port { lines.append("Port: \(port)") }
         lines.append("Addresses: \(addresses.joined(separator: ", "))")
         if let h = monitor.health { lines.append("Runs on: \(h.device)") }
-        if let last = supervisor.lastExitStatus { lines.append("Last exit status: \(last)") }
+        if let last = supervisor.lastExitStatus { lines.append("Last exit: \(ExitStatus.describe(last))") }
         lines.append("Data: \(paths.data.path)")
         lines.append("Logs: \(paths.logs.path)")
         if !models.missing.isEmpty {

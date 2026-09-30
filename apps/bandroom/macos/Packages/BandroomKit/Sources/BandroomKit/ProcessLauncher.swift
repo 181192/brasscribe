@@ -17,14 +17,20 @@ public struct LaunchPlan: Equatable, Sendable {
 }
 
 public protocol ProcessLauncher: Sendable {
-    /// Starts the process in its own process group; `onExit` gets the wait status once it has exited.
+    /// Starts the process in its own process group; `onExit` gets the wait status once it has exited. When it exits by
+    /// itself (not through `terminate`), whatever is left in its group is killed first: an engine whose `pixi run`
+    /// died must not keep the port or the graphics chip.
     func launch(_ plan: LaunchPlan, onExit: @escaping @Sendable (Int32) -> Void) throws -> Int32
     /// SIGTERM to the whole group, then SIGKILL after `grace` seconds if anything is left.
     func terminate(pid: Int32, grace: TimeInterval)
 }
 
 /// posix_spawn with a new process group, so `pixi run` and the Python engine under it stop together.
-public final class PosixLauncher: ProcessLauncher {
+public final class PosixLauncher: ProcessLauncher, @unchecked Sendable {
+    private let lock = NSLock()
+    /// Groups asked to stop: `terminate` gives them their grace period.
+    private var terminating: Set<Int32> = []
+
     public init() {}
 
     public func launch(_ plan: LaunchPlan, onExit: @escaping @Sendable (Int32) -> Void) throws -> Int32 {
@@ -66,9 +72,12 @@ public final class PosixLauncher: ProcessLauncher {
         guard rc == 0 else { throw LaunchFailure.spawn(String(cString: strerror(rc))) }
 
         let waited = pid
-        let thread = Thread {
+        let thread = Thread { [self] in
             var status: Int32 = 0
             while waitpid(waited, &status, 0) == -1 && errno == EINTR {}
+            // Right away, while the group id can't have been handed to anyone else.
+            let asked = lock.withLock { terminating.remove(waited) != nil }
+            if !asked { kill(-waited, SIGKILL) }
             onExit(status)
         }
         thread.name = "engine-wait-\(pid)"
@@ -78,6 +87,7 @@ public final class PosixLauncher: ProcessLauncher {
 
     public func terminate(pid: Int32, grace: TimeInterval) {
         guard pid > 0 else { return }
+        lock.withLock { _ = terminating.insert(pid) }
         kill(-pid, SIGTERM)
         kill(pid, SIGTERM)
         DispatchQueue.global().asyncAfter(deadline: .now() + grace) {
@@ -100,6 +110,14 @@ public final class PosixLauncher: ProcessLauncher {
 }
 
 extension LaunchFailure: Error {}
+
+/// A wait status in words, for logs and the tech-person details: "exit code 1", "signal 9".
+public enum ExitStatus {
+    public static func describe(_ status: Int32) -> String {
+        let signal = status & 0x7f
+        return signal == 0 ? "exit code \((status >> 8) & 0xff)" : "signal \(signal)"
+    }
+}
 
 enum LogRotation {
     static func rotate(_ url: URL, maxBytes: Int) {

@@ -139,7 +139,7 @@ public final class EngineSupervisor {
     private func exited(status: Int32, generation gen: Int) {
         guard gen == generation else { return }
         lastExitStatus = status
-        log("engine: exited with status \(status)")
+        log("engine: exited, \(ExitStatus.describe(status))")
         healthTask?.cancel()
         pid = nil
         try? FileManager.default.removeItem(at: configuration.paths.engineStatus)
