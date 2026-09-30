@@ -284,6 +284,14 @@ def _list_outputs(d: Path) -> list[str]:
 
 
 def _write(path: Path, text: str) -> None:
+    """Replace `path` with `text`. Outputs are read-only hardlinks into the artifact cache: replacing the name
+    leaves the cache's copy as it was, but Windows refuses to replace a read-only file, so there the flag is
+    cleared first. The flag belongs to the file, not the name, so the cache's copy loses it too (its content
+    is unchanged, and the cache checks content by hash)."""
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(text)
-    os.replace(tmp, path)
+    try:
+        os.replace(tmp, path)
+    except PermissionError:
+        os.chmod(path, path.stat().st_mode | stat.S_IWUSR)
+        os.replace(tmp, path)
