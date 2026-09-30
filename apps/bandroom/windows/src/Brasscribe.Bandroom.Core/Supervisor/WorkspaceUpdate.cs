@@ -128,7 +128,7 @@ public sealed class WorkspaceSwap
                 string old = Path.Combine(workspace, rel), fresh = Path.Combine(staging, rel);
                 if (Directory.Exists(old) && !Exists(fresh)) CopyDirectory(old, fresh);
             }
-            File.WriteAllText(swap.Journal, JsonSerializer.Serialize(entries));
+            WriteJournal(swap.Journal, entries);
             foreach (var e in entries)
             {
                 if (e.HadOld) Move(Path.Combine(workspace, e.Name), Path.Combine(swap.Backup, e.Name));
@@ -142,6 +142,17 @@ public sealed class WorkspaceSwap
             throw;
         }
         return swap;
+    }
+
+    /// <summary>
+    /// Written through to the disk before the first entry moves: after a power cut the journal is there, whole, for
+    /// every rename that happened.
+    /// </summary>
+    private static void WriteJournal(string path, List<Entry> entries)
+    {
+        using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough);
+        JsonSerializer.Serialize(stream, entries);
+        stream.Flush(flushToDisk: true);
     }
 
     /// <summary>The update is done: the journal goes first (that is the commit), then the old copy, as far as it can.</summary>
@@ -158,20 +169,34 @@ public sealed class WorkspaceSwap
     /// <summary>
     /// Undoes every update that didn't commit: each replaced entry gets its old self back, entries new in the update
     /// go. A folder without a journal holds nothing to undo (never swapped, or committed) and is removed as far as it
-    /// can be: files the old engine still holds never block the next update.
+    /// can be: files the old engine still holds never block the next update. A journal that is there but can't be read
+    /// leaves its folder alone once anything was moved aside: <c>old</c> may hold the only copy of what the update
+    /// replaced.
     /// </summary>
-    public static void Recover(string workspace)
+    public static void Recover(string workspace, Action<string>? log = null)
     {
         var root = Path.Combine(workspace, WorkDir);
         if (!Directory.Exists(root)) return;
         foreach (var work in Directory.EnumerateDirectories(root).ToList())
         {
             var journal = Path.Combine(work, JournalName);
-            List<Entry>? entries = null;
-            try { entries = JsonSerializer.Deserialize<List<Entry>>(File.ReadAllText(journal)); }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { }
-            if (entries is not null)
+            if (File.Exists(journal))
             {
+                List<Entry>? entries = null;
+                try { entries = JsonSerializer.Deserialize<List<Entry>>(File.ReadAllText(journal)); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { log?.Invoke($"bandroom: can't read {journal}: {e.Message}"); }
+                if (entries is null)
+                {
+                    // Nothing moved aside yet (the journal was cut short while being written): nothing to lose.
+                    string moved = Path.Combine(work, "old");
+                    if (!Directory.Exists(moved) || !Directory.EnumerateFileSystemEntries(moved).Any())
+                    {
+                        DeleteQuietly(work);
+                        continue;
+                    }
+                    log?.Invoke($"bandroom: keeping {work} as it is: its journal can't be read");
+                    continue;
+                }
                 foreach (var e in Enumerable.Reverse(entries))
                 {
                     string live = Path.Combine(workspace, e.Name), old = Path.Combine(work, "old", e.Name);

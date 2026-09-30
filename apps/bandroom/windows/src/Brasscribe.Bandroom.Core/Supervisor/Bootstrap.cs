@@ -145,7 +145,7 @@ public sealed class Bootstrapper
     /// <summary>Undoes an update the app didn't finish (it quit, or the power went): the old copy is back.</summary>
     public void RecoverInterruptedUpdate()
     {
-        try { WorkspaceSwap.Recover(_paths.Workspace); }
+        try { WorkspaceSwap.Recover(_paths.Workspace, _log.Write); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.Write("bandroom: undoing an unfinished update: " + e.Message); }
     }
 
