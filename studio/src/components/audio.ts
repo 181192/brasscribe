@@ -51,6 +51,8 @@ export class AudioAB extends HTMLElement {
   private wave!: Plot;
   private spec!: Plot;
   private status!: HTMLElement;
+  /** A notice per source that could not be loaded, next to the status line. */
+  private problems!: HTMLElement;
   private playBtn!: HTMLButtonElement;
   private radios!: HTMLElement;
   private specCache: { key: string; img: ImageData } | null = null;
@@ -90,6 +92,7 @@ export class AudioAB extends HTMLElement {
         h("input", { type: "radio", name, value: String(i), checked: i === 0, onchange: () => this.switchTo(i) }),
         `${String.fromCharCode(65 + i)}: ${s.label}`)));
     this.status = h("p", { class: "hint", role: "status" }, t("audio.loading"));
+    this.problems = h("div", {});
     this.wave = plot("Waveform", 110, (c, w, hh) => this.drawWave(c, w, hh));
     this.spec = plot("Spectrogram", 220, (c, w, hh) => this.drawSpec(c, w, hh));
     this.wave.canvas.addEventListener("click", (e) => {
@@ -105,6 +108,7 @@ export class AudioAB extends HTMLElement {
     clear(this,
       h("div", { class: "row" }, this.playBtn, h("button", { type: "button", onclick: () => this.seek(0) }, t("audio.backToStart")), this.radios),
       this.status,
+      this.problems,
       h("p", { class: "small muted" }, t("audio.hint")),
       this.wave.box,
       h("div", { style: "height:0.5rem" }),
@@ -124,7 +128,8 @@ export class AudioAB extends HTMLElement {
       this.wave.redraw();
       this.spec.redraw();
     } catch (e) {
-      this.status.replaceWith(errorNotice(e));
+      this.problems.append(h("p", { class: "small" }, t("audio.failed", { which: String.fromCharCode(65 + i), label: s.label })), errorNotice(e));
+      if (!this.loaded.some(Boolean)) this.status.textContent = t("audio.noneLoaded");
     }
   }
 
