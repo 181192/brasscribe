@@ -574,7 +574,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def list_artifacts(job_id: str) -> list[m.Artifact]:
         job = job_or_404(job_id)
         d = jobs.run_dir(job.id) / "outputs"
-        return [m.Artifact(name=n, bytes=(d / n).stat().st_size, media_type=MEDIA.get(n, "application/octet-stream"),
+        return [m.Artifact(name=n, bytes=(d / n).stat().st_size, media_type=media_type(n),
                            url=f"/v1/jobs/{job.id}/artifacts/{n}") for n in outputs_of(job)]
 
     @app.get("/v1/jobs/{job_id}/artifacts/{name:path}", operation_id="getJobArtifact", tags=["results"],
