@@ -50,12 +50,17 @@ public sealed class LoadAverager(TimeProvider? time = null, TimeSpan? window = n
     public double Add(double percent)
     {
         var now = _time.GetUtcNow();
-        _samples.Enqueue((now, Math.Clamp(percent, 0, 100)));
-        while (_samples.Count > 1 && now - _samples.Peek().At > _window) _samples.Dequeue();
-        return Average;
+        lock (_samples)
+        {
+            _samples.Enqueue((now, Math.Clamp(percent, 0, 100)));
+            while (_samples.Count > 1 && now - _samples.Peek().At > _window) _samples.Dequeue();
+            return AverageLocked();
+        }
     }
 
-    public double Average => _samples.Count == 0 ? 0 : _samples.Average(s => s.Value);
+    public double Average { get { lock (_samples) return AverageLocked(); } }
+
+    private double AverageLocked() => _samples.Count == 0 ? 0 : _samples.Average(s => s.Value);
 }
 
 /// <summary>One reading of "This computer", ready for words. MissingModels: the downloads a full-band score still needs, in catalogue order.</summary>

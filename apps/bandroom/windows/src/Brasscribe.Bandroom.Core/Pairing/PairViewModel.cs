@@ -88,7 +88,7 @@ public sealed partial class PairViewModel : ObservableObject
             HasError = false;
             _announcer.Announce(_s["Pair_Waiting_A11y"]);
         }
-        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException)
+        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException or System.Text.Json.JsonException)
         {
             ShowError();
         }
@@ -172,7 +172,20 @@ public sealed partial class PairViewModel : ObservableObject
             }
             // The spent single-use code (the engine closes it) and the wrong-code lockout.
             var current = await api.GetPairingAsync(ct);
-            if (HasPaired) IsOpen = current.Open && current.Code is not null;
+            bool open = current.Open && current.Code is not null;
+            if (HasPaired) IsOpen = open;
+            else if (IsOpen && !open)
+            {
+                // Closed with nothing paired (the engine restarted, say): the code on screen no longer works. Ask for
+                // a new one, unless a phone paired in between (the next poll shows it); a failure shows the error.
+                var now = await api.GetDevicesAsync(ct);
+                if (_knownDevices is null || now.All(d => _knownDevices.Contains(d.DeviceId)))
+                {
+                    await OpenAsync();
+                    return;
+                }
+            }
+            else if (IsOpen && current.Code != Code) Show(current);
             ShowLockout(current);
             _knownDevices = devices.Select(d => d.DeviceId).ToHashSet();
 
@@ -182,7 +195,7 @@ public sealed partial class PairViewModel : ObservableObject
                 _expiresAt = DateTimeOffset.TryParse(state.ExpiresAt, out var t) ? t : null;
             }
         }
-        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException) { }
+        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException or System.Text.Json.JsonException) { }
     }
 
     /// <summary>Done: closes the engine's pairing window, so the code stops working.</summary>
@@ -192,11 +205,11 @@ public sealed partial class PairViewModel : ObservableObject
         IsOpen = false;
         if (_api() is not { } api) return;
         try { await api.ClosePairingAsync(); }
-        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException) { }
+        catch (Exception e) when (e is HttpRequestException or EngineHttpException or TaskCanceledException or System.Text.Json.JsonException) { }
     }
 
     /// <summary>A phone chose this computer (from the request watcher).</summary>
-    public AllowRequestViewModel AddRequest(PairRequestInfo r, Func<string, bool, Task<bool>> decide)
+    public AllowRequestViewModel AddRequest(PairRequestInfo r, Func<string, bool, Task<PairDecision>> decide)
     {
         var vm = new AllowRequestViewModel(_s, r, decide, _announcer);
         vm.Finished += () => Requests.Remove(vm);
@@ -215,10 +228,10 @@ public sealed partial class PairViewModel : ObservableObject
 public sealed partial class AllowRequestViewModel : ObservableObject
 {
     private readonly IStrings _s;
-    private readonly Func<string, bool, Task<bool>> _decide;
+    private readonly Func<string, bool, Task<PairDecision>> _decide;
     private readonly IAnnouncer _announcer;
 
-    public AllowRequestViewModel(IStrings s, PairRequestInfo r, Func<string, bool, Task<bool>> decide, IAnnouncer announcer)
+    public AllowRequestViewModel(IStrings s, PairRequestInfo r, Func<string, bool, Task<PairDecision>> decide, IAnnouncer announcer)
     {
         _s = s;
         _decide = decide;
@@ -240,9 +253,12 @@ public sealed partial class AllowRequestViewModel : ObservableObject
     public string AllowLabel => _s["Allow_Ok"];
     public string DenyLabel => _s["Allow_No"];
     public string ExpiredText => _s["Allow_Expired"];
+    public string FailedText => _s["Allow_Failed"];
     public string CloseLabel => _s["Close"];
 
     [ObservableProperty] public partial bool IsExpired { get; set; }
+    /// <summary>The last answer didn't get through: Allow and Don't allow stay, to try again.</summary>
+    [ObservableProperty] public partial bool HasFailed { get; set; }
     [ObservableProperty] public partial bool IsDecided { get; set; }
     public bool IsActive => !IsExpired && !IsDecided;
 
@@ -260,15 +276,35 @@ public sealed partial class AllowRequestViewModel : ObservableObject
     [RelayCommand]
     private async Task AllowAsync()
     {
-        if (!await _decide(RequestId, true)) { MarkExpired(); return; }
-        IsDecided = true;
-        Finished?.Invoke();
+        switch (await DecideAsync(true))
+        {
+            case PairDecision.Lapsed: MarkExpired(); break;
+            case PairDecision.Done: Finish(); break;
+        }
     }
 
     [RelayCommand]
     private async Task DenyAsync()
     {
-        await _decide(RequestId, false);
+        if (await DecideAsync(false) != PairDecision.Failed) Finish();
+    }
+
+    /// <summary>An answer that doesn't get through is shown on the card, never thrown on the UI thread.</summary>
+    private async Task<PairDecision> DecideAsync(bool approve)
+    {
+        PairDecision result;
+        try { result = await _decide(RequestId, approve); }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or EngineHttpException or System.Text.Json.JsonException)
+        {
+            result = PairDecision.Failed;
+        }
+        HasFailed = result == PairDecision.Failed;
+        if (HasFailed) _announcer.Announce(FailedText);
+        return result;
+    }
+
+    private void Finish()
+    {
         IsDecided = true;
         Finished?.Invoke();
     }

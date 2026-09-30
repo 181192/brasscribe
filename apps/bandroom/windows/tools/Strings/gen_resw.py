@@ -56,6 +56,7 @@ ROWS = [
     ("Devices_Remove", "Remove", "Fjern"),
     ("Devices_Remove_A11y", "Remove {0}", "Fjern {0}"),  # (+) the button's accessible name
     ("Devices_Removed", "{0} is removed.", "{0} er fjernet."),  # (+) announced
+    ("Devices_Remove_Failed", "{0} couldn't be removed. Try again.", "{0} ble ikke fjernet. Prøv igjen."),  # (+)
     ("Devices_Empty", "No phones yet. Pair a phone to make full-band scores from it.", "Ingen telefoner ennå. Koble til en telefon for å lage partitur for fullt band fra den."),
     ("Back", "Back", "Tilbake"),
     ("Close", "Close", "Lukk"),  # (+)
@@ -169,6 +170,7 @@ ROWS = [
     ("Allow_Match", "The phone shows the number:", "Telefonen viser tallet:"),
     ("Allow_Match_A11y", "The phone shows the number: {0}", "Telefonen viser tallet: {0}"),
     ("Allow_Expired", "This request has expired. Choose this computer on the phone again.", "Forespørselen er utløpt. Velg denne datamaskinen på telefonen igjen."),
+    ("Allow_Failed", "That didn't go through. Try again.", "Det gikk ikke. Prøv igjen."),  # (+) the answer didn't get through
     ("Allow_Ok", "Allow", "Godkjenn"),
     ("Allow_No", "Don't allow", "Ikke godkjenn"),
     ("Notify_PairRequest", "{0} wants to use this computer.", "{0} vil bruke denne datamaskinen."),
@@ -192,6 +194,7 @@ ROWS = [
     ("Setup_3_Network_Title", "The download stopped", "Nedlastingen stoppet"),
     ("Setup_3_Network_Why", "Check the internet connection, then try again. It continues where it stopped.", "Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet."),
     ("Setup_3_Disk_Title", "Brasscribe couldn't save the download", "Brasscribe fikk ikke lagret nedlastingen"),  # (+) mac setup window
+    ("Setup_3_Disk_Why", "Check that there's room on the drive, then try again.", "Sjekk at det er plass på disken, og prøv igjen."),  # (+) the file system's own message goes in the details
     ("Setup_2_Key_Label", "Access key from Hugging Face", "Tilgangsnøkkel fra Hugging Face"),
     ("Setup_Item_Listening", "Listening tools", "Lytteverktøy"),
     ("Setup_Item_Soloist", "Soloist separator", "Solistskiller"),
