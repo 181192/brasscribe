@@ -69,7 +69,7 @@ else:
 def _lock() -> Iterator[None]:
     """An OS file lock (flock, msvcrt.locking): the kernel drops it when its holder dies, so a crashed
     conversion never leaves a stale lock that a waiter would have to judge and remove."""
-    fd = os.open(LOCK_FILE, os.O_RDWR | os.O_CREAT, 0o666)
+    fd = os.open(LOCK_FILE, os.O_RDWR | os.O_CREAT, 0o600)
     try:
         while not _try_lock(fd):
             time.sleep(0.2)
