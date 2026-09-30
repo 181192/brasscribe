@@ -52,6 +52,12 @@ updates:
       minor-and-patch: { update-types: [minor, patch] }
       security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
+    ignore:
+      # Play for Windows needs Microsoft.ML.OnnxRuntime.DirectML, whose last release is 1.24.4; the
+      # managed API, the native runtime and DirectML share one version (Directory.Packages.props).
+      # Raise all three together once a newer DirectML build exists.
+      - dependency-name: "Microsoft.ML.OnnxRuntime*"
+        versions: [">1.24.4"]
 
   # The model-conversion environments turn upstream checkpoints into the models the apps bundle. They
   # run on a developer's machine only, never ship, and are pinned on purpose (torch for coremltools,
