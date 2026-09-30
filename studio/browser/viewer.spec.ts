@@ -26,6 +26,16 @@ test("the score viewer opens a MusicXML file and renders it", async ({ page }) =
   expect(errors).toEqual([]);
 });
 
+test("Skip to main content moves focus to the page's content without leaving the page", async ({ page }) => {
+  await page.goto("/#/viewer");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main")).toBeFocused();
+  expect(new URL(page.url()).hash).toBe("#/viewer");
+  await expect(page.locator("#main h1")).toHaveText("Score viewer");
+});
+
 test("the example score that ships with Studio opens in the viewer", async ({ page }) => {
   const errors = pageErrors(page);
   await page.goto("/#/viewer?example=old-hundredth");
