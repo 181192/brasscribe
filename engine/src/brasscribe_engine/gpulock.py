@@ -20,6 +20,7 @@ import os
 import stat
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -86,10 +87,12 @@ def _open(path: Path) -> int:
 
 
 @contextmanager
-def file_lock(path: Path, poll: float = 1.0, on_blocked: Callable[[], None] | None = None) -> Iterator[float]:
+def file_lock(path: Path, poll: float = 1.0, on_blocked: Callable[[], None] | None = None,
+              cancel: threading.Event | None = None) -> Iterator[float]:
     """Hold an exclusive lock on `path`, waiting while another holder has it.
 
     Yields the seconds spent waiting. `on_blocked` is called once, only if the lock was held.
+    Raises InterruptedError if `cancel` is set while it waits.
     """
     path = Path(path)
     t0 = time.monotonic()
@@ -97,6 +100,8 @@ def file_lock(path: Path, poll: float = 1.0, on_blocked: Callable[[], None] | No
     try:
         blocked = False
         while not _try_lock(fd):
+            if cancel is not None and cancel.is_set():
+                raise InterruptedError(f"cancelled while waiting for {path}")
             if not blocked and on_blocked:
                 on_blocked()
             blocked = True

@@ -68,7 +68,8 @@ def _session(settings: Settings) -> tuple[ArtifactCache, AdapterRegistry]:
     settings.ensure()
     hashes = HashIndex(settings.cache_dir / "file-hashes.json")
     cache = ArtifactCache(settings.cache_dir, hashes)
-    adapters = AdapterRegistry(settings.adapters_dir, settings.models_dir, hashes, settings.gpu_lock)
+    adapters = AdapterRegistry(settings.adapters_dir, settings.models_dir, hashes, settings.gpu_lock,
+                               settings.adapter_timeout_s)
     return cache, adapters
 
 
