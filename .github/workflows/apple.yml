@@ -65,7 +65,7 @@ jobs:
       # Verovio is a pinned upstream commit: rebuild only when the build script changes.
       - name: Cache Verovio.xcframework
         id: verovio
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: apps/apple/Frameworks
           key: verovio-${{ runner.os }}-${{ runner.arch }}-xcode${{ env.XCODE_VERSION }}-${{ inputs.release && 'macos' || 'all' }}-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}

@@ -55,7 +55,7 @@ jobs:
       # ChoraleBricks annotations (CC-BY 4.0) read from the Zenodo archive with range
       # requests and checked against eval/fixtures/choralebricks-pins.json, plus our own
       # committed model outputs from eval/fixtures. No dataset audio is downloaded.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ci-data
           key: ci-data-${{ hashFiles('eval/fixtures/**', 'eval/brasscribe_eval/ci_data.py', 'eval/brasscribe_eval/choralebricks.py') }}
