@@ -207,6 +207,10 @@ public final class ModelDownloader {
         do {
             try fm.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         } catch { throw DownloadError.disk(error.localizedDescription) }
+        // A file without a published size changes upstream: a part left over may be of another version, so it
+        // starts afresh rather than continuing with Range.
+        let resumable = f.size > 0
+        if !resumable { try? fm.removeItem(at: part) }
         let already = bytesDone
         fetchNumber += 1
         let number = fetchNumber
@@ -218,7 +222,7 @@ public final class ModelDownloader {
         let gate = Throttle<Int64>(interval: Self.progressInterval) { [weak self] written in
             Task { @MainActor in self?.progress(already + written, fetch: number) }
         }
-        let fetch = FileFetch(request: request, part: part, configuration: configuration) { gate.offer($0) }
+        let fetch = FileFetch(request: request, part: part, configuration: configuration, resume: resumable) { gate.offer($0) }
         self.fetch = fetch
         defer { self.fetch = nil }
         log?("models: fetching \(f.url.absoluteString)")
@@ -282,8 +286,8 @@ public final class ModelDownloader {
     }
 
     /// Size, then SHA-256 or git blob id where upstream publishes them, read on a background thread with
-    /// `progress` (0...1) at most once per `interval`. A bad file is deleted; a cancelled check leaves it as it
-    /// was, so resuming checks it again.
+    /// `progress` (0...1) at most once per `interval`. A JSON file without a published checksum must at least
+    /// parse. A bad file is deleted; a cancelled check leaves it as it was, so resuming checks it again.
     nonisolated static func verify(_ part: URL, as f: ModelFile, chunk: Int = 4 << 20, interval: Duration = progressInterval,
                                    progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
         let size = Self.size(of: part) ?? -1
@@ -299,6 +303,8 @@ public final class ModelDownloader {
                 digest = nil
             }
             ok = digest == (f.sha256 ?? f.gitBlob)
+        } else if ok, f.name.hasSuffix(".json") {
+            ok = (try? Data(contentsOf: part)).flatMap { try? JSONSerialization.jsonObject(with: $0) } != nil
         }
         if !ok {
             try? FileManager.default.removeItem(at: part)
@@ -471,6 +477,8 @@ final class FileFetch: AuthStripping, URLSessionDataDelegate, @unchecked Sendabl
     private let part: URL
     private let configuration: URLSessionConfiguration
     private let onProgress: @Sendable (Int64) -> Void
+    /// Continue after what `part` already holds; false starts over.
+    private let resume: Bool
     private let lock = NSLock()
     private var session: URLSession?
     private var handle: FileHandle?
@@ -479,12 +487,14 @@ final class FileFetch: AuthStripping, URLSessionDataDelegate, @unchecked Sendabl
     private var continuation: CheckedContinuation<Void, Error>?
     private var cancelled = false
 
-    init(request: URLRequest, part: URL, configuration: URLSessionConfiguration, onProgress: @escaping @Sendable (Int64) -> Void) {
-        self.request = request; self.part = part; self.configuration = configuration; self.onProgress = onProgress
+    init(request: URLRequest, part: URL, configuration: URLSessionConfiguration, resume: Bool = true,
+         onProgress: @escaping @Sendable (Int64) -> Void) {
+        self.request = request; self.part = part; self.configuration = configuration; self.resume = resume
+        self.onProgress = onProgress
     }
 
     func run() async throws {
-        let offset = ModelDownloader.size(of: part) ?? 0
+        let offset = resume ? ModelDownloader.size(of: part) ?? 0 : 0
         var req = request
         if offset > 0 { req.setValue("bytes=\(offset)-", forHTTPHeaderField: "Range") }
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
