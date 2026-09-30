@@ -9,7 +9,7 @@
 
 use std::collections::HashMap;
 
-use brasscribe_core::model::{Note, TICKS_PER_BEAT};
+use brasscribe_core::model::{check_span, Note, TICKS_PER_BEAT};
 use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};
@@ -308,6 +308,12 @@ impl Ctx<'_> {
 pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Fingering, String> {
     inst.validate()?;
     opts.validate(inst, notes.len())?;
+    for (i, n) in notes.iter().enumerate() {
+        if !(0..=127).contains(&n.pitch) {
+            return Err(format!("note {i}: pitch {} is outside MIDI 0-127", n.pitch));
+        }
+        check_span(n.start, n.start.saturating_add(n.dur.max(0))).map_err(|e| format!("note {i}: {e}"))?;
+    }
     let bpm = opts.tempo_bpm.unwrap_or(120.0);
     let frets = i32::from(inst.frets);
     let ctx = Ctx {

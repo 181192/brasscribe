@@ -405,6 +405,8 @@ fn json_round_trip_matches_the_direct_call() {
     assert_eq!(resp.fingering.notes[0].position(), Some(Position { string: 6, fret: 0 }));
 
     assert!(solve_json(r#"{"instrument": {"preset": "banjo"}, "notes": []}"#).is_err());
+    assert!(solve_json(r#"{"instrument": {"preset": "guitar-standard"}, "notes": [{"pitch": -2147483648, "start": 0, "dur": 24}]}"#).is_err());
+    assert!(solve_json(r#"{"instrument": {"preset": "guitar-standard"}, "notes": [{"pitch": 60, "start": 9223372036854775807, "dur": 24}]}"#).is_err());
     assert!(solve_json(r#"{"instrument": {"preset": "guitar-standard"}, "notes": [], "options": {"tempo_bpm": 0}}"#).is_err());
     assert!(solve_json(r#"{"instrument": {"preset": "guitar-standard"}, "notes": [], "options": {"pins": [{"note": 3, "string": 1}]}}"#).is_err());
 }
