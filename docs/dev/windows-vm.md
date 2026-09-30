@@ -185,13 +185,16 @@ What it covers of [windows-checklist.md](windows-checklist.md):
 | | |
 |---|---|
 | VM | 8 vCPUs (`WIN_VM_CPUS`), 8 GB (`WIN_VM_MEMORY_MB`), NVMe disk, virtio network, virtio-gpu 1920 × 1080 (the virtio-win `viogpudo` driver) |
-| Disk on the host | ISO ~6 GB; base TIMING_BASE_GB GB after compaction; the overlay grows with builds (TIMING_OVERLAY_GB GB after a build and test) |
-| Cold provision | TIMING_PROVISION (ISO TIMING_ISO, Windows setup to SSH TIMING_SETUP, toolchain TIMING_TOOLCHAIN) |
-| `up` from off | TIMING_UP |
-| Cold build (fresh overlay) | TIMING_COLD_BUILD |
-| Warm build (no change) | TIMING_WARM_BUILD |
-| Warm test run | TIMING_WARM_TEST |
-| `shots default` (48 shots) | TIMING_SHOTS |
+| Disk on the host | ISO ~8 GB (it can go once the base is provisioned); base 24 GB after compaction; the overlay ~7.5 GB after builds, tests and shots |
+| Cold provision | about 95 min: Windows setup to SSH ~90 min (it reads the ISO over emulated USB at a few MB/s), toolchain 4 min, trim and compact 40 s. Downloading the ISO comes on top |
+| `up` from off | about 10 s until SSH answers |
+| Cold build (fresh overlay) | 3 min (the core DLL for both architectures, Play for both, Bandroom) |
+| Warm build (no change) | 45–55 s |
+| Warm test run | 30 s for the .NET tests, then about 5 min for the smoke tests, the Axe.Windows scans and Bandroom's screenshots |
+| `shots default` (48 shots) | 6.5 min |
+| `release` | 35 s warm |
+
+Measured on an M5 Pro Mac, with the defaults above.
 
 ## Troubleshooting
 
