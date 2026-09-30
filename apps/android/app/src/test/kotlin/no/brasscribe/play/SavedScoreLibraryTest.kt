@@ -18,14 +18,14 @@ class SavedScoreLibraryTest {
 
             assertNotNull(renamed)
             assertEquals("Rehearsal take", library.list().single().title)
-            assertEquals("<score-partwise/>", library.list().single().musicXml)
-            assertEquals("{\"title\":\"First take\"}", library.list().single().compositionJson)
+            assertEquals("<score-partwise/>", library.content(saved.id)!!.musicXml)
+            assertEquals("{\"title\":\"First take\"}", library.content(saved.id)!!.compositionJson)
             assertNull(library.rename("missing", "Unused"))
 
             val fromComputer = library.save(null, "Take", "brass-band", "<x/>", null, jobId = "run-1", evidenceJson = "{}", checked = setOf("melody:3"))
             val renamedComputer = library.rename(fromComputer.id, "Take 2")!!
             assertEquals("run-1", renamedComputer.jobId)
-            assertEquals("{}", library.list().first { it.id == fromComputer.id }.evidenceJson)
+            assertEquals("{}", library.content(fromComputer.id)!!.evidenceJson)
             assertEquals(setOf("melody:3"), library.list().first { it.id == fromComputer.id }.checked)
             // A note changed on the phone is remembered: the computer's renders are older than the score.
             val changed = library.save(fromComputer.id, "Take 2", "brass-band", "<y/>", null, jobId = "run-1", changedOnPhone = true)
@@ -40,6 +40,24 @@ class SavedScoreLibraryTest {
             assertEquals(emptyMap<String, Int>(), library.list().first { it.id == changed.id }.reviewChanges)
             library.delete(fromComputer.id)
             assertEquals(1, library.list().size)
+            assertNull(library.content(fromComputer.id))
+            assertNull(library.content("../outside"))
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun listingReadsOnlyTheDetails() {
+        val root = Files.createTempDirectory("brasscribe-library").toFile()
+        try {
+            val library = SavedScoreLibrary(root)
+            val saved = library.save(null, "Big band score", "brass-band", "<score-partwise/>", "{}", evidenceJson = "{}")
+            // A score whose files cannot be read is still listed; it is its content that fails, when opened.
+            java.io.File(root, "${saved.id}/score.musicxml").delete()
+            assertEquals(listOf("Big band score"), library.list().map { it.title })
+            assertEquals(saved.id, library.get(saved.id)?.id)
+            assertNull(library.content(saved.id))
         } finally {
             root.deleteRecursively()
         }

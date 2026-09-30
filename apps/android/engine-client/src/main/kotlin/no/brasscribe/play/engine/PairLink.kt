@@ -8,6 +8,7 @@ import java.net.URLDecoder
  * `brasscribe://pair?v=1&id=<server id>&name=<server name>&h=<ip:port>,<ip:port>&code=<code>[&fp=<SPKI sha-256>]`.
  * Only `v` and `id` are required. Without [hosts] the engine is found by mDNS; without [code] the phone
  * asks the computer to allow it instead. A [fingerprint] means the engine must be reached over pinned TLS.
+ * Addresses off the local network are dropped ([validHost]).
  */
 data class PairLink(
     val serverId: String,
@@ -43,18 +44,24 @@ data class PairLink(
 
         private fun decode(s: String): String = runCatching { URLDecoder.decode(s, Charsets.UTF_8) }.getOrDefault(s)
 
-        /** `host:port` with a port, where an IPv6 host is in brackets (`[fd00::1]:8765`). */
-        private fun validHost(h: String): Boolean {
+        /**
+         * `host:port` with a port, where an IPv6 host is in brackets (`[fd00::1]:8765`), and the host is on the
+         * local network ([LocalHosts.isLocal]): the engine runs on the user's own computer, never elsewhere.
+         */
+        fun validHost(h: String): Boolean {
             if (h.isEmpty() || h.any { it.isWhitespace() || it == '/' || it == '@' }) return false
+            val host: String
             val port = if (h.startsWith("[")) {
                 val close = h.indexOf(']')
                 if (close < 2 || h.getOrNull(close + 1) != ':') return false
+                host = h.substring(1, close)
                 h.substring(close + 2)
             } else {
                 if (h.count { it == ':' } != 1) return false
+                host = h.substringBefore(':')
                 h.substringAfter(':')
             }
-            return port.toIntOrNull()?.let { it in 1..65535 } == true
+            return port.toIntOrNull()?.let { it in 1..65535 } == true && LocalHosts.isLocal(host)
         }
     }
 }

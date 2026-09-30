@@ -103,6 +103,12 @@ fun CompanionScreen(vm: PlayViewModel) {
         when {
             pending != null -> {
                 SubHeading(stringResource(R.string.pair_link_title, vm.serverDisplayName(pending.serverName)))
+                // The name comes from the link; the address is where this phone will actually connect.
+                Text(
+                    if (pending.hosts.isEmpty()) stringResource(R.string.pair_link_address_by_name)
+                    else stringResource(R.string.pair_link_address, pending.hosts.joinToString(", ")),
+                    color = c.textMuted,
+                )
                 state?.let { Text(it, color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
                 PlainButton(stringResource(R.string.cancel), { vm.pendingLink.value = null })
             }

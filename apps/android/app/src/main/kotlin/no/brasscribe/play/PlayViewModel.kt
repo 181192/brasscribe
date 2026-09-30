@@ -5,9 +5,12 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +45,9 @@ import no.brasscribe.play.connection.ConnectionMonitor
 import no.brasscribe.play.connection.Credential
 import no.brasscribe.play.connection.CredentialStore
 import no.brasscribe.play.connection.EngineConnection
+import no.brasscribe.play.connection.mayBeSentTo
 import no.brasscribe.play.connection.ServerNames
+import no.brasscribe.play.capture.CaptureController
 import no.brasscribe.play.engine.EngineException
 import no.brasscribe.play.engine.KtorEngineApi
 import no.brasscribe.play.engine.PairLink
@@ -191,22 +196,32 @@ data class Status(
     val quiet: Boolean = false,
 )
 
-class PlayViewModel(app: Application) : AndroidViewModel(app) {
+class PlayViewModel(app: Application, private val savedState: SavedStateHandle) : AndroidViewModel(app) {
     val container = (app as PlayApplication).container
     private val res = app.resources
-    private val scoreLibrary = SavedScoreLibrary(File(app.filesDir, "scores"))
-    val savedScores = MutableStateFlow(scoreLibrary.list())
+    private val scoreLibrary = container.scoreLibrary
+    /**
+     * Saves, deletes and reads of the library, one at a time and in order, off the main thread: a save
+     * never lands after a later one, and a score is never read half-written.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val storage = Dispatchers.IO.limitedParallelism(1)
+    /** This phone's scores (their details only), read in the background. */
+    val savedScores = MutableStateFlow<List<SavedScore>>(emptyList())
     private val computerJobs = MutableStateFlow<List<no.brasscribe.play.engine.Job>>(emptyList())
     /** "Your scores": this phone's scores and the computer's latest finished ones, newest first. */
     val scores: StateFlow<List<ScoreEntry>> = kotlinx.coroutines.flow.combine(savedScores, computerJobs) { local, jobs ->
         ScoreEntry.merge(local, jobs)
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, ScoreEntry.merge(scoreLibrary.list(), emptyList()))
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
     val openingScore = MutableStateFlow<String?>(null)
     /** "Open on the music stand" from the library: the score opens straight onto the stand (the entry id). */
     val standFromLibrary = MutableStateFlow<String?>(null)
     /** The library row that gets the focus back when a stand opened from the library closes. */
     val focusEntry = MutableStateFlow<String?>(null)
-    private var currentSavedScoreId: String? = null
+    /** The saved copy of the score on screen; kept across process death, so the score can be reopened. */
+    private var currentSavedScoreId: String?
+        get() = savedState[KEY_SCORE]
+        set(v) { savedState[KEY_SCORE] = v }
 
     private val backStack = MutableStateFlow(listOf(if (container.firstRunDone) Screen.HOME else Screen.FIRST_RUN))
     val screen: StateFlow<List<Screen>> = backStack.asStateFlow()
@@ -261,7 +276,8 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     private var job: Job? = null
     private var engineJobId: String? = null
-    private var renderedScoreAudio: PcmAudio? = null
+    /** The engine's render of a score, by the job that made it: another score never plays it. */
+    private var renderedScoreAudio: Pair<String, PcmAudio>? = null
     /** Level-matching of "Listen to this bar": the recording and the engine's rendered score, each measured whole. */
     private val recordingLevel = no.brasscribe.play.playback.LevelMatch()
     private val renderedLevel = no.brasscribe.play.playback.LevelMatch()
@@ -296,6 +312,64 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 output.value = synced
                 lastApplied = synced
             }
+        }
+        restore()
+        // Where the user is, and what they brought in, outlive the process (the system may end it in the background).
+        viewModelScope.launch { backStack.collect { stack -> savedState[KEY_STACK] = ArrayList(stack.map { it.name }) } }
+        viewModelScope.launch {
+            var previous: File? = null
+            source.collect { s ->
+                savedState[KEY_SOURCE] = s?.let { SavedSource.of(it).encode() }
+                // A recording or import that is no longer the source is not needed again: its copy goes.
+                val old = previous
+                previous = s?.file
+                if (old != null && old != s?.file) withContext(Dispatchers.IO) { deleteCopy(old) }
+            }
+        }
+    }
+
+    /** Where recordings and imported copies are kept while they are the source. */
+    private val takesDir get() = File(getApplication<Application>().cacheDir, "takes")
+
+    /** Deletes [file] when it is one of the app's own copies (a take or an import), never anything else. */
+    private fun deleteCopy(file: File) {
+        if (file.parentFile?.canonicalFile == takesDir.canonicalFile && file != CaptureController.activeFile()) file.delete()
+    }
+
+    /**
+     * After the process was ended in the background: back to the screen the user was on, with the source
+     * they brought in and the score they had open; a step that cannot be resumed (recording, making the
+     * score) goes back to the one before it. Then copies nothing refers to any more are cleared away.
+     */
+    private fun restore() {
+        val names = savedState.get<ArrayList<String>>(KEY_STACK)
+        val restoredSource = savedState.get<String>(KEY_SOURCE)?.let(SavedSource::decode)
+        val scoreId = currentSavedScoreId
+        if (names != null) {
+            val restored = names.mapNotNull { n -> Screen.entries.firstOrNull { it.name == n } }
+            val sourceBack = restoredSource?.takeIf { it.file == null || it.file.isFile }
+            source.value = sourceBack?.toSource()
+            val plain = RestoredStack.plain(restored, hasSource = sourceBack != null)
+            backStack.value = plain
+            if (scoreId != null && RestoredStack.needsScore(restored)) {
+                viewModelScope.launch {
+                    val saved = withContext(storage) { scoreLibrary.get(scoreId)?.let { it to scoreLibrary.content(it.id) } }
+                    val content = saved?.second ?: return@launch
+                    if (backStack.value != plain) return@launch
+                    showSaved(saved.first, content)
+                    backStack.value = RestoredStack.withScore(restored, hasSource = sourceBack != null)
+                }
+            }
+        }
+        viewModelScope.launch {
+            val keep = source.value?.file
+            val list = withContext(storage) {
+                // Takes and imports from before, and the rendered scores fetched for "Listen to this bar".
+                takesDir.listFiles()?.filter { it != keep && it != CaptureController.activeFile() }?.forEach { it.delete() }
+                getApplication<Application>().cacheDir.listFiles { f -> f.name.startsWith("score-") && f.name.endsWith(".mp3") }?.forEach { it.delete() }
+                scoreLibrary.list()
+            }
+            savedScores.value = list
         }
     }
 
@@ -402,12 +476,13 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     fun importUri(uri: Uri) {
         val ctx = getApplication<Application>()
-        val name = displayName(uri, "recording")
-        if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return }
         busy.value = true
-        importProgress.value = 0f
-        say(R.string.reading_file, name)
         viewModelScope.launch {
+            // Asking the provider for the name can block on its process: not on the main thread.
+            val name = withContext(Dispatchers.IO) { displayName(uri, "recording") }
+            if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return@launch }
+            importProgress.value = 0f
+            say(R.string.reading_file, name)
             try {
                 // Never the whole file in memory: a video's sound is taken out on disk, the PCM decoded a buffer at a time.
                 val imported = withContext(Dispatchers.IO) {
@@ -439,12 +514,16 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun displayName(uri: Uri, fallback: String): String =
-        getApplication<Application>().contentResolver
-            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
-            ?: uri.lastPathSegment ?: fallback
+        runCatching {
+            getApplication<Application>().contentResolver
+                .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+        }.getOrNull() ?: uri.lastPathSegment ?: fallback
 
-    fun openScoreUri(uri: Uri) = openScore(uri, displayName(uri, "score"))
+    fun openScoreUri(uri: Uri) {
+        busy.value = true
+        viewModelScope.launch { openScore(uri, withContext(Dispatchers.IO) { displayName(uri, "score") }) }
+    }
 
     /**
      * Opens a MusicXML score with no transcription behind it: straight to the score, so Play is also
@@ -550,8 +629,11 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         // A drummer's solo take is no drum part: refused before anything is transcribed (the screen says so too).
         if (p == Profile.SOLO && percussionSeat(container.seat, container.seats)) { say(R.string.percussion_solo_refused); return }
         navigate(Screen.TRANSCRIBE)
-        job?.cancel()
+        val previous = job
+        previous?.cancel()
         job = viewModelScope.launch {
+            // A run that was cancelled stops at its next step; the new one starts after it, never beside it.
+            previous?.join()
             try {
                 val r = if (where.value == Where.DEVICE && canTranscribeOnDevice()) transcribeOnDevice(s) else transcribeWithEngine(s, p)
                 val ignored = seatIgnored(r)
@@ -588,14 +670,18 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         transcribe.value = TranscribeState(true, Step.DECODE, 0.0, 0, steps.size, estimateDeviceSeconds(audio), res.getString(R.string.transcribe_where_device), steps = steps)
         val title = ScoreTitles.withoutExtension(s.name)
         return withContext(Dispatchers.Default) {
+            // The models run as plain blocking calls: Cancel is checked between their stages.
+            val running = coroutineContext.job
             // The core takes the WAV as bytes and the take keeps them for re-arranging, so only a take that fits.
             val wav = s.file?.takeIf { it.extension.equals("wav", true) && it.length() <= MAX_CORE_WAV_BYTES }?.readBytes()
             container.openSoloPipeline().use { pipeline ->
                 val (take, stats) = pipeline.pipeline.listen(audio.samples, audio.sampleRate, title, wav) { stage ->
+                    running.ensureActive()
                     val step = steps[stage.ordinal.coerceAtMost(steps.size - 1)]
                     transcribe.update { it.copy(step = step, stepIndex = stage.ordinal, fraction = stage.ordinal / steps.size.toDouble(),
                         etaSeconds = ((1 - stage.ordinal / steps.size.toDouble()) * estimateDeviceSeconds(audio)).toInt()) }
                 }
+                running.ensureActive()
                 transcribe.update { it.copy(step = Step.ARRANGE, stepIndex = 4, fraction = 0.9) }
                 val a0 = System.nanoTime()
                 // A solo take has no harmony for a quartet: the full band then, as the Output screen shows it.
@@ -767,17 +853,32 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---- Review ---------------------------------------------------------------------------------------
 
+    /**
+     * Saves [r] as the score on screen. What it is saved with is taken now; the writing happens off the
+     * main thread, in order with every other save.
+     */
     private fun saveCurrentScore(r: TranscriptionResult, title: String? = null) {
         val scoreTitle = title?.takeIf(String::isNotBlank)
             ?: r.composition?.title?.takeIf(String::isNotBlank)
             ?: source.value?.name?.let(ScoreTitles::withoutExtension)
             ?: res.getString(R.string.score_title)
-        val saved = scoreLibrary.save(currentSavedScoreId, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
-            jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
-            checked = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet(), part = myPartOverride.value, noticeSeen = mappedNoticeSeen.value, changedOnPhone = r.changedOnPhone,
-            reviewChanges = reviewChanges.value)
-        currentSavedScoreId = saved.id
-        savedScores.value = scoreLibrary.list()
+        // The id is fixed before the write, so a second save of a new score does not make a second copy.
+        val id = currentSavedScoreId ?: java.util.UUID.randomUUID().toString().also { currentSavedScoreId = it }
+        val checkedNow = checked.value.flatMap { (voice, events) -> events.map { "$voice:$it" } }.toSet()
+        val part = myPartOverride.value
+        val noticeSeen = mappedNoticeSeen.value
+        val changes = reviewChanges.value
+        viewModelScope.launch {
+            val list = withContext(storage) {
+                runCatching {
+                    scoreLibrary.save(id, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
+                        jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
+                        checked = checkedNow, part = part, noticeSeen = noticeSeen, changedOnPhone = r.changedOnPhone, reviewChanges = changes)
+                }.onFailure { android.util.Log.w(TAG, "score not saved", it) }
+                scoreLibrary.list()
+            }
+            savedScores.value = list
+        }
     }
 
     /** Fetch the computer's finished scores; keeps the phone's list when the computer can't be reached. */
@@ -830,9 +931,10 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteEntry(entry: ScoreEntry) {
         entry.saved?.let { saved ->
-            scoreLibrary.delete(saved.id)
             if (currentSavedScoreId == saved.id) currentSavedScoreId = null
-            savedScores.value = scoreLibrary.list()
+            viewModelScope.launch {
+                savedScores.value = withContext(storage) { scoreLibrary.delete(saved.id); scoreLibrary.list() }
+            }
             return
         }
         val jobId = entry.jobId ?: return
@@ -842,20 +944,37 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Opens a score from "Your scores": it is read (off the main thread) and then shown. */
     fun openSavedScore(saved: SavedScore, review: Boolean = false) {
+        openingScore.value = saved.id
+        viewModelScope.launch {
+            try {
+                // Its latest details too: a save may have been waiting when the list was drawn.
+                val (latest, content) = withContext(storage) { (scoreLibrary.get(saved.id) ?: saved) to scoreLibrary.content(saved.id) }
+                if (content == null) { showProblem(Problem.FILE_UNREADABLE, saved.title); return@launch }
+                showSaved(latest, content)
+                backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
+            } finally {
+                openingScore.value = null
+            }
+        }
+    }
+
+    /** Makes [saved] the score on screen. */
+    private fun showSaved(saved: SavedScore, content: SavedScoreContent) {
         currentSavedScoreId = saved.id
         myPartOverride.value = saved.part
         mappedNoticeSeen.value = saved.noticeSeen
         source.value = Source(saved.title, SourceKind.SCORE, 0.0)
         reviewChanges.value = saved.reviewChanges
         result.value = TranscriptionResult(
-            composition = saved.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
-            musicXml = saved.musicXml,
+            composition = content.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },
+            musicXml = content.musicXml,
             profile = Profile.entries.firstOrNull { it.id == saved.profile } ?: Profile.BRASS_BAND,
             onDevice = saved.jobId == null,
             jobId = saved.jobId,
-            compositionJson = saved.compositionJson,
-            evidence = saved.evidenceJson?.let {
+            compositionJson = content.compositionJson,
+            evidence = content.evidenceJson?.let {
                 runCatching { no.brasscribe.play.model.BrasscribeJson.decodeFromString(no.brasscribe.play.engine.Evidence.serializer(), it) }.getOrNull()
             },
             changedOnPhone = saved.changedOnPhone,
@@ -863,26 +982,31 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         checked.value = saved.checked.mapNotNull { key ->
             key.substringAfterLast(':').toIntOrNull()?.let { key.substringBeforeLast(':') to it }
         }.groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
-        backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
     }
 
-    fun renameSavedScore(id: String, title: String): Boolean {
+    private fun renameSavedScore(id: String, title: String) {
         val cleaned = title.trim()
-        if (cleaned.isEmpty()) return false
-        val saved = scoreLibrary.list().firstOrNull { it.id == id } ?: return false
-        return runCatching {
-            val composition = saved.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
-            val compositionJson = composition?.let(container.core::encodeComposition)
-            val xml = MusicXmlTitleEditor.replaceTitle(saved.musicXml, cleaned)
-            scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, saved.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone, saved.reviewChanges)
-            savedScores.value = scoreLibrary.list()
-            saved.jobId?.let { job -> viewModelScope.launch { runCatching { container.engine()?.renameRun(job, cleaned) } } }
+        if (cleaned.isEmpty()) return
+        viewModelScope.launch {
+            val renamed = withContext(storage) {
+                runCatching {
+                    val saved = scoreLibrary.get(id) ?: return@runCatching null
+                    val content = scoreLibrary.content(id) ?: return@runCatching null
+                    val composition = content.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
+                    val compositionJson = composition?.let(container.core::encodeComposition)
+                    val xml = MusicXmlTitleEditor.replaceTitle(content.musicXml, cleaned)
+                    scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, content.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone, saved.reviewChanges)
+                    Triple(saved.jobId, composition to compositionJson, xml)
+                }.onFailure { android.util.Log.w(TAG, "score not renamed", it) }.getOrNull()
+            }
+            savedScores.value = withContext(storage) { scoreLibrary.list() }
+            val (job, composition, xml) = renamed ?: return@launch
+            job?.let { runCatching { container.engine()?.renameRun(it, cleaned) } }
             if (currentSavedScoreId == id) {
-                result.value = result.value?.copy(composition = composition, musicXml = xml, compositionJson = compositionJson)
+                result.value = result.value?.copy(composition = composition.first, musicXml = xml, compositionJson = composition.second)
                 source.value = source.value?.copy(name = cleaned)
             }
-            true
-        }.getOrDefault(false)
+        }
     }
 
     /**
@@ -918,22 +1042,42 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
         return (arranged?.first ?: updatedComposition) to xml
     }
 
-    fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
-        val current = result.value ?: return false
-        val (finalComposition, xml) = changedScore(current, voiceId, start, pitch, semitones) ?: return false
-        val newPitch = (pitch + semitones).coerceIn(0, 127)
-        // The evidence follows the note: the musician's pitch is now the written one each transcriber is compared to.
-        val evidence = current.evidence?.let { e ->
-            e.copy(notes = e.notes.map { n ->
-                if (n.voice == voiceId && n.start == start && n.pitch == pitch)
-                    n.copy(pitch = newPitch, models = n.models.map { it.copy(agrees = it.pitch == newPitch) }) else n
-            })
+    /** A note is being changed: the score is arranged again in the background, and Save waits for it. */
+    val changingNote = MutableStateFlow(false)
+
+    /**
+     * Moves the note and arranges the score again, off the main thread (the core's arranger takes a
+     * moment on a full band). Once done, and only if the score on screen is still the one it started
+     * from, [changes] become the Review changes, the score is shown and saved, and [onDone] hears true.
+     */
+    private fun correctNote(voiceId: String, start: Int, pitch: Int, semitones: Int, changes: Map<String, Int>, onDone: (Boolean) -> Unit) {
+        val current = result.value ?: return onDone(false)
+        if (changingNote.value) return onDone(false)
+        changingNote.value = true
+        viewModelScope.launch {
+            val updated = try {
+                withContext(Dispatchers.Default) {
+                    val (finalComposition, xml) = changedScore(current, voiceId, start, pitch, semitones) ?: return@withContext null
+                    val newPitch = (pitch + semitones).coerceIn(0, 127)
+                    // The evidence follows the note: the musician's pitch is now the written one each transcriber is compared to.
+                    val evidence = current.evidence?.let { e ->
+                        e.copy(notes = e.notes.map { n ->
+                            if (n.voice == voiceId && n.start == start && n.pitch == pitch)
+                                n.copy(pitch = newPitch, models = n.models.map { it.copy(agrees = it.pitch == newPitch) }) else n
+                        })
+                    }
+                    current.copy(composition = finalComposition, musicXml = xml,
+                        compositionJson = container.core.encodeComposition(finalComposition), evidence = evidence, changedOnPhone = true)
+                }
+            } finally {
+                changingNote.value = false
+            }
+            if (updated == null || result.value !== current) { onDone(false); return@launch }
+            reviewChanges.value = changes
+            result.value = updated
+            saveCurrentScore(updated)
+            onDone(true)
         }
-        val updated = current.copy(composition = finalComposition, musicXml = xml,
-            compositionJson = container.core.encodeComposition(finalComposition), evidence = evidence, changedOnPhone = true)
-        result.value = updated
-        saveCurrentScore(updated)
-        return true
     }
 
     /**
@@ -967,29 +1111,28 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
      * Review's Save: the note at [start] moves from [pitch] by [semitones], is written to the score
      * and stays open. Moving it back to what Brasscribe wrote clears the change.
      */
-    fun changeReviewNote(voiceId: String, start: Int, pitch: Int, semitones: Int): Boolean {
-        if (semitones == 0) return false
+    fun changeReviewNote(voiceId: String, start: Int, pitch: Int, semitones: Int, onDone: (Boolean) -> Unit = {}) {
+        if (semitones == 0) return onDone(false)
         val key = changeKey(voiceId, start)
         val was = reviewChanges.value[key] ?: pitch
         stopListening(announce = false)
-        val before = reviewChanges.value
         val now = (pitch + semitones).coerceIn(0, 127)
-        // Set first, so the score is saved with it.
-        reviewChanges.update { if (now == was) it - key else it + (key to was) }
-        if (!correctNote(voiceId, start, pitch, semitones)) { reviewChanges.value = before; return false }
-        return true
+        val changes = reviewChanges.value.let { if (now == was) it - key else it + (key to was) }
+        correctNote(voiceId, start, pitch, semitones, changes, onDone)
     }
 
     /** Review's "Undo change": the note at [start], now [pitch], goes back to what Brasscribe wrote. */
-    fun undoReviewChange(voiceId: String, start: Int, pitch: Int): Boolean {
+    fun undoReviewChange(voiceId: String, start: Int, pitch: Int, onDone: (Boolean) -> Unit = {}) {
         val key = changeKey(voiceId, start)
-        val was = reviewChanges.value[key] ?: return false
+        val was = reviewChanges.value[key] ?: return onDone(false)
         stopListening(announce = false)
-        val before = reviewChanges.value
-        reviewChanges.update { it - key }
-        if (was == pitch) { result.value?.let(::saveCurrentScore); return true }
-        if (!correctNote(voiceId, start, pitch, was - pitch)) { reviewChanges.value = before; return false }
-        return true
+        val changes = reviewChanges.value - key
+        if (was == pitch) {
+            reviewChanges.value = changes
+            result.value?.let(::saveCurrentScore)
+            return onDone(true)
+        }
+        correctNote(voiceId, start, pitch, was - pitch, changes, onDone)
     }
 
     /** Keeps several notes at once ("Keep the rest of this bar"). */
@@ -1031,13 +1174,19 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { android.util.Log.w("BrasscribePlay", "bar $bar not rendered on the phone", it) }.getOrNull()
         }
         val jobId = r.jobId ?: return null
-        val rendered = renderedScoreAudio ?: withContext(Dispatchers.IO) {
-            runCatching {
-                val bytes = container.engine()?.renderedAudio(jobId) ?: return@runCatching null
-                val f = File(getApplication<Application>().cacheDir, "score-$jobId.mp3").apply { writeBytes(bytes) }
-                AudioDecoder.decode(getApplication(), Uri.fromFile(f)).audio
-            }.getOrNull()
-        }?.also { renderedScoreAudio = it } ?: return null
+        val rendered = renderedScoreAudio?.takeIf { it.first == jobId }?.second ?: withContext(Dispatchers.IO) {
+            val f = File(getApplication<Application>().cacheDir, "score-$jobId.mp3")
+            try {
+                runCatching {
+                    val bytes = container.engine()?.renderedAudio(jobId) ?: return@runCatching null
+                    f.writeBytes(bytes)
+                    AudioDecoder.decode(getApplication(), Uri.fromFile(f)).audio
+                }.getOrNull()
+            } finally {
+                // Only needed to decode it: the samples are kept, not the file.
+                f.delete()
+            }
+        }?.also { renderedScoreAudio = jobId to it } ?: return null
         // The rendered score starts at bar 1 and runs at the score's tempo.
         val comp = r.composition ?: return null
         val secondsPerTick = 60.0 / comp.bpm / comp.ticksPerBeat
@@ -1156,10 +1305,16 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
      */
     private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.brasscribe.play.engine.Health, code: String): Boolean {
         val store = container.credentials
-        if (!health.authRequired) { connected(url, health.serverId, health.serverName); return true }
+        // Only this phone itself or the emulator's host is let in without pairing; any other address that
+        // says so pairs all the same.
+        if (!health.authRequired && no.brasscribe.play.engine.LocalHosts.hostOf(url)?.let(no.brasscribe.play.engine.LocalHosts::isTrusted) == true) {
+            connected(url, health.serverId, health.serverName)
+            return true
+        }
         // A token from an earlier version belongs to the address it was used with.
         store.get(CredentialStore.LEGACY_ID)?.takeIf { it.lastAddress == url }?.let { store.adopt(health.serverId, health.serverName) }
-        val held = store.get(health.serverId)
+        // A credential goes only to the address it was paired at: at another one, this phone pairs again.
+        val held = store.get(health.serverId)?.takeIf { it.mayBeSentTo(url) }
         if (held != null) {
             client.token = held.token
             val valid = try { client.thisDevice(); true } catch (e: EngineException) { if (e.status == 401) false else throw e }
@@ -1228,7 +1383,12 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
                 while (System.currentTimeMillis() < until) {
                     delay(ASK_POLL_MS)
                     val r = try { client.pollPairingRequest(info.requestId) } catch (e: EngineException) {
-                        if (e.status == 404) break else throw e
+                        if (e.status == 404) break
+                        if (e.status == 0) continue else throw e
+                    } catch (e: java.io.IOException) {
+                        // A moment without Wi-Fi does not end the wait: the computer is asked again next time.
+                        android.util.Log.i(TAG, "pairing request poll: $e")
+                        continue
                     }
                     when (r.status) {
                         "approved" -> {
@@ -1329,6 +1489,9 @@ class PlayViewModel(app: Application) : AndroidViewModel(app) {
             }
             return out.toByteArray()
         }
+        private const val KEY_STACK = "stack"
+        private const val KEY_SOURCE = "source"
+        private const val KEY_SCORE = "score"
         const val ASK_POLL_MS = 2_000L
         /** The engine forgets a pairing request after two minutes. */
         const val ASK_TIMEOUT_MS = 125_000L

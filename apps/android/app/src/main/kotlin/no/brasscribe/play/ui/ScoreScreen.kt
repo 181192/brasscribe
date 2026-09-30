@@ -118,10 +118,10 @@ fun ScoreScreen(vm: PlayViewModel) {
     val reducedMotion = remember {
         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     }
+    // Only the view is made here; the SoundFont is found, and the score read, in the background.
     val controller = remember(r) {
         val ct = vm.container
-        ScoreController(context, reducedMotion, ct.core, ct.bandSoundMap, ct.bandSoundFont(),
-            r.compositionJsonFor(ct.core)).also { vm.scoreController = it }
+        ScoreController(context, reducedMotion, ct.core, ct.bandSoundMap, compositionJson = { r.compositionJsonFor(ct.core) })
     }
     val st by controller.state.collectAsState()
     var textView by rememberSaveable { mutableStateOf(false) }
@@ -142,6 +142,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         (options.keyShift - r.appliedTranspose).takeIf { it != 0 }?.let { controller.setKeyShift(it) }
     }
     DisposableEffect(controller) {
+        vm.scoreController = controller
         onDispose {
             // Export needs the score's MIDI after this screen has gone, never the synth with the SoundFont.
             vm.scoreMidi = controller.midiSource()
@@ -159,7 +160,10 @@ fun ScoreScreen(vm: PlayViewModel) {
     val your = remember(st.parts, r, override, vm.container.seat) { vm.yourPart(st.parts, r) }
     // Mute my part mutes your part; with no part of your own ("I conduct or listen") it is not offered.
     val myPart = your.index
-    val sources = remember(r) { vm.partSources(r) }
+    // Asked of the core off the main thread: a full band's Composition takes a moment to encode and read.
+    val sources by androidx.compose.runtime.produceState(emptyMap<String, no.brasscribe.play.model.PartSource>(), r) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { vm.partSources(r) }
+    }
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
     val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition?.title.orEmpty() }, shownText, st.bar, st.totalBars)
     val nextBar = stringResource(R.string.action_next_bar)
@@ -167,7 +171,13 @@ fun ScoreScreen(vm: PlayViewModel) {
     val nextPart = stringResource(R.string.action_next_part)
     val prevPart = stringResource(R.string.action_prev_part)
     val playBar = stringResource(R.string.action_play_bar)
-    val toCheck = remember(r, checkedMap) { r.composition?.let { itemsToCheck(it, checkedMap, vm.container.core) } ?: 0 }
+    // Kept across a change (no flash of nothing) while the new count is worked out in the background.
+    var toCheck by remember { mutableStateOf(0) }
+    LaunchedEffect(r, checkedMap) {
+        toCheck = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            r.composition?.let { itemsToCheck(it, checkedMap, vm.container.core) } ?: 0
+        }
+    }
     val grouped = r.composition?.review?.isNotEmpty() == true
     // The part on screen: where it came from, and when it is yours in a lineup without your seat, which part it is.
     val shownIndex = st.shown.singleOrNull()
@@ -659,7 +669,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                 }
                 InfoNote(stringResource(R.string.written_tip))
             }
-            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont || (st.loaded && !st.basicTier)) { on -> controller.setRealistic(on) } }
+            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont || (st.loaded && !st.basicTier), st.realisticLoading) { on -> controller.setRealistic(on) } }
         null -> Unit
     }
 }
@@ -814,7 +824,7 @@ private fun LoopControl(total: Int, loop: IntRange?, onSet: (Int, Int) -> Unit, 
 }
 
 @Composable
-private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, bandSoundFont: Boolean, onChange: (Boolean) -> Boolean) {
+private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, bandSoundFont: Boolean, loading: Boolean, onChange: (Boolean) -> Boolean) {
     val available = RealisticSynth.available
     val c = BrasscribeTheme.colors
     SubHeading(stringResource(R.string.sound))
@@ -824,6 +834,7 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
             stringResource(R.string.sound_realistic),
             when {
                 !available -> stringResource(R.string.sound_realistic_unavailable)
+                loading -> stringResource(R.string.sound_realistic_loading)
                 realistic && packParts > 0 -> pluralStringResource(R.plurals.sound_pack_parts, packParts, packParts) +
                     if (humanized) " " + stringResource(R.string.sound_humanized) else ""
                 else -> stringResource(R.string.sound_realistic_test_tone)

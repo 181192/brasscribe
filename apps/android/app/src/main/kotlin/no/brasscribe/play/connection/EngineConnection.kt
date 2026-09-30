@@ -3,6 +3,7 @@ package no.brasscribe.play.connection
 import no.brasscribe.play.AppContainer
 import no.brasscribe.play.engine.EngineException
 import no.brasscribe.play.engine.KtorEngineApi
+import no.brasscribe.play.engine.LocalHosts
 
 /**
  * [ConnectionHost] over the app's settings, encrypted credentials and the engine API. The heartbeat
@@ -29,8 +30,9 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
             }
             if (settings.token == null) {
                 // A trusted client (the emulator's host alias, loopback) has no credential: health is the heartbeat.
-                client.health()
-                return Check.Ok()
+                // Anywhere else no credential means pairing again (a restored backup, a reset Keystore), not "connected".
+                val h = client.health()
+                return noCredential(h.authRequired, LocalHosts.hostOf(url)?.let(LocalHosts::isTrusted) == true, h.serverId == settings.serverId)
             }
             return Check.Ok(client.thisDevice().rotateAfter)
         } catch (e: EngineException) {
@@ -48,6 +50,18 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
             return Check.Unreachable
         } finally {
             if (!current) client.close()
+        }
+    }
+
+    companion object {
+        /**
+         * The heartbeat's answer when this phone holds no credential: connected only where the engine lets it
+         * in without one; else pair again, when it is the paired engine that asks for one.
+         */
+        fun noCredential(authRequired: Boolean, trustedHost: Boolean, sameServer: Boolean): Check = when {
+            !authRequired && trustedHost -> Check.Ok()
+            sameServer -> Check.Unauthorized
+            else -> Check.Unreachable
         }
     }
 

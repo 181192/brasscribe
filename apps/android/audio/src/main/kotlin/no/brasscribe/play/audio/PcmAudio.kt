@@ -21,39 +21,93 @@ class PcmAudio(val samples: FloatArray, val sampleRate: Int) {
     }
 }
 
+/** Where a [WavWriter]'s bytes go: the file on disk, or a stand-in in tests (a disk that fills up). */
+interface WavOutput : AutoCloseable {
+    /** Appends; may write part of [len] before it throws (a full disk). */
+    fun append(bytes: ByteArray, off: Int, len: Int)
+    /** Bytes in the file now, header included. */
+    val length: Long
+    fun truncate(length: Long)
+    /** Writes the 44-byte header over the start of the file (it never needs new space). */
+    fun writeHeader(header: ByteArray)
+}
+
+private class FileWavOutput(file: File) : WavOutput {
+    private val raf = RandomAccessFile(file, "rw").apply { setLength(0); write(ByteArray(WavFile.HEADER_BYTES.toInt())) }
+    override fun append(bytes: ByteArray, off: Int, len: Int) = raf.write(bytes, off, len)
+    override val length: Long get() = raf.length()
+    override fun truncate(length: Long) = raf.setLength(length)
+    override fun writeHeader(header: ByteArray) { raf.seek(0); raf.write(header) }
+    override fun close() = raf.close()
+}
+
 /**
  * Writes a mono 16-bit WAV to disk a buffer at a time; the header is patched with the sizes on
  * [close]. [sampleRate] may change before the first sample (a decoder's real output rate).
+ *
+ * A write that fails (the disk is full) throws, and the buffer it held is dropped. [close] still
+ * writes a header for the samples that reached the disk and closes the file, so what was recorded
+ * up to then stays a readable WAV.
  */
-class WavWriter(private val file: File, var sampleRate: Int) : AutoCloseable {
-    private val raf = RandomAccessFile(file, "rw").apply { setLength(0); write(ByteArray(44)) }
+class WavWriter(private val out: WavOutput, var sampleRate: Int) : AutoCloseable {
+    constructor(file: File, sampleRate: Int) : this(FileWavOutput(file), sampleRate)
+
     private val buf = ByteBuffer.allocate(1 shl 16).order(ByteOrder.LITTLE_ENDIAN)
-    var samples = 0L
-        private set
+    private var failed = false
+    private var closed = false
+
+    private var closedSamples = 0L
+
+    /** Whole samples in the file (a write cut short can leave half of one). */
+    val samples: Long get() = if (closed) closedSamples else (out.length - WavFile.HEADER_BYTES).coerceAtLeast(0) / 2
 
     fun write(v: Float) {
+        if (failed) throw java.io.IOException("an earlier write to the WAV failed")
         buf.putShort((v.coerceIn(-1f, 1f) * 32767f).roundToInt().toShort())
-        samples++
         if (!buf.hasRemaining()) flush()
     }
 
     private fun flush() {
-        raf.write(buf.array(), 0, buf.position())
-        buf.clear()
+        if (buf.position() == 0) return
+        try {
+            out.append(buf.array(), 0, buf.position())
+        } catch (e: java.io.IOException) {
+            failed = true
+            throw e
+        } finally {
+            buf.clear()
+        }
     }
 
     override fun close() {
-        flush()
-        val data = samples * 2
-        require(data + 36 <= 0xFFFFFFFFL) { "WAV file larger than 4 GB" }
-        raf.seek(0)
-        raf.write(WavFile.header(sampleRate, data.toInt()))
-        raf.close()
+        if (closed) return
+        var error: Throwable? = null
+        fun keep(e: Throwable) { error?.addSuppressed(e) ?: run { error = e } }
+        try {
+            if (!failed) flush()
+        } catch (e: java.io.IOException) {
+            keep(e)
+        }
+        closedSamples = runCatching { samples }.getOrDefault(0L)
+        closed = true
+        try {
+            val data = closedSamples * 2
+            if (out.length != WavFile.HEADER_BYTES + data) out.truncate(WavFile.HEADER_BYTES + data)
+            require(data + 36 <= 0xFFFFFFFFL) { "WAV file larger than 4 GB" }
+            out.writeHeader(WavFile.header(sampleRate, data.toInt()))
+        } catch (e: Throwable) {
+            keep(e)
+        } finally {
+            try { out.close() } catch (e: Throwable) { keep(e) }
+        }
+        error?.let { throw it }
     }
 }
 
 /** 16-bit PCM WAV reading and writing (mono out; any channel count in, mixed to mono). */
 object WavFile {
+    internal const val HEADER_BYTES = 44L
+
     internal fun header(sampleRate: Int, dataBytes: Int): ByteArray = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN).apply {
         put("RIFF".toByteArray()); putInt(36 + dataBytes); put("WAVE".toByteArray())
         put("fmt ".toByteArray()); putInt(16); putShort(1); putShort(1); putInt(sampleRate)

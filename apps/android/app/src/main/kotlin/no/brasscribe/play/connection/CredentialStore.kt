@@ -30,6 +30,15 @@ data class Credential(
 )
 
 /**
+ * The credential is sent only to the host it was paired at (or where its computer was last found):
+ * never to another address, even one that answers with the same server id.
+ */
+fun Credential.mayBeSentTo(url: String): Boolean {
+    val recorded = no.brasscribe.play.engine.LocalHosts.hostOf(lastAddress) ?: return false
+    return no.brasscribe.play.engine.LocalHosts.hostOf(url) == recorded
+}
+
+/**
  * Per-device credentials keyed by the engine's server id, encrypted with [cipher] before they reach
  * [store]. A record that no longer decrypts (a restored backup, a reset Keystore) is dropped: the phone
  * then pairs again, which is the only way back anyway.

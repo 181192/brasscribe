@@ -39,44 +39,34 @@ struct Event {
     long long atFrame;  // absolute output frame; <= now plays at the start of the next block
 };
 
-class Player : public oboe::AudioStreamDataCallback {
+class Player : public oboe::AudioStreamDataCallback, public oboe::AudioStreamErrorCallback {
 public:
     ~Player() { close(); }
 
     bool open(int sampleRate) {
-        close();
-        oboe::AudioStreamBuilder b;
-        b.setDirection(oboe::Direction::Output)
-            ->setPerformanceMode(oboe::PerformanceMode::None)
-            ->setSharingMode(oboe::SharingMode::Shared)
-            ->setFormat(oboe::AudioFormat::Float)
-            ->setChannelCount(oboe::ChannelCount::Stereo)
-            ->setUsage(oboe::Usage::Media)
-            ->setContentType(oboe::ContentType::Music)
-            ->setDataCallback(this);
-        if (sampleRate > 0) b.setSampleRate(sampleRate);
-        if (b.openStream(stream_) != oboe::Result::OK) return false;
-        rate_ = stream_->getSampleRate();
-        const int burst = stream_->getFramesPerBurst();
-        if (burst > 0) stream_->setBufferSizeInFrames(std::min(stream_->getBufferCapacityInFrames(), burst * kBufferBursts));
-        __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "stream %d Hz, burst %d, buffer %d frames", rate_, burst,
-                            stream_->getBufferSizeInFrames());
-        {
-            std::lock_guard<std::mutex> g(mutex_);
-            for (auto& s : synths_) if (s) configure(s);
-        }
-        return stream_->requestStart() == oboe::Result::OK;
+        std::lock_guard<std::mutex> l(lifecycle_);
+        closeLocked();
+        requestedRate_ = sampleRate;
+        wanted_ = true;
+        return openLocked();
     }
 
     void close() {
-        if (stream_) {
-            auto xruns = stream_->getXRunCount();
-            if (xruns && xruns.value() > 0)
-                __android_log_print(ANDROID_LOG_WARN, LOG_TAG, "stream closed after %d underruns", xruns.value());
-            stream_->requestStop();
-            stream_->close();
-            stream_.reset();
-        }
+        std::lock_guard<std::mutex> l(lifecycle_);
+        wanted_ = false;
+        closeLocked();
+    }
+
+    // A headset or Bluetooth device came or went: Oboe closed the stream. The recommended way back is a
+    // new stream on the new device; without it the realistic tier would go silent until the score is
+    // opened again. A close or open from the app at the same moment wins (it holds the lock).
+    void onErrorAfterClose(oboe::AudioStream* stream, oboe::Result error) override {
+        __android_log_print(ANDROID_LOG_WARN, LOG_TAG, "stream closed: %s", oboe::convertToText(error));
+        if (error != oboe::Result::ErrorDisconnected) return;
+        std::unique_lock<std::mutex> l(lifecycle_, std::try_to_lock);
+        if (!l.owns_lock() || !wanted_ || stream_.get() != stream) return;
+        stream_.reset();
+        if (!openLocked()) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "could not reopen the output after a device change");
     }
 
     sfizz_synth_t* synth(int ch) {
@@ -108,16 +98,33 @@ public:
         return (ch >= 0 && ch < kChannels && synths_[ch]) ? sfizz_get_num_regions(synths_[ch]) : 0;
     }
 
+    // An event outside the synth's channels or MIDI's notes is dropped here: the render indexes by both.
+    static bool valid(int channel, int note) { return channel >= 0 && channel < kChannels && note >= 0 && note < 128; }
+
     void push(Event e) {
+        if (!valid(e.channel, e.note)) return;
         std::lock_guard<std::mutex> g(mutex_);
         pending_.push_back(e);
     }
 
     /** Queues an event [delaySeconds] after the current output position. */
     void pushDelayed(int channel, int note, int velocity, double delaySeconds) {
+        if (!valid(channel, note)) return;
         std::lock_guard<std::mutex> g(mutex_);
         const long long at = frame_ + static_cast<long long>(std::max(0.0, delaySeconds) * rate_);
         pending_.push_back({channel, note, velocity, at});
+    }
+
+    /** Frees every synth and its samples: the score that used them has gone. */
+    void unloadAll() {
+        std::lock_guard<std::mutex> g(mutex_);
+        pending_.clear();
+        for (auto& s : synths_) {
+            if (s) sfizz_free(s);
+            s = nullptr;
+        }
+        loaded_.fill(false);
+        for (auto& h : held_) h.fill(0);
     }
 
     double positionSeconds() {
@@ -250,6 +257,48 @@ public:
     }
 
 private:
+    // Opens, sizes and starts the output at [requestedRate_]; the caller holds [lifecycle_].
+    bool openLocked() {
+        oboe::AudioStreamBuilder b;
+        b.setDirection(oboe::Direction::Output)
+            ->setPerformanceMode(oboe::PerformanceMode::None)
+            ->setSharingMode(oboe::SharingMode::Shared)
+            ->setFormat(oboe::AudioFormat::Float)
+            ->setChannelCount(oboe::ChannelCount::Stereo)
+            ->setUsage(oboe::Usage::Media)
+            ->setContentType(oboe::ContentType::Music)
+            ->setDataCallback(this)
+            ->setErrorCallback(this);
+        if (requestedRate_ > 0) b.setSampleRate(requestedRate_);
+        std::shared_ptr<oboe::AudioStream> s;
+        if (b.openStream(s) != oboe::Result::OK) return false;
+        const int burst = s->getFramesPerBurst();
+        if (burst > 0) s->setBufferSizeInFrames(std::min(s->getBufferCapacityInFrames(), burst * kBufferBursts));
+        __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "stream %d Hz, burst %d, buffer %d frames", s->getSampleRate(), burst,
+                            s->getBufferSizeInFrames());
+        {
+            std::lock_guard<std::mutex> g(mutex_);
+            rate_ = s->getSampleRate();
+            for (auto& synth : synths_) if (synth) configure(synth);
+        }
+        stream_ = s;
+        return stream_->requestStart() == oboe::Result::OK;
+    }
+
+    void closeLocked() {
+        if (!stream_) return;
+        auto xruns = stream_->getXRunCount();
+        if (xruns && xruns.value() > 0)
+            __android_log_print(ANDROID_LOG_WARN, LOG_TAG, "stream closed after %d underruns", xruns.value());
+        stream_->requestStop();
+        stream_->close();
+        stream_.reset();
+    }
+
+    // Guards the stream and whether one is wanted; the render never takes it.
+    std::mutex lifecycle_;
+    bool wanted_ = false;
+    int requestedRate_ = 0;
     std::shared_ptr<oboe::AudioStream> stream_;
     std::mutex mutex_;
     std::array<sfizz_synth_t*, kChannels> synths_{};
@@ -285,6 +334,7 @@ void noteOff(int channel, int note) { player().push({channel, note, 0, 0}); }
 void noteAt(int channel, int note, int velocity, double delaySeconds) { player().pushDelayed(channel, note, velocity, delaySeconds); }
 double positionSeconds() { return player().positionSeconds(); }
 void allOff() { player().allOff(); }
+void unloadAll() { player().unloadAll(); }
 void releaseAll() { player().releaseAll(); }
 void fadeOut(double seconds) { player().fadeOut(seconds); }
 void setGain(int channel, float gain) { player().setGain(channel, gain); }

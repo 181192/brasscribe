@@ -1,6 +1,9 @@
 package no.brasscribe.play.audio
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import java.io.File
+import java.util.concurrent.Executors
 
 /**
  * The realistic playback tier: SFZ instruments (VSCO 2 CE, Iowa MIS, own recordings) played by sfizz
@@ -12,18 +15,56 @@ import java.io.File
 object RealisticSynth {
     val available: Boolean by lazy { runCatching { NativeAudio.sfizzAvailable() }.getOrDefault(false) }
 
+    /**
+     * Where the tier is started, loaded, stopped and unloaded: one thread, in the order asked. Loading a
+     * band's instruments takes seconds, so it never runs on the main thread, and a score screen that
+     * closes has its instruments unloaded before the next score's are loaded.
+     */
+    private val lifecycleThread = Executors.newSingleThreadExecutor { Thread(it, "realistic-synth").apply { isDaemon = true } }
+    val lifecycle: CoroutineDispatcher = lifecycleThread.asCoroutineDispatcher()
+
+    /** Runs [block] on the [lifecycle] thread after what is already queued there, without waiting for it. */
+    fun post(block: () -> Unit) = lifecycleThread.execute(block)
+
+    /** The .sfz each channel holds, so a channel is loaded again when a part there needs another instrument. */
+    private val loaded = arrayOfNulls<String>(CHANNELS)
+
     /** Opens the output at the shared output stage's gain (the limiter follows it, in C++). */
     fun start(sampleRate: Int = 48000): Boolean = available && NativeAudio.sfizzStart(sampleRate).also {
         if (it) NativeAudio.sfizzSetOutputGain(PlaybackLevels.factor(PlaybackLevels.SFIZZ_GAIN_DB))
     }
     fun stop() { if (available) NativeAudio.sfizzStop() }
 
-    /** Loads an .sfz file; its samples are resolved relative to it. */
-    fun load(channel: Int, sfz: File): Boolean = available && NativeAudio.sfizzLoadFile(channel, sfz.absolutePath)
+    /**
+     * Loads an .sfz file on [channel]; its samples are resolved relative to it. A channel that already
+     * holds this file keeps it (loading takes seconds); one that holds another is loaded again.
+     */
+    @Synchronized
+    fun load(channel: Int, sfz: File): Boolean {
+        if (!available || channel !in 0 until CHANNELS) return false
+        val path = sfz.absolutePath
+        if (loaded[channel] == path && NativeAudio.sfizzRegions(channel) > 0) return true
+        loaded[channel] = null
+        return NativeAudio.sfizzLoadFile(channel, path).also { if (it) loaded[channel] = path }
+    }
+
+    /** Frees every instrument (about 100 MB for a band): the score that used them has gone. */
+    @Synchronized
+    fun unloadAll() {
+        loaded.fill(null)
+        if (available) NativeAudio.sfizzUnloadAll()
+    }
+
+    /** Channels the synth has (cpp/sfizz_player.cpp kChannels). */
+    const val CHANNELS = 32
 
     /** A sine instrument with no samples: for engine tests only; the app never plays it for a part. */
-    fun loadTestTone(channel: Int): Boolean =
-        available && NativeAudio.sfizzLoadString(channel, "<region> sample=*sine ampeg_attack=0.005 ampeg_release=0.2", "/virtual/test-tone.sfz")
+    @Synchronized
+    fun loadTestTone(channel: Int): Boolean {
+        if (!available || channel !in 0 until CHANNELS) return false
+        loaded[channel] = null
+        return NativeAudio.sfizzLoadString(channel, "<region> sample=*sine ampeg_attack=0.005 ampeg_release=0.2", "/virtual/test-tone.sfz")
+    }
 
     fun regions(channel: Int): Int = if (available) NativeAudio.sfizzRegions(channel) else 0
     fun noteOn(channel: Int, note: Int, velocity: Int) { if (available) NativeAudio.sfizzNoteOn(channel, note, velocity) }
