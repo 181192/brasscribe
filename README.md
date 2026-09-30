@@ -27,15 +27,15 @@ The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
 - Play for Android (`brasscribe-play-android-arm64-v8a.apk` for most devices, `-universal.apk` for all).
 - Play for Mac and Bandroom for Mac (Apple silicon). They are not notarised: the first time, open the
   app, then go to **System Settings › Privacy & Security** and choose **Open Anyway**.
-- The `brasscribe-core` command-line tool for Mac, and `SHA256SUMS`.
+- Bandroom for Windows (x64), and Play for Windows as a preview. They are not signed: if SmartScreen
+  stops them, choose **More info › Run anyway**.
+- The `brasscribe-core` command-line tool for Mac, Linux and Windows, and `SHA256SUMS`.
 
-Bandroom's first run downloads the engine and its models (about 10 GB). The band writer model is
-licensed for non-commercial use only; Bandroom asks you to accept its licence with a free Hugging Face
-account.
+Bandroom's first run downloads the engine and its models (about 10 GB on a Mac). The band writer model
+is licensed for non-commercial use only; Bandroom asks you to accept its licence with a free Hugging
+Face account.
 
-Windows has no release build yet: Play and Bandroom for Windows build from source, and have not been
-compiled and tested on Windows yet. iPhone and iPad builds need an Apple
-Developer account and are not distributed.
+iPhone and iPad builds need an Apple Developer account and are not distributed.
 
 ## Developing
 
