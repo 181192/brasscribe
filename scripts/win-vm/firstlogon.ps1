@@ -7,7 +7,7 @@ $ErrorActionPreference = "Continue"
 Start-Transcript -Path C:\firstlogon-transcript.log -Append | Out-Null
 function Step($m) { Write-Host "[firstlogon] $(Get-Date -Format HH:mm:ss) $m" }
 
-Step "network driver (virtio NetKVM ARM64)"
+Step "network and display drivers (virtio NetKVM and viogpudo, ARM64)"
 # trust the drivers' publisher first, so installing them never waits on a "Would you like to install" prompt
 Get-ChildItem "$Drive\drivers" -Recurse -Filter *.cat | ForEach-Object {
     $signer = (Get-AuthenticodeSignature $_.FullName).SignerCertificate

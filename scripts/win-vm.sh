@@ -35,6 +35,7 @@ VIRTIO_ISO_URL="https://fedorapeople.org/groups/virt/virtio-win/direct-downloads
 
 ISO="$DIR/iso/win11-arm64.iso"       # the install ISO, remastered to boot without "Press any key"
 VIRTIO="$DIR/iso/virtio-win.iso"
+LANG_FILE="$DIR/iso/language"        # the install ISO's language (en-US, en-GB, …): Setup's UI language must be it
 SETUP_ISO="$DIR/setup.iso"           # autounattend.xml, firstlogon.ps1, drivers, OpenSSH, the host's key
 BASE="$DIR/base.qcow2"               # the provisioned base; never booted once an overlay exists
 BASE_VARS="$DIR/base-vars.fd"
@@ -191,6 +192,7 @@ iso_from_uup() {
   local built; built="$(ls -t ./*.ISO ./*.iso 2>/dev/null | head -1)"
   [ -n "$built" ] || { echo "error: the converter wrote no ISO" >&2; exit 1; }
   mkdir -p "$(dirname "$ISO")"; mv "$built" "$ISO"
+  echo en-US >"$LANG_FILE"
   cd "$ROOT"
   rm -rf "$work/UUPs" "$work/ISODIR"
 }
@@ -202,11 +204,13 @@ iso_from_download() {
   [ -n "$mnt" ] || { echo "error: could not attach $src" >&2; exit 1; }
   remaster "$mnt" "$(basename "$mnt")" || { hdiutil detach -quiet "$mnt"; exit 1; }
   hdiutil detach -quiet "$mnt"
+  # Setup's language is the ISO's own (the label ends in _EN-GB_DV9 for an en-GB ISO)
+  basename "$mnt" | sed -E 's/.*_([A-Z]{2})-([A-Z]{2})_.*/\1-\2/' | awk -F- '{print tolower($1) "-" $2}' >"$LANG_FILE"
 }
 
 iso() {
   local t=$SECONDS src="${WIN_VM_ISO:-}"
-  [ -n "$src" ] || src="$(ls -t "$HOME"/Downloads/Win11*Arm64*.iso "$HOME"/Downloads/Win11*ARM64*.iso 2>/dev/null | head -1 || true)"
+  [ -n "$src" ] || src="$(ls -t "$HOME"/Downloads/Win*11*[Aa][Rr][Mm]64*.iso 2>/dev/null | head -1 || true)"
   if [ -f "$ISO" ] && [ -z "${WIN_VM_ISO:-}" ]; then log "install ISO: $ISO"; return; fi
   if [ -n "$src" ]; then iso_from_download "$src"; else iso_from_uup; fi
   timing "iso" $((SECONDS - t))
@@ -215,18 +219,21 @@ iso() {
 # --- provisioning ------------------------------------------------------------------------------------
 
 # The second CD of the install: the answer file, the first-logon script, the ARM64 virtio drivers
-# (network; the display needs none: Windows draws on the firmware framebuffer), OpenSSH Server and the host's public key.
+# (network, and display: the firmware's virtio-gpu GOP is blit-only, so Windows needs viogpudo to draw
+# at 1920 × 1080), OpenSSH Server and the host's public key.
 setup_iso() {
   [ -f "$KEY" ] || ssh-keygen -q -t ed25519 -N '' -C brasscribe-win -f "$KEY"
   [ -f "$VIRTIO" ] || { log "downloading the virtio-win drivers"; curl -fsSL -o "$VIRTIO.tmp" "$VIRTIO_ISO_URL"; mv "$VIRTIO.tmp" "$VIRTIO"; }
   local msi="$DIR/iso/$(basename "$OPENSSH_MSI")"
   [ -f "$msi" ] || { log "downloading OpenSSH for Windows (ARM64)"; curl -fsSL -o "$msi.tmp" "$OPENSSH_MSI"; mv "$msi.tmp" "$msi"; }
   local stage; stage="$(mktemp -d)"
-  cp "$HERE/autounattend.xml" "$HERE/firstlogon.ps1" "$msi" "$stage/"
+  cp "$HERE/firstlogon.ps1" "$msi" "$stage/"
+  sed "s#<UILanguage>en-US</UILanguage>#<UILanguage>$(cat "$LANG_FILE" 2>/dev/null || echo en-US)</UILanguage>#g" \
+    "$HERE/autounattend.xml" >"$stage/autounattend.xml"
   cp "$KEY.pub" "$stage/authorized_keys"
   local mnt; mnt="$(hdiutil attach -readonly -nobrowse -noverify "$VIRTIO" | awk -F'\t' '/\/Volumes\//{print $NF}' | tail -1)"
   mkdir -p "$stage/drivers"
-  local d; for d in NetKVM; do
+  local d; for d in NetKVM viogpudo; do
     [ -d "$mnt/$d/w11/ARM64" ] && cp -R "$mnt/$d/w11/ARM64" "$stage/drivers/$d"
   done
   hdiutil detach -quiet "$mnt"

@@ -73,7 +73,7 @@ There are two sources for the install ISO. Both give Microsoft's own files.
 1. **Microsoft's download page, in a browser.** Open
    <https://www.microsoft.com/en-us/software-download/windows11arm64>, choose "Windows 11
    (multi-edition ISO for Arm64)", English, and save the ISO to `~/Downloads`. `iso` picks up
-   `~/Downloads/Win11*Arm64*.iso`, or set `WIN_VM_ISO=path`.
+   the newest `~/Downloads/Win*11*arm64*.iso` (e.g. `Windows11_Client_arm64_en-gb_….iso`; any language works, Setup follows it), or set `WIN_VM_ISO=path`.
    - A script can't use this page. Its download API answers every automated request with
      "Sentinel marked this request as rejected".
 2. **Microsoft's update servers (the default when there's no downloaded ISO).**
@@ -96,7 +96,7 @@ again. The timings go to `~/.brasscribe-vm/windows/timings.log`.
 2. **A setup CD.** `setup.iso` holds:
    - [`autounattend.xml`](../../scripts/win-vm/autounattend.xml) and
      [`firstlogon.ps1`](../../scripts/win-vm/firstlogon.ps1)
-   - the ARM64 virtio network driver, from the Fedora `virtio-win` ISO
+   - the ARM64 virtio network and display drivers (`NetKVM`, `viogpudo`), from the Fedora `virtio-win` ISO
    - the Win32-OpenSSH ARM64 MSI
    - the host's public key, `~/.brasscribe-vm/windows/id_ed25519.pub`
 3. **Unattended Windows setup** into `base.qcow2`: a 64 GB thin disk on an emulated NVMe drive.
@@ -106,7 +106,7 @@ again. The timings go to `~/.brasscribe-vm/windows/timings.log`.
      needed).
    - It creates the local administrator **`brass`** (password `brass`) and turns on auto-logon.
    - At the first logon, `firstlogon.ps1`:
-     - installs the network driver and OpenSSH Server, with key-only access for the host
+     - installs the network and display drivers and OpenSSH Server, with key-only access for the host
      - keeps auto-logon on every boot, and turns off the lock screen, sleep and hibernation
      - pauses Windows Update, and turns off reserved storage
      - enables long paths, and adds Defender exclusions for the build folders
@@ -182,7 +182,7 @@ What it covers of [windows-checklist.md](windows-checklist.md):
 
 | | |
 |---|---|
-| VM | 8 vCPUs (`WIN_VM_CPUS`), 8 GB (`WIN_VM_MEMORY_MB`), NVMe disk, virtio network, virtio-gpu 1920 × 1080 (the firmware framebuffer, no guest driver) |
+| VM | 8 vCPUs (`WIN_VM_CPUS`), 8 GB (`WIN_VM_MEMORY_MB`), NVMe disk, virtio network, virtio-gpu 1920 × 1080 (the virtio-win `viogpudo` driver) |
 | Disk on the host | ISO ~6 GB; base TIMING_BASE_GB GB after compaction; the overlay grows with builds (TIMING_OVERLAY_GB GB after a build and test) |
 | Cold provision | TIMING_PROVISION (ISO TIMING_ISO, Windows setup to SSH TIMING_SETUP, toolchain TIMING_TOOLCHAIN) |
 | `up` from off | TIMING_UP |
