@@ -147,7 +147,12 @@ public sealed partial class ConnectionMonitor : ObservableObject
         {
             while (!ct.IsCancellationRequested)
             {
-                await CheckAsync(ct);
+                // A check that fails in an unexpected way must not end the heartbeat: the next one tries again.
+                try { await CheckAsync(ct); }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Connection check failed: {e}");
+                }
                 var kick = _kick.Task;
                 using (var wait = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
