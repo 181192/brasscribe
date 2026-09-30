@@ -211,7 +211,8 @@ pub fn semitones_to(current: &KeySig, target: &str) -> Result<i32, String> {
         };
         let mode = if mode.is_empty() { current.mode.as_str() } else { mode };
         let f: i64 = f.parse().map_err(|_| format!("bad key {target}"))?;
-        py::pymod(7 * f + degree_of_mode(mode).unwrap_or(0), 12)
+        // 7 * f mod 12 from f mod 12: the same pitch class, without overflowing on a huge f.
+        py::pymod(7 * f.rem_euclid(12) + degree_of_mode(mode).unwrap_or(0), 12)
     } else {
         let minor = t.ends_with('m') && note_name_pc(&t[..t.len() - 1]).is_some();
         note_name_pc(if minor { &t[..t.len() - 1] } else { t }).ok_or_else(|| format!("unknown key {target}"))?

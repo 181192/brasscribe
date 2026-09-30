@@ -102,7 +102,7 @@ pub unsafe extern "C" fn bc_arrange_with(composition_json: *const c_char, option
             lineup: opts.get("lineup").and_then(|v| v.as_str()).unwrap_or("band").to_string(),
             difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
             key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
-            transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
+            transpose: transpose_of(&opts)?,
             seat: str_of(&opts, "seat"),
             reads: str_of(&opts, "reads"),
             lead: str_of(&opts, "lead"),
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn bc_arrange_layers_song(
             Some(s) if !s.trim().is_empty() => serde_json::from_str(s).map_err(|e| (BC_INVALID, format!("options: {e}")))?,
             _ => serde_json::Value::Null,
         };
-        let mut o = options_of(&opts);
+        let mut o = options_of(&opts)?;
         let contour = json_contour(&mut o);
         let b = crate::LayerBytes { midi, stems: [None; 4] };
         let r = crate::band_bytes(&b, &beats, &title, o, contour).map_err(map_err)?;
@@ -172,12 +172,18 @@ pub unsafe extern "C" fn bc_spell_json(request: *const c_char, out: *mut *mut c_
     let Some(req) = from_c(request) else { return BC_NULL };
     run(out, err, || {
         let v: serde_json::Value = serde_json::from_str(&req).map_err(|e| (BC_INVALID, e.to_string()))?;
-        let on: Vec<f64> = v["onsets"].as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default();
-        let ps: Vec<i32> = v["pitches"].as_array().map(|a| a.iter().filter_map(|x| x.as_i64()).map(|x| x as i32).collect()).unwrap_or_default();
+        let bad = |what: &str| (BC_INVALID, format!("{what} must be a list of numbers"));
+        let list = |k: &str| v[k].as_array().map(|a| a.as_slice()).unwrap_or(&[]);
+        let on: Vec<f64> = list("onsets").iter().map(|x| x.as_f64().ok_or_else(|| bad("onsets"))).collect::<Result<_, _>>()?;
+        let ps: Vec<i32> = list("pitches")
+            .iter()
+            .map(|x| x.as_i64().and_then(|p| i32::try_from(p).ok()).ok_or_else(|| bad("pitches")))
+            .collect::<Result<_, _>>()?;
         if on.len() != ps.len() {
             return Err((BC_INVALID, "onsets and pitches differ in length".into()));
         }
         let rows: Vec<serde_json::Value> = crate::spell_pitches(on, ps)
+            .map_err(map_err)?
             .into_iter()
             .map(|s| serde_json::json!({"step": s.step, "alter": s.alter, "octave": s.octave}))
             .collect();
@@ -185,15 +191,19 @@ pub unsafe extern "C" fn bc_spell_json(request: *const c_char, out: *mut *mut c_
     })
 }
 
-fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
-    let floats = |v: &serde_json::Value| -> Vec<f64> { v.as_array().map(|a| a.iter().filter_map(|x| x.as_f64()).collect()).unwrap_or_default() };
+fn options_of(opts: &serde_json::Value) -> Result<crate::LayersSongOptions, (i32, String)> {
+    // A null or other non-number in a contour array is the value a frame without one has (as the
+    // array form reads a non-finite value), so the arrays keep one value per frame.
+    let floats = |v: &serde_json::Value, missing: f64| -> Vec<f64> {
+        v.as_array().map(|a| a.iter().map(|x| x.as_f64().unwrap_or(missing)).collect()).unwrap_or_default()
+    };
     let flag = |k: &str| opts.get(k).and_then(|v| v.as_bool()).unwrap_or(true);
-    crate::LayersSongOptions {
+    Ok(crate::LayersSongOptions {
         solo_contour: opts.get("solo_contour").filter(|c| c.is_object()).map(|c| crate::SoloContour {
-            times: floats(&c["times"]),
-            pitch_hz: floats(&c["pitch_hz"]),
-            loudness_db: floats(&c["loudness_db"]),
-            confidence: c.get("confidence").filter(|v| v.is_array()).map(floats),
+            times: floats(&c["times"], 0.0),
+            pitch_hz: floats(&c["pitch_hz"], 0.0),
+            loudness_db: floats(&c["loudness_db"], -140.0),
+            confidence: c.get("confidence").filter(|v| v.is_array()).map(|v| floats(v, 0.0)),
         }),
         free_time: flag("free_time"),
         free_tempo: opts.get("free_tempo").and_then(|v| v.as_f64()),
@@ -204,11 +214,22 @@ fn options_of(opts: &serde_json::Value) -> crate::LayersSongOptions {
         difficulty: opts.get("difficulty").and_then(|v| v.as_str()).unwrap_or("faithful").to_string(),
         trills: opts.get("trills").and_then(|v| v.as_bool()).unwrap_or(false),
         key: opts.get("key").and_then(|v| v.as_str()).map(String::from),
-        transpose: opts.get("transpose").and_then(|v| v.as_i64()).map(|t| t as i32),
+        transpose: transpose_of(opts)?,
         seat: str_of(opts, "seat"),
         reads: str_of(opts, "reads"),
         lead: str_of(opts, "lead"),
         lang: str_of(opts, "lang"),
+    })
+}
+
+/// The `transpose` option: absent or null, or a whole number of semitones within ±48.
+fn transpose_of(opts: &serde_json::Value) -> Result<Option<i32>, (i32, String)> {
+    match opts.get("transpose").filter(|v| !v.is_null()) {
+        None => Ok(None),
+        Some(v) => {
+            let t = v.as_i64().ok_or_else(|| (BC_INVALID, format!("transpose must be a whole number of semitones, not {v}")))?;
+            brasscribe_core::model::check_transpose(t).map(Some).map_err(|e| (BC_INVALID, e))
+        }
     }
 }
 
@@ -327,7 +348,7 @@ pub unsafe extern "C" fn bc_arrange_layers_band_contour(
     }
     run(out, err, move || {
         let opts = options_json(options)?;
-        let mut o = options_of(&opts);
+        let mut o = options_of(&opts)?;
         let c = match arrays {
             Some([t, hz, db, conf]) => {
                 let read = |p: *const f64, bad: f64| -> Vec<f64> {
@@ -456,7 +477,8 @@ pub unsafe extern "C" fn bc_talking_score_json(ts: *const BcTalkingScore, out: *
 }
 
 fn cursor_of(v: &serde_json::Value) -> brasscribe_core::talking_score::Cursor {
-    let g = |k: &str| v.get(k).and_then(|x| x.as_u64()).unwrap_or(0) as usize;
+    // An index past usize (a 32-bit target) is past every part and bar too.
+    let g = |k: &str| v.get(k).and_then(|x| x.as_u64()).map_or(0, |x| usize::try_from(x).unwrap_or(usize::MAX));
     brasscribe_core::talking_score::Cursor { part: g("part"), bar: g("bar"), event: g("event") }
 }
 

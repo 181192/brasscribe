@@ -189,6 +189,26 @@ returns 0 or an error code (1 invalid input, 2 failure, 3 null argument,
 4 internal error) and writes the result to `*out` or a message to `*err`;
 free returned strings with `bc_string_free`.
 
+### Invalid input
+
+The bindings check what they are given before any work starts, and answer
+with invalid input (`CoreError::Invalid`, `BC_INVALID`) rather than a failure,
+a panic or a hang:
+
+- a Composition (`Composition::validate`): meters of 1 to `MAX_BAR_BEATS`
+  beats with a note-value beat unit, notes of non-negative length with MIDI
+  pitches 0-127, beat times in order, and everything within `MAX_BEATS` of
+  tick 0 (the longest piece the core arranges); a recording that arranges to
+  more than that fails with the same message;
+- a beat table: times and positions are numbers and the times increase;
+- options: unknown lineups, difficulties, seats, clefs, leads, languages and
+  keys, a transposition beyond `MAX_TRANSPOSE` semitones or out of MIDI range,
+  a free-time tempo outside `FREE_TEMPO_RANGE`;
+- a solo contour whose arrays differ in length (a JSON `null` in an array is a
+  frame without a value, not a missing frame), a WAV stem with a cut-off
+  format chunk, list arguments of different lengths, and times that are not
+  numbers.
+
 ## Test tiers
 
 | Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
