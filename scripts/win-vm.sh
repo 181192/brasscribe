@@ -427,8 +427,8 @@ case "$cmd" in
   test) up; new_run test; rc=0; build --x64 || rc=$?; test_all || rc=$?; interactive -Smoke
         [ ! -s "$OUT/$RUN/shots.done" ] || rc=1
         log "results in ${OUT#$ROOT/}/$RUN"; exit "$rc" ;;
-  shots) up; new_run shots; build; interactive -Scenes "${1:-default}"; log "screenshots in ${OUT#$ROOT/}/$RUN" ;;
-  checklist) up; new_run checklist; build; test_all || true; interactive -Checklist; log "checklist results in ${OUT#$ROOT/}/$RUN" ;;
+  shots) up; new_run shots; build --x64; interactive -Scenes "${1:-default}"; log "screenshots in ${OUT#$ROOT/}/$RUN" ;;
+  checklist) up; new_run checklist; build --x64; test_all || true; interactive -Checklist; log "checklist results in ${OUT#$ROOT/}/$RUN" ;;
   release) up; new_run release; sync_repo; release; log "release zips in ${OUT#$ROOT/}/$RUN" ;;
   *) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

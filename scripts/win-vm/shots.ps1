@@ -18,7 +18,8 @@ $out = "C:\b\out\$Run"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 Start-Transcript -Path "$out\shots.log" -Force | Out-Null
 $artifacts = Get-Content (Get-ChildItem C:\b\out\*\artifacts.json | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName | ConvertFrom-Json
-$playExe = $artifacts.'play-arm64'
+# x64 (under emulation here): alphaTab's native Skia has no win-arm64 build, so the ARM64 Play can't draw scores
+$playExe = if ($artifacts.'play-x64') { $artifacts.'play-x64' } else { $artifacts.'play-arm64' }
 $bandroomExe = $artifacts.'bandroom-x64'
 $score = "$Repo\apps\fixtures\old-hundredth\brass-band.musicxml"
 $profileDir = Join-Path $env:LOCALAPPDATA "Brasscribe\Play"
@@ -28,7 +29,7 @@ Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
 using System.Runtime.InteropServices;
-public static class Win {
+public static class BcWin {
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdc, uint flags);
@@ -37,13 +38,13 @@ public static class Win {
 "@
 
 function Save-Window([IntPtr] $hwnd, [string] $file) {
-    $r = New-Object Win+RECT
-    [Win]::GetWindowRect($hwnd, [ref] $r) | Out-Null
+    $r = New-Object BcWin+RECT
+    [BcWin]::GetWindowRect($hwnd, [ref] $r) | Out-Null
     $w = $r.Right - $r.Left; $h = $r.Bottom - $r.Top
     $bmp = New-Object System.Drawing.Bitmap $w, $h
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $hdc = $g.GetHdc()
-    [Win]::PrintWindow($hwnd, $hdc, 2) | Out-Null  # PW_RENDERFULLCONTENT: WinUI's composition too
+    [BcWin]::PrintWindow($hwnd, $hdc, 2) | Out-Null  # PW_RENDERFULLCONTENT: WinUI's composition too
     $g.ReleaseHdc($hdc); $g.Dispose()
     $bmp.Save($file, [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose()
     Write-Host "captured $(Split-Path -Leaf $file) ($w x $h)"
@@ -69,7 +70,7 @@ function Shoot([string] $scene, [string] $lang, [string] $theme, [string] $file)
             if (Test-Path "$profileDir\crash.log") { Get-Content "$profileDir\crash.log" | Select-Object -Last 30 | Write-Host }
             return $false
         }
-        [Win]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
+        [BcWin]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
         Start-Sleep -Seconds $Settle
         if ($scene -in "stand", "settings", "export") { Start-Sleep -Seconds 3 }  # opened 1.5 s after the window, then animated
         $p.Refresh()
@@ -93,6 +94,7 @@ function Shoot-All([string[]] $names, [string] $suffix) {
 # The CI smoke test: the app starts and shows its window (Play), and keeps running with its tray icon (Bandroom).
 function Smoke-Tests {
     Reset-Profile "system"
+    Remove-Item (Join-Path $env:LOCALAPPDATA "Brasscribe\logs\bandroom-crash.log") -ErrorAction SilentlyContinue
     foreach ($exe in @($playExe, $artifacts.'play-x64', $bandroomExe) | Where-Object { $_ }) {
         $p = Start-Process -FilePath $exe -PassThru
         $deadline = (Get-Date).AddSeconds(90)
@@ -103,7 +105,7 @@ function Smoke-Tests {
         elseif ($p.MainWindowHandle -eq 0 -and $exe -notlike "*Bandroom*") { Write-Host "SMOKE FAIL $exe no window"; $script:failures += "smoke $exe" }
         else {
             Write-Host "SMOKE OK $exe ($($p.MainWindowTitle))"
-            if ($p.MainWindowHandle -ne 0) { Save-Window $p.MainWindowHandle (Join-Path $out ("smoke-{0}.png" -f [IO.Path]::GetFileNameWithoutExtension($exe) + "-" + $name)) }
+            if ($p.MainWindowHandle -ne 0) { Save-Window $p.MainWindowHandle (Join-Path $out ("smoke-{0}-{1}.png" -f [IO.Path]::GetFileNameWithoutExtension($exe), $name)) }
         }
         if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
     }
@@ -134,20 +136,26 @@ function Set-TextScale([int] $percent) {
 $sets = @{
     default = @("home", "what-do-you-play", "score", "stand", "settings", "choose-output")
 }
-if ($Smoke -or $Checklist) { Smoke-Tests }
-if ($Checklist) {
-    Shoot-All $sets.default ""
-    Set-TextScale 200
-    try { Shoot-All @("what-do-you-play", "choose-output", "what-is-this", "stand", "settings", "review") "-text200" }
-    finally { Set-TextScale 100 }
+try {
+    if ($Smoke -or $Checklist) { Smoke-Tests }
+    if ($Checklist) {
+        Shoot-All $sets.default ""
+        Set-TextScale 200
+        try { Shoot-All @("what-do-you-play", "choose-output", "what-is-this", "stand", "settings", "review") "-text200" }
+        finally { Set-TextScale 100 }
+    }
+    elseif ($Scenes) {
+        $names = if ($Scenes -eq "default") { $sets.default } elseif ($Scenes -eq "all") {
+            @("first-run", "what-do-you-play", "home", "home-offline", "settings", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "stand", "export", "error")
+        } else { $Scenes -split "," }
+        Shoot-All $names ""
+    }
 }
-elseif ($Scenes) {
-    $names = if ($Scenes -eq "default") { $sets.default } elseif ($Scenes -eq "all") {
-        @("first-run", "what-do-you-play", "home", "home-offline", "settings", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "stand", "export", "error")
-    } else { $Scenes -split "," }
-    Shoot-All $names ""
+catch { Write-Host "ERROR: $_"; $failures += "error: $_" }
+finally {
+    # the host waits for shots.done: write it however the run ended
+    if ($failures.Count -gt 0) { Write-Host "FAILED: $($failures -join '; ')" } else { Write-Host "all ok" }
+    try { [IO.File]::WriteAllText("$out\shots.done", ($failures -join "`n")) }
+    catch { Write-Host "could not write shots.done: $_" }
+    Stop-Transcript | Out-Null
 }
-
-if ($failures.Count -gt 0) { Write-Host "FAILED: $($failures -join '; ')" } else { Write-Host "all ok" }
-Stop-Transcript | Out-Null
-Set-Content -NoNewline "$out\shots.done" ($failures -join "`n")
