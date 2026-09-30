@@ -36,6 +36,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private FlyoutWindow? _flyout;
     private PanelWindow? _window;
     private PairWindow? _pairWindow;
+    /// <summary>Allow windows of their own (the Pair window closed), by request id: told when a request lapses.</summary>
+    private readonly Dictionary<string, AllowRequestViewModel> _allowWindows = [];
     private SettingsWindow? _settingsWindow;
     private Windows.UI.ViewManagement.AccessibilitySettings _accessibility = null!;
     private AppearanceViewModel _appearance = null!;
@@ -213,7 +215,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _controller.SnapshotReady += snap => _ui.TryEnqueue(() => ApplySnapshot(snap));
         _controller.DevicesChanged += list => _ui.TryEnqueue(() => _vm.ApplyDevices(list, DateTimeOffset.UtcNow));
         _controller.Requests.Arrived += r => _ui.TryEnqueue(() => OnPairRequest(r));
-        _controller.Requests.Gone += id => _ui.TryEnqueue(() => _pairWindow?.Vm.RequestGone(id));
+        _controller.Requests.Gone += id => _ui.TryEnqueue(() => OnPairRequestGone(id));
 
         FirstRunDefaults();
         _ = RunAsync();
@@ -501,11 +503,21 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             _pairWindow.Activate();
             return;
         }
+        if (_allowWindows.ContainsKey(r.RequestId)) return;
         var pair = new PairViewModel(_s, () => CurrentApi, this);
         var vm = pair.AddRequest(r, Decide);
         var w = new AllowWindow(vm, vm.Title, _themes);
+        _allowWindows[r.RequestId] = vm;
+        w.Closed += (_, _) => _allowWindows.Remove(r.RequestId);
         w.Activate();
         Announce(_s.Format("Notify_PairRequest", r.Name));
+    }
+
+    /// <summary>A request lapsed or was answered elsewhere: whichever window shows it says so.</summary>
+    private void OnPairRequestGone(string id)
+    {
+        _pairWindow?.Vm.RequestGone(id);
+        if (_allowWindows.TryGetValue(id, out var vm) && vm.IsActive) vm.MarkExpired();
     }
 
     // ----- IBandroomActions -----
