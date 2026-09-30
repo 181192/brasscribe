@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime
 
 from brasscribe_engine.jobs import JobManager
 
@@ -46,3 +47,20 @@ def test_list_reparses_only_changed_manifests(settings):
     assert [j.id for j in jobs.list()] == ["run-a"]
     # a single job still comes with its events
     assert jobs.get("run-a").events[0]["status"] == "succeeded"
+
+
+def test_renaming_a_run_keeps_its_place_in_the_list(settings):
+    from fastapi.testclient import TestClient
+
+    from brasscribe_engine.api import create_app
+
+    for run_id, created in (("run-old", "2026-01-01T10:00:00+00:00"), ("run-new", "2026-02-01T10:00:00+00:00")):
+        _run(settings, run_id, run_id)
+        mpath = settings.runs_dir / run_id / "manifest.json"
+        mpath.write_text(json.dumps({**json.loads(mpath.read_text()), "created": created}))
+    with TestClient(create_app(settings)) as c:
+        assert [j["id"] for j in c.get("/v1/jobs").json()] == ["run-new", "run-old"]
+        assert c.patch("/v1/runs/run-old", json={"title": "Renamed"}).status_code == 200
+        listed = c.get("/v1/jobs").json()
+        assert [j["id"] for j in listed] == ["run-new", "run-old"]
+        assert listed[1]["created"] == datetime.fromisoformat("2026-01-01T10:00:00+00:00").timestamp()

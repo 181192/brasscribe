@@ -16,6 +16,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 
 from . import profiles, runner
@@ -257,10 +258,14 @@ class JobManager:
         if not mpath.exists():
             return None
         m = json.loads(mpath.read_text())
+        try:  # renaming or finishing a run rewrites its manifest, so the file's own times say nothing
+            created = datetime.fromisoformat(m["created"]).timestamp()
+        except (KeyError, TypeError, ValueError):  # manifests before the field
+            created = mpath.stat().st_ctime
         job = Job(m["run_id"], m["profile"], m.get("title"), None, Path(m["input"]["path"]), m.get("params", {}),
                   m.get("options", {}).get("allow_heavy", True), set(m.get("options", {}).get("cold", [])),
                   m.get("previous_run_id"), status=m.get("status", "unknown"),
-                  created=mpath.stat().st_ctime, error=m.get("error"))
+                  created=created, error=m.get("error"))
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],
                                        "seconds": st.get("seconds"), "queue_wait_s": st.get("queue_wait_s"),
