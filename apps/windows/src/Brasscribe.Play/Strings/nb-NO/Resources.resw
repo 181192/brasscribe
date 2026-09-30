@@ -732,6 +732,9 @@
   <data name="Library_RecordingTitle" xml:space="preserve">
     <value>Opptak, {0}</value>
   </data>
+  <data name="Library_SaveFailed" xml:space="preserve">
+    <value>Endringen kunne ikke lagres på denne PC-en. Sjekk at disken ikke er full, og prøv igjen.</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Lite band</value>
   </data>
@@ -746,6 +749,9 @@
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>I dag</value>
+  </data>
+  <data name="Library_Unavailable" xml:space="preserve">
+    <value>Finnes ikke. Koble til disken den ligger på, for å åpne den.</value>
   </data>
   <data name="Library_Yesterday" xml:space="preserve">
     <value>I går</value>
@@ -2135,6 +2141,9 @@
   </data>
   <data name="Start_Error_MicrophonePermission" xml:space="preserve">
     <value>Brasscribe har ikke lov til å bruke mikrofonen. Gi tilgang i Windows-innstillinger, Personvern, Mikrofon.</value>
+  </data>
+  <data name="Start_Error_NeedsCodec" xml:space="preserve">
+    <value>Windows kunne ikke lese {0}. Slike filer kan trenge Webmedieutvidelser fra Microsoft Store. Prøv en MP3-, WAV- eller MP4-fil, eller ta det opp i stedet.</value>
   </data>
   <data name="Start_Error_Score" xml:space="preserve">
     <value>{0} kan ikke åpnes som partitur.</value>

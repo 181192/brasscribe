@@ -732,6 +732,9 @@
   <data name="Library_RecordingTitle" xml:space="preserve">
     <value>Recording, {0}</value>
   </data>
+  <data name="Library_SaveFailed" xml:space="preserve">
+    <value>Your change couldn't be saved on this PC. Check that the disk isn't full, then try again.</value>
+  </data>
   <data name="Library_SmallBand" xml:space="preserve">
     <value>Small band</value>
   </data>
@@ -746,6 +749,9 @@
   </data>
   <data name="Library_Today" xml:space="preserve">
     <value>Today</value>
+  </data>
+  <data name="Library_Unavailable" xml:space="preserve">
+    <value>Not found. Connect the drive it's on to open it.</value>
   </data>
   <data name="Library_Yesterday" xml:space="preserve">
     <value>Yesterday</value>
@@ -2135,6 +2141,9 @@
   </data>
   <data name="Start_Error_MicrophonePermission" xml:space="preserve">
     <value>Brasscribe may not use the microphone. Allow it in Windows Settings, Privacy, Microphone.</value>
+  </data>
+  <data name="Start_Error_NeedsCodec" xml:space="preserve">
+    <value>Windows couldn't read {0}. Files like this may need Web Media Extensions from the Microsoft Store. Try an MP3, WAV or MP4 file, or record it instead.</value>
   </data>
   <data name="Start_Error_Score" xml:space="preserve">
     <value>{0} can't be opened as a score.</value>

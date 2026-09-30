@@ -24,6 +24,8 @@ public sealed partial class StartViewModel : ObservableObject
     private readonly IUiDispatcher _ui;
     private readonly string _workDir;
     private SilenceWatch _watch = new();
+    /// <summary>The take (decoded import or recording) the app is working with now; the one before it is deleted.</summary>
+    private string? _take;
 
     public StartViewModel(ICaptureService capture, IMediaDecoder decoder, IFileDialogs dialogs, IAnnouncer announcer,
         IStrings strings, IUiDispatcher ui, string workDir)
@@ -34,8 +36,11 @@ public sealed partial class StartViewModel : ObservableObject
         _dialogs = dialogs;
         _announcer = announcer;
         _s = strings;
-        _workDir = workDir;
-        Directory.CreateDirectory(workDir);
+        // Takes live in their own folder, emptied at start: nothing refers to a take once the app has closed
+        // (the engine keeps its own copy, and "Your scores" keeps the score, not the recording).
+        _workDir = Path.Combine(workDir, "takes");
+        Directory.CreateDirectory(_workDir);
+        Prune(_workDir);
         _capture.Level += (_, level) => _ui.Post(() => OnLevel(level));
         _capture.Notice += (_, n) => _ui.Post(() => ShowNotice(n));
     }
@@ -96,17 +101,19 @@ public sealed partial class StartViewModel : ObservableObject
                 return;
         }
         IsBusy = true;
+        string wav = Path.Combine(_workDir, Path.GetFileNameWithoutExtension(path) + "-" + Guid.NewGuid().ToString("N")[..8] + ".wav");
         try
         {
-            string wav = Path.Combine(_workDir, Path.GetFileNameWithoutExtension(path) + "-" + Guid.NewGuid().ToString("N")[..8] + ".wav");
             var media = await _decoder.DecodeToWavAsync(path, wav);
             var source = new SourceAudio(media.WavPath, Path.GetFileName(path), media.Duration, path, media.HasVideo);
+            UseTake(media.WavPath);
             _announcer.Announce(_s.Format("Start_Imported", source.DisplayName, DurationText(media.Duration)), AnnouncementKind.Important);
             SourceReady?.Invoke(this, source);
         }
         catch (Exception e) when (e is IOException or InvalidDataException or NotSupportedException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
         {
-            Fail(_s.Format("Start_Error_Decode", Path.GetFileName(path)));
+            Delete(wav); // what was written before the decoder stopped
+            Fail(_s.Format(MediaTypes.NeedsCodec(path) ? "Start_Error_NeedsCodec" : "Start_Error_Decode", Path.GetFileName(path)));
         }
         finally
         {
@@ -152,10 +159,45 @@ public sealed partial class StartViewModel : ObservableObject
         _announcer.Announce(_s.Format("Start_RecordingStopped", DurationText(result.Duration)), AnnouncementKind.Important);
         if (result.Duration < TimeSpan.FromSeconds(1))
         {
+            Delete(result.Path);
             Fail(_s["Start_Error_TooShort"]);
             return;
         }
+        UseTake(result.Path);
         SourceReady?.Invoke(this, new SourceAudio(result.Path, ScoreTitles.Recording(DateTimeOffset.Now, _s), result.Duration, null, false));
+    }
+
+    /// <summary>A new take replaces the last one, whose WAV and level-matched copies are deleted.</summary>
+    private void UseTake(string path)
+    {
+        if (_take is { } old && !string.Equals(old, path, StringComparison.OrdinalIgnoreCase))
+        {
+            Delete(old);
+            string stem = Path.GetFileNameWithoutExtension(old);
+            try
+            {
+                foreach (var copy in Directory.EnumerateFiles(_workDir, stem + ".boost*")) Delete(copy);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        }
+        _take = path;
+    }
+
+    /// <summary>Takes left by an earlier run of the app.</summary>
+    private static void Prune(string dir)
+    {
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(dir)) Delete(file);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+    }
+
+    /// <summary>Best effort: a file still open elsewhere (the media player) goes the next time the app starts.</summary>
+    private static void Delete(string path)
+    {
+        try { File.Delete(path); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     private bool CanStart() => !IsRecording;

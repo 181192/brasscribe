@@ -55,6 +55,7 @@ public sealed partial class MainWindow : Window
         ContentFrame.IsNavigationStackEnabled = false;
 
         ViewModel.PropertyChanged += OnViewModelChanged;
+        ViewModel.ProblemNoticed += (_, text) => ShowProblem(text);
         ViewModel.Score.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(ScoreViewModel.Title) or nameof(ScoreViewModel.SelectedPartIndex)) UpdateTitleBar();
