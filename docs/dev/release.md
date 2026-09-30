@@ -207,9 +207,10 @@ git commit -m "docs(site): …" && git push origin gh-pages     # never force: o
 gh api repos/181192/brasscribe/pages/builds/latest
 ```
 
-`$W` is the release worktree. The guide's Download section (`site/guide/index.html` and
-`site/nb/guide/index.html`) names the current version, its release page and its files: update both
-for each release.
+`$W` is the release worktree. The site and the READMEs never name a version: they link to
+`releases/latest` and to `releases/latest/download/<file>`, so a release needs no text changes there.
+Keep the asset file names stable (no version in them) for those links to keep working.
+`site/build.sh` fails if a pinned release link or version number creeps back in.
 
 ## 9. The band sounds: a separate pre-release
 

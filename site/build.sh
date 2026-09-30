@@ -4,6 +4,13 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/site/_site"
+
+# The site and the READMEs link to the latest release and never name a version, so nothing goes stale.
+pinned=$(cd "$ROOT" && git grep -n -I -E 'releases/tag/v[0-9]|releases/download/v[0-9]|Brasscribe [0-9]+\.[0-9]+\.[0-9]|[Vv]ersjon [0-9]+\.[0-9]+|[Vv]ersion [0-9]+\.[0-9]+\.[0-9]|[Rr]elease v[0-9]' \
+  -- 'site/*.html' 'README.md' '*/README.md' ':!site/research' ':!site/nb/research' || true)
+if [ -n "$pinned" ]; then
+  echo "error: link to releases/latest instead of naming a version:" >&2; echo "$pinned" >&2; exit 1
+fi
 rm -rf "$OUT"
 mkdir -p "$OUT/assets/logo"
 

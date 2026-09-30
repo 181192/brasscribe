@@ -22,7 +22,7 @@ How it works: [kalli.no/brasscribe/research](https://kalli.no/brasscribe/researc
 
 ## Download
 
-[Release v0.2.0](https://github.com/181192/brasscribe/releases/tag/v0.2.0) has:
+The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
 
 - Play for Android (`brasscribe-play-android-arm64-v8a.apk` for most devices, `-universal.apk` for all).
 - Play for Mac and Bandroom for Mac (Apple silicon). They are not notarised: the first time, open the
@@ -33,8 +33,8 @@ Bandroom's first run downloads the engine and its models (about 10 GB). The band
 licensed for non-commercial use only; Bandroom asks you to accept its licence with a free Hugging Face
 account.
 
-Windows has no release build yet: Play and Bandroom for Windows build from source, and Play still lacks
-the music stand, the Appearance setting and "What do you play?". iPhone and iPad builds need an Apple
+Windows has no release build yet: Play and Bandroom for Windows build from source, and have not been
+compiled and tested on Windows yet. iPhone and iPad builds need an Apple
 Developer account and are not distributed.
 
 ## Developing
