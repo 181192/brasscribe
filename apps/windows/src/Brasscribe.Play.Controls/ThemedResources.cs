@@ -17,10 +17,24 @@ public static class ThemedResources
     public static string ThemeKey(FrameworkElement element) =>
         Accessibility.HighContrast ? "HighContrast" : element.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
 
-    public static Brush Brush(FrameworkElement element, string key) =>
-        Find(element.Resources, key, ThemeKey(element)) as Brush
-        ?? Find(Application.Current.Resources, key, ThemeKey(element)) as Brush
-        ?? new SolidColorBrush(Colors.Black);
+    /// <summary>
+    /// In Light and Dark the brush is built from the theme's colour (BcLoopTintBrush from BcLoopTintColor). A theme
+    /// dictionary's brush that no XAML has used yet can resolve its {StaticResource ...Color} in the app's theme instead
+    /// of its own, so Dark handed back Light's loop and selection tints. The colours are plain values in each theme.
+    /// </summary>
+    public static Brush Brush(FrameworkElement element, string key)
+    {
+        string theme = ThemeKey(element);
+        if (theme != "HighContrast" && key.EndsWith("Brush", StringComparison.Ordinal))
+        {
+            string colorKey = key[..^"Brush".Length] + "Color";
+            if ((Find(element.Resources, colorKey, theme) ?? Find(Application.Current.Resources, colorKey, theme)) is Windows.UI.Color color)
+                return new SolidColorBrush(color);
+        }
+        return Find(element.Resources, key, theme) as Brush
+            ?? Find(Application.Current.Resources, key, theme) as Brush
+            ?? new SolidColorBrush(Colors.Black);
+    }
 
     private static object? Find(ResourceDictionary dictionary, string key, string theme)
     {
