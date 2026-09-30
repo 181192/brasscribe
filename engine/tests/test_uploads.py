@@ -101,3 +101,30 @@ def test_uploads_from_earlier_versions_still_start_jobs(settings, audio):
         assert r.status_code == 202 and wait(c, r.json()["id"])["status"] == "succeeded"
         for audio_id in ("fedcba9876543210", "00000000000000aa"):
             assert c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "test"}).status_code == 404
+
+
+def test_an_upload_is_written_once_straight_into_the_uploads_folder(settings, audio, monkeypatch):
+    from starlette import formparsers
+
+    spooled = []
+
+    class Spool(formparsers.SpooledTemporaryFile):
+        def write(self, data):
+            spooled.append(len(data))
+            return super().write(data)
+
+    monkeypatch.setattr(formparsers, "SpooledTemporaryFile", Spool)
+    data = audio.read_bytes() * 1000
+    with TestClient(create_app(settings)) as c:
+        ref = c.post("/v1/audio", files={"file": ("take.wav", data)}).json()
+        assert (settings.uploads_dir / f"{ref['audio_id']}.wav").read_bytes() == data
+        assert ref["bytes"] == len(data) and ref["sha256"] == __import__("hashlib").sha256(data).hexdigest()
+        r = c.post("/v1/jobs/upload", files={"file": ("take2.wav", data + b"2")},
+                   data={"profile": "test", "transpose": "99"})
+        assert r.status_code == 422  # refused after the file was read: nothing is left behind
+        r = c.post("/v1/jobs/upload", files={"file": ("take3.wav", data + b"3")}, data={"profile": "test"})
+        assert r.status_code == 202
+        wait(c, r.json()["id"])
+    assert spooled == []
+    assert not [p.name for p in settings.uploads_dir.iterdir() if p.name.startswith(".")]
+    assert len(list(settings.uploads_dir.iterdir())) == 4  # two uploads and their metadata

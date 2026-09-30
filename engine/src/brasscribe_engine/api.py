@@ -24,8 +24,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import secrets
-import shutil
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -45,6 +45,7 @@ from .config import Settings
 from .guard import BodyLimit, RequestGuard
 from .jobs import TERMINAL, Job, JobManager
 from .names import is_audio, valid_id, valid_relpath
+from .uploads import UploadRoute, UploadSink
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 # Studio's own files keep their names across releases, so the browser revalidates them on every load
@@ -108,6 +109,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                     "cache; progress streams as Server-Sent Events. Loopback clients are trusted; LAN clients pair "
                     "once with the code the engine shows and then send their own long-lived bearer token.",
     )
+    app.router.route_class = UploadRoute  # uploads go straight into the uploads folder (uploads.py)
     app.state.settings = settings
     app.state.jobs = JobManager(settings, workers=workers)
     stream_waiters = anyio.CapacityLimiter(STREAM_WAITERS)
@@ -382,14 +384,17 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     def store_upload(file: UploadFile) -> m.AudioRef:
         up = settings.uploads_dir
-        tmp = up / f".upload-{secrets.token_hex(8)}"
-        h, size = hashlib.sha256(), 0
-        with tmp.open("wb") as f:
-            while chunk := file.file.read(1 << 20):
-                h.update(chunk)
-                size += len(chunk)
-                f.write(chunk)
-        digest = h.hexdigest()
+        if isinstance(file.file, UploadSink):  # already in the uploads folder, hashed as it arrived
+            tmp, digest, size = file.file.keep()
+        else:
+            tmp = up / f".upload-{secrets.token_hex(8)}"
+            h, size = hashlib.sha256(), 0
+            with tmp.open("wb") as f:
+                while chunk := file.file.read(1 << 20):
+                    h.update(chunk)
+                    size += len(chunk)
+                    f.write(chunk)
+            digest = h.hexdigest()
         name = Path(file.filename or "audio.wav").name
         # The client's name is only shown; the stored file keeps an audio suffix, never one like .json.
         suffix = Path(name).suffix.lower() if is_audio(name) else ".wav"
@@ -398,7 +403,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         if dst.exists():
             tmp.unlink()
         else:
-            shutil.move(tmp, dst)
+            os.replace(tmp, dst)
         (up / f"{audio_id}.meta.json").write_text(json.dumps({"audio_id": audio_id, "sha256": digest, "filename": name,
                                                          "bytes": size, "path": dst.name}))
         return m.AudioRef(audio_id=audio_id, sha256=digest, filename=name, bytes=size)
