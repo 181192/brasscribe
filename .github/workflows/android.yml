@@ -5,7 +5,7 @@ name: android
 # signed with the release key (secrets of the `release` environment) and uploaded as dist-android.
 # The `release` environment only admits v* tags, so the signed build runs from a release tag only.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
-# every push gets the fast Linux checks in ci.yml instead.
+# pull requests and pushes to main get the fast Linux checks in ci.yml instead.
 on:
   workflow_call:
     inputs:

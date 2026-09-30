@@ -5,8 +5,9 @@ name: ci
 # (workflow_dispatch on apple.yml, android.yml, windows.yml, core.yml).
 # Branch pushes only: a release tag doesn't start this workflow; release.yml calls it instead.
 on:
+  # Pushes to main and pull requests: a branch is checked once, through its pull request.
   push:
-    branches: ["**"]
+    branches: [main]
     paths-ignore: &ignore
       - "site/**"
       - "**/*.md"
@@ -26,8 +27,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # On pull requests, which parts to check: the paths each job's tests read (the Python tests also read
+  # design tokens and the sound pack). Pushes to main, releases and hand-started runs check everything.
+  changes:
+    name: what changed
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      python: ${{ github.event_name != 'pull_request' || steps.filter.outputs.python == 'true' }}
+      core: ${{ github.event_name != 'pull_request' || steps.filter.outputs.core == 'true' }}
+      studio: ${{ github.event_name != 'pull_request' || steps.filter.outputs.studio == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            python: ['engine/**', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.github/workflows/ci.yml']
+            core: ['core/**', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
+            studio: ['studio/**', 'design/**', '.github/workflows/ci.yml']
+
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -74,8 +102,10 @@ jobs:
           name: bench-ci
           path: bench-ci.json
 
-  apps:
-    name: Rust core, .NET core logic and Studio (Ubuntu 24.04)
+  core:
+    name: Rust core and .NET core logic (Ubuntu 24.04)
+    needs: changes
+    if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -102,6 +132,15 @@ jobs:
       - name: Bandroom for Windows core logic
         run: dotnet test apps/bandroom/windows/tests/Brasscribe.Bandroom.Core.Tests
 
+  studio:
+    name: Studio (Ubuntu 24.04)
+    needs: changes
+    if: needs.changes.outputs.studio == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -114,3 +153,18 @@ jobs:
           npm ci
           npm test
           npm run typecheck
+
+  # One check that is always reported, whichever jobs ran: the one to make required.
+  result:
+    name: CI result
+    needs: [changes, linux, core, studio]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          CHANGES: ${{ needs.changes.result }}
+          RESULTS: ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }}
+        run: |
+          echo "changes: $CHANGES, jobs: $RESULTS"
+          [ "$CHANGES" = success ] || exit 1
+          for r in $RESULTS; do [ "$r" = success ] || [ "$r" = skipped ] || exit 1; done

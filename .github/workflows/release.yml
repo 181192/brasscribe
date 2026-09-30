@@ -31,6 +31,10 @@ jobs:
   checks:
     needs: tag
     uses: ./.github/workflows/ci.yml
+    # ci.yml's change detection asks for pull-requests: read; a called workflow gets no more than this.
+    permissions:
+      contents: read
+      pull-requests: read
 
   core:
     needs: checks
