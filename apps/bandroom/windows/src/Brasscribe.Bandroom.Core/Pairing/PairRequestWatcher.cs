@@ -20,7 +20,7 @@ public sealed class PairRequestWatcher
     /// <summary>A request that lapsed or was answered elsewhere (the id).</summary>
     public event Action<string>? Gone;
 
-    public IReadOnlyCollection<PairRequestInfo> Pending => _pending.Values;
+    public IReadOnlyCollection<PairRequestInfo> Pending { get { lock (_pending) return [.. _pending.Values]; } }
 
     public async Task PollAsync(IEngineApi api, CancellationToken ct = default)
     {
@@ -30,19 +30,21 @@ public sealed class PairRequestWatcher
         Update(list);
     }
 
+    /// <summary>Raises Gone and Arrived once per request, however many polls and decisions overlap.</summary>
     public void Update(IReadOnlyList<PairRequestInfo> list)
     {
         var now = _time.GetUtcNow();
         var live = list.Where(r => r.Status == "pending" && !IsExpired(r, now)).ToDictionary(r => r.RequestId);
-        foreach (var id in _pending.Keys.Where(id => !live.ContainsKey(id)).ToList())
+        List<string> gone;
+        List<PairRequestInfo> arrived;
+        lock (_pending)
         {
-            _pending.Remove(id);
-            Gone?.Invoke(id);
+            gone = _pending.Keys.Where(id => !live.ContainsKey(id)).ToList();
+            foreach (var id in gone) _pending.Remove(id);
+            arrived = live.Values.Where(r => _pending.TryAdd(r.RequestId, r)).ToList();
         }
-        foreach (var (id, r) in live)
-        {
-            if (_pending.TryAdd(id, r)) Arrived?.Invoke(r);
-        }
+        foreach (var id in gone) Gone?.Invoke(id);
+        foreach (var r in arrived) Arrived?.Invoke(r);
     }
 
     public bool IsExpired(PairRequestInfo r, DateTimeOffset now) => r.CreatedAtTime is { } t && now - t >= Lifetime;
@@ -53,13 +55,18 @@ public sealed class PairRequestWatcher
         try
         {
             var r = await api.DecidePairRequestAsync(requestId, approve, ct).ConfigureAwait(false);
-            _pending.Remove(requestId);
+            Forget(requestId);
             return r.Status == (approve ? "approved" : "denied");
         }
         catch (EngineHttpException e) when (e.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone or HttpStatusCode.Conflict)
         {
-            _pending.Remove(requestId);
+            Forget(requestId);
             return false;
         }
+    }
+
+    private void Forget(string requestId)
+    {
+        lock (_pending) _pending.Remove(requestId);
     }
 }

@@ -191,6 +191,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             CheckModels = () => ModelCheck.Check(_paths.Models, _hub),
             Downloads = _downloads,
+            Log = _log.Write,
         };
         _controller.SnapshotReady += snap => _ui.TryEnqueue(() => ApplySnapshot(snap));
         _controller.DevicesChanged += list => _ui.TryEnqueue(() => _vm.ApplyDevices(list, DateTimeOffset.UtcNow));

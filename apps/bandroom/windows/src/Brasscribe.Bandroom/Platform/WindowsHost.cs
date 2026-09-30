@@ -11,17 +11,23 @@ namespace Brasscribe.Bandroom.Platform;
 /// <summary>CPU, memory and free space from the host (never from the engine), §3.6.</summary>
 internal sealed class WindowsMetrics : IHostMetrics
 {
+    private readonly Lock _gate = new();
     private ulong _idle, _total;
 
     public double SampleCpuPercent()
     {
         if (!Native.GetSystemTimes(out var idle, out var kernel, out var user)) return 0;
         ulong i = idle.Value, t = kernel.Value + user.Value; // kernel time includes idle time
-        ulong di = i - _idle, dt = t - _total;
-        bool first = _total == 0;
-        _idle = i;
-        _total = t;
-        return first || dt == 0 ? 0 : 100.0 * (dt - di) / dt;
+        lock (_gate)
+        {
+            bool first = _total == 0;
+            // Counters that went backwards (or idle that grew more than the total) give no reading.
+            bool valid = !first && i >= _idle && t > _total && i - _idle <= t - _total;
+            ulong di = valid ? i - _idle : 0, dt = valid ? t - _total : 0;
+            _idle = i;
+            _total = t;
+            return valid ? 100.0 * (dt - di) / dt : 0;
+        }
     }
 
     public (ulong Total, ulong Available) Memory()
