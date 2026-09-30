@@ -40,7 +40,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # DEVELOPER_DIR as well as xcode-select: the Makefile and the Rust iOS builds read it.
       - name: Select Xcode ${{ env.XCODE_VERSION }}
