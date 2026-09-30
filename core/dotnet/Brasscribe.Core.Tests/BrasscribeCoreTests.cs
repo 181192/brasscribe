@@ -241,6 +241,47 @@ public class BrasscribeCoreTests
     }
 
     [Fact]
+    public void TalkingScoreDisposesOnceAndRefusesUseAfterwards()
+    {
+        var ts = new TalkingScore(BrasscribeCore.ArrangeMusicXml(Composition), Composition);
+        ts.Dispose();
+        ts.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => ts.Json);
+        Assert.Throws<ObjectDisposedException>(() => ts.Export("text"));
+        Assert.Throws<ObjectDisposedException>(() => ts.Navigate(new TalkingCursor(0, 0, 0)));
+    }
+
+    [Fact]
+    public async Task TalkingScoreDisposedWhileInUseFreesAfterTheCall()
+    {
+        var xml = BrasscribeCore.ArrangeMusicXml(Composition);
+        for (var round = 0; round < 20; round++)
+        {
+            var ts = new TalkingScore(xml, Composition);
+            using var go = new ManualResetEventSlim();
+            var users = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
+            {
+                go.Wait();
+                for (var i = 0; i < 50; i++)
+                {
+                    try
+                    {
+                        Assert.Contains("Solo Cornet", ts.Export("text"));
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return;
+                    }
+                }
+            })).ToList();
+            var disposers = Enumerable.Range(0, 4).Select(_ => Task.Run(() => { go.Wait(); ts.Dispose(); })).ToList();
+            go.Set();
+            await Task.WhenAll([.. users, .. disposers]);
+            Assert.Throws<ObjectDisposedException>(() => ts.Json);
+        }
+    }
+
+    [Fact]
     public void SpellsPitches()
     {
         var s = BrasscribeCore.SpellPitches([0, 1, 2], [66, 69, 74]);
