@@ -13,7 +13,8 @@ The page is regenerated from this folder (`design/`); nothing in it is edited by
 - `components/`: static previews and guidelines for the core components, and `bundle.css`, which is the
   component CSS from `mockups/mockup.css` pointed at the artifact's tokens.
 - `fonts/` and `assets/`: Instrument Serif, the logos, the app icon masters, the icons, the mockup PNGs and
-  the social preview, copied as they are. Mockups that show a computer name or a network address are left out.
+  the social preview, copied as they are. Only the mockup screens listed in `PUBLISHED_MOCKUPS` are copied; the
+  build stops on a screen it doesn't know, so a new one is published only after it is added to a list.
 
 Beside `project/` it writes `assets.json`, the map of asset files to upload (group, name, source, size,
 media type). The artifact's index (`project/design-system.json`) is not generated: it holds the upload
@@ -30,7 +31,13 @@ The output depends only on the files under `design/`, so two runs give the same 
 
 ## Keeping the artifact in sync
 
-After a change to `design/` lands on `main`, ask Claude Code to republish the artifact. It rebuilds, then
-compares the output with the published files and sends only the `project/` files that changed. Any new or
-changed images go up first as uploads. The index goes last, re-read just before it is written so its other
-keys are kept.
+After a change to `design/` lands on `main`, ask Claude Code to republish the artifact, or do it by hand:
+
+1. Run `uv run design/claude/build.py`.
+2. Upload new or changed images from `out/project/assets/` as assets to the artifact url.
+3. Publish the `project/` files that changed (never the whole tree).
+4. Last, read the current `project/design-system.json`, keep its keys, update the asset records and
+   `lastChange`, and write it back.
+
+Reading the artifact's content fails behind some corporate web filters (the host answers HTTP 307), and
+publishing needs that read first. Run these steps from another network.

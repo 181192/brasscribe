@@ -49,10 +49,18 @@ ELEVATION_BLOCKS = {
     "pink-dark": ':root[data-theme="dark"] {',
 }
 
-# Mockups that render a person's computer name or a network address stay out of the artifact.
-PRIVATE_IN_MOCKUP = re.compile(
-    r"\b[A-Z][a-z]+'s (?:MacBook|PC|Mac)\b|\b[A-Z][a-z]+s MacBook\b|\b\d{1,3}(?:\.\d{1,3}){3}\b|\.local\."
-)
+# Mockup screens by the page they are rendered from. Only PUBLISHED_MOCKUPS go into the artifact; the
+# withheld ones show private details. A page in neither list stops the build, so a new screen is never
+# published until someone has looked at it and added it here.
+PUBLISHED_MOCKUPS = {
+    "choose-output", "export", "finish-later", "first-run", "home", "music-stand-entry",
+    "music-stand-landscape", "music-stand-phone", "music-stand-tablet", "my-instrument-first-run",
+    "my-instrument-review", "my-instrument-score", "part", "review", "score", "server-first-run", "studio-run",
+}
+WITHHELD_MOCKUPS = {
+    "error", "my-instrument-settings", "server-mac-popover", "server-needs-attention", "server-pair",
+    "server-win-flyout", "transcribing", "what-is-this",
+}
 
 MEDIA_TYPES = {".svg": "image/svg+xml", ".png": "image/png"}
 
@@ -756,13 +764,16 @@ def build_music_stand(md: str) -> str:
 # ---------- assets ----------
 
 def mockup_pngs() -> list[Path]:
-    htmls = {p.stem: p for p in (DESIGN / "mockups").glob("*.html")}
-    keep = []
+    known = PUBLISHED_MOCKUPS | WITHHELD_MOCKUPS
+    keep, unknown = [], []
     for png in sorted((DESIGN / "mockups/png").glob("*.png")):
-        stem = max((s for s in htmls if png.stem.startswith(s + "-")), key=len, default=None)
-        if stem and PRIVATE_IN_MOCKUP.search(htmls[stem].read_text(encoding="utf-8")):
-            continue
-        keep.append(png)
+        stem = max((s for s in known if png.stem.startswith(s + "-")), key=len, default=None)
+        if stem is None:
+            unknown.append(png.name)
+        elif stem in PUBLISHED_MOCKUPS:
+            keep.append(png)
+    if unknown:
+        raise SystemExit("mockups not listed in PUBLISHED_MOCKUPS or WITHHELD_MOCKUPS:\n  " + "\n  ".join(unknown))
     return keep
 
 
