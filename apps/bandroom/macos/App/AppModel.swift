@@ -443,7 +443,7 @@ final class AppModel {
 
     /// The downloads folder in GB, when there is one to keep or delete.
     func downloadsGB() -> Double? {
-        Uninstaller(paths: paths).downloadsSize().map { Double($0) / 1_000_000_000 }
+        Uninstaller(paths: paths, hub: downloader.hub).downloadsSize().map { Double($0) / 1_000_000_000 }
     }
 
     /// Stops the engine, unregisters the login item, deletes the data folder (all of it, or all but
@@ -459,7 +459,7 @@ final class AppModel {
         releaseSleep()
         try? SMAppService.mainApp.unregister()
         do {
-            try Uninstaller(paths: paths).remove(keepDownloads: !deleteDownloads)
+            try Uninstaller(paths: paths, hub: downloader.hub).remove(keepDownloads: !deleteDownloads)
         } catch {
             logger.write("remove: \(error)")
         }

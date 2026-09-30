@@ -60,6 +60,49 @@ import Testing
         }
     }
 
+    @Test func theBandWriterInTheHuggingFaceCacheCountsAsADownload() throws {
+        let (home, paths) = try makeHome()
+        defer { try? FileManager.default.removeItem(at: home) }
+        let fm = FileManager.default
+        let hub = home.appending(path: ".cache/huggingface/hub", directoryHint: .isDirectory)
+        let writer = ModelCatalog.hubRepoFolder(ModelCatalog.muscriptorRepo, hub: hub)
+        let other = hub.appending(path: "models--someone--else", directoryHint: .isDirectory)
+        for dir in [writer.appending(path: "blobs"), other] { try fm.createDirectory(at: dir, withIntermediateDirectories: true) }
+        try Data(repeating: 2, count: 8192).write(to: writer.appending(path: "blobs/ac80"))
+        let u = Uninstaller(paths: paths, home: home, hub: hub)
+        let size = try #require(u.downloadsSize())
+        #expect(size >= 4096 + 8192)
+        try u.remove(keepDownloads: true)
+        #expect(fm.fileExists(atPath: writer.path), "kept with the downloads")
+        try u.remove(keepDownloads: false)
+        #expect(!fm.fileExists(atPath: writer.path))
+        #expect(fm.fileExists(atPath: other.path), "someone else's models stay")
+    }
+
+    @Test func aFolderChosenElsewhereLosesOnlyWhatBrasscribePutThere() throws {
+        let fm = FileManager.default
+        let home = fm.temporaryDirectory.appending(path: "bandroom-override-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? fm.removeItem(at: home) }
+        // BRASSCRIBE_DATA and BRASSCRIBE_LOGS pointed at a folder the user keeps other things in.
+        let documents = home.appending(path: "Documents", directoryHint: .isDirectory)
+        let paths = BandroomPaths(data: documents, logs: documents)
+        for dir in [paths.models, paths.state, paths.workspace.appending(path: ".pixi")] {
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        for file in [paths.adminToken, paths.engineStatus, paths.engineLog, paths.bandroomLog, documents.appending(path: "thesis.txt")] {
+            try Data("x".utf8).write(to: file)
+        }
+        try Uninstaller(paths: paths, home: home).remove(keepDownloads: false)
+        #expect(try fm.contentsOfDirectory(atPath: documents.path) == ["thesis.txt"])
+
+        // A folder of its own is gone once it's empty.
+        let own = home.appending(path: "brasscribe-data", directoryHint: .isDirectory)
+        let ownPaths = BandroomPaths(data: own, logs: home.appending(path: "brasscribe-logs"))
+        try fm.createDirectory(at: ownPaths.state, withIntermediateDirectories: true)
+        try Uninstaller(paths: ownPaths, home: home).remove(keepDownloads: false)
+        #expect(!fm.fileExists(atPath: own.path))
+    }
+
     @Test func missingFoldersAreFine() throws {
         let home = FileManager.default.temporaryDirectory.appending(path: "bandroom-empty-\(UUID().uuidString)", directoryHint: .isDirectory)
         let paths = BandroomPaths(data: home.appending(path: "data"), logs: home.appending(path: "logs"))

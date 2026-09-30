@@ -208,7 +208,7 @@ Play for macOS and Windows uses Bandroom over loopback, where it is **trusted an
   - ☑ "Also delete the downloads (9.8 GB)", on by default.
   - "Scores on your phones stay."
   - [Cancel] [**Remove**]
-  - It unregisters the login item, deletes the data folder and moves the app to the Bin.
+  - It unregisters the login item, deletes the data folder and moves the app to the Bin. The downloads are the models folder and the band writer in the Hugging Face cache. A data or logs folder moved elsewhere (`BRASSCRIBE_DATA`, `BRASSCRIBE_LOGS`) loses only what Brasscribe put there.
   - Dragging the app to the Bin also works. macOS drops the login item, but the data folder (`~/Library/Application Support/Brasscribe`) stays, and the download page says so.
 - **Windows:** Settings › Apps › Installed apps › Brasscribe Bandroom › Uninstall. MSIX removes the package and its redirected app data (§5.3). The More menu has the same **Remove Brasscribe from this PC…**, which opens that Settings page.
 
