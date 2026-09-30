@@ -144,7 +144,7 @@ The **Pair a phone** window offers three ways, easiest first. They all end in th
 
 **Time limits (WCAG 2.2.1):**
 - The code works **while the Pair window is open**, and each code works **once**. The window says exactly that: "This code works while this window is open, and only once."
-- Behind the scenes, the app opens the engine's pairing window with no expiry while the window is open, and closes it when the window closes. If a fixed lifetime is ever needed, the app extends the 10-minute window in the background instead. Either way, the user never sees a timer or races one.
+- Behind the scenes, the app opens the engine's pairing window while the window is open, and closes it when the window closes. Windows opens it with no expiry. The Mac opens it for 10 minutes and extends it in the background while the window stays open, so a code can't outlive a Bandroom that quit or crashed with the window open. Either way, the user never sees a timer or races one.
 - **Pair another phone** in the window issues the next code.
 - The code never changes under the user. After 5 wrong codes, the engine locks code entry for 30 s, and the lock grows up to 15 min. The window then says, politely: "Too many wrong codes. Wait a moment, or allow the phone here." Way 1 still works during a lockout, so a stranger on the network can't block pairing.
 
@@ -668,7 +668,7 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` Â
 - **Status:** `GET /v1/status` returns `server_id`, `server_name`, `version`, `online_devices`, `paired_devices`, `pairing_open`, `jobs_running` and `jobs_queued`. Bandroom polls it every 5 s while the popover or flyout is open, and every 30 s otherwise. A device is online when it was seen in the last 60 s. Paired phones send a heartbeat every 20 s while the app is open.
 
 - **The pairing window:** `POST /v1/pairing {ttl_s, single_use, extend}` returns the state: `open`, `code`, `expires_at`, `server_id`, `server_name`, `hosts`, `fingerprint` and `uri`.
-  - `ttl_s: null` means no expiry. Bandroom uses that while the Pair window is open.
+  - `ttl_s: null` means no expiry. Bandroom for Windows uses that while the Pair window is open; Bandroom for Mac sends 600 and extends it.
   - `extend: true` keeps the code and moves the expiry.
   - `GET /v1/pairing` reads the state; `DELETE /v1/pairing` closes it when the window closes.
   - The engine ignores spaces, so "482 913" can be typed as shown.

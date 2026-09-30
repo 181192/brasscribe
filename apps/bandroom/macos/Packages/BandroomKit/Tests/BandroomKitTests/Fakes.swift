@@ -20,6 +20,8 @@ final class FakeEngine: EngineAPI, @unchecked Sendable {
     var decideError: EngineError?
     var failAll = false
     var nextCode = 482913
+    /// Runs before a new code is made (not an extension): a test holds the engine there.
+    var beforeOpen: (@Sendable () async -> Void)?
 
     private func record(_ s: String) throws {
         lock.withLock { _calls.append(s) }
@@ -36,6 +38,7 @@ final class FakeEngine: EngineAPI, @unchecked Sendable {
     func pairing() async throws -> PairingState { try record("pairing"); return pairingValue }
     func openPairing(_ body: PairingOpen) async throws -> PairingState {
         try record(body.extend ? "extend" : "open")
+        if !body.extend, let beforeOpen { await beforeOpen() }
         opened.append(body)
         if !body.extend {
             pairingValue.open = true
@@ -100,6 +103,33 @@ final class FakeLauncher: ProcessLauncher, @unchecked Sendable {
     func crash(_ pid: Int32, status: Int32 = 256) {
         let exit = lock.withLock { exits.removeValue(forKey: pid) }
         exit?(status)
+    }
+}
+
+/// Holds whoever waits until the test opens it.
+final class Gate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var isOpen = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func wait() async {
+        await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
+            let now = lock.withLock { () -> Bool in
+                if isOpen { return true }
+                waiters.append(c)
+                return false
+            }
+            if now { c.resume() }
+        }
+    }
+
+    func open() {
+        let held = lock.withLock { () -> [CheckedContinuation<Void, Never>] in
+            isOpen = true
+            defer { waiters = [] }
+            return waiters
+        }
+        held.forEach { $0.resume() }
     }
 }
 
