@@ -101,11 +101,12 @@ import Testing
         let piece = try LayoutFixtures.piece()
         // Settings reads its own store: Pink chosen and unlocked, without touching this Mac's settings
         let store = try #require(UserDefaults(suiteName: "pink-shots"))
-        store.set("pink", forKey: AppearanceSetting.key)
         store.set(true, forKey: PinkUnlock.key)
         let window = CGSize(width: 1280, height: 800 - OffscreenHost.toolbarHeight)
 
-        for (dark, suffix) in [(false, "pink"), (true, "pink-dark")] {
+        for (choice, suffix) in [(AppearanceSetting.pinkLight, "pink"), (.pinkDark, "pink-dark")] {
+            let dark = choice == .pinkDark
+            store.set(choice.rawValue, forKey: AppearanceSetting.key)
             save(await render(HarnessShell { HomeView() }.environment(app), size: window, dark: dark), "apple-home-\(suffix)")
             let model = try await LayoutFixtures.model(piece)
             save(await render(HarnessShell { PracticeView(model: model).pageBackground() }.environment(app), size: window, dark: dark,

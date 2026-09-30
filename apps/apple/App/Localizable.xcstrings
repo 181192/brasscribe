@@ -3061,12 +3061,22 @@
         }
       }
     },
-    "Pink": {
+    "Pink dark": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rosa"
+            "value": "Rosa mørk"
+          }
+        }
+      }
+    },
+    "Pink light": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosa lys"
           }
         }
       }

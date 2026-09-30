@@ -58,7 +58,7 @@ struct SettingsView: View {
 
                 Section {
                     Picker(selection: $appearance) {
-                        ForEach(AppearanceSetting.options(pinkUnlocked: pinkUnlocked || appearance == AppearanceSetting.pink.rawValue)) { a in
+                        ForEach(AppearanceSetting.options(pinkUnlocked: pinkUnlocked || AppearanceSetting.storedIsPink(appearance))) { a in
                             Text(a.title).tag(a.rawValue)
                         }
                     } label: { Text("Appearance") }
