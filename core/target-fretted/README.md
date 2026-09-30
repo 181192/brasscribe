@@ -39,16 +39,25 @@ Presets (`PRESET_IDS`, `preset(id)`):
 |---|---|---|---|
 | `guitar-standard` | E4 B3 G3 D3 A2 E2 | 22 | 648 mm |
 | `guitar-eb-standard` | E♭4 B♭3 G♭3 D♭3 A♭2 E♭2 | 22 | 648 mm |
+| `guitar-d-standard` | D4 A3 F3 C3 G2 D2 | 22 | 648 mm |
+| `guitar-c-standard` | C4 G3 E♭3 B♭2 F2 C2 | 22 | 648 mm |
 | `guitar-drop-d` | E4 B3 G3 D3 A2 D2 | 22 | 648 mm |
 | `guitar-drop-c` | D4 A3 F3 C3 G2 C2 | 22 | 648 mm |
+| `guitar-drop-b` | C♯4 G♯3 E3 B2 F♯2 B1 | 22 | 648 mm |
 | `guitar-dadgad` | D4 A3 G3 D3 A2 D2 | 22 | 648 mm |
 | `guitar-open-g` | D4 B3 G3 D3 G2 D2 | 22 | 648 mm |
 | `guitar-open-d` | D4 A3 F♯3 D3 A2 D2 | 22 | 648 mm |
 | `guitar-open-e` | E4 B3 G♯3 E3 B2 E2 | 22 | 648 mm |
 | `guitar-7-standard` | E4 B3 G3 D3 A2 E2 B1 | 24 | 648 mm |
+| `guitar-7-eb-standard` | E♭4 B♭3 G♭3 D♭3 A♭2 E♭2 B♭1 | 24 | 648 mm |
 | `guitar-8-standard` | E4 B3 G3 D3 A2 E2 B1 F♯1 | 24 | 686 mm |
 | `bass-4-standard` | G2 D2 A1 E1 | 21 | 864 mm |
+| `bass-4-eb-standard` | G♭2 D♭2 A♭1 E♭1 | 21 | 864 mm |
+| `bass-4-d-standard` | F2 C2 G1 D1 | 21 | 864 mm |
+| `bass-4-drop-d` | G2 D2 A1 D1 | 21 | 864 mm |
+| `bass-4-bead` | D2 A1 E1 B0 | 21 | 864 mm |
 | `bass-5-standard` | G2 D2 A1 E1 B0 | 24 | 864 mm |
+| `bass-5-drop-a` | G2 D2 A1 E1 A0 | 24 | 864 mm |
 | `bass-6-standard` | C3 G2 D2 A1 E1 B0 | 24 | 864 mm |
 | `ukulele-high-g` | A4 E4 C4 G4 (concert) | 18 | 380 mm |
 | `ukulele-low-g` | A4 E4 C4 G3 (concert) | 18 | 380 mm |
@@ -58,10 +67,34 @@ Presets (`PRESET_IDS`, `preset(id)`):
 `ukulele(UkuleleSize::Soprano | Concert | Tenor, low_g)` builds the other ukulele sizes: 330, 380
 and 432 mm. A custom tuning is just another `Tuning`.
 
+A 5-string bass already reaches D1 on its low B string, so its drop tuning lowers that string to
+A0 instead of adding a drop D.
+
+### Families and tuning suggestion
+
+Presets group into **families**: the same instrument in different tunings (`preset_family(id)`,
+`family_presets(family)`). The families are `guitar`, `guitar-7`, `guitar-8`, `bass-4`, `bass-5`,
+`bass-6`, `ukulele`, `ukulele-baritone` and `mandolin`. The first preset of each family is its
+standard tuning.
+
+`suggest_tunings(family, notes, capo)` ranks every preset of a family by how well it fits the notes.
+It sorts on four keys, in order:
+
+1. fewest out-of-range notes;
+2. fewest notes that can only be played above the 12th fret;
+3. closest to the standard tuning, as semitones summed over the open strings;
+4. preset order.
+
+A bass line that goes down to D1 ranks `bass-4-drop-d` first. A line that fits standard tuning ranks
+standard first. The JSON response carries this ranking for a preset instrument, so the song check
+can offer "Sounds like drop D" and the player confirms it.
+
 ## How notes are placed
 
 Notes that start on the same tick form an **event**. Notes of the same pitch in one event (a
-doubling from two voices) sound as one note and share a position.
+doubling from two voices) sound as one note and share a position. The exception is a strummed
+ukulele or mandolin chord that is an open shape from the shape table (below): there each doubled
+note gets its own string, as in the shape.
 
 For each event, the solver lists **voicings**: each note on its own string, at a position that
 sounds its pitch within the neck, above the capo and not on a short string's missing frets. It
@@ -105,6 +138,7 @@ Per state:
 - **Height.** A cost per mm the hand sits above the nut (or the capo).
 - **Open strings.** A bonus or penalty per open string, set separately for chords and for
   single-note lines.
+- **Chord shapes.** A bonus for a voicing from the shape table (below).
 
 Per transition from one event to the next:
 
@@ -115,14 +149,16 @@ Per transition from one event to the next:
   below the neighbouring hand position costs extra, per mm of the drop. This is the
   "twelfth-fret solo written as open strings" failure: a line played up the neck should not dip to
   an open string or a first-position fret on a thin string for one note.
+- **Techniques.** Breaking a technique constraint (below) costs so much that the search only does it
+  when nothing else fits.
 
 Style presets (`Style`) re-weight these terms:
 
-| Style | Height | Open strings | Shifts |
-|---|---|---|---|
-| `OpenPosition` | strongest pull to the nut | bonus in chords and lines | normal |
-| `AsPlayed` (default) | mild | small bonus in chords, neutral in lines | normal |
-| `Lead` | almost none | penalty in single-note lines | doubled, so a phrase stays in one position |
+| Style | Height | Open strings | Shifts | Chord shapes |
+|---|---|---|---|---|
+| `OpenPosition` | strongest pull to the nut | bonus in chords and lines | cheapest | power chords and open shapes, strongest |
+| `AsPlayed` (default) | mild | small bonus in chords, neutral in lines | a fixed cost per move keeps a lick in its box | power chords and open shapes |
+| `Lead` | almost none | penalty in single-note lines | also twice the cost per mm, so a phrase stays in one position | power chords only |
 
 The weights are in one table in `src/solve.rs`.
 
@@ -133,6 +169,34 @@ deviating does this, so a pin or an impossible reuse still wins.
 **Pins.** `Options::pins` fixes the string of a note. The solver treats a pin as a hard constraint,
 and the neighbours and the rest of a chord reflow around it. A pin on a string that cannot sound the
 pitch is ignored by the solver and reported by the check.
+
+### Chord shapes
+
+`src/shapes.rs` holds two small tables:
+
+- **Power chords.** Root and fifth, with or without the octave, on adjacent strings, root on the
+  lowest. The tuning decides the frets: `x-3-5-5` for C5 in standard tuning, the one-finger `5-5-5`
+  for G5 in drop D.
+- **Open shapes for strummed ukulele and mandolin chords.** These fill every string, so they double
+  a pitch on a second string. Ukulele G is `0-2-3-2`, Am `2-0-0-0`, F `2-0-1-0` and C `0-0-0-3`
+  (high and low G). The mandolin has the common GDAE shapes. Doubling only happens when the input
+  already holds the doubled note, as a transcribed strum does. The solver never adds notes.
+
+A style turns a table off by setting its weight to zero.
+
+### Techniques
+
+A note can carry a technique: `Options::techniques`, or `technique` on a JSON note.
+
+- **Slide, hammer-on, pull-off and bend** keep the string of the note they come from. That is the
+  note among those starting most recently before it that is closest in pitch. A bend must also be
+  fretted.
+- **Let ring** reserves the note's string until the note's written end, so no later note may start
+  on it while it sounds. The search sees only neighbouring events. For a later note further on, the
+  string is taken away and the passage is solved again, up to eight times.
+- **Vibrato** is accepted and does not constrain the position yet.
+
+A technique that cannot be honoured is left to the check to report.
 
 **Alternatives.** Each note lists every other position that sounds its pitch. They are ranked by
 the local cost of playing the note there: the cheapest state of that event using the alternative,
@@ -148,16 +212,24 @@ with its transitions to the chosen neighbours. There is no full re-solve per alt
   (`wrong-pitch`);
 - a pinned note that is not on its pinned string (`pin-not-honoured`);
 - an in-range note left without a string, or an out-of-range flag that does not match the
-  instrument (`no-string`).
+  instrument (`no-string`);
+- a slide, hammer-on, pull-off or bend on another string than the note it comes from
+  (`technique-string`), or a bend on an open string (`bend-on-open-string`);
+- a note that starts on a string a let-ring note still reserves (`ring-cut`). This check looks at
+  notes that overlap in time, not only notes that start together.
 
 ## JSON
 
-`json::solve_json` takes a request and answers with the instrument used, the fingering and the
-violations.
+`json::solve_json` takes a request. It answers with:
+
+- the instrument used;
+- the fingering;
+- the violations;
+- for a preset instrument, `tuning_suggestions`: the presets of its family, ranked.
 
 ```json
 {"instrument": {"preset": "guitar-standard", "capo": 2},
- "notes": [{"pitch": 64, "start": 0, "dur": 24}],
+ "notes": [{"pitch": 62, "start": 0, "dur": 12}, {"pitch": 64, "start": 12, "dur": 12, "technique": "hammer_on"}],
  "options": {"style": "open-position", "tempo_bpm": 96, "pins": [{"note": 0, "string": 2}]}}
 ```
 
@@ -171,16 +243,13 @@ field that is missing or unknown.
 
 ## Not modelled yet
 
-- **Let-ring and sustain.** A note still sounding when the next starts does not reserve its string.
-- **Technique constraints.** Bends, slides and hammer-ons do not force a fretted note or a shared
-  string.
-- **Chord shapes.** There is no table of idiomatic shapes (CAGED forms, power chords). There is no
-  finger count or barre model either. Open chord shapes come from the span, height and open-string
-  terms.
+- **Sustain without let ring.** A note without `let_ring` may be cut by a later note on its string.
+- **Held notes and the hand span.** Only notes that start on the same tick count as one event for
+  the span.
+- **Guitar chord shapes beyond power chords.** There is no CAGED table, and no finger count or barre
+  model. Guitar open chords come from the span, height and open-string terms.
+- **Vibrato** has no position constraint.
 - **String crossing.** Skipping strings costs nothing.
-- **Tuning suggestion** from the range of the notes.
-- **Sustained notes.** Only notes that start on the same tick count as one event for span and
-  shared strings.
 
 The weights are hand-set against the tests below. They have not been fitted to a tab corpus.
 
@@ -217,4 +286,25 @@ cargo clippy -p target-fretted --no-deps --all-targets -- -D warnings
   - doublings;
   - the JSON round trip.
 
-Unit tests in `src/instrument.rs` cover positions, the capo, short strings and fret distances.
+`tests/shapes_tunings_techniques.rs` covers:
+
+- **Chord shapes:**
+  - power chords: C5 `x-3-5-5`, the C5 dyad and drop-D G5 `5-5-5` in every style, plus a riff of
+    power chords;
+  - ukulele G, Am, F and C on high and low G, and with a capo;
+  - mandolin G and D.
+- **Tuning suggestion:**
+  - a bass line down to D1 is flagged in standard, gets drop D suggested, and plays cleanly in
+    drop D, also through JSON;
+  - a line that fits standard ranks standard first;
+  - BEAD, drop D, drop B and the 7-string E♭ tuning each rank first for a line that needs them.
+- **Techniques:**
+  - hammer-ons, pull-offs, slides and bends stay on the string;
+  - a bend moves off an open string;
+  - let ring keeps later notes off its string, both at the next onset and further on;
+  - the check reports each broken constraint;
+  - techniques are read from JSON notes.
+- **Position:** E minor pentatonic licks at the 12th fret stay in frets 12 to 15.
+
+Unit tests in `src/instrument.rs` cover positions, the capo, short strings, fret distances and
+families. Unit tests in `src/shapes.rs` cover the shape tables.
