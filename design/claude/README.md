@@ -13,8 +13,8 @@ The page is regenerated from this folder (`design/`); nothing in it is edited by
 - `components/`: static previews and guidelines for the core components, and `bundle.css`, which is the
   component CSS from `mockups/mockup.css` pointed at the artifact's tokens.
 - `fonts/` and `assets/`: Instrument Serif, the logos, the app icon masters, the icons, the mockup PNGs and
-  the social preview, copied as they are. Only the mockup screens listed in `PUBLISHED_MOCKUPS` are copied; the
-  build stops on a screen it doesn't know, so a new one is published only after it is added to a list.
+  the social preview, copied as they are. Only the mockup PNGs named in `PUBLISHED_MOCKUPS` are copied; the
+  build stops on a PNG it doesn't know, so a new one is published only after it is added to a list.
 
 Beside `project/` it writes `assets.json`, the map of asset files to upload (group, name, source, size,
 media type). The artifact's index (`project/design-system.json`) is not generated: it holds the upload
@@ -38,6 +38,3 @@ After a change to `design/` lands on `main`, ask Claude Code to republish the ar
 3. Publish the `project/` files that changed (never the whole tree).
 4. Last, read the current `project/design-system.json`, keep its keys, update the asset records and
    `lastChange`, and write it back.
-
-Reading the artifact's content fails behind some corporate web filters (the host answers HTTP 307), and
-publishing needs that read first. Run these steps from another network.

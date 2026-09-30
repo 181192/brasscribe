@@ -49,17 +49,44 @@ ELEVATION_BLOCKS = {
     "pink-dark": ':root[data-theme="dark"] {',
 }
 
-# Mockup screens by the page they are rendered from. Only PUBLISHED_MOCKUPS go into the artifact; the
-# withheld ones show private details. A page in neither list stops the build, so a new screen is never
-# published until someone has looked at it and added it here.
+# Mockup PNGs by exact file name. Only PUBLISHED_MOCKUPS go into the artifact; the withheld ones show
+# private details. A PNG in neither list stops the build, so a new screenshot is never published until
+# someone has looked at it and added it here.
 PUBLISHED_MOCKUPS = {
-    "choose-output", "export", "finish-later", "first-run", "home", "music-stand-entry",
-    "music-stand-landscape", "music-stand-phone", "music-stand-tablet", "my-instrument-first-run",
-    "my-instrument-review", "my-instrument-score", "part", "review", "score", "server-first-run", "studio-run",
+    "choose-output-desktop-dark.png", "choose-output-desktop-light.png", "choose-output-nb-phone-light.png",
+    "choose-output-phone-dark.png", "choose-output-phone-light.png", "export-desktop-dark.png",
+    "export-desktop-light.png", "export-phone-dark.png", "export-phone-light.png", "finish-later-desktop-dark.png",
+    "finish-later-phone-light.png", "first-run-phone-dark.png", "first-run-phone-light.png",
+    "home-desktop-dark.png", "home-desktop-light.png", "home-phone-dark.png", "home-phone-light.png",
+    "music-stand-entry-desktop-light.png", "music-stand-entry-nb-phone-light.png",
+    "music-stand-entry-phone-light.png", "music-stand-landscape-phone-land-dark-shown.png",
+    "music-stand-landscape-phone-land-light-hidden.png", "music-stand-landscape-phone-land-light-locked.png",
+    "music-stand-landscape-phone-land-light-shown.png", "music-stand-phone-nb-phone-light-shown.png",
+    "music-stand-phone-phone-dark-shown.png", "music-stand-phone-phone-hc-shown.png",
+    "music-stand-phone-phone-light-hidden.png", "music-stand-phone-phone-light-shown.png",
+    "music-stand-phone-phone-light-turn.png", "music-stand-tablet-tablet-land-dark-shown.png",
+    "music-stand-tablet-tablet-land-light-hidden.png", "music-stand-tablet-tablet-land-light-shown.png",
+    "my-instrument-first-run-nb-phone-light.png", "my-instrument-first-run-phone-dark.png",
+    "my-instrument-first-run-phone-light.png", "my-instrument-review-desktop-dark.png",
+    "my-instrument-review-phone-light.png", "my-instrument-score-desktop-light.png",
+    "my-instrument-score-phone-dark.png", "my-instrument-score-phone-light.png", "part-desktop-dark.png",
+    "part-desktop-light.png", "part-phone-dark.png", "part-phone-light.png", "review-desktop-dark.png",
+    "review-desktop-light.png", "review-phone-dark.png", "review-phone-light.png", "score-desktop-dark.png",
+    "score-desktop-light.png", "score-phone-dark.png", "score-phone-light.png", "server-first-run-desktop-dark.png",
+    "server-first-run-desktop-light.png", "server-first-run-nb-desktop-light.png", "studio-run-desktop-dark.png",
+    "studio-run-desktop-light.png",
 }
 WITHHELD_MOCKUPS = {
-    "error", "my-instrument-settings", "server-mac-popover", "server-needs-attention", "server-pair",
-    "server-win-flyout", "transcribing", "what-is-this",
+    "error-desktop-dark.png", "error-phone-light.png", "my-instrument-settings-desktop-light.png",
+    "my-instrument-settings-phone-light.png", "server-mac-popover-desktop-dark.png",
+    "server-mac-popover-desktop-hc.png", "server-mac-popover-desktop-light.png",
+    "server-needs-attention-desktop-dark.png", "server-needs-attention-desktop-light.png",
+    "server-pair-desktop-dark.png", "server-pair-desktop-hc.png", "server-pair-desktop-light.png",
+    "server-pair-nb-desktop-light.png", "server-win-flyout-desktop-dark.png", "server-win-flyout-desktop-light.png",
+    "transcribing-desktop-dark.png", "transcribing-desktop-light.png", "transcribing-phone-dark.png",
+    "transcribing-phone-light.png", "what-is-this-desktop-dark.png", "what-is-this-desktop-light.png",
+    "what-is-this-nb-desktop-light.png", "what-is-this-nb-phone-light.png", "what-is-this-phone-dark.png",
+    "what-is-this-phone-light.png",
 }
 
 MEDIA_TYPES = {".svg": "image/svg+xml", ".png": "image/png"}
@@ -764,17 +791,11 @@ def build_music_stand(md: str) -> str:
 # ---------- assets ----------
 
 def mockup_pngs() -> list[Path]:
-    known = PUBLISHED_MOCKUPS | WITHHELD_MOCKUPS
-    keep, unknown = [], []
-    for png in sorted((DESIGN / "mockups/png").glob("*.png")):
-        stem = max((s for s in known if png.stem.startswith(s + "-")), key=len, default=None)
-        if stem is None:
-            unknown.append(png.name)
-        elif stem in PUBLISHED_MOCKUPS:
-            keep.append(png)
+    pngs = sorted((DESIGN / "mockups/png").glob("*.png"))
+    unknown = [p.name for p in pngs if p.name not in PUBLISHED_MOCKUPS | WITHHELD_MOCKUPS]
     if unknown:
         raise SystemExit("mockups not listed in PUBLISHED_MOCKUPS or WITHHELD_MOCKUPS:\n  " + "\n  ".join(unknown))
-    return keep
+    return [p for p in pngs if p.name in PUBLISHED_MOCKUPS]
 
 
 def svg_ink(path: Path) -> str:
