@@ -24,6 +24,11 @@ body = """
 {% elif scope == "music" %}Music library{% elif scope == "playback" %}Playback{% elif scope == "notation" %}Notation\
 {% elif scope == "sounds" %}Band sounds{% elif scope == "site" %}Site{% elif scope == "design" %}Design{% elif scope == "qa" %}QA{% elif scope == "bandroom-mac" %}Bandroom for Mac\
 {% elif scope == "bandroom-windows" %}Bandroom for Windows{% elif scope == "musicxml" %}MusicXML{% elif scope == "quantize" %}Quantization\
+{% elif scope == "bandroom-win" %}Bandroom for Windows{% elif scope == "bandroom-macos" %}Bandroom for Mac\
+{% elif scope in ["ffi", "bindings", "core-artifacts"] %}Core{% elif scope == "dotnet" %}Windows\
+{% elif scope in ["ml", "adapters", "pipeline"] %}Engine{% elif scope == "ci" %}CI{% elif scope == "perf" %}Performance\
+{% elif scope == "check" %}Checks{% elif scope == "test" %}Tests{% elif scope == "mac-vm" %}Mac VM{% elif scope == "dev" %}Developer tools\
+{% elif scope == "fast-notes" %}Fast notes{% elif scope in ["plan", "plan,research", "research"] %}Research\
 {% else %}{{ scope | upper_first }}{% endif -%}
 {%- endmacro -%}
 
@@ -60,9 +65,11 @@ body = """
 </details>
 {% endif -%}
 
-{%- if github.contributors | filter(attribute="is_first_time", value=true) | length > 0 %}
+{%- set newcomers = github.contributors | filter(attribute="is_first_time", value=true) | filter(attribute="username") -%}
+{%- set humans = [] -%}{%- for c in newcomers -%}{%- if not c.username is ending_with("[bot]") %}{% set_global humans = humans | concat(with=c) %}{% endif -%}{%- endfor -%}
+{%- if humans | length > 0 %}
 ### New contributors
-{% for contributor in github.contributors | filter(attribute="is_first_time", value=true) %}
+{% for contributor in humans %}
 - @{{ contributor.username }} made their first contribution{% if contributor.pr_number %} in [#{{ contributor.pr_number }}](https://github.com/181192/brasscribe/pull/{{ contributor.pr_number }}){% endif %}
 {%- endfor %}
 {% endif %}
@@ -72,7 +79,8 @@ trim = true
 
 [git]
 conventional_commits = true
-filter_unconventional = true
+# Commits that don't follow Conventional Commits are kept, under "Under the hood".
+filter_unconventional = false
 split_commits = false
 protect_breaking_commits = true
 filter_commits = false
@@ -80,9 +88,18 @@ filter_commits = false
 # (sounds-*) are separate.
 tag_pattern = "^v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"
 sort_commits = "oldest"
+# Public wording: the reference recording used in development is a copyrighted piece and is not
+# named in the notes; one old entry would point at personal data that is no longer there.
+commit_preprocessors = [
+  { pattern = "(?i)\\bmikkel\\b", replace = "reference" },
+  { pattern = "(?i)drop the work email from the music package metadata", replace = "tidy the music package metadata" },
+]
 commit_parsers = [
   { message = "^chore\\(release\\)", skip = true },
   { message = "^Merge ", skip = true },
+  # Developer tooling, tests and plans are housekeeping even when typed feat or fix.
+  { message = "^(feat|fix|perf)\\((check|test|core-artifacts|mac-vm|dev|plan|plan,research|research|eval|fast-notes|conformance|ci|qa)\\)", group = "<!-- 9 -->Under the hood", default_scope = "~" },
+  { message = "^fix: .*\\bVM\\b", group = "<!-- 9 -->Under the hood", default_scope = "~" },
   { message = "^feat", group = "<!-- 0 -->New features", default_scope = "~" },
   { message = "^fix", group = "<!-- 1 -->Fixes", default_scope = "~" },
   { message = "^perf", group = "<!-- 2 -->Performance", default_scope = "~" },

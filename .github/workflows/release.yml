@@ -16,6 +16,11 @@ on:
 permissions:
   contents: read
 
+# One release run per tag at a time: a tag push and a hand-started run must not publish twice.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   tag:
     name: started on a release tag
@@ -67,6 +72,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/download-artifact@v4
         with:
@@ -77,13 +83,26 @@ jobs:
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
 
-      # Release notes from the Conventional Commits since the last release (cliff.toml): new features
-      # and fixes labelled by app, the rest folded away, first-time contributors named.
+      # Release notes from the Conventional Commits since the previous release (cliff.toml): new
+      # features and fixes sorted and labelled by scope, the rest folded away, first-time contributors
+      # named. The range is explicit, so a run started again for an older tag gets that tag's notes; a
+      # stable release counts from the previous stable one, past any pre-releases in between.
+      - name: Release notes range
+        id: range
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ $TAG == *-* ]]; then exclude=(); ignore=''; else exclude=(--exclude '*-*'); ignore='.*-.*'; fi
+          prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${exclude[@]}" "$TAG^" 2>/dev/null || true)
+          echo "range=${prev:+$prev..}$TAG" >> "$GITHUB_OUTPUT"
+          echo "ignore=$ignore" >> "$GITHUB_OUTPUT"
+          echo "notes for ${prev:-the start}..$TAG"
+
       - name: Release notes
         uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4
         with:
           config: cliff.toml
-          args: --latest --strip header
+          args: ${{ steps.range.outputs.ignore && format('--ignore-tags {0}', steps.range.outputs.ignore) || '' }} --strip header ${{ steps.range.outputs.range }}
         env:
           OUTPUT: ${{ runner.temp }}/notes.md
           GITHUB_REPO: ${{ github.repository }}
