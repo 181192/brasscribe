@@ -4,7 +4,7 @@ name: apple
 # simulator app tests. With `release`: Release builds of Play for Mac and of Bandroom for Mac (which
 # installs and runs the engine), both re-signed ad hoc, uploaded as dist-macos.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
-# every push gets the fast Linux checks in ci.yml instead.
+# pull requests and pushes to main get the fast Linux checks in ci.yml instead.
 on:
   workflow_call:
     inputs:

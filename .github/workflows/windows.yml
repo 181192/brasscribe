@@ -4,7 +4,7 @@ name: windows
 # Axe.Windows accessibility scan and screenshots. With `release`: a self-contained x64 build
 # uploaded as dist-windows-x64.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
-# every push gets the fast Linux checks in ci.yml instead.
+# pull requests and pushes to main get the fast Linux checks in ci.yml instead.
 on:
   workflow_call:
     inputs:
