@@ -9,6 +9,7 @@ import { stageLabel, StageGraph } from "../components/stagegraph";
 import { StemsMixer } from "../components/stems";
 import { runTitle } from "./runs";
 import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../lib/beats";
+import { maxOf, minOf } from "../lib/extent";
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
 import { stageTime, waitNote } from "../lib/stagetime";
@@ -383,8 +384,8 @@ async function renderChecks(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: Sco
   const lines = [...groups.values()].sort((a, b) => b.length - a.length).map((g) => {
     const r = g[0];
     const bars = g.map((x) => x.bar ?? 0).filter(Boolean);
-    const lo = Math.min(...bars);
-    const hi = Math.max(...bars);
+    const lo = minOf(bars, (b) => b);
+    const hi = maxOf(bars, (b) => b);
     const who = r.kind === "crossing" && r.upper ? t("checks.above", { lower: r.part ?? "?", upper: r.upper }) : r.part ?? "–";
     const kind = t(`checks.kind.${r.kind}${g.length === 1 ? "1" : ""}`) === `checks.kind.${r.kind}${g.length === 1 ? "1" : ""}` ? r.kind : t(`checks.kind.${r.kind}${g.length === 1 ? "1" : ""}`);
     const range = !bars.length ? "" : lo === hi ? t("checks.bar", { n: lo }) : t("checks.bars", { a: lo, b: hi });
@@ -554,7 +555,7 @@ async function voicesTab(p: HTMLElement, ctx: Ctx): Promise<void> {
           const conf = v.notes.map((n) => n.confidence ?? 1);
           const srcs = [...new Set(v.notes.flatMap((n) => n.sources ?? []))];
           return [v.id, v.role, v.layer ?? "–", v.instrument_hint ?? "–", String(v.notes.length),
-            ps.length ? `${Math.min(...ps)}–${Math.max(...ps)}` : "–",
+            ps.length ? `${minOf(ps, (p) => p)}–${maxOf(ps, (p) => p)}` : "–",
             conf.length ? fmt.num(conf.reduce((a, b) => a + b, 0) / conf.length, 2) : "–",
             String(conf.filter((x) => x < 0.7).length), srcs.join(", ") || "–"];
         })),
@@ -620,7 +621,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
         xml.parts.map((pt) => {
           const w = pt.notes.map((n) => n.written);
           return [pt.name, pt.transpose ? t("mx.semitones", { n: `${pt.transpose > 0 ? "+" : ""}${pt.transpose}` }) : t("mx.concert"), String(pt.bars), String(pt.notes.length),
-            String(pt.notes.filter((n) => n.color).length), pt.percussion ? t("mx.unpitched") : w.length ? `${pitchName(Math.min(...w))}–${pitchName(Math.max(...w))}` : "–"];
+            String(pt.notes.filter((n) => n.color).length), pt.percussion ? t("mx.unpitched") : w.length ? `${pitchName(minOf(w, (p) => p))}–${pitchName(maxOf(w, (p) => p))}` : "–"];
         })));
   } catch (e) {
     clear(parts, h("h3", { id: "parts-h" }, t("mx.partsTitle")), errorNotice(e));

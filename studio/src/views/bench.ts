@@ -2,6 +2,7 @@
 import { api, TimedOut } from "../api/client";
 import type { BenchRun, SuiteInfo, SuiteResult, SuiteRun } from "../api/types";
 import { t } from "../i18n";
+import { maxOf, minOf } from "../lib/extent";
 import { announce, clear, errorNotice, fmt, h, infoTip, loading, pill, rebuild, table, token, viewHead } from "../ui/dom";
 
 export function benchView(root: HTMLElement): void {
@@ -127,8 +128,8 @@ function sparkline(metric: string, runs: SuiteRun[]): HTMLElement {
   const H = 40;
   const vals = pts.map((p) => p.c!.value!);
   const base = pts.find((p) => p.c!.baseline !== null)?.c;
-  const lo = Math.min(...vals, base?.baseline != null ? base.baseline - base.tolerance : Infinity);
-  const hi = Math.max(...vals, base?.baseline != null ? base.baseline + base.tolerance : -Infinity);
+  const lo = Math.min(minOf(vals, (v) => v), base?.baseline != null ? base.baseline - base.tolerance : Infinity);
+  const hi = Math.max(maxOf(vals, (v) => v), base?.baseline != null ? base.baseline + base.tolerance : -Infinity);
   const pad = (hi - lo) * 0.15 || 0.01;
   const y = (v: number) => H - 4 - ((v - (lo - pad)) / (hi - lo + 2 * pad)) * (H - 8);
   const x = (i: number) => (pts.length === 1 ? W / 2 : 8 + (i / (pts.length - 1)) * (W - 16));
