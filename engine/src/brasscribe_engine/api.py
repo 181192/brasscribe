@@ -489,8 +489,10 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         try:
             profiles.job_options(body.profile, params)
         except ValueError as e:
-            # The apps show their own words for the code; the message is for logs and Studio.
-            return JSONResponse({"code": profiles.option_error_code(e), "detail": str(e)}, status_code=422)
+            # The apps show their own words for the code; the message is for Studio, the exception for the log.
+            code = profiles.option_error_code(e)
+            print(f"job options refused ({code}): {e}", file=sys.stderr, flush=True)
+            return JSONResponse({"code": code, "detail": profiles.option_error_message(code)}, status_code=422)
         device = getattr(request.state, "device", None)
         job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title, params=params,
                           allow_heavy=body.allow_heavy, device_name=device.name if device else None)
