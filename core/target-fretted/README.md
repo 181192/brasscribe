@@ -78,15 +78,19 @@ Presets group into **families**: the same instrument in different tunings (`pres
 standard tuning.
 
 `suggest_tunings(family, notes, capo)` ranks every preset of a family by how well it fits the notes.
-It sorts on four keys, in order:
+It sorts on these keys, in order:
 
 1. fewest out-of-range notes;
-2. fewest notes that can only be played above the 12th fret;
-3. closest to the standard tuning, as semitones summed over the open strings;
-4. preset order.
+2. the lowest open string fits the lowest note: the same note, or the same pitch class an octave or
+   more below it (`low_string_fits`);
+3. most notes an open string can play (`open_notes`);
+4. fewest notes that can only be played above the 12th fret;
+5. closest to the standard tuning, as semitones summed over the open strings;
+6. preset order.
 
-A bass line that goes down to D1 ranks `bass-4-drop-d` first. A line that fits standard tuning ranks
-standard first. The JSON response carries this ranking for a preset instrument, so the song check
+Fit comes before closeness. So an E♭ riff ranks E♭ standard first, even though drop D is closer to
+standard and also reaches its notes. A bass line that goes down to D1 ranks `bass-4-drop-d` first,
+and a line that fits standard tuning ranks standard first. The JSON response carries this ranking for a preset instrument, so the song check
 can offer "Sounds like drop D" and the player confirms it.
 
 ## How notes are placed
@@ -186,11 +190,19 @@ A style turns a table off by setting its weight to zero.
 
 ### Techniques
 
-A note can carry a technique: `Options::techniques`, or `technique` on a JSON note.
+A note carries a list of techniques, so one note can be both bent and let ring:
+
+- in JSON, `techniques` on the note, for example `["bend", "let-ring"]`;
+- in Rust, one list per note passed to `assign_with_techniques` and `check_with_techniques`.
+
+Names are kebab-case: `slide`, `hammer-on`, `pull-off`, `bend`, `vibrato`, `let-ring`.
 
 - **Slide, hammer-on, pull-off and bend** keep the string of the note they come from. That is the
-  note among those starting most recently before it that is closest in pitch. A bend must also be
-  fretted.
+  note among those starting most recently before it that is closest in pitch.
+  - A bend must also be fretted.
+  - The string is kept only within a reach the hand can play legato: 12 frets for a slide, 5 for a
+    hammer-on or pull-off. A jump beyond that is reported as `technique-reach`, not forced onto the
+    string.
 - **Let ring** reserves the note's string until the note's written end, so no later note may start
   on it while it sounds. The search sees only neighbouring events. For a later note further on, the
   string is taken away and the passage is solved again, up to eight times.
@@ -215,6 +227,8 @@ with its transitions to the chosen neighbours. There is no full re-solve per alt
   instrument (`no-string`);
 - a slide, hammer-on, pull-off or bend on another string than the note it comes from
   (`technique-string`), or a bend on an open string (`bend-on-open-string`);
+- a slide, hammer-on or pull-off farther from the note it comes from than its reach
+  (`technique-reach`);
 - a note that starts on a string a let-ring note still reserves (`ring-cut`). This check looks at
   notes that overlap in time, not only notes that start together.
 
@@ -229,7 +243,7 @@ with its transitions to the chosen neighbours. There is no full re-solve per alt
 
 ```json
 {"instrument": {"preset": "guitar-standard", "capo": 2},
- "notes": [{"pitch": 62, "start": 0, "dur": 12}, {"pitch": 64, "start": 12, "dur": 12, "technique": "hammer_on"}],
+ "notes": [{"pitch": 62, "start": 0, "dur": 12}, {"pitch": 64, "start": 12, "dur": 12, "techniques": ["hammer-on"]}],
  "options": {"style": "open-position", "tempo_bpm": 96, "pins": [{"note": 0, "string": 2}]}}
 ```
 
@@ -243,7 +257,7 @@ field that is missing or unknown.
 
 ## Not modelled yet
 
-- **Sustain without let ring.** A note without `let_ring` may be cut by a later note on its string.
+- **Sustain without let ring.** A note without `let-ring` may be cut by a later note on its string.
 - **Held notes and the hand span.** Only notes that start on the same tick count as one event for
   the span.
 - **Guitar chord shapes beyond power chords.** There is no CAGED table, and no finger count or barre
@@ -296,14 +310,16 @@ cargo clippy -p target-fretted --no-deps --all-targets -- -D warnings
 - **Tuning suggestion:**
   - a bass line down to D1 is flagged in standard, gets drop D suggested, and plays cleanly in
     drop D, also through JSON;
+  - an E♭ riff ranks E♭ standard ahead of drop D, on guitar and on bass;
   - a line that fits standard ranks standard first;
   - BEAD, drop D, drop B and the 7-string E♭ tuning each rank first for a line that needs them.
 - **Techniques:**
   - hammer-ons, pull-offs, slides and bends stay on the string;
-  - a bend moves off an open string;
+  - a bend moves off an open string, and a bent note can also ring;
+  - legato beyond its reach is reported as `technique-reach`;
   - let ring keeps later notes off its string, both at the next onset and further on;
   - the check reports each broken constraint;
-  - techniques are read from JSON notes.
+  - techniques are read from JSON notes, and other spellings are refused.
 - **Position:** E minor pentatonic licks at the 12th fret stay in frets 12 to 15.
 
 Unit tests in `src/instrument.rs` cover positions, the capo, short strings, fret distances and

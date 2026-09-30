@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};
 use crate::shapes::{is_power_chord, open_shapes};
-use crate::technique::{previous_note, Technique, TechniqueMark};
+use crate::technique::{per_note, previous_note, string_link, Technique};
 
 /// How a passage should sit on the neck.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -62,9 +62,6 @@ pub struct Options {
     pub tempo_bpm: Option<f64>,
     pub hand: HandLimits,
     pub pins: Vec<Pin>,
-    /// Techniques on notes: slides, hammer-ons, pull-offs and bends keep the string of the note
-    /// before; let-ring reserves the string until the note ends.
-    pub techniques: Vec<TechniqueMark>,
 }
 
 impl Options {
@@ -86,26 +83,12 @@ impl Options {
                 return Err(format!("a pin names string {} of {}", pin.string, instrument.string_count()));
             }
         }
-        if let Some(m) = self.techniques.iter().find(|m| m.note >= notes) {
-            return Err(format!("a technique names note {} of {notes}", m.note));
-        }
         Ok(())
     }
 
     /// The string pinned for note `i`, the first pin naming it.
     pub fn pin_for(&self, i: usize) -> Option<u8> {
         self.pins.iter().find(|p| p.note == i).map(|p| p.string)
-    }
-
-    /// The techniques on each note, in input order.
-    pub fn techniques_by_note(&self, notes: usize) -> Vec<Vec<Technique>> {
-        let mut out = vec![Vec::new(); notes];
-        for m in &self.techniques {
-            if let Some(t) = out.get_mut(m.note) {
-                t.push(m.technique);
-            }
-        }
-        out
     }
 }
 
@@ -239,8 +222,9 @@ struct Group {
     bend: bool,
     /// Strings this group may not use (reserved by a ringing note).
     forbid: Vec<u8>,
-    /// Group in the previous event whose string this one must keep (slide, hammer-on, pull-off, bend).
-    link: Option<usize>,
+    /// Group in the previous event whose string this one must keep (slide, hammer-on, pull-off,
+    /// bend), and the most frets it may be from it there.
+    link: Option<(usize, i32)>,
     /// Tick until which a let-ring note of this group reserves its string.
     ring_until: Option<i64>,
 }
@@ -398,10 +382,11 @@ impl Ctx<'_> {
         let (va, vb) = (&a.voicings[sa.v], &b.voicings[sb.v]);
         if b.linked {
             for (gb, g) in b.groups.iter().enumerate() {
-                if let (Some(ga), Some(sb_string)) = (g.link, vb.strings[gb]) {
-                    if va.strings[ga].is_some_and(|s| s != sb_string) {
-                        c += HARD;
-                    }
+                let Some((ga, reach)) = g.link else { continue };
+                let (Some(ca), Some(cb)) = (va.place[ga], vb.place[gb]) else { continue };
+                let (from, to) = (a.groups[ga].cands[ca], g.cands[cb]);
+                if from.pos.string != to.pos.string || (from.neck - to.neck).abs() > reach {
+                    c += HARD;
                 }
             }
         }
@@ -419,7 +404,15 @@ impl Ctx<'_> {
 /// Choose a string and fret for every note. Notes starting on the same tick are played together;
 /// pitches never change, and notes no position can sound are flagged `out_of_range`.
 pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Fingering, String> {
+    assign_with_techniques(inst, notes, &[], opts)
+}
+
+/// [`assign`] with playing techniques: one list per note (or none at all). Slides, hammer-ons,
+/// pull-offs and bends keep the string of the note they come from; let ring reserves its string
+/// until the note ends.
+pub fn assign_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[Vec<Technique>], opts: &Options) -> Result<Fingering, String> {
     inst.validate()?;
+    let techniques = per_note(techniques, notes.len())?;
     opts.validate(inst, notes.len())?;
     for (i, n) in notes.iter().enumerate() {
         if !(0..=127).contains(&n.pitch) {
@@ -452,7 +445,6 @@ pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Finge
         })
         .collect();
 
-    let techniques = opts.techniques_by_note(notes.len());
     let mut events = build_events(&ctx, notes, opts, &techniques, &mut out);
     for ev in events.iter_mut() {
         build_states(&ctx, ev);
@@ -590,13 +582,11 @@ fn build_events(ctx: &Ctx, notes: &[Note], opts: &Options, techniques: &[Vec<Tec
         }
     }
     for i in 0..notes.len() {
-        if !techniques[i].iter().any(|t| t.keeps_string()) {
-            continue;
-        }
+        let Some(reach) = string_link(&techniques[i]) else { continue };
         let (Some((e, g)), Some(j)) = (loc[i], previous_note(notes, i)) else { continue };
         if let Some((pe, pg)) = loc[j] {
             if pe + 1 == e && events[e].groups[g].link.is_none() {
-                events[e].groups[g].link = Some(pg);
+                events[e].groups[g].link = Some((pg, reach));
                 events[e].linked = true;
             }
         }

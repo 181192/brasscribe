@@ -14,8 +14,8 @@ pub mod solve;
 pub mod suggest;
 pub mod technique;
 
-pub use check::{check, Violation};
+pub use check::{check, check_with_techniques, Violation};
 pub use instrument::{family_presets, fret_distance_mm, preset, preset_family, ukulele, Instrument, Position, StringSpec, Tuning, UkuleleSize, PRESET_IDS};
-pub use solve::{assign, Fingering, HandLimits, NotePlace, Options, Pin, Style};
+pub use solve::{assign, assign_with_techniques, Fingering, HandLimits, NotePlace, Options, Pin, Style};
 pub use suggest::{suggest_tunings, TuningFit};
-pub use technique::{Technique, TechniqueMark};
+pub use technique::{Technique, LEGATO_REACH, SLIDE_REACH};

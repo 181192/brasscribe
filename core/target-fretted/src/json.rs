@@ -12,11 +12,11 @@
 use brasscribe_core::model::Note;
 use serde::{Deserialize, Serialize};
 
-use crate::check::{check, Violation};
+use crate::check::{check_with_techniques, Violation};
 use crate::instrument::{preset, preset_family, Instrument};
-use crate::solve::{assign, Fingering, Options};
+use crate::solve::{assign_with_techniques, Fingering, Options};
 use crate::suggest::{suggest_tunings, TuningFit};
-use crate::technique::{Technique, TechniqueMark};
+use crate::technique::Technique;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
@@ -64,18 +64,18 @@ impl InstrumentChoice {
     }
 }
 
-/// A note of the request: the shared model's note plus an optional playing technique.
+/// A note of the request: the shared model's note plus the techniques it is played with.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InputNote {
     #[serde(flatten)]
     pub note: Note,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub technique: Option<Technique>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub techniques: Vec<Technique>,
 }
 
 impl From<Note> for InputNote {
     fn from(note: Note) -> Self {
-        InputNote { note, technique: None }
+        InputNote { note, techniques: Vec::new() }
     }
 }
 
@@ -102,10 +102,9 @@ pub struct Response {
 pub fn solve(req: &Request) -> Result<Response, String> {
     let instrument = req.instrument.resolve()?;
     let notes: Vec<Note> = req.notes.iter().map(|n| n.note.clone()).collect();
-    let mut options = req.options.clone();
-    options.techniques.extend(req.notes.iter().enumerate().filter_map(|(note, n)| Some(TechniqueMark { note, technique: n.technique? })));
-    let fingering = assign(&instrument, &notes, &options)?;
-    let violations = check(&instrument, &notes, &fingering, &options);
+    let techniques: Vec<Vec<Technique>> = req.notes.iter().map(|n| n.techniques.clone()).collect();
+    let fingering = assign_with_techniques(&instrument, &notes, &techniques, &req.options)?;
+    let violations = check_with_techniques(&instrument, &notes, &techniques, &fingering, &req.options);
     let tuning_suggestions = match &req.instrument {
         InstrumentChoice::Preset { preset: id, capo } => preset_family(id).map(|f| suggest_tunings(f, &notes, *capo)).unwrap_or_default(),
         InstrumentChoice::Custom(_) => Vec::new(),

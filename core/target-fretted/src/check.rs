@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};
 use crate::solve::{Fingering, Options};
-use crate::technique::{previous_note, Technique};
+use crate::technique::{per_note, previous_note, string_link, Technique};
 
 /// A hard playability violation. Note numbers are indices into the input.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -26,6 +26,9 @@ pub enum Violation {
     NoString { note: usize },
     /// A slide, hammer-on, pull-off or bend on another string than the note it comes from.
     TechniqueString { note: usize, previous: usize },
+    /// A slide, hammer-on or pull-off farther from the note it comes from than the hand can play it
+    /// (12 frets for a slide, 5 for a hammer-on or pull-off).
+    TechniqueReach { note: usize, previous: usize, frets: i32 },
     /// A bend on an open string.
     BendOnOpenString { note: usize },
     /// A note on a string that a let-ring note, started earlier, still reserves.
@@ -39,6 +42,13 @@ pub fn same_sound(a_pitch: i32, a: Position, b_pitch: i32, b: Position) -> bool 
 
 /// Every hard violation in `fingering` for `notes` on `inst`. Empty means playable.
 pub fn check(inst: &Instrument, notes: &[Note], fingering: &Fingering, opts: &Options) -> Vec<Violation> {
+    check_with_techniques(inst, notes, &[], fingering, opts)
+}
+
+/// [`check`] with playing techniques, one list per note (or none at all; a list of another length
+/// counts as none).
+pub fn check_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[Vec<Technique>], fingering: &Fingering, opts: &Options) -> Vec<Violation> {
+    let techniques = per_note(techniques, notes.len()).unwrap_or_else(|_| vec![Vec::new(); notes.len()]);
     let mut out = Vec::new();
     let mut placed: Vec<(usize, Position, i32)> = Vec::new();
     for (i, (note, place)) in notes.iter().zip(&fingering.notes).enumerate() {
@@ -66,12 +76,17 @@ pub fn check(inst: &Instrument, notes: &[Note], fingering: &Fingering, opts: &Op
         }
     }
 
-    let techniques = opts.techniques_by_note(notes.len());
     let string_of = |i: usize| fingering.notes.get(i).and_then(|p| p.string);
+    let neck_of = |i: usize| fingering.notes.get(i).and_then(|p| p.position()).and_then(|p| inst.neck_fret(p));
     for (i, t) in techniques.iter().enumerate() {
-        if t.iter().any(|t| t.keeps_string()) {
-            if let (Some(j), Some(s)) = (previous_note(notes, i), string_of(i)) {
-                if string_of(j).is_some_and(|sj| sj != s) {
+        if let (Some(reach), Some(j)) = (string_link(t), previous_note(notes, i)) {
+            if let (Some(s), Some(sj)) = (string_of(i), string_of(j)) {
+                // On one string, frets apart equal semitones apart; a jump too far to play legato
+                // is reported as such whichever strings were chosen.
+                let frets = if s == sj { neck_of(i).zip(neck_of(j)).map_or(0, |(a, b)| (a - b).abs()) } else { (notes[i].pitch - notes[j].pitch).abs() };
+                if frets > reach {
+                    out.push(Violation::TechniqueReach { note: i, previous: j, frets });
+                } else if s != sj {
                     out.push(Violation::TechniqueString { note: i, previous: j });
                 }
             }

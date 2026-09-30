@@ -19,15 +19,25 @@ pub struct TuningFit {
     pub tuning: String,
     /// Notes no string can sound.
     pub out_of_range: usize,
+    /// The lowest open string is the lowest note, or the same pitch class: the tuning is built
+    /// around the passage's bottom note, as a drop or down-tuned riff is.
+    pub low_string_fits: bool,
+    /// Notes an open string can play.
+    pub open_notes: usize,
     /// Notes that can only be played above fret [`HIGH_FRET`].
     pub high_frets: usize,
     /// Semitones between this tuning's open strings and the family's standard tuning, summed.
     pub distance: i32,
 }
 
-/// Every preset of `family` ranked by fit to `notes`, best first: fewest out-of-range notes, then
-/// fewest high-fret notes, then closest to the standard tuning, then preset order. Frets are counted
-/// with `capo`. Empty for an unknown family.
+/// Every preset of `family` ranked by fit to `notes`, best first:
+/// 1. fewest out-of-range notes;
+/// 2. the lowest open string fits the lowest note;
+/// 3. most notes on open strings;
+/// 4. fewest high-fret notes;
+/// 5. closest to the standard tuning, then preset order.
+///
+/// Frets are counted with `capo`. Empty for an unknown family.
 pub fn suggest_tunings(family: &str, notes: &[Note], capo: u8) -> Vec<TuningFit> {
     let ids = family_presets(family);
     let Some(standard) = ids.first().and_then(|id| preset(id)) else { return Vec::new() };
@@ -41,17 +51,22 @@ pub fn suggest_tunings(family: &str, notes: &[Note], capo: u8) -> Vec<TuningFit>
             }
             let mut out_of_range = 0;
             let mut high_frets = 0;
+            let mut open_notes = 0;
             for n in notes {
                 match inst.positions(n.pitch).iter().map(|p| p.fret).min() {
                     None => out_of_range += 1,
+                    Some(0) => open_notes += 1,
                     Some(f) if f > HIGH_FRET => high_frets += 1,
                     Some(_) => {}
                 }
             }
+            let lowest_open = (1..=inst.string_count() as u8).filter_map(|s| inst.open_pitch(s)).min();
+            let lowest_note = notes.iter().map(|n| n.pitch).min();
+            let low_string_fits = matches!((lowest_open, lowest_note), (Some(o), Some(n)) if (n - o).rem_euclid(12) == 0 && n >= o);
             let distance = inst.tuning.strings.iter().zip(&standard.tuning.strings).map(|(a, b)| (a.open_pitch - b.open_pitch).abs()).sum();
-            Some((order, TuningFit { preset: id.to_string(), tuning: inst.tuning.name.clone(), out_of_range, high_frets, distance }))
+            Some((order, TuningFit { preset: id.to_string(), tuning: inst.tuning.name.clone(), out_of_range, low_string_fits, open_notes, high_frets, distance }))
         })
         .collect();
-    fits.sort_by_key(|(order, f)| (f.out_of_range, f.high_frets, f.distance, *order));
+    fits.sort_by_key(|(order, f)| (f.out_of_range, !f.low_string_fits, std::cmp::Reverse(f.open_notes), f.high_frets, f.distance, *order));
     fits.into_iter().map(|(_, f)| f).collect()
 }
