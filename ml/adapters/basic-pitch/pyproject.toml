@@ -9,4 +9,7 @@ dependencies = [
 ]
 
 [tool.uv]
+# scipy 1.15 wheels do not load on macOS 27 (dyld rejects their __thread_bss section);
+# 1.14 is the newest that does and still supports Python 3.10.
+constraint-dependencies = ["scipy<1.15"]
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]
