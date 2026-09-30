@@ -2,6 +2,83 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.3.2 (2026-09-30)
+
+### New features
+
+- **Design:** A link-preview image for the repository ([#31](https://github.com/181192/brasscribe/pull/31))
+
+### Fixes
+
+- **Engine:** Patch vulnerable Python dependencies ([#17](https://github.com/181192/brasscribe/pull/17))
+- **Engine:** Run Basic Pitch on macOS 27 ([#34](https://github.com/181192/brasscribe/pull/34))
+- **Android:** Recording, playback, pairing and storage fixes ([#25](https://github.com/181192/brasscribe/pull/25))
+- **iPhone, iPad and Mac:** Refuse broken scores, and keep playback, recording and pairing safe ([#27](https://github.com/181192/brasscribe/pull/27))
+- **Bandroom for Mac:** Engine supervision, pairing, install and removal fixes ([#22](https://github.com/181192/brasscribe/pull/22))
+- **Bandroom for Windows:** Keep working when Brasscribe answers with an error, and say what didn't work ([#21](https://github.com/181192/brasscribe/pull/21))
+- **Core:** Stop the bindings, conformance and core-artifact checks passing on failures ([#19](https://github.com/181192/brasscribe/pull/19))
+- **Core:** Refuse input that cannot be arranged instead of hanging or crashing ([#28](https://github.com/181192/brasscribe/pull/28))
+- **Engine:** Stricter checks on job inputs, request origins and ids ([#26](https://github.com/181192/brasscribe/pull/26))
+- **Engine:** Cancelling stops a running model, renames work on Windows, paired devices see no computer paths ([#30](https://github.com/181192/brasscribe/pull/30))
+- **Engine:** Make stopping a model reliable ([#41](https://github.com/181192/brasscribe/pull/41))
+- **Release:** Refuse a version that doesn't go up, push main and the tag atomically, and check the identity without naming any domain
+- **Release:** Compare versions without GNU sort
+- **Release:** Release through a pull request, generate the notes before changing anything, and check the identity and versions strictly
+- **Release:** Tag what main released under any merge method, and refuse unknown arguments
+- **Release:** Link each pull request once in the notes, and don't name bots as authors ([#44](https://github.com/181192/brasscribe/pull/44))
+- **Site:** Link the release files CI makes, add Bandroom for Windows, and publish checksums
+- **Studio:** Fix stale results, lost focus, stuck playback and silent failures ([#20](https://github.com/181192/brasscribe/pull/20))
+- **Windows:** Give Play and Bandroom for Windows the release version
+- **Windows:** Stay open through errors, follow audio devices and keep your files safe ([#24](https://github.com/181192/brasscribe/pull/24))
+- Music rules, benchmark gates, adapter downloads and conversion parity ([#23](https://github.com/181192/brasscribe/pull/23))
+
+<details><summary>Under the hood (41 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Core:** State the Rust version the core really needs ([#18](https://github.com/181192/brasscribe/pull/18))
+- **Deps:** Bump zip from 2.4.2 to 8.6.0 in /core ([#3](https://github.com/181192/brasscribe/pull/3))
+- **Deps:** Bump the minor-and-patch group across 2 directories with 3 updates ([#6](https://github.com/181192/brasscribe/pull/6))
+- **Deps:** Bump com.google.android.apps.common.testing.accessibility.framework:accessibility-test-framework from 2.1 to 4.1.1 in /apps/android ([#7](https://github.com/181192/brasscribe/pull/7))
+- **Release:** Release notes and changelog from the commits, and a script that cuts a release
+- **Release:** Notes for exactly the tag's range, one run per tag, and public-safe changelog wording
+- **Release:** List the Windows version files in the manual release steps, and say why the identity check uses the author
+- **Security:** CodeQL for the code and workflows, dependency review on pull requests, and Dependabot
+- **Security:** Analyse Kotlin from the Android debug build
+- **Security:** Install the pinned Android NDK and CMake for the Kotlin analysis
+- **Security:** On pull requests, analyse only the languages whose files changed
+- **Security:** Scan the native audio code and inline scripts, add the Gradle dependency graph, a required-safe CodeQL result, and keep the signed APK a day
+- **Windows:** Give the UI-thread stop test room for a slow CI runner
+- Contributor guide, issue and pull request templates, security policy, and agent guidance
+- Say how far the Windows apps are tested, and list the Windows downloads in the README
+- Pin third-party actions to commit SHAs
+- Say exactly when the security scans run, and fold unlisted commit types into the changelog
+- Let the release read pull requests for its notes, and widen the security path filters to manifests and the generated Compose theme
+- List Play for Windows as a preview download, and sort the changelog by app
+- Dependabot for the core Android project, and release notes for pre-release tags
+- Windows in the guide's install and computer sections, the core tool for every OS, and accurate contributor and agent guidance
+- The CodeQL result needs a successful change detection, and the core Android graph uses the app's Gradle version
+- Allow the AI co-author trailer, which is the disclosure the template asks for ([#1](https://github.com/181192/brasscribe/pull/1))
+- Check a branch once, through its pull request, and run only the jobs whose parts changed
+- Run on every pull request so the CI result is always reported ([#16](https://github.com/181192/brasscribe/pull/16))
+- Bump the minor-and-patch group with 3 updates ([#8](https://github.com/181192/brasscribe/pull/8))
+- Bump xunit.runner.visualstudio from 3.1.5 to 4.0.0 ([#9](https://github.com/181192/brasscribe/pull/9))
+- Bump xunit.runner.visualstudio from 3.1.5 to 4.0.0 ([#14](https://github.com/181192/brasscribe/pull/14))
+- Bump prefix-dev/setup-pixi from 0.8.1 to 0.10.2 in the minor-and-patch group ([#10](https://github.com/181192/brasscribe/pull/10))
+- Bump actions/dependency-review-action from 4 to 5 ([#11](https://github.com/181192/brasscribe/pull/11))
+- Bump actions/cache from 4 to 6 ([#12](https://github.com/181192/brasscribe/pull/12))
+- Bump actions/upload-pages-artifact from 3 to 5 ([#13](https://github.com/181192/brasscribe/pull/13))
+- Bump actions/setup-java from 4 to 6 ([#15](https://github.com/181192/brasscribe/pull/15))
+- Only report dependency alerts for code that ships, and fewer, grouped update PRs ([#35](https://github.com/181192/brasscribe/pull/35))
+- Pull request titles become the release notes ([#29](https://github.com/181192/brasscribe/pull/29))
+- Promote the reference golden after the melody-exclusion change ([#33](https://github.com/181192/brasscribe/pull/33))
+- Bump actions/upload-artifact from 4 to 7 ([#40](https://github.com/181192/brasscribe/pull/40))
+- Bump actions/deploy-pages from 4 to 5 ([#38](https://github.com/181192/brasscribe/pull/38))
+- Bump actions/setup-node from 4 to 7 ([#36](https://github.com/181192/brasscribe/pull/36))
+- Bump dorny/paths-filter from 3.0.4 to 4.0.3 ([#37](https://github.com/181192/brasscribe/pull/37))
+- Bump actions/setup-dotnet from 4 to 6 ([#39](https://github.com/181192/brasscribe/pull/39))
+
+</details>
+
 ## 0.3.1 (2026-09-30)
 
 <details><summary>Under the hood (8 changes: docs, tests, CI, build, refactoring)</summary>
