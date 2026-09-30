@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import profiles, runner
+from .names import valid_id
 from .config import Settings
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
@@ -110,6 +111,8 @@ class JobManager:
             job.add_event({"type": "job", "status": "failed", "error": f"{type(e).__name__}: {e}"})
 
     def get(self, job_id: str) -> Job | None:
+        if not valid_id(job_id):
+            return None
         with self.lock:
             job = self.jobs.get(job_id)
         return job or self._from_disk(job_id)
@@ -123,7 +126,7 @@ class JobManager:
         except FileNotFoundError:
             entries = []
         for d in entries:
-            if d.name in live or not d.is_dir():
+            if d.name in live or not valid_id(d.name) or not d.is_dir():
                 continue
             j = self._summary(d.name)
             if j:
@@ -183,7 +186,7 @@ class JobManager:
         """Remove a finished run's directory and forget the job; the artifact cache is untouched.
 
         Returns "deleted", "unknown" or "active" (queued or running: not deleted)."""
-        if not job_id or "/" in job_id or "\\" in job_id or ".." in job_id:
+        if not valid_id(job_id):
             return "unknown"
         job = self.get(job_id)
         if job is None:
@@ -206,7 +209,7 @@ class JobManager:
 
     def rename(self, job_id: str, title: str) -> str:
         """Retitle a finished run in its manifest, Composition and MusicXML. Returns "renamed", "unknown" or "active"."""
-        if not job_id or "/" in job_id or "\\" in job_id or ".." in job_id:
+        if not valid_id(job_id):
             return "unknown"
         job = self.get(job_id)
         if job is None:
@@ -248,8 +251,10 @@ class JobManager:
         return self.settings.runs_dir / job_id
 
     def _from_disk(self, job_id: str, *, events: bool = True) -> Job | None:
+        if not valid_id(job_id):
+            return None
         mpath = self.run_dir(job_id) / "manifest.json"
-        if "/" in job_id or ".." in job_id or not mpath.exists():
+        if not mpath.exists():
             return None
         m = json.loads(mpath.read_text())
         job = Job(m["run_id"], m["profile"], m.get("title"), None, Path(m["input"]["path"]), m.get("params", {}),

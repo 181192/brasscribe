@@ -43,6 +43,7 @@ from . import schemas as m
 from .adapters import host_device
 from .config import Settings
 from .jobs import TERMINAL, Job, JobManager
+from .names import valid_id, valid_relpath
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 # Studio's own files keep their names across releases, so the browser revalidates them on every load
@@ -200,6 +201,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     def output_file(job_id: str, name: str) -> FileResponse:
         job = job_or_404(job_id)
+        if not valid_relpath(name):
+            raise HTTPException(404, f"{name} not available for job {job_id}")
         root = jobs.run_dir(job.id) if name == "manifest.json" else jobs.run_dir(job.id) / "outputs"
         p = (root / name).resolve()
         if not inspection.inside(root, p) or not p.is_file():
@@ -386,8 +389,10 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return m.AudioRef(audio_id=audio_id, sha256=digest, filename=name, bytes=size)
 
     def audio_path(audio_id: str) -> tuple[Path, dict]:
+        if not valid_id(audio_id):
+            raise HTTPException(404, f"no audio {audio_id}")
         meta = settings.uploads_dir / f"{audio_id}.json"
-        if "/" in audio_id or ".." in audio_id or not meta.exists():
+        if not meta.exists():
             raise HTTPException(404, f"no audio {audio_id}")
         d = json.loads(meta.read_text())
         return settings.uploads_dir / d["path"], d
@@ -677,6 +682,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                          url=url, sha256=sha256)
 
     def safe_file(root: Path, rel: str) -> Path:
+        if not valid_relpath(rel):
+            raise HTTPException(404, f"{rel} not found")
         p = (root / rel).resolve()
         if not inspection.inside(root, p) or p == root.resolve() or not p.is_file():
             raise HTTPException(404, f"{rel} not found")
@@ -725,7 +732,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              responses={200: {"content": {"application/octet-stream": {}}}})
     def get_stage_file(job_id: str, stage: str, name: str):
         job = job_or_404(job_id)
-        if stage not in job.stages:
+        if not valid_id(stage) or stage not in job.stages:
             raise HTTPException(404, f"no stage {stage} in job {job_id}")
         p = safe_file(jobs.run_dir(job.id) / "stages" / stage, name)
         return FileResponse(p, media_type=media_type(name), filename=p.name)
@@ -736,7 +743,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         """Reference outputs under <data>/golden (read only)."""
         root = settings.golden_dir
         out = []
-        for d in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+        for d in sorted(p for p in root.iterdir() if valid_id(p.name) and p.is_dir()) if root.is_dir() else []:
             out.append(m.Reference(name=d.name, files=[
                 file_ref(f, f.name, f"/v1/references/{d.name}/files/{f.name}") for f in sorted(d.iterdir()) if f.is_file()]))
         return out
@@ -745,7 +752,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              dependencies=[Depends(auth)], response_class=FileResponse,
              responses={200: {"content": {"application/octet-stream": {}}}})
     def get_reference_file(name: str, file: str):
-        if "/" in name or name in ("", ".", "..") or not (settings.golden_dir / name).is_dir():
+        if not valid_id(name) or not (settings.golden_dir / name).is_dir():
             raise HTTPException(404, f"no reference {name}")
         p = safe_file(settings.golden_dir / name, file)
         return FileResponse(p, media_type=media_type(file), filename=p.name)
@@ -760,9 +767,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         this = jobs.run_dir(job_or_404(job_id).id) / "outputs"
         if bool(reference) == bool(job):
             raise HTTPException(422, "give exactly one of reference, job")
-        other = settings.golden_dir / reference if reference else jobs.run_dir(job_or_404(job).id) / "outputs"
-        if reference and ("/" in reference or reference in (".", "..") or not other.is_dir()):
+        if reference and not (valid_id(reference) and (settings.golden_dir / reference).is_dir()):
             raise HTTPException(404, f"no reference {reference}")
+        other = settings.golden_dir / reference if reference else jobs.run_dir(job_or_404(job).id) / "outputs"
         for d in (this, other):
             if not (d / "composition.json").exists() or not (d / "brass-band.musicxml").exists():
                 raise HTTPException(404, f"no score output in {d.name}")
