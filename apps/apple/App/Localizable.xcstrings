@@ -51,6 +51,16 @@
         }
       }
     },
+    "%@ (playing)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (spiller)"
+          }
+        }
+      }
+    },
     "%@ (you)": {
       "localizations": {
         "nb": {

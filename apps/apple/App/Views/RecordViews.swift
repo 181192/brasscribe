@@ -104,7 +104,7 @@ struct CaptureView: View {
                 Picker(selection: $choice) {
                     Text("Everything playing on this Mac").tag("system")
                     ForEach(apps) { a in
-                        Text(a.isPlaying ? "\(a.bundleID) (playing)" : a.bundleID).tag(a.bundleID)
+                        (a.isPlaying ? Text("\(a.bundleID) (playing)") : Text(verbatim: a.bundleID)).tag(a.bundleID)
                     }
                 } label: { Text("Record from") }
                 .disabled(recorder != nil)
@@ -120,14 +120,27 @@ struct CaptureView: View {
             .padding()
             .formStyle(.grouped)
             .navigationTitle(Text("Record what's playing"))
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { _ = try? recorder?.stop(); dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { cancel() } } }
             .onAppear { apps = ProcessTapRecorder.audioApps() }
             .onReceive(timer) { _ in
-                if let r = recorder { seconds = r.elapsedSeconds; level = r.currentPeak }
+                guard let r = recorder else { return }
+                seconds = r.elapsedSeconds; level = r.currentPeak
+                // the output device went away and nothing more arrives: keep the take as if Stop was pressed
+                if r.outputLost { toggle() }
             }
         }
         // the form's own height
         .sheetSize(minWidth: 480, idealWidth: 540, maxWidth: 640)
+    }
+
+    /// Stops without keeping the take.
+    func cancel() {
+        if let r = recorder {
+            _ = try? r.stop()
+            try? FileManager.default.removeItem(at: r.outputURL)
+            recorder = nil
+        }
+        dismiss()
     }
 
     func toggle() {
@@ -138,7 +151,10 @@ struct CaptureView: View {
                 if result.isSilent { app.show(.silence); return }
                 dismiss()
                 app.acceptRecording(result.url, title: ScoreTitles.recording(at: Date()))
-            } catch { self.error = "\(error)" }
+            } catch {
+                recorder = nil
+                self.error = "\(error)"
+            }
             return
         }
         let url = FileManager.default.temporaryDirectory.appending(path: "capture-\(UUID().uuidString).wav")

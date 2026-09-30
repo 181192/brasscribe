@@ -625,6 +625,7 @@ NB = {
     "page %lld of %lld": "side %1$lld av %2$lld",
     "pages %lld–%lld of %lld": "side %1$lld–%2$lld av %3$lld",
     "No microphone was found. Connect one and try again.": "Fant ingen mikrofon. Koble til en og prøv igjen.",
+    "%@ (playing)": "%@ (spiller)",
 }
 
 INFO_NB = {
