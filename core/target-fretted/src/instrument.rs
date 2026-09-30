@@ -201,7 +201,10 @@ impl Instrument {
 }
 
 // MIDI numbers of the open strings used below.
+const A0: i32 = 21;
+const D1: i32 = 26;
 const E1: i32 = 28;
+const F_SHARP2: i32 = 42;
 const B0: i32 = 23;
 const F_SHARP1: i32 = 30;
 const B1: i32 = 35;
@@ -221,6 +224,7 @@ const G_SHARP3: i32 = 56;
 const A3: i32 = 57;
 const B3: i32 = 59;
 const C4: i32 = 60;
+const C_SHARP4: i32 = 61;
 const D4: i32 = 62;
 const E4: i32 = 64;
 const G4: i32 = 67;
@@ -271,25 +275,38 @@ fn guitar(tuning: &str, pitches: &[i32]) -> Instrument {
     Instrument::new("Guitar", Tuning::from_pitches(tuning, pitches), 22, GUITAR_SCALE_MM)
 }
 
-fn bass(name: &str, pitches: &[i32]) -> Instrument {
-    let frets = if pitches.len() > 4 { 24 } else { 21 };
-    Instrument::new(name, Tuning::from_pitches("Standard", pitches), frets, BASS_SCALE_MM)
+fn guitar7(tuning: &str, pitches: &[i32]) -> Instrument {
+    Instrument::new("7-string guitar", Tuning::from_pitches(tuning, pitches), 24, GUITAR_SCALE_MM)
 }
 
-/// Ids of the built-in instruments, in menu order.
+fn bass(name: &str, tuning: &str, pitches: &[i32]) -> Instrument {
+    let frets = if pitches.len() > 4 { 24 } else { 21 };
+    Instrument::new(name, Tuning::from_pitches(tuning, pitches), frets, BASS_SCALE_MM)
+}
+
+/// Ids of the built-in instruments, in menu order. Within a family the standard tuning comes first.
 pub const PRESET_IDS: &[&str] = &[
     "guitar-standard",
     "guitar-eb-standard",
+    "guitar-d-standard",
+    "guitar-c-standard",
     "guitar-drop-d",
     "guitar-drop-c",
+    "guitar-drop-b",
     "guitar-dadgad",
     "guitar-open-g",
     "guitar-open-d",
     "guitar-open-e",
     "guitar-7-standard",
+    "guitar-7-eb-standard",
     "guitar-8-standard",
     "bass-4-standard",
+    "bass-4-eb-standard",
+    "bass-4-d-standard",
+    "bass-4-drop-d",
+    "bass-4-bead",
     "bass-5-standard",
+    "bass-5-drop-a",
     "bass-6-standard",
     "ukulele-high-g",
     "ukulele-low-g",
@@ -297,28 +314,56 @@ pub const PRESET_IDS: &[&str] = &[
     "mandolin",
 ];
 
+/// The family a preset belongs to. Presets of one family are the same instrument (string count and
+/// neck) in different tunings, and are what a tuning suggestion chooses between. The first preset
+/// of a family in [`PRESET_IDS`] is its standard tuning.
+pub fn preset_family(id: &str) -> Option<&'static str> {
+    // Longer prefixes first, so "guitar-7-..." is not taken for "guitar".
+    const FAMILIES: &[&str] = &["guitar-7", "guitar-8", "bass-4", "bass-5", "bass-6", "ukulele-baritone", "ukulele", "mandolin", "guitar"];
+    if !PRESET_IDS.contains(&id) {
+        return None;
+    }
+    FAMILIES.iter().copied().find(|f| id == *f || id.strip_prefix(f).is_some_and(|rest| rest.starts_with('-')))
+}
+
+/// Preset ids of a family, standard tuning first.
+pub fn family_presets(family: &str) -> Vec<&'static str> {
+    PRESET_IDS.iter().copied().filter(|id| preset_family(id) == Some(family)).collect()
+}
+
 /// A built-in instrument by id; None for an unknown id.
 pub fn preset(id: &str) -> Option<Instrument> {
     let std6 = [E4, B3, G3, D3, A2, E2];
+    let std7 = [E4, B3, G3, D3, A2, E2, B1];
+    let bass4 = [G2, D2, A1, E1];
     Some(match id {
         "guitar-standard" => guitar("Standard", &std6),
         "guitar-eb-standard" => guitar("E\u{266d} standard", &std6.map(|p| p - 1)),
+        "guitar-d-standard" => guitar("D standard", &std6.map(|p| p - 2)),
+        "guitar-c-standard" => guitar("C standard", &std6.map(|p| p - 4)),
         "guitar-drop-d" => guitar("Drop D", &[E4, B3, G3, D3, A2, D2]),
         "guitar-drop-c" => guitar("Drop C", &[D4, A3, F3, C3, G2, C2]),
+        "guitar-drop-b" => guitar("Drop B", &[C_SHARP4, G_SHARP3, E3, B2, F_SHARP2, B1]),
         "guitar-dadgad" => guitar("DADGAD", &[D4, A3, G3, D3, A2, D2]),
         "guitar-open-g" => guitar("Open G", &[D4, B3, G3, D3, G2, D2]),
         "guitar-open-d" => guitar("Open D", &[D4, A3, F_SHARP3, D3, A2, D2]),
         "guitar-open-e" => guitar("Open E", &[E4, B3, G_SHARP3, E3, B2, E2]),
-        "guitar-7-standard" => Instrument::new("7-string guitar", Tuning::from_pitches("B standard", &[E4, B3, G3, D3, A2, E2, B1]), 24, GUITAR_SCALE_MM),
+        "guitar-7-standard" => guitar7("B standard", &std7),
+        "guitar-7-eb-standard" => guitar7("E\u{266d} standard", &std7.map(|p| p - 1)),
         "guitar-8-standard" => Instrument::new(
             "8-string guitar",
             Tuning::from_pitches("F\u{266f} standard", &[E4, B3, G3, D3, A2, E2, B1, F_SHARP1]),
             24,
             EXTENDED_GUITAR_SCALE_MM,
         ),
-        "bass-4-standard" => bass("Bass", &[G2, D2, A1, E1]),
-        "bass-5-standard" => bass("5-string bass", &[G2, D2, A1, E1, B0]),
-        "bass-6-standard" => bass("6-string bass", &[C3, G2, D2, A1, E1, B0]),
+        "bass-4-standard" => bass("Bass", "Standard", &bass4),
+        "bass-4-eb-standard" => bass("Bass", "E\u{266d} standard", &bass4.map(|p| p - 1)),
+        "bass-4-d-standard" => bass("Bass", "D standard", &bass4.map(|p| p - 2)),
+        "bass-4-drop-d" => bass("Bass", "Drop D", &[G2, D2, A1, D1]),
+        "bass-4-bead" => bass("Bass", "BEAD", &[D2, A1, E1, B0]),
+        "bass-5-standard" => bass("5-string bass", "Standard", &[G2, D2, A1, E1, B0]),
+        "bass-5-drop-a" => bass("5-string bass", "Drop A", &[G2, D2, A1, E1, A0]),
+        "bass-6-standard" => bass("6-string bass", "Standard", &[C3, G2, D2, A1, E1, B0]),
         "ukulele-high-g" => ukulele(UkuleleSize::Concert, false),
         "ukulele-low-g" => ukulele(UkuleleSize::Concert, true),
         "ukulele-baritone" => Instrument::new("Baritone ukulele", Tuning::from_pitches("DGBE", &[E4, B3, G3, D3]), 19, BARITONE_UKULELE_SCALE_MM),
@@ -426,5 +471,29 @@ mod tests {
         assert_eq!(open("mandolin"), vec![76, 69, 62, 55]);
         assert_eq!(open("guitar-8-standard"), vec![64, 59, 55, 50, 45, 40, 35, 30]);
         assert_eq!(open("ukulele-baritone"), vec![64, 59, 55, 50]);
+        assert_eq!(open("guitar-drop-b"), vec![61, 56, 52, 47, 42, 35]);
+        assert_eq!(open("guitar-d-standard"), vec![62, 57, 53, 48, 43, 38]);
+        assert_eq!(open("guitar-c-standard"), vec![60, 55, 51, 46, 41, 36]);
+        assert_eq!(open("guitar-7-eb-standard"), vec![63, 58, 54, 49, 44, 39, 34]);
+        assert_eq!(open("bass-4-drop-d"), vec![43, 38, 33, 26]);
+        assert_eq!(open("bass-4-eb-standard"), vec![42, 37, 32, 27]);
+        assert_eq!(open("bass-4-d-standard"), vec![41, 36, 31, 26]);
+        assert_eq!(open("bass-4-bead"), vec![38, 33, 28, 23]);
+        assert_eq!(open("bass-5-drop-a"), vec![43, 38, 33, 28, 21]);
+    }
+
+    #[test]
+    fn presets_group_into_families_with_standard_first() {
+        for id in PRESET_IDS {
+            let family = preset_family(id).unwrap_or_else(|| panic!("{id} has no family"));
+            let first = preset(family_presets(family)[0]).unwrap();
+            assert_eq!(first.string_count(), preset(id).unwrap().string_count(), "{id}");
+        }
+        assert_eq!(family_presets("bass-4")[0], "bass-4-standard");
+        assert_eq!(family_presets("guitar")[0], "guitar-standard");
+        assert!(family_presets("guitar").contains(&"guitar-drop-b"));
+        assert!(!family_presets("guitar").contains(&"guitar-7-standard"));
+        assert_eq!(family_presets("ukulele"), vec!["ukulele-high-g", "ukulele-low-g"]);
+        assert_eq!(preset_family("banjo"), None);
     }
 }

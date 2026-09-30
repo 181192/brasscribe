@@ -13,8 +13,10 @@ use brasscribe_core::model::Note;
 use serde::{Deserialize, Serialize};
 
 use crate::check::{check, Violation};
-use crate::instrument::{preset, Instrument};
+use crate::instrument::{preset, preset_family, Instrument};
 use crate::solve::{assign, Fingering, Options};
+use crate::suggest::{suggest_tunings, TuningFit};
+use crate::technique::{Technique, TechniqueMark};
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
@@ -62,11 +64,26 @@ impl InstrumentChoice {
     }
 }
 
+/// A note of the request: the shared model's note plus an optional playing technique.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct InputNote {
+    #[serde(flatten)]
+    pub note: Note,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub technique: Option<Technique>,
+}
+
+impl From<Note> for InputNote {
+    fn from(note: Note) -> Self {
+        InputNote { note, technique: None }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Request {
     pub instrument: InstrumentChoice,
-    pub notes: Vec<Note>,
+    pub notes: Vec<InputNote>,
     #[serde(default)]
     pub options: Options,
 }
@@ -76,14 +93,24 @@ pub struct Response {
     pub instrument: Instrument,
     pub fingering: Fingering,
     pub violations: Vec<Violation>,
+    /// For a preset instrument: the presets of its family ranked by fit to the notes, best first.
+    #[serde(default)]
+    pub tuning_suggestions: Vec<TuningFit>,
 }
 
 /// Solve a [`Request`].
 pub fn solve(req: &Request) -> Result<Response, String> {
     let instrument = req.instrument.resolve()?;
-    let fingering = assign(&instrument, &req.notes, &req.options)?;
-    let violations = check(&instrument, &req.notes, &fingering, &req.options);
-    Ok(Response { instrument, fingering, violations })
+    let notes: Vec<Note> = req.notes.iter().map(|n| n.note.clone()).collect();
+    let mut options = req.options.clone();
+    options.techniques.extend(req.notes.iter().enumerate().filter_map(|(note, n)| Some(TechniqueMark { note, technique: n.technique? })));
+    let fingering = assign(&instrument, &notes, &options)?;
+    let violations = check(&instrument, &notes, &fingering, &options);
+    let tuning_suggestions = match &req.instrument {
+        InstrumentChoice::Preset { preset: id, capo } => preset_family(id).map(|f| suggest_tunings(f, &notes, *capo)).unwrap_or_default(),
+        InstrumentChoice::Custom(_) => Vec::new(),
+    };
+    Ok(Response { instrument, fingering, violations, tuning_suggestions })
 }
 
 /// Solve a JSON [`Request`] and answer with a JSON [`Response`].

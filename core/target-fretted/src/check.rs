@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};
 use crate::solve::{Fingering, Options};
+use crate::technique::{previous_note, Technique};
 
 /// A hard playability violation. Note numbers are indices into the input.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -23,6 +24,12 @@ pub enum Violation {
     /// A note the instrument can play that was left without a position (more notes start together
     /// than there are strings), or an out-of-range flag that does not match the instrument.
     NoString { note: usize },
+    /// A slide, hammer-on, pull-off or bend on another string than the note it comes from.
+    TechniqueString { note: usize, previous: usize },
+    /// A bend on an open string.
+    BendOnOpenString { note: usize },
+    /// A note on a string that a let-ring note, started earlier, still reserves.
+    RingCut { string: u8, ringing: usize, note: usize },
 }
 
 /// Whether two notes of one onset are one sounding note (a doubling) rather than two.
@@ -55,6 +62,31 @@ pub fn check(inst: &Instrument, notes: &[Note], fingering: &Fingering, opts: &Op
         if let Some(string) = opts.pin_for(i) {
             if place.string != Some(string) {
                 out.push(Violation::PinNotHonoured { note: i, string });
+            }
+        }
+    }
+
+    let techniques = opts.techniques_by_note(notes.len());
+    let string_of = |i: usize| fingering.notes.get(i).and_then(|p| p.string);
+    for (i, t) in techniques.iter().enumerate() {
+        if t.iter().any(|t| t.keeps_string()) {
+            if let (Some(j), Some(s)) = (previous_note(notes, i), string_of(i)) {
+                if string_of(j).is_some_and(|sj| sj != s) {
+                    out.push(Violation::TechniqueString { note: i, previous: j });
+                }
+            }
+        }
+        if t.iter().any(|t| t.needs_fret()) && fingering.notes.get(i).and_then(|p| p.fret) == Some(0) {
+            out.push(Violation::BendOnOpenString { note: i });
+        }
+    }
+    // Notes that overlap in time: a let-ring note keeps its string until it ends.
+    for (r, t) in techniques.iter().enumerate() {
+        let Some(string) = string_of(r).filter(|_| t.contains(&Technique::LetRing)) else { continue };
+        let (start, end) = (notes[r].start, notes[r].end());
+        for (k, n) in notes.iter().enumerate() {
+            if k != r && n.start > start && n.start < end && string_of(k) == Some(string) {
+                out.push(Violation::RingCut { string, ringing: r, note: k });
             }
         }
     }
