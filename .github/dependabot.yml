@@ -1,0 +1,41 @@
+# Dependency updates: weekly, minor and patch versions grouped into one pull request per ecosystem,
+# majors on their own. Security updates come separately, as soon as an advisory lands.
+# Python (pixi.lock) is not a Dependabot ecosystem: update it with `pixi update` and the checks.
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    commit-message: { prefix: ci }
+
+  - package-ecosystem: cargo
+    directory: /core
+    schedule: { interval: weekly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    commit-message: { prefix: build, include: scope }
+
+  - package-ecosystem: npm
+    directory: /studio
+    schedule: { interval: weekly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    commit-message: { prefix: build, include: scope }
+
+  - package-ecosystem: gradle
+    directory: /apps/android
+    schedule: { interval: weekly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    commit-message: { prefix: build, include: scope }
+
+  - package-ecosystem: nuget
+    directories: [/apps/windows, /apps/bandroom/windows, /core/dotnet]
+    schedule: { interval: weekly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    commit-message: { prefix: build, include: scope }
+
+  - package-ecosystem: swift
+    directories: [/apps/apple/Packages/BrasscribeKit, /apps/apple/Packages/NotationKit, /apps/bandroom/macos/Packages/BandroomKit, /capture]
+    schedule: { interval: weekly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+    commit-message: { prefix: build, include: scope }
