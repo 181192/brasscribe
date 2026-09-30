@@ -6,6 +6,8 @@
 #                      apps/apple/Frameworks/VerovioResources/  (font subset loaded at runtime)
 #
 # Env: VEROVIO_HUMDRUM=1 keeps Humdrum support (bigger binary; not needed for MusicXML).
+#      VEROVIO_SLICES picks the slices (default "macos ios ios-sim"); VEROVIO_MACOS_ARCHS the macOS
+#      architectures (default "arm64", like the apps). The Mac release needs only `macos`.
 set -euo pipefail
 
 VERSION=6.3.0
@@ -87,20 +89,22 @@ P
   echo "slice $name: $(du -sh "$bin" | cut -f1) ($(lipo -archs "$bin"))"
 }
 
-build_slice macos Darwin macosx "arm64;x86_64" $MACOS_MIN &
-p1=$!
-build_slice ios iOS iphoneos arm64 $IOS_MIN &
-p2=$!
-build_slice ios-sim iOS iphonesimulator arm64 $IOS_MIN &
-p3=$!
-wait $p1; wait $p2; wait $p3
+SLICES="${VEROVIO_SLICES:-macos ios ios-sim}"
+MACOS_ARCHS="${VEROVIO_MACOS_ARCHS:-arm64}"
+pids=(); fws=()
+for slice in $SLICES; do
+  case $slice in
+    macos)   build_slice macos Darwin macosx "$MACOS_ARCHS" $MACOS_MIN & ;;
+    ios)     build_slice ios iOS iphoneos arm64 $IOS_MIN & ;;
+    ios-sim) build_slice ios-sim iOS iphonesimulator arm64 $IOS_MIN & ;;
+    *) echo "unknown slice $slice" >&2; exit 2 ;;
+  esac
+  pids+=($!); fws+=(-framework "$WORK/fw-$slice/Verovio.framework")
+done
+for p in "${pids[@]}"; do wait "$p"; done
 
 rm -rf "$OUT/Verovio.xcframework"
-xcodebuild -create-xcframework \
-  -framework "$WORK/fw-macos/Verovio.framework" \
-  -framework "$WORK/fw-ios/Verovio.framework" \
-  -framework "$WORK/fw-ios-sim/Verovio.framework" \
-  -output "$OUT/Verovio.xcframework" >/dev/null
+xcodebuild -create-xcframework "${fws[@]}" -output "$OUT/Verovio.xcframework" >/dev/null
 
 # Runtime resources: the two SMuFL fonts the app uses plus text metrics.
 R="$OUT/VerovioResources"

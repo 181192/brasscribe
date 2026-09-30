@@ -1,5 +1,5 @@
 # Brasscribe Play for Apple platforms.
-#   make verovio     build Verovio.xcframework (once, ~2 min)
+#   make verovio     build Verovio.xcframework (once, ~1 min)
 #   make soundfont   download the baseline SF2 into data/soundfonts
 #   make bandsound   stage the band SoundFont + mapping into Sounds/ (bundled; also run by make project)
 #   make project     generate BrasscribePlay.xcodeproj with XcodeGen

@@ -68,10 +68,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: apps/apple/Frameworks
-          key: verovio-${{ runner.os }}-${{ runner.arch }}-xcode${{ env.XCODE_VERSION }}-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
+          key: verovio-${{ runner.os }}-${{ runner.arch }}-xcode${{ env.XCODE_VERSION }}-${{ inputs.release && 'macos' || 'all' }}-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
 
+      # A release builds only the Mac app, so it needs the macOS slice alone.
       - name: Build Verovio.xcframework
         if: steps.verovio.outputs.cache-hit != 'true'
+        env:
+          VEROVIO_SLICES: ${{ inputs.release && 'macos' || '' }}
         run: make verovio
 
       # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built.
