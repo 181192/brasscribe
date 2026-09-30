@@ -81,10 +81,12 @@ run_area() {
     fast:conformance) stamp=$(py_ref_stamp)
                       if [ -d core/target/conformance/mikkel ] && [ "$(cat "$PY_REF_STAMP" 2>/dev/null)" = "$stamp" ]; then
                         conf=(--skip-python --no-extras); else conf=(); fi
-                      (cd core/conformance && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
+                      (cd core/conformance && uv run python -m unittest discover -s tests -q \
+                         && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
                          --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" ;;
     full:conformance) stamp=$(py_ref_stamp)
-                      (cd core/conformance && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
+                      (cd core/conformance && uv run python -m unittest discover -s tests -q \
+                         && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
                         && echo "$stamp" > "$PY_REF_STAMP" ;;
     fast:studio) need_node_modules && (cd studio && npx vitest run) ;;
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
