@@ -15,8 +15,9 @@ What a release ships:
 | `brasscribe-core-macos-arm64.zip` | the `brasscribe-core` command-line tool |
 | `SHA256SUMS` | checksums of the files above |
 
-No Windows or iPhone/iPad build yet: Windows Play still lacks the music stand, the Appearance setting
-and "What do you play?", and iOS needs an Apple Developer account.
+No Windows or iPhone/iPad build yet. Windows Play is built and tested in the Windows VM (§5a), but it
+does not ship until [the Windows checklist](windows-checklist.md) has passed on a real PC. iOS needs
+an Apple Developer account.
 
 Below, `$S` is a scratch directory (DerivedData, staging) and `$OUT` the directory of finished assets.
 Disk is tight on the build Mac: keep DerivedData in `$S`, and delete staging directories and unshipped
@@ -160,6 +161,25 @@ start with the release commit. Its `version` is the engine API version, not the 
 cd core && cargo build --release --locked -p brasscribe-cli
 (cd target/release && zip -q "$OUT/brasscribe-core-macos-arm64.zip" brasscribe-core)
 ```
+
+## 5a. Windows (built, not shipped yet)
+
+The Windows artifacts are built in the headless Windows 11 ARM64 VM on the build Mac
+([windows-vm.md](windows-vm.md)), from the same release worktree:
+
+```sh
+scripts/win-vm.sh test       # the .NET tests, the smoke tests and the Axe.Windows scans of Play and Bandroom
+scripts/win-vm.sh release    # Play, self-contained, for x64 and ARM64, as the CI release job makes it
+```
+
+`release` builds `brasscribe_ffi.dll` for both architectures, publishes Play with
+`dotnet publish -r win-<arch> --self-contained` (.NET and the Windows App SDK inside, the 16-bit band
+SoundFont bundled), and checks that the exe, the DLL and the SoundFont are in it. It writes
+`build/win-vm/release-<time>/brasscribe-play-windows-{x64,arm64}.zip`. The zips are unsigned:
+SmartScreen warns on first start until the app has a code-signing certificate.
+
+Don't upload them yet. Once the checklist has passed, copy the zips to `$OUT` before §6, so they get
+into `SHA256SUMS`, and add the install note for Windows (More info › Run anyway) to the release notes.
 
 ## 6. Checksums and the GitHub release
 

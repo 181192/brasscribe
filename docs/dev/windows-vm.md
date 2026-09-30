@@ -176,7 +176,7 @@ What it covers of [windows-checklist.md](windows-checklist.md):
 | 6 200 % text | shots of each listed screen at 200 % | judging that nothing is clipped, from the shots |
 
 `release` makes the release job's self-contained Play build for x64 and ARM64. See
-[release.md](release.md#windows).
+[release.md](release.md#5a-windows-built-not-shipped-yet).
 
 ## Resources and timings
 

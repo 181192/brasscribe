@@ -1,13 +1,13 @@
 # Verifying a change
 
 Three tiers. Run tier 1 while you work, tier 2 before you hand a branch off, and tier 3 only when the
-change touches a device or the UI.
+change touches a device or the UI, the Windows apps or a release.
 
 | Tier | When | Command | Budget (warm) |
 |---|---|---|---|
 | 1 inner loop | after every edit | `make check-fast` | under 60 s per area |
 | 2 handoff | before a branch is pushed for review | `make check` | minutes (conformance ~20 min) |
-| 3 device and UI | device, audio or UI changes | see [Tier 3](#tier-3-devices-and-ui) | as long as it takes |
+| 3 device and UI | device, audio or UI changes; Windows-touching changes and releases | see [Tier 3](#tier-3-devices-and-ui) | as long as it takes |
 
 `make check-fast` and `make check` run the areas the branch touches (against the merge base with
 `origin/main`, plus uncommitted and untracked files). `AREAS="engine core"` picks areas, and
@@ -153,6 +153,15 @@ fail instead of skipping.
     Runs from different worktrees queue on a host-wide lock.
   - Bandroom has its own entry point: `scripts/mac-vm.sh test-ui-bandroom`.
   - `scripts/mac-vm.sh down` suspends the VMs when you're done.
+- **Windows** builds, tests and screenshots run in a headless Windows 11 ARM64 VM
+  ([windows-vm.md](windows-vm.md)). Use it for a release and for changes that touch the Windows apps'
+  XAML, their native interop or their packaging. Tier 2's `apps/windows/tools/check-macos.sh` never
+  runs the XAML compiler.
+  - `scripts/win-vm.sh test` builds the core DLL, Play and Bandroom, then runs the .NET tests, the
+    smoke tests and the Axe.Windows scans.
+  - `scripts/win-vm.sh shots [SCENES]` screenshots Play in en and nb, light, dark and Pink.
+  - `scripts/win-vm.sh checklist` covers the scriptable part of [windows-checklist.md](windows-checklist.md).
+  - Runs queue on a host-wide lock. `scripts/win-vm.sh down` shuts the VM down.
 
 ## Measurements
 
