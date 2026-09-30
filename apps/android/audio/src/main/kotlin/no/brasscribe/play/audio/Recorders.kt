@@ -7,10 +7,13 @@ import android.media.AudioFormat
 import android.media.AudioPlaybackCaptureConfiguration
 import android.media.AudioRecord
 import android.media.projection.MediaProjection
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +35,8 @@ data class CaptureState(
     val fitsPhone: Boolean = true,
     /** The take reached [TakeSink.MAX_TAKE_SECONDS]: nothing more is recorded. */
     val full: Boolean = false,
+    /** The input went away (the microphone lost, or "Stop sharing"): the take ends with what it has. */
+    val interrupted: Boolean = false,
 )
 
 /** Something that records mono float audio into a WAV file until stopped. */
@@ -80,6 +85,10 @@ class MicRecorder(override val file: File, private val requestedRate: Int = 4800
                     take.add(buf, n)
                     if (peak(buf, n) > SILENCE) lastSound = take.samples
                     _state.value = take.state(NativeAudio.recorderLevel(), lastSound)
+                } else if (NativeAudio.recorderLost()) {
+                    // The microphone went away and could not be opened again: the take ends here.
+                    _state.value = _state.value.copy(interrupted = true)
+                    break
                 } else delay(10)
             }
         }
@@ -87,27 +96,30 @@ class MicRecorder(override val file: File, private val requestedRate: Int = 4800
         return true
     }
 
-    private suspend fun end() {
-        NativeAudio.recorderStop()
+    /** Ends the take whatever happens to the caller: the stream, the read loop and the file are always let go. */
+    private suspend fun end() = withContext(NonCancellable) {
         job?.cancel()
         job?.join()
+        NativeAudio.recorderStop()
         _state.value = _state.value.copy(recording = false)
     }
 
     override suspend fun stop(): CapturedTake {
         end()
         val take = sink!!
-        // Drain what the callback wrote after the last read.
-        val buf = FloatArray(4096)
-        while (true) {
-            val n = NativeAudio.recorderRead(buf)
-            if (n <= 0) break
-            take.add(buf, n)
+        return withContext(NonCancellable + Dispatchers.IO) {
+            // Drain what the callback wrote after the last read.
+            val buf = FloatArray(4096)
+            while (true) {
+                val n = NativeAudio.recorderRead(buf)
+                if (n <= 0) break
+                take.add(buf, n)
+            }
+            take.finish()
         }
-        return withContext(Dispatchers.IO) { take.finish() }
     }
 
-    override suspend fun discard() { end(); sink?.discard() }
+    override suspend fun discard() { end(); withContext(NonCancellable + Dispatchers.IO) { sink?.discard() } }
 }
 
 /**
@@ -145,29 +157,46 @@ class PlaybackCaptureRecorder(
         val take = runCatching { TakeSink(file, sampleRate) }.getOrElse { rec.release(); return false }
         sink = take
         record = rec
+        // "Stop sharing" in the system UI (or another app taking the projection) ends the take here.
+        projection.registerCallback(stopped, Handler(Looper.getMainLooper()))
         rec.startRecording()
         job = scope.launch(Dispatchers.IO) {
             val buf = FloatArray(4096)
             var lastSound = 0L
             while (isActive) {
                 val n = rec.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
-                if (n <= 0) continue
+                if (n < 0) {
+                    // An error code: the recording was stopped under it. Reading again would only spin.
+                    _state.value = _state.value.copy(interrupted = true)
+                    break
+                }
+                if (n == 0) continue
                 take.add(buf, n)
                 val p = peak(buf, n)
                 if (p > SILENCE) lastSound = take.samples
-                _state.value = take.state(p, lastSound)
+                _state.value = take.state(p, lastSound).copy(interrupted = projectionStopped)
             }
         }
         _state.value = CaptureState(recording = true)
         return true
     }
 
-    private suspend fun end() {
+    @Volatile private var projectionStopped = false
+    private val stopped = object : MediaProjection.Callback() {
+        override fun onStop() {
+            projectionStopped = true
+            if (_state.value.recording) _state.value = _state.value.copy(interrupted = true)
+        }
+    }
+
+    /** Ends the take whatever happens to the caller: the recording, the read loop and the projection are always let go. */
+    private suspend fun end() = withContext(NonCancellable) {
         job?.cancel()
-        record?.stop()
+        runCatching { record?.stop() }
         job?.join()
         record?.release()
         record = null
+        runCatching { projection.unregisterCallback(stopped) }
         projection.stop()
         _state.value = _state.value.copy(recording = false)
     }
@@ -175,8 +204,8 @@ class PlaybackCaptureRecorder(
     override suspend fun stop(): CapturedTake {
         end()
         val take = sink!!
-        return withContext(Dispatchers.IO) { take.finish() }
+        return withContext(NonCancellable + Dispatchers.IO) { take.finish() }
     }
 
-    override suspend fun discard() { end(); sink?.discard() }
+    override suspend fun discard() { end(); withContext(NonCancellable + Dispatchers.IO) { sink?.discard() } }
 }

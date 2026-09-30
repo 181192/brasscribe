@@ -42,6 +42,7 @@ JNIEXPORT jint JNICALL FN(recorderRead)(JNIEnv* env, jobject, jfloatArray buffer
 JNIEXPORT jint JNICALL FN(recorderSampleRate)(JNIEnv*, jobject) { return recorder().sampleRate(); }
 JNIEXPORT jfloat JNICALL FN(recorderLevel)(JNIEnv*, jobject) { return recorder().level(); }
 JNIEXPORT jlong JNICALL FN(recorderDropped)(JNIEnv*, jobject) { return recorder().dropped(); }
+JNIEXPORT jboolean JNICALL FN(recorderLost)(JNIEnv*, jobject) { return recorder().lost() ? JNI_TRUE : JNI_FALSE; }
 
 JNIEXPORT jboolean JNICALL FN(sfizzAvailable)(JNIEnv*, jobject) { return sfizz_bridge::available() ? JNI_TRUE : JNI_FALSE; }
 JNIEXPORT jboolean JNICALL FN(sfizzStart)(JNIEnv*, jobject, jint sampleRate) { return sfizz_bridge::start(sampleRate) ? JNI_TRUE : JNI_FALSE; }

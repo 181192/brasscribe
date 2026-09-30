@@ -12,6 +12,7 @@ internal object NativeAudio {
     external fun recorderSampleRate(): Int
     external fun recorderLevel(): Float
     external fun recorderDropped(): Long
+    external fun recorderLost(): Boolean
 
     external fun sfizzAvailable(): Boolean
     external fun sfizzStart(sampleRate: Int): Boolean
