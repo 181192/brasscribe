@@ -14,8 +14,8 @@ on:
       - "design/mockups/png/**"
       - "apps/*/docs/screenshots/**"
       - ".github/workflows/pages.yml"
+  # Every pull request, so `CI result` is always reported; the `changes` job skips what it doesn't touch.
   pull_request:
-    paths-ignore: *ignore
   workflow_call:
   workflow_dispatch:
 
