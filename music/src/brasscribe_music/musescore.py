@@ -16,14 +16,14 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable, Iterator, Sequence
 
-LOCK_DIR = Path(tempfile.gettempdir()) / "brasscribe-mscore.lock"
-STALE_AFTER_S = 900.0
+LOCK_FILE = Path(tempfile.gettempdir()) / "brasscribe-mscore.flock"
 AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg", ".flac"}
 
 Job = tuple[Path | str, Path | str | Sequence[Path | str]]
@@ -37,27 +37,48 @@ def available() -> bool:
     return binary() is not None
 
 
+if sys.platform == "win32":
+    import msvcrt
+
+    def _try_lock(fd: int) -> bool:
+        os.lseek(fd, 0, os.SEEK_SET)
+        try:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            return True
+        except OSError:
+            return False
+
+    def _unlock(fd: int) -> None:
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+else:
+    import fcntl
+
+    def _try_lock(fd: int) -> bool:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except BlockingIOError:
+            return False
+
+    def _unlock(fd: int) -> None:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
 @contextmanager
 def _lock() -> Iterator[None]:
-    while True:
-        try:
-            LOCK_DIR.mkdir()
-            break
-        except FileExistsError:
-            try:
-                if time.time() - LOCK_DIR.stat().st_mtime > STALE_AFTER_S:
-                    LOCK_DIR.rmdir()
-                    continue
-            except FileNotFoundError:
-                continue
-            time.sleep(0.2)
+    """An OS file lock (flock, msvcrt.locking): the kernel drops it when its holder dies, so a crashed
+    conversion never leaves a stale lock that a waiter would have to judge and remove."""
+    fd = os.open(LOCK_FILE, os.O_RDWR | os.O_CREAT, 0o666)
     try:
-        yield
-    finally:
+        while not _try_lock(fd):
+            time.sleep(0.2)
         try:
-            LOCK_DIR.rmdir()
-        except FileNotFoundError:
-            pass
+            yield
+        finally:
+            _unlock(fd)
+    finally:
+        os.close(fd)
 
 
 def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: float = 600.0) -> list[Path]:

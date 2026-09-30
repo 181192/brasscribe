@@ -234,6 +234,10 @@ pub fn fifths(name: &str) -> i32 {
         }
     };
     match name.strip_suffix('m') {
+        // G#, D# and A# minor: the major table has no G#, D# or A# (they are Ab, Eb and Bb there).
+        Some("G#") => 5,
+        Some("D#") => 6,
+        Some("A#") => 7,
         Some(root) => major(root) - 3,
         None => major(name),
     }
@@ -248,4 +252,21 @@ pub fn key_of(durations_beats: &[f64], pitches: &[i32]) -> (&'static str, i32) {
 pub fn name(step: char, alter: i32, octave: i32) -> String {
     let acc = if alter > 0 { "#".repeat(alter as usize) } else { "b".repeat((-alter) as usize) };
     format!("{step}{acc}{octave}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sharp_minor_keys_get_their_sharps() {
+        assert_eq!([fifths("G#m"), fifths("D#m"), fifths("C#m"), fifths("Bbm"), fifths("Am")], [5, 6, 4, -5, 0]);
+        // G# harmonic minor up, then the tonic triad
+        let tonic = 68;
+        let mut ps: Vec<i32> = [0, 2, 3, 5, 7, 8, 11, 12, 7, 3, 0].iter().map(|i| tonic + i).collect();
+        ps.extend([tonic - 12, tonic + 3, tonic + 7].repeat(3));
+        let mut du = vec![1.0; ps.len()];
+        du[0] = 4.0;
+        assert_eq!(key_of(&du, &ps), ("G#m", 5));
+    }
 }

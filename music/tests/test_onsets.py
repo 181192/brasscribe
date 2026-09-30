@@ -84,3 +84,15 @@ def test_semitone_trill_with_a_transit_frame_splits():
         seq += [72 + (k % 2)] * 5 + [72.5]
     out = contour_notes([note(72, 0.0, len(seq) * FRAME)], contour(np.array(seq, float) + 0.03))
     assert len(out) >= 20
+
+
+def test_glides_leading_nowhere_do_not_stretch_an_earlier_note(monkeypatch):
+    from brasscribe_music import onsets
+
+    # 61 scoops into 62, and 62 falls off 61 with a rest after it: both are glides, and 60 is a note apart
+    notes = [note(60, 0.0, 0.5), note(61, 1.0, 1.1), note(62, 1.1, 1.2), note(64, 1.3, 2.0)]
+    monkeypatch.setattr(onsets, "_glide", lambda n, *_: n["pitch"] in (61, 62))
+    t = np.arange(int(2.0 / FRAME)) * FRAME
+    pitch = np.select([t < 1.0, t < 1.3], [60.0, 62.0], 64.0)
+    out = contour_notes(notes, contour(pitch))
+    assert [(n["pitch"], n["onset"], n["offset"]) for n in out] == [(60, 0.0, 0.5), (62, 1.0, 1.2), (64, 1.3, 2.0)]

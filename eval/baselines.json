@@ -852,7 +852,7 @@
           "higher_is_better": false
         },
         "small0.lead:easier.fig_recall": 0.212,
-        "small0.lead:easier.trill_kept": 0.241,
+        "small0.lead:easier.trill_kept": 0.259,
         "small0.line.fig_recall": 0.596,
         "small0.quantized.fig_recall": 0.469,
         "small0.sw.fig_recall": 0.588,

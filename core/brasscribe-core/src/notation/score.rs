@@ -12,7 +12,7 @@ use super::beams::{get_beams, BDir, BeamInput, BeamSequence, Beams, BT};
 use super::duration::{DType, Dur, Rat, TupletType};
 use super::pitch::{altered_names, transpose, transpose_key, update_accidental_display, Acc, P};
 use super::xml::El as X;
-use crate::rhythm_spelling::{is_value, pieces};
+use crate::rhythm_spelling::{pieces, SINGLE, TRIPLET};
 use crate::instruments::Instrument;
 use crate::quantize::QNote;
 use crate::spelling::{key_of, spell};
@@ -273,10 +273,23 @@ fn notatable_end(start: i64, end: i64) -> i64 {
     cands.into_iter().filter(|&c| c > start).min_by_key(|&c| ((c - end).abs(), c)).unwrap()
 }
 
-/// [a, b) splits into plain, dotted or triplet values within each beat (no
-/// 2-tick fragments, which can only be written as nested tuplets).
+/// A plain or dotted value on the 32nd grid of its beat, or a triplet value on the
+/// triplet-16th grid. A plain value and a triplet value can then only meet on an
+/// 8th, so the triplet values of a beat fill whole triplet groups.
+fn clean_piece(x: i64, y: i64) -> bool {
+    let (d, bx, by) = (y - x, x.rem_euclid(TPB), (y - 1).rem_euclid(TPB) + 1);
+    if SINGLE.contains(&d) {
+        bx % 3 == 0 && by % 3 == 0
+    } else {
+        TRIPLET.contains(&d) && bx % 4 == 0 && by % 4 == 0
+    }
+}
+
+/// [a, b) splits into plain, dotted or triplet values within each beat, each on
+/// its own grid (no 2-tick fragments, which can only be written as nested
+/// tuplets, and no incomplete tuplet brackets).
 fn clean_span(a: i64, b: i64) -> bool {
-    b > a && pieces(a, b, TPB).iter().all(|&(x, y)| is_value(y - x))
+    b > a && pieces(a, b, TPB).iter().all(|&(x, y)| clean_piece(x, y))
 }
 
 /// The end nearest `end` for which the note and the rest after it are both clean spans.
@@ -1979,6 +1992,14 @@ mod tests {
         }
         n.push(nots);
         n
+    }
+
+    #[test]
+    fn triplet_values_fill_whole_tuplet_groups() {
+        // a triplet 8th followed by a plain 8th off the 16th grid would leave the bracket open
+        assert!(!clean_span(8, 20) && clean_span(8, 16) && clean_span(16, 20));
+        assert_eq!(clean_end(8, 20, Some(20)), 16);
+        assert!(clean_span(0, 16) && clean_span(16, 42)); // triplet quarter, then a triplet 8th and a dotted 8th
     }
 
     fn numbers(part: &X) -> Vec<Vec<String>> {

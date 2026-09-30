@@ -95,6 +95,16 @@ def test_mid_piece_region_keeps_bars_before_and_resumes_on_a_bar_line():
     assert r.start == a * TICKS_PER_BEAT and r.end == b * TICKS_PER_BEAT
 
 
+def test_region_inside_the_pickup_bar_resumes_on_a_bar_line():
+    # a pickup of three beats (bar 1 at beat 3), free time from beat 1
+    t = np.r_[0.0, np.cumsum([0.5, 1.9, 0.9, 3.1, 1.3] + [0.5] * 16)]
+    plan = plan_free_time(t, t, 4, 3)
+    (a, b, s0, s1, bpm), = plan.spans
+    assert (a, plan.first_downbeat) == (1, 3)
+    assert (b - plan.first_downbeat) % 4 == 0  # the strict grid resumes on a downbeat
+    assert s1 in t and np.allclose(plan.beat_times[b:], t[t >= s1])
+
+
 def test_clip_to_regions_ends_notes_at_the_region_end():
     from brasscribe_music.freetime import clip_to_regions
     from brasscribe_music.score_model import FreeRegion
