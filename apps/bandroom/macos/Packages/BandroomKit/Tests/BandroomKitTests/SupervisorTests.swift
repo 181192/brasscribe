@@ -143,7 +143,7 @@ import Testing
                                          computerName: "Kalli's MacBook", adminToken: "secret")
         let sup = EngineSupervisor(configuration: config, launcher: launcher, makeClient: { _, _ in engine },
                                    sleep: { _ in await Task.yield() }, now: { clock.now }, pickPort: { port },
-                                   baseEnvironment: ["HOME": "/Users/k", "PATH": "/nowhere"])
+                                   baseEnvironment: ["HOME": "/Users/test", "PATH": "/nowhere"])
         return (sup, paths.engineStatus)
     }
 
