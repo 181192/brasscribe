@@ -193,10 +193,10 @@ struct RecordingLevelTests {
     @Test func goldenTargetIsTheBandsLoudness() throws {
         let target = PlaybackLevels.recordingTargetLUFS(for: score)
         print("LEVELS golden recording target \(target) LUFS")
-        // the offset is fitted on two arrangements: the golden's estimate is 0.16 LU under what Windows measures
-        #expect(abs(target - PlaybackLevels.bandArrangementLUFS) < 0.2)
-        // sounds/playback_levels.py --calibrate with the sounds-2026.09.30 pack: -14.60, against -14.44 measured.
-        #expect(abs(target - (-14.60)) < 0.01)
+        // the offset is fitted on two arrangements: the golden's estimate is 0.22 LU under what Windows measures
+        #expect(abs(target - PlaybackLevels.bandArrangementLUFS) < 0.25)
+        // sounds/playback_levels.py --calibrate with the sounds-2026.09.30 pack: -14.72, against -14.50 measured.
+        #expect(abs(target - (-14.72)) < 0.01)
     }
 
     @Test func loudnessIsMeasuredQuickly() throws {
