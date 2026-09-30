@@ -10,6 +10,7 @@ Writes:
   design/brand/logo/          mark, wordmark and lockups as SVG (text converted to outlines)
   design/brand/icon/          app icon masters (SVG)
   design/dist/icons/          per-platform PNG exports, Apple/Android/Windows manifests, favicon set
+  design/brand/social/        the link-preview image (1280 x 640) for the repository and the site
 
 Needs `rsvg-convert` (librsvg) on PATH. PNGs are rendered, not diffed: the sync test covers
 only the text outputs of design/tokens/build.py.
@@ -307,7 +308,49 @@ def build_icons() -> None:
     sheet.unlink()
 
 
+# ---------- social preview ----------
+
+SOCIAL = HERE / "social"
+TAGLINE = "A score for your brass band, from any recording."
+
+
+def social_preview() -> str:
+    """1280 x 640 image for link previews (GitHub, chat apps): the app icon's ink ground, the mark in
+    brass, the wordmark and the tagline. GitHub crops about 40 px on every side in some views, so all
+    content stays well inside."""
+    w, h = 1280, 640
+    regular = TTFont(FONTS / "InstrumentSerif-Regular.ttf")
+    italic = TTFont(FONTS / "InstrumentSerif-Italic.ttf")
+    word_size, tag_size = 168, 46
+    mark = 232
+    gap = 44
+    # Measure first, then centre the mark + text block horizontally.
+    _, word_end = text_path(regular, "Brasscribe", word_size, 0, 0, 0.005)
+    _, tag_end = text_path(italic, TAGLINE, tag_size, 0, 0, 0.0)
+    block_w = mark + gap + max(word_end, tag_end)
+    x0 = (w - block_w) / 2
+    tx = x0 + mark + gap
+    top = (h - mark) / 2
+    word_base = top + mark * 0.60
+    tag_base = word_base + tag_size * 1.75
+    d_word, _ = text_path(regular, "Brasscribe", word_size, tx, word_base, 0.005)
+    d_tag, _ = text_path(italic, TAGLINE, tag_size, tx + 4, tag_base, 0.0)
+    body = (DEFS + f'\n<rect width="{w}" height="{h}" fill="url(#tile)"/>\n'
+            + mark_group(x0, top, mark, "url(#brass)") + "\n"
+            + f'<path fill="#EDEBE6" d="{d_word}"/>\n'
+            + f'<path fill="{BRASS_ON_DARK}" d="{d_tag}"/>')
+    return svg_doc(w, h, body)
+
+
+def build_social() -> None:
+    SOCIAL.mkdir(exist_ok=True)
+    src = SOCIAL / "social-preview.svg"
+    src.write_text(social_preview())
+    render(src, SOCIAL / "social-preview.png", 1280, 640)
+
+
 if __name__ == "__main__":
     build_logo()
     build_icons()
+    build_social()
     print("brand assets written to", LOGO.relative_to(ROOT), ICON.relative_to(ROOT), DIST.relative_to(ROOT))
