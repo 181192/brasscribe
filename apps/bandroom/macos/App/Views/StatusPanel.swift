@@ -154,6 +154,7 @@ struct StatusPanel: View {
         case .missingDownload: app.openWindow("setup")
         case .noFreePort: app.tryAgain()
         case .updateFailed: app.retryUpdate()
+        case .notResponding: app.restartNow()
         }
     }
 

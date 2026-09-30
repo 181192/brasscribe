@@ -102,6 +102,26 @@ import Testing
         #expect(m.status == nil)
     }
 
+    @Test func anEngineThatStopsAnsweringIsUnresponsiveAfterThreeChecks() async {
+        let engine = FakeEngine()
+        let m = StatusMonitor(sleep: { _ in })
+        m.client = engine
+        await m.refresh()
+        engine.failAll = true
+        await m.refresh()
+        await m.refresh()
+        #expect(!m.isUnresponsive, "two missed checks can be a busy moment")
+        await m.refresh()
+        #expect(m.isUnresponsive)
+        engine.failAll = false
+        await m.refresh()
+        #expect(!m.isUnresponsive, "an answer clears it")
+        engine.failAll = true
+        for _ in 0..<3 { await m.refresh() }
+        m.client = nil
+        #expect(!m.isUnresponsive, "a new engine starts afresh")
+    }
+
     @Test func connectedDevicesFirstThenByLastUse() {
         let now = Date(timeIntervalSince1970: 1_790_000_000)
         let f = ISO8601DateFormatter()

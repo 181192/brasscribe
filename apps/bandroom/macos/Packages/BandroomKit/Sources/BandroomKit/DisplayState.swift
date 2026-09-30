@@ -9,6 +9,8 @@ public enum Problem: Equatable, Sendable {
     case noFreePort
     /// The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.
     case updateFailed
+    /// The engine runs but hasn't answered for several checks in a row (hung). The fix restarts it.
+    case notResponding
 }
 
 /// What the menu-bar icon, the tooltip and the status line show (§6.1).

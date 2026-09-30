@@ -310,6 +310,7 @@ final class AppModel {
 
     var problems: [Problem] {
         var list: [Problem] = []
+        if case .running = phase, monitor.isUnresponsive { list.append(.notResponding) }
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
         if updateFailure != nil, !updater.isUpdating { list.append(.updateFailed) }
         if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }

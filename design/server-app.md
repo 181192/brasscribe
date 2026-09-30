@@ -335,6 +335,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 | Missing download or licence | Full-band scores need one more step | Names what is missing: "The soloist separator isn't downloaded yet.", "The soloist separator and the band writer aren't downloaded yet." (the band writer, the soloist separator, the instrument separator) | **Finish setting up** (only the missing downloads) | – | the missing files, the models folder and the Hugging Face cache path, the last download error |
 | Access key refused | Hugging Face didn't accept the access key | The key may have been deleted or expired. | **Sign in again** | Paste a new key | "HTTP 401 from huggingface.co for MuScriptor/muscriptor-medium." |
 | No free port | Brasscribe can't start | Another program on this computer is in the way. | **Restart** | – | "Ports 8765–8775 in use (8765: pid 4121 node)." |
+| Engine not answering (Mac) | Brasscribe isn't answering | It is running but hasn't answered for a while. Restarting it usually helps. | **Restart** | – | the state and the last exit; shown after three status checks in a row get no answer |
 
 - The warning thresholds for low disk: warn under **10 GB** free, and stop taking new jobs under **3 GB**. Phones get the error "Your computer is out of space."
 - A busy port is fixed **silently**: the next free port is used and advertised. It only becomes a problem when all ten are taken.
@@ -656,6 +657,9 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | key.paste | Paste a new key | Lim inn en ny nøkkel |
 | port.title | Brasscribe can't start | Brasscribe kan ikke starte |
 | port.why | Another program on this computer is in the way. | Et annet program på denne datamaskinen står i veien. |
+| hung.title | Brasscribe isn't answering | Brasscribe svarer ikke |
+| hung.why | It is running but hasn't answered for a while. Restarting it usually helps. | Den kjører, men har ikke svart på en stund. Som regel hjelper det å starte den på nytt. |
+| hung.fix | Restart | Start på nytt |
 | error.title | Brasscribe stopped unexpectedly | Brasscribe stoppet uventet |
 | error.why | It tried to start three times. Recordings on your phones are safe. | Den prøvde å starte tre ganger. Opptakene på telefonene er trygge. |
 | error.spawn.why | It couldn't be started. Recordings on your phones are safe. | Den kunne ikke startes. Opptakene på telefonene er trygge. |

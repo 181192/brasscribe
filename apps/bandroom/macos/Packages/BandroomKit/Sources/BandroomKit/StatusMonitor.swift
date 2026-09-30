@@ -65,6 +65,12 @@ public final class StatusMonitor {
     public private(set) var requests: [PairRequestInfo] = []
     public private(set) var lastUpdate: Date?
     public private(set) var reachable = false
+    /// Status checks in a row the engine didn't answer; back to 0 on an answer or a new engine.
+    public private(set) var failedRefreshes = 0
+
+    /// This many unanswered checks in a row: the engine runs but is stuck (§6.2 Needs attention).
+    public static let unresponsiveAfter = 3
+    public var isUnresponsive: Bool { failedRefreshes >= Self.unresponsiveAfter }
 
     public var isPanelOpen = false {
         didSet { if isPanelOpen && !oldValue { refreshDue = true } }
@@ -143,6 +149,7 @@ public final class StatusMonitor {
             let previousRunning = status?.jobsRunning
             status = s
             reachable = true
+            failedRefreshes = 0
             lastUpdate = now()
             if health == nil || health?.serverId != s.serverId || healthDue {
                 if let h = try? await client.health() { health = h; healthDue = false }
@@ -156,6 +163,7 @@ public final class StatusMonitor {
             if previousRunning != s.jobsRunning { onJobsChanged?(s.jobsRunning) }
         } catch {
             reachable = false
+            failedRefreshes += 1
         }
     }
 
@@ -200,6 +208,7 @@ public final class StatusMonitor {
     /// No engine: nothing is being made and its numbers are gone, so nothing waits on a job that isn't there.
     private func clear() {
         reachable = false
+        failedRefreshes = 0
         status = nil
         job = nil
         requests = []
