@@ -30,20 +30,24 @@ on_fresh_main() {
 
 case "${1:-}" in
   --preview)
+    [ $# -eq 1 ] || die "usage: scripts/release.sh --preview"
     git fetch -q --tags origin
     exec "${cliff[@]}" --unreleased --strip header
     ;;
   --tag)
-    version=${2:?usage: scripts/release.sh --tag X.Y.Z}
+    [ $# -eq 2 ] || die "usage: scripts/release.sh --tag X.Y.Z"
+    version=$2
     [[ $version =~ $semver ]] || die "version must be X.Y.Z, got $version"
     tag="v$version"
     on_fresh_main
     git rev-parse -q --verify "refs/tags/$tag" >/dev/null && die "$tag already exists"
-    # The release commit as merged (rebase, squash or merge commit all keep its subject).
-    commit=$(git log -1 --format=%H --first-parent --grep="^chore(release): $version\$" main; \
-             git log -1 --format=%H --grep="^chore(release): $version\$" main)
-    commit=$(head -1 <<<"$commit")
+    # The release commit as merged: rebase and squash put it on main's first-parent line; a merge
+    # commit keeps it on the side, and then the merge commit itself is what main released.
+    commit=$(git log -1 --format=%H --grep="^chore(release): $version\$" main)
     [ -n "$commit" ] || die "no 'chore(release): $version' commit on main; merge the release pull request and pull first"
+    if ! git rev-list --first-parent main | grep -qx "$commit"; then
+      commit=$(git rev-list --first-parent --ancestry-path "$commit..main" | tail -1)
+    fi
     git tag "$tag" "$commit"
     git push -q origin "$tag"
     echo "Pushed $tag. The release workflow is building it: gh run list -w release -L 1"
@@ -51,6 +55,7 @@ case "${1:-}" in
     ;;
   ""|-*) die "usage: scripts/release.sh X.Y.Z | --tag X.Y.Z | --preview" ;;
 esac
+[ $# -eq 1 ] || die "usage: scripts/release.sh X.Y.Z (the release pull request; tag it later with --tag)"
 
 version=$1
 [[ $version =~ $semver ]] || die "version must be X.Y.Z (no leading zeros), got $version"
