@@ -85,4 +85,6 @@ commit_parsers = [
   { message = "^fix", group = "<!-- 1 -->Fixes" },
   { message = "^perf", group = "<!-- 2 -->Performance" },
   { message = "^(docs|test|ci|build|refactor|style|chore|revert)", group = "<!-- 9 -->Under the hood" },
+  # Any other Conventional Commit type (e.g. `deps`) is folded away too, never dropped.
+  { message = ".*", group = "<!-- 9 -->Under the hood" },
 ]
