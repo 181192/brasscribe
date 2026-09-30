@@ -1,0 +1,11 @@
+[package]
+name = "target-fretted"
+description = "String and fret assignment (tablature fingering) for fretted instruments"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+brasscribe-core = { path = "../brasscribe-core" }
+serde.workspace = true
+serde_json.workspace = true
