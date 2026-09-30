@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { anySignal, api, isAbort, subscribe, TimedOut, type StreamState } from "../src/api/client";
+import { anySignal, api, isAbort, subscribe, SUITE_TIMEOUT_S, TimedOut, type StreamState } from "../src/api/client";
 import type { JobEvent } from "../src/api/types";
 
 /** The browser's EventSource, driven by hand. */
@@ -76,6 +76,14 @@ describe("cancelling requests", () => {
     const p = api.parity().catch((e) => e);
     deadline.abort(new DOMException("timed out", "TimeoutError"));
     expect(await p).toBeInstanceOf(TimedOut);
+  });
+
+  it("waits hours, not minutes, for a benchmark suite to finish", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("{}", { status: 200 })));
+    await api.runSuite("cpu");
+    expect(timeout).toHaveBeenCalledWith(SUITE_TIMEOUT_S * 1000);
+    expect(SUITE_TIMEOUT_S).toBeGreaterThanOrEqual(60 * 60);
   });
 
   it("combines signals where AbortSignal.any is missing", () => {

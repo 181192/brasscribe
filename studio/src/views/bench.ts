@@ -1,5 +1,5 @@
 // Benchmarks: run suites, see the regression gate and the trend per metric.
-import { api } from "../api/client";
+import { api, TimedOut } from "../api/client";
 import type { BenchRun, SuiteInfo, SuiteResult, SuiteRun } from "../api/types";
 import { t } from "../i18n";
 import { announce, clear, errorNotice, fmt, h, infoTip, loading, pill, rebuild, table, token, viewHead } from "../ui/dom";
@@ -29,7 +29,11 @@ export function benchView(root: HTMLElement): void {
       announce(t("bench.gateAnnounce", { name, state: run.passed ? t("bench.passed") : t("bench.failed") }));
       await loadTrend();
     } catch (e) {
-      clear(lastEl, errorNotice(e));
+      // Studio stopped waiting, but the engine carries on: the result lands in the history.
+      clear(lastEl, e instanceof TimedOut ? h("div", { class: "notice", role: "status" },
+        h("p", { class: "notice-title" }, h("strong", {}, t("bench.stillRunning", { name }))),
+        h("p", {}, t("bench.stillRunningBody", { min: Math.round(e.seconds / 60) }))) : errorNotice(e));
+      if (e instanceof TimedOut) void loadTrend();
     } finally {
       running = false;
       renderSuites();

@@ -99,15 +99,19 @@ async function get<T>(path: string, endpoint = path, timeoutS = TIMEOUT_S, opts:
   return (await r.json()) as T;
 }
 
-async function send<T>(method: string, path: string, body?: unknown, endpoint = path): Promise<T> {
+/** Sends may start long work (MuseScore); give them longer than reads. */
+const SEND_TIMEOUT_S = 600;
+/** A benchmark suite answers only when it has finished, which with live models can take long. */
+export const SUITE_TIMEOUT_S = 3 * 60 * 60;
+
+async function send<T>(method: string, path: string, body?: unknown, endpoint = path, timeoutS = SEND_TIMEOUT_S): Promise<T> {
   const init: RequestInit = { method, headers: { Accept: "application/json" } };
   if (body instanceof FormData) init.body = body;
   else if (body !== undefined) {
     init.body = JSON.stringify(body);
     init.headers = { ...init.headers, "Content-Type": "application/json" };
   }
-  // Sends may start long work (a benchmark suite, MuseScore); give them longer.
-  const r = await request(path, init, 600);
+  const r = await request(path, init, timeoutS);
   if (!r.ok) return fail(r, endpoint);
   return (await r.json()) as T;
 }
@@ -162,7 +166,7 @@ export const api = {
   eventsUrl: (id: string, after = -1) => url(`/v1/jobs/${enc(id)}/events?after=${after}`),
   suites: () => get<SuiteInfo[]>("/v1/suites"),
   runSuite: (name: string, mode: "cached" | "live" = "cached") =>
-    send<BenchRun>("POST", `/v1/suites/${enc(name)}/run?mode=${mode}`),
+    send<BenchRun>("POST", `/v1/suites/${enc(name)}/run?mode=${mode}`, undefined, "POST /v1/suites/{name}/run", SUITE_TIMEOUT_S),
 
   // Inspection, comparison, benchmarks, registry.
   stages: (id: string, opts?: CallOptions) => get<StageFiles[]>(`/v1/jobs/${enc(id)}/stages`, "GET /v1/jobs/{id}/stages", undefined, opts),
