@@ -560,7 +560,14 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     {
         try
         {
-            if (await bootstrap.IsCompleteAsync(_cuda)) StartMissingDownloads();
+            if (_controller is { } controller) controller.SetupFailure = null;
+            if (await bootstrap.IsCompleteAsync(_cuda))
+            {
+                // Setup is done but the start may have stopped short: start it (nothing happens if it runs).
+                await _supervisor!.StartAsync();
+                StartMissingDownloads();
+                _controller?.Publish();
+            }
             else if (await Task.Run(() => bootstrap.IsUpdate)) await UpdateAsync();
             else await SetupAsync();
         }
@@ -584,6 +591,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     public void Fix(ProblemKind problem)
     {
+        // Setup stopped: Finish setting up runs it again, whatever a download says meanwhile.
+        if (problem == ProblemKind.MissingDownload && _controller?.SetupFailure is not null) { FinishSetup(); return; }
         string? uri = problem switch
         {
             ProblemKind.LowDisk => "ms-settings:storagesense",
