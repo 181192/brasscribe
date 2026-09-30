@@ -26,7 +26,7 @@ def test_dtcg_tokens_load_and_pass():
     if not tokens.exists():
         return
     data = c.load_dtcg(tokens)
-    assert set(data["themes"]) == {"light", "dark", "high-contrast", "high-contrast-light"}
+    assert set(data["themes"]) == {"light", "dark", "high-contrast", "high-contrast-light", "pink", "pink-dark"}
     for theme in data["themes"].values():
         for fg, bg, minimum, _ in data["pairs"]:
             assert c.contrast(theme[fg], theme[bg]) + 1e-9 >= minimum, (fg, bg)
