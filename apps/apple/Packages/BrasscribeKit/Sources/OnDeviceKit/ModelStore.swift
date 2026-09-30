@@ -54,11 +54,27 @@ public enum OnDeviceModel: String, CaseIterable, Sendable {
 /// Sources, in order: the compiled cache in Application Support; a local folder laid out
 /// like `models/converted/` (`BRASSCRIBE_MODELS`, for development and the simulator);
 /// an HTTP base URL serving the same layout (for example the paired computer).
+///
+/// Thread-safe: the sources and the loaded models are behind one lock, and a model is fetched and
+/// compiled once however many callers ask for it at the same time.
 public final class ModelStore: @unchecked Sendable {
     public let cache: URL
-    public var localSource: URL?
-    public var remoteBase: URL?
+    public var localSource: URL? {
+        get { lock.withLock { _localSource } }
+        set { lock.withLock { _localSource = newValue } }
+    }
+    public var remoteBase: URL? {
+        get { lock.withLock { _remoteBase } }
+        set { lock.withLock { _remoteBase = newValue } }
+    }
+    private var _localSource: URL?
+    private var _remoteBase: URL?
     private var loaded: [OnDeviceModel: MLModel] = [:]
+    /// The load in progress for each model, which later callers wait for.
+    private var loading: [OnDeviceModel: Task<Shared, Error>] = [:]
+    /// A loaded model handed between tasks: MLModel is safe to use from several threads but is not
+    /// marked Sendable.
+    private struct Shared: @unchecked Sendable { let model: MLModel }
     private let lock = NSLock()
 
     public static let shared = ModelStore()
@@ -67,8 +83,8 @@ public final class ModelStore: @unchecked Sendable {
         let support = (try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true))
             ?? FileManager.default.temporaryDirectory
         self.cache = cache ?? support.appending(path: "Brasscribe/Models", directoryHint: .isDirectory)
-        self.localSource = localSource ?? ProcessInfo.processInfo.environment["BRASSCRIBE_MODELS"].map { URL(fileURLWithPath: $0) }
-        self.remoteBase = remoteBase
+        _localSource = localSource ?? ProcessInfo.processInfo.environment["BRASSCRIBE_MODELS"].map { URL(fileURLWithPath: $0) }
+        _remoteBase = remoteBase
     }
 
     func compiledURL(_ m: OnDeviceModel) -> URL { cache.appending(path: m.rawValue.replacingOccurrences(of: "/", with: "--") + ".mlmodelc") }
@@ -89,44 +105,75 @@ public final class ModelStore: @unchecked Sendable {
     }
 
     public func model(_ m: OnDeviceModel) async throws -> MLModel {
-        if let x = lock.withLock({ loaded[m] }) { return x }
+        let task: Task<Shared, Error> = lock.withLock {
+            if let x = loaded[m] { return Task { Shared(model: x) } }
+            if let t = loading[m] { return t }
+            let t = Task { Shared(model: try await self.load(m)) }
+            loading[m] = t
+            return t
+        }
+        do {
+            let model = try await task.value.model
+            lock.withLock { loaded[m] = model; loading[m] = nil }
+            return model
+        } catch {
+            // a failed load is not remembered, so the next call tries again
+            lock.withLock { loading[m] = nil }
+            throw error
+        }
+    }
+
+    /// Fetches and compiles the model when it is not in the cache yet, then loads it. Runs once per
+    /// model at a time (`model(_:)`).
+    private func load(_ m: OnDeviceModel) async throws -> MLModel {
         let fm = FileManager.default
         let compiled = compiledURL(m)
         if !fm.fileExists(atPath: compiled.path) {
-            let package = try await fetchPackage(m)
+            let (package, downloaded) = try await fetchPackage(m)
+            // the downloaded package is only needed until it is compiled
+            defer { if let downloaded { try? fm.removeItem(at: downloaded) } }
             let tmp = try await MLModel.compileModel(at: package)
+            defer { try? fm.removeItem(at: tmp) }
             try fm.createDirectory(at: compiled.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? fm.removeItem(at: compiled)
             try fm.moveItem(at: tmp, to: compiled)
         }
         let cfg = MLModelConfiguration()
         cfg.computeUnits = m.computeUnits
-        let model = try MLModel(contentsOf: compiled, configuration: cfg)
-        lock.withLock { loaded[m] = model }
-        return model
+        return try MLModel(contentsOf: compiled, configuration: cfg)
     }
 
-    private func fetchPackage(_ m: OnDeviceModel) async throws -> URL {
+    /// The .mlpackage, and the folder to delete afterwards when it was downloaded.
+    private func fetchPackage(_ m: OnDeviceModel) async throws -> (package: URL, downloaded: URL?) {
         if let local = localSource?.appending(path: "\(m.directory)/\(m.fileName)"), FileManager.default.fileExists(atPath: local.path) {
-            return local
+            return (local, nil)
         }
         guard let base = remoteBase else { throw OnDeviceError.modelMissing(m.fileName) }
-        let dst = FileManager.default.temporaryDirectory.appending(path: "download-\(UUID().uuidString)/\(m.fileName)")
-        for f in OnDeviceModel.packageFiles {
-            let url = base.appending(path: "\(m.directory)/\(m.fileName)/\(f)")
-            let (tmp, resp) = try await URLSession.shared.download(from: url)
-            guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw OnDeviceError.modelMissing("\(m.fileName) (\(url))") }
-            let target = dst.appending(path: f)
-            try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try FileManager.default.moveItem(at: tmp, to: target)
+        let folder = FileManager.default.temporaryDirectory.appending(path: "download-\(UUID().uuidString)", directoryHint: .isDirectory)
+        let dst = folder.appending(path: m.fileName)
+        do {
+            for f in OnDeviceModel.packageFiles {
+                let url = base.appending(path: "\(m.directory)/\(m.fileName)/\(f)")
+                let (tmp, resp) = try await URLSession.shared.download(from: url)
+                guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
+                    try? FileManager.default.removeItem(at: tmp)
+                    throw OnDeviceError.modelMissing("\(m.fileName) (\(url))")
+                }
+                let target = dst.appending(path: f)
+                try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FileManager.default.moveItem(at: tmp, to: target)
+            }
+        } catch {
+            try? FileManager.default.removeItem(at: folder)
+            throw error
         }
-        return dst
+        return (dst, folder)
     }
 
     /// Remove the compiled models (frees about 6 MB).
     public func removeAll() {
         try? FileManager.default.removeItem(at: cache)
-        lock.withLock { loaded = [:] }
+        lock.withLock { loaded = [:]; loading = [:] }
     }
 }
 
