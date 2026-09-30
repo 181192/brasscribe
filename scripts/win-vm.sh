@@ -262,7 +262,7 @@ provision() {
     start "$BASE" "$BASE_VARS"
     wait_ssh 10
   fi
-  trap 'stop' EXIT
+  trap 'stop; rm -rf "$LOCK"' EXIT
   vssh "if not exist C:\\firstlogon.done exit 1" </dev/null || { echo "error: firstlogon.ps1 did not finish (C:\\firstlogon.log in the VM)" >&2; exit 1; }
   t=$SECONDS
   log "installing the toolchain (Build Tools, .NET 10, Git, Rust), ~30 min"
@@ -272,7 +272,7 @@ provision() {
   log "trimming the disk"
   vssh 'powershell -NoProfile -Command "Remove-Item -Recurse -Force $env:TEMP\* -ErrorAction SilentlyContinue; Optimize-Volume -DriveLetter C -ReTrim"' </dev/null || true
   stop
-  trap - EXIT
+  trap 'rm -rf "$LOCK"' EXIT
   log "compacting the base disk"
   qemu-img convert -O qcow2 "$BASE" "$BASE.compact" && mv "$BASE.compact" "$BASE"
   timing "trim and compact" $((SECONDS - t))

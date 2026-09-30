@@ -150,4 +150,4 @@ elseif ($Scenes) {
 
 if ($failures.Count -gt 0) { Write-Host "FAILED: $($failures -join '; ')" } else { Write-Host "all ok" }
 Stop-Transcript | Out-Null
-Set-Content "$out\shots.done" ($failures -join "`n")
+Set-Content -NoNewline "$out\shots.done" ($failures -join "`n")
