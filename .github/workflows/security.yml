@@ -4,7 +4,8 @@ name: security
 # requests. Findings land in the repository's Security tab; the dependency review fails a pull
 # request that adds a dependency with a known high-severity vulnerability.
 # Swift is not analysed: CodeQL needs a full Xcode build for it (the apple workflow builds the apps).
-# Kotlin is analysed from the Android debug build; the other languages from source alone.
+# On pull requests only the languages whose files changed are analysed, and dependencies are reviewed
+# only when a manifest or lockfile changed; pushes to main and the weekly run analyse everything.
 on:
   push:
     branches: [main]
@@ -21,7 +22,48 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Which languages a pull request touches. Pushes to main and the weekly run analyse everything, so
+  # whatever a pull request skips is still analysed when it merges.
+  changes:
+    name: what changed
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      languages: ${{ steps.pick.outputs.languages }}
+      dependencies: ${{ steps.filter.outputs.dependencies }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            actions: ['.github/**']
+            python: ['**/*.py', '**/pyproject.toml', 'pixi.toml', 'pixi.lock']
+            javascript-typescript: ['studio/**', 'site/**/*.js', '**/*.ts', '**/*.js', '**/*.mjs']
+            rust: ['core/**/*.rs', 'core/**/Cargo.toml', 'core/Cargo.lock']
+            csharp: ['apps/windows/**', 'apps/bandroom/windows/**', 'core/dotnet/**']
+            java-kotlin: ['apps/android/**', 'core/android/**']
+            dependencies: ['**/Cargo.lock', '**/package-lock.json', '**/*.gradle.kts', 'apps/android/gradle/**', '**/*.csproj', '**/Directory.Packages.props', '**/Package.resolved', '**/Package.swift', 'pixi.lock', '**/pyproject.toml', '**/requirements*.txt', '.github/**']
+      - id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          CHANGES: ${{ steps.filter.outputs.changes }}
+        run: |
+          all='["actions","python","javascript-typescript","rust","csharp","java-kotlin"]'
+          if [ "$EVENT" = pull_request ]; then
+            langs=$(jq -c --argjson all "$all" '[.[] | select(. as $l | $all | index($l))]' <<<"${CHANGES:-[]}")
+          else
+            langs=$all
+          fi
+          echo "languages=$langs" >> "$GITHUB_OUTPUT"
+          echo "CodeQL languages: $langs"
+
   codeql:
+    needs: changes
+    if: needs.changes.outputs.languages != '[]'
     name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -32,22 +74,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { language: actions, build-mode: none }
-          - { language: python, build-mode: none }
-          - { language: javascript-typescript, build-mode: none }
-          - { language: rust, build-mode: none }
-          - { language: csharp, build-mode: none }
-          # Kotlin is only analysed from a real build: the Android debug build (Kotlin fallback core,
-          # no Rust or NDK needed), as the android workflow's checks build it.
-          - { language: java-kotlin, build-mode: manual }
+        language: ${{ fromJSON(needs.changes.outputs.languages) }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+          # Kotlin is only analysed from a real build: the Android debug build below (Kotlin
+          # fallback core, no Rust needed). The rest are analysed from source alone.
+          build-mode: ${{ matrix.language == 'java-kotlin' && 'manual' || 'none' }}
           queries: security-extended
 
       - uses: actions/setup-java@v4
@@ -76,7 +112,8 @@ jobs:
 
   dependency-review:
     name: dependency review
-    if: github.event_name == 'pull_request'
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.dependencies == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
