@@ -33,11 +33,14 @@ jobs:
     with:
       release: true
 
+  # The signing job reads the release key from the `release` environment's secrets; a called
+  # workflow only gets secrets its caller passes on.
   android:
     needs: checks
     uses: ./.github/workflows/android.yml
     with:
       release: true
+    secrets: inherit
 
   apple:
     needs: checks
