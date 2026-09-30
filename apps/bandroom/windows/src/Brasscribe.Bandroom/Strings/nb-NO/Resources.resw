@@ -542,6 +542,9 @@
   <data name="Setup_3_Disk_Title" xml:space="preserve">
     <value>Brasscribe fikk ikke lagret nedlastingen</value>
   </data>
+  <data name="Setup_3_Disk_Why" xml:space="preserve">
+    <value>Sjekk at det er plass på disken, og prøv igjen.</value>
+  </data>
   <data name="Setup_2_Key_Label" xml:space="preserve">
     <value>Tilgangsnøkkel fra Hugging Face</value>
   </data>

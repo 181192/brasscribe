@@ -175,7 +175,6 @@ public static class Problems
         string why = error switch
         {
             DownloadError.NotEnoughSpace n => s.Format("Setup_3_Space_Why", DownloadText.Gigabytes(n.NeededBytes, s.Culture), DownloadText.Gigabytes(n.FreeBytes, s.Culture)),
-            DownloadError.Disk d => d.Message,
             _ => s[prefix + "_Why"],
         };
         return new(kind, s[prefix + "_Title"], why, fix, error.ToString());

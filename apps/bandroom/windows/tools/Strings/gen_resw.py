@@ -194,6 +194,7 @@ ROWS = [
     ("Setup_3_Network_Title", "The download stopped", "Nedlastingen stoppet"),
     ("Setup_3_Network_Why", "Check the internet connection, then try again. It continues where it stopped.", "Sjekk internettforbindelsen, og prøv igjen. Nedlastingen fortsetter der den stoppet."),
     ("Setup_3_Disk_Title", "Brasscribe couldn't save the download", "Brasscribe fikk ikke lagret nedlastingen"),  # (+) mac setup window
+    ("Setup_3_Disk_Why", "Check that there's room on the drive, then try again.", "Sjekk at det er plass på disken, og prøv igjen."),  # (+) the file system's own message goes in the details
     ("Setup_2_Key_Label", "Access key from Hugging Face", "Tilgangsnøkkel fra Hugging Face"),
     ("Setup_Item_Listening", "Listening tools", "Lytteverktøy"),
     ("Setup_Item_Soloist", "Soloist separator", "Solistskiller"),

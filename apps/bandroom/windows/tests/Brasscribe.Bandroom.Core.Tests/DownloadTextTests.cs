@@ -85,7 +85,13 @@ public sealed class DownloadTextTests
         var network = Problems.DownloadStopped(Strings.En, new DownloadError.Http(500, "x"));
         Assert.Equal("The download stopped", network.Title);
         Assert.Equal("Try again", network.FixLabel);
-        Assert.Equal("Disk full", Problems.DownloadStopped(Strings.En, new DownloadError.Disk("Disk full")).Why);
+        // The file system's own words (with a path) are for the tech person: the details, not the sentence.
+        const string raw = @"Access to the path 'D:\Brasscribe\models\separator' is denied.";
+        var disk = Problems.DownloadStopped(Strings.En, new DownloadError.Disk(raw));
+        Assert.Equal("Brasscribe couldn't save the download", disk.Title);
+        Assert.Equal("Check that there's room on the drive, then try again.", disk.Why);
+        Assert.Contains(raw, disk.Details);
+        Assert.Equal("Sjekk at det er plass på disken, og prøv igjen.", Problems.DownloadStopped(Strings.Nb, new DownloadError.Disk(raw)).Why);
     }
 
     [Fact]
