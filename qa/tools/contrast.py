@@ -147,8 +147,9 @@ def delta_e(a: str, b: str, kind: str | None) -> float:
 
 def token_extension(raw: dict) -> dict:
     """The product's extension block: the one entry under $extensions that lists modes and contrast pairs."""
-    found = [v for v in raw.get("$extensions", {}).values()
-             if isinstance(v, dict) and "modes" in v and "contrast" in v]
+    extensions = raw.get("$extensions")
+    extensions = extensions if isinstance(extensions, dict) else {}
+    found = [v for v in extensions.values() if isinstance(v, dict) and "modes" in v and "contrast" in v]
     if len(found) != 1:
         raise SystemExit(f"expected one $extensions entry with modes and contrast, found {len(found)}")
     return found[0]
