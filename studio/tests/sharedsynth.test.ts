@@ -105,4 +105,34 @@ describe("one synthesizer per page", () => {
     expect(urls).toEqual(["sonivox.sf2", "band.sf2"]);
     expect(synth.synthsCreated).toBe(2);
   });
+
+  it("a SoundFont that fails to load is reported, and the next attach tries again with one new synth", async () => {
+    let fail = true;
+    const synth = new SharedSynth(async () => {
+      if (fail) throw new Error("offline");
+      return new ArrayBuffer(8);
+    });
+    const a = new FakeApi();
+    const errors: unknown[] = [];
+    let lost = 0;
+    synth.attach(a, "band.sf2", () => lost++, (e) => errors.push(e));
+    await flush();
+    const first = a.created[0];
+    expect(errors).toHaveLength(1);
+    expect(lost).toBe(0);
+    expect(first.destroyed).toBe(1);
+    expect(a._player.instance).toBeUndefined();
+    expect(synth.ownerApi).toBeNull();
+    expect(synth.soundFontLoads).toBe(0);
+
+    fail = false;
+    synth.attach(a, "band.sf2", () => lost++, (e) => errors.push(e));
+    await flush();
+    expect(synth.synthsCreated).toBe(2);
+    expect(a.created).toHaveLength(2);
+    expect(a._player.instance).toBe(a.created[1]);
+    expect(synth.soundFontLoads).toBe(1);
+    expect(a.created[1].fonts).toHaveLength(1);
+    expect(errors).toHaveLength(1);
+  });
 });
