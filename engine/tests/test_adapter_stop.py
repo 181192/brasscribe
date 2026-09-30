@@ -119,3 +119,22 @@ def test_cancel_while_waiting_for_the_gpu(settings, audio, tmp_path):
         threading.Timer(0.2, cancel.set).start()
         with pytest.raises(AdapterCancelled, match="waited for the GPU"):
             adapters.run("muscriptor", audio, tmp_path / "m.mid", cancel=cancel)
+
+
+@pytest.mark.slow
+def test_stopping_the_engine_cancels_its_jobs_and_stops_their_models(settings, audio, tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from brasscribe_engine.api import create_app
+
+    pid_file = tmp_path / "model.pid"
+    monkeypatch.setenv("FAKE_HANG", str(pid_file))
+    with TestClient(create_app(settings)) as c:
+        running = c.post("/v1/jobs/upload", files={"file": ("song.wav", audio.read_bytes())}, data={"profile": "test"})
+        queued = c.post("/v1/jobs/upload", files={"file": ("other.wav", b"other")}, data={"profile": "test"})
+        model = wait_for(pid_file)
+        jobs = c.app.state.jobs
+        t0 = time.time()
+    assert time.time() - t0 < 10
+    assert gone(model)
+    assert jobs.get(running.json()["id"]).status == jobs.get(queued.json()["id"]).status == "cancelled"

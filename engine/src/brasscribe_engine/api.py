@@ -100,6 +100,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     async def lifespan(app: FastAPI):
         yield
         app.state.devices.flush()  # presence kept in memory reaches devices.json
+        # A job still running would otherwise keep the engine alive, and its model running, until it finished.
+        await anyio.to_thread.run_sync(app.state.jobs.shutdown)
 
     app = FastAPI(
         lifespan=lifespan,

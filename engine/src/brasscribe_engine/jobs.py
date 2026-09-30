@@ -200,6 +200,14 @@ class JobManager:
             job.cancel.set()
         return job
 
+    def shutdown(self) -> None:
+        """Cancel every queued and running job (a running model is stopped) and wait for the worker to end."""
+        with self.lock:
+            live = [j for j in self.jobs.values() if j.status not in TERMINAL]
+        for job in live:
+            job.cancel.set()
+        self.pool.shutdown(wait=True)
+
     def delete(self, job_id: str) -> str:
         """Remove a finished run's directory and forget the job; the artifact cache is untouched.
 
