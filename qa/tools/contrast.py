@@ -17,8 +17,8 @@ also encoded by notehead shape (WCAG 1.4.1).
     uv run qa/tools/contrast.py > qa/reports/contrast-tokens.md
 
 With --tokens it reads a W3C Design Tokens (DTCG) file instead: colour roles under
-color.<mode>.<role>.$value.hex, and the pairs and distinguish lists under
-$extensions."no.brasscribe".contrast:
+color.<mode>.<role>.$value.hex, and the modes, pairs and distinguish lists under the product's
+own $extensions entry (e.g. "no.brasscribe"; whichever single entry has modes and contrast):
 
     uv run qa/tools/contrast.py --tokens design/tokens/tokens.json > qa/reports/contrast-design-tokens.md
 """
@@ -145,10 +145,19 @@ def delta_e(a: str, b: str, kind: str | None) -> float:
     return ciede2000(lab(ra), lab(rb))
 
 
+def token_extension(raw: dict) -> dict:
+    """The product's extension block: the one entry under $extensions that lists modes and contrast pairs."""
+    found = [v for v in raw.get("$extensions", {}).values()
+             if isinstance(v, dict) and "modes" in v and "contrast" in v]
+    if len(found) != 1:
+        raise SystemExit(f"expected one $extensions entry with modes and contrast, found {len(found)}")
+    return found[0]
+
+
 def load_dtcg(path: Path) -> dict:
     """Flatten a DTCG token file into the {themes, pairs, distinguish, legacy} shape used below."""
     raw = json.loads(path.read_text())
-    ext = raw["$extensions"]["no.brasscribe"]
+    ext = token_extension(raw)
     themes = {}
     for mode in ext["modes"]:
         themes[mode] = {role: tok["$value"]["hex"] for role, tok in raw["color"][mode].items()
