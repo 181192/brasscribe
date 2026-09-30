@@ -1,5 +1,31 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { clear, h, more, rebuild } from "../src/ui/dom";
+import { clear, h, more, onPanelHidden, rebuild, tabs } from "../src/ui/dom";
+
+describe("tabs", () => {
+  it("tells what sits in a panel when another tab is chosen", () => {
+    const players: Record<string, HTMLElement> = {};
+    const hidden: string[] = [];
+    const el = tabs("Views", ["score", "audio"].map((id) => ({ id, label: id, render: (p: HTMLElement) => {
+      players[id] = h("div", {});
+      p.append(players[id]);
+    } })), "score");
+    document.body.append(el);
+    const off = onPanelHidden(players.score, () => hidden.push("score"));
+    el.querySelector<HTMLButtonElement>("[data-id=audio]")!.click();
+    expect(hidden).toEqual(["score"]);
+    onPanelHidden(players.audio, () => hidden.push("audio"));
+    el.querySelector<HTMLButtonElement>("[data-id=score]")!.click();
+    el.querySelector<HTMLButtonElement>("[data-id=score]")!.click();
+    expect(hidden).toEqual(["score", "audio"]);
+    off();
+    el.querySelector<HTMLButtonElement>("[data-id=audio]")!.click();
+    expect(hidden).toEqual(["score", "audio"]);
+  });
+
+  it("does nothing for an element outside a tab panel", () => {
+    expect(() => onPanelHidden(h("div", {}), () => undefined)()).not.toThrow();
+  });
+});
 
 afterEach(() => document.body.replaceChildren());
 

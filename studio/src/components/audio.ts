@@ -4,7 +4,7 @@ import { fetchBytes } from "../api/client";
 import { mixdown, peaks, spectrogram } from "../lib/dsp";
 import { SizedLru } from "../lib/lru";
 import { t } from "../i18n";
-import { announce, clear, errorNotice, fmt, h, loading, nextId, token } from "../ui/dom";
+import { announce, clear, errorNotice, fmt, h, loading, nextId, onPanelHidden, token } from "../ui/dom";
 import { plot, timeAxis, type Plot } from "./canvas";
 
 let ctx: AudioContext | null = null;
@@ -62,8 +62,20 @@ export class AudioAB extends HTMLElement {
     this.render();
   }
 
+  private offHidden: (() => void) | null = null;
+
+  connectedCallback(): void {
+    // Another tab chosen: pause, so it doesn't play on under a panel no one sees.
+    this.offHidden?.();
+    this.offHidden = onPanelHidden(this, () => {
+      if (this.node) this.pause();
+    });
+  }
+
   disconnectedCallback(): void {
     this.stopPlayback();
+    this.offHidden?.();
+    this.offHidden = null;
   }
 
   private get duration(): number {

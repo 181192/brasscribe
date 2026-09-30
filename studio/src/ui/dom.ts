@@ -310,6 +310,17 @@ export function table(caption: string, head: string[], rows: Child[][], opts: { 
         h("tr", {}, h("td", { colspan: head.length }, t("common.nothing"))))));
 }
 
+/** Sent to a tab panel when another tab is chosen, so what plays in it can stop. */
+export const PANEL_HIDDEN = "studio:panel-hidden";
+
+/** Run `f` when the tab panel `el` sits in is hidden. Returns a function that stops listening. */
+export function onPanelHidden(el: Element, f: () => void): () => void {
+  const panel = el.closest("[role=tabpanel]");
+  if (!panel) return () => undefined;
+  panel.addEventListener(PANEL_HIDDEN, f);
+  return () => panel.removeEventListener(PANEL_HIDDEN, f);
+}
+
 /** Accessible tabs with a roving tabindex (WAI-ARIA tabs pattern, manual activation). */
 export function tabs(label: string, items: { id: string; label: string; render: (panel: HTMLElement) => void }[], selected: string, onSelect?: (id: string) => void): HTMLElement {
   const base = nextId("tabs");
@@ -318,7 +329,10 @@ export function tabs(label: string, items: { id: string; label: string; render: 
   const buttons: HTMLButtonElement[] = [];
   const rendered = new Set<string>();
   const panelEls = new Map<string, HTMLElement>();
+  let current: string | null = null;
   const select = (id: string, focus = false) => {
+    const was = current;
+    current = id;
     for (const b of buttons) {
       const on = b.dataset.id === id;
       b.setAttribute("aria-selected", String(on));
@@ -326,6 +340,7 @@ export function tabs(label: string, items: { id: string; label: string; render: 
       if (on && focus) b.focus();
     }
     for (const [pid, p] of panelEls) p.hidden = pid !== id;
+    if (was !== null && was !== id) panelEls.get(was)?.dispatchEvent(new Event(PANEL_HIDDEN));
     if (!rendered.has(id)) {
       rendered.add(id);
       items.find((i) => i.id === id)?.render(panelEls.get(id)!);

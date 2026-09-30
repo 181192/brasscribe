@@ -2,7 +2,7 @@
 // and show each stem's energy over time.
 import { energy, mixdown } from "../lib/dsp";
 import { t } from "../i18n";
-import { announce, clear, fmt, h, token } from "../ui/dom";
+import { announce, clear, fmt, h, onPanelHidden, token } from "../ui/dom";
 import { audioContext, decode, playFrom } from "./audio";
 import { plot, timeAxis } from "./canvas";
 
@@ -71,8 +71,20 @@ export class StemsMixer extends HTMLElement {
     await Promise.all(this.rows.filter((r) => r.src.group === group).slice(0, n).map((r) => this.load(r)));
   }
 
+  private offHidden: (() => void) | null = null;
+
+  connectedCallback(): void {
+    // Another tab chosen: pause, so it doesn't play on under a panel no one sees.
+    this.offHidden?.();
+    this.offHidden = onPanelHidden(this, () => {
+      if (this.nodes.length) this.stop(false);
+    });
+  }
+
   disconnectedCallback(): void {
     this.stop(true);
+    this.offHidden?.();
+    this.offHidden = null;
   }
 
   private async load(r: Row): Promise<void> {

@@ -11,7 +11,7 @@ import { soundFontBytes } from "../lib/soundfontstore";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, percussionKits, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import type { PitchMode, Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
-import { announce, clear, h, menu, nextId, prefersReducedMotion } from "../ui/dom";
+import { announce, clear, h, menu, nextId, onPanelHidden, prefersReducedMotion } from "../ui/dom";
 import { icon } from "../ui/icons";
 
 declare const alphaTab: typeof AT;
@@ -139,7 +139,14 @@ export class ScoreElement extends HTMLElement {
   /** What Play or Play bar asked for while the synth was moving here. */
   private pendingPlay: (() => void) | null = null;
 
+  private offHidden: (() => void) | null = null;
+
   connectedCallback(): void {
+    // Another tab chosen: pause, so the score doesn't play on under a panel no one sees.
+    this.offHidden?.();
+    this.offHidden = onPanelHidden(this, () => {
+      if (this.playing) this.api?.pause();
+    });
     if (this.view) return;
     const id = nextId("score");
     this.classList.add("score-shell");
@@ -211,6 +218,8 @@ export class ScoreElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.offHidden?.();
+    this.offHidden = null;
     this.loadSeq++;
     this.dropApi();
     this.themeWatch?.();
