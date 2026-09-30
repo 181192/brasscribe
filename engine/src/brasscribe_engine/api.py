@@ -420,6 +420,29 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def is_device(request: Request) -> bool:
         return getattr(request.state, "device", None) is not None
 
+    # Paired devices see no paths or details of the computer; Studio and the owner see them in full.
+    def shown_path(p: str | Path | None) -> str | None:
+        """A path as a paired device sees it: relative to the data folder, else only the file name."""
+        if not p:
+            return None
+        try:
+            return Path(p).resolve().relative_to(settings.data_dir.resolve()).as_posix()
+        except (ValueError, OSError):
+            return Path(p).name
+
+    def device_manifest(manifest: dict) -> dict:
+        """A run's manifest without the computer's paths, git state and host details."""
+        m = {k: v for k, v in manifest.items() if k not in ("git", "host", "out")}
+        if isinstance(m.get("input"), dict):
+            m["input"] = {**m["input"], "path": shown_path(m["input"].get("path"))}
+        if isinstance(m.get("options"), dict) and "reuse" in m["options"]:
+            m["options"] = {**m["options"], "reuse": shown_path(m["options"]["reuse"])}
+        if isinstance(m.get("stages"), list):
+            m["stages"] = [{**st, "provenance": {k: v for k, v in st["provenance"].items() if k != "imported_from"}}
+                           if isinstance(st, dict) and isinstance(st.get("provenance"), dict) else st
+                           for st in m["stages"]]
+        return m
+
     def job_input(body: m.JobCreate, request: Request) -> tuple[Path, str]:
         given = [x for x in (body.audio_id, body.source_id, body.path) if x]
         if len(given) != 1:
@@ -470,7 +493,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         old = job_or_404(job_id)
         body = body or m.RerunRequest()
         if not old.audio_path.exists():
-            raise HTTPException(409, f"input {old.audio_path} no longer exists")
+            shown = shown_path(old.audio_path) if is_device(request) else old.audio_path
+            raise HTTPException(409, f"input {shown} no longer exists")
         if not input_allowed(old.audio_path, anywhere=not is_device(request)):
             raise HTTPException(409, "the input is not an audio file in the engine's audio folders "
                                      "(uploads, captures, eval)")
@@ -564,11 +588,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/jobs/{job_id}/manifest", response_model=m.Manifest, operation_id="getJobManifest", tags=["jobs"],
              dependencies=[Depends(auth)])
-    def get_manifest(job_id: str):
+    def get_manifest(job_id: str, request: Request):
+        """What ran: profile, parameters, input, stages. Paired devices get paths relative to the data folder,
+        and no git or host details."""
         p = jobs.run_dir(job_or_404(job_id).id) / "manifest.json"
         if not p.exists():
             raise HTTPException(404, "manifest not written yet")
-        return JSONResponse(json.loads(p.read_text()))
+        manifest = json.loads(p.read_text())
+        return JSONResponse(device_manifest(manifest) if is_device(request) else manifest)
 
     @app.get("/v1/jobs/{job_id}/artifacts", response_model=list[m.Artifact], operation_id="listJobArtifacts",
              tags=["results"], dependencies=[Depends(auth)])
@@ -581,7 +608,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.get("/v1/jobs/{job_id}/artifacts/{name:path}", operation_id="getJobArtifact", tags=["results"],
              dependencies=[Depends(auth)], response_class=FileResponse,
              responses={200: {"content": {"application/octet-stream": {}}}})
-    def get_artifact(job_id: str, name: str):
+    def get_artifact(job_id: str, name: str, request: Request):
+        if name == "manifest.json" and is_device(request):
+            return get_manifest(job_id, request)
         return output_file(job_id, name)
 
     @app.get("/v1/jobs/{job_id}/composition", operation_id="getComposition", tags=["results"],
@@ -701,10 +730,13 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/suites/history", response_model=list[m.SuiteHistoryEntry], operation_id="listSuiteHistory",
              tags=["benchmarks"], dependencies=[Depends(auth)])
-    def suite_history(suite: str | None = Query(None, description="only results of this suite"),
+    def suite_history(request: Request, suite: str | None = Query(None, description="only results of this suite"),
                       limit: int = Query(1000, ge=1, le=10000)) -> list[m.SuiteHistoryEntry]:
         """Every stored suite result, newest first (from `brasscribe bench` and runSuite)."""
-        return [m.SuiteHistoryEntry(**r) for r in history.entries(settings, suite, limit)]
+        rows = history.entries(settings, suite, limit)
+        if is_device(request):
+            rows = [{**r, "manifest": shown_path(r["manifest"])} for r in rows]
+        return [m.SuiteHistoryEntry(**r) for r in rows]
 
     # ------------------------------------------------------------ inspection
 
@@ -809,16 +841,21 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def roundtrip_file(job_id: str) -> Path:
         return jobs.run_dir(job_or_404(job_id).id) / "roundtrip.json"
 
+    def roundtrip_model(r: dict, request: Request) -> m.Roundtrip:
+        if is_device(request) and r.get("musescore"):
+            r = {**r, "musescore": Path(r["musescore"]).name}
+        return m.Roundtrip(**r)
+
     @app.get("/v1/jobs/{job_id}/roundtrip", response_model=m.Roundtrip, operation_id="getRoundtrip",
              tags=["inspection"], dependencies=[Depends(auth)])
-    def get_roundtrip(job_id: str) -> m.Roundtrip:
+    def get_roundtrip(job_id: str, request: Request) -> m.Roundtrip:
         """Stored MuseScore round-trip result, or status not_run (start it with runRoundtrip)."""
         p = roundtrip_file(job_id)
-        return m.Roundtrip(**json.loads(p.read_text())) if p.exists() else m.Roundtrip(status="not_run")
+        return roundtrip_model(json.loads(p.read_text()), request) if p.exists() else m.Roundtrip(status="not_run")
 
     @app.post("/v1/jobs/{job_id}/roundtrip", response_model=m.Roundtrip, operation_id="runRoundtrip",
               tags=["inspection"], dependencies=[Depends(auth)])
-    def run_roundtrip(job_id: str) -> m.Roundtrip:
+    def run_roundtrip(job_id: str, request: Request) -> m.Roundtrip:
         """Re-export the job's MusicXML through MuseScore and compare every part's sounding pitches (takes seconds)."""
         outputs = jobs.run_dir(job_or_404(job_id).id) / "outputs"
         if not (outputs / "brass-band.musicxml").exists():
@@ -826,7 +863,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         r = inspection.roundtrip(outputs)
         if r["status"] != "not_run":
             roundtrip_file(job_id).write_text(json.dumps(r, indent=1))
-        return m.Roundtrip(**r)
+        return roundtrip_model(r, request)
 
     @app.get("/v1/jobs/{job_id}/part-sources", response_model=m.PartSources, operation_id="getPartSources",
              tags=["results"], dependencies=[Depends(auth)])
@@ -858,9 +895,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/sources", response_model=list[m.Source], operation_id="listSources", tags=["inspection"],
              dependencies=[Depends(auth)])
-    def list_sources() -> list[m.Source]:
-        """Recordings that can start a job without an upload: captures and eval-set items (createJob source_id)."""
-        return [m.Source(**x) for x in inspection.sources(settings)]
+    def list_sources(request: Request) -> list[m.Source]:
+        """Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).
+        Paired devices get paths relative to the data folder."""
+        found = inspection.sources(settings)
+        return [m.Source(**{**x, "path": shown_path(x["path"])} if is_device(request) else x) for x in found]
 
     @app.get("/v1/registry/adapters", response_model=list[m.AdapterInfo], operation_id="listAdapters",
              tags=["inspection"], dependencies=[Depends(auth)])
@@ -877,9 +916,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/registry/datasets", response_model=list[m.Dataset], operation_id="listDatasets", tags=["inspection"],
              dependencies=[Depends(auth)])
-    def list_datasets() -> list[m.Dataset]:
-        """Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set."""
-        return [m.Dataset(**d) for d in inspection.datasets(settings)]
+    def list_datasets(request: Request) -> list[m.Dataset]:
+        """Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.
+        Paired devices get paths relative to the data folder."""
+        found = inspection.datasets(settings)
+        return [m.Dataset(**{**d, "path": shown_path(d["path"])} if is_device(request) else d) for d in found]
 
     @app.get("/v1/parity", response_model=list[m.Manifest], operation_id="listParityReports", tags=["inspection"],
              dependencies=[Depends(auth)])

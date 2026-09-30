@@ -4324,6 +4324,7 @@
     },
     "/v1/jobs/{job_id}/manifest": {
       "get": {
+        "description": "What ran: profile, parameters, input, stages. Paired devices get paths relative to the data folder,\nand no git or host details.",
         "operationId": "getJobManifest",
         "parameters": [
           {
@@ -5752,7 +5753,7 @@
     },
     "/v1/registry/datasets": {
       "get": {
-        "description": "Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.",
+        "description": "Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.\nPaired devices get paths relative to the data folder.",
         "operationId": "listDatasets",
         "parameters": [
           {
@@ -5937,7 +5938,7 @@
     },
     "/v1/sources": {
       "get": {
-        "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).",
+        "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).\nPaired devices get paths relative to the data folder.",
         "operationId": "listSources",
         "parameters": [
           {
