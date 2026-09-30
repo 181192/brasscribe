@@ -37,7 +37,8 @@ fi
 # The new version must be higher than the current one.
 gradle=apps/android/app/build.gradle.kts
 current=$(sed -nE 's/^ *versionName = "([^"]+)".*/\1/p' "$gradle")
-if [ "$version" = "$current" ] || [ "$(printf '%s\n%s\n' "$current" "$version" | sort -V | tail -1)" != "$version" ]; then
+IFS=. read -r a1 a2 a3 <<<"$current"; IFS=. read -r b1 b2 b3 <<<"$version"
+if (( b1 < a1 || (b1 == a1 && (b2 < a2 || (b2 == a2 && b3 <= a3))) )); then
   echo "version $version is not higher than the current $current" >&2; exit 1
 fi
 
