@@ -57,7 +57,8 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
   when `pixi.lock` changed.
 - **The engine** is `pixi run --manifest-path <envs>\pixi.toml --frozen -e default brasscribe serve --lan
   --port N` on the first free port from 8765, in a job object (Stop, Restart and Bandroom exiting end the
-  whole tree). It is Running once `/v1/health` answers. An unexpected exit restarts it after 2, 4, 8 … 30 s;
+  whole tree). It is Running once `/v1/health` answers, and is asked again every 30 s: four unanswered in a row
+  count as stuck, and it is ended and restarted like an exit. An unexpected exit restarts it after 2, 4, 8 … 30 s;
   three in five minutes is **Stopped unexpectedly**.
 - **Admin credential**: 256 random bits in `bandroom\admin-token`, with an ACL that allows only the current
   user (inheritance removed). Passed as `BRASSCRIBE_ADMIN_TOKEN`; sent as `Authorization: Bearer` on every
