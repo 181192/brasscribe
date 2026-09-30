@@ -119,8 +119,14 @@ targets:
           - CFBundleTypeName: MusicXML score
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
-            LSItemContentTypes: [org.w3.musicxml, com.recordare.musicxml.uncompressed]
+            LSItemContentTypes: [org.w3.musicxml, com.recordare.musicxml.uncompressed, com.recordare.musicxml]
         UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.recordare.musicxml
+            UTTypeDescription: Compressed MusicXML
+            UTTypeConformsTo: [public.data, public.archive]
+            UTTypeTagSpecification:
+              public.filename-extension: [mxl]
+              public.mime-type: [application/vnd.recordare.musicxml]
           - UTTypeIdentifier: com.recordare.musicxml.uncompressed
             UTTypeDescription: MusicXML
             UTTypeConformsTo: [public.xml]

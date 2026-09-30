@@ -290,8 +290,13 @@ final class AppModel {
             }
             return
         }
-        if type?.conforms(to: .xml) == true || ["musicxml", "xml"].contains(url.pathExtension.lowercased()) {
+        if type?.conforms(to: .xml) == true || ["musicxml", "xml", "mxl"].contains(url.pathExtension.lowercased()) {
             await openScoreFile(url, title: title)
+            return
+        }
+        // a PDF, an image, a document: not something to listen to
+        if let type, !type.conforms(to: .audiovisualContent) {
+            show(.cantOpenFile(String(localized: "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).")))
             return
         }
         let asset = AVURLAsset(url: url)
@@ -327,7 +332,12 @@ final class AppModel {
 
     private func openScoreFile(_ url: URL, title: String) async {
         do {
-            let xml = try Data(contentsOf: url)
+            // a score file is small; a huge one is refused before it is read
+            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            guard size <= CompressedMusicXML.defaultMaxBytes else { throw MusicXMLError.malformed("the file is too large") }
+            var xml = try Data(contentsOf: url)
+            // compressed MusicXML (.mxl): the score inside the archive is what is kept
+            if CompressedMusicXML.isZip(xml) { xml = try CompressedMusicXML.musicXML(from: xml) }
             _ = try MusicXMLParser.parse(xml)
             let result = TranscriptionResult(jobID: "import", composition: nil, musicXML: xml, available: [.musicXML])
             let p = try Piece.create(title: title, profile: nil, result: result, original: nil, video: nil, fixtureDirectory: nil)

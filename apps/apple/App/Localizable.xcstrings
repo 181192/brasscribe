@@ -971,6 +971,16 @@
         }
       }
     },
+    "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe åpner opptak, videoer og MusicXML-partiturer (.musicxml, .xml eller .mxl)."
+          }
+        }
+      }
+    },
     "Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.": {
       "localizations": {
         "nb": {
@@ -1271,22 +1281,22 @@
         }
       }
     },
-    "Couldn't open the notes": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kunne ikke åpne tonene"
-          }
-        }
-      }
-    },
     "Couldn't lay out the score": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Klarte ikke å sette partituret"
+          }
+        }
+      }
+    },
+    "Couldn't open the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunne ikke åpne tonene"
           }
         }
       }
@@ -4371,22 +4381,22 @@
         }
       }
     },
-    "The quartet has no %@ — showing %@": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kvartetten har ingen %1$@ — viser %2$@"
-          }
-        }
-      }
-    },
     "The notes are still here: Read aloud and playback work.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Notene er her fortsatt: Les opp og avspilling virker."
+          }
+        }
+      }
+    },
+    "The quartet has no %@ — showing %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kvartetten har ingen %1$@ — viser %2$@"
           }
         }
       }

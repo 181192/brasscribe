@@ -383,3 +383,20 @@ func testVideo() -> URL? {
     #expect(!WindowFit.overflows(visible, visible))
     #expect(WindowFit.clamp(underDock, into: visible) == visible)
 }
+
+@Test func exportFileNamesAreSafeAndOnePerPart() throws {
+    let xml = """
+    <score-partwise><part-list><score-part id="P1"><part-name>Cornet 1/2</part-name></score-part>
+    <score-part id="P2"><part-name>Cornet 1/2</part-name></score-part><score-part id="P3"><part-name>Bass: Eb</part-name></score-part></part-list>
+    <part id="P1"><measure number="1"><note><rest/><duration>4</duration></note></measure></part>
+    <part id="P2"><measure number="1"><note><rest/><duration>4</duration></note></measure></part>
+    <part id="P3"><measure number="1"><note><rest/><duration>4</duration></note></measure></part></score-partwise>
+    """
+    let parts = try MusicXMLParser.parse(Data(xml.utf8)).parts
+    let names = ExportFileNames.stems(title: "../Old: Hundredth", parts: parts)
+    #expect(names.score == "-Old- Hundredth")
+    let stems = parts.map { names.parts[$0.id] ?? "" }
+    #expect(Set(stems).count == 3)
+    #expect(stems.allSatisfy { !$0.contains("/") && !$0.contains(":") })
+    #expect(stems[1].hasSuffix("(2)"))
+}

@@ -631,6 +631,7 @@ NB = {
     "Only pair with a computer you know. The recordings you send go to it.": "Koble bare til en datamaskin du kjenner. Opptakene du sender, går til den.",
     "Couldn't lay out the score": "Klarte ikke å sette partituret",
     "The notes are still here: Read aloud and playback work.": "Notene er her fortsatt: Les opp og avspilling virker.",
+    "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).": "Brasscribe åpner opptak, videoer og MusicXML-partiturer (.musicxml, .xml eller .mxl).",
 }
 
 INFO_NB = {
