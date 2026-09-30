@@ -26,10 +26,11 @@ final class BrasscribeCoreTests: XCTestCase {
         XCTAssertThrowsError(try normalizeComposition(json: "{"))
     }
 
-    func testSpellingAndKey() {
-        let s = spellPitches(onsetsBeats: [0, 1, 2], pitches: [66, 69, 74])
+    func testSpellingAndKey() throws {
+        let s = try spellPitches(onsetsBeats: [0, 1, 2], pitches: [66, 69, 74])
         XCTAssertEqual(s.map(\.step), ["F", "A", "D"])
         XCTAssertEqual(estimateKey(durationsBeats: [1, 1, 1], pitches: [62, 66, 69]).fifths, 2)
+        XCTAssertThrowsError(try spellPitches(onsetsBeats: [0], pitches: [66, 69]))
     }
 
     func testHumanizePrngVector() {
