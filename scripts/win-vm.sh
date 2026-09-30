@@ -13,7 +13,7 @@
 #   scripts/win-vm.sh test               build, then the .NET tests (Play core, Bandroom core), the smoke tests and Axe.Windows
 #   scripts/win-vm.sh shots [SCENES]     build, then screenshots of Play in en/nb, light/dark/Pink into build/win-vm/<run>/
 #   scripts/win-vm.sh checklist          the automatable steps of docs/dev/windows-checklist.md, with 200 % text shots
-#   scripts/win-vm.sh release            the self-contained x64 and ARM64 zips of Play into build/win-vm/<run>/
+#   scripts/win-vm.sh release            the self-contained x64 zip of Play into build/win-vm/<run>/
 #   scripts/win-vm.sh screen [file.png]  a screendump of the VM's display (QMP), e.g. while Setup runs
 #
 # The VM has no window on the host (-display none) and never touches the host's mouse or keyboard.

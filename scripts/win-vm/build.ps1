@@ -2,7 +2,8 @@
 #   the Rust core's C ABI DLL, brasscribe_ffi.dll: ARM64 (native), and x64 with -X64
 #   Brasscribe Play (WinUI 3): ARM64, and x64 with -X64
 #   Brasscribe Bandroom for Windows (WinUI 3, x64 only; it runs under emulation here)
-# With -Release: the self-contained Play zips for x64 and ARM64 instead, as the release job makes them.
+# With -Release: the self-contained x64 Play zip instead, as the release job makes it. No ARM64 zip:
+# alphaTab's native Skia has no win-arm64 build, so an ARM64 Play can't draw scores.
 # Writes C:\b\out\<Run>\artifacts.json (the exe and DLL paths) for test.ps1 and shots.ps1.
 param([Parameter(Mandatory)] [string] $Run, [switch] $X64, [switch] $Release)
 $ErrorActionPreference = "Continue"   # native tools write progress to stderr
@@ -34,7 +35,7 @@ Pop-Location
 foreach ($a in $ffi.Keys) { if (Test-Path $ffi[$a]) { $artifacts["ffi-$a"] = $ffi[$a] } }
 
 $play = "$Repo\apps\windows"
-$archs = @("arm64") + $(if ($X64 -or $Release) { @("x64") } else { @() })
+$archs = if ($Release) { @("x64") } else { @("arm64") + $(if ($X64) { @("x64") } else { @() }) }
 Push-Location $play
 foreach ($a in $archs) {
     $platform = @{ arm64 = "ARM64"; x64 = "x64" }[$a]

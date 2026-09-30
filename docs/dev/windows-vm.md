@@ -16,7 +16,7 @@ scripts/win-vm.sh build [--x64]      # sync this checkout in; the core DLL, Play
 scripts/win-vm.sh test               # build, the .NET tests, the smoke tests and the Axe.Windows scans
 scripts/win-vm.sh shots [SCENES]     # Play screenshots: en/nb × light/dark/Pink/Pink dark
 scripts/win-vm.sh checklist          # the automatable steps of windows-checklist.md, with 200 % text shots
-scripts/win-vm.sh release            # the self-contained Play zips, x64 and ARM64
+scripts/win-vm.sh release            # the self-contained Play zip, x64
 scripts/win-vm.sh ssh [command]      # a shell (PowerShell), or one cmd.exe command
 scripts/win-vm.sh screen [file.png]  # the VM's screen, as a PNG
 scripts/win-vm.sh down [--reset]     # shut down; --reset also drops the overlay disk
@@ -136,14 +136,16 @@ copied once, when their size changes. Then
 [`build.ps1`](../../scripts/win-vm/build.ps1) builds:
 
 - `brasscribe_ffi.dll`, the Rust core's C ABI: ARM64 always, and x64 with `--x64`
-- Brasscribe Play: ARM64 always (native in the VM), and x64 with `--x64`. That is the build CI and the
-  release ship.
+- Brasscribe Play: ARM64 always (native in the VM), and x64 with `--x64`. x64 is the build CI and the
+  release ship. The ARM64 build starts, but can't draw scores: alphaTab's native Skia
+  (`AlphaSkia.Native.Windows`) has no win-arm64 library. `test`, `shots` and `checklist` build both
+  and use x64, under Windows' x64 emulation.
 - Bandroom for Windows: x64 only (its projects list only x64). It runs under Windows' x64 emulation.
 
-`test` runs [`test.ps1`](../../scripts/win-vm/test.ps1) with the ARM64 native core:
+`test` runs [`test.ps1`](../../scripts/win-vm/test.ps1):
 
-- Play's core tests
-- the core's .NET binding tests
+- Play's core tests, as x64 with the x64 core (like CI)
+- the core's .NET binding tests, with the ARM64 core
 - Bandroom's core tests
 
 It then runs the same smoke tests as CI, in the logged-on session: each app starts and shows its
@@ -175,7 +177,7 @@ What it covers of [windows-checklist.md](windows-checklist.md):
 | 5 Narrator | | all of it: Narrator can't be driven from a script |
 | 6 200 % text | shots of each listed screen at 200 % | judging that nothing is clipped, from the shots |
 
-`release` makes the release job's self-contained Play build for x64 and ARM64. See
+`release` makes the release job's self-contained x64 Play build. See
 [release.md](release.md#5a-windows-built-not-shipped-yet).
 
 ## Resources and timings

@@ -169,16 +169,18 @@ The Windows artifacts are built in the headless Windows 11 ARM64 VM on the build
 
 ```sh
 scripts/win-vm.sh test       # the .NET tests, the smoke tests and the Axe.Windows scans of Play and Bandroom
-scripts/win-vm.sh release    # Play, self-contained, for x64 and ARM64, as the CI release job makes it
+scripts/win-vm.sh release    # Play, self-contained, for x64, as the CI release job makes it
 ```
 
-`release` builds `brasscribe_ffi.dll` for both architectures, publishes Play with
-`dotnet publish -r win-<arch> --self-contained` (.NET and the Windows App SDK inside, the 16-bit band
+`release` builds the x64 `brasscribe_ffi.dll`, publishes Play with
+`dotnet publish -r win-x64 --self-contained` (.NET and the Windows App SDK inside, the 16-bit band
 SoundFont bundled), and checks that the exe, the DLL and the SoundFont are in it. It writes
-`build/win-vm/release-<time>/brasscribe-play-windows-{x64,arm64}.zip`. The zips are unsigned:
-SmartScreen warns on first start until the app has a code-signing certificate.
+`build/win-vm/release-<time>/brasscribe-play-windows-x64.zip`. Windows on Arm PCs run it under
+emulation. There's no ARM64 build: alphaTab's native Skia has no win-arm64 library, so it couldn't
+draw scores. The zip is unsigned: SmartScreen warns on first start until the app has a code-signing
+certificate.
 
-Don't upload them yet. Once the checklist has passed, copy the zips to `$OUT` before §6, so they get
+Don't upload it yet. Once the checklist has passed, copy the zip to `$OUT` before §6, so it gets
 into `SHA256SUMS`, and add the install note for Windows (More info › Run anyway) to the release notes.
 
 ## 6. Checksums and the GitHub release
