@@ -76,6 +76,8 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   let view: RunView | null = null;
   let stages: StageFiles[] | Error = new Error("not loaded");
   let tabsEl: HTMLElement | null = null;
+  // The inspector tab last chosen; the inspector is rebuilt on it when the run finishes.
+  let currentTab = tab ?? "score";
   let selectTab: ((id: string) => void) | null = null;
 
   // The progress line changes with every stage; the rest of the header and the actions only when
@@ -222,7 +224,8 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       { id: "musicxml", label: t("tab.musicxml"), render: (p: HTMLElement) => musicxmlTab(p, ctx) },
       { id: "manifest", label: t("tab.manifest"), render: (p: HTMLElement) => manifestTab(p, ctx, m) },
     ];
-    tabsEl = tabs(t("run.inspectorViews"), items, tab ?? "score", (sel) => {
+    tabsEl = tabs(t("run.inspectorViews"), items, currentTab, (sel) => {
+      currentTab = sel;
       history.replaceState(null, "", `#/runs/${encodeURIComponent(id)}/${sel}`);
     });
     selectTab = (sel) => tabsEl?.querySelector<HTMLButtonElement>(`[role=tab][data-id="${sel}"]`)?.click();
