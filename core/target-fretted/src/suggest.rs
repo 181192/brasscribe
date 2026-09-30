@@ -19,7 +19,8 @@ pub struct TuningFit {
     pub tuning: String,
     /// Notes no string can sound.
     pub out_of_range: usize,
-    /// The lowest open string is the lowest note, or the same pitch class: the tuning is built
+    /// The lowest open string is exactly the lowest note (same MIDI pitch): the notes give evidence
+    /// for this tuning, as a drop or down-tuned riff on its open bottom string does.
     /// around the passage's bottom note, as a drop or down-tuned riff is.
     pub low_string_fits: bool,
     /// Notes an open string can play.
@@ -32,10 +33,11 @@ pub struct TuningFit {
 
 /// Every preset of `family` ranked by fit to `notes`, best first:
 /// 1. fewest out-of-range notes;
-/// 2. the lowest open string fits the lowest note;
-/// 3. most notes on open strings;
-/// 4. fewest high-fret notes;
-/// 5. closest to the standard tuning, then preset order.
+/// 2. the lowest open string is exactly the lowest note;
+/// 3. closest to the standard tuning;
+/// 4. most notes on open strings, fewest high-fret notes, then preset order.
+///
+/// Standard tuning wins unless the notes give evidence against it.
 ///
 /// Frets are counted with `capo`. Empty for an unknown family.
 pub fn suggest_tunings(family: &str, notes: &[Note], capo: u8) -> Vec<TuningFit> {
@@ -62,11 +64,11 @@ pub fn suggest_tunings(family: &str, notes: &[Note], capo: u8) -> Vec<TuningFit>
             }
             let lowest_open = (1..=inst.string_count() as u8).filter_map(|s| inst.open_pitch(s)).min();
             let lowest_note = notes.iter().map(|n| n.pitch).min();
-            let low_string_fits = matches!((lowest_open, lowest_note), (Some(o), Some(n)) if (n - o).rem_euclid(12) == 0 && n >= o);
+            let low_string_fits = matches!((lowest_open, lowest_note), (Some(o), Some(n)) if n == o);
             let distance = inst.tuning.strings.iter().zip(&standard.tuning.strings).map(|(a, b)| (a.open_pitch - b.open_pitch).abs()).sum();
             Some((order, TuningFit { preset: id.to_string(), tuning: inst.tuning.name.clone(), out_of_range, low_string_fits, open_notes, high_frets, distance }))
         })
         .collect();
-    fits.sort_by_key(|(order, f)| (f.out_of_range, !f.low_string_fits, std::cmp::Reverse(f.open_notes), f.high_frets, f.distance, *order));
+    fits.sort_by_key(|(order, f)| (f.out_of_range, !f.low_string_fits, f.distance, std::cmp::Reverse(f.open_notes), f.high_frets, *order));
     fits.into_iter().map(|(_, f)| f).collect()
 }

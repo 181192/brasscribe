@@ -81,16 +81,18 @@ standard tuning.
 It sorts on these keys, in order:
 
 1. fewest out-of-range notes;
-2. the lowest open string fits the lowest note: the same note, or the same pitch class an octave or
-   more below it (`low_string_fits`);
-3. most notes an open string can play (`open_notes`);
-4. fewest notes that can only be played above the 12th fret;
-5. closest to the standard tuning, as semitones summed over the open strings;
-6. preset order.
+2. the lowest note is exactly the tuning's lowest open string, the same MIDI pitch
+   (`low_string_fits`);
+3. closest to the standard tuning, as semitones summed over the open strings;
+4. most notes an open string can play (`open_notes`), then fewest notes that can only be played
+   above the 12th fret, then preset order.
 
-Fit comes before closeness. So an E♭ riff ranks E♭ standard first, even though drop D is closer to
-standard and also reaches its notes. A bass line that goes down to D1 ranks `bass-4-drop-d` first,
-and a line that fits standard tuning ranks standard first. The JSON response carries this ranking for a preset instrument, so the song check
+Standard tuning wins unless the notes give evidence against it:
+
+- An E♭ riff that sits on E♭2 ranks E♭ standard first, although drop D is closer to standard and
+  also reaches its notes.
+- A bass line down to D1 ranks `bass-4-drop-d` first.
+- A melody whose lowest note is C4 or D3 stays in standard. The JSON response carries this ranking for a preset instrument, so the song check
 can offer "Sounds like drop D" and the player confirms it.
 
 ## How notes are placed
@@ -311,6 +313,8 @@ cargo clippy -p target-fretted --no-deps --all-targets -- -D warnings
   - a bass line down to D1 is flagged in standard, gets drop D suggested, and plays cleanly in
     drop D, also through JSON;
   - an E♭ riff ranks E♭ standard ahead of drop D, on guitar and on bass;
+  - ordinary material stays in standard: Ode to Joy, a C scale from C3, a melody down to D3, and
+    a bass line down to D2;
   - a line that fits standard ranks standard first;
   - BEAD, drop D, drop B and the 7-string E♭ tuning each rank first for a line that needs them.
 - **Techniques:**

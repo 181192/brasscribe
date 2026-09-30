@@ -167,6 +167,25 @@ fn a_down_tuned_riff_ranks_its_own_tuning_before_a_drop_tuning() {
 }
 
 #[test]
+fn ordinary_material_stays_in_standard_tuning() {
+    // Ode to Joy, lowest C4.
+    let ode = line(&[64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62]);
+    // A C major scale from C3, and a melody down to D3.
+    let c_scale = line(&[48, 50, 52, 53, 55, 57, 59, 60]);
+    let to_d3 = line(&[57, 55, 53, 52, 50, 52, 55]);
+    for (name, notes) in [("ode", &ode), ("C scale", &c_scale), ("to D3", &to_d3)] {
+        let fits = suggest_tunings("guitar", notes, 0);
+        assert_eq!(fits[0].preset, "guitar-standard", "{name}: {fits:?}");
+    }
+    // A bass line down to D2.
+    let bass = line(&[38, 43, 45, 47, 50, 45, 43, 38]);
+    assert_eq!(suggest_tunings("bass-4", &bass, 0)[0].preset, "bass-4-standard");
+    // A guitar line on D2 is drop D.
+    let drop_d = line(&[38, 38, 45, 50, 38, 48, 50]);
+    assert_eq!(suggest_tunings("guitar", &drop_d, 0)[0].preset, "guitar-drop-d");
+}
+
+#[test]
 fn tuning_suggestion_prefers_standard_when_it_fits() {
     let notes = line(&[28, 31, 33, 35, 36, 38, 40, 43]);
     assert_eq!(suggest_tunings("bass-4", &notes, 0)[0].preset, "bass-4-standard");
