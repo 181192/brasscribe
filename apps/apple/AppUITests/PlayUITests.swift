@@ -259,7 +259,9 @@ final class PlayUITests: XCTestCase {
     /// A recorded solo becomes a readable part with no computer: on-device models and the core.
     func testOfflineSoloToReadablePart() throws {
         guard let clip = dataDir()?.appending(path: "runs/apple/entertainer-tpt1-30s.wav") else { throw XCTSkip("needs data/") }
-        let models = "/Users/k/private/brasscribe/models/converted"
+        let models = ProcessInfo.processInfo.environment["BRASSCRIBE_MODELS"]
+            ?? clip.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent().appending(path: "models/converted").path
         guard FileManager.default.fileExists(atPath: clip.path), FileManager.default.fileExists(atPath: models) else {
             throw XCTSkip("needs the URMP clip and models/converted")
         }

@@ -17,8 +17,13 @@ func refDir() -> URL? {
 
 func modelsDir() -> URL? {
     if let e = ProcessInfo.processInfo.environment["BRASSCRIBE_MODELS"] { return URL(fileURLWithPath: e) }
-    let m = URL(fileURLWithPath: "/Users/k/private/brasscribe/models/converted")
-    return FileManager.default.fileExists(atPath: m.appending(path: "swift-f0").path) ? m : nil
+    var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    for _ in 0..<10 {
+        let m = dir.appending(path: "models/converted")
+        if FileManager.default.fileExists(atPath: m.appending(path: "swift-f0").path) { return m }
+        dir = dir.deletingLastPathComponent()
+    }
+    return nil
 }
 
 var clip: URL { refDir()!.deletingLastPathComponent().appending(path: "entertainer-tpt1-30s.wav") }
