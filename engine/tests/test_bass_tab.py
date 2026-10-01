@@ -37,6 +37,12 @@ def _core_missing() -> str | None:
 needs_core = pytest.mark.skipif(_core_missing() is not None, reason=_core_missing() or "")
 
 
+@pytest.fixture
+def core_present(monkeypatch, tmp_path):
+    """The submit check finds a core, so a test about options does not depend on a built binary."""
+    monkeypatch.setattr(bass_tab, "core_cli", lambda: tmp_path / "brasscribe-core")
+
+
 # ---------------------------------------------------------------- options
 
 def test_defaults_are_a_four_string_bass_in_standard_tuning_separated_from_a_song():
@@ -68,7 +74,7 @@ def test_brass_band_options_are_refused(params):
         profiles.job_options("bass-tab", params)
 
 
-def test_the_brass_band_defaults_the_api_always_sends_are_accepted():
+def test_the_brass_band_defaults_the_api_always_sends_are_accepted(core_present):
     sent = {"audio": True, "lineup": None, "difficulty": "faithful", "key": None, "transpose": None, "seat": None,
             "reads": None, "lead": "lineup"}
     assert profiles.job_options("bass-tab", sent) == bass_tab.options({})
@@ -141,7 +147,7 @@ def test_a_brass_job_from_the_api_has_the_parameters_it_had(profile, settings, a
     assert set(seen["params"]).isdisjoint(bass_tab.DEFAULTS)
 
 
-def test_the_cli_passes_only_the_fretted_options_that_are_given(monkeypatch, tmp_path):
+def test_the_cli_passes_only_the_fretted_options_that_are_given(monkeypatch, tmp_path, core_present):
     from brasscribe_engine import cli
 
     seen = {}
