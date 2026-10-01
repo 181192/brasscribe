@@ -11,4 +11,8 @@ object Product {
 
     @Composable
     fun Root(vm: PlayViewModel) = PlayRoot(vm)
+
+    /** Settings: what the "What you play" row shows as its value. */
+    @Composable
+    fun instrumentValue(vm: PlayViewModel): String = no.brasscribe.play.ui.seatValue(vm.container.seat, vm.container.seats)
 }

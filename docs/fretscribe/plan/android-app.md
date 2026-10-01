@@ -57,7 +57,7 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 |---|---|---|
 | a | Done: flavour skeleton; "Fretscribe" on the launcher and Home | medium, once (Gradle task names, workflows) |
 | b | Done: design folder in the repo, generator flags, theme, icon; no SoundFont or brass models in the Fretscribe APK | low |
-| c | Your instrument | none |
+| c | Done: Your instrument (bass only), and Fretscribe's own words on the first run, Home and Settings | none |
 | d0 | `engine-client`: bass tab profile, `Tab` models, `getTab`, a fixture | low |
 | d | Open a recording, send a `bass-tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
 | e | Check the song from `/tab`; a change is a new job | none |
@@ -78,7 +78,10 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
    shared scheme, or a second `fretscribe://` link in Bandroom's QR code? Does Bandroom keep its name?
 4. **First-run copy.** The flows promise "Made on this phone. Nothing goes online", but the first
    version needs a computer for every tab. Reword, or wait for an on-device bass path.
-5. **Bass only first?** The engine accepts only `bass-4/5/6`.
+   For now the app says what is true: "Your recordings stay on your phone and your own computer", and
+   that Fretscribe on the computer writes down the notes.
+5. **Bass only first?** The engine accepts only `bass-4/5/6`. Your instrument offers the bass, and lists
+   guitar, ukulele and mandolin as "Later".
 6. **Launcher icon.** Drawn from the mark with the art at 64% (`design/fretscribe/brand/build.py`); the
    owner has not yet looked at it on a phone's launcher shapes.
 7. **Min SDK** stays 29; portrait practice is an open design question.

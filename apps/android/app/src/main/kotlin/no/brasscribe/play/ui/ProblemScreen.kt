@@ -156,7 +156,7 @@ fun SettingsScreen(vm: PlayViewModel) {
                 if (focusRow) { kotlinx.coroutines.delay(100); runCatching { seatRow.requestFocus() }; vm.focusSeatRow.value = false }
             }
             SectionLabel(stringResource(R.string.settings_you))
-            val value = seatValue(vm.container.seat, vm.container.seats)
+            val value = no.brasscribe.play.Product.instrumentValue(vm)
             RowGroup {
                 ListRow(stringResource(R.string.settings_seat), { vm.openSeatPicker(no.brasscribe.play.SeatPickerMode.SETTINGS) },
                     Modifier.focusRequester(seatRow).semantics { testTag = "setting-seat" },

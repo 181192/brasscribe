@@ -2,5 +2,66 @@
 <resources>
     <string name="app_name" translatable="false">Fretscribe</string>
     <string name="brand_name" translatable="false">Fretscribe</string>
+    <string name="share_target_label">Skriv ned tonene med Fretscribe</string>
+
+    <string name="first_run_hero_start">"Tab fra "</string>
+    <string name="first_run_hero_end">hvilket som helst opptak.</string>
+    <string name="first_run_1_title">Spill inn eller åpne et opptak</string>
+    <string name="first_run_1_text">Spill det, eller åpne en sang du har. Fretscribe på datamaskinen skriver ned tonene.</string>
+    <string name="first_run_2_title">Sjekk tonene merket ?</string>
+    <string name="first_run_2_text">Toner Fretscribe er usikker på, får et «?». Lytt og velg.</string>
+    <string name="first_run_3_title">Øv med tabben</string>
+    <string name="first_run_3_text">Sett ned tempoet og gjenta de vanskelige taktene.</string>
+    <string name="first_run_privacy">Opptakene dine blir på telefonen og på din egen datamaskin. Gratis, og ingenting er låst.</string>
+
+    <string name="home_hero_start">"Gjør et opptak om til "</string>
+    <string name="home_hero_end">tab.</string>
+    <string name="home_tagline">Spill det, ta det opp, eller åpne en fil. Fretscribe på datamaskinen skriver ned tonene.</string>
+    <string name="home_record_mic_desc">Spill et riff eller en hel sang</string>
+    <string name="home_open_score">Åpne en tab</string>
+    <string name="home_open_score_desc">En MusicXML-fil fra MuseScore eller Guitar Pro</string>
+    <string name="home_scores_empty">Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak.</string>
+    <string name="home_your_scores">Sangene dine</string>
+    <string name="delete_score_phone">Sangen fjernes fra denne telefonen.</string>
+    <string name="delete_score_computer">Sangen fjernes fra datamaskinen din.</string>
+    <string name="record_permission_needed">Fretscribe trenger mikrofonen for å spille inn. Du kan gi tilgang i Innstillinger.</string>
+    <string name="device_notice">Fretscribe spiller inn det andre apper spiller av. Strømmeapper stopper som regel opptak; da hører Fretscribe ingenting og sier fra. Lenker kan ikke lastes ned.</string>
     <string name="conn_offline">Ikke tilkoblet. Fretscribe trenger datamaskinen din for å skrive en tab.</string>
+    <string name="server_name_format">Fretscribe på %1$s</string>
+
+    <string name="settings_seat_caption">Nye tabber skrives for dette instrumentet. Sanger du har fra før, beholder sitt eget.</string>
+    <string name="companion_title">Fretscribe på datamaskinen</string>
+    <string name="settings_sound_realistic">Ekte instrumenter, spilt med menneskelig timing.</string>
+    <string name="settings_text_motion_desc">Fretscribe følger telefonens tekststørrelse, kontrast og animasjoner</string>
+    <string name="appearance_contrast_note">Kontrastinnstillingen din er på, så Fretscribe bruker høykontrastfargene.</string>
+
+    <string name="fs_instrument_title">Instrumentet ditt</string>
+    <string name="fs_instrument_body">Fretscribe skriver tabben for instrumentet du spiller. Du kan endre dette i Innstillinger.</string>
+    <string name="fs_instrument">Instrument</string>
+    <string name="fs_strings">Strenger</string>
+    <string name="fs_tuning">Vanlig stemming</string>
+    <string name="fs_hand">Hvilken hånd tar grepene?</string>
+    <string name="fs_reads">Du leser</string>
+    <string name="fs_instrument_bass">Bass</string>
+    <string name="fs_instrument_guitar">Gitar</string>
+    <string name="fs_instrument_ukulele">Ukulele</string>
+    <string name="fs_instrument_mandolin">Mandolin</string>
+    <string name="fs_later">Senere</string>
+    <string name="fs_strings_count">%1$d strenger</string>
+    <string name="fs_tuning_standard">Standard</string>
+    <string name="fs_tuning_eb_standard">E♭-standard (et halvt trinn ned)</string>
+    <string name="fs_tuning_eb_standard_spoken">Ess-standard (et halvt trinn ned)</string>
+    <string name="fs_tuning_d_standard">D-standard (et helt trinn ned)</string>
+    <string name="fs_tuning_drop_d">Drop D</string>
+    <string name="fs_tuning_bead">BEAD</string>
+    <string name="fs_tuning_drop_a">Drop A</string>
+    <string name="fs_hand_left">Venstre hånd (de fleste)</string>
+    <string name="fs_hand_right">Høyre hånd</string>
+    <string name="fs_hand_right_upside_down">Høyre hånd, instrumentet opp ned</string>
+    <string name="fs_hand_note">Tabben ser lik ut uansett. Akkordbokser og gripebrettet snus.</string>
+    <string name="fs_reads_tab">Tab</string>
+    <string name="fs_reads_tab_and_notation">Tab og noter</string>
+    <string name="fs_reads_notation">Noter</string>
+    <string name="fs_bass_with_strings">%1$d-strengs bass</string>
+    <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
 </resources>
