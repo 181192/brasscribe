@@ -137,8 +137,8 @@ fn parse_npy(b: &[u8]) -> R<Vec<f64>> {
     let data = &b[start + hlen..];
     let descr = header.split("'descr':").nth(1).and_then(|s| s.split('\'').nth(1)).ok_or("npy header without descr")?;
     let v = match descr {
-        "<f4" => data.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]) as f64).collect(),
-        "<f8" => data.chunks_exact(8).map(|c| f64::from_le_bytes(c.try_into().unwrap())).collect(),
+        "<f4" => data.as_chunks::<4>().0.iter().map(|c| f32::from_le_bytes(*c) as f64).collect(),
+        "<f8" => data.as_chunks::<8>().0.iter().map(|c| f64::from_le_bytes(*c)).collect(),
         other => return Err(format!("unsupported npy dtype {other}")),
     };
     Ok(v)
