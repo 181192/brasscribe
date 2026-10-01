@@ -40,6 +40,9 @@ jobs:
 
       - uses: gradle/actions/dependency-submission@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
+          # The action's cache is a separate component under Gradle's Terms of Use; this job runs
+          # rarely and doesn't need it.
+          cache-disabled: true
           build-root-directory: ${{ matrix.project }}
           gradle-version: ${{ matrix.project == 'core/android' && steps.gradle.outputs.version || '' }}
           dependency-graph-include-configurations: ".*[Rr]eleaseRuntimeClasspath"
