@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -63,5 +64,38 @@ class DraftServiceTest {
             instrumentation.runOnMainSync { DraftService.stop(context) }
         }
         assertTrue("stopped with the draft", waitFor(5_000) { notification() == null })
+    }
+
+    /**
+     * A whole draft on this device, from a band recording put there by hand (not in git):
+     * `adb push mix.wav /sdcard/Android/data/no.brasscribe.play/files/band-mix.wav`. Skipped without it. The draft it saves is
+     * removed again, so Your scores is left as it was.
+     */
+    @Test
+    fun aDraftOfARecordingIsMadeUnderTheService() {
+        val mix = java.io.File(context.getExternalFilesDir(null), "band-mix.wav")
+        org.junit.Assume.assumeTrue("no recording at $mix", mix.canRead())
+        val container = (context.applicationContext as PlayApplication).container
+        org.junit.Assume.assumeTrue("the listening files are not in this build", container.hasBandModels)
+        lateinit var vm: PlayViewModel
+        rule.scenario.onActivity { vm = androidx.lifecycle.ViewModelProvider(it)[PlayViewModel::class.java] }
+        val before = container.scoreLibrary.list().map { it.id }.toSet()
+        try {
+            instrumentation.runOnMainSync { vm.home(); vm.importUri(android.net.Uri.fromFile(mix)) }
+            assertTrue("the recording is read", waitFor(60_000) { vm.screen.value.last() == Screen.PROFILE })
+            instrumentation.runOnMainSync {
+                vm.chooseProfile(no.brasscribe.play.engine.Profile.BRASS_BAND)
+                vm.where.value = Where.DEVICE
+                vm.startTranscription()
+            }
+            assertTrue("the draft is made: ${vm.screen.value}, ${vm.problemDetail}", waitFor(300_000) { vm.screen.value.last() != Screen.TRANSCRIBE })
+            assertEquals(Screen.REVIEW, vm.screen.value.last())
+            assertTrue(vm.result.value?.draft == true)
+            assertTrue("the service stops with the draft", waitFor(15_000) { notification() == null })
+        } finally {
+            instrumentation.runOnMainSync { vm.cancelTranscription(); vm.home() }
+            Thread.sleep(1_000)
+            (container.scoreLibrary.list().map { it.id }.toSet() - before).forEach { container.scoreLibrary.delete(it) }
+        }
     }
 }
