@@ -13,6 +13,8 @@ use brasscribe_core::model::{check_span, Note, TICKS_PER_BEAT};
 use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};
+use crate::shapes::{is_power_chord, open_shapes};
+use crate::technique::{per_note, previous_note, string_link, Technique};
 
 /// How a passage should sit on the neck.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -139,6 +141,10 @@ struct Weights {
     stretch_sq: f64,
     /// For a repeated passage fingered differently from its first occurrence.
     repeat: f64,
+    /// For a power chord from the shape table (negative: a bonus).
+    power: f64,
+    /// For a strummed chord played as its open shape from the shape table (negative: a bonus).
+    open_shape: f64,
 }
 
 fn weights(style: Style) -> Weights {
@@ -153,17 +159,21 @@ fn weights(style: Style) -> Weights {
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
+            power: -6.0,
+            open_shape: -6.0,
         },
         Style::AsPlayed => Weights {
             height: 0.01,
             open_chord: -0.5,
             open_melodic: 0.0,
             shift_mm: 0.03,
-            shift_fixed: 1.5,
+            shift_fixed: 3.0,
             drop_mm: 0.04,
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
+            power: -4.0,
+            open_shape: -4.0,
         },
         Style::Lead => Weights {
             height: 0.002,
@@ -175,6 +185,8 @@ fn weights(style: Style) -> Weights {
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
+            power: -4.0,
+            open_shape: 0.0,
         },
     }
 }
@@ -188,6 +200,10 @@ const HAND_FRETS: i32 = 3;
 const MAX_VOICINGS: usize = 64;
 /// Most leaves the voicing search visits per pass, so huge clusters stay bounded.
 const LEAF_CAP: usize = 50_000;
+/// The cost of breaking a technique constraint: the search only does it when nothing else fits.
+const HARD: f64 = 1e6;
+/// Most re-solves that move notes off strings reserved by a let-ring note.
+const RING_PASSES: usize = 8;
 
 #[derive(Debug, Clone, Copy)]
 struct Cand {
@@ -201,6 +217,45 @@ struct Group {
     pitch: i32,
     notes: Vec<usize>,
     cands: Vec<Cand>,
+    pin: Option<u8>,
+    /// A bend: fretted positions only.
+    bend: bool,
+    /// Strings this group may not use (reserved by a ringing note).
+    forbid: Vec<u8>,
+    /// Group in the previous event whose string this one must keep (slide, hammer-on, pull-off,
+    /// bend), and the most frets it may be from it there.
+    link: Option<(usize, i32)>,
+    /// Tick until which a let-ring note of this group reserves its string.
+    ring_until: Option<i64>,
+}
+
+impl Group {
+    fn new(pitch: i32, note: usize) -> Self {
+        Group { pitch, notes: vec![note], cands: Vec::new(), pin: None, bend: false, forbid: Vec::new(), link: None, ring_until: None }
+    }
+
+    /// Candidates honouring the pin, the bend and the reserved strings. A constraint no position
+    /// meets is dropped here and reported by the playability check.
+    fn refresh(&mut self, inst: &Instrument) {
+        let mut cands: Vec<Cand> = inst.positions(self.pitch).into_iter().map(|pos| Cand { pos, neck: inst.neck_fret(pos).unwrap_or(0) }).collect();
+        let mut keep = |f: &dyn Fn(&Cand) -> bool| {
+            let kept: Vec<Cand> = cands.iter().copied().filter(|c| f(c)).collect();
+            if !kept.is_empty() {
+                cands = kept;
+            }
+        };
+        if let Some(pin) = self.pin {
+            keep(&|c| c.pos.string == pin);
+        }
+        if self.bend {
+            keep(&|c| c.neck > 0);
+        }
+        if !self.forbid.is_empty() {
+            let forbid = self.forbid.clone();
+            keep(&move |c| !forbid.contains(&c.pos.string));
+        }
+        self.cands = cands;
+    }
 }
 
 #[derive(Debug)]
@@ -211,6 +266,8 @@ struct Voicing {
     hi: i32,
     fretted: bool,
     opens: i32,
+    /// String per group.
+    strings: Vec<Option<u8>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -226,6 +283,12 @@ struct Event {
     groups: Vec<Group>,
     voicings: Vec<Voicing>,
     states: Vec<State>,
+    /// The open shape these notes form, as sorted positions.
+    shape: Option<Vec<Position>>,
+    /// Some group keeps the string of a note in the previous event.
+    linked: bool,
+    /// Some group has a let-ring note.
+    rings: bool,
 }
 
 impl Event {
@@ -277,6 +340,21 @@ impl Ctx<'_> {
                 c += w.stretch_sq * over * over;
             }
         }
+        if !ev.melodic() && v.strings.iter().all(Option::is_some) {
+            if (2..=3).contains(&ev.groups.len()) {
+                let notes: Vec<(i32, u8)> = ev.groups.iter().zip(&v.strings).filter_map(|(g, s)| Some((g.pitch, (*s)?))).collect();
+                if is_power_chord(&notes) {
+                    c += w.power;
+                }
+            }
+            if let Some(shape) = &ev.shape {
+                let mut pos: Vec<Position> = v.place.iter().zip(&ev.groups).filter_map(|(c, g)| c.map(|c| g.cands[c].pos)).collect();
+                pos.sort_unstable();
+                if pos == *shape {
+                    c += w.open_shape;
+                }
+            }
+        }
         let open_w = if ev.melodic() { w.open_melodic } else { w.open_chord };
         c + open_w * f64::from(v.opens)
     }
@@ -301,6 +379,24 @@ impl Ctx<'_> {
                 c += w.drop_mm * (self.mm(sb.p) - self.mm(q));
             }
         }
+        let (va, vb) = (&a.voicings[sa.v], &b.voicings[sb.v]);
+        if b.linked {
+            for (gb, g) in b.groups.iter().enumerate() {
+                let Some((ga, reach)) = g.link else { continue };
+                let (Some(ca), Some(cb)) = (va.place[ga], vb.place[gb]) else { continue };
+                let (from, to) = (a.groups[ga].cands[ca], g.cands[cb]);
+                if from.pos.string != to.pos.string || (from.neck - to.neck).abs() > reach {
+                    c += HARD;
+                }
+            }
+        }
+        if a.rings {
+            for (ga, g) in a.groups.iter().enumerate() {
+                if g.ring_until.is_some_and(|t| t > b.start) && va.strings[ga].is_some_and(|s| vb.strings.contains(&Some(s))) {
+                    c += HARD;
+                }
+            }
+        }
         c
     }
 }
@@ -308,7 +404,15 @@ impl Ctx<'_> {
 /// Choose a string and fret for every note. Notes starting on the same tick are played together;
 /// pitches never change, and notes no position can sound are flagged `out_of_range`.
 pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Fingering, String> {
+    assign_with_techniques(inst, notes, &[], opts)
+}
+
+/// [`assign`] with playing techniques: one list per note (or none at all). Slides, hammer-ons,
+/// pull-offs and bends keep the string of the note they come from; let ring reserves its string
+/// until the note ends.
+pub fn assign_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[Vec<Technique>], opts: &Options) -> Result<Fingering, String> {
     inst.validate()?;
+    let techniques = per_note(techniques, notes.len())?;
     opts.validate(inst, notes.len())?;
     for (i, n) in notes.iter().enumerate() {
         if !(0..=127).contains(&n.pitch) {
@@ -341,17 +445,28 @@ pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Finge
         })
         .collect();
 
-    let mut events = build_events(&ctx, notes, opts, &mut out);
+    let mut events = build_events(&ctx, notes, opts, &techniques, &mut out);
     for ev in events.iter_mut() {
         build_states(&ctx, ev);
     }
-    let mut path = viterbi(&ctx, &events, &HashMap::new());
-    let refs = repeats(&events);
-    if !refs.is_empty() {
-        // Later occurrences and the first one itself keep the first occurrence's fingering.
-        let chosen = |r: usize| events[r].positions(events[r].states[path[r]].v);
-        let targets: HashMap<usize, Vec<Option<Position>>> = refs.iter().flat_map(|(&e, &r)| [(e, chosen(r)), (r, chosen(r))]).collect();
-        path = viterbi(&ctx, &events, &targets);
+    let mut path = solve_path(&ctx, &events);
+    // A let-ring note reserves its string past the next event too; the search only sees
+    // neighbouring events, so notes placed on a reserved string further on are moved and re-solved.
+    for _ in 0..RING_PASSES {
+        let mut changed = false;
+        for (e, g, string) in ring_conflicts(&events, &path) {
+            let group = &mut events[e].groups[g];
+            if !group.forbid.contains(&string) {
+                group.forbid.push(string);
+                group.refresh(ctx.inst);
+                build_states(&ctx, &mut events[e]);
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+        path = solve_path(&ctx, &events);
     }
 
     for (e, ev) in events.iter().enumerate() {
@@ -372,38 +487,108 @@ pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Finge
     Ok(Fingering { notes: out })
 }
 
-fn build_events(ctx: &Ctx, notes: &[Note], opts: &Options, out: &mut [NotePlace]) -> Vec<Event> {
+/// The cheapest path, with repeated passages pulled onto their first fingering.
+fn solve_path(ctx: &Ctx, events: &[Event]) -> Vec<usize> {
+    let path = viterbi(ctx, events, &HashMap::new());
+    let refs = repeats(events);
+    if refs.is_empty() {
+        return path;
+    }
+    // Later occurrences and the first one itself keep the first occurrence's fingering.
+    let chosen = |r: usize| events[r].positions(events[r].states[path[r]].v);
+    let targets: HashMap<usize, Vec<Option<Position>>> = refs.iter().flat_map(|(&e, &r)| [(e, chosen(r)), (r, chosen(r))]).collect();
+    viterbi(ctx, events, &targets)
+}
+
+/// Notes on a string a let-ring note still reserves: (event, group, string).
+fn ring_conflicts(events: &[Event], path: &[usize]) -> Vec<(usize, usize, u8)> {
+    let mut out = Vec::new();
+    for (ea, a) in events.iter().enumerate().filter(|(_, a)| a.rings) {
+        let va = &a.voicings[a.states[path[ea]].v];
+        for (ga, g) in a.groups.iter().enumerate() {
+            let (Some(until), Some(string)) = (g.ring_until, va.strings[ga]) else { continue };
+            for (eb, b) in events.iter().enumerate().skip(ea + 1).take_while(|(_, b)| b.start < until) {
+                let vb = &b.voicings[b.states[path[eb]].v];
+                for (gb, s) in vb.strings.iter().enumerate() {
+                    if *s == Some(string) {
+                        out.push((eb, gb, string));
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+fn build_events(ctx: &Ctx, notes: &[Note], opts: &Options, techniques: &[Vec<Technique>], out: &mut [NotePlace]) -> Vec<Event> {
+    let shapes = if ctx.w.open_shape != 0.0 { open_shapes(ctx.inst) } else { Vec::new() };
     let mut order: Vec<usize> = (0..notes.len()).collect();
     order.sort_by_key(|&i| (notes[i].start, notes[i].pitch, i));
     let mut events: Vec<Event> = Vec::new();
+    let mut loc: Vec<Option<(usize, usize)>> = vec![None; notes.len()];
     let mut k = 0;
     while k < order.len() {
         let start = notes[order[k]].start;
-        let mut groups: Vec<Group> = Vec::new();
+        let mut playable = Vec::new();
         while k < order.len() && notes[order[k]].start == start {
             let i = order[k];
             k += 1;
-            let pitch = notes[i].pitch;
-            // Notes of one pitch at one onset (doublings from several voices) sound as one note.
-            if let Some(g) = groups.iter_mut().find(|g| g.pitch == pitch) {
-                g.notes.push(i);
-                continue;
-            }
-            if ctx.inst.positions(pitch).is_empty() {
+            if ctx.inst.positions(notes[i].pitch).is_empty() {
                 out[i].out_of_range = true;
-                continue;
+            } else {
+                playable.push(i);
             }
-            groups.push(Group { pitch, notes: vec![i], cands: Vec::new() });
         }
-        for g in groups.iter_mut() {
-            let pin = g.notes.iter().find_map(|&i| opts.pin_for(i));
-            let all: Vec<Cand> = ctx.inst.positions(g.pitch).into_iter().map(|pos| Cand { pos, neck: ctx.inst.neck_fret(pos).unwrap_or(0) }).collect();
-            let pinned: Vec<Cand> = all.iter().copied().filter(|c| Some(c.pos.string) == pin).collect();
-            // A pin that no position honours is dropped here and reported by the playability check.
-            g.cands = if pinned.is_empty() { all } else { pinned };
+        let mut pitches: Vec<i32> = playable.iter().map(|&i| notes[i].pitch).collect();
+        pitches.sort_unstable();
+        let shape = shapes
+            .iter()
+            .find(|(_, pos)| {
+                let mut sounding: Vec<i32> = pos.iter().filter_map(|&p| ctx.inst.pitch_at(p)).collect();
+                sounding.sort_unstable();
+                sounding == pitches
+            })
+            .map(|(_, pos)| {
+                let mut pos = pos.clone();
+                pos.sort_unstable();
+                pos
+            });
+        let mut groups: Vec<Group> = Vec::new();
+        for &i in &playable {
+            let pitch = notes[i].pitch;
+            // Notes of one pitch at one onset (doublings from several voices) sound as one note,
+            // unless together they are an open shape that plays the doubled pitch on two strings.
+            if shape.is_none() {
+                if let Some(g) = groups.iter_mut().find(|g| g.pitch == pitch) {
+                    g.notes.push(i);
+                    continue;
+                }
+            }
+            groups.push(Group::new(pitch, i));
+        }
+        let e = events.len();
+        for (gi, g) in groups.iter_mut().enumerate() {
+            g.pin = g.notes.iter().find_map(|&i| opts.pin_for(i));
+            g.bend = g.notes.iter().any(|&i| techniques[i].iter().any(|t| t.needs_fret()));
+            g.ring_until = g.notes.iter().filter(|&&i| techniques[i].contains(&Technique::LetRing)).map(|&i| notes[i].end()).max();
+            g.refresh(ctx.inst);
+            for &i in &g.notes {
+                loc[i] = Some((e, gi));
+            }
         }
         if !groups.is_empty() {
-            events.push(Event { start, groups, voicings: Vec::new(), states: Vec::new() });
+            let rings = groups.iter().any(|g| g.ring_until.is_some());
+            events.push(Event { start, groups, voicings: Vec::new(), states: Vec::new(), shape, linked: false, rings });
+        }
+    }
+    for i in 0..notes.len() {
+        let Some(reach) = string_link(&techniques[i]) else { continue };
+        let (Some((e, g)), Some(j)) = (loc[i], previous_note(notes, i)) else { continue };
+        if let Some((pe, pg)) = loc[j] {
+            if pe + 1 == e && events[e].groups[g].link.is_none() {
+                events[e].groups[g].link = Some((pg, reach));
+                events[e].linked = true;
+            }
         }
     }
     events
@@ -481,7 +666,9 @@ fn build_states(ctx: &Ctx, ev: &mut Event) {
         .map(|place| {
             let necks: Vec<i32> = place.iter().zip(&ev.groups).filter_map(|(c, g)| c.map(|c| g.cands[c].neck)).collect();
             let fretted: Vec<i32> = necks.iter().copied().filter(|&n| n > 0).collect();
+            let strings = place.iter().zip(&ev.groups).map(|(c, g)| c.map(|c| g.cands[c].pos.string)).collect();
             Voicing {
+                strings,
                 lo: fretted.iter().copied().min().unwrap_or(0),
                 hi: fretted.iter().copied().max().unwrap_or(0),
                 fretted: !fretted.is_empty(),

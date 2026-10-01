@@ -388,7 +388,7 @@ fn doubled_notes_share_one_position() {
 fn json_round_trip_matches_the_direct_call() {
     let notes = chords(&[&[48, 52, 55, 60, 64]]);
     let o = opts(Style::OpenPosition);
-    let req = Request { instrument: InstrumentChoice::Preset { preset: "guitar-standard".into(), capo: 0 }, notes: notes.clone(), options: o.clone() };
+    let req = Request { instrument: InstrumentChoice::Preset { preset: "guitar-standard".into(), capo: 0 }, notes: notes.iter().cloned().map(Into::into).collect(), options: o.clone() };
     let text = solve_json(&serde_json::to_string(&req).unwrap()).unwrap();
     let resp: Response = serde_json::from_str(&text).unwrap();
     let g = preset("guitar-standard").unwrap();
