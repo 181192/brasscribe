@@ -414,9 +414,10 @@ class Tab(BaseModel):
     tuning_suggestions: list[TuningFit] = Field(description="the instrument's tunings ranked by fit to the notes, "
                                                             "best first; when the first is not `preset`, the song "
                                                             "sounds like that tuning")
-    octave_shift: int = Field(description="semitones the whole line was moved after transcription: 0, or -12 (or "
-                                          "-24) when it was heard an octave above where a bass plays; the same for every "
-                                          "instrument, tuning and capo")
+    octave_shift: int = Field(description="semitones the whole line was moved after transcription. With octave auto: "
+                                          "0, or -12 (or -24) when it was heard an octave above where a bass plays, "
+                                          "the same for every instrument, tuning and capo. With a chosen octave: "
+                                          "that choice, 0, -12 or 12")
     octave_source: Literal["auto", "chosen"] = Field(description="auto: the octave check decided octave_shift; chosen: "
                                                                  "the job's octave option did")
     reference_pitch: ReferencePitch | None = Field(description="null when the recording's tuning could not be measured")
@@ -425,7 +426,9 @@ class Tab(BaseModel):
     meter: TabMeter
     ticks_per_beat: int = 24
     beat_times: list[float] = Field(description="seconds of beat 0, 1, 2 ...")
-    first_downbeat: int = Field(description="index into beat_times of tick 0")
+    first_downbeat: int = Field(description="index into beat_times of tick 0; negative when the line starts before "
+                                            "the first tracked downbeat (a pickup): tick 0 is then a bar line "
+                                            "before beat_times[0]")
 
 
 # ---------------------------------------------------------------- benchmarks

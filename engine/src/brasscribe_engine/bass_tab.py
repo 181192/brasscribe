@@ -28,7 +28,10 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
+import threading
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Callable
@@ -37,6 +40,7 @@ import numpy as np
 
 from . import stages as S
 from . import tuning
+from .adapters import kill_tree
 from .config import REPO_ROOT, child_env
 from .dag import SOURCE, Input, Pipeline, Stage, StageContext, StageFailed
 
@@ -73,6 +77,10 @@ OCTAVE_FIT = 0.9
 OCTAVE_MAX_SHIFTS = 2
 
 CORE_CLI_ENV = "BRASSCRIBE_CORE_CLI"
+# How long one fingering may take before it is stopped. A song takes a fraction of a second; the limit
+# is for a core that hangs.
+FRET_TIMEOUT_S = 600.0
+FRET_POLL_S = 0.1  # seconds between checks for a cancelled job or the time limit
 
 
 # ---------------------------------------------------------------- options
@@ -128,37 +136,68 @@ class CoreCliMissing(RuntimeError):
     pass
 
 
-def core_cli_path() -> Path:
-    """Where the core's command line is, or would be: BRASSCRIBE_CORE_CLI, the checkout's release build,
-    then the PATH."""
+def _core_cli() -> tuple[Path, str]:
+    """Where the core's command line is, or would be, and where that comes from: `env`
+    (BRASSCRIBE_CORE_CLI), `checkout` (its release build) or `path`."""
     named = os.environ.get(CORE_CLI_ENV)
     if named:
-        return Path(named).expanduser()
+        return Path(named).expanduser(), "env"
     built = REPO_ROOT / "core" / "target" / "release" / ("brasscribe-core.exe" if os.name == "nt" else "brasscribe-core")
     on_path = None if built.is_file() else shutil.which("brasscribe-core")
-    return Path(on_path) if on_path else built
+    return (Path(on_path), "path") if on_path else (built, "checkout")
+
+
+def core_cli_path() -> Path:
+    return _core_cli()[0]
 
 
 def core_cli() -> Path:
     """The core's command line; CoreCliMissing says how to get it."""
     cli = core_cli_path()
-    if not cli.is_file():
-        # No path in the message: a failed job's error is shown to paired devices too.
+    if not cli.is_file() or not os.access(cli, os.X_OK):
+        # No path in the message: a refused or failed job's error is shown to paired devices too.
         raise CoreCliMissing(f"brasscribe-core not found ({CORE_CLI_ENV}, core/target/release, PATH): build it with "
                              f"`cargo build --release -p brasscribe-cli` in core/")
     return cli
 
 
-def solve(request: dict) -> dict:
-    """target-fretted's answer to its JSON request (core/target-fretted/README.md, JSON)."""
+def solve(request: dict, cancel: threading.Event | None = None, log: Callable[[str], None] | None = None) -> dict:
+    """target-fretted's answer to its JSON request (core/target-fretted/README.md, JSON).
+
+    Setting `cancel` stops the core, and so does FRET_TIMEOUT_S. No error names a path on this computer."""
     cli = core_cli()
+    if _core_cli()[1] == "path":
+        # Which binary answered matters when it is not the checkout's own. The job's log says where it came
+        # from; the path itself goes to the engine's log only (paired devices read the job's).
+        if log:
+            log("brasscribe-core taken from the PATH")
+        print(f"brasscribe-core taken from the PATH: {cli}", file=sys.stderr, flush=True)
     with tempfile.TemporaryDirectory() as tmp:
         req, out = Path(tmp) / "request.json", Path(tmp) / "fingering.json"
         req.write_text(json.dumps(request))
-        proc = subprocess.run([str(cli), "fret", "--request", str(req), "--out", str(out)], stdin=subprocess.DEVNULL,
-                              capture_output=True, text=True, env=child_env())
+        try:
+            proc = subprocess.Popen([str(cli), "fret", "--request", str(req), "--out", str(out)], stdin=subprocess.DEVNULL,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=child_env())
+        except OSError as e:  # not a program this computer can run; the message would name its path
+            raise RuntimeError(f"brasscribe-core could not be started ({type(e).__name__}): build it with "
+                               f"`cargo build --release -p brasscribe-cli` in core/") from None
+        end = time.monotonic() + FRET_TIMEOUT_S
+        while True:
+            try:
+                _, stderr = proc.communicate(timeout=FRET_POLL_S)
+                break
+            except subprocess.TimeoutExpired:
+                if cancel is not None and cancel.is_set():
+                    kill_tree(proc)
+                    raise RuntimeError("brasscribe-core fret stopped: the job was cancelled") from None
+                if time.monotonic() > end:
+                    kill_tree(proc)
+                    raise RuntimeError(f"brasscribe-core fret stopped after {FRET_TIMEOUT_S:.0f} s, its time limit") from None
+            except BaseException:  # e.g. Ctrl-C in `brasscribe run`: leave no process running
+                kill_tree(proc)
+                raise
         if proc.returncode != 0:
-            raise RuntimeError(f"brasscribe-core fret failed: {proc.stderr.strip()[-2000:]}")
+            raise RuntimeError(f"brasscribe-core fret failed: {stderr.strip()[-2000:].replace(tmp, '.')}")
         return json.loads(out.read_text())
 
 
@@ -301,7 +340,7 @@ def export_tab(tab: dict, out: Path) -> list[str]:
 def arrange_stage(ctx: StageContext) -> None:
     doc = json.loads(ctx.inputs["notes"].read_text())
     try:
-        tab = fingered(doc, ctx.params["fingering"])
+        tab = fingered(doc, ctx.params["fingering"], lambda request: solve(request, ctx.executor.cancel, ctx.log))
     except RuntimeError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
     unplayable = sum(n["out_of_range"] for n in tab["notes"])

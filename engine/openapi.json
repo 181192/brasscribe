@@ -2865,7 +2865,7 @@
             "type": "array"
           },
           "first_downbeat": {
-            "description": "index into beat_times of tick 0",
+            "description": "index into beat_times of tick 0; negative when the line starts before the first tracked downbeat (a pickup): tick 0 is then a bar line before beat_times[0]",
             "title": "First Downbeat",
             "type": "integer"
           },
@@ -2887,7 +2887,7 @@
             "type": "array"
           },
           "octave_shift": {
-            "description": "semitones the whole line was moved after transcription: 0, or -12 (or -24) when it was heard an octave above where a bass plays; the same for every instrument, tuning and capo",
+            "description": "semitones the whole line was moved after transcription. With octave auto: 0, or -12 (or -24) when it was heard an octave above where a bass plays, the same for every instrument, tuning and capo. With a chosen octave: that choice, 0, -12 or 12",
             "title": "Octave Shift",
             "type": "integer"
           },

@@ -3,9 +3,10 @@ fingering from the Rust core (target-fretted through `brasscribe-core fret`)."""
 
 from __future__ import annotations
 
-import json
+import os
 import re
 import shutil
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -113,9 +114,9 @@ def test_the_core_knows_every_instrument_and_style(instrument, tunings):
 
 # ---------------------------------------------------------------- the brass paths keep their parameters
 
-def _stage_params(profile: str, params: dict) -> dict:
+def _stages(profile: str, params: dict) -> dict:
     p = profiles.build(profile, Path("song.wav"), "T", params)
-    return {"pipeline": p.params, **{s.name: (s.params, sorted(s.inputs), s.adapter, s.outputs) for s in p.stages}}
+    return {s.name: (s.kind, s.params, s.inputs, s.run, s.adapter, s.code, s.outputs, s.derive) for s in p.stages}
 
 
 @pytest.mark.parametrize("profile", BRASS_PROFILES)
@@ -133,8 +134,9 @@ def test_a_brass_job_from_the_api_has_the_parameters_it_had(profile, settings, a
         c.post("/v1/jobs", json={"audio_id": audio_id, "profile": profile})
     assert seen["params"] == {"audio": True, "lineup": None, "difficulty": "faithful", "key": None, "transpose": None,
                               "seat": None, "reads": None, "lead": "lineup"}
-    assert _stage_params(profile, seen["params"]) == _stage_params(profile, {**seen["params"]})
-    assert not any(k in json.dumps(_stage_params(profile, seen["params"]), default=str) for k in ("capo", "fingering"))
+    # ... and they build the stages of a job with no options at all: nothing of the tab options reaches a stage.
+    assert _stages(profile, seen["params"]) == _stages(profile, {})
+    assert set(seen["params"]).isdisjoint(bass_tab.DEFAULTS)
 
 
 def test_the_cli_passes_only_the_fretted_options_that_are_given(monkeypatch, tmp_path):
@@ -496,6 +498,103 @@ def test_a_job_without_the_core_fails_at_the_fingering_and_says_how_to_get_it(se
     assert manifest["status"] == "failed" and manifest["error"].startswith("arrange: ")
     assert "cargo build --release -p brasscribe-cli" in manifest["error"]
     assert [s["status"] for s in manifest["stages"]] == ["ran", "ran", "ran", "failed"]
+
+
+def test_a_job_is_refused_at_submit_when_the_core_is_missing_and_the_profile_stays_listed(settings, audio, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from brasscribe_engine.api import create_app
+
+    missing = settings.data_dir / "no-such-core"
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(missing))
+    with pytest.raises(profiles.OptionError) as refused:
+        profiles.job_options("bass-tab", {})
+    assert refused.value.code == profiles.CORE_MISSING_CODE == "core_missing"
+    assert profiles.build("bass-tab", Path("song.wav")).stage("arrange").params["title"]  # building needs no core
+    with TestClient(create_app(settings)) as c:
+        assert "bass-tab" in {p["name"] for p in c.get("/v1/profiles").json()}
+        audio_id = c.post("/v1/audio", files={"file": ("song.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
+        r = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab"})
+        assert r.status_code == 422 and r.json()["code"] == "core_missing"
+        assert "cargo build --release -p brasscribe-cli" in r.json()["detail"] and str(missing.parent) not in r.text
+        assert c.get("/v1/jobs").json() == []  # nothing was started
+        # A wrong option is still the first thing said, and the band profiles do not need the core.
+        bad = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "instrument": "bass-5", "tuning": "bead"})
+        assert bad.json()["code"] == "invalid_options"
+        assert c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "test"}).status_code == 202
+
+
+def test_the_cli_refuses_the_run_before_any_model_when_the_core_is_missing(monkeypatch, tmp_path, capsys):
+    from brasscribe_engine import cli
+
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(tmp_path / "no-such-core"))
+    monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path))
+    monkeypatch.setattr(runner, "run", lambda *a, **kw: pytest.fail("the run was started"))
+    assert cli.main(["run", "song.wav", "--profile", "bass-tab"]) == 3
+    assert "cargo build --release -p brasscribe-cli" in capsys.readouterr().err
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permissions and scripts")
+def test_a_core_that_cannot_run_is_missing_and_one_that_cannot_start_fails_without_its_path(tmp_path, monkeypatch):
+    plain = tmp_path / "private-folder" / "brasscribe-core"
+    plain.parent.mkdir()
+    plain.write_text("not a program")
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(plain))
+    with pytest.raises(bass_tab.CoreCliMissing) as e:  # not executable: refused at submit, like a missing one
+        bass_tab.solve({"instrument": {"preset": "bass-4-standard"}, "notes": []})
+    assert "private-folder" not in str(e.value)
+    plain.chmod(0o755)  # executable, but not a program: the system refuses to start it
+    with pytest.raises(RuntimeError, match="could not be started") as e:
+        bass_tab.solve({"instrument": {"preset": "bass-4-standard"}, "notes": []})
+    assert "private-folder" not in str(e.value) and not isinstance(e.value, bass_tab.CoreCliMissing)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="a shell script stands in for the core")
+def test_a_core_that_fails_or_hangs_is_reported_and_stopped(tmp_path, monkeypatch):
+    import threading
+    import time
+
+    core = tmp_path / "private-folder" / "brasscribe-core"
+    core.parent.mkdir()
+    core.write_text('#!/bin/sh\necho "$3: no such preset" >&2\nexit 1\n')
+    core.chmod(0o755)
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))
+    with pytest.raises(RuntimeError, match="fret failed.*no such preset") as e:
+        bass_tab.solve({"instrument": {"preset": "x"}, "notes": []})
+    assert "./request.json" in str(e.value) and tempfile.gettempdir() not in str(e.value)  # the temp folder is not named
+
+    core.write_text("#!/bin/sh\nexec sleep 60\n")
+    monkeypatch.setattr(bass_tab, "FRET_TIMEOUT_S", 0.3)
+    t0 = time.monotonic()
+    with pytest.raises(RuntimeError, match="time limit"):
+        bass_tab.solve({"instrument": {"preset": "x"}, "notes": []})
+    assert time.monotonic() - t0 < 10
+
+    monkeypatch.setattr(bass_tab, "FRET_TIMEOUT_S", 600.0)
+    cancel = threading.Event()
+    threading.Timer(0.3, cancel.set).start()
+    t0 = time.monotonic()
+    with pytest.raises(RuntimeError, match="cancelled"):
+        bass_tab.solve({"instrument": {"preset": "x"}, "notes": []}, cancel)
+    assert time.monotonic() - t0 < 10
+
+
+@pytest.mark.skipif(os.name == "nt", reason="a shell script stands in for the core")
+def test_a_core_from_the_path_is_named_in_the_engines_log_and_only_mentioned_in_the_jobs(tmp_path, monkeypatch, capsys):
+    core = tmp_path / "private-folder" / "brasscribe-core"
+    core.parent.mkdir()
+    core.write_text('#!/bin/sh\necho \'{"ok": true}\' > "$5"\n')
+    core.chmod(0o755)
+    monkeypatch.delenv(bass_tab.CORE_CLI_ENV, raising=False)
+    monkeypatch.setattr(bass_tab, "REPO_ROOT", tmp_path / "no-checkout")
+    monkeypatch.setenv("PATH", f"{core.parent}{os.pathsep}{os.environ['PATH']}")
+    said: list[str] = []
+    assert bass_tab.solve({"notes": []}, log=said.append) == {"ok": True}
+    assert said == ["brasscribe-core taken from the PATH"]
+    assert str(core) in capsys.readouterr().err
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))  # named: nothing to say
+    said.clear()
+    assert bass_tab.solve({"notes": []}, log=said.append) == {"ok": True} and said == []
 
 
 def _wait(client, job_id: str, timeout: float = 60) -> dict:

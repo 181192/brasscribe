@@ -41,6 +41,11 @@ def _cold(value: str | None) -> set[str]:
 
 def cmd_run(args) -> int:
     s = config.load()
+    if args.profile == bass_tab.PROFILE:
+        try:  # before any model runs: the last stage needs the core
+            bass_tab.core_cli()
+        except bass_tab.CoreCliMissing as e:
+            raise runner.RunRefused(str(e)) from e
     m = runner.run(s, args.audio, args.profile, title=args.title, out=args.out, reuse=args.reuse,
                    allow_heavy=not args.no_heavy, cold=_cold(args.cold), params={"audio": not args.no_audio, "lineup": args.lineup,
                                                                      "difficulty": args.difficulty, "key": args.key,

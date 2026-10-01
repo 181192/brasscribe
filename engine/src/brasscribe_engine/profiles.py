@@ -76,8 +76,9 @@ PERCUSSION_SOLO_CODE = "percussion_solo"  # a solo take for the percussion seat
 SEAT_NO_TUNE_CODE = "seat_no_tune"  # lead=seat where the seat's part cannot carry the tune
 READS_NOT_OFFERED_CODE = "reads_not_offered"  # a clef the seat is not offered in
 INVALID_OPTIONS_CODE = "invalid_options"  # anything else wrong with the options
+CORE_MISSING_CODE = "core_missing"  # a tab profile on an engine without the Rust core's command line
 OPTION_ERROR_CODES = (QUARTET_NEEDS_GROUP_CODE, PERCUSSION_SOLO_CODE, SEAT_NO_TUNE_CODE, READS_NOT_OFFERED_CODE,
-                      INVALID_OPTIONS_CODE)
+                      INVALID_OPTIONS_CODE, CORE_MISSING_CODE)
 
 
 def option_error_code(e: ValueError) -> str:
@@ -94,6 +95,8 @@ def option_error_message(code: str) -> str:
         PERCUSSION_SOLO_CODE: PERCUSSION_SOLO,
         SEAT_NO_TUNE_CODE: "the seat's part can't carry the tune in this lineup: choose another lead",
         READS_NOT_OFFERED_CODE: "the seat's part is not offered in that clef",
+        CORE_MISSING_CODE: "this engine cannot write tab: brasscribe-core is not installed with it (build it with "
+                           "`cargo build --release -p brasscribe-cli` in core/)",
     }.get(code, "these job options don't fit together; the engine's log says which one")
 
 
@@ -140,7 +143,12 @@ def job_options(profile: str, params: dict) -> dict:
     from brasscribe_music.instruments import PERCUSSION_SOLO, lead_lineup, lineup_by_name, seat_by_id
 
     if profile == bass_tab.PROFILE:
-        return bass_tab.options(params)
+        opts = bass_tab.options(params)
+        try:  # before any model runs: the last stage needs the core
+            bass_tab.core_cli()
+        except bass_tab.CoreCliMissing as e:
+            raise OptionError(str(e), CORE_MISSING_CODE) from e
+        return opts
     bass_tab.refuse_options(profile, params)
     opts = arrangement_options(params)
     if profile == "solo" and params.get("lineup") == "quartet":

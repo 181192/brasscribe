@@ -52,7 +52,8 @@ the adapter downloads them from where their makers publish them (licences in
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)).
 
 A job option the engine refuses answers 422 with `{"code": …, "detail": …}`; the codes are in
-`profiles.py`, and the apps word them themselves.
+`profiles.py`, and the apps word them themselves. A `bass-tab` job on an engine without `brasscribe-core` is
+refused the same way (`core_missing`), before any model runs.
 
 ## Configuration
 
