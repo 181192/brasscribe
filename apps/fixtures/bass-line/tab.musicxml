@@ -23,7 +23,7 @@
           <mode>minor</mode>
         </key>
         <time>
-          <beats>1</beats>
+          <beats>2</beats>
           <beat-type>4</beat-type>
         </time>
         <clef>
@@ -81,19 +81,15 @@
         </notations>
         <?fretted-note 0?>
       </note>
-    </measure>
-    <measure number="2">
       <note>
         <pitch>
           <step>E</step>
           <octave>1</octave>
         </pitch>
-        <duration>18</duration>
+        <duration>24</duration>
         <voice>1</voice>
-        <type>eighth</type>
-        <dot />
+        <type>quarter</type>
         <stem>down</stem>
-        <beam number="1">begin</beam>
         <notations>
           <technical>
             <string>4</string>
@@ -102,27 +98,8 @@
         </notations>
         <?fretted-note 1?>
       </note>
-      <note>
-        <pitch>
-          <step>G</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>6</duration>
-        <voice>1</voice>
-        <type>16th</type>
-        <stem>down</stem>
-        <beam number="1">end</beam>
-        <beam number="2">backward hook</beam>
-        <notations>
-          <technical>
-            <string>4</string>
-            <fret>3</fret>
-          </technical>
-        </notations>
-        <?fretted-note 2?>
-      </note>
     </measure>
-    <measure number="3">
+    <measure number="2">
       <note>
         <pitch>
           <step>G</step>
@@ -138,7 +115,60 @@
             <fret>3</fret>
           </technical>
         </notations>
+        <?fretted-note 2?>
+      </note>
+      <note>
+        <pitch>
+          <step>A</step>
+          <octave>1</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>3</string>
+            <fret>0</fret>
+          </technical>
+        </notations>
         <?fretted-note 3?>
+      </note>
+    </measure>
+    <measure number="3">
+      <note>
+        <pitch>
+          <step>B</step>
+          <octave>1</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>3</string>
+            <fret>2</fret>
+          </technical>
+        </notations>
+        <?fretted-note 4?>
+      </note>
+      <note>
+        <pitch>
+          <step>B</step>
+          <octave>1</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>3</string>
+            <fret>2</fret>
+          </technical>
+        </notations>
+        <?fretted-note 5?>
       </note>
     </measure>
     <measure number="4">
@@ -157,74 +187,11 @@
             <fret>0</fret>
           </technical>
         </notations>
-        <?fretted-note 4?>
-      </note>
-    </measure>
-    <measure number="5">
-      <note>
-        <pitch>
-          <step>B</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>24</duration>
-        <tie type="start" />
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <tied type="start" />
-          <technical>
-            <string>3</string>
-            <fret>2</fret>
-          </technical>
-        </notations>
-        <?fretted-note 5?>
-      </note>
-    </measure>
-    <measure number="6">
-      <note>
-        <pitch>
-          <step>B</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>24</duration>
-        <tie type="stop" />
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <tied type="stop" />
-          <technical>
-            <string>3</string>
-            <fret>2</fret>
-          </technical>
-        </notations>
-        <?fretted-note 5?>
-      </note>
-    </measure>
-    <measure number="7">
-      <note>
-        <pitch>
-          <step>B</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>24</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <technical>
-            <string>3</string>
-            <fret>2</fret>
-          </technical>
-        </notations>
         <?fretted-note 6?>
       </note>
-    </measure>
-    <measure number="8">
       <note>
         <pitch>
-          <step>A</step>
+          <step>G</step>
           <octave>1</octave>
         </pitch>
         <duration>24</duration>
@@ -233,96 +200,33 @@
         <stem>down</stem>
         <notations>
           <technical>
-            <string>3</string>
-            <fret>0</fret>
+            <string>4</string>
+            <fret>3</fret>
           </technical>
         </notations>
         <?fretted-note 7?>
       </note>
     </measure>
-    <measure number="9">
+    <measure number="5">
       <note>
         <pitch>
-          <step>G</step>
+          <step>E</step>
           <octave>1</octave>
         </pitch>
-        <duration>24</duration>
+        <duration>48</duration>
         <voice>1</voice>
-        <type>quarter</type>
+        <type>half</type>
         <stem>down</stem>
         <notations>
           <technical>
             <string>4</string>
-            <fret>3</fret>
+            <fret>0</fret>
           </technical>
         </notations>
         <?fretted-note 8?>
       </note>
     </measure>
-    <measure number="10">
-      <note>
-        <pitch>
-          <step>E</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>24</duration>
-        <tie type="start" />
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <tied type="start" />
-          <technical>
-            <string>4</string>
-            <fret>0</fret>
-          </technical>
-        </notations>
-        <?fretted-note 9?>
-      </note>
-    </measure>
-    <measure number="11">
-      <note>
-        <pitch>
-          <step>E</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>18</duration>
-        <tie type="stop" />
-        <voice>1</voice>
-        <type>eighth</type>
-        <dot />
-        <stem>down</stem>
-        <beam number="1">begin</beam>
-        <notations>
-          <tied type="stop" />
-          <technical>
-            <string>4</string>
-            <fret>0</fret>
-          </technical>
-        </notations>
-        <?fretted-note 9?>
-      </note>
-      <note>
-        <pitch>
-          <step>G</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>6</duration>
-        <voice>1</voice>
-        <type>16th</type>
-        <stem>down</stem>
-        <beam number="1">end</beam>
-        <beam number="2">backward hook</beam>
-        <notations>
-          <technical>
-            <string>4</string>
-            <fret>3</fret>
-          </technical>
-        </notations>
-        <?fretted-note 10?>
-      </note>
-    </measure>
-    <measure number="12">
+    <measure number="6">
       <note>
         <pitch>
           <step>G</step>
@@ -338,10 +242,8 @@
             <fret>3</fret>
           </technical>
         </notations>
-        <?fretted-note 11?>
+        <?fretted-note 9?>
       </note>
-    </measure>
-    <measure number="13">
       <note>
         <pitch>
           <step>B</step>
@@ -357,10 +259,10 @@
             <fret>2</fret>
           </technical>
         </notations>
-        <?fretted-note 12?>
+        <?fretted-note 10?>
       </note>
     </measure>
-    <measure number="14">
+    <measure number="7">
       <note>
         <pitch>
           <step>E</step>
@@ -376,10 +278,8 @@
             <fret>2</fret>
           </technical>
         </notations>
-        <?fretted-note 13?>
+        <?fretted-note 11?>
       </note>
-    </measure>
-    <measure number="15">
       <note>
         <pitch>
           <step>D</step>
@@ -395,10 +295,10 @@
             <fret>0</fret>
           </technical>
         </notations>
-        <?fretted-note 14?>
+        <?fretted-note 12?>
       </note>
     </measure>
-    <measure number="16">
+    <measure number="8">
       <note>
         <pitch>
           <step>B</step>
@@ -414,10 +314,8 @@
             <fret>2</fret>
           </technical>
         </notations>
-        <?fretted-note 15?>
+        <?fretted-note 13?>
       </note>
-    </measure>
-    <measure number="17">
       <note>
         <pitch>
           <step>A</step>
@@ -433,48 +331,46 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 14?>
+      </note>
+    </measure>
+    <measure number="9">
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>3</string>
+            <fret>3</fret>
+          </technical>
+        </notations>
+        <?fretted-note 15?>
+      </note>
+      <note>
+        <pitch>
+          <step>C</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>3</string>
+            <fret>3</fret>
+          </technical>
+        </notations>
         <?fretted-note 16?>
       </note>
     </measure>
-    <measure number="18">
-      <note>
-        <pitch>
-          <step>C</step>
-          <octave>2</octave>
-        </pitch>
-        <duration>24</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <technical>
-            <string>3</string>
-            <fret>3</fret>
-          </technical>
-        </notations>
-        <?fretted-note 17?>
-      </note>
-    </measure>
-    <measure number="19">
-      <note>
-        <pitch>
-          <step>C</step>
-          <octave>2</octave>
-        </pitch>
-        <duration>24</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <technical>
-            <string>3</string>
-            <fret>3</fret>
-          </technical>
-        </notations>
-        <?fretted-note 18?>
-      </note>
-    </measure>
-    <measure number="20">
+    <measure number="10">
       <note>
         <pitch>
           <step>E</step>
@@ -490,10 +386,8 @@
             <fret>2</fret>
           </technical>
         </notations>
-        <?fretted-note 19?>
+        <?fretted-note 17?>
       </note>
-    </measure>
-    <measure number="21">
       <note>
         <pitch>
           <step>G</step>
@@ -509,48 +403,46 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 18?>
+      </note>
+    </measure>
+    <measure number="11">
+      <note>
+        <pitch>
+          <step>D</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>2</string>
+            <fret>0</fret>
+          </technical>
+        </notations>
+        <?fretted-note 19?>
+      </note>
+      <note>
+        <pitch>
+          <step>D</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>2</string>
+            <fret>0</fret>
+          </technical>
+        </notations>
         <?fretted-note 20?>
       </note>
     </measure>
-    <measure number="22">
-      <note>
-        <pitch>
-          <step>D</step>
-          <octave>2</octave>
-        </pitch>
-        <duration>24</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <technical>
-            <string>2</string>
-            <fret>0</fret>
-          </technical>
-        </notations>
-        <?fretted-note 21?>
-      </note>
-    </measure>
-    <measure number="23">
-      <note>
-        <pitch>
-          <step>D</step>
-          <octave>2</octave>
-        </pitch>
-        <duration>24</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <technical>
-            <string>2</string>
-            <fret>0</fret>
-          </technical>
-        </notations>
-        <?fretted-note 22?>
-      </note>
-    </measure>
-    <measure number="24">
+    <measure number="12">
       <note>
         <pitch>
           <step>B</step>
@@ -566,10 +458,8 @@
             <fret>2</fret>
           </technical>
         </notations>
-        <?fretted-note 23?>
+        <?fretted-note 21?>
       </note>
-    </measure>
-    <measure number="25">
       <note>
         <pitch>
           <step>A</step>
@@ -585,10 +475,10 @@
             <fret>0</fret>
           </technical>
         </notations>
-        <?fretted-note 24?>
+        <?fretted-note 22?>
       </note>
     </measure>
-    <measure number="26">
+    <measure number="13">
       <note>
         <pitch>
           <step>G</step>
@@ -605,7 +495,7 @@
             <fret>3</fret>
           </technical>
         </notations>
-        <?fretted-note 25?>
+        <?fretted-note 23?>
       </note>
       <note>
         <pitch>
@@ -623,10 +513,44 @@
             <fret>0</fret>
           </technical>
         </notations>
-        <?fretted-note 26?>
+        <?fretted-note 24?>
+      </note>
+      <note>
+        <pitch>
+          <step>B</step>
+          <octave>1</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>3</string>
+            <fret>2</fret>
+          </technical>
+        </notations>
+        <?fretted-note 25?>
       </note>
     </measure>
-    <measure number="27">
+    <measure number="14">
+      <note>
+        <pitch>
+          <step>D</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>24</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem>down</stem>
+        <notations>
+          <technical>
+            <string>2</string>
+            <fret>0</fret>
+          </technical>
+        </notations>
+        <?fretted-note 26?>
+      </note>
       <note>
         <pitch>
           <step>B</step>
@@ -645,84 +569,23 @@
         <?fretted-note 27?>
       </note>
     </measure>
-    <measure number="28">
+    <measure number="15">
       <note>
         <pitch>
-          <step>D</step>
-          <octave>2</octave>
+          <step>E</step>
+          <octave>1</octave>
         </pitch>
-        <duration>24</duration>
+        <duration>48</duration>
         <voice>1</voice>
-        <type>quarter</type>
+        <type>half</type>
         <stem>down</stem>
         <notations>
           <technical>
-            <string>2</string>
+            <string>4</string>
             <fret>0</fret>
           </technical>
         </notations>
         <?fretted-note 28?>
-      </note>
-    </measure>
-    <measure number="29">
-      <note>
-        <pitch>
-          <step>B</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>24</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <technical>
-            <string>3</string>
-            <fret>2</fret>
-          </technical>
-        </notations>
-        <?fretted-note 29?>
-      </note>
-    </measure>
-    <measure number="30">
-      <note>
-        <pitch>
-          <step>E</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>24</duration>
-        <tie type="start" />
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <tied type="start" />
-          <technical>
-            <string>4</string>
-            <fret>0</fret>
-          </technical>
-        </notations>
-        <?fretted-note 30?>
-      </note>
-    </measure>
-    <measure number="31">
-      <note>
-        <pitch>
-          <step>E</step>
-          <octave>1</octave>
-        </pitch>
-        <duration>24</duration>
-        <tie type="stop" />
-        <voice>1</voice>
-        <type>quarter</type>
-        <stem>down</stem>
-        <notations>
-          <tied type="stop" />
-          <technical>
-            <string>4</string>
-            <fret>0</fret>
-          </technical>
-        </notations>
-        <?fretted-note 30?>
       </note>
       <barline location="right">
         <bar-style>light-heavy</bar-style>

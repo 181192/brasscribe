@@ -18,6 +18,8 @@ Writes apps/fixtures/bass-line/:
     tab.json          GET /v1/jobs/{id}/tab
     tab.musicxml      GET /v1/jobs/{id}/musicxml
     composition.json  GET /v1/jobs/{id}/composition
+The line is written in 4/4; the beat tracker hears this synthesized take in 2/4, and the fixture keeps
+what the engine answered.
 MuseScore is left out of the run, so there is no tab.pdf or tab.mid, as on a computer without it.
 What differs from run to run is made fixed in job.json: the job's id, its times and each stage's seconds.
 Only tests read this folder; no app build bundles it.
@@ -66,7 +68,10 @@ def take() -> bytes:
     total = sum(beats for _, beats in LINE)
     audio = np.zeros(int((total + 2) * beat * RATE))
     at = beat  # one beat of silence first
+    played = 0.0
     for pitch, beats in LINE:
+        level = 0.4 if played % 4 == 0 else 0.2  # the first beat of each bar is played harder
+        played += beats
         if pitch is not None:
             t = np.arange(int(0.9 * beats * beat * RATE)) / RATE
             f = 440 * 2 ** ((pitch - 69) / 12)
@@ -74,7 +79,7 @@ def take() -> bytes:
             attack = int(0.005 * RATE)
             tone[:attack] *= np.linspace(0, 1, attack)
             start = int(at * RATE)
-            audio[start:start + len(tone)] += 0.25 * tone
+            audio[start:start + len(tone)] += level * tone
         at += beats * beat
     pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2")
     path = Path(tempfile.mkstemp(suffix=".wav")[1])

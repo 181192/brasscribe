@@ -53,7 +53,7 @@ class BassTabTest {
         assertNull("the tab was made for the tuning that fits best", tab.suggestedTuning)
         assertEquals(FrettedInstrument.BASS_4.tunings.map { FrettedInstrument.BASS_4.preset(it) }.toSet(), tab.tuningSuggestions.map { it.preset }.toSet())
         assertEquals(false, tab.referencePitch!!.retuned)
-        assertTrue(tab.beatTimes.size > 30 && tab.beatTimes.zipWithNext().all { (a, b) -> b > a })
+        assertTrue(tab.beatTimes.size > 25 && tab.beatTimes.zipWithNext().all { (a, b) -> b > a })
 
         // Every note is where its string and fret say: the open string, the capo and the fret add up to the pitch.
         assertTrue(tab.notes.size > 25)
