@@ -2934,6 +2934,12 @@
             "title": "Notes",
             "type": "array"
           },
+          "octave_notes_moved": {
+            "default": 0,
+            "description": "single notes written an octave lower than Basic Pitch heard them (with octave auto): each stood above its neighbours, and the second transcriber heard it an octave lower",
+            "title": "Octave Notes Moved",
+            "type": "integer"
+          },
           "octave_shift": {
             "description": "semitones the whole line was moved after transcription. With octave auto: 0, or -12 (or -24) when it was heard an octave above where a bass plays, the same for every instrument, tuning and capo. With a chosen octave: that choice, 0, -12 or 12",
             "title": "Octave Shift",
@@ -3111,6 +3117,7 @@
           },
           "confidence": {
             "default": 1.0,
+            "description": "0 to 1. Below 0.4 the note is one to check (the tab marks it \"?\"): the second transcriber did not hear it at this pitch, or it was heard faintly, or it was written an octave from where it was heard",
             "title": "Confidence",
             "type": "number"
           },

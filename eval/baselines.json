@@ -913,6 +913,87 @@
           "higher_is_better": false
         }
       }
+    },
+    "bass-tab": {
+      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
+      "metrics": {
+        "song.onset_f1": 0.867,
+        "song.onset_p": 0.901,
+        "song.onset_r": 0.84,
+        "song.octave_err_rate": {
+          "value": 0.011,
+          "higher_is_better": false
+        },
+        "song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "song.hand_travel": {
+          "value": 0.69,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "song.high_fret_share": {
+          "value": 0.018,
+          "higher_is_better": false
+        },
+        "song.triplet_lengths": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "song.doubt_precision": 0.916,
+        "song.doubt_recall": 0.264,
+        "song.tempo_ok": 0.7,
+        "song.tempo_ok_level": 0.7,
+        "song.meter_ok": 0.769,
+        "song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "song.tracks": {
+          "value": 16,
+          "tolerance": 0
+        },
+        "instrument.onset_f1": 0.889,
+        "instrument.onset_p": 0.927,
+        "instrument.onset_r": 0.86,
+        "instrument.octave_err_rate": {
+          "value": 0.002,
+          "higher_is_better": false
+        },
+        "instrument.out_of_range": {
+          "value": 0.001,
+          "higher_is_better": false
+        },
+        "instrument.hand_travel": {
+          "value": 0.608,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "instrument.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "instrument.triplet_lengths": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "instrument.doubt_precision": 0.937,
+        "instrument.doubt_recall": 0.256,
+        "instrument.tempo_ok": 0.6,
+        "instrument.tempo_ok_level": 0.7,
+        "instrument.meter_ok": 0.692,
+        "instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "instrument.tracks": {
+          "value": 16,
+          "tolerance": 0
+        }
+      }
     }
   }
 }

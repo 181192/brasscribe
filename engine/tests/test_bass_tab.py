@@ -168,13 +168,17 @@ def test_the_cli_passes_only_the_fretted_options_that_are_given(monkeypatch, tmp
 
 def test_a_song_is_separated_and_its_bass_stem_transcribed_as_in_pop_rock():
     tab = profiles.build("bass-tab", Path("song.wav"))
-    assert [s.name for s in tab.stages] == ["beats", "stems", "transcribe.bass.basic-pitch", "notes", "arrange", "export"]
+    assert [s.name for s in tab.stages] == ["beats", "stems", "transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export"]
     pop = profiles.build("pop-rock", Path("song.wav"))
     for name in ("beats", "stems", "transcribe.bass.basic-pitch"):  # the same stages, so the same cache entries
         a, b = tab.stage(name), pop.stage(name)
         assert (a.kind, a.inputs, a.run, a.params, a.adapter, a.code, a.outputs, a.reuse_subdir, a.derive) == \
             (b.kind, b.inputs, b.run, b.params, b.adapter, b.code, b.outputs, b.reuse_subdir, b.derive), name
     assert tab.stage("transcribe.bass.basic-pitch").derive is None  # a stem's tuning estimate is not trusted
+    second = tab.stage("transcribe.bass.swift-f0")  # this profile's own: a second opinion on the same stem
+    assert (second.adapter, second.inputs["audio"], second.derive) == ("swift-f0", tab.stage("transcribe.bass.basic-pitch").inputs["audio"], None)
+    assert tab.stage("notes").inputs["second"].stage == "transcribe.bass.swift-f0"
+    assert "transcribe.bass.swift-f0" not in [s.name for s in pop.stages]
     assert tab.stage("beats").params == {}  # the adapter's own beat model, not the device's small one
     assert profiles.build("bass-tab", Path("bass.wav"), params={"recording": "instrument"}).stage("beats").params == {}
     assert set(tab.outputs) == {"tab.json", "composition.json", "tab.musicxml", "tab.pdf", "tab.mid"}
@@ -182,10 +186,12 @@ def test_a_song_is_separated_and_its_bass_stem_transcribed_as_in_pop_rock():
 
 def test_a_recording_of_the_bass_alone_is_not_separated_and_is_retuned_like_any_whole_recording():
     p = profiles.build("bass-tab", Path("bass.wav"), params={"recording": "instrument"})
-    assert [s.name for s in p.stages] == ["beats", "transcribe.bass.basic-pitch", "notes", "arrange", "export"]
+    assert [s.name for s in p.stages] == ["beats", "transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export"]
     t = p.stage("transcribe.bass.basic-pitch")
     assert t.inputs["audio"].stage == "source" and t.derive is tuning.derive and t.run is tuning.transcribe
     assert p.stage("notes").params == {"whole_recording": True}
+    second = p.stage("transcribe.bass.swift-f0")  # SwiftF0 hears the recording as it is: only Basic Pitch is retuned
+    assert second.inputs["audio"].stage == "source" and second.derive is None and second.run is S.transcribe
 
 
 def test_the_instrument_is_a_parameter_of_the_fingering_stage_only():
@@ -279,6 +285,24 @@ def test_detached_notes_get_a_readable_length_and_held_ones_reach_the_next():
     assert [(n["start"], n["dur"]) for n in doc["notes"]] == [(0, 48), (48, 48), (96, 12), (144, 48)]
 
 
+@pytest.mark.parametrize("start,dur,next_start,written", [
+    (0, 8, 24, 6), (0, 8, 12, 6), (0, 16, 24, 18), (0, 16, 12, 12), (24, 8, None, 6),  # a triplet's length on the 16th grid
+    (0, 12, 24, 12), (0, 24, 24, 24), (6, 18, 24, 18),  # straight already
+    (0, 8, 8, 8), (8, 8, 16, 8), (16, 8, 24, 8), (0, 16, 16, 16),  # a real triplet: starts on the triplet grid around it
+    (0, 4, 6, 6),  # shorter than a 16th: the shortest straight value
+])
+def test_a_triplets_length_on_the_straight_grid_becomes_the_nearest_straight_one(start, dur, next_start, written):
+    assert bass_tab.straight_length(start, dur, next_start) == written
+
+
+def test_a_detached_note_on_a_straight_line_is_not_written_as_a_triplet():
+    # 0.2 s at 120 BPM is 0.4 of a beat: the shared durations write a triplet eighth (8 ticks); the tab a 16th.
+    doc = bass_tab.transcribed_line(_played([E1, E1], step=1.0, length=0.9) + _played([A1], start=2.0, length=0.2)
+                                    + _played([E1], start=3.0, length=0.9), _beats())
+    assert [(n["start"], n["dur"]) for n in doc["notes"]] == [(0, 48), (48, 48), (96, 6), (144, 48)]
+    assert all(n["dur"] % 6 == 0 for n in doc["notes"])
+
+
 @pytest.mark.parametrize("notes,beats,message", [
     ([], _beats(), "no bass notes"),
     (_played([E1]), _beats(1), "too short"),
@@ -303,6 +327,115 @@ def test_reference_pitch_of_a_whole_recording_and_of_a_song(tmp_path):
     assert bass_tab.reference_pitch(tmp_path / "noise.wav", whole_recording=True) is None
     (tmp_path / "broken.wav").write_bytes(b"RIFF-fake-audio")
     assert bass_tab.reference_pitch(tmp_path / "broken.wav", whole_recording=True) is None
+
+
+# ---------------------------------------------------------------- overtones, single octaves, confidence
+
+def _note(pitch: int, onset: float, length: float = 0.45, amplitude: float = 0.8) -> dict:
+    return {"pitch": pitch, "onset": onset, "offset": onset + length, "amplitude": amplitude}
+
+
+def test_the_transcription_is_read_with_how_strongly_each_note_was_heard(tmp_path):
+    import pretty_midi
+
+    pm = pretty_midi.PrettyMIDI()
+    inst = pretty_midi.Instrument(program=33)
+    inst.notes = [pretty_midi.Note(velocity=127, pitch=E1, start=0.0, end=0.5), pretty_midi.Note(velocity=40, pitch=A1, start=0.5, end=1.0)]
+    pm.instruments.append(inst)
+    pm.write(str(tmp_path / "bass-bp.mid"))
+    notes = bass_tab.load_transcription(tmp_path / "bass-bp.mid")
+    assert [(n["pitch"], round(n["onset"], 2), round(n["offset"], 2)) for n in notes] == [(E1, 0.0, 0.5), (A1, 0.5, 1.0)]
+    assert notes[0]["amplitude"] == 1.0 and notes[1]["amplitude"] == pytest.approx(40 / 127)
+
+
+def test_an_overtone_of_a_sounding_note_is_left_out_and_a_played_octave_is_kept():
+    string = _note(E1, 0.0, 1.0)
+    octave, twelfth = _note(E1 + 12, 0.1, 0.4), _note(E1 + 19, 0.2, 0.3)  # partials heard as notes while the string sounds
+    played = _note(E1 + 12, 1.0, 0.5)  # the octave played after it: the low note has ended
+    late = _note(E1 + 12, 0.8, 0.9)  # starts under the low note, but mostly sounds after it
+    fifth = _note(E1 + 7, 0.3, 0.3)  # not a partial: another note, whatever it is
+    kept = bass_tab.without_overtones([string, octave, twelfth, played, late, fifth])
+    assert kept == [string, fifth, late, played]
+    assert bass_tab.without_overtones([]) == [] and bass_tab.without_overtones([octave]) == [octave]
+    # An overtone that started before its string was heard is not one.
+    early = _note(E1 + 12, 0.0, 0.5)
+    assert bass_tab.without_overtones([early, _note(E1, 0.1, 1.0)])[0] == early
+
+    doc = bass_tab.transcribed_line([_note(p, 0.5 * i) for i, p in enumerate(LOW_LINE)] + [_note(LOW_LINE[2] + 12, 1.1, 0.3)], _beats())
+    assert [n["pitch"] for n in doc["notes"]] == LOW_LINE and doc["overtones_dropped"] == 1
+
+
+def test_a_single_note_heard_an_octave_high_is_moved_when_both_signs_agree():
+    low = [33, 33, 35, 33, 36, 33, 35, 33, 31, 33]
+    heard = [_note(p, 0.5 * i) for i, p in enumerate(low)]
+    heard[4] = _note(48, 2.0)  # the C heard an octave high
+    second = [_note(p, 0.5 * i) for i, p in enumerate(low)]  # the second transcriber has it where it was played
+    assert bass_tab.octave_outliers(heard, second) == [4]
+    assert bass_tab.octave_outliers(heard, None) == [] and bass_tab.octave_outliers(heard, []) == []  # nothing to agree with
+
+    # The second transcriber heard it high too: a note played up there.
+    assert bass_tab.octave_outliers(heard, second[:4] + [_note(48, 2.0)] + second[5:]) == []
+    # The second transcriber is an octave low on a note that sits in the line: its error, not this note's.
+    assert bass_tab.octave_outliers([_note(p, 0.5 * i) for i, p in enumerate(low)], second[:4] + [_note(24, 2.0)] + second[5:]) == []
+    # A passage up the neck, heard high by both: left where it is, first note to last.
+    passage = [33, 33, 35, 33, 45, 47, 48, 50, 52, 50, 48, 47, 33, 33]
+    both = [_note(p, 0.5 * i) for i, p in enumerate(passage)]
+    assert bass_tab.octave_outliers(both, both) == []
+    # An octave pattern, root and octave in turn: the high notes are as far above their neighbours as an error would be.
+    pattern = [_note(p, 0.5 * i) for i, p in enumerate([28, 28, 28, 40, 28, 28, 28, 40, 28, 28])]
+    assert bass_tab.octave_outliers(pattern, pattern) == []
+    # A note that would fall below a bass an octave lower is not moved.
+    bottom = [_note(p, 0.5 * i) for i, p in enumerate([28, 28, 28, 39, 28, 28])]
+    assert bass_tab.octave_outliers(bottom, [_note(27, 1.5)]) == []
+
+    doc = bass_tab.transcribed_line(heard, _beats(), second=second)
+    assert [n["pitch"] for n in doc["notes"]] == low and doc["octave_notes_moved"] == 1 and doc["octave_shift"] == 0
+    chosen = bass_tab.transcribed_line(heard, _beats(), "0", second)  # the player chose the octave: no note is moved
+    assert chosen["notes"][4]["pitch"] == 48 and chosen["octave_notes_moved"] == 0
+    tab = bass_tab.fingered({**doc, "reference_pitch": None}, bass_tab.options({}), _fake_solver([]))
+    assert tab["octave_notes_moved"] == 1
+
+
+def test_a_high_note_neither_transcriber_places_in_the_line_is_left_out():
+    low = [33, 33, 35, 33, 36, 33, 35, 33, 31, 33]
+    second = [_note(p, 0.5 * i) for i, p in enumerate(low)]
+    heard = [_note(p, 0.5 * i) for i, p in enumerate(low)]
+    heard.insert(5, _note(50, 2.2, 0.2))  # a guitar note left in the stem: SwiftF0 has the bass note there, not this
+    heard.insert(8, _note(46, 3.2, 0.2))  # another, where SwiftF0 has nothing at this pitch or an octave below
+    assert bass_tab.stray_notes(heard, second) == [5, 8]
+    assert bass_tab.stray_notes(heard, None) == []
+    assert bass_tab.stray_notes(heard, second + [_note(50, 2.2, 0.2)]) == [8]  # heard by both: a note
+    assert bass_tab.stray_notes(heard, second + [_note(38, 2.2, 0.2)]) == [8]  # heard an octave lower: one to move, not to drop
+    in_line = [_note(p, 0.5 * i) for i, p in enumerate(low)]
+    assert bass_tab.stray_notes(in_line, []) == [] and bass_tab.stray_notes(in_line, [_note(60, 0.0)]) == []  # doubt, not removal
+
+    doc = bass_tab.transcribed_line(heard, _beats(), second=second)
+    assert [n["pitch"] for n in doc["notes"]] == low and doc["strays_dropped"] == 2
+    # When the second transcriber heard nothing at all, the line stays as the first heard it.
+    alone = bass_tab.transcribed_line([_note(40, 0.0), _note(52, 0.5), _note(40, 1.0), _note(40, 1.5)], _beats(), second=[_note(90, 9.0)])
+    assert [n["pitch"] for n in alone["notes"]] == [40, 40, 40] and alone["strays_dropped"] == 1
+
+
+def test_confidence_is_the_second_transcribers_agreement_and_the_amplitude():
+    second = [_note(33, 0.0), _note(45, 0.5), _note(35, 1.0)]
+    assert bass_tab.note_confidence(_note(33, 0.0, amplitude=1.0), second) == 1.0
+    assert bass_tab.note_confidence(_note(33, 0.0, amplitude=0.2), second) == 0.6  # confirmed: sure, however faint
+    assert bass_tab.note_confidence(_note(33, 0.5, amplitude=1.0), second) == bass_tab.UNCONFIRMED < bass_tab.DOUBT  # another pitch
+    assert bass_tab.note_confidence(_note(33, 3.0, amplitude=1.0), second) == bass_tab.UNCONFIRMED  # nothing there
+    # Below what SwiftF0 hears, and without a second transcriber: the amplitude alone.
+    assert bass_tab.note_confidence(_note(E1, 3.0, amplitude=0.9), second) == 0.95
+    assert bass_tab.note_confidence(_note(E1, 3.0, amplitude=0.2), second) == 0.2 < bass_tab.DOUBT
+    assert bass_tab.note_confidence(_note(33, 3.0, amplitude=0.39), None) < bass_tab.DOUBT <= bass_tab.note_confidence(_note(33, 3.0, amplitude=0.4), None)
+    assert bass_tab.note_confidence({"pitch": 33, "onset": 0.0, "offset": 0.4}, None) == 1.0  # a note without an amplitude
+
+    line = [_note(p, 0.5 * i, amplitude=0.8) for i, p in enumerate(LOW_LINE)]
+    heard_by_both = [n for i, n in enumerate(line) if i != 5]
+    doc = bass_tab.transcribed_line(line, _beats(), second=heard_by_both)
+    assert [n["confidence"] < bass_tab.DOUBT for n in doc["notes"]] == [False] * 5 + [True] + [False] * 6
+    tab = bass_tab.fingered({**doc, "reference_pitch": None}, bass_tab.options({}), _fake_solver([]))
+    seen: list[dict] = []
+    bass_tab.export_tab(tab, "T", "tab", Path(tempfile.mkdtemp()), lambda r: seen.append(r) or {"musicxml": "<x/>", "adjusted_notes": 0})
+    assert [n["confidence"] for n in seen[0]["notes"]][4:7] == [0.9, bass_tab.UNCONFIRMED, 0.9]  # what the "?" is drawn from
 
 
 # ---------------------------------------------------------------- the octave check
@@ -506,6 +639,7 @@ def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings,
 
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
+    monkeypatch.setattr(S, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
     monkeypatch.setattr(musescore, "binary", lambda: None)
     without = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert without["status"] == "succeeded" and "tab.pdf" not in without["outputs"] and "tab.musicxml" in without["outputs"]
@@ -517,7 +651,8 @@ def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings,
     monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
     installed = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert {s["stage"]: s["status"] for s in installed["stages"]} == {
-        "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "cached", "arrange": "cached", "export": "ran"}
+        "beats": "cached", "transcribe.bass.basic-pitch": "cached",
+            "transcribe.bass.swift-f0": "cached", "notes": "cached", "arrange": "cached", "export": "ran"}
     assert {"tab.pdf", "tab.mid"} <= set(installed["outputs"])
     again = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert again["stages"][-1]["status"] == "cached" and "tab.pdf" in again["outputs"]
@@ -597,6 +732,7 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
     monkeypatch.setattr(musescore, "binary", lambda: None)  # the rendering has a test of its own
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], heard))
+    monkeypatch.setattr(S, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], heard))
     with TestClient(create_app(settings)) as c:
         audio_id = c.post("/v1/audio", files={"file": ("my_bass.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
         r = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument",
@@ -604,7 +740,7 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
         assert r.status_code == 202 and r.json()["title"] == "My Bass — bass tab (draft)"
         job = _wait(c, r.json()["id"])
         assert job["status"] == "succeeded", job["error"]
-        assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.bass.basic-pitch", "notes", "arrange", "export"]
+        assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export"]
         assert job["outputs"] == ["composition.json", "tab.json", "tab.musicxml"]
 
         tab = c.get(f"/v1/jobs/{job['id']}/tab")
@@ -637,7 +773,8 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
                                         "instrument": "bass-5", "octave": "0"})
         kept = _wait(c, kept.json()["id"])
         assert {s["name"]: s["status"] for s in kept["stages"]} == {
-            "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "ran", "arrange": "ran", "export": "ran"}
+            "beats": "cached", "transcribe.bass.basic-pitch": "cached",
+            "transcribe.bass.swift-f0": "cached", "notes": "ran", "arrange": "ran", "export": "ran"}
         chosen = m.Tab.model_validate(c.get(f"/v1/jobs/{kept['id']}/tab").json())
         assert (chosen.octave_shift, chosen.octave_source, tab.octave_source) == (0, "chosen", "auto")
         assert [n.pitch for n in chosen.notes] == [p + 12 for p in TYPICAL_LINE]
@@ -648,7 +785,8 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
                                          "instrument": "bass-4", "tuning": "drop-d"})
         again = _wait(c, again.json()["id"])
         assert {s["name"]: s["status"] for s in again["stages"]} == {
-            "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "cached", "arrange": "ran", "export": "ran"}
+            "beats": "cached", "transcribe.bass.basic-pitch": "cached",
+            "transcribe.bass.swift-f0": "cached", "notes": "cached", "arrange": "ran", "export": "ran"}
 
         # Notation above the tab: the fingering stage writes the page again, and the tab says which.
         paged = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument",
@@ -673,10 +811,11 @@ def test_a_job_without_the_core_fails_at_the_fingering_and_says_how_to_get_it(se
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(settings.data_dir / "no-such-core"))
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(LOW_LINE)))
+    monkeypatch.setattr(S, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(LOW_LINE)))
     manifest = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert manifest["status"] == "failed" and manifest["error"].startswith("arrange: ")
     assert "cargo build --release -p brasscribe-cli" in manifest["error"]
-    assert [s["status"] for s in manifest["stages"]] == ["ran", "ran", "ran", "failed"]
+    assert [s["status"] for s in manifest["stages"]] == ["ran", "ran", "ran", "ran", "failed"]
 
 
 def test_a_job_is_refused_at_submit_when_the_core_is_missing_and_the_profile_stays_listed(settings, audio, monkeypatch):
@@ -792,6 +931,7 @@ def test_a_job_renders_the_tab_as_pdf_and_midi_and_serves_them(settings, audio, 
 
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
+    monkeypatch.setattr(S, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
     with TestClient(create_app(settings)) as c:
         audio_id = c.post("/v1/audio", files={"file": ("old_hundredth.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
         job = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument"}).json()

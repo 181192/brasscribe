@@ -5,9 +5,11 @@
                                  separated once); left out when the recording is the bass alone
     transcribe.bass.basic-pitch  Basic Pitch on the bass stem, or on the recording when it is the bass alone
                                  (then retuned to A = 440 first, as any whole recording: tuning.py)
-    notes                        the bottom line on the beat grid with written durations (the shared
-                                 quantization and durations), the octave check, meter, key, tempo, and the
-                                 recording's offset from A = 440
+    transcribe.bass.swift-f0     SwiftF0 on the same audio: a second opinion, for each note's confidence
+    notes                        the bottom line, without the overtones heard as notes, on the beat grid with
+                                 written durations (the shared quantization and durations); the octave
+                                 check, for the line and for single notes; each note's confidence; meter,
+                                 key, tempo, and the recording's offset from A = 440
     arrange                      a string and a fret for every note, and the tab as MusicXML, both from
                                  the Rust crate target-fretted (core/target-fretted)
     export                       PDF and MIDI of that MusicXML through MuseScore, as the band profiles'
@@ -80,6 +82,19 @@ BASS_LOWEST = 28  # E1, the low string of a four-string bass
 OCTAVE_MEDIAN = 46
 OCTAVE_FIT = 0.9
 OCTAVE_MAX_SHIFTS = 2
+# Single notes heard an octave high, after the whole line is placed (octave_outliers).
+OUTLIER_WINDOW = 4  # neighbours on each side
+OUTLIER_ABOVE = 6  # semitones over their median
+# Overtones heard as notes (without_overtones): the 2nd to 6th partial above a note that started no later
+# than OVERTONE_LATE seconds after it and sounds through OVERTONE_COVER of its length.
+OVERTONES = (12, 19, 24, 28, 31)
+OVERTONE_LATE = 0.02
+OVERTONE_COVER = 0.5
+# Confidence (note_confidence). DOUBT is target-fretted's default threshold for the "?" mark.
+DOUBT = 0.4
+UNCONFIRMED = 0.3  # the second transcriber did not hear the note at that pitch
+AMPLITUDE_DOUBT = 0.4  # Basic Pitch's amplitude below which a note is in doubt when nothing else can say
+SECOND_LOWEST = 30  # F#1 (46 Hz): the lowest pitch SwiftF0 hears
 
 CORE_CLI_ENV = "BRASSCRIBE_CORE_CLI"
 # How long one fingering may take before it is stopped. A song takes a fraction of a second; the limit
@@ -221,7 +236,96 @@ def core_call(command: str, request: dict, cancel: threading.Event | None = None
 
 # ---------------------------------------------------------------- notes
 
-def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto") -> dict:
+def load_transcription(path: Path) -> list[dict]:
+    """A transcriber's notes: pitch, onset and offset in seconds, and `amplitude` (0 to 1), the MIDI
+    velocity, which Basic Pitch writes from how strongly it heard the note."""
+    import pretty_midi
+
+    pm = pretty_midi.PrettyMIDI(str(path))
+    return [{"pitch": int(n.pitch), "onset": float(n.start), "offset": float(n.end), "amplitude": n.velocity / 127}
+            for inst in pm.instruments if not inst.is_drum for n in inst.notes]
+
+
+def without_overtones(raw: list[dict]) -> list[dict]:
+    """`raw` without the notes that are an overtone of a lower note sounding through them.
+
+    A transcriber hears a plucked string's partials as notes of their own, starting a little after the
+    string does. In a bass line they would cut the real note short and send the hand up the neck."""
+    by_onset = sorted(raw, key=lambda n: n["onset"])
+    kept = []
+    for n in by_onset:
+        half = n["onset"] + OVERTONE_COVER * (n["offset"] - n["onset"])
+        if not any(n["pitch"] - low["pitch"] in OVERTONES and low["onset"] <= n["onset"] + OVERTONE_LATE and low["offset"] >= half
+                   for low in by_onset if low is not n):
+            kept.append(n)
+    return kept
+
+
+def _heard(second: list[dict], note: dict, pitch: int) -> bool:
+    """The second transcriber has a note of `pitch` while `note` sounds."""
+    return any(s["pitch"] == pitch and s["onset"] < note["offset"] and s["offset"] > note["onset"] for s in second)
+
+
+def octave_outliers(line: list[dict], second: list[dict] | None) -> list[int]:
+    """Indices of the notes of `line` that were heard an octave high, one at a time.
+
+    Two things must agree: the note stands more than OUTLIER_ABOVE over the median of its OUTLIER_WINDOW
+    neighbours on each side, and the second transcriber heard the octave below while it sounds and not
+    the note's own pitch. Neither is enough alone: a bass line jumps an octave on purpose, and the second
+    transcriber has octave errors of its own. Without a second transcriber no note is moved, and a
+    passage both transcribers heard high stays where it is."""
+    if not second:
+        return []
+    return [j for j, n in enumerate(line) if _stands_above(line, j) and n["pitch"] - 12 >= BASS_LOWEST
+            and _heard(second, n, n["pitch"] - 12) and not _heard(second, n, n["pitch"])]
+
+
+def stray_notes(line: list[dict], second: list[dict] | None) -> list[int]:
+    """Indices of the notes of `line` that are not the bass: they stand above their neighbours as an octave
+    outlier does, and the second transcriber heard neither them nor their lower octave. On a separated
+    stem these are what is left of the other instruments; in the benchmark one in a hundred is a real note."""
+    if not second:
+        return []
+    return [j for j, n in enumerate(line) if _stands_above(line, j)
+            and not _heard(second, n, n["pitch"]) and not _heard(second, n, n["pitch"] - 12)]
+
+
+def _stands_above(line: list[dict], j: int) -> bool:
+    """Note `j` is more than OUTLIER_ABOVE over the median of its OUTLIER_WINDOW neighbours on each side."""
+    lo, hi = max(0, j - OUTLIER_WINDOW), min(len(line), j + OUTLIER_WINDOW + 1)
+    around = [line[i]["pitch"] for i in range(lo, hi) if i != j]
+    return len(around) >= 2 and line[j]["pitch"] - float(np.median(around)) > OUTLIER_ABOVE
+
+
+STRAIGHT_LENGTHS = (6, 12, 18, 24, 36, 48, 72, 96)  # ticks: a 16th to a whole note, with the dotted values
+
+
+def straight_length(start: int, dur: int, next_start: int | None) -> int:
+    """`dur`, or the nearest straight value when a note on the 16th grid, followed by one on it, was given a
+    triplet's length. The shared durations choose among triplet and straight values alike; under a tab a
+    lone triplet value draws a bracket over a line that has no triplets."""
+    if dur % 6 == 0 or start % 6 != 0 or (next_start is not None and next_start % 6 != 0):
+        return dur
+    room = None if next_start is None else next_start - start
+    fits = [c for c in STRAIGHT_LENGTHS if room is None or c <= room] or [6]
+    return min(fits, key=lambda c: (abs(np.log(c / dur)), c))
+
+
+def note_confidence(note: dict, second: list[dict] | None) -> float:
+    """How sure the note is, 0 to 1; below DOUBT it is one to check (the tab marks it "?").
+
+    With a second transcriber's notes (`second`: SwiftF0 on the same audio), a note it also heard at that
+    pitch is sure, the more so the stronger Basic Pitch heard it, and a note it did not hear there is in
+    doubt. SwiftF0 hears nothing below SECOND_LOWEST, so the lowest notes of a bass, and every note when
+    there is no second transcriber, are judged on Basic Pitch's amplitude alone."""
+    amplitude = min(1.0, max(0.0, note.get("amplitude", 1.0)))
+    sure = round(0.5 + 0.5 * amplitude, 3)
+    if second is None or note["pitch"] < SECOND_LOWEST:
+        return sure if amplitude >= AMPLITUDE_DOUBT else round(amplitude * DOUBT / AMPLITUDE_DOUBT, 3)
+    return sure if _heard(second, note, note["pitch"]) else UNCONFIRMED
+
+
+def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", second: list[dict] | None = None) -> dict:
     """The bass line of transcribed notes ({pitch, onset, offset} in seconds) on the beat grid.
 
     As the bass voice of the song arrangers: the bottom line, quantized as one voice on the level
@@ -241,9 +345,15 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto") -
     downs = np.where(pos == 1)[0]
     if len(downs) < 2:
         raise ValueError("fewer than two downbeats tracked: no bars to write")
-    bottom = line(raw, 0, 127, top=False)
+    heard = without_overtones(raw)
+    bottom = line(heard, 0, 127, top=False)
     if not bottom:
         raise ValueError("no bass notes heard in the recording")
+    strays = set(stray_notes(bottom, second))
+    bottom = [n for j, n in enumerate(bottom) if j not in strays] or bottom  # never the whole line
+    moved = set(octave_outliers(bottom, second)) if octave == "auto" else set()
+    bottom = [{**n, "pitch": n["pitch"] - 12} if j in moved else n for j, n in enumerate(bottom)]
+    bottom = [{**n, "confidence": note_confidence(n, second)} for n in bottom]
     beats_per_bar = int(Counter(np.diff(downs)).most_common(1)[0][0])
     first_down = int(downs[0])
     onsets = np.array([n["onset"] for n in bottom])
@@ -258,12 +368,16 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto") -
 
     written = apply_written(quantize(bottom, times, monophonic=True, auto_level=False), BeatMap(times))
     shift = octave_shift([q.pitch for q, _ in written]) if octave == "auto" else int(octave)
-    notes = [{"pitch": int(q.pitch) + shift, "start": int(q.start - pickup), "dur": int(w.dur), "confidence": float(q.confidence),
-              "onset_s": float(q.onset_s), "offset_s": float(q.offset_s)} for q, w in written]
+    starts = [int(q.start) for q, _ in written]
+    notes = [{"pitch": int(q.pitch) + shift, "start": int(q.start - pickup),
+              "dur": straight_length(int(q.start), int(w.dur), starts[i + 1] if i + 1 < len(starts) else None),
+              "confidence": float(q.confidence), "onset_s": float(q.onset_s), "offset_s": float(q.offset_s)}
+             for i, (q, w) in enumerate(written)]
     name, fifths = key_of([n["start"] / TICKS_PER_BEAT for n in notes], [n["dur"] / TICKS_PER_BEAT for n in notes],
                           [n["pitch"] for n in notes])
     return {"ticks_per_beat": TICKS_PER_BEAT, "notes": notes, "octave_shift": shift,
-            "octave_source": "auto" if octave == "auto" else "chosen",
+            "octave_source": "auto" if octave == "auto" else "chosen", "octave_notes_moved": len(moved),
+            "overtones_dropped": len(raw) - len(heard), "strays_dropped": len(strays),
             "meter": {"beats": beats_per_bar, "beat_unit": 4},
             "key": {"name": name, "fifths": int(fifths), "mode": "minor" if name.endswith("m") else "major"},
             "tempo_bpm": round(float(60 / np.median(np.diff(times))), 1),
@@ -298,16 +412,17 @@ def octave_shift(pitches: list[int]) -> int:
 
 
 def notes_stage(ctx: StageContext) -> None:
-    from brasscribe_eval.score import load_notes
-
     try:
-        doc = transcribed_line(load_notes(ctx.inputs["bass"]), np.loadtxt(ctx.inputs["beats"], ndmin=2),
-                               ctx.params.get("octave", "auto"))
+        doc = transcribed_line(load_transcription(ctx.inputs["bass"]), np.loadtxt(ctx.inputs["beats"], ndmin=2),
+                               ctx.params.get("octave", "auto"), load_transcription(ctx.inputs["second"]))
     except ValueError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
     doc["reference_pitch"] = reference_pitch(ctx.inputs["audio"], bool(ctx.params.get("whole_recording")))
     ctx.log(f"{len(doc['notes'])} notes, {doc['meter']['beats']}/{doc['meter']['beat_unit']}, "
             f"{doc['key']['name']}, {doc['tempo_bpm']} BPM")
+    doubtful = sum(n["confidence"] < DOUBT for n in doc["notes"])
+    ctx.log(f"{doc['overtones_dropped']} overtones and {doc['strays_dropped']} stray notes left out, {doc['octave_notes_moved']} single notes written an octave "
+            f"lower, {doubtful} notes in doubt")
     if doc["octave_shift"] and doc["octave_source"] == "auto":
         ctx.log(f"the line was heard above a bass: written {-doc['octave_shift'] // 12} octave(s) lower")
     (ctx.out / "bass-notes.json").write_text(json.dumps(doc, indent=1))
@@ -331,6 +446,7 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = solve) -> di
             "notes": [{**n, **place} for n, place in zip(doc["notes"], places)],
             "violations": answer["violations"], "tuning_suggestions": answer["tuning_suggestions"],
             "octave_shift": doc["octave_shift"], "octave_source": doc["octave_source"],
+            "octave_notes_moved": doc.get("octave_notes_moved", 0),
             "reference_pitch": doc["reference_pitch"],
             "tempo_bpm": doc["tempo_bpm"], "key": doc["key"], "meter": doc["meter"],
             "ticks_per_beat": doc["ticks_per_beat"], "beat_times": doc["beat_times"],
@@ -459,10 +575,14 @@ def build(title: str, params: dict) -> Pipeline:
                         outputs=tuple(f"{s}.wav" for s in P.SW_STEMS)))
         bass = Input("stems", "bass.wav")
     st.append(P._transcribe("bass", "basic-pitch", "bp", bass, None, retune=whole))
+    # A second opinion on the same audio, for each note's confidence (note_confidence). It is this profile's own
+    # stage: beats, stems and Basic Pitch are still the ones pop-rock runs.
+    st.append(P._transcribe("bass", "swift-f0", "sw", bass, None))
     # Only what differs from the defaults, so a job that chooses neither keeps its cache entry.
     heard = {**({"whole_recording": True} if whole else {}), **({"octave": opts["octave"]} if opts["octave"] != "auto" else {})}
     st.append(Stage("notes", "notes", {"beats": Input("beats", "mix.beats"), "audio": Input(SOURCE),
-                                       "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid")},
+                                       "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid"),
+                                       "second": Input("transcribe.bass.swift-f0", "bass-sw.mid")},
                     notes_stage, params=heard,
                     code=(S.MUSIC_SRC, S.EVAL_SRC, THIS, tuning.THIS), outputs=("bass-notes.json",)))
     fingering = {"instrument": opts["instrument"], "tuning": opts["tuning"], "capo": opts["capo"], "style": opts["style"]}

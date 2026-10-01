@@ -22,7 +22,10 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore when it is installed; `/musicxml`, `/pdf`
   and `/midi` of the job serve them. It takes `instrument` (`bass-4`, `bass-5`, `bass-6`), `tuning`, `capo`,
   `style`, `octave` (`auto`, or the player's choice) and `layout` (`tab`, `tab-and-notation`, `notation`), and
-  none of the band options.
+  none of the band options. SwiftF0 listens to the same audio as a second opinion: a note it did not hear at that
+  pitch gets a confidence below 0.4 and a "?" in the tab, a single note it heard an octave lower is written there,
+  and overtones heard as notes are left out. `brasscribe bench bass-tab` measures all of it on Slakh bass lines
+  ([`bass_tab_bench.py`](../eval/brasscribe_eval/bass_tab_bench.py)).
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS
   advertisement as `_brasscribe._tcp` (`discovery.py`). The contract is the committed
