@@ -43,11 +43,11 @@ public class EngineClientTests
             "/v1/pair" => FakeHandler.Json("""{"token":"tok-123"}"""),
             _ => FakeHandler.Json("""[{"name":"solo","pipeline":"A-solo","description":"One brass line","validated":false,"stages":["f0"]}]"""),
         });
-        await c.PairAsync("4821", "Kalli-PC");
+        await c.PairAsync("4821", "Kari-PC");
         var profiles = await c.ListProfilesAsync();
 
         Assert.Equal("tok-123", c.Token);
-        Assert.Equal("""{"code":"4821","device_name":"Kalli-PC"}""", h.Requests[0].Body);
+        Assert.Equal("""{"code":"4821","device_name":"Kari-PC"}""", h.Requests[0].Body);
         Assert.Null(h.Requests[0].Request.Headers.Authorization);
         Assert.Equal("Bearer", h.Requests[1].Request.Headers.Authorization!.Scheme);
         Assert.Equal("tok-123", h.Requests[1].Request.Headers.Authorization!.Parameter);

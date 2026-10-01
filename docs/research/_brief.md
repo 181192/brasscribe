@@ -19,4 +19,4 @@ Project: "brasscribe" — local-first app: recorded audio (pop/rock/orchestral/b
 model · architecture · release/update date · code license · weights license · repository · pretrained weights (where) · training datasets · published benchmarks · hardware requirements · Apple Silicon support · inference speed · strengths · weaknesses · suitability for brass music
 
 ## Output
-Write your findings to the markdown file named in your task (in /Users/k/private/brasscribe/docs/research/). Structure: short executive summary with a PRIMARY and BACKUP pick, a comparison table, per-candidate detail sections, open questions that only benchmarking can settle, and a references list. Then return a ≤300-word summary to the caller with your top picks and the biggest risks.
+Write your findings to the markdown file named in your task (in `docs/research/`). Structure: short executive summary with a PRIMARY and BACKUP pick, a comparison table, per-candidate detail sections, open questions that only benchmarking can settle, and a references list. Then return a ≤300-word summary to the caller with your top picks and the biggest risks.
