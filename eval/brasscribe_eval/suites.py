@@ -554,6 +554,53 @@ def _solo_ondevice(data: Path, mode: str) -> dict[str, float]:
             "part_files_identical_frac": sum(extra) / max(1, len(extra)), "notes_total": float(d["notes_total"])}
 
 
+# ------------------------------------------------------------------- bass tab
+
+def _bass_tab(data: Path, mode: str) -> dict[str, float]:
+    """The engine's bass-tab profile on Slakh bass lines (bass_tab_bench), a full song and the bass alone.
+
+    Cached mode scores the model outputs next to the eval data and runs only the profile's own stages
+    and the Rust core. Live mode builds the set from the Slakh tracks and runs the models it lacks."""
+    from brasscribe_engine import bass_tab
+
+    from . import bass_tab_bench as B
+
+    source = data / B.SOURCE
+    if not B.entries(data):
+        if mode != "live" or not source.is_dir():
+            raise SkipSuite(f"missing data: eval/{B.SET} (built from {B.SOURCE} in live mode)")
+        B.build(source, data)
+    try:
+        bass_tab.core_cli()
+    except bass_tab.CoreCliMissing as e:
+        raise SkipSuite(str(e)) from e
+    # The low register, synthesized: made in live mode where FluidSynth and the SoundFont are.
+    if not B.entries(data, B.SYNTH_SET) and mode == "live" and shutil.which("fluidsynth") and (data / B.SOUNDFONT).exists():
+        B.synthesize(data)
+    low = B.entries(data, B.SYNTH_SET)
+    for entry in B.entries(data) + low:
+        missing = [f for m in B.MODES for f in B.FILES[m].values() if not (entry / f).exists()]
+        if missing and mode != "live":
+            raise SkipSuite(f"no cached {missing[0]} for {entry.name}")
+        if missing:
+            try:
+                B.prepare(entry, *B.audio_of(entry, source if source.is_dir() else None))
+            except FileNotFoundError as e:
+                raise SkipSuite(str(e)) from e
+    out: dict[str, float] = {}
+    for m in B.MODES:
+        metrics, _ = B.evaluate(data, m)
+        out.update({f"{m}.{k}": v for k, v in metrics.items()})
+    # Each group of the low-register set apart: its numbers are not Slakh's.
+    labels = {g: g.replace("-", "_") for g in B.GROUPS}
+    out[SKIPPED] = [] if low else list(labels.values())
+    for group, label in labels.items() if low else ():
+        for m in B.MODES:
+            metrics, _ = B.evaluate(data, m, eval_set=B.SYNTH_SET, group=group)
+            out.update({f"{label}.{m}.{k}": v for k, v in metrics.items()})
+    return out
+
+
 # -------------------------------------------------------------------- registry
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
@@ -610,6 +657,8 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
     Suite("solo-ondevice", "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
           _solo_ondevice, (ONDEVICE_REF, "runs/apple/entertainer-tpt1-30s.wav")),
+    Suite("bass-tab", "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, "
+          "range, playability, tempo and meter, hand travel (cached model outputs)", _bass_tab, ("eval/slakh-bass",)),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}

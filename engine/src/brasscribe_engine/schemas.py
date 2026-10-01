@@ -339,7 +339,9 @@ class TabNote(BaseModel):
     pitch: int = Field(description="concert MIDI pitch, as written in the tab (after octave_shift)")
     start: int = Field(description="ticks from the first downbeat")
     dur: int = Field(description="written duration in ticks")
-    confidence: float = 1.0
+    confidence: float = Field(1.0, description="0 to 1. Below 0.4 the note is one to check (the tab marks it \"?\"): "
+                                               "the second transcriber did not hear it at this pitch, or, where "
+                                               "there is no second opinion, it was heard faintly")
     onset_s: float | None = None
     offset_s: float | None = None
     string: int | None = Field(description="null: the note has no place on the instrument")
@@ -348,6 +350,9 @@ class TabNote(BaseModel):
     out_of_range: bool = Field(description="no string of the instrument sounds this pitch; the usual cause is "
                                            "another tuning or instrument than the player's")
     pinned: bool = False
+    octave_moved: bool = Field(False, description="written an octave below where Basic Pitch heard it, where the second "
+                                                  "transcriber heard it. Its confidence is that of any note both heard: in "
+                                                  "the benchmark four in five of these are right, so it gets no \"?\"")
 
 
 class TabString(BaseModel):
@@ -425,6 +430,9 @@ class Tab(BaseModel):
                                           "0, or -12 (or -24) when it was heard an octave above where a bass plays, "
                                           "the same for every instrument, tuning and capo. With a chosen octave: "
                                           "that choice, 0, -12 or 12")
+    octave_notes_moved: int = Field(0, description="single notes written an octave lower than Basic Pitch heard them "
+                                                   "(with octave auto): each stood above its neighbours, and the second "
+                                                   "transcriber heard it an octave lower")
     octave_source: Literal["auto", "chosen"] = Field(description="auto: the octave check decided octave_shift; chosen: "
                                                                  "the job's octave option did")
     reference_pitch: ReferencePitch | None = Field(description="null when the recording's tuning could not be measured")
