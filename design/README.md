@@ -4,6 +4,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 - [`system.md`](system.md): components, patterns, layout, navigation and the screen map
 - [`brand/brand.md`](brand/brand.md): name, mark, icon, typeface, voice and copy rules
 - [`mockups/png/`](mockups/png/): the key screens (phone and desktop, light and dark, two screens in Norwegian, and Studio)
+- [`claude/`](claude/README.md): the design system as a Claude artifact, generated from this folder
 
 ![Home, What is this?, review and score](mockups/png/home-desktop-light.png)
 
