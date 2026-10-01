@@ -90,13 +90,16 @@ public sealed record EngineLaunchConfig(
         if ((Variable("HF_TOKEN") is { Length: > 0 } t ? t : HuggingFaceToken?.Invoke()) is { Length: > 0 } token) env["HF_TOKEN"] = token;
         // Studio (served by the engine) plays the band SoundFont from here.
         if (BandSoundsDir is { Length: > 0 }) env["BRASSCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
-        // The installed workspace has no core to build: the bass-tab profile runs the bundled command line.
+        // The installed workspace has no core to build: the bass-tab profile runs the bundled command line, and
+        // only that one. Without it, a BRASSCRIBE_CORE_CLI set for this user is not passed on, so the engine says
+        // plainly that the core is missing instead of running some other build.
         if (CoreCli is { Length: > 0 }) env["BRASSCRIBE_CORE_CLI"] = CoreCli;
         return new ProcessSpec(
             PixiExe,
             ["run", "--manifest-path", Paths.Manifest, "--frozen", "-e", "default",
              "brasscribe", "serve", "--lan", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)],
             Paths.Workspace,
-            env);
+            env)
+        { Unset = CoreCli is { Length: > 0 } ? [] : ["BRASSCRIBE_CORE_CLI"] };
     }
 }

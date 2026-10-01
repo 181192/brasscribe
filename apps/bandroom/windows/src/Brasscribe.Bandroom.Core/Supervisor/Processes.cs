@@ -5,7 +5,11 @@ public sealed record ProcessSpec(
     string FileName,
     IReadOnlyList<string> Arguments,
     string WorkingDirectory,
-    IReadOnlyDictionary<string, string> Environment);
+    IReadOnlyDictionary<string, string> Environment)
+{
+    /// <summary>Variables of this process the child must not inherit (it gets the rest, plus <see cref="Environment"/>).</summary>
+    public IReadOnlyList<string> Unset { get; init; } = [];
+}
 
 /// <summary>A started child process. <see cref="Kill"/> ends the whole tree (pixi starts python).</summary>
 public interface IEngineProcess : IDisposable
@@ -65,6 +69,7 @@ public sealed class SystemProcessLauncher : IProcessLauncher
             StandardErrorEncoding = System.Text.Encoding.UTF8,
         };
         foreach (var a in spec.Arguments) psi.ArgumentList.Add(a);
+        foreach (var k in spec.Unset) psi.Environment.Remove(k);
         foreach (var (k, v) in spec.Environment) psi.Environment[k] = v;
         var p = new System.Diagnostics.Process { StartInfo = psi, EnableRaisingEvents = true };
         p.OutputDataReceived += (_, e) => { if (e.Data is not null) output(e.Data); };

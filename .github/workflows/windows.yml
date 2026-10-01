@@ -220,8 +220,12 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
 
+      # With the C runtime linked in: a PC without the Visual C++ runtime (vcruntime140.dll) can run it.
+      # Only the command line is built in this job, so the flag does not reach the FFI library.
       - name: Build the core command line
         working-directory: core
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
         run: cargo build --release --locked -p brasscribe-cli
 
       - name: Release build (self-contained, x64, pixi bundled)
