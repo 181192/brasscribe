@@ -8,8 +8,9 @@
 #
 # 1. Links data/, models/ and apps/apple/Frameworks (Verovio) from the main checkout, found through
 #    `git worktree list` (or BRASSCRIBE_MAIN). Nothing is linked in the main checkout itself.
-# 2. Copies in the prebuilt Rust core (scripts/core-artifacts.sh ensure): the host library, the
-#    Apple xcframework and the Android jniLibs, built once per core change and shared by all worktrees.
+# 2. Copies in the prebuilt Rust core (scripts/core-artifacts.sh ensure): the host library and
+#    command line, the Apple xcframework and the Android jniLibs, built once per core change and
+#    shared by all worktrees.
 # 3. Prints the environment to export on stdout (progress goes to stderr), and writes it to
 #    .brasscribe-env for `source .brasscribe-env` in later shells.
 set -euo pipefail
@@ -21,7 +22,7 @@ while [ $# -gt 0 ]; do
     --print-env) print_only=1 ;;
     --no-core) core=0 ;;
     --core) comps="${2//,/ }"; shift ;;
-    -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -44,6 +45,8 @@ env_lines() {
   # it, and data/ and models/ are linked in.
   echo "export BRASSCRIBE_REPO='$ROOT'"
   echo "export BRASSCRIBE_FFI_PATH='$ROOT/core/target/release/libbrasscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
+  # The core's command line, for the engine's bass-tab profile and the tests that need it.
+  [ -x "$ROOT/core/target/release/brasscribe-core" ] && echo "export BRASSCRIBE_CORE_CLI='$ROOT/core/target/release/brasscribe-core'"
   # The data is here, so a Rust golden test that cannot find it fails instead of skipping.
   [ -e "$MAIN/data/mikkel/repro/mix.beats" ] && echo "export BRASSCRIBE_REQUIRE_DATA=1"
   echo "export ANDROID_HOME='$ANDROID_HOME'"

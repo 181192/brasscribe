@@ -33,11 +33,13 @@ core, and `--core host,apple` limits it to those components. It does four things
   is set to the worktree itself, since the tests also look up tracked files through it.
 - Copies in the prebuilt Rust core with `scripts/core-artifacts.sh ensure`:
   - the host library in `core/target/release` and `core/dist/macos`
+  - the command line `core/target/release/brasscribe-core`, which the engine's `bass-tab` profile and
+    its tests need
   - `BrasscribeFFI.xcframework`
   - the Android `jniLibs`
 - Clones `studio/node_modules` from the main checkout when the lock files match.
 - Prints the environment, and writes it to `.brasscribe-env`: `BRASSCRIBE_REPO`, `BRASSCRIBE_FFI_PATH`,
-  `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
+  `BRASSCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
   `PATH` with rustup and the Android tools.
 
 ### The core artifact cache
