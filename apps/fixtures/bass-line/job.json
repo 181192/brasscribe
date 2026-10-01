@@ -1,0 +1,75 @@
+{
+ "id": "bass-line",
+ "profile": "bass-tab",
+ "title": "Bass line",
+ "audio_id": "a239dd764c3f5373",
+ "status": "succeeded",
+ "created": 1767225600.0,
+ "started": 1767225600.0,
+ "finished": 1767225606.0,
+ "error": null,
+ "progress": 1.0,
+ "previous_run_id": null,
+ "device_name": null,
+ "stages": [
+  {
+   "name": "beats",
+   "kind": "beats",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": "mps"
+  },
+  {
+   "name": "transcribe.bass.basic-pitch",
+   "kind": "transcribe",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": "coreml"
+  },
+  {
+   "name": "transcribe.bass.swift-f0",
+   "kind": "transcribe",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": "cpu"
+  },
+  {
+   "name": "notes",
+   "kind": "notes",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  },
+  {
+   "name": "arrange",
+   "kind": "arrange",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  },
+  {
+   "name": "export",
+   "kind": "export",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  }
+ ],
+ "outputs": [
+  "composition.json",
+  "tab.json",
+  "tab.musicxml"
+ ]
+}

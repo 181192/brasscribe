@@ -1,0 +1,17 @@
+{
+ "audio_id": "a239dd764c3f5373",
+ "profile": "bass-tab",
+ "render_audio": true,
+ "allow_heavy": true,
+ "title": "Bass line",
+ "lineup": "full",
+ "difficulty": "faithful",
+ "muscriptor": true,
+ "instrument": "bass-4",
+ "tuning": "standard",
+ "capo": 0,
+ "style": "as-played",
+ "recording": "instrument",
+ "octave": "auto",
+ "layout": "tab"
+}

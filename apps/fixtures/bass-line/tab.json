@@ -1,0 +1,677 @@
+{
+ "preset": "bass-4-standard",
+ "style": "as-played",
+ "instrument": {
+  "name": "Bass",
+  "tuning": {
+   "name": "Standard",
+   "strings": [
+    {
+     "open_pitch": 43,
+     "first_fret": 0
+    },
+    {
+     "open_pitch": 38,
+     "first_fret": 0
+    },
+    {
+     "open_pitch": 33,
+     "first_fret": 0
+    },
+    {
+     "open_pitch": 28,
+     "first_fret": 0
+    }
+   ]
+  },
+  "frets": 21,
+  "scale_length_mm": 864.0,
+  "capo": 0,
+  "notation": "bass-8vb"
+ },
+ "notes": [
+  {
+   "pitch": 28,
+   "start": 0,
+   "dur": 24,
+   "confidence": 0.843,
+   "onset_s": 0.65,
+   "offset_s": 1.2431818181818182,
+   "string": 4,
+   "fret": 0,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 28,
+   "start": 24,
+   "dur": 18,
+   "confidence": 0.858,
+   "onset_s": 1.2431818181818182,
+   "offset_s": 1.718181818181818,
+   "string": 4,
+   "fret": 0,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 42,
+   "dur": 6,
+   "confidence": 0.685,
+   "onset_s": 1.6477272727272727,
+   "offset_s": 1.8454545454545455,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 48,
+   "dur": 24,
+   "confidence": 0.858,
+   "onset_s": 1.8454545454545455,
+   "offset_s": 2.334090909090909,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 33,
+   "start": 72,
+   "dur": 24,
+   "confidence": 0.878,
+   "onset_s": 2.4045454545454543,
+   "offset_s": 2.9386363636363635,
+   "string": 3,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 5
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 96,
+   "dur": 48,
+   "confidence": 0.874,
+   "onset_s": 2.9977272727272726,
+   "offset_s": 3.5999999999999996,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 144,
+   "dur": 24,
+   "confidence": 0.878,
+   "onset_s": 3.5999999999999996,
+   "offset_s": 4.136363636363636,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 33,
+   "start": 168,
+   "dur": 24,
+   "confidence": 0.882,
+   "onset_s": 4.215909090909091,
+   "offset_s": 4.727272727272727,
+   "string": 3,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 5
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 192,
+   "dur": 24,
+   "confidence": 0.858,
+   "onset_s": 4.831818181818182,
+   "offset_s": 5.3545454545454545,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 28,
+   "start": 216,
+   "dur": 42,
+   "confidence": 0.874,
+   "onset_s": 5.447727272727272,
+   "offset_s": 6.425,
+   "string": 4,
+   "fret": 0,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 258,
+   "dur": 6,
+   "confidence": 0.709,
+   "onset_s": 6.470454545454545,
+   "offset_s": 6.634090909090909,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 264,
+   "dur": 24,
+   "confidence": 0.862,
+   "onset_s": 6.634090909090909,
+   "offset_s": 7.179545454545454,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 288,
+   "dur": 24,
+   "confidence": 0.882,
+   "onset_s": 7.202272727272727,
+   "offset_s": 7.759090909090909,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 40,
+   "start": 312,
+   "dur": 24,
+   "confidence": 0.878,
+   "onset_s": 7.806818181818182,
+   "offset_s": 8.352272727272727,
+   "string": 2,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 3,
+     "fret": 7
+    },
+    {
+     "string": 4,
+     "fret": 12
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 38,
+   "start": 336,
+   "dur": 24,
+   "confidence": 0.89,
+   "onset_s": 8.4,
+   "offset_s": 8.945454545454545,
+   "string": 2,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 3,
+     "fret": 5
+    },
+    {
+     "string": 4,
+     "fret": 10
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 360,
+   "dur": 24,
+   "confidence": 0.886,
+   "onset_s": 9.002272727272727,
+   "offset_s": 9.536363636363635,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 33,
+   "start": 384,
+   "dur": 24,
+   "confidence": 0.882,
+   "onset_s": 9.629545454545454,
+   "offset_s": 10.14090909090909,
+   "string": 3,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 5
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 36,
+   "start": 408,
+   "dur": 24,
+   "confidence": 0.874,
+   "onset_s": 10.211363636363636,
+   "offset_s": 10.81590909090909,
+   "string": 3,
+   "fret": 3,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 8
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 36,
+   "start": 432,
+   "dur": 24,
+   "confidence": 0.882,
+   "onset_s": 10.81590909090909,
+   "offset_s": 11.361363636363636,
+   "string": 3,
+   "fret": 3,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 8
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 40,
+   "start": 456,
+   "dur": 24,
+   "confidence": 0.878,
+   "onset_s": 11.406818181818181,
+   "offset_s": 11.954545454545453,
+   "string": 2,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 3,
+     "fret": 7
+    },
+    {
+     "string": 4,
+     "fret": 12
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 43,
+   "start": 480,
+   "dur": 24,
+   "confidence": 0.886,
+   "onset_s": 12.0,
+   "offset_s": 12.545454545454545,
+   "string": 1,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 2,
+     "fret": 5
+    },
+    {
+     "string": 3,
+     "fret": 10
+    },
+    {
+     "string": 4,
+     "fret": 15
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 38,
+   "start": 504,
+   "dur": 24,
+   "confidence": 0.878,
+   "onset_s": 12.604545454545454,
+   "offset_s": 13.209090909090909,
+   "string": 2,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 3,
+     "fret": 5
+    },
+    {
+     "string": 4,
+     "fret": 10
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 38,
+   "start": 528,
+   "dur": 24,
+   "confidence": 0.886,
+   "onset_s": 13.209090909090909,
+   "offset_s": 13.754545454545454,
+   "string": 2,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 3,
+     "fret": 5
+    },
+    {
+     "string": 4,
+     "fret": 10
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 552,
+   "dur": 24,
+   "confidence": 0.882,
+   "onset_s": 13.799999999999999,
+   "offset_s": 14.336363636363636,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 33,
+   "start": 576,
+   "dur": 24,
+   "confidence": 0.882,
+   "onset_s": 14.415909090909091,
+   "offset_s": 14.938636363636363,
+   "string": 3,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 5
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 600,
+   "dur": 12,
+   "confidence": 0.815,
+   "onset_s": 15.031818181818181,
+   "offset_s": 15.288636363636362,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 33,
+   "start": 612,
+   "dur": 12,
+   "confidence": 0.835,
+   "onset_s": 15.322727272727272,
+   "offset_s": 15.577272727272726,
+   "string": 3,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 5
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 624,
+   "dur": 24,
+   "confidence": 0.878,
+   "onset_s": 15.602272727272727,
+   "offset_s": 16.147727272727273,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 38,
+   "start": 648,
+   "dur": 24,
+   "confidence": 0.89,
+   "onset_s": 16.195454545454545,
+   "offset_s": 16.74090909090909,
+   "string": 2,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 3,
+     "fret": 5
+    },
+    {
+     "string": 4,
+     "fret": 10
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 672,
+   "dur": 24,
+   "confidence": 0.886,
+   "onset_s": 16.797727272727272,
+   "offset_s": 17.354545454545455,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 28,
+   "start": 696,
+   "dur": 48,
+   "confidence": 0.87,
+   "onset_s": 17.44772727272727,
+   "offset_s": 18.575,
+   "string": 4,
+   "fret": 0,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  }
+ ],
+ "violations": [],
+ "tuning_suggestions": [
+  {
+   "preset": "bass-4-standard",
+   "tuning": "Standard",
+   "out_of_range": 0,
+   "low_string_fits": true,
+   "open_notes": 14,
+   "high_frets": 0,
+   "distance": 0
+  },
+  {
+   "preset": "bass-4-drop-d",
+   "tuning": "Drop D",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 10,
+   "high_frets": 0,
+   "distance": 2
+  },
+  {
+   "preset": "bass-4-eb-standard",
+   "tuning": "E\u266d standard",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 0,
+   "high_frets": 0,
+   "distance": 4
+  },
+  {
+   "preset": "bass-4-d-standard",
+   "tuning": "D standard",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 8,
+   "high_frets": 0,
+   "distance": 8
+  },
+  {
+   "preset": "bass-4-bead",
+   "tuning": "BEAD",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 13,
+   "high_frets": 0,
+   "distance": 20
+  }
+ ],
+ "octave_shift": 0,
+ "octave_source": "auto",
+ "octave_notes_moved": 0,
+ "reference_pitch": {
+  "cents": -2.2,
+  "concentration": 0.79,
+  "retuned": false
+ },
+ "tempo_bpm": 100.0,
+ "key": {
+  "name": "Em",
+  "fifths": 1,
+  "mode": "minor"
+ },
+ "meter": {
+  "beats": 1,
+  "beat_unit": 4
+ },
+ "ticks_per_beat": 24,
+ "beat_times": [
+  0.6,
+  1.2,
+  1.8,
+  2.4,
+  2.98,
+  3.28,
+  3.6,
+  4.18,
+  4.8,
+  5.4,
+  5.98,
+  6.6,
+  7.2,
+  7.78,
+  8.38,
+  8.98,
+  9.58,
+  10.18,
+  10.78,
+  11.38,
+  11.98,
+  12.58,
+  13.18,
+  13.78,
+  14.38,
+  14.98,
+  15.58,
+  16.16,
+  16.76,
+  17.36,
+  17.96
+ ],
+ "first_downbeat": 0,
+ "layout": "tab",
+ "adjusted_notes": 0
+}
