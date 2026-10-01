@@ -4,7 +4,8 @@ Bands rarely play at exactly A = 440: the eval recordings sit 1–20 cents sharp
 Basic Pitch loses most notes of a band 30 cents off. A transcription stage estimates its
 input's offset from A = 440 and, when it is large enough to matter, resamples the audio so
 the band plays at A = 440, transcribes that, and scales the note times back to the
-original timeline. Resampling is exact and adds no artefacts, unlike a phase-vocoder shift.
+original timeline. Resampling at a rational ratio changes pitch and time together and leaves the
+sound otherwise as it was, which a phase-vocoder shift does not.
 
 The decision is a parameter of the stage, taken when the stage is keyed (`derive`): an
 input that is in tune adds nothing, so its stage keeps the cache key it had before.
@@ -37,27 +38,23 @@ _memo: dict[tuple[str, int, int], tuple[float, float]] = {}
 _memo_lock = threading.Lock()
 
 
-def estimate(x: np.ndarray, sr: int) -> tuple[float, float]:
-    """Offset of the music from A = 440 in cents (-50..50), and how concentrated the evidence is (0..1).
-
-    The weighted circular mean of the spectral peaks' deviations from the tempered grid: each peak
-    between 80 Hz and 2 kHz, located to a fraction of a bin by a parabola through its log magnitude,
-    votes for its cents modulo 100 with its magnitude."""
-    x = np.asarray(x, dtype=np.float64)
-    if x.ndim > 1:
-        x = x.mean(axis=1)
-    n = FFT_SIZE
-    if len(x) < n:
-        x = np.pad(x, (0, n - len(x)))
-    starts = np.arange(0, len(x) - n + 1, n // 4)
+def _starts(length: int) -> np.ndarray:
+    """Where the analysis windows start: every quarter window, thinned evenly to MAX_FRAMES."""
+    starts = np.arange(0, max(length - FFT_SIZE, 0) + 1, FFT_SIZE // 4)
     if len(starts) > MAX_FRAMES:
         starts = starts[np.linspace(0, len(starts) - 1, MAX_FRAMES).astype(int)]
+    return starts
+
+
+def _estimate(windows, sr: int) -> tuple[float, float]:
+    """The circular mean over mono windows of FFT_SIZE samples (see estimate)."""
+    n = FFT_SIZE
     win = np.hanning(n)
     freqs = np.fft.rfftfreq(n, 1 / sr)
     band = ((freqs > BAND_HZ[0]) & (freqs < BAND_HZ[1]))[1:-1]
     z, total = 0j, 0.0
-    for i in starts:
-        mag = np.abs(np.fft.rfft(x[i:i + n] * win))
+    for w in windows:
+        mag = np.abs(np.fft.rfft(np.pad(w, (0, n - len(w))) * win))
         top = mag.max()
         if top <= 0:
             continue
@@ -76,29 +73,57 @@ def estimate(x: np.ndarray, sr: int) -> tuple[float, float]:
     return float(np.angle(z) / (2 * np.pi) * 100), float(abs(z) / total)
 
 
+def estimate(x: np.ndarray, sr: int) -> tuple[float, float]:
+    """Offset of the music from A = 440 in cents (-50..50), and how concentrated the evidence is (0..1).
+
+    The weighted circular mean of the spectral peaks' deviations from the tempered grid: each peak
+    between 80 Hz and 2 kHz, located to a fraction of a bin by a parabola through its log magnitude,
+    votes for its cents modulo 100 with its magnitude."""
+    x = np.asarray(x, dtype=np.float64)
+    if x.ndim > 1:
+        x = x.mean(axis=1)
+    return _estimate((x[i:i + FFT_SIZE] for i in _starts(len(x))), sr)
+
+
+def _decoded(path: Path, tmp: str, mono: bool = False) -> Path:
+    """path itself if libsndfile reads it, else a float WAV decoded by ffmpeg (mono if asked)."""
+    import soundfile as sf
+
+    try:
+        sf.info(str(path))
+        return path
+    except (RuntimeError, sf.LibsndfileError):
+        wav = Path(tmp) / "decoded.wav"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(path), "-vn", "-c:a", "pcm_f32le",
+                        *(["-ac", "1"] if mono else []), str(wav)], check=True)
+        return wav
+
+
 def read_audio(path: Path) -> tuple[np.ndarray, int]:
     """Samples (frames x channels, float32) and rate; formats libsndfile cannot read are decoded by ffmpeg."""
     import soundfile as sf
 
-    try:
-        return sf.read(str(path), dtype="float32", always_2d=True)
-    except (RuntimeError, sf.LibsndfileError):
-        with tempfile.TemporaryDirectory() as tmp:
-            wav = Path(tmp) / "decoded.wav"
-            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(path), "-vn", "-c:a", "pcm_f32le", str(wav)],
-                           check=True)
-            return sf.read(str(wav), dtype="float32", always_2d=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        return sf.read(str(_decoded(path, tmp)), dtype="float32", always_2d=True)
 
 
 def estimate_file(path: Path) -> tuple[float, float]:
-    """estimate() of an audio file, remembered for the file as it is (path, size and time)."""
+    """estimate() of an audio file, reading only the analysis windows (a long recording is never held
+    whole), remembered for the file as it is (path, size and time)."""
+    import soundfile as sf
+
     st = path.stat()
     memo_key = (str(path.resolve()), st.st_size, st.st_mtime_ns)
     with _memo_lock:
         if memo_key in _memo:
             return _memo[memo_key]
-    x, sr = read_audio(path)
-    result = estimate(x, sr)
+    with tempfile.TemporaryDirectory() as tmp, sf.SoundFile(str(_decoded(path, tmp, mono=True))) as f:
+        def windows():
+            for i in _starts(f.frames):
+                f.seek(int(i))
+                yield f.read(FFT_SIZE, dtype="float64", always_2d=True).mean(axis=1)
+
+        result = _estimate(windows(), f.samplerate)
     with _memo_lock:
         _memo[memo_key] = result
     return result

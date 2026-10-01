@@ -287,7 +287,18 @@ class Executor:
                 inputs[name], digests[name] = up.out_dir / inp.file, up.files[inp.file]
             else:
                 inputs[name], digests[name] = up.out_dir, digest_of_files(up.files)
-        derived, facts = stage.derive(inputs) if stage.derive else ({}, {})
+        t_derive = time.time()
+        try:
+            derived, facts = stage.derive(inputs) if stage.derive else ({}, {})
+        except Exception as e:  # noqa: BLE001 - reported on the stage like a failed run
+            res = StageResult(stage.name, stage.kind, "failed", "", stages_dir / stage.name, {}, inputs=digests,
+                              seconds=time.time() - t_derive, error=f"{type(e).__name__}: {e}")
+            with self._emit_lock:
+                results[stage.name] = res
+            self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "failed", "error": res.error,
+                       "trace": traceback.format_exc(limit=5)})
+            raise StageFailed(stage.name, res.error) from e
+        derive_s = time.time() - t_derive
         key = self.key(stage, digests, derived)
         out = stages_dir / stage.name
         adapter = self.adapters.describe(stage.adapter) if stage.adapter else None
@@ -296,7 +307,7 @@ class Executor:
         self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "started", "key": key,
                    "fraction": started_fraction})
         res = StageResult(stage.name, stage.kind, "failed", key, out, {}, inputs=digests, adapter=adapter, derived=facts)
-        t0 = time.time()
+        t0 = time.time() - derive_s  # measuring the input for derive is part of the stage's time
         try:
             entry = self.cache.lookup(key)
             cold = self._is_cold(stage)

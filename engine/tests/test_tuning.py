@@ -180,3 +180,20 @@ def test_transcribe_retunes_then_rescales(tmp_path):
     assert note.end == pytest.approx(len(x) / SR, abs=0.003)
     assert [p.name for p in Ctx.out.iterdir()] == ["mix-bp.mid"]
 
+
+
+def test_estimate_file_reads_the_same_windows(tmp_path):
+    x = np.stack([tones(12), tones(12)], axis=1)
+    wav = tmp_path / "stereo.wav"
+    sf.write(wav, x, SR, subtype="FLOAT")
+    assert tuning.estimate_file(wav) == pytest.approx(tuning.estimate(x, SR), abs=1e-6)
+
+
+def test_a_derive_that_raises_fails_its_stage(settings, audio, tmp_path):
+    from brasscribe_engine.dag import StageFailed
+
+    def boom(inputs):
+        raise ValueError("unreadable")
+
+    with pytest.raises(StageFailed, match="unreadable"):
+        run(settings, audio, tmp_path, "r1", pipeline=_with_derive(boom))
