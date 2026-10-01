@@ -20,6 +20,7 @@ FrettedInstrument = Literal["bass-4", "bass-5", "bass-6"]
 FingeringStyle = Literal["as-played", "open-position", "lead"]
 Recording = Literal["song", "instrument"]
 Octave = Literal["auto", "0", "-12", "+12"]
+TabLayout = Literal["tab", "tab-and-notation", "notation"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
 
@@ -201,6 +202,9 @@ class JobCreate(BaseModel):
     recording: Recording | None = Field(None, description="bass-tab profile: what was recorded. song: a band or a "
                                                           "record, the bass is separated from it; instrument: the bass "
                                                           "alone, no separation; default: song")
+    layout: TabLayout | None = Field(None, description="bass-tab profile: what the page shows. tab: the tab staff alone, "
+                                                       "with stems for the rhythm; tab-and-notation: a notation staff "
+                                                       "above it; notation: the notation staff alone; default: tab")
     octave: Octave | None = Field(None, description="bass-tab profile: the octave the line is written in. auto: an "
                                                     "octave lower when it was heard an octave above where a bass "
                                                     "plays; 0, -12, +12: the player's choice, in semitones from what "
@@ -414,6 +418,9 @@ class Tab(BaseModel):
     tuning_suggestions: list[TuningFit] = Field(description="the instrument's tunings ranked by fit to the notes, "
                                                             "best first; when the first is not `preset`, the song "
                                                             "sounds like that tuning")
+    layout: TabLayout = Field(description="what tab.musicxml (and the PDF made from it) shows")
+    adjusted_notes: int = Field(description="notes whose start or length no note value could spell, written at the "
+                                            "nearest one that can; in tab.musicxml only, the notes here are unchanged")
     octave_shift: int = Field(description="semitones the whole line was moved after transcription. With octave auto: "
                                           "0, or -12 (or -24) when it was heard an octave above where a bass plays, "
                                           "the same for every instrument, tuning and capo. With a chosen octave: "

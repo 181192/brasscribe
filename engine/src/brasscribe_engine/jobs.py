@@ -256,7 +256,7 @@ class JobManager:
             c = json.loads(comp.read_text())
             c["title"] = title
             _write(comp, json.dumps(c))
-        for xml in [out / "brass-band.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
+        for xml in [out / "brass-band.musicxml", out / "tab.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
             if xml.exists():
                 _write(xml, _retitle_musicxml(xml.read_text(), title))
         talking = out / "talking-score.json"

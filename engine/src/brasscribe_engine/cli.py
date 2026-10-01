@@ -257,6 +257,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--octave", choices=list(bass_tab.OCTAVES),
                    help="bass-tab: the octave the line is written in, in semitones from what was heard (default auto: "
                         "an octave lower when it was heard an octave high)")
+    r.add_argument("--layout", choices=list(bass_tab.LAYOUTS),
+                   help="bass-tab: what the page shows: the tab staff alone (default), with notation above it, or notation alone")
     r.add_argument("--check-golden", type=Path, help="compare outputs with a reference directory; exit 2 on difference")
     r.set_defaults(fn=cmd_run)
 
