@@ -25,7 +25,8 @@ data class ScoreEntry(
             val seenAudio = HashSet<String>()
             val remote = jobs.sortedByDescending { it.created }
                 .filter { it.status == JobStatus.SUCCEEDED && it.outputs.any { o -> o.endsWith(".musicxml") } }
-                .filter { j -> j.audioId?.let(seenAudio::add) ?: true }
+                // (The other app's runs of the same recording are another score: they never hide this app's.)
+                .filter { j -> j.audioId?.let { seenAudio.add("${Product.makes(j.profile)}:$it") } ?: true }
                 .filter { it.id !in downloaded }
                 .map { j -> ScoreEntry("job:${j.id}", j.title ?: j.id, (j.created * 1000).toLong(), j.profile, jobId = j.id) }
             return (local.map { ScoreEntry(it.id, it.title, it.updated, it.profile, it) } + remote).sortedByDescending { it.updated }
