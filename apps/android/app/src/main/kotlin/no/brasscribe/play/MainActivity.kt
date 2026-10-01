@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
             val appearance = vm.container.appearance
             val dark = appearance.isDark(isSystemInDarkTheme())
             SideEffect { applyWindowTheme(dark, appearance.isPink) }
-            PlayTheme(dark = dark, pink = appearance.isPink) { PlayRoot(vm) }
+            PlayTheme(dark = dark, pink = appearance.isPink) { Product.Root(vm) }
         }
     }
 

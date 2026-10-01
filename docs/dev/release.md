@@ -65,7 +65,7 @@ python3 sounds/tools/band_sounds.py verify # the pinned band pack is in data/sou
 Bump the version in its own commit and push it to main **before** building, because Bandroom's
 workspace stamp records the commit it was built from:
 
-- `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName`
+- `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; the `fretscribe` flavour has its own)
 - `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
 - `apps/windows/Directory.Build.props` and `apps/bandroom/windows/Directory.Build.props`: `<Version>`
 - Leave the core's Cargo version alone: the fixtures embed `brasscribe-core 0.1.0` in their MusicXML.
@@ -81,7 +81,7 @@ full macOS UI suite in the VM: `MAC_VM_FULL=1 scripts/mac-vm.sh test-ui` ([macos
 cd apps/android && ./gradlew assembleRelease assembleDebug -q   # the debug APK is for the phone (§7)
 ```
 
-This writes `app/build/outputs/apk/release/app-{arm64-v8a,universal,x86_64}-release-unsigned.apk`
+This writes `app/build/outputs/apk/brasscribe/release/app-brasscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`
 (one APK per ABI plus a universal one; the x86_64 one is not shipped). Signing is not in Gradle. It is
 done by hand with the build tools and the key in `~/.brasscribe/release-keys`
 (`brasscribe-release.jks`, alias `brasscribe`, and `keystore-password.txt`). **Every release must use
@@ -91,7 +91,7 @@ password, and pass it as `file:`, not `pass:`, so it stays out of the process li
 ```sh
 BT=$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1); K=~/.brasscribe/release-keys
 for a in arm64-v8a universal; do
-  "$BT/zipalign" -f -p 4 "app/build/outputs/apk/release/app-$a-release-unsigned.apk" "$S/tmp.apk"
+  "$BT/zipalign" -f -p 4 "app/build/outputs/apk/brasscribe/release/app-brasscribe-$a-release-unsigned.apk" "$S/tmp.apk"
   "$BT/apksigner" sign --ks "$K/brasscribe-release.jks" --ks-pass "file:$K/keystore-password.txt" \
     --out "$OUT/brasscribe-play-android-$a.apk" "$S/tmp.apk"
   "$BT/apksigner" verify "$OUT/brasscribe-play-android-$a.apk"
@@ -217,7 +217,7 @@ Hugging Face key). See `gh release view v0.2.0` for the shape.
   listing of `~/Library/Containers/no.brasscribe.play` and `~/Library/Application Support/Brasscribe`
   (without `envs/` and `logs/`) before and after, to show the user's data is untouched.
 - **The phone.** It carries the **debug**-signed app, so it gets the debug APK
-  (`adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk`). A release APK would need an
+  (`adb install -r app/build/outputs/apk/brasscribe/debug/app-brasscribe-arm64-v8a-debug.apk`). A release APK would need an
   uninstall first. **Never uninstall the app**: that deletes the user's scores.
 
 ## 8. The site

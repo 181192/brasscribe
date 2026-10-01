@@ -81,7 +81,9 @@ done
 
 # The new version must be higher than the current one.
 gradle=apps/android/app/build.gradle.kts
-current=$(sed -nE 's/^ *versionName = "([^"]+)".*/\1/p' "$gradle")
+# Brasscribe's version is the one in defaultConfig; a product flavour with its own version keeps it.
+default_config='/^ *defaultConfig \{/,/^ *\}/'
+current=$(sed -nE "$default_config"' s/^ *versionName = "([^"]+)".*/\1/p' "$gradle")
 [[ $current =~ $semver ]] || die "can't read the current version from $gradle (got '$current')"
 IFS=. read -r a1 a2 a3 <<<"$current"; IFS=. read -r b1 b2 b3 <<<"$version"
 if (( b1 < a1 || (b1 == a1 && (b2 < a2 || (b2 == a2 && b3 <= a3))) )); then
@@ -94,10 +96,10 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 "${cliff[@]}" --unreleased --tag "$tag" --strip header -o "$tmp/notes.md"
 
 # The build number goes up by one on every release; Android's versionCode is where it is kept.
-build=$(( $(sed -nE 's/^ *versionCode = ([0-9]+).*/\1/p' "$gradle") + 1 ))
+build=$(( $(sed -nE "$default_config"' s/^ *versionCode = ([0-9]+).*/\1/p' "$gradle") + 1 ))
 apple="apps/apple/project.yml apps/bandroom/macos/project.yml"
 windows="apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
-sed -i.bak -E "s/^( *versionCode = )[0-9]+/\1$build/; s/^( *versionName = )\"[^\"]*\"/\1\"$version\"/" "$gradle"
+sed -i.bak -E "$default_config { s/^( *versionCode = )[0-9]+/\1$build/; s/^( *versionName = )\"[^\"]*\"/\1\"$version\"/; }" "$gradle"
 for y in $apple; do
   sed -i.bak -E "s/^( *MARKETING_VERSION: )\"[^\"]*\"/\1\"$version\"/; s/^( *CURRENT_PROJECT_VERSION: )\"[^\"]*\"/\1\"$build\"/" "$y"
 done
