@@ -1,7 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Fretscribe's own words (design/fretscribe/brand/brand.md: a good teacher; no "AI", no "we", verbs on
+         buttons). The rest are Brasscribe's, in src/main; a string here replaces the one of the same name. -->
     <string name="app_name" translatable="false">Fretscribe</string>
     <string name="brand_name" translatable="false">Fretscribe</string>
+    <string name="share_target_label">Write down the notes with Fretscribe</string>
+
+    <!-- First run (design/fretscribe/flows.md §1), as it is today: every tab is written on the computer. -->
+    <string name="first_run_hero_start">"Tab from "</string>
+    <string name="first_run_hero_end">any recording.</string>
+    <string name="first_run_1_title">Record or open a recording</string>
+    <string name="first_run_1_text">Play it, or open a song you have. Fretscribe on your computer writes down the notes.</string>
+    <string name="first_run_2_title">Check the notes marked ?</string>
+    <string name="first_run_2_text">Notes Fretscribe isn\'t sure about get a “?”. Listen and choose.</string>
+    <string name="first_run_3_title">Practise with the tab</string>
+    <string name="first_run_3_text">Slow it down and repeat the hard bars.</string>
+    <string name="first_run_privacy">Your recordings stay on your phone and your own computer. Free, with nothing locked.</string>
+
+    <!-- Home -->
+    <string name="home_hero_start">"Turn a recording into "</string>
+    <string name="home_hero_end">tab.</string>
+    <string name="home_tagline">Play it, record it, or open a file. Fretscribe on your computer writes down the notes.</string>
+    <string name="home_record_mic_desc">Play a riff or a whole song</string>
+    <string name="home_open_score">Open a tab</string>
+    <string name="home_open_score_desc">A MusicXML file from MuseScore or Guitar Pro</string>
+    <string name="home_scores_empty">Nothing written down yet. Record a riff or open a recording.</string>
+    <string name="home_your_scores">Your songs</string>
+    <string name="delete_score_phone">The song is removed from this phone.</string>
+    <string name="delete_score_computer">The song is removed from your computer.</string>
+    <string name="record_permission_needed">Fretscribe needs the microphone to record. You can allow it in Settings.</string>
+    <string name="device_notice">Fretscribe records what other apps play. Streaming apps usually block recording; then Fretscribe hears nothing and tells you. Links can\'t be downloaded.</string>
     <!-- Brasscribe's says scores can still be made on the phone; this app has no models on the phone. -->
     <string name="conn_offline">Not connected. Fretscribe needs your computer to write a tab.</string>
+    <string name="server_name_format">Fretscribe on %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_you">What you play</string>
+    <string name="settings_seat">Your instrument</string>
+    <string name="settings_seat_caption">Fretscribe remembers this for your tabs.</string>
+    <string name="companion_title">Fretscribe on your computer</string>
+    <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
+    <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>
+
+    <!-- Your instrument (design/fretscribe/flows.md §2) -->
+    <string name="fs_instrument_title">Your instrument</string>
+    <string name="fs_instrument_body">Fretscribe remembers this for your tabs. You can change it in Settings.</string>
+    <!-- The same screen opened from Settings. -->
+    <string name="fs_instrument_body_settings">Fretscribe remembers this for your tabs.</string>
+    <string name="fs_instrument">Instrument</string>
+    <string name="fs_strings">Strings</string>
+    <string name="fs_tuning">Usual tuning</string>
+    <string name="fs_hand">Which hand is on the neck?</string>
+    <string name="fs_reads">You read</string>
+    <string name="fs_instrument_bass">Bass</string>
+    <string name="fs_instrument_guitar">Guitar</string>
+    <string name="fs_instrument_ukulele">Ukulele</string>
+    <string name="fs_instrument_mandolin">Mandolin</string>
+    <!-- Beside an instrument that can't be chosen yet. -->
+    <string name="fs_later">Later</string>
+    <plurals name="fs_strings_count">
+        <item quantity="one">%1$d string</item>
+        <item quantity="other">%1$d strings</item>
+    </plurals>
+    <string name="fs_tuning_standard">Standard</string>
+    <string name="fs_tuning_eb_standard">E-flat standard (half a step down)</string>
+    <string name="fs_tuning_d_standard">D standard (a whole step down)</string>
+    <string name="fs_tuning_drop_d">Drop D</string>
+    <string name="fs_tuning_bead">BEAD</string>
+    <!-- Read letter by letter, not as a word. -->
+    <string name="fs_tuning_bead_spoken">B, E, A, D</string>
+    <string name="fs_tuning_drop_a">Drop A</string>
+    <string name="fs_hand_left">Left hand on the neck (most players)</string>
+    <string name="fs_hand_right">Right hand on the neck (left-handed instrument)</string>
+    <string name="fs_hand_right_upside_down">Right hand on the neck (instrument upside down)</string>
+    <string name="fs_hand_note">Tab looks the same either way.</string>
+    <string name="fs_reads_tab">Tab</string>
+    <string name="fs_reads_tab_and_notation">Tab and notation</string>
+    <string name="fs_reads_notation">Notation</string>
+    <!-- Settings: "4-string bass · Standard · Tab" -->
+    <string name="fs_bass_with_strings">%1$d-string bass</string>
+    <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
 </resources>

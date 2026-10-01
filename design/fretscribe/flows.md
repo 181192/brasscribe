@@ -43,11 +43,11 @@ tuning. One question per row, on one screen:
 | Instrument | Guitar · Bass · Ukulele · Mandolin (Banjo later) | Guitar |
 | Strings | Guitar 6/7/8 · Bass 4/5/6 · Ukulele: high G / low G | 6 · 4 · high G |
 | Usual tuning | Standard, E♭ standard, Drop D, DADGAD, Open G, …, **Custom** (per string, note name and Hz) | Standard |
-| Which hand frets? | Left hand (most players) · Right hand · Right hand, guitar upside down | Left hand |
+| Which hand is on the neck? | Left hand on the neck (most players) · Right hand on the neck (left-handed instrument) · Right hand on the neck (instrument upside down) | Left hand |
 | You read | Tab · Tab and notation · Notation | Tab |
 
-- The handedness row explains itself in one line: "Tab looks the same either way. Chord boxes and the
-  fretboard turn round."
+- The handedness row explains itself in one line: "Tab looks the same either way." Once there are
+  chord boxes and a fretboard to draw, it adds "Chord boxes and the fretboard turn round."
 - Level is not asked here. **Easier / As played** appears where it matters (Practice › Play this in…).
 - Reference pitch (A = 440) lives in Settings, not here.
 

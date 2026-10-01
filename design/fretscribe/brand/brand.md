@@ -129,6 +129,6 @@ alone; no jargon; English and Norwegian both first-class; never "we").
 | Repeat a passage | Repeat bars 12 to 16 · Stop repeating | Gjenta takt 12 til 16 · Slutt å gjenta | Loop, A–B |
 | Hands-free | Pedals and keys | Pedaler og taster | HID, MIDI (in Settings detail only) |
 | Stop touches on the tab | Lock the tab | Lås tabben | Lock screen |
-| Hand | Which hand frets? | Hvilken hånd tar grepene? | lefty mode |
+| Hand | Which hand is on the neck? · Left hand on the neck (most players) · Right hand on the neck (left-handed instrument) | Hvilken hånd er på halsen? · Venstre hånd på halsen (de fleste) · Høyre hånd på halsen (venstrehendt instrument) | lefty mode, "frets" as a verb |
 | Output | Share or print | Del eller skriv ut | Export (desktop menu bar only) |
 | Your computer | Fretscribe on your computer (installer and app lists: Bandroom) | Fretscribe på datamaskinen | engine, server |
