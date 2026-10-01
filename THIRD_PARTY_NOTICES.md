@@ -39,6 +39,8 @@ for Mac, iPhone and iPad when the band SoundFont is missing. It is not committed
 | Font | Licence | Where |
 |---|---|---|
 | [Instrument Serif](https://github.com/Instrument/instrument-serif), Copyright 2022 The Instrument Serif Project Authors | SIL OFL 1.1 | Display face of every app and the site; `OFL.txt` ships beside the font (`design/brand/fonts/`, `design/dist/*/`). |
+| [Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next), Copyright 2020-2024 The Atkinson Hyperlegible Next Project Authors | SIL OFL 1.1 | Display face of Fretscribe; `OFL-AtkinsonHyperlegibleNext.txt` ships beside the font (`design/fretscribe/brand/fonts/`, and as `OFL.txt` in `design/fretscribe/dist/android/res/font/`). |
+| Fretscribe Tab, a modified version of [Atkinson Hyperlegible Mono](https://github.com/googlefonts/atkinson-hyperlegible-next-mono), Copyright 2020-2024 The Atkinson Hyperlegible Mono Project Authors | SIL OFL 1.1 | Fret numbers in Fretscribe's design (`design/fretscribe/brand/fonts/`, with `OFL-FretscribeTab.txt` and the script that builds it); the weight is fixed at 600 and the plain zero is the default, under a new name as the licence requires. Not in any app yet. |
 
 ## Machine-learning models
 

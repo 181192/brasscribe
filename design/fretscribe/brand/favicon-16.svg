@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img" aria-labelledby="title">
+<title id="title">Fretscribe</title>
+<rect width="16" height="16" rx="3.5" fill="#1B1D21"/>
+<path fill="#FAF8F3" shape-rendering="crispEdges" d="M3 2H10v1H3zM12 2H13v1H12zM3 4H9v1H3zM11 4H13v1H11zM3 6H8v1H3zM10 6H13v1H10zM3 8H7v1H3zM9 8H13v1H9zM3 10H6v1H3zM8 10H13v1H8zM3 12H5v2H3zM7 12H13v2H7z"/>
+</svg>
