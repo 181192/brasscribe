@@ -443,6 +443,75 @@ fn lead_keeps_a_melody_with_octave_leaps_in_one_position() {
 }
 
 #[test]
+fn a_fill_is_reached_and_left_and_the_pedal_stays_low() {
+    // A C2 pedal, a fill of a bar around the 9th to 19th fret, the pedal again.
+    let fill = [52, 55, 57, 60, 62, 60, 55, 52];
+    let mut pitches = vec![C2; 8];
+    pitches.extend(fill);
+    pitches.extend([C2; 8]);
+    assert_low_except(&pitches, 50);
+    for (id, style, bpm) in bass_setups() {
+        let p = bass_line(id, &pitches, style, bpm);
+        // The fill stays up the neck and ends near the nut side of it, not further up.
+        assert!(p[8..16].iter().all(|pos| pos.fret >= 9), "{id} {style:?} {bpm}: {p:?}");
+        assert_eq!(p[15], Position { string: 1, fret: 9 }, "{id} {style:?} {bpm}: {p:?}");
+    }
+    // Four high notes.
+    let short = [C2, C2, C2, C2, C2, C2, C2, C2, 55, 58, 60, 58, C2, C2, C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2];
+    assert_low_except(&short, 50);
+}
+
+#[test]
+fn an_arpeggio_keeps_its_shape() {
+    // G major on a 4-string bass: one shape around the 10th fret, as before.
+    let p = bass_line("bass-4-standard", &[G2, 47, 50, 55, 50, 47], Style::OpenPosition, 120.0);
+    let want = [(3, 10), (2, 9), (2, 12), (1, 12), (2, 12), (2, 9)].map(|(string, fret)| Position { string, fret });
+    assert_eq!(p, want);
+    // A major, then F sharp minor, on guitar: each bar is one shape, and no bar runs along a string.
+    let g = preset("guitar-standard").unwrap();
+    let bars = [A3, E4, A4, 73, E5, 73, A4, E4, 54, 61, 66, A4, 73, A4, 66, 61];
+    for style in [Style::OpenPosition, Style::AsPlayed] {
+        let o = Options { tempo_bpm: Some(120.0), ..opts(style) };
+        let p = positions(&solve(&g, &line(&bars), &o));
+        let want = [(5, 9), (4, 11), (3, 11), (2, 10), (1, 9), (2, 10), (3, 11), (4, 11)].map(|(string, fret)| Position { string, fret });
+        assert_eq!(p[8..], want, "{style:?}: {p:?}");
+        assert!(p[..8].iter().all(|pos| (9..=12).contains(&pos.fret)), "{style:?}: {p:?}");
+        // A triad that turns round on its top note does not slide along one string.
+        let triad = [66, B4, 66, B4, 75, B4, 66, B4];
+        let p = positions(&solve(&g, &line(&triad), &o));
+        let frets = || p.iter().map(|pos| pos.fret);
+        assert!(frets().max().unwrap() - frets().min().unwrap() <= 2, "{style:?}: {p:?}");
+    }
+}
+
+#[test]
+fn a_melody_with_octave_leaps_keeps_its_other_notes_in_one_position() {
+    let g = preset("guitar-standard").unwrap();
+    let melody = [C4, D4, E4, E5, E4, D4, C4, C5, C4, D4, E4, F4, G4, 79, G4, F4];
+    for style in [Style::OpenPosition, Style::AsPlayed] {
+        let o = Options { tempo_bpm: Some(120.0), ..opts(style) };
+        let p = positions(&solve(&g, &line(&melody), &o));
+        // Every pitch has one place.
+        for (i, a) in melody.iter().enumerate() {
+            for (j, b) in melody.iter().enumerate() {
+                assert!(a != b || p[i] == p[j], "{style:?}: pitch {a} at {:?} and {:?}; all {p:?}", p[i], p[j]);
+            }
+        }
+        // The notes that are not leaps fit under one hand.
+        let hand: Vec<u8> = p.iter().zip(&melody).filter(|(_, pitch)| **pitch <= G4).map(|(pos, _)| pos.fret).collect();
+        assert!(hand.iter().max().unwrap() - hand.iter().filter(|f| **f > 0).min().unwrap() <= 3, "{style:?}: {p:?}");
+    }
+}
+
+#[test]
+fn a_long_pedal_gets_one_place() {
+    let inst = preset("bass-4-standard").unwrap();
+    let notes = line(&[C2; 2000]);
+    let p = positions(&solve(&inst, &notes, &opts(Style::AsPlayed)));
+    assert!(p.iter().all(|pos| *pos == Position { string: 3, fret: 3 }));
+}
+
+#[test]
 fn a_repeated_bar_next_to_a_stray_note_follows_the_other_bars() {
     // The same bar three times; the first is followed by two high notes. All three get the
     // fingering the bar has on its own.
