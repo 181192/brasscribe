@@ -125,11 +125,19 @@ jobs:
       # (with the workspace stamp of this commit), the band SoundFont and the core's command line (built
       # here for the macOS Bandroom supports; the engine needs it for bass tabs), and it bundles pixi so
       # a Mac without it can install the engine. Re-signed ad hoc, the two programs first, then the app.
+      # The pixi Bandroom bundles must be one the engine workspace accepts (requires-pixi in pixi.toml):
+      # the same pinned version the other jobs use, not whatever Homebrew has on the runner.
+      - name: pixi for Bandroom to bundle
+        if: ${{ inputs.release }}
+        uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
+        with:
+          pixi-version: v0.81.0
+          run-install: false
+
       - name: Release build of Bandroom for Mac
         if: ${{ inputs.release }}
         working-directory: apps/bandroom/macos
         run: |
-          brew install pixi
           (cd ../../../core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p brasscribe-cli)
           xcodegen generate
           xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
@@ -141,6 +149,7 @@ jobs:
           grep -q "$(git rev-parse --short HEAD)" "$stamp" || { echo "the workspace stamp is not from $(git rev-parse --short HEAD)" >&2; cat "$stamp" >&2; exit 1; }
           mkdir -p "$B/Contents/Resources/bin"
           cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
+          scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"
           "$B/Contents/Resources/bin/brasscribe-core" version || { echo "Bandroom has no core command line" >&2; exit 1; }
           codesign -d --entitlements - --xml "$B" > "$RUNNER_TEMP/band.entitlements"
           codesign --force --sign - "$B/Contents/Resources/bin/pixi"
