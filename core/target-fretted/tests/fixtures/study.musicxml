@@ -545,7 +545,7 @@
       </note>
       <direction placement="above">
         <direction-type>
-          <words>! F♯1</words>
+          <words enclosure="rectangle">! F♯1</words>
         </direction-type>
         <staff>2</staff>
       </direction>
@@ -590,6 +590,7 @@
         <stem>none</stem>
         <staff>2</staff>
         <notations>
+          <tuplet type="start" bracket="no" />
           <technical>
             <string>2</string>
             <fret>0</fret>
@@ -633,6 +634,7 @@
         <stem>none</stem>
         <staff>2</staff>
         <notations>
+          <tuplet type="stop" />
           <technical>
             <string>1</string>
             <fret>0</fret>

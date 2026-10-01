@@ -16,7 +16,7 @@ use crate::check::{check_with_techniques, Violation};
 use crate::instrument::{preset, preset_family, Instrument};
 use crate::solve::{assign_with_techniques, Fingering, Options};
 use crate::suggest::{suggest_tunings, TuningFit};
-use crate::tab::{write_tab_musicxml, TabOptions, TabScore};
+use crate::tab::{write_tab_musicxml, TabDocument, TabOptions, TabScore};
 use crate::technique::Technique;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -178,8 +178,9 @@ pub struct TabRequest {
     pub tab: TabOptions,
 }
 
-/// The MusicXML tablature of a [`TabRequest`].
-pub fn tab_musicxml(req: &TabRequest) -> Result<String, String> {
+/// The tablature of a [`TabRequest`]: the MusicXML document and how many notes were moved to a
+/// start or length that can be written.
+pub fn tab(req: &TabRequest) -> Result<TabDocument, String> {
     let instrument = req.instrument.resolve()?;
     let notes: Vec<Note> = req.notes.iter().map(|n| n.note.clone()).collect();
     let techniques: Vec<Vec<Technique>> = req.notes.iter().map(|n| n.techniques.clone()).collect();
@@ -197,11 +198,20 @@ pub fn tab_musicxml(req: &TabRequest) -> Result<String, String> {
     if let Some(k) = &req.key {
         score = score.with_key(k.fifths, &k.mode);
     }
-    Ok(write_tab_musicxml(&score, &req.tab))
+    write_tab_musicxml(&score, &req.tab)
 }
 
-/// The MusicXML tablature of a JSON [`TabRequest`].
+fn tab_request(request: &str) -> Result<TabRequest, String> {
+    serde_json::from_str(request).map_err(|e| format!("not a tablature request: {e}"))
+}
+
+/// The tablature of a JSON [`TabRequest`] as JSON: `{"musicxml": "...", "adjusted_notes": 0}`.
+pub fn tab_json(request: &str) -> Result<String, String> {
+    let doc = tab(&tab_request(request)?)?;
+    serde_json::to_string(&doc).map_err(|e| e.to_string())
+}
+
+/// The MusicXML tablature of a JSON [`TabRequest`], without the count of adjusted notes.
 pub fn tab_musicxml_json(request: &str) -> Result<String, String> {
-    let req: TabRequest = serde_json::from_str(request).map_err(|e| format!("not a tablature request: {e}"))?;
-    tab_musicxml(&req)
+    Ok(tab(&tab_request(request)?)?.musicxml)
 }

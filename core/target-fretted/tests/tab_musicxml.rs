@@ -2,8 +2,8 @@
 
 use brasscribe_core::model::Note;
 use roxmltree::{Document, Node, ParsingOptions};
-use target_fretted::json::tab_musicxml_json;
-use target_fretted::{assign, assign_with_techniques, preset, write_tab_musicxml, CapoEncoding, Fingering, Instrument, Layout, NotationClef, NotePlace, Options, TabOptions, TabScore, Technique, PRESET_IDS};
+use target_fretted::json::{tab_json, tab_musicxml_json};
+use target_fretted::{assign, assign_with_techniques, preset, write_tab_musicxml, CapoEncoding, Fingering, Instrument, Layout, NotationClef, NotePlace, Options, TabDocument, TabOptions, TabScore, Technique, PRESET_IDS};
 
 const QUARTER: i64 = 24;
 const EIGHTH: i64 = 12;
@@ -17,6 +17,11 @@ fn doubtful(pitch: i32, start: i64, dur: i64, confidence: f64) -> Note {
     Note::new(pitch, start, dur, confidence, Vec::new())
 }
 
+/// The document of a score that can be written.
+fn write(score: &TabScore, opts: &TabOptions) -> String {
+    write_tab_musicxml(score, opts).unwrap().musicxml
+}
+
 fn layout(layout: Layout) -> TabOptions {
     TabOptions { layout, ..TabOptions::default() }
 }
@@ -24,7 +29,7 @@ fn layout(layout: Layout) -> TabOptions {
 /// Solve and write, with one technique list per note (or none).
 fn tab_with(inst: &Instrument, notes: &[Note], techniques: &[Vec<Technique>], opts: &TabOptions) -> String {
     let fingering = assign_with_techniques(inst, notes, techniques, &Options::default()).unwrap();
-    write_tab_musicxml(&TabScore::new("Test", inst, notes, techniques, &fingering).unwrap(), opts)
+    write(&TabScore::new("Test", inst, notes, techniques, &fingering).unwrap(), opts)
 }
 
 fn tab(inst: &Instrument, notes: &[Note], opts: &TabOptions) -> String {
@@ -150,6 +155,44 @@ fn assert_measures_full(doc: &Document, bar: i64) {
     }
 }
 
+/// Every note and rest has a written type (a whole-measure rest says so instead), and every
+/// triplet value sits inside a `<tuplet>` bracket that is opened and closed on its own staff.
+fn assert_typed_and_bracketed(doc: &Document) {
+    for m in all(doc, "measure") {
+        let mut open = false;
+        for n in m.children().filter(|c| c.has_tag_name("note")) {
+            let number = m.attribute("number").unwrap();
+            let measure_rest = child(n, "rest").is_some_and(|r| r.attribute("measure") == Some("yes"));
+            assert!(measure_rest || child(n, "type").is_some(), "measure {number}: a note without a type");
+            let brackets: Vec<&str> = n.descendants().filter(|c| c.has_tag_name("tuplet")).map(|t| t.attribute("type").unwrap()).collect();
+            if brackets.contains(&"start") {
+                assert!(!open, "measure {number}: a bracket opens inside another");
+                open = true;
+            }
+            // The brackets are on a chord's first note and cover the rest of it.
+            if child(n, "time-modification").is_some() && child(n, "chord").is_none() {
+                assert!(open, "measure {number}: a triplet value outside a bracket");
+            }
+            if brackets.contains(&"stop") {
+                assert!(open, "measure {number}: a bracket closes that was not open");
+                open = false;
+            }
+            // The other staff starts after a backup, with its own brackets.
+            if n.next_siblings().skip(1).find(|c| c.is_element()).is_some_and(|c| c.has_tag_name("backup")) {
+                assert!(!open, "measure {number}: a bracket left open at the end of a staff");
+            }
+        }
+        assert!(!open, "a bracket left open at the end of a measure");
+    }
+}
+
+/// The document and the number of adjusted notes, on a mandolin in the given meter.
+fn in_meter(notes: &[Note], beats: i64, unit: i64, l: Layout) -> TabDocument {
+    let inst = preset("mandolin").unwrap();
+    let fingering = assign(&inst, notes, &Options::default()).unwrap();
+    write_tab_musicxml(&TabScore::new("Test", &inst, notes, &[], &fingering).unwrap().with_meter(beats, unit), &layout(l)).unwrap()
+}
+
 // --- the tab staff ---
 
 #[test]
@@ -214,7 +257,7 @@ fn notes_carry_sounding_pitch_string_and_fret() {
     let inst = preset("guitar-standard").unwrap();
     let notes = [note(40, 0, QUARTER), note(48, 24, QUARTER), note(64, 48, QUARTER), note(69, 72, QUARTER)];
     let fingering = assign(&inst, &notes, &Options::default()).unwrap();
-    let xml = write_tab_musicxml(&TabScore::new("Test", &inst, &notes, &[], &fingering).unwrap(), &layout(Layout::Tab));
+    let xml = write(&TabScore::new("Test", &inst, &notes, &[], &fingering).unwrap(), &layout(Layout::Tab));
     let doc = parse(&xml);
     let written = sounding(&doc);
     assert_eq!(written.len(), notes.len());
@@ -412,7 +455,7 @@ fn header_holds_title_tempo_meter_and_key() {
     let notes = [note(62, 0, 36), note(64, 36, 36)];
     let fingering = assign(&inst, &notes, &Options::default()).unwrap();
     let score = TabScore::new("Jig & <reel>", &inst, &notes, &[], &fingering).unwrap().with_tempo(112.5).with_meter(6, 8).with_key(2, "major");
-    let xml = write_tab_musicxml(&score, &layout(Layout::TabAndNotation));
+    let xml = write(&score, &layout(Layout::TabAndNotation));
     assert!(xml.starts_with("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0 Partwise//EN\""));
     let doc = parse(&xml);
     let root = doc.root_element();
@@ -437,7 +480,7 @@ fn compound_time_beams_in_threes() {
     let notes: Vec<Note> = (0..6).map(|i| note(62 + i, i64::from(i) * EIGHTH, EIGHTH)).collect();
     let fingering = assign(&inst, &notes, &Options::default()).unwrap();
     let score = TabScore::new("Jig", &inst, &notes, &[], &fingering).unwrap().with_meter(6, 8);
-    let xml = write_tab_musicxml(&score, &layout(Layout::Tab));
+    let xml = write(&score, &layout(Layout::Tab));
     let doc = parse(&xml);
     let beams: Vec<&str> = sounding(&doc).iter().map(|n| text(*n, "beam").unwrap()).collect();
     assert_eq!(beams, ["begin", "continue", "end", "begin", "continue", "end"]);
@@ -446,9 +489,9 @@ fn compound_time_beams_in_threes() {
 #[test]
 fn compound_time_is_split_on_the_dotted_quarter() {
     let inst = preset("mandolin").unwrap();
-    let write = |notes: &[Note], beats: i64| {
+    let jig = |notes: &[Note], beats: i64| {
         let fingering = assign(&inst, notes, &Options::default()).unwrap();
-        write_tab_musicxml(&TabScore::new("Jig", &inst, notes, &[], &fingering).unwrap().with_meter(beats, 8), &layout(Layout::Tab))
+        write(&TabScore::new("Jig", &inst, notes, &[], &fingering).unwrap().with_meter(beats, 8), &layout(Layout::Tab))
     };
     let values = |xml: &str| -> Vec<(String, usize, bool, Vec<String>)> {
         let doc = parse(xml);
@@ -456,13 +499,13 @@ fn compound_time_is_split_on_the_dotted_quarter() {
     };
     let v = |t: &str, dots: usize, rest: bool, ties: &[&str]| (t.to_string(), dots, rest, ties.iter().map(|s| s.to_string()).collect::<Vec<_>>());
     // Two dotted quarters fill a 6/8 bar, untied.
-    let xml = write(&[note(62, 0, 36), note(64, 36, 36)], 6);
+    let xml = jig(&[note(62, 0, 36), note(64, 36, 36)], 6);
     assert_eq!(values(&xml), [v("quarter", 1, false, &[]), v("quarter", 1, false, &[])]);
     // Quarter and eighth; then an eighth rest, and a quarter that stays inside the second beat.
-    let xml = write(&[note(62, 0, 24), note(64, 24, 12), note(66, 48, 24)], 6);
+    let xml = jig(&[note(62, 0, 24), note(64, 24, 12), note(66, 48, 24)], 6);
     assert_eq!(values(&xml), [v("quarter", 0, false, &[]), v("eighth", 0, false, &[]), v("eighth", 0, true, &[]), v("quarter", 0, false, &[])]);
     // A dotted half fills the bar; a quarter across the beat is split and tied.
-    let xml = write(&[note(62, 0, 72), note(64, 96, 24), note(66, 120, 24)], 6);
+    let xml = jig(&[note(62, 0, 72), note(64, 96, 24), note(66, 120, 24)], 6);
     assert_eq!(values(&xml), [
         v("half", 1, false, &[]),
         v("quarter", 0, true, &[]),
@@ -471,7 +514,7 @@ fn compound_time_is_split_on_the_dotted_quarter() {
         v("quarter", 0, false, &[])
     ]);
     // Three beats of 9/8 are a dotted half tied to a dotted quarter.
-    let xml = write(&[note(62, 0, 108)], 9);
+    let xml = jig(&[note(62, 0, 108)], 9);
     assert_eq!(values(&xml), [v("half", 1, false, &["start"]), v("quarter", 1, false, &["stop"])]);
     assert_measures_full(&parse(&xml), 108);
 }
@@ -549,6 +592,95 @@ fn triplets_are_written_as_three_in_the_time_of_two() {
     let tuplet = |k: usize| descendant(n[k], "tuplet").and_then(|t| t.attribute("type"));
     assert_eq!((tuplet(0), tuplet(1), tuplet(2)), (Some("start"), None, Some("stop")));
     assert_measures_full(&doc, BAR);
+}
+
+#[test]
+fn a_triplet_beat_is_bracketed_on_both_staves_with_its_rests() {
+    // A triplet eighth, a triplet rest and a triplet eighth; then plain eighths.
+    let notes = [note(62, 0, 8), note(64, 16, 8), note(65, 24, 12), note(67, 36, 12), note(69, 48, 48)];
+    for l in [Layout::Tab, Layout::TabAndNotation, Layout::Notation] {
+        let out = in_meter(&notes, 4, 4, l);
+        assert_eq!(out.adjusted_notes, 0, "triplets are on the grid");
+        let doc = parse(&out.musicxml);
+        assert_typed_and_bracketed(&doc);
+        assert_measures_full(&doc, BAR);
+        let staves = if l == Layout::TabAndNotation { 2 } else { 1 };
+        let of = |ty: &str| all(&doc, "tuplet").iter().filter(|t| t.attribute("type") == Some(ty)).count();
+        assert_eq!((of("start"), of("stop")), (staves, staves));
+        assert_eq!(all(&doc, "time-modification").len(), 3 * staves, "two notes and the rest between them");
+    }
+    // A triplet that crosses the beat is tied at the beat, each beat with its own bracket.
+    let out = in_meter(&[note(62, 0, 16), note(64, 16, 16), note(65, 32, 16)], 2, 4, Layout::Tab);
+    let doc = parse(&out.musicxml);
+    assert_typed_and_bracketed(&doc);
+    assert_eq!(all(&doc, "note").iter().map(|n| (text(*n, "type").unwrap(), ties(*n))).collect::<Vec<_>>(), [
+        ("quarter", vec![]),
+        ("eighth", vec!["start"]),
+        ("eighth", vec!["stop"]),
+        ("quarter", vec![])
+    ]);
+    assert_eq!(all(&doc, "tuplet").len(), 4);
+}
+
+#[test]
+fn starts_and_lengths_no_value_can_spell_are_moved_to_the_grid() {
+    // (meter, notes, notes moved): each of these used to give a note without a type.
+    let cases: [(i64, i64, Vec<Note>, usize); 5] = [
+        (9, 8, vec![note(62, 110, 1)], 1),
+        (6, 8, vec![note(62, 0, 16), note(64, 16, 20)], 2),
+        (4, 4, vec![note(62, 50, 10)], 1),
+        // A beat whose notes are nearer to triplets is written in triplets, the next one in 16ths.
+        (4, 4, vec![note(62, 0, 7), note(64, 7, 9), note(65, 16, 8), note(67, 24, 5), note(69, 29, 7), note(71, 36, 12)], 4),
+        // Two notes that land on one start become a chord; a note squeezed to nothing keeps a length.
+        (3, 4, vec![note(62, 1, 23), note(64, 2, 22), note(65, 47, 1)], 3),
+    ];
+    for (beats, unit, notes, moved) in cases {
+        for l in [Layout::Tab, Layout::TabAndNotation, Layout::Notation] {
+            let out = in_meter(&notes, beats, unit, l);
+            assert_eq!(out.adjusted_notes, moved, "{beats}/{unit} {l:?}");
+            let doc = parse(&out.musicxml);
+            assert_typed_and_bracketed(&doc);
+            assert_measures_full(&doc, beats * 96 / unit);
+            let staves = if l == Layout::TabAndNotation { 2 } else { 1 };
+            let pitches: std::collections::BTreeSet<i32> = sounding(&doc).iter().map(|n| midi(*n).unwrap()).collect();
+            assert_eq!(pitches, notes.iter().map(|n| n.pitch).collect(), "no note is lost");
+            assert!(sounding(&doc).len() >= notes.len() * staves);
+        }
+    }
+    // What they become.
+    let lengths = |beats, unit, notes: &[Note]| -> Vec<(bool, String)> {
+        let out = in_meter(notes, beats, unit, Layout::Tab);
+        all(&parse(&out.musicxml), "note").iter().filter(|n| child(**n, "rest").is_none_or(|r| r.attribute("measure").is_none())).map(|n| (child(*n, "pitch").is_some(), text(*n, "duration").unwrap().to_string())).collect()
+    };
+    let l = |sounds: bool, d: &str| (sounds, d.to_string());
+    // Tick 110 in 9/8 is in the second bar: a 32nd on the nearest 32nd.
+    assert_eq!(lengths(9, 8, &[note(62, 110, 1)]), [l(false, "3"), l(true, "3"), l(false, "24"), l(false, "6"), l(false, "72")]);
+    assert_eq!(lengths(6, 8, &[note(62, 0, 16), note(64, 16, 20)]), [l(true, "12"), l(true, "3"), l(true, "18"), l(true, "3"), l(false, "36")]);
+    assert_eq!(lengths(4, 4, &[note(62, 50, 10)]), [l(false, "48"), l(false, "3"), l(true, "9"), l(false, "12"), l(false, "24")]);
+    // Input on the grid is left alone.
+    assert_eq!(in_meter(&[note(62, 0, 9), note(64, 9, 3), note(65, 12, 8), note(67, 24, 8)], 4, 4, Layout::Tab).adjusted_notes, 1, "an eighth then a triplet in one beat cannot both stay");
+    assert_eq!(in_meter(&[note(62, 0, 9), note(64, 9, 15), note(65, 24, 8), note(67, 32, 16)], 4, 4, Layout::Tab).adjusted_notes, 0);
+}
+
+#[test]
+fn compound_time_has_no_triplets() {
+    // 4, 8 and 16 ticks are triplet values in simple time; a dotted-quarter beat cannot hold them.
+    let notes = [note(62, 0, 8), note(64, 8, 8), note(65, 16, 4), note(67, 20, 16), note(69, 36, 18), note(71, 54, 18)];
+    for (beats, bar) in [(6, 72), (12, 144)] {
+        for l in [Layout::Tab, Layout::TabAndNotation] {
+            let out = in_meter(&notes, beats, 8, l);
+            let doc = parse(&out.musicxml);
+            assert!(all(&doc, "time-modification").is_empty() && all(&doc, "tuplet").is_empty(), "{beats}/8");
+            assert_typed_and_bracketed(&doc);
+            assert_measures_full(&doc, bar);
+            assert_eq!(out.adjusted_notes, 4, "{beats}/8");
+        }
+    }
+    // A duplet is two dotted eighths, untied.
+    let out = in_meter(&[note(69, 0, 18), note(71, 18, 18), note(72, 36, 36)], 6, 8, Layout::Tab);
+    let doc = parse(&out.musicxml);
+    assert_eq!(out.adjusted_notes, 0);
+    assert_eq!(all(&doc, "note").iter().map(|n| (text(*n, "type").unwrap(), n.children().filter(|c| c.has_tag_name("dot")).count(), ties(*n).len())).collect::<Vec<_>>(), [("eighth", 1, 0), ("eighth", 1, 0), ("quarter", 1, 0)]);
 }
 
 #[test]
@@ -805,6 +937,7 @@ fn an_out_of_range_note_is_a_rest_on_the_tab_staff_with_its_name() {
             // Rests of the same length stand in, each with its mark right before it.
             let marks: Vec<Node> = all(&doc, "direction").into_iter().filter(|d| text(*d, "words").is_some_and(|w| w.starts_with('!'))).collect();
             assert_eq!(marks.iter().map(|d| text(*d, "words").unwrap()).collect::<Vec<_>>(), ["! D1", "! B1"]);
+            assert!(marks.iter().all(|d| descendant(*d, "words").unwrap().attribute("enclosure") == Some("rectangle")), "the ! is boxed");
             for (mark, len) in marks.iter().zip(["12", "24"]) {
                 assert_eq!(text(*mark, "staff"), if l == Layout::Tab { None } else { Some("2") });
                 let next = mark.next_siblings().skip(1).find(|s| s.is_element()).unwrap();
@@ -840,7 +973,7 @@ fn a_technique_to_a_note_without_a_place_is_not_written() {
     let notes = [note(40, 0, QUARTER), note(38, 24, QUARTER), note(40, 48, 48)];
     let t = techniques(3, &[(1, Technique::PullOff), (2, Technique::HammerOn)]);
     let fingering = assign(&inst, &notes, &Options::default()).unwrap();
-    let xml = write_tab_musicxml(&TabScore::new("Test", &inst, &notes, &t, &fingering).unwrap(), &layout(Layout::TabAndNotation));
+    let xml = write(&TabScore::new("Test", &inst, &notes, &t, &fingering).unwrap(), &layout(Layout::TabAndNotation));
     let doc = parse(&xml);
     for name in ["slur", "pull-off", "hammer-on"] {
         assert!(all(&doc, name).is_empty(), "{name}");
@@ -872,7 +1005,8 @@ fn every_preset_and_layout_is_well_formed_and_fills_its_measures() {
         seed ^= seed << 17;
         seed % n
     };
-    let lengths = [3, 6, 8, 9, 12, 16, 18, 24, 30, 36, 48, 60, 96, 120];
+    // Also lengths and starts off every grid.
+    let lengths = [1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 16, 18, 20, 24, 30, 36, 48, 60, 96, 120];
     for id in PRESET_IDS {
         let inst = preset(id).unwrap().with_capo(next(4) as u8);
         let (lo, hi) = inst.range();
@@ -887,12 +1021,13 @@ fn every_preset_and_layout_is_well_formed_and_fills_its_measures() {
             at += lengths[next(lengths.len() as u64) as usize];
         }
         let fingering = assign(&inst, &notes, &Options::default()).unwrap();
-        for (beats, unit) in [(4, 4), (3, 4), (6, 8), (5, 8)] {
+        for (beats, unit) in [(4, 4), (3, 4), (2, 2), (6, 8), (12, 8), (5, 8), (7, 16)] {
             let score = TabScore::new(id, &inst, &notes, &[], &fingering).unwrap().with_meter(beats, unit);
             for l in [Layout::Tab, Layout::TabAndNotation, Layout::Notation] {
-                let xml = write_tab_musicxml(&score, &layout(l));
+                let xml = write(&score, &layout(l));
                 let doc = parse(&xml);
                 assert_measures_full(&doc, beats * 96 / unit);
+                assert_typed_and_bracketed(&doc);
                 // Every placed note sounds its pitch at the written string and fret.
                 for n in sounding(&doc) {
                     if let Some((string, fret)) = place(n) {
@@ -927,10 +1062,81 @@ fn a_score_refuses_input_that_does_not_fit_together() {
 }
 
 #[test]
+fn a_score_that_cannot_be_written_is_an_error() {
+    let inst = preset("guitar-standard").unwrap();
+    let notes = [note(60, 0, QUARTER)];
+    let fingering = assign(&inst, &notes, &Options::default()).unwrap();
+    let score = TabScore::new("x", &inst, &notes, &[], &fingering).unwrap();
+    let err = |s: &TabScore| write_tab_musicxml(s, &TabOptions::default()).unwrap_err();
+    // Time signatures are written as given or not at all.
+    assert!(err(&score.clone().with_meter(4, 3)).contains("lower number"));
+    assert!(err(&score.clone().with_meter(4, 0)).contains("lower number"));
+    assert!(err(&score.clone().with_meter(0, 4)).contains("upper number"));
+    assert!(err(&score.clone().with_meter(33, 4)).contains("upper number"));
+    assert!(err(&score.clone().with_meter(-4, 4)).contains("upper number"));
+    assert!(err(&score.clone().with_key(8, "major")).contains("key signature"));
+    for bpm in [0.0, -60.0, f64::NAN, f64::INFINITY, 5000.0] {
+        assert!(err(&score.clone().with_tempo(bpm)).contains("tempo"), "{bpm}");
+    }
+    // A score put together by hand is checked by the writer.
+    let broken = |change: fn(&mut TabScore)| {
+        let mut s = score.clone();
+        change(&mut s);
+        (s.validate().unwrap_err(), err(&s))
+    };
+    for (change, says) in [
+        ((|s| s.notes[0].dur = 0) as fn(&mut TabScore), "needs a length"),
+        (|s| s.notes[0].dur = -24, "needs a length"),
+        (|s| s.notes[0].start = i64::MAX, "out of range"),
+        (|s| s.notes[0].start = i64::MAX / 2, "note 0"),
+        (|s| s.notes[0].dur = i64::MAX, "note 0"),
+        (|s| s.notes[0].pitch = 200, "MIDI"),
+        (|s| s.notes[0].confidence = f64::NAN, "confidence"),
+        (|s| s.notes[0].string = Some(9), "string 9"),
+        (|s| s.notes[0].fret = Some(99), "fret 99"),
+        (|s| s.notes[0].fret = None, "go together"),
+        (|s| s.instrument.frets = 0, "fret"),
+        (|s| s.instrument.tuning.strings.clear(), "strings"),
+    ] {
+        let (validated, written) = broken(change);
+        assert_eq!(validated, written);
+        assert!(written.contains(says), "{written:?} should mention {says:?}");
+    }
+    let opts = TabOptions { doubt_below: f64::NAN, ..TabOptions::default() };
+    assert!(write_tab_musicxml(&score, &opts).unwrap_err().contains("threshold"));
+    // The longest passage the model allows is still a bounded number of measures.
+    let far = [note(60, brasscribe_core::model::MAX_TICKS - 24, 24)];
+    let fingering = assign(&inst, &far, &Options::default()).unwrap();
+    let xml = write(&TabScore::new("x", &inst, &far, &[], &fingering).unwrap(), &layout(Layout::Tab));
+    assert_eq!(xml.matches("<measure ").count() as i64, brasscribe_core::model::MAX_TICKS / BAR);
+}
+
+#[test]
+fn control_characters_in_names_are_left_out() {
+    let mut inst = preset("guitar-standard").unwrap();
+    inst.name = "Gui\u{0}tar\u{1b}[31m\u{7f}".into();
+    inst.tuning.name = "Stan\u{85}dard\r\nmine\u{8}".into();
+    let notes = [note(60, 0, QUARTER)];
+    let fingering = assign(&inst, &notes, &Options::default()).unwrap();
+    let score = TabScore::new("Bell\u{7}\u{1}\tsong\u{9f}\u{ffff} <&>", &inst, &notes, &[], &fingering).unwrap();
+    for l in [Layout::Tab, Layout::TabAndNotation, Layout::Notation] {
+        let xml = write(&score, &layout(l));
+        assert!(!xml.chars().any(|c| c.is_control() && c != '\n'), "{l:?}");
+        let doc = parse(&xml);
+        assert_eq!(text(doc.root_element(), "work-title"), Some("Bell song <&>"));
+        assert_eq!(text(doc.root_element(), "part-name"), Some("Guitar[31m"));
+        assert_eq!(words(&doc)[0], "Standard  mine: E A D G B E");
+    }
+    // A title of nothing but control characters is no title.
+    let score = TabScore { title: "\u{1}\u{2}".into(), ..score };
+    assert!(all(&parse(&write(&score, &TabOptions::default())), "work").is_empty());
+}
+
+#[test]
 fn an_empty_passage_is_one_bar_of_rest() {
     let inst = preset("ukulele-high-g").unwrap();
     let score = TabScore::new("", &inst, &[], &[], &Fingering { notes: Vec::new() }).unwrap();
-    let xml = write_tab_musicxml(&score, &TabOptions::default());
+    let xml = write(&score, &TabOptions::default());
     let doc = parse(&xml);
     assert_eq!(all(&doc, "measure").len(), 1);
     assert!(all(&doc, "work").is_empty(), "no title element for an empty title");
@@ -960,6 +1166,22 @@ fn json_solves_and_writes() {
     // The solver's tempo is used when the request names no other.
     let xml = tab_musicxml_json(r#"{"instrument": {"preset": "mandolin"}, "notes": [], "options": {"tempo_bpm": 140}}"#).unwrap();
     assert_eq!(text(parse(&xml).root_element(), "per-minute"), Some("140"));
+}
+
+#[test]
+fn json_says_how_many_notes_were_moved() {
+    let request = |start: i64| format!(r#"{{"instrument": {{"preset": "mandolin"}}, "notes": [{{"pitch": 62, "start": {start}, "dur": 10}}], "tab": {{"layout": "tab"}}}}"#);
+    let answer = |start| serde_json::from_str::<TabDocument>(&tab_json(&request(start)).unwrap()).unwrap();
+    assert_eq!(answer(50).adjusted_notes, 1);
+    assert_eq!(answer(50).musicxml, tab_musicxml_json(&request(50)).unwrap());
+    assert!(answer(50).musicxml.starts_with("<?xml"));
+    // 48 + 12 is an eighth on the beat.
+    let on_grid = r#"{"instrument": {"preset": "mandolin"}, "notes": [{"pitch": 62, "start": 48, "dur": 12}]}"#;
+    assert_eq!(serde_json::from_str::<TabDocument>(&tab_json(on_grid).unwrap()).unwrap().adjusted_notes, 0);
+    // A time signature that cannot be written is refused, not rewritten.
+    let odd = r#"{"instrument": {"preset": "mandolin"}, "notes": [], "meter": {"beats": 4, "beat_unit": 3}}"#;
+    assert!(tab_json(odd).unwrap_err().contains("lower number"));
+    assert!(tab_musicxml_json(&odd.replace(r#""beats": 4, "beat_unit": 3"#, r#""beats": 0"#)).unwrap_err().contains("upper number"));
 }
 
 #[test]

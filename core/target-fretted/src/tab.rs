@@ -5,11 +5,15 @@
 //! The same input always gives the same text.
 //!
 //! One rhythmic voice is written. Notes that start together are a chord; a chord lasts until its
-//! longest note ends or the next note starts, whichever comes first.
+//! longest note ends or the next note starts, whichever comes first. Starts and lengths that no
+//! note value can spell are moved to the nearest ones that can, and the writer says how many notes
+//! it moved.
 
-use brasscribe_core::model::{check_span, Composition, Note, TICKS_PER_BEAT};
+use std::collections::{BTreeMap, BTreeSet};
+
+use brasscribe_core::model::{check_span, Composition, Note, MAX_BAR_BEATS, TICKS_PER_BEAT};
 use brasscribe_core::notation::xml::El;
-use brasscribe_core::rhythm_spelling::{is_value, pieces};
+use brasscribe_core::rhythm_spelling::{is_single, pieces};
 use brasscribe_core::spelling::{spell, Spelled};
 use serde::{Deserialize, Serialize};
 
@@ -31,6 +35,11 @@ const DIVISIONS: i64 = TICKS_PER_BEAT;
 const WHOLE: i64 = 4 * TICKS_PER_BEAT;
 /// Ticks of a dotted quarter: the beat of compound time.
 const DOTTED_QUARTER: i64 = 36;
+/// Lower numbers of a time signature that can be written.
+const BEAT_UNITS: [i64; 5] = [1, 2, 4, 8, 16];
+/// Slowest and fastest tempo written, in quarter notes per minute.
+const MIN_TEMPO: f64 = 10.0;
+const MAX_TEMPO: f64 = 600.0;
 /// The largest bend written, in semitones.
 const MAX_BEND: i32 = 4;
 
@@ -116,27 +125,16 @@ impl TabScore {
     /// A score in 4/4, C major, at 120 BPM from the solver's input and output. `techniques` is
     /// empty or one list per note; `fingering` has one place per note.
     pub fn new(title: &str, instrument: &Instrument, notes: &[Note], techniques: &[Vec<Technique>], fingering: &Fingering) -> Result<TabScore, String> {
-        instrument.validate()?;
         let techniques = per_note(techniques, notes.len())?;
         if fingering.notes.len() != notes.len() {
             return Err(format!("the fingering places {} notes, not the {} notes of the passage", fingering.notes.len(), notes.len()));
         }
-        let strings = instrument.string_count();
         let mut out = Vec::with_capacity(notes.len());
         for (i, ((n, place), techniques)) in notes.iter().zip(&fingering.notes).zip(techniques).enumerate() {
-            check_span(n.start, n.end()).map_err(|e| format!("note {i}: {e}"))?;
-            if !(0..=127).contains(&n.pitch) {
-                return Err(format!("note {i}: pitch {} is outside MIDI 0-127", n.pitch));
-            }
             if place.pitch != n.pitch {
                 return Err(format!("note {i}: the fingering is for pitch {}, the note is {}", place.pitch, n.pitch));
             }
             let position = place.position();
-            if let Some(p) = position {
-                if p.string == 0 || usize::from(p.string) > strings {
-                    return Err(format!("note {i}: string {} is not on an instrument with {strings} strings", p.string));
-                }
-            }
             out.push(TabNote {
                 pitch: n.pitch,
                 start: n.start,
@@ -148,7 +146,56 @@ impl TabScore {
                 techniques,
             });
         }
-        Ok(TabScore { title: title.into(), instrument: instrument.clone(), tempo_bpm: 120.0, beats: 4, beat_unit: 4, fifths: 0, mode: "major".into(), notes: out })
+        let score = TabScore { title: title.into(), instrument: instrument.clone(), tempo_bpm: 120.0, beats: 4, beat_unit: 4, fifths: 0, mode: "major".into(), notes: out };
+        score.validate()?;
+        Ok(score)
+    }
+
+    /// Err when the score cannot be written: an instrument that cannot be fingered, a time
+    /// signature, key or tempo out of bounds, or a note with a length, position, pitch, string or
+    /// confidence that makes no sense. [`write_tab_musicxml`] calls this, so a score built by hand
+    /// is checked like any other.
+    pub fn validate(&self) -> Result<(), String> {
+        self.instrument.validate()?;
+        if !BEAT_UNITS.contains(&self.beat_unit) {
+            return Err(format!("the lower number of a time signature is 1, 2, 4, 8 or 16, not {}", self.beat_unit));
+        }
+        if !(1..=MAX_BAR_BEATS).contains(&self.beats) {
+            return Err(format!("the upper number of a time signature is 1 to {MAX_BAR_BEATS}, not {}", self.beats));
+        }
+        if !(-7..=7).contains(&self.fifths) {
+            return Err(format!("a key signature has at most 7 sharps or flats, not {}", self.fifths));
+        }
+        if !(self.tempo_bpm.is_finite() && (MIN_TEMPO..=MAX_TEMPO).contains(&self.tempo_bpm)) {
+            return Err(format!("the tempo is {MIN_TEMPO} to {MAX_TEMPO} quarter notes per minute, not {}", self.tempo_bpm));
+        }
+        let strings = self.instrument.string_count();
+        for (i, n) in self.notes.iter().enumerate() {
+            if n.dur <= 0 {
+                return Err(format!("note {i}: a note needs a length, not {} ticks", n.dur));
+            }
+            let end = n.start.checked_add(n.dur).ok_or_else(|| format!("note {i}: start {} plus length {} is out of range", n.start, n.dur))?;
+            check_span(n.start, end).map_err(|e| format!("note {i}: {e}"))?;
+            if !(0..=127).contains(&n.pitch) {
+                return Err(format!("note {i}: pitch {} is outside MIDI 0-127", n.pitch));
+            }
+            if n.confidence.is_nan() {
+                return Err(format!("note {i}: the confidence is not a number"));
+            }
+            match (n.string, n.fret) {
+                (None, None) => {}
+                (Some(s), Some(f)) => {
+                    if s == 0 || usize::from(s) > strings {
+                        return Err(format!("note {i}: string {s} is not on an instrument with {strings} strings"));
+                    }
+                    if f > self.instrument.frets {
+                        return Err(format!("note {i}: fret {f} is past the last fret {}", self.instrument.frets));
+                    }
+                }
+                _ => return Err(format!("note {i}: a string and a fret go together")),
+            }
+        }
+        Ok(())
     }
 
     pub fn with_tempo(mut self, bpm: f64) -> Self {
@@ -272,7 +319,8 @@ fn value(len: i64) -> Option<(&'static str, u8, bool)> {
 
 /// Readable (start, end) pieces of [start, end) in compound time, where the beat is a dotted
 /// quarter: split at bar lines, and at the beat unless the value starts on a beat and fills whole
-/// beats.
+/// beats. Only plain and dotted values are used (a duplet is two dotted eighths), so there are no
+/// tuplets; the span is on the 32nd-note grid.
 fn compound_pieces(start: i64, end: i64, bar: i64) -> Vec<(i64, i64)> {
     let mut out = Vec::new();
     let mut at = start;
@@ -281,7 +329,7 @@ fn compound_pieces(start: i64, end: i64, bar: i64) -> Vec<(i64, i64)> {
         let left = (end - at).min(bar - in_bar);
         let in_beat = in_bar % DOTTED_QUARTER;
         // On a beat a value may fill whole beats; anywhere it may stay inside its beat.
-        let fits = |n: i64| n <= left && is_value(n) && if in_beat == 0 { n <= DOTTED_QUARTER || n % DOTTED_QUARTER == 0 } else { in_beat + n <= DOTTED_QUARTER };
+        let fits = |n: i64| n <= left && is_single(n) && if in_beat == 0 { n <= DOTTED_QUARTER || n % DOTTED_QUARTER == 0 } else { in_beat + n <= DOTTED_QUARTER };
         let reach = if in_beat == 0 { left } else { left.min(DOTTED_QUARTER - in_beat) };
         let len = (1..=reach).rev().find(|&n| fits(n)).unwrap_or(reach);
         out.push((at, at + len));
@@ -364,6 +412,12 @@ fn pitch_name(s: Spelled) -> String {
     format!("{}{accidental}{}", s.step, s.octave)
 }
 
+/// Text without control characters: a tab or a line break becomes a space, the others are left
+/// out, so a name typed with one still gives a well-formed file.
+fn clean(text: &str) -> String {
+    text.chars().filter_map(|c| if matches!(c, '\t' | '\n' | '\r') { Some(' ') } else { (!c.is_control()).then_some(c) }).collect()
+}
+
 /// The header line: tuning name, open strings low line to high, and the capo when set.
 pub fn header_text(inst: &Instrument) -> String {
     let mut text = format!("{}: {}", inst.tuning.name, tuning_text(inst));
@@ -384,9 +438,102 @@ struct Plan<'a> {
     /// Ticks of one beam group: the beat.
     beam_group: i64,
     events: Vec<Event>,
+    /// Starts of the beats written in triplet values.
+    triplets: BTreeSet<i64>,
+    /// Notes whose start or length was moved to a place that can be written.
+    adjusted: usize,
     /// (start, end, number, implicit) per measure.
     measures: Vec<(i64, i64, usize, bool)>,
     symbols: Vec<Symbol>,
+}
+
+/// The beat cell a tick is in, as (start, end): a quarter note counted from the bar line, shorter
+/// at the end of a bar that is not a whole number of quarters.
+fn cell(tick: i64, bar: i64) -> (i64, i64) {
+    let bar_start = tick.div_euclid(bar) * bar;
+    let start = bar_start + (tick - bar_start) / TICKS_PER_BEAT * TICKS_PER_BEAT;
+    (start, (start + TICKS_PER_BEAT).min(bar_start + bar))
+}
+
+/// The nearest multiple of `grid` to `offset` (the lower one on a tie).
+fn nearest(offset: i64, grid: i64) -> i64 {
+    let below = offset.div_euclid(grid) * grid;
+    if offset - below > grid / 2 {
+        below + grid
+    } else {
+        below
+    }
+}
+
+/// Where every note is written, and which beats are triplets.
+struct Grid {
+    /// (start, end) per note of the score.
+    spans: Vec<(i64, i64)>,
+    /// Starts of the beat cells written in triplet values.
+    triplets: BTreeSet<i64>,
+    /// Notes whose start or length was moved.
+    adjusted: usize,
+}
+
+/// Move every start and end to a place note values can spell.
+///
+/// A beat is written either in 32nds (a 3-tick grid) or in triplet 16ths (a 4-tick grid),
+/// whichever is nearer to the starts and ends inside it; a tie goes to the 32nds. Compound time
+/// has no triplets. A note that would be left without a length gets the shortest one of its beat.
+fn grid(score: &TabScore, bar: i64, compound: bool) -> Grid {
+    // What is written of a note ends where its chord ends: at the chord's longest note, or at the
+    // next start. Only those ends, and the starts, are places on the page.
+    let starts: BTreeSet<i64> = score.notes.iter().map(|n| n.start).collect();
+    let mut chord_end: BTreeMap<i64, i64> = BTreeMap::new();
+    for n in &score.notes {
+        let next = starts.range(n.start + 1..).next().copied().unwrap_or(i64::MAX);
+        let end = chord_end.entry(n.start).or_insert(n.start);
+        *end = (*end).max((n.start + n.dur).min(next));
+    }
+    let mut triplets = BTreeSet::new();
+    if !compound {
+        // Distance of the places inside each beat to the 32nd grid and to the triplet grid.
+        let mut error: BTreeMap<i64, (i64, i64)> = BTreeMap::new();
+        for &t in starts.iter().chain(chord_end.values()) {
+            let (start, end) = cell(t, bar);
+            if (end - start) % 12 == 0 {
+                let o = t - start;
+                let e = error.entry(start).or_default();
+                e.0 += (o - nearest(o, 3)).abs();
+                e.1 += (o - nearest(o, 4)).abs();
+            }
+        }
+        triplets = error.into_iter().filter(|(_, (plain, triplet))| triplet < plain).map(|(start, _)| start).collect();
+    }
+    let unit = |cell_start: i64| if triplets.contains(&cell_start) { 4 } else { 3 };
+    let snap = |t: i64| {
+        if compound {
+            return nearest(t, 3);
+        }
+        let (start, end) = cell(t, bar);
+        (start + nearest(t - start, unit(start))).min(end)
+    };
+    let mut adjusted = 0;
+    let spans = score
+        .notes
+        .iter()
+        .map(|n| {
+            let written_end = chord_end[&n.start];
+            let start = snap(n.start);
+            let mut end = snap(written_end);
+            let squeezed = end <= start;
+            if squeezed {
+                end = start + if compound { 3 } else { unit(cell(start, bar).0) };
+            }
+            // A note cut short by its chord or by the next note was not moved.
+            let own_end = n.start + n.dur == written_end;
+            if start != n.start || squeezed || (own_end && end != written_end) {
+                adjusted += 1;
+            }
+            (start, end)
+        })
+        .collect();
+    Grid { spans, triplets, adjusted }
 }
 
 fn doubtful(n: &Written, opts: &TabOptions) -> bool {
@@ -394,11 +541,11 @@ fn doubtful(n: &Written, opts: &TabOptions) -> bool {
 }
 
 /// Group the notes into chords, merge notes that sound as one, and pair up the techniques.
-fn events(score: &TabScore) -> Vec<Event> {
+fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
     let notes = &score.notes;
     let kept: Vec<usize> = {
-        let mut k: Vec<usize> = (0..notes.len()).filter(|&i| notes[i].dur > 0).collect();
-        k.sort_by_key(|&i| (notes[i].start, notes[i].pitch, i));
+        let mut k: Vec<usize> = (0..notes.len()).collect();
+        k.sort_by_key(|&i| (spans[i].0, notes[i].pitch, i));
         k
     };
     let place = |i: usize| notes[i].string.zip(notes[i].fret).filter(|_| !notes[i].out_of_range);
@@ -407,12 +554,13 @@ fn events(score: &TabScore) -> Vec<Event> {
     let mut events: Vec<Event> = Vec::new();
     for &i in &kept {
         let n = &notes[i];
-        if events.last().is_none_or(|e| e.start != n.start) {
-            events.push(Event { start: n.start, end: n.start, notes: Vec::new() });
+        let (start, end) = spans[i];
+        if events.last().is_none_or(|e| e.start != start) {
+            events.push(Event { start, end: start, notes: Vec::new() });
         }
         let e = events.len() - 1;
         let ev = &mut events[e];
-        ev.end = ev.end.max(n.start + n.dur);
+        ev.end = ev.end.max(end);
         let has = |t: Technique| n.techniques.contains(&t);
         // Two notes of one pitch on one position sound as one note.
         if let Some(k) = ev.notes.iter().position(|w| w.pitch == n.pitch && w.place == place(i)) {
@@ -452,7 +600,7 @@ fn events(score: &TabScore) -> Vec<Event> {
     }
 
     // A slide, hammer-on, pull-off or bend links the note it comes from to the note that has it.
-    let model: Vec<Note> = notes.iter().map(|n| Note::new(n.pitch, n.start, n.dur, n.confidence, Vec::new())).collect();
+    let model: Vec<Note> = notes.iter().zip(spans).map(|(n, &(start, end))| Note::new(n.pitch, start, end - start, n.confidence, Vec::new())).collect();
     for &i in &kept {
         let Some(to) = slot[i] else { continue };
         for &t in &notes[i].techniques {
@@ -496,13 +644,16 @@ fn events(score: &TabScore) -> Vec<Event> {
 }
 
 impl<'a> Plan<'a> {
-    fn new(score: &'a TabScore, opts: &'a TabOptions) -> Plan<'a> {
-        let beat_unit = if [1, 2, 4, 8, 16].contains(&score.beat_unit) { score.beat_unit } else { 4 };
-        let beats = score.beats.clamp(1, 32);
-        let bar = beats * WHOLE / beat_unit;
-        let compound = beat_unit == 8 && beats % 3 == 0;
+    fn new(score: &'a TabScore, opts: &'a TabOptions) -> Result<Plan<'a>, String> {
+        score.validate()?;
+        if !(0.0..=1.0).contains(&opts.doubt_below) {
+            return Err(format!("the doubt threshold is a confidence from 0 to 1, not {}", opts.doubt_below));
+        }
+        let bar = score.beats * WHOLE / score.beat_unit;
+        let compound = score.beat_unit == 8 && score.beats % 3 == 0;
         let beam_group = if compound { DOTTED_QUARTER } else { TICKS_PER_BEAT };
-        let events = events(score);
+        let Grid { spans, triplets, adjusted } = grid(score, bar, compound);
+        let events = events(score, &spans);
 
         let first = events.first().map_or(0, |e| e.start);
         let last = events.last().map_or(0, |e| e.end);
@@ -520,18 +671,37 @@ impl<'a> Plan<'a> {
             n += 1;
         }
 
-        let mut plan = Plan { score, opts, clef: opts.clef.unwrap_or_else(|| score.instrument.notation_clef()), bar, compound, beam_group, events, measures, symbols: Vec::new() };
+        let mut plan = Plan { score, opts, clef: opts.clef.unwrap_or_else(|| score.instrument.notation_clef()), bar, compound, beam_group, triplets, adjusted, events, measures, symbols: Vec::new() };
         plan.lay_out();
-        plan
+        Ok(plan)
     }
 
     /// A span as tied values that show the beat.
     fn split(&self, start: i64, end: i64) -> Vec<(i64, i64)> {
         if self.compound {
-            compound_pieces(start, end, self.bar)
-        } else {
-            pieces(start, end, self.bar)
+            return compound_pieces(start, end, self.bar);
         }
+        let mut out = Vec::new();
+        let mut at = start;
+        while at < end {
+            let (cell_start, cell_end) = cell(at, self.bar);
+            if self.triplets.contains(&cell_start) {
+                // Triplet 16ths, joined into triplet eighths and quarters where they line up.
+                let to = end.min(cell_end);
+                while at < to {
+                    let on_eighth = (at - cell_start) % 8 == 0;
+                    let len = [16, 8].into_iter().find(|&v| on_eighth && at + v <= to).unwrap_or(4);
+                    out.push((at, at + len));
+                    at += len;
+                }
+            } else {
+                // Plain values up to the next triplet beat.
+                let to = self.triplets.range(at..).next().map_or(end, |&t| t.min(end));
+                out.extend(pieces(at, to, self.bar));
+                at = to;
+            }
+        }
+        out
     }
 
     fn rest(&mut self, from: i64, to: i64) {
@@ -565,21 +735,14 @@ impl<'a> Plan<'a> {
         let (bar, group) = (self.bar, self.beam_group);
         let measure_of = |s: &Symbol| s.start.div_euclid(bar);
         let n = self.symbols.len();
-        // Triplets: a bracket from the first triplet value to the one that ends on a beat.
-        let triplet = |s: &Symbol| value(s.end - s.start).is_some_and(|v| v.2);
-        let mut open = false;
+        // Triplets: a bracket over each triplet beat, which its values fill. A pickup may start
+        // inside one.
+        let first = self.measures[0].0;
         for i in 0..n {
-            if !triplet(&self.symbols[i]) {
-                continue;
-            }
-            if !open {
-                self.symbols[i].tuplet_start = true;
-                open = true;
-            }
-            let next_joins = i + 1 < n && triplet(&self.symbols[i + 1]) && measure_of(&self.symbols[i + 1]) == measure_of(&self.symbols[i]);
-            if self.symbols[i].end.rem_euclid(TICKS_PER_BEAT) == 0 || !next_joins {
-                self.symbols[i].tuplet_stop = true;
-                open = false;
+            let (cell_start, cell_end) = cell(self.symbols[i].start, bar);
+            if self.triplets.contains(&cell_start) && !self.symbols[i].whole_measure {
+                self.symbols[i].tuplet_start = self.symbols[i].start == cell_start.max(first);
+                self.symbols[i].tuplet_stop = self.symbols[i].end == cell_end;
             }
         }
         // Beams: runs of notes shorter than a quarter inside one beat.
@@ -627,8 +790,12 @@ impl<'a> Plan<'a> {
         self.two_staves().then_some(if staff == Staff::Tab { 2 } else { 1 })
     }
 
-    fn words(&self, text: &str, staff: Staff) -> El {
-        let mut d = El::new("direction").attr("placement", "above").child(El::new("direction-type").child(El::text("words", text)));
+    fn words(&self, text: &str, staff: Staff, boxed: bool) -> El {
+        let mut words = El::text("words", clean(text));
+        if boxed {
+            words.set("enclosure", "rectangle");
+        }
+        let mut d = El::new("direction").attr("placement", "above").child(El::new("direction-type").child(words));
         if let Some(n) = self.staff_number(staff) {
             d.push(El::text("staff", n.to_string()));
         }
@@ -639,13 +806,12 @@ impl<'a> Plan<'a> {
         let score = self.score;
         let inst = &score.instrument;
         let mut a = El::new("attributes").child(El::text("divisions", DIVISIONS.to_string()));
-        let mut key = El::new("key").child(El::text("fifths", score.fifths.clamp(-7, 7).to_string()));
+        let mut key = El::new("key").child(El::text("fifths", score.fifths.to_string()));
         if score.mode == "major" || score.mode == "minor" {
             key.push(El::text("mode", score.mode.as_str()));
         }
         a.push(key);
-        let beat_unit = if [1, 2, 4, 8, 16].contains(&score.beat_unit) { score.beat_unit } else { 4 };
-        a.push(El::new("time").child(El::text("beats", score.beats.clamp(1, 32).to_string())).child(El::text("beat-type", beat_unit.to_string())));
+        a.push(El::new("time").child(El::text("beats", score.beats.to_string())).child(El::text("beat-type", score.beat_unit.to_string())));
         if self.two_staves() {
             a.push(El::text("staves", "2"));
         }
@@ -690,8 +856,8 @@ impl<'a> Plan<'a> {
     /// Tempo and the tuning header, at the start of the first measure.
     fn opening(&self, out: &mut El) {
         let top = if self.opts.layout == Layout::Tab { Staff::Tab } else { Staff::Notation };
-        out.push(self.words(&header_text(&self.score.instrument), top));
-        let bpm = if self.score.tempo_bpm.is_finite() && self.score.tempo_bpm > 0.0 { self.score.tempo_bpm.clamp(10.0, 600.0) } else { 120.0 };
+        out.push(self.words(&header_text(&self.score.instrument), top, false));
+        let bpm = self.score.tempo_bpm;
         let mut d = El::new("direction")
             .attr("placement", "above")
             .child(El::new("direction-type").child(El::new("metronome").child(El::text("beat-unit", "quarter")).child(El::text("per-minute", number(bpm)))));
@@ -715,15 +881,15 @@ impl<'a> Plan<'a> {
             if let (Some(ev), true, true) = (event, marks, sym.first) {
                 let lost: Vec<String> = ev.notes.iter().filter(|n| n.place.is_none()).map(|n| pitch_name(n.spelled)).collect();
                 if !lost.is_empty() {
-                    out.push(self.words(&format!("! {}", lost.join(" ")), staff));
+                    out.push(self.words(&format!("! {}", lost.join(" ")), staff, true));
                 }
                 if ev.notes.iter().any(|n| doubtful(n, self.opts)) {
-                    out.push(self.words("?", staff));
+                    out.push(self.words("?", staff, false));
                 }
                 let rings = |e: &Event| e.notes.iter().any(|n| n.let_ring);
                 let ringing_before = sym.event.and_then(|e| e.checked_sub(1)).is_some_and(|p| rings(&self.events[p]) && self.events[p].end == ev.start);
                 if rings(ev) && !ringing_before {
-                    out.push(self.words("let ring", staff));
+                    out.push(self.words("let ring", staff, false));
                 }
             }
             // The tab staff never shows a note without a place: a wrong fret would be a wrong pitch.
@@ -796,11 +962,13 @@ impl<'a> Plan<'a> {
                 if let Some(w) = w {
                     self.notations(w, sym, staff, &mut notations);
                 }
-                if k == 0 && rhythm && (sym.tuplet_start || sym.tuplet_stop) {
-                    if sym.tuplet_stop && !sym.tuplet_start {
+                // Every triplet beat has its bracket, on each staff, so no value is left without one.
+                if k == 0 {
+                    if sym.tuplet_stop {
                         notations.children.insert(0, El::new("tuplet").attr("type", "stop"));
-                    } else if sym.tuplet_start && !sym.tuplet_stop {
-                        notations.children.insert(0, El::new("tuplet").attr("type", "start").attr("bracket", "yes"));
+                    }
+                    if sym.tuplet_start {
+                        notations.children.insert(0, El::new("tuplet").attr("type", "start").attr("bracket", if rhythm { "yes" } else { "no" }));
                     }
                 }
                 if !notations.children.is_empty() {
@@ -881,11 +1049,11 @@ impl<'a> Plan<'a> {
     fn document(&self) -> String {
         let score = self.score;
         let mut root = El::new("score-partwise").attr("version", "4.0");
-        if !score.title.is_empty() {
-            root.push(El::new("work").child(El::text("work-title", score.title.as_str())));
+        if !clean(&score.title).is_empty() {
+            root.push(El::new("work").child(El::text("work-title", clean(&score.title))));
         }
         root.push(El::new("identification").child(El::new("encoding").child(El::text("software", "Brasscribe"))));
-        root.push(El::new("part-list").child(El::new("score-part").attr("id", "P1").child(El::text("part-name", score.instrument.name.as_str()))));
+        root.push(El::new("part-list").child(El::new("score-part").attr("id", "P1").child(El::text("part-name", clean(&score.instrument.name)))));
         let mut part = El::new("part").attr("id", "P1");
         let count = self.measures.len();
         for (m, &(a, b, number, implicit)) in self.measures.iter().enumerate() {
@@ -919,7 +1087,19 @@ impl<'a> Plan<'a> {
     }
 }
 
-/// The score as a MusicXML 4.0 partwise document.
-pub fn write_tab_musicxml(score: &TabScore, opts: &TabOptions) -> String {
-    Plan::new(score, opts).document()
+/// What [`write_tab_musicxml`] answers with.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TabDocument {
+    /// The MusicXML 4.0 partwise document.
+    pub musicxml: String,
+    /// Notes whose start or length no note value could spell, and which were moved to the nearest
+    /// place one can. 0 for input on the 32nd-note or triplet grid.
+    pub adjusted_notes: usize,
+}
+
+/// The score as a MusicXML 4.0 partwise document. Err when the score or the options cannot be
+/// written: see [`TabScore::validate`].
+pub fn write_tab_musicxml(score: &TabScore, opts: &TabOptions) -> Result<TabDocument, String> {
+    let plan = Plan::new(score, opts)?;
+    Ok(TabDocument { musicxml: plan.document(), adjusted_notes: plan.adjusted })
 }

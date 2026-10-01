@@ -239,7 +239,9 @@ with its transitions to the chosen neighbours. There is no full re-solve per alt
 ## Tablature as MusicXML
 
 `write_tab_musicxml(&TabScore, &TabOptions)` writes a solved passage as one MusicXML 4.0 partwise
-document. The same input always gives the same text.
+document. It answers with a `TabDocument`: the text (`musicxml`) and how many notes it had to move
+to a place that can be written (`adjusted_notes`, see Rhythm and measures). The same input always
+gives the same text.
 
 ```rust
 use target_fretted::{assign, preset, write_tab_musicxml, Layout, Options, TabOptions, TabScore};
@@ -247,13 +249,25 @@ use target_fretted::{assign, preset, write_tab_musicxml, Layout, Options, TabOpt
 let guitar = preset("guitar-standard").unwrap().with_capo(2);
 let fingering = assign(&guitar, &notes, &Options::default())?;
 let score = TabScore::new("Study", &guitar, &notes, &[], &fingering)?.with_tempo(88.0).with_meter(3, 4).with_key(2, "major");
-let xml = write_tab_musicxml(&score, &TabOptions { layout: Layout::Tab, ..TabOptions::default() });
+let xml = write_tab_musicxml(&score, &TabOptions { layout: Layout::Tab, ..TabOptions::default() })?.musicxml;
 ```
 
 A `TabScore` holds the title, the instrument, tempo, one time signature, one key, and each note with
 its string, fret, confidence and techniques. `TabScore::new` builds it from the solver's input and
 output and refuses input that does not fit together. `with_composition` takes tempo, first meter and
 first key from a `Composition`.
+
+The writer checks the score first (`TabScore::validate`), also one built by hand, and answers with
+an error instead of changing what it was given:
+
+- a time signature whose lower number is not 1, 2, 4, 8 or 16, or whose upper number is not 1 to 32;
+- more than 7 sharps or flats, or a tempo outside 10 to 600;
+- a note without a length, outside the model's tick range, outside MIDI 0-127, with a confidence
+  that is not a number, or with a string or fret the instrument does not have;
+- a doubt threshold outside 0 to 1.
+
+Control characters in the title, the instrument's name and the tuning's name are left out (a tab or
+line break becomes a space), so the file stays well-formed.
 
 ### Layouts
 
@@ -327,8 +341,20 @@ reader works them out from the pitch and the key.
   higher confidence.
 - Values are split and tied to show the beat and the bar line, on notes and rests alike: by the
   shared `rhythm_spelling` module on quarter-note beats, and on dotted-quarter beats in 3/8, 6/8,
-  9/8 and 12/8. Other meters in eighths (5/8, 7/8) are split on quarter notes. Triplet values get `<time-modification>` and a `<tuplet>`
-  bracket. An empty bar is a whole-measure rest.
+  9/8 and 12/8. Other meters in eighths (5/8, 7/8) are split on quarter notes. An empty bar is a
+  whole-measure rest. Every other note and rest has a `<type>`.
+- **The grid.** A start or an end that no note value can spell is moved to the nearest one that
+  can, and `adjusted_notes` counts the notes this changed (0 for input already on the grid).
+  - Each quarter-note beat is written either in 32nds (every 3 ticks) or in triplet 16ths (every 4
+    ticks), whichever is nearer to the starts and ends inside it. A tie goes to the 32nds.
+  - A note squeezed to nothing gets the shortest value of its beat. Two notes moved to one start
+    become a chord.
+  - A note cut short by its chord or by the next note does not count as moved.
+- **Triplets.** A triplet beat is filled with triplet 16ths, eighths and quarters, each with
+  `<time-modification>` 3:2, under one `<tuplet>` bracket that starts and stops inside the beat,
+  on each staff. A triplet value that crosses the beat is tied at the beat.
+- **Compound time has no tuplets.** In 3/8, 6/8, 9/8 and 12/8 everything is on the 32nd grid and
+  written in plain and dotted values; a duplet is two dotted eighths.
 - Beams join notes shorter than a quarter inside one beat: a quarter, or a dotted quarter in 3/8,
   6/8, 9/8 and 12/8.
 - A pickup shorter than a bar is measure 0 with `implicit="yes"`. A longer one starts on a bar line
@@ -386,8 +412,8 @@ staves the notation staff gets only the slurs and the x noteheads.
   - the notation staff writes it as any other note;
   - the tab staff leaves it out of its chord, or writes a rest of the same length when the chord has
     no other note;
-  - words above the column name it: `! D1`. In the notation-only layout the words stand above the
-    note.
+  - boxed words above the column name it: `! D1` (`enclosure="rectangle"`). In the notation-only
+    layout the words stand above the note.
   - A slide, hammer-on, pull-off or bend to or from such a note is not written.
 - In a pair of staves the `?` and `!` are on the tab staff.
 
@@ -399,7 +425,8 @@ to PDF):
 - kept: the number of tab lines, every `<staff-tuning>` (also the re-entrant ukulele and the 5-string
   bass), every string and fret with the default capo encoding, the two-staff part, the octave clef,
   ties, chords, triplets, slurs, slides, let-ring ties, x noteheads, the note colour, the rest that
-  stands for an out-of-range note, and the `?`, `!`, header and tempo;
+  stands for an out-of-range note, the `?`, the boxed `!`, header and tempo, and notes that were
+  moved to the grid in 9/8, 6/8 and 4/4;
 - changed: a `<wavy-line>` is drawn as a trill line, and with `"capo": "element"` the frets are
   rewritten (see Capo);
 - lost: `<hammer-on>`, `<pull-off>` and `<bend>` (the slurs stay), and the confidence.
@@ -427,8 +454,9 @@ alongside it.
 Unknown keys are errors, anywhere in the request. A malformed instrument is reported with the
 field that is missing or unknown.
 
-`json::tab_musicxml_json` takes the same request with what the page says added, and answers with the
-MusicXML text:
+`json::tab_json` takes the same request with what the page says added, and answers with
+`{"musicxml": "...", "adjusted_notes": 0}`. `json::tab_musicxml_json` answers with the MusicXML text
+alone.
 
 ```json
 {"title": "Study", "instrument": {"preset": "guitar-standard", "capo": 2},
@@ -533,8 +561,12 @@ checked to hold exactly their length on each staff.
   no pitch on the tab staff without a string and fret that sound it.
 - **Layouts:** two staves with the same notes, tab alone with stems and beams, notation alone; the
   clef of every preset, and of a custom instrument with and without `notation`.
+- **The grid:** starts and lengths off the grid in 9/8, 6/8 and 4/4 are moved and counted, every
+  note has a type, and every triplet value sits in a bracket that opens and closes on its staff.
+- **Refusals:** time signatures, keys, tempos and hand-built notes that cannot be written; control
+  characters in names.
 - **Rhythm:** ties across the bar line, rests, pickups, triplets, compound time (beams and values
-  on the dotted quarter), chords, a chord cut
+  on the dotted quarter, no tuplets), chords, a chord cut
   at the next note, doublings.
 - **Techniques:** start and stop pairs, marks at the ends of a tied note, each technique's element.
 - **Doubt and range:** the colour, the confidence, the `?` and the `!`, the threshold, never a
