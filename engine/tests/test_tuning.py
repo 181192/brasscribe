@@ -93,7 +93,15 @@ def test_derive_leaves_an_in_tune_input_alone(tmp_path):
     params, facts = tuning.derive({"audio": wav})
     assert params["retune"]["shift_cents"] in (19, 20, 21) and facts["retuned"] is True
     params, facts = tuning.derive({"audio": tmp_path / "missing.wav"})
-    assert params == {} and "tuning_error" in facts
+    assert params == {} and facts["tuning_error"].isidentifier()  # the exception's type, never its message
+
+
+def test_a_clip_too_short_to_measure_has_no_tuning(tmp_path):
+    x = tones(-20)[:100]
+    assert tuning.estimate(x, SR) == (0.0, 0.0)
+    wav = tmp_path / "blip.wav"
+    sf.write(wav, x, SR)
+    assert tuning.estimate_file(wav) == (0.0, 0.0)
 
 
 def _with_derive(derive):

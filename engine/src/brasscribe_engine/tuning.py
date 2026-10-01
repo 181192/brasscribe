@@ -33,6 +33,8 @@ MIN_CONCENTRATION = 0.3
 FFT_SIZE = 16384
 MAX_FRAMES = 2000  # frames spread evenly over a long recording; enough for a stable mean
 BAND_HZ = (80.0, 2000.0)
+MIN_SECONDS = 0.1  # a shorter clip has too few cycles for its peaks to mean anything
+MEMO_SIZE = 64
 
 _memo: dict[tuple[str, int, int], tuple[float, float]] = {}
 _memo_lock = threading.Lock()
@@ -82,6 +84,8 @@ def estimate(x: np.ndarray, sr: int) -> tuple[float, float]:
     x = np.asarray(x, dtype=np.float64)
     if x.ndim > 1:
         x = x.mean(axis=1)
+    if len(x) < MIN_SECONDS * sr:
+        return 0.0, 0.0
     return _estimate((x[i:i + FFT_SIZE] for i in _starts(len(x))), sr)
 
 
@@ -123,8 +127,10 @@ def estimate_file(path: Path) -> tuple[float, float]:
                 f.seek(int(i))
                 yield f.read(FFT_SIZE, dtype="float64", always_2d=True).mean(axis=1)
 
-        result = _estimate(windows(), f.samplerate)
+        result = _estimate(windows(), f.samplerate) if f.frames >= MIN_SECONDS * f.samplerate else (0.0, 0.0)
     with _memo_lock:
+        if len(_memo) >= MEMO_SIZE:
+            _memo.pop(next(iter(_memo)))
         _memo[memo_key] = result
     return result
 
@@ -143,7 +149,7 @@ def derive(inputs: dict[str, Path]) -> tuple[dict, dict]:
     try:
         cents, concentration = estimate_file(inputs["audio"])
     except Exception as e:  # noqa: BLE001 - an input it cannot measure is transcribed as it is
-        return {}, {"tuning_error": f"{type(e).__name__}: {e}"}
+        return {}, {"tuning_error": type(e).__name__}  # the message can hold paths; the manifest is shared
     shift = decide(cents, concentration)
     facts = {"tuning_cents": round(cents, 1), "concentration": round(concentration, 2), "retuned": bool(shift)}
     if not shift:
