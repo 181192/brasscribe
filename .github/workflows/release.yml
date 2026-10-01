@@ -73,7 +73,7 @@ jobs:
       pull-requests: read
     steps:
       # The whole history, for the notes: git-cliff reads the commits since the previous vX.Y.Z tag.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
