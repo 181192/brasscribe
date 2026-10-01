@@ -69,8 +69,8 @@ landscape shows two to three systems. Neither ever shows tab smaller than `tab.l
 
 ## 5. Your instrument
 
-A settings group and the first-run screen: Instrument, Strings, Usual tuning, Which hand frets?, You
-read. Each is a native picker row with its current value. Reference pitch (A = 440) sits under
+A settings group and the first-run screen: Instrument, Strings, Usual tuning, Which hand is on the
+neck?, You read. Each is a native picker row with its current value. Reference pitch (A = 440) sits under
 **Advanced**. Changing the instrument never changes songs already written; each song keeps its own.
 
 ## 6. Pedals and keys

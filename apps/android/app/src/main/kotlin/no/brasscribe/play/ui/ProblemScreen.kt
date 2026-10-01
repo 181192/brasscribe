@@ -171,8 +171,9 @@ fun SettingsScreen(vm: PlayViewModel) {
                 subtitle = connectionText(vm, connection),
             )
         }
-        SectionLabel(stringResource(R.string.sound))
-        ChoiceGroup(2) {
+        // The sound choice is for the band's instruments: a product without them leaves it out.
+        if (no.brasscribe.play.Product.BAND_SOUNDS) SectionLabel(stringResource(R.string.sound))
+        if (no.brasscribe.play.Product.BAND_SOUNDS) ChoiceGroup(2) {
             ChoiceCard(stringResource(R.string.sound_baseline), stringResource(R.string.settings_sound_standard), !realistic, true, 0) {
                 realistic = false; vm.container.realisticByDefault = false
             }

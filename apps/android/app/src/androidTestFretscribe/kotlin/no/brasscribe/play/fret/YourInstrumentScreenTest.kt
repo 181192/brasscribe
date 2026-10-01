@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -165,6 +166,25 @@ class YourInstrumentScreenTest {
         rule.waitForIdle()
     }
 
+    /**
+     * The element is read once. In the tree a screen reader gets, its name is its one description, it has
+     * no text of its own and nothing under it. In the tree as composed, whatever is under it (the question,
+     * the answer, the note, the mark) is either cleared by the element or has no words.
+     */
+    private fun assertSaidOnce(tag: String, prefix: String = "fs-row-") {
+        val read = rule.onNodeWithTag("$prefix$tag").fetchSemanticsNode()
+        assertEquals("$tag: one description", 1, read.config.getOrNull(SemanticsProperties.ContentDescription)?.size)
+        assertEquals("$tag: no text beside the description", null, read.config.getOrNull(SemanticsProperties.Text))
+        assertEquals("$tag: nothing under it is read", emptyList<String>(), read.children.map { it.config.toString() })
+        val composed = rule.onNodeWithTag("$prefix$tag", useUnmergedTree = true).fetchSemanticsNode()
+        fun words(node: SemanticsNode): List<String> = node.children.flatMap { child ->
+            child.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } +
+                child.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() +
+                (if (child.config.isClearingSemantics) emptyList() else words(child))
+        }
+        if (!composed.config.isClearingSemantics) assertEquals("$tag: no words under it", emptyList<String>(), words(composed))
+    }
+
     private val isRadio = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
     private val isPicker = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.DropdownList)
 
@@ -188,10 +208,10 @@ class YourInstrumentScreenTest {
     fun theFirstRunAsksYourInstrumentInEnglishAndBokmal() {
         val words = mapOf(
             "en-GB" to listOf("Your instrument", "Instrument, Bass", "Strings, 4 strings", "Usual tuning, Standard",
-                "Which hand frets?, Left hand (most players), Tab looks the same either way. Chord boxes and the fretboard turn round.",
+                "Which hand is on the neck?, Left hand on the neck (most players), Tab looks the same either way.",
                 "You read, Tab", "Not now", "Continue", "Guitar, Later"),
             "nb-NO" to listOf("Instrumentet ditt", "Instrument, Bass", "Strenger, 4 strenger", "Vanlig stemming, Standard",
-                "Hvilken hånd tar grepene?, Venstre hånd (de fleste), Tabben ser lik ut uansett. Akkordbokser og gripebrettet snus.",
+                "Hvilken hånd er på halsen?, Venstre hånd på halsen (de fleste), Tabben ser lik ut uansett.",
                 "Du leser, Tab", "Ikke nå", "Fortsett", "Gitar, Senere"),
         )
         for ((lang, w) in words) {
@@ -206,6 +226,7 @@ class YourInstrumentScreenTest {
                 row(tag).performScrollTo().assertIsDisplayed().assertHasClickAction()
                     .assertContentDescriptionEquals(w[1 + i]).assert(isPicker)
                     .assertHeightIsAtLeast(48.dp)
+                assertSaidOnce(tag)
             }
             rule.onNodeWithTag("fs-not-now").assertIsDisplayed().assert(hasText(w[6]))
                 .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
@@ -246,9 +267,11 @@ class YourInstrumentScreenTest {
         rule.onNodeWithTag("fs-instrument-bass").assertIsEnabled().assertIsSelected()
         listOf("guitar", "ukulele", "mandolin").forEach { rule.onNodeWithTag("fs-instrument-$it").assertIsNotEnabled().assertIsNotSelected() }
         closePicker()
-        // E♭ is spoken as "E flat".
+        // The flat is written out, and BEAD is spoken letter by letter; each choice is named once.
         open("tuning", "eb-standard")
-        rule.onNodeWithTag("fs-tuning-eb-standard").assertContentDescriptionEquals("E flat standard (half a step down)")
+        rule.onNodeWithTag("fs-tuning-eb-standard").assertContentDescriptionEquals("E-flat standard (half a step down)")
+        rule.onNodeWithTag("fs-tuning-bead").assertContentDescriptionEquals("B, E, A, D")
+        listOf("standard", "eb-standard", "d-standard", "drop-d", "bead").forEach { assertSaidOnce("tuning-$it", prefix = "fs-") }
         closePicker()
     }
 
@@ -292,13 +315,23 @@ class YourInstrumentScreenTest {
         rule.runOnUiThread { vm.navigate(Screen.SETTINGS) }
         rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("5-string bass · Drop A · Tab and notation").assertIsDisplayed()
+        // The row is named as the screen it opens, and the band's sound choice is not offered.
+        rule.onNodeWithTag("setting-seat").assert(hasText("Your instrument"))
+        assertTrue(rule.onAllNodesWithText("Realistic").fetchSemanticsNodes().isEmpty())
+        assertTrue(rule.onAllNodesWithText("Sound", ignoreCase = true).fetchSemanticsNodes().isEmpty())
         shot("settings-light")
         rule.onNodeWithTag("setting-seat").performClick()
         rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
         assertTrue(rule.onAllNodesWithTag("fs-not-now").fetchSemanticsNodes().isEmpty())
+        // Inside Settings the screen doesn't point to Settings.
+        rule.onNodeWithText("Fretscribe remembers this for your tabs.").assertIsDisplayed()
+        assertTrue(rule.onAllNodesWithText("Settings", substring = true).fetchSemanticsNodes().none { n ->
+            n.config.getOrNull(SemanticsProperties.Text)?.any { it.text.contains("change it in Settings") } == true
+        })
+        shot("your-instrument-settings-light")
         rule.onNodeWithTag("fs-keep").assert(hasText("Save"))
         row("hand").assertContentDescriptionEquals(
-            "Which hand frets?, Right hand, instrument upside down, Tab looks the same either way. Chord boxes and the fretboard turn round.")
+            "Which hand is on the neck?, Right hand on the neck (instrument upside down), Tab looks the same either way.")
         // Back without Save changes nothing.
         pick("reads", "notation")
         rule.runOnUiThread { vm.back() }
@@ -312,6 +345,43 @@ class YourInstrumentScreenTest {
         rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
         assertEquals(chosen.copy(reads = Reads.NOTATION), store.load())
         rule.onNodeWithText("5-string bass · Drop A · Notation").assertIsDisplayed()
+    }
+
+    @Test
+    fun choicesLeftWithoutSaveAreGoneAfterTheAppIsRestored() {
+        language("en-GB")
+        val stored = YourInstrument(strings = 5, tuning = "drop-a")
+        store.save(stored)
+        fun openFromSettings() {
+            rule.runOnUiThread { vm.home(); vm.navigate(Screen.SETTINGS); vm.openSeatPicker(SeatPickerMode.SETTINGS) }
+            rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        }
+        openFromSettings()
+        pick("reads", "notation")
+        pick("tuning", "standard")
+        // Restored in the middle of choosing (the activity is destroyed and made again from its saved
+        // state): the choices are still there, and still not stored.
+        rule.activityRule.scenario.recreate()
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        row("reads").assertContentDescriptionEquals("You read, Notation")
+        row("tuning").assertContentDescriptionEquals("Usual tuning, Standard")
+        assertEquals(stored, store.load())
+        // The app is stopped with the choices on screen, and comes back on Settings (as after the process
+        // was killed, when the screens come back from what was saved but not always to the same one): the
+        // state saved for this visit must not be picked up by the next. Back and the restore are asked for
+        // together, so the state is saved while the screen is still composed.
+        rule.runOnUiThread { vm.back(); rule.activity.recreate() }
+        rule.waitForIdle()
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
+        // The row opens on what is stored, and Save stores that.
+        rule.onNodeWithTag("setting-seat").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        row("reads").assertContentDescriptionEquals("You read, Tab")
+        row("tuning").assertContentDescriptionEquals("Usual tuning, Drop A")
+        row("strings").assertContentDescriptionEquals("Strings, 5 strings")
+        rule.onNodeWithTag("fs-keep").performClick()
+        rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
+        assertEquals(stored, store.load())
     }
 
     @Test
@@ -354,7 +424,7 @@ class YourInstrumentScreenTest {
                 // Fretscribe's words: tab, and nothing about a band.
                 val shown = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).fetchSemanticsNodes()
                     .flatMap { it.config[SemanticsProperties.Text] }.joinToString(" ") { it.text }
-                assertTrue(shown, shown.contains("Fretscribe") && shown.contains(if (lang == "en-GB") "Tab from any recording." else "Tab fra hvilket som helst opptak."))
+                assertTrue(shown, shown.contains("Fretscribe") && shown.contains(if (lang == "en-GB") "Tab from any recording." else "Tab fra et hvilket som helst opptak."))
                 assertFalse(shown, BRASSCRIBE_WORDS.containsMatchIn(shown))
                 // The first run is a brand moment: the tinted band with the mark in blue ink, on Fretscribe's paper.
                 val colours = if (appearance == Appearance.DARK) BrasscribeDarkColors else BrasscribeLightColors

@@ -9,6 +9,9 @@ object Product {
     /** The scheme of the pairing link in the computer's QR code. */
     const val PAIR_SCHEME = "brasscribe"
 
+    /** The band's sounds are in this app, so Settings offers the choice between them. */
+    const val BAND_SOUNDS = true
+
     @Composable
     fun Root(vm: PlayViewModel) = PlayRoot(vm)
 

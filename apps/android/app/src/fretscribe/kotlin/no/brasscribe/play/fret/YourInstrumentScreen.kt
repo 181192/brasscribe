@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,11 +29,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
@@ -41,6 +46,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.SeatPickerMode
 import no.brasscribe.play.connection.PrefsStore
+import no.brasscribe.play.ui.BcIcon
 import no.brasscribe.play.ui.Lead
 import no.brasscribe.play.ui.ListRow
 import no.brasscribe.play.ui.PlainButton
@@ -62,14 +68,14 @@ private fun instrumentName(i: Instrument): Int = when (i) {
     Instrument.MANDOLIN -> R.string.fs_instrument_mandolin
 }
 
-/** A tuning's name as shown and as spoken ("E♭" is read "E flat"). An id without words of its own shows as it is. */
+/** A tuning's name, as shown or as spoken ("BEAD" is read letter by letter). An id without words of its own shows as it is. */
 @Composable
 private fun tuningName(id: String, spoken: Boolean = false): String = when (id) {
     "standard" -> stringResource(R.string.fs_tuning_standard)
-    "eb-standard" -> stringResource(if (spoken) R.string.fs_tuning_eb_standard_spoken else R.string.fs_tuning_eb_standard)
+    "eb-standard" -> stringResource(R.string.fs_tuning_eb_standard)
     "d-standard" -> stringResource(R.string.fs_tuning_d_standard)
     "drop-d" -> stringResource(R.string.fs_tuning_drop_d)
-    "bead" -> stringResource(R.string.fs_tuning_bead)
+    "bead" -> stringResource(if (spoken) R.string.fs_tuning_bead_spoken else R.string.fs_tuning_bead)
     "drop-a" -> stringResource(R.string.fs_tuning_drop_a)
     else -> id
 }
@@ -105,19 +111,22 @@ private class Choice(val id: String, val label: String, val spoken: String = lab
  * row that shows its answer. Asked once after the first run, where Not now leaves the defaults, and
  * opened again from Settings. Nothing is kept until Continue or Save (WCAG 3.2.2), and songs already
  * written are never changed by it.
+ *
+ * [visit] numbers this opening of the screen. The choices being made are kept under it across a
+ * rotation or a restore of the app, and an earlier visit's choices are never picked up again.
  */
 @Composable
-fun YourInstrumentScreen(vm: PlayViewModel) {
+fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
     val status by vm.status.collectAsState()
     val context = LocalContext.current
     val store = remember { yourInstrumentStore(context) }
     val firstRun = vm.seatPicker == SeatPickerMode.FIRST_RUN
     val start = remember { store.load() }
-    var instrument by rememberSaveable { mutableStateOf(start.instrument) }
-    var strings by rememberSaveable { mutableStateOf(start.strings) }
-    var tuning by rememberSaveable { mutableStateOf(start.tuning) }
-    var hand by rememberSaveable { mutableStateOf(start.hand) }
-    var reads by rememberSaveable { mutableStateOf(start.reads) }
+    var instrument by rememberSaveable(key = "your-instrument-$visit-instrument") { mutableStateOf(start.instrument) }
+    var strings by rememberSaveable(key = "your-instrument-$visit-strings") { mutableIntStateOf(start.strings) }
+    var tuning by rememberSaveable(key = "your-instrument-$visit-tuning") { mutableStateOf(start.tuning) }
+    var hand by rememberSaveable(key = "your-instrument-$visit-hand") { mutableStateOf(start.hand) }
+    var reads by rememberSaveable(key = "your-instrument-$visit-reads") { mutableStateOf(start.reads) }
     val chosen = YourInstrument(instrument, strings, tuning, hand, reads)
 
     fun keep() {
@@ -138,7 +147,7 @@ fun YourInstrumentScreen(vm: PlayViewModel) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
             ScreenTitle(stringResource(R.string.fs_instrument_title))
-            Lead(stringResource(R.string.fs_instrument_body))
+            Lead(stringResource(if (firstRun) R.string.fs_instrument_body else R.string.fs_instrument_body_settings))
         }
         val later = stringResource(R.string.fs_later)
         RowGroup {
@@ -153,7 +162,7 @@ fun YourInstrumentScreen(vm: PlayViewModel) {
             RowDivider()
             PickerRow(
                 stringResource(R.string.fs_strings), "strings", strings.toString(),
-                YourInstrument.stringsOf(instrument).map { Choice(it.toString(), stringResource(R.string.fs_strings_count, it)) },
+                YourInstrument.stringsOf(instrument).map { Choice(it.toString(), pluralStringResource(R.plurals.fs_strings_count, it, it)) },
                 later,
             ) { id ->
                 // A tuning the new string count doesn't have goes back to standard.
@@ -200,9 +209,17 @@ private fun PickerRow(
     val spoken = listOfNotNull(label, current?.spoken, note).joinToString(", ")
     ListRow(
         label, { open = true },
-        modifier = Modifier.semantics { contentDescription = spoken }.testTag("fs-row-$tag"),
+        // One element, named once: the question, the answer and the note. The texts and the mark inside are
+        // not read again. Clearing also drops the row's own click and role, so they are set here.
+        modifier = Modifier.clearAndSetSemantics {
+            contentDescription = spoken
+            role = Role.DropdownList
+            onClick { open = true; true }
+            testTag = "fs-row-$tag"
+        },
         subtitle = listOfNotNull(current?.label, note).joinToString("\n"),
-        chevron = false, role = Role.DropdownList,
+        chevron = false,
+        trailing = { BcIcon(R.drawable.ic_bc_choose, null, tint = c.textMuted) },
     )
     if (!open) return
     AlertDialog(

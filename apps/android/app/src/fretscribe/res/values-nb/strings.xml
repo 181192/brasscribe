@@ -5,7 +5,7 @@
     <string name="share_target_label">Skriv ned tonene med Fretscribe</string>
 
     <string name="first_run_hero_start">"Tab fra "</string>
-    <string name="first_run_hero_end">hvilket som helst opptak.</string>
+    <string name="first_run_hero_end">et hvilket som helst opptak.</string>
     <string name="first_run_1_title">Spill inn eller åpne et opptak</string>
     <string name="first_run_1_text">Spill det, eller åpne en sang du har. Fretscribe på datamaskinen skriver ned tonene.</string>
     <string name="first_run_2_title">Sjekk tonene merket ?</string>
@@ -29,36 +29,41 @@
     <string name="conn_offline">Ikke tilkoblet. Fretscribe trenger datamaskinen din for å skrive en tab.</string>
     <string name="server_name_format">Fretscribe på %1$s</string>
 
-    <string name="settings_seat_caption">Nye tabber skrives for dette instrumentet. Sanger du har fra før, beholder sitt eget.</string>
+    <string name="settings_you">Hva du spiller</string>
+    <string name="settings_seat">Instrumentet ditt</string>
+    <string name="settings_seat_caption">Fretscribe husker dette til tabbene dine.</string>
     <string name="companion_title">Fretscribe på datamaskinen</string>
-    <string name="settings_sound_realistic">Ekte instrumenter, spilt med menneskelig timing.</string>
     <string name="settings_text_motion_desc">Fretscribe følger telefonens tekststørrelse, kontrast og animasjoner</string>
     <string name="appearance_contrast_note">Kontrastinnstillingen din er på, så Fretscribe bruker høykontrastfargene.</string>
 
     <string name="fs_instrument_title">Instrumentet ditt</string>
-    <string name="fs_instrument_body">Fretscribe skriver tabben for instrumentet du spiller. Du kan endre dette i Innstillinger.</string>
+    <string name="fs_instrument_body">Fretscribe husker dette til tabbene dine. Du kan endre det i Innstillinger.</string>
+    <string name="fs_instrument_body_settings">Fretscribe husker dette til tabbene dine.</string>
     <string name="fs_instrument">Instrument</string>
     <string name="fs_strings">Strenger</string>
     <string name="fs_tuning">Vanlig stemming</string>
-    <string name="fs_hand">Hvilken hånd tar grepene?</string>
+    <string name="fs_hand">Hvilken hånd er på halsen?</string>
     <string name="fs_reads">Du leser</string>
     <string name="fs_instrument_bass">Bass</string>
     <string name="fs_instrument_guitar">Gitar</string>
     <string name="fs_instrument_ukulele">Ukulele</string>
     <string name="fs_instrument_mandolin">Mandolin</string>
     <string name="fs_later">Senere</string>
-    <string name="fs_strings_count">%1$d strenger</string>
+    <plurals name="fs_strings_count">
+        <item quantity="one">%1$d streng</item>
+        <item quantity="other">%1$d strenger</item>
+    </plurals>
     <string name="fs_tuning_standard">Standard</string>
-    <string name="fs_tuning_eb_standard">E♭-standard (et halvt trinn ned)</string>
-    <string name="fs_tuning_eb_standard_spoken">Ess-standard (et halvt trinn ned)</string>
-    <string name="fs_tuning_d_standard">D-standard (et helt trinn ned)</string>
+    <string name="fs_tuning_eb_standard">Ess-standard (en halvtone ned)</string>
+    <string name="fs_tuning_d_standard">D-standard (en heltone ned)</string>
     <string name="fs_tuning_drop_d">Drop D</string>
     <string name="fs_tuning_bead">BEAD</string>
+    <string name="fs_tuning_bead_spoken">B, E, A, D</string>
     <string name="fs_tuning_drop_a">Drop A</string>
-    <string name="fs_hand_left">Venstre hånd (de fleste)</string>
-    <string name="fs_hand_right">Høyre hånd</string>
-    <string name="fs_hand_right_upside_down">Høyre hånd, instrumentet opp ned</string>
-    <string name="fs_hand_note">Tabben ser lik ut uansett. Akkordbokser og gripebrettet snus.</string>
+    <string name="fs_hand_left">Venstre hånd på halsen (de fleste)</string>
+    <string name="fs_hand_right">Høyre hånd på halsen (venstrehendt instrument)</string>
+    <string name="fs_hand_right_upside_down">Høyre hånd på halsen (instrumentet opp ned)</string>
+    <string name="fs_hand_note">Tabben ser lik ut uansett.</string>
     <string name="fs_reads_tab">Tab</string>
     <string name="fs_reads_tab_and_notation">Tab og noter</string>
     <string name="fs_reads_notation">Noter</string>

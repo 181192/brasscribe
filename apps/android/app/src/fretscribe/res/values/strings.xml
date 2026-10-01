@@ -35,19 +35,22 @@
     <string name="server_name_format">Fretscribe on %1$s</string>
 
     <!-- Settings -->
-    <string name="settings_seat_caption">New tabs are written for this instrument. Songs you already have keep their own.</string>
+    <string name="settings_you">What you play</string>
+    <string name="settings_seat">Your instrument</string>
+    <string name="settings_seat_caption">Fretscribe remembers this for your tabs.</string>
     <string name="companion_title">Fretscribe on your computer</string>
-    <string name="settings_sound_realistic">Real instruments, played with human timing.</string>
     <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>
 
     <!-- Your instrument (design/fretscribe/flows.md §2) -->
     <string name="fs_instrument_title">Your instrument</string>
-    <string name="fs_instrument_body">Fretscribe writes the tab for the instrument you play. You can change this in Settings.</string>
+    <string name="fs_instrument_body">Fretscribe remembers this for your tabs. You can change it in Settings.</string>
+    <!-- The same screen opened from Settings. -->
+    <string name="fs_instrument_body_settings">Fretscribe remembers this for your tabs.</string>
     <string name="fs_instrument">Instrument</string>
     <string name="fs_strings">Strings</string>
     <string name="fs_tuning">Usual tuning</string>
-    <string name="fs_hand">Which hand frets?</string>
+    <string name="fs_hand">Which hand is on the neck?</string>
     <string name="fs_reads">You read</string>
     <string name="fs_instrument_bass">Bass</string>
     <string name="fs_instrument_guitar">Guitar</string>
@@ -55,18 +58,22 @@
     <string name="fs_instrument_mandolin">Mandolin</string>
     <!-- Beside an instrument that can't be chosen yet. -->
     <string name="fs_later">Later</string>
-    <string name="fs_strings_count">%1$d strings</string>
+    <plurals name="fs_strings_count">
+        <item quantity="one">%1$d string</item>
+        <item quantity="other">%1$d strings</item>
+    </plurals>
     <string name="fs_tuning_standard">Standard</string>
-    <string name="fs_tuning_eb_standard">E♭ standard (half a step down)</string>
-    <string name="fs_tuning_eb_standard_spoken">E flat standard (half a step down)</string>
+    <string name="fs_tuning_eb_standard">E-flat standard (half a step down)</string>
     <string name="fs_tuning_d_standard">D standard (a whole step down)</string>
     <string name="fs_tuning_drop_d">Drop D</string>
     <string name="fs_tuning_bead">BEAD</string>
+    <!-- Read letter by letter, not as a word. -->
+    <string name="fs_tuning_bead_spoken">B, E, A, D</string>
     <string name="fs_tuning_drop_a">Drop A</string>
-    <string name="fs_hand_left">Left hand (most players)</string>
-    <string name="fs_hand_right">Right hand</string>
-    <string name="fs_hand_right_upside_down">Right hand, instrument upside down</string>
-    <string name="fs_hand_note">Tab looks the same either way. Chord boxes and the fretboard turn round.</string>
+    <string name="fs_hand_left">Left hand on the neck (most players)</string>
+    <string name="fs_hand_right">Right hand on the neck (left-handed instrument)</string>
+    <string name="fs_hand_right_upside_down">Right hand on the neck (instrument upside down)</string>
+    <string name="fs_hand_note">Tab looks the same either way.</string>
     <string name="fs_reads_tab">Tab</string>
     <string name="fs_reads_tab_and_notation">Tab and notation</string>
     <string name="fs_reads_notation">Notation</string>
