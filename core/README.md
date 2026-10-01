@@ -75,6 +75,7 @@ brasscribe-core talking-score --musicxml band.musicxml --composition c.json --te
 brasscribe-core quantize --reference reference.json --beats b.beats --out q.json
 brasscribe-core meter --beats b.beats --notes notes.json --out meter.json
 brasscribe-core normalize --composition composition.json --out composition.json
+brasscribe-core fret --request request.json --out fingering.json
 brasscribe-core version
 ```
 
@@ -87,6 +88,9 @@ tune) and `--lang nb` for the source footer on each part, and reads the stems
 when present. `arrange-song` and `arrange-reference` take `--lineup
 minimal|quartet` (default minimal); `arrange-song` also takes `--seat`, `--reads` and `--lead`. The quartet is 1st Cornet, 2nd Cornet,
 Tenor Horn and Euphonium, one player each.
+
+`fret` is how the engine reaches [`target-fretted`](target-fretted/README.md): it reads that crate's JSON request
+(instrument, notes, options) and writes its JSON response (fingering, violations, tuning suggestions), both unchanged.
 
 ## Conformance
 

@@ -15,6 +15,11 @@ Seat = Literal["soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", 
                "2nd-trombone", "bass-trombone", "euphonium", "eb-bass", "bb-bass", "percussion", "trumpet"]
 Reads = Literal["treble", "bass"]
 Lead = Literal["lineup", "seat"]
+# The bass-tab profile's options (bass_tab.py).
+FrettedInstrument = Literal["bass-4", "bass-5", "bass-6"]
+FingeringStyle = Literal["as-played", "open-position", "lead"]
+Recording = Literal["song", "instrument"]
+Octave = Literal["auto", "0", "-12", "+12"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
 
@@ -182,6 +187,24 @@ class JobCreate(BaseModel):
     lead: Lead = Field("lineup", description="who plays the tune: lineup keeps it on the lineup's lead (Solo Cornet); "
                                              "seat writes it on the seat's part, for the full and minimal bands only. "
                                              "The solo profile with a seat always uses seat")
+    instrument: FrettedInstrument | None = Field(None, description="bass-tab profile: the instrument the tab is "
+                                                 "written for, by its number of strings; default: bass-4")
+    tuning: str | None = Field(None, description="bass-tab profile: the instrument's tuning. bass-4: standard, "
+                                                 "eb-standard, d-standard, drop-d, bead; bass-5: standard, drop-a; "
+                                                 "bass-6: standard; default: standard")
+    capo: int | None = Field(None, ge=0, le=12, description="bass-tab profile: the capo's fret; frets in the tab are "
+                                                            "counted from it; default: 0, no capo")
+    style: FingeringStyle | None = Field(None, description="bass-tab profile: where the line sits on the neck. "
+                                                           "as-played: the cheapest playable fingering; open-position: "
+                                                           "low frets and open strings; lead: a phrase stays in one "
+                                                           "position; default: as-played")
+    recording: Recording | None = Field(None, description="bass-tab profile: what was recorded. song: a band or a "
+                                                          "record, the bass is separated from it; instrument: the bass "
+                                                          "alone, no separation; default: song")
+    octave: Octave | None = Field(None, description="bass-tab profile: the octave the line is written in. auto: an "
+                                                    "octave lower when it was heard an octave above where a bass "
+                                                    "plays; 0, -12, +12: the player's choice, in semitones from what "
+                                                    "was heard; default: auto")
 
 
 class PartSources(BaseModel):
@@ -296,6 +319,116 @@ class Composition(BaseModel):
     beat_times: list[float] = Field(default_factory=list, description="seconds of beat 0, 1, 2 ...")
     first_downbeat: int = 0
     ticks_per_beat: int = 24
+
+
+# ---------------------------------------------------------------- tablature
+
+
+class TabPosition(BaseModel):
+    string: int = Field(description="1 is the highest line of the tab")
+    fret: int = Field(description="counted from the capo; 0 is the open string")
+
+
+class TabNote(BaseModel):
+    """One note of the tab: when it sounds, what was heard, and where it is played."""
+
+    pitch: int = Field(description="concert MIDI pitch, as written in the tab (after octave_shift)")
+    start: int = Field(description="ticks from the first downbeat")
+    dur: int = Field(description="written duration in ticks")
+    confidence: float = 1.0
+    onset_s: float | None = None
+    offset_s: float | None = None
+    string: int | None = Field(description="null: the note has no place on the instrument")
+    fret: int | None = None
+    alternatives: list[TabPosition] = Field(description="the other places that sound this pitch, cheapest first")
+    out_of_range: bool = Field(description="no string of the instrument sounds this pitch; the usual cause is "
+                                           "another tuning or instrument than the player's")
+    pinned: bool = False
+
+
+class TabString(BaseModel):
+    open_pitch: int = Field(description="MIDI pitch of the open string, without the capo")
+    first_fret: int = Field(0, description="where a short string starts (a banjo's fifth string); 0: at the nut")
+
+
+class TabTuning(BaseModel):
+    name: str = Field(description="display name, e.g. Drop D")
+    strings: list[TabString] = Field(description="string 1 first")
+
+
+class TabInstrument(BaseModel):
+    name: str
+    tuning: TabTuning
+    frets: int
+    scale_length_mm: float
+    capo: int = 0
+
+
+class TabViolation(BaseModel):
+    """A hard playability violation (core/target-fretted/README.md, Playability check); the other fields
+    depend on `kind` and name notes by their index in `notes`."""
+
+    model_config = ConfigDict(extra="allow")
+    kind: str = Field(description="shared-string, span-too-wide, fret-out-of-range, wrong-pitch, pin-not-honoured, "
+                                  "no-string, technique-string, technique-reach, bend-on-open-string or ring-cut")
+
+
+class TuningFit(BaseModel):
+    """How well one tuning of the instrument fits the notes."""
+
+    preset: str = Field(description="<instrument>-<tuning>, e.g. bass-4-drop-d")
+    tuning: str = Field(description="display name, e.g. Drop D")
+    out_of_range: int = Field(description="notes no string can sound")
+    low_string_fits: bool = Field(description="the lowest note is exactly the lowest open string")
+    open_notes: int = Field(description="notes an open string can play")
+    high_frets: int = Field(description="notes that can only be played above the 12th fret")
+    distance: int = Field(description="semitones from the standard tuning, summed over the strings")
+
+
+class TabKey(BaseModel):
+    name: str = Field(description="tonic and mode, e.g. G or Em")
+    fifths: int
+    mode: Literal["major", "minor"]
+
+
+class TabMeter(BaseModel):
+    beats: int
+    beat_unit: int = 4
+
+
+class ReferencePitch(BaseModel):
+    cents: float = Field(description="offset of the recording from A = 440, -50 to 50; positive is sharp")
+    concentration: float = Field(description="how well the recording agrees on it, 0 to 1")
+    retuned: bool = Field(description="the notes were transcribed from the recording retuned to A = 440")
+
+
+class Tab(BaseModel):
+    """The bass-tab profile's result: every note with its string and fret, and what the song check shows
+    before the tab (tuning, reference pitch, capo, octave, key and tempo)."""
+
+    preset: str = Field(description="the instrument and tuning the tab was made for, e.g. bass-4-standard")
+    style: FingeringStyle
+    instrument: TabInstrument
+    notes: list[TabNote] = Field(description="in time order; violations name notes by their index here")
+    violations: list[TabViolation] = Field(description="empty when the tab is playable as written")
+    tuning_suggestions: list[TuningFit] = Field(description="the instrument's tunings ranked by fit to the notes, "
+                                                            "best first; when the first is not `preset`, the song "
+                                                            "sounds like that tuning")
+    octave_shift: int = Field(description="semitones the whole line was moved after transcription. With octave auto: "
+                                          "0, or -12 (or -24) when it was heard an octave above where a bass plays, "
+                                          "the same for every instrument, tuning and capo. With a chosen octave: "
+                                          "that choice, 0, -12 or 12")
+    octave_source: Literal["auto", "chosen"] = Field(description="auto: the octave check decided octave_shift; chosen: "
+                                                                 "the job's octave option did")
+    reference_pitch: ReferencePitch | None = Field(description="null when the recording's tuning could not be measured")
+    tempo_bpm: float
+    key: TabKey
+    meter: TabMeter
+    ticks_per_beat: int = 24
+    beat_times: list[float] = Field(description="seconds of beat 0, 1, 2 ...")
+    first_downbeat: int = Field(description="index into beat_times of tick 0; negative when the line starts before "
+                                            "the first tracked downbeat (a pickup): tick 0 is then a bar line "
+                                            "before beat_times[0]")
 
 
 # ---------------------------------------------------------------- benchmarks

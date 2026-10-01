@@ -20,7 +20,7 @@ from pathlib import Path
 
 from brasscribe_music.instruments import SEAT_IDS
 
-from . import config, profiles, runner
+from . import bass_tab, config, profiles, runner
 
 
 def _print_event(e: dict) -> None:
@@ -41,12 +41,18 @@ def _cold(value: str | None) -> set[str]:
 
 def cmd_run(args) -> int:
     s = config.load()
+    if args.profile == bass_tab.PROFILE:
+        try:  # before any model runs: the last stage needs the core
+            bass_tab.core_cli()
+        except bass_tab.CoreCliMissing as e:
+            raise runner.RunRefused(str(e)) from e
     m = runner.run(s, args.audio, args.profile, title=args.title, out=args.out, reuse=args.reuse,
                    allow_heavy=not args.no_heavy, cold=_cold(args.cold), params={"audio": not args.no_audio, "lineup": args.lineup,
                                                                      "difficulty": args.difficulty, "key": args.key,
                                                                      "transpose": args.transpose, "seat": args.seat,
                                                                      "reads": args.reads, "lead": args.lead,
-                                                                     **({"muscriptor": False} if args.no_muscriptor else {})},
+                                                                     **({"muscriptor": False} if args.no_muscriptor else {}),
+                                                                     **bass_tab.given(**vars(args))},
                    emit=_print_event)
     run_dir = s.runs_dir / m["run_id"]
     print(f"{m['status']}: {run_dir}  ({m['seconds']:.1f}s, devices {', '.join(m['devices']) or '-'})")
@@ -242,6 +248,15 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--seat", choices=SEAT_IDS, help="the player's seat: a solo take is written for it")
     r.add_argument("--reads", choices=["treble", "bass"], help="the clef of the seat's part (bass: at concert pitch)")
     r.add_argument("--lead", choices=["lineup", "seat"], default="lineup", help="who plays the tune (band lineups)")
+    r.add_argument("--instrument", choices=list(bass_tab.INSTRUMENTS), help="bass-tab: the instrument (default bass-4)")
+    r.add_argument("--tuning", help="bass-tab: the instrument's tuning, e.g. standard, drop-d, bead (default standard)")
+    r.add_argument("--capo", type=int, help="bass-tab: the capo's fret (default 0, none)")
+    r.add_argument("--style", choices=list(bass_tab.STYLES), help="bass-tab: where the line sits on the neck (default as-played)")
+    r.add_argument("--recording", choices=list(bass_tab.RECORDINGS),
+                   help="bass-tab: song separates the bass from a band or a record (default); instrument: the bass alone")
+    r.add_argument("--octave", choices=list(bass_tab.OCTAVES),
+                   help="bass-tab: the octave the line is written in, in semitones from what was heard (default auto: "
+                        "an octave lower when it was heard an octave high)")
     r.add_argument("--check-golden", type=Path, help="compare outputs with a reference directory; exit 2 on difference")
     r.set_defaults(fn=cmd_run)
 

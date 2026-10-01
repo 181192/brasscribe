@@ -9,13 +9,15 @@
                           part plays the pop kit
   orchestra-with-soloist  layered solo-with-band: Mega-53 solo/bass/drums, the
                           orchestra as residual, 18-part brass band (layered)
+  bass-tab                the bass line as tablature: the SW bass stem (or the recording, when it
+                          is the bass alone), Basic Pitch, a string and fret per note (bass_tab.py)
 
 In brass-band, Basic Pitch hears the recording retuned to A = 440 when it is out of
 tune (tuning.py).
 
 Only orchestra-with-soloist is checked end to end against a golden output
-(data/golden/mikkel-arranged-band); the other three are wired from the same
-reference modules but have no end-to-end gate yet.
+(data/golden/mikkel-arranged-band); the other three band profiles are wired from
+the same reference modules but have no end-to-end gate yet, and neither has bass-tab.
 """
 
 from __future__ import annotations
@@ -74,8 +76,9 @@ PERCUSSION_SOLO_CODE = "percussion_solo"  # a solo take for the percussion seat
 SEAT_NO_TUNE_CODE = "seat_no_tune"  # lead=seat where the seat's part cannot carry the tune
 READS_NOT_OFFERED_CODE = "reads_not_offered"  # a clef the seat is not offered in
 INVALID_OPTIONS_CODE = "invalid_options"  # anything else wrong with the options
+CORE_MISSING_CODE = "core_missing"  # a tab profile on an engine without the Rust core's command line
 OPTION_ERROR_CODES = (QUARTET_NEEDS_GROUP_CODE, PERCUSSION_SOLO_CODE, SEAT_NO_TUNE_CODE, READS_NOT_OFFERED_CODE,
-                      INVALID_OPTIONS_CODE)
+                      INVALID_OPTIONS_CODE, CORE_MISSING_CODE)
 
 
 def option_error_code(e: ValueError) -> str:
@@ -92,6 +95,8 @@ def option_error_message(code: str) -> str:
         PERCUSSION_SOLO_CODE: PERCUSSION_SOLO,
         SEAT_NO_TUNE_CODE: "the seat's part can't carry the tune in this lineup: choose another lead",
         READS_NOT_OFFERED_CODE: "the seat's part is not offered in that clef",
+        CORE_MISSING_CODE: "this engine cannot write tab: brasscribe-core is not installed with it (build it with "
+                           "`cargo build --release -p brasscribe-cli` in core/)",
     }.get(code, "these job options don't fit together; the engine's log says which one")
 
 
@@ -137,6 +142,14 @@ def job_options(profile: str, params: dict) -> dict:
     the seat's part in the band lineups only)."""
     from brasscribe_music.instruments import PERCUSSION_SOLO, lead_lineup, lineup_by_name, seat_by_id
 
+    if profile == bass_tab.PROFILE:
+        opts = bass_tab.options(params)
+        try:  # before any model runs: the last stage needs the core
+            bass_tab.core_cli()
+        except bass_tab.CoreCliMissing as e:
+            raise OptionError(str(e), CORE_MISSING_CODE) from e
+        return opts
+    bass_tab.refuse_options(profile, params)
     opts = arrangement_options(params)
     if profile == "solo" and params.get("lineup") == "quartet":
         raise OptionError(QUARTET_NEEDS_GROUP, QUARTET_NEEDS_GROUP_CODE)
@@ -329,11 +342,18 @@ PROFILES: dict[str, Profile] = {p.name: p for p in [
             "Soloist with orchestra; Mega-53 solo/bass/drums + orchestra residual, 18-part brass band", True, layered),
 ]}
 
+# Tablature. Registered after the brass-band profiles; its options are its own (bass_tab.options).
+from . import bass_tab  # noqa: E402 - it reads this module's stage helpers when it builds
+
+PROFILES[bass_tab.PROFILE] = Profile(bass_tab.PROFILE, "tab", "The bass line as tablature; BS-RoFormer SW bass stem (or the "
+                                     "recording itself), Basic Pitch, a string and fret per note", False, bass_tab.build)
+
 DEFAULT_TITLES = {
     "orchestra-with-soloist": "{name} — solo cornet & brass band (draft)",
     "solo": "{name} — solo (draft)",
     "brass-band": "{name} — brass band (draft)",
     "pop-rock": "{name} — brass band (draft)",
+    bass_tab.PROFILE: "{name} — bass tab (draft)",
 }
 
 
@@ -344,4 +364,6 @@ def default_title(profile: str, audio: Path) -> str:
 def build(profile: str, audio: Path, title: str | None = None, params: dict | None = None) -> Pipeline:
     if profile not in PROFILES:
         raise KeyError(f"unknown profile {profile!r}; choose from {', '.join(PROFILES)}")
+    if profile != bass_tab.PROFILE:
+        bass_tab.refuse_options(profile, params or {})
     return PROFILES[profile].build(title or default_title(profile, audio), dict(params or {}))

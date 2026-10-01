@@ -16,6 +16,7 @@
 //! brasscribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
 //! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
+//! brasscribe-core fret --request JSON --out FILE     (a string and fret for every note: target-fretted's JSON request and response)
 //! ```
 
 use std::collections::HashMap;
@@ -136,8 +137,8 @@ fn parse_npy(b: &[u8]) -> R<Vec<f64>> {
     let data = &b[start + hlen..];
     let descr = header.split("'descr':").nth(1).and_then(|s| s.split('\'').nth(1)).ok_or("npy header without descr")?;
     let v = match descr {
-        "<f4" => data.chunks_exact(4).map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]) as f64).collect(),
-        "<f8" => data.chunks_exact(8).map(|c| f64::from_le_bytes(c.try_into().unwrap())).collect(),
+        "<f4" => data.as_chunks::<4>().0.iter().map(|c| f32::from_le_bytes(*c) as f64).collect(),
+        "<f8" => data.as_chunks::<8>().0.iter().map(|c| f64::from_le_bytes(*c)).collect(),
         other => return Err(format!("unsupported npy dtype {other}")),
     };
     Ok(v)
@@ -323,6 +324,11 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             }
             Ok(())
         }
+        "fret" => {
+            // The request and the response are target-fretted's own JSON, passed through unchanged.
+            let request = String::from_utf8(read(Path::new(&a.one("request")?))?).map_err(|e| format!("the request is not UTF-8: {e}"))?;
+            write(Path::new(&a.one("out")?), &target_fretted::json::solve_json(&request)?)
+        }
         "version" => {
             println!("brasscribe-core {}", brasscribe_core::VERSION);
             Ok(())
@@ -334,7 +340,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let Some(cmd) = argv.first() else {
-        eprintln!("usage: brasscribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|version> ...");
+        eprintln!("usage: brasscribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|meter|humanize|talking-score|fret|version> ...");
         return ExitCode::from(2);
     };
     match run(cmd, &Args::parse(&argv[1..])) {

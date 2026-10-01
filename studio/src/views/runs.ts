@@ -109,7 +109,9 @@ export function runsView(root: HTMLElement): void {
   loaded.then(renderList).catch((e) => clear(listEl, errorNotice(e)));
 }
 
-function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLElement {
+function newRunForm(all: ProfileInfo[], sources: Source[] | Error): HTMLElement {
+  // Tablature profiles have no score for the run view to show yet, so they are not offered here.
+  const profiles = all.filter((p) => p.pipeline !== "tab");
   const err = h("div", { id: "run-error", "aria-live": "assertive" });
   const kind = (v: string, label: string, checked = false) =>
     h("label", {}, h("input", { type: "radio", name: "source-kind", value: v, checked }), label);
