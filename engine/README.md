@@ -60,7 +60,8 @@ the adapter downloads them from where their makers publish them (licences in
 
 A job option the engine refuses answers 422 with `{"code": …, "detail": …}`; the codes are in
 `profiles.py`, and the apps word them themselves. A `bass-tab` job on an engine without `brasscribe-core` is
-refused the same way (`core_missing`), before any model runs.
+refused the same way (`core_missing`), before any model runs. Bandroom for Mac and for Windows bundle
+`brasscribe-core` and point the engine they install at it with `BRASSCRIBE_CORE_CLI`.
 
 ## Configuration
 

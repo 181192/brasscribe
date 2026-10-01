@@ -257,6 +257,19 @@ public sealed class SupervisorTests : IDisposable
     }
 
     [Fact]
+    public void The_bundled_core_command_line_reaches_the_engine()
+    {
+        var app = Path.Combine(_dir, "app-with-core");
+        Assert.Null(EngineLaunchConfig.FindCoreCli(app));
+        Assert.False(Config().Build(8765).Environment.ContainsKey("BRASSCRIBE_CORE_CLI"));
+        var exe = Path.Combine(Directory.CreateDirectory(Path.Combine(app, "core")).FullName, "brasscribe-core.exe");
+        File.WriteAllText(exe, "MZ");
+        Assert.Equal(exe, EngineLaunchConfig.FindCoreCli(app));
+        var spec = (Config() with { CoreCli = exe }).Build(8765);
+        Assert.Equal(exe, spec.Environment["BRASSCRIBE_CORE_CLI"]);
+    }
+
+    [Fact]
     public void The_log_rolls_over_and_keeps_a_tail()
     {
         var log = new EngineLog(Path.Combine(_dir, "roll"), _time, maxBytes: 200, tailLines: 5);
