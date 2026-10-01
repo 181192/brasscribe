@@ -49,7 +49,7 @@ def host_label(hostname: str | None = None) -> str:
 def os_computer_name() -> str | None:
     """The name the operating system shows for this computer, where it differs from the host name.
 
-    macOS: the ComputerName ("Kalli's MacBook Pro"), which the host name only approximates. Windows: the
+    macOS: the ComputerName ("Kari's MacBook Pro"), which the host name only approximates. Windows: the
     device name is the host name, which socket.gethostname() already returns with its case kept.
     """
     if sys.platform != "darwin" or not shutil.which("scutil"):

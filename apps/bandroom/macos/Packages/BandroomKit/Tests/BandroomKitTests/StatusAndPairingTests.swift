@@ -161,8 +161,8 @@ import Testing
         #expect(engine.opened.first == PairingOpen(ttlSeconds: 600, singleUse: true, extend: false))
         #expect(p.code == "482913")
         #expect(p.displayCode == "482 913")
-        #expect(p.host == "Kalli's MacBook")
-        #expect(p.address?.ip == "192.168.1.20")
+        #expect(p.host == "Kari's MacBook")
+        #expect(p.address?.ip == "192.0.2.20")
         #expect(p.address?.port == "8765")
         await p.close()
     }
@@ -289,7 +289,7 @@ import Testing
     @Test func words() {
         #expect([10, 40, 85, 86].map { WorkLoad.from(percent: $0) } == [.calm, .busy, .busy, .veryBusy])
         #expect([60, 25, 10, 9].map { MemoryLevel.from(freePercent: $0) } == [.plentyFree, .gettingFull, .gettingFull, .almostFull])
-        #expect(ComputerName.host(fromServerName: "Brasscribe on Kalli's MacBook") == "Kalli's MacBook")
+        #expect(ComputerName.host(fromServerName: "Brasscribe on Kari's MacBook") == "Kari's MacBook")
         #expect(JobStep.from(kind: "stems") == .separatingInstruments)
         #expect(JobStep.from(kind: "layers") == .separatingSoloist)
         #expect(JobStep.from(kind: "export") == .engraving)

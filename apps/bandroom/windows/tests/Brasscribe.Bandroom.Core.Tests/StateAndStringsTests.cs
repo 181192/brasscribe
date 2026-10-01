@@ -37,7 +37,7 @@ public sealed class StringsTests
         Assert.Equal("482 913", CodeText.Display("482913"));
         Assert.Equal("Code: 4 8 2, 9 1 3", CodeText.Spoken(Strings.En, "482913"));
         Assert.Equal("Kode: 4 8 2, 9 1 3", CodeText.Spoken(Strings.Nb, "482 913"));
-        Assert.Equal("192 dot 168 dot 1 dot 20", CodeText.SpokenAddress(Strings.En, "192.168.1.20"));
+        Assert.Equal("192 dot 0 dot 2 dot 20", CodeText.SpokenAddress(Strings.En, "192.0.2.20"));
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public sealed class StateTests
     [Fact]
     public void The_qr_is_a_png_with_a_quiet_zone()
     {
-        var uri = "brasscribe://pair?v=1&id=3f9c2a7e11&name=Brasscribe%20on%20Kalli%27s%20PC&h=192.168.1.20:8765&code=482913";
+        var uri = "brasscribe://pair?v=1&id=3f9c2a7e11&name=Brasscribe%20on%20Kari%27s%20PC&h=192.0.2.20:8765&code=482913";
         var png = QrImage.Png(uri);
         Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, png[..4]);
         Assert.True(QrImage.Modules(uri) >= 21 + 8);

@@ -20,19 +20,19 @@ public sealed class FlyoutViewModelTests
     private static BandroomSnapshot Snap(EngineState e = EngineState.Running, JobView? job = null, int online = 2, int paired = 3,
         IReadOnlyList<Problem>? problems = null, int queued = 0) =>
         new(new StateInputs(e, true, 1, false, problems ?? [], job?.Fraction, online),
-            "Brasscribe on Kalli's PC",
-            new StatusInfo("3f9c2a7e11", "Brasscribe on Kalli's PC", "0.9.4", online, paired, false, job is null ? 0 : 1, queued),
+            "Brasscribe on Kari's PC",
+            new StatusInfo("3f9c2a7e11", "Brasscribe on Kari's PC", "0.9.4", online, paired, false, job is null ? 0 : 1, queued),
             job,
             new HealthSnapshot(12, 0.2, 86_400_000_000, []),
             "Health_Speed_Nvidia",
-            new TechDetails(["192.168.1.20:8765"], 8765, "0.9.4", "CUDA · NVIDIA GeForce RTX 4070", "3f9c2a7e11deadbeef", @"C:\Users\kalli\AppData\Local\Brasscribe"));
+            new TechDetails(["192.0.2.20:8765"], 8765, "0.9.4", "CUDA · NVIDIA GeForce RTX 4070", "3f9c2a7e11deadbeef", @"C:\Users\kari\AppData\Local\Brasscribe"));
 
     [Fact]
     public void Idle_flyout_matches_the_mockup()
     {
         var vm = Make();
         vm.Apply(Snap());
-        Assert.Equal("Brasscribe on Kalli's PC", vm.Header);
+        Assert.Equal("Brasscribe on Kari's PC", vm.Header);
         Assert.Equal("Running", vm.StatusWord);
         Assert.Equal("Ready. Phones and tablets can send recordings.", vm.StatusSub);
         Assert.Equal("Pair a phone", vm.PrimaryLabel);
@@ -45,7 +45,7 @@ public sealed class FlyoutViewModelTests
         Assert.Equal("86 GB free", vm.DiskText);
         Assert.Equal("Ready", vm.ReadyWord);
         Assert.Equal("Uses the graphics card (NVIDIA)", vm.SpeedCaption);
-        Assert.Contains("192.168.1.20:8765", vm.TechText);
+        Assert.Contains("192.0.2.20:8765", vm.TechText);
         Assert.Contains("3f9c2a7e…", vm.TechText);
         Assert.False(vm.IsBusy);
         Assert.Equal(TrayBadge.None, vm.Badge);
@@ -304,12 +304,12 @@ public sealed class PairViewModelTests
         Assert.Equal("482 914", vm.CodeDisplay);
         Assert.Equal("Code: 4 8 2, 9 1 4", vm.CodeSpoken);
         Assert.StartsWith("brasscribe://pair?v=1", vm.QrPayload);
-        Assert.Equal("QR code for pairing with Brasscribe on Kalli's PC. It holds the same code: 482 914.", vm.QrSpoken);
+        Assert.Equal("QR code for pairing with Brasscribe on Kari's PC. It holds the same code: 482 914.", vm.QrSpoken);
         Assert.Equal("On the phone, open Brasscribe › Settings › Your computer and choose ", vm.Way1Before);
-        Assert.Equal("Brasscribe on Kalli's PC", vm.Way1Name);
+        Assert.Equal("Brasscribe on Kari's PC", vm.Way1Name);
         Assert.Equal(". Then allow it here.", vm.Way1After);
-        Assert.Equal("Or type this address in Brasscribe on the phone: 192.168.1.20, port 8765", vm.HelpAddress);
-        Assert.Contains("192 dot 168 dot 1 dot 20", vm.HelpAddressSpoken);
+        Assert.Equal("Or type this address in Brasscribe on the phone: 192.0.2.20, port 8765", vm.HelpAddress);
+        Assert.Contains("192 dot 0 dot 2 dot 20", vm.HelpAddressSpoken);
         Assert.True(vm.IsWaiting);
         Assert.Equal(["Waiting for a phone."], _said.Said);
     }
@@ -319,7 +319,7 @@ public sealed class PairViewModelTests
     {
         var vm = Make(Strings.Nb);
         await vm.OpenAsync();
-        Assert.Equal("Brasscribe på Kalli's PC", vm.Way1Name);
+        Assert.Equal("Brasscribe på Kari's PC", vm.Way1Name);
         Assert.StartsWith("Åpne Brasscribe på telefonen", vm.Way1Before);
     }
 
@@ -551,11 +551,11 @@ public sealed class ControllerTests
             engine.Devices.Add(new("d1", "Kari's iPhone", "ios", "x", DateTimeOffset.UtcNow.ToString("O"), null, true));
             var launcher = new FakeLauncher();
             var sup = new EngineSupervisor(launcher, new FakePorts(),
-                (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kalli's PC")),
+                (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC")),
                 p => new ProcessSpec("pixi", [], dir, new Dictionary<string, string>()), new EngineLog(null));
             var metrics = new Metrics();
             var ctl = new BandroomController(sup, _ => engine, metrics, Strings.En, new BandroomPaths(dir),
-                new MachineInfo("Kalli's PC", "Health_Speed_Nvidia", "CUDA · RTX 4070", ["192.168.1.20"]));
+                new MachineInfo("Kari's PC", "Health_Speed_Nvidia", "CUDA · RTX 4070", ["192.0.2.20"]));
             BandroomSnapshot? last = null;
             IReadOnlyList<DeviceInfo>? devices = null;
             ctl.SnapshotReady += s => last = s;
@@ -563,7 +563,7 @@ public sealed class ControllerTests
 
             await ctl.TickAsync();
             Assert.Equal(EngineState.Stopped, last!.Inputs.Engine);
-            Assert.Equal("Brasscribe on Kalli's PC", last.Header);
+            Assert.Equal("Brasscribe on Kari's PC", last.Header);
 
             await sup.StartAsync();
             for (int i = 0; i < 200 && sup.State != EngineState.Running; i++) await Task.Delay(5);
@@ -571,7 +571,7 @@ public sealed class ControllerTests
             await ctl.TickAsync();
             Assert.Equal(1, last.Status!.OnlineDevices);
             Assert.Single(devices!);
-            Assert.Equal(["192.168.1.20:8765"], last.Tech.Addresses);
+            Assert.Equal(["192.0.2.20:8765"], last.Tech.Addresses);
             Assert.Equal(Level.Low, last.Health!.Load);
             Assert.Empty(last.Inputs.Problems);
 
@@ -591,7 +591,7 @@ public sealed class ControllerTests
             var sup = new EngineSupervisor(new FakeLauncher(), new FakePorts(), (_, _) => Task.FromResult<HealthInfo?>(null),
                 p => new ProcessSpec("pixi", [], dir, new Dictionary<string, string>()), new EngineLog(null));
             var ctl = new BandroomController(sup, _ => new FakeEngine(), new Metrics(), Strings.En, new BandroomPaths(dir),
-                new MachineInfo("DESKTOP-4F2K9QZ", "Health_Speed_Cpu", "CPU", []))
+                new MachineInfo("DESKTOP-ABC1234", "Health_Speed_Cpu", "CPU", []))
             {
                 CheckModels = () => new ModelCheckResult([ModelComponent.SoloistSeparator, ModelComponent.BandWriter], ["BS-Roformer-SW.ckpt"]),
             };

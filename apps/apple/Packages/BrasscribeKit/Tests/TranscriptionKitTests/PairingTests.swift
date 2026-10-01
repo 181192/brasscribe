@@ -7,14 +7,14 @@ import Testing
 
 @Test func pairingLinkFromTheEnginesPayload() throws {
     // as engine/src/brasscribe_engine/companion.py pairing_uri writes it
-    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kalli%E2%80%99s%20Mac&h=192.168.1.20:8765,100.101.1.2:8765&code=482913"))
+    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.168.0.20:8765,100.64.0.2:8765&code=482913"))
     #expect(link.version == 1)
     #expect(link.serverID == "srv-7f3a")
-    #expect(link.serverName == "Brasscribe on Kalli’s Mac")
-    #expect(link.hosts == ["192.168.1.20:8765", "100.101.1.2:8765"])
+    #expect(link.serverName == "Brasscribe on Kari’s Mac")
+    #expect(link.hosts == ["192.168.0.20:8765", "100.64.0.2:8765"])
     #expect(link.code == "482913")
     #expect(link.fingerprint == nil)
-    #expect(link.baseURLs.map(\.absoluteString) == ["http://192.168.1.20:8765", "http://100.101.1.2:8765"])
+    #expect(link.baseURLs.map(\.absoluteString) == ["http://192.168.0.20:8765", "http://100.64.0.2:8765"])
 }
 
 @Test func pairingLinkOptionalPartsAndPastedText() throws {
@@ -47,7 +47,7 @@ import Testing
     var r = EngineRecord(serverID: "s", serverName: "Brasscribe on Studio Mac", token: "t", lastAddress: "http://10.0.0.2:8765")
     #expect(r.computerName == "Studio Mac")
     #expect(EngineRecord.computerName(fromServerName: "Band laptop") == "Band laptop")
-    #expect(EngineRecord.computerName(fromServerName: "Brasscribe on Kalli's MacBook (2)") == "Kalli's MacBook")
+    #expect(EngineRecord.computerName(fromServerName: "Brasscribe on Kari's MacBook (2)") == "Kari's MacBook")
     #expect(EngineBrowser.Engine(name: "Brasscribe on Studio (2)").computerName == "Studio")
     #expect(EngineBrowser.Engine(name: "Brasscribe on Studio (2)", host: "Studio Mac").computerName == "Studio Mac")
     #expect(!r.rotationDue(now: now))
@@ -85,12 +85,12 @@ private func freshDefaults() -> UserDefaults {
 @Test func migrationMovesThePlainTokenOnceAndDeletesIt() throws {
     let defaults = freshDefaults()
     defaults.set("old-token", forKey: "companionToken")
-    defaults.set("http://192.168.1.20:8765", forKey: "companionURL")
+    defaults.set("http://192.168.0.20:8765", forKey: "companionURL")
     let store = InMemoryCredentialStore()
 
     let moved = try #require(try CredentialMigration.run(defaults: defaults, store: store))
     #expect(moved.token == "old-token")
-    #expect(moved.lastAddress == "http://192.168.1.20:8765")
+    #expect(moved.lastAddress == "http://192.168.0.20:8765")
     #expect(moved.isProvisional)
     #expect(defaults.string(forKey: "companionToken") == nil)
     #expect(try store.all() == [moved])
@@ -216,7 +216,7 @@ private func freshDefaults() -> UserDefaults {
     #expect((1...7).map(ConnectionMachine.backoff(attempt:)) == [2, 4, 8, 16, 30, 30, 30])
 }
 
-@Test(arguments: ["10.0.0.2", "172.16.0.1", "172.31.255.255", "192.168.1.20", "169.254.3.4", "127.0.0.1", "100.101.1.2",
+@Test(arguments: ["10.0.0.2", "172.16.0.1", "172.31.255.255", "192.168.0.20", "169.254.3.4", "127.0.0.1", "100.64.0.2",
                   "::1", "fe80::1", "fe80::1%en0", "fd7a:115c:a1e0::1", "::ffff:192.168.0.1", "studio.local", "Studio.local.", "localhost"])
 func localNetworkHostsAreAccepted(host: String) {
     #expect(PairingLink.isLocalNetwork(host))
@@ -229,9 +229,9 @@ func otherHostsAreRefused(host: String) {
 }
 
 @Test func onlyTheLocalAddressesOfALinkAreKept() throws {
-    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n&h=203.0.113.9:8765,192.168.1.20:8765,[fe80::1]:8765&code=1"))
-    #expect(link.hosts == ["192.168.1.20:8765", "[fe80::1]:8765"])
-    #expect(link.displayHost == "192.168.1.20")
+    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n&h=203.0.113.9:8765,192.168.0.20:8765,[fe80::1]:8765&code=1"))
+    #expect(link.hosts == ["192.168.0.20:8765", "[fe80::1]:8765"])
+    #expect(link.displayHost == "192.168.0.20")
 }
 
 @Test func anAddressIsCheckedAsItIsConnectedTo() {
@@ -239,6 +239,6 @@ func otherHostsAreRefused(host: String) {
     #expect(PairingLink.host(of: "studio.local:8765") == "studio.local")
     // what a URL would connect to is example.com, whatever the text around it says
     #expect(PairingLink.host(of: "example.com#.local:8765") == nil)
-    #expect(PairingLink.host(of: "192.168.1.2@example.com:8765") == nil)
+    #expect(PairingLink.host(of: "192.168.0.2@example.com:8765") == nil)
     #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=example.com%23.local:8765") == nil)
 }

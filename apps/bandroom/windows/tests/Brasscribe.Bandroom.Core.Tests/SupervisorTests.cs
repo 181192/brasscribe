@@ -19,7 +19,7 @@ public sealed class SupervisorTests : IDisposable
     private EngineSupervisor Make(EngineLaunchConfig? config = null) => new(
         _launcher, _ports,
         (port, _) => Task.FromResult(Interlocked.Increment(ref _healthChecks) > 0 && _healthy && _launcher.Started.Count > 0 && !_launcher.Last.WaitForExitAsync().IsCompleted
-            ? new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kalli's PC")
+            ? new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC")
             : null),
         port => (config ?? Config()).Build(port),
         new EngineLog(Path.Combine(_dir, "logs"), _time),
@@ -27,7 +27,7 @@ public sealed class SupervisorTests : IDisposable
         new SupervisorOptions { StatusFilePath = Path.Combine(_dir, "engine.json") });
 
     private EngineLaunchConfig Config(bool cuda = true) =>
-        new(new BandroomPaths(_dir), @"C:\Program Files\Brasscribe Bandroom\pixi\pixi.exe", "Kalli's PC", "secret-admin-token-0123456789abcdef", cuda);
+        new(new BandroomPaths(_dir), @"C:\Program Files\Brasscribe Bandroom\pixi\pixi.exe", "Kari's PC", "secret-admin-token-0123456789abcdef", cuda);
 
     /// <summary>Waits for a condition, moving fake time on so back-off delays can run.</summary>
     private async Task Until(Func<bool> condition, bool advance = false, double stepSeconds = 0.5)
@@ -232,7 +232,7 @@ public sealed class SupervisorTests : IDisposable
         Assert.Equal(_dir, spec.Environment["BRASSCRIBE_DATA"]);
         Assert.Equal(Path.Combine(_dir, "models"), spec.Environment["BRASSCRIBE_MODELS"]);
         Assert.Equal(Path.Combine(_dir, "envs", "ml", "adapters"), spec.Environment["BRASSCRIBE_ADAPTERS"]);
-        Assert.Equal("Kalli's PC", spec.Environment["BRASSCRIBE_COMPUTER_NAME"]);
+        Assert.Equal("Kari's PC", spec.Environment["BRASSCRIBE_COMPUTER_NAME"]);
         Assert.Equal("secret-admin-token-0123456789abcdef", spec.Environment["BRASSCRIBE_ADMIN_TOKEN"]);
         Assert.Equal("pixi", spec.Environment["BRASSCRIBE_ADAPTER_RUNNER"]);
         Assert.Equal("1", spec.Environment["BRASSCRIBE_CUDA"]);

@@ -336,7 +336,7 @@ public sealed class WorkspaceUpdateTests : IDisposable
     public void The_tech_details_show_the_engines_build_and_the_apps_workspace()
     {
         var vm = new FlyoutViewModel(Strings.En, new FakeActions(), new RecordingAnnouncer(), TimeProvider.System);
-        var tech = new TechDetails([], 8765, "0.1.0", "CPU", "3f9c2a7e11", @"C:\Users\kalli\AppData\Local\Brasscribe",
+        var tech = new TechDetails([], 8765, "0.1.0", "CPU", "3f9c2a7e11", @"C:\Users\kari\AppData\Local\Brasscribe",
             Build: "c3dc2ad 5faffacca071", Workspace: "0cf2582 · 68fe81c4cca4");
         string text = vm.FormatTech(tech);
         Assert.Contains("Engine build c3dc2ad 5faffacca071", text);

@@ -121,7 +121,7 @@ def test_server_name_override_is_used_everywhere(settings, monkeypatch):
     monkeypatch.setenv("BRASSCRIBE_COMPUTER_NAME", "ignored")
     monkeypatch.setenv("BRASSCRIBE_SERVER_NAME", "Brasscribe on Band room")
     with lan(settings) as c:
-        c.app.state.hosts = ["192.168.1.20:8765"]
+        c.app.state.hosts = ["192.0.2.20:8765"]
         assert c.get("/v1/health").json()["server_name"] == "Brasscribe on Band room"
         p = pair(c)
         assert p["server_name"] == "Brasscribe on Band room"
@@ -130,7 +130,7 @@ def test_server_name_override_is_used_everywhere(settings, monkeypatch):
             assert c.get("/v1/status").json()["server_name"] == "Brasscribe on Band room"
         assert st["server_name"] == "Brasscribe on Band room"
         assert parse_qs(urlsplit(st["uri"]).query)["name"] == ["Brasscribe on Band room"]
-    info = discovery.service_info(8765, ["192.168.1.20"])
+    info = discovery.service_info(8765, ["192.0.2.20"])
     assert info.name == "Brasscribe on Band room._brasscribe._tcp.local."
     assert info.decoded_properties["host"] == "Band room"
 
@@ -143,19 +143,19 @@ def test_server_name_override_without_the_prefix_is_taken_whole(monkeypatch):
 def test_the_operating_systems_computer_name_comes_before_the_host_name(monkeypatch):
     monkeypatch.delenv("BRASSCRIBE_COMPUTER_NAME", raising=False)
     monkeypatch.delenv("BRASSCRIBE_SERVER_NAME", raising=False)
-    monkeypatch.setattr(discovery, "os_computer_name", lambda: "Kalli's MacBook Pro")
-    monkeypatch.setattr(discovery.socket, "gethostname", lambda: "Kallis-MBP.local")
-    assert discovery.server_names() == ("Brasscribe on Kalli's MacBook Pro", "Kalli's MacBook Pro")
+    monkeypatch.setattr(discovery, "os_computer_name", lambda: "Kari's MacBook Pro")
+    monkeypatch.setattr(discovery.socket, "gethostname", lambda: "Karis-MBP.local")
+    assert discovery.server_names() == ("Brasscribe on Kari's MacBook Pro", "Kari's MacBook Pro")
     monkeypatch.setattr(discovery, "os_computer_name", lambda: None)
-    assert discovery.service_name() == "Brasscribe on Kallis-MBP"
+    assert discovery.service_name() == "Brasscribe on Karis-MBP"
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="scutil is macOS only")
 def test_os_computer_name_reads_scutil_on_macos(monkeypatch):
     real = REAL_OS_COMPUTER_NAME
     monkeypatch.setattr(discovery.subprocess, "run",
-                        lambda *a, **k: subprocess.CompletedProcess(a, 0, "Kalli's MacBook Pro\n", ""))
-    assert real() == "Kalli's MacBook Pro"
+                        lambda *a, **k: subprocess.CompletedProcess(a, 0, "Kari's MacBook Pro\n", ""))
+    assert real() == "Kari's MacBook Pro"
     monkeypatch.setattr(discovery.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 1, "", "err"))
     assert real() is None
 

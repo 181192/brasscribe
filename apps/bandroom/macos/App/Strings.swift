@@ -201,7 +201,7 @@ enum Strings {
         return String(localized: "Code: \(d[0]) \(d[1]) \(d[2]), \(d[3]) \(d[4]) \(d[5])")
     }
 
-    /// "192 dot 168 dot 1 dot 20".
+    /// "192 dot 0 dot 2 dot 20".
     static func addressForVoiceOver(_ ip: String) -> String {
         ip.split(separator: ".").joined(separator: String(localized: " dot "))
     }

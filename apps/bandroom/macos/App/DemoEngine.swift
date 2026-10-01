@@ -11,7 +11,7 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
     init(busy: Bool) { self.busy = busy }
 
     private static let serverId = "3f9c2a7e5b1d4c8a9e0f1a2b3c4d5e6f"
-    private static let name = "Brasscribe on Kalli's MacBook"
+    private static let name = "Brasscribe on Kari's MacBook"
 
     private static func iso(_ ago: TimeInterval) -> String {
         ISO8601DateFormatter().string(from: Date().addingTimeInterval(-ago))
@@ -37,8 +37,8 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
 
     private func state(open: Bool) -> PairingState {
         PairingState(open: open, code: open ? "482913" : nil, serverId: Self.serverId, serverName: Self.name,
-                     hosts: ["192.168.1.20:8765", "10.0.0.4:8765"],
-                     uri: "brasscribe://pair?v=1&id=\(Self.serverId)&name=Brasscribe%20on%20Kalli%27s%20MacBook&h=192.168.1.20:8765,10.0.0.4:8765"
+                     hosts: ["192.0.2.20:8765", "198.51.100.4:8765"],
+                     uri: "brasscribe://pair?v=1&id=\(Self.serverId)&name=Brasscribe%20on%20Kari%27s%20MacBook&h=192.0.2.20:8765,198.51.100.4:8765"
                         + (open ? "&code=482913" : ""))
     }
 

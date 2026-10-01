@@ -58,10 +58,10 @@ public class EngineDiscoveryTests
     public void Parses_ptr_srv_and_a_into_an_engine()
     {
         var records = new DnsSdRecords();
-        records.Add(Response("Brasscribe on studio", "studio", 8765, [192, 168, 10, 95]));
+        records.Add(Response("Brasscribe on studio", "studio", 8765, [192, 168, 0, 2]));
         var engine = Assert.Single(records.Engines(EngineDiscovery.ServiceType));
         Assert.Equal("Brasscribe on studio", engine.Name);
-        Assert.Equal(new Uri("http://192.168.10.95:8765/"), engine.BaseAddress);
+        Assert.Equal(new Uri("http://192.168.0.2:8765/"), engine.BaseAddress);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class EngineDiscoveryTests
     {
         var records = new DnsSdRecords();
         records.Add(Response("Brasscribe on Studio PC (2)", "studio", 8765,
-            ["v=0.4.0", "api=/v1", "auth=pair", "id=0123456789abcdef0123456789abcdef", "host=Studio PC"], [192, 168, 10, 95]));
+            ["v=0.4.0", "api=/v1", "auth=pair", "id=0123456789abcdef0123456789abcdef", "host=Studio PC"], [192, 168, 0, 2]));
         var engine = Assert.Single(records.Engines(EngineDiscovery.ServiceType));
         Assert.Equal("0123456789abcdef0123456789abcdef", engine.ServerId);
         Assert.Equal("Studio PC", engine.Host);
@@ -90,9 +90,9 @@ public class EngineDiscoveryTests
     public void Prefers_a_private_address_over_vpn_and_cgnat_ones()
     {
         var records = new DnsSdRecords();
-        records.Add(Response("Brasscribe on studio", "studio", 8765, [100, 64, 0, 1], [192, 168, 10, 95]));
+        records.Add(Response("Brasscribe on studio", "studio", 8765, [100, 64, 0, 1], [192, 168, 0, 2]));
         var engine = Assert.Single(records.Engines(EngineDiscovery.ServiceType, a => EngineDiscovery.Rank(a, [])));
-        Assert.Equal(new Uri("http://192.168.10.95:8765/"), engine.BaseAddress);
+        Assert.Equal(new Uri("http://192.168.0.2:8765/"), engine.BaseAddress);
     }
 
     [Fact]
@@ -122,9 +122,9 @@ public class EngineDiscoveryTests
     [Fact]
     public async Task Choosing_a_found_engine_sets_the_address_and_keeps_its_credential()
     {
-        var studio = new DiscoveredEngine("Brasscribe on studio", new Uri("http://192.168.10.95:8765/"), "0123456789abcdef0123456789abcdef", "studio");
+        var studio = new DiscoveredEngine("Brasscribe on studio", new Uri("http://192.168.0.2:8765/"), "0123456789abcdef0123456789abcdef", "studio");
         var vm = new SettingsViewModel(new InMemorySettings(), new Silent(), Strings(), new FakeDiscovery(studio));
-        vm.Credentials.Save(new EngineCredential("0123456789abcdef0123456789abcdef", "tok", LastAddress: "http://192.168.10.20:8765/"));
+        vm.Credentials.Save(new EngineCredential("0123456789abcdef0123456789abcdef", "tok", LastAddress: "http://192.168.0.3:8765/"));
 
         await vm.FindEnginesCommand.ExecuteAsync(null);
         Assert.Equal([studio], vm.DiscoveredEngines);
@@ -132,7 +132,7 @@ public class EngineDiscoveryTests
 
         // The same engine at another address: the credential belongs to its server id, not the address.
         vm.UseEngineCommand.Execute(studio);
-        Assert.Equal("http://192.168.10.95:8765/", vm.EngineAddress);
+        Assert.Equal("http://192.168.0.2:8765/", vm.EngineAddress);
         Assert.Equal("tok", vm.EngineToken);
     }
 }

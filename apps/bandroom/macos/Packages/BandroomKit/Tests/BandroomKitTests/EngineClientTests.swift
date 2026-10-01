@@ -41,7 +41,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
 }
 
 let pairingJSON = """
-{"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"3f9c2a7e","server_name":"Brasscribe on Kalli's MacBook","hosts":["192.168.1.20:8765"],"fingerprint":null,"uri":"brasscribe://pair?v=1&id=3f9c2a7e&code=482913"}
+{"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"3f9c2a7e","server_name":"Brasscribe on Kari's MacBook","hosts":["192.0.2.20:8765"],"fingerprint":null,"uri":"brasscribe://pair?v=1&id=3f9c2a7e&code=482913"}
 """
 
 @Suite(.serialized) struct EngineClientTests {
@@ -58,10 +58,10 @@ let pairingJSON = """
 
     @Test func decodesTheContractStatus() async throws {
         let c = client(["GET /v1/status": (200, """
-        {"server_id":"3f9c2a7e","server_name":"Brasscribe on Kalli's MacBook","version":"0.9.4","online_devices":2,"paired_devices":3,"pairing_open":false,"jobs_running":1,"jobs_queued":1}
+        {"server_id":"3f9c2a7e","server_name":"Brasscribe on Kari's MacBook","version":"0.9.4","online_devices":2,"paired_devices":3,"pairing_open":false,"jobs_running":1,"jobs_queued":1}
         """)])
         let s = try await c.status()
-        #expect(s == EngineStatus(serverId: "3f9c2a7e", serverName: "Brasscribe on Kalli's MacBook", version: "0.9.4",
+        #expect(s == EngineStatus(serverId: "3f9c2a7e", serverName: "Brasscribe on Kari's MacBook", version: "0.9.4",
                                   onlineDevices: 2, pairedDevices: 3, pairingOpen: false, jobsRunning: 1, jobsQueued: 1))
     }
 
@@ -71,7 +71,7 @@ let pairingJSON = """
         let f = ISO8601DateFormatter()
         let recent = f.string(from: now.addingTimeInterval(-10)), old = f.string(from: now.addingTimeInterval(-86400))
         let c = client([
-            "GET /v1/health": (200, #"{"status":"ok","version":"0.9.4","device":"mps","auth_required":false,"server_id":"3f9c","server_name":"Brasscribe on Kalli's MacBook"}"#),
+            "GET /v1/health": (200, #"{"status":"ok","version":"0.9.4","device":"mps","auth_required":false,"server_id":"3f9c","server_name":"Brasscribe on Kari's MacBook"}"#),
             "GET /v1/devices": (200, """
             [{"device_id":"a","name":"Kari's iPhone","platform":"ios","paired_at":"\(old)","last_seen":"\(recent)","rotated_at":null},
              {"device_id":"b","name":"Pixel 9","platform":"android","paired_at":"\(old)","last_seen":"\(old)","rotated_at":null}]
@@ -84,7 +84,7 @@ let pairingJSON = """
         #expect(s.pairedDevices == 2)
         #expect(s.pairingOpen)
         #expect(s.jobsRunning == 1)
-        #expect(s.serverName == "Brasscribe on Kalli's MacBook")
+        #expect(s.serverName == "Brasscribe on Kari's MacBook")
     }
 
     @Test func sendsTheAdminBearerOnEveryOwnerEndpoint() async throws {

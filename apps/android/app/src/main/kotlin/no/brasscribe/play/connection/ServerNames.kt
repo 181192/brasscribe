@@ -2,7 +2,7 @@ package no.brasscribe.play.connection
 
 /**
  * The engine calls itself "Brasscribe on <computer>". Each language builds its own phrase from the
- * computer part ("Brasscribe on Kalli's Mac", "Brasscribe på Kalli's Mac") instead of quoting the English
+ * computer part ("Brasscribe on Kari's Mac", "Brasscribe på Kari's Mac") instead of quoting the English
  * name inside a Norwegian sentence.
  */
 object ServerNames {

@@ -49,7 +49,7 @@ Date: 2026-09-27. Desk research plus one-off measurements on the existing eval s
 - `eval/brasscribe_eval/urmp.py:24`: URMP reference pitches are the annotated frequency rounded at A440.
 - `docs/songs/mikkel.md:54`: the *arranger* writes unisons for paired parts. That is the output side, not detection.
 
-**Session memory:** `/Users/k/private/brasscribe/.remember` does not exist. `/Users/k/private/.remember` mentions unisons once (`today-2026-09-25.done.md:27`, "fixed unisons"), and that refers to the arranger forcing unisons ([10-benchmark-results.md:304](10-benchmark-results.md)), not to detection. The auto-memory files say nothing on the topic.
+**Session memory:** the repository has no `.remember` folder. The notes folder one level up mentions unisons once (`today-2026-09-25.done.md:27`, "fixed unisons"), and that refers to the arranger forcing unisons ([10-benchmark-results.md:304](10-benchmark-results.md)), not to detection. The auto-memory files say nothing on the topic.
 
 ---
 
