@@ -540,6 +540,11 @@ alone.
 
 `cargo run -p target-fretted --example tab < request.json` prints the document for a request.
 
+The same two requests and answers reach the apps through the bindings in `brasscribe-ffi`
+(`fretted_fingering_json` for `solve_json`, `fretted_tab_json` for `tab_json`; see
+[the core's README](../README.md#bindings)) and the command line (`brasscribe-core fret` and `tab`).
+Every refusal is invalid input there.
+
 ## Not modelled yet
 
 - **Sustain without let ring.** A note without `let-ring` may be cut by a later note on its string.

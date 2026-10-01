@@ -7,6 +7,9 @@
 //!
 //! Inputs and outputs are plain data: MIDI file bytes, beat tables as text,
 //! Composition JSON and MusicXML strings. Nothing here touches the file system.
+//!
+//! [`fretted`] is the one part that is not brasscribe-core: tab fingering for fretted
+//! instruments (`target-fretted`), as JSON.
 
 use brasscribe_core::arranger::{arrange, arrange_layers};
 use brasscribe_core::durations::Contour;
@@ -18,6 +21,7 @@ use brasscribe_core::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
 use brasscribe_core::quantize::{choose_level, fill_gaps, quantize};
 
 pub mod c_api;
+pub mod fretted;
 pub mod humanize;
 pub mod talking;
 

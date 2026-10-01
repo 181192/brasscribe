@@ -149,6 +149,29 @@ int32_t bc_arrange_layers_band_contour(const uint8_t *const *midi,
 // "from_composition"}...], "detune": cents, "stats": {...}}`.
 int32_t bc_humanize_json(const char *request, char **out, char **err);
 
+// A string and a fret for every note, on a fretted instrument. `request` is `target-fretted`'s
+// fingering request:
+// `{"instrument": {"preset": "bass-4-standard", "capo": 0}, "notes": [{"pitch", "start", "dur"}...],
+//   "options": {"style": "as-played", "tempo_bpm": 96, "pins": [{"note": 0, "string": 2}]}}`;
+// writes `{"instrument": {...}, "fingering": {"notes": [{"pitch", "string", "fret", "alternatives",
+// "out_of_range", "pinned"}...]}, "violations": [...], "tuning_suggestions": [...]}`.
+// See `fretted_fingering_json`.
+//
+// # Safety
+// `request` is null or a NUL-terminated string; `out` and `err` are null or point to a place a
+// string pointer can be written. A string written there is released with [`bc_string_free`].
+int32_t bc_fretted_fingering_json(const char *request,
+                                  char **out,
+                                  char **err);
+
+// Tablature as MusicXML. `request` is `target-fretted`'s tab request (the fingering request plus
+// `title`, `tempo_bpm`, `meter`, `key`, `tab` and optionally `fingering`); writes
+// `{"musicxml": "...", "adjusted_notes": 0}`. See `fretted_tab_json`.
+//
+// # Safety
+// As [`bc_fretted_fingering_json`].
+int32_t bc_fretted_tab_json(const char *request, char **out, char **err);
+
 // Build a talking score from MusicXML and (optionally, may be null) the
 // Composition JSON. Writes a handle to `*out`; release with
 // [`bc_talking_score_free`].

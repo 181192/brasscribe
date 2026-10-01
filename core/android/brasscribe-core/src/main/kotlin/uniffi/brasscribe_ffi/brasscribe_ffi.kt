@@ -711,6 +711,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_spell_pitches(
     ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_fretted_tab_json(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_humanize_part(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_humanize_uniform(
@@ -838,6 +842,10 @@ internal object UniffiLib {
     external fun uniffi_brasscribe_ffi_fn_func_seats(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_spell_pitches(`onsetsBeats`: RustBuffer.ByValue,`pitches`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_fretted_tab_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_humanize_part(`notes`: RustBuffer.ByValue,`part`: RustBuffer.ByValue,`player`: Long,`seed`: RustBuffer.ByValue,`performance`: RustBuffer.ByValue,`performedTiming`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1018,6 +1026,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 55508) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json() and 0xFFFF) != 8683) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_tab_json() and 0xFFFF) != 63499) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_humanize_part() and 0xFFFF) != 14286) {
@@ -4948,6 +4962,51 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
         
         FfiConverterSequenceDouble.lower(`onsetsBeats`),
         FfiConverterSequenceInt.lower(`pitches`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * A string and a fret for every note. `request` is `target-fretted`'s fingering request:
+         * `{"instrument": {"preset": "bass-4-standard", "capo": 0} | {full instrument},
+         * "notes": [{"pitch", "start", "dur", "confidence"?, "techniques"?: ["slide", ...]}...],
+         * "options": {"style": "open-position" | "as-played" | "lead", "tempo_bpm", "hand",
+         * "pins": [{"note": index, "string": number}]}}` (`options` and each of its fields
+         * may be left out). Answers with
+         * `{"instrument": {the instrument used}, "fingering": {"notes": [{"pitch", "string", "fret",
+         * "alternatives": [{"string", "fret"}...], "out_of_range", "pinned"}...]},
+         * "violations": [{"kind": "pin-not-honoured", ...}...], "tuning_suggestions": [...]}`:
+         * one place per note in the order of the request, the hard playability violations, and for a
+         * preset instrument the tunings of its family ranked by fit.
+         * A pin on a string that cannot sound the note's pitch is not an error: the note is placed
+         * elsewhere and the pin is listed in `violations`.
+         */
+    @Throws(CoreException::class) fun `frettedFingeringJson`(`request`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(
+    
+        
+        FfiConverterString.lower(`request`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Tablature as MusicXML. `request` is `target-fretted`'s tab request: the fingering request plus
+         * `title`, `tempo_bpm`, `meter`, `key`, `tab` (layout, capo encoding, clef, doubt threshold) and,
+         * to write a fingering as it is instead of solving, `fingering`. Answers with
+         * `{"musicxml": "...", "adjusted_notes": 0}`.
+         */
+    @Throws(CoreException::class) fun `frettedTabJson`(`request`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_tab_json(
+    
+        
+        FfiConverterString.lower(`request`),_status)
 }
     )
     }

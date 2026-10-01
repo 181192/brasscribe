@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Brasscribe.Core;
 using Xunit;
 
@@ -308,5 +309,49 @@ public class BrasscribeCoreTests
         var s = BrasscribeCore.SpellPitches([0, 1, 2], [66, 69, 74]);
         Assert.Equal(["F", "A", "D"], s.Select(p => p.Step));
         Assert.Equal(1, s[0].Alter);
+    }
+
+    // A bass line down to D1, which a 4-string bass in standard tuning cannot play.
+    private const string BassLine = """
+        {"instrument": {"preset": "bass-4-standard"},
+         "notes": [{"pitch": 26, "start": 0, "dur": 24}, {"pitch": 33, "start": 24, "dur": 24},
+                   {"pitch": 38, "start": 48, "dur": 12}, {"pitch": 40, "start": 60, "dur": 36, "techniques": ["hammer-on"]}],
+         "options": {"style": "open-position", "pins": [{"note": 2, "string": 3}]}}
+        """;
+
+    [Fact]
+    public void FingersABassLineAndWritesItsTab()
+    {
+        using var answer = JsonDocument.Parse(BrasscribeCore.FrettedFingeringJson(BassLine));
+        var notes = answer.RootElement.GetProperty("fingering").GetProperty("notes");
+        Assert.Equal(4, notes.GetArrayLength());
+        Assert.True(notes[0].GetProperty("out_of_range").GetBoolean());
+        // With D2 pinned at the fifth fret, A1 is played beside it and not on the open string.
+        Assert.Equal((4, 5), (notes[1].GetProperty("string").GetInt32(), notes[1].GetProperty("fret").GetInt32()));
+        // The pin puts D2 on the third string, and the hammer-on follows it there.
+        Assert.Equal((3, 5), (notes[2].GetProperty("string").GetInt32(), notes[2].GetProperty("fret").GetInt32()));
+        Assert.True(notes[2].GetProperty("pinned").GetBoolean());
+        Assert.Equal(3, notes[3].GetProperty("string").GetInt32());
+        Assert.Equal(0, answer.RootElement.GetProperty("violations").GetArrayLength());
+        Assert.Equal("bass-4-drop-d", answer.RootElement.GetProperty("tuning_suggestions")[0].GetProperty("preset").GetString());
+
+        using var tab = JsonDocument.Parse(BrasscribeCore.FrettedTabJson(BassLine));
+        Assert.Equal(0, tab.RootElement.GetProperty("adjusted_notes").GetInt32());
+        var xml = tab.RootElement.GetProperty("musicxml").GetString()!;
+        Assert.Contains("<sign>TAB</sign>", xml);
+        Assert.Contains("<staff-lines>4</staff-lines>", xml);
+    }
+
+    [Fact]
+    public void AFrettedRequestItCannotReadIsInvalidInput()
+    {
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedFingeringJson("{")).Code);
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedTabJson("{")).Code);
+        // A pin on a string the instrument does not have is refused; one the string cannot sound is reported.
+        var e = Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 9")));
+        Assert.Equal(1, e.Code);
+        Assert.Contains("a pin names string 9 of 4", e.Message);
+        using var answer = JsonDocument.Parse(BrasscribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 1")));
+        Assert.Equal("pin-not-honoured", answer.RootElement.GetProperty("violations")[0].GetProperty("kind").GetString());
     }
 }

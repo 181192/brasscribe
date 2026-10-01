@@ -4167,6 +4167,43 @@ public func spellPitches(onsetsBeats: [Double], pitches: [Int32])throws  -> [Spe
 })
 }
 /**
+ * A string and a fret for every note. `request` is `target-fretted`'s fingering request:
+ * `{"instrument": {"preset": "bass-4-standard", "capo": 0} | {full instrument},
+ * "notes": [{"pitch", "start", "dur", "confidence"?, "techniques"?: ["slide", ...]}...],
+ * "options": {"style": "open-position" | "as-played" | "lead", "tempo_bpm", "hand",
+ * "pins": [{"note": index, "string": number}]}}` (`options` and each of its fields
+ * may be left out). Answers with
+ * `{"instrument": {the instrument used}, "fingering": {"notes": [{"pitch", "string", "fret",
+ * "alternatives": [{"string", "fret"}...], "out_of_range", "pinned"}...]},
+ * "violations": [{"kind": "pin-not-honoured", ...}...], "tuning_suggestions": [...]}`:
+ * one place per note in the order of the request, the hard playability violations, and for a
+ * preset instrument the tunings of its family ranked by fit.
+ * A pin on a string that cannot sound the note's pitch is not an error: the note is placed
+ * elsewhere and the pin is listed in `violations`.
+ */
+public func frettedFingeringJson(request: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(
+        FfiConverterString.lower(request),uniffiCallStatus
+    )
+})
+}
+/**
+ * Tablature as MusicXML. `request` is `target-fretted`'s tab request: the fingering request plus
+ * `title`, `tempo_bpm`, `meter`, `key`, `tab` (layout, capo encoding, clef, doubt threshold) and,
+ * to write a fingering as it is instead of solving, `fingering`. Answers with
+ * `{"musicxml": "...", "adjusted_notes": 0}`.
+ */
+public func frettedTabJson(request: String)throws  -> String  {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
+        uniffiCallStatus in
+    uniffi_brasscribe_ffi_fn_func_fretted_tab_json(
+        FfiConverterString.lower(request),uniffiCallStatus
+    )
+})
+}
+/**
  * Humanize one player's notes. `performed_timing` follows the recording's
  * rubato (needs `performance`); otherwise the score tempo is kept.
  */
@@ -4286,6 +4323,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_spell_pitches() != 55508) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json() != 8683) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_brasscribe_ffi_checksum_func_fretted_tab_json() != 63499) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_brasscribe_ffi_checksum_func_humanize_part() != 14286) {

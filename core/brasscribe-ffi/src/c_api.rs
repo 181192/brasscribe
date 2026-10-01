@@ -428,6 +428,35 @@ pub unsafe extern "C" fn bc_humanize_json(request: *const c_char, out: *mut *mut
     })
 }
 
+/// A string and a fret for every note, on a fretted instrument. `request` is `target-fretted`'s
+/// fingering request:
+/// `{"instrument": {"preset": "bass-4-standard", "capo": 0}, "notes": [{"pitch", "start", "dur"}...],
+///   "options": {"style": "as-played", "tempo_bpm": 96, "pins": [{"note": 0, "string": 2}]}}`;
+/// writes `{"instrument": {...}, "fingering": {"notes": [{"pitch", "string", "fret", "alternatives",
+/// "out_of_range", "pinned"}...]}, "violations": [...], "tuning_suggestions": [...]}`.
+/// See `fretted_fingering_json`.
+///
+/// # Safety
+/// `request` is null or a NUL-terminated string; `out` and `err` are null or point to a place a
+/// string pointer can be written. A string written there is released with [`bc_string_free`].
+#[no_mangle]
+pub unsafe extern "C" fn bc_fretted_fingering_json(request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || crate::fretted::fretted_fingering_json(req).map_err(map_err))
+}
+
+/// Tablature as MusicXML. `request` is `target-fretted`'s tab request (the fingering request plus
+/// `title`, `tempo_bpm`, `meter`, `key`, `tab` and optionally `fingering`); writes
+/// `{"musicxml": "...", "adjusted_notes": 0}`. See `fretted_tab_json`.
+///
+/// # Safety
+/// As [`bc_fretted_fingering_json`].
+#[no_mangle]
+pub unsafe extern "C" fn bc_fretted_tab_json(request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || crate::fretted::fretted_tab_json(req).map_err(map_err))
+}
+
 /// Opaque talking-score document.
 pub struct BcTalkingScore(crate::talking::TalkingScore);
 
