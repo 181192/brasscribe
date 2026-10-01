@@ -8,7 +8,13 @@ ml/adapters/mega53/msst
 capture
 docs
 apps
-core
+core/target
+core/dist
+core/swift
+core/android
+core/bindings
+core/dotnet
+core/conformance
 studio
 **/*.wav
 **/*.flac

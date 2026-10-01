@@ -77,7 +77,7 @@ refused the same way (`core_missing`), before any model runs.
 | `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu-<uid>.lock` | Lock for heavy models, shared by this user's runs |
 | `BRASSCRIBE_ADAPTER_TIMEOUT_S` | 3 h heavy, 1 h other models | How long one model run may take before it is stopped |
 | `BRASSCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
-| `BRASSCRIBE_CORE_CLI` | `<repo>/core/target/release/brasscribe-core`, then the `PATH` | The Rust core's command line, for the `bass-tab` profile (`cargo build --release -p brasscribe-cli` in `core/`) |
+| `BRASSCRIBE_CORE_CLI` | `<repo>/core/target/release/brasscribe-core`, then the `PATH` | The Rust core's command line, for the `bass-tab` profile. A checkout gets it from `scripts/worktree-setup.sh` (or `cargo build --release -p brasscribe-cli` in `core/`); the Docker image builds it and sets the variable |
 
 `src/brasscribe_engine/config.py` lists the rest (companion state, device expiry, display name, owner
 credential, report folders).
@@ -101,5 +101,6 @@ docker build -f engine/Dockerfile --target cpu -t brasscribe:cpu .    # --target
 docker run --rm -v "$PWD/data:/data" -p 8765:8765 brasscribe:cpu
 ```
 
-The image has the engine and every adapter environment, and serves on the LAN without mDNS (a bridged
+The image has the engine, every adapter environment and the Rust core's command line (built from `core/`
+in its own stage, for the `bass-tab` profile), and serves on the LAN without mDNS (a bridged
 container would advertise its own address).
