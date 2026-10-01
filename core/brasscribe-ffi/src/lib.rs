@@ -521,27 +521,15 @@ pub fn arrange_song_with(
     title: String,
     options: SongArrangeOptions,
 ) -> Result<SongOutput, CoreError> {
-    use brasscribe_core::instruments::{check_reads, lead_lineup, lineup_by_name, seat_by_id, LEADS};
-
-    let lineup = if options.lineup.is_empty() { "minimal" } else { options.lineup.as_str() };
-    if !["minimal", "quartet"].contains(&lineup) {
-        return Err(invalid(format!("lineup must be minimal or quartet, not {lineup}")));
-    }
-    let lead = options.lead.as_deref().filter(|l| !l.is_empty()).unwrap_or("lineup");
-    if !LEADS.contains(&lead) {
-        return Err(invalid(format!("lead must be one of {LEADS:?}")));
-    }
-    if let Some(s) = &options.seat {
-        seat_by_id(s).map_err(invalid)?;
-    }
-    check_reads(options.seat.as_deref(), options.reads.as_deref()).map_err(invalid)?;
-    match (&options.seat, lead) {
-        (Some(s), "seat") => {
-            lead_lineup(lineup_by_name(lineup).map_err(invalid)?, s).map_err(invalid)?;
-        }
-        (None, "seat") => return Err(invalid("lead seat needs a seat")),
-        _ => {}
-    }
+    // The core's own check of the options, asked first: what it refuses is invalid input.
+    let opts = pipeline::SongOptions {
+        lineup: options.lineup,
+        seat: options.seat,
+        reads: options.reads,
+        lead: options.lead.unwrap_or_default(),
+        kit: String::new(),
+    };
+    pipeline::check_song_options(&opts).map_err(invalid)?;
     let inp = SongInputs {
         melody: midi(&melody)?,
         melody_support: melody_support.map(|b| midi(&b)).transpose()?,
@@ -549,7 +537,6 @@ pub fn arrange_song_with(
         harmony: harmony.iter().map(|b| midi(b)).collect::<Result<_, _>>()?,
     };
     let beats = Beats::parse(&beats_text).map_err(invalid)?;
-    let opts = pipeline::SongOptions { lineup: lineup.into(), seat: options.seat, reads: options.reads, lead: lead.into(), kit: String::new() };
     let r = pipeline::arrange_song_opts(&inp, &beats, &title, &opts).map_err(failed)?;
     Ok(SongOutput { composition_json: r.composition.to_json_string(), musicxml: r.musicxml })
 }

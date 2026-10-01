@@ -82,6 +82,15 @@ fn options_that_do_not_fit_are_invalid_input() {
     ];
     for o in bad {
         let desc = format!("{o:?}");
+        // the core's own check refuses it too: the binding asks that check, it has no rules of its own
+        let core = brasscribe_core::pipeline::SongOptions {
+            lineup: o.lineup.clone(),
+            seat: o.seat.clone(),
+            reads: o.reads.clone(),
+            lead: o.lead.clone().unwrap_or_default(),
+            kit: String::new(),
+        };
+        assert!(brasscribe_core::pipeline::check_song_options(&core).is_err(), "{desc}");
         assert!(matches!(draft(dir, o), Err(CoreError::Invalid { .. })), "{desc}");
     }
 }
