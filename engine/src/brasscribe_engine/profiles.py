@@ -9,13 +9,15 @@
                           part plays the pop kit
   orchestra-with-soloist  layered solo-with-band: Mega-53 solo/bass/drums, the
                           orchestra as residual, 18-part brass band (layered)
+  bass-tab                the bass line as tablature: the SW bass stem (or the recording, when it
+                          is the bass alone), Basic Pitch, a string and fret per note (bass_tab.py)
 
 In brass-band, Basic Pitch hears the recording retuned to A = 440 when it is out of
 tune (tuning.py).
 
 Only orchestra-with-soloist is checked end to end against a golden output
-(data/golden/mikkel-arranged-band); the other three are wired from the same
-reference modules but have no end-to-end gate yet.
+(data/golden/mikkel-arranged-band); the other three band profiles are wired from
+the same reference modules but have no end-to-end gate yet, and neither has bass-tab.
 """
 
 from __future__ import annotations
@@ -137,6 +139,9 @@ def job_options(profile: str, params: dict) -> dict:
     the seat's part in the band lineups only)."""
     from brasscribe_music.instruments import PERCUSSION_SOLO, lead_lineup, lineup_by_name, seat_by_id
 
+    if profile == bass_tab.PROFILE:
+        return bass_tab.options(params)
+    bass_tab.refuse_options(profile, params)
     opts = arrangement_options(params)
     if profile == "solo" and params.get("lineup") == "quartet":
         raise OptionError(QUARTET_NEEDS_GROUP, QUARTET_NEEDS_GROUP_CODE)
@@ -329,11 +334,18 @@ PROFILES: dict[str, Profile] = {p.name: p for p in [
             "Soloist with orchestra; Mega-53 solo/bass/drums + orchestra residual, 18-part brass band", True, layered),
 ]}
 
+# Tablature. Registered after the brass-band profiles; its options are its own (bass_tab.options).
+from . import bass_tab  # noqa: E402 - it reads this module's stage helpers when it builds
+
+PROFILES[bass_tab.PROFILE] = Profile(bass_tab.PROFILE, "tab", "The bass line as tablature; BS-RoFormer SW bass stem (or the "
+                                     "recording itself), Basic Pitch, a string and fret per note", False, bass_tab.build)
+
 DEFAULT_TITLES = {
     "orchestra-with-soloist": "{name} — solo cornet & brass band (draft)",
     "solo": "{name} — solo (draft)",
     "brass-band": "{name} — brass band (draft)",
     "pop-rock": "{name} — brass band (draft)",
+    bass_tab.PROFILE: "{name} — bass tab (draft)",
 }
 
 
@@ -344,4 +356,6 @@ def default_title(profile: str, audio: Path) -> str:
 def build(profile: str, audio: Path, title: str | None = None, params: dict | None = None) -> Pipeline:
     if profile not in PROFILES:
         raise KeyError(f"unknown profile {profile!r}; choose from {', '.join(PROFILES)}")
+    if profile != bass_tab.PROFILE:
+        bass_tab.refuse_options(profile, params or {})
     return PROFILES[profile].build(title or default_title(profile, audio), dict(params or {}))

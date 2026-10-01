@@ -37,7 +37,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, 
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, build_info, history, inspection, profiles
+from . import __version__, bass_tab, build_info, history, inspection, profiles
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
 from .adapters import host_device
@@ -488,6 +488,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                   "key": body.key, "transpose": body.transpose, "seat": body.seat, "reads": body.reads, "lead": body.lead}
         if not body.muscriptor:
             params["muscriptor"] = False
+        params.update(bass_tab.given(instrument=body.instrument, tuning=body.tuning, capo=body.capo, style=body.style,
+                                     recording=body.recording))
         try:
             profiles.job_options(body.profile, params)
         except ValueError as e:
@@ -524,12 +526,16 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
                                key: str | None = Form(None), transpose: int | None = Form(None, ge=-11, le=11),
                                seat: m.Seat | None = Form(None), reads: m.Reads | None = Form(None),
-                               lead: m.Lead = Form("lineup")) -> m.Job:
+                               lead: m.Lead = Form("lineup"), instrument: m.FrettedInstrument | None = Form(None),
+                               tuning: str | None = Form(None), capo: int | None = Form(None, ge=0, le=12),
+                               style: m.FingeringStyle | None = Form(None),
+                               recording: m.Recording | None = Form(None)) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
         return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
                                       lineup=lineup, difficulty=difficulty, key=key, transpose=transpose, seat=seat,
-                                      reads=reads, lead=lead), request)
+                                      reads=reads, lead=lead, instrument=instrument, tuning=tuning, capo=capo,
+                                      style=style, recording=recording), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:
@@ -632,6 +638,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              responses={200: {"description": "Composition JSON, byte for byte as written by the pipeline"}})
     def get_composition(job_id: str):
         return output_file(job_id, "composition.json")
+
+    @app.get("/v1/jobs/{job_id}/tab", operation_id="getTab", tags=["results"], dependencies=[Depends(auth)],
+             response_model=m.Tab,
+             responses={200: {"description": "tab.json as written by the bass-tab profile"},
+                        404: {"description": "the job has no tab: another profile, or not finished"}})
+    def get_tab(job_id: str):
+        """The tab of a bass-tab job: a string and fret for every note, and what the song check asks about."""
+        return output_file(job_id, "tab.json")
 
     @app.get("/v1/jobs/{job_id}/musicxml", operation_id="getMusicXml", tags=["results"], dependencies=[Depends(auth)],
              response_class=FileResponse,

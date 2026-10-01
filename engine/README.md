@@ -12,6 +12,14 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   take a machine-wide GPU lock (`gpulock.py`).
 - **Symbolic stages** (quantization, spelling, arranging, MusicXML) come from the
   [`music`](../music/README.md) library.
+- **Tablature.** The `bass-tab` profile (`bass_tab.py`) writes a bass line as tab instead of a band score: the
+  separated bass stem, or the recording itself when it is the bass alone (`recording: instrument`), then Basic
+  Pitch, the shared beat grid and durations, and a string and fret for every note from the Rust crate
+  [`target-fretted`](../core/target-fretted/README.md), which the engine calls through the core's command line
+  (`brasscribe-core fret`). Its result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the
+  fingered notes, the tunings ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the
+  octave shift when the line was heard an octave high. It takes `instrument` (`bass-4`, `bass-5`, `bass-6`),
+  `tuning`, `capo` and `style`, and none of the band options. There is no tab MusicXML yet.
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS
   advertisement as `_brasscribe._tcp` (`discovery.py`). The contract is the committed
@@ -26,6 +34,7 @@ From the repository root, after `pixi install`:
 ```sh
 pixi run brasscribe profiles                    # the transcription profiles
 pixi run brasscribe run take.wav --profile solo --out data/runs/my-take
+pixi run brasscribe run song.wav --profile bass-tab --instrument bass-5 --out data/runs/my-tab
 pixi run studio                                 # engine + Studio on http://127.0.0.1:8765/, opens a browser
 pixi run serve --lan                            # listen on the LAN, print the URL and a 6-digit pairing code
 curl -s http://127.0.0.1:8765/v1/health
@@ -60,6 +69,7 @@ A job option the engine refuses answers 422 with `{"code": …, "detail": …}`;
 | `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu-<uid>.lock` | Lock for heavy models, shared by this user's runs |
 | `BRASSCRIBE_ADAPTER_TIMEOUT_S` | 3 h heavy, 1 h other models | How long one model run may take before it is stopped |
 | `BRASSCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
+| `BRASSCRIBE_CORE_CLI` | `<repo>/core/target/release/brasscribe-core`, then the `PATH` | The Rust core's command line, for the `bass-tab` profile (`cargo build --release -p brasscribe-cli` in `core/`) |
 
 `src/brasscribe_engine/config.py` lists the rest (companion state, device expiry, display name, owner
 credential, report folders).
