@@ -34,6 +34,18 @@ android {
         noCompress += "sf2"
     }
 
+    // One code base, two apps. Brasscribe is the default and overrides nothing; Fretscribe installs beside
+    // it under its own applicationId and version. The namespace (R, packages) is shared.
+    flavorDimensions += "product"
+    productFlavors {
+        create("brasscribe") { isDefault = true }
+        create("fretscribe") {
+            applicationId = "no.fretscribe.play"
+            versionCode = 1
+            versionName = "0.0.1"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -139,6 +151,8 @@ val designLicence = tasks.register<Sync>("syncDesignLicence") {
 }
 
 androidComponents {
+    // Fretscribe has no release build yet.
+    beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
     onVariants { variant ->
         variant.sources.kotlin?.addStaticSourceDirectory(File(designDist, "android/kotlin").path)
         variant.sources.res?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/design/res").get().asFile.path)
@@ -147,6 +161,13 @@ androidComponents {
     }
 }
 tasks.named("preBuild") { dependsOn(modelAssets, designRes, designLicence) }
+
+// The task names from before there were two products stay, and mean the Brasscribe app.
+mapOf(
+    "testDebugUnitTest" to "testBrasscribeDebugUnitTest",
+    "installDebug" to "installBrasscribeDebug",
+    "connectedDebugAndroidTest" to "connectedBrasscribeDebugAndroidTest",
+).forEach { (name, variantTask) -> tasks.register(name) { dependsOn(variantTask) } }
 
 dependencies {
     implementation(project(":model"))

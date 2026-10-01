@@ -95,7 +95,8 @@ build for testing again.
 - conformance on every case
 - vitest and the Playwright browser tests
 - the Swift packages (BrasscribeKit, NotationKit, `capture`) and the macOS app unit tests
-- `./gradlew testDebugUnitTest lint assembleDebug`
+- `./gradlew testDebugUnitTest lint assembleDebug` (tests and lint for the Brasscribe app; the debug build is
+  both apps, Brasscribe and Fretscribe)
 - `apps/windows/tools/check-macos.sh`
 - the core .NET tests
 - Bandroom for macOS: the BandroomKit tests and `make -C apps/bandroom/macos build`

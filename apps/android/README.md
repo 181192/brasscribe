@@ -13,6 +13,8 @@ export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools   # SDK: platfo
 
 `testDebugUnitTest` also runs the tests of the plain Kotlin modules.
 
+The `app` module builds two apps from the same code, as the product flavours `brasscribe` (the default) and `fretscribe` (`no.fretscribe.play`, debug only for now), so its variant tasks carry the product's name: `assembleFretscribeDebug`, `lintFretscribeDebug`, `testFretscribeDebugUnitTest`. `testDebugUnitTest`, `installDebug`, `connectedDebugAndroidTest` and `lint` mean the Brasscribe app; `assembleDebug` builds both. The APKs are in `app/build/outputs/apk/<product>/<build type>/`. What differs between the two is in `app/src/brasscribe` and `app/src/fretscribe` (`Product.kt`, the app's name); everything else is in `app/src/main`.
+
 Some inputs come from outside git and are used only when present:
 
 | Input | From | Used for |

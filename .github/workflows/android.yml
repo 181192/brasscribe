@@ -95,9 +95,9 @@ jobs:
           ./gradlew assembleRelease --stacktrace
           mkdir -p "$RUNNER_TEMP/unsigned"
           for a in arm64-v8a universal; do
-            apk="app/build/outputs/apk/release/app-$a-release-unsigned.apk"
+            apk="app/build/outputs/apk/brasscribe/release/app-brasscribe-$a-release-unsigned.apk"
             unzip -l "$apk" | grep -q "assets/sounds/brasscribe-band-mobile.sf2" || { echo "$apk has no band SoundFont" >&2; exit 1; }
-            cp "$apk" "$RUNNER_TEMP/unsigned/"
+            cp "$apk" "$RUNNER_TEMP/unsigned/app-$a-release-unsigned.apk"
           done
 
       - uses: actions/upload-artifact@v7
