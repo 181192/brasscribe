@@ -764,17 +764,25 @@ pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<Band
     arrange_song_opts(inp, beats, title, &SongOptions::default())
 }
 
-/// [`arrange_song`] for a lineup (minimal band or quartet), recorded in the composition.
-pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &SongOptions) -> Result<BandResult, String> {
+/// What [`arrange_song_opts`] refuses in its options, before it reads a note: an unknown lineup, lead, seat
+/// or clef, and a tune the seat cannot carry in the lineup. The bindings ask this first, so a refused option
+/// is invalid input there and not a failed arrangement.
+pub fn check_song_options(opts: &SongOptions) -> Result<(), String> {
+    song_window(opts).map(|_| ())
+}
+
+/// The range the melody is taken in, with the lineup as the composition records it; checks the options.
+fn song_window(opts: &SongOptions) -> Result<(&'static str, crate::instruments::Lineup, &'static str, (i32, i32)), String> {
     let (lineup_key, lineup) = song_lineup(&opts.lineup)?;
     let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
-    if !crate::instruments::LEADS.contains(&lead) {
-        return Err(format!("lead must be one of {:?}", crate::instruments::LEADS));
-    }
+    let lead = *crate::instruments::LEADS
+        .iter()
+        .find(|l| **l == lead)
+        .ok_or_else(|| format!("lead must be one of {:?}", crate::instruments::LEADS))?;
     crate::instruments::check_reads(opts.seat.as_deref(), opts.reads.as_deref())?;
     // With the tune on the player's part, the melody is taken in that part's range.
     let window = match (&opts.seat, lead) {
-        (Some(s), "seat") => crate::instruments::lead_lineup(lineup, s)?.lead_part().instrument.pro,
+        (Some(s), "seat") => crate::instruments::lead_lineup(lineup.clone(), s)?.lead_part().instrument.pro,
         (None, "seat") => return Err("lead seat needs a seat".into()),
         (Some(s), _) => {
             crate::instruments::seat_by_id(s)?;
@@ -782,6 +790,12 @@ pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &So
         }
         _ => SOLO_WINDOW,
     };
+    Ok((lineup_key, lineup, lead, window))
+}
+
+/// [`arrange_song`] for a lineup (minimal band or quartet), recorded in the composition.
+pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &SongOptions) -> Result<BandResult, String> {
+    let (lineup_key, lineup, lead, window) = song_window(opts)?;
     let mel_all = inp.melody.pitched();
     let bass_all = inp.bass.pitched();
     let harm_all: Vec<Vec<RawNote>> = inp.harmony.iter().map(|m| m.pitched()).collect();

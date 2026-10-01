@@ -130,7 +130,10 @@
     <string name="where_title">Hvor partituret lages</string>
     <string name="where_device">På telefonen</string>
     <string name="where_device_desc">Bare ett instrument. Ingenting forlater telefonen.</string>
-    <string name="where_device_solo_only">Bare for ett instrument.</string>
+    <string name="where_device_solo_only">Bare for ett instrument eller et brassband.</string>
+    <string name="where_device_draft">På telefonen: et raskt utkast</string>
+    <string name="where_device_draft_desc">Datamaskinen lager et bedre partitur.</string>
+    <string name="where_device_draft_card">Et raskt utkast. Ingenting forlater telefonen.</string>
     <string name="where_companion">På datamaskinen din</string>
     <string name="where_companion_desc">%1$s · ingenting sendes til nettet</string>
     <string name="where_device_unavailable">Denne versjonen kan ikke lage partitur på telefonen.</string>
@@ -173,6 +176,24 @@
     <string name="transcribe_failed">Partituret kunne ikke lages: %1$s</string>
     <string name="transcribe_done">Partituret er klart</string>
     <string name="transcribe_where_device">På telefonen</string>
+    <string name="transcribe_where_device_draft">På telefonen, som utkast</string>
+    <string name="draft_notice">Et raskt utkast laget på telefonen. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen.</string>
+    <string name="draft_notice_short">Et raskt utkast laget på telefonen.</string>
+    <string name="draft_make_full">Lag hele partituret</string>
+    <string name="draft_no_computer">Åpne Brasscribe på datamaskinen for å lage hele partituret fra det samme opptaket.</string>
+    <string name="draft_label">Utkast</string>
+    <string name="draft_too_long_title">For langt for et utkast på telefonen</string>
+    <string name="draft_too_long_body">Datamaskinen kan lage partituret fra dette opptaket.</string>
+    <string name="draft_too_long_body_away">Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere.</string>
+    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble til i Innstillinger her. Eller velg et kortere opptak.</string>
+    <string name="draft_refused_title">Utkastet kan ikke lages akkurat nå</string>
+    <string name="draft_refused_body">Telefonen har stoppet Brasscribe fra å jobbe med det. Datamaskinen kan lage partituret, eller prøv igjen senere.</string>
+    <string name="draft_refused_body_away">Telefonen har stoppet Brasscribe fra å jobbe med det. Prøv igjen senere.</string>
+    <string name="draft_too_long_kept">Opptaket ditt er tatt vare på til du velger et annet.</string>
+    <string name="draft_make_on_computer">Lag det på datamaskinen</string>
+    <string name="problem_choose_another_recording">Velg et annet opptak</string>
+    <string name="notif_draft_channel">Bandutkast</string>
+    <string name="notif_draft">Lager et bandutkast</string>
     <string name="transcribe_where_companion">På %1$s</string>
     <string name="transcribe_progress_label">Framdrift</string>
 

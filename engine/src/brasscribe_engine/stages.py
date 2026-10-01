@@ -44,7 +44,9 @@ def _python(ctx: StageContext, module: str, *args: str) -> None:
 # ---------------------------------------------------------------- model stages
 
 def beats(ctx: StageContext) -> None:
-    ctx.adapter("beat-this", ctx.inputs["audio"], ctx.out / "mix.beats")
+    """Beat This!; params["model"] names a checkpoint other than the adapter's own (final0)."""
+    model = ctx.params.get("model")
+    ctx.adapter("beat-this", ctx.inputs["audio"], ctx.out / "mix.beats", env={"BEAT_THIS_MODEL": model} if model else None)
 
 
 def stems_mega53(ctx: StageContext) -> None:

@@ -3,7 +3,8 @@
   solo                    one brass line, no separation. SwiftF0 is the spine,
                           confirmed by MuScriptor or Basic Pitch (pipeline A, solo rule)
   brass-band              brass-only ensemble, no separation: MuScriptor medium +
-                          Basic Pitch on the mix, minimal band (pipeline A)
+                          Basic Pitch on the mix, minimal band (pipeline A); with
+                          muscriptor=False, Basic Pitch alone (the apps' draft on device)
   pop-rock                full band: BS-RoFormer SW, then per-stem transcription
                           (bass with Basic Pitch), minimal band (pipeline B); a Percussion
                           part plays the pop kit
@@ -13,7 +14,7 @@
                           is the bass alone), Basic Pitch, a string and fret per note (bass_tab.py)
 
 In brass-band, Basic Pitch hears the recording retuned to A = 440 when it is out of
-tune (tuning.py).
+tune (tuning.py); not in the draft (muscriptor=False), which follows the device.
 
 Only orchestra-with-soloist is checked end to end against a golden output
 (data/golden/mikkel-arranged-band); the other three band profiles are wired from
@@ -174,9 +175,13 @@ def _arrange_params(title: str, params: dict, lineup: str = "full", kit: str = "
     return {"title": title, "arrangement": opts} if opts else {"title": title}
 
 
-def _beats() -> Stage:
+def _beats(model: str | None = None) -> Stage:
+    """Beat This! on the recording. `model` is a checkpoint other than the adapter's own (final0): small0 is the
+    one the Play apps run on the device. Beats are only reused from the same model: a reuse directory's own
+    mix.beats is final0's, and another model's are in beats-<model>/mix.beats."""
     return Stage("beats", "beats", {"audio": Input(SOURCE)}, S.beats, adapter="beat-this",
-                 outputs=("mix.beats",), reuse_subdir=".")
+                 params={"model": model} if model else {},
+                 outputs=("mix.beats",), reuse_subdir=f"beats-{model}" if model else ".")
 
 
 # The transcribers that are retuned to A = 440 first (tuning.py), and only on a whole recording. MuScriptor
@@ -258,14 +263,24 @@ def layered(title: str, params: dict) -> Pipeline:
 
 
 def brass_band(title: str, params: dict) -> Pipeline:
+    """A whole brass band, no separation: MuScriptor on the mix for the melody, bass and harmony, Basic Pitch
+    confirming the melody, arrange_song for the minimal band or the quartet.
+
+    With muscriptor=False it is the draft the Play apps make on the device: Basic Pitch on the mix fills
+    every MuScriptor slot, with no melody support (the notes are the same with it; only one model votes), and
+    Beat This! small0 gives the beats, as on the device.
+    """
     mix = Input(SOURCE)
-    st = [_beats(), _transcribe("mix", "muscriptor", "mus", mix, None),
-          _transcribe("mix", "basic-pitch", "bp", mix, None, retune=True)]
+    if params.get("muscriptor", True):
+        st = [_beats(), _transcribe("mix", "muscriptor", "mus", mix, None),
+              _transcribe("mix", "basic-pitch", "bp", mix, None, retune=True)]
+        notes, support = Input("transcribe.mix.muscriptor", "mix-mus.mid"), {"melody_support": Input("transcribe.mix.basic-pitch", "mix-bp.mid")}
+    else:
+        # Not retuned: the draft is the reference for the device's, and the device does not retune.
+        st = [_beats("small0"), _transcribe("mix", "basic-pitch", "bp", mix, None)]
+        notes, support = Input("transcribe.mix.basic-pitch", "mix-bp.mid"), {}
     st.append(Stage("arrange", "arrange", {
-        "beats": Input("beats", "mix.beats"), "melody": Input("transcribe.mix.muscriptor", "mix-mus.mid"),
-        "melody_support": Input("transcribe.mix.basic-pitch", "mix-bp.mid"),
-        "bass": Input("transcribe.mix.muscriptor", "mix-mus.mid"),
-        "harmony0": Input("transcribe.mix.muscriptor", "mix-mus.mid")},
+        "beats": Input("beats", "mix.beats"), "melody": notes, **support, "bass": notes, "harmony0": notes},
         S.arrange_band, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("brass-band", "A", st, _outputs("arrange"), params)
@@ -288,8 +303,7 @@ def solo(title: str, params: dict) -> Pipeline:
     if params.get("seat") and not seat_by_id(params["seat"]).reads:
         raise ValueError(PERCUSSION_SOLO)
     mix = Input(SOURCE)
-    st = [Stage("beats", "beats", {"audio": mix}, S.beats, adapter="beat-this", params={"env": {"BEAT_THIS_MODEL": "small0"}},
-                outputs=("mix.beats",), reuse_subdir=".")]
+    st = [_beats("small0")]
     tools = [("swift-f0", "sw"), ("basic-pitch", "bp")] + ([("muscriptor", "mus")] if params.get("muscriptor", True) else [])
     arrange_inputs = {"beats": Input("beats", "mix.beats")}
     for tool, suffix in tools:

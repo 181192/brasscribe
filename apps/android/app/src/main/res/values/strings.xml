@@ -132,7 +132,10 @@
     <string name="where_title">Where the score is made</string>
     <string name="where_device">On this phone</string>
     <string name="where_device_desc">One instrument only. Nothing leaves the phone.</string>
-    <string name="where_device_solo_only">Only for one instrument.</string>
+    <string name="where_device_solo_only">Only for one instrument or a brass band.</string>
+    <string name="where_device_draft">On this phone: a quick draft</string>
+    <string name="where_device_draft_desc">Your computer makes a better score.</string>
+    <string name="where_device_draft_card">A quick draft. Nothing leaves the phone.</string>
     <string name="where_companion">On your computer</string>
     <string name="where_companion_desc">%1$s · nothing goes online</string>
     <string name="where_device_unavailable">This version can\'t make scores on the phone.</string>
@@ -175,6 +178,24 @@
     <string name="transcribe_failed">The score couldn\'t be made: %1$s</string>
     <string name="transcribe_done">Score ready</string>
     <string name="transcribe_where_device">On this phone</string>
+    <string name="transcribe_where_device_draft">On this phone, as a draft</string>
+    <string name="draft_notice">A quick draft made on this phone. Your computer makes a better score, and results on the phone can differ slightly from the computer\'s.</string>
+    <string name="draft_notice_short">A quick draft made on this phone.</string>
+    <string name="draft_make_full">Make the full score</string>
+    <string name="draft_no_computer">Open Brasscribe on your computer to make the full score from the same recording.</string>
+    <string name="draft_label">Draft</string>
+    <string name="draft_too_long_title">Too long for a draft on this phone</string>
+    <string name="draft_too_long_body">Your computer can make the score from this recording.</string>
+    <string name="draft_too_long_body_away">Open Brasscribe on your computer to make the score from this recording, or choose a shorter one.</string>
+    <string name="draft_too_long_body_unpaired">Your computer can make the score from this recording. Open Brasscribe there and choose Pair a phone, then connect in Settings here. Or choose a shorter recording.</string>
+    <string name="draft_refused_title">The draft can\'t be made right now</string>
+    <string name="draft_refused_body">The phone has stopped Brasscribe from working on it. Your computer can make the score, or try again later.</string>
+    <string name="draft_refused_body_away">The phone has stopped Brasscribe from working on it. Try again later.</string>
+    <string name="draft_too_long_kept">Your recording is kept until you choose another.</string>
+    <string name="draft_make_on_computer">Make it on your computer</string>
+    <string name="problem_choose_another_recording">Choose another recording</string>
+    <string name="notif_draft_channel">Band drafts</string>
+    <string name="notif_draft">Making a band draft</string>
     <string name="transcribe_where_companion">On %1$s</string>
     <string name="transcribe_progress_label">Progress</string>
 

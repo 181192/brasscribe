@@ -156,12 +156,58 @@ final class AppModel {
         didSet { UserDefaults.standard.set(modelDownloadURL, forKey: "modelDownloadURL"); ModelStore.shared.remoteBase = URL(string: modelDownloadURL) }
     }
 
-    func service(for profile: SourceProfile) -> TranscriptionService {
-        if profile == .solo && soloOnDevice && !useFixtureService {
-            ModelStore.shared.remoteBase = URL(string: modelDownloadURL)
-            if ModelStore.shared.missing.isEmpty || ModelStore.shared.remoteBase != nil { return OnDeviceSoloService() }
+    /// A brass band recording is made as a draft on this device even when the computer is there
+    /// (Settings › On this device).
+    var bandDraftOnDevice: Bool = UserDefaults.standard.object(forKey: "bandDraftOnDevice") as? Bool ?? false {
+        didSet { UserDefaults.standard.set(bandDraftOnDevice, forKey: "bandDraftOnDevice") }
+    }
+
+    /// Where a recording is written down.
+    enum Maker: Equatable { case soloOnDevice, bandDraft, computer }
+
+    /// Solos on this device when that is switched on; a brass band as a draft on this device when the
+    /// computer is not there or the player asked for drafts; everything else, and anything without the
+    /// listening files, on the computer (design/system.md, "A band draft on the device").
+    nonisolated static func maker(for profile: SourceProfile, soloOnDevice: Bool, bandDraftOnDevice: Bool, computerThere: Bool,
+                      modelsReady: Bool) -> Maker {
+        guard modelsReady else { return .computer }
+        switch profile {
+        case .solo: return soloOnDevice ? .soloOnDevice : .computer
+        case .brassBand: return bandDraftOnDevice || !computerThere ? .bandDraft : .computer
+        case .orchestraWithSoloist, .popRock: return .computer
         }
-        return service()
+    }
+
+    /// A computer is paired, or Brasscribe runs on this Mac.
+    var computerPaired: Bool { connection.record != nil || connection.localAddress != nil }
+
+    /// The computer counts as there when one is paired (or Brasscribe runs on this Mac) and its
+    /// connection is Connected or still Reconnecting; Offline and needs-pairing do not count.
+    var computerThere: Bool {
+        guard computerPaired else { return false }
+        switch connection.state.kind {
+        case .connected, .reconnecting: return true
+        case .offline, .needsPairing: return false
+        }
+    }
+
+    /// Screenshot scenes only: the listening files count as there, so the draft's words show.
+    @ObservationIgnored var assumeModelsReady = false
+
+    func maker(for profile: SourceProfile) -> Maker {
+        if useFixtureService { return .computer }
+        ModelStore.shared.remoteBase = URL(string: modelDownloadURL)
+        let ready = assumeModelsReady || ModelStore.shared.missing.isEmpty || ModelStore.shared.remoteBase != nil
+        return Self.maker(for: profile, soloOnDevice: soloOnDevice, bandDraftOnDevice: bandDraftOnDevice,
+                          computerThere: computerThere, modelsReady: ready)
+    }
+
+    func service(for profile: SourceProfile) -> TranscriptionService {
+        switch maker(for: profile) {
+        case .soloOnDevice: return OnDeviceSoloService()
+        case .bandDraft: return OnDeviceBandDraftService()
+        case .computer: return service()
+        }
     }
 
     func refresh() { pieces = Piece.loadAll() }
@@ -263,13 +309,29 @@ final class AppModel {
 
     /// Where the listening happens, for "What is this?" and the transcribing screen.
     func whereItRuns(for profile: SourceProfile?) -> String {
-        if let profile, service(for: profile) is OnDeviceSoloService { return String(localized: "On this device. Nothing goes online.") }
+        if let profile {
+            switch maker(for: profile) {
+            case .soloOnDevice: return String(localized: "On this device. Nothing goes online.")
+            case .bandDraft: return String(localized: "A quick draft on this device. Your computer makes a better score.")
+            case .computer: break
+            }
+        }
         #if os(macOS)
         if let host = engineURL.host(), ["localhost", "127.0.0.1"].contains(host) {
             return String(localized: "Made on this Mac. Nothing goes online.")
         }
         #endif
         return String(localized: "On your computer. Nothing goes online.")
+    }
+
+    /// Where a running job is being made: by its service, since a full score from a draft goes to the
+    /// computer whatever the settings say.
+    func whereItRuns(for job: TranscriptionJob) -> String {
+        switch job.service {
+        case is OnDeviceBandDraftService: return String(localized: "On this device, as a draft.")
+        case is OnDeviceSoloService: return String(localized: "On this device. Nothing goes online.")
+        default: return whereItRuns(for: Optional<SourceProfile>.none)
+        }
     }
 
     // MARK: sources
@@ -350,7 +412,28 @@ final class AppModel {
 
     // MARK: transcription
 
-    func startTranscription(_ src: PendingSource, profile: SourceProfile, output chosen: OutputChoice) {
+    /// "Make the full score": the draft's recording, sent to the computer as a Brass band score. The
+    /// result is a new score; the draft stays in Your scores.
+    func makeFullScore(from draft: Piece) {
+        guard let audio = draft.originalURL, FileManager.default.fileExists(atPath: audio.path) else { return }
+        startTranscription(PendingSource(audioURL: audio, videoURL: draft.videoURL, title: draft.title), profile: .brassBand,
+                           output: draft.output ?? OutputChoice(), onComputer: true)
+    }
+
+    /// "Try again" after a failure, where the player asked for it: a score asked of the computer is asked of
+    /// the computer again, also when a band would now be a draft on this device. `onComputer` moves it there.
+    func retry(_ job: TranscriptionJob, onComputer: Bool? = nil) {
+        startTranscription(job.source, profile: job.profile, output: job.output, onComputer: onComputer ?? job.onComputer)
+    }
+
+    /// Back to "What is this?" with the recording of a job that failed.
+    func backToSource(_ job: TranscriptionJob) {
+        if let i = path.firstIndex(of: .transcribe(job.id)) { path[i] = .source(job.source) } else { goHome() }
+        jobs[job.id] = nil
+    }
+
+    /// `onComputer`: the player asked for the computer ("Make the full score"), whatever the profile's own route.
+    func startTranscription(_ src: PendingSource, profile: SourceProfile, output chosen: OutputChoice, onComputer: Bool = false) {
         // the player's seat goes along; a solo take is then written for their instrument
         var output = chosen
         if output.seat == nil, let id = seat.id {
@@ -358,7 +441,8 @@ final class AppModel {
             output.reads = seat.reads
             if profile == .solo { output.lead = "seat" }
         }
-        let job = TranscriptionJob(source: src, profile: profile, output: output, service: service(for: profile))
+        let job = TranscriptionJob(source: src, profile: profile, output: output,
+                                   service: onComputer ? service() : service(for: profile), onComputer: onComputer)
         // a 401 from the computer turns the connection row into "pair again"
         job.onUnauthorized = { [weak self] in self?.connection.poke() }
         jobs[job.id] = job
@@ -369,7 +453,7 @@ final class AppModel {
             do {
                 let p = try Piece.create(title: src.title, profile: profile, result: result, original: src.audioURL,
                                          video: src.videoURL, fixtureDirectory: self.useFixtureService ? self.fixtureDirectory : nil,
-                                         output: output)
+                                         output: output, draft: job.service is OnDeviceBandDraftService)
                 self.refresh()
                 if let i = self.path.firstIndex(of: .transcribe(job.id)) { self.path[i] = .review(p) } else { self.path.append(.review(p)) }
                 self.jobs[job.id] = nil
@@ -446,16 +530,22 @@ final class TranscriptionJob: Identifiable {
     let profile: SourceProfile
     let output: OutputChoice
     let service: TranscriptionService
+    /// The player asked for the computer; "Try again" asks it again.
+    let onComputer: Bool
     var progress = TranscriptionProgress(stage: .uploading, fraction: 0, etaSeconds: nil)
     var failure: String?
     /// What went wrong in the player's words, when more is known than "it failed" (ErrorWords).
     var failureWords: String?
+    /// The failure's title when it is more specific than "The score couldn't be made".
+    var failureTitle: String?
+    /// The recording was too long for a draft on this device (DraftTooLong).
+    var tooLong = false
     var cancelled = false
     private var task: Task<Void, Never>?
     var onUnauthorized: (@MainActor () -> Void)?
 
-    init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService) {
-        self.source = source; self.profile = profile; self.output = output; self.service = service
+    init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService, onComputer: Bool = false) {
+        self.source = source; self.profile = profile; self.output = output; self.service = service; self.onComputer = onComputer
     }
 
     func start(onDone: @escaping @MainActor (TranscriptionResult) -> Void) {
@@ -477,6 +567,8 @@ final class TranscriptionJob: Identifiable {
                 } else if !Task.isCancelled {
                     self.failure = error.localizedDescription
                     self.failureWords = ErrorWords.specific(error)
+                    self.failureTitle = ErrorWords.title(error)
+                    self.tooLong = error is DraftTooLong
                 }
             }
         }

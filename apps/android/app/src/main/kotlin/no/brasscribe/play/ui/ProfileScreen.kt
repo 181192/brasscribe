@@ -161,10 +161,10 @@ fun ProfileScreen(vm: PlayViewModel) {
             val onPhone = where == Where.DEVICE
             RowGroup {
                 ListRow(
-                    stringResource(if (onPhone) R.string.where_device else R.string.where_companion),
+                    stringResource(no.brasscribe.play.OnDeviceRouting.whereTitle(profile, where)),
                     onClick = null,
                     icon = if (onPhone) R.drawable.ic_bc_record_mic else R.drawable.ic_bc_computer,
-                    subtitle = if (onPhone) stringResource(R.string.where_device_desc)
+                    subtitle = if (onPhone) stringResource(no.brasscribe.play.OnDeviceRouting.deviceSubtitle(profile))
                     else if (companionOk) stringResource(R.string.where_companion_desc, vm.container.engineLabel())
                     else stringResource(R.string.where_companion_missing),
                     chevron = false,
@@ -182,12 +182,8 @@ fun ProfileScreen(vm: PlayViewModel) {
             Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
                 verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                 SubHeading(stringResource(R.string.where_title))
-                val deviceDesc = when {
-                    profile != Profile.SOLO -> R.string.where_device_solo_only
-                    !vm.container.hasPitchModel -> R.string.where_device_unavailable
-                    source?.audio == null -> null
-                    else -> R.string.where_device_desc
-                }
+                val deviceDesc = no.brasscribe.play.OnDeviceRouting.deviceCard(profile, vm.container.hasPitchModel,
+                    vm.container.hasBandModels, source?.audio != null)
                 ChoiceGroup(2) {
                     // A take too long to hold in memory is kept on disk only; the phone cannot make its score.
                     val deviceText = deviceDesc?.let { stringResource(it) } ?: phoneMinutes().let { androidx.compose.ui.res.pluralStringResource(R.plurals.where_device_too_long, it, it) }
@@ -234,7 +230,8 @@ fun TranscribeScreen(vm: PlayViewModel) {
         // The step title is the live region here; the status line would only repeat it.
         title = source?.name?.substringBeforeLast('.'), onBack = vm::back, backLabel = stringResource(R.string.home), status = null,
         bottom = {
-            InfoNote(stringResource(R.string.transcribe_leave, s.where), icon = if (s.where == stringResource(R.string.transcribe_where_device)) R.drawable.ic_bc_info else R.drawable.ic_bc_computer)
+            val onPhone = s.where == stringResource(R.string.transcribe_where_device) || s.where == stringResource(R.string.transcribe_where_device_draft)
+            InfoNote(stringResource(R.string.transcribe_leave, s.where), icon = if (onPhone) R.drawable.ic_bc_info else R.drawable.ic_bc_computer)
             OutlineButton(stringResource(R.string.cancel), { confirmCancel = true }, enabled = s.running)
         },
     ) {

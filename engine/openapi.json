@@ -1321,7 +1321,7 @@
           },
           "muscriptor": {
             "default": true,
-            "description": "solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch in its place, as the apps do on device",
+            "description": "solo and brass-band profiles: use MuScriptor; false puts Basic Pitch in its place, as the apps do on device",
             "title": "Muscriptor",
             "type": "boolean"
           },

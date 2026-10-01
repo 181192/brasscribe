@@ -685,6 +685,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_arrange_song(
     ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_arrange_song_with(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_choose_metrical_level(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_core_version(
@@ -810,6 +812,8 @@ internal object UniffiLib {
     external fun uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(`compositionJson`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_arrange_song(`melody`: RustBuffer.ByValue,`melodySupport`: RustBuffer.ByValue,`bass`: RustBuffer.ByValue,`harmony`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_arrange_song_with(`melody`: RustBuffer.ByValue,`melodySupport`: RustBuffer.ByValue,`bass`: RustBuffer.ByValue,`harmony`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_choose_metrical_level(`beatTimes`: RustBuffer.ByValue,`onsets`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -975,6 +979,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_song() and 0xFFFF) != 47821) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_song_with() and 0xFFFF) != 27927) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() and 0xFFFF) != 53243) {
@@ -3384,6 +3391,71 @@ public object FfiConverterTypeSoloContour: FfiConverterRustBuffer<SoloContour> {
 
 
 /**
+ * Options of [`arrange_song_with`]: the ones the engine's brass-band profile passes to the song
+ * arranger. Difficulty and key are not among them: the apps apply those afterwards by arranging
+ * the Composition again ([`arrange_musicxml_with`]).
+ */
+data class SongArrangeOptions (
+    /**
+     * "minimal" (8 parts; also when empty) or "quartet".
+     */
+    var `lineup`: kotlin.String = "" 
+    , 
+    /**
+     * The player's seat (`seats()` ids): their part; with `lead` "seat", the tune's.
+     */
+    var `seat`: kotlin.String? = null 
+    , 
+    /**
+     * "treble" or "bass": the clef the seat's part is written in; None: the band's.
+     */
+    var `reads`: kotlin.String? = null 
+    , 
+    /**
+     * Who plays the tune: "lineup" (None) or "seat".
+     */
+    var `lead`: kotlin.String? = null 
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeSongArrangeOptions: FfiConverterRustBuffer<SongArrangeOptions> {
+    override fun read(buf: ByteBuffer): SongArrangeOptions {
+        return SongArrangeOptions(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: SongArrangeOptions) = (
+            FfiConverterString.allocationSize(value.`lineup`) +
+            FfiConverterOptionalString.allocationSize(value.`seat`) +
+            FfiConverterOptionalString.allocationSize(value.`reads`) +
+            FfiConverterOptionalString.allocationSize(value.`lead`)
+    )
+
+    override fun write(value: SongArrangeOptions, buf: ByteBuffer) {
+            FfiConverterString.write(value.`lineup`, buf)
+            FfiConverterOptionalString.write(value.`seat`, buf)
+            FfiConverterOptionalString.write(value.`reads`, buf)
+            FfiConverterOptionalString.write(value.`lead`, buf)
+    }
+}
+
+
+
+/**
  * Composition and MusicXML of one arrangement.
  */
 data class SongOutput (
@@ -4670,6 +4742,29 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
         FfiConverterSequenceByteArray.lower(`harmony`),
         FfiConverterString.lower(`beatsText`),
         FfiConverterString.lower(`title`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * [`arrange_song`] for a lineup and a seat: a whole-band recording's melody, optional melody
+         * support, bass and harmony transcriptions arranged for the minimal band or the quartet, as the
+         * engine's brass-band profile does. Invalid when an option is unknown or does not fit the lineup.
+         */
+    @Throws(CoreException::class) fun `arrangeSongWith`(`melody`: kotlin.ByteArray, `melodySupport`: kotlin.ByteArray?, `bass`: kotlin.ByteArray, `harmony`: List<kotlin.ByteArray>, `beatsText`: kotlin.String, `title`: kotlin.String, `options`: SongArrangeOptions): SongOutput {
+            return FfiConverterTypeSongOutput.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_song_with(
+    
+        
+        FfiConverterByteArray.lower(`melody`),
+        FfiConverterOptionalByteArray.lower(`melodySupport`),
+        FfiConverterByteArray.lower(`bass`),
+        FfiConverterSequenceByteArray.lower(`harmony`),
+        FfiConverterString.lower(`beatsText`),
+        FfiConverterString.lower(`title`),
+        FfiConverterTypeSongArrangeOptions.lower(`options`),_status)
 }
     )
     }

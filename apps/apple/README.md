@@ -113,6 +113,15 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
   Swift. The Rust core's solo-with-band path then writes the score. The models (about 6 MB) download on
   demand from the address in Settings, or come from `BRASSCRIBE_MODELS` (a `models/converted/` folder)
   during development. They are not in the app.
+- **Band drafts.** A brass band recording is made on the device as a draft when the computer is not
+  there (no computer paired, or Offline / needs pairing) or when Settings › On this device › "Make band
+  drafts on this device" is on (`AppModel.maker(for:)`). `OnDeviceBandDraftService` runs Basic Pitch on
+  the whole mix and Beat This small0 (`BandTranscriber`), then the core's song arranger
+  (`arrangeSongWith`) with Basic Pitch in every slot: the engine's brass-band profile with
+  `muscriptor=false`. A recording longer than the free memory allows (`OnDeviceBudget`) is refused before
+  anything runs. It stays in the foreground on iPhone and iPad (the models use the GPU). The piece is
+  marked as a draft and keeps its recording, and its score offers "Make the full score" on the computer.
+  Parity with the engine's draft: `BandDraftTests` against `scripts/make-band-draft-reference.sh`.
 - **Video.** The synced video plays in a player layer with picture in picture
   (AVPictureInPictureController) and a labelled start/stop button.
 - **Capture on macOS.** This uses the Core Audio process tap. The release build is sandboxed. Whether

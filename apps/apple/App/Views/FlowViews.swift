@@ -9,7 +9,8 @@ struct SourceView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var hsize
     let source: PendingSource
-    @State private var profile: SourceProfile?
+    // the draft's screenshot scene opens with Brass band chosen
+    @State private var profile: SourceProfile? = LaunchOptions.screen == "source-draft" ? .brassBand : nil
     @State private var output = OutputChoice()
     @State private var duration: String?
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -252,7 +253,8 @@ struct TranscribeView: View {
         if job.service is CompanionService { s.append(.uploading) }
         s.append(.preparing)
         s.append(.findingBeat)
-        if job.profile != .solo { s.append(.separating) }
+        // a solo and a band draft are written down from the whole recording: nothing is separated
+        if job.profile != .solo && !(job.service is OnDeviceBandDraftService) { s.append(.separating) }
         s += [.transcribing, .arranging, .engraving]
         return s
     }
@@ -300,7 +302,7 @@ struct TranscribeView: View {
                     }
                 }
                 NoticeBox(systemImage: BrasscribeIcon.computer.systemName,
-                          text: "\(app.whereItRuns(for: job.profile)) " + String(localized: "You can leave this screen. Brasscribe will tell you when the score is ready."))
+                          text: "\(app.whereItRuns(for: job)) " + Self.leaveLine(draft: job.service is OnDeviceBandDraftService))
                 if PageActions.followContent { cancelRow(job).layoutProbe("pageActions") }
             }
             .padding(.horizontal, wide ? Space.s8 : Space.s5)
@@ -340,8 +342,36 @@ struct TranscribeView: View {
         AccessibilityNotifier.announce([step, percentText(fraction * 100)].compactMap { $0 }.joined(separator: ", "))
     }
 
-    private func failed(_ job: TranscriptionJob, reason: String) -> some View {
-        ProblemContent(title: String(localized: "The score couldn't be made"),
+    @ViewBuilder private func failed(_ job: TranscriptionJob, reason: String) -> some View {
+        if job.tooLong { tooLong(job, reason: reason) } else { couldNotBeMade(job, reason: reason) }
+    }
+
+    /// Too long for a draft on this device: the computer is the way forward, as soon as it is there. Back goes
+    /// to What is this?, with the same recording.
+    private func tooLong(_ job: TranscriptionJob, reason: String) -> some View {
+        ProblemContent(title: job.failureTitle ?? String(localized: "Too long for a draft on this device"), lead: nil,
+                       reasons: [ErrorWords.draftTooLong(computerThere: app.computerThere, paired: app.computerPaired)], hint: nil, detail: reason) {
+            let full = !PageActions.followContent
+            if PageActions.followContent {
+                Button { app.backToSource(job) } label: { Text("Back") }
+                    .buttonStyle(SecondaryButtonStyle(fullWidth: full))
+            }
+            if app.computerThere {
+                Button { app.retry(job, onComputer: true) } label: {
+                    Label("Make it on your computer", systemImage: BrasscribeIcon.computer.systemName)
+                }
+                .buttonStyle(PrimaryButtonStyle(fullWidth: full))
+                .accessibilityIdentifier("makeOnComputer")
+            }
+            if !PageActions.followContent {
+                Button { app.backToSource(job) } label: { Text("Back") }
+                    .buttonStyle(SecondaryButtonStyle(fullWidth: full))
+            }
+        }
+    }
+
+    private func couldNotBeMade(_ job: TranscriptionJob, reason: String) -> some View {
+        ProblemContent(title: job.failureTitle ?? String(localized: "The score couldn't be made"),
                        lead: nil,
                        reasons: [job.failureWords ?? String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
                        hint: nil, detail: reason) {
@@ -350,7 +380,7 @@ struct TranscribeView: View {
                 Button { app.goHome() } label: { Text("Back to Home") }
                     .buttonStyle(SecondaryButtonStyle(fullWidth: full))
             }
-            Button { app.startTranscription(job.source, profile: job.profile, output: job.output) } label: {
+            Button { app.retry(job) } label: {
                 Label("Try again", systemImage: BrasscribeIcon.retry.systemName)
             }
             .buttonStyle(PrimaryButtonStyle(fullWidth: full))
@@ -359,6 +389,15 @@ struct TranscribeView: View {
                     .buttonStyle(SecondaryButtonStyle(fullWidth: full))
             }
         }
+    }
+
+    /// Whether the player can leave the screen. A draft on iPhone and iPad needs the graphics chip,
+    /// which the system stops when the app is in the background.
+    nonisolated static func leaveLine(draft: Bool) -> String {
+        #if os(iOS)
+        if draft { return String(localized: "Keep Brasscribe open until the draft is ready.") }
+        #endif
+        return String(localized: "You can leave this screen. Brasscribe will tell you when the score is ready.")
     }
 
     func eta(_ p: TranscriptionProgress) -> String {
