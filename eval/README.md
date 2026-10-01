@@ -52,6 +52,7 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
 | solo-vote | no | needs Slakh and the Mega-53 stems of every case |
 | solo-ondevice | no | the URMP Entertainer clip and the on-device reference run |
 | bass-tab | no | Slakh; its low-register part is synthesized here (FluidSynth, MuseScore General) and needs the models' outputs on it. `python -m brasscribe_eval.bass_tab_bench build`, `synthesize` and `prepare` make the set, `brasscribe bench bass-tab` scores it |
+| guitar-tab | no | GuitarSet (CC BY 4.0, 1.4 GB with the audio: Zenodo 3371780, `annotation.zip` and `audio_mono-mic.zip` unpacked under `data/guitarset/`) and Slakh, and the models' outputs on both. `python -m brasscribe_eval.guitar_tab_bench build`, `prepare`, `build-songs` and `prepare-songs` make the sets, `brasscribe bench guitar-tab` scores them. Its rules were set on players 00 to 02 and are quoted for players 03 to 05 |
 | mikkel-golden, readability, musescore-roundtrip | no | Mikkel is a commercial recording; the round trip also needs MuseScore |
 
 On a machine with the full `data/` directory, `brasscribe bench cpu` runs all of them.

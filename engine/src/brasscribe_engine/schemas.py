@@ -15,8 +15,10 @@ Seat = Literal["soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", 
                "2nd-trombone", "bass-trombone", "euphonium", "eb-bass", "bb-bass", "percussion", "trumpet"]
 Reads = Literal["treble", "bass"]
 Lead = Literal["lineup", "seat"]
-# The bass-tab profile's options (bass_tab.py).
-FrettedInstrument = Literal["bass-4", "bass-5", "bass-6"]
+# The tab profile's options (tab.py; bass_tab.py for the bass and the bass-tab profile id).
+FrettedInstrument = Literal["bass-4", "bass-5", "bass-6", "guitar-6", "guitar-7", "guitar-8", "ukulele", "ukulele-baritone",
+                            "mandolin"]
+NotationClef = Literal["treble", "treble-8vb", "bass-8vb"]
 FingeringStyle = Literal["as-played", "open-position", "lead"]
 Recording = Literal["song", "instrument"]
 Octave = Literal["auto", "0", "-12", "+12"]
@@ -188,27 +190,33 @@ class JobCreate(BaseModel):
     lead: Lead = Field("lineup", description="who plays the tune: lineup keeps it on the lineup's lead (Solo Cornet); "
                                              "seat writes it on the seat's part, for the full and minimal bands only. "
                                              "The solo profile with a seat always uses seat")
-    instrument: FrettedInstrument | None = Field(None, description="bass-tab profile: the instrument the tab is "
-                                                 "written for, by its number of strings; default: bass-4")
-    tuning: str | None = Field(None, description="bass-tab profile: the instrument's tuning. bass-4: standard, "
-                                                 "eb-standard, d-standard, drop-d, bead; bass-5: standard, drop-a; "
-                                                 "bass-6: standard; default: standard")
-    capo: int | None = Field(None, ge=0, le=12, description="bass-tab profile: the capo's fret; frets in the tab are "
-                                                            "counted from it; default: 0, no capo")
-    style: FingeringStyle | None = Field(None, description="bass-tab profile: where the line sits on the neck. "
+    instrument: FrettedInstrument | None = Field(None, description="tab profile: the instrument the tab is written for. "
+                                                 "Default: guitar-6. The bass-tab profile takes the basses only; "
+                                                 "default: bass-4")
+    tuning: str | None = Field(None, description="tab profile: the instrument's tuning, its first when left out. bass-4: "
+                                                 "standard, eb-standard, d-standard, drop-d, bead; bass-5: standard, drop-a; "
+                                                 "bass-6: standard; guitar-6: standard, eb-standard, d-standard, c-standard, "
+                                                 "drop-d, drop-c, drop-b, dadgad, open-g, open-d, open-e; guitar-7: standard, "
+                                                 "eb-standard; guitar-8: standard; ukulele: high-g, low-g; ukulele-baritone, "
+                                                 "mandolin: standard")
+    capo: int | None = Field(None, ge=0, le=12, description="tab profile: the capo's fret; frets in the tab are "
+                                                            "counted from it, and the page names it; default: 0, no capo")
+    style: FingeringStyle | None = Field(None, description="tab profile: where the line sits on the neck. "
                                                            "as-played: the cheapest playable fingering; open-position: "
                                                            "low frets and open strings; lead: a phrase stays in one "
                                                            "position; default: as-played")
-    recording: Recording | None = Field(None, description="bass-tab profile: what was recorded. song: a band or a "
-                                                          "record, the bass is separated from it; instrument: the bass "
-                                                          "alone, no separation; default: song")
-    layout: TabLayout | None = Field(None, description="bass-tab profile: what the page shows. tab: the tab staff alone, "
+    recording: Recording | None = Field(None, description="tab profile: what was recorded. song: a band or a record, "
+                                                          "the instrument is separated from it (bass and guitar; not yet "
+                                                          "ukulele or mandolin); instrument: the instrument alone, no "
+                                                          "separation; default: song")
+    layout: TabLayout | None = Field(None, description="tab profile: what the page shows. tab: the tab staff alone, "
                                                        "with stems for the rhythm; tab-and-notation: a notation staff "
                                                        "above it; notation: the notation staff alone; default: tab")
-    octave: Octave | None = Field(None, description="bass-tab profile: the octave the line is written in. auto: an "
-                                                    "octave lower when it was heard an octave above where a bass "
-                                                    "plays; 0, -12, +12: the player's choice, in semitones from what "
-                                                    "was heard; default: auto")
+    octave: Octave | None = Field(None, description="tab profile: the octave the notes are written in. auto: an "
+                                                    "octave lower when they were heard an octave above where the "
+                                                    "instrument plays (a guitar: also an octave higher when heard "
+                                                    "below it); 0, -12, +12: the player's choice, in semitones from "
+                                                    "what was heard; default: auto")
 
 
 class PartSources(BaseModel):
@@ -371,6 +379,9 @@ class TabInstrument(BaseModel):
     frets: int
     scale_length_mm: float
     capo: int = 0
+    notation: NotationClef | None = Field(None, description="the clef of the instrument's notation staff: treble (ukulele, "
+                                                            "mandolin), treble-8vb (guitar and baritone ukulele, written an "
+                                                            "octave above their sound), bass-8vb (bass)")
 
 
 class TabViolation(BaseModel):
@@ -412,7 +423,7 @@ class ReferencePitch(BaseModel):
 
 
 class Tab(BaseModel):
-    """The bass-tab profile's result: every note with its string and fret, and what the song check shows
+    """The tab profile's result (and bass-tab's): every note with its string and fret, and what the song check shows
     before the tab (tuning, reference pitch, capo, octave, key and tempo)."""
 
     preset: str = Field(description="the instrument and tuning the tab was made for, e.g. bass-4-standard")
@@ -430,6 +441,9 @@ class Tab(BaseModel):
                                           "0, or -12 (or -24) when it was heard an octave above where a bass plays, "
                                           "the same for every instrument, tuning and capo. With a chosen octave: "
                                           "that choice, 0, -12 or 12")
+    unplayable_dropped: int = Field(0, description="notes heard that are not in the tab because the instrument cannot "
+                                                   "play them with the others: more notes on one onset than it has "
+                                                   "strings, or a chord no hand spans. Always 0 for a bass line")
     octave_notes_moved: int = Field(0, description="single notes written an octave lower than Basic Pitch heard them "
                                                    "(with octave auto): each stood above its neighbours, and the second "
                                                    "transcriber heard it an octave lower")

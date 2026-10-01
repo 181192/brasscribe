@@ -20,7 +20,7 @@ from pathlib import Path
 
 from brasscribe_music.instruments import SEAT_IDS
 
-from . import bass_tab, config, profiles, runner
+from . import bass_tab, config, profiles, runner, tab
 
 
 def _print_event(e: dict) -> None:
@@ -41,7 +41,7 @@ def _cold(value: str | None) -> set[str]:
 
 def cmd_run(args) -> int:
     s = config.load()
-    if args.profile == bass_tab.PROFILE:
+    if tab.is_tab(args.profile):
         try:  # before any model runs: the last stage needs the core
             bass_tab.core_cli()
         except bass_tab.CoreCliMissing as e:
@@ -248,8 +248,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--seat", choices=SEAT_IDS, help="the player's seat: a solo take is written for it")
     r.add_argument("--reads", choices=["treble", "bass"], help="the clef of the seat's part (bass: at concert pitch)")
     r.add_argument("--lead", choices=["lineup", "seat"], default="lineup", help="who plays the tune (band lineups)")
-    r.add_argument("--instrument", choices=list(bass_tab.INSTRUMENTS), help="bass-tab: the instrument (default bass-4)")
-    r.add_argument("--tuning", help="bass-tab: the instrument's tuning, e.g. standard, drop-d, bead (default standard)")
+    r.add_argument("--instrument", choices=list(tab.TUNINGS),
+                   help="tab: the instrument (default guitar-6; bass-tab: a bass, default bass-4)")
+    r.add_argument("--tuning", help="tab: the instrument's tuning, e.g. standard, drop-d, low-g (default: its first)")
     r.add_argument("--capo", type=int, help="bass-tab: the capo's fret (default 0, none)")
     r.add_argument("--style", choices=list(bass_tab.STYLES), help="bass-tab: where the line sits on the neck (default as-played)")
     r.add_argument("--recording", choices=list(bass_tab.RECORDINGS),

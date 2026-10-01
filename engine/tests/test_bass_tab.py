@@ -102,7 +102,7 @@ def test_the_instrument_table_is_target_fretteds_bass_presets():
     ids = re.search(r"PRESET_IDS: &\[&str\] = &\[(.*?)\];", source.read_text(), re.S).group(1)
     in_crate = [i for i in re.findall(r'"([^"]+)"', ids) if i.startswith("bass-")]
     assert in_crate == [f"{inst}-{t}" for inst, tunings in bass_tab.INSTRUMENTS.items() for t in tunings]
-    assert set(bass_tab.INSTRUMENTS) == set(m.FrettedInstrument.__args__)
+    assert set(bass_tab.INSTRUMENTS) <= set(m.FrettedInstrument.__args__)  # the tab profile has more: test_tab.py
     assert set(bass_tab.STYLES) == set(m.FingeringStyle.__args__)
     assert set(bass_tab.RECORDINGS) == set(m.Recording.__args__)
     assert set(bass_tab.OCTAVES) == set(m.Octave.__args__)
