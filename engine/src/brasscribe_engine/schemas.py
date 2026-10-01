@@ -19,6 +19,7 @@ Lead = Literal["lineup", "seat"]
 FrettedInstrument = Literal["bass-4", "bass-5", "bass-6"]
 FingeringStyle = Literal["as-played", "open-position", "lead"]
 Recording = Literal["song", "instrument"]
+Octave = Literal["auto", "0", "-12", "+12"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
 
@@ -200,6 +201,10 @@ class JobCreate(BaseModel):
     recording: Recording | None = Field(None, description="bass-tab profile: what was recorded. song: a band or a "
                                                           "record, the bass is separated from it; instrument: the bass "
                                                           "alone, no separation; default: song")
+    octave: Octave | None = Field(None, description="bass-tab profile: the octave the line is written in. auto: an "
+                                                    "octave lower when it was heard an octave above where a bass "
+                                                    "plays; 0, -12, +12: the player's choice, in semitones from what "
+                                                    "was heard; default: auto")
 
 
 class PartSources(BaseModel):
@@ -412,6 +417,8 @@ class Tab(BaseModel):
     octave_shift: int = Field(description="semitones the whole line was moved after transcription: 0, or -12 (or "
                                           "-24) when it was heard an octave above where a bass plays; the same for every "
                                           "instrument, tuning and capo")
+    octave_source: Literal["auto", "chosen"] = Field(description="auto: the octave check decided octave_shift; chosen: "
+                                                                 "the job's octave option did")
     reference_pitch: ReferencePitch | None = Field(description="null when the recording's tuning could not be measured")
     tempo_bpm: float
     key: TabKey

@@ -249,6 +249,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--style", choices=list(bass_tab.STYLES), help="bass-tab: where the line sits on the neck (default as-played)")
     r.add_argument("--recording", choices=list(bass_tab.RECORDINGS),
                    help="bass-tab: song separates the bass from a band or a record (default); instrument: the bass alone")
+    r.add_argument("--octave", choices=list(bass_tab.OCTAVES),
+                   help="bass-tab: the octave the line is written in, in semitones from what was heard (default auto: "
+                        "an octave lower when it was heard an octave high)")
     r.add_argument("--check-golden", type=Path, help="compare outputs with a reference directory; exit 2 on difference")
     r.set_defaults(fn=cmd_run)
 

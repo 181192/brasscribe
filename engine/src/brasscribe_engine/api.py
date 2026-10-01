@@ -489,7 +489,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         if not body.muscriptor:
             params["muscriptor"] = False
         params.update(bass_tab.given(instrument=body.instrument, tuning=body.tuning, capo=body.capo, style=body.style,
-                                     recording=body.recording))
+                                     recording=body.recording, octave=body.octave))
         try:
             profiles.job_options(body.profile, params)
         except ValueError as e:
@@ -529,13 +529,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                lead: m.Lead = Form("lineup"), instrument: m.FrettedInstrument | None = Form(None),
                                tuning: str | None = Form(None), capo: int | None = Form(None, ge=0, le=12),
                                style: m.FingeringStyle | None = Form(None),
-                               recording: m.Recording | None = Form(None)) -> m.Job:
+                               recording: m.Recording | None = Form(None),
+                               octave: m.Octave | None = Form(None)) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
         return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
                                       lineup=lineup, difficulty=difficulty, key=key, transpose=transpose, seat=seat,
                                       reads=reads, lead=lead, instrument=instrument, tuning=tuning, capo=capo,
-                                      style=style, recording=recording), request)
+                                      style=style, recording=recording, octave=octave), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:

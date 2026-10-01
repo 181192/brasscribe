@@ -265,6 +265,23 @@
             ],
             "title": "Lineup"
           },
+          "octave": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "0",
+                  "-12",
+                  "+12"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Octave"
+          },
           "profile": {
             "default": "orchestra-with-soloist",
             "title": "Profile",
@@ -1307,6 +1324,24 @@
             "description": "solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch in its place, as the apps do on device",
             "title": "Muscriptor",
             "type": "boolean"
+          },
+          "octave": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "0",
+                  "-12",
+                  "+12"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "bass-tab profile: the octave the line is written in. auto: an octave lower when it was heard an octave above where a bass plays; 0, -12, +12: the player's choice, in semitones from what was heard; default: auto",
+            "title": "Octave"
           },
           "path": {
             "anyOf": [
@@ -2856,6 +2891,15 @@
             "title": "Octave Shift",
             "type": "integer"
           },
+          "octave_source": {
+            "description": "auto: the octave check decided octave_shift; chosen: the job's octave option did",
+            "enum": [
+              "auto",
+              "chosen"
+            ],
+            "title": "Octave Source",
+            "type": "string"
+          },
           "preset": {
             "description": "the instrument and tuning the tab was made for, e.g. bass-4-standard",
             "title": "Preset",
@@ -2915,6 +2959,7 @@
           "violations",
           "tuning_suggestions",
           "octave_shift",
+          "octave_source",
           "reference_pitch",
           "tempo_bpm",
           "key",

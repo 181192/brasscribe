@@ -39,13 +39,14 @@ needs_core = pytest.mark.skipif(_core_missing() is not None, reason=_core_missin
 
 def test_defaults_are_a_four_string_bass_in_standard_tuning_separated_from_a_song():
     assert bass_tab.options({}) == {"instrument": "bass-4", "tuning": "standard", "capo": 0, "style": "as-played",
-                                    "recording": "song"}
+                                    "recording": "song", "octave": "auto"}
     assert bass_tab.preset(bass_tab.options({"instrument": "bass-5", "tuning": "drop-a"})) == "bass-5-drop-a"
 
 
 @pytest.mark.parametrize("params", [
     {"instrument": "guitar"}, {"instrument": "bass-7"}, {"tuning": "open-g"}, {"instrument": "bass-5", "tuning": "drop-d"},
     {"capo": -1}, {"capo": 13}, {"capo": "2"}, {"capo": True}, {"capo": 1.5}, {"style": "shred"}, {"recording": "band"},
+    {"octave": "12"}, {"octave": -12}, {"octave": "-24"}, {"octave": "down"},
 ])
 def test_values_outside_the_instrument_are_refused(params):
     with pytest.raises(ValueError):
@@ -82,7 +83,7 @@ def test_brass_profiles_refuse_the_fretted_options(profile, option):
 
 
 def test_a_job_that_names_no_fretted_option_has_none_in_its_parameters():
-    assert bass_tab.given(instrument=None, tuning=None, capo=None, style=None, recording=None, lineup="full") == {}
+    assert bass_tab.given(instrument=None, tuning=None, capo=None, style=None, recording=None, octave=None, lineup="full") == {}
     assert bass_tab.given(instrument="bass-5", capo=0, style=None) == {"instrument": "bass-5", "capo": 0}
 
 
@@ -96,6 +97,7 @@ def test_the_instrument_table_is_target_fretteds_bass_presets():
     assert set(bass_tab.INSTRUMENTS) == set(m.FrettedInstrument.__args__)
     assert set(bass_tab.STYLES) == set(m.FingeringStyle.__args__)
     assert set(bass_tab.RECORDINGS) == set(m.Recording.__args__)
+    assert set(bass_tab.OCTAVES) == set(m.Octave.__args__)
     assert bass_tab.MAX_CAPO == next(x.le for x in m.JobCreate.model_fields["capo"].metadata if hasattr(x, "le"))
 
 
@@ -146,9 +148,9 @@ def test_the_cli_passes_only_the_fretted_options_that_are_given(monkeypatch, tmp
     assert seen["params"] == {"audio": True, "lineup": None, "difficulty": "faithful", "key": None, "transpose": None,
                               "seat": None, "reads": None, "lead": "lineup"}
     assert cli.main(["run", "song.wav", "--profile", "bass-tab", "--instrument", "bass-5", "--capo", "2",
-                     "--recording", "instrument"]) == 0
-    assert {k: seen["params"][k] for k in ("instrument", "capo", "recording")} == \
-        {"instrument": "bass-5", "capo": 2, "recording": "instrument"}
+                     "--recording", "instrument", "--octave", "-12"]) == 0
+    assert {k: seen["params"][k] for k in ("instrument", "capo", "recording", "octave")} == \
+        {"instrument": "bass-5", "capo": 2, "recording": "instrument", "octave": "-12"}
     assert "tuning" not in seen["params"] and "style" not in seen["params"]
 
 
@@ -181,7 +183,20 @@ def test_the_instrument_is_a_parameter_of_the_fingering_stage_only():
         assert a.stage(name).params == b.stage(name).params, name
     assert b.stage("arrange").params == {"title": "T", "fingering": {"instrument": "bass-5", "tuning": "drop-a", "capo": 2,
                                                                      "style": "lead"}}
-    assert b.params == {"instrument": "bass-5", "tuning": "drop-a", "capo": 2, "style": "lead", "recording": "song"}
+    assert b.params == {"instrument": "bass-5", "tuning": "drop-a", "capo": 2, "style": "lead", "recording": "song",
+                        "octave": "auto"}
+
+
+def test_a_chosen_octave_is_a_parameter_of_the_notes_stage_only():
+    auto = profiles.build("bass-tab", Path("song.wav"), "T")
+    assert auto.stage("notes").params == profiles.build("bass-tab", Path("song.wav"), "T", {"octave": "auto"}).stage("notes").params == {}
+    for octave in ("0", "-12", "+12"):
+        chosen = profiles.build("bass-tab", Path("song.wav"), "T", {"octave": octave})
+        assert chosen.stage("notes").params == {"octave": octave}
+        for name in ("beats", "stems", "transcribe.bass.basic-pitch", "arrange"):
+            assert chosen.stage(name).params == auto.stage(name).params, name
+    both = profiles.build("bass-tab", Path("bass.wav"), "T", {"octave": "+12", "recording": "instrument"})
+    assert both.stage("notes").params == {"whole_recording": True, "octave": "+12"}
 
 
 def test_the_profile_is_listed_with_a_title_and_builds_without_the_core(monkeypatch):
@@ -230,6 +245,17 @@ def test_the_bottom_line_is_kept_whatever_its_register_and_the_octave_check_sees
     assert [n["pitch"] for n in doc["notes"]] == [52, 52, 59, 64] and doc["octave_shift"] == -24
     low = bass_tab.transcribed_line(_played([E1, E1, 35, 40]), _beats())
     assert [n["pitch"] for n in low["notes"]] == [E1, E1, 35, 40] and low["octave_shift"] == 0
+    assert doc["octave_source"] == low["octave_source"] == "auto"
+
+
+@pytest.mark.parametrize("octave,shift", [("0", 0), ("-12", -12), ("+12", 12)])
+def test_a_chosen_octave_replaces_the_check(octave, shift):
+    high = [p + 12 for p in TYPICAL_LINE]  # the check would write this an octave lower
+    doc = bass_tab.transcribed_line(_played(high), _beats(17), octave)
+    assert (doc["octave_shift"], doc["octave_source"]) == (shift, "chosen")
+    assert [n["pitch"] for n in doc["notes"]] == [p + shift for p in high]
+    low = bass_tab.transcribed_line(_played(LOW_LINE), _beats(17), octave)  # and leave this one alone
+    assert [n["pitch"] for n in low["notes"]] == [p + shift for p in LOW_LINE] and low["octave_source"] == "chosen"
 
 
 def test_detached_notes_get_a_readable_length_and_held_ones_reach_the_next():
@@ -333,7 +359,7 @@ def test_the_request_is_the_crates_and_the_tab_joins_each_note_with_its_place():
 def test_a_line_heard_an_octave_high_is_fingered_an_octave_lower_and_says_so():
     seen: list[dict] = []
     tab = bass_tab.fingered(_doc([p + 12 for p in TYPICAL_LINE]), bass_tab.options({}), _fake_solver(seen))
-    assert len(seen) == 1 and tab["octave_shift"] == -12
+    assert len(seen) == 1 and (tab["octave_shift"], tab["octave_source"]) == (-12, "auto")
     assert [n["pitch"] for n in seen[0]["notes"]] == TYPICAL_LINE == [n["pitch"] for n in tab["notes"]]
     comp = bass_tab.composition(tab, "Title")
     assert [n.pitch for n in comp.voices[0].notes] == TYPICAL_LINE and comp.title == "Title"
@@ -431,7 +457,18 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
         assert (comp["keys"][0]["fifths"], comp["keys"][0]["mode"]) == (tab.key.fifths, tab.key.mode)
         manifest = c.get(f"/v1/jobs/{job['id']}/manifest").json()
         assert manifest["params"] == {"instrument": "bass-5", "tuning": "standard", "capo": 0, "style": "open-position",
-                                      "recording": "instrument"}
+                                      "recording": "instrument", "octave": "auto"}
+
+        # The player says the line is where it was heard: the notes are written again, not transcribed again.
+        kept = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument",
+                                        "instrument": "bass-5", "octave": "0"})
+        kept = _wait(c, kept.json()["id"])
+        assert {s["name"]: s["status"] for s in kept["stages"]} == {
+            "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "ran", "arrange": "ran"}
+        chosen = m.Tab.model_validate(c.get(f"/v1/jobs/{kept['id']}/tab").json())
+        assert (chosen.octave_shift, chosen.octave_source, tab.octave_source) == (0, "chosen", "auto")
+        assert [n.pitch for n in chosen.notes] == [p + 12 for p in TYPICAL_LINE]
+        assert c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "octave": "-24"}).status_code == 422
 
         # Another tuning for the same song: only the fingering runs again.
         again = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument",

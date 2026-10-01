@@ -12,7 +12,8 @@
                                  (core/target-fretted)
 
 The instrument (instrument, tuning, capo, style) is a parameter of the last stage only, so choosing
-another tuning for a song fingers it again without transcribing it again.
+another tuning for a song fingers it again without transcribing it again. The octave is a parameter of
+the notes stage: `auto` runs the octave check, a number of semitones replaces it.
 
 The engine reaches target-fretted through the core's command line (`brasscribe-core fret`), which
 passes the crate's JSON request and response through unchanged.
@@ -53,7 +54,11 @@ STYLES = ("as-played", "open-position", "lead")  # target-fretted's Style
 # What was recorded: a song the bass is separated from, or the bass alone (no separation).
 RECORDINGS = ("song", "instrument")
 MAX_CAPO = 12
-DEFAULTS = {"instrument": "bass-4", "tuning": "standard", "capo": 0, "style": "as-played", "recording": "song"}
+# Which octave the line is written in: auto lets the octave check decide; the others are the player's
+# choice, in semitones from what was heard.
+OCTAVES = ("auto", "0", "-12", "+12")
+DEFAULTS = {"instrument": "bass-4", "tuning": "standard", "capo": 0, "style": "as-played", "recording": "song",
+            "octave": "auto"}
 
 # The octave check. Transcribers hear a bass an octave high when its fundamental is weak (a phone's
 # microphone barely carries a low E). The whole line is written an octave lower when its median pitch
@@ -107,6 +112,8 @@ def options(params: dict) -> dict:
         raise ValueError(f"style must be one of {', '.join(STYLES)}")
     if opts["recording"] not in RECORDINGS:
         raise ValueError(f"recording must be one of {', '.join(RECORDINGS)}")
+    if opts["octave"] not in OCTAVES:
+        raise ValueError(f"octave must be one of {', '.join(OCTAVES)}")
     return opts
 
 
@@ -157,13 +164,14 @@ def solve(request: dict) -> dict:
 
 # ---------------------------------------------------------------- notes
 
-def transcribed_line(raw: list[dict], beats: np.ndarray) -> dict:
+def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto") -> dict:
     """The bass line of transcribed notes ({pitch, onset, offset} in seconds) on the beat grid.
 
     As the bass voice of the song arrangers: the bottom line, quantized as one voice on the level
     the onsets choose, tick 0 on the downbeat at or before the first note, durations as written.
-    There is no pitch window, so a line that was heard too high is all there for the octave check;
-    `octave_shift` is what the check moved every pitch by."""
+    There is no pitch window, so a line that was heard too high is all there for the octave check.
+    `octave` (OCTAVES): auto runs the check, a number is the player's choice. `octave_shift` is what
+    every pitch was moved by, and `octave_source` says who decided: auto or chosen."""
     from brasscribe_eval.lead_sheet import line
     from brasscribe_music.durations import apply_written
     from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
@@ -192,12 +200,13 @@ def transcribed_line(raw: list[dict], beats: np.ndarray) -> dict:
     pickup = first_down * TICKS_PER_BEAT
 
     written = apply_written(quantize(bottom, times, monophonic=True, auto_level=False), BeatMap(times))
-    shift = octave_shift([q.pitch for q, _ in written])
+    shift = octave_shift([q.pitch for q, _ in written]) if octave == "auto" else int(octave)
     notes = [{"pitch": int(q.pitch) + shift, "start": int(q.start - pickup), "dur": int(w.dur), "confidence": float(q.confidence),
               "onset_s": float(q.onset_s), "offset_s": float(q.offset_s)} for q, w in written]
     name, fifths = key_of([n["start"] / TICKS_PER_BEAT for n in notes], [n["dur"] / TICKS_PER_BEAT for n in notes],
                           [n["pitch"] for n in notes])
     return {"ticks_per_beat": TICKS_PER_BEAT, "notes": notes, "octave_shift": shift,
+            "octave_source": "auto" if octave == "auto" else "chosen",
             "meter": {"beats": beats_per_bar, "beat_unit": 4},
             "key": {"name": name, "fifths": int(fifths), "mode": "minor" if name.endswith("m") else "major"},
             "tempo_bpm": round(float(60 / np.median(np.diff(times))), 1),
@@ -235,13 +244,14 @@ def notes_stage(ctx: StageContext) -> None:
     from brasscribe_eval.score import load_notes
 
     try:
-        doc = transcribed_line(load_notes(ctx.inputs["bass"]), np.loadtxt(ctx.inputs["beats"], ndmin=2))
+        doc = transcribed_line(load_notes(ctx.inputs["bass"]), np.loadtxt(ctx.inputs["beats"], ndmin=2),
+                               ctx.params.get("octave", "auto"))
     except ValueError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
     doc["reference_pitch"] = reference_pitch(ctx.inputs["audio"], bool(ctx.params.get("whole_recording")))
     ctx.log(f"{len(doc['notes'])} notes, {doc['meter']['beats']}/{doc['meter']['beat_unit']}, "
             f"{doc['key']['name']}, {doc['tempo_bpm']} BPM")
-    if doc["octave_shift"]:
+    if doc["octave_shift"] and doc["octave_source"] == "auto":
         ctx.log(f"the line was heard above a bass: written {-doc['octave_shift'] // 12} octave(s) lower")
     (ctx.out / "bass-notes.json").write_text(json.dumps(doc, indent=1))
 
@@ -263,7 +273,8 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = solve) -> di
     return {"preset": preset(opts), "style": opts["style"], "instrument": answer["instrument"],
             "notes": [{**n, **place} for n, place in zip(doc["notes"], places)],
             "violations": answer["violations"], "tuning_suggestions": answer["tuning_suggestions"],
-            "octave_shift": doc["octave_shift"], "reference_pitch": doc["reference_pitch"],
+            "octave_shift": doc["octave_shift"], "octave_source": doc["octave_source"],
+            "reference_pitch": doc["reference_pitch"],
             "tempo_bpm": doc["tempo_bpm"], "key": doc["key"], "meter": doc["meter"],
             "ticks_per_beat": doc["ticks_per_beat"], "beat_times": doc["beat_times"],
             "first_downbeat": doc["first_downbeat"]}
@@ -316,9 +327,11 @@ def build(title: str, params: dict) -> Pipeline:
                         outputs=tuple(f"{s}.wav" for s in P.SW_STEMS)))
         bass = Input("stems", "bass.wav")
     st.append(P._transcribe("bass", "basic-pitch", "bp", bass, None, retune=whole))
+    # Only what differs from the defaults, so a job that chooses neither keeps its cache entry.
+    heard = {**({"whole_recording": True} if whole else {}), **({"octave": opts["octave"]} if opts["octave"] != "auto" else {})}
     st.append(Stage("notes", "notes", {"beats": Input("beats", "mix.beats"), "audio": Input(SOURCE),
                                        "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid")},
-                    notes_stage, params={"whole_recording": True} if whole else {},
+                    notes_stage, params=heard,
                     code=(S.MUSIC_SRC, S.EVAL_SRC, THIS, tuning.THIS), outputs=("bass-notes.json",)))
     fingering = {"instrument": opts["instrument"], "tuning": opts["tuning"], "capo": opts["capo"], "style": opts["style"]}
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "bass-notes.json")}, arrange_stage,
