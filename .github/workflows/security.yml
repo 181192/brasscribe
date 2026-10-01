@@ -46,7 +46,7 @@ jobs:
             javascript-typescript: ['studio/**', '**/*.ts', '**/*.js', '**/*.mjs', '**/*.html']
             rust: ['core/**/*.rs', 'core/**/Cargo.toml', 'core/Cargo.lock']
             csharp: ['apps/windows/**', 'apps/bandroom/windows/**', 'core/dotnet/**']
-            java-kotlin: ['apps/android/**', 'core/android/**', 'design/dist/android/**']
+            java-kotlin: ['apps/android/**', 'core/android/**', 'design/dist/android/**', 'design/fretscribe/dist/android/**']
             c-cpp: ['apps/android/audio/src/main/cpp/**', 'apps/android/audio/build.gradle.kts']
             dependencies: ['**/Cargo.toml', '**/Cargo.lock', '**/package.json', '**/package-lock.json', '**/*.gradle.kts', 'apps/android/gradle/**', '**/*.csproj', '**/Directory.Packages.props', '**/Package.swift', '**/Package.resolved', 'pixi.toml', 'pixi.lock', '**/pyproject.toml', '**/requirements*.txt', '.github/**']
       - id: pick

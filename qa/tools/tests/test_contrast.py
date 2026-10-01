@@ -33,6 +33,17 @@ def test_dtcg_tokens_load_and_pass():
             assert c.contrast(theme[fg], theme[bg]) + 1e-9 >= minimum, (fg, bg)
 
 
+def test_fretscribe_tokens_load_and_pass():
+    tokens = c.ROOT / "design" / "fretscribe" / "tokens" / "tokens.json"
+    data = c.load_dtcg(tokens)
+    assert set(data["themes"]) == {"light", "dark", "high-contrast", "high-contrast-light"}
+    assert data["pairs"]
+    for theme in data["themes"].values():
+        for fg, bg, minimum, _ in data["pairs"]:
+            assert c.contrast(theme[fg], theme[bg]) + 1e-9 >= minimum, (fg, bg)
+    assert c.main(["--tokens", str(tokens)]) == 0
+
+
 def test_dtcg_extension_namespace_is_not_fixed(tmp_path):
     token = {"$type": "color", "$value": {"colorSpace": "srgb", "components": [0, 0, 0], "hex": "#000000"}}
     paper = {"$type": "color", "$value": {"colorSpace": "srgb", "components": [1, 1, 1], "hex": "#FFFFFF"}}
