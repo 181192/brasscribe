@@ -185,6 +185,10 @@
     <string name="draft_too_long_title">For langt for et utkast på telefonen</string>
     <string name="draft_too_long_body">Datamaskinen kan lage partituret fra dette opptaket.</string>
     <string name="draft_too_long_body_away">Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere.</string>
+    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble til i Innstillinger her. Eller velg et kortere opptak.</string>
+    <string name="draft_refused_title">Utkastet kan ikke lages akkurat nå</string>
+    <string name="draft_refused_body">Telefonen har stoppet Brasscribe fra å jobbe med det. Datamaskinen kan lage partituret, eller prøv igjen senere.</string>
+    <string name="draft_refused_body_away">Telefonen har stoppet Brasscribe fra å jobbe med det. Prøv igjen senere.</string>
     <string name="draft_too_long_kept">Opptaket ditt er tatt vare på til du velger et annet.</string>
     <string name="draft_make_on_computer">Lag det på datamaskinen</string>
     <string name="problem_choose_another_recording">Velg et annet opptak</string>

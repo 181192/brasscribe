@@ -51,6 +51,24 @@ class DraftServiceTest {
         assertTrue("the notification is gone", waitFor(2_000) { notification() == null })
     }
 
+    /** The phone refuses the foreground: the service stops, says so, and the app goes on living. */
+    @Test
+    fun aRefusedForegroundStopsTheDraft() {
+        val real = DraftService.enterForeground
+        var refused = false
+        // A refusal from the system itself: it does not accept a service without a type.
+        DraftService.enterForeground = { s, id, n, _ -> s.startForeground(id, n, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) }
+        try {
+            instrumentation.runOnMainSync { DraftService.start(context) { refused = true } }
+            assertTrue("the draft is told", waitFor(5_000) { refused })
+            Thread.sleep(15_000)
+            assertTrue(notification() == null)
+        } finally {
+            DraftService.enterForeground = real
+            instrumentation.runOnMainSync { DraftService.stop(context) }
+        }
+    }
+
     @Test
     fun theNotificationOpensTheApp() {
         instrumentation.runOnMainSync { DraftService.start(context) }

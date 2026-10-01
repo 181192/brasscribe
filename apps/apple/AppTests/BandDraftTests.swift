@@ -42,7 +42,7 @@ import TranscriptionKit
     // nothing paired
     app.connection.stage(.connected(serverName: ""), record: nil)
     app.connection.localAddress = nil
-    #expect(!app.computerThere)
+    #expect(!app.computerThere && !app.computerPaired)
 }
 
 @Test @MainActor func theServiceFollowsTheRoute() {
@@ -113,9 +113,11 @@ import TranscriptionKit
     #expect(away.hint == "Open Brasscribe on your computer to make the full score from the same recording.")
     #expect(ErrorWords.title(DraftTooLong(seconds: 900, maxSeconds: 600)) == "Too long for a draft on this device")
     // too long: the computer is the way forward when it is there; otherwise the words say to open it
-    #expect(ErrorWords.draftTooLong(computerThere: true) == "Your computer can make the score from this recording.")
-    #expect(ErrorWords.draftTooLong(computerThere: false) == "Open Brasscribe on your computer to make the score from this recording, or choose a shorter one.")
-    #expect(ErrorWords.specific(DraftTooLong(seconds: 900, maxSeconds: 600)) == ErrorWords.draftTooLong(computerThere: false))
+    #expect(ErrorWords.draftTooLong(computerThere: true, paired: true) == "Your computer can make the score from this recording.")
+    #expect(ErrorWords.draftTooLong(computerThere: false, paired: true) == "Open Brasscribe on your computer to make the score from this recording, or choose a shorter one.")
+    // nothing paired: pair first
+    #expect(ErrorWords.draftTooLong(computerThere: false, paired: false).contains("choose Pair a phone, then connect in Settings"))
+    #expect(ErrorWords.specific(DraftTooLong(seconds: 900, maxSeconds: 600)) == ErrorWords.draftTooLong(computerThere: false, paired: true))
     #if os(iOS)
     #expect(TranscribeView.leaveLine(draft: true) == "Keep Brasscribe open until the draft is ready.")
     #endif

@@ -120,6 +120,41 @@ class BandDraftScreensTest {
         vm.showProblem(Problem.DRAFT_TOO_LONG)
     }
 
+    /** The phone refused the draft: try again later, or the computer when it is there; the recording stays. */
+    @Test
+    fun aDraftThePhoneRefusesSaysWhatToDo() {
+        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
+        fun refuse() = rule.runOnUiThread {
+            vm.home()
+            vm.setSource(Source("Band practice.wav", SourceKind.FILE, 60.0))
+            vm.navigate(Screen.PROFILE)
+            vm.chooseProfile(Profile.BRASS_BAND)
+            vm.navigate(Screen.TRANSCRIBE)
+            vm.draftRefused()
+        }
+        try {
+            container.fixtureSource = null
+            refuse()
+            rule.waitUntil(5_000) { shows(R.string.draft_refused_title) }
+            assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.PROBLEM), vm.screen.value)
+            assertTrue(shows(R.string.draft_refused_body_away) && shows(R.string.retry) && shows(R.string.draft_too_long_kept))
+            assertTrue(!shows(R.string.draft_make_on_computer))
+            rule.onNodeWithText(text(R.string.back)).performClick()
+            rule.waitUntil(5_000) { vm.screen.value.last() == Screen.PROFILE }
+            assertEquals("Band practice.wav", vm.source.value?.name)
+
+            rule.runOnUiThread { vm.home() }
+            rule.waitUntil(5_000) { !shows(R.string.draft_refused_title) }
+            container.fixtureSource = oldHundredth()
+            refuse()
+            rule.waitUntil(5_000) { shows(R.string.draft_make_on_computer) }
+            assertTrue(shows(R.string.draft_refused_body) && shows(R.string.retry))
+        } finally {
+            rule.runOnUiThread { vm.cancelTranscription(); vm.home() }
+            container.fixtureSource = null
+        }
+    }
+
     /** A take too long for a draft: the way forward is the computer, and going back keeps the recording. */
     @Test
     fun aTakeTooLongForADraftGoesToTheComputer() {
@@ -129,7 +164,8 @@ class BandDraftScreensTest {
             container.fixtureSource = null
             showTooLong()
             rule.waitUntil(5_000) { shows(R.string.draft_too_long_title) }
-            assertTrue(shows(R.string.draft_too_long_body_away) && shows(R.string.draft_too_long_kept) && shows(R.string.problem_choose_another_recording))
+            // nothing is paired: the words say to pair first
+            assertTrue(shows(R.string.draft_too_long_body_unpaired) && shows(R.string.draft_too_long_kept) && shows(R.string.problem_choose_another_recording))
             assertTrue(!shows(R.string.draft_make_on_computer) && !shows(R.string.problem_choose_another))
             shot("too-long-no-computer")
             rule.onNodeWithText(text(R.string.back)).performClick()

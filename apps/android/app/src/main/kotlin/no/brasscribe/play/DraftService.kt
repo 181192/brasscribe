@@ -35,9 +35,16 @@ class DraftService : Service() {
         // Always before anything else: a service started with startForegroundService that stops without
         // reaching the foreground ends the app. The platform call, not ServiceCompat's: that one masks the type
         // with the types it knows, which leaves mediaProcessing as none, and the system refuses none.
-        runCatching { startForeground(NOTIFICATION_ID, notification, type) }
+        val entered = runCatching { enterForeground(this, NOTIFICATION_ID, notification, type) }
             .onFailure { android.util.Log.w("BrasscribePlay", "draft service not in the foreground", it) }
         starting = false
+        // The phone refused (the type's time for the day is used up, for one): no draft outside the foreground.
+        if (entered.isFailure) {
+            stopWhenStarted = false
+            stopSelf()
+            refused?.invoke()
+            return START_NOT_STICKY
+        }
         // The draft ended (refused, failed or cancelled) before the service got here.
         if (stopWhenStarted) {
             stopWhenStarted = false
@@ -68,10 +75,17 @@ class DraftService : Service() {
         @Volatile private var starting = false
         /** The draft ended while the service was starting: it stops itself once it is in the foreground. */
         @Volatile private var stopWhenStarted = false
+        /** Called on the main thread when the phone refuses the foreground: the draft must stop. */
+        @Volatile private var refused: (() -> Unit)? = null
+
+        /** Service.startForeground; tests put a refusal in its place. */
+        @androidx.annotation.VisibleForTesting
+        internal var enterForeground: (Service, Int, android.app.Notification, Int) -> Unit = { s, id, n, type -> s.startForeground(id, n, type) }
 
         /** Started when a draft starts; a start the system refuses (the app is not in front) leaves the draft running. */
-        fun start(context: Context) {
+        fun start(context: Context, onRefused: (() -> Unit)? = null) {
             stopWhenStarted = false
+            refused = onRefused
             runCatching { context.startForegroundService(Intent(context, DraftService::class.java)) }
                 .onSuccess { starting = true }
                 .onFailure { android.util.Log.w("BrasscribePlay", "draft service not started", it) }
@@ -79,6 +93,7 @@ class DraftService : Service() {
 
         /** Stops it when the draft ends. One that is still starting stops itself once it is in the foreground. */
         fun stop(context: Context) {
+            refused = null
             if (starting) stopWhenStarted = true
             else context.stopService(Intent(context, DraftService::class.java))
         }

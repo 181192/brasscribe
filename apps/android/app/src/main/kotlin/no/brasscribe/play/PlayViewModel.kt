@@ -61,7 +61,7 @@ import java.util.zip.ZipInputStream
 enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG }
+enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED }
 
 enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SCORE }
 
@@ -346,7 +346,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private fun restore() {
         val names = savedState.get<ArrayList<String>>(KEY_STACK)
         val restoredSource = savedState.get<String>(KEY_SOURCE)?.let(SavedSource::decode)
-        val scoreId = currentSavedScoreId
+        // The process ended while the full score of a draft was being made: the draft comes back.
+        val scoreId = currentSavedScoreId ?: draftBehind
+        draftBehind = null
         if (names != null) {
             val restored = names.mapNotNull { n -> Screen.entries.firstOrNull { it.name == n } }
             val sourceBack = restoredSource?.takeIf { it.file == null || it.file.isFile }
@@ -390,7 +392,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      * place; when the player comes back before it is ready (Cancel, or back from a problem), the draft is
      * shown again.
      */
-    private var draftBehind: String? = null
+    private var draftBehind: String?
+        get() = savedState[KEY_DRAFT_BEHIND]
+        set(v) { savedState[KEY_DRAFT_BEHIND] = v }
 
     private fun showDraftBehind() {
         val id = draftBehind ?: return
@@ -701,6 +705,16 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         startTranscription()
     }
 
+    /**
+     * The phone would not let the draft's service into the foreground (its daily time for such work is used up,
+     * for one): the draft stops, and the problem screen says to try later or to use the computer.
+     */
+    internal fun draftRefused() {
+        job?.cancel()
+        transcribe.update { it.copy(running = false) }
+        showProblem(Problem.DRAFT_REFUSED)
+    }
+
     /** The way forward from a take too long for a draft on the phone: the same recording, made on the computer. */
     fun makeOnComputer() {
         where.value = Where.COMPANION
@@ -776,7 +790,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val title = ScoreTitles.withoutExtension(s.name)
         // A band draft is re-arranged from its Composition (Output), never from a solo take.
         soloTake = null
-        DraftService.start(app)
+        DraftService.start(app, ::draftRefused)
         try {
             return withContext(Dispatchers.Default) {
                 // The models run as plain blocking calls: Cancel is checked between their stages.
@@ -1604,6 +1618,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         private const val KEY_STACK = "stack"
         private const val KEY_SOURCE = "source"
         private const val KEY_SCORE = "score"
+        private const val KEY_DRAFT_BEHIND = "draftBehind"
         const val ASK_POLL_MS = 2_000L
         /** The engine forgets a pairing request after two minutes. */
         const val ASK_TIMEOUT_MS = 125_000L

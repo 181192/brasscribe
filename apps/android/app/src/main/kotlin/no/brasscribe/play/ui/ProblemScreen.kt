@@ -45,6 +45,7 @@ private val COPY = mapOf(
     Problem.SCORE_FAILED to ProblemCopy(R.string.problem_score_title, R.string.problem_score_body, emptyList(), R.string.problem_score_kept),
     Problem.TOO_LARGE to ProblemCopy(R.string.problem_too_large_title, R.string.problem_too_large_body, listOf(R.string.problem_too_large_reason), null),
     Problem.DRAFT_TOO_LONG to ProblemCopy(R.string.draft_too_long_title, R.string.draft_too_long_body, emptyList(), R.string.draft_too_long_kept),
+    Problem.DRAFT_REFUSED to ProblemCopy(R.string.draft_refused_title, R.string.draft_refused_body, emptyList(), R.string.draft_too_long_kept),
 )
 
 /**
@@ -64,14 +65,22 @@ fun ProblemScreen(vm: PlayViewModel) {
     // A take too long for a draft: the computer is the way forward, as soon as it is there. Back goes to
     // What is this?, where the recording still is.
     val tooLong = p == Problem.DRAFT_TOO_LONG
+    // The phone would not let the draft run: later, or on the computer. Its recording is still there too.
+    val draft = tooLong || p == Problem.DRAFT_REFUSED
     val connection by vm.connection.state.collectAsState()
     val computerThere = vm.container.usingFixture || no.brasscribe.play.OnDeviceRouting.computerThere(connection)
 
     PlayScaffold(
-        title = null, onBack = { if (tooLong) vm.back() else vm.home() },
-        backLabel = stringResource(if (tooLong) R.string.back else R.string.home), status = null,
+        title = null, onBack = { if (draft) vm.back() else vm.home() },
+        backLabel = stringResource(if (draft) R.string.back else R.string.home), status = null,
         bottom = {
             when (p) {
+                Problem.DRAFT_REFUSED -> {
+                    if (computerThere) {
+                        PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
+                        SecondaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
+                    } else PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
+                }
                 Problem.DRAFT_TOO_LONG -> {
                     if (computerThere) PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
                     SecondaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
@@ -96,7 +105,14 @@ fun ProblemScreen(vm: PlayViewModel) {
             contentAlignment = Alignment.Center,
         ) { BcIcon(R.drawable.ic_bc_error, null, tint = c.error) }
         ScreenTitle(stringResource(copy.title), Modifier.semantics { liveRegion = LiveRegionMode.Assertive })
-        Text(stringResource(if (tooLong && !computerThere) R.string.draft_too_long_body_away else copy.body), style = MaterialTheme.typography.bodyLarge)
+        // Without the computer the words say how to get it: open Brasscribe there, and pair first when nothing is paired.
+        val body = when {
+            !draft || computerThere -> copy.body
+            !tooLong -> R.string.draft_refused_body_away
+            vm.container.settings.paired -> R.string.draft_too_long_body_away
+            else -> R.string.draft_too_long_body_unpaired
+        }
+        Text(stringResource(body), style = MaterialTheme.typography.bodyLarge)
         if (copy.reasons.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
             copy.reasons.forEach { reason ->
                 Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {

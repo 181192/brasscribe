@@ -350,7 +350,7 @@ struct TranscribeView: View {
     /// to What is this?, with the same recording.
     private func tooLong(_ job: TranscriptionJob, reason: String) -> some View {
         ProblemContent(title: job.failureTitle ?? String(localized: "Too long for a draft on this device"), lead: nil,
-                       reasons: [ErrorWords.draftTooLong(computerThere: app.computerThere)], hint: nil, detail: reason) {
+                       reasons: [ErrorWords.draftTooLong(computerThere: app.computerThere, paired: app.computerPaired)], hint: nil, detail: reason) {
             let full = !PageActions.followContent
             if PageActions.followContent {
                 Button { app.backToSource(job) } label: { Text("Back") }

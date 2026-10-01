@@ -178,10 +178,13 @@ final class AppModel {
         }
     }
 
+    /// A computer is paired, or Brasscribe runs on this Mac.
+    var computerPaired: Bool { connection.record != nil || connection.localAddress != nil }
+
     /// The computer counts as there when one is paired (or Brasscribe runs on this Mac) and its
     /// connection is Connected or still Reconnecting; Offline and needs-pairing do not count.
     var computerThere: Bool {
-        guard connection.record != nil || connection.localAddress != nil else { return false }
+        guard computerPaired else { return false }
         switch connection.state.kind {
         case .connected, .reconnecting: return true
         case .offline, .needsPairing: return false
