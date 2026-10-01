@@ -381,7 +381,28 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         if (backStack.value.size <= 1) return false
         if (backStack.value.last() == Screen.TRANSCRIBE) cancelTranscription()
         backStack.update { it.dropLast(1) }
+        showDraftBehind()
         return true
+    }
+
+    /**
+     * The draft that "Make the full score" started from. Making the full score puts a new source in the draft's
+     * place; when the player comes back before it is ready (Cancel, or back from a problem), the draft is
+     * shown again.
+     */
+    private var draftBehind: String? = null
+
+    private fun showDraftBehind() {
+        val id = draftBehind ?: return
+        if (result.value != null || backStack.value.last() !in setOf(Screen.SCORE, Screen.REVIEW)) return
+        draftBehind = null
+        viewModelScope.launch {
+            val saved = withContext(storage) { scoreLibrary.get(id)?.let { it to scoreLibrary.content(id) } }
+            val content = saved?.second
+            if (content == null) { home(); return@launch }
+            // Only while the player is still there, and nothing else took its place.
+            if (result.value == null && backStack.value.last() in setOf(Screen.SCORE, Screen.REVIEW)) showSaved(saved.first, content)
+        }
     }
 
     fun home() { backStack.value = listOf(Screen.HOME) }
@@ -604,6 +625,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         // A new take is the player's own, as Settings says; a friend's seat from the last one does not carry over.
         output.update { it.withSeat(container.seat, container.seats) }
         profile.value = null
+        draftBehind = null
         where.value = if (s.kind == SourceKind.MICROPHONE && container.hasPitchModel) Where.DEVICE else Where.COMPANION
     }
 
@@ -649,6 +671,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 }
                 val ignored = seatIgnored(r)
                 reviewChanges.value = emptyMap()
+                draftBehind = null
                 result.value = r
                 saveCurrentScore(r)
                 transcribe.update { it.copy(running = false, fraction = 1.0, etaSeconds = 0) }
@@ -676,6 +699,12 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     fun retryTranscription() {
         backStack.update { it.dropLast(1) }
         startTranscription()
+    }
+
+    /** The way forward from a take too long for a draft on the phone: the same recording, made on the computer. */
+    fun makeOnComputer() {
+        where.value = Where.COMPANION
+        retryTranscription()
     }
 
     private suspend fun transcribeOnDevice(s: Source): TranscriptionResult {
@@ -787,6 +816,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val recording = withContext(storage) { scoreLibrary.recordingFile(id) } ?: return@launch
             val title = source.value?.name ?: r.composition?.title.orEmpty()
             setSource(Source(title, SourceKind.FILE, 0.0, audio = null, file = recording))
+            draftBehind = id
             profile.value = Profile.BRASS_BAND
             where.value = Where.COMPANION
             startTranscription()

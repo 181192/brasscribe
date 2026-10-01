@@ -44,7 +44,7 @@ private val COPY = mapOf(
     Problem.RECORDING_FAILED to ProblemCopy(R.string.problem_record_title, R.string.problem_record_body, listOf(R.string.problem_record_reason), null),
     Problem.SCORE_FAILED to ProblemCopy(R.string.problem_score_title, R.string.problem_score_body, emptyList(), R.string.problem_score_kept),
     Problem.TOO_LARGE to ProblemCopy(R.string.problem_too_large_title, R.string.problem_too_large_body, listOf(R.string.problem_too_large_reason), null),
-    Problem.DRAFT_TOO_LONG to ProblemCopy(R.string.draft_too_long_title, R.string.draft_too_long_body, emptyList(), null),
+    Problem.DRAFT_TOO_LONG to ProblemCopy(R.string.draft_too_long_title, R.string.draft_too_long_body, emptyList(), R.string.draft_too_long_kept),
 )
 
 /**
@@ -61,11 +61,21 @@ fun ProblemScreen(vm: PlayViewModel) {
     val pickFile = rememberFilePicker(vm)
     val recorder = rememberRecorder(vm)
     var details by rememberSaveable { mutableStateOf(false) }
+    // A take too long for a draft: the computer is the way forward, as soon as it is there. Back goes to
+    // What is this?, where the recording still is.
+    val tooLong = p == Problem.DRAFT_TOO_LONG
+    val connection by vm.connection.state.collectAsState()
+    val computerThere = vm.container.usingFixture || no.brasscribe.play.OnDeviceRouting.computerThere(connection)
 
     PlayScaffold(
-        title = null, onBack = vm::home, backLabel = stringResource(R.string.home), status = null,
+        title = null, onBack = { if (tooLong) vm.back() else vm.home() },
+        backLabel = stringResource(if (tooLong) R.string.back else R.string.home), status = null,
         bottom = {
             when (p) {
+                Problem.DRAFT_TOO_LONG -> {
+                    if (computerThere) PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
+                    SecondaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
+                }
                 Problem.SCORE_FAILED -> {
                     PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
                     SecondaryButton(stringResource(R.string.back_home), vm::home)
@@ -86,7 +96,7 @@ fun ProblemScreen(vm: PlayViewModel) {
             contentAlignment = Alignment.Center,
         ) { BcIcon(R.drawable.ic_bc_error, null, tint = c.error) }
         ScreenTitle(stringResource(copy.title), Modifier.semantics { liveRegion = LiveRegionMode.Assertive })
-        Text(stringResource(copy.body), style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(if (tooLong && !computerThere) R.string.draft_too_long_body_away else copy.body), style = MaterialTheme.typography.bodyLarge)
         if (copy.reasons.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
             copy.reasons.forEach { reason ->
                 Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {

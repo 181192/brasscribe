@@ -4,12 +4,16 @@ import android.graphics.Bitmap
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import no.brasscribe.play.audio.PcmAudio
+import no.brasscribe.play.engine.FixtureSource
 import no.brasscribe.play.engine.Profile
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -68,5 +72,85 @@ class BandDraftScreensTest {
         rule.waitUntil(5_000) { rule.onAllNodesWithTag("draft-notice").fetchSemanticsNodes().isNotEmpty() ||
             rule.onAllNodesWithText(rule.activity.getString(R.string.draft_notice_short)).fetchSemanticsNodes().isNotEmpty() }
         shot("score-draft-notice")
+    }
+
+    private fun text(id: Int) = rule.activity.getString(id)
+    private fun shows(id: Int) = rule.onAllNodesWithText(text(id)).fetchSemanticsNodes().isNotEmpty()
+    private fun oldHundredth() = FixtureSource { name -> runCatching { instrumentation.context.assets.open("old-hundredth/$name").use { it.readBytes() } }.getOrNull() }
+    private fun draftIsOnScreen() = vm.screen.value.last() == Screen.SCORE && vm.result.value?.draft == true
+
+    /** Coming back from "Make the full score" before it is ready, by Cancel or from a problem, shows the draft again. */
+    @Test
+    fun theDraftIsStillThereWhenTheFullScoreIsNotMade() {
+        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
+        val take = File(rule.activity.cacheDir, "band-draft-take.wav").apply { writeBytes(ByteArray(64)) }
+        val saved = container.scoreLibrary.save(null, "Old Hundredth", Profile.BRASS_BAND.id, fixture("brass-band.musicxml"),
+            fixture("composition.json"), draft = true, recording = take)
+        try {
+            rule.runOnUiThread { vm.home(); vm.openSavedScore(saved) }
+            rule.waitUntil(10_000) { draftIsOnScreen() }
+
+            // Cancel while the computer is making it.
+            container.fixtureSource = oldHundredth()
+            rule.runOnUiThread { vm.makeFullScore() }
+            rule.waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
+            rule.runOnUiThread { vm.cancelTranscription(); vm.back() }
+            rule.waitUntil(10_000) { draftIsOnScreen() }
+            rule.waitUntil(30_000) { rule.onAllNodesWithTag("draft-notice").fetchSemanticsNodes().isNotEmpty() || shows(R.string.draft_notice_short) }
+
+            // Back from the problem screen when the computer is gone.
+            container.fixtureSource = null
+            rule.runOnUiThread { vm.makeFullScore() }
+            rule.waitUntil(10_000) { vm.screen.value.last() == Screen.PROBLEM }
+            rule.runOnUiThread { vm.back() }
+            rule.waitUntil(10_000) { draftIsOnScreen() }
+        } finally {
+            container.fixtureSource = null
+            rule.runOnUiThread { vm.home() }
+            container.scoreLibrary.delete(saved.id)
+            take.delete()
+        }
+    }
+
+    private fun showTooLong() = rule.runOnUiThread {
+        vm.home()
+        vm.setSource(Source("Band practice.wav", SourceKind.FILE, 900.0))
+        vm.navigate(Screen.PROFILE)
+        vm.chooseProfile(Profile.BRASS_BAND)
+        vm.showProblem(Problem.DRAFT_TOO_LONG)
+    }
+
+    /** A take too long for a draft: the way forward is the computer, and going back keeps the recording. */
+    @Test
+    fun aTakeTooLongForADraftGoesToTheComputer() {
+        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
+        try {
+            // No computer: the words say to open Brasscribe there; no button promises what can't be done.
+            container.fixtureSource = null
+            showTooLong()
+            rule.waitUntil(5_000) { shows(R.string.draft_too_long_title) }
+            assertTrue(shows(R.string.draft_too_long_body_away) && shows(R.string.draft_too_long_kept) && shows(R.string.problem_choose_another_recording))
+            assertTrue(!shows(R.string.draft_make_on_computer) && !shows(R.string.problem_choose_another))
+            shot("too-long-no-computer")
+            rule.onNodeWithText(text(R.string.back)).performClick()
+            rule.waitUntil(5_000) { vm.screen.value.last() == Screen.PROFILE }
+            assertEquals("Band practice.wav", vm.source.value?.name)
+
+            // The computer is there: the primary makes the score there, from the same recording.
+            rule.runOnUiThread { vm.home() }
+            rule.waitUntil(5_000) { !shows(R.string.draft_too_long_title) }
+            container.fixtureSource = oldHundredth()
+            showTooLong()
+            rule.waitUntil(5_000) { shows(R.string.draft_make_on_computer) }
+            assertTrue(shows(R.string.draft_too_long_body) && shows(R.string.draft_too_long_kept))
+            shot("too-long-computer-there")
+            rule.onNodeWithText(text(R.string.draft_make_on_computer)).performClick()
+            rule.waitUntil(5_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
+            assertEquals(Where.COMPANION, vm.where.value)
+            assertEquals("Band practice.wav", vm.source.value?.name)
+        } finally {
+            rule.runOnUiThread { vm.cancelTranscription(); vm.home() }
+            container.fixtureSource = null
+        }
     }
 }
