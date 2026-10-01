@@ -67,6 +67,50 @@ def test_octave_errors_range_tempo_level_and_doubt_are_counted():
     assert "tempo_ok" not in without and "meter_ok" not in without  # a song whose tempo changes is not scored on it
 
 
+def test_the_synthesized_lines_cover_the_bottom_of_the_instrument_and_are_the_same_every_time():
+    for group, (low, instrument) in B.GROUPS.items():
+        for pattern in B.PATTERNS:
+            line = B.synth_line(group, pattern, 100.0)
+            assert line == B.synth_line(group, pattern, 100.0)
+            pitches = [n["pitch"] for n in line]
+            assert min(pitches) == low and max(pitches) <= low + 19, (group, pattern)
+            assert all(a["offset"] <= b["onset"] for a, b in zip(line, line[1:]))  # one line, no overlaps
+            assert line[0]["onset"] == pytest.approx(4 * 0.6) and len(line) >= 4 * B.BARS  # a bar's count-in, then every bar
+    low_e = [n["pitch"] for p in B.PATTERNS for n in B.synth_line("low-e", p, 100.0)]
+    low_b = [n["pitch"] for p in B.PATTERNS for n in B.synth_line("low-b", p, 100.0)]
+    # What Slakh's lines never reach: the E string's first frets, notes under SwiftF0's floor (F#1), a five-string's B string.
+    assert np.mean([p < 35 for p in low_e]) > 0.4 and np.mean([p < 30 for p in low_e]) > 0.1
+    assert np.mean([p < 28 for p in low_b]) > 0.3 and B.GROUPS["low-b"][1] == "bass-5"
+    octaves = [n["pitch"] for n in B.synth_line("low-e", "octaves", 100.0)][:4]
+    assert octaves == [28, 40, 28, 40]
+
+
+def test_each_group_of_the_low_register_set_is_scored_apart_with_its_own_instrument(tmp_path, monkeypatch):
+    seen = []
+    for name, group, instrument in (("a", "low-e", "bass-4"), ("b", "low-b", "bass-5")):
+        d = tmp_path / "eval" / B.SYNTH_SET / name
+        d.mkdir(parents=True)
+        (d / "reference.json").write_text(json.dumps({**REF, "group": group, "params": {"instrument": instrument}}))
+    monkeypatch.setattr(B, "tab_of", lambda entry, mode, params=None: seen.append(entry.name) or _tab(
+        [(28, 0.0, 4, 0, 1.0), (33, 0.5, 4, 5, 1.0), (35, 1.0, 4, 7, 1.0), (40, 1.5, 3, 7, 1.0)]))
+    out, rows = B.evaluate(tmp_path, "song", eval_set=B.SYNTH_SET, group="low-b")
+    assert seen == ["b"] and out["tracks"] == 1.0 and out["onset_f1"] == 1.0
+    assert len(B.evaluate(tmp_path, "song", eval_set=B.SYNTH_SET)[1]) == 2
+    assert B.audio_of(tmp_path / "eval" / B.SYNTH_SET / "a", None) == (tmp_path / "eval" / B.SYNTH_SET / "a" / "mix.wav",
+                                                                      tmp_path / "eval" / B.SYNTH_SET / "a" / "bass.wav")
+
+
+def test_without_the_low_register_set_its_metrics_are_skipped_not_missing():
+    base = suites.load_baselines()
+    gated = {m for m in base["suites"]["bass-tab"]["metrics"]}
+    assert any(m.startswith("low_e.") for m in gated) and any(m.startswith("low_b.") for m in gated)
+    slakh_only = {m: (v["value"] if isinstance(v, dict) else v) for m, v in base["suites"]["bass-tab"]["metrics"].items()
+                  if not m.startswith("low_")}
+    report = suites.gate([{"suite": "bass-tab", "status": "ran", "metrics": slakh_only, "skipped_parts": ["low_e", "low_b"],
+                           "seconds": 0.0}], base)
+    assert report["passed"] and {c["status"] for c in report["suites"][0]["checks"] if c["metric"].startswith("low_")} == {"skipped"}
+
+
 def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
     r = suites.run_suite("bass-tab", data=tmp_path)
     assert r["status"] == "skipped" and "eval/slakh-bass" in r["reason"]

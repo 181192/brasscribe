@@ -90,6 +90,8 @@ OUTLIER_ABOVE = 6  # semitones over their median
 OVERTONES = (12, 19, 24, 28, 31)
 OVERTONE_LATE = 0.02
 OVERTONE_COVER = 0.5
+OVERTONE_PLAYED = 0.1  # seconds after the lower note's onset: later than this, and heard by the second transcriber, it was played
+STRAY_SECONDS = 0.2  # a stray note is shorter than this (stray_notes)
 # Confidence (note_confidence). DOUBT is target-fretted's default threshold for the "?" mark.
 DOUBT = 0.4
 UNCONFIRMED = 0.3  # the second transcriber did not hear the note at that pitch
@@ -246,17 +248,25 @@ def load_transcription(path: Path) -> list[dict]:
             for inst in pm.instruments if not inst.is_drum for n in inst.notes]
 
 
-def without_overtones(raw: list[dict]) -> list[dict]:
+def without_overtones(raw: list[dict], second: list[dict] | None = None) -> list[dict]:
     """`raw` without the notes that are an overtone of a lower note sounding through them.
 
     A transcriber hears a plucked string's partials as notes of their own, starting a little after the
-    string does. In a bass line they would cut the real note short and send the hand up the neck."""
+    string does. In a bass line they would cut the real note short and send the hand up the neck.
+
+    A player also plays those intervals over a note that still rings: a popped octave over a slapped
+    root, root and octave in eighths, a line moving over a held root. Such a note starts well after the
+    lower one (more than OVERTONE_PLAYED after its onset), and the second transcriber, which follows
+    one line, hears it at its own pitch: with both signs it is kept. Without a second transcriber
+    there is nothing to tell the two apart, and the interval over a sounding note is left out."""
     by_onset = sorted(raw, key=lambda n: n["onset"])
     kept = []
     for n in by_onset:
         half = n["onset"] + OVERTONE_COVER * (n["offset"] - n["onset"])
-        if not any(n["pitch"] - low["pitch"] in OVERTONES and low["onset"] <= n["onset"] + OVERTONE_LATE and low["offset"] >= half
-                   for low in by_onset if low is not n):
+        under = [low for low in by_onset if low is not n and n["pitch"] - low["pitch"] in OVERTONES
+                 and low["onset"] <= n["onset"] + OVERTONE_LATE and low["offset"] >= half]
+        played = bool(second) and _heard(second, n, n["pitch"]) and all(n["onset"] - low["onset"] > OVERTONE_PLAYED for low in under)
+        if not under or played:
             kept.append(n)
     return kept
 
@@ -281,13 +291,17 @@ def octave_outliers(line: list[dict], second: list[dict] | None) -> list[int]:
 
 
 def stray_notes(line: list[dict], second: list[dict] | None) -> list[int]:
-    """Indices of the notes of `line` that are not the bass: they stand above their neighbours as an octave
-    outlier does, and the second transcriber heard neither them nor their lower octave. On a separated
-    stem these are what is left of the other instruments; in the benchmark one in a hundred is a real note."""
+    """Indices of the notes of `line` that are left out as not the bass. All of this must hold: the note
+    stands above its neighbours as an octave outlier does, the second transcriber heard neither it nor its
+    lower octave, and Basic Pitch heard it faintly (under AMPLITUDE_DOUBT) and briefly (under STRAY_SECONDS).
+
+    A high note that is only unconfirmed stays in the line with a confidence under DOUBT: it may be a
+    fill the second transcriber missed, and a wrong note with a "?" is better than a missing fill."""
     if not second:
         return []
     return [j for j, n in enumerate(line) if _stands_above(line, j)
-            and not _heard(second, n, n["pitch"]) and not _heard(second, n, n["pitch"] - 12)]
+            and not _heard(second, n, n["pitch"]) and not _heard(second, n, n["pitch"] - 12)
+            and n.get("amplitude", 1.0) < AMPLITUDE_DOUBT and n["offset"] - n["onset"] < STRAY_SECONDS]
 
 
 def _stands_above(line: list[dict], j: int) -> bool:
@@ -345,7 +359,8 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     downs = np.where(pos == 1)[0]
     if len(downs) < 2:
         raise ValueError("fewer than two downbeats tracked: no bars to write")
-    heard = without_overtones(raw)
+    second = second or None  # a second transcriber that heard nothing has no opinion
+    heard = without_overtones(raw, second)
     bottom = line(heard, 0, 127, top=False)
     if not bottom:
         raise ValueError("no bass notes heard in the recording")
@@ -354,6 +369,7 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     moved = set(octave_outliers(bottom, second)) if octave == "auto" else set()
     bottom = [{**n, "pitch": n["pitch"] - 12} if j in moved else n for j, n in enumerate(bottom)]
     bottom = [{**n, "confidence": note_confidence(n, second)} for n in bottom]
+    moved_at = {(n["onset"], n["pitch"]) for j, n in enumerate(bottom) if j in moved}
     beats_per_bar = int(Counter(np.diff(downs)).most_common(1)[0][0])
     first_down = int(downs[0])
     onsets = np.array([n["onset"] for n in bottom])
@@ -371,12 +387,14 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     starts = [int(q.start) for q, _ in written]
     notes = [{"pitch": int(q.pitch) + shift, "start": int(q.start - pickup),
               "dur": straight_length(int(q.start), int(w.dur), starts[i + 1] if i + 1 < len(starts) else None),
-              "confidence": float(q.confidence), "onset_s": float(q.onset_s), "offset_s": float(q.offset_s)}
+              "confidence": float(q.confidence), "onset_s": float(q.onset_s), "offset_s": float(q.offset_s),
+              **({"octave_moved": True} if (q.onset_s, q.pitch) in moved_at else {})}
              for i, (q, w) in enumerate(written)]
     name, fifths = key_of([n["start"] / TICKS_PER_BEAT for n in notes], [n["dur"] / TICKS_PER_BEAT for n in notes],
                           [n["pitch"] for n in notes])
     return {"ticks_per_beat": TICKS_PER_BEAT, "notes": notes, "octave_shift": shift,
-            "octave_source": "auto" if octave == "auto" else "chosen", "octave_notes_moved": len(moved),
+            "octave_source": "auto" if octave == "auto" else "chosen",
+            "octave_notes_moved": sum(n.get("octave_moved", False) for n in notes),
             "overtones_dropped": len(raw) - len(heard), "strays_dropped": len(strays),
             "meter": {"beats": beats_per_bar, "beat_unit": 4},
             "key": {"name": name, "fifths": int(fifths), "mode": "minor" if name.endswith("m") else "major"},
@@ -577,7 +595,11 @@ def build(title: str, params: dict) -> Pipeline:
     st.append(P._transcribe("bass", "basic-pitch", "bp", bass, None, retune=whole))
     # A second opinion on the same audio, for each note's confidence (note_confidence). It is this profile's own
     # stage: beats, stems and Basic Pitch are still the ones pop-rock runs.
-    st.append(P._transcribe("bass", "swift-f0", "sw", bass, None))
+    # On a whole recording it hears the same retuned audio as Basic Pitch: two transcribers a few cents apart
+    # would round an out-of-tune note to different pitches, and the disagreement would read as doubt.
+    st.append(Stage("transcribe.bass.swift-f0", "transcribe", {"audio": bass}, tuning.transcribe if whole else S.transcribe,
+                    adapter="swift-f0", params={"output": "bass-sw.mid"}, outputs=("bass-sw.mid",),
+                    derive=tuning.derive if whole else None))
     # Only what differs from the defaults, so a job that chooses neither keeps its cache entry.
     heard = {**({"whole_recording": True} if whole else {}), **({"octave": opts["octave"]} if opts["octave"] != "auto" else {})}
     st.append(Stage("notes", "notes", {"beats": Input("beats", "mix.beats"), "audio": Input(SOURCE),

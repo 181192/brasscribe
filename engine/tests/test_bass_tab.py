@@ -190,8 +190,43 @@ def test_a_recording_of_the_bass_alone_is_not_separated_and_is_retuned_like_any_
     t = p.stage("transcribe.bass.basic-pitch")
     assert t.inputs["audio"].stage == "source" and t.derive is tuning.derive and t.run is tuning.transcribe
     assert p.stage("notes").params == {"whole_recording": True}
-    second = p.stage("transcribe.bass.swift-f0")  # SwiftF0 hears the recording as it is: only Basic Pitch is retuned
-    assert second.inputs["audio"].stage == "source" and second.derive is None and second.run is S.transcribe
+    second = p.stage("transcribe.bass.swift-f0")  # SwiftF0 hears the same retuned recording as Basic Pitch
+    assert second.inputs["audio"].stage == "source" and second.derive is tuning.derive and second.run is tuning.transcribe
+
+
+def test_both_transcribers_hear_a_sharp_recording_retuned_by_the_same_amount(tmp_path):
+    sf = pytest.importorskip("soundfile")
+    sr, cents = 22050, 30.0
+    t = np.arange(4 * sr) / sr
+    tone = sum(np.sin(2 * np.pi * f * 2 ** (cents / 1200) * k * t) / k for f in (55.0, 82.41) for k in (1, 2, 3, 4))
+    sf.write(tmp_path / "sharp.wav", 0.2 * tone, sr)
+    p = profiles.build("bass-tab", tmp_path / "sharp.wav", params={"recording": "instrument"})
+    shifts = {}
+    for name in ("transcribe.bass.basic-pitch", "transcribe.bass.swift-f0"):
+        params, facts = p.stage(name).derive({"audio": tmp_path / "sharp.wav"})
+        shifts[name] = params["retune"]["shift_cents"]
+        assert facts["retuned"] is True
+    assert shifts["transcribe.bass.basic-pitch"] == shifts["transcribe.bass.swift-f0"] and abs(shifts["transcribe.bass.swift-f0"] + cents) <= 2
+
+    # Each stage transcribes the retuned audio and puts its notes back on the recording's timeline.
+    seen = []
+
+    class Ctx:
+        out, inputs = tmp_path, {"audio": tmp_path / "sharp.wav"}
+        params = {"output": "bass-sw.mid", "retune": {"shift_cents": shifts["transcribe.bass.swift-f0"]}}
+        stage = p.stage("transcribe.bass.swift-f0")
+
+        def log(self, message):
+            seen.append(message)
+
+        def adapter(self, name, src, dst, env=None):
+            seen.append((name, tuning.estimate_file(src)[0]))
+            _write_midi(dst, _played([A1, E1 + 12]))
+
+    p.stage("transcribe.bass.swift-f0").run(Ctx())
+    name, heard_cents = seen[-1]
+    assert name == "swift-f0" and abs(heard_cents) < 3  # SwiftF0 was given the recording at A = 440
+    assert [n["pitch"] for n in bass_tab.load_transcription(tmp_path / "bass-sw.mid")] == [A1, E1 + 12]
 
 
 def test_the_instrument_is_a_parameter_of_the_fingering_stage_only():
@@ -357,12 +392,57 @@ def test_an_overtone_of_a_sounding_note_is_left_out_and_a_played_octave_is_kept(
     kept = bass_tab.without_overtones([string, octave, twelfth, played, late, fifth])
     assert kept == [string, fifth, late, played]
     assert bass_tab.without_overtones([]) == [] and bass_tab.without_overtones([octave]) == [octave]
+    # The second transcriber heard the string, not its partials: they are still left out.
+    assert bass_tab.without_overtones([string, octave, twelfth], [_note(E1, 0.0, 1.0)]) == [string]
+    # A partial it did hear, but which started with the string, is the string's attack, not a played note.
+    assert bass_tab.without_overtones([string, _note(E1 + 12, 0.05, 0.4)], [_note(E1 + 12, 0.0, 0.5)]) == [string]
     # An overtone that started before its string was heard is not one.
     early = _note(E1 + 12, 0.0, 0.5)
     assert bass_tab.without_overtones([early, _note(E1, 0.1, 1.0)])[0] == early
 
     doc = bass_tab.transcribed_line([_note(p, 0.5 * i) for i, p in enumerate(LOW_LINE)] + [_note(LOW_LINE[2] + 12, 1.1, 0.3)], _beats())
     assert [n["pitch"] for n in doc["notes"]] == LOW_LINE and doc["overtones_dropped"] == 1
+
+
+def _pitches_written(heard: list[dict], second: list[dict]) -> list[int]:
+    return [n["pitch"] for n in bass_tab.transcribed_line(heard, _beats(33), second=second)["notes"]]
+
+
+def test_octaves_played_over_a_ringing_root_are_kept():
+    # Slap and pop: the root is slapped on the beat and rings on, the octave is popped on the off-beat over it.
+    root, octave = 33, 45
+    heard, second = [], []
+    for bar in range(4):
+        for beat in range(4):
+            t = bar * 2.0 + beat * 0.5
+            heard += [_note(root, t, 0.48), _note(octave, t + 0.25, 0.2, amplitude=0.6)]
+            second += [_note(root, t, 0.24), _note(octave, t + 0.25, 0.2)]  # one line: root, then octave
+    assert _pitches_written(heard, second) == [root, octave] * 16
+    assert len(bass_tab.without_overtones(heard, second)) == len(heard)
+    # The same sound without a second opinion cannot be told from overtones: the octaves are left out.
+    assert set(_pitches_written(heard, [])) == {root}
+
+
+def test_root_and_octave_in_eighths_are_kept_with_the_root_held_through():
+    heard, second = [], []
+    for i in range(16):
+        t = 0.5 * i
+        heard += [_note(28, t, 0.5), _note(40, t + 0.25, 0.25)]  # Basic Pitch holds each root through its octave
+        second += [_note(28, t, 0.25), _note(40, t + 0.25, 0.25)]
+    assert _pitches_written(heard, second) == [28, 40] * 16
+    # A twelfth played the same way is kept too.
+    twelfths = [n if n["pitch"] == 28 else {**n, "pitch": 47} for n in heard]
+    assert _pitches_written(twelfths, [n if n["pitch"] == 28 else {**n, "pitch": 47} for n in second]) == [28, 47] * 16
+
+
+def test_a_line_moving_over_a_held_root_is_kept_and_its_overtones_are_not():
+    upper = [45, 52, 57, 52, 45, 52, 57, 52]  # an octave, a twelfth and two octaves above a held A, among others
+    heard = [_note(33, 0.0, 4.0)] + [_note(p, 0.5 * i + 0.25, 0.4) for i, p in enumerate(upper)]
+    second = [_note(33, 0.0, 0.25)] + [_note(p, 0.5 * i + 0.25, 0.4) for i, p in enumerate(upper)]
+    assert _pitches_written(heard, second) == [33] + upper
+    # The held root's own partials, heard by Basic Pitch alone a moment after it starts, still go.
+    ghosts = [_note(45, 0.04, 0.2, amplitude=0.3), _note(52, 0.06, 0.15, amplitude=0.3)]
+    assert _pitches_written(heard + ghosts, second) == [33] + upper
 
 
 def test_a_single_note_heard_an_octave_high_is_moved_when_both_signs_agree():
@@ -390,30 +470,52 @@ def test_a_single_note_heard_an_octave_high_is_moved_when_both_signs_agree():
 
     doc = bass_tab.transcribed_line(heard, _beats(), second=second)
     assert [n["pitch"] for n in doc["notes"]] == low and doc["octave_notes_moved"] == 1 and doc["octave_shift"] == 0
+    # The moved note says so, and is as sure as any note both transcribers heard: no "?".
+    assert [n.get("octave_moved", False) for n in doc["notes"]] == [False] * 4 + [True] + [False] * 5
+    assert doc["notes"][4]["confidence"] == doc["notes"][3]["confidence"] == 0.9
     chosen = bass_tab.transcribed_line(heard, _beats(), "0", second)  # the player chose the octave: no note is moved
     assert chosen["notes"][4]["pitch"] == 48 and chosen["octave_notes_moved"] == 0
     tab = bass_tab.fingered({**doc, "reference_pitch": None}, bass_tab.options({}), _fake_solver([]))
-    assert tab["octave_notes_moved"] == 1
+    assert tab["octave_notes_moved"] == 1 and m.Tab.model_validate({**tab, "layout": "tab", "adjusted_notes": 0}).notes[4].octave_moved
 
 
-def test_a_high_note_neither_transcriber_places_in_the_line_is_left_out():
+def test_a_high_note_is_left_out_only_when_it_is_faint_short_and_unheard_by_the_second_transcriber():
     low = [33, 33, 35, 33, 36, 33, 35, 33, 31, 33]
     second = [_note(p, 0.5 * i) for i, p in enumerate(low)]
     heard = [_note(p, 0.5 * i) for i, p in enumerate(low)]
-    heard.insert(5, _note(50, 2.2, 0.2))  # a guitar note left in the stem: SwiftF0 has the bass note there, not this
-    heard.insert(8, _note(46, 3.2, 0.2))  # another, where SwiftF0 has nothing at this pitch or an octave below
+    heard.insert(5, _note(50, 2.2, 0.15, amplitude=0.3))  # what is left of a guitar in the stem: faint and short
+    heard.insert(8, _note(46, 3.2, 0.15, amplitude=0.3))
     assert bass_tab.stray_notes(heard, second) == [5, 8]
     assert bass_tab.stray_notes(heard, None) == []
     assert bass_tab.stray_notes(heard, second + [_note(50, 2.2, 0.2)]) == [8]  # heard by both: a note
     assert bass_tab.stray_notes(heard, second + [_note(38, 2.2, 0.2)]) == [8]  # heard an octave lower: one to move, not to drop
-    in_line = [_note(p, 0.5 * i) for i, p in enumerate(low)]
-    assert bass_tab.stray_notes(in_line, []) == [] and bass_tab.stray_notes(in_line, [_note(60, 0.0)]) == []  # doubt, not removal
-
     doc = bass_tab.transcribed_line(heard, _beats(), second=second)
     assert [n["pitch"] for n in doc["notes"]] == low and doc["strays_dropped"] == 2
-    # When the second transcriber heard nothing at all, the line stays as the first heard it.
-    alone = bass_tab.transcribed_line([_note(40, 0.0), _note(52, 0.5), _note(40, 1.0), _note(40, 1.5)], _beats(), second=[_note(90, 9.0)])
-    assert [n["pitch"] for n in alone["notes"]] == [40, 40, 40] and alone["strays_dropped"] == 1
+
+    # A fill up the neck that the second transcriber missed: clearly played (loud, or long), so it stays, with a "?".
+    for fill in (_note(50, 2.2, 0.15, amplitude=0.7), _note(50, 2.2, 0.25, amplitude=0.3)):
+        with_fill = [_note(p, 0.5 * i) for i, p in enumerate(low)]
+        with_fill.insert(5, fill)
+        assert bass_tab.stray_notes(with_fill, second) == []
+        doc = bass_tab.transcribed_line(with_fill, _beats(), second=second)
+        kept = [n for n in doc["notes"] if n["pitch"] == 50]
+        assert len(kept) == 1 and kept[0]["confidence"] < bass_tab.DOUBT and doc["strays_dropped"] == 0
+        assert sum(n["confidence"] < bass_tab.DOUBT for n in doc["notes"]) == 1
+    # A whole fill of several notes: every one kept and marked.
+    run = [_note(p, 0.5 * i) for i, p in enumerate(low) if i != 4]
+    run[4:4] = [_note(p, 2.0 + 0.125 * k, 0.11, amplitude=0.6) for k, p in enumerate((48, 50, 52, 53))]  # sixteenths
+    doc = bass_tab.transcribed_line(run, _beats(), second=second[:4] + second[5:])  # it heard nothing during the fill
+    assert doc["strays_dropped"] == 0 and [n["pitch"] for n in doc["notes"]][4:8] == [48, 50, 52, 53]
+    assert all(n["confidence"] < bass_tab.DOUBT for n in doc["notes"][4:8])
+
+
+def test_a_second_transcriber_that_heard_nothing_is_no_opinion():
+    line = [_note(p, 0.5 * i, amplitude=0.8) for i, p in enumerate(LOW_LINE)]
+    line[3] = _note(LOW_LINE[3], 1.5, amplitude=0.2)
+    silent = bass_tab.transcribed_line(line, _beats(), second=[])
+    alone = bass_tab.transcribed_line(line, _beats(), second=None)
+    assert [n["confidence"] for n in silent["notes"]] == [n["confidence"] for n in alone["notes"]]
+    assert [n["confidence"] < bass_tab.DOUBT for n in silent["notes"]] == [i == 3 for i in range(len(LOW_LINE))]  # the faint one only
 
 
 def test_confidence_is_the_second_transcribers_agreement_and_the_amplitude():

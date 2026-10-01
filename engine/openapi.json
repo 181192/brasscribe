@@ -3117,7 +3117,7 @@
           },
           "confidence": {
             "default": 1.0,
-            "description": "0 to 1. Below 0.4 the note is one to check (the tab marks it \"?\"): the second transcriber did not hear it at this pitch, or it was heard faintly, or it was written an octave from where it was heard",
+            "description": "0 to 1. Below 0.4 the note is one to check (the tab marks it \"?\"): the second transcriber did not hear it at this pitch, or, where there is no second opinion, it was heard faintly",
             "title": "Confidence",
             "type": "number"
           },
@@ -3136,6 +3136,12 @@
               }
             ],
             "title": "Fret"
+          },
+          "octave_moved": {
+            "default": false,
+            "description": "written an octave below where Basic Pitch heard it, where the second transcriber heard it. Its confidence is that of any note both heard: in the benchmark four in five of these are right, so it gets no \"?\"",
+            "title": "Octave Moved",
+            "type": "boolean"
           },
           "offset_s": {
             "anyOf": [

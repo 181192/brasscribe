@@ -915,34 +915,34 @@
       }
     },
     "bass-tab": {
-      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
+      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
       "metrics": {
-        "song.onset_f1": 0.867,
-        "song.onset_p": 0.901,
-        "song.onset_r": 0.84,
+        "song.onset_f1": 0.86,
+        "song.onset_p": 0.887,
+        "song.onset_r": 0.839,
         "song.octave_err_rate": {
-          "value": 0.011,
+          "value": 0.013,
           "higher_is_better": false
         },
         "song.out_of_range": {
-          "value": 0.0,
+          "value": 0.001,
           "higher_is_better": false
         },
         "song.hand_travel": {
-          "value": 0.69,
+          "value": 0.92,
           "higher_is_better": false,
           "tolerance": 0.05
         },
         "song.high_fret_share": {
-          "value": 0.018,
+          "value": 0.031,
           "higher_is_better": false
         },
         "song.triplet_lengths": {
           "value": 0.0,
           "higher_is_better": false
         },
-        "song.doubt_precision": 0.916,
-        "song.doubt_recall": 0.264,
+        "song.doubt_precision": 0.936,
+        "song.doubt_recall": 0.355,
         "song.tempo_ok": 0.7,
         "song.tempo_ok_level": 0.7,
         "song.meter_ok": 0.769,
@@ -955,8 +955,8 @@
           "value": 16,
           "tolerance": 0
         },
-        "instrument.onset_f1": 0.889,
-        "instrument.onset_p": 0.927,
+        "instrument.onset_f1": 0.888,
+        "instrument.onset_p": 0.925,
         "instrument.onset_r": 0.86,
         "instrument.octave_err_rate": {
           "value": 0.002,
@@ -967,20 +967,20 @@
           "higher_is_better": false
         },
         "instrument.hand_travel": {
-          "value": 0.608,
+          "value": 0.623,
           "higher_is_better": false,
           "tolerance": 0.05
         },
         "instrument.high_fret_share": {
-          "value": 0.0,
+          "value": 0.004,
           "higher_is_better": false
         },
         "instrument.triplet_lengths": {
           "value": 0.0,
           "higher_is_better": false
         },
-        "instrument.doubt_precision": 0.937,
-        "instrument.doubt_recall": 0.256,
+        "instrument.doubt_precision": 0.923,
+        "instrument.doubt_recall": 0.272,
         "instrument.tempo_ok": 0.6,
         "instrument.tempo_ok_level": 0.7,
         "instrument.meter_ok": 0.692,
@@ -991,6 +991,118 @@
         },
         "instrument.tracks": {
           "value": 16,
+          "tolerance": 0
+        },
+        "low_e.song.onset_f1": 0.885,
+        "low_e.song.octave_err_rate": {
+          "value": 0.015,
+          "higher_is_better": false
+        },
+        "low_e.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "low_e.song.hand_travel": {
+          "value": 0.742,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "low_e.song.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "low_e.song.doubt_precision": 1.0,
+        "low_e.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "low_e.song.tracks": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "low_e.instrument.onset_f1": 0.873,
+        "low_e.instrument.octave_err_rate": {
+          "value": 0.005,
+          "higher_is_better": false
+        },
+        "low_e.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "low_e.instrument.hand_travel": {
+          "value": 0.754,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "low_e.instrument.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "low_e.instrument.doubt_precision": 1.0,
+        "low_e.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "low_e.instrument.tracks": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "low_b.song.onset_f1": 0.729,
+        "low_b.song.octave_err_rate": {
+          "value": 0.047,
+          "higher_is_better": false
+        },
+        "low_b.song.out_of_range": {
+          "value": 0.008,
+          "higher_is_better": false
+        },
+        "low_b.song.hand_travel": {
+          "value": 0.796,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "low_b.song.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "low_b.song.doubt_precision": 0.767,
+        "low_b.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "low_b.song.tracks": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "low_b.instrument.onset_f1": 0.745,
+        "low_b.instrument.octave_err_rate": {
+          "value": 0.054,
+          "higher_is_better": false
+        },
+        "low_b.instrument.out_of_range": {
+          "value": 0.008,
+          "higher_is_better": false
+        },
+        "low_b.instrument.hand_travel": {
+          "value": 0.743,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "low_b.instrument.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "low_b.instrument.doubt_precision": 0.696,
+        "low_b.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "low_b.instrument.tracks": {
+          "value": 4,
           "tolerance": 0
         }
       }

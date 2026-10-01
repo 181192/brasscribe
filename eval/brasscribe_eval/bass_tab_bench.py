@@ -11,9 +11,19 @@ Rust core, so the numbers are those of a job's tab.json.
 The reference is at sounding pitch. Slakh writes bass an octave above where its patches sound; that is
 checked per stem on the rendered audio (sounding_shift) rather than assumed, and stored with the reference.
 
-    python -m brasscribe_eval.bass_tab_bench build <slakh root> [--data DIR]     reference.json per track
+A second set covers what Slakh's lines never reach, the bottom of the instrument: lines written here
+between B0 and E2 and rendered with FluidSynth and the MuseScore General SoundFont (`synthesize`), alone
+and under drums and a keyboard. Its numbers are reported apart from Slakh's, as low_e and low_b.
+
+Both sets are rendered instruments. Nothing here measures a real recording.
+
+    python -m brasscribe_eval.bass_tab_bench build <slakh root> [--data DIR]     reference.json per Slakh track
+    python -m brasscribe_eval.bass_tab_bench synthesize [--data DIR]             the low-register set (FluidSynth)
     python -m brasscribe_eval.bass_tab_bench prepare <slakh root> [--data DIR]   run the models (GPU)
     python -m brasscribe_eval.bass_tab_bench report [--data DIR]                 per-track numbers
+
+It runs on a computer that has the data and the models, not in CI: `brasscribe bench bass-tab` scores
+what `prepare` left next to the data, `--mode live` builds and prepares what is missing.
 """
 
 from __future__ import annotations
@@ -39,14 +49,14 @@ SECOND = True  # SwiftF0 confirms Basic Pitch's notes, as in the profile; False 
 
 # ---------------------------------------------------------------- the reference
 
-def sounding_shift(audio: np.ndarray, sr: int, notes: list[dict], max_notes: int = 60) -> int:
+def sounding_shift(audio: np.ndarray, sr: int, notes: list[dict], max_notes: int = 60, lowest: int = 36) -> int:
     """0 when the stem sounds at the MIDI's pitches, -12 when it sounds an octave below them.
 
     For each longer note, the spectrum of its sound is read at the partials an octave-lower tone would
     add between those of the written pitch (0.5 f, 1.5 f, 2.5 f). A tone at the written pitch has
     nothing there; one an octave lower has its odd partials there. The median over the notes decides."""
     ratios = []
-    long = [n for n in notes if n["offset"] - n["onset"] >= 0.2 and n["pitch"] >= 36][:max_notes]
+    long = [n for n in notes if n["offset"] - n["onset"] >= 0.2 and n["pitch"] >= lowest][:max_notes]
     for n in long:
         a, b = int((n["onset"] + 0.03) * sr), int(min(n["offset"], n["onset"] + 0.6) * sr)
         seg = audio[a:b]
@@ -110,12 +120,20 @@ FILES = {"song": {"beats": "song.beats", "bp": "song-bp.mid", "sw": "song-sw.mid
          "instrument": {"beats": "alone.beats", "bp": "alone-bp.mid", "sw": "alone-sw.mid"}}
 
 
-def prepare(entry: Path, track: Path) -> None:
+def audio_of(entry: Path, slakh: Path | None) -> tuple[Path, Path]:
+    """The full mix and the bass alone of an entry: a Slakh track's files, or the synthesized ones kept with it."""
+    ref = json.loads((entry / "reference.json").read_text())
+    if "stem" in ref:
+        if slakh is None:
+            raise FileNotFoundError(f"{entry.name} needs the Slakh tracks")
+        return Path(slakh) / entry.name / "mix.wav", Path(slakh) / entry.name / "stems" / f"{ref['stem']}.wav"
+    return entry / "mix.wav", entry / "bass.wav"
+
+
+def prepare(entry: Path, mix: Path, stem: Path) -> None:
     """Run the models an entry still lacks: Beat This!, the separator, Basic Pitch and SwiftF0."""
     from .suites import _run_adapter, _run_retuned
 
-    ref = json.loads((entry / "reference.json").read_text())
-    mix, stem = track / "mix.wav", track / "stems" / f"{ref['stem']}.wav"
     if not (entry / "song.beats").exists():
         _run_adapter("beat-this", mix, entry / "song.beats")
     if not (entry / "alone.beats").exists():
@@ -126,7 +144,7 @@ def prepare(entry: Path, track: Path) -> None:
             _run_adapter("separator", mix, Path(tmp))
             found = [p for p in Path(tmp).glob("*.wav") if "_(bass)_" in p.name.lower()]
             if not found:
-                raise RuntimeError(f"the separator wrote no bass stem for {track.name}")
+                raise RuntimeError(f"the separator wrote no bass stem for {entry.name}")
             shutil.move(str(found[0]), separated)
     if not (entry / "song-bp.mid").exists():
         _run_adapter("basic-pitch", separated, entry / "song-bp.mid")  # a stem is not retuned
@@ -135,12 +153,107 @@ def prepare(entry: Path, track: Path) -> None:
     if not (entry / "song-sw.mid").exists():
         _run_adapter("swift-f0", separated, entry / "song-sw.mid")
     if not (entry / "alone-sw.mid").exists():
-        _run_adapter("swift-f0", stem, entry / "alone-sw.mid")
+        _run_retuned("swift-f0", stem, entry / "alone-sw.mid")  # the same retuned recording as Basic Pitch
 
 
-def entries(data: Path) -> list[Path]:
-    root = Path(data) / "eval" / SET
+def entries(data: Path, eval_set: str = SET) -> list[Path]:
+    root = Path(data) / "eval" / eval_set
     return sorted(p for p in root.iterdir() if (p / "reference.json").exists()) if root.is_dir() else []
+
+
+# ---------------------------------------------------------------- the low register, synthesized
+
+# Slakh's bass lines sit between B1 and G3. Nothing in them is on the E string below the 7th fret, on a
+# five-string's B string, or under SwiftF0's floor (F#1). These lines are: written here, rendered with
+# FluidSynth and the MuseScore General SoundFont (MIT), alone and under drums and a keyboard.
+SYNTH_SET = "synth-bass"
+SOUNDFONT = "soundfonts/MuseScore_General.sf2"
+SYNTH_SR = 44100
+# group -> (lowest root, the job's instrument). low-e: E1 to B1 and a little above, a four-string's bottom
+# string. low-b: B0 to E1 and a little above, a five-string's.
+GROUPS = {"low-e": (28, "bass-4"), "low-b": (23, "bass-5")}
+PATTERNS = ("eighths", "walk", "octaves", "syncopated")
+PROGRESSION = (0, 5, 7, 3)  # semitones over the lowest root, one per bar
+BARS = 16
+
+
+def synth_line(group: str, pattern: str, bpm: float) -> list[dict]:
+    """A bass line in the group's register: {pitch, onset, offset}, 4/4, BARS bars, from beat 0 after one bar's rest."""
+    low, _ = GROUPS[group]
+    beat = 60 / bpm
+    notes = []
+
+    def add(pitch: int, at: float, length: float) -> None:
+        notes.append({"pitch": int(pitch), "onset": round((4 + at) * beat, 6), "offset": round((4 + at + length * 0.9) * beat, 6)})
+
+    for bar in range(BARS):
+        root = low + PROGRESSION[bar % 4]
+        at = 4 * bar
+        if pattern == "eighths":  # the root in eighths, a fifth to end the bar
+            for k in range(8):
+                add(root + (7 if k == 7 else 0), at + k / 2, 0.5)
+        elif pattern == "walk":  # quarters up the scale and back
+            for k, step in enumerate((0, 2, 4, 5) if bar % 2 == 0 else (7, 5, 4, 2)):
+                add(root + step, at + k, 1)
+        elif pattern == "octaves":  # root and octave in eighths
+            for k in range(8):
+                add(root + (12 if k % 2 else 0), at + k / 2, 0.5)
+        else:  # dotted quarter, eighth tied over, two eighths
+            for start, length, step in ((0, 1.5, 0), (1.5, 1.0, 0), (2.5, 0.5, 7), (3, 0.5, 0), (3.5, 0.5, 5)):
+                add(root + step, at + start, length)
+    return notes
+
+
+def _render(tracks: list[tuple[int, bool, list[tuple[int, float, float, int]]]], bpm: float, soundfont: Path, dst: Path) -> None:
+    """FluidSynth's render of tracks of (program, is_drum, [(pitch, onset, offset, velocity)])."""
+    import subprocess
+
+    import pretty_midi
+
+    pm = pretty_midi.PrettyMIDI(initial_tempo=bpm)
+    for program, is_drum, notes in tracks:
+        inst = pretty_midi.Instrument(program=program, is_drum=is_drum)
+        inst.notes = [pretty_midi.Note(velocity=v, pitch=p, start=a, end=b) for p, a, b, v in notes]
+        pm.instruments.append(inst)
+    with tempfile.TemporaryDirectory() as tmp:
+        mid = Path(tmp) / "x.mid"
+        pm.write(str(mid))
+        subprocess.run(["fluidsynth", "-ni", "-q", "-R", "0", "-C", "0", "-g", "0.6", "-r", str(SYNTH_SR), "-F", str(dst),
+                        str(soundfont), str(mid)], check=True, capture_output=True)
+
+
+def synthesize(data: Path) -> list[Path]:
+    """The low-register entries: reference.json, bass.wav (the bass alone) and mix.wav (with drums and a keyboard)."""
+    import soundfile as sf
+
+    soundfont = Path(data) / SOUNDFONT
+    made = []
+    for group, (low, instrument) in GROUPS.items():
+        for i, pattern in enumerate(PATTERNS):
+            bpm = (96.0, 120.0, 108.0, 84.0)[i]
+            beat = 60 / bpm
+            line = synth_line(group, pattern, bpm)
+            bass = (33, False, [(n["pitch"], n["onset"], n["offset"], 100) for n in line])  # Electric Bass (finger)
+            drums, keys = [], []
+            for bar in range(BARS + 1):
+                t = 4 * bar * beat
+                drums += [(36, t + k * 2 * beat, t + k * 2 * beat + 0.1, 100) for k in range(2)]  # kick on 1 and 3
+                drums += [(38, t + (1 + 2 * k) * beat, t + (1 + 2 * k) * beat + 0.1, 90) for k in range(2)]  # snare on 2 and 4
+                drums += [(42, t + k * beat / 2, t + k * beat / 2 + 0.05, 60) for k in range(8)]  # hi-hat eighths
+                if bar:
+                    root = 48 + (low + PROGRESSION[(bar - 1) % 4]) % 12
+                    keys += [(root + iv, t, t + 3.8 * beat, 70) for iv in (0, 4, 7)]  # a triad around middle C
+            dest = Path(data) / "eval" / SYNTH_SET / f"{group}-{pattern}"
+            dest.mkdir(parents=True, exist_ok=True)
+            _render([bass], bpm, soundfont, dest / "bass.wav")
+            _render([bass, (0, True, drums), (4, False, keys)], bpm, soundfont, dest / "mix.wav")
+            audio, sr = sf.read(str(dest / "bass.wav"), dtype="float64", always_2d=True)
+            shift = sounding_shift(audio.mean(axis=1), sr, line, lowest=0)
+            (dest / "reference.json").write_text(json.dumps({
+                "group": group, "pattern": pattern, "params": {"instrument": instrument}, "written_to_sounding": shift,
+                "tempo_bpm": bpm, "beats_per_bar": 4, "notes": [{**n, "pitch": n["pitch"] + shift} for n in line]}, indent=1))
+            made.append(dest)
+    return made
 
 
 # ---------------------------------------------------------------- the tab and its score
@@ -150,7 +263,8 @@ def tab_of(entry: Path, mode: str, params: dict | None = None) -> dict:
     from brasscribe_engine import bass_tab
 
     files = FILES[mode]
-    opts = bass_tab.options(params or {})
+    # An entry may say what the job would be given: a five-string for a line below E1.
+    opts = bass_tab.options({**json.loads((entry / "reference.json").read_text()).get("params", {}), **(params or {})})
     doc = bass_tab.transcribed_line(bass_tab.load_transcription(entry / files["bp"]),
                                     np.loadtxt(entry / files["beats"], ndmin=2), opts["octave"],
                                     bass_tab.load_transcription(entry / files["sw"]) if SECOND else None)
@@ -199,12 +313,14 @@ MEANS = ("onset_f1", "onset_p", "onset_r", "octave_err_rate", "out_of_range", "h
          "doubt_share", "triplet_lengths", "tempo_ok", "tempo_ok_level", "meter_ok")
 
 
-def evaluate(data: Path, mode: str, params: dict | None = None) -> tuple[dict[str, float], list[dict]]:
-    """Mean metrics over the set for one recording mode, and the per-track rows."""
+def evaluate(data: Path, mode: str, params: dict | None = None, eval_set: str = SET,
+             group: str | None = None) -> tuple[dict[str, float], list[dict]]:
+    """Mean metrics over a set (or one group of it) for one recording mode, and the per-track rows."""
     rows = []
-    for entry in entries(data):
+    for entry in entries(data, eval_set):
         ref = json.loads((entry / "reference.json").read_text())
-        rows.append({"track": entry.name, **score_tab(ref, tab_of(entry, mode, params))})
+        if group is None or ref.get("group") == group:
+            rows.append({"track": entry.name, **score_tab(ref, tab_of(entry, mode, params))})
     out = {k: float(np.mean([r[k] for r in rows if k in r])) for k in MEANS}
     out["violations"] = float(sum(r["violations"] for r in rows))
     out["octave_moved"] = float(sum(r["octave_moved"] for r in rows))
@@ -218,9 +334,9 @@ def evaluate(data: Path, mode: str, params: dict | None = None) -> tuple[dict[st
 
 def report(data: Path, params: dict | None = None) -> str:
     lines = []
-    for mode in MODES:
-        out, rows = evaluate(data, mode, params)
-        lines.append(f"{mode}: " + "  ".join(f"{k} {v:.3f}" for k, v in out.items()))
+    for eval_set, mode in [(e, m) for e in (SET, SYNTH_SET) if entries(data, e) for m in MODES]:
+        out, rows = evaluate(data, mode, params, eval_set)
+        lines.append(f"{eval_set} {mode}: " + "  ".join(f"{k} {v:.3f}" for k, v in out.items()))
         for r in rows:
             lines.append(f"  {r['track']}  f1 {r['onset_f1']:.3f} p {r['onset_p']:.3f} r {r['onset_r']:.3f}  oct {r['octave_err_rate']:.3f}"
                          f"  oor {r['out_of_range']:.3f}  travel {r['hand_travel']:.2f}  high {r['high_fret_share']:.2f}"
@@ -233,7 +349,7 @@ def main() -> None:
     from .paths import DATA
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=["build", "prepare", "report"])
+    ap.add_argument("command", choices=["build", "synthesize", "prepare", "report"])
     ap.add_argument("slakh", type=Path, nargs="?")
     ap.add_argument("--data", type=Path, default=DATA)
     args = ap.parse_args()
@@ -242,9 +358,14 @@ def main() -> None:
             ref = json.loads((d / "reference.json").read_text())
             print(f"{d.name}: {len(ref['notes'])} notes, {ref['program']}, written to sounding {ref['written_to_sounding']}, "
                   f"{ref['tempo_bpm']} BPM, {ref['beats_per_bar']} beats a bar")
+    elif args.command == "synthesize":
+        for d in synthesize(args.data):
+            ref = json.loads((d / "reference.json").read_text())
+            pitches = [n["pitch"] for n in ref["notes"]]
+            print(f"{d.name}: {len(pitches)} notes, {min(pitches)} to {max(pitches)}, written to sounding {ref['written_to_sounding']}")
     elif args.command == "prepare":
-        for d in entries(args.data):
-            prepare(d, args.slakh / d.name)
+        for d in entries(args.data) + entries(args.data, SYNTH_SET):
+            prepare(d, *audio_of(d, args.slakh))
             print(d.name, "ready", flush=True)
     else:
         print(report(args.data))

@@ -574,16 +574,30 @@ def _bass_tab(data: Path, mode: str) -> dict[str, float]:
         bass_tab.core_cli()
     except bass_tab.CoreCliMissing as e:
         raise SkipSuite(str(e)) from e
-    for entry in B.entries(data):
+    # The low register, synthesized: made in live mode where FluidSynth and the SoundFont are.
+    if not B.entries(data, B.SYNTH_SET) and mode == "live" and shutil.which("fluidsynth") and (data / B.SOUNDFONT).exists():
+        B.synthesize(data)
+    low = B.entries(data, B.SYNTH_SET)
+    for entry in B.entries(data) + low:
         missing = [f for m in B.MODES for f in B.FILES[m].values() if not (entry / f).exists()]
-        if missing and (mode != "live" or not (source / entry.name).is_dir()):
+        if missing and mode != "live":
             raise SkipSuite(f"no cached {missing[0]} for {entry.name}")
         if missing:
-            B.prepare(entry, source / entry.name)
+            try:
+                B.prepare(entry, *B.audio_of(entry, source if source.is_dir() else None))
+            except FileNotFoundError as e:
+                raise SkipSuite(str(e)) from e
     out: dict[str, float] = {}
     for m in B.MODES:
         metrics, _ = B.evaluate(data, m)
         out.update({f"{m}.{k}": v for k, v in metrics.items()})
+    # Each group of the low-register set apart: its numbers are not Slakh's.
+    labels = {g: g.replace("-", "_") for g in B.GROUPS}
+    out[SKIPPED] = [] if low else list(labels.values())
+    for group, label in labels.items() if low else ():
+        for m in B.MODES:
+            metrics, _ = B.evaluate(data, m, eval_set=B.SYNTH_SET, group=group)
+            out.update({f"{label}.{m}.{k}": v for k, v in metrics.items()})
     return out
 
 
