@@ -2,7 +2,12 @@ package no.brasscribe.play.fret
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +23,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,18 +33,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
+import no.brasscribe.design.BrasscribeScore
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.AppearanceStore
@@ -194,9 +207,23 @@ fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
 }
 
 /**
- * A picker row: the question, its answer under it, and the system's dialog of radio choices on a tap.
- * The row is one element whose name is the question and the answer; [note] is one more line of the same
- * row. A choice that isn't [Choice.available] is listed, marked [later], and can't be chosen.
+ * The family's keyboard focus ring: a 2 dp line in the focus colour (ink, paper in dark), 2 dp inside the
+ * element's edge, drawn only while the element has the keyboard's focus.
+ */
+private fun Modifier.focusRing(focused: Boolean, colour: Color): Modifier = if (!focused) this else drawWithContent {
+    drawContent()
+    val width = BrasscribeScore.focusWidth.toPx()
+    val inset = BrasscribeScore.focusGap.toPx() + width / 2
+    drawRoundRect(
+        colour, Offset(inset, inset), Size(size.width - 2 * inset, size.height - 2 * inset),
+        CornerRadius(BrasscribeSpace.s2.toPx()), Stroke(width),
+    )
+}
+
+/**
+ * A picker row: the question, its answer under it, and the system's dialog of radio choices on a tap or
+ * on Enter. The row is one element whose name is the question and the answer; [note] is one more line of
+ * the same row. A choice that isn't [Choice.available] is listed, marked [later], and can't be chosen.
  */
 @Composable
 private fun PickerRow(
@@ -207,37 +234,59 @@ private fun PickerRow(
     val c = BrasscribeTheme.colors
     val current = choices.firstOrNull { it.id == selected }
     val spoken = listOfNotNull(label, current?.spoken, note).joinToString(", ")
-    ListRow(
-        label, { open = true },
-        // One element, named once: the question, the answer and the note. The texts and the mark inside are
-        // not read again. Clearing also drops the row's own click and role, so they are set here.
-        modifier = Modifier.clearAndSetSemantics {
-            contentDescription = spoken
-            role = Role.DropdownList
-            onClick { open = true; true }
-            testTag = "fs-row-$tag"
-        },
-        subtitle = listOfNotNull(current?.label, note).joinToString("\n"),
-        chevron = false,
-        trailing = { BcIcon(R.drawable.ic_bc_choose, null, tint = c.textMuted) },
-    )
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val rowFocus = remember { FocusRequester() }
+    // When the dialog closes, the keyboard's focus is back on the row that opened it.
+    fun close() {
+        open = false
+        runCatching { rowFocus.requestFocus() }
+    }
+    // The outer box is the one element: it takes the click, the keyboard's focus and the name. The shared
+    // row inside only draws, so its texts and the mark are not read a second time.
+    Box(
+        Modifier.fillMaxWidth()
+            // Outside the click's own focus tint, so the ring is drawn over it in its own colour.
+            .focusRing(focused, c.focus)
+            .focusRequester(rowFocus)
+            .clickable(interactionSource = interaction, indication = LocalIndication.current, role = Role.DropdownList) { open = true }
+            .semantics { contentDescription = spoken }
+            .testTag("fs-row-$tag"),
+    ) {
+        ListRow(
+            label, null,
+            modifier = Modifier.clearAndSetSemantics { },
+            subtitle = listOfNotNull(current?.label, note).joinToString("\n"),
+            trailing = { BcIcon(R.drawable.ic_bc_choose, null, tint = c.textMuted) },
+        )
+    }
     if (!open) return
     AlertDialog(
-        onDismissRequest = { open = false },
+        onDismissRequest = ::close,
         title = { Text(label) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()).selectableGroup()) {
                 choices.forEach { choice ->
                     val on = choice.id == selected
                     val name = if (choice.available) choice.spoken else "${choice.spoken}, $later"
+                    val source = remember { MutableInteractionSource() }
+                    val onKeys by source.collectIsFocusedAsState()
+                    // With a keyboard, the dialog opens on the chosen one, and the arrows move from there.
+                    val start = remember { FocusRequester() }
+                    // (Asked for once the dialog's window has the focus; before that there is nothing to focus in.)
+                    val inFront = LocalWindowInfo.current.isWindowFocused
+                    if (on) LaunchedEffect(inFront) { if (inFront) runCatching { start.requestFocus() } }
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .selectable(selected = on, enabled = choice.available, role = Role.RadioButton) {
-                                onPick(choice.id); open = false
+                            .focusRing(onKeys, c.focus)
+                            .then(if (on) Modifier.focusRequester(start) else Modifier)
+                            .selectable(selected = on, interactionSource = source, indication = LocalIndication.current,
+                                enabled = choice.available, role = Role.RadioButton) {
+                                onPick(choice.id); close()
                             }
                             .semantics { contentDescription = name }
                             .testTag("fs-$tag-${choice.id}")
-                            .padding(vertical = BrasscribeSpace.s1),
+                            .padding(horizontal = BrasscribeSpace.s2, vertical = BrasscribeSpace.s1),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
                     ) {
@@ -251,6 +300,6 @@ private fun PickerRow(
                 }
             }
         },
-        confirmButton = { PlainButton(stringResource(R.string.cancel), { open = false }) },
+        confirmButton = { PlainButton(stringResource(R.string.cancel), ::close) },
     )
 }

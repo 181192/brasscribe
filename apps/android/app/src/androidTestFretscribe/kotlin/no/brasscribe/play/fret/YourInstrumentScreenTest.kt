@@ -2,6 +2,7 @@ package no.brasscribe.play.fret
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.view.KeyEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
@@ -60,7 +61,7 @@ import java.io.File
 /**
  * "Your instrument" on the device, with the accessibility checks on: asked after the first run in place
  * of Brasscribe's "What do you play?", in English and bokmål, each row one element that says its answer,
- * radio choices in the pickers, 48 dp targets, 200 % text, Not now, and the way in from Settings.
+ * radio choices in the pickers, 48 dp targets, 200 % text, the keyboard, Not now, and the way in from Settings.
  * Screenshots of the first run, Your instrument and Home, light and dark, go to the app's files,
  * fretscribe/.
  */
@@ -176,6 +177,8 @@ class YourInstrumentScreenTest {
         assertEquals("$tag: one description", 1, read.config.getOrNull(SemanticsProperties.ContentDescription)?.size)
         assertEquals("$tag: no text beside the description", null, read.config.getOrNull(SemanticsProperties.Text))
         assertEquals("$tag: nothing under it is read", emptyList<String>(), read.children.map { it.config.toString() })
+        // And it is the element a keyboard or a switch lands on.
+        assertTrue("$tag: can take the focus", read.config.contains(SemanticsProperties.Focused))
         val composed = rule.onNodeWithTag("$prefix$tag", useUnmergedTree = true).fetchSemanticsNode()
         fun words(node: SemanticsNode): List<String> = node.children.flatMap { child ->
             child.config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } +
@@ -240,8 +243,6 @@ class YourInstrumentScreenTest {
 
     @Test
     fun thePickersAreRadioGroupsWithFullSizeTargets() {
-        language("en-GB")
-        getStarted()
         val options = mapOf(
             "instrument" to listOf("bass", "guitar", "ukulele", "mandolin"),
             "strings" to listOf("4", "5", "6"),
@@ -249,30 +250,163 @@ class YourInstrumentScreenTest {
             "hand" to listOf("left", "right", "right-upside-down"),
             "reads" to listOf("tab", "tab-and-notation", "notation"),
         )
-        for ((tag, ids) in options) {
-            open(tag, ids.first())
-            // The choices are the only radio buttons, one group, in order, and exactly one is chosen.
-            val radios = rule.onAllNodes(isRadio).fetchSemanticsNodes()
-            assertEquals(tag, ids.map { "fs-$tag-$it" }, radios.map { it.config.getOrNull(SemanticsProperties.TestTag) })
-            assertEquals("$tag: one group", 1, radios.map { it.parent?.id }.distinct().size)
-            assertTrue("$tag: a group", radios.first().parent?.config?.contains(SemanticsProperties.SelectableGroup) == true)
-            assertEquals("$tag: one chosen", listOf(ids.first()), ids.filter { id ->
-                radios.first { it.config.getOrNull(SemanticsProperties.TestTag) == "fs-$tag-$id" }.config.getOrNull(SemanticsProperties.Selected) == true
-            })
-            ids.forEach { rule.onNodeWithTag("fs-$tag-$it").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp) }
+        // What each choice is called, in order, per language.
+        val names = mapOf(
+            "en-GB" to mapOf(
+                "instrument" to listOf("Bass", "Guitar, Later", "Ukulele, Later", "Mandolin, Later"),
+                "strings" to listOf("4 strings", "5 strings", "6 strings"),
+                "tuning" to listOf("Standard", "E-flat standard (half a step down)", "D standard (a whole step down)", "Drop D", "B, E, A, D"),
+                "hand" to listOf("Left hand on the neck (most players)", "Right hand on the neck (left-handed instrument)", "Right hand on the neck (instrument upside down)"),
+                "reads" to listOf("Tab", "Tab and notation", "Notation"),
+            ),
+            "nb-NO" to mapOf(
+                "instrument" to listOf("Bass", "Gitar, Senere", "Ukulele, Senere", "Mandolin, Senere"),
+                "strings" to listOf("4 strenger", "5 strenger", "6 strenger"),
+                "tuning" to listOf("Standard", "Ess-standard (en halvtone ned)", "D-standard (en heltone ned)", "Drop D", "B, E, A, D"),
+                "hand" to listOf("Venstre hånd på halsen (de fleste)", "Høyre hånd på halsen (venstrehendt instrument)", "Høyre hånd på halsen (instrumentet opp ned)"),
+                "reads" to listOf("Tab", "Tab og noter", "Noter"),
+            ),
+        )
+        for ((lang, spoken) in names) {
+            language(lang)
+            getStarted()
+            for ((tag, ids) in options) {
+                open(tag, ids.first())
+                // The choices are the only radio buttons, one group, in order, and exactly one is chosen.
+                val radios = rule.onAllNodes(isRadio).fetchSemanticsNodes()
+                assertEquals(tag, ids.map { "fs-$tag-$it" }, radios.map { it.config.getOrNull(SemanticsProperties.TestTag) })
+                assertEquals("$tag: one group", 1, radios.map { it.parent?.id }.distinct().size)
+                assertTrue("$tag: a group", radios.first().parent?.config?.contains(SemanticsProperties.SelectableGroup) == true)
+                assertEquals("$tag: one chosen", listOf(ids.first()), ids.filter { id ->
+                    radios.first { it.config.getOrNull(SemanticsProperties.TestTag) == "fs-$tag-$id" }.config.getOrNull(SemanticsProperties.Selected) == true
+                })
+                // Each is named once, in words (the flat written out, BEAD letter by letter, "Later" said).
+                assertEquals("$lang $tag", spoken.getValue(tag), radios.map { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() })
+                ids.forEach {
+                    rule.onNodeWithTag("fs-$tag-$it").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
+                    if (tag != "instrument" || it == "bass") assertSaidOnce("$tag-$it", prefix = "fs-")
+                }
+                closePicker()
+            }
+            // Only the bass can be chosen; the others are there, and off.
+            open("instrument", "bass")
+            rule.onNodeWithTag("fs-instrument-bass").assertIsEnabled().assertIsSelected()
+            listOf("guitar", "ukulele", "mandolin").forEach { rule.onNodeWithTag("fs-instrument-$it").assertIsNotEnabled().assertIsNotSelected() }
             closePicker()
         }
-        // Only the bass can be chosen; the others are there, and off.
-        open("instrument", "bass")
-        rule.onNodeWithTag("fs-instrument-bass").assertIsEnabled().assertIsSelected()
-        listOf("guitar", "ukulele", "mandolin").forEach { rule.onNodeWithTag("fs-instrument-$it").assertIsNotEnabled().assertIsNotSelected() }
-        closePicker()
-        // The flat is written out, and BEAD is spoken letter by letter; each choice is named once.
-        open("tuning", "eb-standard")
-        rule.onNodeWithTag("fs-tuning-eb-standard").assertContentDescriptionEquals("E-flat standard (half a step down)")
-        rule.onNodeWithTag("fs-tuning-bead").assertContentDescriptionEquals("B, E, A, D")
-        listOf("standard", "eb-standard", "d-standard", "drop-d", "bead").forEach { assertSaidOnce("tuning-$it", prefix = "fs-") }
-        closePicker()
+    }
+
+    private fun key(code: Int) {
+        instrumentation.sendKeyDownUpSync(code)
+        rule.waitForIdle()
+    }
+
+    /**
+     * The tag of the element with the keyboard's focus, or null. With a dialog open, the screen under it
+     * still has its own focused element; the dialog's window is the later one, and it has the keys.
+     */
+    private fun focusedTag(): String? = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
+        .fetchSemanticsNodes().lastOrNull()?.config?.getOrNull(SemanticsProperties.TestTag)
+
+    /**
+     * Whether the focus ring is drawn on the element: the focus colour on its left edge, inside the gap. Read
+     * from a screenshot of the whole screen, so an element in a dialog's window is looked at where it is shown.
+     */
+    private fun ringed(tag: String, colour: Color): Boolean {
+        rule.waitForIdle()
+        Thread.sleep(400)
+        val node = rule.onNodeWithTag(tag).fetchSemanticsNode()
+        val at = node.positionOnScreen
+        val x = at.x.toInt() + (4 * rule.activity.resources.displayMetrics.density).toInt() - 1
+        val y = at.y.toInt() + node.size.height / 2
+        val shot = checkNotNull(instrumentation.uiAutomation.takeScreenshot()) { "no screenshot" }.copy(Bitmap.Config.ARGB_8888, false)
+        val want = android.graphics.Color.argb(255, (colour.red * 255 + 0.5f).toInt(), (colour.green * 255 + 0.5f).toInt(), (colour.blue * 255 + 0.5f).toInt())
+        return shot.getPixel(x, y) == want
+    }
+
+    @Test
+    fun theKeyboardReachesEveryRowAndWorksThePickers() {
+        language("en-GB")
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        getStarted()
+        val focus = BrasscribeLightColors.focus
+        val rows = listOf("instrument", "strings", "tuning", "hand", "reads").map { "fs-row-$it" }
+        assertFalse("no ring before the keyboard is used", ringed(rows[0], focus))
+        // Tab reaches Not now, Continue and the five rows, the rows in reading order, and every row gets the
+        // ring while it has the focus. (The shared screen layout puts its docked button before the content.)
+        val order = mutableListOf<String?>()
+        repeat(7) {
+            key(KeyEvent.KEYCODE_TAB)
+            val at = focusedTag()
+            order += at
+            if (at in rows) {
+                assertTrue("$at: the focus ring is drawn", ringed(at!!, focus))
+                rows.filter { it != at }.forEach { assertFalse("$it: no ring without the focus", ringed(it, focus)) }
+            }
+        }
+        assertEquals(rows, order.filter { it in rows })
+        assertEquals(setOf("fs-not-now", "fs-keep") + rows, order.toSet())
+        assertEquals("fs-row-reads", order.last())
+        shot("your-instrument-focus-light")
+
+        // Back up to Usual tuning. Enter opens its picker with the focus on the chosen tuning.
+        repeat(2) { instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)); instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)) }
+        rule.waitForIdle()
+        assertEquals("fs-row-tuning", focusedTag())
+        key(KeyEvent.KEYCODE_ENTER)
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-standard").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { focusedTag() == "fs-tuning-standard" }
+        assertTrue("the chosen tuning has the ring", ringed("fs-tuning-standard", focus))
+        // The arrows move through the group, one choice at a time, both ways.
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        assertEquals("fs-tuning-eb-standard", focusedTag())
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        assertEquals("fs-tuning-drop-d", focusedTag())
+        assertTrue("the ring follows the arrows", ringed("fs-tuning-drop-d", focus))
+        shot("your-instrument-tuning-focus-light")
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        assertEquals("fs-tuning-d-standard", focusedTag())
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        // Moving chooses nothing; Enter does, and the focus is back on the row, which says the new answer.
+        rule.onNodeWithTag("fs-tuning-standard").assertIsSelected()
+        key(KeyEvent.KEYCODE_ENTER)
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
+        row("tuning").assertContentDescriptionEquals("Usual tuning, Drop D")
+        rule.waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
+
+        // Space opens it too, and Escape closes it with nothing changed.
+        key(KeyEvent.KEYCODE_SPACE)
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { focusedTag() == "fs-tuning-drop-d" }
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        key(KeyEvent.KEYCODE_ESCAPE)
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
+        row("tuning").assertContentDescriptionEquals("Usual tuning, Drop D")
+        rule.waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
+        // So does Back; and Space chooses in the group as Enter does.
+        key(KeyEvent.KEYCODE_ENTER)
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isNotEmpty() }
+        key(KeyEvent.KEYCODE_BACK)
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
+        row("tuning").assertContentDescriptionEquals("Usual tuning, Drop D")
+        assertEquals(listOf(Screen.WHAT_DO_YOU_PLAY), vm.screen.value)
+        rule.waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
+        key(KeyEvent.KEYCODE_SPACE)
+        rule.waitUntil(5_000) { focusedTag() == "fs-tuning-drop-d" }
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        assertEquals("fs-tuning-bead", focusedTag())
+        key(KeyEvent.KEYCODE_SPACE)
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-bead").fetchSemanticsNodes().isEmpty() }
+        row("tuning").assertContentDescriptionEquals("Usual tuning, B, E, A, D")
+        // Nothing is stored by any of it until Continue, which the keyboard reaches and presses.
+        assertEquals(YourInstrument.DEFAULT, store.load())
+        var tabs = 0
+        while (focusedTag() != "fs-keep" && tabs++ < 8) key(KeyEvent.KEYCODE_TAB)
+        assertEquals("fs-keep", focusedTag())
+        key(KeyEvent.KEYCODE_ENTER)
+        rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
+        assertEquals(YourInstrument(tuning = "bead"), store.load())
     }
 
     @Test
@@ -349,39 +483,42 @@ class YourInstrumentScreenTest {
 
     @Test
     fun choicesLeftWithoutSaveAreGoneAfterTheAppIsRestored() {
-        language("en-GB")
-        val stored = YourInstrument(strings = 5, tuning = "drop-a")
-        store.save(stored)
-        fun openFromSettings() {
+        val words = mapOf(
+            "en-GB" to listOf("You read, Notation", "Usual tuning, Standard", "You read, Tab", "Usual tuning, Drop A", "Strings, 5 strings"),
+            "nb-NO" to listOf("Du leser, Noter", "Vanlig stemming, Standard", "Du leser, Tab", "Vanlig stemming, Drop A", "Strenger, 5 strenger"),
+        )
+        for ((lang, w) in words) {
+            language(lang)
+            val stored = YourInstrument(strings = 5, tuning = "drop-a")
+            store.save(stored)
             rule.runOnUiThread { vm.home(); vm.navigate(Screen.SETTINGS); vm.openSeatPicker(SeatPickerMode.SETTINGS) }
             rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+            pick("reads", "notation")
+            pick("tuning", "standard")
+            // Restored in the middle of choosing (the activity is destroyed and made again from its saved
+            // state): the choices are still there, and still not stored.
+            rule.activityRule.scenario.recreate()
+            rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+            row("reads").assertContentDescriptionEquals(w[0])
+            row("tuning").assertContentDescriptionEquals(w[1])
+            assertEquals(stored, store.load())
+            // The app is stopped with the choices on screen, and comes back on Settings (as after the process
+            // was killed, when the screens come back from what was saved but not always to the same one): the
+            // state saved for this visit must not be picked up by the next. Back and the restore are asked for
+            // together, so the state is saved while the screen is still composed.
+            rule.runOnUiThread { vm.back(); rule.activity.recreate() }
+            rule.waitForIdle()
+            rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
+            // The row opens on what is stored, and Save stores that.
+            rule.onNodeWithTag("setting-seat").performClick()
+            rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+            row("reads").assertContentDescriptionEquals(w[2])
+            row("tuning").assertContentDescriptionEquals(w[3])
+            row("strings").assertContentDescriptionEquals(w[4])
+            rule.onNodeWithTag("fs-keep").performClick()
+            rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
+            assertEquals(stored, store.load())
         }
-        openFromSettings()
-        pick("reads", "notation")
-        pick("tuning", "standard")
-        // Restored in the middle of choosing (the activity is destroyed and made again from its saved
-        // state): the choices are still there, and still not stored.
-        rule.activityRule.scenario.recreate()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
-        row("reads").assertContentDescriptionEquals("You read, Notation")
-        row("tuning").assertContentDescriptionEquals("Usual tuning, Standard")
-        assertEquals(stored, store.load())
-        // The app is stopped with the choices on screen, and comes back on Settings (as after the process
-        // was killed, when the screens come back from what was saved but not always to the same one): the
-        // state saved for this visit must not be picked up by the next. Back and the restore are asked for
-        // together, so the state is saved while the screen is still composed.
-        rule.runOnUiThread { vm.back(); rule.activity.recreate() }
-        rule.waitForIdle()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
-        // The row opens on what is stored, and Save stores that.
-        rule.onNodeWithTag("setting-seat").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
-        row("reads").assertContentDescriptionEquals("You read, Tab")
-        row("tuning").assertContentDescriptionEquals("Usual tuning, Drop A")
-        row("strings").assertContentDescriptionEquals("Strings, 5 strings")
-        rule.onNodeWithTag("fs-keep").performClick()
-        rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
-        assertEquals(stored, store.load())
     }
 
     @Test
