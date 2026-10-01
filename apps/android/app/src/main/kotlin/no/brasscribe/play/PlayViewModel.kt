@@ -90,6 +90,8 @@ enum class Step(@StringRes val text: Int) {
         fun ofKind(kind: String?): Step = when (kind) {
             "beats" -> BEATS; "stems" -> STEMS; "layers" -> LAYERS; "transcribe" -> TRANSCRIBE
             "arrange" -> ARRANGE; "export" -> EXPORT
+            // A bass tab's own stage: the two transcribers' notes joined and put on the beat grid.
+            "notes" -> QUANTIZE
             else -> QUEUED
         }
     }
@@ -682,7 +684,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // An engine that ignored the seat wrote for Solo Cornet: say so once, not silently.
                 if (ignored) sayText(res.getString(R.string.transcribe_done) + " " + res.getString(R.string.engine_too_old_seat))
                 else say(R.string.transcribe_done)
-                replaceTop(Screen.REVIEW)
+                replaceTop(Product.afterTranscription(r))
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: OutOfMemoryError) {
@@ -939,8 +941,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         transcribe.update { it.copy(fraction = 0.0) }
         seatFellBack = false
         val created = engine.createJobForSeat(
-            JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
-                title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null }),
+            // The product adds what its own profiles take (a bass tab's instrument and tuning).
+            Product.job(this, JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
+                title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
         ).also { seatFellBack = it.second }.first
         engineJobId = created.id
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
@@ -1015,6 +1018,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
         standFromLibrary.value = if (stand && !review) entry.id else null
         entry.saved?.let { openSavedScore(it, review); return }
+        // The computer's list also holds what the other app made: that opens there, not here.
+        if (!Product.makes(entry.profile)) { say(R.string.other_product_opens); return }
         val jobId = entry.jobId ?: return
         val engine = container.engine() ?: return
         openingScore.value = entry.id

@@ -90,6 +90,8 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
 
 @Composable
 fun scoreSubtitle(entry: ScoreEntry): String {
+    // The product's own line for what it lists differently: its own kind of score, or the other app's.
+    no.brasscribe.play.Product.rowSubtitle(entry)?.let { return it }
     val profile = when (entry.profile) {
         "solo" -> stringResource(R.string.profile_solo)
         "brass-band" -> stringResource(R.string.profile_brass_band)

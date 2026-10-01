@@ -69,4 +69,90 @@
     <string name="fs_reads_notation">Noter</string>
     <string name="fs_bass_with_strings">%1$d-strengs bass</string>
     <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
+
+    <!-- Hva er dette? -->
+    <string name="fs_what_hint">Svaret ditt bestemmer hvordan Fretscribe lytter. Den gjetter aldri.</string>
+    <string name="fs_what_instrument">Bare instrumentet mitt</string>
+    <string name="fs_what_instrument_desc">Et opptak av bassen alene.</string>
+    <string name="fs_what_song">En hel sang</string>
+    <string name="fs_what_song_desc">Et band eller en plate. Fretscribe plukker ut bassen.</string>
+    <string name="fs_where_desc">Fretscribe på datamaskinen skriver ned tonene. Ingenting sendes til nettet.</string>
+    <string name="fs_where_needed">Fretscribe på datamaskinen skriver ned tonene.</string>
+    <string name="fs_what_connect_first">Koble til datamaskinen for å fortsette.</string>
+    <string name="where_companion_missing">Koble til Fretscribe på datamaskinen først.</string>
+
+    <!-- Skriver ned tonene -->
+    <string name="stage_beats">Lytter etter pulsen</string>
+    <string name="stage_stems">Skiller ut bassen</string>
+    <string name="stage_transcribe">Skriver ned tonene</string>
+    <string name="stage_quantize">Plasserer tonene i takter</string>
+    <string name="stage_arrange">Velger strenger og bånd</string>
+    <string name="stage_export">Setter opp tabben</string>
+    <string name="transcribe_leave">%1$s. Du kan gå fra denne skjermen; Fretscribe sier fra når tabben er klar.</string>
+    <string name="transcribe_where_companion">På datamaskinen din (%1$s)</string>
+    <string name="transcribe_cancel_title">Slutte å skrive ned tonene?</string>
+    <string name="transcribe_done">Tabben er klar</string>
+    <string name="transcribe_failed">Tabben kunne ikke lages: %1$s</string>
+
+    <!-- Problemer -->
+    <string name="problem_score_title">Tabben kunne ikke lages</string>
+    <string name="problem_score_body">Noe gikk galt mens Fretscribe på datamaskinen arbeidet med den.</string>
+    <string name="details_show">Tekniske detaljer</string>
+    <string name="error_unreachable">Får ikke kontakt med Fretscribe på datamaskinen. Sjekk at den kjører og er på samme nettverk.</string>
+    <string name="error_engine_failed">Fretscribe på datamaskinen klarte ikke å gjøre ferdig tabben. Prøv igjen.</string>
+    <string name="error_invalid_options">Fretscribe på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering.</string>
+    <string name="error_core_missing">Fretscribe på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.</string>
+
+    <!-- Sjekk sangen -->
+    <string name="fs_check_title">Sjekk sangen</string>
+    <string name="fs_check_lead">Dette er det Fretscribe hørte. Er noe feil her, blir båndene feil også.</string>
+    <string name="fs_check_reading">Leser det Fretscribe hørte …</string>
+    <string name="fs_check_missing">Det Fretscribe hørte kan ikke vises akkurat nå. %1$s</string>
+    <string name="fs_check_later">Du kan endre dette senere.</string>
+    <string name="fs_show_tab">Vis tabben</string>
+    <string name="fs_check_open_again">Åpne opptaket på nytt for å endre dette.</string>
+    <string name="fs_check_connect">Koble til datamaskinen for å endre dette.</string>
+    <string name="fs_check_tuning">Stemming</string>
+    <string name="fs_check_sounds_like">Høres ut som %1$s. Skrevet for %2$s.</string>
+    <string name="fs_check_use">Bruk %1$s</string>
+    <string name="fs_check_octave">Oktav</string>
+    <string name="fs_check_octave_down">Skrevet én oktav lavere enn det ble hørt.</string>
+    <string name="fs_check_octave_two_down">Skrevet to oktaver lavere enn det ble hørt.</string>
+    <string name="fs_check_octave_up">Skrevet én oktav høyere enn det ble hørt.</string>
+    <string name="fs_check_octave_as_heard">Skrevet slik det ble hørt, slik du valgte.</string>
+    <string name="fs_check_octave_chosen_down">Skrevet én oktav lavere, slik du valgte.</string>
+    <string name="fs_check_octave_chosen_up">Skrevet én oktav høyere, slik du valgte.</string>
+    <plurals name="fs_check_octave_notes">
+        <item quantity="one">%1$d tone er skrevet en oktav lavere enn den ble hørt.</item>
+        <item quantity="other">%1$d toner er skrevet en oktav lavere enn de ble hørt.</item>
+    </plurals>
+    <string name="fs_check_as_heard">Skriv det slik det ble hørt</string>
+    <string name="fs_check_octave_auto">La Fretscribe velge</string>
+    <string name="fs_check_reference">Kammertone</string>
+    <string name="fs_check_reference_sharp">Stemt %1$d cent over A = 440.</string>
+    <string name="fs_check_reference_flat">Stemt %1$d cent under A = 440.</string>
+    <string name="fs_check_reference_allowed">Fretscribe tok hensyn til det.</string>
+    <string name="fs_check_key_tempo">Toneart og tempo</string>
+    <string name="fs_check_key_tempo_value">%1$s · ♩ = %2$d · %3$d/%4$d</string>
+    <string name="fs_check_key_tempo_spoken">%1$s, %2$d slag i minuttet, %3$d %4$d-takt</string>
+    <string name="fs_check_notes">Toner å sjekke</string>
+    <plurals name="fs_check_marked">
+        <item quantity="one">%1$d tone merket ?</item>
+        <item quantity="other">%1$d toner merket ?</item>
+    </plurals>
+    <string name="fs_check_no_place_title">Toner uten plass</string>
+    <plurals name="fs_check_no_place">
+        <item quantity="one">%1$d tone uten plass på bassen din. Er stemmingen riktig?</item>
+        <item quantity="other">%1$d toner uten plass på bassen din. Er stemmingen riktig?</item>
+    </plurals>
+
+    <!-- Sangene dine -->
+    <string name="fs_song_tab">Basstab</string>
+    <plurals name="fs_song_to_check">
+        <item quantity="one">%1$d tone å sjekke</item>
+        <item quantity="other">%1$d toner å sjekke</item>
+    </plurals>
+    <string name="check_notes">Sjekk sangen</string>
+    <string name="other_product_row">Bandpartitur · åpnes i Brasscribe</string>
+    <string name="other_product_opens">Dette er et bandpartitur. Åpne det i Brasscribe.</string>
 </resources>

@@ -83,7 +83,7 @@ private fun instrumentName(i: Instrument): Int = when (i) {
 
 /** A tuning's name, as shown or as spoken ("BEAD" is read letter by letter). An id without words of its own shows as it is. */
 @Composable
-private fun tuningName(id: String, spoken: Boolean = false): String = when (id) {
+internal fun tuningName(id: String, spoken: Boolean = false): String = when (id) {
     "standard" -> stringResource(R.string.fs_tuning_standard)
     "eb-standard" -> stringResource(R.string.fs_tuning_eb_standard)
     "d-standard" -> stringResource(R.string.fs_tuning_d_standard)
