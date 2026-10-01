@@ -290,7 +290,10 @@ let xml = write_tab_musicxml(&score, &TabOptions { layout: Layout::Tab, ..TabOpt
 
 A `TabScore` holds the title, the instrument, tempo, one time signature, one key, and each note with
 its string, fret, confidence and techniques. `TabScore::new` builds it from the solver's input and
-output and refuses input that does not fit together. `with_composition` takes tempo, first meter and
+output and refuses input that does not fit together: a fingering for another number of notes or
+other pitches, a string without a fret, and a string and fret that the instrument does not have or
+that sound another pitch than the note's (`note 1: string 1 fret 0 sounds pitch 43, not the note's
+33`). A fingering edited by hand is checked the same way; a note may be left without a place. `with_composition` takes tempo, first meter and
 first key from a `Composition`.
 
 The writer checks the score first (`TabScore::validate`), also one built by hand, and answers with
@@ -298,6 +301,7 @@ an error instead of changing what it was given:
 
 - a time signature whose lower number is not 1, 2, 4, 8 or 16, or whose upper number is not 1 to 32;
 - more than 7 sharps or flats, or a tempo outside 10 to 600;
+- more than `MAX_NOTES` notes;
 - a note without a length, outside the model's tick range, outside MIDI 0-127, with a confidence
   that is not a number, or with a string or fret the instrument does not have;
 - a doubt threshold outside 0 to 1.
@@ -519,8 +523,16 @@ alongside it.
 
 `options` may be left out, and so may each of its fields, including each field of `hand`.
 
-Unknown keys are errors, anywhere in the request. A malformed instrument is reported with the
-field that is missing or unknown.
+Unknown keys are errors, anywhere in the request: at the top, in the instrument, the options, a
+note (so a misspelled `techniques` is refused, not dropped) and a given fingering. A note's keys
+are the shared model's (`pitch`, `start`, `dur`, `confidence`, `sources`, `onset_s`, `offset_s`,
+`performed_dur`, `articulations`, `trill`) and `techniques`. A malformed instrument is reported
+with the field that is missing or unknown.
+
+A passage has at most `MAX_NOTES` notes (20,000); a longer one is refused. Ten minutes of
+sixteenth notes at 200 beats per minute are 8,000 notes, so the limit leaves room for a long piece
+played in chords, and stops a request far beyond any piece before it costs seconds and hundreds of
+megabytes: the solver keeps every candidate position of every note in memory.
 
 `json::tab_json` takes the same request with what the page says added, and answers with
 `{"musicxml": "...", "adjusted_notes": 0}`. `json::tab_musicxml_json` answers with the MusicXML text
@@ -536,9 +548,15 @@ alone.
 - Every field but `instrument` and `notes` may be left out: 4/4, C major, `tab-and-notation`.
   The tempo is `tempo_bpm`, else `options.tempo_bpm`, else 120.
 - Without `fingering` the notes are solved with `options` first. With `fingering` (the `fingering`
-  of an earlier answer, perhaps edited) they are written where it says.
+  of an earlier answer, perhaps edited) they are written where it says, once each place is checked
+  to sound its note on the instrument; a place that does not is an error.
 
 `cargo run -p target-fretted --example tab < request.json` prints the document for a request.
+
+The same two requests and answers reach the apps through the bindings in `brasscribe-ffi`
+(`fretted_fingering_json` for `solve_json`, `fretted_tab_json` for `tab_json`; see
+[the core's README](../README.md#bindings)) and the command line (`brasscribe-core fret` and `tab`).
+Every refusal is invalid input there.
 
 ## Not modelled yet
 

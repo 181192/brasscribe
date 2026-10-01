@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};
 use crate::solve::{Fingering, Options};
-use crate::technique::{per_note, previous_note, string_link, Technique};
+use crate::technique::{per_note, previous_notes, string_link, Technique};
 
 /// A hard playability violation. Note numbers are indices into the input.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -78,8 +78,9 @@ pub fn check_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[Ve
 
     let string_of = |i: usize| fingering.notes.get(i).and_then(|p| p.string);
     let neck_of = |i: usize| fingering.notes.get(i).and_then(|p| p.position()).and_then(|p| inst.neck_fret(p));
+    let previous = previous_notes(notes);
     for (i, t) in techniques.iter().enumerate() {
-        if let (Some(reach), Some(j)) = (string_link(t), previous_note(notes, i)) {
+        if let (Some(reach), Some(j)) = (string_link(t), previous[i]) {
             if let (Some(s), Some(sj)) = (string_of(i), string_of(j)) {
                 // On one string, frets apart equal semitones apart; a jump too far to play legato
                 // is reported as such whichever strings were chosen.

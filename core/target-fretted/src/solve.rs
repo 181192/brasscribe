@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};
 use crate::shapes::{is_power_chord, open_shapes};
-use crate::technique::{per_note, previous_note, string_link, Technique};
+use crate::technique::{per_note, previous_notes, string_link, Technique};
 
 /// How a passage should sit on the neck.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -95,6 +95,7 @@ impl Options {
 
 /// Where one input note is played.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NotePlace {
     /// The input pitch, unchanged.
     pub pitch: i32,
@@ -117,6 +118,7 @@ impl NotePlace {
 
 /// One [`NotePlace`] per input note, in input order.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Fingering {
     pub notes: Vec<NotePlace>,
 }
@@ -427,6 +429,19 @@ impl Ctx<'_> {
     }
 }
 
+/// The most notes one passage may have. Ten minutes of sixteenth notes at 200 beats per minute are
+/// 8,000 notes, so this leaves room for a long piece in chords throughout, while a request far
+/// beyond any piece is refused before it takes seconds and hundreds of megabytes to answer.
+pub const MAX_NOTES: usize = 20_000;
+
+/// Err for a passage of more than [`MAX_NOTES`] notes.
+pub fn check_note_count(notes: usize) -> Result<(), String> {
+    if notes > MAX_NOTES {
+        return Err(format!("a passage has at most {MAX_NOTES} notes, not {notes}"));
+    }
+    Ok(())
+}
+
 /// Choose a string and fret for every note. Notes starting on the same tick are played together;
 /// pitches never change, and notes no position can sound are flagged `out_of_range`.
 pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Fingering, String> {
@@ -438,6 +453,7 @@ pub fn assign(inst: &Instrument, notes: &[Note], opts: &Options) -> Result<Finge
 /// until the note ends.
 pub fn assign_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[Vec<Technique>], opts: &Options) -> Result<Fingering, String> {
     inst.validate()?;
+    check_note_count(notes.len())?;
     let techniques = per_note(techniques, notes.len())?;
     opts.validate(inst, notes.len())?;
     for (i, n) in notes.iter().enumerate() {
@@ -770,9 +786,10 @@ fn build_events(ctx: &Ctx, notes: &[Note], opts: &Options, techniques: &[Vec<Tec
             events.push(Event { start, groups, voicings: Vec::new(), states: Vec::new(), shape, linked: false, rings });
         }
     }
+    let previous = previous_notes(notes);
     for i in 0..notes.len() {
         let Some(reach) = string_link(&techniques[i]) else { continue };
-        let (Some((e, g)), Some(j)) = (loc[i], previous_note(notes, i)) else { continue };
+        let (Some((e, g)), Some(j)) = (loc[i], previous[i]) else { continue };
         if let Some((pe, pg)) = loc[j] {
             if pe + 1 == e && events[e].groups[g].link.is_none() {
                 events[e].groups[g].link = Some((pg, reach));

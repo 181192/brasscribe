@@ -427,6 +427,16 @@ RustBuffer uniffi_brasscribe_ffi_fn_func_seats(RustCallStatus *_Nonnull out_stat
 RustBuffer uniffi_brasscribe_ffi_fn_func_spell_pitches(RustBuffer onsets_beats, RustBuffer pitches, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_FINGERING_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_FINGERING_JSON
+RustBuffer uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(RustBuffer request, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_TAB_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_TAB_JSON
+RustBuffer uniffi_brasscribe_ffi_fn_func_fretted_tab_json(RustBuffer request, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_HUMANIZE_PART
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_HUMANIZE_PART
 RustBuffer uniffi_brasscribe_ffi_fn_func_humanize_part(RustBuffer notes, RustBuffer part, int64_t player, RustBuffer seed, RustBuffer performance, int8_t performed_timing, RustCallStatus *_Nonnull out_status
@@ -813,6 +823,18 @@ uint16_t uniffi_brasscribe_ffi_checksum_func_seats(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SPELL_PITCHES
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_SPELL_PITCHES
 uint16_t uniffi_brasscribe_ffi_checksum_func_spell_pitches(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_FINGERING_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_FINGERING_JSON
+uint16_t uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_TAB_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_TAB_JSON
+uint16_t uniffi_brasscribe_ffi_checksum_func_fretted_tab_json(void
     
 );
 #endif

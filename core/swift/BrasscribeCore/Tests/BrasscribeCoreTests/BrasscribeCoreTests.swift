@@ -71,4 +71,53 @@ final class BrasscribeCoreTests: XCTestCase {
         XCTAssertNotNil(ts.navigate(cursor: start, unit: .note, forward: true))
         XCTAssertTrue(ts.toText(settings: talkingSettingsDefault(), parts: [solo]).contains("Solo Cornet"))
     }
+
+    /// A bass line down to D1, which a 4-string bass in standard tuning cannot play.
+    func bassLine(pinString: Int) -> String {
+        """
+        {"instrument": {"preset": "bass-4-standard"},
+         "notes": [{"pitch": 26, "start": 0, "dur": 24}, {"pitch": 33, "start": 24, "dur": 24},
+                   {"pitch": 38, "start": 48, "dur": 12}, {"pitch": 40, "start": 60, "dur": 36, "techniques": ["hammer-on"]}],
+         "options": {"style": "open-position", "pins": [{"note": 2, "string": \(pinString)}]}}
+        """
+    }
+
+    func object(_ json: String) throws -> [String: Any] {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+    }
+
+    func testFrettedFingeringAndTab() throws {
+        let answer = try object(frettedFingeringJson(request: bassLine(pinString: 3)))
+        let notes = try XCTUnwrap((answer["fingering"] as? [String: Any])?["notes"] as? [[String: Any]])
+        XCTAssertEqual(notes.count, 4)
+        XCTAssertEqual(notes[0]["out_of_range"] as? Bool, true)
+        // With D2 pinned at the fifth fret, A1 is played beside it and not on the open string.
+        XCTAssertEqual(notes[1]["string"] as? Int, 4)
+        XCTAssertEqual(notes[1]["fret"] as? Int, 5)
+        // The pin puts D2 on the third string, and the hammer-on follows it there.
+        XCTAssertEqual(notes[2]["string"] as? Int, 3)
+        XCTAssertEqual(notes[2]["fret"] as? Int, 5)
+        XCTAssertEqual(notes[3]["string"] as? Int, 3)
+        XCTAssertEqual((answer["violations"] as? [Any])?.count, 0)
+        XCTAssertEqual((answer["tuning_suggestions"] as? [[String: Any]])?.first?["preset"] as? String, "bass-4-drop-d")
+
+        let tab = try object(frettedTabJson(request: bassLine(pinString: 3)))
+        XCTAssertEqual(tab["adjusted_notes"] as? Int, 0)
+        let xml = try XCTUnwrap(tab["musicxml"] as? String)
+        XCTAssertTrue(xml.contains("<sign>TAB</sign>") && xml.contains("<staff-lines>4</staff-lines>"))
+    }
+
+    func testFrettedInvalidInputThrows() throws {
+        XCTAssertThrowsError(try frettedFingeringJson(request: "{")) { error in
+            guard case CoreError.Invalid = error else { return XCTFail("\(error)") }
+        }
+        XCTAssertThrowsError(try frettedTabJson(request: "{"))
+        // A pin on a string the instrument does not have is refused; one the string cannot sound is reported.
+        XCTAssertThrowsError(try frettedFingeringJson(request: bassLine(pinString: 9))) { error in
+            guard case CoreError.Invalid(let reason) = error else { return XCTFail("\(error)") }
+            XCTAssertEqual(reason, "a pin names string 9 of 4")
+        }
+        let reported = try object(frettedFingeringJson(request: bassLine(pinString: 1)))
+        XCTAssertEqual((reported["violations"] as? [[String: Any]])?.first?["kind"] as? String, "pin-not-honoured")
+    }
 }

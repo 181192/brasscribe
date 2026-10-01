@@ -316,6 +316,18 @@ public static class BrasscribeCore
     public static string TalkingAnnounceJson(string request) =>
         Call((out IntPtr o, out IntPtr e) => Native.bc_talking_announce_json(request, out o, out e));
 
+    /// <summary>A string and a fret for every note on a fretted instrument. The request and the answer are
+    /// target-fretted's own JSON: instrument (a preset or a full instrument), notes and options (style, tempo, hand,
+    /// pins) in; the instrument used, the fingering with each note's alternatives, the violations and the tuning
+    /// suggestions out. A request it cannot read or that names what does not exist is invalid input (code 1).</summary>
+    public static string FrettedFingeringJson(string request) =>
+        Call((out IntPtr o, out IntPtr e) => Native.bc_fretted_fingering_json(request, out o, out e));
+
+    /// <summary>Tablature as MusicXML for target-fretted's tab request (the fingering request plus title, tempo, meter,
+    /// key, the <c>tab</c> options and optionally a fingering to write as it is): <c>{"musicxml": ..., "adjusted_notes": n}</c>.</summary>
+    public static string FrettedTabJson(string request) =>
+        Call((out IntPtr o, out IntPtr e) => Native.bc_fretted_tab_json(request, out o, out e));
+
     internal static object SettingsJson(TalkingSettings s) => new
     {
         lang = s.Lang, pitch_mode = s.PitchMode, verbosity = s.Verbosity, octave_style = s.OctaveStyle, announce_confident = s.AnnounceConfident,
@@ -482,6 +494,12 @@ public static class BrasscribeCore
 
         [DllImport(Lib)]
         public static extern int bc_part_name_nb([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int bc_fretted_fingering_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int bc_fretted_tab_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib)]
         public static extern int bc_talking_announce_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);

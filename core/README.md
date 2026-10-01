@@ -32,7 +32,7 @@ brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   py, pyjson       CPython/NumPy rounding, sums and JSON output, bit for bit
   pipeline         the reference entry points (arrange_layers_song, arrange_song, lead_sheet, reference -> band)
   notation/        measures, accidentals, ties, tuplets, beams, stems, transposition, MusicXML
-brasscribe-ffi/    UniFFI exports + `bc_*` C ABI
+brasscribe-ffi/    UniFFI exports + `bc_*` C ABI (the core, and target-fretted as JSON)
 brasscribe-cli/    `brasscribe-core` binary: the same entry points as the Python scripts, file based
 target-fretted/    tab fingering: a string and fret for every note on guitar, bass, ukulele, mandolin
 bindings/          generated Swift, Kotlin and C header (scripts/bindings.sh)
@@ -199,6 +199,21 @@ using var ts = new TalkingScore(band.MusicXml, band.CompositionJson);
 var (text, context) = ts.Announce(new TalkingCursor(1, 0, 0), settings: new TalkingSettings(Lang: "nb"));
 ```
 
+Tab fingering for fretted instruments ([`target-fretted`](target-fretted/README.md)) goes through
+the bindings as that crate's JSON, the same request and answer as the command line's `fret` and
+`tab`: `fretted_fingering_json` (instrument or preset, notes with their techniques, style and pins
+in; the fingering with each note's alternatives, the violations and the tuning suggestions out) and
+`fretted_tab_json` (the tab request in; `{"musicxml": …, "adjusted_notes": …}` out). They are
+`frettedFingeringJson` and `frettedTabJson` in Swift and Kotlin, `BrasscribeCore.FrettedFingeringJson`
+and `FrettedTabJson` in C#, and `bc_fretted_fingering_json` and `bc_fretted_tab_json` in C.
+
+```kotlin
+val answer = frettedFingeringJson("""{"instrument": {"preset": "bass-4-standard"},
+    "notes": [{"pitch": 33, "start": 0, "dur": 24}], "options": {"pins": [{"note": 0, "string": 4}]}}""")
+// {"instrument": {…}, "fingering": {"notes": [{"pitch": 33, "string": 4, "fret": 5, "alternatives": [{"string": 3, "fret": 0}],
+//   "out_of_range": false, "pinned": true}]}, "violations": [], "tuning_suggestions": [{"preset": "bass-4-standard", …}, …]}
+```
+
 C: `bindings/c/brasscribe.h`. Strings are NUL-terminated UTF-8; every call
 returns 0 or an error code (1 invalid input, 2 failure, 3 null argument,
 4 internal error) and writes the result to `*out` or a message to `*err`;
@@ -219,6 +234,12 @@ a panic or a hang:
 - options: unknown lineups, difficulties, seats, clefs, leads, languages and
   keys, a transposition beyond `MAX_TRANSPOSE` semitones or out of MIDI range,
   a free-time tempo outside `FREE_TEMPO_RANGE`;
+- a fretted request: JSON that is not the request (unknown keys included, also in a note), an
+  unknown preset, style or technique, a pin that names a note or a string that does not exist,
+  more than 20,000 notes, a note outside MIDI 0-127 or `MAX_BEATS`, a given fingering with a string
+  and fret that do not sound its note, and for tablature a meter, key, tempo or note length that cannot be
+  written. A pin on a string that cannot sound its note is not invalid: the answer lists it under
+  `violations`;
 - a solo contour whose arrays differ in length (a JSON `null` in an array is a
   frame without a value, not a missing frame), a WAV stem with a cut-off
   format chunk, list arguments of different lengths, and times that are not

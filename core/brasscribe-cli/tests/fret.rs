@@ -57,6 +57,14 @@ fn a_bad_request_fails_with_the_crates_message_and_writes_nothing() {
     let (ok, _, stderr) = fret("unknown-preset", r#"{"instrument": {"preset": "bass-9"}, "notes": []}"#);
     assert!(!ok);
     assert!(stderr.contains("bass-9"), "{stderr}");
+
+    // A key a note does not have (a misspelled `techniques`) is refused, not dropped.
+    let note = r#"{"instrument": {"preset": "bass-4-standard"}, "notes": [{"pitch": 33, "start": 0, "dur": 24, "technique": ["slide"]}]}"#;
+    for command in ["fret", "tab"] {
+        let (ok, written, stderr) = call(command, "unknown-note-key", note);
+        assert!(!ok && written.is_empty());
+        assert!(stderr.contains("unknown field `technique` in a note"), "{command}: {stderr}");
+    }
 }
 
 #[test]
@@ -122,4 +130,11 @@ fn a_bad_tab_request_fails_with_the_crates_message_and_writes_nothing() {
     assert!(stderr.contains("not a tablature request"), "{stderr}");
     let run = Command::new(env!("CARGO_BIN_EXE_brasscribe-core")).arg("tab").arg("--request").arg("r.json").output().unwrap();
     assert!(!run.status.success());
+
+    // A fingering that puts a note where it does not sound is refused, not written.
+    let wrong = r#"{"instrument": {"preset": "bass-4-standard"}, "notes": [{"pitch": 33, "start": 0, "dur": 24}],
+        "fingering": {"notes": [{"pitch": 33, "string": 1, "fret": 0, "alternatives": [], "out_of_range": false, "pinned": false}]}}"#;
+    let (ok, written, stderr) = call("tab", "wrong-place", wrong);
+    assert!(!ok && written.is_empty());
+    assert!(stderr.contains("string 1 fret 0 sounds pitch 43, not the note's 33"), "{stderr}");
 }

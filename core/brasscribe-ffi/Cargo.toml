@@ -11,5 +11,6 @@ name = "brasscribe_ffi"
 
 [dependencies]
 brasscribe-core = { path = "../brasscribe-core" }
+target-fretted = { path = "../target-fretted" }
 serde_json.workspace = true
 uniffi = { version = "0.32", default-features = false }

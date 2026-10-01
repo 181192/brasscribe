@@ -65,6 +65,27 @@ pub fn previous_note(notes: &[Note], i: usize) -> Option<usize> {
     (0..notes.len()).filter(|&j| notes[j].start == prev).min_by_key(|&j| ((notes[j].pitch - notes[i].pitch).abs(), j))
 }
 
+/// [`previous_note`] for every note at once, in time that grows with the passage and not with its
+/// square: the notes are grouped by start once, and each note looks only at the group before its
+/// own.
+pub fn previous_notes(notes: &[Note]) -> Vec<Option<usize>> {
+    let mut order: Vec<usize> = (0..notes.len()).collect();
+    order.sort_by_key(|&i| (notes[i].start, i));
+    let mut out = vec![None; notes.len()];
+    // The notes of the start before the current one, and of the current one, as ranges of `order`.
+    let (mut before, mut from) = (0..0, 0);
+    while from < order.len() {
+        let start = notes[order[from]].start;
+        let to = from + order[from..].iter().take_while(|&&i| notes[i].start == start).count();
+        for &i in &order[from..to] {
+            out[i] = order[before.clone()].iter().copied().min_by_key(|&j| ((notes[j].pitch - notes[i].pitch).abs(), j));
+        }
+        before = from..to;
+        from = to;
+    }
+    out
+}
+
 /// Techniques per note, checked against the notes: empty (no techniques) or one list per note.
 pub(crate) fn per_note(techniques: &[Vec<Technique>], notes: usize) -> Result<Vec<Vec<Technique>>, String> {
     match techniques.len() {

@@ -18,8 +18,8 @@ use brasscribe_core::spelling::{spell, Spelled};
 use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, NotationClef};
-use crate::solve::Fingering;
-use crate::technique::{per_note, previous_note, Technique};
+use crate::solve::{check_note_count, Fingering};
+use crate::technique::{per_note, previous_notes, Technique};
 
 /// Notes below this confidence are marked as doubtful unless [`TabOptions::doubt_below`] says
 /// otherwise.
@@ -127,7 +127,9 @@ pub struct TabScore {
 
 impl TabScore {
     /// A score in 4/4, C major, at 120 BPM from the solver's input and output. `techniques` is
-    /// empty or one list per note; `fingering` has one place per note.
+    /// empty or one list per note; `fingering` has one place per note, and each place given must
+    /// be a string and fret of the instrument that sound the note's pitch (a fingering edited by
+    /// hand is checked like the solver's).
     pub fn new(title: &str, instrument: &Instrument, notes: &[Note], techniques: &[Vec<Technique>], fingering: &Fingering) -> Result<TabScore, String> {
         let techniques = per_note(techniques, notes.len())?;
         if fingering.notes.len() != notes.len() {
@@ -138,7 +140,19 @@ impl TabScore {
             if place.pitch != n.pitch {
                 return Err(format!("note {i}: the fingering is for pitch {}, the note is {}", place.pitch, n.pitch));
             }
+            if place.string.is_some() != place.fret.is_some() {
+                return Err(format!("note {i}: a string and a fret go together"));
+            }
             let position = place.position();
+            // A place that sounds another pitch would be written as a wrong note: the fret is
+            // what a player reads.
+            if let Some(p) = position {
+                match instrument.pitch_at(p) {
+                    Some(sounds) if sounds == n.pitch => {}
+                    Some(sounds) => return Err(format!("note {i}: string {} fret {} sounds pitch {sounds}, not the note's {}", p.string, p.fret, n.pitch)),
+                    None => return Err(format!("note {i}: the instrument has no string {} fret {}", p.string, p.fret)),
+                }
+            }
             out.push(TabNote {
                 pitch: n.pitch,
                 start: n.start,
@@ -161,6 +175,7 @@ impl TabScore {
     /// is checked like any other.
     pub fn validate(&self) -> Result<(), String> {
         self.instrument.validate()?;
+        check_note_count(self.notes.len())?;
         if !BEAT_UNITS.contains(&self.beat_unit) {
             return Err(format!("the lower number of a time signature is 1, 2, 4, 8 or 16, not {}", self.beat_unit));
         }
@@ -608,13 +623,14 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
 
     // A slide, hammer-on, pull-off or bend links the note it comes from to the note that has it.
     let model: Vec<Note> = notes.iter().zip(spans).map(|(n, &(start, end))| Note::new(n.pitch, start, end - start, n.confidence, Vec::new())).collect();
+    let previous = previous_notes(&model);
     for &i in &kept {
         let Some(to) = slot[i] else { continue };
         for &t in &notes[i].techniques {
             if !t.keeps_string() {
                 continue;
             }
-            let Some(from) = previous_note(&model, i).and_then(|j| slot[j]) else { continue };
+            let Some(from) = previous[i].and_then(|j| slot[j]) else { continue };
             // A note without a place is a rest on the tab staff, and nothing can lead to or from it.
             if events[from.0].notes[from.1].place.is_none() || events[to.0].notes[to.1].place.is_none() {
                 continue;
