@@ -535,7 +535,8 @@ def _solo_ondevice(data: Path, mode: str) -> dict[str, float]:
     with tempfile.TemporaryDirectory() as tmp:
         seed = Path(tmp) / "seed"
         (seed / "layers").mkdir(parents=True)
-        shutil.copy(ref / "beats-small0.beats", seed / "mix.beats")
+        (seed / "beats-small0").mkdir()  # where the solo profile looks for small0 beats to reuse
+        shutil.copy(ref / "beats-small0.beats", seed / "beats-small0" / "mix.beats")
         if mode != "live":
             for f in ("solo-sw.mid", "solo-bp.mid", "solo-sw.contour.npz"):
                 shutil.copy(ref / "layers" / f, seed / "layers" / f)

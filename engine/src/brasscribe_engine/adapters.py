@@ -57,7 +57,8 @@ class Adapter:
 ADAPTERS: dict[str, Adapter] = {
     a.name: a
     for a in [
-        Adapter("beat-this", heavy=True, accelerator="torch", torch_checkpoints=("beat_this-final0.ckpt",),
+        # final0 is the adapter's own model; small0 is the one the solo profile and the band draft ask for.
+        Adapter("beat-this", heavy=True, accelerator="torch", torch_checkpoints=("beat_this-final0.ckpt", "beat_this-small0.ckpt"),
                 licence="MIT"),
         Adapter("mega53", heavy=True, accelerator="torch",
                 model_files=("mega53/mvsep_mega_model_bs_roformer_53_stems_v1.ckpt", "mega53/mvsep_mega_model_bs_roformer_53_stems.yaml"),

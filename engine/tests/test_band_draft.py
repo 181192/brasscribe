@@ -39,10 +39,19 @@ def test_the_beat_model_reaches_the_adapter(tmp_path):
     assert _beat_adapter_call("brass-band", {}, tmp_path)["env"] is None
 
 
-def test_the_draft_never_takes_beats_from_another_model(tmp_path):
-    # A song-pipeline directory's mix.beats is the adapter's own model's: the draft makes its own.
-    assert profiles.build("brass-band", tmp_path / "b.wav", params={"muscriptor": False}).stage("beats").reuse_subdir is None
+def test_beats_are_only_reused_from_the_same_model(tmp_path):
+    # A reuse directory's own mix.beats is the adapter's model's (final0); small0's are kept apart.
+    assert profiles.build("brass-band", tmp_path / "b.wav", params={"muscriptor": False}).stage("beats").reuse_subdir == "beats-small0"
+    assert profiles.build("solo", tmp_path / "b.wav").stage("beats").reuse_subdir == "beats-small0"
     assert profiles.build("brass-band", tmp_path / "b.wav").stage("beats").reuse_subdir == "."
+
+
+def test_the_model_listing_has_both_beat_models(tmp_path):
+    from brasscribe_engine.adapters import AdapterRegistry
+    from brasscribe_engine.hashing import HashIndex
+
+    listed = [m["name"] for m in AdapterRegistry(tmp_path, tmp_path, HashIndex(None)).models("beat-this")]
+    assert listed == ["beat_this-final0.ckpt", "beat_this-small0.ckpt"]
 
 
 def test_the_full_score_still_uses_muscriptor():
