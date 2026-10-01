@@ -208,7 +208,7 @@ class JobCreate(BaseModel):
     recording: Recording | None = Field(None, description="tab profile: what was recorded. song: a band or a record, "
                                                           "the instrument is separated from it (bass and guitar; not yet "
                                                           "ukulele or mandolin); instrument: the instrument alone, no "
-                                                          "separation; default: song")
+                                                          "separation; default: song (instrument for a ukulele or a mandolin)")
     layout: TabLayout | None = Field(None, description="tab profile: what the page shows. tab: the tab staff alone, "
                                                        "with stems for the rhythm; tab-and-notation: a notation staff "
                                                        "above it; notation: the notation staff alone; default: tab")
