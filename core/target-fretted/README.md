@@ -1,7 +1,8 @@
 # target-fretted
 
 Tablature fingering for fretted instruments. It chooses a string and a fret for each note of a
-passage, so the passage can be written as tab for guitar, bass, ukulele or mandolin.
+passage, so the passage can be written as tab for guitar, bass, ukulele or mandolin, and writes the
+result as tablature in MusicXML.
 
 The input is the shared symbolic model's notes from `brasscribe-core` (`Note`: concert MIDI
 `pitch`, and `start` and `dur` in ticks at `TICKS_PER_BEAT`). The output gives each note a string
@@ -197,7 +198,7 @@ A note carries a list of techniques, so one note can be both bent and let ring:
 - in JSON, `techniques` on the note, for example `["bend", "let-ring"]`;
 - in Rust, one list per note passed to `assign_with_techniques` and `check_with_techniques`.
 
-Names are kebab-case: `slide`, `hammer-on`, `pull-off`, `bend`, `vibrato`, `let-ring`.
+Names are kebab-case: `slide`, `hammer-on`, `pull-off`, `bend`, `vibrato`, `let-ring`, `dead-note`.
 
 - **Slide, hammer-on, pull-off and bend** keep the string of the note they come from. That is the
   note among those starting most recently before it that is closest in pitch.
@@ -209,6 +210,7 @@ Names are kebab-case: `slide`, `hammer-on`, `pull-off`, `bend`, `vibrato`, `let-
   on it while it sounds. The search sees only neighbouring events. For a later note further on, the
   string is taken away and the passage is solved again, up to eight times.
 - **Vibrato** is accepted and does not constrain the position yet.
+- **Dead note** (a muted, percussive note) does not constrain the position. It is written as an x.
 
 A technique that cannot be honoured is left to the check to report.
 
@@ -234,6 +236,146 @@ with its transitions to the chosen neighbours. There is no full re-solve per alt
 - a note that starts on a string a let-ring note still reserves (`ring-cut`). This check looks at
   notes that overlap in time, not only notes that start together.
 
+## Tablature as MusicXML
+
+`write_tab_musicxml(&TabScore, &TabOptions)` writes a solved passage as one MusicXML 4.0 partwise
+document. The same input always gives the same text.
+
+```rust
+use target_fretted::{assign, preset, write_tab_musicxml, Layout, Options, TabOptions, TabScore};
+
+let guitar = preset("guitar-standard").unwrap().with_capo(2);
+let fingering = assign(&guitar, &notes, &Options::default())?;
+let score = TabScore::new("Study", &guitar, &notes, &[], &fingering)?.with_tempo(88.0).with_meter(3, 4).with_key(2, "major");
+let xml = write_tab_musicxml(&score, &TabOptions { layout: Layout::Tab, ..TabOptions::default() });
+```
+
+A `TabScore` holds the title, the instrument, tempo, one time signature, one key, and each note with
+its string, fret, confidence and techniques. `TabScore::new` builds it from the solver's input and
+output and refuses input that does not fit together. `with_composition` takes tempo, first meter and
+first key from a `Composition`.
+
+### Layouts
+
+| `layout` | Staves | Rhythm |
+|---|---|---|
+| `tab-and-notation` (default) | one part, two staves: notation (staff 1) above tab (staff 2), the same notes on both | on the notation staff; tab notes have `<stem>none</stem>` and no beams |
+| `tab` | the tab staff | in the tab notes: types, dots, ties, rests, stems down and beams per beat, so a renderer can draw it under the staff |
+| `notation` | the notation staff | on the staff; no string or fret |
+
+### The tab staff
+
+- `<clef>` `TAB`, and `<staff-details>` with `<staff-lines>` = the number of strings.
+- One `<staff-tuning line="k">` per string. **Line 1 is the bottom line**, so line *k* is string
+  *n + 1 - k*: the last string of the tuning comes first. On a high-G ukulele line 1 is G4, above
+  the C4 on line 2.
+- Each note has its sounding `<pitch>` and `<technical><string>` and `<fret>`. String 1 is the top
+  line.
+- Open strings are named with flats when the tuning's name has a flat sign, or when flats give the
+  simpler names (C standard: E♭ and B♭); otherwise with sharps.
+
+### Capo
+
+Frets are relative to the capo: 0 is the capo'd open string. The pitch is always the sounding one,
+and the header always says `Capo n`. `TabOptions::capo` chooses how the staff says it:
+
+| `capo` | `<staff-tuning>` | `<capo>` |
+|---|---|---|
+| `element` (default) | the tuning without the capo | the capo fret |
+| `tuning` | the open strings as they sound with the capo on | none |
+
+`element` follows the MusicXML definition: the capo raises the strings given by `<staff-tuning>`, so
+pitch = tuning + capo + fret. Readers differ, so **check the round trip in the program the file is
+for**. MuseScore 4.7 ignores `<capo>` on import: it keeps the pitches, checks each string and fret
+against the tuning without the capo, and rewrites the ones that no longer match, so the tab shows
+frets counted from the nut and some notes move string. With `tuning` MuseScore keeps every string
+and fret as written. Guitar Pro and Dorico have not been checked.
+
+### Notation staff
+
+Pitches are written as they sound. An instrument written an octave above its sound gets a clef with
+`<clef-octave-change>-1</clef-octave-change>`, and no `<transpose>`:
+
+- bass clef 8vb when the highest open string is below E3 (bass guitars);
+- treble clef 8vb when the lowest open string is below C3 (guitars);
+- plain treble clef otherwise (ukulele, baritone ukulele, mandolin).
+
+`TabOptions::clef` overrides the choice. Pitches are spelled by the shared `spelling` module.
+`<accidental>` elements are not written; a reader works them out from the pitch and the key.
+
+### Rhythm and measures
+
+- `<divisions>` is 24, the model's ticks per quarter note, so durations are ticks.
+- **One rhythmic voice.** Notes that start together are a chord (`<chord/>`, low to high). A chord
+  lasts until its longest note ends or the next note starts, whichever comes first. A bass note held
+  under a melody is therefore cut at the next melody note.
+- Two notes of one pitch on one position (a doubling from two voices) are written once, with the
+  higher confidence.
+- Values are split and tied to show the beat and the bar line, on notes and rests alike: by the
+  shared `rhythm_spelling` module on quarter-note beats, and on dotted-quarter beats in 3/8, 6/8,
+  9/8 and 12/8. Other meters in eighths (5/8, 7/8) are split on quarter notes. Triplet values get `<time-modification>` and a `<tuplet>`
+  bracket. An empty bar is a whole-measure rest.
+- Beams join notes shorter than a quarter inside one beat: a quarter, or a dotted quarter in 3/8,
+  6/8, 9/8 and 12/8.
+- A pickup shorter than a bar is measure 0 with `implicit="yes"`. A longer one starts on a bar line
+  with rests before it.
+- The TAB clef names line 5 whatever the number of lines. MuseScore reads it and leaves the line out
+  when it writes.
+- The first measure holds the key, the time signature, a `<metronome>` with `<sound tempo>` (quarter
+  notes per minute), and the header as words: the tuning's name, the open strings from the bottom
+  line to the top, and the capo, for example `Drop D: D A D G B E, Capo 3`. The part name is the
+  instrument's name.
+
+### Techniques
+
+Marks are written on the tab staff, or on the notation staff when it is the only one. In a pair of
+staves the notation staff gets only the slurs and the x noteheads.
+
+| Technique | Written as |
+|---|---|
+| hammer-on, pull-off | `<hammer-on>` / `<pull-off>` `type="start"` on the note it comes from and `type="stop"` on the note that has it, plus a `<slur>` between them |
+| slide | `<slide type="start">` and `type="stop"` on the same two notes |
+| bend | `<bend><bend-alter>` on the note the bend starts from, with the interval up to the bent note in semitones, and a `<slur>` to the bent note |
+| vibrato | `<ornaments>` with a `<wavy-line>` start and stop |
+| let ring | the words "let ring" where a run of ringing notes starts, and `<tied type="let-ring">` on each |
+| dead note | `<notehead>x</notehead>` |
+
+- A tied note carries the marks that end on it on its first piece and the marks that leave it on its
+  last.
+- A bend is only written when the note it comes from is 1 to 4 semitones lower.
+- The bent note keeps the fret the solver gave it, which is the fret that sounds its pitch without
+  bending. So the two numbers read "from 7, bent up to the pitch of 9", and every `<pitch>` agrees
+  with its string and fret.
+
+### Doubt and range
+
+- A note whose confidence is below `TabOptions::doubt_below` (default 0.4; 0 marks none) is
+  **doubtful**:
+  - `color` on the `<note>` and on its `<notehead>` (`#9A5200`);
+  - the confidence as a processing instruction, the last child of the `<note>`:
+    `<?brasscribe-confidence 0.31?>`;
+  - one `?` as words above the column, before the chord's first note.
+- Doubt is never a parenthesis or another notehead shape: those mean ghost notes, ties and half
+  notes in tab. It never changes a pitch, string or fret.
+- The confidence is not an `<other-notation>` element: MuseScore 4.7 stops responding when it reads
+  one.
+- A note without a place (out of range, or more notes than strings) keeps its pitch, has no
+  `<technical>`, and gets a `!` above it. A reader may then invent a place for it: MuseScore writes
+  it on the nearest string.
+- In a pair of staves the `?` and `!` are on the tab staff.
+
+### Round trip in MuseScore
+
+Checked by converting generated files with MuseScore 4.7 (`mscore -o out.musicxml in.musicxml`, and
+to PDF):
+
+- kept: the number of tab lines, every `<staff-tuning>` (also the re-entrant ukulele and the 5-string
+  bass), the two-staff part, the octave clef, ties, chords, triplets, slurs, slides, let-ring ties,
+  x noteheads, the note colour, and the `?`, `!`, header and tempo;
+- changed: `<capo>` is dropped (see Capo), a `<wavy-line>` is drawn as a trill line, and an
+  out-of-range note is given a string;
+- lost: `<hammer-on>`, `<pull-off>` and `<bend>` (the slurs stay), and the confidence.
+
 ## JSON
 
 `json::solve_json` takes a request. It answers with:
@@ -257,6 +399,23 @@ alongside it.
 Unknown keys are errors, anywhere in the request. A malformed instrument is reported with the
 field that is missing or unknown.
 
+`json::tab_musicxml_json` takes the same request with what the page says added, and answers with the
+MusicXML text:
+
+```json
+{"title": "Study", "instrument": {"preset": "guitar-standard", "capo": 2},
+ "notes": [{"pitch": 66, "start": 0, "dur": 24, "confidence": 0.3}],
+ "tempo_bpm": 96, "meter": {"beats": 3, "beat_unit": 4}, "key": {"fifths": 2, "mode": "major"},
+ "tab": {"layout": "tab", "doubt_below": 0.4, "capo": "element", "clef": "treble-8vb"}}
+```
+
+- Every field but `instrument` and `notes` may be left out: 4/4, C major, `tab-and-notation`.
+  The tempo is `tempo_bpm`, else `options.tempo_bpm`, else 120.
+- Without `fingering` the notes are solved with `options` first. With `fingering` (the `fingering`
+  of an earlier answer, perhaps edited) they are written where it says.
+
+`cargo run -p target-fretted --example tab < request.json` prints the document for a request.
+
 ## Not modelled yet
 
 - **Sustain without let ring.** A note without `let-ring` may be cut by a later note on its string.
@@ -266,6 +425,8 @@ field that is missing or unknown.
   model. Guitar open chords come from the span, height and open-string terms.
 - **Vibrato** has no position constraint.
 - **String crossing.** Skipping strings costs nothing.
+- **In the MusicXML:** a second voice for held notes, meter and key changes, chord names and
+  diagrams, palm mute, harmonics, pre-bends and releases, and a per-string (partial) capo.
 
 The weights are hand-set against the tests below. They have not been fitted to a tab corpus.
 
@@ -325,6 +486,24 @@ cargo clippy -p target-fretted --no-deps --all-targets -- -D warnings
   - the check reports each broken constraint;
   - techniques are read from JSON notes, and other spellings are refused.
 - **Position:** E minor pentatonic licks at the 12th fret stay in frets 12 to 15.
+
+`tests/tab_musicxml.rs` covers the MusicXML. Every document is parsed back, and whole measures are
+checked to hold exactly their length on each staff.
+
+- **Tab staff:** line count and `<staff-tuning>` lines for standard and drop-D guitar, 4- and
+  5-string bass, both ukuleles and mandolin; flat tunings; both capo encodings.
+- **Layouts:** two staves with the same notes, tab alone with stems and beams, notation alone; the
+  octave clefs.
+- **Rhythm:** ties across the bar line, rests, pickups, triplets, compound time (beams and values
+  on the dotted quarter), chords, a chord cut
+  at the next note, doublings.
+- **Techniques:** start and stop pairs, marks at the ends of a tied note, each technique's element.
+- **Doubt and range:** the colour, the confidence, the `?` and the `!`, the threshold, never a
+  parenthesis, and no change to pitch or place.
+- **Whole documents:** a fixed pseudo-random passage on every preset, in four meters and three
+  layouts; the same input gives the same text; the JSON entry point.
+- **Fixture:** `tests/fixtures/study.json` (an original four-bar study with every feature) must give
+  `tests/fixtures/study.musicxml`. Regenerate it on purpose with the `tab` example.
 
 Unit tests in `src/instrument.rs` cover positions, the capo, short strings, fret distances and
 families. Unit tests in `src/shapes.rs` cover the shape tables.

@@ -1,0 +1,28 @@
+{
+  "title": "Study in F sharp minor",
+  "instrument": {"preset": "guitar-standard", "capo": 2},
+  "tempo_bpm": 88,
+  "meter": {"beats": 4, "beat_unit": 4},
+  "key": {"fifths": 3, "mode": "minor"},
+  "tab": {"layout": "tab-and-notation"},
+  "notes": [
+    {"pitch": 59, "start": -12, "dur": 12},
+    {"pitch": 42, "start": 0, "dur": 24},
+    {"pitch": 54, "start": 0, "dur": 24},
+    {"pitch": 57, "start": 0, "dur": 24},
+    {"pitch": 61, "start": 24, "dur": 12},
+    {"pitch": 64, "start": 36, "dur": 12, "techniques": ["hammer-on"]},
+    {"pitch": 61, "start": 48, "dur": 12, "techniques": ["pull-off"]},
+    {"pitch": 59, "start": 60, "dur": 12, "confidence": 0.25},
+    {"pitch": 61, "start": 72, "dur": 12, "techniques": ["slide"]},
+    {"pitch": 62, "start": 84, "dur": 36, "techniques": ["bend", "vibrato"]},
+    {"pitch": 30, "start": 120, "dur": 24},
+    {"pitch": 57, "start": 144, "dur": 24, "techniques": ["dead-note"]},
+    {"pitch": 61, "start": 168, "dur": 8},
+    {"pitch": 64, "start": 176, "dur": 8},
+    {"pitch": 66, "start": 184, "dur": 8},
+    {"pitch": 42, "start": 192, "dur": 96, "techniques": ["let-ring"]},
+    {"pitch": 49, "start": 192, "dur": 96, "techniques": ["let-ring"]},
+    {"pitch": 54, "start": 192, "dur": 96, "techniques": ["let-ring"]}
+  ]
+}
