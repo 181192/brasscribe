@@ -39,6 +39,7 @@ strings, as a pen stroke, and as the place a fret number interrupts its line.
 | `logo-mark.svg`, `logo-mark-dark.svg` | The mark on light and dark grounds, 24 px and up |
 | `favicon-16.svg` | Pixel-hinted version for 16 and 32 px |
 | `app-icon-fullbleed.svg` | iOS, store listings. Square, no baked corners; the art at 78% |
+| `../dist/icons/android/res` | Android launcher icon, written by `build.py`: adaptive foreground with the art at 64% (the 78% art breaks the 66 dp safe zone), a monochrome layer and legacy squares |
 | `wordmark.svg`, `wordmark-dark.svg` | "fretscribe" outlined, Atkinson Hyperlegible Next 600, −8/1000 em |
 | `lockup.svg`, `lockup-dark.svg` | Mark plus wordmark |
 
@@ -51,8 +52,6 @@ per unit of rise.
   favicon below that), the wordmark at a 12 px cap height.
 - Colour: ink, paper or blue ink only. No gradients, outlines, shadows or rotation.
 - The mark never appears inside the tab, and never stands in for an action icon.
-- Still to draw: the Android adaptive-icon foreground with the art at 64% (the 78% art breaks the safe
-  zone), and a monochrome layer.
 
 ## Colour
 

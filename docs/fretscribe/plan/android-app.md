@@ -57,7 +57,7 @@ Each is one small pull request with an independent review. Fretscribe strings al
 | | What | Conflict risk with Brasscribe work |
 |---|---|---|
 | a | Flavour skeleton; "Fretscribe" on the launcher and Home | medium, once (Gradle task names, workflows) |
-| b | Design folder into the repo, generator flags, theme, icon; no SoundFont or brass models in the Fretscribe APK | low |
+| b | Done: design folder in the repo, generator flags, theme, icon; no SoundFont or brass models in the Fretscribe APK | low |
 | c | Your instrument | none |
 | d0 | `engine-client`: bass tab profile, `Tab` models, `getTab`, a fixture | low |
 | d | Open a recording, send a `bass-tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
@@ -80,7 +80,8 @@ Each is one small pull request with an independent review. Fretscribe strings al
 4. **First-run copy.** The flows promise "Made on this phone. Nothing goes online", but the first
    version needs a computer for every tab. Reword, or wait for an on-device bass path.
 5. **Bass only first?** The engine accepts only `bass-4/5/6`.
-6. **Launcher icon.** The adaptive foreground at 64% is not drawn.
+6. **Launcher icon.** Drawn from the mark with the art at 64% (`design/fretscribe/brand/build.py`); the
+   owner has not yet looked at it on a phone's launcher shapes.
 7. **Min SDK** stays 29; portrait practice is an open design question.
 8. **Tab font.** alphaTab on Android resolves fonts by system family name; if the test fails, the first
    version ships without Fretscribe Tab numerals.

@@ -177,6 +177,20 @@ def test_fretscribe_roles_come_through_the_alias_map():
     assert font.read_bytes() == (FRETSCRIBE / "brand" / "fonts" / "AtkinsonHyperlegibleNext-wght.ttf").read_bytes()
 
 
+def test_android_window_colours_are_the_token_backgrounds():
+    # The window behind Compose (apps/android, each product's res/values/themes.xml) is the token bg.
+    import re
+    app = build.ROOT / "apps" / "android" / "app" / "src"
+    fs = fretscribe()
+    for product, tokens, modes in (("brasscribe", build, ("light", "dark", "pink", "pink-dark")),
+                                   ("fretscribe", fs, ("light", "dark", "light", "dark"))):
+        xml = (app / product / "res" / "values" / "themes.xml").read_text()
+        found = dict(re.findall(r'<color name="(window_\w+)">#FF([0-9A-F]{6})</color>', xml))
+        want = dict(zip(("window_light", "window_dark", "window_pink", "window_pink_dark"),
+                        (tokens.hexval(m, "bg")[1:] for m in modes)))
+        assert found == want, product
+
+
 def test_another_product_writes_only_into_its_own_folder(tmp_path):
     fs = product_build(FRETSCRIBE / "tokens" / "tokens.json", tmp_path / "dist")
     want = fs.outputs()

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The window behind Compose: Fretscribe's token bg (design/fretscribe/tokens/tokens.json) in light and dark,
+         and the same again for Pink, which Fretscribe does not have. Not night-qualified: the app's own Appearance setting
+         picks one (MainActivity), whatever the phone's night mode is. -->
+    <color name="window_light">#FFFAF8F3</color>
+    <color name="window_dark">#FF15171A</color>
+    <color name="window_pink">#FFFAF8F3</color>
+    <color name="window_pink_dark">#FF15171A</color>
+</resources>

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Window theme only; the UI is Compose Material 3 (see ui/theme). -->
+    <!-- Window theme only; the UI is Compose Material 3 (see ui/theme). The window colours are each
+         product's own (res/values/themes.xml in src/brasscribe and src/fretscribe). -->
     <style name="Theme.BrasscribePlay" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">#FFFBFAF7</item>
+        <item name="android:windowBackground">@color/window_light</item>
     </style>
 </resources>
