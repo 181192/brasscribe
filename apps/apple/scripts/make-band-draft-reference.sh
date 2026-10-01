@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Reference outputs for the band draft made on the device, from the tools the engine's brass-band profile
-# runs with muscriptor=False (the same path as `brasscribe run <mix> brass-band --no-muscriptor`):
+# runs with muscriptor=False (`brasscribe run <mix> --profile brass-band --no-muscriptor` runs the same adapters
+# with the same settings and gives the same notes, beats and composition):
 #   <out>/bp.mid             Basic Pitch adapter on the whole mix
 #   <out>/beats-small0.beats Beat This! small0 adapter
 #   <out>/minimal/           brasscribe_eval.arrange_song, Basic Pitch in the melody, bass and harmony slots

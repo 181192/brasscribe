@@ -175,9 +175,13 @@ def _arrange_params(title: str, params: dict, lineup: str = "full", kit: str = "
     return {"title": title, "arrangement": opts} if opts else {"title": title}
 
 
-def _beats() -> Stage:
+def _beats(model: str | None = None, reuse: bool = True) -> Stage:
+    """Beat This! on the recording. `model` is a checkpoint other than the adapter's own (final0): small0 is the
+    one the Play apps run on the device. `reuse=False` never imports a mix.beats from a song-pipeline directory,
+    whose beats come from the adapter's own model."""
     return Stage("beats", "beats", {"audio": Input(SOURCE)}, S.beats, adapter="beat-this",
-                 outputs=("mix.beats",), reuse_subdir=".")
+                 params={"model": model} if model else {},
+                 outputs=("mix.beats",), reuse_subdir="." if reuse else None)
 
 
 # The transcribers that are retuned to A = 440 first (tuning.py), and only on a whole recording. MuScriptor
@@ -273,9 +277,7 @@ def brass_band(title: str, params: dict) -> Pipeline:
         notes, support = Input("transcribe.mix.muscriptor", "mix-mus.mid"), {"melody_support": Input("transcribe.mix.basic-pitch", "mix-bp.mid")}
     else:
         # Not retuned: the draft is the reference for the device's, and the device does not retune.
-        st = [Stage("beats", "beats", {"audio": mix}, S.beats, adapter="beat-this", params={"env": {"BEAT_THIS_MODEL": "small0"}},
-                    outputs=("mix.beats",), reuse_subdir="."),
-              _transcribe("mix", "basic-pitch", "bp", mix, None)]
+        st = [_beats("small0", reuse=False), _transcribe("mix", "basic-pitch", "bp", mix, None)]
         notes, support = Input("transcribe.mix.basic-pitch", "mix-bp.mid"), {}
     st.append(Stage("arrange", "arrange", {
         "beats": Input("beats", "mix.beats"), "melody": notes, **support, "bass": notes, "harmony0": notes},
@@ -301,8 +303,8 @@ def solo(title: str, params: dict) -> Pipeline:
     if params.get("seat") and not seat_by_id(params["seat"]).reads:
         raise ValueError(PERCUSSION_SOLO)
     mix = Input(SOURCE)
-    st = [Stage("beats", "beats", {"audio": mix}, S.beats, adapter="beat-this", params={"env": {"BEAT_THIS_MODEL": "small0"}},
-                outputs=("mix.beats",), reuse_subdir=".")]
+    # Reused from a directory that holds the on-device reference's small0 beats (the solo-ondevice suite).
+    st = [_beats("small0")]
     tools = [("swift-f0", "sw"), ("basic-pitch", "bp")] + ([("muscriptor", "mus")] if params.get("muscriptor", True) else [])
     arrange_inputs = {"beats": Input("beats", "mix.beats")}
     for tool, suffix in tools:
