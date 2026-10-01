@@ -173,6 +173,9 @@ fn what_is_not_a_request_is_invalid_input() {
         with(&|r| r["notes"][0]["pitch"] = json!(128)),
         with(&|r| r["notes"][0]["pitch"] = json!("C")),
         with(&|r| r["notes"][0]["techniques"] = json!(["tapping"])),
+        with(&|r| r["notes"][3]["technique"] = json!(["hammer-on"])),
+        with(&|r| r["notes"][0]["string"] = json!(2)),
+        with(&|r| r["notes"] = Value::Array((0..20_001).map(|i| json!({"pitch": 40, "start": 12 * i, "dur": 12})).collect())),
         with(&|r| r["notes"][0]["start"] = json!(i64::MAX)),
         with(&|r| r["notes"][0]["start"] = json!(i64::MIN)),
         with(&|r| r["notes"][0]["dur"] = json!(i64::MAX)),
@@ -202,6 +205,17 @@ fn what_is_not_a_request_is_invalid_input() {
     let v: Value = serde_json::from_str(&fretted_fingering_json(r.to_string()).unwrap()).unwrap();
     assert_eq!((&v["instrument"]["name"], &v["tuning_suggestions"]), (&json!("Custom"), &json!([])));
     assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_OK);
+    // A fingering that puts a note where it does not sound is refused, with the place and the pitch.
+    let solved: Value = serde_json::from_str(&fretted_fingering_json(request().to_string()).unwrap()).unwrap();
+    let mut r = request();
+    r["fingering"] = solved["fingering"].clone();
+    r["fingering"]["notes"][1]["string"] = json!(1);
+    assert_eq!(reason(fretted_tab_json(r.to_string())), "note 1: string 1 fret 0 sounds pitch 43, not the note's 33");
+    assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_INVALID);
+    r["fingering"]["notes"][1]["fret"] = json!(99);
+    assert_eq!(reason(fretted_tab_json(r.to_string())), "note 1: the instrument has no string 1 fret 99");
+    r["fingering"]["notes"][1] = json!({"pitch": 33, "string": 3, "fret": 0, "alternatives": [], "out_of_range": false, "pinned": false, "finger": 1});
+    assert!(reason(fretted_tab_json(r.to_string())).contains("unknown field `finger`"));
     // A zero-length note can be fingered and cannot be written.
     let mut r = request();
     r["notes"][0]["dur"] = json!(0);

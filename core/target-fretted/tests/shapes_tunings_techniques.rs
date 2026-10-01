@@ -319,6 +319,25 @@ fn the_check_reports_broken_technique_constraints() {
     assert!(assign_with_techniques(&g, &notes, &[Vec::new()], &o).is_err());
 }
 
+/// The note a technique comes from is the same whether it is looked up for one note or for all.
+#[test]
+fn the_note_before_is_the_same_looked_up_one_by_one_or_all_at_once() {
+    use target_fretted::{previous_note, previous_notes};
+    let mut seed = 0x9e37_79b9_7f4a_7c15u64;
+    let mut next = |n: u64| {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        seed % n
+    };
+    for len in [0, 1, 2, 7, 200] {
+        // Starts out of order, with chords, equal pitches and a pickup.
+        let notes: Vec<Note> = (0..len).map(|_| Note::new(40 + next(8) as i32, next(40) as i64 * 6 - 24, 6, 1.0, Vec::new())).collect();
+        let one_by_one: Vec<Option<usize>> = (0..notes.len()).map(|i| previous_note(&notes, i)).collect();
+        assert_eq!(previous_notes(&notes), one_by_one);
+    }
+}
+
 #[test]
 fn techniques_come_in_on_json_notes() {
     let body = r#"{"instrument": {"preset": "guitar-standard"}, "options": {"style": "open-position"},

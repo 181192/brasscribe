@@ -2,8 +2,8 @@
 
 use brasscribe_core::model::Note;
 use roxmltree::{Document, Node, ParsingOptions};
-use target_fretted::json::{tab_json, tab_musicxml_json};
-use target_fretted::{assign, assign_with_techniques, preset, write_tab_musicxml, CapoEncoding, Fingering, Instrument, Layout, NotationClef, NotePlace, Options, TabDocument, TabOptions, TabScore, Technique, PRESET_IDS};
+use target_fretted::json::{solve_json, tab_json, tab_musicxml_json, NOTE_KEYS};
+use target_fretted::{assign, assign_with_techniques, preset, write_tab_musicxml, CapoEncoding, Fingering, Instrument, Layout, NotationClef, NotePlace, Options, TabDocument, TabOptions, TabScore, Technique, MAX_NOTES, PRESET_IDS};
 
 const QUARTER: i64 = 24;
 const EIGHTH: i64 = 12;
@@ -1167,12 +1167,13 @@ fn every_preset_and_layout_is_well_formed_and_fills_its_measures() {
                 assert_typed_and_bracketed(&doc);
                 assert_indexed(&doc, notes.len());
                 // Every note is named on each staff that shows it, or was written as one with an
-                // earlier note of its pitch on its place.
+                // earlier note of its pitch and its place whose start was moved to the same place
+                // on the grid (each start moves two ticks at most).
                 for staff in if l == Layout::TabAndNotation { vec![Some("1"), Some("2")] } else { vec![None] } {
                     let on_tab = l == Layout::Tab || staff == Some("2");
                     let named = indices_on(&doc, staff);
                     for (i, (n, p)) in notes.iter().zip(&fingering.notes).enumerate() {
-                        let same = |j: &usize| *j < i && notes[*j].pitch == n.pitch && fingering.notes[*j].position() == p.position();
+                        let same = |j: &usize| *j < i && (notes[*j].start - n.start).abs() <= 4 && notes[*j].pitch == n.pitch && fingering.notes[*j].position() == p.position();
                         let shown = !on_tab || p.position().is_some();
                         assert_eq!(named.contains(&i) || named.iter().any(same), shown, "{id} {l:?} staff {staff:?}: note {i}");
                     }
@@ -1358,6 +1359,60 @@ fn json_refuses_what_it_does_not_know() {
     assert!(err(r#"{"instrument": {"preset": "lute"}, "notes": []}"#).contains("lute"));
     let short = r#"{"instrument": {"preset": "guitar-standard"}, "notes": [{"pitch": 64, "start": 0, "dur": 24}], "fingering": {"notes": []}}"#;
     assert!(err(short).contains("places 0 notes"));
+    // A key a note does not have, such as a misspelled `techniques`, is refused and named.
+    let note = r#"{"instrument": {"preset": "guitar-standard"}, "notes": [{"pitch": 64, "start": 0, "dur": 24, "technique": ["slide"]}]}"#;
+    assert!(err(note).starts_with(&format!("not a tablature request: unknown field `technique` in a note, expected one of {}", NOTE_KEYS.join(", "))), "{}", err(note));
+    assert!(solve_json(note).unwrap_err().starts_with("not a fingering request: unknown field `technique` in a note"));
+    // Every key of the shared model's note is known, so a note taken from a composition is read.
+    let mut full = Note::new(64, 0, 24, 0.5, vec!["swiftf0".into()]).with_times(Some(0.0), Some(0.5));
+    full.trill = Some(2);
+    full.performed_dur = Some(20);
+    let written = serde_json::to_value(&full).unwrap();
+    let keys: Vec<&str> = written.as_object().unwrap().keys().map(String::as_str).collect();
+    assert_eq!(keys, NOTE_KEYS[..10], "a new field of the model's note belongs in NOTE_KEYS");
+    assert!(solve_json(&serde_json::json!({"instrument": {"preset": "guitar-standard"}, "notes": [written]}).to_string()).is_ok());
+    // A note that is not an object, or lacks a pitch, is refused too.
+    for bad in ["[64, 0, 24]", r#"{"start": 0, "dur": 24}"#, r#"{"pitch": 64, "start": 0, "dur": 24, "techniques": "slide"}"#] {
+        assert!(err(&format!(r#"{{"instrument": {{"preset": "guitar-standard"}}, "notes": [{bad}]}}"#)).starts_with("not a tablature request"), "{bad}");
+    }
+}
+
+#[test]
+fn a_given_fingering_must_sound_the_notes() {
+    // A1 on a 4-string bass: the open third string, or the fourth string at fret 5.
+    let request = |string: Option<u8>, fret: Option<u8>| {
+        let place = NotePlace { pitch: 33, string, fret, alternatives: Vec::new(), out_of_range: false, pinned: false };
+        serde_json::json!({"instrument": {"preset": "bass-4-standard", "capo": 0}, "notes": [{"pitch": 33, "start": 0, "dur": 24}], "fingering": Fingering { notes: vec![place] }}).to_string()
+    };
+    assert!(tab_json(&request(Some(3), Some(0))).is_ok());
+    assert!(tab_json(&request(Some(4), Some(5))).is_ok());
+    assert_eq!(tab_json(&request(Some(1), Some(0))).unwrap_err(), "note 0: string 1 fret 0 sounds pitch 43, not the note's 33");
+    assert_eq!(tab_json(&request(Some(5), Some(0))).unwrap_err(), "note 0: the instrument has no string 5 fret 0");
+    assert_eq!(tab_json(&request(Some(4), Some(40))).unwrap_err(), "note 0: the instrument has no string 4 fret 40");
+    assert_eq!(tab_json(&request(Some(3), None)).unwrap_err(), "note 0: a string and a fret go together");
+    // A note left without a place is still written, as a rest with its name.
+    assert!(tab_json(&request(None, None)).unwrap().contains("! A1"));
+    // With a capo the frets count from it: the open third string then sounds B1.
+    let capo = request(Some(3), Some(0)).replace("\"capo\":0", "\"capo\":2");
+    assert_eq!(tab_json(&capo).unwrap_err(), "note 0: string 3 fret 0 sounds pitch 35, not the note's 33");
+    // The same holds for a score built in Rust.
+    let inst = preset("bass-4-standard").unwrap();
+    let place = NotePlace { pitch: 33, string: Some(1), fret: Some(0), alternatives: Vec::new(), out_of_range: false, pinned: false };
+    assert!(TabScore::new("Test", &inst, &[note(33, 0, 24)], &[], &Fingering { notes: vec![place] }).unwrap_err().contains("sounds pitch 43"));
+}
+
+#[test]
+fn a_passage_beyond_any_piece_is_refused() {
+    let passage = |n: usize| -> String {
+        let notes: Vec<serde_json::Value> = (0..n).map(|i| serde_json::json!({"pitch": 40 + (i % 12) as i32, "start": 12 * i as i64, "dur": 12})).collect();
+        serde_json::json!({"instrument": {"preset": "bass-4-standard"}, "notes": notes}).to_string()
+    };
+    let most = passage(MAX_NOTES);
+    solve_json(&most).unwrap();
+    tab_json(&most).unwrap();
+    let over = passage(MAX_NOTES + 1);
+    assert_eq!(solve_json(&over).unwrap_err(), "a passage has at most 20000 notes, not 20001");
+    assert_eq!(tab_json(&over).unwrap_err(), "a passage has at most 20000 notes, not 20001");
 }
 
 // --- fixture ---

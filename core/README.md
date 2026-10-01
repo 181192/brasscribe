@@ -234,9 +234,10 @@ a panic or a hang:
 - options: unknown lineups, difficulties, seats, clefs, leads, languages and
   keys, a transposition beyond `MAX_TRANSPOSE` semitones or out of MIDI range,
   a free-time tempo outside `FREE_TEMPO_RANGE`;
-- a fretted request: JSON that is not the request (unknown keys included), an unknown preset,
-  style or technique, a pin that names a note or a string that does not exist, a note outside
-  MIDI 0-127 or `MAX_BEATS`, and for tablature a meter, key, tempo or note length that cannot be
+- a fretted request: JSON that is not the request (unknown keys included, also in a note), an
+  unknown preset, style or technique, a pin that names a note or a string that does not exist,
+  more than 20,000 notes, a note outside MIDI 0-127 or `MAX_BEATS`, a given fingering with a string
+  and fret that do not sound its note, and for tablature a meter, key, tempo or note length that cannot be
   written. A pin on a string that cannot sound its note is not invalid: the answer lists it under
   `violations`;
 - a solo contour whose arrays differ in length (a JSON `null` in an array is a

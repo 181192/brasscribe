@@ -66,12 +66,33 @@ impl InstrumentChoice {
 }
 
 /// A note of the request: the shared model's note plus the techniques it is played with.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct InputNote {
     #[serde(flatten)]
     pub note: Note,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub techniques: Vec<Technique>,
+}
+
+/// The keys a note of a request may have: the shared model's note and `techniques`.
+pub const NOTE_KEYS: [&str; 11] = ["pitch", "start", "dur", "confidence", "sources", "onset_s", "offset_s", "performed_dur", "articulations", "trill", "techniques"];
+
+/// Read by hand, because a flattened struct cannot refuse unknown keys: a misspelled `techniques`
+/// would otherwise be dropped without a word.
+impl<'de> Deserialize<'de> for InputNote {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        use serde::de::Error;
+        let mut fields = serde_json::Map::<String, serde_json::Value>::deserialize(d)?;
+        if let Some(key) = fields.keys().find(|k| !NOTE_KEYS.contains(&k.as_str())) {
+            return Err(D::Error::custom(format!("unknown field `{key}` in a note, expected one of {}", NOTE_KEYS.join(", "))));
+        }
+        let techniques = match fields.remove("techniques") {
+            Some(t) => Vec::<Technique>::deserialize(t).map_err(|e| D::Error::custom(format!("techniques: {e}")))?,
+            None => Vec::new(),
+        };
+        let note = Note::deserialize(serde_json::Value::Object(fields)).map_err(D::Error::custom)?;
+        Ok(InputNote { note, techniques })
+    }
 }
 
 impl From<Note> for InputNote {
