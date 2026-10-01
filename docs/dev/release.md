@@ -171,6 +171,7 @@ B="$S/stage/Brasscribe Bandroom.app"
 ditto "$S/dd-band/Build/Products/Release/Brasscribe Bandroom.app" "$B"
 mkdir -p "$B/Contents/Resources/bin"
 cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
+scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"   # stops if it is older than pixi.toml asks for (CI bundles v0.81.0)
 codesign -d --entitlements - --xml "$B" > "$S/band.entitlements"
 "$B/Contents/Resources/bin/brasscribe-core" version    # staged by the build
 codesign --force --sign - "$B/Contents/Resources/bin/pixi"
