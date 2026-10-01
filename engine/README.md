@@ -18,8 +18,11 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   [`target-fretted`](../core/target-fretted/README.md), which the engine calls through the core's command line
   (`brasscribe-core fret`). Its result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the
   fingered notes, the tunings ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the
-  octave shift when the line was heard an octave high. It takes `instrument` (`bass-4`, `bass-5`, `bass-6`),
-  `tuning`, `capo`, `style` and `octave` (`auto`, or the player's choice), and none of the band options. There is no tab MusicXML yet.
+  octave shift when the line was heard an octave high. The tab itself is `tab.musicxml`, written by the same crate
+  (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore when it is installed; `/musicxml`, `/pdf`
+  and `/midi` of the job serve them. It takes `instrument` (`bass-4`, `bass-5`, `bass-6`), `tuning`, `capo`,
+  `style`, `octave` (`auto`, or the player's choice) and `layout` (`tab`, `tab-and-notation`, `notation`), and
+  none of the band options.
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS
   advertisement as `_brasscribe._tcp` (`discovery.py`). The contract is the committed

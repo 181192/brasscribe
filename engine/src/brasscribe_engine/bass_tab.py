@@ -8,22 +8,25 @@
     notes                        the bottom line on the beat grid with written durations (the shared
                                  quantization and durations), the octave check, meter, key, tempo, and the
                                  recording's offset from A = 440
-    arrange                      a string and a fret for every note, from the Rust crate target-fretted
-                                 (core/target-fretted)
+    arrange                      a string and a fret for every note, and the tab as MusicXML, both from
+                                 the Rust crate target-fretted (core/target-fretted)
+    export                       PDF and MIDI of that MusicXML through MuseScore, as the band profiles'
 
 The instrument (instrument, tuning, capo, style) is a parameter of the last stage only, so choosing
 another tuning for a song fingers it again without transcribing it again. The octave is a parameter of
 the notes stage: `auto` runs the octave check, a number of semitones replaces it.
 
-The engine reaches target-fretted through the core's command line (`brasscribe-core fret`), which
-passes the crate's JSON request and response through unchanged.
+The engine reaches target-fretted through the core's command line (`brasscribe-core fret` for the
+fingering, `brasscribe-core tab` for the MusicXML), which passes the crate's JSON requests and responses
+through unchanged.
 
-The result is tab.json (schemas.Tab), next to a composition.json with the one bass voice. There is no
-tab MusicXML yet: export_tab is where it goes.
+The result is tab.json (schemas.Tab), a composition.json with the one bass voice, tab.musicxml
+(export_tab), and tab.pdf and tab.mid when MuseScore is installed.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -61,8 +64,10 @@ MAX_CAPO = 12
 # Which octave the line is written in: auto lets the octave check decide; the others are the player's
 # choice, in semitones from what was heard.
 OCTAVES = ("auto", "0", "-12", "+12")
+# What the page shows (target-fretted's Layout). A bass part is tab alone unless the player asks for notation.
+LAYOUTS = ("tab", "tab-and-notation", "notation")
 DEFAULTS = {"instrument": "bass-4", "tuning": "standard", "capo": 0, "style": "as-played", "recording": "song",
-            "octave": "auto"}
+            "octave": "auto", "layout": "tab"}
 
 # The octave check. Transcribers hear a bass an octave high when its fundamental is weak (a phone's
 # microphone barely carries a low E). The whole line is written an octave lower when its median pitch
@@ -122,6 +127,8 @@ def options(params: dict) -> dict:
         raise ValueError(f"recording must be one of {', '.join(RECORDINGS)}")
     if opts["octave"] not in OCTAVES:
         raise ValueError(f"octave must be one of {', '.join(OCTAVES)}")
+    if opts["layout"] not in LAYOUTS:
+        raise ValueError(f"layout must be one of {', '.join(LAYOUTS)}")
     return opts
 
 
@@ -162,7 +169,18 @@ def core_cli() -> Path:
 
 
 def solve(request: dict, cancel: threading.Event | None = None, log: Callable[[str], None] | None = None) -> dict:
-    """target-fretted's answer to its JSON request (core/target-fretted/README.md, JSON).
+    """target-fretted's answer to its fingering request (core/target-fretted/README.md, JSON)."""
+    return core_call("fret", request, cancel, log)
+
+
+def tablature(request: dict, cancel: threading.Event | None = None, log: Callable[[str], None] | None = None) -> dict:
+    """target-fretted's answer to its tablature request: {"musicxml": ..., "adjusted_notes": ...}."""
+    return core_call("tab", request, cancel, log)
+
+
+def core_call(command: str, request: dict, cancel: threading.Event | None = None,
+              log: Callable[[str], None] | None = None) -> dict:
+    """One call of the core's command line: the JSON `request` in, its JSON answer out.
 
     Setting `cancel` stops the core, and so does FRET_TIMEOUT_S. No error names a path on this computer."""
     cli = core_cli()
@@ -173,10 +191,10 @@ def solve(request: dict, cancel: threading.Event | None = None, log: Callable[[s
             log("brasscribe-core taken from the PATH")
         print(f"brasscribe-core taken from the PATH: {cli}", file=sys.stderr, flush=True)
     with tempfile.TemporaryDirectory() as tmp:
-        req, out = Path(tmp) / "request.json", Path(tmp) / "fingering.json"
+        req, out = Path(tmp) / "request.json", Path(tmp) / "answer.json"
         req.write_text(json.dumps(request))
         try:
-            proc = subprocess.Popen([str(cli), "fret", "--request", str(req), "--out", str(out)], stdin=subprocess.DEVNULL,
+            proc = subprocess.Popen([str(cli), command, "--request", str(req), "--out", str(out)], stdin=subprocess.DEVNULL,
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=child_env())
         except OSError as e:  # not a program this computer can run; the message would name its path
             raise RuntimeError(f"brasscribe-core could not be started ({type(e).__name__}): build it with "
@@ -189,15 +207,15 @@ def solve(request: dict, cancel: threading.Event | None = None, log: Callable[[s
             except subprocess.TimeoutExpired:
                 if cancel is not None and cancel.is_set():
                     kill_tree(proc)
-                    raise RuntimeError("brasscribe-core fret stopped: the job was cancelled") from None
+                    raise RuntimeError(f"brasscribe-core {command} stopped: the job was cancelled") from None
                 if time.monotonic() > end:
                     kill_tree(proc)
-                    raise RuntimeError(f"brasscribe-core fret stopped after {FRET_TIMEOUT_S:.0f} s, its time limit") from None
+                    raise RuntimeError(f"brasscribe-core {command} stopped after {FRET_TIMEOUT_S:.0f} s, its time limit") from None
             except BaseException:  # e.g. Ctrl-C in `brasscribe run`: leave no process running
                 kill_tree(proc)
                 raise
         if proc.returncode != 0:
-            raise RuntimeError(f"brasscribe-core fret failed: {stderr.strip()[-2000:].replace(tmp, '.')}")
+            raise RuntimeError(f"brasscribe-core {command} failed: {stderr.strip()[-2000:].replace(tmp, '.')}")
         return json.loads(out.read_text())
 
 
@@ -330,24 +348,97 @@ def composition(tab: dict, title: str):
                        [KeySig(0, tab["key"]["fifths"], tab["key"]["mode"])], tab["beat_times"], tab["first_downbeat"])
 
 
-def export_tab(tab: dict, out: Path) -> list[str]:
-    """Where the tab's files will be written: MusicXML with a tab staff first, then what is rendered
-    from it. target-fretted does not write tab MusicXML yet, so nothing is written, and the profile
-    lists no such output. Returns the names written under `out`."""
-    return []
+PAGE_TITLE_MAX = 48  # characters: a longer title runs off the page in the tab's header
+
+
+def page_title(title: str) -> str:
+    """The title as the page's header shows it: one line that fits, cut at a word where there is one.
+    The job keeps its whole name."""
+    title = " ".join("".join(c for c in title if c.isprintable() or c.isspace()).split())
+    if len(title) <= PAGE_TITLE_MAX:
+        return title
+    cut = title[:PAGE_TITLE_MAX - 1]
+    word = cut.rfind(" ")
+    return (cut[:word] if word >= PAGE_TITLE_MAX // 2 else cut).rstrip() + "…"
+
+
+def export_tab(tab: dict, title: str, layout: str, out: Path, tablature: Callable[[dict], dict] = tablature) -> int:
+    """Write `tab` as MusicXML to `out`/tab.musicxml, laid out as `layout` (LAYOUTS), in one call of the core.
+
+    The notes are written where tab.json has them, not fingered again. Returns how many notes the
+    writer had to move to a start or length it can spell."""
+    places = ("pitch", "string", "fret", "alternatives", "out_of_range", "pinned")
+    answer = tablature({
+        "title": page_title(title),
+        "instrument": {"preset": tab["preset"], "capo": tab["instrument"]["capo"]},
+        "notes": [{"pitch": n["pitch"], "start": n["start"], "dur": n["dur"], "confidence": n["confidence"]} for n in tab["notes"]],
+        "fingering": {"notes": [{k: n[k] for k in places} for n in tab["notes"]]},
+        "tempo_bpm": round(tab["tempo_bpm"]),  # the page says a whole number of beats per minute
+        "meter": tab["meter"],
+        "key": {"fifths": tab["key"]["fifths"], "mode": tab["key"]["mode"]},
+        "tab": {"layout": layout}})
+    (out / "tab.musicxml").write_text(answer["musicxml"])
+    return int(answer["adjusted_notes"])
 
 
 def arrange_stage(ctx: StageContext) -> None:
     doc = json.loads(ctx.inputs["notes"].read_text())
+    layout = ctx.params.get("layout", DEFAULTS["layout"])
     try:
         tab = fingered(doc, ctx.params["fingering"], lambda request: solve(request, ctx.executor.cancel, ctx.log))
+        tab["layout"] = layout
+        tab["adjusted_notes"] = export_tab(tab, ctx.params["title"], layout, ctx.out,
+                                           lambda request: tablature(request, ctx.executor.cancel, ctx.log))
     except RuntimeError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
     unplayable = sum(n["out_of_range"] for n in tab["notes"])
     ctx.log(f"{len(tab['notes'])} notes on {tab['preset']}, {unplayable} out of range, {len(tab['violations'])} violations")
+    if tab["adjusted_notes"]:
+        ctx.log(f"{tab['adjusted_notes']} notes moved to a start or length that can be written")
     (ctx.out / "tab.json").write_text(json.dumps(tab, indent=1))
     composition(tab, ctx.params["title"]).to_json(ctx.out / "composition.json")
-    export_tab(tab, ctx.out)
+
+
+EXPORT_FORMATS = ("pdf", "mid")
+
+
+def musescore_fingerprint() -> str | None:
+    """Which MuseScore would render the tab, for the export stage's cache key: None without one, else a
+    digest of where its program is, its size and when it was written. So a run made without MuseScore is
+    rendered once it is installed, and again after an update."""
+    from brasscribe_music import musescore
+
+    exe = musescore.binary()
+    found = shutil.which(exe) if exe else None
+    if not found:
+        return None
+    try:
+        st = Path(found).resolve().stat()
+    except OSError:
+        return None
+    return hashlib.sha256(f"{Path(found).resolve()}:{st.st_size}:{st.st_mtime_ns}".encode()).hexdigest()[:16]
+
+
+def export_stage(ctx: StageContext) -> None:
+    """PDF and MIDI of the tab's MusicXML through MuseScore, as the band profiles' export stage.
+
+    MuseScore 4 aborts during shutdown after writing its output, so success is judged by the output
+    files, never the exit code. Without MuseScore nothing is rendered, and export.json and the log say so."""
+    from brasscribe_music import musescore
+
+    mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
+    written = []
+    if mscore:
+        dsts = [ctx.out / f"tab.{ext}" for ext in EXPORT_FORMATS]
+        missing = musescore.convert_many([(ctx.inputs["score"] / "tab.musicxml", dsts)])
+        if missing:
+            raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
+        written = [d.name for d in dsts]
+    else:
+        ctx.log("mscore not found: PDF and MIDI skipped")
+    (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,
+                                                     "skipped": [] if mscore else [f"tab.{ext}" for ext in EXPORT_FORMATS]},
+                                                    indent=1))
 
 
 # ---------------------------------------------------------------- the pipeline
@@ -357,6 +448,8 @@ def build(title: str, params: dict) -> Pipeline:
 
     opts = options(params)
     whole = opts["recording"] == "instrument"
+    # The adapter's own beat model (final0), as pop-rock: it runs on the computer, on a whole song, and the two
+    # profiles share its cache entry. small0 is for what the apps also make on the device.
     st = [P._beats()]
     if whole:
         bass = Input(SOURCE)
@@ -374,8 +467,11 @@ def build(title: str, params: dict) -> Pipeline:
                     code=(S.MUSIC_SRC, S.EVAL_SRC, THIS, tuning.THIS), outputs=("bass-notes.json",)))
     fingering = {"instrument": opts["instrument"], "tuning": opts["tuning"], "capo": opts["capo"], "style": opts["style"]}
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "bass-notes.json")}, arrange_stage,
-                    params={"title": title, "fingering": fingering},
+                    params={"title": title, "fingering": fingering, "layout": opts["layout"]},
                     # The core binary is part of the cache key: a new target-fretted fingers again.
-                    code=(THIS, core_cli_path()), outputs=("composition.json", "tab.json")))
-    outputs = {"composition.json": ("arrange", "composition.json"), "tab.json": ("arrange", "tab.json")}
+                    code=(THIS, core_cli_path()), outputs=("composition.json", "tab.json", "tab.musicxml")))
+    st.append(Stage("export", "export", {"score": Input("arrange")}, export_stage,
+                    params={"musescore": musescore_fingerprint()}, code=(THIS,), outputs=("export.json",)))
+    outputs = {"composition.json": ("arrange", "composition.json"), "tab.json": ("arrange", "tab.json"),
+               "tab.musicxml": ("arrange", "tab.musicxml"), "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
     return Pipeline(PROFILE, "tab", st, outputs, opts)

@@ -240,6 +240,22 @@
             ],
             "title": "Key"
           },
+          "layout": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tab",
+                  "tab-and-notation",
+                  "notation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout"
+          },
           "lead": {
             "default": "lineup",
             "enum": [
@@ -1291,6 +1307,23 @@
             ],
             "description": "target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] (-2, -2:minor); the arrangement is transposed to it",
             "title": "Key"
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tab",
+                  "tab-and-notation",
+                  "notation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "bass-tab profile: what the page shows. tab: the tab staff alone, with stems for the rhythm; tab-and-notation: a notation staff above it; notation: the notation staff alone; default: tab",
+            "title": "Layout"
           },
           "lead": {
             "default": "lineup",
@@ -2856,6 +2889,11 @@
       "Tab": {
         "description": "The bass-tab profile's result: every note with its string and fret, and what the song check shows\nbefore the tab (tuning, reference pitch, capo, octave, key and tempo).",
         "properties": {
+          "adjusted_notes": {
+            "description": "notes whose start or length no note value could spell, written at the nearest one that can; in tab.musicxml only, the notes here are unchanged",
+            "title": "Adjusted Notes",
+            "type": "integer"
+          },
           "beat_times": {
             "description": "seconds of beat 0, 1, 2 ...",
             "items": {
@@ -2874,6 +2912,16 @@
           },
           "key": {
             "$ref": "#/components/schemas/TabKey"
+          },
+          "layout": {
+            "description": "what tab.musicxml (and the PDF made from it) shows",
+            "enum": [
+              "tab",
+              "tab-and-notation",
+              "notation"
+            ],
+            "title": "Layout",
+            "type": "string"
           },
           "meter": {
             "$ref": "#/components/schemas/TabMeter"
@@ -2958,6 +3006,8 @@
           "notes",
           "violations",
           "tuning_suggestions",
+          "layout",
+          "adjusted_notes",
           "octave_shift",
           "octave_source",
           "reference_pitch",

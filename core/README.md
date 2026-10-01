@@ -76,6 +76,7 @@ brasscribe-core quantize --reference reference.json --beats b.beats --out q.json
 brasscribe-core meter --beats b.beats --notes notes.json --out meter.json
 brasscribe-core normalize --composition composition.json --out composition.json
 brasscribe-core fret --request request.json --out fingering.json
+brasscribe-core tab --request tab-request.json --out tab.json
 brasscribe-core version
 ```
 
@@ -91,6 +92,9 @@ Tenor Horn and Euphonium, one player each.
 
 `fret` is how the engine reaches [`target-fretted`](target-fretted/README.md): it reads that crate's JSON request
 (instrument, notes, options) and writes its JSON response (fingering, violations, tuning suggestions), both unchanged.
+`tab` does the same for tablature: the crate's tab request in (the notes, a fingering or none, title, tempo, meter,
+key, and `tab` with the layout, the capo encoding and the doubt threshold), and `{"musicxml": …, "adjusted_notes": …}`
+out.
 
 ## Conformance
 

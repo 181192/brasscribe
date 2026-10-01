@@ -3,6 +3,7 @@ fingering from the Rust core (target-fretted through `brasscribe-core fret`)."""
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -40,14 +41,14 @@ needs_core = pytest.mark.skipif(_core_missing() is not None, reason=_core_missin
 
 def test_defaults_are_a_four_string_bass_in_standard_tuning_separated_from_a_song():
     assert bass_tab.options({}) == {"instrument": "bass-4", "tuning": "standard", "capo": 0, "style": "as-played",
-                                    "recording": "song", "octave": "auto"}
+                                    "recording": "song", "octave": "auto", "layout": "tab"}
     assert bass_tab.preset(bass_tab.options({"instrument": "bass-5", "tuning": "drop-a"})) == "bass-5-drop-a"
 
 
 @pytest.mark.parametrize("params", [
     {"instrument": "guitar"}, {"instrument": "bass-7"}, {"tuning": "open-g"}, {"instrument": "bass-5", "tuning": "drop-d"},
     {"capo": -1}, {"capo": 13}, {"capo": "2"}, {"capo": True}, {"capo": 1.5}, {"style": "shred"}, {"recording": "band"},
-    {"octave": "12"}, {"octave": -12}, {"octave": "-24"}, {"octave": "down"},
+    {"layout": "score"}, {"layout": "tab+notation"}, {"octave": "12"}, {"octave": -12}, {"octave": "-24"}, {"octave": "down"},
 ])
 def test_values_outside_the_instrument_are_refused(params):
     with pytest.raises(ValueError):
@@ -99,6 +100,7 @@ def test_the_instrument_table_is_target_fretteds_bass_presets():
     assert set(bass_tab.STYLES) == set(m.FingeringStyle.__args__)
     assert set(bass_tab.RECORDINGS) == set(m.Recording.__args__)
     assert set(bass_tab.OCTAVES) == set(m.Octave.__args__)
+    assert set(bass_tab.LAYOUTS) == set(m.TabLayout.__args__)
     assert bass_tab.MAX_CAPO == next(x.le for x in m.JobCreate.model_fields["capo"].metadata if hasattr(x, "le"))
 
 
@@ -160,19 +162,21 @@ def test_the_cli_passes_only_the_fretted_options_that_are_given(monkeypatch, tmp
 
 def test_a_song_is_separated_and_its_bass_stem_transcribed_as_in_pop_rock():
     tab = profiles.build("bass-tab", Path("song.wav"))
-    assert [s.name for s in tab.stages] == ["beats", "stems", "transcribe.bass.basic-pitch", "notes", "arrange"]
+    assert [s.name for s in tab.stages] == ["beats", "stems", "transcribe.bass.basic-pitch", "notes", "arrange", "export"]
     pop = profiles.build("pop-rock", Path("song.wav"))
     for name in ("beats", "stems", "transcribe.bass.basic-pitch"):  # the same stages, so the same cache entries
         a, b = tab.stage(name), pop.stage(name)
         assert (a.kind, a.inputs, a.run, a.params, a.adapter, a.code, a.outputs, a.reuse_subdir, a.derive) == \
             (b.kind, b.inputs, b.run, b.params, b.adapter, b.code, b.outputs, b.reuse_subdir, b.derive), name
     assert tab.stage("transcribe.bass.basic-pitch").derive is None  # a stem's tuning estimate is not trusted
-    assert set(tab.outputs) == {"tab.json", "composition.json"}
+    assert tab.stage("beats").params == {}  # the adapter's own beat model, not the device's small one
+    assert profiles.build("bass-tab", Path("bass.wav"), params={"recording": "instrument"}).stage("beats").params == {}
+    assert set(tab.outputs) == {"tab.json", "composition.json", "tab.musicxml", "tab.pdf", "tab.mid"}
 
 
 def test_a_recording_of_the_bass_alone_is_not_separated_and_is_retuned_like_any_whole_recording():
     p = profiles.build("bass-tab", Path("bass.wav"), params={"recording": "instrument"})
-    assert [s.name for s in p.stages] == ["beats", "transcribe.bass.basic-pitch", "notes", "arrange"]
+    assert [s.name for s in p.stages] == ["beats", "transcribe.bass.basic-pitch", "notes", "arrange", "export"]
     t = p.stage("transcribe.bass.basic-pitch")
     assert t.inputs["audio"].stage == "source" and t.derive is tuning.derive and t.run is tuning.transcribe
     assert p.stage("notes").params == {"whole_recording": True}
@@ -183,10 +187,13 @@ def test_the_instrument_is_a_parameter_of_the_fingering_stage_only():
     b = profiles.build("bass-tab", Path("song.wav"), "T", {"instrument": "bass-5", "tuning": "drop-a", "capo": 2, "style": "lead"})
     for name in ("beats", "stems", "transcribe.bass.basic-pitch", "notes"):
         assert a.stage(name).params == b.stage(name).params, name
-    assert b.stage("arrange").params == {"title": "T", "fingering": {"instrument": "bass-5", "tuning": "drop-a", "capo": 2,
-                                                                     "style": "lead"}}
+    assert b.stage("arrange").params == {"title": "T", "layout": "tab",
+                                         "fingering": {"instrument": "bass-5", "tuning": "drop-a", "capo": 2, "style": "lead"}}
     assert b.params == {"instrument": "bass-5", "tuning": "drop-a", "capo": 2, "style": "lead", "recording": "song",
-                        "octave": "auto"}
+                        "octave": "auto", "layout": "tab"}
+    both = profiles.build("bass-tab", Path("song.wav"), "T", {"layout": "tab-and-notation"})
+    assert both.stage("arrange").params["layout"] == "tab-and-notation"
+    assert both.stage("notes").params == a.stage("notes").params and both.stage("export").params == a.stage("export").params
 
 
 def test_a_chosen_octave_is_a_parameter_of_the_notes_stage_only():
@@ -195,7 +202,7 @@ def test_a_chosen_octave_is_a_parameter_of_the_notes_stage_only():
     for octave in ("0", "-12", "+12"):
         chosen = profiles.build("bass-tab", Path("song.wav"), "T", {"octave": octave})
         assert chosen.stage("notes").params == {"octave": octave}
-        for name in ("beats", "stems", "transcribe.bass.basic-pitch", "arrange"):
+        for name in ("beats", "stems", "transcribe.bass.basic-pitch", "arrange", "export"):
             assert chosen.stage(name).params == auto.stage(name).params, name
     both = profiles.build("bass-tab", Path("bass.wav"), "T", {"octave": "+12", "recording": "instrument"})
     assert both.stage("notes").params == {"whole_recording": True, "octave": "+12"}
@@ -354,7 +361,7 @@ def test_the_request_is_the_crates_and_the_tab_joins_each_note_with_its_place():
     first = tab["notes"][0]
     assert (first["pitch"], first["start"], first["dur"], first["string"], first["fret"]) == (E1, 0, 24, 4, 0)
     assert first["onset_s"] == 0.0 and first["out_of_range"] is False
-    m.Tab.model_validate(tab)
+    m.Tab.model_validate({**tab, "layout": "tab", "adjusted_notes": 0})  # the two the MusicXML export adds
     assert tab["reference_pitch"]["cents"] == 12.0 and tab["preset"] == "bass-4-standard" and tab["style"] == "lead"
 
 
@@ -382,7 +389,7 @@ def test_an_answer_that_lost_notes_is_an_error():
 def test_the_core_fingers_the_line_and_suggests_the_tuning_it_sounds_like():
     line = [26, 26, 33, 38, 26, 26, 31, 33]  # down to D1: below a four-string bass in standard tuning
     tab = bass_tab.fingered(_doc(line), bass_tab.options({}))
-    m.Tab.model_validate(tab)
+    m.Tab.model_validate({**tab, "layout": "tab", "adjusted_notes": 0})
     assert [n["out_of_range"] for n in tab["notes"]] == [p == 26 for p in line]
     assert tab["notes"][0]["string"] is None and tab["notes"][0]["alternatives"] == []
     assert (tab["notes"][2]["string"], tab["notes"][2]["fret"]) == (3, 0)  # A1: the open A string
@@ -412,6 +419,153 @@ def test_a_request_the_core_refuses_fails_with_its_message():
         bass_tab.solve({"instrument": {"preset": "bass-9"}, "notes": []})
 
 
+# ---------------------------------------------------------------- the tab as MusicXML
+
+def test_the_tab_is_written_in_one_call_where_the_fingering_put_it(tmp_path):
+    tab = bass_tab.fingered(_doc(LOW_LINE), bass_tab.options({"capo": 2}), _fake_solver([]))
+    tab["notes"][1]["confidence"] = 0.2
+    seen: list[dict] = []
+
+    def stub(request: dict) -> dict:
+        seen.append(request)
+        return {"musicxml": "<score-partwise/>", "adjusted_notes": 3}
+
+    assert bass_tab.export_tab(tab, "My song", "tab-and-notation", tmp_path, stub) == 3
+    assert (tmp_path / "tab.musicxml").read_text() == "<score-partwise/>" and len(seen) == 1
+    r = seen[0]
+    assert set(r) == {"title", "instrument", "notes", "fingering", "tempo_bpm", "meter", "key", "tab"}  # the crate refuses others
+    assert (r["title"], r["instrument"], r["tab"]) == ("My song", {"preset": "bass-4-standard", "capo": 2}, {"layout": "tab-and-notation"})
+    assert (r["tempo_bpm"], r["meter"], r["key"]) == (120.0, {"beats": 4, "beat_unit": 4}, {"fifths": tab["key"]["fifths"], "mode": tab["key"]["mode"]})
+    assert r["notes"][1] == {"pitch": E1, "start": 24, "dur": 24, "confidence": 0.2}
+    assert r["fingering"]["notes"][2] == {"pitch": 35, "string": 4, "fret": 7, "alternatives": [], "out_of_range": False, "pinned": False}
+    assert len(r["notes"]) == len(r["fingering"]["notes"]) == len(LOW_LINE)
+
+
+@needs_core
+@pytest.mark.parametrize("layout,tab_staff,notation_staff", [("tab", True, False), ("tab-and-notation", True, True),
+                                                             ("notation", False, True)])
+def test_the_core_writes_each_layout_with_the_title_and_the_frets_of_the_tab(layout, tab_staff, notation_staff, tmp_path):
+    tab = bass_tab.fingered(_doc(LOW_LINE), bass_tab.options({}))
+    tab["notes"][2].update(string=4, fret=7)  # as a player moved it: B1 on the E string, not the A string's 2nd fret
+    assert bass_tab.export_tab(tab, "Low & slow", layout, tmp_path) == 0
+    xml = (tmp_path / "tab.musicxml").read_text()
+    assert "<work-title>Low &amp; slow</work-title>" in xml
+    assert ("<sign>TAB</sign>" in xml) == tab_staff and ("<sign>F</sign>" in xml) == notation_staff
+    if tab_staff:
+        assert re.search(r"<string>4</string>\s*<fret>7</fret>|<fret>7</fret>\s*<string>4</string>", xml)
+    assert xml.count("<note") >= len(LOW_LINE)
+
+
+def test_a_long_title_is_cut_to_the_page_and_the_job_keeps_its_name(tmp_path):
+    assert bass_tab.page_title("Old Hundredth") == "Old Hundredth"
+    assert bass_tab.page_title("  Old\tHundredth \n take\x01 2 ") == "Old Hundredth take 2"
+    words = "All people that on earth do dwell, sing to the Lord with cheerful voice"
+    assert bass_tab.page_title(words) == "All people that on earth do dwell, sing to the…"
+    unbroken = bass_tab.page_title("x" * 200)
+    assert unbroken == "x" * 47 + "…" and len(unbroken) == bass_tab.PAGE_TITLE_MAX
+    assert bass_tab.page_title("y" * 30 + " " + "z" * 100) == "y" * 30 + "…"  # cut at the word
+
+    tab = bass_tab.fingered(_doc(LOW_LINE), bass_tab.options({}), _fake_solver([]))
+    seen: list[dict] = []
+    bass_tab.export_tab(tab, "x" * 200, "tab", tmp_path, lambda r: seen.append(r) or {"musicxml": "<x/>", "adjusted_notes": 0})
+    assert seen[0]["title"] == unbroken
+    assert bass_tab.composition(tab, "x" * 200).title == "x" * 200
+
+
+def test_the_export_is_keyed_on_the_musescore_that_would_render_it(tmp_path, monkeypatch):
+    from brasscribe_music import musescore
+
+    def key() -> dict:
+        return profiles.build("bass-tab", Path("song.wav"), "T").stage("export").params
+
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    assert key() == {"musescore": None}
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    installed = key()["musescore"]
+    assert installed and key()["musescore"] == installed and str(tmp_path) not in installed
+    exe.write_text("#!/bin/sh\n# an update\n")
+    assert key()["musescore"] not in (None, installed)
+    monkeypatch.setattr(musescore, "binary", lambda: str(tmp_path / "gone"))
+    assert key() == {"musescore": None}
+    for name in ("beats", "stems", "transcribe.bass.basic-pitch", "notes", "arrange"):  # only the export
+        assert "musescore" not in profiles.build("bass-tab", Path("song.wav"), "T").stage(name).params
+
+
+@needs_core
+def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings, audio, monkeypatch, tmp_path):
+    from brasscribe_music import musescore
+
+    monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
+    monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    without = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert without["status"] == "succeeded" and "tab.pdf" not in without["outputs"] and "tab.musicxml" in without["outputs"]
+
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
+    installed = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert {s["stage"]: s["status"] for s in installed["stages"]} == {
+        "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "cached", "arrange": "cached", "export": "ran"}
+    assert {"tab.pdf", "tab.mid"} <= set(installed["outputs"])
+    again = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert again["stages"][-1]["status"] == "cached" and "tab.pdf" in again["outputs"]
+
+
+def test_renaming_a_run_never_writes_a_control_character_into_its_musicxml(settings, audio, monkeypatch):
+    from xml.etree import ElementTree
+
+    from brasscribe_engine.jobs import JobManager, _retitle_musicxml
+
+    for xml in ("<score-partwise><work><work-title>Old</work-title></work></score-partwise>", "<score-partwise/>",
+                '<score-partwise version="4.0"><part-list/></score-partwise>'):
+        renamed = _retitle_musicxml(xml, "a\x01b\x7f \x00c\td\ne & <f>")
+        assert ElementTree.fromstring(renamed).findtext("work/work-title") == "ab c d e & <f>"
+
+    jobs = JobManager(settings)
+    m1 = runner.run(settings, audio, "test")  # a band job: brass-band.musicxml
+    out = settings.runs_dir / m1["run_id"] / "outputs"
+    (out / "brass-band.musicxml").write_text("<score-partwise><work><work-title>Old</work-title></work></score-partwise>")
+    (out / "tab.musicxml").write_text("<score-partwise><work><work-title>Old</work-title></work></score-partwise>")
+    assert jobs.rename(m1["run_id"], "a\x01b " + "x" * 200) == "renamed"
+    band = ElementTree.parse(out / "brass-band.musicxml").findtext("work/work-title")
+    tab = ElementTree.parse(out / "tab.musicxml").findtext("work/work-title")
+    assert band == "ab " + "x" * 200  # the band score keeps the whole title, as before
+    assert tab == bass_tab.page_title("ab " + "x" * 200) and len(tab) == bass_tab.PAGE_TITLE_MAX
+    jobs.shutdown()
+
+
+def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from brasscribe_music import musescore
+
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    (tmp_path / "score").mkdir()
+    (tmp_path / "score" / "tab.musicxml").write_text("<score-partwise/>")
+    said: list[str] = []
+    ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=said.append, stage=SimpleNamespace(name="export"),
+                          params={"musescore": None})
+    bass_tab.export_stage(ctx)
+    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"]}
+    assert said == ["mscore not found: PDF and MIDI skipped"]
+
+    # With a MuseScore that writes one of the two files, the stage fails and names the other.
+    monkeypatch.setattr(musescore, "binary", lambda: "mscore")
+    ctx.params = {"musescore": "0123456789abcdef"}
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(jobs[0][1][1])])
+    with pytest.raises(bass_tab.StageFailed, match="MuseScore did not write tab.mid"):
+        bass_tab.export_stage(ctx)
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [])
+    bass_tab.export_stage(ctx)
+    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": "mscore", "written": ["tab.pdf", "tab.mid"], "skipped": []}
+
+
 # ---------------------------------------------------------------- end to end
 
 def _write_midi(path: Path, notes: list[dict]) -> None:
@@ -431,7 +585,10 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
 
     from brasscribe_engine.api import create_app
 
+    from brasscribe_music import musescore
+
     heard = _played([p + 12 for p in TYPICAL_LINE])
+    monkeypatch.setattr(musescore, "binary", lambda: None)  # the rendering has a test of its own
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], heard))
     with TestClient(create_app(settings)) as c:
@@ -441,8 +598,8 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
         assert r.status_code == 202 and r.json()["title"] == "My Bass — bass tab (draft)"
         job = _wait(c, r.json()["id"])
         assert job["status"] == "succeeded", job["error"]
-        assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.bass.basic-pitch", "notes", "arrange"]
-        assert job["outputs"] == ["composition.json", "tab.json"]
+        assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.bass.basic-pitch", "notes", "arrange", "export"]
+        assert job["outputs"] == ["composition.json", "tab.json", "tab.musicxml"]
 
         tab = c.get(f"/v1/jobs/{job['id']}/tab")
         assert tab.status_code == 200 and tab.headers["content-type"] == "application/json"
@@ -451,22 +608,30 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
         assert [n.pitch for n in tab.notes] == TYPICAL_LINE and not tab.violations
         assert all(n.string and n.fret is not None and n.fret <= 5 for n in tab.notes)
         assert tab.tuning_suggestions[0].preset == "bass-5-standard" and tab.reference_pitch is None
+        assert (tab.layout, tab.adjusted_notes) == ("tab", 0)
+        xml = c.get(f"/v1/jobs/{job['id']}/musicxml")
+        assert xml.status_code == 200 and xml.headers["content-type"].startswith("application/vnd.recordare.musicxml")
+        assert "<work-title>My Bass — bass tab (draft)</work-title>" in xml.text and "<sign>TAB</sign>" in xml.text
+        assert c.get(f"/v1/jobs/{job['id']}/artifacts/tab.musicxml").text == xml.text
+        assert c.get(f"/v1/jobs/{job['id']}/pdf").status_code == 404  # no MuseScore here
+        assert c.patch(f"/v1/runs/{job['id']}", json={"title": "Renamed"}).status_code == 200
+        assert "<work-title>Renamed</work-title>" in c.get(f"/v1/jobs/{job['id']}/musicxml").text
         assert (tab.tempo_bpm, tab.meter.beats) == (120.0, 4)
 
         comp = c.get(f"/v1/jobs/{job['id']}/composition").json()
-        assert comp["title"] == "My Bass — bass tab (draft)" and [v["role"] for v in comp["voices"]] == ["bass"]
+        assert comp["title"] == "Renamed" and [v["role"] for v in comp["voices"]] == ["bass"]
         assert [n["pitch"] for n in comp["voices"][0]["notes"]] == TYPICAL_LINE
         assert (comp["keys"][0]["fifths"], comp["keys"][0]["mode"]) == (tab.key.fifths, tab.key.mode)
         manifest = c.get(f"/v1/jobs/{job['id']}/manifest").json()
         assert manifest["params"] == {"instrument": "bass-5", "tuning": "standard", "capo": 0, "style": "open-position",
-                                      "recording": "instrument", "octave": "auto"}
+                                      "recording": "instrument", "octave": "auto", "layout": "tab"}
 
         # The player says the line is where it was heard: the notes are written again, not transcribed again.
         kept = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument",
                                         "instrument": "bass-5", "octave": "0"})
         kept = _wait(c, kept.json()["id"])
         assert {s["name"]: s["status"] for s in kept["stages"]} == {
-            "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "ran", "arrange": "ran"}
+            "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "ran", "arrange": "ran", "export": "ran"}
         chosen = m.Tab.model_validate(c.get(f"/v1/jobs/{kept['id']}/tab").json())
         assert (chosen.octave_shift, chosen.octave_source, tab.octave_source) == (0, "chosen", "auto")
         assert [n.pitch for n in chosen.notes] == [p + 12 for p in TYPICAL_LINE]
@@ -477,7 +642,15 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
                                          "instrument": "bass-4", "tuning": "drop-d"})
         again = _wait(c, again.json()["id"])
         assert {s["name"]: s["status"] for s in again["stages"]} == {
-            "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "cached", "arrange": "ran"}
+            "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "cached", "arrange": "ran", "export": "ran"}
+
+        # Notation above the tab: the fingering stage writes the page again, and the tab says which.
+        paged = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument",
+                                         "instrument": "bass-4", "tuning": "drop-d", "layout": "tab-and-notation"})
+        paged = _wait(c, paged.json()["id"])
+        assert paged["status"] == "succeeded" and m.Tab.model_validate(c.get(f"/v1/jobs/{paged['id']}/tab").json()).layout == "tab-and-notation"
+        assert "<staves>2</staves>" in c.get(f"/v1/jobs/{paged['id']}/musicxml").text
+        assert c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "layout": "grand-staff"}).status_code == 422
 
         refused = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "instrument": "bass-5", "tuning": "bead"})
         assert refused.status_code == 422 and refused.json()["code"] == "invalid_options"
@@ -595,6 +768,41 @@ def test_a_core_from_the_path_is_named_in_the_engines_log_and_only_mentioned_in_
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))  # named: nothing to say
     said.clear()
     assert bass_tab.solve({"notes": []}, log=said.append) == {"ok": True} and said == []
+
+
+def _mscore_missing() -> str | None:
+    from brasscribe_music import musescore
+
+    return _core_missing() or (None if musescore.available() else "MuseScore is not installed: the tab's PDF and MIDI are not rendered")
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(_mscore_missing() is not None, reason=_mscore_missing() or "")
+def test_a_job_renders_the_tab_as_pdf_and_midi_and_serves_them(settings, audio, monkeypatch):
+    """The core and MuseScore for real, with the models' outputs written in their place."""
+    from fastapi.testclient import TestClient
+
+    from brasscribe_engine.api import create_app
+
+    monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
+    monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
+    with TestClient(create_app(settings)) as c:
+        audio_id = c.post("/v1/audio", files={"file": ("old_hundredth.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
+        job = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument"}).json()
+        job = _wait(c, job["id"], timeout=300)
+        assert job["status"] == "succeeded", job["error"]
+        assert job["outputs"] == ["composition.json", "tab.json", "tab.mid", "tab.musicxml", "tab.pdf"]
+        pdf = c.get(f"/v1/jobs/{job['id']}/pdf")
+        assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf" and pdf.content[:5] == b"%PDF-"
+        midi = c.get(f"/v1/jobs/{job['id']}/midi")
+        assert midi.status_code == 200 and midi.content[:4] == b"MThd"
+        import io
+
+        import pretty_midi
+
+        played = [n.pitch for i in pretty_midi.PrettyMIDI(io.BytesIO(midi.content)).instruments for n in i.notes]
+        assert played == TYPICAL_LINE  # the bass line at the pitches the tab is written at
+        assert {a["name"] for a in c.get(f"/v1/jobs/{job['id']}/artifacts").json()} == set(job["outputs"])
 
 
 def _wait(client, job_id: str, timeout: float = 60) -> dict:

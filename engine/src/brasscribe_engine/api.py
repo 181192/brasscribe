@@ -64,6 +64,7 @@ ROTATE_AFTER_S = 30 * 86400.0  # clients are asked to rotate their token monthly
 MEDIA = {
     "composition.json": "application/json",
     "brass-band.musicxml": "application/vnd.recordare.musicxml+xml",
+    "tab.musicxml": "application/vnd.recordare.musicxml+xml",
     "brass-band.pdf": "application/pdf",
     "brass-band.mid": "audio/midi",
     "brass-band.mp3": "audio/mpeg",
@@ -213,6 +214,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
                      device_name=job.device_name,
                      stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job))
+
+    def score_file(job_id: str, suffix: str) -> FileResponse:
+        """The job's score in one format: the band score, or the tab of a tablature job."""
+        stem = "tab" if job_or_404(job_id).profile == bass_tab.PROFILE else "brass-band"
+        return output_file(job_id, f"{stem}.{suffix}")
 
     def output_file(job_id: str, name: str) -> FileResponse:
         job = job_or_404(job_id)
@@ -489,7 +495,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         if not body.muscriptor:
             params["muscriptor"] = False
         params.update(bass_tab.given(instrument=body.instrument, tuning=body.tuning, capo=body.capo, style=body.style,
-                                     recording=body.recording, octave=body.octave))
+                                     recording=body.recording, octave=body.octave, layout=body.layout))
         try:
             profiles.job_options(body.profile, params)
         except ValueError as e:
@@ -530,13 +536,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                tuning: str | None = Form(None), capo: int | None = Form(None, ge=0, le=12),
                                style: m.FingeringStyle | None = Form(None),
                                recording: m.Recording | None = Form(None),
-                               octave: m.Octave | None = Form(None)) -> m.Job:
+                               octave: m.Octave | None = Form(None),
+                               layout: m.TabLayout | None = Form(None)) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
         return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
                                       lineup=lineup, difficulty=difficulty, key=key, transpose=transpose, seat=seat,
                                       reads=reads, lead=lead, instrument=instrument, tuning=tuning, capo=capo,
-                                      style=style, recording=recording, octave=octave), request)
+                                      style=style, recording=recording, octave=octave, layout=layout), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:
@@ -652,19 +659,19 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              response_class=FileResponse,
              responses={200: {"content": {"application/vnd.recordare.musicxml+xml": {"schema": {"type": "string"}}}}})
     def get_musicxml(job_id: str):
-        return output_file(job_id, "brass-band.musicxml")
+        return score_file(job_id, "musicxml")
 
     @app.get("/v1/jobs/{job_id}/pdf", operation_id="getPdf", tags=["results"], dependencies=[Depends(auth)],
              response_class=FileResponse,
              responses={200: {"content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}}})
     def get_pdf(job_id: str):
-        return output_file(job_id, "brass-band.pdf")
+        return score_file(job_id, "pdf")
 
     @app.get("/v1/jobs/{job_id}/midi", operation_id="getMidi", tags=["results"], dependencies=[Depends(auth)],
              response_class=FileResponse,
              responses={200: {"content": {"audio/midi": {"schema": {"type": "string", "format": "binary"}}}}})
     def get_midi(job_id: str):
-        return output_file(job_id, "brass-band.mid")
+        return score_file(job_id, "mid")
 
     @app.get("/v1/jobs/{job_id}/audio", operation_id="getRenderedAudio", tags=["results"], dependencies=[Depends(auth)],
              response_class=FileResponse,
