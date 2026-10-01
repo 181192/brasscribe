@@ -24,6 +24,14 @@ fn request() -> Value {
     })
 }
 
+/// A full instrument with `strings` strings a fourth apart, edited.
+fn custom(edit: &dyn Fn(&mut Value), strings: usize) -> Value {
+    let open: Vec<Value> = (0..strings).map(|i| json!({"open_pitch": 43 - 5 * (i % 4) as i32, "first_fret": 0})).collect();
+    let mut inst = json!({"name": "Custom", "tuning": {"name": "Fourths", "strings": open}, "frets": 20, "scale_length_mm": 864.0, "capo": 0});
+    edit(&mut inst);
+    inst
+}
+
 fn reason(r: Result<String, CoreError>) -> String {
     match r {
         Err(CoreError::Invalid { reason }) => reason,
@@ -148,6 +156,16 @@ fn what_is_not_a_request_is_invalid_input() {
         with(&|r| r["instrument"] = json!({"preset": "no-such-instrument"})),
         with(&|r| r["instrument"] = json!("bass-4-standard")),
         with(&|r| r["instrument"] = json!({"preset": "bass-4-standard", "frets": 30})),
+        with(&|r| r["instrument"] = json!({"preset": "bass-4-standard", "capo": 255})),
+        with(&|r| r["instrument"] = json!({"preset": "bass-4-standard", "capo": 21})),
+        with(&|r| r["instrument"] = custom(&|_| {}, 0)),
+        with(&|r| r["instrument"] = custom(&|_| {}, 300)),
+        with(&|r| r["instrument"] = custom(&|i| i["tuning"]["strings"][0]["open_pitch"] = json!(-5), 4)),
+        with(&|r| r["instrument"] = custom(&|i| i["tuning"]["strings"][0]["open_pitch"] = json!(200), 4)),
+        with(&|r| r["instrument"] = custom(&|i| i["tuning"]["strings"][0]["first_fret"] = json!(30), 4)),
+        with(&|r| r["instrument"] = custom(&|i| i["frets"] = json!(0), 4)),
+        with(&|r| r["instrument"] = custom(&|i| i["scale_length_mm"] = json!(0.0), 4)),
+        with(&|r| r["instrument"] = custom(&|i| i["scale_length_mm"] = json!(-1.0), 4)),
         with(&|r| r["surprise"] = json!(1)),
         with(&|r| r["options"]["style"] = json!("shred")),
         with(&|r| r["options"]["tempo_bpm"] = json!(0)),
@@ -178,6 +196,12 @@ fn what_is_not_a_request_is_invalid_input() {
         assert!(!reason(fretted_tab_json(r.to_string())).is_empty());
         assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_INVALID, "{r}");
     }
+    // A full instrument that makes sense is taken as it is, and has no tuning suggestions.
+    let mut r = request();
+    r["instrument"] = custom(&|_| {}, 4);
+    let v: Value = serde_json::from_str(&fretted_fingering_json(r.to_string()).unwrap()).unwrap();
+    assert_eq!((&v["instrument"]["name"], &v["tuning_suggestions"]), (&json!("Custom"), &json!([])));
+    assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_OK);
     // A zero-length note can be fingered and cannot be written.
     let mut r = request();
     r["notes"][0]["dur"] = json!(0);
