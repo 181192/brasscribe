@@ -7,7 +7,8 @@
 #   scripts/core-artifacts.sh prune [days]                      drop entries unused for N days (default 14)
 #
 # Components (default: all whose toolchain is installed):
-#   host     core/target/release/libbrasscribe_ffi.{dylib,a} and core/dist/macos/ (JVM, .NET and FFI tests)
+#   host     core/target/release/libbrasscribe_ffi.{dylib,a} and core/dist/macos/ (JVM, .NET and FFI tests),
+#            and the command line core/target/release/brasscribe-core (the engine's bass-tab profile)
 #   apple    core/swift/BrasscribeCore/BrasscribeFFI.xcframework (macOS, iOS, iOS simulator)
 #   android  apps/android/core-bridge/src/main/jniLibs/{arm64-v8a,x86_64}/libbrasscribe_ffi.so
 #
@@ -132,6 +133,9 @@ build() {
       cargo build --release -q --locked -p brasscribe-ffi || return 1
       local ext=so; [ "$(uname -s)" = Darwin ] && ext=dylib
       cp "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.$ext" "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.a" "$out/" || return 1
+      # On its own, so the library is built with the same features as before the command line was added.
+      cargo build --release -q --locked -p brasscribe-cli || return 1
+      cp "$CARGO_TARGET_DIR/release/brasscribe-core" "$out/" || return 1
       ;;
     apple)
       local t
@@ -159,7 +163,8 @@ build() {
 built() {
   local d="$2"
   case "$1" in
-    host) [ -f "$d/libbrasscribe_ffi.a" ] && { [ -f "$d/libbrasscribe_ffi.so" ] || [ -f "$d/libbrasscribe_ffi.dylib" ]; } ;;
+    host) [ -f "$d/libbrasscribe_ffi.a" ] && { [ -f "$d/libbrasscribe_ffi.so" ] || [ -f "$d/libbrasscribe_ffi.dylib" ]; } \
+      && [ -x "$d/brasscribe-core" ] ;;
     apple) [ -f "$d/BrasscribeFFI.xcframework/Info.plist" ] ;;
     android) [ -f "$d/jniLibs/arm64-v8a/libbrasscribe_ffi.so" ] && [ -f "$d/jniLibs/x86_64/libbrasscribe_ffi.so" ] ;;
   esac
@@ -202,6 +207,7 @@ install() {
         clone "$f" "$CORE/target/release/$(basename "$f")"
         [ "$(uname -s)" = Darwin ] && clone "$f" "$CORE/dist/macos/$(basename "$f")"
       done
+      clone "$dir/brasscribe-core" "$CORE/target/release/brasscribe-core"
       ;;
     apple) clone "$dir/BrasscribeFFI.xcframework" "$CORE/swift/BrasscribeCore/BrasscribeFFI.xcframework" ;;
     android)
@@ -217,7 +223,7 @@ install() {
 
 installed() {
   case "$1" in
-    host) ls "$CORE"/target/release/libbrasscribe_ffi.* >/dev/null 2>&1 ;;
+    host) ls "$CORE"/target/release/libbrasscribe_ffi.* >/dev/null 2>&1 && [ -x "$CORE/target/release/brasscribe-core" ] ;;
     apple) [ -d "$CORE/swift/BrasscribeCore/BrasscribeFFI.xcframework" ] ;;
     android) [ -f "$ROOT/apps/android/core-bridge/src/main/jniLibs/arm64-v8a/libbrasscribe_ffi.so" ] ;;
   esac
