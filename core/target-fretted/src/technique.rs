@@ -19,6 +19,8 @@ pub enum Technique {
     Vibrato,
     /// Rings until its written end: no later note may use its string while it sounds.
     LetRing,
+    /// Muted with the fretting hand, written as an x. No constraint on the position.
+    DeadNote,
 }
 
 /// The farthest a slide travels along the string, in frets.

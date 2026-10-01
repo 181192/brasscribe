@@ -16,6 +16,7 @@ use crate::check::{check_with_techniques, Violation};
 use crate::instrument::{preset, preset_family, Instrument};
 use crate::solve::{assign_with_techniques, Fingering, Options};
 use crate::suggest::{suggest_tunings, TuningFit};
+use crate::tab::{write_tab_musicxml, TabDocument, TabOptions, TabScore};
 use crate::technique::Technique;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -117,4 +118,100 @@ pub fn solve_json(request: &str) -> Result<String, String> {
     let req: Request = serde_json::from_str(request).map_err(|e| format!("not a fingering request: {e}"))?;
     let resp = solve(&req)?;
     serde_json::to_string(&resp).map_err(|e| e.to_string())
+}
+
+/// Time signature of a [`TabRequest`].
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MeterChoice {
+    pub beats: i64,
+    #[serde(default = "four")]
+    pub beat_unit: i64,
+}
+
+fn four() -> i64 {
+    4
+}
+
+/// Key signature of a [`TabRequest`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct KeyChoice {
+    pub fifths: i32,
+    #[serde(default = "major")]
+    pub mode: String,
+}
+
+fn major() -> String {
+    "major".into()
+}
+
+/// A request for tablature: a fingering [`Request`] plus what the page says.
+///
+/// ```json
+/// {"title": "Study", "instrument": {"preset": "guitar-standard", "capo": 2},
+///  "notes": [{"pitch": 66, "start": 0, "dur": 24, "confidence": 0.3}],
+///  "tempo_bpm": 96, "meter": {"beats": 3, "beat_unit": 4}, "key": {"fifths": 2},
+///  "tab": {"layout": "tab", "doubt_below": 0.4}}
+/// ```
+/// Without `fingering` the notes are solved with `options` first; with it (a fingering from an
+/// earlier response, perhaps edited) they are written where it says.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TabRequest {
+    #[serde(default)]
+    pub title: String,
+    pub instrument: InstrumentChoice,
+    pub notes: Vec<InputNote>,
+    #[serde(default)]
+    pub options: Options,
+    #[serde(default)]
+    pub fingering: Option<Fingering>,
+    /// Quarter notes per minute; when left out, `options.tempo_bpm`, else 120.
+    #[serde(default)]
+    pub tempo_bpm: Option<f64>,
+    #[serde(default)]
+    pub meter: Option<MeterChoice>,
+    #[serde(default)]
+    pub key: Option<KeyChoice>,
+    #[serde(default)]
+    pub tab: TabOptions,
+}
+
+/// The tablature of a [`TabRequest`]: the MusicXML document and how many notes were moved to a
+/// start or length that can be written.
+pub fn tab(req: &TabRequest) -> Result<TabDocument, String> {
+    let instrument = req.instrument.resolve()?;
+    let notes: Vec<Note> = req.notes.iter().map(|n| n.note.clone()).collect();
+    let techniques: Vec<Vec<Technique>> = req.notes.iter().map(|n| n.techniques.clone()).collect();
+    let fingering = match &req.fingering {
+        Some(f) => f.clone(),
+        None => assign_with_techniques(&instrument, &notes, &techniques, &req.options)?,
+    };
+    let mut score = TabScore::new(&req.title, &instrument, &notes, &techniques, &fingering)?;
+    if let Some(bpm) = req.tempo_bpm.or(req.options.tempo_bpm) {
+        score = score.with_tempo(bpm);
+    }
+    if let Some(m) = req.meter {
+        score = score.with_meter(m.beats, m.beat_unit);
+    }
+    if let Some(k) = &req.key {
+        score = score.with_key(k.fifths, &k.mode);
+    }
+    write_tab_musicxml(&score, &req.tab)
+}
+
+fn tab_request(request: &str) -> Result<TabRequest, String> {
+    serde_json::from_str(request).map_err(|e| format!("not a tablature request: {e}"))
+}
+
+/// The tablature of a JSON [`TabRequest`] as JSON: `{"musicxml": "...", "adjusted_notes": 0}`.
+pub fn tab_json(request: &str) -> Result<String, String> {
+    let doc = tab(&tab_request(request)?)?;
+    serde_json::to_string(&doc).map_err(|e| e.to_string())
+}
+
+/// The MusicXML tablature of a JSON [`TabRequest`], without the count of adjusted notes.
+pub fn tab_musicxml_json(request: &str) -> Result<String, String> {
+    Ok(tab(&tab_request(request)?)?.musicxml)
 }

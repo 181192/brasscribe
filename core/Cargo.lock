@@ -563,6 +563,7 @@ name = "target-fretted"
 version = "0.1.0"
 dependencies = [
  "brasscribe-core",
+ "roxmltree",
  "serde",
  "serde_json",
 ]
