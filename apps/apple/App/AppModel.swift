@@ -414,11 +414,23 @@ final class AppModel {
     func makeFullScore(from draft: Piece) {
         guard let audio = draft.originalURL, FileManager.default.fileExists(atPath: audio.path) else { return }
         startTranscription(PendingSource(audioURL: audio, videoURL: draft.videoURL, title: draft.title), profile: .brassBand,
-                           output: draft.output ?? OutputChoice(), on: service())
+                           output: draft.output ?? OutputChoice(), onComputer: true)
     }
 
-    func startTranscription(_ src: PendingSource, profile: SourceProfile, output chosen: OutputChoice,
-                            on chosenService: TranscriptionService? = nil) {
+    /// "Try again" after a failure, where the player asked for it: a score asked of the computer is asked of
+    /// the computer again, also when a band would now be a draft on this device. `onComputer` moves it there.
+    func retry(_ job: TranscriptionJob, onComputer: Bool? = nil) {
+        startTranscription(job.source, profile: job.profile, output: job.output, onComputer: onComputer ?? job.onComputer)
+    }
+
+    /// Back to "What is this?" with the recording of a job that failed.
+    func backToSource(_ job: TranscriptionJob) {
+        if let i = path.firstIndex(of: .transcribe(job.id)) { path[i] = .source(job.source) } else { goHome() }
+        jobs[job.id] = nil
+    }
+
+    /// `onComputer`: the player asked for the computer ("Make the full score"), whatever the profile's own route.
+    func startTranscription(_ src: PendingSource, profile: SourceProfile, output chosen: OutputChoice, onComputer: Bool = false) {
         // the player's seat goes along; a solo take is then written for their instrument
         var output = chosen
         if output.seat == nil, let id = seat.id {
@@ -426,7 +438,8 @@ final class AppModel {
             output.reads = seat.reads
             if profile == .solo { output.lead = "seat" }
         }
-        let job = TranscriptionJob(source: src, profile: profile, output: output, service: chosenService ?? service(for: profile))
+        let job = TranscriptionJob(source: src, profile: profile, output: output,
+                                   service: onComputer ? service() : service(for: profile), onComputer: onComputer)
         // a 401 from the computer turns the connection row into "pair again"
         job.onUnauthorized = { [weak self] in self?.connection.poke() }
         jobs[job.id] = job
@@ -514,18 +527,22 @@ final class TranscriptionJob: Identifiable {
     let profile: SourceProfile
     let output: OutputChoice
     let service: TranscriptionService
+    /// The player asked for the computer; "Try again" asks it again.
+    let onComputer: Bool
     var progress = TranscriptionProgress(stage: .uploading, fraction: 0, etaSeconds: nil)
     var failure: String?
     /// What went wrong in the player's words, when more is known than "it failed" (ErrorWords).
     var failureWords: String?
     /// The failure's title when it is more specific than "The score couldn't be made".
     var failureTitle: String?
+    /// The recording was too long for a draft on this device (DraftTooLong).
+    var tooLong = false
     var cancelled = false
     private var task: Task<Void, Never>?
     var onUnauthorized: (@MainActor () -> Void)?
 
-    init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService) {
-        self.source = source; self.profile = profile; self.output = output; self.service = service
+    init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService, onComputer: Bool = false) {
+        self.source = source; self.profile = profile; self.output = output; self.service = service; self.onComputer = onComputer
     }
 
     func start(onDone: @escaping @MainActor (TranscriptionResult) -> Void) {
@@ -548,6 +565,7 @@ final class TranscriptionJob: Identifiable {
                     self.failure = error.localizedDescription
                     self.failureWords = ErrorWords.specific(error)
                     self.failureTitle = ErrorWords.title(error)
+                    self.tooLong = error is DraftTooLong
                 }
             }
         }

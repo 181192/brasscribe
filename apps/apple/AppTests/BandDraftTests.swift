@@ -65,6 +65,41 @@ import TranscriptionKit
     #expect(app.service(for: .brassBand) is OnDeviceBandDraftService)
 }
 
+/// "Try again" asks where the player asked: a full score asked of the computer does not become another draft
+/// when bands are drafts on this device, and a too-long draft can be moved to the computer.
+@Test @MainActor func tryAgainKeepsTheComputerThePlayerChose() {
+    let app = AppModel()
+    let saved = (app.modelDownloadURL, app.bandDraftOnDevice)
+    defer { (app.modelDownloadURL, app.bandDraftOnDevice) = saved; app.jobs.values.forEach { $0.cancel() } }
+    app.modelDownloadURL = "http://192.0.2.1:8765/models/"
+    app.bandDraftOnDevice = true
+    let src = PendingSource(audioURL: URL(fileURLWithPath: "/nonexistent/band.wav"), title: "Band")
+
+    app.startTranscription(src, profile: .brassBand, output: OutputChoice(), onComputer: true)
+    let full = try! #require(app.jobs.values.first)
+    #expect(full.onComputer && full.service is CompanionService)
+    app.retry(full)
+    let again = try! #require(app.jobs.values.first { $0.id != full.id })
+    #expect(again.onComputer && again.service is CompanionService)
+
+    // the player's own choice of a draft stays a draft, until they move it to the computer
+    app.jobs.values.forEach { $0.cancel() }
+    app.jobs = [:]
+    app.path = []
+    app.startTranscription(src, profile: .brassBand, output: OutputChoice())
+    let draft = try! #require(app.jobs.values.first)
+    #expect(!draft.onComputer && draft.service is OnDeviceBandDraftService)
+    app.retry(draft)
+    #expect(app.jobs.values.allSatisfy { $0.service is OnDeviceBandDraftService })
+    app.retry(draft, onComputer: true)
+    #expect(app.jobs.values.contains { $0.onComputer && $0.service is CompanionService })
+
+    // back from the too-long screen: What is this?, with the same recording
+    app.path = [.transcribe(draft.id)]
+    app.backToSource(draft)
+    #expect(app.path == [.source(src)])
+}
+
 // MARK: words
 
 @Test func theDraftSaysWhatItIs() {
@@ -77,7 +112,10 @@ import TranscriptionKit
     #expect(away.action == nil)
     #expect(away.hint == "Open Brasscribe on your computer to make the full score from the same recording.")
     #expect(ErrorWords.title(DraftTooLong(seconds: 900, maxSeconds: 600)) == "Too long for a draft on this device")
-    #expect(ErrorWords.specific(DraftTooLong(seconds: 900, maxSeconds: 600)) == "Try a shorter recording, or make the score on your computer.")
+    // too long: the computer is the way forward when it is there; otherwise the words say to open it
+    #expect(ErrorWords.draftTooLong(computerThere: true) == "Your computer can make the score from this recording.")
+    #expect(ErrorWords.draftTooLong(computerThere: false) == "Open Brasscribe on your computer to make the score from this recording, or choose a shorter one.")
+    #expect(ErrorWords.specific(DraftTooLong(seconds: 900, maxSeconds: 600)) == ErrorWords.draftTooLong(computerThere: false))
     #if os(iOS)
     #expect(TranscribeView.leaveLine(draft: true) == "Keep Brasscribe open until the draft is ready.")
     #endif

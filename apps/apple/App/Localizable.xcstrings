@@ -4911,16 +4911,6 @@
         }
       }
     },
-    "Try a shorter recording, or make the score on your computer.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Prøv et kortere opptak, eller lag partituret på datamaskinen."
-          }
-        }
-      }
-    },
     "Try again": {
       "localizations": {
         "nb": {
@@ -5927,6 +5917,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "🎺 Rosa låst opp"
+          }
+        }
+      }
+    },
+    "Your computer can make the score from this recording.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kan lage partituret fra dette opptaket."
+          }
+        }
+      }
+    },
+    "Open Brasscribe on your computer to make the score from this recording, or choose a shorter one.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere."
+          }
+        }
+      }
+    },
+    "Make it on your computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lag det på datamaskinen"
           }
         }
       }

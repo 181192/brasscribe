@@ -102,14 +102,22 @@ A brass band recording can be written down on the phone, tablet or Mac without t
 | Change sheet, a choice the device can't make (pop, soloist) | Only for one instrument or a brass band. | Bare for ett instrument eller et brassband. |
 | Transcribing, where it runs | Android: On this phone, as a draft · Apple: On this device, as a draft. | Android: På telefonen, som utkast · Apple: På denne enheten, som utkast. |
 | Transcribing, iPhone and iPad only | Keep Brasscribe open until the draft is ready. | Hold Brasscribe åpen til utkastet er klart. |
-| Score, the draft notice (top of the score, an info note) | A quick draft made on this device. Your computer makes a better score, and results on the device can differ slightly from the computer's. | Et raskt utkast laget på denne enheten. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen. |
+| Score, the draft notice (top of the score, an info note) | A quick draft made on this device. Your computer makes a better score, and results on the device can differ slightly from the computer's. (Android: *this phone*, *the phone*.) | Et raskt utkast laget på denne enheten. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen. (Android: *på telefonen*.) |
 | Score, the draft notice's action (secondary, only when the computer is there) | Make the full score | Lag hele partituret |
 | Score, the draft notice without the computer | Open Brasscribe on your computer to make the full score from the same recording. | Åpne Brasscribe på datamaskinen for å lage hele partituret fra det samme opptaket. |
 | Your scores, the row's subtitle | Brass band · Draft · 32 bars | Brassband · Utkast · 32 takter |
-| Too long for the device (error title · body) | Too long for a draft on this device · Try a shorter recording, or make the score on your computer. | For langt for et utkast på denne enheten · Prøv et kortere opptak, eller lag partituret på datamaskinen. |
+| Too long for the device, title | Too long for a draft on this device (Android: *this phone*) | For langt for et utkast på denne enheten (Android: *på telefonen*) |
+| Too long, body with the computer there | Your computer can make the score from this recording. | Datamaskinen kan lage partituret fra dette opptaket. |
+| Too long, body without the computer | Open Brasscribe on your computer to make the score from this recording, or choose a shorter one. | Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere. |
+| Too long, the primary (only when the computer is there) | Make it on your computer | Lag det på datamaskinen |
+| Too long, the note (Android) | Your recording is kept until you choose another. | Opptaket ditt er tatt vare på til du velger et annet. |
+| Too long, the secondary | Android: Choose another recording · Apple: Back | Android: Velg et annet opptak · Apple: Tilbake |
+
+**Too long for a draft.** The refusal comes before anything runs, and the recording stays where it was: Back goes to What is this? with the same recording. With the computer there, the primary sends that recording to it as a Brass band score. Without it there is no primary: the body says to open Brasscribe on the computer, and the primary appears when the computer does. **Try again** is not offered, since it would be refused again.
 
 **Draft now, better later.**
 - A draft keeps its recording, so **Make the full score** sends that recording to the computer as a Brass band score. It runs like any other score (Transcribing, then Check the notes) and becomes a new score in Your scores; the draft stays until the player deletes it.
+- Coming back before the full score is ready (Cancel, or back from a problem) shows the draft again. **Try again** after a failure asks the computer again; it never makes another draft in its place.
 - Notes checked or changed in the draft do not carry over: the computer writes the notes afresh.
 - **Make the full score** is a secondary (tonal) button in the notice, never the primary: on the score, the round Play button is the primary.
 
