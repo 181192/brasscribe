@@ -100,9 +100,10 @@ def test_what_does_not_fit_the_instrument_is_refused(params):
 
 @pytest.mark.parametrize("instrument", ["ukulele", "ukulele-baritone", "mandolin"])
 def test_a_ukulele_or_mandolin_is_taken_alone_and_not_yet_from_a_song(instrument):
-    assert tab.options({"instrument": instrument, "recording": "instrument"})["recording"] == "instrument"
+    assert tab.options({"instrument": instrument})["recording"] == "instrument"  # the simplest request works: taken alone
+    assert profiles.build("tab", Path("uke.wav"), params={"instrument": instrument}).params["recording"] == "instrument"
     with pytest.raises(ValueError, match="recording of .* must be instrument"):
-        tab.options({"instrument": instrument})  # the default, a song: which stem carries it is not measured
+        tab.options({"instrument": instrument, "recording": "song"})  # which stem carries it in a song is not measured
     p = profiles.build("tab", Path("uke.wav"), params={"instrument": instrument, "recording": "instrument"})
     assert [s.name for s in p.stages][1] == f"transcribe.{tab.HEARD[instrument].kind}.basic-pitch"
 
@@ -110,7 +111,7 @@ def test_a_ukulele_or_mandolin_is_taken_alone_and_not_yet_from_a_song(instrument
 @pytest.mark.parametrize("profile", ["solo", "brass-band", "pop-rock", "orchestra-with-soloist"])
 def test_the_band_profiles_still_refuse_the_tab_options(profile):
     for params in ({"instrument": "guitar-6"}, {"capo": 2}, {"layout": "tab"}):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=f"only the tab profile takes this, not {profile}"):
             profiles.job_options(profile, params)
         with pytest.raises(ValueError):
             profiles.build(profile, Path("song.wav"), params=params)
@@ -261,6 +262,28 @@ def test_in_a_line_overtones_and_faint_notes_go_and_in_a_chord_the_same_notes_st
     assert len(straight["notes"]) == 10 and {n["confidence"] for n in straight["notes"]} == {1.0}
 
 
+def test_a_guitars_limits_are_not_applied_to_a_mandolin_or_a_ukulele():
+    """The top G of a mandolin's open G chord (0-0-2-3) is two octaves over its G string and above a guitar's 12th fret."""
+    mandolin_g, uke_c = [55, 62, 71, 79], [60, 64, 67, 84]  # the ukulele's C with its top string at the 15th fret
+    for instrument, chord in (("mandolin", mandolin_g), ("ukulele", uke_c), ("ukulele-baritone", [50, 55, 59, 79])):
+        notes = sorted(_strummed([chord] * 4), key=lambda n: n["onset"])
+        assert tab.HEARD[instrument].chord_high is None
+        assert tab.leftovers(notes, tab.chordal(notes), tab.HEARD[instrument].chord_high) == ([], [])
+        doc = tab.played_notes(notes, _beats(), instrument)
+        assert sorted({n["pitch"] for n in doc["notes"]}) == sorted(chord) and len(doc["notes"]) == 16, instrument
+        assert doc["leftovers_dropped"] == 0
+    # On a guitar the same shape of evidence, an overtone above the 12th fret of the top string, is left out and counted.
+    guitar = sorted(_strummed([[43, 55, 67, 79]] * 4), key=lambda n: n["onset"])
+    assert {tab.HEARD[i].chord_high for i in ("guitar-6", "guitar-7", "guitar-8")} == {76}
+    doc = tab.played_notes(guitar, _beats(), "guitar-6")
+    assert 79 not in {n["pitch"] for n in doc["notes"]} and doc["leftovers_dropped"] == 4
+    t = tab.fingered({**doc, "reference_pitch": None}, tab.options({}), lambda request: {
+        "instrument": {"name": "Guitar", "tuning": {"name": "Standard", "strings": []}, "frets": 22, "scale_length_mm": 648.0, "capo": 0},
+        "fingering": {"notes": [{"pitch": n["pitch"], "string": 1, "fret": 0, "alternatives": [], "out_of_range": False, "pinned": False}
+                                for n in request["notes"]]}, "violations": [], "tuning_suggestions": []})
+    assert t["leftovers_dropped"] == 4 and m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0}).leftovers_dropped == 4
+
+
 def test_confidence_in_a_line_is_swiftf0s_and_among_chords_the_amplitude_and_the_next_strum():
     second = [_note(60, 0.0), _note(62, 0.5)]
     sure = tab.confidence(_note(60, 0.0, amplitude=0.42), False, True, second)
@@ -354,13 +377,21 @@ def test_only_what_the_crate_reads_is_sent_and_an_unplayable_note_is_left_out_un
     m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0})
     assert t["instrument"]["notation"] == "treble-8vb" and t["preset"] == "guitar-drop-d"
 
-    def never(request: dict) -> dict:
+    def spans(request: dict) -> dict:  # a crate that objects to any two notes of the first onset together
         answer = solver(request)
-        answer["violations"] = [{"kind": "span-too-wide", "notes": [0, 1], "span_mm": 200.0}]
+        together = [i for i, n in enumerate(request["notes"]) if n["start"] == 0]
+        answer["violations"] = [{"kind": "span-too-wide", "notes": together[:2], "span_mm": 200.0}] if len(together) > 1 else []
         return answer
 
-    stuck = tab.fingered(doc, tab.options({}), never)  # a crate that always objects: the loop ends, and the tab says so
-    assert stuck["unplayable_dropped"] == tab.MAX_UNPLAYABLE_ROUNDS and len(stuck["violations"]) == 1
+    one = tab.fingered(doc, tab.options({}), spans)  # it goes on until nothing is objected to: no violation is ever written
+    assert one["violations"] == [] and one["unplayable_dropped"] == 6 and len([n for n in one["notes"] if n["start"] == 0]) == 1
+    assert one["notes"][0]["confidence"] == max(n["confidence"] for n in doc["notes"] if n["start"] == 0)  # the surest stays
+
+    def nameless(request: dict) -> dict:
+        return {**solver(request), "violations": [{"kind": "something-new"}]}
+
+    with pytest.raises(RuntimeError, match="violation without a note: something-new"):
+        tab.fingered(doc, tab.options({}), nameless)  # nothing to leave out: a failed stage, not a tab with a violation
 
 
 @needs_core
@@ -519,7 +550,7 @@ def test_a_guitar_job_runs_to_a_tab_and_a_bass_job_of_either_profile_shares_its_
         a, b = (c.get(f"/v1/jobs/{j['id']}/tab").json() for j in (old, new))
         assert a == b and a["preset"] == "bass-4-standard"
 
-        for body in ({"profile": "tab", "instrument": "guitar-6", "tuning": "bead"}, {"profile": "tab", "instrument": "ukulele"},
+        for body in ({"profile": "tab", "instrument": "guitar-6", "tuning": "bead"}, {"profile": "tab", "instrument": "ukulele", "recording": "song"},
                      {"profile": "bass-tab", "instrument": "guitar-6"}, {"profile": "tab", "lineup": "quartet"}):
             refused = c.post("/v1/jobs", json={"audio_id": audio_id, **body})
             assert refused.status_code == 422 and refused.json()["code"] == "invalid_options", body

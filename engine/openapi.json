@@ -2935,6 +2935,12 @@
             "title": "Layout",
             "type": "string"
           },
+          "leftovers_dropped": {
+            "default": 0,
+            "description": "notes Basic Pitch heard that are not in the tab because they were not played: in a line, faint overtones of a sounding note and notes heard very faintly; among a guitar's chords, overtones above the 12th fret of the top string. Always 0 for a bass line, whose own count is in the job's log",
+            "title": "Leftovers Dropped",
+            "type": "integer"
+          },
           "meter": {
             "$ref": "#/components/schemas/TabMeter"
           },

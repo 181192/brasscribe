@@ -234,10 +234,12 @@ def score_tab(ref: dict, tab: dict) -> dict:
     # Where the right notes are played: the string the player used (so the fret too).
     placed = [(i, j) for i, j in pairs if notes[j]["string"] is not None and "string" in ref["notes"][i]]
     out["placed"], out["same_string"] = float(len(placed)), float(sum(notes[j]["string"] == ref["notes"][i]["string"] for i, j in placed))
+    out["ref_strings"] = float(sum("string" in n for n in ref["notes"]))
     out["notes"] = float(len(notes))
     out["out_of_range"] = float(np.mean([n["out_of_range"] for n in notes])) if notes else 0.0
     out["violations"] = float(len(tab["violations"]))
     out["unplayable_dropped"] = float(tab.get("unplayable_dropped", 0))
+    out["leftovers_dropped"] = float(tab.get("leftovers_dropped", 0))
     out["octave_moved"] = float(tab.get("octave_notes_moved", 0))
     doubt = [n["confidence"] < 0.4 for n in notes]
     wrong = [j not in right_est for j in range(len(notes))]
@@ -274,11 +276,15 @@ def summarize(rows: list[dict]) -> dict[str, float]:
         return float(sum(r[num] for r in rows) / d) if d else 0.0
 
     out["chord_recall"], out["chord_precision"] = ratio("chord_ref_right", "chord_ref"), ratio("chord_est_right", "chord_est")
+    # Two readings of one count: of the notes the tab has right, and of all the notes the player played (a note
+    # that is missing or wrong is then on no string at all, so this one cannot be higher than the recall).
     out["string_agreement"] = ratio("same_string", "placed")
+    out["string_recall"] = ratio("same_string", "ref_strings")
     out["chords_whole"] = ratio("chords_whole", "chords_heard")
     out["doubt_precision"], out["doubt_recall"] = ratio("doubt_marked_wrong", "doubt_marked"), ratio("doubt_marked_wrong", "wrong")
     out["doubt_share"] = ratio("doubt_marked", "notes")
     out["unplayable_dropped"] = ratio("unplayable_dropped", "notes")
+    out["leftovers_dropped"] = ratio("leftovers_dropped", "notes")
     out["violations"] = float(sum(r["violations"] for r in rows))
     out["octave_moved"] = float(sum(r["octave_moved"] for r in rows))
     out["excerpts"] = float(len(rows))

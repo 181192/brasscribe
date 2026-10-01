@@ -73,14 +73,19 @@ class Heard:
     lowest: int  # the lowest pitch any tuning of the instrument reaches (MIDI)
     highest: int  # the highest fret of its top string in standard tuning
     strings: int
+    # Among chords an overtone above this pitch is left out (leftovers). It was measured on guitars only, where it
+    # is the 12th fret of the top string in standard tuning; an instrument without a measurement has none.
+    chord_high: int | None = None
 
+
+GUITAR_CHORD_HIGH = 76  # E5: the 12th fret of a guitar's top string in standard tuning (six, seven and eight strings alike)
 
 # Guitar ranges: the lowest tuning offered (drop B on six strings, B standard and F# on seven and eight) to
 # the 22nd or 24th fret of the top string.
 HEARD = {
-    "guitar-6": Heard("guitar", "guitar", 35, 86, 6),
-    "guitar-7": Heard("guitar", "guitar", 34, 88, 7),
-    "guitar-8": Heard("guitar", "guitar", 30, 88, 8),
+    "guitar-6": Heard("guitar", "guitar", 35, 86, 6, GUITAR_CHORD_HIGH),
+    "guitar-7": Heard("guitar", "guitar", 34, 88, 7, GUITAR_CHORD_HIGH),
+    "guitar-8": Heard("guitar", "guitar", 30, 88, 8, GUITAR_CHORD_HIGH),
     "ukulele": Heard("ukulele", None, 55, 87, 4),
     "ukulele-baritone": Heard("ukulele", None, 50, 83, 4),
     "mandolin": Heard("mandolin", None, 55, 96, 4),
@@ -117,12 +122,14 @@ LINE_DOUBT = 0.45
 CHORD_FAINT = 0.35
 CHORD_DOUBT = 0.45
 REPEAT = 2.0
-# Among chords an overtone is told from a played note only at the top of a strum. The top note is left out
-# when it is an overtone of a note under it and above CHORD_HIGH, the 12th fret of a guitar's top string in
-# standard tuning (99% wrong). It is in doubt when it is an overtone heard at under TOP_RATIO of the note
+# Among chords an overtone is told from a played note only at the top of a strum. On a guitar the top note is
+# left out when it is an overtone of a note under it and above the 12th fret of the top string (Heard.chord_high;
+# 99% wrong). It is in doubt, on any instrument, when it is an overtone heard at under TOP_RATIO of the note
 # under it and stands TOP_GAP semitones or more over the rest of the strum (84% wrong): one such note
 # would otherwise move the whole chord up the neck.
-CHORD_HIGH = 76
+#
+# Every other number here is about the transcriber (how strongly and how long Basic Pitch hears a played
+# note) or about intervals, not about a guitar; the instrument's own limits are in Heard.
 TOP_RATIO = 0.8
 TOP_GAP = 9
 # The whole passage an octave from where the instrument plays: more than half of its notes outside the
@@ -133,7 +140,8 @@ OCTAVE_FIT = 0.9
 # ---------------------------------------------------------------- options
 
 def options(params: dict) -> dict:
-    """The job's options with the defaults filled in: a six-string guitar in standard tuning, heard in a song."""
+    """The job's options with the defaults filled in: a six-string guitar in standard tuning, heard in a song.
+    A ukulele or mandolin is heard alone by default."""
     from .profiles import ARRANGEMENT_DEFAULTS
 
     band = [k for k, default in ARRANGEMENT_DEFAULTS.items() if params.get(k) not in (None, default)]
@@ -145,7 +153,10 @@ def options(params: dict) -> dict:
     instrument = params.get("instrument") or DEFAULT_INSTRUMENT
     if instrument not in TUNINGS:
         raise ValueError(f"instrument must be one of {', '.join(TUNINGS)}")
-    defaults = {**bass_tab.DEFAULTS, "instrument": instrument, "tuning": TUNINGS[instrument][0], "layout": DEFAULT_LAYOUT}
+    # An instrument whose stem in a song is not known yet is taken alone unless the job says otherwise.
+    alone_only = instrument in HEARD and HEARD[instrument].stem is None
+    defaults = {**bass_tab.DEFAULTS, "instrument": instrument, "tuning": TUNINGS[instrument][0], "layout": DEFAULT_LAYOUT,
+                **({"recording": "instrument"} if alone_only else {})}
     opts = {k: params[k] if params.get(k) is not None else default for k, default in defaults.items()}
     if opts["tuning"] not in TUNINGS[instrument]:
         raise ValueError(f"tuning of {instrument} must be one of {', '.join(TUNINGS[instrument])}")
@@ -154,10 +165,17 @@ def options(params: dict) -> dict:
     for name, allowed in (("style", STYLES), ("recording", RECORDINGS), ("octave", OCTAVES), ("layout", LAYOUTS)):
         if opts[name] not in allowed:
             raise ValueError(f"{name} must be one of {', '.join(allowed)}")
-    if instrument in HEARD and HEARD[instrument].stem is None and opts["recording"] == "song":
+    if alone_only and opts["recording"] == "song":
         raise ValueError(f"recording of {instrument} must be instrument: which of the separator's stems carries it in a "
                          f"song is not measured yet")
     return opts
+
+
+def refuse_options(profile: str, params: dict) -> None:
+    """A profile that writes no tab takes none of the tab options."""
+    named = [k for k in bass_tab.DEFAULTS if params.get(k) is not None]
+    if named:
+        raise ValueError(f"{', '.join(named)}: only the {PROFILE} profile takes this, not {profile}")
 
 
 def preset(opts: dict) -> str:
@@ -220,12 +238,12 @@ def chordal(notes: list[dict]) -> list[bool]:
     return out
 
 
-def leftovers(notes: list[dict], in_chords: list[bool]) -> tuple[list[int], list[int]]:
+def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None = None) -> tuple[list[int], list[int]]:
     """Indices of the notes of `notes` (sorted by onset) that were not played, and of those that may not have been.
 
     Left out: in a line, the faint overtones of a note sounding under them and the notes heard too faintly
-    to be played ones; among chords, an overtone above CHORD_HIGH. In doubt: among chords, a faint overtone
-    standing over the top of its strum (TOP_RATIO, TOP_GAP)."""
+    to be played ones; among chords, an overtone above `chord_high` (Heard.chord_high) when the instrument
+    has one. In doubt: among chords, a faint overtone standing over the top of its strum (TOP_RATIO, TOP_GAP)."""
     out, doubt = [], []
     for i, (n, others) in enumerate(zip(notes, sounding_with(notes))):
         amplitude = n.get("amplitude", 1.0)
@@ -235,7 +253,7 @@ def leftovers(notes: list[dict], in_chords: list[bool]) -> tuple[list[int], list
         if not in_chords[i]:
             if any(amplitude < OVERTONE_RATIO * low.get("amplitude", 1.0) for low in under) or amplitude < LINE_FAINT:
                 out.append(i)
-        elif under and n["pitch"] > CHORD_HIGH:
+        elif under and chord_high is not None and n["pitch"] > chord_high:
             out.append(i)
         elif any(amplitude < TOP_RATIO * low.get("amplitude", 1.0) for low in under):
             together = [o["pitch"] for o in others if abs(o["onset"] - n["onset"]) <= STRUM_SECONDS]
@@ -308,7 +326,7 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     notes = sorted((dict(n) for n in raw if n["offset"] - n["onset"] >= MIN_SECONDS), key=lambda n: (n["onset"], n["pitch"]))
     dropped = 0
     if clean and notes:
-        gone, unsure = leftovers(notes, chordal(notes))
+        gone, unsure = leftovers(notes, chordal(notes), heard.chord_high)
         for i in unsure:
             notes[i]["top_overtone"] = True
         kept = [n for i, n in enumerate(notes) if i not in set(gone)] or notes  # never the whole passage
@@ -404,31 +422,38 @@ def notes_stage(ctx: StageContext) -> None:
 
 # ---------------------------------------------------------------- fingering
 
-MAX_UNPLAYABLE_ROUNDS = 8
+def least_wanted(involved: list[int], notes: list[dict]) -> int:
+    """Of the notes of a violation, the one to leave out: the least sure, and of equally sure ones the lowest."""
+    return min(involved, key=lambda i: (notes[i]["confidence"], notes[i]["pitch"]))
 
 
 def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.solve) -> dict:
     """tab.json (schemas.Tab) for the notes stage's `doc`, with the instrument of `opts` (options()).
 
     As the bass line's, with one more step. What was heard can hold more notes on one onset than the
-    instrument has strings, or a chord no hand spans: target-fretted reports those as violations. The
-    least sure note of each is then left out and the passage fingered again, so the tab that is written
-    can be played. `unplayable_dropped` counts them."""
+    instrument has strings, or a chord no hand spans: target-fretted, which has by then tried every
+    other place for each note, reports those as violations. One note of each violation is then left out
+    (least_wanted) and the passage fingered again, until there is no violation: every round leaves out
+    at least one note, so it ends, and the tab that is written can be played. `unplayable_dropped`
+    counts every note left out this way."""
     notes = list(doc["notes"])
     dropped = 0
-    for round_ in range(MAX_UNPLAYABLE_ROUNDS + 1):
+    while True:
         answer = solve({"instrument": {"preset": preset(opts), "capo": opts["capo"]},
                         "notes": [{"pitch": n["pitch"], "start": n["start"], "dur": n["dur"]} for n in notes],
                         "options": {"style": opts["style"], "tempo_bpm": doc["tempo_bpm"]}})
         places = answer["fingering"]["notes"]
         if len(places) != len(notes):
             raise RuntimeError(f"target-fretted placed {len(places)} notes of {len(notes)}")
-        out = set()
+        out: set[int] = set()
         for v in answer["violations"]:
-            involved = [i for i in ([v["note"]] if "note" in v else v.get("notes", [])) if i not in out]
+            named = [v["note"]] if "note" in v else v.get("notes", [])
+            involved = [i for i in named if isinstance(i, int) and 0 <= i < len(notes) and i not in out]
             if involved:
-                out.add(min(involved, key=lambda i: (notes[i]["confidence"], notes[i]["pitch"])))
-        if not out or round_ == MAX_UNPLAYABLE_ROUNDS:  # the last answer is written as it is, violations and all
+                out.add(least_wanted(involved, notes))
+        if answer["violations"] and not out:  # a violation that names no note cannot be answered by leaving one out
+            raise RuntimeError(f"target-fretted reports a violation without a note: {answer['violations'][0].get('kind')}")
+        if not out:
             break
         dropped += len(out)
         notes = [n for i, n in enumerate(notes) if i not in out]
@@ -437,7 +462,8 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
             "violations": answer["violations"], "tuning_suggestions": answer["tuning_suggestions"],
             "octave_shift": doc["octave_shift"], "octave_source": doc["octave_source"],
             "octave_notes_moved": sum(n.get("octave_moved", False) for n in notes),
-            "unplayable_dropped": dropped, "reference_pitch": doc["reference_pitch"],
+            "unplayable_dropped": dropped, "leftovers_dropped": doc.get("leftovers_dropped", 0),
+            "reference_pitch": doc["reference_pitch"],
             "tempo_bpm": doc["tempo_bpm"], "key": doc["key"], "meter": doc["meter"],
             "ticks_per_beat": doc["ticks_per_beat"], "beat_times": doc["beat_times"],
             "first_downbeat": doc["first_downbeat"]}

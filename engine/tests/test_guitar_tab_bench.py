@@ -58,7 +58,7 @@ def test_a_tab_that_matches_its_reference_scores_full_marks():
     line = [(64, 1.0, 48, 1, 0, 1.0), (62, 1.5, 72, 2, 3, 1.0), (60, 2.0, 96, 2, 1, 1.0)]
     s = G.summarize([G.score_tab(REF, _tab(chord + line))])
     assert s["onset_f1"] == 1.0 and s["chord_recall"] == 1.0 and s["chord_precision"] == 1.0 and s["chords_whole"] == 1.0
-    assert s["string_agreement"] == 1.0 and s["violations"] == 0.0 and s["doubt_share"] == 0.0
+    assert s["string_agreement"] == 1.0 and s["string_recall"] == 1.0 and s["violations"] == 0.0 and s["doubt_share"] == 0.0
     assert (s["tempo_ok"], s["meter_ok"]) == (1.0, 1.0)
     assert s["hand_travel"] == 1.5  # the hand's frets, one per onset: 2 (the chord's lowest fretted note), 3, 1; the open e is none
 
@@ -73,10 +73,11 @@ def test_missed_chord_notes_other_strings_split_chords_and_doubt_are_counted():
     assert (row["chord_est"], row["chord_est_right"]) == (3.0, 2.0)  # the three written together; one of them is wrong
     assert s["chords_whole"] == 0.0  # the G on top landed on another onset
     assert s["string_agreement"] == pytest.approx(3 / 5)  # the chord's three right notes; neither note of the line
+    assert s["string_recall"] == pytest.approx(3 / 9)  # of all nine notes played: the missed ones are on no string
     # Three missed notes have something an octave away at their onset (the D heard high, and the chord's own octaves).
     assert s["octave_err_rate"] == pytest.approx(3 / 9) and s["doubt_precision"] == 1.0 and s["doubt_recall"] == 1.0
     assert (s["tempo_ok"], s["tempo_ok_level"], s["meter_ok"]) == (0.0, 1.0, 0.0)
-    assert s["unplayable_dropped"] == pytest.approx(2 / 7)
+    assert s["unplayable_dropped"] == pytest.approx(2 / 7) and s["leftovers_dropped"] == 0.0
     no_strings = {**REF, "notes": [{k: v for k, v in n.items() if k != "string"} for n in REF["notes"]]}
     assert G.summarize([G.score_tab(no_strings, _tab(chord + line))])["string_agreement"] == 0.0  # Slakh: nothing to agree with
 
@@ -89,6 +90,7 @@ def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
         assert base[f"{group}.violations"] == {"value": 0, "tolerance": 0, "higher_is_better": False}, group
         assert f"{group}.onset_f1" in base and f"{group}.chord_recall" in base
     assert "report.comp.string_agreement" in base and "song.string_agreement" not in base  # Slakh has no strings
+    assert "report.comp.string_recall" in base and "song.string_recall" not in base
     slakh_free = {k: (v["value"] if isinstance(v, dict) else v) for k, v in base.items() if not k.startswith("song.")}
     report = suites.gate([{"suite": "guitar-tab", "status": "ran", "metrics": slakh_free, "skipped_parts": ["song"], "seconds": 0.0}])
     assert report["passed"]  # without the Slakh tracks the song part is skipped, not missing

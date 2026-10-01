@@ -1121,12 +1121,17 @@
         "tune.solo.chord_precision": 0.581,
         "tune.solo.chords_whole": 1.0,
         "tune.solo.string_agreement": 0.373,
+        "tune.solo.string_recall": 0.312,
         "tune.solo.out_of_range": {
           "value": 0.001,
           "higher_is_better": false
         },
         "tune.solo.unplayable_dropped": {
           "value": 0.001,
+          "higher_is_better": false
+        },
+        "tune.solo.leftovers_dropped": {
+          "value": 0.064,
           "higher_is_better": false
         },
         "tune.solo.hand_travel": {
@@ -1167,12 +1172,17 @@
         "tune.comp.chord_precision": 0.775,
         "tune.comp.chords_whole": 0.999,
         "tune.comp.string_agreement": 0.706,
+        "tune.comp.string_recall": 0.468,
         "tune.comp.out_of_range": {
           "value": 0.002,
           "higher_is_better": false
         },
         "tune.comp.unplayable_dropped": {
           "value": 0.004,
+          "higher_is_better": false
+        },
+        "tune.comp.leftovers_dropped": {
+          "value": 0.01,
           "higher_is_better": false
         },
         "tune.comp.hand_travel": {
@@ -1213,12 +1223,17 @@
         "report.solo.chord_precision": 0.746,
         "report.solo.chords_whole": 1.0,
         "report.solo.string_agreement": 0.453,
+        "report.solo.string_recall": 0.38,
         "report.solo.out_of_range": {
           "value": 0.001,
           "higher_is_better": false
         },
         "report.solo.unplayable_dropped": {
           "value": 0.001,
+          "higher_is_better": false
+        },
+        "report.solo.leftovers_dropped": {
+          "value": 0.045,
           "higher_is_better": false
         },
         "report.solo.hand_travel": {
@@ -1259,12 +1274,17 @@
         "report.comp.chord_precision": 0.72,
         "report.comp.chords_whole": 0.999,
         "report.comp.string_agreement": 0.695,
+        "report.comp.string_recall": 0.489,
         "report.comp.out_of_range": {
           "value": 0.001,
           "higher_is_better": false
         },
         "report.comp.unplayable_dropped": {
           "value": 0.004,
+          "higher_is_better": false
+        },
+        "report.comp.leftovers_dropped": {
+          "value": 0.008,
           "higher_is_better": false
         },
         "report.comp.hand_travel": {
@@ -1309,6 +1329,10 @@
         },
         "song.unplayable_dropped": {
           "value": 0.009,
+          "higher_is_better": false
+        },
+        "song.leftovers_dropped": {
+          "value": 0.081,
           "higher_is_better": false
         },
         "song.hand_travel": {

@@ -251,15 +251,15 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--instrument", choices=list(tab.TUNINGS),
                    help="tab: the instrument (default guitar-6; bass-tab: a bass, default bass-4)")
     r.add_argument("--tuning", help="tab: the instrument's tuning, e.g. standard, drop-d, low-g (default: its first)")
-    r.add_argument("--capo", type=int, help="bass-tab: the capo's fret (default 0, none)")
-    r.add_argument("--style", choices=list(bass_tab.STYLES), help="bass-tab: where the line sits on the neck (default as-played)")
+    r.add_argument("--capo", type=int, help="tab: the capo's fret (default 0, none)")
+    r.add_argument("--style", choices=list(bass_tab.STYLES), help="tab: where the notes sit on the neck (default as-played)")
     r.add_argument("--recording", choices=list(bass_tab.RECORDINGS),
-                   help="bass-tab: song separates the bass from a band or a record (default); instrument: the bass alone")
+                   help="tab: song separates the instrument from a band or a record (default); instrument: the instrument alone")
     r.add_argument("--octave", choices=list(bass_tab.OCTAVES),
-                   help="bass-tab: the octave the line is written in, in semitones from what was heard (default auto: "
-                        "an octave lower when it was heard an octave high)")
+                   help="tab: the octave the notes are written in, in semitones from what was heard (default auto: "
+                        "moved an octave when they were heard an octave from the instrument)")
     r.add_argument("--layout", choices=list(bass_tab.LAYOUTS),
-                   help="bass-tab: what the page shows: the tab staff alone (default), with notation above it, or notation alone")
+                   help="tab: what the page shows: the tab staff alone (default), with notation above it, or notation alone")
     r.add_argument("--check-golden", type=Path, help="compare outputs with a reference directory; exit 2 on difference")
     r.set_defaults(fn=cmd_run)
 

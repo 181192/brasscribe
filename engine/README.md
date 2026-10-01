@@ -26,7 +26,12 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   - A guitar plays chords and lines, and the two are read differently. Among chords every note heard is kept (an
     octave or a fifth over a sounding note is played on purpose) and a faint note that no other strum repeats gets
     the "?". In a line the overtones and faint leftovers are left out and SwiftF0 is the second opinion. A chord the
-    hand cannot play as heard loses its least sure note, so the tab that is written has no playability violation.
+    hand cannot play as heard loses its least sure note, again until none is left that it cannot play, so the tab
+    that is written has no playability violation. Any other instrument is read by the same rules, without the one
+    limit that was measured on guitars (an overtone above the 12th fret of the top string, among chords).
+  - Nothing is left out silently: `tab.json` counts the notes heard but not written, `leftovers_dropped` (overtones
+    and faint notes taken as not played) and `unplayable_dropped` (notes the instrument or the hand cannot play
+    with the rest of their chord). A ukulele or mandolin is taken alone (`recording: instrument`, their default).
   - The result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the fingered notes, the tunings
     ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
     `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore

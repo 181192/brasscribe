@@ -152,7 +152,7 @@ def job_options(profile: str, params: dict) -> dict:
         except bass_tab.CoreCliMissing as e:
             raise OptionError(str(e), CORE_MISSING_CODE) from e
         return opts
-    bass_tab.refuse_options(profile, params)
+    tab.refuse_options(profile, params)
     opts = arrangement_options(params)
     if profile == "solo" and params.get("lineup") == "quartet":
         raise OptionError(QUARTET_NEEDS_GROUP, QUARTET_NEEDS_GROUP_CODE)
@@ -388,5 +388,5 @@ def build(profile: str, audio: Path, title: str | None = None, params: dict | No
     if profile not in PROFILES:
         raise KeyError(f"unknown profile {profile!r}; choose from {', '.join(PROFILES)}")
     if not tab.is_tab(profile):
-        bass_tab.refuse_options(profile, params or {})
+        tab.refuse_options(profile, params or {})
     return PROFILES[profile].build(title or default_title(profile, audio), dict(params or {}))

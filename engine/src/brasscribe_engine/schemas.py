@@ -444,6 +444,11 @@ class Tab(BaseModel):
     unplayable_dropped: int = Field(0, description="notes heard that are not in the tab because the instrument cannot "
                                                    "play them with the others: more notes on one onset than it has "
                                                    "strings, or a chord no hand spans. Always 0 for a bass line")
+    leftovers_dropped: int = Field(0, description="notes Basic Pitch heard that are not in the tab because they were "
+                                                  "not played: in a line, faint overtones of a sounding note and "
+                                                  "notes heard very faintly; among a guitar's chords, overtones above "
+                                                  "the 12th fret of the top string. Always 0 for a bass line, whose own "
+                                                  "count is in the job's log")
     octave_notes_moved: int = Field(0, description="single notes written an octave lower than Basic Pitch heard them "
                                                    "(with octave auto): each stood above its neighbours, and the second "
                                                    "transcriber heard it an octave lower")
