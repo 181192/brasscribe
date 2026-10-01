@@ -374,7 +374,7 @@ reader works them out from the pitch and the key.
   lasts until its longest note ends or the next note starts, whichever comes first. A bass note held
   under a melody is therefore cut at the next melody note.
 - Two notes of one pitch on one position (a doubling from two voices) are written once, with the
-  higher confidence.
+  higher confidence and the note index of the first of them (see The note index).
 - Values are split and tied to show the beat and the bar line, on notes and rests alike: by the
   shared `rhythm_spelling` module on quarter-note beats, and on dotted-quarter beats in 3/8, 6/8,
   9/8 and 12/8. Other meters in eighths (5/8, 7/8) are split on quarter notes. An empty bar is a
@@ -423,6 +423,31 @@ staves the notation staff gets only the slurs and the x noteheads.
   bending. So the two numbers read "from 7, bent up to the pitch of 9", and every `<pitch>` agrees
   with its string and fret.
 
+### The note index
+
+Every `<note>` with a pitch says which note of the input it was written for, as a processing
+instruction at the end of the `<note>`:
+
+```xml
+<note>
+  ...
+  <?fretted-note 17?>
+</note>
+```
+
+- The number is the note's position in the input, counted from 0: `TabScore::notes`, which is the
+  `notes` list of a JSON request and the order of its `fingering`.
+- A drawn note can be matched to its note this way where the ticks cannot: when its start or
+  length was moved to the grid, when it was cut by its chord or the next note, in a chord, and on
+  a tied note.
+- Every tied piece of a note carries the note's index.
+- In a pair of staves the note carries it on both staves.
+- A rest has none. That includes the rest that stands for a note without a place on the tab staff;
+  the notation staff has that note, with its index.
+- Notes written once (a doubling: one pitch on one position at one start) carry the index of the
+  first of them in the input. The other indices of the doubling are not in the document.
+- A doubtful note has the index first and the confidence after it.
+
 ### Doubt and range
 
 - A note whose confidence is below `TabOptions::doubt_below` (default 0.4; 0 marks none) is
@@ -434,6 +459,7 @@ staves the notation staff gets only the slurs and the x noteheads.
     ```xml
     <note color="#9A5200">
       ...
+      <?fretted-note 7?>
       <?fretted-confidence 0.31?>
     </note>
     ```
@@ -465,7 +491,13 @@ to PDF):
   moved to the grid in 9/8, 6/8 and 4/4;
 - changed: a `<wavy-line>` is drawn as a trill line, and with `"capo": "element"` the frets are
   rewritten (see Capo);
-- lost: `<hammer-on>`, `<pull-off>` and `<bend>` (the slurs stay), and the confidence.
+- lost: `<hammer-on>`, `<pull-off>` and `<bend>` (the slurs stay), the confidence and the note
+  index.
+
+`cargo test -p target-fretted --test tab_musicxml -- --ignored musescore` repeats the check on the
+study with the note index in it: MuseScore must write a file with every note, string and fret. It
+starts MuseScore (`MSCORE`, `mscore` on the path, or the macOS application), so it only runs when
+asked for, and says so when MuseScore is missing.
 
 ## JSON
 
@@ -607,6 +639,9 @@ checked to hold exactly their length on each staff.
 - **Techniques:** start and stop pairs, marks at the ends of a tied note, each technique's element.
 - **Doubt and range:** the colour, the confidence, the `?` and the `!`, the threshold, never a
   parenthesis, and no change to pitch or place.
+- **The note index:** one on every note with a pitch and none on a rest, the same on every tied
+  piece and on both staves, every placed note named, a moved note, a chord, a note without a place
+  and a doubling.
 - **Whole documents:** a fixed pseudo-random passage on every preset, in four meters and three
   layouts; the same input gives the same text; the JSON entry point.
 - **Fixture:** `tests/fixtures/study.json` (an original four-bar study with every feature) must give

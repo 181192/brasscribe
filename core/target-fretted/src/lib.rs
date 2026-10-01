@@ -19,5 +19,5 @@ pub use check::{check, check_with_techniques, Violation};
 pub use instrument::{family_presets, fret_distance_mm, preset, preset_family, ukulele, Instrument, NotationClef, Position, StringSpec, Tuning, UkuleleSize, PRESET_IDS};
 pub use solve::{assign, assign_with_techniques, Fingering, HandLimits, NotePlace, Options, Pin, Style};
 pub use suggest::{suggest_tunings, TuningFit};
-pub use tab::{header_text, CapoEncoding, write_tab_musicxml, Layout, TabDocument, TabNote, TabOptions, TabScore, CONFIDENCE, DOUBT_BELOW, DOUBT_COLOR};
+pub use tab::{header_text, CapoEncoding, write_tab_musicxml, Layout, TabDocument, TabNote, TabOptions, TabScore, CONFIDENCE, DOUBT_BELOW, DOUBT_COLOR, NOTE_INDEX};
 pub use technique::{Technique, LEGATO_REACH, SLIDE_REACH};

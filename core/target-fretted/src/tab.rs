@@ -29,6 +29,10 @@ pub const DOUBT_COLOR: &str = "#9A5200";
 /// Target of the processing instruction that carries a doubtful note's confidence, as the last
 /// child of its `<note>`: `<?fretted-confidence 0.31?>`.
 pub const CONFIDENCE: &str = "fretted-confidence";
+/// Target of the processing instruction that says which note of the score a `<note>` was written
+/// for, as its position in [`TabScore::notes`]: `<?fretted-note 17?>`. Every `<note>` with a pitch
+/// has one, on each staff and on each tied piece; a rest has none.
+pub const NOTE_INDEX: &str = "fretted-note";
 /// Divisions per quarter note: durations are written in the model's ticks.
 const DIVISIONS: i64 = TICKS_PER_BEAT;
 /// Ticks of a whole note.
@@ -253,6 +257,8 @@ impl Link {
 /// One written note of a chord, after notes that sound as one are merged.
 #[derive(Debug, Clone)]
 struct Written {
+    /// Position in the score's notes. Of notes merged into one, the first in the score.
+    source: usize,
     pitch: i32,
     confidence: f64,
     place: Option<(u8, u8)>,
@@ -574,6 +580,7 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
         }
         slot[i] = Some((e, ev.notes.len()));
         ev.notes.push(Written {
+            source: i,
             pitch: n.pitch,
             confidence: n.confidence,
             place: place(i),
@@ -974,6 +981,9 @@ impl<'a> Plan<'a> {
                 if !notations.children.is_empty() {
                     note.push(notations);
                 }
+                if let Some(w) = w {
+                    note.push(El::text(NOTE_INDEX, w.source.to_string()));
+                }
                 if let Some(w) = w.filter(|w| sym.first && doubtful(w, self.opts)) {
                     note.push(El::text(CONFIDENCE, format!("{:.2}", w.confidence.clamp(0.0, 1.0))));
                 }
@@ -1082,8 +1092,9 @@ impl<'a> Plan<'a> {
         root.push(part);
         let mut out = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0 Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\">\n");
         root.write(0, &mut out);
-        // The confidence is a processing instruction, which the element tree cannot hold.
-        out.replace(&format!("<{CONFIDENCE}>"), &format!("<?{CONFIDENCE} ")).replace(&format!("</{CONFIDENCE}>"), "?>")
+        // The note index and the confidence are processing instructions, which the element tree
+        // cannot hold.
+        [NOTE_INDEX, CONFIDENCE].iter().fold(out, |text, target| text.replace(&format!("<{target}>"), &format!("<?{target} ")).replace(&format!("</{target}>"), "?>"))
     }
 }
 

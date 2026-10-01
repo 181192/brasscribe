@@ -186,6 +186,40 @@ fn assert_typed_and_bracketed(doc: &Document) {
     }
 }
 
+/// The score notes a `<note>` says it was written for: its `<?fretted-note …?>` instructions.
+fn indices(n: Node) -> Vec<usize> {
+    n.children().filter_map(|c| c.pi()).filter(|pi| pi.target == "fretted-note").map(|pi| pi.value.unwrap().parse().unwrap()).collect()
+}
+
+/// The index of every `<note>` with a pitch on a staff ("1", "2", or None in a one-staff layout),
+/// in document order.
+fn indices_on(doc: &Document, staff: Option<&str>) -> Vec<usize> {
+    sounding(doc).into_iter().filter(|n| staff_of(*n) == staff).map(|n| indices(n)[0]).collect()
+}
+
+/// Every `<note>` with a pitch names exactly one of the `count` notes of the score, a rest names
+/// none, and the pieces of a tied note name the same one.
+fn assert_indexed(doc: &Document, count: usize) {
+    let mut open: std::collections::BTreeSet<(Option<&str>, usize)> = Default::default();
+    for n in all(doc, "note") {
+        let found = indices(n);
+        if child(n, "pitch").is_none() {
+            assert!(found.is_empty(), "a rest names a note");
+            continue;
+        }
+        assert_eq!(found.len(), 1, "a note names {found:?}");
+        assert!(found[0] < count, "note {} of {count}", found[0]);
+        let key = (staff_of(n), found[0]);
+        if ties(n).contains(&"stop") {
+            assert!(open.remove(&key), "a tie ends on another note than it started from");
+        }
+        if ties(n).contains(&"start") {
+            assert!(open.insert(key));
+        }
+    }
+    assert!(open.is_empty(), "a tie is left open");
+}
+
 /// The document and the number of adjusted notes, on a mandolin in the given meter.
 fn in_meter(notes: &[Note], beats: i64, unit: i64, l: Layout) -> TabDocument {
     let inst = preset("mandolin").unwrap();
@@ -721,6 +755,107 @@ fn two_voices_on_one_pitch_are_written_once() {
     assert!(!words(&doc).contains(&"?"), "the more confident of the two decides");
 }
 
+// --- the note index ---
+
+#[test]
+fn every_written_note_names_the_note_it_was_written_for() {
+    let inst = preset("guitar-standard").unwrap();
+    let notes = [
+        note(60, 1, 23),            // starts off the grid: moved
+        note(64, 72, 48),           // across the bar line: two tied pieces
+        note(59, 120, 24),          // a chord, given out of order
+        note(52, 120, 24),
+        note(64, 120, 24),
+        note(26, 144, 24),          // below the low E string: no place
+        doubtful(62, 168, 24, 0.2), // two voices on one pitch: written once
+        doubtful(62, 168, 24, 0.9),
+    ];
+    let fingering = assign(&inst, &notes, &Options::default()).unwrap();
+    let score = TabScore::new("Test", &inst, &notes, &[], &fingering).unwrap();
+    // A chord is written low to high; the doubling carries the first of its two notes.
+    let every = vec![0, 1, 1, 3, 2, 4, 5, 6];
+    let placed = vec![0, 1, 1, 3, 2, 4, 6];
+    for l in [Layout::Tab, Layout::TabAndNotation, Layout::Notation] {
+        let TabDocument { musicxml, adjusted_notes } = write_tab_musicxml(&score, &layout(l)).unwrap();
+        assert_eq!(adjusted_notes, 1);
+        let doc = parse(&musicxml);
+        assert_measures_full(&doc, BAR);
+        assert_typed_and_bracketed(&doc);
+        assert_indexed(&doc, notes.len());
+        match l {
+            Layout::Tab => assert_eq!(indices_on(&doc, None), placed),
+            Layout::Notation => assert_eq!(indices_on(&doc, None), every),
+            Layout::TabAndNotation => {
+                assert_eq!(indices_on(&doc, Some("1")), every);
+                assert_eq!(indices_on(&doc, Some("2")), placed);
+            }
+        }
+        // The index leads back to the note: the pitch written is the pitch of the note named.
+        for n in sounding(&doc) {
+            assert_eq!(midi(n), Some(notes[indices(n)[0]].pitch));
+        }
+        // The more confident voice of the doubling decides the doubt; the index stays the first's.
+        assert!(!words(&doc).contains(&"?"));
+        assert_eq!(musicxml.matches("<?fretted-note 1?>").count(), if l == Layout::TabAndNotation { 4 } else { 2 });
+        assert!(!musicxml.contains("<?fretted-note 7?>"));
+    }
+}
+
+#[test]
+fn a_doubtful_tied_note_names_itself_on_each_piece_and_its_confidence_once() {
+    let inst = preset("guitar-standard").unwrap();
+    let xml = tab(&inst, &[note(60, 0, 48), doubtful(62, 72, 48, 0.1)], &layout(Layout::Tab));
+    let doc = parse(&xml);
+    assert_indexed(&doc, 2);
+    let pieces: Vec<Vec<&str>> = sounding(&doc).into_iter().filter(|n| midi(*n) == Some(62)).map(|n| n.children().filter_map(|c| c.pi()).map(|pi| pi.target).collect()).collect();
+    assert_eq!(pieces, [vec!["fretted-note", "fretted-confidence"], vec!["fretted-note"]]);
+    assert_eq!(xml.matches("<?fretted-note 1?>").count(), 2);
+}
+
+/// MuseScore, when it is installed: `MSCORE`, `mscore` on the path, or the macOS application.
+fn musescore() -> Option<std::path::PathBuf> {
+    let named = std::env::var_os("MSCORE").map(std::path::PathBuf::from);
+    let on_path = std::env::var_os("PATH").and_then(|p| std::env::split_paths(&p).map(|d| d.join("mscore")).find(|f| f.is_file()));
+    let app = Some(std::path::PathBuf::from("/Applications/MuseScore 4.app/Contents/MacOS/mscore")).filter(|f| f.is_file());
+    named.or(on_path).or(app)
+}
+
+/// MuseScore reads the study with the note index in it and writes it back with every note and
+/// every string and fret. It starts an application, so it runs on request:
+/// `cargo test -p target-fretted --test tab_musicxml -- --ignored musescore`.
+#[test]
+#[ignore = "starts MuseScore"]
+fn musescore_opens_a_tab_with_the_note_index() {
+    let Some(mscore) = musescore() else {
+        eprintln!("SKIPPED musescore_opens_a_tab_with_the_note_index: MuseScore not found (set MSCORE to its command)");
+        return;
+    };
+    let fixtures = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let xml = tab_musicxml_json(&std::fs::read_to_string(fixtures.join("study.json")).unwrap()).unwrap();
+    assert!(xml.contains("<?fretted-note 0?>"));
+    let dir = std::env::temp_dir().join(format!("target-fretted-musescore-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let (input, output) = (dir.join("in.musicxml"), dir.join("out.musicxml"));
+    std::fs::write(&input, &xml).unwrap();
+    let mut run = std::process::Command::new(&mscore).arg("-o").arg(&output).arg(&input).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()).spawn().unwrap();
+    // A file MuseScore cannot read can leave it waiting: give up after two minutes.
+    let started = std::time::Instant::now();
+    while run.try_wait().unwrap().is_none() {
+        if started.elapsed() > std::time::Duration::from_secs(120) {
+            run.kill().unwrap();
+            panic!("MuseScore did not finish");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    // The file it wrote is the evidence, not its exit code.
+    let back = std::fs::read_to_string(&output).expect("MuseScore wrote no file");
+    let (ours, theirs) = (parse(&xml), parse(&back));
+    let placed = |doc: &Document| -> Vec<(i32, (u8, u8))> { sounding(doc).into_iter().filter_map(|n| Some((midi(n)?, place(n)?))).collect() };
+    assert_eq!(sounding(&theirs).len(), sounding(&ours).len(), "every note on both staves");
+    assert_eq!(placed(&theirs), placed(&ours), "every string and fret");
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
 // --- techniques ---
 
 fn techniques(n: usize, marks: &[(usize, Technique)]) -> Vec<Vec<Technique>> {
@@ -855,8 +990,10 @@ fn a_doubtful_note_is_coloured_and_marked_with_a_question_mark() {
             let head = child(*n, "notehead").unwrap();
             assert_eq!((head.attribute("color"), head.text()), (Some("#9A5200"), Some("normal")));
             // The confidence rides along as a processing instruction.
-            let pi = n.children().find(|c| c.is_pi()).and_then(|c| c.pi()).unwrap();
-            assert_eq!((pi.target, pi.value), ("fretted-confidence", Some("0.31")));
+            let pi = n.children().filter_map(|c| c.pi()).find(|pi| pi.target == "fretted-confidence").unwrap();
+            assert_eq!(pi.value, Some("0.31"));
+            // It is the note's last child, after the note index.
+            assert_eq!(n.children().filter_map(|c| c.pi()).next_back().map(|pi| pi.target), Some("fretted-confidence"));
         }
         // One "?" above the column, on the tab staff when there is one.
         let marks: Vec<Node> = all(&doc, "direction").into_iter().filter(|d| text(*d, "words") == Some("?")).collect();
@@ -1028,6 +1165,18 @@ fn every_preset_and_layout_is_well_formed_and_fills_its_measures() {
                 let doc = parse(&xml);
                 assert_measures_full(&doc, beats * 96 / unit);
                 assert_typed_and_bracketed(&doc);
+                assert_indexed(&doc, notes.len());
+                // Every note is named on each staff that shows it, or was written as one with an
+                // earlier note of its pitch on its place.
+                for staff in if l == Layout::TabAndNotation { vec![Some("1"), Some("2")] } else { vec![None] } {
+                    let on_tab = l == Layout::Tab || staff == Some("2");
+                    let named = indices_on(&doc, staff);
+                    for (i, (n, p)) in notes.iter().zip(&fingering.notes).enumerate() {
+                        let same = |j: &usize| *j < i && notes[*j].pitch == n.pitch && fingering.notes[*j].position() == p.position();
+                        let shown = !on_tab || p.position().is_some();
+                        assert_eq!(named.contains(&i) || named.iter().any(same), shown, "{id} {l:?} staff {staff:?}: note {i}");
+                    }
+                }
                 // Every placed note sounds its pitch at the written string and fret.
                 for n in sounding(&doc) {
                     if let Some((string, fret)) = place(n) {
@@ -1239,4 +1388,10 @@ fn the_study_fixture_is_reproduced() {
     let tab_notes: Vec<Node> = sounding(&doc).into_iter().filter(|n| staff_of(*n) == Some("2")).collect();
     let last: Vec<(u8, u8)> = tab_notes[tab_notes.len() - 3..].iter().map(|n| place(*n).unwrap()).collect();
     assert_eq!(last, [(6, 0), (5, 2), (4, 2)]);
+    // The note index is the note's position in the request: every note is on the notation staff,
+    // and every note but the one out of range on the tab staff.
+    assert_indexed(&doc, 18);
+    let named = |staff: &str| indices_on(&doc, Some(staff)).into_iter().collect::<std::collections::BTreeSet<usize>>();
+    assert_eq!(named("1"), (0..18).collect());
+    assert_eq!(named("2"), (0..18).filter(|i| *i != 10).collect());
 }

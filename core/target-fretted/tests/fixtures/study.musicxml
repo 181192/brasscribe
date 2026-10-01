@@ -92,6 +92,7 @@
         <voice>1</voice>
         <type>eighth</type>
         <staff>1</staff>
+        <?fretted-note 0?>
       </note>
       <backup>
         <duration>12</duration>
@@ -112,6 +113,7 @@
             <fret>2</fret>
           </technical>
         </notations>
+        <?fretted-note 0?>
       </note>
     </measure>
     <measure number="1">
@@ -125,6 +127,7 @@
         <voice>1</voice>
         <type>quarter</type>
         <staff>1</staff>
+        <?fretted-note 1?>
       </note>
       <note>
         <chord />
@@ -137,6 +140,7 @@
         <voice>1</voice>
         <type>quarter</type>
         <staff>1</staff>
+        <?fretted-note 2?>
       </note>
       <note>
         <chord />
@@ -148,6 +152,7 @@
         <voice>1</voice>
         <type>quarter</type>
         <staff>1</staff>
+        <?fretted-note 3?>
       </note>
       <note>
         <pitch>
@@ -163,6 +168,7 @@
         <notations>
           <slur type="start" number="1" />
         </notations>
+        <?fretted-note 4?>
       </note>
       <note>
         <pitch>
@@ -178,6 +184,7 @@
           <slur type="stop" number="1" />
           <slur type="start" number="1" />
         </notations>
+        <?fretted-note 5?>
       </note>
       <note>
         <pitch>
@@ -193,6 +200,7 @@
         <notations>
           <slur type="stop" number="1" />
         </notations>
+        <?fretted-note 6?>
       </note>
       <note color="#9A5200">
         <pitch>
@@ -205,6 +213,7 @@
         <notehead color="#9A5200">normal</notehead>
         <staff>1</staff>
         <beam number="1">end</beam>
+        <?fretted-note 7?>
         <?fretted-confidence 0.25?>
       </note>
       <note>
@@ -221,6 +230,7 @@
         <notations>
           <slur type="start" number="1" />
         </notations>
+        <?fretted-note 8?>
       </note>
       <note>
         <pitch>
@@ -237,6 +247,7 @@
           <tied type="start" />
           <slur type="stop" number="1" />
         </notations>
+        <?fretted-note 9?>
       </note>
       <backup>
         <duration>96</duration>
@@ -258,6 +269,7 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 1?>
       </note>
       <note>
         <chord />
@@ -277,6 +289,7 @@
             <fret>2</fret>
           </technical>
         </notations>
+        <?fretted-note 2?>
       </note>
       <note>
         <chord />
@@ -295,6 +308,7 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 3?>
       </note>
       <note>
         <pitch>
@@ -315,6 +329,7 @@
             <hammer-on type="start" number="1">H</hammer-on>
           </technical>
         </notations>
+        <?fretted-note 4?>
       </note>
       <note>
         <pitch>
@@ -336,6 +351,7 @@
             <pull-off type="start" number="1">P</pull-off>
           </technical>
         </notations>
+        <?fretted-note 5?>
       </note>
       <note>
         <pitch>
@@ -356,6 +372,7 @@
             <pull-off type="stop" number="1" />
           </technical>
         </notations>
+        <?fretted-note 6?>
       </note>
       <direction placement="above">
         <direction-type>
@@ -381,6 +398,7 @@
             <fret>2</fret>
           </technical>
         </notations>
+        <?fretted-note 7?>
         <?fretted-confidence 0.25?>
       </note>
       <note>
@@ -405,6 +423,7 @@
             </bend>
           </technical>
         </notations>
+        <?fretted-note 8?>
       </note>
       <note>
         <pitch>
@@ -429,6 +448,7 @@
             <fret>5</fret>
           </technical>
         </notations>
+        <?fretted-note 9?>
       </note>
     </measure>
     <measure number="2">
@@ -445,6 +465,7 @@
         <notations>
           <tied type="stop" />
         </notations>
+        <?fretted-note 9?>
       </note>
       <note>
         <pitch>
@@ -456,6 +477,7 @@
         <voice>1</voice>
         <type>quarter</type>
         <staff>1</staff>
+        <?fretted-note 10?>
       </note>
       <note>
         <pitch>
@@ -467,6 +489,7 @@
         <type>quarter</type>
         <notehead>x</notehead>
         <staff>1</staff>
+        <?fretted-note 11?>
       </note>
       <note>
         <pitch>
@@ -486,6 +509,7 @@
         <notations>
           <tuplet type="start" bracket="yes" />
         </notations>
+        <?fretted-note 12?>
       </note>
       <note>
         <pitch>
@@ -501,6 +525,7 @@
         </time-modification>
         <staff>1</staff>
         <beam number="1">continue</beam>
+        <?fretted-note 13?>
       </note>
       <note>
         <pitch>
@@ -520,6 +545,7 @@
         <notations>
           <tuplet type="stop" />
         </notations>
+        <?fretted-note 14?>
       </note>
       <backup>
         <duration>96</duration>
@@ -542,6 +568,7 @@
             <fret>5</fret>
           </technical>
         </notations>
+        <?fretted-note 9?>
       </note>
       <direction placement="above">
         <direction-type>
@@ -573,6 +600,7 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 11?>
       </note>
       <note>
         <pitch>
@@ -596,6 +624,7 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 12?>
       </note>
       <note>
         <pitch>
@@ -617,6 +646,7 @@
             <fret>3</fret>
           </technical>
         </notations>
+        <?fretted-note 13?>
       </note>
       <note>
         <pitch>
@@ -640,6 +670,7 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 14?>
       </note>
     </measure>
     <measure number="3">
@@ -653,6 +684,7 @@
         <voice>1</voice>
         <type>whole</type>
         <staff>1</staff>
+        <?fretted-note 15?>
       </note>
       <note>
         <chord />
@@ -665,6 +697,7 @@
         <voice>1</voice>
         <type>whole</type>
         <staff>1</staff>
+        <?fretted-note 16?>
       </note>
       <note>
         <chord />
@@ -677,6 +710,7 @@
         <voice>1</voice>
         <type>whole</type>
         <staff>1</staff>
+        <?fretted-note 17?>
       </note>
       <backup>
         <duration>96</duration>
@@ -705,6 +739,7 @@
             <fret>0</fret>
           </technical>
         </notations>
+        <?fretted-note 15?>
       </note>
       <note>
         <chord />
@@ -725,6 +760,7 @@
             <fret>2</fret>
           </technical>
         </notations>
+        <?fretted-note 16?>
       </note>
       <note>
         <chord />
@@ -745,6 +781,7 @@
             <fret>2</fret>
           </technical>
         </notations>
+        <?fretted-note 17?>
       </note>
       <barline location="right">
         <bar-style>light-heavy</bar-style>
