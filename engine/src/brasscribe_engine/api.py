@@ -37,7 +37,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, 
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, bass_tab, build_info, history, inspection, profiles
+from . import __version__, bass_tab, build_info, history, inspection, profiles, tab
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
 from .adapters import host_device
@@ -217,7 +217,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     def score_file(job_id: str, suffix: str) -> FileResponse:
         """The job's score in one format: the band score, or the tab of a tablature job."""
-        stem = "tab" if job_or_404(job_id).profile == bass_tab.PROFILE else "brass-band"
+        stem = "tab" if tab.is_tab(job_or_404(job_id).profile) else "brass-band"
         return output_file(job_id, f"{stem}.{suffix}")
 
     def output_file(job_id: str, name: str) -> FileResponse:
@@ -649,10 +649,10 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/jobs/{job_id}/tab", operation_id="getTab", tags=["results"], dependencies=[Depends(auth)],
              response_model=m.Tab,
-             responses={200: {"description": "tab.json as written by the bass-tab profile"},
+             responses={200: {"description": "tab.json as written by the tab profile (and bass-tab)"},
                         404: {"description": "the job has no tab: another profile, or not finished"}})
     def get_tab(job_id: str):
-        """The tab of a bass-tab job: a string and fret for every note, and what the song check asks about."""
+        """The tab of a tab job: a string and fret for every note, and what the song check asks about."""
         return output_file(job_id, "tab.json")
 
     @app.get("/v1/jobs/{job_id}/musicxml", operation_id="getMusicXml", tags=["results"], dependencies=[Depends(auth)],

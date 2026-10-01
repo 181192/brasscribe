@@ -601,6 +601,51 @@ def _bass_tab(data: Path, mode: str) -> dict[str, float]:
     return out
 
 
+# ----------------------------------------------------------------- guitar tab
+
+def _guitar_tab(data: Path, mode: str) -> dict[str, float]:
+    """The engine's tab profile with a guitar (guitar_tab_bench): GuitarSet's guitar alone, per style and apart
+    for the players the rules were set on and the players they are reported on; and Slakh's guitars in a song.
+
+    Cached mode scores the model outputs next to the eval data. Live mode builds the references from
+    <data>/guitarset and the Slakh tracks and runs the models that are missing."""
+    from brasscribe_engine import bass_tab
+
+    from . import guitar_tab_bench as G
+
+    root, slakh = data / "guitarset", data / G.SONG_SOURCE
+    if not G.entries(data):
+        if mode != "live" or not (root / "annotation").is_dir():
+            raise SkipSuite(f"missing data: eval/{G.SET} (built from guitarset/ in live mode)")
+        G.build(root, data)
+    try:
+        bass_tab.core_cli()
+    except bass_tab.CoreCliMissing as e:
+        raise SkipSuite(str(e)) from e
+    for entry in G.entries(data):
+        missing = [f for f in G.FILES.values() if not (entry / f).exists()]
+        if missing and (mode != "live" or not G.audio_of(entry, root).exists()):
+            raise SkipSuite(f"no cached {missing[0]} for {entry.name}")
+        if missing:
+            G.prepare(entry, G.audio_of(entry, root))
+    out: dict[str, float] = {}
+    for split, players in (("tune", G.TUNE), ("report", G.REPORT)):
+        for style in G.STYLES:
+            metrics, _ = G.evaluate(data, players, style)
+            out.update({f"{split}.{style}.{k}": v for k, v in metrics.items()})
+    # Guitars in a song: Slakh, where the tracks are.
+    if not G.song_entries(data) and mode == "live" and slakh.is_dir():
+        G.build_songs(slakh, data)
+    for entry in G.song_entries(data) if mode == "live" and slakh.is_dir() else ():
+        G.prepare_song(entry, slakh / entry.name / "mix.wav")
+    songs = [e for e in G.song_entries(data) if all((e / f).exists() for f in G.SONG_FILES.values())]
+    out[SKIPPED] = [] if songs else ["song"]
+    if songs:
+        metrics, _ = G.evaluate_songs(data)
+        out.update({f"song.{k}": v for k, v in metrics.items()})
+    return out
+
+
 # -------------------------------------------------------------------- registry
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
@@ -659,6 +704,9 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           _solo_ondevice, (ONDEVICE_REF, "runs/apple/entertainer-tpt1-30s.wav")),
     Suite("bass-tab", "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, "
           "range, playability, tempo and meter, hand travel (cached model outputs)", _bass_tab, ("eval/slakh-bass",)),
+    Suite("guitar-tab", "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and "
+          "reporting players apart) and on Slakh's guitars in a song: notes, chords, string agreement, playability "
+          "(cached model outputs)", _guitar_tab, ("eval/guitarset",)),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}

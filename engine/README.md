@@ -12,21 +12,38 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   take a machine-wide GPU lock (`gpulock.py`).
 - **Symbolic stages** (quantization, spelling, arranging, MusicXML) come from the
   [`music`](../music/README.md) library.
-- **Tablature.** The `bass-tab` profile (`bass_tab.py`) writes a bass line as tab instead of a band score: the
-  separated bass stem, or the recording itself when it is the bass alone (`recording: instrument`), then Basic
-  Pitch, the shared beat grid and durations, and a string and fret for every note from the Rust crate
-  [`target-fretted`](../core/target-fretted/README.md), which the engine calls through the core's command line
-  (`brasscribe-core fret`). Its result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the
-  fingered notes, the tunings ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the
-  octave shift when the line was heard an octave high. The tab itself is `tab.musicxml`, written by the same crate
-  (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore when it is installed; `/musicxml`, `/pdf`
-  and `/midi` of the job serve them. It takes `instrument` (`bass-4`, `bass-5`, `bass-6`), `tuning`, `capo`,
-  `style`, `octave` (`auto`, or the player's choice) and `layout` (`tab`, `tab-and-notation`, `notation`), and
-  none of the band options. SwiftF0 listens to the same audio as a second opinion: a note it did not hear at that
-  pitch gets a confidence below 0.4 and a "?" in the tab, a single note it heard an octave lower is written there,
-  and overtones heard as notes are left out. `brasscribe bench bass-tab` measures all of it on Slakh bass lines and
-  on synthesized lines at the bottom of the instrument ([`bass_tab_bench.py`](../eval/brasscribe_eval/bass_tab_bench.py));
-  it runs where the data and the models are, not in CI.
+- **Tablature.** The `tab` profile (`tab.py`) writes what one fretted instrument plays as tab instead of a band
+  score. `instrument` says which: a bass (`bass-4`, `bass-5`, `bass-6`), a guitar (`guitar-6`, `guitar-7`,
+  `guitar-8`), a ukulele (`ukulele` with tuning `high-g` or `low-g`, `ukulele-baritone`) or a mandolin; its tunings
+  are the presets of the Rust crate [`target-fretted`](../core/target-fretted/README.md). The instrument's stem is
+  separated from the song (bass and guitar; a ukulele or mandolin is taken alone for now), or the recording itself
+  is read when it is the instrument alone (`recording: instrument`); then Basic Pitch, the shared beat grid and
+  durations, and a string and fret for every note from the crate, which the engine calls through the core's command
+  line (`brasscribe-core fret`).
+  - A bass is one line (`bass_tab.py`): SwiftF0 listens to the same audio as a second opinion; a note it did not
+    hear at that pitch gets a confidence below 0.4 and a "?" in the tab, a single note it heard an octave lower is
+    written there, and overtones heard as notes are left out.
+  - A guitar plays chords and lines, and the two are read differently. Among chords every note heard is kept (an
+    octave or a fifth over a sounding note is played on purpose) and a faint note that no other strum repeats gets
+    the "?". In a line the overtones and faint leftovers are left out and SwiftF0 is the second opinion. A chord the
+    hand cannot play as heard loses its least sure note, again until none is left that it cannot play, so the tab
+    that is written has no playability violation. Any other instrument is read by the same rules, without the one
+    limit that was measured on guitars (an overtone above the 12th fret of the top string, among chords).
+  - Nothing is left out silently: `tab.json` counts the notes heard but not written, `leftovers_dropped` (overtones,
+    faint notes and notes too short to be one, taken as not played) and `unplayable_dropped` (notes the instrument or the hand cannot play
+    with the rest of their chord). A ukulele or mandolin is taken alone (`recording: instrument`, their default).
+  - The result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the fingered notes, the tunings
+    ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
+    `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore
+    when it is installed; `/musicxml`, `/pdf` and `/midi` of the job serve them.
+  - Options: `instrument`, `tuning`, `capo` (frets are counted from it, and the page names it), `style`, `octave`
+    (`auto`, or the player's choice) and `layout` (`tab`, `tab-and-notation`, `notation`), and none of the band
+    options. `bass-tab` is the same profile with a bass under the id older apps use.
+  - `brasscribe bench bass-tab` and `brasscribe bench guitar-tab` measure it, on Slakh's bass lines and synthesized
+    low ones, and on GuitarSet and Slakh's guitars
+    ([`bass_tab_bench.py`](../eval/brasscribe_eval/bass_tab_bench.py),
+    [`guitar_tab_bench.py`](../eval/brasscribe_eval/guitar_tab_bench.py)); they run where the data and the models
+    are, not in CI.
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS
   advertisement as `_brasscribe._tcp` (`discovery.py`). The contract is the committed
@@ -41,7 +58,7 @@ From the repository root, after `pixi install`:
 ```sh
 pixi run brasscribe profiles                    # the transcription profiles
 pixi run brasscribe run take.wav --profile solo --out data/runs/my-take
-pixi run brasscribe run song.wav --profile bass-tab --instrument bass-5 --out data/runs/my-tab
+pixi run brasscribe run song.wav --profile tab --instrument guitar-6 --capo 2 --out data/runs/my-tab
 pixi run studio                                 # engine + Studio on http://127.0.0.1:8765/, opens a browser
 pixi run serve --lan                            # listen on the LAN, print the URL and a 6-digit pairing code
 curl -s http://127.0.0.1:8765/v1/health
@@ -59,7 +76,7 @@ the adapter downloads them from where their makers publish them (licences in
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)).
 
 A job option the engine refuses answers 422 with `{"code": …, "detail": …}`; the codes are in
-`profiles.py`, and the apps word them themselves. A `bass-tab` job on an engine without `brasscribe-core` is
+`profiles.py`, and the apps word them themselves. A `tab` (or `bass-tab`) job on an engine without `brasscribe-core` is
 refused the same way (`core_missing`), before any model runs. Bandroom for Mac and for Windows bundle
 `brasscribe-core` and point the engine they install at it with `BRASSCRIBE_CORE_CLI`.
 
@@ -78,7 +95,7 @@ refused the same way (`core_missing`), before any model runs. Bandroom for Mac a
 | `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu-<uid>.lock` | Lock for heavy models, shared by this user's runs |
 | `BRASSCRIBE_ADAPTER_TIMEOUT_S` | 3 h heavy, 1 h other models | How long one model run may take before it is stopped |
 | `BRASSCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
-| `BRASSCRIBE_CORE_CLI` | `<repo>/core/target/release/brasscribe-core`, then the `PATH` | The Rust core's command line, for the `bass-tab` profile. A checkout gets it from `scripts/worktree-setup.sh` (or `cargo build --release -p brasscribe-cli` in `core/`); the Docker image builds it and sets the variable |
+| `BRASSCRIBE_CORE_CLI` | `<repo>/core/target/release/brasscribe-core`, then the `PATH` | The Rust core's command line, for the `tab` profile. A checkout gets it from `scripts/worktree-setup.sh` (or `cargo build --release -p brasscribe-cli` in `core/`); the Docker image builds it and sets the variable |
 
 `src/brasscribe_engine/config.py` lists the rest (companion state, device expiry, display name, owner
 credential, report folders).
@@ -103,5 +120,5 @@ docker run --rm -v "$PWD/data:/data" -p 8765:8765 brasscribe:cpu
 ```
 
 The image has the engine, every adapter environment and the Rust core's command line (built from `core/`
-in its own stage, for the `bass-tab` profile), and serves on the LAN without mDNS (a bridged
+in its own stage, for the `tab` profile), and serves on the LAN without mDNS (a bridged
 container would advertise its own address).
