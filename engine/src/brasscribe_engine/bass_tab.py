@@ -448,6 +448,8 @@ def build(title: str, params: dict) -> Pipeline:
 
     opts = options(params)
     whole = opts["recording"] == "instrument"
+    # The adapter's own beat model (final0), as pop-rock: it runs on the computer, on a whole song, and the two
+    # profiles share its cache entry. small0 is for what the apps also make on the device.
     st = [P._beats()]
     if whole:
         bass = Input(SOURCE)

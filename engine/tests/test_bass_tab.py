@@ -169,6 +169,8 @@ def test_a_song_is_separated_and_its_bass_stem_transcribed_as_in_pop_rock():
         assert (a.kind, a.inputs, a.run, a.params, a.adapter, a.code, a.outputs, a.reuse_subdir, a.derive) == \
             (b.kind, b.inputs, b.run, b.params, b.adapter, b.code, b.outputs, b.reuse_subdir, b.derive), name
     assert tab.stage("transcribe.bass.basic-pitch").derive is None  # a stem's tuning estimate is not trusted
+    assert tab.stage("beats").params == {}  # the adapter's own beat model, not the device's small one
+    assert profiles.build("bass-tab", Path("bass.wav"), params={"recording": "instrument"}).stage("beats").params == {}
     assert set(tab.outputs) == {"tab.json", "composition.json", "tab.musicxml", "tab.pdf", "tab.mid"}
 
 
