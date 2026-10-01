@@ -59,8 +59,8 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 | b | Done: design folder in the repo, generator flags, theme, icon; no SoundFont or brass models in the Fretscribe APK | low |
 | c | Done: Your instrument (bass only), and Fretscribe's own words on the first run, Home and Settings | none |
 | d0 | `engine-client`: bass tab profile, `Tab` models, `getTab`, a fixture | low |
-| d | Open a recording, send a `bass-tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
-| e | Check the song from `/tab`; a change is a new job | none |
+| d | Done: open a recording, send a `bass-tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
+| e | Done in a first form: Check the song from `/tab` (tuning, octave, reference pitch, key and tempo, notes to check); a change is a new job. Still to come: capo, Other… tunings | none |
 | f1 | Tab view: alphaTab, "?" and "!" overlay, font test | low |
 | f2 | Practice: the recording as the sound, 5% speed steps, repeat by bar, 64 dp transport | low |
 | g0 | Core: FFI export (the note index is done) | medium (bindings) |

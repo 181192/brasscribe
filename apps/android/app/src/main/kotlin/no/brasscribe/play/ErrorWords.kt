@@ -33,6 +33,7 @@ object ErrorWords {
             "seat_no_tune" -> R.string.lead_seat_refused
             "reads_not_offered" -> R.string.error_reads_not_offered
             "invalid_options" -> R.string.error_invalid_options
+            "core_missing" -> R.string.error_core_missing
             else -> when (e.status) {
                 0 -> R.string.error_unreachable
                 401, 403 -> R.string.error_pair_again

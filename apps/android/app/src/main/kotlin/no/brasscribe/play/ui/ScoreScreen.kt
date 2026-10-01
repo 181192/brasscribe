@@ -175,7 +175,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     var toCheck by remember { mutableStateOf(0) }
     LaunchedEffect(r, checkedMap) {
         toCheck = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            r.composition?.let { itemsToCheck(it, checkedMap, vm.container.core) } ?: 0
+            // Only for a score this app checks and arranges: Check the notes would write another product's as a band.
+            r.composition?.takeIf { no.brasscribe.play.Product.arranges(r.profile) }?.let { itemsToCheck(it, checkedMap, vm.container.core) } ?: 0
         }
     }
     val grouped = r.composition?.review?.isNotEmpty() == true
@@ -625,7 +626,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     when (sheet) {
         Sheet.PARTS -> PartsSheet(st, controller, your.index, sources, onMakeMine = { vm.makeMyPart(st.parts[it].replace('\u00A0', ' ').trim()) },
             // How should the score be? again, from the score: what "You can change this later" promises.
-            onWriteForAnother = if (r.composition != null) ({ sheet = null; vm.navigate(Screen.OUTPUT) }) else null,
+            onWriteForAnother = if (r.composition != null && no.brasscribe.play.Product.arranges(r.profile)) ({ sheet = null; vm.navigate(Screen.OUTPUT) }) else null,
             outputLabel = if (r.isSoloTake && vm.container.seats.isNotEmpty()) R.string.write_for_another else R.string.change_output) { sheet = null }
         Sheet.SPEED -> BottomSheet({ sheet = null }) { SpeedControl(st.speed) { controller.setSpeed(it) } }
         Sheet.LOOP -> BottomSheet({ sheet = null }) {

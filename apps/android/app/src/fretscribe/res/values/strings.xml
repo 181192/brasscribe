@@ -80,4 +80,97 @@
     <!-- Settings: "4-string bass · Standard · Tab" -->
     <string name="fs_bass_with_strings">%1$d-string bass</string>
     <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
+
+    <!-- What is this? (design/fretscribe/flows.md §5). In this version the computer writes down both. -->
+    <string name="fs_what_hint">Your answer decides how Fretscribe listens.</string>
+    <string name="fs_what_no_recording">This recording is no longer on the phone. Open it again from Home.</string>
+    <string name="fs_what_instrument">Just my instrument</string>
+    <string name="fs_what_instrument_desc">A recording of the bass alone.</string>
+    <string name="fs_what_song">A full song</string>
+    <string name="fs_what_song_desc">A band or a record. Fretscribe picks out the bass.</string>
+    <string name="fs_where_desc">Fretscribe on your computer writes down the notes. Nothing goes online.</string>
+    <string name="fs_where_needed">Fretscribe on your computer writes down the notes.</string>
+    <string name="fs_what_connect_first">Connect your computer to continue.</string>
+    <string name="where_companion_missing">Connect Fretscribe on your computer first.</string>
+
+    <!-- Writing down the notes (flows.md §6): the computer's steps for a tab, in plain words. -->
+    <string name="stage_beats">Listening for the beat</string>
+    <string name="stage_stems">Separating the bass</string>
+    <string name="stage_transcribe">Writing down the notes</string>
+    <string name="stage_quantize">Placing the notes in bars</string>
+    <string name="stage_arrange">Choosing strings and frets</string>
+    <string name="stage_export">Laying out the tab</string>
+    <!-- Nothing tells the player when the tab is ready while the app is away, so the screen says to stay, and stays on. -->
+    <string name="transcribe_leave">%1$s. Keep Fretscribe open until the tab is ready.</string>
+    <!-- "Fretscribe on Kari's Mac is writing down the notes" -->
+    <string name="transcribe_where_companion">%1$s is writing down the notes</string>
+    <string name="transcribe_cancel_title">Stop writing down the notes?</string>
+    <string name="transcribe_done">Tab ready</string>
+    <string name="transcribe_failed">The tab couldn\'t be made: %1$s</string>
+
+    <!-- Problems, with what to do next. -->
+    <string name="problem_score_title">The tab couldn\'t be made</string>
+    <string name="problem_score_body">Something went wrong while Fretscribe on your computer was working on it.</string>
+    <string name="details_show">Technical details</string>
+    <string name="error_unreachable">Can\'t reach Fretscribe on your computer. Check that it is running and on the same network.</string>
+    <string name="error_engine_failed">Fretscribe on your computer couldn\'t finish the tab. Try again.</string>
+    <string name="error_invalid_options">Fretscribe on your computer didn\'t accept these choices. It may need an update.</string>
+    <string name="error_core_missing">Fretscribe on your computer needs an update to write tabs. Update it there, then try again.</string>
+
+    <!-- Check the song (flows.md §7) -->
+    <string name="fs_check_title">Check the song</string>
+    <string name="fs_check_lead">This is what Fretscribe heard. If something here is wrong, the frets are wrong too.</string>
+    <string name="fs_check_reading">Reading what Fretscribe heard…</string>
+    <string name="fs_check_missing">What Fretscribe heard can\'t be shown right now. %1$s</string>
+    <string name="fs_check_later">You can change this later.</string>
+    <string name="fs_show_tab">Show the tab</string>
+    <string name="fs_check_connect">To change these, connect your computer.</string>
+    <string name="fs_check_tuning">Tuning</string>
+    <!-- "Sounds like Drop D. Written for Standard." -->
+    <string name="fs_check_sounds_like">Sounds like %1$s. Written for %2$s.</string>
+    <string name="fs_check_use">Use %1$s</string>
+    <string name="fs_check_octave">Octave</string>
+    <string name="fs_check_octave_down">Written one octave lower than it was heard.</string>
+    <string name="fs_check_octave_two_down">Written two octaves lower than it was heard.</string>
+    <string name="fs_check_octave_up">Written one octave higher than it was heard.</string>
+    <string name="fs_check_octave_as_heard">Written as it was heard, as you chose.</string>
+    <string name="fs_check_octave_chosen_down">Written one octave lower, as you chose.</string>
+    <string name="fs_check_octave_chosen_up">Written one octave higher, as you chose.</string>
+    <plurals name="fs_check_octave_notes">
+        <item quantity="one">%1$d note is written an octave lower than it was heard.</item>
+        <item quantity="other">%1$d notes are written an octave lower than they were heard.</item>
+    </plurals>
+    <string name="fs_check_as_heard">Write it as it was heard</string>
+    <string name="fs_check_octave_auto">Let Fretscribe choose</string>
+    <string name="fs_check_reference">Reference pitch</string>
+    <!-- A cent is a hundredth of a semitone; the words come first, the number after. -->
+    <string name="fs_check_reference_sharp">A little sharp of concert pitch (A = 440): %1$d cents.</string>
+    <string name="fs_check_reference_flat">A little flat of concert pitch (A = 440): %1$d cents.</string>
+    <string name="fs_check_reference_allowed">Fretscribe allowed for it.</string>
+    <string name="fs_check_key_tempo">Key and tempo</string>
+    <!-- "E minor · ♩ = 100 · 2/4" -->
+    <string name="fs_check_key_tempo_value">%1$s · ♩ = %2$d · %3$d/%4$d</string>
+    <!-- %3$s: the time signature in words, "two-four" -->
+    <string name="fs_check_key_tempo_spoken">%1$s, %2$d beats a minute, %3$s time</string>
+    <string name="fs_check_notes">Notes to check</string>
+    <plurals name="fs_check_marked">
+        <item quantity="one">%1$d note marked ?</item>
+        <item quantity="other">%1$d notes marked ?</item>
+    </plurals>
+    <string name="fs_check_no_place_title">Notes with no place</string>
+    <plurals name="fs_check_no_place">
+        <item quantity="one">%1$d note with no place on your bass. Is the tuning right?</item>
+        <item quantity="other">%1$d notes with no place on your bass. Is the tuning right?</item>
+    </plurals>
+
+    <!-- Your songs -->
+    <string name="fs_song_tab">Bass tab</string>
+    <plurals name="fs_song_to_check">
+        <item quantity="one">%1$d note to check</item>
+        <item quantity="other">%1$d notes to check</item>
+    </plurals>
+    <string name="check_notes">Check the song</string>
+    <!-- A band score in the computer's list is Brasscribe's. -->
+    <string name="other_product_row">Band score · opens in Brasscribe</string>
+    <string name="other_product_opens">This is a band score. Open it in Brasscribe.</string>
 </resources>

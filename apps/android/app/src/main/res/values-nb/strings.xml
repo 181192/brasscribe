@@ -265,6 +265,9 @@
     <string name="error_engine_failed">Brasscribe på datamaskinen klarte ikke å gjøre ferdig partituret. Prøv igjen.</string>
     <string name="error_reads_not_offered">Instrumentet ditt skrives ikke i den nøkkelen. Velg på nytt under Hva du spiller.</string>
     <string name="error_invalid_options">Brasscribe på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering.</string>
+    <string name="error_core_missing">Brasscribe på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.</string>
+    <string name="other_product_row">Basstab · åpnes i Fretscribe</string>
+    <string name="other_product_opens">Dette er en basstab. Åpne den i Fretscribe.</string>
     <string name="lineup_full_not_yet">Kommer senere for opptak av hele bandet</string>
     <string name="lineup_quartet_needs_group">Trenger et opptak av hele gruppen</string>
     <string name="difficulty">Hvor vanskelig?</string>
