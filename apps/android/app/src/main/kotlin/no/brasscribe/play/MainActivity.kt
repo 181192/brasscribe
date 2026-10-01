@@ -59,22 +59,14 @@ class MainActivity : ComponentActivity() {
         val scrim = android.graphics.Color.TRANSPARENT
         val bars = if (dark) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim)
         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+        // The product's token bg per palette (its res/values/themes.xml); the window theme starts from the same.
         val background = when {
-            pink && dark -> WINDOW_PINK_DARK
-            pink -> WINDOW_PINK
-            dark -> WINDOW_DARK
-            else -> WINDOW_LIGHT
+            pink && dark -> R.color.window_pink_dark
+            pink -> R.color.window_pink
+            dark -> R.color.window_dark
+            else -> R.color.window_light
         }
-        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(background))
-    }
-
-    private companion object {
-        // The same values as windowBackground in res/values(-night)/themes.xml (token bg).
-        const val WINDOW_LIGHT = 0xFFFBFAF7.toInt()
-        const val WINDOW_DARK = 0xFF131210.toInt()
-        // Token bg of the hidden Pink palette, light and dark.
-        const val WINDOW_PINK = 0xFFFFF6F9.toInt()
-        const val WINDOW_PINK_DARK = 0xFF1B1017.toInt()
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(getColor(background)))
     }
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null

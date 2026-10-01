@@ -30,3 +30,6 @@ site/_site/
 keystore-password.txt
 .env
 .env.*
+
+# Built from screens.src.html by design/fretscribe/mockups/build.py (the font is inlined, so it is large).
+design/fretscribe/mockups/screens.html

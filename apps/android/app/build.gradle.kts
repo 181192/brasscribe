@@ -111,12 +111,12 @@ kotlin {
 }
 
 /*
- * Assets that come from outside git:
+ * Brasscribe's assets that come from outside git; the Fretscribe app carries neither:
  * - models/: SwiftF0 (1.1 MB), Basic Pitch (0.26 MB) and Beat This! small (9.4 MB) ONNX from convert/ (all MIT),
- *   bundled in every build when present.
+ *   bundled in every Brasscribe build when present.
  * - sounds/brasscribe-band-mobile.sf2: the phone band SoundFont (apps/android/scripts/mobile_soundfont.py,
- *   VSCO 2 CE CC0, Univ. of Iowa MIS, MS Basic kit MIT), bundled in every build when present, so the
- *   band plays its own instruments without a download. Without it the app says the band sounds are missing.
+ *   VSCO 2 CE CC0, Univ. of Iowa MIS, MS Basic kit MIT), bundled in every Brasscribe build when present, so
+ *   the band plays its own instruments without a download. Without it the app says the band sounds are missing.
  */
 val modelAssets = tasks.register<Sync>("syncModelAssets") {
     into(layout.buildDirectory.dir("generated/brasscribe/models"))
@@ -125,42 +125,67 @@ val modelAssets = tasks.register<Sync>("syncModelAssets") {
         from(File(repoRoot, "models/converted/basic-pitch")) { include("nmp-b1.onnx") }
         from(File(repoRoot, "models/converted/beat-this")) { include("beat-this-small0.onnx") }
     }
-    // The band SoundFont's part map (committed in sounds/), so presets and balance match the other apps.
-    into("sounds") {
-        from(File(repoRoot, "sounds")) { include("mapping.json") }
-        from(bandSoundsDir) { include("brasscribe-band-mobile.sf2") }
-    }
+    into("sounds") { from(bandSoundsDir) { include("brasscribe-band-mobile.sf2") } }
+    filePermissions { user { read = true; write = true } }
+}
+// The band SoundFont's part map (committed in sounds/), so presets and balance match the other apps. The
+// shared score code reads it, so both apps carry it.
+val soundMap = tasks.register<Sync>("syncSoundMap") {
+    into(layout.buildDirectory.dir("generated/shared/sounds"))
+    into("sounds") { from(File(repoRoot, "sounds")) { include("mapping.json") } }
     filePermissions { user { read = true; write = true } }
 }
 
 /*
- * The Brasscribe design system (design/dist, generated from design/tokens): the Compose theme and icon
- * enum are compiled from design/dist/android/kotlin as they are; the icon drawables, the display face
- * and the launcher icons are synced into one generated res folder (res/font may hold only fonts, so the
- * font's licence goes to the assets instead).
+ * Each product's design system, generated from its tokens by design/tokens/build.py: Brasscribe's in
+ * design/dist, Fretscribe's in design/fretscribe/dist. Both have the same Kotlin names, so the shared
+ * screens compile against either. The Compose theme and icon enum are compiled from <dist>/android/kotlin
+ * as they are; the icon drawables, the display face (as res/font/display, whichever face it is) and the
+ * launcher icons are synced into one generated res folder per product (res/font may hold only fonts, so
+ * the font's licence goes to the assets instead).
  */
-val designDist = File(repoRoot, "design/dist")
-val designRes = tasks.register<Sync>("syncDesignResources") {
-    into(layout.buildDirectory.dir("generated/brasscribe/design/res"))
-    from(File(designDist, "android/res")) { exclude("font/OFL.txt") }
-    from(File(designDist, "icons/android/res"))
-}
-val designLicence = tasks.register<Sync>("syncDesignLicence") {
-    into(layout.buildDirectory.dir("generated/brasscribe/design/assets/licences"))
-    from(File(designDist, "android/res/font")) { include("OFL.txt"); rename { "instrument-serif-OFL.txt" } }
+class ProductDesign(val dist: File, val displayFont: String)
+val designs = mapOf(
+    "brasscribe" to ProductDesign(File(repoRoot, "design/dist"), "instrument_serif"),
+    "fretscribe" to ProductDesign(File(repoRoot, "design/fretscribe/dist"), "atkinson_hyperlegible_next"),
+)
+val designSyncs = designs.flatMap { (product, design) ->
+    val name = product.replaceFirstChar(Char::uppercase)
+    val dist = design.dist
+    val font = design.displayFont
+    listOf(
+        tasks.register<Sync>("sync${name}DesignResources") {
+            into(layout.buildDirectory.dir("generated/$product/design/res"))
+            from(File(dist, "android/res")) {
+                exclude("font/OFL.txt")
+                rename { if (it == "$font.ttf") "display.ttf" else it }
+            }
+            from(File(dist, "icons/android/res"))
+        },
+        tasks.register<Sync>("sync${name}DesignLicence") {
+            into(layout.buildDirectory.dir("generated/$product/design/assets/licences"))
+            from(File(dist, "android/res/font")) {
+                include("OFL.txt")
+                rename { "${font.replace('_', '-')}-OFL.txt" }
+            }
+        },
+    )
 }
 
 androidComponents {
     // Fretscribe has no release build yet.
     beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
     onVariants { variant ->
-        variant.sources.kotlin?.addStaticSourceDirectory(File(designDist, "android/kotlin").path)
-        variant.sources.res?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/design/res").get().asFile.path)
-        variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/design/assets").get().asFile.path)
-        variant.sources.assets?.addStaticSourceDirectory(layout.buildDirectory.dir("generated/brasscribe/models").get().asFile.path)
+        val product = variant.productFlavors.single { it.first == "product" }.second
+        fun generated(path: String) = layout.buildDirectory.dir("generated/$path").get().asFile.path
+        variant.sources.kotlin?.addStaticSourceDirectory(File(designs.getValue(product).dist, "android/kotlin").path)
+        variant.sources.res?.addStaticSourceDirectory(generated("$product/design/res"))
+        variant.sources.assets?.addStaticSourceDirectory(generated("$product/design/assets"))
+        variant.sources.assets?.addStaticSourceDirectory(generated("shared/sounds"))
+        if (product == "brasscribe") variant.sources.assets?.addStaticSourceDirectory(generated("brasscribe/models"))
     }
 }
-tasks.named("preBuild") { dependsOn(modelAssets, designRes, designLicence) }
+tasks.named("preBuild") { dependsOn(modelAssets, soundMap, designSyncs) }
 
 // The task names from before there were two products stay, and mean the Brasscribe app.
 mapOf(

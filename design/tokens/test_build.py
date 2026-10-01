@@ -109,3 +109,116 @@ def test_every_platform_gets_the_pink_palette():
     assert xaml.index('<Color x:Key="BcBgColor">#FFFFF6F9</Color>') in range(light, dark)
     assert xaml.index('<Color x:Key="BcPrimaryColor">#FFFF9ECF</Color>') > dark
     assert 'x:Key="HighContrast"' in xaml
+
+
+# ---------------------------------------------------------------- another product: Fretscribe's Android theme
+
+FRETSCRIBE = build.ROOT / "design" / "fretscribe"
+
+
+def product_build(tokens: Path, out: Path):
+    """A second copy of the generator set up for another product, so `build` stays Brasscribe's."""
+    s = importlib.util.spec_from_file_location("design_build_product", HERE / "build.py")
+    module = importlib.util.module_from_spec(s)
+    s.loader.exec_module(module)
+    module.configure(tokens, out, "android")
+    return module
+
+
+def fretscribe():
+    return product_build(FRETSCRIBE / "tokens" / "tokens.json", FRETSCRIBE / "dist")
+
+
+def declarations(kotlin: str) -> list[str]:
+    """Every declared name of a generated Kotlin file, in order: types, functions, values and fields."""
+    import re
+    return re.findall(r"^\s*(?:@\w+\s+)*((?:data class|enum class|object|fun|const val|val)\s+[\w.]+|[A-Z_]+(?=\())", kotlin, re.M)
+
+
+def test_fretscribe_outputs_in_sync():
+    stale = fretscribe().stale()
+    assert not stale, ("run `uv run design/tokens/build.py --tokens design/fretscribe/tokens/tokens.json "
+                       "--out design/fretscribe/dist --only android`; stale: " + ", ".join(stale))
+
+
+def test_fretscribe_every_mode_defines_every_role():
+    fs = fretscribe()
+    light = set(fs.roles())
+    for mode in fs.MODES:
+        assert set(k for k in fs.TOKENS["color"][mode] if not k.startswith("$")) == light, mode
+
+
+def test_fretscribe_theme_has_the_names_the_shared_screens_use():
+    # The apps share their screens, so both generated themes declare exactly the same names.
+    for name in ("BrasscribeTheme.kt", "BrasscribeIcon.kt"):
+        ours = (build.DIST / "android" / "kotlin" / "no" / "brasscribe" / "design" / name).read_text()
+        theirs = (FRETSCRIBE / "dist" / "android" / "kotlin" / "no" / "brasscribe" / "design" / name).read_text()
+        assert len(declarations(ours)) > 20, name
+        assert declarations(theirs) == declarations(ours), name
+    assert sorted(p.name for p in (FRETSCRIBE / "dist" / "android" / "res" / "drawable").iterdir()) == \
+        sorted(p.name for p in (build.DIST / "android" / "res" / "drawable").iterdir() if not p.name.startswith("ic_launcher"))
+
+
+def test_fretscribe_roles_come_through_the_alias_map():
+    fs = fretscribe()
+    kt = (FRETSCRIBE / "dist" / "android" / "kotlin" / "no" / "brasscribe" / "design" / "BrasscribeTheme.kt").read_text()
+    light = kt.split("val BrasscribeLightColors = BrasscribeColors(")[1].split(")\n\n")[0]
+    for field, role in (("brass", "brand"), ("brassText", "brand-text"), ("brassTint", "brand-tint"), ("staff", "string"),
+                        ("veryUncertain", "uncertain"), ("adlibTint", "loop-tint"), ("primary", "primary")):
+        assert f"    {field} = Color({fs.argb(fs.hexval('light', role), fs.alpha('light', role))})," in light, field
+    # No Pink palette: the pink values are the standard ones.
+    pink = kt.split("val BrasscribePinkColors = BrasscribeColors(")[1].split(")\n\n")[0]
+    dark = kt.split("val BrasscribeDarkColors = BrasscribeColors(")[1].split(")\n\n")[0]
+    pink_dark = kt.split("val BrasscribePinkDarkColors = BrasscribeColors(")[1].split(")\n\n")[0]
+    assert pink == light and pink_dark == dark and light != dark
+    # The titles: the brand's own face, at the weight its display token names.
+    assert "displaySmall = base.displaySmall.copy(fontFamily = display, fontWeight = FontWeight.SemiBold," in kt
+    font = FRETSCRIBE / "dist" / "android" / "res" / "font" / "atkinson_hyperlegible_next.ttf"
+    assert font.read_bytes() == (FRETSCRIBE / "brand" / "fonts" / "AtkinsonHyperlegibleNext-wght.ttf").read_bytes()
+
+
+def test_android_window_colours_are_the_token_backgrounds():
+    # The window behind Compose (apps/android, each product's res/values/themes.xml) is the token bg.
+    import re
+    app = build.ROOT / "apps" / "android" / "app" / "src"
+    fs = fretscribe()
+    for product, tokens, modes in (("brasscribe", build, ("light", "dark", "pink", "pink-dark")),
+                                   ("fretscribe", fs, ("light", "dark", "light", "dark"))):
+        xml = (app / product / "res" / "values" / "themes.xml").read_text()
+        found = dict(re.findall(r'<color name="(window_\w+)">#FF([0-9A-F]{6})</color>', xml))
+        want = dict(zip(("window_light", "window_dark", "window_pink", "window_pink_dark"),
+                        (tokens.hexval(m, "bg")[1:] for m in modes)))
+        assert found == want, product
+
+
+def test_another_product_writes_only_into_its_own_folder(tmp_path):
+    fs = product_build(FRETSCRIBE / "tokens" / "tokens.json", tmp_path / "dist")
+    want = fs.outputs()
+    assert want and all(p.is_relative_to(tmp_path / "dist" / "android") for p in want)
+    fs.write()
+    assert fs.stale() == []
+    assert build.stale() == []  # Brasscribe's outputs are untouched
+
+
+def test_another_product_cannot_use_brasscribes_dist_or_other_platforms():
+    import pytest
+    tokens = FRETSCRIBE / "tokens" / "tokens.json"
+    with pytest.raises(SystemExit, match="its own --out"):
+        product_build(tokens, build.DEFAULT_DIST)
+    s = importlib.util.spec_from_file_location("design_build_product", HERE / "build.py")
+    module = importlib.util.module_from_spec(s)
+    s.loader.exec_module(module)
+    with pytest.raises(SystemExit, match="--only android"):
+        module.configure(tokens, FRETSCRIBE / "dist", None)
+
+
+def test_a_role_the_product_neither_has_nor_maps_is_an_error(tmp_path):
+    import pytest
+    raw = json.loads((FRETSCRIBE / "tokens" / "tokens.json").read_text())
+    del raw["$extensions"]["no.fretscribe"]["android"]["aliases"]["roles"]["staff"]
+    (tmp_path / "tokens").mkdir()
+    tokens = tmp_path / "tokens" / "tokens.json"
+    tokens.write_text(json.dumps(raw))
+    fs = product_build(tokens, tmp_path / "dist")
+    with pytest.raises(SystemExit, match="no role for 'staff'"):
+        fs.outputs()

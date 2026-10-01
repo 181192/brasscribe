@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The window behind Compose: Brasscribe's token bg (design/tokens/tokens.json) in light and dark,
+         and of the hidden Pink palette. Not night-qualified: the app's own Appearance setting
+         picks one (MainActivity), whatever the phone's night mode is. -->
+    <color name="window_light">#FFFBFAF7</color>
+    <color name="window_dark">#FF131210</color>
+    <color name="window_pink">#FFFFF6F9</color>
+    <color name="window_pink_dark">#FF1B1017</color>
+</resources>

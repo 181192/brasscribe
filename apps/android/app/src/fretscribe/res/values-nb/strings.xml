@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name" translatable="false">Fretscribe</string>
     <string name="brand_name" translatable="false">Fretscribe</string>
+    <string name="conn_offline">Ikke tilkoblet. Fretscribe trenger datamaskinen din for å skrive en tab.</string>
 </resources>

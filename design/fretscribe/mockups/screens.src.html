@@ -1,0 +1,392 @@
+<title>Fretscribe Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap">
+<style>
+/* Layout: a design-review sheet. The page is quiet paper; the phone frames are the subject. */
+@font-face { font-family: "Fretscribe Tab"; src: url(data:font/ttf;base64,{{TABFONT}}) format("truetype"); font-weight: 600; }
+:root {
+  --bg: #FAF8F3; --surface: #F1EFE9; --raised: #FFFFFF; --text: #1B1D21; --muted: #4B5058;
+  --border: #E2E0DA; --border-strong: #737983; --primary: #1B1D21; --on-primary: #FAF8F3;
+  --secondary: #E7E6E0; --brand: #1F5FAD; --brand-tint: #E8EFF8;
+  --ink: #1B1D21; --string: #737983; --uncertain: #9A5200; --uncertain-tint: #FCF0DB;
+  --loop-tint: #E4F0EA; --loop-edge: #1D6B55; --cursor: #1F5FAD; --cursor-tint: #DDE7F5;
+  --selection-tint: #E7E6E0; --focus: #1B1D21; --frame: #2A2D32; --shadow: 0 1px 2px rgb(0 0 0 / .06), 0 12px 32px rgb(20 24 30 / .10);
+  --display: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --ui: system-ui, -apple-system, "Segoe UI Variable", Roboto, sans-serif;
+  --tab: "Fretscribe Tab", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15171A; --surface: #1A1C20; --raised: #212429; --text: #ECEAE4; --muted: #A9AEB6;
+  --border: #30343A; --border-strong: #80868F; --primary: #ECEAE4; --on-primary: #15171A;
+  --secondary: #2C3036; --brand: #8AB8F2; --brand-tint: #1C2635;
+  --ink: #ECEAE4; --string: #80868F; --uncertain: #F2B24C; --uncertain-tint: #3B3325;
+  --loop-tint: #18291F; --loop-edge: #5FC4A3; --cursor: #8AB8F2; --cursor-tint: #1F2C3D;
+  --selection-tint: #2C3036; --focus: #ECEAE4; --frame: #0B0C0E; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 12px 32px rgb(0 0 0 / .35);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #15171A; --surface: #1A1C20; --raised: #212429; --text: #ECEAE4; --muted: #A9AEB6;
+  --border: #30343A; --border-strong: #80868F; --primary: #ECEAE4; --on-primary: #15171A;
+  --secondary: #2C3036; --brand: #8AB8F2; --brand-tint: #1C2635;
+  --ink: #ECEAE4; --string: #80868F; --uncertain: #F2B24C; --uncertain-tint: #3B3325;
+  --loop-tint: #18291F; --loop-edge: #5FC4A3; --cursor: #8AB8F2; --cursor-tint: #1F2C3D;
+  --selection-tint: #2C3036; --focus: #ECEAE4; --frame: #0B0C0E; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 12px 32px rgb(0 0 0 / .35);
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 16px/1.5 var(--ui); padding-inline: 16px; padding-block: 32px 64px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 48px; }
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 32px; }
+.lockup { display: flex; align-items: center; gap: 14px; color: var(--text); }
+.lockup svg.mark { width: 44px; height: 44px; }
+.lockup svg.word { height: 30px; width: auto; }
+.intro { max-width: 62ch; color: var(--muted); margin: 0; }
+h2 { font: 600 1.75rem/1.2 var(--display); margin: 0; text-wrap: balance; letter-spacing: -.005em; }
+.section-head { display: grid; gap: 6px; max-width: 70ch; }
+.section-head p { margin: 0; color: var(--muted); }
+.screens { display: flex; flex-wrap: wrap; gap: 40px 32px; align-items: flex-start; }
+figure { margin: 0; display: grid; gap: 12px; min-width: 0; }
+figcaption { font-size: .9375rem; color: var(--muted); max-width: 44ch; }
+figcaption b { color: var(--text); font-weight: 600; }
+.scroll { overflow-x: auto; max-width: 100%; padding-bottom: 8px; }
+
+/* Phone frames at logical size */
+.phone { justify-self: start; width: max-content; background: var(--frame); border-radius: 40px; padding: 10px; box-shadow: var(--shadow); flex: none; }
+.screen { background: var(--bg); border-radius: 31px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+.portrait .screen { width: 360px; height: 760px; }
+.landscape { border-radius: 36px; }
+.landscape .screen { width: 800px; height: 400px; border-radius: 27px; }
+.status { height: 34px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 26px; font: 600 .8125rem var(--ui); color: var(--text); }
+
+/* App chrome */
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; min-height: 44px; }
+.navbtn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; gap: 4px; color: var(--text); font: 500 1rem var(--ui); background: none; border: 0; padding: 0 6px; }
+.content { padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0; }
+.title { font: 600 1.75rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); font-size: 1rem; }
+.rows { background: var(--raised); border-radius: 16px; border: 1px solid var(--border); display: grid; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 14px; min-height: 60px; align-items: center; }
+.row + .row { border-top: 1px solid var(--border); }
+.row .k { font-size: .8125rem; color: var(--muted); letter-spacing: .02em; }
+.row .v { font-size: 1rem; line-height: 1.35; grid-column: 1; }
+.row .btn { grid-row: 1 / span 2; grid-column: 2; }
+.btn { min-height: 44px; border-radius: 12px; padding: 0 16px; font: 600 .9375rem var(--ui); border: 1.5px solid var(--border-strong); background: transparent; color: var(--text); display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.btn.tonal { background: var(--secondary); border-color: transparent; }
+.btn.on { background: var(--secondary); border-color: var(--ink); }
+.btn.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); min-height: 52px; width: 100%; font-size: 1.0625rem; }
+.fine { font-size: .875rem; color: var(--muted); margin: 0; }
+.spacer { flex: 1; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 12px; border: 1.5px solid var(--border-strong); font: 600 .875rem var(--ui); color: var(--text); background: var(--raised); white-space: nowrap; }
+.chip .tuning { font-variant-numeric: tabular-nums; }
+
+/* Tab */
+svg.tab { display: block; overflow: visible; }
+svg.tab .str { stroke: var(--string); stroke-width: 1; }
+svg.tab .bar { stroke: var(--string); stroke-width: 1.25; }
+svg.tab .num { font-family: var(--tab); font-weight: 600; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+svg.tab .ko { fill: var(--raised); }
+svg.tab .ko.doubt { fill: var(--uncertain-tint); }
+svg.tab .ko.sel { fill: var(--selection-tint); stroke: var(--ink); stroke-width: 1.5; }
+svg.tab .num.doubt { fill: var(--uncertain); }
+svg.tab .qmark { font: 700 15px var(--display); fill: var(--uncertain); text-anchor: middle; }
+svg.tab .stem { stroke: var(--ink); stroke-width: 1.25; }
+svg.tab .beam { fill: var(--ink); }
+svg.tab .loop { fill: var(--loop-tint); }
+svg.tab .loopedge { stroke: var(--loop-edge); stroke-width: 3; fill: none; }
+svg.tab .looplabel { font: 600 12px var(--ui); fill: var(--loop-edge); }
+svg.tab .cursor { stroke: var(--cursor); stroke-width: 3; }
+svg.tab .cursortint { fill: var(--cursor-tint); }
+svg.tab .label { font: 600 11px var(--ui); fill: var(--muted); text-anchor: middle; dominant-baseline: central; }
+svg.tab .barno { font: 600 11px var(--ui); fill: var(--muted); }
+svg.tab .sheet { fill: var(--raised); }
+
+/* Practice */
+.practice .top { display: flex; align-items: center; gap: 10px; padding: 2px 16px 0 10px; min-height: 48px; }
+.practice .song { font: 600 1rem var(--ui); margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.practice .tabarea { flex: 1; background: var(--raised); margin: 0 12px; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 4px 0 8px; }
+.practice .status-line { padding-left: 14px; font-size: .8125rem; color: var(--muted); }
+.practice .status-line b { color: var(--uncertain); font-weight: 700; }
+.player { display: flex; align-items: center; gap: 10px; padding: 8px 14px 12px; }
+.play { width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: var(--on-primary); border: 0; display: grid; place-items: center; flex: none; }
+.tbtn { width: 64px; height: 64px; border-radius: 16px; background: var(--secondary); color: var(--text); border: 0; display: grid; place-items: center; flex: none; }
+.pos { display: grid; line-height: 1.2; min-width: 96px; }
+.pos b { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.pos span { font-size: .8125rem; color: var(--muted); }
+.beats { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.beats i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--border-strong); }
+.beats i.now { background: var(--ink); border-color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; justify-content: flex-end; }
+.chips .chip { min-height: 44px; }
+
+/* Fix a note */
+.fix .tabstrip { background: var(--raised); border-bottom: 1px solid var(--border); padding: 8px 0 4px; }
+.sheetpanel { flex: 1; background: var(--raised); border-radius: 20px 20px 0 0; box-shadow: 0 -8px 24px rgb(0 0 0 / .08); margin-top: 10px; padding: 8px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.grab { width: 36px; height: 5px; border-radius: 3px; background: var(--border-strong); opacity: .5; margin: 2px auto 4px; }
+.notehead { display: grid; gap: 2px; }
+.notehead h3 { font: 600 1.25rem/1.2 var(--display); margin: 0; }
+.notehead p { margin: 0; color: var(--muted); font-size: .9375rem; }
+.doubtline { display: flex; gap: 8px; align-items: flex-start; font-size: .9375rem; background: var(--uncertain-tint); border-radius: 12px; padding: 10px 12px; }
+.doubtline .q { font: 700 1rem var(--display); color: var(--uncertain); }
+.group { display: grid; gap: 8px; }
+.group > .k { font-size: .8125rem; font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.btnrow .btn { min-height: 48px; }
+svg.board .fret { stroke: var(--border-strong); stroke-width: 1; }
+svg.board .nut { stroke: var(--ink); stroke-width: 3; }
+svg.board .s { stroke: var(--string); }
+svg.board .inlay { fill: var(--border); }
+svg.board .spot { fill: var(--raised); stroke: var(--ink); stroke-width: 1.5; }
+svg.board .spot.on { fill: var(--ink); }
+svg.board .spotnum { font: 600 11px var(--tab); text-anchor: middle; dominant-baseline: central; fill: var(--ink); }
+svg.board .spotnum.on { fill: var(--on-primary); }
+svg.board .fretno { font: 500 10px var(--ui); fill: var(--muted); text-anchor: middle; }
+.twobtn { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+
+/* Signals legend */
+.signals { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.signal { background: var(--raised); border: 1px solid var(--border); border-radius: 16px; padding: 14px; display: grid; gap: 8px; align-content: start; }
+.signal h3 { margin: 0; font: 600 1rem var(--ui); }
+.signal p { margin: 0; font-size: .875rem; color: var(--muted); }
+.flow { background: var(--raised); border: 1px solid var(--border); border-radius: 16px; padding: 16px; overflow-x: auto; }
+.digits { font: 600 2.5rem/1 var(--tab); letter-spacing: .06em; color: var(--ink); }
+.typecard { display: flex; flex-wrap: wrap; gap: 24px 48px; align-items: end; background: var(--raised); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+.typecard .spec { font-size: .875rem; color: var(--muted); }
+.disp { font: 600 2rem/1.1 var(--display); }
+@media (prefers-reduced-motion: no-preference) { .cursorline { transition: transform .2s linear; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lockup" aria-label="Fretscribe">
+      <svg class="mark" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="11" fill="currentColor"/><path fill="var(--bg)" d="M9 8.2H29.94L29.06 9.8H9zM35.44 8.2H39V9.8H34.56zM9 14H26.75L25.65 16H9zM32.25 14H39V16H31.15zM9 19.8H23.56L22.24 22.2H9zM29.06 19.8H39V22.2H27.74zM9 25.6H20.37L18.83 28.4H9zM25.87 25.6H39V28.4H24.33zM9 31.4H17.18L15.42 34.6H9zM22.68 31.4H39V34.6H20.92zM9 37.2H13.99L12.01 40.8H9zM19.49 37.2H39V40.8H17.51z"/></svg>
+      {{WORDMARK}}
+    </div>
+    <p class="intro">First screens for Fretscribe: tab from any recording, for guitar, bass, ukulele and mandolin. These are the three screens that differ most from Brasscribe, in the Ruled Paper brand. Switch your system to dark mode to see the dark palette.</p>
+  </header>
+
+  <section class="section-head" aria-labelledby="h-screens">
+    <h2 id="h-screens">Settle the song, then practise it</h2>
+    <p>The example is an E♭-tuned riff. Fretscribe asks about the tuning before showing any tab, because one wrong answer there makes every fret wrong.</p>
+  </section>
+
+  <div class="screens">
+    <figure>
+      <div class="phone portrait"><div class="screen" role="img" aria-label="Check the song screen">
+        <div class="status"><span>9:41</span><span>●●●</span></div>
+        <div class="nav"><button class="navbtn" type="button">‹ Back</button><span></span></div>
+        <div class="content">
+          <h1 class="title">Check the song</h1>
+          <p class="lead">Answer these once. Every fret depends on them.</p>
+          <div class="rows">
+            <div class="row"><span class="k">Tuning</span><span class="v">Sounds like <b>E♭ standard</b>, half a step down</span><button class="btn" type="button">Change</button></div>
+            <div class="row"><span class="k">Reference pitch</span><span class="v">Tuned 12 cents flat of A = 440</span><button class="btn" type="button">Keep</button></div>
+            <div class="row"><span class="k">Capo</span><span class="v">No capo</span><button class="btn" type="button">Change</button></div>
+            <div class="row"><span class="k">Key and tempo</span><span class="v">E♭ minor · ♩ = 96 · 4/4</span><button class="btn" type="button">Change</button></div>
+          </div>
+          <p class="fine">You can change this later. Your changes to notes are kept.</p>
+          <div class="spacer"></div>
+          <button class="btn primary" type="button">Show the tab</button>
+        </div>
+      </div></div>
+      <figcaption><b>Check the song.</b> Tuning, reference pitch, capo, octave (bass and ukulele), key and tempo, each in words with one way to change it. Nothing is written in tab until this is confirmed.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="phone portrait"><div class="screen fix" role="img" aria-label="Fix a note sheet over the tab">
+        <div class="status"><span>9:41</span><span>●●●</span></div>
+        <div class="tabstrip"><svg class="tab" id="tab-fix" width="360" height="140" aria-hidden="true"></svg></div>
+        <div class="sheetpanel">
+          <div class="grab"></div>
+          <div class="notehead"><h3>Bar 13, beat 2</h3><p>3rd string, fret 7 · D♭</p></div>
+          <div class="doubtline"><span class="q">?</span><span>Fretscribe isn't sure about this one. It could be a D♭ or a C. The bar is repeating slowly while this is open.</span></div>
+          <div class="group"><span class="k">Pitch</span>
+            <div class="btnrow"><button class="btn" type="button">One lower</button><button class="btn" type="button">One higher</button><button class="btn tonal" type="button">▶ D♭</button><button class="btn tonal" type="button">▶ C</button></div>
+          </div>
+          <div class="group"><span class="k">Place</span>
+            <svg class="board" id="board" width="324" height="118" aria-hidden="true"></svg>
+            <p class="fine">Also on the 2nd string, fret 3, and the 4th string, fret 12.</p>
+          </div>
+          <div class="spacer"></div>
+          <div class="twobtn"><button class="btn" type="button">Skip</button><button class="btn primary" type="button">Keep, go to next</button></div>
+        </div>
+      </div></div>
+      <figcaption><b>Fix a note</b>, as Check the notes steps through the doubtful notes (from a tap in Practice it ends with Done). Two separate fixes: the <b>pitch</b> (one lower, one higher, or a candidate by ear) and the <b>place</b> on the neck (the same pitch on another string). Players dislike a right note in the wrong place more than a wrong note.</figcaption>
+    </figure>
+  </div>
+
+  <figure>
+    <div class="scroll">
+      <div class="phone landscape"><div class="screen practice" role="img" aria-label="Practice view in landscape">
+        <div class="top">
+          <button class="navbtn" type="button">‹</button>
+          <p class="song">Night ferry riff</p>
+          <span class="chip"><span class="tuning">E♭ standard · no capo</span></span>
+          <span class="chip">View ▾</span>
+          <span class="chip">Lock the tab</span>
+        </div>
+        <div class="tabarea">
+          <svg class="tab" id="tab-practice" width="776" height="200" aria-hidden="true"></svg>
+          <span class="status-line"><b>?</b> 3 notes marked ? · Check them</span>
+        </div>
+        <div class="player">
+          <button class="play" type="button" aria-label="Pause"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="4" y="3" width="5" height="16" rx="1" fill="currentColor"/><rect x="13" y="3" width="5" height="16" rx="1" fill="currentColor"/></svg></button>
+          <button class="tbtn" type="button" aria-label="Back to repeat start"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M19 5 9 12l10 7z" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linejoin="round"/></svg></button>
+          <button class="tbtn" type="button" aria-label="Previous bar"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="tbtn" type="button" aria-label="Next bar"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="pos"><b>Bar 13, beat 2</b><span>♩ = 72 of 96</span><span class="beats" aria-hidden="true"><i></i><i class="now"></i><i></i><i></i></span></div>
+          <div class="chips">
+            <span class="chip">Speed 75%</span>
+            <span class="chip on" style="border-color:var(--ink);background:var(--secondary)">✓ Repeat 12–13</span>
+            <span class="chip">Count-in</span>
+            <span class="chip">Metronome</span>
+            <span class="chip">Sound: Recording</span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+    <figcaption><b>Practice, phone in landscape.</b> The recording plays by default. The cursor stays fixed and the tab scrolls past with two bars of lookahead. Transport buttons are 64 pt, and everything works from a page-turner pedal. Chrome hides during playback; the back button and Lock the tab never do.</figcaption>
+  </figure>
+
+  <section class="section-head" aria-labelledby="h-signals">
+    <h2 id="h-signals">Five signals in the tab, each with its own shape</h2>
+    <p>Colour only reinforces. Each signal has a shape, so none of them depends on its hue. Red never appears in the tab, because it can look like the doubt colour with colour-blindness.</p>
+  </section>
+  <div class="signals">
+    <div class="signal"><svg class="tab" data-demo="doubt" width="170" height="92" aria-hidden="true"></svg><h3>Doubtful pitch</h3><p>A "?" above the column, the numeral in umber on a faint wash. Only notes below the threshold show it.</p></div>
+    <div class="signal"><svg class="tab" data-demo="range" width="170" height="92" aria-hidden="true"></svg><h3>No valid place</h3><p>A boxed "!" in ink. Usually the tuning or instrument is wrong, so it links to Change tuning.</p></div>
+    <div class="signal"><svg class="tab" data-demo="cursor" width="170" height="92" aria-hidden="true"></svg><h3>Playback cursor</h3><p>A 3 px line in blue ink over the current beat's column.</p></div>
+    <div class="signal"><svg class="tab" data-demo="loop" width="170" height="104" aria-hidden="true"></svg><h3>Repeat</h3><p>A band with brackets at both ends and the words "Repeat 12–13".</p></div>
+    <div class="signal"><svg class="tab" data-demo="sel" width="170" height="92" aria-hidden="true"></svg><h3>Selection</h3><p>A box in ink on a neutral wash. Focus is an ink ring, never a signal colour.</p></div>
+  </div>
+
+  <section class="section-head" aria-labelledby="h-type">
+    <h2 id="h-type">Numbers you can read from a music stand</h2>
+    <p>Fret numbers use Fretscribe Tab: Atkinson Hyperlegible Mono at weight 600 with a plain zero built in, so every renderer shows it without font features. Titles use Atkinson Hyperlegible Next; everything else uses the platform's own font.</p>
+  </section>
+  <div class="typecard">
+    <div><div class="digits">0 1 2 3 4 5 6 7 8 9 10 12 17</div><div class="spec">Fretscribe Tab 600 · 1 has a flag and a foot, 6 and 9 have open tails, 0 is plain</div></div>
+    <div><div class="disp">Check the song</div><div class="spec">Atkinson Hyperlegible Next 600 · titles from 28 px</div></div>
+  </div>
+
+  <section class="section-head" aria-labelledby="h-flow">
+    <h2 id="h-flow">The whole flow</h2>
+    <p>Check the song comes before any note is shown. Practice is where a song opens every time after that.</p>
+  </section>
+  <div class="flow">
+<pre class="mermaid">
+flowchart LR
+  H[Home: Record, Open a recording, Your songs] --> W[What is this? Just my instrument or a full song]
+  W --> T[Writing down the notes]
+  T --> SC[Check the song: tuning, capo, octave, key]
+  SC --> R[Check the notes: pitch first]
+  R --> P[Practice: tab, repeat, speed]
+  P <--> F[Fix a note: pitch or place]
+  P --> X[Share or print]
+  H -->|open a song| P
+</pre>
+  </div>
+</div>
+
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (p, tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; p.appendChild(e); return e; };
+  const TUNING = ["e♭", "B♭", "G♭", "D♭", "A♭", "E♭"]; // string 1 (top) to 6
+
+  // Bars 12-14 of an original riff, in eighths (d = length in eighths).
+  const BARS = [
+    { n: 12, ev: [ {d:1,n:[[6,0]]},{d:1,n:[[6,0]]},{d:1,n:[[5,2]]},{d:1,n:[[6,0]]},{d:1,n:[[4,2]]},{d:1,n:[[6,0]]},{d:1,n:[[5,2]]},{d:1,n:[[5,0]]} ] },
+    { n: 13, ev: [ {d:2,n:[[4,2]]},{d:1,n:[[3,7]],doubt:1},{d:1,n:[[3,5]]},{d:2,n:[[2,3]]},{d:1,n:[[3,4]],doubt:1},{d:1,n:[[3,2]]} ] },
+    { n: 14, ev: [ {d:4,n:[[6,0],[5,2],[4,2]]},{d:2,n:[[6,3]]},{d:2,n:[[6,5]],doubt:1} ] },
+  ];
+
+  function drawTab(svg, { bars, x0 = 36, top = 40, ls = 17, fs = 17, labels = true, loop, cursor, select, barW }) {
+    const W = +svg.getAttribute("width");
+    const inner = W - x0 - 14;
+    const bw = barW || inner / bars.length;
+    const yOf = s => top + (s - 1) * ls;
+    const bottom = yOf(6);
+    // repeat band
+    if (loop) {
+      const lx = x0 + loop[0] * bw + 2, rx = x0 + (loop[1] + 1) * bw - 2;
+      el(svg, "rect", { class: "loop", x: lx, y: top - 42, width: rx - lx, height: bottom - top + 78 });
+      el(svg, "path", { class: "loopedge", d: `M${lx + 7} ${top - 42}H${lx}V${bottom + 36}H${lx + 7}` });
+      el(svg, "path", { class: "loopedge", d: `M${rx - 7} ${top - 42}H${rx}V${bottom + 36}H${rx - 7}` });
+      el(svg, "text", { class: "looplabel", x: lx + 12, y: top - 28 }, `Repeat ${bars[loop[0]].n}–${bars[loop[1]].n}`);
+    }
+    // event positions
+    const pos = [];
+    bars.forEach((b, bi) => {
+      const total = b.ev.reduce((a, e) => a + e.d, 0);
+      let t = 0;
+      b.ev.forEach((e, ei) => { pos.push({ bi, ei, e, x: x0 + bi * bw + 16 + (t + .5) * ((bw - 24) / total), t }); t += e.d; });
+    });
+    if (cursor) {
+      const p = pos.find(p => p.bi === cursor[0] && p.ei === cursor[1]);
+      el(svg, "rect", { class: "cursortint", x: p.x - 13, y: top - 8, width: 26, height: bottom - top + 16, rx: 4 });
+    }
+    for (let s = 1; s <= 6; s++) el(svg, "line", { class: "str", x1: x0, x2: x0 + bars.length * bw, y1: yOf(s), y2: yOf(s) });
+    for (let i = 0; i <= bars.length; i++) el(svg, "line", { class: "bar", x1: x0 + i * bw, x2: x0 + i * bw, y1: top, y2: bottom });
+    if (labels) TUNING.forEach((t, i) => el(svg, "text", { class: "label", x: x0 - 16, y: yOf(i + 1) }, t));
+    bars.forEach((b, bi) => el(svg, "text", { class: "barno", x: x0 + bi * bw + 3, y: top - 6 }, b.n));
+    // numbers with knockouts
+    pos.forEach(p => {
+      p.e.n.forEach(([s, f]) => {
+        const txt = String(f), w = txt.length > 1 ? fs * 1.1 : fs * .72;
+        const sel = select && select[0] === p.bi && select[1] === p.ei;
+        el(svg, "rect", { class: "ko" + (p.e.doubt ? " doubt" : "") + (sel ? " sel" : ""), x: p.x - w / 2 - 3, y: yOf(s) - fs * .62, width: w + 6, height: fs * 1.24, rx: 3 });
+        el(svg, "text", { class: "num" + (p.e.doubt ? " doubt" : ""), x: p.x, y: yOf(s) + 1, "font-size": fs }, txt);
+      });
+      if (p.e.doubt) el(svg, "text", { class: "qmark", x: p.x, y: top - 12 }, "?");
+    });
+    // rhythm under the tab: stems, beams on eighth pairs, half notes stem only
+    pos.forEach(p => { if (p.e.d < 4) el(svg, "line", { class: "stem", x1: p.x, x2: p.x, y1: bottom + 12, y2: bottom + 30 }); });
+    bars.forEach((b, bi) => {
+      const ps = pos.filter(p => p.bi === bi);
+      for (let i = 0; i < ps.length - 1; i++) {
+        const a = ps[i], c = ps[i + 1];
+        if (a.e.d === 1 && c.e.d === 1 && Math.floor(a.t / 2) === Math.floor(c.t / 2)) { el(svg, "rect", { class: "beam", x: a.x - .6, y: bottom + 27, width: c.x - a.x + 1.2, height: 3.5 }); i++; }
+      }
+    });
+    if (cursor) {
+      const p = pos.find(p => p.bi === cursor[0] && p.ei === cursor[1]);
+      el(svg, "line", { class: "cursor", x1: p.x - 13, x2: p.x - 13, y1: top - 20, y2: bottom + 20 });
+    }
+    return pos;
+  }
+
+  drawTab(document.getElementById("tab-practice"), { bars: BARS, x0: 40, top: 56, ls: 18, fs: 18, loop: [0, 1], cursor: [1, 1] });
+  drawTab(document.getElementById("tab-fix"), { bars: [BARS[1]], x0: 36, top: 34, ls: 13, fs: 14, select: [0, 1], loop: null });
+
+  // Signal demos
+  document.querySelectorAll("svg[data-demo]").forEach(svg => {
+    const kind = svg.dataset.demo;
+    const bar = [{ n: 12, ev: [{ d: 2, n: [[3, 5]] }, { d: 2, n: [[3, 7]], doubt: kind === "doubt" ? 1 : 0 }, { d: 4, n: [[2, 5]] }] }];
+    const opt = { bars: bar, x0: 14, top: 30, ls: 8, fs: 12, labels: false };
+    if (kind === "cursor") opt.cursor = [0, 1];
+    if (kind === "sel") opt.select = [0, 1];
+    if (kind === "loop") { opt.loop = [0, 0]; opt.top = 46; }
+    const pos = drawTab(svg, opt);
+    if (kind === "range") {
+      const p = pos[1];
+      el(svg, "rect", { x: p.x - 7, y: 5, width: 14, height: 16, rx: 2, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5 });
+      el(svg, "text", { x: p.x, y: 15.5, "text-anchor": "middle", style: "font:700 12px var(--display);fill:var(--ink)" }, "!");
+    }
+  });
+
+  // Fretboard strip: every place D♭4 can be played, 3rd string fret 7 chosen
+  const b = document.getElementById("board");
+  const L = 22, R = 316, T = 14, gap = 16, frets = 15;
+  const fx = f => L + (R - L) * (f / frets);
+  [3, 5, 7, 9, 12, 15].forEach(f => el(b, "circle", { class: "inlay", cx: (fx(f) + fx(f - 1)) / 2, cy: T + gap * 2.5, r: f === 12 ? 4 : 3 }));
+  for (let f = 1; f <= frets; f++) el(b, "line", { class: "fret", x1: fx(f), x2: fx(f), y1: T, y2: T + gap * 5 });
+  el(b, "line", { class: "nut", x1: L, x2: L, y1: T - 1, y2: T + gap * 5 + 1 });
+  for (let s = 1; s <= 6; s++) el(b, "line", { class: "s", x1: L, x2: R, y1: T + gap * (s - 1), y2: T + gap * (s - 1), "stroke-width": .8 + s * .25 });
+  [3, 5, 7, 9, 12, 15].forEach(f => el(b, "text", { class: "fretno", x: (fx(f) + fx(f - 1)) / 2, y: T + gap * 5 + 18 }, f));
+  [[2, 3, 0], [3, 7, 1], [4, 12, 0]].forEach(([s, f, on]) => {
+    const cx = (fx(f) + fx(f - 1)) / 2, cy = T + gap * (s - 1);
+    el(b, "circle", { class: "spot" + (on ? " on" : ""), cx, cy, r: 9.5 });
+    el(b, "text", { class: "spotnum" + (on ? " on" : ""), x: cx, y: cy + .5 }, f);
+  });
+})();
+</script>
