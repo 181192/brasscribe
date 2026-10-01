@@ -191,7 +191,7 @@ def test_the_instrument_is_a_parameter_of_the_fingering_stage_only():
                         "octave": "auto", "layout": "tab"}
     both = profiles.build("bass-tab", Path("song.wav"), "T", {"layout": "tab-and-notation"})
     assert both.stage("arrange").params["layout"] == "tab-and-notation"
-    assert both.stage("notes").params == a.stage("notes").params and both.stage("export").params == {}
+    assert both.stage("notes").params == a.stage("notes").params and both.stage("export").params == a.stage("export").params
 
 
 def test_a_chosen_octave_is_a_parameter_of_the_notes_stage_only():
@@ -454,6 +454,90 @@ def test_the_core_writes_each_layout_with_the_title_and_the_frets_of_the_tab(lay
     assert xml.count("<note") >= len(LOW_LINE)
 
 
+def test_a_long_title_is_cut_to_the_page_and_the_job_keeps_its_name(tmp_path):
+    assert bass_tab.page_title("Old Hundredth") == "Old Hundredth"
+    assert bass_tab.page_title("  Old\tHundredth \n take\x01 2 ") == "Old Hundredth take 2"
+    words = "All people that on earth do dwell, sing to the Lord with cheerful voice"
+    assert bass_tab.page_title(words) == "All people that on earth do dwell, sing to the…"
+    unbroken = bass_tab.page_title("x" * 200)
+    assert unbroken == "x" * 47 + "…" and len(unbroken) == bass_tab.PAGE_TITLE_MAX
+    assert bass_tab.page_title("y" * 30 + " " + "z" * 100) == "y" * 30 + "…"  # cut at the word
+
+    tab = bass_tab.fingered(_doc(LOW_LINE), bass_tab.options({}), _fake_solver([]))
+    seen: list[dict] = []
+    bass_tab.export_tab(tab, "x" * 200, "tab", tmp_path, lambda r: seen.append(r) or {"musicxml": "<x/>", "adjusted_notes": 0})
+    assert seen[0]["title"] == unbroken
+    assert bass_tab.composition(tab, "x" * 200).title == "x" * 200
+
+
+def test_the_export_is_keyed_on_the_musescore_that_would_render_it(tmp_path, monkeypatch):
+    from brasscribe_music import musescore
+
+    def key() -> dict:
+        return profiles.build("bass-tab", Path("song.wav"), "T").stage("export").params
+
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    assert key() == {"musescore": None}
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    installed = key()["musescore"]
+    assert installed and key()["musescore"] == installed and str(tmp_path) not in installed
+    exe.write_text("#!/bin/sh\n# an update\n")
+    assert key()["musescore"] not in (None, installed)
+    monkeypatch.setattr(musescore, "binary", lambda: str(tmp_path / "gone"))
+    assert key() == {"musescore": None}
+    for name in ("beats", "stems", "transcribe.bass.basic-pitch", "notes", "arrange"):  # only the export
+        assert "musescore" not in profiles.build("bass-tab", Path("song.wav"), "T").stage(name).params
+
+
+@needs_core
+def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings, audio, monkeypatch, tmp_path):
+    from brasscribe_music import musescore
+
+    monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
+    monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    without = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert without["status"] == "succeeded" and "tab.pdf" not in without["outputs"] and "tab.musicxml" in without["outputs"]
+
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
+    installed = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert {s["stage"]: s["status"] for s in installed["stages"]} == {
+        "beats": "cached", "transcribe.bass.basic-pitch": "cached", "notes": "cached", "arrange": "cached", "export": "ran"}
+    assert {"tab.pdf", "tab.mid"} <= set(installed["outputs"])
+    again = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert again["stages"][-1]["status"] == "cached" and "tab.pdf" in again["outputs"]
+
+
+def test_renaming_a_run_never_writes_a_control_character_into_its_musicxml(settings, audio, monkeypatch):
+    from xml.etree import ElementTree
+
+    from brasscribe_engine.jobs import JobManager, _retitle_musicxml
+
+    for xml in ("<score-partwise><work><work-title>Old</work-title></work></score-partwise>", "<score-partwise/>",
+                '<score-partwise version="4.0"><part-list/></score-partwise>'):
+        renamed = _retitle_musicxml(xml, "a\x01b\x7f \x00c\td\ne & <f>")
+        assert ElementTree.fromstring(renamed).findtext("work/work-title") == "ab c d e & <f>"
+
+    jobs = JobManager(settings)
+    m1 = runner.run(settings, audio, "test")  # a band job: brass-band.musicxml
+    out = settings.runs_dir / m1["run_id"] / "outputs"
+    (out / "brass-band.musicxml").write_text("<score-partwise><work><work-title>Old</work-title></work></score-partwise>")
+    (out / "tab.musicxml").write_text("<score-partwise><work><work-title>Old</work-title></work></score-partwise>")
+    assert jobs.rename(m1["run_id"], "a\x01b " + "x" * 200) == "renamed"
+    band = ElementTree.parse(out / "brass-band.musicxml").findtext("work/work-title")
+    tab = ElementTree.parse(out / "tab.musicxml").findtext("work/work-title")
+    assert band == "ab " + "x" * 200  # the band score keeps the whole title, as before
+    assert tab == bass_tab.page_title("ab " + "x" * 200) and len(tab) == bass_tab.PAGE_TITLE_MAX
+    jobs.shutdown()
+
+
 def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
@@ -463,13 +547,15 @@ def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch
     (tmp_path / "score").mkdir()
     (tmp_path / "score" / "tab.musicxml").write_text("<score-partwise/>")
     said: list[str] = []
-    ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=said.append, stage=SimpleNamespace(name="export"))
+    ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=said.append, stage=SimpleNamespace(name="export"),
+                          params={"musescore": None})
     bass_tab.export_stage(ctx)
     assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"]}
     assert said == ["mscore not found: PDF and MIDI skipped"]
 
     # With a MuseScore that writes one of the two files, the stage fails and names the other.
     monkeypatch.setattr(musescore, "binary", lambda: "mscore")
+    ctx.params = {"musescore": "0123456789abcdef"}
     monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(jobs[0][1][1])])
     with pytest.raises(bass_tab.StageFailed, match="MuseScore did not write tab.mid"):
         bass_tab.export_stage(ctx)

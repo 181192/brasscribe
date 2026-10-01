@@ -256,9 +256,14 @@ class JobManager:
             c = json.loads(comp.read_text())
             c["title"] = title
             _write(comp, json.dumps(c))
-        for xml in [out / "brass-band.musicxml", out / "tab.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
+        for xml in [out / "brass-band.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
             if xml.exists():
                 _write(xml, _retitle_musicxml(xml.read_text(), title))
+        tab = out / "tab.musicxml"
+        if tab.exists():  # its header holds the title cut to the page's width, as when it was written
+            from . import bass_tab
+
+            _write(tab, _retitle_musicxml(tab.read_text(), bass_tab.page_title(title)))
         talking = out / "talking-score.json"
         if talking.exists():
             from . import talking_score
@@ -319,6 +324,8 @@ def _retitle_musicxml(text: str, title: str) -> str:
     import re
     from xml.sax.saxutils import escape
 
+    # XML has no way to write a control character: a title that holds one would make the file unreadable.
+    title = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", re.sub(r"[\t\n\r]+", " ", title))
     tag = re.compile(r"(<work-title>)[\s\S]*?(</work-title>)")
     work = f"<work><work-title>{escape(title)}</work-title></work>"
     if tag.search(text):

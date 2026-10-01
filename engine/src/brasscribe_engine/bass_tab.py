@@ -26,6 +26,7 @@ The result is tab.json (schemas.Tab), a composition.json with the one bass voice
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -347,6 +348,20 @@ def composition(tab: dict, title: str):
                        [KeySig(0, tab["key"]["fifths"], tab["key"]["mode"])], tab["beat_times"], tab["first_downbeat"])
 
 
+PAGE_TITLE_MAX = 48  # characters: a longer title runs off the page in the tab's header
+
+
+def page_title(title: str) -> str:
+    """The title as the page's header shows it: one line that fits, cut at a word where there is one.
+    The job keeps its whole name."""
+    title = " ".join("".join(c for c in title if c.isprintable() or c.isspace()).split())
+    if len(title) <= PAGE_TITLE_MAX:
+        return title
+    cut = title[:PAGE_TITLE_MAX - 1]
+    word = cut.rfind(" ")
+    return (cut[:word] if word >= PAGE_TITLE_MAX // 2 else cut).rstrip() + "…"
+
+
 def export_tab(tab: dict, title: str, layout: str, out: Path, tablature: Callable[[dict], dict] = tablature) -> int:
     """Write `tab` as MusicXML to `out`/tab.musicxml, laid out as `layout` (LAYOUTS), in one call of the core.
 
@@ -354,7 +369,7 @@ def export_tab(tab: dict, title: str, layout: str, out: Path, tablature: Callabl
     writer had to move to a start or length it can spell."""
     places = ("pitch", "string", "fret", "alternatives", "out_of_range", "pinned")
     answer = tablature({
-        "title": title,
+        "title": page_title(title),
         "instrument": {"preset": tab["preset"], "capo": tab["instrument"]["capo"]},
         "notes": [{"pitch": n["pitch"], "start": n["start"], "dur": n["dur"], "confidence": n["confidence"]} for n in tab["notes"]],
         "fingering": {"notes": [{k: n[k] for k in places} for n in tab["notes"]]},
@@ -387,6 +402,23 @@ def arrange_stage(ctx: StageContext) -> None:
 EXPORT_FORMATS = ("pdf", "mid")
 
 
+def musescore_fingerprint() -> str | None:
+    """Which MuseScore would render the tab, for the export stage's cache key: None without one, else a
+    digest of where its program is, its size and when it was written. So a run made without MuseScore is
+    rendered once it is installed, and again after an update."""
+    from brasscribe_music import musescore
+
+    exe = musescore.binary()
+    found = shutil.which(exe) if exe else None
+    if not found:
+        return None
+    try:
+        st = Path(found).resolve().stat()
+    except OSError:
+        return None
+    return hashlib.sha256(f"{Path(found).resolve()}:{st.st_size}:{st.st_mtime_ns}".encode()).hexdigest()[:16]
+
+
 def export_stage(ctx: StageContext) -> None:
     """PDF and MIDI of the tab's MusicXML through MuseScore, as the band profiles' export stage.
 
@@ -394,7 +426,7 @@ def export_stage(ctx: StageContext) -> None:
     files, never the exit code. Without MuseScore nothing is rendered, and export.json and the log say so."""
     from brasscribe_music import musescore
 
-    mscore = musescore.binary()
+    mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
     written = []
     if mscore:
         dsts = [ctx.out / f"tab.{ext}" for ext in EXPORT_FORMATS]
@@ -436,7 +468,8 @@ def build(title: str, params: dict) -> Pipeline:
                     params={"title": title, "fingering": fingering, "layout": opts["layout"]},
                     # The core binary is part of the cache key: a new target-fretted fingers again.
                     code=(THIS, core_cli_path()), outputs=("composition.json", "tab.json", "tab.musicxml")))
-    st.append(Stage("export", "export", {"score": Input("arrange")}, export_stage, code=(THIS,), outputs=("export.json",)))
+    st.append(Stage("export", "export", {"score": Input("arrange")}, export_stage,
+                    params={"musescore": musescore_fingerprint()}, code=(THIS,), outputs=("export.json",)))
     outputs = {"composition.json": ("arrange", "composition.json"), "tab.json": ("arrange", "tab.json"),
                "tab.musicxml": ("arrange", "tab.musicxml"), "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
     return Pipeline(PROFILE, "tab", st, outputs, opts)
