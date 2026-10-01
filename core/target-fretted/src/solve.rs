@@ -8,7 +8,7 @@
 //! second pass pulls repeated pitch sequences onto one fingering. See the crate README for the cost
 //! model.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 use brasscribe_core::model::{check_span, Note, TICKS_PER_BEAT};
 use serde::{Deserialize, Serialize};
@@ -515,6 +515,9 @@ pub fn assign_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[V
 
 type Neighbour<'a> = Option<(&'a Event, &'a State)>;
 
+/// The positions of one event, a group at a time.
+type Placed = Vec<Option<Position>>;
+
 /// The state chosen for every event. Excursions are left out while the rest of the line is solved,
 /// so the notes around one sit where they would without it; each excursion is then solved on its
 /// own between its neighbours, which stay where they are.
@@ -620,40 +623,68 @@ fn excursions(events: &[Event]) -> Vec<bool> {
 /// The cheapest states for the events `line`, with repeated passages pulled onto one fingering.
 ///
 /// A style that keeps the first occurrence gives every event of a repeated passage the positions
-/// its first occurrence got. Otherwise each event takes the positions most of its occurrences got
-/// on their own; on a tie the cheaper ones, then the earliest. One occurrence in an odd context
-/// (after a passage up the neck, say) then follows the others, not the other way round.
+/// its first occurrence got. Otherwise the occurrences of a passage vote, each with its whole
+/// fingering: the one most of them got on their own wins; on a tie the cheapest, then the
+/// earliest. One occurrence in an odd context (after a passage up the neck, say) then follows the
+/// others, not the other way round, and a passage is never pieced together from two fingerings.
 fn solve_line(ctx: &Ctx, events: &[Event], line: &[usize]) -> Vec<usize> {
     let path = viterbi(ctx, events, line, &HashMap::new(), None, None);
     let refs = repeats(events, line);
     if refs.is_empty() {
         return path;
     }
+    // By place in `line`.
+    let state = |k: usize| &events[line[k]].states[path[k]];
+    let chosen = |k: usize| events[line[k]].positions(state(k).v);
     let at: HashMap<usize, usize> = line.iter().enumerate().map(|(k, &e)| (e, k)).collect();
-    let state = |e: usize| &events[e].states[path[at[&e]]];
-    let chosen = |e: usize| events[e].positions(state(e).v);
+    let mut targets: HashMap<usize, Placed> = HashMap::new();
     if !ctx.w.repeat_vote {
-        let targets: HashMap<usize, Vec<Option<Position>>> = refs.iter().flat_map(|(&e, &r)| [(e, chosen(r)), (r, chosen(r))]).collect();
+        for (&e, &r) in &refs {
+            targets.insert(e, chosen(at[&r]));
+            targets.insert(r, chosen(at[&r]));
+        }
         return viterbi(ctx, events, line, &targets, None, None);
     }
-    let mut occurrences: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
-    for (&e, &first) in &refs {
-        occurrences.entry(first).or_insert_with(|| vec![first]).push(e);
+    // Later occurrences as (first place in the first occurrence, length, places later).
+    let mut later: Vec<(usize, usize, usize)> = Vec::new();
+    for (k, e) in line.iter().enumerate() {
+        let Some(r) = refs.get(e) else { continue };
+        let ahead = k - at[r];
+        match later.last_mut() {
+            Some((from, len, d)) if *d == ahead && *from + *len == at[r] => *len += 1,
+            _ => later.push((at[r], 1, ahead)),
+        }
     }
-    let mut targets: HashMap<usize, Vec<Option<Position>>> = HashMap::new();
-    for same in occurrences.into_values() {
-        // Per fingering: its votes, its lowest cost and the first event that got it.
-        let mut votes: HashMap<Vec<Option<Position>>, (usize, f64, usize)> = HashMap::new();
-        for &e in &same {
-            let vote = votes.entry(chosen(e)).or_insert((0, f64::INFINITY, e));
+    later.sort_unstable();
+    let mut i = 0;
+    while i < later.len() {
+        // The stretch of the first occurrence that these later ones repeat, whole or in part.
+        let (from, mut to) = (later[i].0, later[i].0 + later[i].1);
+        let mut j = i + 1;
+        while j < later.len() && later[j].0 < to {
+            to = to.max(later[j].0 + later[j].1);
+            j += 1;
+        }
+        // Per fingering of the whole stretch: its votes, its lowest cost, its earliest occurrence.
+        let mut votes: HashMap<Vec<Placed>, (usize, f64, usize)> = HashMap::new();
+        let whole = later[i..j].iter().filter(|&&(f, len, _)| f == from && len == to - from).map(|&(_, _, d)| d);
+        for d in std::iter::once(0).chain(whole) {
+            let cost: f64 = (from..to).map(|k| state(k + d).cost).sum();
+            let vote = votes.entry((from..to).map(|k| chosen(k + d)).collect()).or_insert((0, f64::INFINITY, d));
             vote.0 += 1;
-            vote.1 = vote.1.min(state(e).cost);
-            vote.2 = vote.2.min(e);
+            vote.1 = vote.1.min(cost);
+            vote.2 = vote.2.min(d);
         }
         let best = votes.into_iter().max_by(|(_, a), (_, b)| a.0.cmp(&b.0).then(b.1.total_cmp(&a.1)).then(b.2.cmp(&a.2))).map(|(f, _)| f).unwrap_or_default();
-        for &e in &same {
-            targets.insert(e, best.clone());
+        for (k, positions) in (from..to).zip(&best) {
+            targets.insert(line[k], positions.clone());
         }
+        for &(f, len, d) in &later[i..j] {
+            for k in f..f + len {
+                targets.insert(line[k + d], best[k - from].clone());
+            }
+        }
+        i = j;
     }
     viterbi(ctx, events, line, &targets, None, None)
 }

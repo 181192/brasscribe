@@ -548,6 +548,28 @@ fn a_stray_note_that_opens_or_closes_a_bass_line_is_reached_and_left() {
 }
 
 #[test]
+fn a_repeated_bar_is_not_pieced_together_from_two_fingerings() {
+    // The same bar before a fill, straight after it, and once more. On its own each occurrence
+    // gets a different fingering; all three end up with one, and A1 keeps its place in the bar.
+    let bar = [33, 33, 40, 33, C2, C2, D2, 40];
+    let mut pitches = bar.to_vec();
+    pitches.extend([52, 54, 55, 57, 59, 57, 55, 52]);
+    pitches.extend(bar);
+    pitches.extend(bar);
+    let low = [(3, 0), (3, 0), (2, 2), (3, 0), (3, 3), (3, 3), (2, 0), (2, 2)].map(|(string, fret)| Position { string, fret });
+    for id in ["bass-4-standard", "bass-5-standard"] {
+        for style in [Style::OpenPosition, Style::AsPlayed] {
+            for bpm in [80.0, 100.0, 120.0] {
+                let p = bass_line(id, &pitches, style, bpm);
+                for at in [0, 16, 24] {
+                    assert_eq!(p[at..at + 8], low, "{id} {style:?} {bpm}: {p:?}");
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn a_repeated_bar_next_to_a_stray_note_follows_the_other_bars() {
     // The same bar three times; the first is followed by two high notes. All three get the
     // fingering the bar has on its own.

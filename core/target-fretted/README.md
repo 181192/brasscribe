@@ -193,15 +193,19 @@ What is not an excursion pays the ordinary shift costs, so a chord shape or a bo
 
 `Lead` sets nothing aside. It keeps a phrase with wide leaps in one position.
 
+Known limit: two excursions with fewer than three notes of the line between them are both left in
+the line and get the ordinary costs, so the notes around them can still be pulled towards them.
+
 **Repeats.** When a run of four events has the same pitches as an earlier run, a second pass gives
 the occurrences one fingering. A strong cost for deviating does this, so a pin or an impossible
 reuse still wins.
 
 - In `Lead`, every occurrence takes the first occurrence's fingering.
-- In `OpenPosition` and `AsPlayed`, the pass works event by event: each event of the run takes the
-  positions most of its occurrences got on their own. On a tie the cheaper positions win, then the
+- In `OpenPosition` and `AsPlayed`, the occurrences of a passage vote, each with its whole
+  fingering. The fingering most of them got on their own wins. On a tie the cheapest wins, then the
   earliest. So one bar in an odd context, such as the first bar after a passage up the neck,
-  follows the other bars and does not pass its fingering on to them.
+  follows the other bars and does not pass its fingering on to them. A bar is never pieced together
+  from two fingerings, so a pitch repeated in it keeps its place.
 - Excursions are left out before repeats are looked for, so a bar with a stray note in it still
   counts as a repeat of the bar without.
 
