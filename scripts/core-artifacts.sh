@@ -62,7 +62,7 @@ sources() {
   # The crates are the workspace's members, read from core/Cargo.toml, so a new member is a source
   # without a change here (cargo refuses a workspace with a member missing).
   local members
-  members=$(workspace_members) || return 1
+  members=$(workspace_members) || members=""
   [ -n "$members" ] || { echo "core-artifacts: no workspace members found in core/Cargo.toml" >&2; return 1; }
   # shellcheck disable=SC2086  # one path per member; member paths have no spaces
   git -C "$ROOT" ls-files -co --exclude-standard -z -- \
