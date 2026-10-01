@@ -50,6 +50,7 @@ def test_noise_has_no_tuning():
 
 def test_decide():
     assert tuning.decide(3.9, 0.9) == 0
+    assert tuning.decide(4.99, 0.9) == 0 and tuning.decide(5.0, 0.9) == -5  # 5 cents or more
     assert tuning.decide(13.4, 0.9) == -13
     assert tuning.decide(-30.6, 0.9) == 31
     assert tuning.decide(30.0, 0.1) == 0

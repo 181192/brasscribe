@@ -24,7 +24,7 @@ import numpy as np
 from .hashing import source_fingerprint
 
 THIS = Path(__file__).resolve()
-# Retune only beyond this many cents: the estimate of a perfectly tuned brass tone can be a few
+# Retune at this many cents or more: the estimate of a perfectly tuned brass tone can be a few
 # cents off (the 5th and 7th partials sit 14 and 31 cents flat of the tempered grid).
 THRESHOLD_CENTS = 5.0
 # Below this concentration of the peak deviations (0: spread evenly, 1: all agree) there is no

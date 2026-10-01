@@ -244,7 +244,7 @@ Corrected results (100 ms):
 
 ## Basic Pitch on the recording retuned to A = 440
 
-The brass-band profile retunes the recording to A = 440 before Basic Pitch when it sits more than 5 cents off
+The brass-band profile retunes the recording to A = 440 before Basic Pitch when it sits 5 cents or more off
 (`engine/src/brasscribe_engine/tuning.py`). `basic-pitch-retuned.mid` is that output for the 10 chorales, which sit
 −1 to +17 cents from A = 440 (9 of the 10 are retuned). `brasscribe bench chorales-transcription --mode live`
 writes a missing one the same way.
