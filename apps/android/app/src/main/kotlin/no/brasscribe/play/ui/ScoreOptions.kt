@@ -37,19 +37,21 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
         IconButton({ menu = true }, Modifier.size(48.dp)) {
             BcIcon(R.drawable.ic_bc_more, stringResource(R.string.score_options, entry.title), tint = c.textMuted)
         }
+        // The other app's score is not opened here: its row keeps only what is about the row itself.
+        val opensHere = !entry.onComputer || no.brasscribe.play.Product.makes(entry.profile)
         DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.edit_title)) },
                 leadingIcon = { BcIcon(R.drawable.ic_bc_text_size, null) },
                 onClick = { menu = false; draft = entry.title; renaming = true },
             )
-            DropdownMenuItem(
+            if (opensHere) DropdownMenuItem(
                 text = { Text(stringResource(R.string.stand_open_from_library)) },
                 leadingIcon = { BcIcon(R.drawable.ic_stand_music_stand, null) },
                 onClick = { menu = false; vm.openEntry(entry, stand = true) },
                 modifier = Modifier.semantics { testTag = "open-on-stand" },
             )
-            DropdownMenuItem(
+            if (opensHere) DropdownMenuItem(
                 text = { Text(stringResource(R.string.check_notes)) },
                 leadingIcon = { BcIcon(R.drawable.ic_bc_next_uncertain, null) },
                 onClick = { menu = false; vm.openEntry(entry, review = true) },

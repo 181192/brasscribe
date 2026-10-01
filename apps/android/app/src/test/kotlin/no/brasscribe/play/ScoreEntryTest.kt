@@ -25,6 +25,23 @@ class ScoreEntryTest {
     }
 
     @Test
+    fun anotherAppsScoreIsNotOpenedAndLeavesNoMusicStandBehind() {
+        val ours: (String) -> Boolean = { it != "other" }
+        val theirs = ScoreEntry("job:x", "Theirs", 0, "other", jobId = "x")
+        // Open on the music stand on the other app's row: nothing opens, and the next score opened is not put on the stand.
+        assertEquals(ScoreEntry.Opening(here = false, standFor = null), theirs.opening(review = false, stand = true, makes = ours))
+        assertEquals(ScoreEntry.Opening(here = false, standFor = null), theirs.opening(review = true, stand = false, makes = ours))
+        // This app's own: the stand for that row, and never together with Check the notes.
+        val mine = ScoreEntry("job:y", "Mine", 0, "brass-band", jobId = "y")
+        assertEquals(ScoreEntry.Opening(here = true, standFor = "job:y"), mine.opening(review = false, stand = true, makes = ours))
+        assertEquals(ScoreEntry.Opening(here = true, standFor = null), mine.opening(review = true, stand = true, makes = ours))
+        assertEquals(ScoreEntry.Opening(here = true, standFor = null), mine.opening(review = false, stand = false, makes = ours))
+        // A copy on this phone opens whatever made it.
+        val copy = ScoreEntry("s1", "Copy", 0, "other", saved = SavedScore("s1", "Copy", "other", 0))
+        assertEquals(ScoreEntry.Opening(here = true, standFor = "s1"), copy.opening(review = false, stand = true, makes = ours))
+    }
+
+    @Test
     fun theOtherAppsRunOfTheSameRecordingIsItsOwnRow() {
         // One recording, sent from both apps: a band score and a bass tab. Neither hides the other, whichever is newer.
         val band = job("band", 1000.0, "audio-1")

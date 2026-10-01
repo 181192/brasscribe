@@ -362,7 +362,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     val saved = withContext(storage) { scoreLibrary.get(scoreId)?.let { it to scoreLibrary.content(it.id) } }
                     val content = saved?.second ?: return@launch
                     if (backStack.value != plain) return@launch
-                    showSaved(saved.first, content)
+                    // The recording the score was made from is still the source, as before the process ended:
+                    // What is this? under the score can send it again, and a take is not deleted from the phone.
+                    showSaved(saved.first, content, recording = source.value?.takeIf { it.file != null })
                     backStack.value = RestoredStack.withScore(restored, hasSource = sourceBack != null)
                 }
             }
@@ -929,20 +931,21 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val engine: EngineApi = container.engine() ?: throw NoCompanionException()
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
-            res.getString(R.string.transcribe_where_companion, container.engineLabel()))
+            res.getString(R.string.transcribe_where_companion, Product.computerName(this)))
         // Streamed from the file: memory stays flat whatever its size (a video arrives here as its sound only).
         // A source with no file (tests) sends an empty upload, as before.
         val upload = s.file?.let { UploadSource.of(it) } ?: UploadSource.of(s.name, ByteArray(0))
-        val audio = withContext(Dispatchers.IO) {
+        // A product that writes a song down again names the recording the computer already holds: nothing is sent twice.
+        val audioId = Product.audioOnComputer(this, engine) ?: withContext(Dispatchers.IO) {
             engine.uploadAudio(upload) { sent, total ->
                 if (total > 0) transcribe.update { it.copy(fraction = (sent.toDouble() / total).coerceIn(0.0, 1.0)) }
             }
-        }
+        }.audioId
         transcribe.update { it.copy(fraction = 0.0) }
         seatFellBack = false
         val created = engine.createJobForSeat(
             // The product adds what its own profiles take (a bass tab's instrument and tuning).
-            Product.job(this, JobCreate(audio.audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
+            Product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
                 title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
         ).also { seatFellBack = it.second }.first
         engineJobId = created.id
@@ -960,7 +963,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         if (final.status != JobStatus.SUCCEEDED) throw EngineJobFailedException(final.error ?: final.status.name.lowercase())
         val composition = engine.composition(created.id)
         val xml = engine.musicXml(created.id)
-        return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id, audioId = audio.audioId,
+        return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id, audioId = audioId,
             engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() },
             evidence = runCatching { engine.evidence(created.id) }.getOrNull())
     }
@@ -1016,10 +1019,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
-        standFromLibrary.value = if (stand && !review) entry.id else null
+        val opening = entry.opening(review, stand, Product::makes)
+        // The computer's list also holds what the other app made: that opens there, not here, and leaves nothing behind.
+        if (!opening.here) { say(R.string.other_product_opens); return }
+        standFromLibrary.value = opening.standFor
         entry.saved?.let { openSavedScore(it, review); return }
-        // The computer's list also holds what the other app made: that opens there, not here.
-        if (!Product.makes(entry.profile)) { say(R.string.other_product_opens); return }
         val jobId = entry.jobId ?: return
         val engine = container.engine() ?: return
         openingScore.value = entry.id
@@ -1091,11 +1095,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     /** Makes [saved] the score on screen. */
-    private fun showSaved(saved: SavedScore, content: SavedScoreContent) {
+    private fun showSaved(saved: SavedScore, content: SavedScoreContent, recording: Source? = null) {
         currentSavedScoreId = saved.id
         myPartOverride.value = saved.part
         mappedNoticeSeen.value = saved.noticeSeen
-        source.value = Source(saved.title, SourceKind.SCORE, 0.0)
+        source.value = recording ?: Source(saved.title, SourceKind.SCORE, 0.0)
         reviewChanges.value = saved.reviewChanges
         result.value = TranscriptionResult(
             composition = content.compositionJson?.let { runCatching { container.core.decodeComposition(it) }.getOrNull() },

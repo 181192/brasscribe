@@ -71,7 +71,8 @@
     <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
 
     <!-- Hva er dette? -->
-    <string name="fs_what_hint">Svaret ditt bestemmer hvordan Fretscribe lytter. Den gjetter aldri.</string>
+    <string name="fs_what_hint">Svaret ditt bestemmer hvordan Fretscribe lytter.</string>
+    <string name="fs_what_no_recording">Dette opptaket er ikke lenger på telefonen. Åpne det på nytt fra Hjem.</string>
     <string name="fs_what_instrument">Bare instrumentet mitt</string>
     <string name="fs_what_instrument_desc">Et opptak av bassen alene.</string>
     <string name="fs_what_song">En hel sang</string>
@@ -88,8 +89,8 @@
     <string name="stage_quantize">Plasserer tonene i takter</string>
     <string name="stage_arrange">Velger strenger og bånd</string>
     <string name="stage_export">Setter opp tabben</string>
-    <string name="transcribe_leave">%1$s. Du kan gå fra denne skjermen; Fretscribe sier fra når tabben er klar.</string>
-    <string name="transcribe_where_companion">På datamaskinen din (%1$s)</string>
+    <string name="transcribe_leave">%1$s. Ha Fretscribe åpen til tabben er klar.</string>
+    <string name="transcribe_where_companion">%1$s skriver ned tonene</string>
     <string name="transcribe_cancel_title">Slutte å skrive ned tonene?</string>
     <string name="transcribe_done">Tabben er klar</string>
     <string name="transcribe_failed">Tabben kunne ikke lages: %1$s</string>
@@ -110,7 +111,6 @@
     <string name="fs_check_missing">Det Fretscribe hørte kan ikke vises akkurat nå. %1$s</string>
     <string name="fs_check_later">Du kan endre dette senere.</string>
     <string name="fs_show_tab">Vis tabben</string>
-    <string name="fs_check_open_again">Åpne opptaket på nytt for å endre dette.</string>
     <string name="fs_check_connect">Koble til datamaskinen for å endre dette.</string>
     <string name="fs_check_tuning">Stemming</string>
     <string name="fs_check_sounds_like">Høres ut som %1$s. Skrevet for %2$s.</string>
@@ -129,12 +129,12 @@
     <string name="fs_check_as_heard">Skriv det slik det ble hørt</string>
     <string name="fs_check_octave_auto">La Fretscribe velge</string>
     <string name="fs_check_reference">Kammertone</string>
-    <string name="fs_check_reference_sharp">Stemt %1$d cent over A = 440.</string>
-    <string name="fs_check_reference_flat">Stemt %1$d cent under A = 440.</string>
+    <string name="fs_check_reference_sharp">Litt høyere enn kammertonen (A = 440): %1$d cent.</string>
+    <string name="fs_check_reference_flat">Litt lavere enn kammertonen (A = 440): %1$d cent.</string>
     <string name="fs_check_reference_allowed">Fretscribe tok hensyn til det.</string>
     <string name="fs_check_key_tempo">Toneart og tempo</string>
     <string name="fs_check_key_tempo_value">%1$s · ♩ = %2$d · %3$d/%4$d</string>
-    <string name="fs_check_key_tempo_spoken">%1$s, %2$d slag i minuttet, %3$d %4$d-takt</string>
+    <string name="fs_check_key_tempo_spoken">%1$s, %2$d slag i minuttet, %3$s takt</string>
     <string name="fs_check_notes">Toner å sjekke</string>
     <plurals name="fs_check_marked">
         <item quantity="one">%1$d tone merket ?</item>

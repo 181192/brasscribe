@@ -15,6 +15,17 @@ data class ScoreEntry(
 ) {
     val onComputer: Boolean get() = saved == null
 
+    /**
+     * What opening this row does. A score in the computer's list that the other app made ([makes] says no to
+     * its profile) is not opened [Opening.here], and nothing is set up for it; [Opening.standFor] is the row
+     * whose score goes straight onto the music stand.
+     */
+    fun opening(review: Boolean, stand: Boolean, makes: (String) -> Boolean): Opening =
+        if (saved == null && !makes(profile)) Opening(here = false, standFor = null)
+        else Opening(here = true, standFor = id.takeIf { stand && !review })
+
+    data class Opening(val here: Boolean, val standFor: String?)
+
     companion object {
         /**
          * This phone's scores and the computer's finished runs, newest first. A run already opened

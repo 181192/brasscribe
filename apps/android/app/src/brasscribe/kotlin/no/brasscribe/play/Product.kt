@@ -32,6 +32,19 @@ object Product {
     @Suppress("UNUSED_PARAMETER")
     fun job(vm: PlayViewModel, request: JobCreate): JobCreate = request
 
+    /** The recording as the computer already holds it, for a job that needs no upload: Brasscribe always sends it. */
+    @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
+    suspend fun audioOnComputer(vm: PlayViewModel, engine: no.brasscribe.play.engine.EngineApi): String? = null
+
+    /** The computer, as the transcribing screen names it. */
+    fun computerName(vm: PlayViewModel): String = vm.container.engineLabel()
+
+    /** The transcribing screen shows the time left. */
+    const val TIME_LEFT = true
+
+    /** The transcribing screen says the app may be left, so it does not hold the screen on. */
+    const val KEEP_OPEN_WHILE_WRITING = false
+
     /** The screen that follows a finished transcription. */
     @Suppress("UNUSED_PARAMETER")
     fun afterTranscription(result: TranscriptionResult): Screen = Screen.REVIEW

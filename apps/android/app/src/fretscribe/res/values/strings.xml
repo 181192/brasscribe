@@ -82,7 +82,8 @@
     <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
 
     <!-- What is this? (design/fretscribe/flows.md §5). In this version the computer writes down both. -->
-    <string name="fs_what_hint">Your answer decides how Fretscribe listens. It never guesses.</string>
+    <string name="fs_what_hint">Your answer decides how Fretscribe listens.</string>
+    <string name="fs_what_no_recording">This recording is no longer on the phone. Open it again from Home.</string>
     <string name="fs_what_instrument">Just my instrument</string>
     <string name="fs_what_instrument_desc">A recording of the bass alone.</string>
     <string name="fs_what_song">A full song</string>
@@ -99,8 +100,10 @@
     <string name="stage_quantize">Placing the notes in bars</string>
     <string name="stage_arrange">Choosing strings and frets</string>
     <string name="stage_export">Laying out the tab</string>
-    <string name="transcribe_leave">%1$s. You can leave this screen; Fretscribe will tell you when the tab is ready.</string>
-    <string name="transcribe_where_companion">On your computer (%1$s)</string>
+    <!-- Nothing tells the player when the tab is ready while the app is away, so the screen says to stay, and stays on. -->
+    <string name="transcribe_leave">%1$s. Keep Fretscribe open until the tab is ready.</string>
+    <!-- "Fretscribe on Kari's Mac is writing down the notes" -->
+    <string name="transcribe_where_companion">%1$s is writing down the notes</string>
     <string name="transcribe_cancel_title">Stop writing down the notes?</string>
     <string name="transcribe_done">Tab ready</string>
     <string name="transcribe_failed">The tab couldn\'t be made: %1$s</string>
@@ -121,7 +124,6 @@
     <string name="fs_check_missing">What Fretscribe heard can\'t be shown right now. %1$s</string>
     <string name="fs_check_later">You can change this later.</string>
     <string name="fs_show_tab">Show the tab</string>
-    <string name="fs_check_open_again">To change these, open the recording again.</string>
     <string name="fs_check_connect">To change these, connect your computer.</string>
     <string name="fs_check_tuning">Tuning</string>
     <!-- "Sounds like Drop D. Written for Standard." -->
@@ -141,13 +143,15 @@
     <string name="fs_check_as_heard">Write it as it was heard</string>
     <string name="fs_check_octave_auto">Let Fretscribe choose</string>
     <string name="fs_check_reference">Reference pitch</string>
-    <string name="fs_check_reference_sharp">Tuned %1$d cents sharp of A = 440.</string>
-    <string name="fs_check_reference_flat">Tuned %1$d cents flat of A = 440.</string>
+    <!-- A cent is a hundredth of a semitone; the words come first, the number after. -->
+    <string name="fs_check_reference_sharp">A little sharp of concert pitch (A = 440): %1$d cents.</string>
+    <string name="fs_check_reference_flat">A little flat of concert pitch (A = 440): %1$d cents.</string>
     <string name="fs_check_reference_allowed">Fretscribe allowed for it.</string>
     <string name="fs_check_key_tempo">Key and tempo</string>
     <!-- "E minor · ♩ = 100 · 2/4" -->
     <string name="fs_check_key_tempo_value">%1$s · ♩ = %2$d · %3$d/%4$d</string>
-    <string name="fs_check_key_tempo_spoken">%1$s, %2$d beats a minute, %3$d %4$d time</string>
+    <!-- %3$s: the time signature in words, "two-four" -->
+    <string name="fs_check_key_tempo_spoken">%1$s, %2$d beats a minute, %3$s time</string>
     <string name="fs_check_notes">Notes to check</string>
     <plurals name="fs_check_marked">
         <item quantity="one">%1$d note marked ?</item>

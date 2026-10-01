@@ -215,7 +215,9 @@ fun TranscribeScreen(vm: PlayViewModel) {
     val c = BrasscribeTheme.colors
     var confirmCancel by remember { mutableStateOf(false) }
     val percent = (s.fraction * 100).toInt()
+    // A product whose jobs the estimate is wrong for shows the step and the percentage only.
     val eta = when {
+        !no.brasscribe.play.Product.TIME_LEFT -> null
         s.etaSeconds == null -> stringResource(R.string.eta_unknown)
         s.etaSeconds!! < 60 -> stringResource(R.string.eta_under_minute)
         else -> pluralStringResource(R.plurals.eta_minutes, (s.etaSeconds!! + 30) / 60, (s.etaSeconds!! + 30) / 60)
@@ -223,6 +225,14 @@ fun TranscribeScreen(vm: PlayViewModel) {
     val stepText = stringResource(s.step.text)
     val steps = s.steps.ifEmpty { listOf(s.step) }
     val current = steps.indexOf(s.step).coerceAtLeast(0)
+    // Where the app says to keep it open while this runs, the screen stays on meanwhile.
+    if (no.brasscribe.play.Product.KEEP_OPEN_WHILE_WRITING && s.running) {
+        val view = androidx.compose.ui.platform.LocalView.current
+        androidx.compose.runtime.DisposableEffect(view) {
+            view.keepScreenOn = true
+            onDispose { view.keepScreenOn = false }
+        }
+    }
     // Announce each new step once, politely, rather than every percent.
     LaunchedEffect(s.step) { if (s.running) vm.status.value = no.brasscribe.play.Status(stepText) }
 
@@ -253,7 +263,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
         )
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(percentText, style = no.brasscribe.design.BrasscribeNumericStyle, color = c.textMuted)
-            Text(eta, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+            if (eta != null) Text(eta, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4)) {
             steps.forEachIndexed { i, step ->

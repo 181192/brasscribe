@@ -75,6 +75,30 @@ object Product {
         if (request.profile != Profile.BASS_TAB.id) request
         else tabJob(request, tabOptions(yourInstrumentStore(vm.getApplication()).load(), SongAnswers.of(vm.source.value)))
 
+    /**
+     * The recording as the computer already holds it, when Check the song has the song written down again:
+     * the new job is made on the same upload, so it also works for a song opened from Your songs and when
+     * the phone's copy of the recording is gone. Null for a first job: the recording is sent.
+     */
+    suspend fun audioOnComputer(vm: PlayViewModel, engine: no.brasscribe.play.engine.EngineApi): String? {
+        if (vm.profile.value != Profile.BASS_TAB || SongAnswers.of(vm.source.value).again == null) return null
+        val written = vm.result.value ?: return null
+        return written.audioId ?: written.jobId?.let { engine.job(it).audioId }
+    }
+
+    /** The computer, as the transcribing screen names it: "Fretscribe on Kari's Mac", never its address. */
+    fun computerName(vm: PlayViewModel): String =
+        if (vm.container.usingFixture) vm.container.engineLabel() else vm.serverDisplayName(vm.container.settings.serverName)
+
+    /**
+     * No time left on the transcribing screen: the estimate counts stages, and a tab's stages differ too much
+     * in length for it to be right. The step and the percentage are shown.
+     */
+    const val TIME_LEFT = false
+
+    /** Nothing tells the player when a tab is ready while the app is away, so the screen says to keep it open, and stays on. */
+    const val KEEP_OPEN_WHILE_WRITING = true
+
     /** The screen that follows a finished transcription: Check the song for a tab (drawn in the output choices' place). */
     fun afterTranscription(result: TranscriptionResult): Screen =
         if (result.profile == Profile.BASS_TAB) Screen.OUTPUT else Screen.REVIEW

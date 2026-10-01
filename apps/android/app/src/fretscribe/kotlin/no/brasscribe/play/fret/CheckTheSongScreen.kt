@@ -39,6 +39,7 @@ import no.brasscribe.play.Screen
 import no.brasscribe.play.engine.Octave
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.Tab
+import no.brasscribe.play.engine.TabOptions
 import no.brasscribe.play.ui.InfoNote
 import no.brasscribe.play.ui.Lead
 import no.brasscribe.play.ui.OutlineButton
@@ -53,12 +54,13 @@ import no.brasscribe.play.ui.keyName
 /** The tab's facts as they come from the computer: still being read, there, or not to be had right now. */
 private sealed interface Heard {
     data object Reading : Heard
-    data class Ready(val tab: Tab) : Heard
+    /** [stages]: the stages of the job that made it (a full song was separated first). */
+    data class Ready(val tab: Tab, val stages: List<String>) : Heard
     data class Missing(val why: Int) : Heard
 }
 
 /** What a row's button asks for: the same recording written down again with this changed. */
-private class Change(val label: String, val tag: String, val answer: (SongAnswer) -> SongAnswer)
+private class Change(val label: String, val tag: String, val options: (TabOptions) -> TabOptions)
 
 /**
  * "Check the song" (design/fretscribe/flows.md §7), in its first form: what Fretscribe heard, one row per
@@ -78,7 +80,10 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
         value = Heard.Reading
         value = try {
             val engine = vm.container.engine() ?: throw NoCompanionException()
-            Heard.Ready(withContext(Dispatchers.IO) { engine.tab(jobId ?: throw NoCompanionException()) })
+            withContext(Dispatchers.IO) {
+                val id = jobId ?: throw NoCompanionException()
+                Heard.Ready(engine.tab(id), engine.job(id).stages.map { it.name })
+            }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -87,13 +92,14 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
         }
     }
     val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
-    // The recording is sent again from its file: a song opened from Your songs has none in hand.
-    val canChange = there && source?.file?.isFile == true
+    // The computer keeps the recording it was sent: a change is a new job on it, also for a song opened from Your songs.
+    val canChange = there
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
-    fun writeAgain(change: Change) {
-        SongAnswers.set(source, change.answer(SongAnswers.of(source)))
+    fun writeAgain(change: Change, made: Heard.Ready) {
+        val options = change.options(SongCheck.optionsOf(made.tab, made.stages))
+        SongAnswers.set(source, SongAnswer(options.recording, again = options))
         vm.chooseProfile(Profile.BASS_TAB)
         // Writing down the notes takes this screen's place, and it comes back when they are written.
         vm.back()
@@ -103,7 +109,10 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
     PlayScaffold(
         title = source?.name?.substringBeforeLast('.'), onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
-            Text(stringResource(R.string.fs_check_later), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+            // Only said when it is so: the result offers a change, and the computer is there to make it.
+            val ready = heard as? Heard.Ready
+            if (ready != null && canChange && SongCheck.rows(ready.tab).any { changes(it) })
+                Text(stringResource(R.string.fs_check_later), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
             PrimaryButton(stringResource(R.string.fs_show_tab), { vm.navigate(Screen.SCORE) }, Modifier.testTag("fs-show-tab"))
         },
     ) {
@@ -118,16 +127,24 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
                 Lead(stringResource(R.string.fs_check_lead))
                 val rows = remember(h.tab) { SongCheck.rows(h.tab) }
                 val changes = rows.map { changeFor(it) }
+                // Above the rows, so it is seen: why the buttons are not there.
+                if (changes.any { it != null } && !canChange) InfoNote(stringResource(R.string.fs_check_connect), Modifier.testTag("fs-check-connect"))
                 RowGroup {
                     rows.forEachIndexed { i, row ->
                         if (i > 0) RowDivider()
-                        SongRowView(row, changes[i]?.takeIf { canChange }, ::writeAgain)
+                        SongRowView(row, changes[i]?.takeIf { canChange }) { writeAgain(it, h) }
                     }
                 }
-                if (changes.any { it != null } && !canChange) InfoNote(stringResource(if (there) R.string.fs_check_open_again else R.string.fs_check_connect))
             }
         }
     }
+}
+
+/** Whether a row offers a change. */
+private fun changes(row: SongRow): Boolean = when (row) {
+    is SongRow.Tuning -> row.soundsLike != null
+    is SongRow.Octave -> row.chosen || row.shift != 0
+    else -> false
 }
 
 /** The change a row offers, if the computer takes one for it. */
@@ -175,7 +192,8 @@ private fun rowWords(row: SongRow): Triple<String, String, String> = when (row) 
         val key = keyName(row.fifths, row.minor, 0, currentLang())
         Triple(stringResource(R.string.fs_check_key_tempo),
             stringResource(R.string.fs_check_key_tempo_value, key, row.bpm, row.beats, row.beatUnit),
-            stringResource(R.string.fs_check_key_tempo_spoken, key, row.bpm, row.beats, row.beatUnit))
+            stringResource(R.string.fs_check_key_tempo_spoken, key, row.bpm,
+                SongCheck.meterWords(row.beats, row.beatUnit, currentLang() == no.brasscribe.play.model.Lang.NB)))
     }
     is SongRow.Doubtful -> pluralStringResource(R.plurals.fs_check_marked, row.count, row.count).let {
         Triple(stringResource(R.string.fs_check_notes), it, it)

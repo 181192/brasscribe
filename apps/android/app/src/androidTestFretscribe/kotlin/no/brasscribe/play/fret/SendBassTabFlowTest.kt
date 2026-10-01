@@ -21,7 +21,9 @@ import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -199,12 +201,12 @@ class SendBassTabFlowTest {
         val words = mapOf(
             "en-GB" to listOf("What is this?", "Just my instrument", "A full song", "On your computer",
                 "Fretscribe on your computer writes down the notes. Nothing goes online.", "Choose one to continue.", "Continue",
-                "Stop writing down the notes?", "Stop", "Check the song", "Tuning: Standard", "Key and tempo: E minor, 100 beats a minute, 2 4 time",
-                "Show the tab", "You can change this later.", "4-string bass · Standard"),
+                "Stop writing down the notes?", "Stop", "Check the song", "Tuning: Standard", "Key and tempo: E minor, 100 beats a minute, two-four time",
+                "Show the tab", "You can change this later.", "4-string bass · Standard", "is writing down the notes. Keep Fretscribe open until the tab is ready."),
             "nb-NO" to listOf("Hva er dette?", "Bare instrumentet mitt", "En hel sang", "På datamaskinen din",
                 "Fretscribe på datamaskinen skriver ned tonene. Ingenting sendes til nettet.", "Velg ett for å fortsette.", "Fortsett",
-                "Slutte å skrive ned tonene?", "Stopp", "Sjekk sangen", "Stemming: Standard", "Toneart og tempo: e-moll, 100 slag i minuttet, 2 4-takt",
-                "Vis tabben", "Du kan endre dette senere.", "4-strengs bass · Standard"),
+                "Slutte å skrive ned tonene?", "Stopp", "Sjekk sangen", "Stemming: Standard", "Toneart og tempo: e-moll, 100 slag i minuttet, to firedels takt",
+                "Vis tabben", "Du kan endre dette senere.", "4-strengs bass · Standard", "skriver ned tonene. Ha Fretscribe åpen til tabben er klar."),
         )
         val steps = mapOf(
             "en-GB" to listOf("Sending the recording to your computer", "Listening for the beat", "Writing down the notes",
@@ -261,6 +263,13 @@ class SendBassTabFlowTest {
             steps.getValue(lang).forEach { assertTrue("$it in: $during", during.contains(it)) }
             assertFalse(during, Regex("Brasscribe|brass band|brassband|score|partitur", RegexOption.IGNORE_CASE).containsMatchIn(during))
             assertEquals(whole, !during.contains(if (lang == "en-GB") "Separating the bass" else "Skiller ut bassen"))
+            // What is true while it runs: keep the app open (the screen stays on), and no time left that is not known.
+            assertTrue(during, during.contains(w[15]))
+            assertFalse(during, Regex("minute|minutt|left|igjen|tell you|sier fra").containsMatchIn(during))
+            rule.runOnUiThread { assertTrue("the screen stays on", rule.activity.window.decorView.findViewById<android.view.View>(android.R.id.content).let { root ->
+                generateSequence(listOf(root)) { vs -> vs.flatMap { v -> (v as? android.view.ViewGroup)?.let { g -> (0 until g.childCount).map(g::getChildAt) }.orEmpty() }.takeIf { it.isNotEmpty() } }
+                    .flatten().any { it.keepScreenOn }
+            }) }
             val bar = rule.onNode(hasContentDescription(text(no.brasscribe.play.R.string.transcribe_progress_label)), useUnmergedTree = true).fetchSemanticsNode()
             assertTrue(bar.config.contains(SemanticsProperties.ProgressBarRangeInfo))
             shot("writing-down-${lang.take(2)}-light")
@@ -277,7 +286,8 @@ class SendBassTabFlowTest {
                 assertTrue(it, rule.onAllNodesWithTag("fs-check-$it").fetchSemanticsNodes().isEmpty())
             }
             rule.onNodeWithTag("fs-show-tab").assert(hasText(w[12])).assertHeightIsAtLeast(48.dp)
-            rule.onNodeWithText(w[13]).assertIsDisplayed()
+            // Nothing here can be changed, so nothing says it can.
+            assertTrue(rule.onAllNodesWithText(w[13]).fetchSemanticsNodes().isEmpty())
             rule.onRoot().tryPerformAccessibilityChecks()
             shot("check-the-song-${lang.take(2)}-light")
             rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
@@ -334,7 +344,8 @@ class SendBassTabFlowTest {
 
         rule.onNodeWithTag("fs-check-tuning").assertContentDescriptionEquals("Tuning: Sounds like Drop D. Written for Standard.")
         rule.onNodeWithTag("fs-check-octave").assertContentDescriptionEquals("Octave: Written one octave lower than it was heard.")
-        rule.onNodeWithTag("fs-check-reference").assertContentDescriptionEquals("Reference pitch: Tuned 30 cents sharp of A = 440. Fretscribe allowed for it.")
+        rule.onNodeWithTag("fs-check-reference").assertContentDescriptionEquals("Reference pitch: A little sharp of concert pitch (A = 440): 30 cents. Fretscribe allowed for it.")
+        rule.onNodeWithText("You can change this later.").assertIsDisplayed()
         rule.onNodeWithTag("fs-check-marked").performScrollTo().assertContentDescriptionEquals("Notes to check: 3 notes marked ?")
         rule.onNodeWithTag("fs-check-no-place").performScrollTo()
             .assertContentDescriptionEquals("Notes with no place: 1 note with no place on your bass. Is the tuning right?")
@@ -456,6 +467,23 @@ class SendBassTabFlowTest {
         rule.waitUntil(5_000) { rule.onAllNodesWithText("This is a band score. Open it in Brasscribe.").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(listOf(Screen.HOME), vm.screen.value)
         assertEquals(null, vm.result.value)
+        assertEquals(null, vm.standFromLibrary.value)
+        // Its row's menu has none of the actions that would open it; a tab's row has them.
+        val now = System.currentTimeMillis()
+        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:band-1", "Old Hundredth", now, "brass-band", jobId = "band-1")))
+        assertEquals(listOf("Edit title", "Open on the music stand", "Check the song", "Delete"),
+            menuOf(ScoreEntry("job:tab-1", "Bass line", now, "bass-tab", jobId = "tab-1")))
+    }
+
+    /** The row menu of [entry], opened: the actions it offers. */
+    private fun menuOf(entry: ScoreEntry): List<String> {
+        rule.runOnUiThread {
+            rule.activity.setContent { no.brasscribe.play.ui.theme.PlayTheme(dark = false, pink = false) { no.brasscribe.play.ui.ScoreOptionsButton(vm, entry) } }
+        }
+        rule.onNodeWithContentDescription(rule.activity.getString(no.brasscribe.play.R.string.score_options, entry.title)).performClick()
+        rule.waitForIdle()
+        return listOf(no.brasscribe.play.R.string.edit_title, no.brasscribe.play.R.string.stand_open_from_library, no.brasscribe.play.R.string.check_notes, no.brasscribe.play.R.string.delete)
+            .map { rule.activity.getString(it) }.filter { rule.onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
     }
 
     private companion object {

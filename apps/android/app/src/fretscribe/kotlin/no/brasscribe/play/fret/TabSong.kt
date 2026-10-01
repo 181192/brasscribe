@@ -17,11 +17,10 @@ import no.brasscribe.play.engine.TabOptions
 import no.brasscribe.play.model.CompositionJson
 
 /**
- * What the player answered for one recording: What is this? ([recording]), and what Check the song
- * changed ([tuning], [octave]). Nothing is answered until the player does: null is "not asked yet" for
- * the recording, and "as Your instrument says" or "let Fretscribe choose" for the other two.
+ * What the player answered for one recording: What is this? ([recording], null until it is answered), and
+ * what Check the song asked for ([again]: the options to write the same recording down with once more).
  */
-data class SongAnswer(val recording: Recording? = null, val tuning: String? = null, val octave: Octave? = null)
+data class SongAnswer(val recording: Recording? = null, val again: TabOptions? = null)
 
 /**
  * The answers for the recording in hand, kept while it is the one being worked on: another recording
@@ -42,20 +41,23 @@ object SongAnswers {
     }
 }
 
-/** The `bass-tab` job's options: the player's instrument, and what was answered for this song. */
+/**
+ * The `bass-tab` job's options. A first job is for the player's instrument and what was answered for this
+ * song; a song written down again takes the options Check the song made for it.
+ */
 fun tabOptions(instrument: YourInstrument, answer: SongAnswer): TabOptions {
+    answer.again?.let { return it }
     val chosen = instrument.jobOptions()
     val fretted = FrettedInstrument.entries.firstOrNull { it.id == chosen.instrument } ?: FrettedInstrument.BASS_4
     return TabOptions(
         instrument = fretted,
-        // A tuning chosen for this song counts only when the instrument has it.
-        tuning = answer.tuning?.takeIf { it in fretted.tunings } ?: chosen.tuning.takeIf { it in fretted.tunings } ?: FrettedInstrument.STANDARD_TUNING,
+        tuning = chosen.tuning.takeIf { it in fretted.tunings } ?: FrettedInstrument.STANDARD_TUNING,
         capo = 0,
         // The fingering style is left to the computer's default (as played).
         style = null,
-        // A full song is the safe reading of an unanswered question: the bass is separated first.
+        // Continue needs an answer, so this is never the player's: an unanswered job is separated first, which also suits a bass alone.
         recording = answer.recording ?: Recording.SONG,
-        octave = answer.octave ?: Octave.AUTO,
+        octave = Octave.AUTO,
         layout = TabLayout.entries.firstOrNull { it.id == chosen.layout } ?: TabLayout.TAB,
     )
 }
@@ -100,6 +102,40 @@ object SongCheck {
     /** The number of strings of a preset's instrument ("bass-5-standard" has 5). */
     fun stringsOf(preset: String): Int? = FrettedInstrument.entries.firstOrNull { it.id != null && preset.startsWith("${it.id}-") }
         ?.id?.substringAfterLast('-')?.toIntOrNull()
+
+    /**
+     * The options [tab] was made with, read back from the result and from [stages] of its job (a full song was
+     * separated first). This is what a song is written down again with, one thing changed: it holds for a
+     * song opened from Your songs and after the app was restarted, when nothing else remembers the answers.
+     */
+    fun optionsOf(tab: Tab, stages: List<String>): TabOptions {
+        val fretted = FrettedInstrument.entries.firstOrNull { it.id != null && tab.preset.startsWith("${it.id}-") }
+        return TabOptions(
+            instrument = fretted,
+            tuning = tuningOf(tab.preset),
+            capo = tab.instrument.capo,
+            style = tab.style.takeIf { it.id != null },
+            recording = if (stages.any { it == "stems" }) Recording.SONG else Recording.INSTRUMENT,
+            octave = if (tab.octaveSource != OctaveSource.CHOSEN) Octave.AUTO else when {
+                tab.octaveShift < 0 -> Octave.DOWN
+                tab.octaveShift > 0 -> Octave.UP
+                else -> Octave.AS_HEARD
+            },
+            layout = tab.layout.takeIf { it.id != null },
+        )
+    }
+
+    private val EN = listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve")
+    private val NB = listOf("en", "to", "tre", "fire", "fem", "seks", "sju", "åtte", "ni", "ti", "elleve", "tolv")
+    private val NB_UNITS = mapOf(2 to "halve", 4 to "firedels", 8 to "åttedels", 16 to "sekstendedels")
+    private val EN_UNITS = mapOf(2 to "two", 4 to "four", 8 to "eight", 16 to "sixteen")
+
+    /** A time signature as it is said: "two-four" (bokmål «to firedels»); the digits for one with no words here. */
+    fun meterWords(beats: Int, beatUnit: Int, bokmal: Boolean): String {
+        val count = (if (bokmal) NB else EN).getOrNull(beats - 1)
+        val unit = (if (bokmal) NB_UNITS else EN_UNITS)[beatUnit]
+        return if (count == null || unit == null) "$beats $beatUnit" else if (bokmal) "$count $unit" else "$count-$unit"
+    }
 
     /** The rows the result has something to say for, in the order of the screen. */
     fun rows(tab: Tab): List<SongRow> = buildList {

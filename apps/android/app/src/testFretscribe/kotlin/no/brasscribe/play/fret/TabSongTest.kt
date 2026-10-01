@@ -65,14 +65,40 @@ class TabSongTest {
     }
 
     @Test
-    fun checkTheSongsChangesAreForThisSongOnly() {
-        val standard = YourInstrument()
-        val changed = tabOptions(standard, SongAnswer(Recording.INSTRUMENT, tuning = "drop-d", octave = Octave.AS_HEARD))
-        assertEquals("drop-d", changed.tuning)
-        assertEquals(Octave.AS_HEARD, changed.octave)
-        assertEquals(FrettedInstrument.BASS_4, changed.instrument)
-        // A tuning the player's instrument doesn't have is not sent: theirs is.
-        assertEquals("standard", tabOptions(YourInstrument(strings = 6), SongAnswer(Recording.SONG, tuning = "drop-d")).tuning)
+    fun aSongIsWrittenDownAgainWithTheOptionsItWasMadeWithAndOneChange() {
+        val tab = recorded()
+        val alone = listOf("beats", "transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export")
+        // Read back from the result and its job: nothing else has to remember the answers.
+        val made = SongCheck.optionsOf(tab, alone)
+        assertEquals(TabOptions(FrettedInstrument.BASS_4, "standard", capo = 0, style = no.brasscribe.play.engine.FingeringStyle.AS_PLAYED,
+            recording = Recording.INSTRUMENT, octave = Octave.AUTO, layout = TabLayout.TAB), made)
+        // A full song was separated first.
+        assertEquals(Recording.SONG, SongCheck.optionsOf(tab, listOf("beats", "stems") + alone.drop(1)).recording)
+        // What the player chose for the octave is kept; what Fretscribe chose stays its to choose.
+        assertEquals(Octave.AUTO, SongCheck.optionsOf(tab.copy(octaveShift = -12), alone).octave)
+        assertEquals(Octave.DOWN, SongCheck.optionsOf(tab.copy(octaveShift = -12, octaveSource = OctaveSource.CHOSEN), alone).octave)
+        assertEquals(Octave.UP, SongCheck.optionsOf(tab.copy(octaveShift = 12, octaveSource = OctaveSource.CHOSEN), alone).octave)
+        assertEquals(Octave.AS_HEARD, SongCheck.optionsOf(tab.copy(octaveSource = OctaveSource.CHOSEN), alone).octave)
+        val fiveString = SongCheck.optionsOf(tab.copy(preset = "bass-5-drop-a", layout = TabLayout.NOTATION), alone)
+        assertEquals(listOf(FrettedInstrument.BASS_5, "drop-a", TabLayout.NOTATION), listOf(fiveString.instrument, fiveString.tuning, fiveString.layout))
+
+        // Use Drop D: those options with the tuning changed are the job, whatever Your instrument says now.
+        val again = made.copy(tuning = "drop-d")
+        assertEquals(again, tabOptions(YourInstrument(strings = 6, reads = Reads.NOTATION), SongAnswer(again.recording, again = again)))
+        // Continue on What is this? starts afresh: the player's instrument as it is now.
+        assertEquals("standard", tabOptions(YourInstrument(), SongAnswer(Recording.INSTRUMENT)).tuning)
+    }
+
+    @Test
+    fun theTimeSignatureIsSaidInWords() {
+        assertEquals("two-four", SongCheck.meterWords(2, 4, bokmal = false))
+        assertEquals("four-four", SongCheck.meterWords(4, 4, bokmal = false))
+        assertEquals("six-eight", SongCheck.meterWords(6, 8, bokmal = false))
+        assertEquals("to firedels", SongCheck.meterWords(2, 4, bokmal = true))
+        assertEquals("seks åttedels", SongCheck.meterWords(6, 8, bokmal = true))
+        assertEquals("to halve", SongCheck.meterWords(2, 2, bokmal = true))
+        // One with no words here is still said, as its digits.
+        assertEquals("13 8", SongCheck.meterWords(13, 8, bokmal = false))
     }
 
     @Test
@@ -107,8 +133,8 @@ class TabSongTest {
     fun theAnswerStaysWithItsRecording() {
         val riff = Source("riff.wav", SourceKind.FILE, 12.0, file = File("takes/riff.wav"))
         val other = Source("other.wav", SourceKind.FILE, 30.0, file = File("takes/other.wav"))
-        SongAnswers.set(riff, SongAnswer(Recording.INSTRUMENT, tuning = "drop-d"))
-        assertEquals(SongAnswer(Recording.INSTRUMENT, tuning = "drop-d"), SongAnswers.of(riff))
+        SongAnswers.set(riff, SongAnswer(Recording.INSTRUMENT))
+        assertEquals(SongAnswer(Recording.INSTRUMENT), SongAnswers.of(riff))
         // Another recording has not been asked about: nothing is chosen for it.
         assertEquals(SongAnswer(), SongAnswers.of(other))
         assertEquals(SongAnswer(), SongAnswers.of(null))
@@ -244,9 +270,12 @@ class TabSongTest {
             val strings = File(res, "$dir/strings.xml").readText()
             fun text(name: String) = Regex("""<string name="$name">(.*?)</string>""").find(strings)?.groupValues?.get(1)?.replace("\\'", "'")
             assertEquals(dir, words, text("error_core_missing"))
+            // Nothing tells the player when the tab is ready while the app is away: no promise that it will.
+            assertFalse(dir, Regex("tell you|sier fra|leave this screen|gå fra").containsMatchIn(text("transcribe_leave").orEmpty()))
+            assertFalse(dir, Regex("guess|gjett").containsMatchIn(text("fs_what_hint").orEmpty()))
             // Every word this path can show is Fretscribe's, in both languages.
             for (name in listOf("error_core_missing", "error_unreachable", "error_engine_failed", "error_invalid_options", "where_companion_missing",
-                "problem_score_title", "problem_score_body", "transcribe_leave", "transcribe_done", "transcribe_cancel_title",
+                "problem_score_title", "problem_score_body", "transcribe_leave", "transcribe_where_companion", "transcribe_done", "transcribe_cancel_title",
                 "stage_beats", "stage_stems", "stage_transcribe", "stage_quantize", "stage_arrange", "stage_export")) {
                 val t = text(name)
                 assertTrue("$dir $name", t != null && !t.contains("Brasscribe") && !Regex("score|partitur|band", RegexOption.IGNORE_CASE).containsMatchIn(t))

@@ -51,6 +51,8 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
     val answer = SongAnswers.of(source)
     // The fixture engine of the UI tests is always there.
     val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
+    // The recording is sent from its file: without it there is nothing to continue with.
+    val inHand = source?.file?.isFile == true
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
@@ -60,15 +62,18 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
         bottom = {
             // One line says what is still missing; the computer comes first, since the row above has its button.
             val missing = when {
+                !inHand -> R.string.fs_what_no_recording
                 !there -> R.string.fs_what_connect_first
                 answer.recording == null -> R.string.profile_choose_one
                 else -> null
             }
             if (missing != null) Text(stringResource(missing), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
             PrimaryButton(stringResource(R.string.continue_label), {
+                // From here the recording is written down afresh, for the player's instrument as it is now.
+                SongAnswers.set(source, SongAnswer(answer.recording))
                 vm.chooseProfile(Profile.BASS_TAB)
                 vm.startTranscription()
-            }, Modifier.testTag("fs-what-continue"), enabled = there && answer.recording != null)
+            }, Modifier.testTag("fs-what-continue"), enabled = inHand && there && answer.recording != null)
         },
     ) {
         ScreenTitle(stringResource(R.string.profile_title), Modifier.focusRequester(headingFocus).focusable())
