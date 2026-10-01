@@ -206,9 +206,9 @@ class JobCreate(BaseModel):
                                                            "low frets and open strings; lead: a phrase stays in one "
                                                            "position; default: as-played")
     recording: Recording | None = Field(None, description="tab profile: what was recorded. song: a band or a record, "
-                                                          "the instrument is separated from it (bass and guitar; not yet "
-                                                          "ukulele or mandolin); instrument: the instrument alone, no "
-                                                          "separation; default: song (instrument for a ukulele or a mandolin)")
+                                                          "the instrument is separated from it (a ukulele or mandolin "
+                                                          "from the guitar stem, with any guitar in the song); "
+                                                          "instrument: the instrument alone, no separation; default: song")
     layout: TabLayout | None = Field(None, description="tab profile: what the page shows. tab: the tab staff alone, "
                                                        "with stems for the rhythm; tab-and-notation: a notation staff "
                                                        "above it; notation: the notation staff alone; default: tab")
@@ -443,10 +443,12 @@ class Tab(BaseModel):
                                           "that choice, 0, -12 or 12")
     unplayable_dropped: int = Field(0, description="notes heard that are not in the tab because the instrument cannot "
                                                    "play them with the others: more notes on one onset than it has "
-                                                   "strings, or a chord no hand spans. Always 0 for a bass line")
+                                                   "strings, a chord no hand spans, or a note below its lowest string "
+                                                   "that is the lower octave of a note in the same strum. Always 0 "
+                                                   "for a bass line")
     leftovers_dropped: int = Field(0, description="notes Basic Pitch heard that are not in the tab because they were "
                                                   "not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and "
-                                                  "notes heard very faintly; among a guitar's chords, overtones above "
+                                                  "notes heard very faintly; among a guitar's or a ukulele's chords, overtones above "
                                                   "the 12th fret of the top string. One pitch heard twice on one onset "
                                                   "is one note and is not counted. Always 0 for a bass line, whose "
                                                   "own count is in the job's log")

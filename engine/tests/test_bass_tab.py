@@ -1108,3 +1108,47 @@ def test_a_synthetic_bass_take_becomes_a_playable_tab(tmp_path, monkeypatch):
     assert sum(p in (E1, A1, D2, G2) for p in played) >= 0.75 * len(played)
     assert sum(n.fret == 0 for n in tab.notes) >= 0.75 * len(tab.notes)  # the open strings
     assert 95 <= tab.tempo_bpm <= 105 or 190 <= tab.tempo_bpm <= 210 or 47 <= tab.tempo_bpm <= 53
+
+
+# ---------------------------------------------------------------- a SwiftF0 that hears no note
+
+def _swift_f0_script():
+    import importlib.util
+
+    path = REPO / "ml" / "adapters" / "swift-f0" / "transcribe.py"
+    spec = importlib.util.spec_from_file_location("swift_f0_transcribe", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)  # the model is imported only when it runs
+    return module
+
+
+def test_the_swiftf0_adapter_writes_a_file_without_notes_when_it_hears_none(tmp_path):
+    out = tmp_path / "bass-sw.mid"
+    _swift_f0_script().write_notes([], str(out))
+    assert out.is_file() and bass_tab.load_transcription(out) == []
+    # ... and the notes are then judged without a second opinion, as before: the job goes on.
+    line = [{"pitch": p, "onset": 0.5 * i, "offset": 0.5 * i + 0.45, "amplitude": 0.8} for i, p in enumerate(LOW_LINE)]
+    doc = bass_tab.transcribed_line(line, _beats(), second=bass_tab.load_transcription(out))
+    assert [n["pitch"] for n in doc["notes"]] == LOW_LINE and not any(n["confidence"] < bass_tab.DOUBT for n in doc["notes"])
+
+
+def _swift_f0_missing() -> str | None:
+    s = Settings()
+    if not shutil.which("uv") and not shutil.which("pixi"):
+        return "neither uv nor pixi is installed: the model adapters cannot start"
+    if not (s.adapters_dir / "swift-f0" / "pyproject.toml").exists():
+        return "the swift-f0 adapter is not in this checkout (ml/adapters/swift-f0)"
+    return None
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(_swift_f0_missing() is not None, reason=_swift_f0_missing() or "")
+def test_swiftf0_on_silence_is_a_stage_that_ran_not_a_failed_job(tmp_path):
+    """The real adapter on a recording with nothing in it: it used to raise, and the job with it."""
+    sf = pytest.importorskip("soundfile")
+    silent = tmp_path / "silence.wav"
+    sf.write(silent, np.zeros(3 * 22050), 22050)
+    s = Settings()
+    registry = AdapterRegistry(s.adapters_dir, s.models_dir, HashIndex(None))
+    registry.run("swift-f0", silent, tmp_path / "bass-sw.mid")
+    assert bass_tab.load_transcription(tmp_path / "bass-sw.mid") == []

@@ -99,13 +99,17 @@ def test_what_does_not_fit_the_instrument_is_refused(params):
 
 
 @pytest.mark.parametrize("instrument", ["ukulele", "ukulele-baritone", "mandolin"])
-def test_a_ukulele_or_mandolin_is_taken_alone_and_not_yet_from_a_song(instrument):
-    assert tab.options({"instrument": instrument})["recording"] == "instrument"  # the simplest request works: taken alone
-    assert profiles.build("tab", Path("uke.wav"), params={"instrument": instrument}).params["recording"] == "instrument"
-    with pytest.raises(ValueError, match="recording of .* must be instrument"):
-        tab.options({"instrument": instrument, "recording": "song"})  # which stem carries it in a song is not measured
-    p = profiles.build("tab", Path("uke.wav"), params={"instrument": instrument, "recording": "instrument"})
-    assert [s.name for s in p.stages][1] == f"transcribe.{tab.HEARD[instrument].kind}.basic-pitch"
+def test_a_ukulele_or_mandolin_is_read_from_the_guitar_stem_of_a_song_or_alone(instrument):
+    kind = tab.HEARD[instrument].kind
+    song = profiles.build("tab", Path("song.wav"), "T", {"instrument": instrument})
+    assert [s.name for s in song.stages] == ["beats", "stems", f"transcribe.{kind}.basic-pitch", f"transcribe.{kind}.swift-f0", "notes",
+                                             "arrange", "export"]
+    for name in (f"transcribe.{kind}.basic-pitch", f"transcribe.{kind}.swift-f0"):
+        assert (song.stage(name).inputs["audio"].stage, song.stage(name).inputs["audio"].file) == ("stems", "guitar.wav")
+    assert song.stage("notes").params == {"instrument": instrument}
+    alone = profiles.build("tab", Path("uke.wav"), "T", {"instrument": instrument, "recording": "instrument"})
+    assert [s.name for s in alone.stages][1] == f"transcribe.{kind}.basic-pitch" and "stems" not in [s.name for s in alone.stages]
+    assert alone.stage("notes").params == {"instrument": instrument, "whole_recording": True}
 
 
 @pytest.mark.parametrize("profile", ["solo", "brass-band", "pop-rock", "orchestra-with-soloist"])
@@ -182,9 +186,7 @@ def test_a_guitar_alone_is_not_separated_and_both_transcribers_hear_it_retuned()
     assert [s.name for s in p.stages] == ["beats", "transcribe.guitar.basic-pitch", "transcribe.guitar.swift-f0", "notes", "arrange",
                                           "export"]
     for name in ("transcribe.guitar.basic-pitch", "transcribe.guitar.swift-f0"):
-        assert (p.stage(name).inputs["audio"].stage, p.stage(name).derive) == ("source", tuning.derive)
-    assert p.stage("transcribe.guitar.basic-pitch").run is tuning.transcribe
-    assert p.stage("transcribe.guitar.swift-f0").run is tab.second_opinion_retuned
+        assert (p.stage(name).inputs["audio"].stage, p.stage(name).derive, p.stage(name).run) == ("source", tuning.derive, tuning.transcribe)
     assert p.stage("notes").params == {"instrument": "guitar-7", "whole_recording": True}
 
 
@@ -262,23 +264,28 @@ def test_in_a_line_overtones_and_faint_notes_go_and_in_a_chord_the_same_notes_st
     assert len(straight["notes"]) == 10 and {n["confidence"] for n in straight["notes"]} == {1.0}
 
 
-def test_a_guitars_limits_are_not_applied_to_a_mandolin_or_a_ukulele():
+def test_the_top_of_a_chord_is_judged_by_the_instruments_own_neck_not_a_guitars():
     """The top G of a mandolin's open G chord (0-0-2-3) is two octaves over its G string and above a guitar's 12th fret."""
-    mandolin_g, uke_c = [55, 62, 71, 79], [60, 64, 67, 84]  # the ukulele's C with its top string at the 15th fret
-    for instrument, chord in (("mandolin", mandolin_g), ("ukulele", uke_c), ("ukulele-baritone", [50, 55, 59, 79])):
+    mandolin_g, uke_c = [55, 62, 71, 79], [60, 64, 67, 79]  # the ukulele's C with a G at the 10th fret of its top string
+    assert {i: tab.HEARD[i].chord_high for i in ("ukulele", "ukulele-baritone", "mandolin")} == {
+        "ukulele": 81, "ukulele-baritone": 76, "mandolin": None}  # the 12th fret of A4 and E4; a mandolin has no limit
+    for instrument, chord in (("mandolin", mandolin_g), ("ukulele", uke_c), ("ukulele-baritone", [50, 55, 59, 76])):
         notes = sorted(_strummed([chord] * 4), key=lambda n: n["onset"])
-        assert tab.HEARD[instrument].chord_high is None
         assert tab.leftovers(notes, tab.chordal(notes), tab.HEARD[instrument].chord_high) == ([], [])
         doc = tab.played_notes(notes, _beats(), instrument)
         assert sorted({n["pitch"] for n in doc["notes"]}) == sorted(chord) and len(doc["notes"]) == 16, instrument
         assert doc["leftovers_dropped"] == 0
+    # Above its own 12th fret an octave of a chord note is taken as an overtone, and counted.
+    high = tab.played_notes(sorted(_strummed([[60, 64, 67, 84]] * 4), key=lambda n: n["onset"]), _beats(), "ukulele")
+    assert 84 not in {n["pitch"] for n in high["notes"]} and high["leftovers_dropped"] == 4
     # On a guitar the same shape of evidence, an overtone above the 12th fret of the top string, is left out and counted.
     guitar = sorted(_strummed([[43, 55, 67, 79]] * 4), key=lambda n: n["onset"])
     assert {tab.HEARD[i].chord_high for i in ("guitar-6", "guitar-7", "guitar-8")} == {76}
     doc = tab.played_notes(guitar, _beats(), "guitar-6")
     assert 79 not in {n["pitch"] for n in doc["notes"]} and doc["leftovers_dropped"] == 4
     t = tab.fingered({**doc, "reference_pitch": None}, tab.options({}), lambda request: {
-        "instrument": {"name": "Guitar", "tuning": {"name": "Standard", "strings": []}, "frets": 22, "scale_length_mm": 648.0, "capo": 0},
+        "instrument": {"name": "Guitar", "tuning": {"name": "Standard", "strings": [{"open_pitch": 40, "first_fret": 0}]},
+                       "frets": 22, "scale_length_mm": 648.0, "capo": 0},
         "fingering": {"notes": [{"pitch": n["pitch"], "string": 1, "fret": 0, "alternatives": [], "out_of_range": False, "pinned": False}
                                 for n in request["notes"]]}, "violations": [], "tuning_suggestions": []})
     assert t["leftovers_dropped"] == 4 and m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0}).leftovers_dropped == 4
@@ -453,32 +460,97 @@ def test_every_instrument_of_the_table_is_fingered_by_the_core(instrument, tunin
     m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0})
 
 
-def test_a_swiftf0_that_hears_no_line_is_no_opinion_and_any_other_failure_is_one(tmp_path, monkeypatch):
-    import threading
-    from types import SimpleNamespace
-
-    from brasscribe_engine.adapters import AdapterError
-
-    said: list[str] = []
-    ctx = SimpleNamespace(out=tmp_path, params={"output": "guitar-sw.mid"}, log=said.append,
-                          executor=SimpleNamespace(cancel=threading.Event()))
-
-    def fails(message: str):
-        def run(ctx):
-            raise AdapterError(message)
-        return run
-
-    monkeypatch.setattr(S, "transcribe", fails("swift-f0 failed (1): ValueError: Cannot export empty notes list"))
-    tab.second_opinion(ctx)
-    assert bass_tab.load_transcription(tmp_path / "guitar-sw.mid") == [] and "no second opinion" in said[0]
+def test_a_swiftf0_that_heard_nothing_is_no_opinion():
     doc = tab.played_notes(_strummed([OPEN_E] * 2) + [_note(64, 4.0, amplitude=0.42)], _beats(), "guitar-6", second=[])
     assert not any(n["confidence"] < tab.DOUBT for n in doc["notes"])  # nothing is doubted for want of an opinion
-    monkeypatch.setattr(tuning, "transcribe", fails("swift-f0 failed (1): ModuleNotFoundError: swift_f0"))
-    with pytest.raises(AdapterError, match="ModuleNotFoundError"):
-        tab.second_opinion_retuned(ctx)
-    ctx.executor.cancel.set()
-    with pytest.raises(AdapterError):
-        tab.second_opinion(ctx)  # a cancelled job stays cancelled
+
+
+# ---------------------------------------------------------------- ukulele and mandolin
+
+UKE_C, UKE_G = [60, 64, 67, 72], [62, 67, 71, 67]  # C: g c e c' ; G: g d g b, as they sound on a high-G ukulele
+
+
+@needs_core
+def test_a_high_g_ukulele_is_fingered_with_its_fourth_string_above_its_third():
+    """Re-entrant tuning: string 4 (G4) is higher than string 3 (C4), and the tab must use it as such."""
+    opts = tab.options({"instrument": "ukulele", "recording": "instrument"})  # high G is the default tuning
+    doc = {**tab.played_notes(_strummed([UKE_C, [62, 67, 71], [60, 65, 69]]), _beats(), "ukulele"), "reference_pitch": None}
+    t = tab.fingered(doc, opts)
+    assert [s["open_pitch"] for s in t["instrument"]["tuning"]["strings"]] == [69, 64, 60, 67]
+    by_start = {}
+    for n in t["notes"]:
+        by_start.setdefault(n["start"], {})[n["pitch"]] = (n["string"], n["fret"])
+    assert by_start[0] == {67: (4, 0), 60: (3, 0), 64: (2, 0), 72: (1, 3)}  # C: 0003, the G on the open fourth string
+    assert by_start[48][62] == (3, 2) and by_start[48][71] == (1, 2)  # G: the D on the C string, the B on the A string
+    assert by_start[96] == {65: (2, 1), 60: (3, 0), 69: (1, 0)}  # F without its fourth string: 010
+    assert t["violations"] == [] and not any(n["out_of_range"] for n in t["notes"]) and t["instrument"]["notation"] == "treble"
+
+    # A line around G4 and A4 uses the open fourth string, which a low-G ukulele does not have there.
+    line = {**tab.played_notes([_note(p, 0.5 * i) for i, p in enumerate([67, 69, 67, 64, 67, 60])], _beats(), "ukulele"), "reference_pitch": None}
+    high = tab.fingered(line, opts)
+    assert (high["notes"][0]["string"], high["notes"][0]["fret"]) in ((4, 0), (2, 3))
+    assert {"string": 4, "fret": 0} in [dict(a) for a in high["notes"][0]["alternatives"]] + [{"string": high["notes"][0]["string"], "fret": high["notes"][0]["fret"]}]
+    low = tab.fingered(line, tab.options({"instrument": "ukulele", "tuning": "low-g", "recording": "instrument"}))
+    assert [s["open_pitch"] for s in low["instrument"]["tuning"]["strings"]] == [69, 64, 60, 55]
+    assert all((n["string"], n["fret"]) != (4, 0) for n in low["notes"] if n["pitch"] == 67)  # its open fourth string is G3
+    low_c = tab.fingered({**tab.played_notes(_strummed([[55, 60, 64, 72]]), _beats(), "ukulele"), "reference_pitch": None},
+                         tab.options({"instrument": "ukulele", "tuning": "low-g", "recording": "instrument"}))
+    assert sorted((n["string"], n["fret"]) for n in low_c["notes"]) == [(1, 3), (2, 0), (3, 0), (4, 0)]
+
+
+@needs_core
+def test_a_lower_octave_heard_under_a_chord_is_left_out_and_a_low_note_on_its_own_is_flagged():
+    opts = tab.options({"instrument": "ukulele", "recording": "instrument"})
+    heard = _strummed([UKE_C + [48], UKE_G + [43, 55]]) + [_note(52, 2.0), _note(64, 2.5), _note(100, 3.0)]
+    doc = {**tab.played_notes(heard, _beats(), "ukulele"), "reference_pitch": None}
+    assert {48, 43, 55} <= {n["pitch"] for n in doc["notes"]}  # the notes stage does not know the tuning
+    t = tab.fingered(doc, opts)
+    assert sorted(n["pitch"] for n in t["notes"] if n["start"] == 0) == sorted(UKE_C)  # C3 under the chord's C4 went
+    assert sorted(n["pitch"] for n in t["notes"] if n["start"] == 48) == sorted(set(UKE_G))  # G2 and G3 under its G4
+    assert t["unplayable_dropped"] == 3 and t["violations"] == []
+    # E3 with nothing above it, and a note above the neck: kept and flagged, the sign of another tuning or instrument.
+    assert [(n["pitch"], n["out_of_range"]) for n in t["notes"] if n["start"] >= 96] == [(52, True), (64, False), (100, True)]
+    low = tab.fingered(doc, tab.options({"instrument": "ukulele", "tuning": "low-g", "recording": "instrument"}))
+    assert 55 in [n["pitch"] for n in low["notes"] if n["start"] == 48]  # on a low-G ukulele that G3 is its open fourth string
+
+
+@needs_core
+def test_a_high_g_ukuleles_tab_is_written_with_four_lines_and_its_tuning(tmp_path):
+    opts = tab.options({"instrument": "ukulele", "recording": "instrument"})
+    doc = {**tab.played_notes(_strummed([UKE_C] * 4), _beats(), "ukulele"), "reference_pitch": None}
+    t = tab.fingered(doc, opts)
+    assert bass_tab.export_tab(t, "Four strings", "tab-and-notation", tmp_path) == 0
+    xml = (tmp_path / "tab.musicxml").read_text()
+    assert "<staff-lines>4</staff-lines>" in xml and "<work-title>Four strings</work-title>" in xml
+    tunings = re.findall(r'<staff-tuning line="(\d)">\s*<tuning-step>(\w)</tuning-step>\s*<tuning-octave>(\d)</tuning-octave>', xml)
+    assert sorted(tunings) == [("1", "G", "4"), ("2", "C", "4"), ("3", "E", "4"), ("4", "A", "4")]  # the bottom line is the high G
+    assert re.search(r"<string>4</string>\s*<fret>0</fret>|<fret>0</fret>\s*<string>4</string>", xml)
+
+
+@pytest.mark.parametrize("instrument,lowest,highest", [("ukulele", 55, 87), ("ukulele-baritone", 50, 83), ("mandolin", 55, 96),
+                                                       ("guitar-6", 35, 86), ("guitar-7", 34, 88), ("guitar-8", 30, 88)])
+def test_each_instruments_range_is_its_lowest_tuning_to_its_last_fret(instrument, lowest, highest):
+    assert (tab.HEARD[instrument].lowest, tab.HEARD[instrument].highest) == (lowest, highest)
+    if _core_missing():
+        return
+    opens, tops = [], []
+    for tuning_name in tab.TUNINGS[instrument]:
+        answer = bass_tab.solve({"instrument": {"preset": tab.preset({"instrument": instrument, "tuning": tuning_name})}, "notes": []})
+        strings = [s["open_pitch"] for s in answer["instrument"]["tuning"]["strings"]]
+        opens.append(min(strings))
+        tops.append(max(strings) + answer["instrument"]["frets"])
+        assert len(strings) == tab.HEARD[instrument].strings
+    assert min(opens) == lowest and tops[0] == highest  # every tuning's lowest string; the standard tuning's last fret
+
+
+def test_a_mandolin_and_a_ukulele_keep_their_registers():
+    fiddle_tune = [_note(p, 0.25 * i, 0.22) for i, p in enumerate([74, 76, 78, 79, 81, 83, 86, 88, 90, 91, 93, 95])]
+    doc = tab.played_notes(fiddle_tune, _beats(), "mandolin")
+    assert doc["octave_shift"] == 0 and [n["pitch"] for n in doc["notes"]][-1] == 95  # up to the 19th fret of the E string
+    assert tab.octave_shift([43, 45, 47, 48, 50, 52], tab.HEARD["mandolin"]) == 12  # below its G string: heard an octave low
+    assert tab.octave_shift([88, 91, 93, 95, 96, 98], tab.HEARD["ukulele"]) == -12
+    assert tab.octave_shift([55, 57, 59, 60], tab.HEARD["ukulele"]) == 0  # a low-G ukulele's bottom
+    assert tab.octave_shift([50, 52, 54, 55], tab.HEARD["ukulele-baritone"]) == 0
 
 
 # ---------------------------------------------------------------- end to end
@@ -557,12 +629,49 @@ def test_a_guitar_job_runs_to_a_tab_and_a_bass_job_of_either_profile_shares_its_
         a, b = (c.get(f"/v1/jobs/{j['id']}/tab").json() for j in (old, new))
         assert a == b and a["preset"] == "bass-4-standard"
 
-        for body in ({"profile": "tab", "instrument": "guitar-6", "tuning": "bead"}, {"profile": "tab", "instrument": "ukulele", "recording": "song"},
+        for body in ({"profile": "tab", "instrument": "guitar-6", "tuning": "bead"}, {"profile": "tab", "instrument": "ukulele", "tuning": "standard"},
                      {"profile": "bass-tab", "instrument": "guitar-6"}, {"profile": "tab", "lineup": "quartet"}):
             refused = c.post("/v1/jobs", json={"audio_id": audio_id, **body})
             assert refused.status_code == 422 and refused.json()["code"] == "invalid_options", body
         assert c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "tab", "instrument": "banjo"}).status_code == 422
         assert c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "test", "instrument": "guitar-6"}).json()["code"] == "invalid_options"
+
+
+@needs_core
+def test_a_ukulele_job_runs_to_a_tab_on_four_strings_with_the_high_g(settings, audio, monkeypatch):
+    from brasscribe_music import musescore
+    from fastapi.testclient import TestClient
+
+    from brasscribe_engine.api import create_app
+
+    heard = _strummed([UKE_C, UKE_G, UKE_C, UKE_G]) + [_note(p, 4.0 + 0.5 * i, 0.4) for i, p in enumerate([67, 69, 72, 69, 67, 64, 60, 64])]
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
+    monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], heard))
+    with TestClient(create_app(settings)) as c:
+        audio_id = c.post("/v1/audio", files={"file": ("uke.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
+        job = _wait(c, c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "tab", "instrument": "ukulele",
+                                                "recording": "instrument"}).json()["id"])
+        assert job["status"] == "succeeded", job["error"]
+        assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.ukulele.basic-pitch", "transcribe.ukulele.swift-f0", "notes",
+                                                      "arrange", "export"]
+        t = m.Tab.model_validate(c.get(f"/v1/jobs/{job['id']}/tab").json())
+        assert (t.preset, t.instrument.notation, [s.open_pitch for s in t.instrument.tuning.strings]) == ("ukulele-high-g", "treble", [69, 64, 60, 67])
+        first = {n.pitch: (n.string, n.fret) for n in t.notes if n.start == 0}
+        assert first == {67: (4, 0), 60: (3, 0), 64: (2, 0), 72: (1, 3)} and not t.violations  # the C chord, its G on the fourth string
+        xml = c.get(f"/v1/jobs/{job['id']}/musicxml").text
+        assert "<staff-lines>4</staff-lines>" in xml and "GCEA" in xml
+        comp = c.get(f"/v1/jobs/{job['id']}/composition").json()
+        assert comp["voices"][0]["id"] == "ukulele"
+        low = _wait(c, c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "tab", "instrument": "ukulele", "tuning": "low-g",
+                                                "recording": "instrument"}).json()["id"])
+        assert {s["name"]: s["status"] for s in low["stages"]}["notes"] == "cached"  # the same notes, fingered for another tuning
+        lt = c.get(f"/v1/jobs/{low['id']}/tab").json()
+        assert lt["preset"] == "ukulele-low-g" and all((n["string"], n["fret"]) != (4, 0) for n in lt["notes"] if n["pitch"] == 67)
+        mandolin = _wait(c, c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "tab", "instrument": "mandolin",
+                                                     "recording": "instrument"}).json()["id"])
+        mt = c.get(f"/v1/jobs/{mandolin['id']}/tab").json()
+        assert mandolin["status"] == "succeeded" and mt["preset"] == "mandolin" and [s["open_pitch"] for s in mt["instrument"]["tuning"]["strings"]] == [76, 69, 62, 55]
 
 
 def test_a_tab_job_without_the_core_is_refused_at_submit_under_both_ids(settings, audio, monkeypatch):

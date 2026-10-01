@@ -646,6 +646,47 @@ def _guitar_tab(data: Path, mode: str) -> dict[str, float]:
     return out
 
 
+# --------------------------------------------------------- ukulele, mandolin
+
+def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
+    """The engine's tab profile with a ukulele or a mandolin, on passages written and rendered by
+    small_tab_bench (FluidSynth, MuseScore General): each alone and separated from a mix with a bass and drums."""
+
+    def fn(data: Path, mode: str) -> dict[str, float]:
+        from brasscribe_engine import bass_tab
+
+        from . import small_tab_bench as B
+
+        groups = B.SUITES[suite]
+        if not B.entries(data, groups):
+            if mode != "live" or not shutil.which("fluidsynth") or not (data / B.SOUNDFONT).exists():
+                raise SkipSuite(f"missing data: eval/{B.SET} (synthesized in live mode, with FluidSynth and {B.SOUNDFONT})")
+            B.synthesize(data)
+        try:
+            bass_tab.core_cli()
+        except bass_tab.CoreCliMissing as e:
+            raise SkipSuite(str(e)) from e
+        for entry in B.entries(data, groups):
+            needed = [*B.FILES["instrument"].values(), *(f for stem in B.STEMS for f in B.song_files(stem).values())]
+            missing = [f for f in needed if not (entry / f).exists()]
+            if missing and mode != "live":
+                raise SkipSuite(f"no cached {missing[0]} for {entry.name}")
+            if missing:
+                B.prepare(entry)
+        out: dict[str, float] = {}
+        for group in groups:
+            label = group.replace("-", "_") + "." if len(groups) > 1 else ""
+            for m in B.MODES:
+                metrics, _ = B.evaluate(data, (group,), m)
+                out.update({f"{label}{m}.{k}": v for k, v in metrics.items()})
+        # Where the separator puts the instrument: the stem the profile reads, against the others.
+        for stem, scores in B.stem_scores(data, groups).items():
+            out[f"stem.{stem}.recall"] = scores["onset_r"]
+        return out
+
+    return fn
+
+
 # -------------------------------------------------------------------- registry
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
@@ -707,6 +748,11 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
     Suite("guitar-tab", "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and "
           "reporting players apart) and on Slakh's guitars in a song: notes, chords, string agreement, playability "
           "(cached model outputs)", _guitar_tab, ("eval/guitarset",)),
+    Suite("ukulele-tab", "the tab profile with a ukulele (high G, low G, baritone) on rendered passages, alone and separated "
+          "from a mix: notes, chords, the string of each note, playability (cached model outputs)", _small_tab("ukulele"),
+          ("eval/small-tab",)),
+    Suite("mandolin-tab", "the tab profile with a mandolin on rendered passages, alone and separated from a mix (cached model "
+          "outputs)", _small_tab("mandolin"), ("eval/small-tab",)),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}
