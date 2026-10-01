@@ -324,13 +324,13 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
         raise ValueError("fewer than two downbeats tracked: no bars to write")
     second = second or None
     notes = sorted((dict(n) for n in raw if n["offset"] - n["onset"] >= MIN_SECONDS), key=lambda n: (n["onset"], n["pitch"]))
-    dropped = 0
+    dropped = len(raw) - len(notes)  # too short to be a note: counted with the other leftovers
     if clean and notes:
         gone, unsure = leftovers(notes, chordal(notes), heard.chord_high)
         for i in unsure:
             notes[i]["top_overtone"] = True
         kept = [n for i, n in enumerate(notes) if i not in set(gone)] or notes  # never the whole passage
-        dropped = len(notes) - len(kept)
+        dropped += len(notes) - len(kept)
         notes = sorted(strums(kept), key=lambda n: (n["onset"], n["pitch"]))
     if not notes:
         raise ValueError(f"no {heard.kind} notes heard in the recording")

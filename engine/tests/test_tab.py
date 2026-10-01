@@ -284,6 +284,13 @@ def test_a_guitars_limits_are_not_applied_to_a_mandolin_or_a_ukulele():
     assert t["leftovers_dropped"] == 4 and m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0}).leftovers_dropped == 4
 
 
+def test_a_note_too_short_to_be_one_is_counted_with_what_is_left_out():
+    notes = sorted(_strummed([OPEN_E] * 4) + [_note(66, 0.3, 0.04), _note(68, 1.2, 0.05)], key=lambda n: n["onset"])
+    for clean in (True, False):
+        doc = tab.played_notes(notes, _beats(), "guitar-6", clean=clean)
+        assert not {66, 68} & {n["pitch"] for n in doc["notes"]} and doc["leftovers_dropped"] == 2, clean
+
+
 def test_confidence_in_a_line_is_swiftf0s_and_among_chords_the_amplitude_and_the_next_strum():
     second = [_note(60, 0.0), _note(62, 0.5)]
     sure = tab.confidence(_note(60, 0.0, amplitude=0.42), False, True, second)
