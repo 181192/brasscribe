@@ -24,5 +24,6 @@ typealias UploadProgress = (sent: Long, total: Long) -> Unit
 
 suspend fun EngineApi.uploadAudio(filename: String, bytes: ByteArray): AudioRef = uploadAudio(UploadSource.of(filename, bytes))
 
-suspend fun EngineApi.createJobFromUpload(filename: String, bytes: ByteArray, profile: Profile, title: String?, renderAudio: Boolean = true): Job =
-    createJobFromUpload(UploadSource.of(filename, bytes), profile, title, renderAudio)
+suspend fun EngineApi.createJobFromUpload(filename: String, bytes: ByteArray, profile: Profile, title: String?, renderAudio: Boolean = true,
+                                          tab: TabOptions? = null): Job =
+    createJobFromUpload(UploadSource.of(filename, bytes), profile, title, renderAudio, tab = tab)

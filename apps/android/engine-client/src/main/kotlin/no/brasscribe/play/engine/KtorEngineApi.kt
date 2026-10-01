@@ -126,12 +126,14 @@ class KtorEngineApi(
             pitchMode?.let { parameter("pitch_mode", it) }
         }.ok().bodyAsText()
 
-    override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress): Job =
+    override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress,
+                                             tab: TabOptions?): Job =
         http.submitFormWithBinaryData("v1/jobs/upload", formData {
             appendFile(source)
             append("profile", profile.id)
             append("render_audio", renderAudio.toString())
             title?.let { append("title", it) }
+            tab?.formFields()?.forEach { (name, value) -> append(name, value) }
         }) { auth(); onUpload { sent, total -> onProgress(sent, total ?: source.size) } }.ok().body()
 
     override suspend fun job(jobId: String): Job = http.get("v1/jobs/$jobId") { auth() }.ok().body()
@@ -197,6 +199,7 @@ class KtorEngineApi(
     override suspend fun musicXml(jobId: String): String = http.get("v1/jobs/$jobId/musicxml") { auth() }.ok().bodyAsText()
     override suspend fun midi(jobId: String): ByteArray = bytes("v1/jobs/$jobId/midi")
     override suspend fun pdf(jobId: String): ByteArray = bytes("v1/jobs/$jobId/pdf")
+    override suspend fun tab(jobId: String): Tab = http.get("v1/jobs/$jobId/tab") { auth() }.ok().body()
     override suspend fun renderedAudio(jobId: String): ByteArray = bytes("v1/jobs/$jobId/audio")
     override suspend fun artifacts(jobId: String): List<Artifact> = http.get("v1/jobs/$jobId/artifacts") { auth() }.ok().body()
     override suspend fun artifact(jobId: String, name: String): ByteArray = bytes("v1/jobs/$jobId/artifacts/$name")

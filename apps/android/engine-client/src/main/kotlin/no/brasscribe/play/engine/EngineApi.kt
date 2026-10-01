@@ -3,9 +3,34 @@ package no.brasscribe.play.engine
 import kotlinx.coroutines.flow.Flow
 import no.brasscribe.play.model.Composition
 
-/** Thrown for any non-success response; [status] is the HTTP status (0 when there was no response). */
-/** [code]: the engine's code for a refused option (a 422's `code`: quartet_needs_group, seat_no_tune, ...), when it gave one. */
-class EngineException(val status: Int, message: String, val code: String? = null) : Exception(message)
+/**
+ * Thrown for any non-success response; [status] is the HTTP status (0 when there was no response).
+ * [code]: the engine's code for a refused option (a 422's `code`: quartet_needs_group, seat_no_tune, ...), when it gave one.
+ */
+class EngineException(val status: Int, message: String, val code: String? = null) : Exception(message) {
+    /** Why the engine refused the job, when it said so with a code this client knows. */
+    val refusal: Refusal? get() = Refusal.of(code)
+}
+
+/** The engine's codes for a job it refuses to start (a 422's `code`); the app has its own words for each. */
+enum class Refusal(val code: String) {
+    /** A solo take asked for the quartet. */
+    QUARTET_NEEDS_GROUP("quartet_needs_group"),
+    /** A solo take for the percussion seat. */
+    PERCUSSION_SOLO("percussion_solo"),
+    /** The seat's part cannot carry the tune in this lineup. */
+    SEAT_NO_TUNE("seat_no_tune"),
+    /** A clef the seat is not offered in. */
+    READS_NOT_OFFERED("reads_not_offered"),
+    /** Anything else wrong with the options. */
+    INVALID_OPTIONS("invalid_options"),
+    /** A tab was asked of a computer whose Brasscribe cannot write tab: the Rust core's command line is not installed with it. */
+    CORE_MISSING("core_missing");
+
+    companion object {
+        fun of(code: String?): Refusal? = entries.firstOrNull { it.code == code }
+    }
+}
 
 /**
  * The engine companion API as Play uses it. [KtorEngineApi] talks to a real engine on the LAN;
@@ -28,8 +53,9 @@ interface EngineApi {
     /** Streams [source] to the engine; [onProgress] reports bytes sent. */
     suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress = { _, _ -> }): AudioRef
     suspend fun createJob(request: JobCreate): Job
+    /** [tab]: the options of a [Profile.BASS_TAB] job; the engine refuses them for any other profile. */
     suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean = true,
-                                    onProgress: UploadProgress = { _, _ -> }): Job
+                                    onProgress: UploadProgress = { _, _ -> }, tab: TabOptions? = null): Job
     suspend fun job(jobId: String): Job
     suspend fun jobs(): List<Job>
     suspend fun cancel(jobId: String): Job
@@ -38,9 +64,18 @@ interface EngineApi {
     fun events(jobId: String, after: Int = -1): Flow<JobEvent>
 
     suspend fun composition(jobId: String): Composition
+
+    /** The job's score: the band score, or tab.musicxml of a bass-tab job. */
     suspend fun musicXml(jobId: String): String
+
+    /** As [musicXml]; of a bass-tab job, tab.mid, which is there only when the computer has MuseScore (404 otherwise). */
     suspend fun midi(jobId: String): ByteArray
+
+    /** As [musicXml]; of a bass-tab job, tab.pdf, which is there only when the computer has MuseScore (404 otherwise). */
     suspend fun pdf(jobId: String): ByteArray
+
+    /** The tab of a finished bass-tab job: a string and a fret for every note. 404 for another profile, or before it is done. */
+    suspend fun tab(jobId: String): Tab
     suspend fun renderedAudio(jobId: String): ByteArray
     suspend fun artifacts(jobId: String): List<Artifact>
     suspend fun artifact(jobId: String, name: String): ByteArray
@@ -68,7 +103,7 @@ interface EngineApi {
             "getHealth", "pairDevice", "listProfiles", "uploadAudio", "createJob", "createJobFromUpload", "getJob",
             "listJobs", "cancelJob", "streamJobEvents", "getComposition", "getMusicXml", "getMidi", "getPdf",
             "getRenderedAudio", "listJobArtifacts", "getJobArtifact", "getJobManifest", "getBraille", "getTalkingScore",
-            "getJobEvidence", "updateRun", "deleteRun", "getThisDevice", "rotateDeviceToken", "unpairThisDevice",
+            "getJobEvidence", "getTab", "updateRun", "deleteRun", "getThisDevice", "rotateDeviceToken", "unpairThisDevice",
             "requestPairing", "pollPairingRequest",
         )
 

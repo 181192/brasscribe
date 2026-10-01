@@ -555,6 +555,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/{job_id}/tab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tab
+         * @description The tab of a bass-tab job: a string and fret for every note, and what the song check asks about.
+         */
+        get: operations["getTab"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/{job_id}/talking-score": {
         parameters: {
             query?: never;
@@ -1015,6 +1035,8 @@ export interface components {
         };
         /** Body_createJobFromUpload */
         Body_createJobFromUpload: {
+            /** Capo */
+            capo?: number | null;
             /**
              * Difficulty
              * @default faithful
@@ -1023,8 +1045,12 @@ export interface components {
             difficulty: "faithful" | "standard" | "easier";
             /** File */
             file: string;
+            /** Instrument */
+            instrument?: ("bass-4" | "bass-5" | "bass-6") | null;
             /** Key */
             key?: string | null;
+            /** Layout */
+            layout?: ("tab" | "tab-and-notation" | "notation") | null;
             /**
              * Lead
              * @default lineup
@@ -1033,6 +1059,8 @@ export interface components {
             lead: "lineup" | "seat";
             /** Lineup */
             lineup?: ("full" | "minimal" | "quartet") | null;
+            /** Octave */
+            octave?: ("auto" | "0" | "-12" | "+12") | null;
             /**
              * Profile
              * @default orchestra-with-soloist
@@ -1040,6 +1068,8 @@ export interface components {
             profile: string;
             /** Reads */
             reads?: ("treble" | "bass") | null;
+            /** Recording */
+            recording?: ("song" | "instrument") | null;
             /**
              * Render Audio
              * @default true
@@ -1047,10 +1077,14 @@ export interface components {
             render_audio: boolean;
             /** Seat */
             seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion" | "trumpet") | null;
+            /** Style */
+            style?: ("as-played" | "open-position" | "lead") | null;
             /** Title */
             title?: string | null;
             /** Transpose */
             transpose?: number | null;
+            /** Tuning */
+            tuning?: string | null;
         };
         /** Body_uploadAudio */
         Body_uploadAudio: {
@@ -1410,6 +1444,11 @@ export interface components {
             /** Audio Id */
             audio_id?: string | null;
             /**
+             * Capo
+             * @description bass-tab profile: the capo's fret; frets in the tab are counted from it; default: 0, no capo
+             */
+            capo?: number | null;
+            /**
              * Difficulty
              * @description faithful keeps every transcribed note; standard and easier simplify rhythms and ranges
              * @default faithful
@@ -1417,10 +1456,20 @@ export interface components {
              */
             difficulty: "faithful" | "standard" | "easier";
             /**
+             * Instrument
+             * @description bass-tab profile: the instrument the tab is written for, by its number of strings; default: bass-4
+             */
+            instrument?: ("bass-4" | "bass-5" | "bass-6") | null;
+            /**
              * Key
              * @description target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] (-2, -2:minor); the arrangement is transposed to it
              */
             key?: string | null;
+            /**
+             * Layout
+             * @description bass-tab profile: what the page shows. tab: the tab staff alone, with stems for the rhythm; tab-and-notation: a notation staff above it; notation: the notation staff alone; default: tab
+             */
+            layout?: ("tab" | "tab-and-notation" | "notation") | null;
             /**
              * Lead
              * @description who plays the tune: lineup keeps it on the lineup's lead (Solo Cornet); seat writes it on the seat's part, for the full and minimal bands only. The solo profile with a seat always uses seat
@@ -1435,10 +1484,15 @@ export interface components {
             lineup?: ("full" | "minimal" | "quartet") | null;
             /**
              * Muscriptor
-             * @description solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch in its place, as the apps do on device
+             * @description solo and brass-band profiles: use MuScriptor; false puts Basic Pitch in its place, as the apps do on device
              * @default true
              */
             muscriptor: boolean;
+            /**
+             * Octave
+             * @description bass-tab profile: the octave the line is written in. auto: an octave lower when it was heard an octave above where a bass plays; 0, -12, +12: the player's choice, in semitones from what was heard; default: auto
+             */
+            octave?: ("auto" | "0" | "-12" | "+12") | null;
             /**
              * Path
              * @description audio file under uploads/, captures/ or eval/, relative to the engine's data directory ('/'-separated); not for paired devices
@@ -1455,6 +1509,11 @@ export interface components {
              */
             reads?: ("treble" | "bass") | null;
             /**
+             * Recording
+             * @description bass-tab profile: what was recorded. song: a band or a record, the bass is separated from it; instrument: the bass alone, no separation; default: song
+             */
+            recording?: ("song" | "instrument") | null;
+            /**
              * Render Audio
              * @description also render an MP3 of the score
              * @default true
@@ -1467,6 +1526,11 @@ export interface components {
             seat?: ("soprano-cornet" | "solo-cornet" | "repiano-cornet" | "2nd-cornet" | "3rd-cornet" | "flugelhorn" | "solo-horn" | "1st-horn" | "2nd-horn" | "1st-baritone" | "2nd-baritone" | "1st-trombone" | "2nd-trombone" | "bass-trombone" | "euphonium" | "eb-bass" | "bb-bass" | "percussion" | "trumpet") | null;
             /** Source Id */
             source_id?: string | null;
+            /**
+             * Style
+             * @description bass-tab profile: where the line sits on the neck. as-played: the cheapest playable fingering; open-position: low frets and open strings; lead: a phrase stays in one position; default: as-played
+             */
+            style?: ("as-played" | "open-position" | "lead") | null;
             /** Title */
             title?: string | null;
             /**
@@ -1474,6 +1538,11 @@ export interface components {
              * @description transpose the arrangement by this many semitones (instead of key)
              */
             transpose?: number | null;
+            /**
+             * Tuning
+             * @description bass-tab profile: the instrument's tuning. bass-4: standard, eb-standard, d-standard, drop-d, bead; bass-5: standard, drop-a; bass-6: standard; default: standard
+             */
+            tuning?: string | null;
         };
         /** KeySig */
         KeySig: {
@@ -1802,6 +1871,24 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** ReferencePitch */
+        ReferencePitch: {
+            /**
+             * Cents
+             * @description offset of the recording from A = 440, -50 to 50; positive is sharp
+             */
+            cents: number;
+            /**
+             * Concentration
+             * @description how well the recording agrees on it, 0 to 1
+             */
+            concentration: number;
+            /**
+             * Retuned
+             * @description the notes were transcribed from the recording retuned to A = 440
+             */
+            retuned: boolean;
+        };
         /** RerunRequest */
         RerunRequest: {
             /**
@@ -2027,6 +2114,282 @@ export interface components {
             status: "pass" | "fail" | "skipped" | "error";
             /** Suite */
             suite: string;
+        };
+        /**
+         * Tab
+         * @description The bass-tab profile's result: every note with its string and fret, and what the song check shows
+         *     before the tab (tuning, reference pitch, capo, octave, key and tempo).
+         */
+        Tab: {
+            /**
+             * Adjusted Notes
+             * @description notes whose start or length no note value could spell, written at the nearest one that can; in tab.musicxml only, the notes here are unchanged
+             */
+            adjusted_notes: number;
+            /**
+             * Beat Times
+             * @description seconds of beat 0, 1, 2 ...
+             */
+            beat_times: number[];
+            /**
+             * First Downbeat
+             * @description index into beat_times of tick 0; negative when the line starts before the first tracked downbeat (a pickup): tick 0 is then a bar line before beat_times[0]
+             */
+            first_downbeat: number;
+            instrument: components["schemas"]["TabInstrument"];
+            key: components["schemas"]["TabKey"];
+            /**
+             * Layout
+             * @description what tab.musicxml (and the PDF made from it) shows
+             * @enum {string}
+             */
+            layout: "tab" | "tab-and-notation" | "notation";
+            meter: components["schemas"]["TabMeter"];
+            /**
+             * Notes
+             * @description in time order; violations name notes by their index here
+             */
+            notes: components["schemas"]["TabNote"][];
+            /**
+             * Octave Notes Moved
+             * @description single notes written an octave lower than Basic Pitch heard them (with octave auto): each stood above its neighbours, and the second transcriber heard it an octave lower
+             * @default 0
+             */
+            octave_notes_moved: number;
+            /**
+             * Octave Shift
+             * @description semitones the whole line was moved after transcription. With octave auto: 0, or -12 (or -24) when it was heard an octave above where a bass plays, the same for every instrument, tuning and capo. With a chosen octave: that choice, 0, -12 or 12
+             */
+            octave_shift: number;
+            /**
+             * Octave Source
+             * @description auto: the octave check decided octave_shift; chosen: the job's octave option did
+             * @enum {string}
+             */
+            octave_source: "auto" | "chosen";
+            /**
+             * Preset
+             * @description the instrument and tuning the tab was made for, e.g. bass-4-standard
+             */
+            preset: string;
+            /** @description null when the recording's tuning could not be measured */
+            reference_pitch: components["schemas"]["ReferencePitch"] | null;
+            /**
+             * Style
+             * @enum {string}
+             */
+            style: "as-played" | "open-position" | "lead";
+            /** Tempo Bpm */
+            tempo_bpm: number;
+            /**
+             * Ticks Per Beat
+             * @default 24
+             */
+            ticks_per_beat: number;
+            /**
+             * Tuning Suggestions
+             * @description the instrument's tunings ranked by fit to the notes, best first; when the first is not `preset`, the song sounds like that tuning
+             */
+            tuning_suggestions: components["schemas"]["TuningFit"][];
+            /**
+             * Violations
+             * @description empty when the tab is playable as written
+             */
+            violations: components["schemas"]["TabViolation"][];
+        };
+        /** TabInstrument */
+        TabInstrument: {
+            /**
+             * Capo
+             * @default 0
+             */
+            capo: number;
+            /** Frets */
+            frets: number;
+            /** Name */
+            name: string;
+            /** Scale Length Mm */
+            scale_length_mm: number;
+            tuning: components["schemas"]["TabTuning"];
+        };
+        /** TabKey */
+        TabKey: {
+            /** Fifths */
+            fifths: number;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "major" | "minor";
+            /**
+             * Name
+             * @description tonic and mode, e.g. G or Em
+             */
+            name: string;
+        };
+        /** TabMeter */
+        TabMeter: {
+            /**
+             * Beat Unit
+             * @default 4
+             */
+            beat_unit: number;
+            /** Beats */
+            beats: number;
+        };
+        /**
+         * TabNote
+         * @description One note of the tab: when it sounds, what was heard, and where it is played.
+         */
+        TabNote: {
+            /**
+             * Alternatives
+             * @description the other places that sound this pitch, cheapest first
+             */
+            alternatives: components["schemas"]["TabPosition"][];
+            /**
+             * Confidence
+             * @description 0 to 1. Below 0.4 the note is one to check (the tab marks it "?"): the second transcriber did not hear it at this pitch, or, where there is no second opinion, it was heard faintly
+             * @default 1
+             */
+            confidence: number;
+            /**
+             * Dur
+             * @description written duration in ticks
+             */
+            dur: number;
+            /** Fret */
+            fret?: number | null;
+            /**
+             * Octave Moved
+             * @description written an octave below where Basic Pitch heard it, where the second transcriber heard it. Its confidence is that of any note both heard: in the benchmark four in five of these are right, so it gets no "?"
+             * @default false
+             */
+            octave_moved: boolean;
+            /** Offset S */
+            offset_s?: number | null;
+            /** Onset S */
+            onset_s?: number | null;
+            /**
+             * Out Of Range
+             * @description no string of the instrument sounds this pitch; the usual cause is another tuning or instrument than the player's
+             */
+            out_of_range: boolean;
+            /**
+             * Pinned
+             * @default false
+             */
+            pinned: boolean;
+            /**
+             * Pitch
+             * @description concert MIDI pitch, as written in the tab (after octave_shift)
+             */
+            pitch: number;
+            /**
+             * Start
+             * @description ticks from the first downbeat
+             */
+            start: number;
+            /**
+             * String
+             * @description null: the note has no place on the instrument
+             */
+            string: number | null;
+        };
+        /** TabPosition */
+        TabPosition: {
+            /**
+             * Fret
+             * @description counted from the capo; 0 is the open string
+             */
+            fret: number;
+            /**
+             * String
+             * @description 1 is the highest line of the tab
+             */
+            string: number;
+        };
+        /** TabString */
+        TabString: {
+            /**
+             * First Fret
+             * @description where a short string starts (a banjo's fifth string); 0: at the nut
+             * @default 0
+             */
+            first_fret: number;
+            /**
+             * Open Pitch
+             * @description MIDI pitch of the open string, without the capo
+             */
+            open_pitch: number;
+        };
+        /** TabTuning */
+        TabTuning: {
+            /**
+             * Name
+             * @description display name, e.g. Drop D
+             */
+            name: string;
+            /**
+             * Strings
+             * @description string 1 first
+             */
+            strings: components["schemas"]["TabString"][];
+        };
+        /**
+         * TabViolation
+         * @description A hard playability violation (core/target-fretted/README.md, Playability check); the other fields
+         *     depend on `kind` and name notes by their index in `notes`.
+         */
+        TabViolation: {
+            /**
+             * Kind
+             * @description shared-string, span-too-wide, fret-out-of-range, wrong-pitch, pin-not-honoured, no-string, technique-string, technique-reach, bend-on-open-string or ring-cut
+             */
+            kind: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * TuningFit
+         * @description How well one tuning of the instrument fits the notes.
+         */
+        TuningFit: {
+            /**
+             * Distance
+             * @description semitones from the standard tuning, summed over the strings
+             */
+            distance: number;
+            /**
+             * High Frets
+             * @description notes that can only be played above the 12th fret
+             */
+            high_frets: number;
+            /**
+             * Low String Fits
+             * @description the lowest note is exactly the lowest open string
+             */
+            low_string_fits: boolean;
+            /**
+             * Open Notes
+             * @description notes an open string can play
+             */
+            open_notes: number;
+            /**
+             * Out Of Range
+             * @description notes no string can sound
+             */
+            out_of_range: number;
+            /**
+             * Preset
+             * @description <instrument>-<tuning>, e.g. bass-4-drop-d
+             */
+            preset: string;
+            /**
+             * Tuning
+             * @description display name, e.g. Drop D
+             */
+            tuning: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -3265,6 +3628,46 @@ export interface operations {
                 content: {
                     "application/octet-stream": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getTab: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description tab.json as written by the bass-tab profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tab"];
+                };
+            };
+            /** @description the job has no tab: another profile, or not finished */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

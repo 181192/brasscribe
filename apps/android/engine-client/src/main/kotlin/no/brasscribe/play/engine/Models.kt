@@ -69,6 +69,8 @@ data class PairRequestInfo(
     @SerialName("match_code") val matchCode: String,
     @SerialName("created_at") val createdAt: String,
     val status: String,
+    /** A device already paired with this computer has the same name (ignoring case): the app can suggest another one. */
+    @SerialName("name_in_use") val nameInUse: Boolean = false,
 )
 
 /** Poll result; [token] is set once, on the first poll after approval. */
@@ -124,7 +126,27 @@ data class JobCreate(
     val reads: String? = null,
     /** "lineup" or "seat": who plays the tune. */
     val lead: String? = null,
-)
+    // The bass-tab profile's options (TabOptions). Null is not sent: the engine refuses them for any other profile.
+    val instrument: FrettedInstrument? = null,
+    /** One of the instrument's [FrettedInstrument.tunings]. */
+    val tuning: String? = null,
+    /** The capo's fret, 0 (none) to 12. */
+    val capo: Int? = null,
+    val style: FingeringStyle? = null,
+    val recording: Recording? = null,
+    val octave: Octave? = null,
+    val layout: TabLayout? = null,
+) {
+    /** This job with the bass-tab options of [options]. */
+    fun withTab(options: TabOptions): JobCreate = copy(instrument = options.instrument, tuning = options.tuning, capo = options.capo,
+        style = options.style, recording = options.recording, octave = options.octave, layout = options.layout)
+
+    companion object {
+        /** A bass-tab job for an uploaded recording, with the options the player chose. */
+        fun bassTab(audioId: String, options: TabOptions = TabOptions(), title: String? = null): JobCreate =
+            JobCreate(audioId, Profile.BASS_TAB.id, title = title).withTab(options)
+    }
+}
 
 @Serializable
 enum class JobStatus {
@@ -249,7 +271,9 @@ enum class Profile(val id: String) {
     SOLO("solo"),
     BRASS_BAND("brass-band"),
     ORCHESTRA_WITH_SOLOIST("orchestra-with-soloist"),
-    POP_ROCK("pop-rock");
+    POP_ROCK("pop-rock"),
+    /** A bass line as tablature: its result is a [Tab], not a band score. */
+    BASS_TAB("bass-tab");
 
     companion object {
         fun of(id: String): Profile? = entries.firstOrNull { it.id == id }

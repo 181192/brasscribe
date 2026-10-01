@@ -21,9 +21,10 @@ class DirectoryFixtureSource(private val dir: File) : FixtureSource {
 
 /**
  * Plays the part of the engine from a folder laid out like its output (composition.json,
- * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present): every job walks the
- * stages of its profile with timed progress events and then serves those files. Tests only: the JVM
- * tests replay data/golden, the instrumented tests apps/fixtures/old-hundredth.
+ * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present; for a bass-tab job
+ * tab.json, tab.musicxml, and tab.pdf and tab.mid when present): every job walks the stages of its
+ * profile with timed progress events and then serves those files. Tests only: the JVM tests replay
+ * data/golden and apps/fixtures/bass-line, the instrumented tests apps/fixtures/old-hundredth.
  */
 class FixtureEngineApi(
     private val source: FixtureSource,
@@ -70,14 +71,19 @@ class FixtureEngineApi(
     override suspend fun createJob(request: JobCreate): Job {
         val profile = Profile.of(request.profile) ?: throw EngineException(422, "unknown profile ${request.profile}")
         val id = "fixture-${counter.incrementAndGet()}"
-        val job = Job(id, profile.id, JobStatus.QUEUED, now(), stagesOf(profile).map { StageState(it, StageStatus.PENDING, kindOf(it)) },
+        if (profile != Profile.BASS_TAB && request.tabOptionsNamed()) throw EngineException(422, "only the bass-tab profile takes the tab options", Refusal.INVALID_OPTIONS.code)
+        val stages = stagesOf(profile, wholeRecording = request.recording == Recording.INSTRUMENT)
+        val job = Job(id, profile.id, JobStatus.QUEUED, now(), stages.map { StageState(it, StageStatus.PENDING, kindOf(it)) },
             audioId = request.audioId, title = request.title)
         jobs[id] = job
         return job
     }
 
-    override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress): Job =
-        createJob(JobCreate(uploadAudio(source, onProgress).audioId, profile.id, renderAudio, title = title))
+    override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress,
+                                             tab: TabOptions?): Job =
+        createJob(JobCreate(uploadAudio(source, onProgress).audioId, profile.id, renderAudio, title = title).withTab(tab ?: TabOptions()))
+
+    private fun JobCreate.tabOptionsNamed() = listOf(instrument, tuning, capo, style, recording, octave, layout).any { it != null }
 
     override suspend fun job(jobId: String): Job = jobs[jobId] ?: throw EngineException(404, "no job $jobId")
     override suspend fun jobs(): List<Job> = jobs.values.sortedBy { it.created }
@@ -91,7 +97,7 @@ class FixtureEngineApi(
 
     override fun events(jobId: String, after: Int): Flow<JobEvent> = flow {
         val job = job(jobId)
-        val stages = stagesOf(Profile.of(job.profile) ?: Profile.ORCHESTRA_WITH_SOLOIST)
+        val stages = job.stages.map { it.name }
         var id = 0
         suspend fun send(e: JobEvent) {
             if (e.id > after) emit(e)
@@ -115,19 +121,31 @@ class FixtureEngineApi(
                 seconds = stageSeconds, fraction = fraction, device = "cpu"))
             jobs[jobId] = job(jobId).copy(progress = fraction)
         }
-        jobs[jobId] = job(jobId).copy(status = JobStatus.SUCCEEDED, finished = now(), progress = 1.0, outputs = outputs)
+        jobs[jobId] = job(jobId).copy(status = JobStatus.SUCCEEDED, finished = now(), progress = 1.0, outputs = outputsOf(jobId))
         send(JobEvent(id, "job", run = jobId, time = now(), status = "succeeded"))
     }
 
     override suspend fun composition(jobId: String): Composition = CompositionJson.decode(String(file("composition.json")))
-    override suspend fun musicXml(jobId: String): String = String(file("brass-band.musicxml"))
-    override suspend fun midi(jobId: String): ByteArray = file("brass-band.mid")
-    override suspend fun pdf(jobId: String): ByteArray = file("brass-band.pdf")
+    override suspend fun musicXml(jobId: String): String = String(file("${stem(jobId)}.musicxml"))
+    override suspend fun midi(jobId: String): ByteArray = file("${stem(jobId)}.mid")
+    override suspend fun pdf(jobId: String): ByteArray = file("${stem(jobId)}.pdf")
     override suspend fun renderedAudio(jobId: String): ByteArray = file("brass-band.mp3")
 
-    override suspend fun artifacts(jobId: String): List<Artifact> = outputs.mapNotNull { name ->
+    override suspend fun tab(jobId: String): Tab {
+        if (!isTab(jobId)) throw EngineException(404, "job $jobId has no tab")
+        return no.brasscribe.play.model.BrasscribeJson.decodeFromString(Tab.serializer(), String(file("tab.json")))
+    }
+
+    override suspend fun artifacts(jobId: String): List<Artifact> = outputsOf(jobId).mapNotNull { name ->
         source.read(name)?.let { Artifact(name, it.size.toLong(), mediaOf(name), "/v1/jobs/$jobId/artifacts/$name") }
     }
+
+    private fun isTab(jobId: String) = jobs[jobId]?.profile == Profile.BASS_TAB.id
+
+    /** The name the job's score files go by, as the engine's /musicxml, /pdf and /midi choose it. */
+    private fun stem(jobId: String) = if (isTab(jobId)) "tab" else "brass-band"
+
+    private fun outputsOf(jobId: String) = if (isTab(jobId)) tabOutputs else outputs
 
     /** The score's files and per-part files (parts/NN-Name.pdf|brf|musicxml) the fixture has. */
     private val outputs: List<String> by lazy {
@@ -135,6 +153,8 @@ class FixtureEngineApi(
             listOf("pdf", "brf", "musicxml").map { "parts/%02d-%s.%s".format(i + 1, n, it) }
         }).filter { source.read(it) != null }
     }
+
+    private val tabOutputs: List<String> by lazy { TAB_OUTPUTS.filter { source.read(it) != null } }
 
     override suspend fun artifact(jobId: String, name: String): ByteArray = file(name)
     override suspend fun braille(jobId: String, part: String?): ByteArray =
@@ -162,6 +182,8 @@ class FixtureEngineApi(
         const val SERVER_ID = "fixture"
         const val SERVER_NAME = "Brasscribe (test fixture)"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
+        /** What a bass-tab job leaves; the PDF and the MIDI only on a computer with MuseScore. */
+        val TAB_OUTPUTS = listOf("composition.json", "tab.json", "tab.musicxml", "tab.pdf", "tab.mid")
         /** The brass band's parts in order, as the engine's file names spell them. */
         val PART_NAMES = listOf(
             "Soprano-Cornet", "Solo-Cornet", "Repiano-Cornet", "2nd-Cornet", "3rd-Cornet", "Flugelhorn", "Solo-Horn", "1st-Horn", "2nd-Horn",
@@ -170,6 +192,7 @@ class FixtureEngineApi(
 
         fun mediaOf(name: String): String = MEDIA[name] ?: when (name.substringAfterLast('.')) {
             "pdf" -> "application/pdf"; "brf" -> "text/plain"; "musicxml" -> "application/vnd.recordare.musicxml+xml"
+            "json" -> "application/json"; "mid" -> "audio/midi"
             else -> "application/octet-stream"
         }
 
@@ -178,8 +201,13 @@ class FixtureEngineApi(
             "brass-band.pdf" to "application/pdf", "brass-band.mp3" to "audio/mpeg", "brass-band.brf" to "text/plain",
         )
 
-        /** Stage names per profile, as the engine's profiles define them. */
-        fun stagesOf(profile: Profile): List<String> = when (profile) {
+        /**
+         * Stage names per profile, as the engine's profiles define them. [wholeRecording]: a bass-tab job
+         * for a recording of the bass alone, which is not separated.
+         */
+        fun stagesOf(profile: Profile, wholeRecording: Boolean = false): List<String> = when (profile) {
+            Profile.BASS_TAB -> listOf("beats") + (if (wholeRecording) emptyList() else listOf("stems")) +
+                listOf("transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export")
             Profile.SOLO -> listOf("beats", "transcribe.mix.swift-f0", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
             Profile.BRASS_BAND -> listOf("beats", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
             Profile.POP_ROCK -> listOf("beats", "stems") + listOf("vocals", "other", "guitar", "piano").map { "transcribe.$it.muscriptor" } +
