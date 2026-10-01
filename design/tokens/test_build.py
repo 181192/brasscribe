@@ -171,7 +171,7 @@ def test_fretscribe_roles_come_through_the_alias_map():
     dark = kt.split("val BrasscribeDarkColors = BrasscribeColors(")[1].split(")\n\n")[0]
     pink_dark = kt.split("val BrasscribePinkDarkColors = BrasscribeColors(")[1].split(")\n\n")[0]
     assert pink == light and pink_dark == dark and light != dark
-    # The titles: the brand's own face, at the weight brand.md names.
+    # The titles: the brand's own face, at the weight its display token names.
     assert "displaySmall = base.displaySmall.copy(fontFamily = display, fontWeight = FontWeight.SemiBold," in kt
     font = FRETSCRIBE / "dist" / "android" / "res" / "font" / "atkinson_hyperlegible_next.ttf"
     assert font.read_bytes() == (FRETSCRIBE / "brand" / "fonts" / "AtkinsonHyperlegibleNext-wght.ttf").read_bytes()

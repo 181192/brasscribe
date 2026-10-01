@@ -387,14 +387,13 @@ def android_group(name: str) -> dict:
 
 def android_display_font() -> dict:
     """The display face in res/font: the file and its licence text (paths from the token file's folder
-    when the product names its own), the resource name and, for a variable font, the titles' weight."""
+    when the product names its own) and the resource name."""
     font = ANDROID.get("display-font")
     if not font:
         return {"file": BRAND / "fonts" / "InstrumentSerif-Regular.ttf", "resource": "instrument_serif",
-                "licence": BRAND / "fonts" / "OFL.txt", "weight": None}
+                "licence": BRAND / "fonts" / "OFL.txt"}
     base = TOKENS_FILE.parent
-    return {"file": base / font["file"], "resource": font["resource"], "licence": base / font["licence"],
-            "weight": font.get("weight")}
+    return {"file": base / font["file"], "resource": font["resource"], "licence": base / font["licence"]}
 
 
 def android_outputs() -> dict[str, str | bytes]:
@@ -489,8 +488,7 @@ def android_outputs() -> dict[str, str | bytes]:
     for role, (k, v, m) in used.items():
         fam = "display" if "display" in v["$value"]["fontFamily"] else "FontFamily.Default"
         ls = v["$value"]["letterSpacing"]["value"]
-        w = font["weight"] if fam == "display" and font["weight"] else v["$value"]["fontWeight"]
-        L.append(f"        {role} = base.{role}.copy(fontFamily = {fam}, fontWeight = FontWeight.{weight[w]}, "
+        L.append(f"        {role} = base.{role}.copy(fontFamily = {fam}, fontWeight = FontWeight.{weight[v['$value']['fontWeight']]}, "
                  f"fontSize = {fmt(m['sizeSp'])}.sp, lineHeight = {fmt(m['lineHeightSp'])}.sp, letterSpacing = {fmt(ls)}.sp),")
     L += ["    )", "}", ""]
     num = typo["numeric"]["$extensions"]["no.brasscribe.platform"]["material"]

@@ -31,8 +31,8 @@ from:
 | the `pink` and `pink-dark` palettes | `light` and `dark` |
 | the `score` group | `tab`; `single-part-reflow-zoom` keeps Brasscribe's value |
 
-`display-font` names the title face, Atkinson Hyperlegible Next, and the weight its titles are set in
-(600, as in [`brand.md`](../brand/brand.md)); the app gets it as `res/font/display`. A name that is
+`display-font` names the title face, Atkinson Hyperlegible Next; the app gets it as `res/font/display`,
+set in the weight of the `display` typography token (600, as in [`brand.md`](../brand/brand.md)). A name that is
 neither in the tokens nor in this map stops the generator. `uncertain-tint` has no name in the shared
 theme yet, so it is not generated.
 

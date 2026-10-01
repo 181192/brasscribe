@@ -41,46 +41,55 @@ Fretscribe's design started outside this repository and now lives in it: the des
 7. Owner actions: register `fretscribe.app` and `fretscribe.no` (and `brasscribe.app`/`.no`), create the
    `fretscribe` GitHub repo for the site. Check trademarks and app stores for the name first.
 
-## Done so far (merged, each reviewed independently)
+## Done
 
-- The contrast check reads any product's token file (#42).
-- Tests keep instrument knowledge out of the shared core modules, in Rust and in the Python reference
-  (#43). The shared modules were already clean, so no code had to move.
-- `core/target-fretted`: tunings as data for guitar, bass, ukulele and mandolin, string and fret
-  assignment with a hand span in millimetres, styles, pins, alternatives and a playability check (#50);
-  tuning suggestion, playing techniques, chord shapes and staying in position (#62).
-- The design system page is generated from `design/` (#48).
-- LAN addresses, device names and absolute paths replaced with documentation values (#57).
+Shared tooling:
 
-## Bass tab in the engine (merged)
+- The contrast check reads any product's token file.
+- Tests keep instrument knowledge out of the shared core modules, in Rust and in the Python reference.
+  The shared modules were already clean, so no code had to move.
+- The design system page is generated from `design/`.
 
-- Tab MusicXML from `target-fretted` (#64): tab, tab and notation, or notation; capo folded into the
-  staff tuning (what MuseScore keeps); doubt as "?" and a processing instruction; "!" over a rest for a
-  note with no place.
-- Engine `bass-tab` profile (#65) through a `fret`/`tab` subcommand on the core command line: bass stem
-  or bass alone → notes → shared beats and quantization → string and fret. Result at
+Bass tab, from a recording to a file:
+
+- `core/target-fretted`: tunings as data for guitar, bass, ukulele and mandolin; string and fret
+  assignment with a hand span in millimetres; styles, pins, alternatives and a playability check; tuning
+  suggestion, playing techniques, chord shapes and staying in position. Bass lines stay low on the neck,
+  and isolated high notes are set aside instead of dragging the hand up.
+- Tab MusicXML from `target-fretted`: tab, tab and notation, or notation; capo folded into the staff
+  tuning (what MuseScore keeps); doubt as "?" and a processing instruction; "!" over a rest for a note
+  with no place. Every note names its source note, so an app can match a note it changed.
+- The engine's `bass-tab` profile, through a `fret`/`tab` subcommand on the core command line: bass stem
+  or bass alone → notes → shared beats and quantization → string and fret. The result is at
   `/v1/jobs/{id}/tab` with alternatives, tuning suggestions, octave shift, reference pitch, tempo, key
   and meter. Options: instrument, tuning, capo, style, recording, octave, layout.
-- Export (#73): `tab.musicxml`, `tab.pdf`, `tab.mid`.
-- Fingering keeps bass lines low and sets isolated high excursions aside (#78).
-- Benchmark `bass-tab` and note quality (#80), 16 Slakh tracks: onset and pitch F1 0.80 → 0.86 (song)
-  and 0.89 (bass alone); hand travel 2.3 → 0.9 and 0.6 frets per note; "?" marks right about 9 times in
-  10, catching about a third of the wrong notes. Synthesized low-register set: fine from E1 up, weak on
-  the low B string (F1 about 0.73, 5% octave errors).
+- Export: `tab.musicxml`, `tab.pdf`, `tab.mid`.
+- The Docker image and a new worktree carry the core command line, so bass tabs work there.
+- The `bass-tab` benchmark, 16 Slakh tracks: onset and pitch F1 0.86 (song) and 0.89 (bass alone); hand
+  travel 0.9 and 0.6 frets per note; "?" marks right about 9 times in 10, catching about a third of the
+  wrong notes. Synthesized low-register set: fine from E1 up, weak on the low B string (F1 about 0.73,
+  5% octave errors).
+
+The app:
+
+- Fretscribe is built as a second Android app from Brasscribe's code (the `fretscribe` product flavour).
+- It wears its own design: colours and title font generated from its tokens, its launcher icon, and no
+  band SoundFont or brass models in its APK. Its screens and wording are still Brasscribe's.
 
 Known gaps: real recordings unmeasured; tempo and meter right on about 70% of songs and 60% of lone
-basses; low B string; the core command line is not shipped in Docker or Bandroom yet; dense bars are
-cramped on the page. Open issues: #66–#70, #75–#77.
+basses; the low B string; Bandroom does not bundle the core command line yet; dense bars are cramped on
+the page. Open issues: #66–#70, #75–#77.
 
 ## Next
 
-1. The Fretscribe app: Android flavour first (alphaTab already renders tab): Home, Record or open,
-   What is this?, Check the song (reads the tab result), Practice (tab view, repeat, speed), Fix a
-   note, Share or print. The steps are in [`android-app.md`](android-app.md).
-2. Ship the core command line with Bandroom and the Docker image, so a phone can ask a computer for a
-   bass tab.
-3. Real recordings in the benchmark; tempo and meter on a lone bass; the low B string.
-4. Guitar: single-note lines, then chords (GuitarSet for evaluation).
+1. The Fretscribe app's own screens, in the order of [`android-app.md`](android-app.md): Your
+   instrument, opening a recording and asking the paired computer for a bass tab, Check the song, the
+   tab view and Practice, Fix a note, Share or print.
+2. `target-fretted` through the core's bindings, so the phone can move a note to another string without
+   asking the computer.
+3. Bandroom bundles the core command line, so a paired phone can ask any computer for a bass tab.
+4. Real recordings in the benchmark; tempo and meter on a lone bass; the low B string.
+5. Guitar: single-note lines, then chords (GuitarSet for evaluation).
 
 ## At the first quiet moment: split the core
 
@@ -104,15 +113,12 @@ unchanged.
 
 ## First Fretscribe: bass tab
 
-1. `target-fretted` crate: tunings as data, string and fret assignment by dynamic programming (hand
-   span, position shifts, open strings, phrase-on-one-string), tab difficulty.
-2. Engine profile: bass stem from the existing separator, Basic Pitch or SwiftF0 for notes, then
-   `target-fretted`. MusicXML with tab staff.
-3. Eval: GuitarSet (string-level ground truth), plus DadaGP tabs to check fingering against human
+1. Done: the `target-fretted` crate and the engine profile (above). Tab difficulty is not written yet.
+2. Eval: GuitarSet (string-level ground truth), plus DadaGP tabs to check fingering against human
    choices.
-4. App flavour on Android first (alphaTab renders tab and notation already), then Apple (Verovio's tab
+3. The app on Android first (alphaTab renders tab and notation already), then Apple (Verovio's tab
    support needs checking) and Windows.
-5. Site: source in this repository, built output pushed to the `fretscribe` repo's Pages, own domain.
+4. Site: source in this repository, built output pushed to the `fretscribe` repo's Pages, own domain.
 
 ## After that
 

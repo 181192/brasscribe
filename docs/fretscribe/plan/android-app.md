@@ -38,7 +38,6 @@ Fix a note and the screen reader. "?" and boxed "!" are drawn with the existing
 
 | Gap | Where |
 |---|---|
-| A note index in `tab.musicxml` (adjusted notes can't be matched by tick) | core, `target-fretted/src/tab.rs` |
 | `target-fretted` through FFI (JSON in, JSON out), so re-fingering is instant and offline | `core/brasscribe-ffi`, regenerated bindings |
 | Pins as job input | engine |
 | "Around fret N" / "on these strings" | core, then device |
@@ -47,16 +46,16 @@ Fix a note and the screen reader. "?" and boxed "!" are drawn with the existing
 | `Profile.BASS_TAB`, `Tab` models, `getTab` | `engine-client` |
 | Guitar instruments in the engine | engine, when guitar comes |
 | Text tab and playing instructions exports | core, later |
-| The core command line in Bandroom and Docker | packaging (blocks the paired-computer flow) |
+| The core command line in Bandroom (the Docker image has it) | packaging (blocks the paired-computer flow with Bandroom) |
 | The recording on the phone for songs opened from the job list | `GET /v1/jobs/{id}/input` |
 
 ## Roadmap
 
-Each is one small pull request with an independent review. Fretscribe strings always carry `values-nb`.
+Each is one small pull request. Fretscribe strings always carry `values-nb`.
 
 | | What | Conflict risk with Brasscribe work |
 |---|---|---|
-| a | Flavour skeleton; "Fretscribe" on the launcher and Home | medium, once (Gradle task names, workflows) |
+| a | Done: flavour skeleton; "Fretscribe" on the launcher and Home | medium, once (Gradle task names, workflows) |
 | b | Done: design folder in the repo, generator flags, theme, icon; no SoundFont or brass models in the Fretscribe APK | low |
 | c | Your instrument | none |
 | d0 | `engine-client`: bass tab profile, `Tab` models, `getTab`, a fixture | low |
@@ -64,7 +63,7 @@ Each is one small pull request with an independent review. Fretscribe strings al
 | e | Check the song from `/tab`; a change is a new job | none |
 | f1 | Tab view: alphaTab, "?" and "!" overlay, font test | low |
 | f2 | Practice: the recording as the sound, 5% speed steps, repeat by bar, 64 dp transport | low |
-| g0 | Core: FFI export and the note index | medium (bindings) |
+| g0 | Core: FFI export (the note index is done) | medium (bindings) |
 | g | Fix a note: fretboard strip, pitch stepper, pins, provenance, undo | low |
 | h | Share or print | low |
 | i | Pedals and keys, Lock the tab | low |

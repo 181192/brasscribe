@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name" translatable="false">Fretscribe</string>
     <string name="brand_name" translatable="false">Fretscribe</string>
+    <!-- Brasscribe's says scores can still be made on the phone; this app has no models on the phone. -->
+    <string name="conn_offline">Not connected. Fretscribe needs your computer to write a tab.</string>
 </resources>
