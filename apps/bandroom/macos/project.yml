@@ -53,6 +53,10 @@ targets:
       - name: Band sounds
         script: "\"$SRCROOT/scripts/stage-band-sounds.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/band\""
         basedOnDependencyAnalysis: false
+      # The Rust core's command line, for bass tabs (the engine gets it through BRASSCRIBE_CORE_CLI).
+      - name: Core command line
+        script: "\"$SRCROOT/scripts/stage-core-cli.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/bin\""
+        basedOnDependencyAnalysis: false
     info:
       path: App/Info.plist
       properties:

@@ -122,13 +122,15 @@ jobs:
           (cd "$stage" && ditto -c -k --keepParent "Brasscribe Play.app" "$RUNNER_TEMP/out/brasscribe-play-macos-arm64.zip")
 
       # Bandroom is how the engine is distributed: its post-build scripts stage the engine workspace
-      # (with the workspace stamp of this commit) and the band SoundFont, and it bundles pixi so a Mac
-      # without it can install the engine. Re-signed ad hoc, pixi first, then the app.
+      # (with the workspace stamp of this commit), the band SoundFont and the core's command line (built
+      # here for the macOS Bandroom supports; the engine needs it for bass tabs), and it bundles pixi so
+      # a Mac without it can install the engine. Re-signed ad hoc, the two programs first, then the app.
       - name: Release build of Bandroom for Mac
         if: ${{ inputs.release }}
         working-directory: apps/bandroom/macos
         run: |
           brew install pixi
+          (cd ../../../core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p brasscribe-cli)
           xcodegen generate
           xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
             -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData build
@@ -139,8 +141,10 @@ jobs:
           grep -q "$(git rev-parse --short HEAD)" "$stamp" || { echo "the workspace stamp is not from $(git rev-parse --short HEAD)" >&2; cat "$stamp" >&2; exit 1; }
           mkdir -p "$B/Contents/Resources/bin"
           cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
+          "$B/Contents/Resources/bin/brasscribe-core" version || { echo "Bandroom has no core command line" >&2; exit 1; }
           codesign -d --entitlements - --xml "$B" > "$RUNNER_TEMP/band.entitlements"
           codesign --force --sign - "$B/Contents/Resources/bin/pixi"
+          codesign --force --sign - "$B/Contents/Resources/bin/brasscribe-core"
           codesign --force --sign - --entitlements "$RUNNER_TEMP/band.entitlements" "$B"
           codesign --verify --deep --strict "$B"
           (cd "$stage" && ditto -c -k --keepParent "Brasscribe Bandroom.app" "$RUNNER_TEMP/out/brasscribe-bandroom-macos-arm64.zip")
