@@ -512,6 +512,42 @@ fn a_long_pedal_gets_one_place() {
 }
 
 #[test]
+fn a_figure_in_two_registers_is_not_taken_apart() {
+    let g = preset("guitar-standard").unwrap();
+    let at = |list: &[(u8, u8)]| list.iter().map(|&(string, fret)| Position { string, fret }).collect::<Vec<_>>();
+    // Broken octaves, a pedal point under a melody, alternating fifths: every second note leaps,
+    // so there is no line for the others to be an excursion from. One position, as before.
+    let octaves = [C4, C5, D4, D5, E4, E5, F4, 77, G4, 79];
+    let pedal = [E5, E4, D5, E4, C5, E4, B4, E4, A4, E4, B4, E4, C5, E4, D5, E4];
+    let fifths = [B4, F4, C5, E4, B4, F4, C5, E4, B4, F4, C5, E4];
+    for style in [Style::OpenPosition, Style::AsPlayed] {
+        let o = Options { tempo_bpm: Some(120.0), ..opts(style) };
+        let p = positions(&solve(&g, &line(&octaves), &o));
+        assert_eq!(p, at(&[(5, 15), (2, 13), (4, 12), (2, 15), (4, 14), (1, 12), (4, 15), (1, 13), (3, 12), (1, 15)]), "{style:?}");
+        let p = positions(&solve(&g, &line(&pedal), &o));
+        assert!(p.iter().skip(1).step_by(2).all(|pos| *pos == Position { string: 3, fret: 9 }), "{style:?}: {p:?}");
+        assert!(p.iter().all(|pos| (7..=12).contains(&pos.fret)), "{style:?}: {p:?}");
+        let p = positions(&solve(&g, &line(&fifths), &o));
+        assert_eq!(p[..4], at(&[(1, 7), (2, 6), (1, 8), (2, 5)]), "{style:?}");
+        assert_eq!(p[..4], p[4..8], "{style:?}");
+    }
+}
+
+#[test]
+fn a_stray_note_that_opens_or_closes_a_bass_line_is_reached_and_left() {
+    // G3, B flat 3, or C4 and B flat 3 before a low line; C4, or B flat 3 and C4 after one.
+    let opens: [&[i32]; 3] = [
+        &[55, C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2, C2],
+        &[58, BB1, BB1, C2, D2, BB1, BB1, C2, D2, BB1, BB1, BB1],
+        &[60, 58, C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2],
+    ];
+    let closes: [&[i32]; 2] = [&[C2, C2, C2, C2, EB2, F2, C2, EB2, F2, C2, 60], &[C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2, 58, 60]];
+    for pitches in opens.into_iter().chain(closes) {
+        assert_low_except(pitches, 50);
+    }
+}
+
+#[test]
 fn a_repeated_bar_next_to_a_stray_note_follows_the_other_bars() {
     // The same bar three times; the first is followed by two high notes. All three get the
     // fingering the bar has on its own.
