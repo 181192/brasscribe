@@ -16,6 +16,7 @@
 //! brasscribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
 //! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
+//! brasscribe-core fret --request JSON --out FILE     (a string and fret for every note: target-fretted's JSON request and response)
 //! ```
 
 use std::collections::HashMap;
@@ -323,6 +324,11 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             }
             Ok(())
         }
+        "fret" => {
+            // The request and the response are target-fretted's own JSON, passed through unchanged.
+            let request = String::from_utf8(read(Path::new(&a.one("request")?))?).map_err(|e| format!("the request is not UTF-8: {e}"))?;
+            write(Path::new(&a.one("out")?), &target_fretted::json::solve_json(&request)?)
+        }
         "version" => {
             println!("brasscribe-core {}", brasscribe_core::VERSION);
             Ok(())
@@ -334,7 +340,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let Some(cmd) = argv.first() else {
-        eprintln!("usage: brasscribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|version> ...");
+        eprintln!("usage: brasscribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|meter|humanize|talking-score|fret|version> ...");
         return ExitCode::from(2);
     };
     match run(cmd, &Args::parse(&argv[1..])) {
