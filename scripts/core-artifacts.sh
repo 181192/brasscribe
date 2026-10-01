@@ -49,13 +49,25 @@ have() {
   esac
 }
 
+# The `members = [...]` of the core workspace, as paths from the repository root.
+workspace_members() {
+  awk '/^members[[:space:]]*=/{on=1} on{print} on&&/\]/{exit}' "$ROOT/core/Cargo.toml" \
+    | grep -oE '"[^"]+"' | tr -d '"' | sed 's|^|core/|'
+}
+
 sources() {
   # Everything that goes into the library: the crates' sources and manifests (not their tests),
   # the lock file, the cargo config and the Swift header/modulemap packed into the xcframework.
   # A tracked file deleted in the working tree is still listed by git, but is not a source.
+  # The crates are the workspace's members, read from core/Cargo.toml, so a new member is a source
+  # without a change here (cargo refuses a workspace with a member missing).
+  local members
+  members=$(workspace_members) || members=""
+  [ -n "$members" ] || { echo "core-artifacts: no workspace members found in core/Cargo.toml" >&2; return 1; }
+  # shellcheck disable=SC2086  # one path per member; member paths have no spaces
   git -C "$ROOT" ls-files -co --exclude-standard -z -- \
     core/Cargo.toml core/Cargo.lock core/.cargo \
-    core/brasscribe-core core/brasscribe-ffi core/brasscribe-cli core/tools \
+    $members \
     core/bindings/swift/brasscribe_ffiFFI.h core/bindings/swift/brasscribe_ffiFFI.modulemap \
     ':(exclude)core/*/tests/*' \
     | while IFS= read -r -d '' f; do [ -e "$ROOT/$f" ] && printf '%s\0' "$f"; done
