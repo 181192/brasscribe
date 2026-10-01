@@ -242,6 +242,24 @@ Corrected results (100 ms):
   - Air on the G String and the Chorale stay ambiguous; their notated beat is a convention the audio cannot fully determine.
 - **Remaining position errors** are beat insertions/deletions (drift in bar count). The next steps are downbeat-constrained beat cleanup and a UI step to confirm meter and pickup.
 
+## Basic Pitch on the recording retuned to A = 440
+
+The brass-band profile retunes the recording to A = 440 before Basic Pitch when it sits 5 cents or more off
+(`engine/src/brasscribe_engine/tuning.py`). `basic-pitch-retuned.mid` is that output for the 10 chorales, which sit
+−1 to +17 cents from A = 440 (9 of the 10 are retuned). `brasscribe bench chorales-transcription --mode live`
+writes a missing one the same way.
+
+| Chorales (mean over 10) | Basic Pitch | Basic Pitch, retuned |
+|---|---|---|
+| onset F1, 50 ms | 0.468 | 0.483 |
+| onset + offset F1 | 0.281 | 0.334 |
+| octave error rate | 0.108 | 0.102 |
+| onset F1, 100 ms | 0.595 | 0.618 |
+| consensus with MuScriptor, best F1 over thresholds (100 ms) | 0.76 | 0.756 |
+
+Quartet from recordings (MuScriptor with Basic Pitch support, `mus` against `mus-retuned`): melody kept 0.848 → 0.841,
+alto pitch-class recall 0.534 → 0.537, tenor 0.426 → 0.439, bass kept 0.922 → 0.922, parallels per 100 5.5 → 5.1.
+
 ## Notation: spelling, durations, melody line
 
 **Pitch spelling (`music/src/brasscribe_music/spelling.py`).**

@@ -62,6 +62,22 @@ def _run_adapter(tool: str, src: Path, dst: Path) -> None:
         subprocess.run(cmd, check=True)
 
 
+def _run_retuned(tool: str, src: Path, dst: Path) -> None:
+    """Live mode: an adapter on src as the brass-band profile runs it, retuned to A = 440 when it is out of tune."""
+    from brasscribe_engine import tuning
+
+    params, _ = tuning.derive({"audio": src})
+    if not params:
+        return _run_adapter(tool, src, dst)
+    with tempfile.TemporaryDirectory() as tmp:
+        audio = Path(tmp) / "retuned.wav"
+        q = tuning.shift_audio(src, audio, params["retune"]["shift_cents"])
+        part = Path(tmp) / dst.name
+        _run_adapter(tool, audio, part)
+        tuning.rescale_midi(part, float(q))
+        shutil.move(part, dst)
+
+
 def _need(data: Path, *rels: str) -> None:
     missing = [r for r in rels if not (data / r).exists()]
     if missing:
@@ -94,6 +110,7 @@ def _mean(rows: list[dict], key: str) -> float:
 def _transcription(eval_set: str, models: dict[str, list[str]]) -> Callable[[Path, str], dict[str, float]]:
     """Mean metrics per model over an eval set, from <song>/<model>.mid."""
     adapters = {"basic-pitch": "basic-pitch", "muscriptor-medium": "muscriptor"}
+    retuned = {"basic-pitch-retuned": "basic-pitch"}
 
     def fn(data: Path, mode: str) -> dict[str, float]:
         from .score import load_notes, score
@@ -107,6 +124,8 @@ def _transcription(eval_set: str, models: dict[str, list[str]]) -> Callable[[Pat
                 mid = song / f"{model}.mid"
                 if not mid.exists() and mode == "live" and model in adapters:
                     _run_adapter(adapters[model], song / "mix.wav", mid)
+                if not mid.exists() and mode == "live" and model in retuned:
+                    _run_retuned(retuned[model], song / "mix.wav", mid)
                 if not mid.exists():
                     raise SkipSuite(f"no cached {model}.mid for {song.name}")
                 rows.append(score(load_notes(song / "reference.json"), load_notes(mid)))
@@ -296,7 +315,9 @@ def _quartet_audio(data: Path, mode: str) -> dict[str, float]:
 
     d = data / "eval" / SETS["chorales"]
     _need(data, f"eval/{SETS['chorales']}")
-    sources = {"mus": ("muscriptor-medium.mid", "basic-pitch.mid"), "bp": ("basic-pitch.mid", None)}
+    # mus-retuned: what the brass-band profile arranges from, Basic Pitch on the recording retuned to A = 440.
+    sources = {"mus": ("muscriptor-medium.mid", "basic-pitch.mid"), "bp": ("basic-pitch.mid", None),
+               "mus-retuned": ("muscriptor-medium.mid", "basic-pitch-retuned.mid")}
     out: dict = {}
     for label, (main, support) in sources.items():
         rows = []
@@ -538,7 +559,8 @@ _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
 SUITES: dict[str, Suite] = {s.name: s for s in [
     Suite("chorales-transcription", "transcription per model on ChoraleBricks brass quartets (cached MIDI)",
           _transcription("choralebricks-brass4", {m: _CHORALE_KEYS for m in [
-              "basic-pitch", "muscriptor-medium", "muscriptor-large", "muscriptor-medium-brass", "muscriptor-large-brass"]}),
+              "basic-pitch", "basic-pitch-retuned", "muscriptor-medium", "muscriptor-large", "muscriptor-medium-brass",
+              "muscriptor-large-brass"]}),
           ("eval/choralebricks-brass4",), ci=True),
     Suite("urmp-transcription", "transcription per model on URMP brass (cached MIDI)",
           _transcription("urmp-brass", {m: ["onset_f1", "onset100_f1", "octave_err_rate"] for m in ["basic-pitch", "muscriptor-medium"]}),
@@ -554,6 +576,9 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           ("eval/slakh-trumpet", "eval/urmp-brass", "eval/choralebricks-brass4")),
     Suite("consensus-chorales", "MuScriptor + Basic Pitch consensus on chorales (leave-one-song-out precision)",
           _consensus("choralebricks-brass4", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch.mid", False)],
+                     [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]), ("eval/choralebricks-brass4",), ci=True),
+    Suite("consensus-chorales-retuned", "the same, with Basic Pitch on the recording retuned to A = 440",
+          _consensus("choralebricks-brass4", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch-retuned.mid", False)],
                      [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]), ("eval/choralebricks-brass4",), ci=True),
     Suite("consensus-urmp", "MuScriptor + Basic Pitch consensus on URMP brass",
           _consensus("urmp-brass", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch.mid", False)], [0.8]),

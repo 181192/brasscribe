@@ -24,7 +24,8 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
   archive with HTTP range requests (about 2 MB, no audio). Every file and every rebuilt
   `reference.json` is checked against the sha256 pinned in `eval/fixtures/choralebricks-pins.json`.
 - `eval/fixtures/choralebricks-brass4/`: our own adapter outputs on those chorales
-  (MuScriptor medium/large with and without brass conditioning, Basic Pitch, Beat This!).
+  (MuScriptor medium/large with and without brass conditioning, Basic Pitch as recorded and retuned to
+  A = 440 as the brass-band profile runs it, Beat This!).
 - `eval/fixtures/contours/`: SwiftF0 contours of the ChoraleBricks part tracks.
 - `eval/fixtures/choralebricks-solo/`: SwiftF0 and Basic Pitch MIDI and Beat This! small0 beats of
   all 93 ChoraleBricks brass stems (trumpet, flugelhorn, French horn, trombone, baritone, tuba), with
@@ -38,7 +39,7 @@ built by `python -m brasscribe_eval.ci_data --out ci-data`:
 |---|---|---|
 | chorales-transcription | yes | |
 | quant-chorales | yes | |
-| consensus-chorales | yes | |
+| consensus-chorales, consensus-chorales-retuned | yes | |
 | solo-instruments, seat-voices | yes | |
 | fast-notes | yes | |
 | quartet-audio | yes | |
