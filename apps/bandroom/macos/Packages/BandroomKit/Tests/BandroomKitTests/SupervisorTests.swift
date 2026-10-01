@@ -331,3 +331,31 @@ import Testing
         #expect(config.environment(base: [:])["BRASSCRIBE_BAND_SOUNDS_DIR"] == band.path)
     }
 }
+
+@Suite struct CoreCLITests {
+    @Test func theBundledCoreCommandLineReachesTheInstalledEngine() throws {
+        let resources = tempDir()
+        #expect(EngineConfiguration.findCoreCLI(resources: resources) == nil)
+        let bin = resources.appending(path: "bin")
+        try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+        let cli = bin.appending(path: "brasscribe-core")
+        FileManager.default.createFile(atPath: cli.path, contents: Data("#!/bin/sh\n".utf8))
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: cli.path)
+        #expect(EngineConfiguration.findCoreCLI(resources: resources) == nil, "not executable: the engine could not run it")
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: cli.path)
+        let found = try #require(EngineConfiguration.findCoreCLI(resources: resources))
+        #expect(found.path == cli.path)
+        let paths = BandroomPaths(data: resources.appending(path: "data"), logs: resources.appending(path: "logs"))
+        let installed = EngineConfiguration(source: .installed(workspace: paths.workspace, adapters: nil), pixi: nil, paths: paths,
+                                            computerName: "Mac", adminToken: "secret", coreCLI: found)
+        // The variable is not inherited from Bandroom's own environment: only the bundled binary is passed on.
+        #expect(installed.environment(base: ["BRASSCRIBE_CORE_CLI": "/elsewhere"])["BRASSCRIBE_CORE_CLI"] == cli.path)
+        var none = installed
+        none.coreCLI = nil
+        #expect(none.environment(base: ["BRASSCRIBE_CORE_CLI": "/elsewhere"])["BRASSCRIBE_CORE_CLI"] == nil)
+        // A checkout uses the core it builds itself (core/target/release).
+        let checkout = EngineConfiguration(source: .checkout(resources), pixi: nil, paths: paths, computerName: "Mac",
+                                           adminToken: "secret", coreCLI: found)
+        #expect(checkout.environment(base: [:])["BRASSCRIBE_CORE_CLI"] == nil)
+    }
+}

@@ -28,8 +28,9 @@ public sealed record BandroomPaths(string DataDir)
 }
 
 /// <summary>
-/// What the engine process needs: the pinned pixi, the data folder, the computer's name, the admin credential
-/// and the band sounds the app bundles (<c>band\</c> next to the exe; null when this build has none).
+/// What the engine process needs: the pinned pixi, the data folder, the computer's name, the admin credential,
+/// the band sounds the app bundles (<c>band\</c> next to the exe; null when this build has none) and the Rust
+/// core's command line (<c>core\brasscribe-core.exe</c> next to the exe; null when this build has none).
 /// </summary>
 public sealed record EngineLaunchConfig(
     BandroomPaths Paths,
@@ -37,7 +38,8 @@ public sealed record EngineLaunchConfig(
     string ComputerName,
     string AdminToken,
     bool UseCuda,
-    string? BandSoundsDir = null)
+    string? BandSoundsDir = null,
+    string? CoreCli = null)
 {
     /// <summary>The user's Hugging Face key (HF_TOKEN), read at each start so a key saved in Settings reaches the next one.</summary>
     public Func<string?>? HuggingFaceToken { get; init; }
@@ -50,6 +52,13 @@ public sealed record EngineLaunchConfig(
     {
         string dir = Path.Combine(appDir, "band");
         return File.Exists(Path.Combine(dir, "brasscribe-band.sf2")) && File.Exists(Path.Combine(dir, "mapping.json")) ? dir : null;
+    }
+
+    /// <summary>The bundled core command line under <paramref name="appDir"/> (the bass-tab profile runs it), if it is there.</summary>
+    public static string? FindCoreCli(string appDir)
+    {
+        string exe = Path.Combine(appDir, "core", "brasscribe-core.exe");
+        return File.Exists(exe) ? exe : null;
     }
 
     /// <summary>
@@ -81,11 +90,16 @@ public sealed record EngineLaunchConfig(
         if ((Variable("HF_TOKEN") is { Length: > 0 } t ? t : HuggingFaceToken?.Invoke()) is { Length: > 0 } token) env["HF_TOKEN"] = token;
         // Studio (served by the engine) plays the band SoundFont from here.
         if (BandSoundsDir is { Length: > 0 }) env["BRASSCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
+        // The installed workspace has no core to build: the bass-tab profile runs the bundled command line, and
+        // only that one. Without it, a BRASSCRIBE_CORE_CLI set for this user is not passed on, so the engine says
+        // plainly that the core is missing instead of running some other build.
+        if (CoreCli is { Length: > 0 }) env["BRASSCRIBE_CORE_CLI"] = CoreCli;
         return new ProcessSpec(
             PixiExe,
             ["run", "--manifest-path", Paths.Manifest, "--frozen", "-e", "default",
              "brasscribe", "serve", "--lan", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)],
             Paths.Workspace,
-            env);
+            env)
+        { Unset = CoreCli is { Length: > 0 } ? [] : ["BRASSCRIBE_CORE_CLI"] };
     }
 }

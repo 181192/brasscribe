@@ -36,8 +36,8 @@ What a release ships:
 | `brasscribe-play-android-arm64-v8a.apk` | Play for Android, most devices |
 | `brasscribe-play-android-universal.apk` | Play for Android, all CPU types |
 | `brasscribe-play-macos-arm64.zip` | Play for Mac (Apple silicon), ad-hoc signed |
-| `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` inside |
-| `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` inside |
+| `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` and `brasscribe-core` inside |
+| `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` and `brasscribe-core` inside |
 | `brasscribe-play-windows-x64.zip` | Play for Windows, self-contained (preview) |
 | `brasscribe-core-*` | the `brasscribe-core` command-line tool, per OS |
 | `SHA256SUMS` | checksums of the files above |
@@ -139,6 +139,7 @@ installed app stays up. Without UI automation, a quick crash check is
 ## 4. Bandroom for Mac
 
 ```sh
+(cd core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p brasscribe-cli)   # staged into the app below
 cd apps/bandroom/macos && xcodegen generate
 xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
   -destination 'generic/platform=macOS' -derivedDataPath "$S/dd-band" build
@@ -148,6 +149,10 @@ The build's post-build scripts stage what the first run installs from:
 
 - `scripts/stage-band-sounds.sh` copies `data/sounds/band/brasscribe-band-mobile.sf2` into
   `Resources/band/brasscribe-band.sf2`. A Release build fails without it.
+- `scripts/stage-core-cli.sh` copies the core's command line, `core/target/release/brasscribe-core`
+  (the build above, for macOS 14 as Bandroom itself), into `Resources/bin/brasscribe-core`. Bandroom
+  passes it to the installed engine as `BRASSCRIBE_CORE_CLI`: the `bass-tab` profile runs it. A Release
+  build fails without it.
 - `scripts/stage-workspace.sh` copies the engine workspace (`pixi.toml`, `pixi.lock`, `engine`, `music`,
   the benchmark package, `ml/adapters` and the pinned MSST code, fetched once into `build/cache`, which
   needs the network) into `Resources/workspace`. Last, it writes the **workspace stamp**,
@@ -159,7 +164,7 @@ The build's post-build scripts stage what the first run installs from:
 
 The app bundles `pixi`, so a Mac without it can install the engine. Bandroom takes `BRASSCRIBE_PIXI` when set,
 then the bundled `Contents/Resources/bin/pixi`, then `~/.pixi/bin` and Homebrew. Copy it in,
-then re-sign **pixi first, then the app**:
+then re-sign **pixi and `brasscribe-core` first, then the app**:
 
 ```sh
 B="$S/stage/Brasscribe Bandroom.app"
@@ -167,7 +172,9 @@ ditto "$S/dd-band/Build/Products/Release/Brasscribe Bandroom.app" "$B"
 mkdir -p "$B/Contents/Resources/bin"
 cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
 codesign -d --entitlements - --xml "$B" > "$S/band.entitlements"
+"$B/Contents/Resources/bin/brasscribe-core" version    # staged by the build
 codesign --force --sign - "$B/Contents/Resources/bin/pixi"
+codesign --force --sign - "$B/Contents/Resources/bin/brasscribe-core"
 codesign --force --sign - --entitlements "$S/band.entitlements" "$B"
 codesign --verify --deep --strict "$B"
 (cd "$S/stage" && ditto -c -k --keepParent "Brasscribe Bandroom.app" "$OUT/brasscribe-bandroom-macos-arm64.zip")

@@ -190,7 +190,8 @@ jobs:
   # Bandroom for Windows as a download: how the engine is distributed on Windows. Self-contained x64 with
   # the engine workspace (its stamp from this commit) and the band SoundFont next to the exe, and pixi
   # bundled at pixi\pixi.exe (FindPixi looks there first), so the first run can install the engine
-  # without anything installed beforehand.
+  # without anything installed beforehand. The core's command line (core\brasscribe-core.exe, for bass
+  # tabs) is built first; the project copies it next to the exe.
   bandroom-release:
     name: bandroom release build
     if: ${{ inputs.release }}
@@ -217,12 +218,22 @@ jobs:
           pixi-version: v0.81.0
           run-install: false
 
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+
+      # With the C runtime linked in: a PC without the Visual C++ runtime (vcruntime140.dll) can run it.
+      # Only the command line is built in this job, so the flag does not reach the FFI library.
+      - name: Build the core command line
+        working-directory: core
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
+        run: cargo build --release --locked -p brasscribe-cli
+
       - name: Release build (self-contained, x64, pixi bundled)
         run: |
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
           dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
           if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
-          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2")) {
+          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/brasscribe-core.exe")) {
             if (-not (Test-Path (Join-Path $out $f))) { throw "$f is not next to the exe" }
           }
           $stamp = Get-Content "$out/workspace/.brasscribe-workspace.json" -Raw

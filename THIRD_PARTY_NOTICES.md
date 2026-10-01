@@ -73,7 +73,8 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
 - **Engine (Python):** installed by `pixi install` from conda-forge and PyPI (versions pinned in
   `pixi.lock`); Bandroom runs the same install on the user's computer on first launch. Notable:
   music21 (BSD-3-Clause), FastAPI (MIT), PyTorch (BSD-3-Clause).
-- **Bandroom for Mac** ships the [pixi](https://github.com/prefix-dev/pixi) binary (BSD-3-Clause).
+- **Bandroom** (Mac and Windows) ships the [pixi](https://github.com/prefix-dev/pixi) binary (BSD-3-Clause),
+  and the project's own `brasscribe-core` command-line tool, built from the Rust core below.
 - **Rust core:** crates under MIT, Apache-2.0, BSD-style or Unicode-3.0 licences, plus UniFFI (MPL-2.0,
   above). `cargo metadata` in `core/` lists them.
 - **Android:** AndroidX and Jetpack Compose (Apache-2.0), Kotlin coroutines and serialization

@@ -107,6 +107,14 @@
     <Content Include="$(RepoRoot)sounds\playback_levels.py" Link="band\playback_levels.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot)sounds\band-notice.txt" Link="band\NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <!--
+    The Rust core's command line, which the engine's bass-tab profile runs (BRASSCRIBE_CORE_CLI): under core\ next
+    to the exe when it has been built (a release build of brasscribe-cli in core\). Without it Bandroom logs that
+    it is missing and the engine refuses bass-tab jobs.
+  -->
+  <ItemGroup Condition="Exists('$(RepoRoot)core\target\release\brasscribe-core.exe')">
+    <Content Include="$(RepoRoot)core\target\release\brasscribe-core.exe" Link="core\brasscribe-core.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <ItemGroup Condition="'$(BandroomPixiExe)' != '' And Exists('$(BandroomPixiExe)')">
     <Content Include="$(BandroomPixiExe)" Link="pixi\pixi.exe" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

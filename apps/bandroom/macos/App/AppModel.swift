@@ -96,6 +96,9 @@ final class AppModel {
         let bandSounds = EngineConfiguration.findBandSounds(resources: Bundle.main.resourceURL)
         logger.write(bandSounds.map { "band sounds: \($0.path)" }
                      ?? "band sounds missing from the app (Resources/band/brasscribe-band.sf2); Studio plays General MIDI sounds")
+        let coreCLI = EngineConfiguration.findCoreCLI(resources: Bundle.main.resourceURL)
+        logger.write(coreCLI.map { "core command line: \($0.path)" }
+                     ?? "core command line missing from the app (Resources/bin/brasscribe-core); the installed engine cannot make bass tabs")
         let systemName = ComputerName.current()
         let customName = UserDefaults.standard.string(forKey: ComputerName.customNameKey) ?? ""
         systemComputerName = systemName
@@ -105,7 +108,7 @@ final class AppModel {
         let config = EngineConfiguration(source: source, pixi: EngineConfiguration.findPixi(bundle: .main, environment: env),
                                          paths: paths, computerName: ComputerName.shown(system: systemName, custom: customName),
                                          adminToken: token,
-                                         bandSounds: bandSounds)
+                                         bandSounds: bandSounds, coreCLI: coreCLI)
         // Without the saved key: it's read in the background and handed over when it comes.
         supervisor = EngineSupervisor(configuration: config, baseEnvironment: env)
         sampler = HostSampler(volume: paths.data)

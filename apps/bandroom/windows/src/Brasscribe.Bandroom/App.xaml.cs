@@ -186,7 +186,11 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _log.Write(band is null
             ? "bandroom: band sounds missing next to the exe (band\\brasscribe-band.sf2); Studio plays General MIDI sounds"
             : $"bandroom: band sounds {band}");
-        _config = new EngineLaunchConfig(_paths, pixi, computer, token, _cuda, band) { HuggingFaceToken = HuggingFaceKey.Read };
+        string? coreCli = EngineLaunchConfig.FindCoreCli(AppContext.BaseDirectory);
+        _log.Write(coreCli is null
+            ? "bandroom: core command line missing next to the exe (core\\brasscribe-core.exe); the engine cannot make bass tabs"
+            : $"bandroom: core command line {coreCli}");
+        _config = new EngineLaunchConfig(_paths, pixi, computer, token, _cuda, band, coreCli) { HuggingFaceToken = HuggingFaceKey.Read };
         _hub = ModelCatalog.HubCache();
         _downloads = new ModelDownloader(_paths.Models, _hub, HuggingFaceKey.Current) { Log = _log.Write };
         _downloads.Changed += () => _controller?.Publish();

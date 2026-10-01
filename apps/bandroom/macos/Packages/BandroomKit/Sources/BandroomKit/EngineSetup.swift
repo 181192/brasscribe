@@ -44,11 +44,21 @@ public struct EngineConfiguration: Equatable, Sendable {
     public var environmentName = "default"
     /// The band sounds the app bundles (`Contents/Resources/band`), passed to the engine for Studio; nil when missing.
     public var bandSounds: URL?
+    /// The Rust core's command line the app bundles (`Contents/Resources/bin/brasscribe-core`), which the installed
+    /// engine needs for bass tabs; nil when missing.
+    public var coreCLI: URL?
 
     public init(source: EngineSource, pixi: URL?, paths: BandroomPaths, computerName: String, adminToken: String,
-                bandSounds: URL? = nil) {
+                bandSounds: URL? = nil, coreCLI: URL? = nil) {
         self.source = source; self.pixi = pixi; self.paths = paths
         self.computerName = computerName; self.adminToken = adminToken; self.bandSounds = bandSounds
+        self.coreCLI = coreCLI
+    }
+
+    /// `bin/brasscribe-core` in the app's resources, when it is there and can be run.
+    public static func findCoreCLI(resources: URL?) -> URL? {
+        guard let cli = resources?.appending(path: "bin/brasscribe-core") else { return nil }
+        return FileManager.default.isExecutableFile(atPath: cli.path) ? cli : nil
     }
 
     /// `band/` in the app's resources when it holds the band SoundFont and its part map.
@@ -103,6 +113,8 @@ public struct EngineConfiguration: Equatable, Sendable {
             break
         case .installed(_, let adapters):
             if let adapters { env["BRASSCRIBE_ADAPTERS"] = adapters.path }
+            // The installed workspace has no core/ to build; a checkout uses its own build.
+            if let coreCLI { env["BRASSCRIBE_CORE_CLI"] = coreCLI.path }
             env["PIXI_CACHE_DIR"] = paths.pixiCache.path
         }
         return env

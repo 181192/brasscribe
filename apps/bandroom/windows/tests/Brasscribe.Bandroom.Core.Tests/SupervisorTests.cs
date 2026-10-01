@@ -257,6 +257,54 @@ public sealed class SupervisorTests : IDisposable
     }
 
     [Fact]
+    public void The_bundled_core_command_line_reaches_the_engine()
+    {
+        var app = Path.Combine(_dir, "app-with-core");
+        Assert.Null(EngineLaunchConfig.FindCoreCli(app));
+        Assert.False(Config().Build(8765).Environment.ContainsKey("BRASSCRIBE_CORE_CLI"));
+        var exe = Path.Combine(Directory.CreateDirectory(Path.Combine(app, "core")).FullName, "brasscribe-core.exe");
+        File.WriteAllText(exe, "MZ");
+        Assert.Equal(exe, EngineLaunchConfig.FindCoreCli(app));
+        var spec = (Config() with { CoreCli = exe }).Build(8765);
+        Assert.Equal(exe, spec.Environment["BRASSCRIBE_CORE_CLI"]);
+        Assert.Empty(spec.Unset);
+    }
+
+    [Fact]
+    public async Task Without_the_bundled_core_a_core_set_for_the_user_does_not_reach_the_engine()
+    {
+        var spec = Config().Build(8765);
+        Assert.False(spec.Environment.ContainsKey("BRASSCRIBE_CORE_CLI"));
+        Assert.Contains("BRASSCRIBE_CORE_CLI", spec.Unset);
+
+        // The launcher: a variable of this process that is named in Unset is not inherited; one that is set is.
+        const string inherited = "BANDROOM_TEST_INHERITED_CORE", set = "BANDROOM_TEST_SET_CORE";
+        Environment.SetEnvironmentVariable(inherited, "from-the-user");
+        try
+        {
+            bool windows = OperatingSystem.IsWindows();
+            var lines = new List<string>();
+            var child = new ProcessSpec(
+                windows ? "cmd.exe" : "/bin/sh",
+                windows ? ["/c", $"echo [%{inherited}%][%{set}%]"] : ["-c", $"echo \"[${inherited}][${set}]\""],
+                _dir,
+                new Dictionary<string, string> { [set] = "bundled" });
+            foreach (var (unset, expected) in new[] { (false, "[from-the-user][bundled]"), (true, windows ? $"[%{inherited}%][bundled]" : "[][bundled]") })
+            {
+                lines.Clear();
+                using var p = new SystemProcessLauncher().Start(unset ? child with { Unset = [inherited] } : child, l => { lock (lines) lines.Add(l); });
+                Assert.Equal(0, await p.WaitForExitAsync());
+                for (int i = 0; i < 100 && lines.Count == 0; i++) await Task.Delay(20); // the output callback runs on its own thread
+                lock (lines) Assert.Equal(expected, Assert.Single(lines).Trim());
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(inherited, null);
+        }
+    }
+
+    [Fact]
     public void The_log_rolls_over_and_keeps_a_tail()
     {
         var log = new EngineLog(Path.Combine(_dir, "roll"), _time, maxBytes: 200, tailLines: 5);
