@@ -165,13 +165,49 @@ Style presets (`Style`) re-weight these terms:
 |---|---|---|---|---|
 | `OpenPosition` | strongest pull to the nut | bonus in chords and lines | cheapest | power chords and open shapes, strongest |
 | `AsPlayed` (default) | mild | small bonus in chords, neutral in lines | a fixed cost per move keeps a lick in its box | power chords and open shapes |
-| `Lead` | almost none | penalty in single-note lines | also twice the cost per mm, so a phrase stays in one position | power chords only |
+| `Lead` | almost none | penalty in single-note lines | also twice the cost per mm, and excursions are not set aside, so a phrase stays in one position | power chords only |
 
 The weights are in one table in `src/solve.rs`.
 
-**Repeats.** When a run of four events has the same pitches as an earlier run, a second pass makes
-the repeat, and the first occurrence, keep the first occurrence's fingering. A strong cost for
-deviating does this, so a pin or an impossible reuse still wins.
+**Excursions.** One or two stray notes far above or below a line, or a short fill, should be
+reached and left. They should not drag the notes around them along the neck. In `OpenPosition` and
+`AsPlayed` the solver therefore sets excursions aside, places the rest of the line as if they were
+not there, and then places each excursion between its neighbours, which stay where they are. An
+excursion is a run of single notes that the line leaps to and straight back from:
+
+- one or two notes, each an octave or more from the notes on both sides of the run and on the same
+  side of both; or up to 8 notes, each more than an octave from them;
+- the notes on the two sides are within 5 semitones of each other, so the line carries on where it
+  was;
+- one or two stray notes can also open or close the passage. With the line on one side only, its
+  next three notes must stay within 5 semitones of the nearest one;
+- it stands alone: at least three notes of the line lie between it and the next excursion;
+- no note of the run, and neither neighbour, is tied to another by a technique.
+
+What is not an excursion pays the ordinary shift costs, so a chord shape or a box holds:
+
+- the top of an arpeggio, a fifth or a seventh above a root, a run that climbs and stays, and a
+  line that moves by step;
+- a figure that alternates between two registers, such as broken octaves or a pedal point under a
+  melody. It has no line to return to.
+
+`Lead` sets nothing aside. It keeps a phrase with wide leaps in one position.
+
+Known limit: two excursions with fewer than three notes of the line between them are both left in
+the line and get the ordinary costs, so the notes around them can still be pulled towards them.
+
+**Repeats.** When a run of four events has the same pitches as an earlier run, a second pass gives
+the occurrences one fingering. A strong cost for deviating does this, so a pin or an impossible
+reuse still wins.
+
+- In `Lead`, every occurrence takes the first occurrence's fingering.
+- In `OpenPosition` and `AsPlayed`, the occurrences of a passage vote, each with its whole
+  fingering. The fingering most of them got on their own wins. On a tie the cheapest wins, then the
+  earliest. So one bar in an odd context, such as the first bar after a passage up the neck,
+  follows the other bars and does not pass its fingering on to them. A bar is never pieced together
+  from two fingerings, so a pitch repeated in it keeps its place.
+- Excursions are left out before repeats are looked for, so a bar with a stray note in it still
+  counts as a repeat of the bar without.
 
 **Pins.** `Options::pins` fixes the string of a note. The solver treats a pin as a hard constraint,
 and the neighbours and the rest of a chord reflow around it. A pin on a string that cannot sound the

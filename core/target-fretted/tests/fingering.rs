@@ -316,6 +316,278 @@ fn five_string_bass_plays_low_b_on_string_five() {
     assert!(f.notes[0].out_of_range && !f.notes[1].out_of_range);
 }
 
+/// A single-note bass line, one note per eighth, at a tempo.
+fn bass_line(id: &str, pitches: &[i32], style: Style, bpm: f64) -> Vec<Position> {
+    let inst = preset(id).unwrap();
+    let o = Options { style, tempo_bpm: Some(bpm), ..Options::default() };
+    positions(&solve(&inst, &line(pitches), &o))
+}
+
+/// Every 4- and 5-string bass, style and tempo the bass tab is made with.
+fn bass_setups() -> Vec<(&'static str, Style, f64)> {
+    let mut all = Vec::new();
+    for id in ["bass-4-standard", "bass-5-standard"] {
+        for style in [Style::OpenPosition, Style::AsPlayed] {
+            for bpm in [80.0, 120.0] {
+                all.push((id, style, bpm));
+            }
+        }
+    }
+    all
+}
+
+/// The notes of `pitches` below `stray` sit at frets 0 to 5.
+fn assert_low_except(pitches: &[i32], stray: i32) {
+    for (id, style, bpm) in bass_setups() {
+        let p = bass_line(id, pitches, style, bpm);
+        for (pos, pitch) in p.iter().zip(pitches) {
+            if *pitch < stray {
+                assert!(pos.fret <= 5, "{id} {style:?} {bpm}: pitch {pitch} at {pos:?}; all {p:?}");
+            }
+        }
+    }
+}
+
+// Bass pitches (MIDI) used below.
+const F1: i32 = 29;
+const AB1: i32 = 32;
+const BB1: i32 = 34;
+const C2: i32 = 36;
+const D2: i32 = 38;
+const EB2: i32 = 39;
+const F2: i32 = 41;
+const G2: i32 = 43;
+const BB2: i32 = 46;
+const C3_BASS: i32 = 48;
+
+#[test]
+fn a_stray_high_note_does_not_drag_a_bass_line_up_the_neck() {
+    // C2 pedal with a turn, three bars. One note of the first bar is far above the line: G3 (an
+    // octave and a fifth up) or C4 (two octaves up), as a transcription leaves them.
+    for stray in [55, 60] {
+        let mut pitches = vec![C2, C2, C2, C2, stray, C2, C2, C2];
+        pitches.extend([C2, C2, C2, C2, EB2, EB2, F2, F2, C2, C2, C2, C2, C2, C2, BB1, BB1]);
+        assert_low_except(&pitches, 50);
+        // C2 stays on the A string, also where a low B string could play it at the 13th fret.
+        for (id, style, bpm) in bass_setups() {
+            let p = bass_line(id, &pitches, style, bpm);
+            assert_eq!(p[3], Position { string: 3, fret: 3 }, "{id} {style:?} {bpm}: {p:?}");
+            assert_eq!(p[5], Position { string: 3, fret: 3 }, "{id} {style:?} {bpm}: {p:?}");
+        }
+    }
+}
+
+#[test]
+fn stray_notes_in_every_bar_leave_the_bass_line_low() {
+    // One note an octave up in each bar.
+    let octave_up = [C2, C2, C2, C3_BASS, C2, C2, EB2, F2, C2, C2, C2, 51, C2, C2, EB2, F2, BB1, BB1, BB1, BB2, BB1, BB1, C2, D2, BB1, BB1, BB1, 53, BB1, BB1, C2, D2];
+    assert_low_except(&octave_up, 44);
+    // One note two octaves up in each bar.
+    let two_octaves = [F1, F1, F1, 53, F1, F1, AB1, BB1, F1, F1, F1, 56, F1, F1, AB1, BB1, BB1, BB1, BB1, 58, BB1, BB1, C2, D2, BB1, BB1, BB1, 53, BB1, BB1, C2, D2];
+    assert_low_except(&two_octaves, 50);
+    // Two high notes in a row, then the same bar twice without them.
+    let pair = [F1, F1, F1, AB1, BB1, BB1, 53, 56, F1, F1, F1, AB1, BB1, BB1, C2, C2, F1, F1, F1, AB1, BB1, BB1, C2, C2];
+    assert_low_except(&pair, 50);
+}
+
+#[test]
+fn a_bass_line_returns_to_low_positions_after_a_high_passage() {
+    // A bar around the 12th to 15th fret, then three low bars: the first low note is already low.
+    let mut pitches = vec![53, 53, 55, 56, 58, 58, 56, 55];
+    pitches.extend([F1, F1, F1, F1, AB1, AB1, BB1, BB1, C2, C2, C2, C2, BB1, BB1, AB1, AB1, F1, F1, F1, F1, F1, F1, F1, F1]);
+    assert_low_except(&pitches, 50);
+    // A fill of four high notes in the middle of a pedal.
+    let fill = [C2, C2, C2, C2, C2, C2, C2, C2, 55, 58, 60, 58, C2, C2, C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2];
+    assert_low_except(&fill, 50);
+}
+
+#[test]
+fn long_low_bass_passages_sit_in_the_first_five_frets() {
+    // Root, fifth, octave in E, A and G, then in F, B flat and C, where no open string helps.
+    let open_keys = [28, 28, 35, 40, 28, 28, 35, 40, 33, 33, 40, 45, 33, 33, 40, 45, 31, 31, 38, 43, 31, 31, 38, 43, 28, 28, 35, 40, 28, 35, 40, 35];
+    let flat_keys = [F1, F1, C2, F2, F1, F1, C2, F2, BB1, BB1, F2, BB2, BB1, BB1, F2, BB2, C2, C2, G2, C3_BASS, C2, C2, G2, C3_BASS, F1, F1, C2, F2, F1, C2, F2, C2];
+    let pedal = [BB1, BB1, BB1, BB1, BB1, BB1, C2, D2, EB2, EB2, EB2, EB2, EB2, EB2, D2, C2, F1, F1, F1, F1, F1, F1, 31, 33, BB1, BB1, BB1, BB1, BB1, BB1, BB1, BB1];
+    for pitches in [&open_keys[..], &flat_keys[..], &pedal[..]] {
+        assert_low_except(pitches, 127);
+    }
+    // A walking line in quarters.
+    let walk = [28, 32, 35, 37, 38, 37, 35, 32, 33, 37, 40, 42, 43, 42, 40, 37];
+    for (id, style, bpm) in bass_setups() {
+        let inst = preset(id).unwrap();
+        let notes: Vec<Note> = walk.iter().enumerate().map(|(i, &p)| Note::new(p, i as i64 * 24, 24, 1.0, Vec::new())).collect();
+        let o = Options { style, tempo_bpm: Some(bpm), ..Options::default() };
+        let p = positions(&solve(&inst, &notes, &o));
+        assert!(p.iter().all(|pos| pos.fret <= 5), "{id} {style:?} {bpm}: {p:?}");
+    }
+}
+
+#[test]
+fn a_stray_note_exactly_an_octave_up_is_reached_and_left() {
+    // G3 over a G2 pedal, F3 over an F2 pedal, D3 and F3 over a line on D2 and F2.
+    let g = [G2, G2, G2, G2, 55, G2, G2, G2, G2, G2, F2, F2, G2, G2, G2, G2, D2, D2, D2, D2, G2, G2, G2, G2];
+    let f = [F2, F2, F2, F2, 53, F2, F2, F2, F2, F2, EB2, EB2, F2, F2, F2, F2, C2, C2, C2, C2, F2, F2, F2, F2];
+    let d = [D2, D2, F2, D2, 50, D2, F2, D2, D2, D2, F2, D2, 53, F2, F2, D2, C2, C2, C2, C2, D2, D2, D2, D2];
+    for pitches in [&g[..], &f[..], &d[..]] {
+        assert_low_except(pitches, 50);
+    }
+}
+
+#[test]
+fn lead_keeps_a_melody_with_octave_leaps_in_one_position() {
+    let g = preset("guitar-standard").unwrap();
+    // C4 D4 E4 with single notes an octave up: a solo phrase stays around the 12th fret.
+    let melody = [C4, D4, E4, E5, E4, D4, C4, C5, C4, D4, E4, F4, G4, 79, G4, F4];
+    let o = Options { tempo_bpm: Some(120.0), ..opts(Style::Lead) };
+    let p = positions(&solve(&g, &line(&melody), &o));
+    assert!(p.iter().all(|pos| pos.fret >= 12), "{p:?}");
+}
+
+#[test]
+fn a_fill_is_reached_and_left_and_the_pedal_stays_low() {
+    // A C2 pedal, a fill of a bar around the 9th to 19th fret, the pedal again.
+    let fill = [52, 55, 57, 60, 62, 60, 55, 52];
+    let mut pitches = vec![C2; 8];
+    pitches.extend(fill);
+    pitches.extend([C2; 8]);
+    assert_low_except(&pitches, 50);
+    for (id, style, bpm) in bass_setups() {
+        let p = bass_line(id, &pitches, style, bpm);
+        // The fill stays up the neck and ends near the nut side of it, not further up.
+        assert!(p[8..16].iter().all(|pos| pos.fret >= 9), "{id} {style:?} {bpm}: {p:?}");
+        assert_eq!(p[15], Position { string: 1, fret: 9 }, "{id} {style:?} {bpm}: {p:?}");
+    }
+    // Four high notes.
+    let short = [C2, C2, C2, C2, C2, C2, C2, C2, 55, 58, 60, 58, C2, C2, C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2];
+    assert_low_except(&short, 50);
+}
+
+#[test]
+fn an_arpeggio_keeps_its_shape() {
+    // G major on a 4-string bass: one shape around the 10th fret, as before.
+    let p = bass_line("bass-4-standard", &[G2, 47, 50, 55, 50, 47], Style::OpenPosition, 120.0);
+    let want = [(3, 10), (2, 9), (2, 12), (1, 12), (2, 12), (2, 9)].map(|(string, fret)| Position { string, fret });
+    assert_eq!(p, want);
+    // A major, then F sharp minor, on guitar: each bar is one shape, and no bar runs along a string.
+    let g = preset("guitar-standard").unwrap();
+    let bars = [A3, E4, A4, 73, E5, 73, A4, E4, 54, 61, 66, A4, 73, A4, 66, 61];
+    for style in [Style::OpenPosition, Style::AsPlayed] {
+        let o = Options { tempo_bpm: Some(120.0), ..opts(style) };
+        let p = positions(&solve(&g, &line(&bars), &o));
+        let want = [(5, 9), (4, 11), (3, 11), (2, 10), (1, 9), (2, 10), (3, 11), (4, 11)].map(|(string, fret)| Position { string, fret });
+        assert_eq!(p[8..], want, "{style:?}: {p:?}");
+        assert!(p[..8].iter().all(|pos| (9..=12).contains(&pos.fret)), "{style:?}: {p:?}");
+        // A triad that turns round on its top note does not slide along one string.
+        let triad = [66, B4, 66, B4, 75, B4, 66, B4];
+        let p = positions(&solve(&g, &line(&triad), &o));
+        let frets = || p.iter().map(|pos| pos.fret);
+        assert!(frets().max().unwrap() - frets().min().unwrap() <= 2, "{style:?}: {p:?}");
+    }
+}
+
+#[test]
+fn a_melody_with_octave_leaps_keeps_its_other_notes_in_one_position() {
+    let g = preset("guitar-standard").unwrap();
+    let melody = [C4, D4, E4, E5, E4, D4, C4, C5, C4, D4, E4, F4, G4, 79, G4, F4];
+    for style in [Style::OpenPosition, Style::AsPlayed] {
+        let o = Options { tempo_bpm: Some(120.0), ..opts(style) };
+        let p = positions(&solve(&g, &line(&melody), &o));
+        // Every pitch has one place.
+        for (i, a) in melody.iter().enumerate() {
+            for (j, b) in melody.iter().enumerate() {
+                assert!(a != b || p[i] == p[j], "{style:?}: pitch {a} at {:?} and {:?}; all {p:?}", p[i], p[j]);
+            }
+        }
+        // The notes that are not leaps fit under one hand.
+        let hand: Vec<u8> = p.iter().zip(&melody).filter(|(_, pitch)| **pitch <= G4).map(|(pos, _)| pos.fret).collect();
+        assert!(hand.iter().max().unwrap() - hand.iter().filter(|f| **f > 0).min().unwrap() <= 3, "{style:?}: {p:?}");
+    }
+}
+
+#[test]
+fn a_long_pedal_gets_one_place() {
+    let inst = preset("bass-4-standard").unwrap();
+    let notes = line(&[C2; 2000]);
+    let p = positions(&solve(&inst, &notes, &opts(Style::AsPlayed)));
+    assert!(p.iter().all(|pos| *pos == Position { string: 3, fret: 3 }));
+}
+
+#[test]
+fn a_figure_in_two_registers_is_not_taken_apart() {
+    let g = preset("guitar-standard").unwrap();
+    let at = |list: &[(u8, u8)]| list.iter().map(|&(string, fret)| Position { string, fret }).collect::<Vec<_>>();
+    // Broken octaves, a pedal point under a melody, alternating fifths: every second note leaps,
+    // so there is no line for the others to be an excursion from. One position, as before.
+    let octaves = [C4, C5, D4, D5, E4, E5, F4, 77, G4, 79];
+    let pedal = [E5, E4, D5, E4, C5, E4, B4, E4, A4, E4, B4, E4, C5, E4, D5, E4];
+    let fifths = [B4, F4, C5, E4, B4, F4, C5, E4, B4, F4, C5, E4];
+    for style in [Style::OpenPosition, Style::AsPlayed] {
+        let o = Options { tempo_bpm: Some(120.0), ..opts(style) };
+        let p = positions(&solve(&g, &line(&octaves), &o));
+        assert_eq!(p, at(&[(5, 15), (2, 13), (4, 12), (2, 15), (4, 14), (1, 12), (4, 15), (1, 13), (3, 12), (1, 15)]), "{style:?}");
+        let p = positions(&solve(&g, &line(&pedal), &o));
+        assert!(p.iter().skip(1).step_by(2).all(|pos| *pos == Position { string: 3, fret: 9 }), "{style:?}: {p:?}");
+        assert!(p.iter().all(|pos| (7..=12).contains(&pos.fret)), "{style:?}: {p:?}");
+        let p = positions(&solve(&g, &line(&fifths), &o));
+        assert_eq!(p[..4], at(&[(1, 7), (2, 6), (1, 8), (2, 5)]), "{style:?}");
+        assert_eq!(p[..4], p[4..8], "{style:?}");
+    }
+}
+
+#[test]
+fn a_stray_note_that_opens_or_closes_a_bass_line_is_reached_and_left() {
+    // G3, B flat 3, or C4 and B flat 3 before a low line; C4, or B flat 3 and C4 after one.
+    let opens: [&[i32]; 3] = [
+        &[55, C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2, C2],
+        &[58, BB1, BB1, C2, D2, BB1, BB1, C2, D2, BB1, BB1, BB1],
+        &[60, 58, C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2],
+    ];
+    let closes: [&[i32]; 2] = [&[C2, C2, C2, C2, EB2, F2, C2, EB2, F2, C2, 60], &[C2, C2, C2, C2, EB2, F2, C2, C2, C2, C2, 58, 60]];
+    for pitches in opens.into_iter().chain(closes) {
+        assert_low_except(pitches, 50);
+    }
+}
+
+#[test]
+fn a_repeated_bar_is_not_pieced_together_from_two_fingerings() {
+    // The same bar before a fill, straight after it, and once more. On its own each occurrence
+    // gets a different fingering; all three end up with one, and A1 keeps its place in the bar.
+    let bar = [33, 33, 40, 33, C2, C2, D2, 40];
+    let mut pitches = bar.to_vec();
+    pitches.extend([52, 54, 55, 57, 59, 57, 55, 52]);
+    pitches.extend(bar);
+    pitches.extend(bar);
+    let low = [(3, 0), (3, 0), (2, 2), (3, 0), (3, 3), (3, 3), (2, 0), (2, 2)].map(|(string, fret)| Position { string, fret });
+    for id in ["bass-4-standard", "bass-5-standard"] {
+        for style in [Style::OpenPosition, Style::AsPlayed] {
+            for bpm in [80.0, 100.0, 120.0] {
+                let p = bass_line(id, &pitches, style, bpm);
+                for at in [0, 16, 24] {
+                    assert_eq!(p[at..at + 8], low, "{id} {style:?} {bpm}: {p:?}");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn a_repeated_bar_next_to_a_stray_note_follows_the_other_bars() {
+    // The same bar three times; the first is followed by two high notes. All three get the
+    // fingering the bar has on its own.
+    let bar = [F1, F1, F1, AB1, BB1, BB1];
+    let mut pitches = bar.to_vec();
+    pitches.extend([53, 56]);
+    for _ in 0..2 {
+        pitches.extend(bar);
+        pitches.extend([C2, C2]);
+    }
+    for (id, style, bpm) in bass_setups() {
+        let p = bass_line(id, &pitches, style, bpm);
+        assert_eq!(p[0..6], p[8..14], "{id} {style:?} {bpm}: {p:?}");
+        assert_eq!(p[8..14], p[16..22], "{id} {style:?} {bpm}: {p:?}");
+        assert_eq!(p[0], Position { string: 4, fret: 1 }, "{id} {style:?} {bpm}: {p:?}");
+    }
+}
+
 #[test]
 fn a_pin_moves_the_note_and_the_neighbours_stay_playable() {
     let g = preset("guitar-standard").unwrap();

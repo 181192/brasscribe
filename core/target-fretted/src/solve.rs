@@ -4,8 +4,9 @@
 //! and each voicing is paired with a hand position `p` (the neck fret under the index finger). The
 //! cheapest path through these states minimises the per-state cost (span, height on the neck, open
 //! strings) plus the per-transition cost (moving the hand, dropping a melody note far below the
-//! hand). A second pass pulls repeated pitch sequences onto the fingering of their first
-//! occurrence. See the crate README for the cost model.
+//! hand). Stray notes and short fills are set aside first and reached from the line afterwards. A
+//! second pass pulls repeated pitch sequences onto one fingering. See the crate README for the cost
+//! model.
 
 use std::collections::HashMap;
 
@@ -135,11 +136,16 @@ struct Weights {
     shift_fixed: f64,
     /// Per mm a melody note sits below a neighbouring hand position by more than a hand's width.
     drop_mm: f64,
+    /// Excursions (stray notes, short fills) are set aside while the rest of the line is placed,
+    /// then reached from it.
+    excursions: bool,
+    /// A repeated passage takes the fingering most of its occurrences got, not the first one's.
+    repeat_vote: bool,
     /// Per mm of voicing span (lowest to highest fretted note).
     span_mm: f64,
     /// Per mm squared the reach from the index finger exceeds the comfortable span.
     stretch_sq: f64,
-    /// For a repeated passage fingered differently from its first occurrence.
+    /// For a repeated passage fingered differently from the occurrence it follows.
     repeat: f64,
     /// For a power chord from the shape table (negative: a bonus).
     power: f64,
@@ -156,6 +162,8 @@ fn weights(style: Style) -> Weights {
             shift_mm: 0.03,
             shift_fixed: 1.5,
             drop_mm: 0.03,
+            excursions: true,
+            repeat_vote: true,
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
@@ -169,6 +177,8 @@ fn weights(style: Style) -> Weights {
             shift_mm: 0.03,
             shift_fixed: 3.0,
             drop_mm: 0.04,
+            excursions: true,
+            repeat_vote: true,
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
@@ -182,6 +192,8 @@ fn weights(style: Style) -> Weights {
             shift_mm: 0.06,
             shift_fixed: 3.0,
             drop_mm: 0.06,
+            excursions: false,
+            repeat_vote: false,
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
@@ -200,6 +212,20 @@ const HAND_FRETS: i32 = 3;
 const MAX_VOICINGS: usize = 64;
 /// Most leaves the voicing search visits per pass, so huge clusters stay bounded.
 const LEAF_CAP: usize = 50_000;
+/// Most notes in a row that can be an excursion: a bar of eighths.
+const EXCURSION_NOTES: usize = 8;
+/// Most notes in a row that are stray notes; a longer excursion is a fill.
+const STRAY_NOTES: usize = 2;
+/// Fewest semitones between a stray note and the notes on either side of the excursion: an octave.
+/// A fifth or a seventh above the root is part of the line.
+const STRAY_LEAP: i32 = 12;
+/// The same for every note of a fill: more than an octave, so that an arpeggio over its root or a
+/// phrase an octave up is not taken for one.
+const FILL_LEAP: i32 = 13;
+/// Most semitones between the notes on either side of an excursion.
+const EXCURSION_RETURN: i32 = 5;
+/// Fewest notes of the line between two excursions.
+const EXCURSION_APART: usize = 3;
 /// The cost of breaking a technique constraint: the search only does it when nothing else fits.
 const HARD: f64 = 1e6;
 /// Most re-solves that move notes off strings reserved by a let-ring note.
@@ -487,17 +513,180 @@ pub fn assign_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[V
     Ok(Fingering { notes: out })
 }
 
-/// The cheapest path, with repeated passages pulled onto their first fingering.
+type Neighbour<'a> = Option<(&'a Event, &'a State)>;
+
+/// The positions of one event, a group at a time.
+type Placed = Vec<Option<Position>>;
+
+/// The state chosen for every event. Excursions are left out while the rest of the line is solved,
+/// so the notes around one sit where they would without it; each excursion is then solved on its
+/// own between its neighbours, which stay where they are.
 fn solve_path(ctx: &Ctx, events: &[Event]) -> Vec<usize> {
-    let path = viterbi(ctx, events, &HashMap::new());
-    let refs = repeats(events);
+    let away = if ctx.w.excursions { excursions(events) } else { vec![false; events.len()] };
+    let line: Vec<usize> = (0..events.len()).filter(|&e| !away[e]).collect();
+    let mut path = vec![0; events.len()];
+    for (&e, state) in line.iter().zip(solve_line(ctx, events, &line)) {
+        path[e] = state;
+    }
+    let mut e = 0;
+    while e < events.len() {
+        if !away[e] {
+            e += 1;
+            continue;
+        }
+        let end = (e..events.len()).find(|&k| !away[k]).unwrap_or(events.len());
+        let run: Vec<usize> = (e..end).collect();
+        let before = e.checked_sub(1).map(|b| (&events[b], &events[b].states[path[b]]));
+        let after = events.get(end).map(|a| (a, &a.states[path[end]]));
+        for (&k, state) in run.iter().zip(viterbi(ctx, events, &run, &HashMap::new(), before, after)) {
+            path[k] = state;
+        }
+        e = end;
+    }
+    path
+}
+
+/// Which events are excursions: up to [`EXCURSION_NOTES`] single notes in a row that the line
+/// leaps to and straight back from, such as a stray note an octave up or a short fill.
+///
+/// - Every note of the excursion is far from the notes on both sides of it, and on the same side
+///   of both: at least [`STRAY_LEAP`] semitones for one or two stray notes, [`FILL_LEAP`] for a
+///   longer fill.
+/// - Those two notes are within [`EXCURSION_RETURN`] semitones of each other: the line carries on
+///   where it was.
+/// - One or two stray notes can also open or close the passage. They have the line on one side
+///   only, so its next [`EXCURSION_APART`] notes must stay within [`EXCURSION_RETURN`] semitones
+///   of its nearest one.
+/// - It stands alone: at least [`EXCURSION_APART`] notes of the line lie between it and the next
+///   excursion. A figure that alternates between two registers (broken octaves, a pedal point
+///   under a melody) has no line to return to and is not taken apart.
+///
+/// A run that climbs and stays, the top of an arpeggio and a line that moves by step are not
+/// excursions. Notes tied to a neighbour by a technique are never set aside.
+fn excursions(events: &[Event]) -> Vec<bool> {
+    let n = events.len();
+    let pitch = |e: usize| events[e].groups[0].pitch;
+    // No technique ties `from..to`, or the events on either side of it, to each other.
+    let free = |from: usize, to: usize| {
+        let (first, last) = (from.saturating_sub(1), to.min(n - 1));
+        (first..=last).all(|k| events[k].melodic()) && (from..=last).all(|k| !events[k].linked) && (first..to).all(|k| !events[k].rings)
+    };
+    let far = |from: usize, to: usize, lo: i32, hi: i32, leap: i32| (from..to).all(|k| pitch(k) - hi >= leap) || (from..to).all(|k| lo - pitch(k) >= leap);
+    // The line stays near its note `at` for the notes `rest` after or before it.
+    let settled = |at: usize, mut rest: std::ops::Range<usize>| rest.all(|k| events[k].melodic() && (pitch(k) - pitch(at)).abs() <= EXCURSION_RETURN);
+
+    let mut runs: Vec<(usize, usize)> = Vec::new();
+    let mut e = 1;
+    if let Some(len) = (1..=STRAY_NOTES).find(|&len| len + EXCURSION_APART <= n && free(0, len) && far(0, len, pitch(len), pitch(len), STRAY_LEAP) && settled(len, len + 1..len + EXCURSION_APART)) {
+        runs.push((0, len));
+        e = len + 1;
+    }
+    while e < n {
+        let len = (1..=EXCURSION_NOTES).find(|&len| {
+            let (before, after) = (e - 1, e + len);
+            if after >= n || !free(e, after) {
+                return false;
+            }
+            let (lo, hi) = (pitch(before).min(pitch(after)), pitch(before).max(pitch(after)));
+            hi - lo <= EXCURSION_RETURN && far(e, after, lo, hi, if len <= STRAY_NOTES { STRAY_LEAP } else { FILL_LEAP })
+        });
+        match len {
+            Some(len) => {
+                runs.push((e, e + len));
+                // The note after the excursion belongs to the line.
+                e += len + 1;
+            }
+            None => e += 1,
+        }
+    }
+    let line_end = runs.last().map_or(0, |r| r.1);
+    if let Some(len) = (1..=STRAY_NOTES).find(|&len| {
+        let Some(before) = n.checked_sub(len + 1) else { return false };
+        before + 1 >= line_end + EXCURSION_APART && free(before + 1, n) && far(before + 1, n, pitch(before), pitch(before), STRAY_LEAP) && settled(before, before + 1 - EXCURSION_APART..before)
+    }) {
+        runs.push((n - len, n));
+    }
+
+    let mut away = vec![false; n];
+    for (i, &(from, to)) in runs.iter().enumerate() {
+        let apart = |a: Option<&(usize, usize)>, b: Option<&(usize, usize)>| match (a, b) {
+            (Some(a), Some(b)) => b.0 - a.1 >= EXCURSION_APART,
+            _ => true,
+        };
+        if apart(i.checked_sub(1).and_then(|k| runs.get(k)), Some(&(from, to))) && apart(Some(&(from, to)), runs.get(i + 1)) {
+            away[from..to].fill(true);
+        }
+    }
+    away
+}
+
+/// The cheapest states for the events `line`, with repeated passages pulled onto one fingering.
+///
+/// A style that keeps the first occurrence gives every event of a repeated passage the positions
+/// its first occurrence got. Otherwise the occurrences of a passage vote, each with its whole
+/// fingering: the one most of them got on their own wins; on a tie the cheapest, then the
+/// earliest. One occurrence in an odd context (after a passage up the neck, say) then follows the
+/// others, not the other way round, and a passage is never pieced together from two fingerings.
+fn solve_line(ctx: &Ctx, events: &[Event], line: &[usize]) -> Vec<usize> {
+    let path = viterbi(ctx, events, line, &HashMap::new(), None, None);
+    let refs = repeats(events, line);
     if refs.is_empty() {
         return path;
     }
-    // Later occurrences and the first one itself keep the first occurrence's fingering.
-    let chosen = |r: usize| events[r].positions(events[r].states[path[r]].v);
-    let targets: HashMap<usize, Vec<Option<Position>>> = refs.iter().flat_map(|(&e, &r)| [(e, chosen(r)), (r, chosen(r))]).collect();
-    viterbi(ctx, events, &targets)
+    // By place in `line`.
+    let state = |k: usize| &events[line[k]].states[path[k]];
+    let chosen = |k: usize| events[line[k]].positions(state(k).v);
+    let at: HashMap<usize, usize> = line.iter().enumerate().map(|(k, &e)| (e, k)).collect();
+    let mut targets: HashMap<usize, Placed> = HashMap::new();
+    if !ctx.w.repeat_vote {
+        for (&e, &r) in &refs {
+            targets.insert(e, chosen(at[&r]));
+            targets.insert(r, chosen(at[&r]));
+        }
+        return viterbi(ctx, events, line, &targets, None, None);
+    }
+    // Later occurrences as (first place in the first occurrence, length, places later).
+    let mut later: Vec<(usize, usize, usize)> = Vec::new();
+    for (k, e) in line.iter().enumerate() {
+        let Some(r) = refs.get(e) else { continue };
+        let ahead = k - at[r];
+        match later.last_mut() {
+            Some((from, len, d)) if *d == ahead && *from + *len == at[r] => *len += 1,
+            _ => later.push((at[r], 1, ahead)),
+        }
+    }
+    later.sort_unstable();
+    let mut i = 0;
+    while i < later.len() {
+        // The stretch of the first occurrence that these later ones repeat, whole or in part.
+        let (from, mut to) = (later[i].0, later[i].0 + later[i].1);
+        let mut j = i + 1;
+        while j < later.len() && later[j].0 < to {
+            to = to.max(later[j].0 + later[j].1);
+            j += 1;
+        }
+        // Per fingering of the whole stretch: its votes, its lowest cost, its earliest occurrence.
+        let mut votes: HashMap<Vec<Placed>, (usize, f64, usize)> = HashMap::new();
+        let whole = later[i..j].iter().filter(|&&(f, len, _)| f == from && len == to - from).map(|&(_, _, d)| d);
+        for d in std::iter::once(0).chain(whole) {
+            let cost: f64 = (from..to).map(|k| state(k + d).cost).sum();
+            let vote = votes.entry((from..to).map(|k| chosen(k + d)).collect()).or_insert((0, f64::INFINITY, d));
+            vote.0 += 1;
+            vote.1 = vote.1.min(cost);
+            vote.2 = vote.2.min(d);
+        }
+        let best = votes.into_iter().max_by(|(_, a), (_, b)| a.0.cmp(&b.0).then(b.1.total_cmp(&a.1)).then(b.2.cmp(&a.2))).map(|(f, _)| f).unwrap_or_default();
+        for (k, positions) in (from..to).zip(&best) {
+            targets.insert(line[k], positions.clone());
+        }
+        for &(f, len, d) in &later[i..j] {
+            for k in f..f + len {
+                targets.insert(line[k + d], best[k - from].clone());
+            }
+        }
+        i = j;
+    }
+    viterbi(ctx, events, line, &targets, None, None)
 }
 
 /// Notes on a string a let-ring note still reserves: (event, group, string).
@@ -713,9 +902,11 @@ fn build_states(ctx: &Ctx, ev: &mut Event) {
     ev.states = states;
 }
 
-/// The cheapest state per event. `targets` maps an event to the positions it should repeat.
-fn viterbi(ctx: &Ctx, events: &[Event], targets: &HashMap<usize, Vec<Option<Position>>>) -> Vec<usize> {
-    if events.is_empty() {
+/// The cheapest state for each of the events `line`, taken one after another. `targets` maps an
+/// event to the positions it should repeat. `before` and `after` are events on either side whose
+/// states are already chosen.
+fn viterbi(ctx: &Ctx, events: &[Event], line: &[usize], targets: &HashMap<usize, Vec<Option<Position>>>, before: Neighbour, after: Neighbour) -> Vec<usize> {
+    if line.is_empty() {
         return Vec::new();
     }
     let bias = |e: usize, s: &State| -> f64 {
@@ -724,10 +915,11 @@ fn viterbi(ctx: &Ctx, events: &[Event], targets: &HashMap<usize, Vec<Option<Posi
             _ => 0.0,
         }
     };
-    let mut cost: Vec<f64> = events[0].states.iter().map(|s| s.cost + bias(0, s)).collect();
+    let lead_in = |s: &State| before.map_or(0.0, |(b, sb)| ctx.transition(b, sb, &events[line[0]], s));
+    let mut cost: Vec<f64> = events[line[0]].states.iter().map(|s| lead_in(s) + s.cost + bias(line[0], s)).collect();
     let mut back: Vec<Vec<usize>> = vec![Vec::new()];
-    for e in 1..events.len() {
-        let (a, b) = (&events[e - 1], &events[e]);
+    for k in 1..line.len() {
+        let (a, b) = (&events[line[k - 1]], &events[line[k]]);
         let mut next = Vec::with_capacity(b.states.len());
         let mut from = Vec::with_capacity(b.states.len());
         for sb in &b.states {
@@ -738,11 +930,17 @@ fn viterbi(ctx: &Ctx, events: &[Event], targets: &HashMap<usize, Vec<Option<Posi
                     best = (c, ia);
                 }
             }
-            next.push(best.0 + sb.cost + bias(e, sb));
+            next.push(best.0 + sb.cost + bias(line[k], sb));
             from.push(best.1);
         }
         cost = next;
         back.push(from);
+    }
+    if let Some((a, sa)) = after {
+        let end = &events[line[line.len() - 1]];
+        for (c, s) in cost.iter_mut().zip(&end.states) {
+            *c += ctx.transition(end, s, a, sa);
+        }
     }
     let mut last = 0;
     for (i, c) in cost.iter().enumerate() {
@@ -750,26 +948,27 @@ fn viterbi(ctx: &Ctx, events: &[Event], targets: &HashMap<usize, Vec<Option<Posi
             last = i;
         }
     }
-    let mut path = vec![0; events.len()];
-    path[events.len() - 1] = last;
-    for e in (1..events.len()).rev() {
-        path[e - 1] = back[e][path[e]];
+    let mut path = vec![0; line.len()];
+    path[line.len() - 1] = last;
+    for k in (1..line.len()).rev() {
+        path[k - 1] = back[k][path[k]];
     }
     path
 }
 
-/// Events that repeat an earlier passage: event -> the event whose fingering it should reuse.
-/// A passage is this many consecutive events with the same pitches.
+/// Events of `line` that repeat an earlier passage: event -> the first event with its place in the
+/// passage. A passage is this many events in a row with the same pitches.
 const REPEAT_EVENTS: usize = 4;
 
-fn repeats(events: &[Event]) -> HashMap<usize, usize> {
-    let keys: Vec<Vec<i32>> = events.iter().map(|e| e.groups.iter().map(|g| g.pitch).collect()).collect();
+fn repeats(events: &[Event], line: &[usize]) -> HashMap<usize, usize> {
+    let keys: Vec<Vec<i32>> = line.iter().map(|&e| events[e].groups.iter().map(|g| g.pitch).collect()).collect();
     let mut first: HashMap<&[Vec<i32>], usize> = HashMap::new();
+    // By place in `line`.
     let mut refs: HashMap<usize, usize> = HashMap::new();
-    if events.len() < REPEAT_EVENTS {
+    if line.len() < REPEAT_EVENTS {
         return refs;
     }
-    for i in 0..=events.len() - REPEAT_EVENTS {
+    for i in 0..=line.len() - REPEAT_EVENTS {
         let key = &keys[i..i + REPEAT_EVENTS];
         match first.get(key) {
             Some(&j) => {
@@ -791,10 +990,8 @@ fn repeats(events: &[Event]) -> HashMap<usize, usize> {
             }
         }
     }
-    refs
+    refs.into_iter().map(|(e, r)| (line[e], line[r])).collect()
 }
-
-type Neighbour<'a> = Option<(&'a Event, &'a State)>;
 
 fn rank_alternatives(ctx: &Ctx, ev: &Event, g: usize, chosen: Option<Position>, prev: Neighbour, next: Neighbour) -> Vec<Position> {
     let group = &ev.groups[g];
