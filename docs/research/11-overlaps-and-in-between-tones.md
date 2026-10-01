@@ -2,7 +2,7 @@
 
 Date: 2026-09-27. Desk research plus one-off measurements on the existing eval sets and the Mikkel run. The scripts were inline and are not committed. As in [10-benchmark-results.md](10-benchmark-results.md), treat the numbers as findings to re-derive, not as regression baselines.
 
-**Status (2026-09-29):** recommendation 3 (contour segmentation for the solo line) is built for fast notes and bends in `docs/plan/fast-notes.md`: a short semitone into or off a held note is now its bend, and alternations are split on contour plateaus. Recommendations 1 (voice separation that allows unisons) and 2 (tuning-aware pitch decisions beyond the solo contour) are open.
+**Status (2026-09-29):** recommendation 3 (contour segmentation for the solo line) is built for fast notes and bends in `docs/plan/fast-notes.md`: a short semitone into or off a held note is now its bend, and alternations are split on contour plateaus. Recommendation 1 (voice separation that allows unisons) is open. Recommendation 2 is started (2026-10-01): in the brass-band profile, Basic Pitch hears the recording retuned to A = 440 (`engine/src/brasscribe_engine/tuning.py`). Retuning MuScriptor (it gains on average but collapses on single pieces), SwiftF0 and separated stems (whose estimates are unreliable), and the confidence feature are open.
 
 "Mellom toner" covers two different problems, and this report covers both:
 - **(a) Notes hidden where instruments overlap:** unisons (cornet + flugel on one pitch), octaves (E♭ and B♭ bass, euphonium under cornet), an upper note sitting on a partial of a lower one, and close voicings.
@@ -177,7 +177,7 @@ Basic Pitch's octave-error rate is overstated by about a third on chorales and b
 **Why:**
 - Every piece is 6–20 cents sharp.
 - Basic Pitch loses almost all notes more than 50 cents off, and half of those at 35–50 cents.
-- Nothing in the pipeline estimates tuning: `durations.py:62` and `urmp.py:24` hard-code 440.
+- Nothing in the pipeline estimated tuning: `durations.py:62` and `urmp.py:24` hard-code 440.
 - The confidence model cannot see a note that sits on the boundary (`SUPPORT_TOL = 1.0` semitone).
 - It is the cheapest fix in this report.
 

@@ -668,7 +668,9 @@ function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
     more(t("manifest.moreDetails"), h("dl", { class: "kv" },
       kv(t("manifest.kv.inputSha"), m.input?.sha256, true),
       kv(t("manifest.kv.host"), m.host), kv(t("manifest.kv.params"), m.params, true), kv(t("manifest.kv.options"), m.options, true),
-      kv(t("manifest.kv.devices"), m.devices?.join(", ")))),
+      kv(t("manifest.kv.devices"), m.devices?.join(", ")),
+      m.tuning ? kv(t("manifest.kv.tuning"), Object.entries(m.tuning).map(([stage, d]) =>
+        `${stage} ${d.tuning_cents > 0 ? "+" : ""}${d.tuning_cents} c${d.retuned ? ` (${t("manifest.tuningRetuned")})` : ""}`).join(", ")) : null)),
     more(t("manifest.stages"), table(t("manifest.stages"), [t("manifest.col.stage"), t("manifest.col.status"), t("manifest.col.time"), t("manifest.col.adapter"), t("manifest.col.device"), t("manifest.col.models"), t("manifest.col.key"), t("manifest.col.provenance")],
       (m.stages ?? []).map((s) => [
         h("span", { class: "mono" }, s.stage), pill(s.status), stageTime(s),
