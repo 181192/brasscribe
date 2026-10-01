@@ -17,6 +17,7 @@
 //! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
 //! brasscribe-core fret --request JSON --out FILE     (a string and fret for every note: target-fretted's JSON request and response)
+//! brasscribe-core tab --request JSON --out FILE      (tablature: target-fretted's tab request in, {"musicxml", "adjusted_notes"} out)
 //! ```
 
 use std::collections::HashMap;
@@ -329,6 +330,11 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             let request = String::from_utf8(read(Path::new(&a.one("request")?))?).map_err(|e| format!("the request is not UTF-8: {e}"))?;
             write(Path::new(&a.one("out")?), &target_fretted::json::solve_json(&request)?)
         }
+        "tab" => {
+            // target-fretted's tablature request, answered with its {"musicxml", "adjusted_notes"}.
+            let request = String::from_utf8(read(Path::new(&a.one("request")?))?).map_err(|e| format!("the request is not UTF-8: {e}"))?;
+            write(Path::new(&a.one("out")?), &target_fretted::json::tab_json(&request)?)
+        }
         "version" => {
             println!("brasscribe-core {}", brasscribe_core::VERSION);
             Ok(())
@@ -340,7 +346,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let Some(cmd) = argv.first() else {
-        eprintln!("usage: brasscribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|meter|humanize|talking-score|fret|version> ...");
+        eprintln!("usage: brasscribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|meter|humanize|talking-score|fret|tab|version> ...");
         return ExitCode::from(2);
     };
     match run(cmd, &Args::parse(&argv[1..])) {
