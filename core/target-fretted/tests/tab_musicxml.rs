@@ -230,11 +230,11 @@ fn notes_carry_sounding_pitch_string_and_fret() {
 }
 
 #[test]
-fn capo_is_an_element_with_frets_relative_to_it() {
+fn capo_can_be_an_element_with_frets_relative_to_it() {
     let inst = preset("guitar-standard").unwrap().with_capo(3);
     // G2 is the capo'd low string: fret 0.
     let notes = [note(43, 0, QUARTER), note(45, 24, QUARTER)];
-    let xml = tab(&inst, &notes, &layout(Layout::Tab));
+    let xml = tab(&inst, &notes, &TabOptions { layout: Layout::Tab, capo: CapoEncoding::Element, ..TabOptions::default() });
     let doc = parse(&xml);
     assert_eq!(text(doc.root_element(), "capo"), Some("3"));
     // The tuning is the one without the capo.
@@ -252,9 +252,10 @@ fn capo_is_an_element_with_frets_relative_to_it() {
 }
 
 #[test]
-fn capo_can_be_written_into_the_tuning() {
+fn capo_is_written_into_the_tuning() {
     let inst = preset("guitar-standard").unwrap().with_capo(3);
-    let opts = TabOptions { layout: Layout::Tab, capo: CapoEncoding::Tuning, ..TabOptions::default() };
+    assert_eq!(TabOptions::default().capo, CapoEncoding::Tuning);
+    let opts = layout(Layout::Tab);
     let xml = tab(&inst, &[note(43, 0, QUARTER), note(58, 24, QUARTER)], &opts);
     let doc = parse(&xml);
     assert!(all(&doc, "capo").is_empty());
@@ -372,13 +373,35 @@ fn guitar_and_bass_clefs_sound_an_octave_lower() {
     for id in ["bass-4-standard", "bass-4-bead", "bass-5-standard", "bass-6-standard"] {
         assert_eq!(clef(id), own("F", "4", Some("-1")), "{id}");
     }
-    for id in ["ukulele-high-g", "ukulele-low-g", "ukulele-baritone", "mandolin"] {
+    assert_eq!(clef("ukulele-baritone"), own("G", "2", Some("-1")));
+    for id in ["ukulele-high-g", "ukulele-low-g", "mandolin"] {
         assert_eq!(clef(id), own("G", "2", None), "{id}");
     }
+    // Every preset says its clef.
+    for id in PRESET_IDS {
+        assert!(preset(id).unwrap().notation.is_some(), "{id}");
+    }
     // The caller can choose.
-    let inst = preset("ukulele-baritone").unwrap();
+    let inst = preset("ukulele-high-g").unwrap();
     let opts = TabOptions { clef: Some(NotationClef::Treble8vb), ..TabOptions::default() };
-    assert_eq!(text(parse(&tab(&inst, &[note(55, 0, QUARTER)], &opts)).root_element(), "clef-octave-change"), Some("-1"));
+    assert_eq!(text(parse(&tab(&inst, &[note(67, 0, QUARTER)], &opts)).root_element(), "clef-octave-change"), Some("-1"));
+}
+
+#[test]
+fn a_custom_instrument_gets_its_clef_from_its_strings_unless_it_says() {
+    // An instrument written before the field existed still loads.
+    let json = |low: i32, high: i32| format!(r#"{{"name": "Custom", "tuning": {{"name": "x", "strings": [{{"open_pitch": {high}}}, {{"open_pitch": {low}}}]}}, "frets": 20, "scale_length_mm": 600.0}}"#);
+    let load = |low, high| serde_json::from_str::<Instrument>(&json(low, high)).unwrap();
+    assert_eq!(load(40, 64).notation, None);
+    assert_eq!(load(40, 64).notation_clef(), NotationClef::Treble8vb);
+    assert_eq!(load(28, 43).notation_clef(), NotationClef::Bass8vb);
+    assert_eq!(load(55, 69).notation_clef(), NotationClef::Treble);
+    assert_eq!(load(55, 69).with_notation(NotationClef::Bass8vb).notation_clef(), NotationClef::Bass8vb);
+    let said: Instrument = serde_json::from_str(&json(55, 69).replace(r#""frets""#, r#""notation": "treble-8vb", "frets""#)).unwrap();
+    assert_eq!(said.notation_clef(), NotationClef::Treble8vb);
+    // A preset's clef survives the JSON round trip.
+    let bass = preset("bass-4-standard").unwrap();
+    assert_eq!(serde_json::from_str::<Instrument>(&serde_json::to_string(&bass).unwrap()).unwrap(), bass);
 }
 
 // --- measures and rhythm ---
@@ -701,7 +724,7 @@ fn a_doubtful_note_is_coloured_and_marked_with_a_question_mark() {
             assert_eq!((head.attribute("color"), head.text()), (Some("#9A5200"), Some("normal")));
             // The confidence rides along as a processing instruction.
             let pi = n.children().find(|c| c.is_pi()).and_then(|c| c.pi()).unwrap();
-            assert_eq!((pi.target, pi.value), ("brasscribe-confidence", Some("0.31")));
+            assert_eq!((pi.target, pi.value), ("fretted-confidence", Some("0.31")));
         }
         // One "?" above the column, on the tab staff when there is one.
         let marks: Vec<Node> = all(&doc, "direction").into_iter().filter(|d| text(*d, "words") == Some("?")).collect();
@@ -729,7 +752,7 @@ fn the_doubt_threshold_is_an_option() {
         let doc = parse(&xml);
         let marks = words(&doc).iter().filter(|w| **w == "?").count();
         assert_eq!(marks, sounding(&doc).iter().filter(|n| n.attribute("color").is_some()).count());
-        assert_eq!(marks, xml.matches("<?brasscribe-confidence ").count());
+        assert_eq!(marks, xml.matches("<?fretted-confidence ").count());
         marks
     };
     assert_eq!((count(0.0), count(0.4), count(0.7), count(1.0)), (0, 1, 2, 3));
@@ -754,26 +777,73 @@ fn a_tied_doubtful_note_is_marked_once() {
     let xml = tab(&inst, &[doubtful(60, 72, 48, 0.1)], &layout(Layout::Tab));
     let doc = parse(&xml);
     assert_eq!(words(&doc).iter().filter(|w| **w == "?").count(), 1);
-    assert_eq!(xml.matches("<?brasscribe-confidence 0.10?>").count(), 1);
+    assert_eq!(xml.matches("<?fretted-confidence 0.10?>").count(), 1);
     assert_eq!(sounding(&doc).iter().filter(|n| n.attribute("color").is_some()).count(), 2, "both pieces keep the colour");
 }
 
 #[test]
-fn an_out_of_range_note_keeps_its_pitch_and_gets_an_exclamation_mark() {
+fn an_out_of_range_note_is_a_rest_on_the_tab_staff_with_its_name() {
     let inst = preset("guitar-standard").unwrap();
-    // B1 is below the low E string.
-    let notes = [note(52, 0, QUARTER), note(35, 24, QUARTER), note(55, 48, 48)];
-    for l in [Layout::Tab, Layout::TabAndNotation] {
+    // D1 and B1 are below the low E string.
+    let notes = [note(52, 0, EIGHTH), note(26, 12, EIGHTH), note(35, 24, QUARTER), note(55, 48, 48)];
+    for l in [Layout::Tab, Layout::TabAndNotation, Layout::Notation] {
         let xml = tab(&inst, &notes, &layout(l));
         let doc = parse(&xml);
-        let low: Vec<Node> = sounding(&doc).into_iter().filter(|n| midi(*n) == Some(35)).collect();
-        assert_eq!(low.len(), if l == Layout::Tab { 1 } else { 2 });
-        assert!(low.iter().all(|n| descendant(*n, "technical").is_none()), "no string or fret is invented");
-        let marks: Vec<Node> = all(&doc, "direction").into_iter().filter(|d| text(*d, "words") == Some("!")).collect();
-        assert_eq!(marks.len(), 1);
-        assert_eq!(midi(marks[0].next_siblings().find(|s| s.has_tag_name("note")).unwrap()), Some(35));
-        assert!(!words(&doc).contains(&"?"));
         assert_measures_full(&doc, BAR);
+        let on_tab = |n: &Node| l == Layout::Tab || staff_of(*n) == Some("2");
+        let low: Vec<Node> = sounding(&doc).into_iter().filter(|n| matches!(midi(*n), Some(26 | 35))).collect();
+        // No pitch on the tab staff, and no string or fret anywhere.
+        assert!(low.iter().all(|n| !on_tab(n) || l == Layout::Notation), "{l:?}: the tab staff shows no pitch for them");
+        assert!(low.iter().all(|n| descendant(*n, "technical").is_none()));
+        assert_eq!(low.len(), if l == Layout::Tab { 0 } else { 2 }, "{l:?}: the notation staff keeps them");
+        if l != Layout::Notation {
+            // Every pitch on the tab staff has a place that sounds it.
+            for n in sounding(&doc).into_iter().filter(on_tab) {
+                let (string, fret) = place(n).expect("a tab note has a string and fret");
+                assert_eq!(inst.pitch_at(target_fretted::Position { string, fret }), midi(n));
+            }
+            // Rests of the same length stand in, each with its mark right before it.
+            let marks: Vec<Node> = all(&doc, "direction").into_iter().filter(|d| text(*d, "words").is_some_and(|w| w.starts_with('!'))).collect();
+            assert_eq!(marks.iter().map(|d| text(*d, "words").unwrap()).collect::<Vec<_>>(), ["! D1", "! B1"]);
+            for (mark, len) in marks.iter().zip(["12", "24"]) {
+                assert_eq!(text(*mark, "staff"), if l == Layout::Tab { None } else { Some("2") });
+                let next = mark.next_siblings().skip(1).find(|s| s.is_element()).unwrap();
+                assert!(child(next, "rest").is_some() && child(next, "pitch").is_none());
+                assert_eq!(text(next, "duration"), Some(len));
+            }
+            // The eighth before the rest is not beamed into it.
+            let first = sounding(&doc).into_iter().find(|n| on_tab(n)).unwrap();
+            assert!(child(first, "beam").is_none());
+        }
+        assert!(!words(&doc).contains(&"?"));
+    }
+}
+
+#[test]
+fn a_chord_keeps_its_placed_notes_on_the_tab_staff() {
+    let inst = preset("guitar-standard").unwrap();
+    let notes = [note(35, 0, 48), note(52, 0, 48), note(59, 0, 48), note(55, 48, 48)];
+    let xml = tab(&inst, &notes, &layout(Layout::TabAndNotation));
+    let doc = parse(&xml);
+    let pitches = |staff: &str| -> Vec<i32> { sounding(&doc).into_iter().filter(|n| staff_of(*n) == Some(staff)).map(|n| midi(n).unwrap()).collect() };
+    assert_eq!(pitches("1"), [35, 52, 59, 55]);
+    assert_eq!(pitches("2"), [52, 59, 55]);
+    let tab_notes: Vec<Node> = sounding(&doc).into_iter().filter(|n| staff_of(*n) == Some("2")).collect();
+    assert_eq!(tab_notes.iter().map(|n| child(*n, "chord").is_some()).collect::<Vec<_>>(), [false, true, false]);
+    assert!(words(&doc).contains(&"! B1"));
+    assert_measures_full(&doc, BAR);
+}
+
+#[test]
+fn a_technique_to_a_note_without_a_place_is_not_written() {
+    let inst = preset("guitar-standard").unwrap();
+    let notes = [note(40, 0, QUARTER), note(38, 24, QUARTER), note(40, 48, 48)];
+    let t = techniques(3, &[(1, Technique::PullOff), (2, Technique::HammerOn)]);
+    let fingering = assign(&inst, &notes, &Options::default()).unwrap();
+    let xml = write_tab_musicxml(&TabScore::new("Test", &inst, &notes, &t, &fingering).unwrap(), &layout(Layout::TabAndNotation));
+    let doc = parse(&xml);
+    for name in ["slur", "pull-off", "hammer-on"] {
+        assert!(all(&doc, name).is_empty(), "{name}");
     }
 }
 
@@ -880,8 +950,9 @@ fn json_solves_and_writes() {
     let root = doc.root_element();
     assert_eq!(text(root, "work-title"), Some("Round"));
     assert_eq!(text(root, "part-name"), Some("Ukulele (high G)"));
-    assert_eq!((text(root, "beats"), text(root, "beat-type"), text(root, "fifths"), text(root, "per-minute"), text(root, "capo")), (Some("2"), Some("4"), Some("-1"), Some("72"), Some("1")));
-    // The capo'd open G and C strings.
+    assert_eq!((text(root, "beats"), text(root, "beat-type"), text(root, "fifths"), text(root, "per-minute"), text(root, "capo")), (Some("2"), Some("4"), Some("-1"), Some("72"), None));
+    // The capo'd open G and C strings, which the staff tuning names.
+    assert_eq!(staff_tuning(&doc), vec![(1, 68), (2, 61), (3, 65), (4, 70)]);
     assert_eq!(sounding(&doc).iter().map(|n| place(*n)).collect::<Vec<_>>(), [Some((4, 0)), Some((3, 0))]);
     assert_eq!(words(&doc).iter().filter(|w| **w == "?").count(), 1);
     assert_eq!(xml, tab_musicxml_json(request).unwrap());
@@ -899,7 +970,7 @@ fn json_writes_a_given_fingering_as_it_is() {
         "instrument": {"preset": "guitar-standard"},
         "notes": [{"pitch": 64, "start": 0, "dur": 24}],
         "fingering": Fingering { notes: vec![place] },
-        "tab": {"layout": "tab", "capo": "tuning"}
+        "tab": {"layout": "tab", "capo": "element"}
     });
     let xml = tab_musicxml_json(&request.to_string()).unwrap();
     let doc = parse(&xml);
@@ -934,10 +1005,11 @@ fn the_study_fixture_is_reproduced() {
     assert_measures_full(&doc, BAR);
     let measures = all(&doc, "measure");
     assert_eq!(measures.iter().map(|m| m.attribute("number").unwrap()).collect::<Vec<_>>(), ["0", "1", "2", "3"]);
-    assert_eq!(text(doc.root_element(), "capo"), Some("2"));
-    assert_eq!(staff_tuning(&doc), vec![(1, 40), (2, 45), (3, 50), (4, 55), (5, 59), (6, 64)]);
+    // Capo 2 is in the staff tuning.
+    assert!(all(&doc, "capo").is_empty());
+    assert_eq!(staff_tuning(&doc), vec![(1, 42), (2, 47), (3, 52), (4, 57), (5, 61), (6, 66)]);
     let w = words(&doc);
-    assert_eq!(w, ["Standard: E A D G B E, Capo 2", "?", "!", "let ring"]);
+    assert_eq!(w, ["Standard: E A D G B E, Capo 2", "?", "! F\u{266f}1", "let ring"]);
     for name in ["hammer-on", "pull-off", "slide", "bend", "wavy-line", "time-modification", "tie", "chord", "notehead"] {
         assert!(!all(&doc, name).is_empty(), "the study has a {name}");
     }

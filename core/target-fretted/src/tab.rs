@@ -13,7 +13,7 @@ use brasscribe_core::rhythm_spelling::{is_value, pieces};
 use brasscribe_core::spelling::{spell, Spelled};
 use serde::{Deserialize, Serialize};
 
-use crate::instrument::Instrument;
+use crate::instrument::{Instrument, NotationClef};
 use crate::solve::Fingering;
 use crate::technique::{per_note, previous_note, Technique};
 
@@ -23,8 +23,8 @@ pub const DOUBT_BELOW: f64 = 0.4;
 /// Colour of a doubtful note.
 pub const DOUBT_COLOR: &str = "#9A5200";
 /// Target of the processing instruction that carries a doubtful note's confidence, as the last
-/// child of its `<note>`: `<?brasscribe-confidence 0.31?>`.
-pub const CONFIDENCE: &str = "brasscribe-confidence";
+/// child of its `<note>`: `<?fretted-confidence 0.31?>`.
+pub const CONFIDENCE: &str = "fretted-confidence";
 /// Divisions per quarter note: durations are written in the model's ticks.
 const DIVISIONS: i64 = TICKS_PER_BEAT;
 /// Ticks of a whole note.
@@ -47,45 +47,17 @@ pub enum Layout {
     Notation,
 }
 
-/// The clef of the notation staff. Pitches are written as they sound; the `8vb` clefs carry the
-/// octave an instrument is written above its sound.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum NotationClef {
-    Treble,
-    /// Treble clef sounding an octave lower: guitar.
-    #[serde(rename = "treble-8vb")]
-    Treble8vb,
-    /// Bass clef sounding an octave lower: bass guitar.
-    #[serde(rename = "bass-8vb")]
-    Bass8vb,
-}
-
-impl NotationClef {
-    /// The clef an instrument is usually written in, from its open strings: bass clef 8vb when
-    /// the highest open string is below E3, treble 8vb when the lowest is below C3, else treble
-    /// at pitch.
-    pub fn for_instrument(inst: &Instrument) -> NotationClef {
-        let open = || inst.tuning.strings.iter().map(|s| s.open_pitch);
-        match (open().min(), open().max()) {
-            (_, Some(hi)) if hi < 52 => NotationClef::Bass8vb,
-            (Some(lo), _) if lo < 48 => NotationClef::Treble8vb,
-            _ => NotationClef::Treble,
-        }
-    }
-}
-
 /// How a capo is written on the tab staff. Frets are relative to the capo either way, and the
 /// header names it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum CapoEncoding {
-    /// `<staff-tuning>` holds the tuning without the capo, and `<capo>` the capo fret.
-    #[default]
-    Element,
     /// `<staff-tuning>` holds the open strings as they sound with the capo on, and there is no
-    /// `<capo>`: for readers that ignore the element.
+    /// `<capo>`: readers that ignore the element still show the frets as written.
+    #[default]
     Tuning,
+    /// `<staff-tuning>` holds the tuning without the capo, and `<capo>` the capo fret.
+    Element,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -94,7 +66,7 @@ pub struct TabOptions {
     pub layout: Layout,
     /// A note with a confidence below this is marked as doubtful. 0 marks none.
     pub doubt_below: f64,
-    /// The notation staff's clef; None picks [`NotationClef::for_instrument`].
+    /// The notation staff's clef; None takes [`Instrument::notation_clef`].
     pub clef: Option<NotationClef>,
     pub capo: CapoEncoding,
 }
@@ -382,6 +354,16 @@ fn tuning_text(inst: &Instrument) -> String {
     names.join(" ")
 }
 
+/// A note's name for the "!" mark: "D1", "F♯1".
+fn pitch_name(s: Spelled) -> String {
+    let accidental = match s.alter {
+        1 => "\u{266f}",
+        -1 => "\u{266d}",
+        _ => "",
+    };
+    format!("{}{accidental}{}", s.step, s.octave)
+}
+
 /// The header line: tuning name, open strings low line to high, and the capo when set.
 pub fn header_text(inst: &Instrument) -> String {
     let mut text = format!("{}: {}", inst.tuning.name, tuning_text(inst));
@@ -478,6 +460,10 @@ fn events(score: &TabScore) -> Vec<Event> {
                 continue;
             }
             let Some(from) = previous_note(&model, i).and_then(|j| slot[j]) else { continue };
+            // A note without a place is a rest on the tab staff, and nothing can lead to or from it.
+            if events[from.0].notes[from.1].place.is_none() || events[to.0].notes[to.1].place.is_none() {
+                continue;
+            }
             let links: &[Link] = match t {
                 Technique::HammerOn => &[Link::HammerOn],
                 Technique::PullOff => &[Link::PullOff],
@@ -534,7 +520,7 @@ impl<'a> Plan<'a> {
             n += 1;
         }
 
-        let mut plan = Plan { score, opts, clef: opts.clef.unwrap_or_else(|| NotationClef::for_instrument(&score.instrument)), bar, compound, beam_group, events, measures, symbols: Vec::new() };
+        let mut plan = Plan { score, opts, clef: opts.clef.unwrap_or_else(|| score.instrument.notation_clef()), bar, compound, beam_group, events, measures, symbols: Vec::new() };
         plan.lay_out();
         plan
     }
@@ -597,7 +583,8 @@ impl<'a> Plan<'a> {
             }
         }
         // Beams: runs of notes shorter than a quarter inside one beat.
-        let levels: Vec<usize> = self.symbols.iter().map(|s| if s.event.is_some() { beam_levels(s.end - s.start) } else { 0 }).collect();
+        let on_tab = |e: usize| !self.has_tab() || self.events[e].notes.iter().any(|n| n.place.is_some());
+        let levels: Vec<usize> = self.symbols.iter().map(|s| if s.event.is_some_and(on_tab) { beam_levels(s.end - s.start) } else { 0 }).collect();
         let cell = |s: &Symbol| (measure_of(s), (s.start - measure_of(s) * bar).div_euclid(group));
         let joined = |a: usize, b: usize, k: usize| levels[a] >= k && levels[b] >= k && cell(&self.symbols[a]) == cell(&self.symbols[b]);
         let mut beams: Vec<Vec<&'static str>> = vec![Vec::new(); n];
@@ -726,8 +713,9 @@ impl<'a> Plan<'a> {
             let written = value(len);
             let event = sym.event.map(|e| &self.events[e]);
             if let (Some(ev), true, true) = (event, marks, sym.first) {
-                if ev.notes.iter().any(|n| n.place.is_none()) {
-                    out.push(self.words("!", staff));
+                let lost: Vec<String> = ev.notes.iter().filter(|n| n.place.is_none()).map(|n| pitch_name(n.spelled)).collect();
+                if !lost.is_empty() {
+                    out.push(self.words(&format!("! {}", lost.join(" ")), staff));
                 }
                 if ev.notes.iter().any(|n| doubtful(n, self.opts)) {
                     out.push(self.words("?", staff));
@@ -738,10 +726,12 @@ impl<'a> Plan<'a> {
                     out.push(self.words("let ring", staff));
                 }
             }
-            let chord: Vec<Option<&Written>> = match event {
-                Some(ev) => ev.notes.iter().map(Some).collect(),
-                None => vec![None],
-            };
+            // The tab staff never shows a note without a place: a wrong fret would be a wrong pitch.
+            // A chord with no placed note is a rest there.
+            let mut chord: Vec<Option<&Written>> = event.map_or(Vec::new(), |ev| ev.notes.iter().filter(|w| staff != Staff::Tab || w.place.is_some()).map(Some).collect());
+            if chord.is_empty() {
+                chord.push(None);
+            }
             for (k, w) in chord.into_iter().enumerate() {
                 let mut note = El::new("note");
                 if w.is_some_and(|w| doubtful(w, self.opts)) {

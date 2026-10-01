@@ -21,7 +21,7 @@ assert!(check(&guitar, &notes, &fingering, &opts).is_empty());
 ## Instruments as data
 
 An `Instrument` is a `Tuning` (one `StringSpec` per string, string 1 first), a fret count, a scale
-length in millimetres and a capo.
+length in millimetres, a capo and the clef it is written in (`notation`).
 
 - **Strings are numbered from 1**, the highest line in tab. The solver never infers pitch order from
   the string number. It reads each string's `open_pitch`, so re-entrant tunings work: on a high-G
@@ -281,27 +281,41 @@ and the header always says `Capo n`. `TabOptions::capo` chooses how the staff sa
 
 | `capo` | `<staff-tuning>` | `<capo>` |
 |---|---|---|
-| `element` (default) | the tuning without the capo | the capo fret |
-| `tuning` | the open strings as they sound with the capo on | none |
+| `tuning` (default) | the open strings as they sound with the capo on | none |
+| `element` | the tuning without the capo | the capo fret |
 
-`element` follows the MusicXML definition: the capo raises the strings given by `<staff-tuning>`, so
-pitch = tuning + capo + fret. Readers differ, so **check the round trip in the program the file is
-for**. MuseScore 4.7 ignores `<capo>` on import: it keeps the pitches, checks each string and fret
-against the tuning without the capo, and rewrites the ones that no longer match, so the tab shows
-frets counted from the nut and some notes move string. With `tuning` MuseScore keeps every string
-and fret as written. Guitar Pro and Dorico have not been checked.
+`tuning` is the default because it is what readers keep. `element` follows the MusicXML definition
+(the capo raises the strings given by `<staff-tuning>`, so pitch = tuning + capo + fret), but a
+reader that ignores `<capo>` then sees frets that do not match the tuning.
+
+Readers checked: **MuseScore 4.7 only.**
+
+- With `tuning` it keeps every string and fret as written.
+- With `element` it drops `<capo>`: it keeps the pitches, checks each string and fret against the
+  tuning without the capo, and rewrites the ones that no longer match. The tab then shows frets
+  counted from the nut, and some notes move to another string.
+
+Guitar Pro, Dorico and alphaTab have not been checked. Check the round trip in the program the file
+is for before choosing `element`.
 
 ### Notation staff
 
 Pitches are written as they sound. An instrument written an octave above its sound gets a clef with
-`<clef-octave-change>-1</clef-octave-change>`, and no `<transpose>`:
+`<clef-octave-change>-1</clef-octave-change>`, and no `<transpose>`. The clef is the instrument's
+`notation` field:
 
-- bass clef 8vb when the highest open string is below E3 (bass guitars);
-- treble clef 8vb when the lowest open string is below C3 (guitars);
-- plain treble clef otherwise (ukulele, baritone ukulele, mandolin).
+| `notation` | Clef | Presets |
+|---|---|---|
+| `treble-8vb` | treble, sounding an octave lower | guitars, baritone ukulele |
+| `bass-8vb` | bass, sounding an octave lower | basses |
+| `treble` | treble at pitch | ukuleles, mandolin |
 
-`TabOptions::clef` overrides the choice. Pitches are spelled by the shared `spelling` module.
-`<accidental>` elements are not written; a reader works them out from the pitch and the key.
+A custom instrument may leave `notation` out. It then gets bass clef 8vb when its highest open
+string is below E3, treble 8vb when its lowest is below C3, and plain treble otherwise
+(`Instrument::notation_clef`). `TabOptions::clef` overrides the instrument for one document.
+
+Pitches are spelled by the shared `spelling` module. `<accidental>` elements are not written; a
+reader works them out from the pitch and the key.
 
 ### Rhythm and measures
 
@@ -352,16 +366,29 @@ staves the notation staff gets only the slurs and the x noteheads.
 - A note whose confidence is below `TabOptions::doubt_below` (default 0.4; 0 marks none) is
   **doubtful**:
   - `color` on the `<note>` and on its `<notehead>` (`#9A5200`);
+  - one `?` as words above the column, before the chord's first note;
   - the confidence as a processing instruction, the last child of the `<note>`:
-    `<?brasscribe-confidence 0.31?>`;
-  - one `?` as words above the column, before the chord's first note.
+
+    ```xml
+    <note color="#9A5200">
+      ...
+      <?fretted-confidence 0.31?>
+    </note>
+    ```
+
+    The value has two decimals, from 0.00 to 1.00. A tied note carries it on its first piece.
 - Doubt is never a parenthesis or another notehead shape: those mean ghost notes, ties and half
   notes in tab. It never changes a pitch, string or fret.
 - The confidence is not an `<other-notation>` element: MuseScore 4.7 stops responding when it reads
-  one.
-- A note without a place (out of range, or more notes than strings) keeps its pitch, has no
-  `<technical>`, and gets a `!` above it. A reader may then invent a place for it: MuseScore writes
-  it on the nearest string.
+  one. A processing instruction is skipped by readers that do not know it.
+- **A note without a place** (out of range, or more notes than strings) is never shown on the tab
+  staff, because any fret there would be a wrong pitch:
+  - the notation staff writes it as any other note;
+  - the tab staff leaves it out of its chord, or writes a rest of the same length when the chord has
+    no other note;
+  - words above the column name it: `! D1`. In the notation-only layout the words stand above the
+    note.
+  - A slide, hammer-on, pull-off or bend to or from such a note is not written.
 - In a pair of staves the `?` and `!` are on the tab staff.
 
 ### Round trip in MuseScore
@@ -370,10 +397,11 @@ Checked by converting generated files with MuseScore 4.7 (`mscore -o out.musicxm
 to PDF):
 
 - kept: the number of tab lines, every `<staff-tuning>` (also the re-entrant ukulele and the 5-string
-  bass), the two-staff part, the octave clef, ties, chords, triplets, slurs, slides, let-ring ties,
-  x noteheads, the note colour, and the `?`, `!`, header and tempo;
-- changed: `<capo>` is dropped (see Capo), a `<wavy-line>` is drawn as a trill line, and an
-  out-of-range note is given a string;
+  bass), every string and fret with the default capo encoding, the two-staff part, the octave clef,
+  ties, chords, triplets, slurs, slides, let-ring ties, x noteheads, the note colour, the rest that
+  stands for an out-of-range note, and the `?`, `!`, header and tempo;
+- changed: a `<wavy-line>` is drawn as a trill line, and with `"capo": "element"` the frets are
+  rewritten (see Capo);
 - lost: `<hammer-on>`, `<pull-off>` and `<bend>` (the slurs stay), and the confidence.
 
 ## JSON
@@ -406,7 +434,7 @@ MusicXML text:
 {"title": "Study", "instrument": {"preset": "guitar-standard", "capo": 2},
  "notes": [{"pitch": 66, "start": 0, "dur": 24, "confidence": 0.3}],
  "tempo_bpm": 96, "meter": {"beats": 3, "beat_unit": 4}, "key": {"fifths": 2, "mode": "major"},
- "tab": {"layout": "tab", "doubt_below": 0.4, "capo": "element", "clef": "treble-8vb"}}
+ "tab": {"layout": "tab", "doubt_below": 0.4, "capo": "tuning", "clef": "treble-8vb"}}
 ```
 
 - Every field but `instrument` and `notes` may be left out: 4/4, C major, `tab-and-notation`.
@@ -425,8 +453,17 @@ MusicXML text:
   model. Guitar open chords come from the span, height and open-string terms.
 - **Vibrato** has no position constraint.
 - **String crossing.** Skipping strings costs nothing.
-- **In the MusicXML:** a second voice for held notes, meter and key changes, chord names and
-  diagrams, palm mute, harmonics, pre-bends and releases, and a per-string (partial) capo.
+
+Known limits of the MusicXML:
+
+- **One rhythmic voice.** A chord is cut when the next note starts, so a bass note held under a
+  melody loses its length. There is no second voice.
+- **Bends.** The model has no bend amount, and the solver gives the bent note the fret that sounds
+  its pitch. The bend is written on the note it starts from and the bent note follows as its own
+  number, so a reader that plays bends sounds the target pitch twice. Pre-bends and releases are
+  not written.
+- Meter and key changes, chord names and diagrams, palm mute, harmonics and a per-string (partial)
+  capo are not written.
 
 The weights are hand-set against the tests below. They have not been fitted to a tab corpus.
 
@@ -492,8 +529,10 @@ checked to hold exactly their length on each staff.
 
 - **Tab staff:** line count and `<staff-tuning>` lines for standard and drop-D guitar, 4- and
   5-string bass, both ukuleles and mandolin; flat tunings; both capo encodings.
+- **Out of range:** a rest and the note's name on the tab staff, the note on the notation staff, and
+  no pitch on the tab staff without a string and fret that sound it.
 - **Layouts:** two staves with the same notes, tab alone with stems and beams, notation alone; the
-  octave clefs.
+  clef of every preset, and of a custom instrument with and without `notation`.
 - **Rhythm:** ties across the bar line, rests, pickups, triplets, compound time (beams and values
   on the dotted quarter), chords, a chord cut
   at the next note, doublings.

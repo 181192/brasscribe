@@ -46,6 +46,20 @@ impl Tuning {
     }
 }
 
+/// The clef an instrument is written in on a notation staff. Pitches are written as they sound;
+/// the `8vb` clefs carry the octave an instrument is written above its sound.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NotationClef {
+    Treble,
+    /// Treble clef sounding an octave lower: guitar.
+    #[serde(rename = "treble-8vb")]
+    Treble8vb,
+    /// Bass clef sounding an octave lower: bass guitar.
+    #[serde(rename = "bass-8vb")]
+    Bass8vb,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Instrument {
@@ -58,6 +72,10 @@ pub struct Instrument {
     /// Capo fret; 0 = no capo. It raises every full-length string by this many semitones.
     #[serde(default)]
     pub capo: u8,
+    /// The clef of the notation staff. None (a custom instrument that does not say) picks one from
+    /// the open strings: see [`Instrument::notation_clef`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notation: Option<NotationClef>,
 }
 
 /// Where a note is played: string (1 = highest tab line) and fret relative to the capo (0 = open).
@@ -76,7 +94,26 @@ pub fn fret_distance_mm(scale_mm: f64, fret: f64) -> f64 {
 
 impl Instrument {
     pub fn new(name: &str, tuning: Tuning, frets: u8, scale_length_mm: f64) -> Self {
-        Instrument { name: name.into(), tuning, frets, scale_length_mm, capo: 0 }
+        Instrument { name: name.into(), tuning, frets, scale_length_mm, capo: 0, notation: None }
+    }
+
+    pub fn with_notation(mut self, clef: NotationClef) -> Self {
+        self.notation = Some(clef);
+        self
+    }
+
+    /// The notation clef: the instrument's own, or else from the open strings: bass clef 8vb when
+    /// the highest open string is below E3, treble 8vb when the lowest is below C3, else treble.
+    pub fn notation_clef(&self) -> NotationClef {
+        if let Some(clef) = self.notation {
+            return clef;
+        }
+        let open = || self.tuning.strings.iter().map(|s| s.open_pitch);
+        match (open().min(), open().max()) {
+            (_, Some(hi)) if hi < 52 => NotationClef::Bass8vb,
+            (Some(lo), _) if lo < 48 => NotationClef::Treble8vb,
+            _ => NotationClef::Treble,
+        }
     }
 
     pub fn with_capo(mut self, capo: u8) -> Self {
@@ -268,20 +305,20 @@ impl UkuleleSize {
 /// A GCEA ukulele: re-entrant (G4 on string 4) unless `low_g` (G3).
 pub fn ukulele(size: UkuleleSize, low_g: bool) -> Instrument {
     let (name, g) = if low_g { ("Ukulele (low G)", G3) } else { ("Ukulele (high G)", G4) };
-    Instrument::new(name, Tuning::from_pitches(if low_g { "GCEA low G" } else { "GCEA high G" }, &[A4, E4, C4, g]), size.frets(), size.scale_length_mm())
+    Instrument::new(name, Tuning::from_pitches(if low_g { "GCEA low G" } else { "GCEA high G" }, &[A4, E4, C4, g]), size.frets(), size.scale_length_mm()).with_notation(NotationClef::Treble)
 }
 
 fn guitar(tuning: &str, pitches: &[i32]) -> Instrument {
-    Instrument::new("Guitar", Tuning::from_pitches(tuning, pitches), 22, GUITAR_SCALE_MM)
+    Instrument::new("Guitar", Tuning::from_pitches(tuning, pitches), 22, GUITAR_SCALE_MM).with_notation(NotationClef::Treble8vb)
 }
 
 fn guitar7(tuning: &str, pitches: &[i32]) -> Instrument {
-    Instrument::new("7-string guitar", Tuning::from_pitches(tuning, pitches), 24, GUITAR_SCALE_MM)
+    Instrument::new("7-string guitar", Tuning::from_pitches(tuning, pitches), 24, GUITAR_SCALE_MM).with_notation(NotationClef::Treble8vb)
 }
 
 fn bass(name: &str, tuning: &str, pitches: &[i32]) -> Instrument {
     let frets = if pitches.len() > 4 { 24 } else { 21 };
-    Instrument::new(name, Tuning::from_pitches(tuning, pitches), frets, BASS_SCALE_MM)
+    Instrument::new(name, Tuning::from_pitches(tuning, pitches), frets, BASS_SCALE_MM).with_notation(NotationClef::Bass8vb)
 }
 
 /// Ids of the built-in instruments, in menu order. Within a family the standard tuning comes first.
@@ -355,7 +392,8 @@ pub fn preset(id: &str) -> Option<Instrument> {
             Tuning::from_pitches("F\u{266f} standard", &[E4, B3, G3, D3, A2, E2, B1, F_SHARP1]),
             24,
             EXTENDED_GUITAR_SCALE_MM,
-        ),
+        )
+        .with_notation(NotationClef::Treble8vb),
         "bass-4-standard" => bass("Bass", "Standard", &bass4),
         "bass-4-eb-standard" => bass("Bass", "E\u{266d} standard", &bass4.map(|p| p - 1)),
         "bass-4-d-standard" => bass("Bass", "D standard", &bass4.map(|p| p - 2)),
@@ -366,8 +404,8 @@ pub fn preset(id: &str) -> Option<Instrument> {
         "bass-6-standard" => bass("6-string bass", "Standard", &[C3, G2, D2, A1, E1, B0]),
         "ukulele-high-g" => ukulele(UkuleleSize::Concert, false),
         "ukulele-low-g" => ukulele(UkuleleSize::Concert, true),
-        "ukulele-baritone" => Instrument::new("Baritone ukulele", Tuning::from_pitches("DGBE", &[E4, B3, G3, D3]), 19, BARITONE_UKULELE_SCALE_MM),
-        "mandolin" => Instrument::new("Mandolin", Tuning::from_pitches("GDAE", &[E5, A4, D4, G3]), 20, MANDOLIN_SCALE_MM),
+        "ukulele-baritone" => Instrument::new("Baritone ukulele", Tuning::from_pitches("DGBE", &[E4, B3, G3, D3]), 19, BARITONE_UKULELE_SCALE_MM).with_notation(NotationClef::Treble8vb),
+        "mandolin" => Instrument::new("Mandolin", Tuning::from_pitches("GDAE", &[E5, A4, D4, G3]), 20, MANDOLIN_SCALE_MM).with_notation(NotationClef::Treble),
         _ => return None,
     })
 }
