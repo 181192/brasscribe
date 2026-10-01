@@ -4,10 +4,10 @@
 //! and each voicing is paired with a hand position `p` (the neck fret under the index finger). The
 //! cheapest path through these states minimises the per-state cost (span, height on the neck, open
 //! strings) plus the per-transition cost (moving the hand, dropping a melody note far below the
-//! hand). A second pass pulls repeated pitch sequences onto the fingering of their first
-//! occurrence. See the crate README for the cost model.
+//! hand). A second pass pulls repeated pitch sequences onto the fingering most of their
+//! occurrences got. See the crate README for the cost model.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use brasscribe_core::model::{check_span, Note, TICKS_PER_BEAT};
 use serde::{Deserialize, Serialize};
@@ -135,11 +135,13 @@ struct Weights {
     shift_fixed: f64,
     /// Per mm a melody note sits below a neighbouring hand position by more than a hand's width.
     drop_mm: f64,
+    /// A leap in a single-note line excuses that much of a shift or a drop from the costs per mm.
+    leaps: bool,
     /// Per mm of voicing span (lowest to highest fretted note).
     span_mm: f64,
     /// Per mm squared the reach from the index finger exceeds the comfortable span.
     stretch_sq: f64,
-    /// For a repeated passage fingered differently from its first occurrence.
+    /// For a repeated passage fingered differently from its other occurrences.
     repeat: f64,
     /// For a power chord from the shape table (negative: a bonus).
     power: f64,
@@ -156,6 +158,7 @@ fn weights(style: Style) -> Weights {
             shift_mm: 0.03,
             shift_fixed: 1.5,
             drop_mm: 0.03,
+            leaps: true,
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
@@ -169,6 +172,7 @@ fn weights(style: Style) -> Weights {
             shift_mm: 0.03,
             shift_fixed: 3.0,
             drop_mm: 0.04,
+            leaps: true,
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
@@ -182,6 +186,7 @@ fn weights(style: Style) -> Weights {
             shift_mm: 0.06,
             shift_fixed: 3.0,
             drop_mm: 0.06,
+            leaps: false,
             span_mm: 0.01,
             stretch_sq: 0.01,
             repeat: 25.0,
@@ -329,6 +334,23 @@ impl Ctx<'_> {
         self.mm(hi) - self.mm(lo)
     }
 
+    /// Millimetres between two neck frets, less the part a leap in the line excuses. A leap of more
+    /// than a hand's width in a single-note line counts as an excursion: the hand may travel the
+    /// interval less that width, in frets, without paying per mm, so the notes on either side of
+    /// the leap keep the positions they would have without it. Without an interval (a chord on
+    /// either side), or in a style that keeps a phrase in one position, the whole distance counts.
+    fn beyond_leap(&self, from: i32, to: i32, interval: Option<i32>) -> f64 {
+        let mm = (self.mm(from) - self.mm(to)).abs();
+        let frets = (from - to).abs();
+        match interval {
+            Some(i) if self.w.leaps && frets > 0 => {
+                let free = (i.abs() - HAND_FRETS).max(0);
+                mm * f64::from((frets - free).max(0)) / f64::from(frets)
+            }
+            _ => mm,
+        }
+    }
+
     fn state_cost(&self, ev: &Event, v: &Voicing, p: i32) -> f64 {
         let w = &self.w;
         let mut c = 0.0;
@@ -363,20 +385,21 @@ impl Ctx<'_> {
         let w = &self.w;
         let dt = ((b.start - a.start) as f64 * self.sec_per_tick).max(0.02);
         let urgency = 1.0 + SHIFT_TIME_S / dt;
+        let interval = (a.melodic() && b.melodic()).then(|| b.groups[0].pitch - a.groups[0].pitch);
         let mut c = 0.0;
         if sa.p != sb.p {
-            c += (w.shift_fixed + w.shift_mm * (self.mm(sa.p) - self.mm(sb.p)).abs()) * urgency;
+            c += (w.shift_fixed + w.shift_mm * self.beyond_leap(sa.p, sb.p, interval)) * urgency;
         }
         // A melody note far below the neighbouring hand position: the open-string or low-fret
         // rendering of a line that is being played up the neck.
         if let Some(q) = b.melody_fret(sb, self.capo) {
             if q + HAND_FRETS < sa.p {
-                c += w.drop_mm * (self.mm(sa.p) - self.mm(q));
+                c += w.drop_mm * self.beyond_leap(sa.p, q, interval);
             }
         }
         if let Some(q) = a.melody_fret(sa, self.capo) {
             if q + HAND_FRETS < sb.p {
-                c += w.drop_mm * (self.mm(sb.p) - self.mm(q));
+                c += w.drop_mm * self.beyond_leap(sb.p, q, interval);
             }
         }
         let (va, vb) = (&a.voicings[sa.v], &b.voicings[sb.v]);
@@ -487,16 +510,34 @@ pub fn assign_with_techniques(inst: &Instrument, notes: &[Note], techniques: &[V
     Ok(Fingering { notes: out })
 }
 
-/// The cheapest path, with repeated passages pulled onto their first fingering.
+/// The cheapest path, with repeated passages pulled onto one fingering: the one most of their
+/// occurrences got on their own, and the earliest of those when they tie. One occurrence next to
+/// an odd note then follows the others, not the other way round.
 fn solve_path(ctx: &Ctx, events: &[Event]) -> Vec<usize> {
     let path = viterbi(ctx, events, &HashMap::new());
     let refs = repeats(events);
     if refs.is_empty() {
         return path;
     }
-    // Later occurrences and the first one itself keep the first occurrence's fingering.
-    let chosen = |r: usize| events[r].positions(events[r].states[path[r]].v);
-    let targets: HashMap<usize, Vec<Option<Position>>> = refs.iter().flat_map(|(&e, &r)| [(e, chosen(r)), (r, chosen(r))]).collect();
+    let mut occurrences: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+    for (&e, &first) in &refs {
+        occurrences.entry(first).or_insert_with(|| vec![first]).push(e);
+    }
+    let mut targets: HashMap<usize, Vec<Option<Position>>> = HashMap::new();
+    for mut same in occurrences.into_values() {
+        same.sort_unstable();
+        let chosen: Vec<Vec<Option<Position>>> = same.iter().map(|&e| events[e].positions(events[e].states[path[e]].v)).collect();
+        let count = |f: &Vec<Option<Position>>| chosen.iter().filter(|c| *c == f).count();
+        let mut best = &chosen[0];
+        for f in &chosen[1..] {
+            if count(f) > count(best) {
+                best = f;
+            }
+        }
+        for &e in &same {
+            targets.insert(e, best.clone());
+        }
+    }
     viterbi(ctx, events, &targets)
 }
 

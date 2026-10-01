@@ -152,6 +152,13 @@ Per transition from one event to the next:
 - **Shift.** A fixed cost per hand move plus a cost per mm moved. Both are scaled by
   `1 + 0.25 s / Δt`, so a shift with no time to make it costs more. Ticks become seconds through
   `Options::tempo_bpm`. Without a tempo, time is counted in beats, as at 120 BPM.
+- **Leaps.** In a single-note line, a leap of more than a hand's width (three frets) counts as an
+  excursion. The hand may travel the interval less that width, in frets, free of the cost per mm
+  and of the cost for dropping below the hand. The fixed cost per move stays. So a stray note an
+  octave or more away is reached and left: the notes around it keep their own position and do not
+  climb the neck to meet it, and a line that leaves a high passage by a leap lands in its low
+  position at once. Steps and small intervals get no allowance, so a lick does not slide along one
+  string. `Lead` has no allowance: it keeps the phrase in one position across the leap.
 - **Dropping below the hand.** In a single-note line, a note more than a hand's width (three frets)
   below the neighbouring hand position costs extra, per mm of the drop. This is the
   "twelfth-fret solo written as open strings" failure: a line played up the neck should not dip to
@@ -165,13 +172,15 @@ Style presets (`Style`) re-weight these terms:
 |---|---|---|---|---|
 | `OpenPosition` | strongest pull to the nut | bonus in chords and lines | cheapest | power chords and open shapes, strongest |
 | `AsPlayed` (default) | mild | small bonus in chords, neutral in lines | a fixed cost per move keeps a lick in its box | power chords and open shapes |
-| `Lead` | almost none | penalty in single-note lines | also twice the cost per mm, so a phrase stays in one position | power chords only |
+| `Lead` | almost none | penalty in single-note lines | also twice the cost per mm and no allowance for leaps, so a phrase stays in one position | power chords only |
 
 The weights are in one table in `src/solve.rs`.
 
-**Repeats.** When a run of four events has the same pitches as an earlier run, a second pass makes
-the repeat, and the first occurrence, keep the first occurrence's fingering. A strong cost for
-deviating does this, so a pin or an impossible reuse still wins.
+**Repeats.** When a run of four events has the same pitches as an earlier run, a second pass gives
+every occurrence one fingering: the one most occurrences got on their own, or the first
+occurrence's when they tie. So one bar that sits next to an odd note follows the other bars, and
+does not pass its fingering on to them. A strong cost for deviating does this, so a pin or an
+impossible reuse still wins.
 
 **Pins.** `Options::pins` fixes the string of a note. The solver treats a pin as a hard constraint,
 and the neighbours and the rest of a chord reflow around it. A pin on a string that cannot sound the
