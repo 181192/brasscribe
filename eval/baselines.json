@@ -945,7 +945,7 @@
         "song.doubt_recall": 0.355,
         "song.tempo_ok": 0.7,
         "song.tempo_ok_level": 0.7,
-        "song.meter_ok": 0.769,
+        "song.meter_ok": 0.923,
         "song.violations": {
           "value": 0,
           "tolerance": 0,
@@ -983,7 +983,7 @@
         "instrument.doubt_recall": 0.272,
         "instrument.tempo_ok": 0.6,
         "instrument.tempo_ok_level": 0.7,
-        "instrument.meter_ok": 0.692,
+        "instrument.meter_ok": 0.923,
         "instrument.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1121,7 +1121,7 @@
         "tune.solo.chord_precision": 0.581,
         "tune.solo.chords_whole": 1.0,
         "tune.solo.string_agreement": 0.373,
-        "tune.solo.string_recall": 0.312,
+        "tune.solo.string_recall": 0.313,
         "tune.solo.out_of_range": {
           "value": 0.001,
           "higher_is_better": false
@@ -1151,7 +1151,7 @@
         "tune.solo.doubt_recall": 0.275,
         "tune.solo.tempo_ok": 0.722,
         "tune.solo.tempo_ok_level": 0.867,
-        "tune.solo.meter_ok": 0.189,
+        "tune.solo.meter_ok": 0.967,
         "tune.solo.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1161,24 +1161,24 @@
           "value": 90,
           "tolerance": 0
         },
-        "tune.comp.onset_f1": 0.72,
-        "tune.comp.onset_p": 0.779,
+        "tune.comp.onset_f1": 0.721,
+        "tune.comp.onset_p": 0.78,
         "tune.comp.onset_r": 0.688,
         "tune.comp.octave_err_rate": {
           "value": 0.059,
           "higher_is_better": false
         },
         "tune.comp.chord_recall": 0.671,
-        "tune.comp.chord_precision": 0.775,
+        "tune.comp.chord_precision": 0.776,
         "tune.comp.chords_whole": 0.999,
         "tune.comp.string_agreement": 0.706,
         "tune.comp.string_recall": 0.468,
         "tune.comp.out_of_range": {
-          "value": 0.002,
+          "value": 0.001,
           "higher_is_better": false
         },
         "tune.comp.unplayable_dropped": {
-          "value": 0.004,
+          "value": 0.005,
           "higher_is_better": false
         },
         "tune.comp.leftovers_dropped": {
@@ -1198,11 +1198,11 @@
           "value": 0.0,
           "higher_is_better": false
         },
-        "tune.comp.doubt_precision": 0.713,
-        "tune.comp.doubt_recall": 0.248,
+        "tune.comp.doubt_precision": 0.711,
+        "tune.comp.doubt_recall": 0.246,
         "tune.comp.tempo_ok": 0.867,
         "tune.comp.tempo_ok_level": 0.989,
-        "tune.comp.meter_ok": 0.922,
+        "tune.comp.meter_ok": 1.0,
         "tune.comp.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1253,7 +1253,7 @@
         "report.solo.doubt_recall": 0.186,
         "report.solo.tempo_ok": 0.611,
         "report.solo.tempo_ok_level": 0.711,
-        "report.solo.meter_ok": 0.167,
+        "report.solo.meter_ok": 0.967,
         "report.solo.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1264,14 +1264,14 @@
           "tolerance": 0
         },
         "report.comp.onset_f1": 0.717,
-        "report.comp.onset_p": 0.738,
+        "report.comp.onset_p": 0.739,
         "report.comp.onset_r": 0.726,
         "report.comp.octave_err_rate": {
           "value": 0.029,
           "higher_is_better": false
         },
         "report.comp.chord_recall": 0.721,
-        "report.comp.chord_precision": 0.72,
+        "report.comp.chord_precision": 0.721,
         "report.comp.chords_whole": 0.999,
         "report.comp.string_agreement": 0.695,
         "report.comp.string_recall": 0.489,
@@ -1280,7 +1280,7 @@
           "higher_is_better": false
         },
         "report.comp.unplayable_dropped": {
-          "value": 0.004,
+          "value": 0.005,
           "higher_is_better": false
         },
         "report.comp.leftovers_dropped": {
@@ -1300,11 +1300,11 @@
           "value": 0.0,
           "higher_is_better": false
         },
-        "report.comp.doubt_precision": 0.801,
-        "report.comp.doubt_recall": 0.25,
+        "report.comp.doubt_precision": 0.799,
+        "report.comp.doubt_recall": 0.249,
         "report.comp.tempo_ok": 0.944,
         "report.comp.tempo_ok_level": 1.0,
-        "report.comp.meter_ok": 0.956,
+        "report.comp.meter_ok": 1.0,
         "report.comp.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1315,24 +1315,24 @@
           "tolerance": 0
         },
         "song.onset_f1": 0.348,
-        "song.onset_p": 0.443,
+        "song.onset_p": 0.445,
         "song.onset_r": 0.326,
         "song.octave_err_rate": {
           "value": 0.132,
           "higher_is_better": false
         },
-        "song.chord_recall": 0.252,
-        "song.chord_precision": 0.386,
+        "song.chord_recall": 0.251,
+        "song.chord_precision": 0.385,
         "song.out_of_range": {
-          "value": 0.023,
+          "value": 0.018,
           "higher_is_better": false
         },
         "song.unplayable_dropped": {
-          "value": 0.009,
+          "value": 0.017,
           "higher_is_better": false
         },
         "song.leftovers_dropped": {
-          "value": 0.081,
+          "value": 0.082,
           "higher_is_better": false
         },
         "song.hand_travel": {
@@ -1348,11 +1348,11 @@
           "value": 0.0,
           "higher_is_better": false
         },
-        "song.doubt_precision": 0.764,
-        "song.doubt_recall": 0.161,
+        "song.doubt_precision": 0.761,
+        "song.doubt_recall": 0.159,
         "song.tempo_ok": 0.769,
         "song.tempo_ok_level": 0.769,
-        "song.meter_ok": 0.75,
+        "song.meter_ok": 0.938,
         "song.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1401,7 +1401,7 @@
         },
         "ukulele_baritone.instrument.doubt_precision": 0.0,
         "ukulele_baritone.instrument.tempo_ok": 1.0,
-        "ukulele_baritone.instrument.meter_ok": 0.667,
+        "ukulele_baritone.instrument.meter_ok": 1.0,
         "ukulele_baritone.instrument.violations": {
           "value": 0,
           "tolerance": 0,

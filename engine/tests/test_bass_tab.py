@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from brasscribe_engine import bass_tab, profiles, runner, tuning
+from brasscribe_engine import bass_tab, profiles, runner, tab, tuning
 from brasscribe_engine import schemas as m
 from brasscribe_engine import stages as S
 from brasscribe_engine.adapters import AdapterRegistry
@@ -1152,3 +1152,15 @@ def test_swiftf0_on_silence_is_a_stage_that_ran_not_a_failed_job(tmp_path):
     registry = AdapterRegistry(s.adapters_dir, s.models_dir, HashIndex(None))
     registry.run("swift-f0", silent, tmp_path / "bass-sw.mid")
     assert bass_tab.load_transcription(tmp_path / "bass-sw.mid") == []
+
+
+def test_a_bar_of_one_or_two_tracked_beats_is_written_as_four():
+    """On one instrument alone the tracker often calls every beat, or every other one, a downbeat."""
+    assert [bass_tab.bar_beats(n) for n in (1, 2, 3, 4, 5, 6, 7, 8)] == [4, 4, 3, 4, 5, 6, 7, 4]
+    notes = [{"pitch": 40 + i % 5, "onset": 0.5 * i, "offset": 0.5 * i + 0.4} for i in range(32)]
+    for every, written in ((1, 4), (2, 4), (3, 3), (4, 4)):
+        beats = np.array([[0.5 * i, 1 if i % every == 0 else 2] for i in range(34)])
+        doc = bass_tab.transcribed_line(notes, beats)
+        assert doc["meter"] == {"beats": written, "beat_unit": 4}, every
+        assert doc["notes"][0]["start"] == 0  # the first tracked downbeat is still where the first bar starts
+        assert tab.played_notes(notes, beats, "guitar-6", clean=False)["meter"]["beats"] == written

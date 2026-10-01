@@ -339,6 +339,17 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
     return sure if _heard(second, note, note["pitch"]) else UNCONFIRMED
 
 
+def bar_beats(tracked: int) -> int:
+    """Beats in a bar, given the commonest distance between the tracked downbeats (after the level is chosen).
+
+    On one instrument alone the beat tracker often calls every beat, or every other one, a downbeat: on
+    GuitarSet's single lines (all in 4/4) it gave bars of one beat in 48% of the takes and of two in 34%,
+    and the tab was written in 1/4 or 2/4. A bar of one or two beats is taken as half or a quarter of a
+    bar of four, and a bar of eight as two. A real 2/4 is then written two bars to the bar, which reads
+    the same; three, five, six and seven stay as tracked."""
+    return 4 if tracked in (1, 2, 8) else tracked
+
+
 def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", second: list[dict] | None = None) -> dict:
     """The bass line of transcribed notes ({pitch, onset, offset} in seconds) on the beat grid.
 
@@ -377,6 +388,7 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     if len(times) != len(beats):
         beats_per_bar *= 2
         first_down *= 2
+    beats_per_bar = bar_beats(beats_per_bar)
     earliest = float(BeatMap(times).to_beats(np.array([onsets.min()]))[0])
     while first_down > earliest + 1e-6:
         first_down -= beats_per_bar
