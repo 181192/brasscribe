@@ -32,7 +32,13 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     chords an overtone above the 12th fret of the top string is left out on a guitar and on a ukulele (its own top
     string, and only a note that starts with the note it is an overtone of and is fainter: a melody played up there
     stays), not on a mandolin, where that made no measurable difference. A unison that a strummed open chord of a
-    ukulele plays on two strings (the G of 0232) is heard once and written on both, marked `doubled`.
+    ukulele plays on two strings (the G of 0232) is heard once and written on both, marked `doubled`. A faint
+    overtone that starts apart from a strum is left out too. With `style: open-position` an overtone on top of a
+    chord that alone moves the chord three or more frets up the neck is left out, so an open C stays an open C.
+  - The bar: on one instrument alone the beat tracker often marks every beat, or every other one, as a downbeat.
+    A bar of one, two or eight tracked beats is written as a bar of four (a bass too).
+  - `chords: completed` (off by default) adds to a chord a note the same chord has in the strums around it; the
+    note is marked `inferred` in `tab.json`, counted in `inferred_notes`, and gets the "?".
   - Nothing is left out silently: `tab.json` counts the notes heard but not written, `leftovers_dropped` (overtones,
     faint notes and notes too short to be one, taken as not played) and `unplayable_dropped` (notes the instrument
     or the hand cannot play with the rest of their chord, or, on a ukulele or a mandolin only, that lie under
@@ -43,8 +49,8 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore
     when it is installed; `/musicxml`, `/pdf` and `/midi` of the job serve them.
   - Options: `instrument`, `tuning`, `capo` (frets are counted from it, and the page names it), `style`, `octave`
-    (`auto`, or the player's choice) and `layout` (`tab`, `tab-and-notation`, `notation`), and none of the band
-    options. `bass-tab` is the same profile with a bass under the id older apps use.
+    (`auto`, or the player's choice), `layout` (`tab`, `tab-and-notation`, `notation`) and `chords` (`heard`,
+    `completed`; not for a bass), and none of the band options. `bass-tab` is the same profile with a bass under the id older apps use.
   - `brasscribe bench bass-tab`, `guitar-tab`, `ukulele-tab` and `mandolin-tab` measure it: on Slakh's bass lines
     and synthesized low ones, on GuitarSet and Slakh's guitars, and on rendered ukulele and mandolin passages
     ([`bass_tab_bench.py`](../eval/brasscribe_eval/bass_tab_bench.py),

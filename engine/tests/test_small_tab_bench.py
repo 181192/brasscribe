@@ -21,12 +21,16 @@ def test_the_passages_are_the_same_every_time_and_on_the_instruments_strings():
             assert notes[0]["onset"] == pytest.approx(4 * 60 / 96)  # a bar's count-in
             for n in notes:
                 if "string" in n:  # a chord's notes say their string: at or above its open pitch; the first frets where rules are chosen
-                    assert 0 <= n["pitch"] - strings[n["string"] - 1] <= (15 if held_out else 3), (group, pattern, n)
+                    assert 0 <= n["pitch"] - strings[n["string"] - 1] <= (15 if held_out else 4 if group.startswith("guitar") else 3), (group, pattern, n)
             assert ("string" in notes[0]) == (pattern != "melody")
-    assert {g: p["instrument"] for g, (p, *_) in B.GROUPS.items() if not g.endswith(B.HELDOUT)} == {
+    assert {g: p["instrument"] for g, (p, *_) in B.GROUPS.items() if not g.endswith(B.HELDOUT) and not g.startswith("guitar")} == {
         "ukulele-high-g": "ukulele", "ukulele-low-g": "ukulele", "ukulele-baritone": "ukulele-baritone", "mandolin": "mandolin"}
     assert all(B.GROUPS[g + B.HELDOUT][0] == B.GROUPS[g][0] and B.GROUPS[g + B.HELDOUT][3] != B.GROUPS[g][3]
-               for g in B.GROUPS if not g.endswith(B.HELDOUT))  # each group has a held-out one: the same instrument, other chords
+               for g in B.GROUPS if not g.endswith(B.HELDOUT) and not g.startswith("guitar"))  # each group has a held-out one: the same instrument, other chords
+    guitars = [g for g in B.GROUPS if g.startswith("guitar")]
+    assert tuple(guitars) == B.SUITES["guitar-rendered"] and sum(g.endswith("-heldout") for g in guitars) == 2
+    picked = B.passage("guitar-nylon", "picked", 96.0)[:8]  # C: the bass string, then the top three strings in turn
+    assert [(n["string"], n["pitch"]) for n in picked] == [(5, 48), (3, 55), (2, 60), (1, 64), (2, 60), (3, 55), (2, 60), (1, 64)]
     assert sorted(g for groups in B.SUITES.values() for g in groups) == sorted(B.GROUPS)
 
 

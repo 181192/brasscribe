@@ -198,6 +198,21 @@
             ],
             "title": "Capo"
           },
+          "chords": {
+            "anyOf": [
+              {
+                "enum": [
+                  "heard",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chords"
+          },
           "difficulty": {
             "default": "faithful",
             "enum": [
@@ -1273,6 +1288,22 @@
             ],
             "description": "tab profile: the capo's fret; frets in the tab are counted from it, and the page names it; default: 0, no capo",
             "title": "Capo"
+          },
+          "chords": {
+            "anyOf": [
+              {
+                "enum": [
+                  "heard",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile, not a bass: heard writes the notes that were heard; completed also adds to a chord a note that the same chord has in the strums around it. An added note is marked inferred and gets the \"?\". On comping by jazz players one added note in three was played, on strummed open chords most; default: heard",
+            "title": "Chords"
           },
           "difficulty": {
             "default": "faithful",
@@ -2925,6 +2956,12 @@
             "title": "First Downbeat",
             "type": "integer"
           },
+          "inferred_notes": {
+            "default": 0,
+            "description": "notes in the tab that were not heard (chords: completed); each has inferred set",
+            "title": "Inferred Notes",
+            "type": "integer"
+          },
           "instrument": {
             "$ref": "#/components/schemas/TabInstrument"
           },
@@ -2943,7 +2980,7 @@
           },
           "leftovers_dropped": {
             "default": 0,
-            "description": "notes Basic Pitch heard that are not in the tab because they were not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and notes heard very faintly; among a guitar's or a ukulele's chords, overtones above the 12th fret of the top string. One pitch heard twice on one onset is one note and is not counted. Always 0 for a bass line, whose own count is in the job's log",
+            "description": "notes Basic Pitch heard that are not in the tab because they were not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and notes heard very faintly; among a guitar's or a ukulele's chords, overtones above the 12th fret of the top string, faint overtones that start apart from a strum, and, in the open-position style, an overtone on top of a chord that alone moves it up the neck. One pitch heard twice on one onset is one note and is not counted. Always 0 for a bass line, whose own count is in the job's log",
             "title": "Leftovers Dropped",
             "type": "integer"
           },
@@ -3189,6 +3226,12 @@
               }
             ],
             "title": "Fret"
+          },
+          "inferred": {
+            "default": false,
+            "description": "not heard: added to its chord because the same chord around it has this note (chords: completed). Its confidence is below 0.4",
+            "title": "Inferred",
+            "type": "boolean"
           },
           "octave_moved": {
             "default": false,

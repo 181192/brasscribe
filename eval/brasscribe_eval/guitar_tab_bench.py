@@ -8,6 +8,10 @@ hexaphonic pickup, so every note is annotated with the string it was played on. 
     python -m brasscribe_eval.guitar_tab_bench build <guitarset root> [--data DIR]    reference.json per excerpt
     python -m brasscribe_eval.guitar_tab_bench prepare <guitarset root> [--data DIR] [--only beats|notes] [--reverse]
                                                                                      run the models
+    python -m brasscribe_eval.guitar_tab_bench build-songs <slakh root> / prepare-songs <slakh root>
+                                                                                     guitars in a song (Slakh)
+    python -m brasscribe_eval.guitar_tab_bench build-idmt <IDMT-SMT-GUITAR_V2> / prepare-idmt <IDMT-SMT-GUITAR_V2>
+                                                                                     other guitars (IDMT-SMT-Guitar)
     python -m brasscribe_eval.guitar_tab_bench report [--data DIR]                    per-group numbers
 
 <guitarset root> holds `annotation/*.jams` and `audio_mono-mic/*_mic.wav` as unpacked from Zenodo.
@@ -101,17 +105,21 @@ SONG_FILES = {"beats": "song.beats", "bp": "song-bp.mid", "sw": "song-sw.mid"}
 
 
 def build_songs(slakh: Path, data: Path) -> list[Path]:
-    """reference.json for every Slakh track with a guitar: the notes of its Guitar stems at sounding pitch."""
+    """reference.json for every Slakh track with a guitar: the notes of its Guitar stems, as its MIDI has them.
+
+    The stems sound at the MIDI's pitches. (The bass bench reads from the audio whether a patch sounds an
+    octave lower; on a guitar's chords that reading is not reliable, and it had put seven of these stems an
+    octave down. Basic Pitch on each of the 43 stems by itself agrees with the MIDI as written, F1 0.4 to
+    0.96 against 0 to 0.38 an octave lower, for every stem it hears at all.)"""
     import pretty_midi
-    import soundfile as sf
     import yaml
 
-    from .bass_tab_bench import MIN_NOTES, sounding_shift
+    from .bass_tab_bench import MIN_NOTES
 
     made = []
     for track in sorted(p for p in Path(slakh).iterdir() if (p / "metadata.yaml").exists()):
         meta = yaml.safe_load((track / "metadata.yaml").read_text())
-        notes, programs, shifts = [], [], []
+        notes, programs = [], []
         for sid, stem in meta["stems"].items():
             if stem["inst_class"] != "Guitar" or not (track / "stems" / f"{sid}.wav").exists():
                 continue
@@ -119,11 +127,8 @@ def build_songs(slakh: Path, data: Path) -> list[Path]:
             own = [{"pitch": n.pitch, "onset": float(n.start), "offset": float(n.end)} for inst in pm.instruments for n in inst.notes]
             if not own:
                 continue
-            audio, sr = sf.read(str(track / "stems" / f"{sid}.wav"), dtype="float64", always_2d=True)
-            shift = sounding_shift(audio.mean(axis=1), sr, sorted(own, key=lambda n: n["onset"]), lowest=40)
-            notes += [{**n, "pitch": n["pitch"] + shift} for n in own]
+            notes += own
             programs.append(stem["midi_program_name"])
-            shifts.append(shift)
         if len(notes) < MIN_NOTES:
             continue
         whole = pretty_midi.PrettyMIDI(str(track / "all_src.mid"))
@@ -132,7 +137,7 @@ def build_songs(slakh: Path, data: Path) -> list[Path]:
         dest = Path(data) / "eval" / SONG_SET / track.name
         dest.mkdir(parents=True, exist_ok=True)
         (dest / "reference.json").write_text(json.dumps({
-            "style": "song", "player": "slakh", "programs": programs, "written_to_sounding": shifts,
+            "style": "song", "player": "slakh", "programs": programs, "guitars": len(programs),
             "tempo_bpm": float(tempi[0]) if len(tempi) == 1 else None,
             "beats_per_bar": int(meters[0].numerator) if len(meters) == 1 else (4 if not meters else None),
             "notes": sorted(notes, key=lambda n: (n["onset"], n["pitch"]))}))
@@ -174,6 +179,75 @@ def song_entries(data: Path) -> list[Path]:
     return sorted(p for p in root.iterdir() if (p / "reference.json").exists()) if root.is_dir() else []
 
 
+# ---------------------------------------------------------------- other guitars (IDMT-SMT-Guitar)
+
+# GuitarSet is one acoustic guitar through one microphone. IDMT-SMT-Guitar (Fraunhofer IDMT, CC BY-NC-ND 4.0,
+# Zenodo 7544110; not redistributed here) has three electric guitars recorded direct, with every note and
+# its string annotated: short licks (dataset 2: single lines with bends, slides and vibrato, and chords,
+# played with the fingers, with a pick and muted) and five longer pieces (dataset 3, three of them
+# polyphonic fingerstyle). The licks of two of the guitars (AR, FS) are with the material the rules are chosen
+# on; the third guitar's licks (LP) and the pieces are only reported.
+IDMT_SET = "idmt-guitar"
+IDMT_TUNE = ("AR", "FS")
+
+
+def idmt_reference(xml: Path, style: str) -> dict:
+    """The notes of an IDMT-SMT-Guitar annotation. Its strings count from the low E (1); a tab's from the high e (1)."""
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(str(xml)).getroot()
+    notes = []
+    for e in root.iter("event"):
+        get = {c.tag: (c.text or "").strip() for c in e}
+        note = {"pitch": int(round(float(get["pitch"]))), "onset": float(get["onsetSec"]), "offset": float(get["offsetSec"])}
+        if get.get("stringNumber", "").isdigit() and 1 <= int(get["stringNumber"]) <= STRINGS:
+            note["string"] = STRINGS + 1 - int(get["stringNumber"])
+        notes.append(note)
+    player = Path(xml).stem.split("_")[0] if style == "lick" else "piece"
+    return {"player": player, "style": style, "split": "tune" if player in IDMT_TUNE else "report",
+            "tempo_bpm": None, "beats_per_bar": None, "notes": sorted(notes, key=lambda n: (n["onset"], n["pitch"]))}
+
+
+def idmt_sources(root: Path) -> list[tuple[Path, Path, str]]:
+    """(annotation, audio, style) of the licks and the pieces under the unpacked IDMT-SMT-GUITAR_V2."""
+    root = Path(root)
+    found = [(x, root / "dataset2" / "audio" / f"{x.stem}.wav", "lick") for x in sorted((root / "dataset2" / "annotation").glob("*Lick*.xml"))]
+    found += [(x, root / "dataset3" / "audio" / f"{x.stem}.wav", "piece") for x in sorted((root / "dataset3" / "annotation").glob("*.xml"))]
+    return [f for f in found if f[1].exists()]
+
+
+def build_idmt(root: Path, data: Path) -> list[Path]:
+    made = []
+    for xml, _, style in idmt_sources(root):
+        ref = idmt_reference(xml, style)
+        if len(ref["notes"]) < 4:
+            continue
+        dest = Path(data) / "eval" / IDMT_SET / f"{style}-{xml.stem}"
+        dest.mkdir(parents=True, exist_ok=True)
+        (dest / "reference.json").write_text(json.dumps(ref))
+        made.append(dest)
+    return made
+
+
+def idmt_entries(data: Path) -> list[Path]:
+    root = Path(data) / "eval" / IDMT_SET
+    return sorted(p for p in root.iterdir() if (p / "reference.json").exists()) if root.is_dir() else []
+
+
+def evaluate_idmt(data: Path, split: str, clean: bool = True, params: dict | None = None) -> tuple[dict[str, float], list[dict]]:
+    """IDMT-SMT-Guitar's excerpts of one split (`tune` or `report`), the guitar alone. A lick of a few seconds
+    can be too short for the beat tracker: the engine refuses it, and `refused` counts those."""
+    rows, refused = [], 0
+    for entry in idmt_entries(data):
+        ref = json.loads((entry / "reference.json").read_text())
+        if ref["split"] == split and all((entry / f).exists() for f in FILES.values()):
+            try:
+                rows.append({"excerpt": entry.name, **score_tab(ref, tab_of(entry, clean, params))})
+            except ValueError:
+                refused += 1
+    return ({**summarize(rows), "refused": float(refused)} if rows else {}), rows
+
+
 # ---------------------------------------------------------------- the tab and its score
 
 ONSET_TOL = 0.05
@@ -190,7 +264,8 @@ def tab_of(entry: Path, clean: bool = True, params: dict | None = None, files: d
     files = files or FILES
     opts = tab.options({"instrument": "guitar-6", "recording": "instrument", **(params or {})})
     doc = tab.played_notes(bass_tab.load_transcription(entry / files["bp"]), np.loadtxt(entry / files["beats"], ndmin=2),
-                           opts["instrument"], opts["octave"], bass_tab.load_transcription(entry / files["sw"]), clean=clean)
+                           opts["instrument"], opts["octave"], bass_tab.load_transcription(entry / files["sw"]), clean=clean,
+                           chords=opts["chords"])
     doc["reference_pitch"] = None
     return tab.fingered(doc, opts)
 
@@ -248,6 +323,8 @@ def score_tab(ref: dict, tab: dict) -> dict:
     out["unplayable_dropped"] = float(tab.get("unplayable_dropped", 0))
     out["leftovers_dropped"] = float(tab.get("leftovers_dropped", 0))
     out["octave_moved"] = float(tab.get("octave_notes_moved", 0))
+    inferred = [j for j, n in enumerate(notes) if n.get("inferred")]
+    out["inferred"], out["inferred_right"] = float(len(inferred)), float(sum(j in right_est for j in inferred))
     doubt = [n["confidence"] < 0.4 for n in notes]
     wrong = [j not in right_est for j in range(len(notes))]
     out["doubt_marked"], out["doubt_marked_wrong"], out["wrong"] = float(sum(doubt)), float(sum(d and w for d, w in zip(doubt, wrong))), float(sum(wrong))
@@ -292,6 +369,7 @@ def summarize(rows: list[dict]) -> dict[str, float]:
     out["doubt_share"] = ratio("doubt_marked", "notes")
     out["unplayable_dropped"] = ratio("unplayable_dropped", "notes")
     out["leftovers_dropped"] = ratio("leftovers_dropped", "notes")
+    out["inferred_share"], out["inferred_right"] = ratio("inferred", "notes"), ratio("inferred_right", "inferred")
     out["violations"] = float(sum(r["violations"] for r in rows))
     out["octave_moved"] = float(sum(r["octave_moved"] for r in rows))
     out["excerpts"] = float(len(rows))
@@ -311,12 +389,15 @@ def evaluate(data: Path, players: tuple[str, ...], style: str, clean: bool = Tru
     return summarize(rows), rows
 
 
-def evaluate_songs(data: Path, clean: bool = True, params: dict | None = None) -> tuple[dict[str, float], list[dict]]:
-    """The Slakh songs' guitars, from the separator's guitar stem."""
+def evaluate_songs(data: Path, clean: bool = True, params: dict | None = None, one_guitar: bool = False) -> tuple[dict[str, float], list[dict]]:
+    """The Slakh songs' guitars, from the separator's guitar stem. `one_guitar`: only the songs with a single guitar,
+    where the tab can be the part one player plays."""
     rows = []
     for entry in song_entries(data):
         if all((entry / f).exists() for f in SONG_FILES.values()):
             ref = json.loads((entry / "reference.json").read_text())
+            if one_guitar and len(ref["programs"]) != 1:
+                continue
             rows.append({"excerpt": entry.name, **score_tab(ref, tab_of(entry, clean, params, SONG_FILES))})
     return summarize(rows), rows
 
@@ -335,7 +416,7 @@ def main() -> None:
     from .paths import DATA
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=["build", "prepare", "build-songs", "prepare-songs", "report"])
+    ap.add_argument("command", choices=["build", "prepare", "build-songs", "prepare-songs", "build-idmt", "prepare-idmt", "report"])
     ap.add_argument("root", type=Path, nargs="?")
     ap.add_argument("--data", type=Path, default=DATA)
     ap.add_argument("--only", choices=["beats", "notes"])
@@ -351,7 +432,14 @@ def main() -> None:
     elif args.command == "build-songs":
         for d in build_songs(args.root, args.data):
             ref = json.loads((d / "reference.json").read_text())
-            print(f"{d.name}: {len(ref['notes'])} notes, {ref['programs']}, written to sounding {ref['written_to_sounding']}")
+            print(f"{d.name}: {len(ref['notes'])} notes, {ref['programs']}")
+    elif args.command == "build-idmt":
+        print(f"{len(build_idmt(args.root, args.data))} excerpts")
+    elif args.command == "prepare-idmt":
+        audio = {f"{style}-{xml.stem}": wav for xml, wav, style in idmt_sources(args.root)}
+        for d in idmt_entries(args.data):
+            prepare(d, audio[d.name], args.only)
+            print(d.name, "ready", flush=True)
     elif args.command == "prepare-songs":
         for d in song_entries(args.data):
             prepare_song(d, args.root / d.name / "mix.wav")

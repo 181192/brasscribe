@@ -639,10 +639,19 @@ def _guitar_tab(data: Path, mode: str) -> dict[str, float]:
     for entry in G.song_entries(data) if mode == "live" and slakh.is_dir() else ():
         G.prepare_song(entry, slakh / entry.name / "mix.wav")
     songs = [e for e in G.song_entries(data) if all((e / f).exists() for f in G.SONG_FILES.values())]
-    out[SKIPPED] = [] if songs else ["song"]
+    out[SKIPPED] = [] if songs else ["song", "song_one"]
     if songs:
         metrics, _ = G.evaluate_songs(data)
         out.update({f"song.{k}": v for k, v in metrics.items()})
+        metrics, _ = G.evaluate_songs(data, one_guitar=True)
+        out.update({f"song_one.{k}": v for k, v in metrics.items()})
+    # Other guitars: IDMT-SMT-Guitar, where its excerpts and the models' outputs on them are.
+    idmt = [e for e in G.idmt_entries(data) if all((e / f).exists() for f in G.FILES.values())]
+    if not idmt:
+        out[SKIPPED].append("idmt")
+    for split in ("tune", "report") if idmt else ():
+        metrics, _ = G.evaluate_idmt(data, split)
+        out.update({f"idmt.{split}.{k}": v for k, v in metrics.items()})
     return out
 
 
@@ -753,6 +762,8 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           ("eval/small-tab",)),
     Suite("mandolin-tab", "the tab profile with a mandolin on rendered passages, alone and separated from a mix (cached model "
           "outputs)", _small_tab("mandolin"), ("eval/small-tab",)),
+    Suite("guitar-rendered-tab", "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two "
+          "groups the rules were chosen with and two held out (cached model outputs)", _small_tab("guitar-rendered"), ("eval/small-tab",)),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}

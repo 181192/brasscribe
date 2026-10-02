@@ -494,8 +494,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                   "key": body.key, "transpose": body.transpose, "seat": body.seat, "reads": body.reads, "lead": body.lead}
         if not body.muscriptor:
             params["muscriptor"] = False
-        params.update(bass_tab.given(instrument=body.instrument, tuning=body.tuning, capo=body.capo, style=body.style,
-                                     recording=body.recording, octave=body.octave, layout=body.layout))
+        params.update(tab.given(instrument=body.instrument, tuning=body.tuning, capo=body.capo, style=body.style,
+                                recording=body.recording, octave=body.octave, layout=body.layout, chords=body.chords))
         try:
             profiles.job_options(body.profile, params)
         except ValueError as e:
@@ -537,13 +537,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                style: m.FingeringStyle | None = Form(None),
                                recording: m.Recording | None = Form(None),
                                octave: m.Octave | None = Form(None),
-                               layout: m.TabLayout | None = Form(None)) -> m.Job:
+                               layout: m.TabLayout | None = Form(None),
+                               chords: m.TabChords | None = Form(None)) -> m.Job:
         """Upload audio and start a job in one request (same as uploadAudio followed by createJob)."""
         ref = store_upload(file)
         return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
                                       lineup=lineup, difficulty=difficulty, key=key, transpose=transpose, seat=seat,
                                       reads=reads, lead=lead, instrument=instrument, tuning=tuning, capo=capo,
-                                      style=style, recording=recording, octave=octave, layout=layout), request)
+                                      style=style, recording=recording, octave=octave, layout=layout, chords=chords), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:

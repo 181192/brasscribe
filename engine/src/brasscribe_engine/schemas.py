@@ -23,6 +23,7 @@ FingeringStyle = Literal["as-played", "open-position", "lead"]
 Recording = Literal["song", "instrument"]
 Octave = Literal["auto", "0", "-12", "+12"]
 TabLayout = Literal["tab", "tab-and-notation", "notation"]
+TabChords = Literal["heard", "completed"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
 
@@ -214,6 +215,11 @@ class JobCreate(BaseModel):
     layout: TabLayout | None = Field(None, description="tab profile: what the page shows. tab: the tab staff alone, "
                                                        "with stems for the rhythm; tab-and-notation: a notation staff "
                                                        "above it; notation: the notation staff alone; default: tab")
+    chords: TabChords | None = Field(None, description="tab profile, not a bass: heard writes the notes that were heard; "
+                                                       "completed also adds to a chord a note that the same chord has "
+                                                       "in the strums around it. An added note is marked inferred and "
+                                                       "gets the \"?\". On comping by jazz players one added note in "
+                                                       "three was played, on strummed open chords most; default: heard")
     octave: Octave | None = Field(None, description="tab profile: the octave the notes are written in. auto: an "
                                                     "octave lower when they were heard an octave above where the "
                                                     "instrument plays (a guitar: also an octave higher when heard "
@@ -362,6 +368,8 @@ class TabNote(BaseModel):
     pinned: bool = False
     doubled: bool = Field(False, description="heard once and written twice: a unison that a strummed open chord of a "
                                              "ukulele or a mandolin plays on two strings (the G of a ukulele's G chord, 0232)")
+    inferred: bool = Field(False, description="not heard: added to its chord because the same chord around it has "
+                                              "this note (chords: completed). Its confidence is below 0.4")
     octave_moved: bool = Field(False, description="written an octave below where Basic Pitch heard it, where the second "
                                                   "transcriber heard it. Its confidence is that of any note both heard: in "
                                                   "the benchmark four in five of these are right, so it gets no \"?\"")
@@ -453,10 +461,14 @@ class Tab(BaseModel):
                                                    "for a bass line")
     doubled_notes: int = Field(0, description="notes written on a second string as the unison of a strummed chord; "
                                               "each has doubled set")
+    inferred_notes: int = Field(0, description="notes in the tab that were not heard (chords: completed); each has "
+                                               "inferred set")
     leftovers_dropped: int = Field(0, description="notes Basic Pitch heard that are not in the tab because they were "
                                                   "not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and "
                                                   "notes heard very faintly; among a guitar's or a ukulele's chords, overtones above "
-                                                  "the 12th fret of the top string. One pitch heard twice on one onset "
+                                                  "the 12th fret of the top string, faint overtones that start apart "
+                                                  "from a strum, and, in the open-position style, an overtone on top "
+                                                  "of a chord that alone moves it up the neck. One pitch heard twice on one onset "
                                                   "is one note and is not counted. Always 0 for a bass line, whose "
                                                   "own count is in the job's log")
     octave_notes_moved: int = Field(0, description="single notes written an octave lower than Basic Pitch heard them "
