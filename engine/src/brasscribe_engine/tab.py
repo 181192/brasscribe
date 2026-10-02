@@ -470,7 +470,7 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     if len(times) != len(beats):
         beats_per_bar *= 2
         first_down *= 2
-    beats_per_bar = bass_tab.bar_beats(beats_per_bar)
+    beats_per_bar = bass_tab.bar_beats(beats_per_bar, times, onsets)
     bm = BeatMap(times)
     earliest = float(bm.to_beats(np.array([onsets.min()]))[0])
     while first_down > earliest + 1e-6:

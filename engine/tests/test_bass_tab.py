@@ -1164,3 +1164,21 @@ def test_a_bar_of_one_or_two_tracked_beats_is_written_as_four():
         assert doc["meter"] == {"beats": written, "beat_unit": 4}, every
         assert doc["notes"][0]["start"] == 0  # the first tracked downbeat is still where the first bar starts
         assert tab.played_notes(notes, beats, "guitar-6", clean=False)["meter"]["beats"] == written
+
+
+def test_a_bar_of_two_beats_divided_in_three_stays_two():
+    """6/8 counted in two: three notes to the beat. Swing, with an onset near two thirds of some beats only, is not that."""
+    beat = 60 / 72
+    beats = np.array([[i * beat, i % 2 + 1] for i in range(34)])
+    six_eight = [{"pitch": 40 + k % 3 * 5, "onset": (i + k / 3) * beat, "offset": (i + k / 3 + 0.3) * beat} for i in range(32) for k in range(3)]
+    assert bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in six_eight]))
+    assert bass_tab.transcribed_line(six_eight, beats)["meter"] == {"beats": 2, "beat_unit": 4}
+    assert tab.played_notes(six_eight, beats, "guitar-6", clean=False)["meter"]["beats"] == 2
+    eighths = [{"pitch": 40 + k * 5, "onset": (i + k / 2) * beat, "offset": (i + k / 2 + 0.4) * beat} for i in range(32) for k in range(2)]
+    swing = [{"pitch": 40 + k * 5, "onset": (i + (0, 0.5, 2 / 3)[(i + k) % 3 if k else 0]) * beat, "offset": (i + 0.9) * beat} for i in range(32) for k in range(2)]
+    for line in (eighths, swing):
+        assert not bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in line]))
+        assert bass_tab.transcribed_line(line, beats)["meter"]["beats"] == 4
+    few = six_eight[:9]  # too few onsets off the beat to say
+    assert not bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in few]))
+    assert bass_tab.bar_beats(2) == 4 and bass_tab.bar_beats(3, beats[:, 0], np.array([n["onset"] for n in six_eight])) == 3

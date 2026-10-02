@@ -339,14 +339,36 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
     return sure if _heard(second, note, note["pitch"]) else UNCONFIRMED
 
 
-def bar_beats(tracked: int) -> int:
+# A bar of two tracked beats whose onsets divide the beat in three is a real two (6/8 counted in two): of
+# the onsets off the beat, COMPOUND_SHARE or more lie within COMPOUND_NEAR of a third of the beat, not of a
+# half or a quarter, and there are at least COMPOUND_ONSETS of them. The share is above every two-beat-bar
+# take of GuitarSet's players 00 to 02, swing takes included (their highest is 0.75).
+COMPOUND_SHARE = 0.8
+COMPOUND_NEAR = 0.07
+COMPOUND_ONSETS = 12
+
+
+def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
+    """The onsets divide the beats of `beat_times` in three (COMPOUND_*)."""
+    from brasscribe_music.quantize import BeatMap
+
+    at = BeatMap(beat_times).to_beats(np.unique(np.round(np.sort(onsets), 2))) % 1.0
+    thirds = int(np.sum((np.abs(at - 1 / 3) <= COMPOUND_NEAR) | (np.abs(at - 2 / 3) <= COMPOUND_NEAR)))
+    twos = int(np.sum((np.abs(at - 0.5) <= COMPOUND_NEAR) | (np.abs(at - 0.25) <= COMPOUND_NEAR) | (np.abs(at - 0.75) <= COMPOUND_NEAR)))
+    return thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= COMPOUND_SHARE
+
+
+def bar_beats(tracked: int, beat_times: np.ndarray | None = None, onsets: np.ndarray | None = None) -> int:
     """Beats in a bar, given the commonest distance between the tracked downbeats (after the level is chosen).
 
     On one instrument alone the beat tracker often calls every beat, or every other one, a downbeat: on
     GuitarSet's single lines (all in 4/4) it gave bars of one beat in 48% of the takes and of two in 34%,
     and the tab was written in 1/4 or 2/4. A bar of one or two beats is taken as half or a quarter of a
-    bar of four, and a bar of eight as two. A real 2/4 is then written two bars to the bar, which reads
-    the same; three, five, six and seven stay as tracked."""
+    bar of four, and a bar of eight as two. A bar of two whose beats the onsets divide in three (compound)
+    stays two: that is 6/8 counted in two. Any other real 2/4 is written two bars to the bar; three,
+    five, six and seven stay as tracked."""
+    if tracked == 2 and beat_times is not None and onsets is not None and compound(beat_times, onsets):
+        return 2
     return 4 if tracked in (1, 2, 8) else tracked
 
 
@@ -388,7 +410,7 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     if len(times) != len(beats):
         beats_per_bar *= 2
         first_down *= 2
-    beats_per_bar = bar_beats(beats_per_bar)
+    beats_per_bar = bar_beats(beats_per_bar, times, onsets)
     earliest = float(BeatMap(times).to_beats(np.array([onsets.min()]))[0])
     while first_down > earliest + 1e-6:
         first_down -= beats_per_bar

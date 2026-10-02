@@ -2595,9 +2595,9 @@
       "source": "measured by this suite (brasscribe bench meter-tab) on eight passages written in meter_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, one instrument alone. tracked_ok is the bar as the beat tracker found it (what the tab had before bar_beats), meter_ok the bar that is written. Rendered, one take each: weak evidence. Not in 10-benchmark-results.md",
       "metrics": {
         "tracked_ok": 0.5,
-        "meter_ok": 0.375,
+        "meter_ok": 0.5,
         "right_became_wrong": {
-          "value": 1,
+          "value": 0,
           "tolerance": 0,
           "higher_is_better": false
         },

@@ -127,7 +127,7 @@ def meters(entry: Path) -> dict:
 
     doc = written()
     rule = bass_tab.bar_beats
-    bass_tab.bar_beats = lambda tracked: tracked  # the bar as tracked
+    bass_tab.bar_beats = lambda tracked, *evidence: tracked  # the bar as tracked
     try:
         before = written()
     finally:
