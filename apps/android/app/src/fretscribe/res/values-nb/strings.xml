@@ -48,7 +48,6 @@
     <string name="fs_instrument_guitar">Gitar</string>
     <string name="fs_instrument_ukulele">Ukulele</string>
     <string name="fs_instrument_mandolin">Mandolin</string>
-    <string name="fs_later">Senere</string>
     <plurals name="fs_strings_count">
         <item quantity="one">%1$d streng</item>
         <item quantity="other">%1$d strenger</item>
@@ -74,7 +73,7 @@
     <string name="fs_what_hint">Svaret ditt bestemmer hvordan Fretscribe lytter.</string>
     <string name="fs_what_no_recording">Dette opptaket er ikke lenger på telefonen. Åpne det på nytt fra Hjem.</string>
     <string name="fs_what_instrument">Bare instrumentet mitt</string>
-    <string name="fs_what_instrument_desc">Et opptak av bassen alene.</string>
+    <string name="fs_what_instrument_desc">Ett instrument som spiller, uten noe annet.</string>
     <string name="fs_what_song">En hel sang</string>
     <string name="fs_what_song_desc">Et band eller en plate. Fretscribe plukker ut bassen.</string>
     <string name="fs_where_desc">Fretscribe på datamaskinen skriver ned tonene. Ingenting sendes til nettet.</string>
@@ -84,7 +83,7 @@
 
     <!-- Skriver ned tonene -->
     <string name="stage_beats">Lytter etter pulsen</string>
-    <string name="stage_stems">Skiller ut bassen</string>
+    <string name="stage_stems">Plukker ut instrumentet ditt</string>
     <string name="stage_transcribe">Skriver ned tonene</string>
     <string name="stage_quantize">Plasserer tonene i takter</string>
     <string name="stage_arrange">Velger strenger og bånd</string>
@@ -142,12 +141,12 @@
     </plurals>
     <string name="fs_check_no_place_title">Toner uten plass</string>
     <plurals name="fs_check_no_place">
-        <item quantity="one">%1$d tone uten plass på bassen din. Er stemmingen riktig?</item>
-        <item quantity="other">%1$d toner uten plass på bassen din. Er stemmingen riktig?</item>
+        <item quantity="one">%1$d tone uten plass på instrumentet ditt. Er stemmingen riktig?</item>
+        <item quantity="other">%1$d toner uten plass på instrumentet ditt. Er stemmingen riktig?</item>
     </plurals>
 
     <!-- Sangene dine -->
-    <string name="fs_song_tab">Basstab</string>
+    <string name="fs_song_tab">Tab</string>
     <plurals name="fs_song_to_check">
         <item quantity="one">%1$d tone å sjekke</item>
         <item quantity="other">%1$d toner å sjekke</item>

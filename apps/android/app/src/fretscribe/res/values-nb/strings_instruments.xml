@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fretscribes ord for gitar, ukulele og mandolin, ved siden av bassen (resten står i strings.xml). -->
+
+    <!-- Instrumentet ditt -->
+    <string name="fs_size">Størrelse</string>
+    <string name="fs_size_small">Sopran, konsert eller tenor</string>
+    <string name="fs_size_baritone">Baryton</string>
+    <string name="fs_tuning_c_standard">C-standard (to heltoner ned)</string>
+    <string name="fs_tuning_drop_c">Drop C</string>
+    <string name="fs_tuning_drop_b">Drop B</string>
+    <string name="fs_tuning_dadgad">DADGAD</string>
+    <string name="fs_tuning_dadgad_spoken">D, A, D, G, A, D</string>
+    <string name="fs_tuning_open_g">Åpen G</string>
+    <string name="fs_tuning_open_d">Åpen D</string>
+    <string name="fs_tuning_open_e">Åpen E</string>
+    <string name="fs_tuning_high_g">Høy G</string>
+    <string name="fs_tuning_low_g">Lav G</string>
+    <string name="fs_guitar_with_strings">%1$d-strengs gitar</string>
+    <string name="fs_ukulele_baritone">Barytonukulele</string>
+
+    <!-- Hva er dette? -->
+    <string name="fs_what_song_desc_guitar">Et band eller en plate. Fretscribe plukker ut gitaren.</string>
+    <string name="fs_what_song_desc_ukulele">Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en ukulele fra en gitar.</string>
+    <string name="fs_what_song_desc_mandolin">Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en mandolin fra en gitar.</string>
+
+    <!-- Sjekk sangen -->
+    <string name="fs_check_capo">Capo</string>
+    <string name="fs_check_capo_none">Ingen capo</string>
+    <string name="fs_check_capo_on">Capo på bånd %1$d</string>
+    <string name="fs_check_capo_change">Endre capo</string>
+    <string name="fs_check_left_out_title">Utelatte toner</string>
+    <plurals name="fs_check_left_out">
+        <item quantity="one">%1$d tone er utelatt. Den kan ikke spilles sammen med resten.</item>
+        <item quantity="other">%1$d toner er utelatt. De kan ikke spilles sammen med resten.</item>
+    </plurals>
+    <string name="fs_check_added_title">Toner lagt til</string>
+    <plurals name="fs_check_added">
+        <item quantity="one">%1$d tone er lagt til for å fullføre en akkord. Den er merket ?.</item>
+        <item quantity="other">%1$d toner er lagt til for å fullføre en akkord. De er merket ?.</item>
+    </plurals>
+</resources>

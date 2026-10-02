@@ -67,7 +67,7 @@ class RestoredSongTest {
     fun setUp() {
         rule.enableAccessibilityChecks()
         rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
-        yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
+        yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
         // The computer answers as it did for the bass line, as if the line sounded like drop D: a change is on offer.
         val assets = instrumentation.context.assets
         container.fixtureSource = FixtureSource { name ->
@@ -157,12 +157,12 @@ class RestoredSongTest {
         val again = jobOf(vm)
         assertNotEquals(before.id, again.id)
         assertEquals("the same recording on the computer", before.audioId, again.audioId)
-        assertEquals("bass-tab", again.profile)
+        assertEquals("tab", again.profile)
         // As it was made: the bass alone, not separated, now for drop D.
         assertTrue(again.stages.none { it.name == "stems" })
         val sent = tabOptions(yourInstrumentStore(rule.activity).load(), SongAnswers.of(vm.source.value))
         assertEquals(listOf("drop-d", Recording.INSTRUMENT), listOf(sent.tuning, sent.recording))
-        assertEquals(YourInstrument.DEFAULT, yourInstrumentStore(rule.activity).load())
+        assertEquals(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
     }
 
     @Test

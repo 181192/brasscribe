@@ -45,6 +45,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Product
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
+import no.brasscribe.play.engine.FrettedInstrument
 import no.brasscribe.play.SeatChoice
 import no.brasscribe.play.SeatPickerMode
 import org.junit.After
@@ -99,7 +100,7 @@ class YourInstrumentScreenTest {
     /** No answer stored, as on a new phone. */
     private fun forget() {
         val prefs = rule.activity.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE).edit()
-        listOf(YourInstrumentStore.INSTRUMENT, YourInstrumentStore.STRINGS, YourInstrumentStore.TUNING, YourInstrumentStore.HAND, YourInstrumentStore.READS)
+        listOf(YourInstrumentStore.KIND, YourInstrumentStore.INSTRUMENT, YourInstrumentStore.STRINGS, YourInstrumentStore.TUNING, YourInstrumentStore.HAND, YourInstrumentStore.READS)
             .forEach(prefs::remove)
         prefs.commit()
     }
@@ -210,12 +211,19 @@ class YourInstrumentScreenTest {
     @Test
     fun theFirstRunAsksYourInstrumentInEnglishAndBokmal() {
         val words = mapOf(
-            "en-GB" to listOf("Your instrument", "Instrument, Bass", "Strings, 4 strings", "Usual tuning, Standard",
+            "en-GB" to listOf("Your instrument", "Instrument, Guitar", "Strings, 6 strings", "Usual tuning, Standard",
                 "Which hand is on the neck?, Left hand on the neck (most players), Tab looks the same either way.",
-                "You read, Tab", "Not now", "Continue", "Guitar, Later"),
-            "nb-NO" to listOf("Instrumentet ditt", "Instrument, Bass", "Strenger, 4 strenger", "Vanlig stemming, Standard",
+                "You read, Tab", "Not now", "Continue"),
+            "nb-NO" to listOf("Instrumentet ditt", "Instrument, Gitar", "Strenger, 6 strenger", "Vanlig stemming, Standard",
                 "Hvilken hånd er på halsen?, Venstre hånd på halsen (de fleste), Tabben ser lik ut uansett.",
-                "Du leser, Tab", "Ikke nå", "Fortsett", "Gitar, Senere"),
+                "Du leser, Tab", "Ikke nå", "Fortsett"),
+        )
+        // What the rows say as the instrument changes: the bass, the ukulele in its two sizes, the mandolin.
+        val others = mapOf(
+            "en-GB" to listOf("Instrument, Bass", "Strings, 4 strings", "Instrument, Ukulele", "Size, Soprano, concert or tenor", "Usual tuning, High G",
+                "Usual tuning, Low G", "Size, Baritone", "Usual tuning, Standard", "Instrument, Mandolin"),
+            "nb-NO" to listOf("Instrument, Bass", "Strenger, 4 strenger", "Instrument, Ukulele", "Størrelse, Sopran, konsert eller tenor", "Vanlig stemming, Høy G",
+                "Vanlig stemming, Lav G", "Størrelse, Baryton", "Vanlig stemming, Standard", "Instrument, Mandolin"),
         )
         for ((lang, w) in words) {
             language(lang)
@@ -234,35 +242,59 @@ class YourInstrumentScreenTest {
             rule.onNodeWithTag("fs-not-now").assertIsDisplayed().assert(hasText(w[6]))
                 .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
             rule.onNodeWithTag("fs-keep").assertIsDisplayed().assert(hasText(w[7])).assertHeightIsAtLeast(48.dp)
-            // The instruments that can't be chosen yet say so, in words.
-            open("instrument", "guitar")
-            rule.onNodeWithTag("fs-instrument-guitar").assertContentDescriptionEquals(w[8]).assertIsNotEnabled()
-            closePicker()
+            // Every instrument can be chosen, and the rows under it follow: a bass by its strings, a ukulele by its
+            // size with a high or a low G, a mandolin with nothing more to ask.
+            val o = others.getValue(lang)
+            pick("tuning", "drop-d")
+            pick("instrument", "bass")
+            row("instrument").assertContentDescriptionEquals(o[0])
+            row("strings").assertContentDescriptionEquals(o[1])
+            // (The guitar was in drop D; nothing says the bass is.)
+            row("tuning").assertContentDescriptionEquals(w[3])
+            pick("instrument", "ukulele")
+            row("instrument").assertContentDescriptionEquals(o[2])
+            row("strings").assertContentDescriptionEquals(o[3]).assert(isPicker).assertHeightIsAtLeast(48.dp)
+            row("tuning").assertContentDescriptionEquals(o[4])
+            assertSaidOnce("strings")
+            pick("tuning", "low-g")
+            row("tuning").assertContentDescriptionEquals(o[5])
+            pick("strings", "ukulele-baritone")
+            row("strings").assertContentDescriptionEquals(o[6])
+            row("tuning").assertContentDescriptionEquals(o[7])
+            pick("instrument", "mandolin")
+            row("instrument").assertContentDescriptionEquals(o[8])
+            row("tuning").assertContentDescriptionEquals(o[7])
+            assertTrue(rule.onAllNodesWithTag("fs-row-strings").fetchSemanticsNodes().isEmpty())
+            listOf("instrument", "tuning", "hand", "reads").forEach { assertSaidOnce(it) }
+            // Nothing of it is kept until Continue.
+            assertEquals(YourInstrument.DEFAULT, store.load())
         }
     }
 
     @Test
     fun thePickersAreRadioGroupsWithFullSizeTargets() {
         val options = mapOf(
-            "instrument" to listOf("bass", "guitar", "ukulele", "mandolin"),
-            "strings" to listOf("4", "5", "6"),
-            "tuning" to listOf("standard", "eb-standard", "d-standard", "drop-d", "bead"),
+            "instrument" to listOf("guitar", "bass", "ukulele", "mandolin"),
+            "strings" to listOf("guitar-6", "guitar-7", "guitar-8"),
+            "tuning" to listOf("standard", "eb-standard", "d-standard", "c-standard", "drop-d", "drop-c", "drop-b", "dadgad", "open-g", "open-d", "open-e"),
             "hand" to listOf("left", "right", "right-upside-down"),
             "reads" to listOf("tab", "tab-and-notation", "notation"),
         )
         // What each choice is called, in order, per language.
         val names = mapOf(
             "en-GB" to mapOf(
-                "instrument" to listOf("Bass", "Guitar, Later", "Ukulele, Later", "Mandolin, Later"),
-                "strings" to listOf("4 strings", "5 strings", "6 strings"),
-                "tuning" to listOf("Standard", "E-flat standard (half a step down)", "D standard (a whole step down)", "Drop D", "B, E, A, D"),
+                "instrument" to listOf("Guitar", "Bass", "Ukulele", "Mandolin"),
+                "strings" to listOf("6 strings", "7 strings", "8 strings"),
+                "tuning" to listOf("Standard", "E-flat standard (half a step down)", "D standard (a whole step down)", "C standard (two whole steps down)",
+                    "Drop D", "Drop C", "Drop B", "D, A, D, G, A, D", "Open G", "Open D", "Open E"),
                 "hand" to listOf("Left hand on the neck (most players)", "Right hand on the neck (left-handed instrument)", "Right hand on the neck (instrument upside down)"),
                 "reads" to listOf("Tab", "Tab and notation", "Notation"),
             ),
             "nb-NO" to mapOf(
-                "instrument" to listOf("Bass", "Gitar, Senere", "Ukulele, Senere", "Mandolin, Senere"),
-                "strings" to listOf("4 strenger", "5 strenger", "6 strenger"),
-                "tuning" to listOf("Standard", "Ess-standard (en halvtone ned)", "D-standard (en heltone ned)", "Drop D", "B, E, A, D"),
+                "instrument" to listOf("Gitar", "Bass", "Ukulele", "Mandolin"),
+                "strings" to listOf("6 strenger", "7 strenger", "8 strenger"),
+                "tuning" to listOf("Standard", "Ess-standard (en halvtone ned)", "D-standard (en heltone ned)", "C-standard (to heltoner ned)",
+                    "Drop D", "Drop C", "Drop B", "D, A, D, G, A, D", "Åpen G", "Åpen D", "Åpen E"),
                 "hand" to listOf("Venstre hånd på halsen (de fleste)", "Høyre hånd på halsen (venstrehendt instrument)", "Høyre hånd på halsen (instrumentet opp ned)"),
                 "reads" to listOf("Tab", "Tab og noter", "Noter"),
             ),
@@ -280,19 +312,33 @@ class YourInstrumentScreenTest {
                 assertEquals("$tag: one chosen", listOf(ids.first()), ids.filter { id ->
                     radios.first { it.config.getOrNull(SemanticsProperties.TestTag) == "fs-$tag-$id" }.config.getOrNull(SemanticsProperties.Selected) == true
                 })
-                // Each is named once, in words (the flat written out, BEAD letter by letter, "Later" said).
+                // Each is named once, in words (the flat written out, DADGAD letter by letter).
                 assertEquals("$lang $tag", spoken.getValue(tag), radios.map { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() })
                 ids.forEach {
                     rule.onNodeWithTag("fs-$tag-$it").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
-                    if (tag != "instrument" || it == "bass") assertSaidOnce("$tag-$it", prefix = "fs-")
+                    assertSaidOnce("$tag-$it", prefix = "fs-")
                 }
                 closePicker()
             }
-            // Only the bass can be chosen; the others are there, and off.
-            open("instrument", "bass")
-            rule.onNodeWithTag("fs-instrument-bass").assertIsEnabled().assertIsSelected()
-            listOf("guitar", "ukulele", "mandolin").forEach { rule.onNodeWithTag("fs-instrument-$it").assertIsNotEnabled().assertIsNotSelected() }
+            // Every instrument can be chosen; the guitar is the one chosen to begin with.
+            open("instrument", "guitar")
+            rule.onNodeWithTag("fs-instrument-guitar").assertIsEnabled().assertIsSelected()
+            listOf("bass", "ukulele", "mandolin").forEach { rule.onNodeWithTag("fs-instrument-$it").assertIsEnabled().assertIsNotSelected() }
             closePicker()
+            // The other instruments' own choices, as they are said: a bass's tunings, a ukulele's sizes and tunings.
+            fun said(tag: String, first: String): List<String?> {
+                open(tag, first)
+                return rule.onAllNodes(isRadio).fetchSemanticsNodes().map { it.config.getOrNull(SemanticsProperties.ContentDescription)?.single() }.also { closePicker() }
+            }
+            val nb = lang == "nb-NO"
+            pick("instrument", "bass")
+            assertEquals(if (nb) listOf("4 strenger", "5 strenger", "6 strenger") else listOf("4 strings", "5 strings", "6 strings"), said("strings", "bass-4"))
+            assertEquals(spoken.getValue("tuning").take(3) + listOf("Drop D", "B, E, A, D"), said("tuning", "standard"))
+            pick("instrument", "ukulele")
+            assertEquals(if (nb) listOf("Sopran, konsert eller tenor", "Baryton") else listOf("Soprano, concert or tenor", "Baritone"), said("strings", "ukulele"))
+            assertEquals(if (nb) listOf("Høy G", "Lav G") else listOf("High G", "Low G"), said("tuning", "high-g"))
+            pick("instrument", "mandolin")
+            assertEquals(listOf("Standard"), said("tuning", "standard"))
         }
     }
 
@@ -362,11 +408,12 @@ class YourInstrumentScreenTest {
         assertEquals("fs-tuning-eb-standard", focusedTag())
         key(KeyEvent.KEYCODE_DPAD_DOWN)
         key(KeyEvent.KEYCODE_DPAD_DOWN)
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
         assertEquals("fs-tuning-drop-d", focusedTag())
         assertTrue("the ring follows the arrows", ringed("fs-tuning-drop-d", focus))
         shot("your-instrument-tuning-focus-light")
         key(KeyEvent.KEYCODE_DPAD_UP)
-        assertEquals("fs-tuning-d-standard", focusedTag())
+        assertEquals("fs-tuning-c-standard", focusedTag())
         key(KeyEvent.KEYCODE_DPAD_DOWN)
         // Moving chooses nothing; Enter does, and the focus is back on the row, which says the new answer.
         rule.onNodeWithTag("fs-tuning-standard").assertIsSelected()
@@ -394,11 +441,11 @@ class YourInstrumentScreenTest {
         rule.waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
         key(KeyEvent.KEYCODE_SPACE)
         rule.waitUntil(5_000) { focusedTag() == "fs-tuning-drop-d" }
-        key(KeyEvent.KEYCODE_DPAD_DOWN)
-        assertEquals("fs-tuning-bead", focusedTag())
+        repeat(3) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
+        assertEquals("fs-tuning-dadgad", focusedTag())
         key(KeyEvent.KEYCODE_SPACE)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-bead").fetchSemanticsNodes().isEmpty() }
-        row("tuning").assertContentDescriptionEquals("Usual tuning, B, E, A, D")
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-dadgad").fetchSemanticsNodes().isEmpty() }
+        row("tuning").assertContentDescriptionEquals("Usual tuning, D, A, D, G, A, D")
         // Nothing is stored by any of it until Continue, which the keyboard reaches and presses.
         assertEquals(YourInstrument.DEFAULT, store.load())
         var tabs = 0
@@ -406,7 +453,7 @@ class YourInstrumentScreenTest {
         assertEquals("fs-keep", focusedTag())
         key(KeyEvent.KEYCODE_ENTER)
         rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
-        assertEquals(YourInstrument(tuning = "bead"), store.load())
+        assertEquals(YourInstrument(tuning = "dadgad"), store.load())
     }
 
     @Test
@@ -414,12 +461,12 @@ class YourInstrumentScreenTest {
         language("en-GB")
         getStarted()
         // Choices made and then skipped are not kept.
-        pick("strings", "5")
+        pick("strings", "guitar-7")
         rule.onNodeWithTag("fs-not-now").performClick()
         rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
         assertTrue(container.firstRunDone)
         assertEquals(YourInstrument.DEFAULT, store.load())
-        assertEquals(TabJobOptions("bass-4", "standard", "tab"), store.load().jobOptions())
+        assertEquals(TabJobOptions("guitar-6", "standard", "tab"), store.load().jobOptions())
         // Brasscribe's own answer is left as it was.
         assertEquals(SeatChoice.NotSet, container.seat)
     }
@@ -428,10 +475,11 @@ class YourInstrumentScreenTest {
     fun continueKeepsTheAnswerAndSettingsShowsAndChangesIt() {
         language("en-GB")
         getStarted()
+        pick("instrument", "bass")
         pick("tuning", "drop-d")
         row("tuning").assertContentDescriptionEquals("Usual tuning, Drop D")
         // Five strings have no Drop D: the tuning goes back to standard, and says so on its row.
-        pick("strings", "5")
+        pick("strings", "bass-5")
         row("strings").assertContentDescriptionEquals("Strings, 5 strings")
         row("tuning").assertContentDescriptionEquals("Usual tuning, Standard")
         pick("tuning", "drop-a")
@@ -441,7 +489,7 @@ class YourInstrumentScreenTest {
         assertEquals(YourInstrument.DEFAULT, store.load())
         rule.onNodeWithTag("fs-keep").performClick()
         rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
-        val chosen = YourInstrument(Instrument.BASS, 5, "drop-a", FrettingHand.RIGHT_UPSIDE_DOWN, Reads.TAB_AND_NOTATION)
+        val chosen = YourInstrument(FrettedInstrument.BASS_5, "drop-a", FrettingHand.RIGHT_UPSIDE_DOWN, Reads.TAB_AND_NOTATION)
         assertEquals(chosen, store.load())
         assertTrue(container.firstRunDone)
 
@@ -479,6 +527,36 @@ class YourInstrumentScreenTest {
         rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
         assertEquals(chosen.copy(reads = Reads.NOTATION), store.load())
         rule.onNodeWithText("5-string bass · Drop A · Notation").assertIsDisplayed()
+        // The row names the other instruments as they are.
+        for ((mine, value) in listOf(
+            YourInstrument(FrettedInstrument.GUITAR_7, "eb-standard") to "7-string guitar · E-flat standard (half a step down) · Tab",
+            YourInstrument(FrettedInstrument.UKULELE, "low-g") to "Ukulele · Low G · Tab",
+            YourInstrument(FrettedInstrument.UKULELE_BARITONE) to "Baritone ukulele · Standard · Tab",
+            YourInstrument(FrettedInstrument.MANDOLIN, reads = Reads.TAB_AND_NOTATION) to "Mandolin · Standard · Tab and notation",
+        )) {
+            store.save(mine)
+            rule.runOnUiThread { vm.home(); vm.navigate(Screen.SETTINGS) }
+            rule.waitUntil(5_000) { rule.onAllNodesWithText(value).fetchSemanticsNodes().isNotEmpty() }
+        }
+    }
+
+    @Test
+    fun aBassChosenInTheVersionThatOfferedOnlyTheBassIsStillThatBass() {
+        language("en-GB")
+        // What that version stored.
+        rule.activity.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE).edit()
+            .putString("fret_instrument", "bass").putString("fret_strings", "5").putString("fret_tuning", "drop-a")
+            .putString("fret_hand", "right").putString("fret_reads", "notation").commit()
+        assertEquals(YourInstrument(FrettedInstrument.BASS_5, "drop-a", FrettingHand.RIGHT, Reads.NOTATION), store.load())
+        rule.runOnUiThread { container.firstRunDone = true; vm.home(); vm.navigate(Screen.SETTINGS) }
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("5-string bass · Drop A · Notation").assertIsDisplayed()
+        rule.onNodeWithTag("setting-seat").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        row("instrument").assertContentDescriptionEquals("Instrument, Bass")
+        row("strings").assertContentDescriptionEquals("Strings, 5 strings")
+        row("tuning").assertContentDescriptionEquals("Usual tuning, Drop A")
+        row("reads").assertContentDescriptionEquals("You read, Notation")
     }
 
     @Test
@@ -489,7 +567,7 @@ class YourInstrumentScreenTest {
         )
         for ((lang, w) in words) {
             language(lang)
-            val stored = YourInstrument(strings = 5, tuning = "drop-a")
+            val stored = YourInstrument(FrettedInstrument.BASS_5, tuning = "drop-a")
             store.save(stored)
             rule.runOnUiThread { vm.home(); vm.navigate(Screen.SETTINGS); vm.openSeatPicker(SeatPickerMode.SETTINGS) }
             rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
@@ -537,13 +615,18 @@ class YourInstrumentScreenTest {
             row("instrument").performScrollTo()
             shot("your-instrument-200-${lang.take(2)}")
             // The longest list, in a dialog: every choice can be reached and none is cut off.
-            open("tuning", "bead")
+            open("tuning", "open-e")
             assertNoTextIsClipped()
-            listOf("standard", "eb-standard", "d-standard", "drop-d", "bead").forEach {
+            listOf("standard", "eb-standard", "d-standard", "c-standard", "drop-d", "drop-c", "drop-b", "dadgad", "open-g", "open-d", "open-e").forEach {
                 rule.onNodeWithTag("fs-tuning-$it").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(48.dp)
             }
             shot("your-instrument-200-tuning-${lang.take(2)}")
             closePicker()
+            // The ukulele's size is the longest answer on a row.
+            pick("instrument", "ukulele")
+            assertNoTextIsClipped()
+            row("strings").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+            shot("your-instrument-200-ukulele-${lang.take(2)}")
             shell("settings put system font_scale 1.0")
             rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale <= 1.1f }
         }
@@ -581,6 +664,12 @@ class YourInstrumentScreenTest {
                 open("tuning", "standard")
                 shot("your-instrument-tuning-$tag")
                 closePicker()
+                open("instrument", "guitar")
+                shot("your-instrument-instruments-$tag")
+                closePicker()
+                pick("instrument", "ukulele")
+                shot("your-instrument-ukulele-$tag")
+                pick("instrument", "guitar")
                 rule.onNodeWithTag("fs-keep").performClick()
                 rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
                 val home = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).fetchSemanticsNodes()

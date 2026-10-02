@@ -1,13 +1,26 @@
 package no.brasscribe.play.fret
 
 import no.brasscribe.play.connection.KeyValueStore
+import no.brasscribe.play.engine.FrettedInstrument
 
-/** The instruments of "Your instrument". Only the bass can be chosen yet; the others are shown as "Later". */
-enum class Instrument(val id: String, val available: Boolean) {
-    BASS("bass", true),
-    GUITAR("guitar", false),
-    UKULELE("ukulele", false),
-    MANDOLIN("mandolin", false),
+/**
+ * The instruments of "Your instrument", in the order they are listed, each with the kinds of it that can be
+ * chosen: a guitar or a bass by its number of strings, a ukulele by its size.
+ */
+enum class Instrument(val id: String, val kinds: List<FrettedInstrument>) {
+    GUITAR("guitar", listOf(FrettedInstrument.GUITAR_6, FrettedInstrument.GUITAR_7, FrettedInstrument.GUITAR_8)),
+    BASS("bass", listOf(FrettedInstrument.BASS_4, FrettedInstrument.BASS_5, FrettedInstrument.BASS_6)),
+    /** Soprano, concert and tenor are one kind: they are tuned alike. The baritone is tuned as a guitar's top four strings. */
+    UKULELE("ukulele", listOf(FrettedInstrument.UKULELE, FrettedInstrument.UKULELE_BARITONE)),
+    MANDOLIN("mandolin", listOf(FrettedInstrument.MANDOLIN));
+
+    /** A capo is used on it: asked about on Check the song. */
+    val takesCapo: Boolean get() = this == GUITAR || this == UKULELE
+
+    companion object {
+        /** The instrument [kind] is a kind of; null for one this version does not offer. */
+        fun of(kind: FrettedInstrument): Instrument? = entries.firstOrNull { kind in it.kinds }
+    }
 }
 
 /**
@@ -32,103 +45,112 @@ enum class Reads(val id: String) {
     NOTATION("notation"),
 }
 
-/** The options of a `bass-tab` job that come from the player's instrument. */
+/** The options of a `tab` job that come from the player's instrument. */
 data class TabJobOptions(val instrument: String, val tuning: String, val layout: String)
 
 /**
  * The player's answer to "Your instrument" (design/fretscribe/flows.md §2): what new tabs are written for.
  * A song already written keeps the instrument it was made for.
  *
- * [tuning] is the engine's tuning id ("standard", "drop-d"); with the instrument and its strings it names a
- * preset of the core's `target-fretted` crate ([preset], "bass-4-drop-d").
+ * [kind] is the engine's instrument ("guitar-6", "bass-5", "ukulele-baritone") and [tuning] one of the
+ * tunings the engine has for it ("standard", "drop-d", "high-g"); together they name a preset of the
+ * core's `target-fretted` crate ([preset], "guitar-drop-d").
  */
 data class YourInstrument(
-    val instrument: Instrument = Instrument.BASS,
-    val strings: Int = 4,
-    val tuning: String = STANDARD,
+    val kind: FrettedInstrument = FrettedInstrument.GUITAR_6,
+    val tuning: String = kind.defaultTuning,
     val hand: FrettingHand = FrettingHand.LEFT,
     val reads: Reads = Reads.TAB,
 ) {
-    /** The engine's `instrument`: "bass-4", "bass-5" or "bass-6". */
-    val family: String get() = "${instrument.id}-$strings"
+    /** Guitar, bass, ukulele or mandolin. */
+    val instrument: Instrument get() = Instrument.of(kind) ?: Instrument.of(DEFAULT.kind)!!
+
+    /** The number of strings, for a guitar or a bass (they are chosen by it); null for the others. */
+    val strings: Int? get() = stringsOf(kind)
+
+    /** The engine's `instrument`: "guitar-6", "bass-4", "ukulele", "mandolin". */
+    val family: String get() = valid().kind.id!!
 
     /** The crate's preset id for this instrument in this tuning. */
-    val preset: String get() = "$family-$tuning"
+    val preset: String get() = valid().let { it.kind.preset(it.tuning) }
 
-    /** The tunings offered for this instrument, standard first. */
-    val tunings: List<String> get() = tuningsOf(instrument, strings)
+    /** The tunings offered for this instrument, its usual one first. */
+    val tunings: List<String> get() = kind.tunings
 
-    /** Another string count: the tuning stays when the new instrument has it, and is standard otherwise. */
-    fun withStrings(count: Int): YourInstrument = copy(strings = count).valid()
+    /** Another instrument: its first kind in its usual tuning. The same instrument changes nothing. */
+    fun withInstrument(other: Instrument): YourInstrument = if (other == instrument) this else other.kinds.first().let { copy(kind = it, tuning = it.defaultTuning) }
+
+    /** Another kind of the instrument: the tuning stays when the new kind has it, and is its usual one otherwise. */
+    fun withKind(other: FrettedInstrument): YourInstrument = copy(kind = other).valid()
 
     /**
-     * This answer with every part that can't be chosen replaced by its default: an instrument that is
-     * still "Later", a string count the instrument doesn't have, a tuning it has no preset for.
+     * This answer with every part that can't be chosen replaced by its default: an instrument this version
+     * does not offer, a tuning the instrument has no preset for.
      */
     fun valid(): YourInstrument {
-        // Another instrument's strings and tuning say nothing about the bass: a six-string guitar is no six-string bass.
-        if (!instrument.available) return copy(instrument = DEFAULT.instrument, strings = DEFAULT.strings, tuning = STANDARD)
-        val strings = strings.takeIf { it in stringsOf(instrument) } ?: stringsOf(instrument).first()
-        val tuning = tuning.takeIf { it in tuningsOf(instrument, strings) } ?: STANDARD
-        return copy(instrument = instrument, strings = strings, tuning = tuning)
+        if (Instrument.of(kind) == null) return copy(kind = DEFAULT.kind, tuning = DEFAULT.tuning)
+        return if (tuning in kind.tunings) this else copy(tuning = kind.defaultTuning)
     }
 
     /** What a job is asked for. The fretting hand changes only how things are drawn, so it is not among them. */
-    fun jobOptions(): TabJobOptions = valid().let { TabJobOptions(it.family, it.tuning, it.reads.id) }
+    fun jobOptions(): TabJobOptions = valid().let { TabJobOptions(it.kind.id!!, it.tuning, it.reads.id) }
 
     companion object {
-        const val STANDARD = "standard"
+        const val STANDARD = FrettedInstrument.STANDARD_TUNING
 
-        /** "Not now": a four-string bass in standard tuning, the left hand frets, tab. */
+        /** "Not now": a six-string guitar in standard tuning, the left hand frets, tab. */
         val DEFAULT = YourInstrument()
 
-        /**
-         * The engine's instruments and their tunings, standard first: the `target-fretted` presets
-         * "<instrument>-<tuning>" (core/target-fretted/src/instrument.rs). A test checks this table
-         * against the crate.
-         */
-        val BASS_TUNINGS: Map<Int, List<String>> = mapOf(
-            4 to listOf(STANDARD, "eb-standard", "d-standard", "drop-d", "bead"),
-            5 to listOf(STANDARD, "drop-a"),
-            6 to listOf(STANDARD),
-        )
-
-        /** The string counts offered for [instrument]; none for one that can't be chosen yet. */
-        fun stringsOf(instrument: Instrument): List<Int> =
-            if (instrument == Instrument.BASS) BASS_TUNINGS.keys.toList() else emptyList()
-
-        fun tuningsOf(instrument: Instrument, strings: Int): List<String> =
-            if (instrument == Instrument.BASS) BASS_TUNINGS[strings].orEmpty() else emptyList()
+        /** The number of strings a guitar or a bass is chosen by ("guitar-7" has 7); null for a ukulele and a mandolin. */
+        fun stringsOf(kind: FrettedInstrument): Int? =
+            if (Instrument.of(kind)?.let { it == Instrument.GUITAR || it == Instrument.BASS } == true) kind.id?.substringAfterLast('-')?.toIntOrNull() else null
     }
 }
 
 /**
  * Keeps the answer on this phone, in the per-device preferences (left out of backup and device transfer,
  * like Appearance). Anything stored that this version can't offer reads as its default.
+ *
+ * The version that offered the bass alone stored "bass" and a number of strings: that still reads as the
+ * same bass.
  */
 class YourInstrumentStore(private val store: KeyValueStore) {
-    fun load(): YourInstrument = YourInstrument(
-        instrument = Instrument.entries.firstOrNull { it.id == store.get(INSTRUMENT) } ?: YourInstrument.DEFAULT.instrument,
-        strings = store.get(STRINGS)?.toIntOrNull() ?: YourInstrument.DEFAULT.strings,
-        tuning = store.get(TUNING) ?: YourInstrument.STANDARD,
-        hand = FrettingHand.entries.firstOrNull { it.id == store.get(HAND) } ?: YourInstrument.DEFAULT.hand,
-        reads = Reads.entries.firstOrNull { it.id == store.get(READS) } ?: YourInstrument.DEFAULT.reads,
-    ).valid()
+    fun load(): YourInstrument {
+        val stored = store.get(KIND)?.let { id -> Instrument.entries.flatMap { it.kinds }.firstOrNull { it.id == id } }
+            ?: bassOf(store.get(INSTRUMENT), store.get(STRINGS))
+        val kind = stored ?: YourInstrument.DEFAULT.kind
+        return YourInstrument(
+            kind = kind,
+            // A tuning stored for an instrument this version can't read says nothing about the default one.
+            tuning = store.get(TUNING)?.takeIf { stored != null } ?: kind.defaultTuning,
+            hand = FrettingHand.entries.firstOrNull { it.id == store.get(HAND) } ?: YourInstrument.DEFAULT.hand,
+            reads = Reads.entries.firstOrNull { it.id == store.get(READS) } ?: YourInstrument.DEFAULT.reads,
+        ).valid()
+    }
+
+    /** What the bass-only version stored: "bass" and its strings. A count the bass doesn't come with is four. */
+    private fun bassOf(instrument: String?, strings: String?): FrettedInstrument? {
+        if (instrument != Instrument.BASS.id) return null
+        return Instrument.BASS.kinds.firstOrNull { YourInstrument.stringsOf(it)?.toString() == strings } ?: FrettedInstrument.BASS_4
+    }
 
     fun save(value: YourInstrument) {
         val v = value.valid()
-        store.put(INSTRUMENT, v.instrument.id)
-        store.put(STRINGS, v.strings.toString())
+        store.put(KIND, v.kind.id!!)
         store.put(TUNING, v.tuning)
         store.put(HAND, v.hand.id)
         store.put(READS, v.reads.id)
     }
 
     companion object {
-        const val INSTRUMENT = "fret_instrument"
-        const val STRINGS = "fret_strings"
+        /** The engine's instrument id. */
+        const val KIND = "fret_kind"
         const val TUNING = "fret_tuning"
         const val HAND = "fret_hand"
         const val READS = "fret_reads"
+
+        /** Read only: what the bass-only version stored beside the tuning. */
+        const val INSTRUMENT = "fret_instrument"
+        const val STRINGS = "fret_strings"
     }
 }

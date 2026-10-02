@@ -41,8 +41,8 @@ tuning. One question per row, on one screen:
 | Question | Choices | Default |
 |---|---|---|
 | Instrument | Guitar · Bass · Ukulele · Mandolin (Banjo later) | Guitar |
-| Strings | Guitar 6/7/8 · Bass 4/5/6 · Ukulele: high G / low G | 6 · 4 · high G |
-| Usual tuning | Standard, E♭ standard, Drop D, DADGAD, Open G, …, **Custom** (per string, note name and Hz) | Standard |
+| Strings | Guitar 6/7/8 · Bass 4/5/6 · Ukulele (asked as Size): soprano, concert or tenor / baritone | 6 · 4 · soprano, concert or tenor |
+| Usual tuning | Standard, E♭ standard, Drop D, DADGAD, Open G, …, **Custom** (per string, note name and Hz); a ukulele: High G / Low G | Standard · High G |
 | Which hand is on the neck? | Left hand on the neck (most players) · Right hand on the neck (left-handed instrument) · Right hand on the neck (instrument upside down) | Left hand |
 | You read | Tab · Tab and notation · Notation | Tab |
 
@@ -73,7 +73,8 @@ Two choices, nothing pre-selected on the first run, remembered per song:
 
 - **Just my instrument**: one instrument playing. "Made on this phone."
 - **A full song**: a band or a record. "Needs Fretscribe on your computer." Shows whether the computer
-  is found, with **Pair your computer** when it isn't.
+  is found, with **Pair your computer** when it isn't. For a ukulele or a mandolin it says that this only
+  works when no guitar is playing, and Just my instrument is the choice they start on.
 
 A full song then asks **Which part?** (Guitar 1, Guitar 2, Bass, …) once the parts are separated.
 

@@ -1,5 +1,6 @@
 package no.brasscribe.play.fret
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.focusable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -11,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import no.brasscribe.design.BrasscribeTheme
@@ -32,23 +34,40 @@ import no.brasscribe.play.ui.clock
 
 private class Answer(val recording: Recording, val tag: String, val title: Int, val desc: Int)
 
-private val CHOICES = listOf(
-    Answer(Recording.INSTRUMENT, "instrument", R.string.fs_what_instrument, R.string.fs_what_instrument_desc),
-    Answer(Recording.SONG, "song", R.string.fs_what_song, R.string.fs_what_song_desc),
-)
+/**
+ * What "A full song" says for [instrument]: which instrument is picked out of it. For a ukulele and a
+ * mandolin it also says when that works: the computer finds them where it finds a guitar, so with a guitar
+ * in the song the tab would hold both.
+ */
+@StringRes
+internal fun songWords(instrument: Instrument): Int = when (instrument) {
+    Instrument.GUITAR -> R.string.fs_what_song_desc_guitar
+    Instrument.BASS -> R.string.fs_what_song_desc
+    Instrument.UKULELE -> R.string.fs_what_song_desc_ukulele
+    Instrument.MANDOLIN -> R.string.fs_what_song_desc_mandolin
+}
 
 /**
- * "What is this?" (design/fretscribe/flows.md §5): the bass alone, or a full song the bass is picked out
- * of. Nothing is chosen until the player chooses, and the answer stays with the recording. In this
- * version the computer writes down the notes for both, so the row under the choices says whether it is
- * there, with the way to connect it when it is not.
+ * "What is this?" (design/fretscribe/flows.md §5): the instrument alone, or a full song it is picked out
+ * of. For a guitar or a bass nothing is chosen until the player chooses; a ukulele or a mandolin starts on
+ * the instrument alone, as the computer takes it, and A full song says when it works. The answer stays
+ * with the recording. In this version the computer writes down the notes for both, so the row under the
+ * choices says whether it is there, with the way to connect it when it is not.
  */
 @Composable
 fun WhatIsThisScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val source by vm.source.collectAsState()
     val connection by vm.connection.state.collectAsState()
-    val answer = SongAnswers.of(source)
+    val context = LocalContext.current
+    // The player's instrument as it is now: it is what the recording will be written down for.
+    val mine = remember { yourInstrumentStore(context).load() }
+    val given = SongAnswers.of(source)
+    val answer = if (given.recording != null) given else given.copy(recording = startingAnswer(mine))
+    val choices = listOf(
+        Answer(Recording.INSTRUMENT, "instrument", R.string.fs_what_instrument, R.string.fs_what_instrument_desc),
+        Answer(Recording.SONG, "song", R.string.fs_what_song, songWords(mine.instrument)),
+    )
     // The fixture engine of the UI tests is always there.
     val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
     // The recording is sent from its file: without it there is nothing to continue with.
@@ -71,15 +90,15 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
             PrimaryButton(stringResource(R.string.continue_label), {
                 // From here the recording is written down afresh, for the player's instrument as it is now.
                 SongAnswers.set(source, SongAnswer(answer.recording))
-                vm.chooseProfile(Profile.BASS_TAB)
+                vm.chooseProfile(Profile.TAB)
                 vm.startTranscription()
             }, Modifier.testTag("fs-what-continue"), enabled = inHand && there && answer.recording != null)
         },
     ) {
         ScreenTitle(stringResource(R.string.profile_title), Modifier.focusRequester(headingFocus).focusable())
         Lead(stringResource(R.string.fs_what_hint))
-        ChoiceGroup(CHOICES.size) {
-            CHOICES.forEachIndexed { i, c ->
+        ChoiceGroup(choices.size) {
+            choices.forEachIndexed { i, c ->
                 androidx.compose.foundation.layout.Box(Modifier.testTag("fs-what-${c.tag}")) {
                     ChoiceCard(stringResource(c.title), stringResource(c.desc), answer.recording == c.recording, true, i) {
                         SongAnswers.set(source, answer.copy(recording = c.recording))

@@ -9,6 +9,7 @@ import no.brasscribe.play.engine.FrettedInstrument
 import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Octave
 import no.brasscribe.play.engine.OctaveSource
+import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.Recording
 import no.brasscribe.play.engine.Tab
 import no.brasscribe.play.engine.TabLayout
@@ -42,29 +43,38 @@ object SongAnswers {
 }
 
 /**
- * The `bass-tab` job's options. A first job is for the player's instrument and what was answered for this
+ * The `tab` job's options. A first job is for the player's instrument and what was answered for this
  * song; a song written down again takes the options Check the song made for it.
  */
 fun tabOptions(instrument: YourInstrument, answer: SongAnswer): TabOptions {
     answer.again?.let { return it }
-    val chosen = instrument.jobOptions()
-    val fretted = FrettedInstrument.entries.firstOrNull { it.id == chosen.instrument } ?: FrettedInstrument.BASS_4
+    val mine = instrument.valid()
     return TabOptions(
-        instrument = fretted,
-        tuning = chosen.tuning.takeIf { it in fretted.tunings } ?: FrettedInstrument.STANDARD_TUNING,
+        instrument = mine.kind,
+        tuning = mine.tuning,
+        // A capo is this song's, not the instrument's: Check the song asks about it.
         capo = 0,
         // The fingering style is left to the computer's default (as played).
         style = null,
-        // Continue needs an answer, so this is never the player's: an unanswered job is separated first, which also suits a bass alone.
-        recording = answer.recording ?: Recording.SONG,
+        // Continue needs an answer, so this is never the player's: an unanswered job is taken as the computer takes it.
+        recording = answer.recording ?: mine.kind.defaultRecording,
         octave = Octave.AUTO,
-        layout = TabLayout.entries.firstOrNull { it.id == chosen.layout } ?: TabLayout.TAB,
+        layout = TabLayout.entries.firstOrNull { it.id == mine.reads.id } ?: TabLayout.TAB,
+        // Chords are written as they were heard: the computer's default, so nothing is sent.
+        chords = null,
     )
 }
 
-/** [request] as a bass-tab job: the tab options, and none of the band's (a seat, a clef, who plays the tune). */
+/**
+ * What is this? as it stands before the player has answered. A ukulele or a mandolin starts on "Just my
+ * instrument", as the computer takes it: in a song it only works when no guitar plays. A guitar or a bass
+ * starts with nothing chosen.
+ */
+fun startingAnswer(instrument: YourInstrument): Recording? = instrument.valid().kind.let { if (it.aloneByDefault) it.defaultRecording else null }
+
+/** [request] as a tab job: the tab options, and none of the band's (a seat, a clef, who plays the tune). */
 fun tabJob(request: JobCreate, options: TabOptions): JobCreate =
-    request.copy(seat = null, reads = null, lead = null).withTab(options)
+    request.copy(profile = Profile.TAB.id, seat = null, reads = null, lead = null).withTab(options)
 
 /** One row of Check the song (design/fretscribe/flows.md §7): what Fretscribe heard, as the result tells it. */
 sealed interface SongRow {
@@ -87,21 +97,32 @@ sealed interface SongRow {
 
     /** Notes no string of the instrument can play. */
     data class NoPlace(val count: Int) : SongRow
+
+    /** The capo the tab is written for, 0 for none. Frets are counted from it. */
+    data class Capo(val fret: Int) : SongRow
+
+    /** Notes that were heard and are not in the tab: the instrument can't play them together with the others. */
+    data class LeftOut(val count: Int) : SongRow
+
+    /** Notes in the tab that were not heard: added to complete a chord, each marked "?". */
+    data class Added(val count: Int) : SongRow
 }
 
 object SongCheck {
     /** A recording this far from A = 440 is worth a row; nearer than that is how any instrument is tuned. */
     const val REFERENCE_CENTS = 10
 
-    /** The tuning id of a preset ("bass-4-drop-d" is "drop-d"); null for a preset this version does not know. */
-    fun tuningOf(preset: String): String? = FrettedInstrument.entries.firstNotNullOfOrNull { i ->
-        val id = i.id ?: return@firstNotNullOfOrNull null
-        preset.removePrefix("$id-").takeIf { it != preset && it in i.tunings }
-    }
+    /** The tuning id of a preset ("bass-4-drop-d" and "guitar-drop-d" are "drop-d"); null for a preset this version does not know. */
+    fun tuningOf(preset: String): String? = FrettedInstrument.ofPreset(preset)?.second
 
-    /** The number of strings of a preset's instrument ("bass-5-standard" has 5). */
-    fun stringsOf(preset: String): Int? = FrettedInstrument.entries.firstOrNull { it.id != null && preset.startsWith("${it.id}-") }
-        ?.id?.substringAfterLast('-')?.toIntOrNull()
+    /** The instrument of a preset ("guitar-drop-d" is a six-string guitar); null for a preset this version does not know. */
+    fun kindOf(preset: String): FrettedInstrument? = FrettedInstrument.ofPreset(preset)?.first
+
+    /** The frets a capo can be asked for: 0 is none. */
+    val CAPO_FRETS = 0..TabOptions.MAX_CAPO
+
+    /** A capo is asked about for this tab: a guitar or a ukulele, or any tab that was written for one. */
+    fun asksCapo(tab: Tab): Boolean = tab.instrument.capo > 0 || kindOf(tab.preset)?.let(Instrument::of)?.takesCapo == true
 
     /**
      * The options [tab] was made with, read back from the result and from [stages] of its job (a full song was
@@ -109,10 +130,10 @@ object SongCheck {
      * song opened from Your songs and after the app was restarted, when nothing else remembers the answers.
      */
     fun optionsOf(tab: Tab, stages: List<String>): TabOptions {
-        val fretted = FrettedInstrument.entries.firstOrNull { it.id != null && tab.preset.startsWith("${it.id}-") }
+        val made = FrettedInstrument.ofPreset(tab.preset)
         return TabOptions(
-            instrument = fretted,
-            tuning = tuningOf(tab.preset),
+            instrument = made?.first,
+            tuning = made?.second,
             capo = tab.instrument.capo,
             style = tab.style.takeIf { it.id != null },
             recording = if (stages.any { it == "stems" }) Recording.SONG else Recording.INSTRUMENT,
@@ -140,6 +161,7 @@ object SongCheck {
     /** The rows the result has something to say for, in the order of the screen. */
     fun rows(tab: Tab): List<SongRow> = buildList {
         add(SongRow.Tuning(tuningOf(tab.preset) ?: tab.preset, tab.suggestedTuning?.let { tuningOf(it.preset) }))
+        if (asksCapo(tab)) add(SongRow.Capo(tab.instrument.capo))
         val chosen = tab.octaveSource == OctaveSource.CHOSEN
         if (tab.octaveShift != 0 || tab.octaveNotesMoved > 0 || chosen) add(SongRow.Octave(tab.octaveShift, chosen, tab.octaveNotesMoved))
         tab.referencePitch?.let { r ->
@@ -152,16 +174,32 @@ object SongCheck {
         if (doubtful > 0) add(SongRow.Doubtful(doubtful))
         val noPlace = tab.notes.count { it.outOfRange || it.position == null }
         if (noPlace > 0) add(SongRow.NoPlace(noPlace))
+        if (tab.unplayableDropped > 0) add(SongRow.LeftOut(tab.unplayableDropped))
+        if (tab.inferredNotes > 0) add(SongRow.Added(tab.inferredNotes))
     }
 }
 
 /** What a saved song's row on Home says: read from the tab's MusicXML and its notes, as the library keeps them. */
-data class SongFacts(val strings: Int?, val tuning: String?, val toCheck: Int) {
+data class SongFacts(val strings: Int?, val tuning: String?, val toCheck: Int, val kind: FrettedInstrument? = null) {
     companion object {
         private val STEPS = mapOf('C' to 0, 'D' to 2, 'E' to 4, 'F' to 5, 'G' to 7, 'A' to 9, 'B' to 11)
 
         /** The open strings of each tuning, lowest first (core/target-fretted/src/instrument.rs). */
         val OPEN_STRINGS: Map<String, List<Int>> = mapOf(
+            "guitar-standard" to listOf(40, 45, 50, 55, 59, 64),
+            "guitar-eb-standard" to listOf(39, 44, 49, 54, 58, 63),
+            "guitar-d-standard" to listOf(38, 43, 48, 53, 57, 62),
+            "guitar-c-standard" to listOf(36, 41, 46, 51, 55, 60),
+            "guitar-drop-d" to listOf(38, 45, 50, 55, 59, 64),
+            "guitar-drop-c" to listOf(36, 43, 48, 53, 57, 62),
+            "guitar-drop-b" to listOf(35, 42, 47, 52, 56, 61),
+            "guitar-dadgad" to listOf(38, 45, 50, 55, 57, 62),
+            "guitar-open-g" to listOf(38, 43, 50, 55, 59, 62),
+            "guitar-open-d" to listOf(38, 45, 50, 54, 57, 62),
+            "guitar-open-e" to listOf(40, 47, 52, 56, 59, 64),
+            "guitar-7-standard" to listOf(35, 40, 45, 50, 55, 59, 64),
+            "guitar-7-eb-standard" to listOf(34, 39, 44, 49, 54, 58, 63),
+            "guitar-8-standard" to listOf(30, 35, 40, 45, 50, 55, 59, 64),
             "bass-4-standard" to listOf(28, 33, 38, 43),
             "bass-4-eb-standard" to listOf(27, 32, 37, 42),
             "bass-4-d-standard" to listOf(26, 31, 36, 41),
@@ -170,6 +208,10 @@ data class SongFacts(val strings: Int?, val tuning: String?, val toCheck: Int) {
             "bass-5-standard" to listOf(23, 28, 33, 38, 43),
             "bass-5-drop-a" to listOf(21, 28, 33, 38, 43),
             "bass-6-standard" to listOf(23, 28, 33, 38, 43, 48),
+            "ukulele-high-g" to listOf(60, 64, 67, 69),
+            "ukulele-low-g" to listOf(55, 60, 64, 69),
+            "ukulele-baritone" to listOf(50, 55, 59, 64),
+            "mandolin" to listOf(55, 62, 69, 76),
         )
 
         /** The open strings a tab's MusicXML is written for (its staff tuning), lowest first; empty without one. */
@@ -190,7 +232,7 @@ data class SongFacts(val strings: Int?, val tuning: String?, val toCheck: Int) {
             val toCheck = compositionJson?.let { json ->
                 runCatching { CompositionJson.decode(json).voices.sumOf { v -> v.notes.count { it.confidence < TabNote.DOUBT } } }.getOrNull()
             } ?: 0
-            return SongFacts(open.size.takeIf { it > 0 }, preset?.let(SongCheck::tuningOf), toCheck)
+            return SongFacts(open.size.takeIf { it > 0 }, preset?.let(SongCheck::tuningOf), toCheck, preset?.let(SongCheck::kindOf))
         }
     }
 }

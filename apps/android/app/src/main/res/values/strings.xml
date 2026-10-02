@@ -268,9 +268,9 @@
     <string name="error_reads_not_offered">Your instrument isn\'t written in that clef. Choose again under What you play.</string>
     <string name="error_invalid_options">Brasscribe on your computer didn\'t accept these choices. It may need an update.</string>
     <string name="error_core_missing">Brasscribe on your computer needs an update to write tabs. Update it there, then try again.</string>
-    <!-- A score in the computer's list that the other app made (a bass tab is Fretscribe's). -->
-    <string name="other_product_row">Bass tab · opens in Fretscribe</string>
-    <string name="other_product_opens">This is a bass tab. Open it in Fretscribe.</string>
+    <!-- A score in the computer's list that the other app made (a tab is Fretscribe's). -->
+    <string name="other_product_row">Tab · opens in Fretscribe</string>
+    <string name="other_product_opens">This is a tab. Open it in Fretscribe.</string>
     <string name="lineup_full_not_yet">Not yet for whole-band recordings</string>
     <string name="lineup_quartet_needs_group">Needs a recording of the whole group</string>
     <string name="difficulty">How hard?</string>

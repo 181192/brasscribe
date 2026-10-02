@@ -57,10 +57,10 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 |---|---|---|
 | a | Done: flavour skeleton; "Fretscribe" on the launcher and Home | medium, once (Gradle task names, workflows) |
 | b | Done: design folder in the repo, generator flags, theme, icon; no SoundFont or brass models in the Fretscribe APK | low |
-| c | Done: Your instrument (bass only), and Fretscribe's own words on the first run, Home and Settings | none |
+| c | Done: Your instrument (guitar, bass, ukulele, mandolin), and Fretscribe's own words on the first run, Home and Settings | none |
 | d0 | `engine-client`: bass tab profile, `Tab` models, `getTab`, a fixture | low |
-| d | Done: open a recording, send a `bass-tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
-| e | Done in a first form: Check the song from `/tab` (tuning, octave, reference pitch, key and tempo, notes to check); a change is a new job. Still to come: capo, Other… tunings | none |
+| d | Done: open a recording, send a `tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
+| e | Done in a first form: Check the song from `/tab` (tuning, capo, octave, reference pitch, key and tempo, notes to check, notes left out); a change is a new job. Still to come: Other… tunings, and the capo that would fit (the computer does not suggest one) | none |
 | f1 | Tab view: alphaTab, "?" and "!" overlay, font test | low |
 | f2 | Practice: the recording as the sound, 5% speed steps, repeat by bar, 64 dp transport | low |
 | g0 | Core: FFI export (the note index is done) | medium (bindings) |
@@ -80,8 +80,9 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
    version needs a computer for every tab. Reword, or wait for an on-device bass path.
    For now the app says what is true: "Your recordings stay on your phone and your own computer", and
    that Fretscribe on the computer writes down the notes.
-5. **Bass only first?** The engine accepts only `bass-4/5/6`. Your instrument offers the bass, and lists
-   guitar, ukulele and mandolin as "Later".
+5. **Every instrument the computer writes tab for.** Your instrument offers the guitar (6, 7, 8 strings), the
+   bass (4, 5, 6), the ukulele (soprano, concert or tenor with a high or a low G, and baritone) and the mandolin.
+   A ukulele or a mandolin in a full song only works when no guitar plays in it, and What is this? says so.
 6. **Launcher icon.** Drawn from the mark with the art at 64% (`design/fretscribe/brand/build.py`); the
    owner has not yet looked at it on a phone's launcher shapes.
 7. **Min SDK** stays 29; portrait practice is an open design question.
@@ -90,4 +91,4 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 
 ## Not decided here
 
-iOS and desktop flavours; guitar; on-device bass transcription.
+iOS and desktop flavours; on-device transcription.

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fretscribe's words for the guitar, the ukulele and the mandolin, beside the bass (the rest are in strings.xml). -->
+
+    <!-- Your instrument (design/fretscribe/flows.md §2) -->
+    <!-- A ukulele is chosen by its size, where a guitar and a bass are chosen by their strings. -->
+    <string name="fs_size">Size</string>
+    <string name="fs_size_small">Soprano, concert or tenor</string>
+    <string name="fs_size_baritone">Baritone</string>
+    <string name="fs_tuning_c_standard">C standard (two whole steps down)</string>
+    <string name="fs_tuning_drop_c">Drop C</string>
+    <string name="fs_tuning_drop_b">Drop B</string>
+    <string name="fs_tuning_dadgad">DADGAD</string>
+    <!-- Read letter by letter, not as a word. -->
+    <string name="fs_tuning_dadgad_spoken">D, A, D, G, A, D</string>
+    <string name="fs_tuning_open_g">Open G</string>
+    <string name="fs_tuning_open_d">Open D</string>
+    <string name="fs_tuning_open_e">Open E</string>
+    <!-- A ukulele's fourth string: an octave up (the usual way) or down. -->
+    <string name="fs_tuning_high_g">High G</string>
+    <string name="fs_tuning_low_g">Low G</string>
+    <!-- Settings and Your songs: "6-string guitar · Standard · Tab" -->
+    <string name="fs_guitar_with_strings">%1$d-string guitar</string>
+    <string name="fs_ukulele_baritone">Baritone ukulele</string>
+
+    <!-- What is this? (flows.md §5): what A full song says for each instrument. -->
+    <string name="fs_what_song_desc_guitar">A band or a record. Fretscribe picks out the guitar.</string>
+    <!-- The computer finds a ukulele where it finds a guitar, so with both in the song the tab would hold both. -->
+    <string name="fs_what_song_desc_ukulele">A band or a record. This only works when no guitar is playing: in a song, Fretscribe can\'t tell a ukulele from a guitar.</string>
+    <string name="fs_what_song_desc_mandolin">A band or a record. This only works when no guitar is playing: in a song, Fretscribe can\'t tell a mandolin from a guitar.</string>
+
+    <!-- Check the song (flows.md §7) -->
+    <string name="fs_check_capo">Capo</string>
+    <string name="fs_check_capo_none">No capo</string>
+    <string name="fs_check_capo_on">Capo on fret %1$d</string>
+    <string name="fs_check_capo_change">Change the capo</string>
+    <string name="fs_check_left_out_title">Notes left out</string>
+    <plurals name="fs_check_left_out">
+        <item quantity="one">%1$d note left out. It can\'t be played together with the rest.</item>
+        <item quantity="other">%1$d notes left out. They can\'t be played together with the rest.</item>
+    </plurals>
+    <string name="fs_check_added_title">Notes added</string>
+    <plurals name="fs_check_added">
+        <item quantity="one">%1$d note added to complete a chord. It is marked ?.</item>
+        <item quantity="other">%1$d notes added to complete a chord. They are marked ?.</item>
+    </plurals>
+</resources>

@@ -35,7 +35,7 @@ object Product {
      * - where Brasscribe asks "What do you play?" (after the first run, and from Settings), Fretscribe asks
      *   Your instrument ("Who played this?" on a finished take is still Brasscribe's);
      * - What is this? has Fretscribe's two choices;
-     * - a bass tab's place for Brasscribe's output choices and Check the notes is Check the song.
+     * - a tab's place for Brasscribe's output choices and Check the notes is Check the song.
      */
     @Composable
     fun Root(vm: PlayViewModel) {
@@ -50,7 +50,7 @@ object Product {
         val own: (@Composable () -> Unit)? = when {
             asking -> ({ YourInstrumentScreen(vm, visit) })
             top == Screen.PROFILE -> ({ WhatIsThisScreen(vm) })
-            (top == Screen.OUTPUT || top == Screen.REVIEW) && result?.profile == Profile.BASS_TAB -> ({ CheckTheSongScreen(vm) })
+            (top == Screen.OUTPUT || top == Screen.REVIEW) && result?.profile?.writesTab == true -> ({ CheckTheSongScreen(vm) })
             else -> null
         }
         if (own != null) {
@@ -63,16 +63,16 @@ object Product {
     @Composable
     fun instrumentValue(vm: PlayViewModel): String = yourInstrumentValue()
 
-    /** The computer's scores this app opens: bass tabs. A band score is Brasscribe's. */
-    fun makes(profile: String): Boolean = profile == Profile.BASS_TAB.id
+    /** The computer's scores this app opens: tabs, also a bass tab made before there were other instruments. A band score is Brasscribe's. */
+    fun makes(profile: String): Boolean = Profile.writesTab(profile)
 
     /** Brasscribe's Check the notes and output choices write for a band: never offered here. */
     @Suppress("UNUSED_PARAMETER")
     fun arranges(profile: Profile): Boolean = false
 
-    /** The job as it is sent to the computer: a bass tab takes the player's instrument and the answers for this song. */
+    /** The job as it is sent to the computer: a tab takes the player's instrument and the answers for this song. */
     fun job(vm: PlayViewModel, request: JobCreate): JobCreate =
-        if (request.profile != Profile.BASS_TAB.id) request
+        if (!Profile.writesTab(request.profile)) request
         else tabJob(request, tabOptions(yourInstrumentStore(vm.getApplication()).load(), SongAnswers.of(vm.source.value)))
 
     /**
@@ -81,7 +81,7 @@ object Product {
      * the phone's copy of the recording is gone. Null for a first job: the recording is sent.
      */
     suspend fun audioOnComputer(vm: PlayViewModel, engine: no.brasscribe.play.engine.EngineApi): String? {
-        if (vm.profile.value != Profile.BASS_TAB || SongAnswers.of(vm.source.value).again == null) return null
+        if (vm.profile.value?.writesTab != true || SongAnswers.of(vm.source.value).again == null) return null
         val written = vm.result.value ?: return null
         return written.audioId ?: written.jobId?.let { engine.job(it).audioId }
     }
@@ -101,7 +101,7 @@ object Product {
 
     /** The screen that follows a finished transcription: Check the song for a tab (drawn in the output choices' place). */
     fun afterTranscription(result: TranscriptionResult): Screen =
-        if (result.profile == Profile.BASS_TAB) Screen.OUTPUT else Screen.REVIEW
+        if (result.profile.writesTab) Screen.OUTPUT else Screen.REVIEW
 
     /** A row in Your songs: a tab's instrument, tuning and notes to check; a band score says where it opens. Null for the usual line. */
     @Composable
