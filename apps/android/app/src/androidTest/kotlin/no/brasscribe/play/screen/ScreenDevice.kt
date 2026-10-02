@@ -92,6 +92,12 @@ object ScreenDevice {
         return shot.copy(Bitmap.Config.ARGB_8888, false)
     }
 
+    /** The phone's Back. */
+    fun back(rule: AppRule) {
+        instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        rule.waitForIdle()
+    }
+
     /** A keyboard is in use from now on: touch mode ends, as with the first key pressed. */
     fun keyboard(rule: AppRule) {
         instrumentation.setInTouchMode(false)
@@ -112,6 +118,16 @@ object ScreenDevice {
 
     /** Waits until [condition] holds, for [ms] at most. */
     fun waitUntil(rule: AppRule, ms: Long, condition: () -> Boolean) = rule.waitUntil(ms) { condition() }
+
+    /** Waits until [condition] holds where no screen is up. */
+    fun waitWithoutScreen(ms: Long, condition: () -> Boolean) {
+        val end = System.nanoTime() + ms * 1_000_000
+        while (!condition()) {
+            if (System.nanoTime() > end) throw AssertionError("not within $ms ms")
+            Thread.sleep(20)
+        }
+        instrumentation.waitForIdleSync()
+    }
 
     /** Lets the screen come to rest. */
     fun settle(rule: AppRule) {
@@ -135,5 +151,6 @@ object ScreenDevice {
         shell("settings delete secure contrast_level")
         shell("cmd uimode night no")
         instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0)
+        instrumentation.setInTouchMode(true)
     }
 }

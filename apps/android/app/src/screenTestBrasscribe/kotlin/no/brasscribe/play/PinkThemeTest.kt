@@ -19,47 +19,31 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 
 /**
  * The hidden Pink palette end to end: hidden in Appearance, five activations of the version on About
- * unlock it with a confirmation, then Pink light and Pink dark are chosen and the app turns pink. Screenshots go to the app's files, pink/.
+ * unlock it with a confirmation, then Pink light and Pink dark are chosen and the app turns pink.
  */
 @RunWith(AndroidJUnit4::class)
-class PinkThemeTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
-    private val dir by lazy { File(rule.activity.getExternalFilesDir(null), "pink").apply { mkdirs() } }
+class PinkThemeTest : ScreenTest() {
+    override val shots = "brasscribe/pink"
 
     @After
     fun tearDown() {
-        shell("cmd uimode night no")
         rule.runOnUiThread { container.forgetPink() }
     }
 
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(600)
-    }
-
-    private fun shot(name: String) {
-        rule.waitForIdle()
-        Thread.sleep(700)
-        instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$name.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
-    }
-
-    private fun fixture(name: String) = instrumentation.context.assets.open("old-hundredth/$name").use { String(it.readBytes()) }
+    private fun fixture(name: String) = String(checkNotNull(ScreenDevice.fixture("old-hundredth/$name")) { name })
 
     private fun openSettingsDialog() {
         rule.runOnUiThread { vm.navigate(Screen.SETTINGS) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-appearance").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("setting-appearance").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("setting-appearance").performScrollTo().performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("appearance-system").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("appearance-system").fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun openScore() {
@@ -71,12 +55,12 @@ class PinkThemeTest {
                 compositionJson = fixture("composition.json"))
             vm.navigate(Screen.SCORE)
         }
-        rule.waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }
+        waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }
     }
 
     @Test
     fun unlockFromAboutThenChoosePinkLightAndDark() {
-        shell("cmd uimode night no")
+        ScreenDevice.night(rule, false)
         rule.runOnUiThread { container.forgetPink(); container.updateAppearance(Appearance.LIGHT) }
 
         // Hidden until unlocked.
@@ -87,7 +71,7 @@ class PinkThemeTest {
 
         // The version is a button (TalkBack and keyboards reach it); five presses unlock Pink once.
         rule.runOnUiThread { vm.navigate(Screen.ABOUT) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("about-version").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("about-version").fetchSemanticsNodes().isNotEmpty() }
         val version = rule.onNodeWithTag("about-version").performScrollTo()
         assertEquals(Role.Button, version.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Role))
         repeat(4) { version.performClick() }
@@ -95,7 +79,7 @@ class PinkThemeTest {
         version.performClick()
         assertTrue(container.pinkUnlocked)
         val confirmation = rule.activity.getString(R.string.pink_unlocked)
-        rule.waitUntil(5_000) { rule.onAllNodesWithText(confirmation).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithText(confirmation).fetchSemanticsNodes().isNotEmpty() }
         shot("about-unlocked-pink")
 
         // Now listed as Pink light and Pink dark, each a radio row named by its label.

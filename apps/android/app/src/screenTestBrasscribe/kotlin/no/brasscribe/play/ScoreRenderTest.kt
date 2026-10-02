@@ -19,6 +19,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 
@@ -28,24 +30,13 @@ import java.io.File
  * fixture opened over and over, a longer score, and after a rotation.
  */
 @RunWith(AndroidJUnit4::class)
-class ScoreRenderTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val container get() = (rule.activity.application as PlayApplication).container
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+class ScoreRenderTest : ScreenTest() {
 
     @Before
     fun setUp() {
         container.firstRunDone = true
         container.standHintShown = true
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
-    }
-
-    @After
-    fun tearDown() {
-        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0)
     }
 
     /** The hymn's bars [times] over in every part, renumbered: a longer score. */
@@ -65,29 +56,29 @@ class ScoreRenderTest {
 
     /** Puts [title] in the library (opened once as a file), then goes Home. */
     private fun addToLibrary(title: String, times: Int = 1) {
-        val xml = repeated(instrumentation.context.assets.open("old-hundredth/brass-band.musicxml").use { it.readBytes() }.decodeToString(), times)
+        val xml = repeated(checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml")).decodeToString(), times)
             .replace(Regex("""<work-title>[^<]*</work-title>"""), "<work-title>$title</work-title>")
         val file = File(rule.activity.cacheDir, "$title.musicxml").apply { writeText(xml) }
         rule.runOnUiThread { vm.openScoreUri(android.net.Uri.fromFile(file)) }
-        rule.waitUntil(20_000) { vm.scoreController?.state?.value?.loaded == true }
+        waitUntil(20_000) { vm.scoreController?.state?.value?.loaded == true }
         rule.runOnUiThread { vm.home() }
         rule.waitForIdle()
     }
 
     private fun openFromHome(title: String) {
-        rule.waitUntil(10_000) { rule.onAllNodesWithText(title, substring = true).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(10_000) { rule.onAllNodesWithText(title, substring = true).fetchSemanticsNodes().isNotEmpty() }
         val before = vm.scoreController
         rule.onAllNodesWithText(title, substring = true).onFirst().performClick()
-        rule.waitUntil(20_000) { vm.scoreController !== before && rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { vm.scoreController !== before && rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isNotEmpty() }
     }
 
     /** Waits for a finished render with systems in it, then checks the notation is really on screen. */
     private fun assertScoreShows(label: String, onScreen: Boolean = true) {
         val c = vm.scoreController!!
-        rule.waitUntil(20_000) { c.renders.value > 0 && c.standSystems().isNotEmpty() }
+        waitUntil(20_000) { c.renders.value > 0 && c.standSystems().isNotEmpty() }
         rule.waitForIdle()
         // The surface is laid out to the engraving on a pass after the render: wait for it.
-        rule.waitUntil(5_000) { var w = 0; rule.runOnUiThread { w = surface(c).width }; w > 0 }
+        waitUntil(5_000) { var w = 0; rule.runOnUiThread { w = surface(c).width }; w > 0 }
         var detail = ""
         var clipped = false
         rule.runOnUiThread {
@@ -102,10 +93,6 @@ class ScoreRenderTest {
         if (!onScreen) return
         val bmp = rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()
         val ink = inkShare(bmp)
-        if (ink < MIN_INK) {
-            val dir = File(rule.activity.getExternalFilesDir(null), "score-render").apply { mkdirs() }
-            File(dir, "$label.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
         assertTrue("$label: no notation on screen (ink ${"%.4f".format(ink)}; $detail)", ink >= MIN_INK)
     }
 
@@ -127,7 +114,7 @@ class ScoreRenderTest {
 
     private fun backHome() {
         rule.runOnUiThread { vm.back() }
-        rule.waitUntil(10_000) { rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isEmpty() }
+        waitUntil(10_000) { rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isEmpty() }
     }
 
     @Test
@@ -149,14 +136,12 @@ class ScoreRenderTest {
             backHome()
         }
         openFromHome("Hundredth Long")
-        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_90)
-        rule.waitForIdle()
-        Thread.sleep(500)
+        ScreenDevice.turn(rule, sideways = true)
+        settle()
         // A phone on its side leaves the score no height under the controls, so only the render is checked.
         assertScoreShows("long-landscape", onScreen = false)
-        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0)
-        rule.waitForIdle()
-        Thread.sleep(500)
+        ScreenDevice.turn(rule, sideways = false)
+        settle()
         assertScoreShows("long-portrait-again")
     }
 

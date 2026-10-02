@@ -25,21 +25,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 
 /**
  * A phone on its side keeps the score in view: at 100 % and 200 % text the score view has at least 55 %
  * of the height inside the system bars and shows notation, and the controls under it keep 48 dp targets.
- * Screenshots go to the app's files, score-landscape/ (pulled into docs/screenshots/score-landscape).
  */
 @RunWith(AndroidJUnit4::class)
-class ScoreLandscapeTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+class ScoreLandscapeTest : ScreenTest() {
+    override val shots = "brasscribe/score-landscape"
 
     @Before
     fun setUp() {
@@ -47,33 +44,19 @@ class ScoreLandscapeTest {
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
     }
 
-    @After
-    fun tearDown() {
-        shell("settings put system font_scale 1.0")
-        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0)
-    }
-
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(300)
-    }
-
     private fun openScore() {
-        val xml = instrumentation.context.assets.open("old-hundredth/brass-band.musicxml").use { it.readBytes() }
+        val xml = checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml"))
         val file = File(rule.activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(xml) }
         rule.runOnUiThread { vm.openScoreUri(android.net.Uri.fromFile(file)) }
-        rule.waitUntil(20_000) { vm.scoreController?.state?.value?.loaded == true }
+        waitUntil(20_000) { vm.scoreController?.state?.value?.loaded == true }
     }
 
     private fun check(label: String, fontScale: String) {
-        shell("settings put system font_scale $fontScale")
-        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_90)
-        rule.waitUntil(10_000) { rule.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE }
-        rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale.toString().startsWith(fontScale.take(3)) }
+        textSize(fontScale.toFloat())
+        ScreenDevice.turn(rule, sideways = true)
         openScore()
-        rule.waitUntil(20_000) { (vm.scoreController?.renders?.value ?: 0) > 0 && rule.onAllNodesWithTag("score-controls").fetchSemanticsNodes().isNotEmpty() }
-        rule.waitForIdle()
-        Thread.sleep(800)
+        waitUntil(20_000) { (vm.scoreController?.renders?.value ?: 0) > 0 && rule.onAllNodesWithTag("score-controls").fetchSemanticsNodes().isNotEmpty() }
+        settle()
 
         var available = 0
         rule.runOnUiThread {
@@ -86,8 +69,7 @@ class ScoreLandscapeTest {
         val scoreHeight = (score.bottom - score.top).value * density
         val share = scoreHeight / available
 
-        val dir = File(rule.activity.getExternalFilesDir(null), "score-landscape").apply { mkdirs() }
-        instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$label.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+        shot(label)
         assertTrue("$label: the score has ${"%.0f".format(share * 100)} % of $available px", share >= 0.55f)
 
         val bmp = rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()
@@ -107,9 +89,8 @@ class ScoreLandscapeTest {
         // The music stand is one tap away: in the row, or in the ⋯ sheet, which always has it.
         if (rule.onAllNodesWithTag("stand-enter").fetchSemanticsNodes().none { it.layoutInfo.isPlaced }) {
             rule.onNodeWithTag("top-more").performClick()
-            rule.waitUntil(5_000) { rule.onAllNodesWithTag("performance").fetchSemanticsNodes().isNotEmpty() }
-            Thread.sleep(400)
-            instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$label-more.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+            waitUntil(5_000) { rule.onAllNodesWithTag("performance").fetchSemanticsNodes().isNotEmpty() }
+            shot("$label-more")
             // The sheet's content ends above the navigation bar: nothing under the gesture handle.
             var navTop = 0
             rule.runOnUiThread {

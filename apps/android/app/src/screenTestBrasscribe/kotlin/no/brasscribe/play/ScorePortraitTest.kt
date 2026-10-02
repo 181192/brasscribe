@@ -27,6 +27,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 
@@ -34,37 +36,24 @@ import java.io.File
  * Upright, the score keeps the height too: with your part in a lineup that lacks your seat (the mapping
  * banner) and its source pill both showing, the score view has at least 55 % of the height inside the
  * system bars and shows notation, at 100 % and 200 % text. Closing the banner keeps it closed for the score.
- * Screenshots go to the app's files, score-portrait/.
  */
 @RunWith(AndroidJUnit4::class)
-class ScorePortraitTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
+class ScorePortraitTest : ScreenTest() {
+    override val shots = "brasscribe/score-portrait"
 
     @Before
     fun setUp() {
         rule.runOnUiThread { container.firstRunDone = true; container.updateSeat(SeatChoice.Player("1st-baritone")) }
-        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_FREEZE_0)
     }
 
     @After
     fun tearDown() {
-        shell("settings put system font_scale 1.0")
         rule.runOnUiThread { container.updateSeat(SeatChoice.NotSet) }
-    }
-
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(300)
     }
 
     /** Old Hundredth for the small band, which has no 1st Baritone: your part is Euphonium. */
     private fun openSmallBand() {
-        val json = instrumentation.context.assets.open("old-hundredth/composition.json").use { String(it.readBytes()) }
+        val json = String(checkNotNull(ScreenDevice.fixture("old-hundredth/composition.json")))
         val composition = container.core.decodeComposition(json)
         val small = composition.arrangedFor(Lineup.MINIMAL, "faithful")
         val xml = container.core.arrangeMusicXmlWith(composition, ArrangeOptions(lineup = "minimal"))!!
@@ -74,17 +63,14 @@ class ScorePortraitTest {
             vm.result.value = TranscriptionResult(small, xml, Profile.BRASS_BAND, onDevice = true, compositionJson = container.core.encodeComposition(small))
             vm.navigate(Screen.SCORE)
         }
-        rule.waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }
-        rule.waitForIdle()
-        Thread.sleep(800)
+        waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }
+        settle()
     }
 
     private fun check(label: String, fontScale: String) {
-        shell("settings put system font_scale $fontScale")
-        rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale.toString().startsWith(fontScale.take(3)) }
+        textSize(fontScale.toFloat())
         openSmallBand()
-        val dir = File(rule.activity.getExternalFilesDir(null), "score-portrait").apply { mkdirs() }
-        instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(dir, "$label.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+        shot(label)
         val placed = { tag: String -> rule.onAllNodesWithTag(tag).fetchSemanticsNodes().any { it.layoutInfo.isPlaced } }
         if (fontScale == "1.0") assertTrue("$label: the mapping banner shows", placed("mapped-notice"))
         assertTrue("$label: the source pill shows", rule.onAllNodesWithTag("source-recording").fetchSemanticsNodes().isNotEmpty() ||

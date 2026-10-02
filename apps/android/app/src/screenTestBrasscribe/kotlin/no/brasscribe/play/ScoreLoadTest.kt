@@ -8,9 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import no.brasscribe.play.score.ScoreController
+import no.brasscribe.play.screen.ScreenDevice
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -30,7 +29,7 @@ class ScoreLoadTest {
     private val scope = CoroutineScope(Dispatchers.Main)
     private lateinit var controller: ScoreController
 
-    private fun xml(): ByteArray = instrumentation.context.assets.open("old-hundredth/brass-band.musicxml").use { it.readBytes() }
+    private fun xml(): ByteArray = checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml"))
 
     private fun newController() {
         instrumentation.runOnMainSync { controller = ScoreController(instrumentation.targetContext, reducedMotion = true) }
@@ -43,11 +42,11 @@ class ScoreLoadTest {
     }
 
     @Test
-    fun theScoreIsParsedOffTheMainThread() = runBlocking {
+    fun theScoreIsParsedOffTheMainThread() {
         newController()
         var pickedOn: Thread? = null
         val job = scope.launch { controller.load(xml()) { pickedOn = Thread.currentThread(); setOf(0) } }
-        withTimeout(20_000) { job.join() }
+        ScreenDevice.waitWithoutScreen(20_000) { job.isCompleted }
         val st = controller.state.value
         assertNull(st.error)
         assertTrue("loaded", st.loaded)
@@ -59,16 +58,15 @@ class ScoreLoadTest {
     }
 
     @Test
-    fun aCancelledLoadLeavesTheControllerUnloaded() = runBlocking {
+    fun aCancelledLoadLeavesTheControllerUnloaded() {
         newController()
         lateinit var job: Job
         // Cancelled while the parse runs: the screen went away before the score was ready.
         job = scope.launch(start = kotlinx.coroutines.CoroutineStart.LAZY) { controller.load(xml()) { job.cancel(); setOf(0) } }
         job.start()
-        withTimeout(20_000) { job.join() }
+        ScreenDevice.waitWithoutScreen(20_000) { job.isCompleted }
         assertTrue(job.isCancelled)
-        Thread.sleep(500)
-        instrumentation.waitForIdleSync()
+        runCatching { ScreenDevice.waitWithoutScreen(500) { false } }
         val st = controller.state.value
         assertFalse("not loaded", st.loaded)
         assertNull("no error", st.error)

@@ -164,6 +164,12 @@ object ScreenDevice {
         shadowOf(Looper.getMainLooper()).idle()
     }
 
+    /** The phone's Back. */
+    fun back(rule: AppRule) {
+        rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
+        rule.waitForIdle()
+    }
+
     /** A keyboard is in use from now on: touch mode ends, as with the first key pressed. */
     fun keyboard(rule: AppRule) {
         rule.runOnUiThread { touchMode(frontWindow(), false) }
@@ -240,6 +246,17 @@ object ScreenDevice {
             pass(rule, 50)
             Thread.sleep(2)
         }
+    }
+
+    /** Waits until [condition] holds where no screen is up: the main thread's work is done meanwhile. */
+    fun waitWithoutScreen(ms: Long, condition: () -> Boolean) {
+        val end = System.nanoTime() + ms * 1_000_000
+        while (!condition()) {
+            if (System.nanoTime() > end) throw AssertionError("not within $ms ms")
+            shadowOf(Looper.getMainLooper()).idleFor(20, TimeUnit.MILLISECONDS)
+            Thread.sleep(2)
+        }
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
     /** Lets the screen come to rest: a second of the app's time, with its frames. */
