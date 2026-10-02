@@ -1,0 +1,260 @@
+{
+ "preset": "bass-4-standard",
+ "style": "as-played",
+ "instrument": {
+  "name": "Bass",
+  "tuning": {
+   "name": "Standard",
+   "strings": [
+    {
+     "open_pitch": 43,
+     "first_fret": 0
+    },
+    {
+     "open_pitch": 38,
+     "first_fret": 0
+    },
+    {
+     "open_pitch": 33,
+     "first_fret": 0
+    },
+    {
+     "open_pitch": 28,
+     "first_fret": 0
+    }
+   ]
+  },
+  "frets": 21,
+  "scale_length_mm": 864.0,
+  "capo": 0,
+  "notation": "bass-8vb"
+ },
+ "notes": [
+  {
+   "pitch": 28,
+   "start": 0,
+   "dur": 12,
+   "confidence": 0.9,
+   "onset_s": 0.0,
+   "offset_s": 0.3,
+   "string": 4,
+   "fret": 0,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 12,
+   "dur": 12,
+   "confidence": 0.9,
+   "onset_s": 0.3,
+   "offset_s": 0.6,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 33,
+   "start": 24,
+   "dur": 12,
+   "confidence": 0.9,
+   "onset_s": 0.6,
+   "offset_s": 0.9,
+   "string": 3,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 5
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 36,
+   "dur": 12,
+   "confidence": 0.2,
+   "onset_s": 0.9,
+   "offset_s": 1.2,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 33,
+   "start": 48,
+   "dur": 12,
+   "confidence": 0.9,
+   "onset_s": 1.2,
+   "offset_s": 1.5,
+   "string": 3,
+   "fret": 0,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 5
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 31,
+   "start": 60,
+   "dur": 12,
+   "confidence": 0.9,
+   "onset_s": 1.5,
+   "offset_s": 1.8,
+   "string": 4,
+   "fret": 3,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 28,
+   "start": 72,
+   "dur": 36,
+   "confidence": 0.9,
+   "onset_s": 1.8,
+   "offset_s": 2.7,
+   "string": 4,
+   "fret": 0,
+   "alternatives": [],
+   "out_of_range": false,
+   "pinned": false
+  },
+  {
+   "pitch": 35,
+   "start": 108,
+   "dur": 36,
+   "confidence": 0.2,
+   "onset_s": 2.7,
+   "offset_s": 3.6,
+   "string": 3,
+   "fret": 2,
+   "alternatives": [
+    {
+     "string": 4,
+     "fret": 7
+    }
+   ],
+   "out_of_range": false,
+   "pinned": false
+  }
+ ],
+ "violations": [],
+ "tuning_suggestions": [
+  {
+   "preset": "bass-4-standard",
+   "tuning": "Standard",
+   "out_of_range": 0,
+   "low_string_fits": true,
+   "open_notes": 4,
+   "high_frets": 0,
+   "distance": 0
+  },
+  {
+   "preset": "bass-4-drop-d",
+   "tuning": "Drop D",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 2,
+   "high_frets": 0,
+   "distance": 2
+  },
+  {
+   "preset": "bass-4-eb-standard",
+   "tuning": "E\u266d standard",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 0,
+   "high_frets": 0,
+   "distance": 4
+  },
+  {
+   "preset": "bass-4-d-standard",
+   "tuning": "D standard",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 2,
+   "high_frets": 0,
+   "distance": 8
+  },
+  {
+   "preset": "bass-4-bead",
+   "tuning": "BEAD",
+   "out_of_range": 0,
+   "low_string_fits": false,
+   "open_notes": 4,
+   "high_frets": 0,
+   "distance": 20
+  }
+ ],
+ "octave_shift": 0,
+ "octave_source": "auto",
+ "octave_notes_moved": 0,
+ "reference_pitch": {
+  "cents": -2.2,
+  "concentration": 0.79,
+  "retuned": false
+ },
+ "tempo_bpm": 100.0,
+ "key": {
+  "name": "Em",
+  "fifths": 1,
+  "mode": "minor"
+ },
+ "meter": {
+  "beats": 6,
+  "beat_unit": 8
+ },
+ "ticks_per_beat": 24,
+ "beat_times": [
+  0.6,
+  1.2,
+  1.8,
+  2.4,
+  2.98,
+  3.6,
+  4.18,
+  4.8,
+  5.4,
+  5.98,
+  6.58,
+  7.2,
+  7.78,
+  8.36,
+  8.98,
+  9.58,
+  10.18,
+  10.78,
+  11.38,
+  11.98,
+  12.58,
+  13.18,
+  13.78,
+  14.38,
+  14.98,
+  15.58,
+  16.16,
+  16.76,
+  17.36,
+  17.96
+ ],
+ "first_downbeat": 0,
+ "layout": "tab",
+ "adjusted_notes": 0
+}
