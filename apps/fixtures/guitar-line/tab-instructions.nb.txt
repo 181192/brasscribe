@@ -1,0 +1,44 @@
+Guitar line
+
+Gitar, 6 strenger.
+Streng 1 er strengen nærmest gulvet når du spiller. Streng 6 er nærmest taket.
+Stemming: Standard. Løse strenger fra streng 6 til streng 1: E, A, D, G, H, E.
+Ingen capo.
+Tempo: 51 fjerdedelsnoter per minutt.
+Taktart: 3 fjerdedels takt.
+En tone merket «bør sjekkes» ble ikke hørt tydelig.
+
+Takt 1
+  Slag 1. Akkord, 6 toner: streng 6, løs; streng 5, bånd 2; streng 4, bånd 2; streng 3, løs; streng 2, løs; streng 1, løs. Fjerdedelsnote.
+  Slag 2. Akkord, 6 toner: streng 6, løs; streng 5, bånd 2; streng 4, bånd 2; streng 3, løs; streng 2, løs; streng 1, løs. Halvnote.
+
+Takt 2
+  Slag 1. Akkord, 6 toner: streng 6, bånd 3; streng 5, bånd 2; streng 4, løs; streng 3, løs; streng 2, løs; streng 1, bånd 3. Halvnote.
+  Slag 3. Akkord, 6 toner: streng 6, bånd 3; streng 5, bånd 2; streng 4, løs; streng 3, løs; streng 2, løs; streng 1, bånd 3. Fjerdedelsnote.
+
+Takt 3
+  Slag 1. Streng 4, bånd 2. Åttendedelsnote.
+  Slag 1-og. Streng 3, løs. Åttendedelsnote.
+  Slag 2. Streng 3, bånd 2. Åttendedelsnote.
+  Slag 2-og. Streng 2, løs. Åttendedelsnote.
+  Slag 3. Akkord, 4 toner: streng 4, løs; streng 3, bånd 2; streng 2, bånd 3; streng 1, bånd 2. Fjerdedelsnote bundet til punktert fjerdedelsnote.
+
+Takt 4
+  Holdes fra takt 3.
+  Slag 2-og. Streng 2, løs. Åttendedelsnote.
+  Slag 3. Akkord, 5 toner: streng 5, bånd 3; streng 4, bånd 2; streng 3, løs; streng 2, bånd 1; streng 1, løs. Fjerdedelsnote.
+
+Takt 5
+  Slag 1. Akkord, 5 toner: streng 5, bånd 3; streng 4, bånd 2; streng 3, løs; streng 2, bånd 1; streng 1, løs. Halvnote.
+  Slag 3. Streng 2, løs. Åttendedelsnote.
+  Slag 3-og. Streng 3, bånd 2. Åttendedelsnote.
+
+Takt 6
+  Slag 1. Akkord, 2 toner: streng 3, løs; G 6, ingen streng å spille den på, bør sjekkes. Åttendedelsnote.
+  Slag 1-og. Streng 4, bånd 2. Åttendedelsnote.
+  Slag 2. Akkord, 5 toner: streng 5, løs; streng 4, bånd 2; streng 3, bånd 2; streng 2, bånd 1; streng 1, løs. Fjerdedelsnote.
+  Slag 3. Akkord, 4 toner: streng 4, løs; streng 3, bånd 2; streng 2, bånd 3; streng 1, bånd 2. Fjerdedelsnote.
+
+Takt 7
+  Slag 1. Akkord, 7 toner: streng 6, løs; streng 5, bånd 2; streng 4, bånd 2; streng 3, løs; streng 2, løs, bør sjekkes; streng 1, løs; D 2, ingen streng å spille den på, bør sjekkes. Halvnote.
+  Slag 3. Fjerdedelspause.

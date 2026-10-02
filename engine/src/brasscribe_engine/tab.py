@@ -685,6 +685,8 @@ def arrange_stage(ctx: StageContext) -> None:
         tab["layout"] = layout
         tab["adjusted_notes"] = bass_tab.export_tab(tab, ctx.params["title"], layout, ctx.out,
                                                     lambda request: bass_tab.tablature(request, ctx.executor.cancel, ctx.log))
+        bass_tab.export_text(tab, ctx.params["title"], ctx.out,
+                             lambda request, fmt, lang: bass_tab.tab_text(request, fmt, lang, ctx.executor.cancel, ctx.log))
     except RuntimeError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
     unplayable = sum(n["out_of_range"] for n in tab["notes"])
@@ -730,9 +732,11 @@ def build(title: str, params: dict) -> Pipeline:
     fingering = {"instrument": opts["instrument"], "tuning": opts["tuning"], "capo": opts["capo"], "style": opts["style"]}
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "tab-notes.json")}, arrange_stage,
                     params={"title": title, "fingering": fingering, "layout": opts["layout"]},
-                    code=(THIS, bass_tab.THIS, bass_tab.core_cli_path()), outputs=("composition.json", "tab.json", "tab.musicxml")))
+                    code=(THIS, bass_tab.THIS, bass_tab.core_cli_path()),
+                    outputs=("composition.json", "tab.json", "tab.musicxml", *bass_tab.TEXT_OUTPUTS)))
     st.append(Stage("export", "export", {"score": Input("arrange")}, bass_tab.export_stage,
                     params={"musescore": bass_tab.musescore_fingerprint()}, code=(bass_tab.THIS,), outputs=("export.json",)))
     outputs = {"composition.json": ("arrange", "composition.json"), "tab.json": ("arrange", "tab.json"),
-               "tab.musicxml": ("arrange", "tab.musicxml"), "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
+               "tab.musicxml": ("arrange", "tab.musicxml"), **{name: ("arrange", name) for name in bass_tab.TEXT_OUTPUTS},
+               "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
     return Pipeline(PROFILE, "tab", st, outputs, opts)

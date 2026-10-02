@@ -75,7 +75,7 @@ class BassTabTest {
         assertEquals(FixtureEngineApi.stagesOf(Profile.BASS_TAB, wholeRecording = true), job.stages.map { it.name })
         assertEquals(job.stages.map { it.kind }, job.stages.map { FixtureEngineApi.kindOf(it.name) })
         assertTrue(job.stages.all { it.status.done })
-        assertEquals(listOf("composition.json", "tab.json", "tab.musicxml"), job.outputs)
+        assertEquals(listOf("composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml", "tab.txt"), job.outputs)
 
         val tab = tabOf(text("tab.json"))
         val xml = text("tab.musicxml")
@@ -89,7 +89,10 @@ class BassTabTest {
     @Test
     fun nothingInTheFixtureNamesTheComputerItWasRecordedOn() {
         val files = fixture.listFiles()!!.filter { it.isFile }
-        assertEquals(setOf("request.json", "job.json", "tab.json", "tab.musicxml", "composition.json"), files.map { it.name }.toSet())
+        assertEquals(
+            setOf("request.json", "job.json", "tab.json", "tab.musicxml", "composition.json", "tab.txt", "tab-instructions.en.txt", "tab-instructions.nb.txt"),
+            files.map { it.name }.toSet(),
+        )
         for (f in files) {
             val machine = Regex("/Users/|/home/|/tmp/|/var/|[A-Za-z]:\\\\\\\\|\\.local\\b|\\b\\d{1,3}(\\.\\d{1,3}){3}\\b").find(f.readText())
             assertNull("${f.name}: ${machine?.value}", machine)
@@ -268,9 +271,19 @@ class BassTabTest {
         assertEquals(tabOf(text("tab.json")), api.tab(job.id))
         assertEquals(text("tab.musicxml"), api.musicXml(job.id))
         assertEquals(text("tab.musicxml"), String(api.artifact(job.id, "tab.musicxml")))
+        // The tab as text and as playing instructions are artifacts like the others.
+        assertTrue(String(api.artifact(job.id, "tab.txt")).startsWith("Bass line\nBass\nTuning: Standard (E A D G), bottom line to top\n"))
+        assertTrue(String(api.artifact(job.id, "tab-instructions.en.txt")).startsWith("Bass line\n\nBass, 4 strings.\n"))
+        assertTrue(String(api.artifact(job.id, "tab-instructions.nb.txt")).startsWith("Bass line\n\nBass, 4 strenger.\n"))
         assertEquals(listOf("bass"), api.composition(job.id).voices.map { it.id })
-        assertEquals(listOf("composition.json" to "application/json", "tab.json" to "application/json",
-            "tab.musicxml" to "application/vnd.recordare.musicxml+xml"), api.artifacts(job.id).map { it.name to it.mediaType })
+        assertEquals(
+            listOf(
+                "composition.json" to "application/json", "tab-instructions.en.txt" to "text/plain; charset=utf-8",
+                "tab-instructions.nb.txt" to "text/plain; charset=utf-8", "tab.json" to "application/json",
+                "tab.musicxml" to "application/vnd.recordare.musicxml+xml", "tab.txt" to "text/plain; charset=utf-8",
+            ),
+            api.artifacts(job.id).map { it.name to it.mediaType },
+        )
         // Recorded without MuseScore: no PDF and no MIDI, as on a computer that has none.
         assertEquals(404, (runCatching { api.pdf(job.id) }.exceptionOrNull() as EngineException).status)
         assertEquals(404, (runCatching { api.midi(job.id) }.exceptionOrNull() as EngineException).status)

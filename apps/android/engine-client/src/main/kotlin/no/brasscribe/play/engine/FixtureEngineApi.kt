@@ -24,7 +24,8 @@ class DirectoryFixtureSource(private val dir: File) : FixtureSource {
 /**
  * Plays the part of the engine from a folder laid out like its output (composition.json,
  * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present; for a tab job
- * tab.json, tab.musicxml, and tab.pdf and tab.mid when present): every job walks the stages of its
+ * tab.json, tab.musicxml, the tab as text (tab.txt) and as playing instructions (tab-instructions.en.txt and
+ * .nb.txt), and tab.pdf and tab.mid when present): every job walks the stages of its
  * profile with timed progress events and then serves those files. A folder with a profiles.json (a list of
  * profile ids) plays a computer that has only those: an older one, from before the tab profile. (The file is
  * read each time the profiles are asked for, so a source may take its time over it, or fail.) Tests only: the JVM tests replay
@@ -202,8 +203,10 @@ class FixtureEngineApi(
         /** A fixture file that lists the profile ids the computer has, when it has not all of them. */
         const val PROFILES_FILE = "profiles.json"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
-        /** What a tab job leaves; the PDF and the MIDI only on a computer with MuseScore. */
-        val TAB_OUTPUTS = listOf("composition.json", "tab.json", "tab.musicxml", "tab.pdf", "tab.mid")
+        /** What a tab job leaves, in the engine's order; the PDF and the MIDI only on a computer with MuseScore. */
+        val TAB_OUTPUTS = listOf(
+            "composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.mid", "tab.musicxml", "tab.pdf", "tab.txt",
+        )
         /** The brass band's parts in order, as the engine's file names spell them. */
         val PART_NAMES = listOf(
             "Soprano-Cornet", "Solo-Cornet", "Repiano-Cornet", "2nd-Cornet", "3rd-Cornet", "Flugelhorn", "Solo-Horn", "1st-Horn", "2nd-Horn",
@@ -212,7 +215,7 @@ class FixtureEngineApi(
 
         fun mediaOf(name: String): String = MEDIA[name] ?: when (name.substringAfterLast('.')) {
             "pdf" -> "application/pdf"; "brf" -> "text/plain"; "musicxml" -> "application/vnd.recordare.musicxml+xml"
-            "json" -> "application/json"; "mid" -> "audio/midi"
+            "json" -> "application/json"; "mid" -> "audio/midi"; "txt" -> "text/plain; charset=utf-8"
             else -> "application/octet-stream"
         }
 

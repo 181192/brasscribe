@@ -69,7 +69,10 @@
  ],
  "outputs": [
   "composition.json",
+  "tab-instructions.en.txt",
+  "tab-instructions.nb.txt",
   "tab.json",
-  "tab.musicxml"
+  "tab.musicxml",
+  "tab.txt"
  ]
 }

@@ -19,6 +19,8 @@ Writes apps/fixtures/guitar-line/ and apps/fixtures/ukulele-line/, each with:
     tab.json          GET /v1/jobs/{id}/tab
     tab.musicxml      GET /v1/jobs/{id}/musicxml
     composition.json  GET /v1/jobs/{id}/composition
+    tab.txt, tab-instructions.en.txt, tab-instructions.nb.txt
+                      GET /v1/jobs/{id}/artifacts/{name}: the tab as text and as playing instructions
 The fixtures keep what the engine answered, also where it differs from what is written here.
 MuseScore is left out of the run, so there is no tab.pdf or tab.mid, as on a computer without it.
 What differs from run to run or from computer to computer is made fixed in job.json: the job's id, its
@@ -159,6 +161,8 @@ def record(c, name: str, line: list, options: dict) -> dict[str, str] | None:
     return {"tab.json": c.get(f"/v1/jobs/{job['id']}/tab").text,
             "tab.musicxml": c.get(f"/v1/jobs/{job['id']}/musicxml").text,
             "composition.json": c.get(f"/v1/jobs/{job['id']}/composition").text,
+            **{text: c.get(f"/v1/jobs/{job['id']}/artifacts/{text}").text
+               for text in ("tab.txt", "tab-instructions.en.txt", "tab-instructions.nb.txt")},
             "job.json": json.dumps(fixed(job, name), indent=1) + "\n",
             "request.json": json.dumps(body, indent=1) + "\n"}
 
@@ -191,7 +195,7 @@ def main() -> int:
         out = HERE / name
         out.mkdir(exist_ok=True)
         for file, text in answers.items():
-            (out / file).write_text(text)
+            (out / file).write_text(text, encoding="utf-8")
         tab = json.loads(answers["tab.json"])
         print(f"{name}: {len(tab['notes'])} notes on {tab['preset']}, {tab['key']['name']}, {tab['tempo_bpm']} BPM, "
               f"{sum(n['confidence'] < 0.4 for n in tab['notes'])} in doubt, {tab.get('unplayable_dropped', 0)} left out as "

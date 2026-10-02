@@ -1,0 +1,66 @@
+Bass line
+
+Bass, 4 strings.
+String 1 is the string nearest the floor as you play. String 4 is nearest the ceiling.
+Tuning: Standard. Open strings from string 4 to string 1: E, A, D, G.
+No capo.
+Tempo: 100 quarter notes per minute.
+Time: 2 4 time.
+
+Bar 1
+  Beat 1. String 4, open. Quarter note.
+  Beat 2. String 4, open. Quarter note.
+
+Bar 2
+  Beat 1. String 4, fret 3. Quarter note.
+  Beat 2. String 3, open. Quarter note.
+
+Bar 3
+  Beat 1. String 3, fret 2. Quarter note.
+  Beat 2. String 3, fret 2. Quarter note.
+
+Bar 4
+  Beat 1. String 3, open. Quarter note.
+  Beat 2. String 4, fret 3. Quarter note.
+
+Bar 5
+  Beat 1. String 4, open. Half note.
+
+Bar 6
+  Beat 1. String 4, fret 3. Quarter note.
+  Beat 2. String 3, fret 2. Quarter note.
+
+Bar 7
+  Beat 1. String 2, fret 2. Quarter note.
+  Beat 2. String 2, open. Quarter note.
+
+Bar 8
+  Beat 1. String 3, fret 2. Quarter note.
+  Beat 2. String 3, open. Quarter note.
+
+Bar 9
+  Beat 1. String 3, fret 3. Quarter note.
+  Beat 2. String 3, fret 3. Quarter note.
+
+Bar 10
+  Beat 1. String 2, fret 2. Quarter note.
+  Beat 2. String 1, open. Quarter note.
+
+Bar 11
+  Beat 1. String 2, open. Quarter note.
+  Beat 2. String 2, open. Quarter note.
+
+Bar 12
+  Same as bar 8.
+
+Bar 13
+  Beat 1. String 4, fret 3. Eighth note.
+  Beat 1 and. String 3, open. Eighth note.
+  Beat 2. String 3, fret 2. Quarter note.
+
+Bar 14
+  Beat 1. String 2, open. Quarter note.
+  Beat 2. String 3, fret 2. Quarter note.
+
+Bar 15
+  Same as bar 5.
