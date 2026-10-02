@@ -46,7 +46,9 @@ case "${1:-}" in
     # A squash merge appends the pull request number to the subject: "chore(release): X.Y.Z (#45)".
     commit=$(git log -1 --format=%H -E --grep="^chore\(release\): ${version//./\\.}( \(#[0-9]+\))?\$" main)
     [ -n "$commit" ] || die "no 'chore(release): $version' commit on main; merge the release pull request and pull first"
-    if ! git rev-list --first-parent main | grep -qx "$commit"; then
+    # grep reads to the end (no -q): leaving early would end rev-list with a broken pipe, which
+    # pipefail reports as "not found" once the history is longer than a pipe buffer.
+    if ! git rev-list --first-parent main | grep -x "$commit" >/dev/null; then
       commit=$(git rev-list --first-parent --ancestry-path "$commit..main" | tail -1)
     fi
     git tag "$tag" "$commit"
