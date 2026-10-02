@@ -77,6 +77,12 @@ interface EngineApi {
     /** The tab of a finished tab job: a string and a fret for every note. 404 for another profile, or before it is done. */
     suspend fun tab(jobId: String): Tab
     suspend fun renderedAudio(jobId: String): ByteArray
+
+    /**
+     * The recording the job was made from, written to [into] a buffer at a time (it can be a whole song).
+     * 404 when the computer no longer has it, or made the job from a file outside its own audio folders.
+     */
+    suspend fun jobInput(jobId: String, into: java.io.File)
     suspend fun artifacts(jobId: String): List<Artifact>
     suspend fun artifact(jobId: String, name: String): ByteArray
     suspend fun manifest(jobId: String): String
@@ -102,7 +108,7 @@ interface EngineApi {
         val OPERATIONS = setOf(
             "getHealth", "pairDevice", "listProfiles", "uploadAudio", "createJob", "createJobFromUpload", "getJob",
             "listJobs", "cancelJob", "streamJobEvents", "getComposition", "getMusicXml", "getMidi", "getPdf",
-            "getRenderedAudio", "listJobArtifacts", "getJobArtifact", "getJobManifest", "getBraille", "getTalkingScore",
+            "getRenderedAudio", "getJobInput", "listJobArtifacts", "getJobArtifact", "getJobManifest", "getBraille", "getTalkingScore",
             "getJobEvidence", "getTab", "updateRun", "deleteRun", "getThisDevice", "rotateDeviceToken", "unpairThisDevice",
             "requestPairing", "pollPairingRequest",
         )
@@ -112,7 +118,7 @@ interface EngineApi {
         /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools, and the computer's own. */
         val NOT_USED = setOf(
             "getPartSources",
-            "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getJobInput", "getReferenceFile", "getRoundtrip",
+            "listSuites", "runSuite", "listSuiteHistory", "compareJob", "getReferenceFile", "getRoundtrip",
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
             "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "getConformanceRun",
             "runConformance",

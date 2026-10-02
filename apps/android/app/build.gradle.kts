@@ -236,6 +236,8 @@ dependencies {
     // alphaSkia's Java API, to register the tab's own face for the fret numbers. Every build already carries
     // the library (alphaTab brings it in); this only lets Fretscribe's code name it.
     "fretscribeImplementation"(libs.alphaskia)
+    // The recording as the sound of the tab: slowed down or sped up with its pitch kept. Fretscribe only.
+    "fretscribeImplementation"(libs.media3.exoplayer)
     // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
     // 13.4 MB instead of 33.0 MB per arm64 APK. Otherwise the full Maven build.
     val reducedOrt = rootProject.file("third_party/onnxruntime/onnxruntime-android-reduced.aar")

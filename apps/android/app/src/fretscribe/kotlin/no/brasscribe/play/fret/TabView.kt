@@ -35,7 +35,24 @@ data class TabPalette(
     val paper: Int, val ink: Int, val string: Int, val uncertain: Int,
     /** The wash behind a doubtful numeral; null in high contrast, which has shapes only. */
     val uncertainTint: Int?,
+    /** The line where the recording is. */
+    val cursor: Int,
+    /** The wash behind the beat the recording is at; null in high contrast. */
+    val cursorTint: Int?,
+    /** The brackets at both ends of the bars being repeated. */
+    val repeat: Int,
+    /** The band behind the bars being repeated; null in high contrast. */
+    val repeatBand: Int?,
 )
+
+/** Where the cursor stands for one beat: the beat's start in its bar ([TabIndex.TICKS]), and its column's left edge and width in the page's pixels. */
+data class CursorStop(val tick: Int, val left: Float, val width: Float)
+
+/** One bar of the page, in the page's pixels: its box, the top line of its first staff, and the cursor's stops in it, in time order. */
+data class BarBox(val bar: Int, val left: Float, val right: Float, val top: Float, val bottom: Float, val stops: List<CursorStop>, val staffTop: Float = top) {
+    /** The stop of the beat that is sounding at [tick] of the bar: the last that starts at or before it. */
+    fun stopAt(tick: Int): CursorStop? = stops.lastOrNull { it.tick <= tick } ?: stops.firstOrNull()
+}
 
 /** Where a mark is drawn, in the page's pixels: the middle of its column, the mark itself, how far down the column's numerals go, and how wide the mark and the numerals are. */
 data class MarkBox(val column: Int, val centre: Float, val top: Float, val bottom: Float, val columnBottom: Float, val width: Float)
@@ -47,7 +64,15 @@ data class TabLine(val top: Int, val bottom: Int, val firstBar: Int, val lastBar
  * One engraving of the tab, as alphaTab laid it out: the height of its page in pixels (the height alphaTab
  * scrolls, so a scroll over it ends where alphaTab's does), its lines, and where the marks are.
  */
-data class TabEngraving(val height: Int, val lines: List<TabLine>, val boxes: List<MarkBox>) {
+data class TabEngraving(val height: Int, val lines: List<TabLine>, val boxes: List<MarkBox>, val bars: List<BarBox> = emptyList()) {
+    private val byBar = bars.associateBy { it.bar }
+
+    /** The box of [bar] (counted from 0). */
+    fun bar(bar: Int): BarBox? = byBar[bar]
+
+    /** The line [bar] is on. */
+    fun lineOf(bar: Int): TabLine? = lines.firstOrNull { bar in it.firstBar..it.lastBar }
+
     val barsPerLine: List<Int> get() = lines.map { it.lastBar - it.firstBar + 1 }
 
     /** The first bar of the line that [y] pixels down the page is in: the last line that starts at or above it. */
@@ -107,11 +132,44 @@ class TabView(
     ownFace: Boolean = true,
 ) {
     val view: AlphaTabView = AlphaTabView(context, null)
-    private val washes = TabOverlay.attach(this, under = true)
-    private val glyphs = TabOverlay.attach(this, under = false)
+    // Under the engraving: the band of a repeat, on it the wash of the beat being played, on that the doubtful numerals' wash
+    // (washes never stack: each covers the one under it). Over it: the marks and the repeat's brackets, then the cursor's line.
+    private val band = TabOverlay.attach(this, TabLayer.BAND)
+    private val beatWash = TabOverlay.attach(this, TabLayer.BEAT)
+    private val washes = TabOverlay.attach(this, TabLayer.WASH)
+    private val glyphs = TabOverlay.attach(this, TabLayer.MARKS)
+    private val cursorLine = TabOverlay.attach(this, TabLayer.CURSOR)
+    private val overlays = listOf(band, beatWash, washes, glyphs, cursorLine)
     private val density = context.resources.displayMetrics.density
     private var score: Score? = null
     private var columns: List<TabColumn> = emptyList()
+    /** The staff the cursor stops on its beats: the one the marks stand on. */
+    private var cursorStaff = 0
+
+    /** The bar and the stop the cursor stands at; null when it is not shown. */
+    internal var cursor: Pair<BarBox, CursorStop>? = null
+        private set
+
+    /** The bars being repeated (counted from 0), with brackets at both ends and a band behind them. */
+    var repeat: IntRange? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            band.invalidate(); glyphs.invalidate()
+        }
+
+    /**
+     * Stands the cursor at the beat that sounds at [place]; null takes it away. It moves from beat to beat and
+     * is still between them, so nothing is drawn while a note sounds. True when it moved.
+     */
+    fun cursorAt(place: TabPlace?): Boolean {
+        val bar = place?.let { _engraving.value?.bar(it.bar) }
+        val to = bar?.let { b -> b.stopAt(place.tick)?.let { b to it } }
+        if (to == cursor) return false
+        cursor = to
+        beatWash.invalidate(); cursorLine.invalidate()
+        return true
+    }
 
     /** The beat each column's mark stands over, and the notes of it that are in doubt. */
     internal var placed: List<Placed> = emptyList()
@@ -189,7 +247,7 @@ class TabView(
         }
         view.api.postRenderFinished.on {
             hideCredit()
-            washes.refresh(); glyphs.refresh()
+            overlays.forEach { it.refresh() }
             engravings++
             view.post { publish() }
         }
@@ -226,6 +284,7 @@ class TabView(
             view.api.updateSettings()
         }
         columns = marks.columns
+        cursorStaff = index.markStaff
         place(s)
         tint(s)
         // alphaTab skips an engraving asked of a view that has no width yet, and does not always make it up when the
@@ -374,6 +433,8 @@ class TabView(
             seeAgain()
         }
         _engraving.value = engraving
+        // The repeat's band and brackets are drawn from the bars of the engraving.
+        if (repeat != null) { band.invalidate(); glyphs.invalidate() }
     }
 
     private var seenFor = -1
@@ -399,7 +460,52 @@ class TabView(
             val b = systems[i].realBounds
             TabLine((b.y * density).toInt(), Math.ceil((b.y + b.h) * density).toInt(), bars[0].index.toInt(), bars[n - 1].index.toInt())
         }
-        return TabEngraving(page, lines, boxes())
+        return TabEngraving(page, lines, boxes(), bars())
+    }
+
+    /** Every bar's box and the cursor's stops in it: the columns of the beats written on the staff the marks stand on. */
+    private fun bars(): List<BarBox> {
+        val systems = view.api.boundsLookup?.staffSystems ?: return emptyList()
+        val ls = lineSpace
+        val pad = 0.25f * ls
+        val out = ArrayList<BarBox>()
+        for (i in 0 until systems.length.toInt()) {
+            val masters = systems[i].bars
+            for (j in 0 until masters.length.toInt()) {
+                val master = masters[j]
+                val box = master.visualBounds
+                val stops = java.util.TreeMap<Int, CursorStop>()
+                val staves = master.bars
+                var staffTop = box.y + box.h
+                for (k in 0 until staves.length.toInt()) {
+                    staffTop = minOf(staffTop, staves[k].visualBounds.y)
+                    val beats = staves[k].beats
+                    for (m in 0 until beats.length.toInt()) {
+                        val bb = beats[m]
+                        if (bb.beat.isEmpty || bb.beat.voice.bar.staff.index.toInt() != cursorStaff) continue
+                        var from = bb.visualBounds.x
+                        var to = bb.visualBounds.x + bb.visualBounds.w
+                        val notes = bb.notes
+                        if (notes != null && notes.length.toInt() > 0) {
+                            from = Double.MAX_VALUE; to = -Double.MAX_VALUE
+                            for (n in 0 until notes.length.toInt()) {
+                                val h = notes[n].noteHeadBounds
+                                from = minOf(from, h.x); to = maxOf(to, h.x + h.w)
+                            }
+                        }
+                        val width = maxOf(ls, ((to - from) * density).toFloat() + 2 * pad)
+                        val left = ((from + to) / 2 * density).toFloat() - width / 2
+                        // Two voices that start a beat together share its column: the first one written stands.
+                        stops.putIfAbsent(bb.beat.playbackStart.toInt(), CursorStop(bb.beat.playbackStart.toInt(), left, width))
+                    }
+                }
+                val left = (box.x * density).toFloat()
+                if (stops.isEmpty()) stops[0] = CursorStop(0, left + pad, ls)
+                out += BarBox(master.index.toInt(), left, ((box.x + box.w) * density).toFloat(), (box.y * density).toFloat(), ((box.y + box.h) * density).toFloat(), stops.values.toList(),
+                    (staffTop * density).toFloat())
+            }
+        }
+        return out
     }
 
     private val pageScroll: android.widget.ScrollView? = view.findViewById(net.alphatab.R.id.innerScroll)
@@ -445,13 +551,16 @@ class TabView(
     }
 }
 
+/** What an overlay draws, and on which side of the engraving. */
+internal enum class TabLayer(val under: Boolean) { BAND(true), BEAT(true), WASH(true), MARKS(false), CURSOR(false) }
+
 /**
  * Draws the marks inside alphaTab's render wrapper, from its layout (boundsLookup): under the engraving
  * the wash behind each doubtful numeral, over it the "?" in the doubt colour and the boxed "!" in ink.
  * The glyph carries the meaning; the colour only goes with it.
  */
 @SuppressLint("ViewConstructor")
-internal class TabOverlay(context: Context, private val tab: TabView, private val under: Boolean) : View(context) {
+internal class TabOverlay(context: Context, private val tab: TabView, private val layer: TabLayer) : View(context) {
     private val density = context.resources.displayMetrics.density
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -471,7 +580,31 @@ internal class TabOverlay(context: Context, private val tab: TabView, private va
     override fun onDraw(canvas: Canvas) {
         val p = tab.palette
         val ls = tab.lineSpace
-        if (under) {
+        // A band, a wash and the cursor reach half a line space past the staff's outer lines.
+        val reach = 0.5f * ls
+        when (layer) {
+            TabLayer.BAND -> {
+                fill.color = p.repeatBand ?: return
+                val bars = tab.repeat ?: return
+                for (b in tab.engraving.value?.bars.orEmpty()) if (b.bar in bars) canvas.drawRect(b.left, b.top - reach, b.right, b.bottom + reach, fill)
+                return
+            }
+            TabLayer.BEAT -> {
+                fill.color = p.cursorTint ?: return
+                val (bar, stop) = tab.cursor ?: return
+                canvas.drawRect(stop.left, bar.top - reach, stop.left + stop.width, bar.bottom + reach, fill)
+                return
+            }
+            TabLayer.CURSOR -> {
+                val (bar, stop) = tab.cursor ?: return
+                fill.color = p.cursor
+                // At the left edge of the beat's column, so the line never crosses a numeral.
+                canvas.drawRect(stop.left - TabTokens.CURSOR_DP * density, bar.top - reach, stop.left, bar.bottom + reach, fill)
+                return
+            }
+            else -> Unit
+        }
+        if (layer == TabLayer.WASH) {
             val wash = p.uncertainTint ?: return
             val lookup = tab.view.api.boundsLookup ?: return
             fill.color = wash
@@ -486,6 +619,30 @@ internal class TabOverlay(context: Context, private val tab: TabView, private va
                 }
             }
             return
+        }
+        tab.repeat?.let { bars ->
+            // A bracket at each end of the bars: "[" before the first, "]" after the last. It starts at the staff's top line, under the bar's number.
+            stroke.color = p.repeat
+            stroke.strokeWidth = TabTokens.CURSOR_DP * density
+            val half = stroke.strokeWidth / 2
+            val arm = 0.9f * ls
+            for (b in tab.engraving.value?.bars.orEmpty()) {
+                if (b.bar != bars.first && b.bar != bars.last) continue
+                val top = b.staffTop - half
+                val bottom = b.bottom + reach
+                if (b.bar == bars.first) {
+                    val x = b.left + half
+                    canvas.drawLine(x, top, x, bottom, stroke)
+                    canvas.drawLine(x, top + half, x + arm, top + half, stroke)
+                    canvas.drawLine(x, bottom - half, x + arm, bottom - half, stroke)
+                }
+                if (b.bar == bars.last) {
+                    val x = b.right - half
+                    canvas.drawLine(x, top, x, bottom, stroke)
+                    canvas.drawLine(x, top + half, x - arm, top + half, stroke)
+                    canvas.drawLine(x, bottom - half, x - arm, bottom - half, stroke)
+                }
+            }
         }
         val kinds = tab.placed.associate { it.column to it.kind }
         stroke.strokeWidth = maxOf(1.5f * density, 0.12f * ls)
@@ -520,12 +677,13 @@ internal class TabOverlay(context: Context, private val tab: TabView, private va
         /** A capital's height as a part of the text size, for the bold system face. */
         private const val CAP = 0.72f
 
-        fun attach(tab: TabView, under: Boolean): TabOverlay {
-            val overlay = TabOverlay(tab.view.context, tab, under)
+        /** Each layer goes on top of the ones attached before it on its side of the engraving. */
+        fun attach(tab: TabView, layer: TabLayer): TabOverlay {
+            val overlay = TabOverlay(tab.view.context, tab, layer)
             val wrapper = tab.view.findViewById<RelativeLayout>(net.alphatab.R.id.renderWrapper)
             val surface = tab.view.findViewById<View>(net.alphatab.R.id.renderSurface)
-            val index = (0 until wrapper.childCount).firstOrNull { wrapper.getChildAt(it) === surface }?.plus(if (under) 0 else 1) ?: 0
-            wrapper.addView(overlay, index, RelativeLayout.LayoutParams(0, 0))
+            val at = (0 until wrapper.childCount).firstOrNull { wrapper.getChildAt(it) === surface } ?: 0
+            wrapper.addView(overlay, if (layer.under) at else wrapper.childCount, RelativeLayout.LayoutParams(0, 0))
             overlay.surface = surface
             surface.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> overlay.post { overlay.refresh() } }
             return overlay

@@ -230,4 +230,25 @@ class KtorEngineApiTest {
         assertEquals(90, p.etaSeconds)
         assertEquals("stems", p.currentKind)
     }
+
+    @Test
+    fun theRecordingOfAJobIsWrittenToAFile() = runTest {
+        val sound = ByteArray(200_000) { (it % 251).toByte() }
+        val engine = MockEngine { req ->
+            when (req.url.encodedPath) {
+                "/v1/jobs/r1/input" -> respond(sound, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "audio/wav"))
+                else -> respond("""{"detail":"input audio no longer exists, or is not in the engine's audio folders"}""", HttpStatusCode.NotFound, json)
+            }
+        }
+        val api = KtorEngineApi("http://host", engine, token = "t")
+        val file = java.io.File.createTempFile("input", ".wav")
+        try {
+            api.jobInput("r1", file)
+            assertTrue(sound.contentEquals(file.readBytes()))
+            val gone = runCatching { api.jobInput("r2", file) }.exceptionOrNull()
+            assertEquals(404, (gone as? EngineException)?.status)
+        } finally {
+            file.delete()
+        }
+    }
 }

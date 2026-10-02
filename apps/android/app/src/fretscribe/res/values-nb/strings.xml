@@ -201,4 +201,32 @@
         <item>7.</item>
         <item>8.</item>
     </string-array>
+
+    <!-- Øving: opptaket er lyden til tabben -->
+    <string name="fs_practice_to_start">Tilbake til starten</string>
+    <string name="fs_practice_to_repeat_start">Tilbake til starten av gjentakelsen</string>
+    <string name="fs_practice_bar_beat">Takt %1$s, slag %2$d</string>
+    <string name="fs_practice_pickup_beat">Opptakten, slag %1$d</string>
+    <string name="fs_practice_slower">Saktere</string>
+    <string name="fs_practice_faster">Raskere</string>
+    <string name="fs_practice_repeat">Gjenta takter</string>
+    <string name="fs_practice_repeat_on">Gjentar %1$s–%2$s</string>
+    <string name="fs_practice_repeat_on_one">Gjentar %1$s</string>
+    <string name="fs_practice_repeating">Gjentar takt %1$s til %2$s</string>
+    <string name="fs_practice_repeating_one">Gjentar takt %1$s</string>
+    <string name="fs_practice_repeat_tip">Opptaket spiller disse taktene om og om igjen.</string>
+    <string name="fs_practice_repeat_pickup">Takt 0 er opptakten.</string>
+    <string name="fs_practice_bar_earlier">%1$s: én takt tidligere</string>
+    <string name="fs_practice_bar_later">%1$s: én takt senere</string>
+    <string name="fs_practice_bar_value">%1$s %2$s</string>
+    <string name="fs_practice_repeat_set">Gjenta takt %1$s til %2$s</string>
+    <string name="fs_practice_repeat_set_one">Gjenta takt %1$s</string>
+    <string name="fs_practice_not_here">Opptaket er ikke på denne telefonen.</string>
+    <string name="fs_practice_not_here_alone">Opptaket er ikke på denne telefonen. Koble til datamaskinen for å hente det. Du kan fortsatt lese tabben.</string>
+    <string name="fs_practice_get">Hent det fra datamaskinen</string>
+    <string name="fs_practice_getting">Henter opptaket fra datamaskinen…</string>
+    <string name="fs_practice_gone">Datamaskinen har ikke opptaket lenger. Du kan fortsatt lese tabben.</string>
+    <string name="fs_practice_no_answer">Opptaket kom ikke. Er datamaskinen på?</string>
+    <string name="fs_practice_unplayable">Denne telefonen kan ikke spille av opptaket. Du kan fortsatt lese tabben.</string>
+    <string name="fs_practice_no_beats">Fretscribe kan ikke følge opptaket i denne tabben. Du kan fortsatt lese den.</string>
 </resources>

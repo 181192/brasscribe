@@ -36,6 +36,23 @@ data class TabPiece(
     val pickup: Boolean = false,
 )
 
+/** One written measure: its printed number, how long it is and how its beats are counted. */
+data class TabMeasure(
+    /** The printed number: 0 for a pickup. */
+    val number: String,
+    /** In [TabIndex.TICKS] to a quarter note: a full bar of its time signature, or what a pickup holds. */
+    val length: Int,
+    /** Beats in a full bar of the time signature in force. */
+    val beats: Int,
+    /** One beat, in [TabIndex.TICKS]. */
+    val beatTicks: Int,
+    /** A first measure shorter than its time signature. */
+    val pickup: Boolean = false,
+) {
+    /** The beat that starts at or before [tick] of this measure, 1 the first; in a pickup, the beat of the full bar it leads into. */
+    fun beatAt(tick: Int): Int = ((tick.coerceAtLeast(0) + if (pickup) beats * beatTicks - length else 0) / beatTicks + 1).coerceIn(1, beats)
+}
+
 /** The boxed "! D1" above a column: the names of the notes that have no place there. */
 data class TabNoPlace(val staff: Int, val bar: Int, val barNumber: String, val onset: Int, val names: List<String>, val beat: Int = 1, val pickup: Boolean = false)
 
@@ -57,6 +74,8 @@ class TabIndex(
     val header: String?,
     /** Quarter notes a minute, as the first measure says; null when it does not. */
     val tempo: Int? = null,
+    /** The measures in the order they are written; [bars] of them. */
+    val measures: List<TabMeasure> = emptyList(),
 ) {
     private val byNote = pieces.groupBy { it.note }
 
@@ -178,6 +197,7 @@ class TabIndex(
             var beats = 4
             var beatTicks = TICKS
             val measures = part.children("measure")
+            val written = ArrayList<TabMeasure>()
             measures.forEachIndexed { bar, measure ->
                 val number = measure.getAttribute("number").ifEmpty { (bar + 1).toString() }
                 // The time signature and the divisions of this measure are in force from its start.
@@ -194,6 +214,7 @@ class TabIndex(
                 val full = beats * beatTicks
                 val pickup = bar == 0 && length in 1 until full
                 fun beatAt(onset: Int) = (onset + if (pickup) full - length else 0) / beatTicks + 1
+                written += TabMeasure(number, if (pickup) length else full, beats, beatTicks, pickup)
                 var c = measure.firstChild
                 while (c != null) {
                     val el = c as? Element
@@ -248,7 +269,7 @@ class TabIndex(
                     }
                 }
             }
-            return TabIndex(pieces, noPlace, measures.size, staves, tabStaff, header, tempo)
+            return TabIndex(pieces, noPlace, measures.size, staves, tabStaff, header, tempo, written)
         }
     }
 }
