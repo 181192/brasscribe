@@ -142,6 +142,7 @@ class TabJobOptionsTest {
             assertTrue("the engine's option check did not finish in five minutes", process.waitFor(5, TimeUnit.MINUTES))
             assumeTrue("the engine cannot check tab options here (scripts/worktree-setup.sh builds the core's command line): $output", process.exitValue() != 3)
             assertEquals(output, 0, process.exitValue())
+            println(output.trim().lines().last())
             assertTrue(output, output.trim().endsWith("${jobs.size} of ${jobs.size} jobs accepted and read as meant"))
         } finally {
             file.delete()

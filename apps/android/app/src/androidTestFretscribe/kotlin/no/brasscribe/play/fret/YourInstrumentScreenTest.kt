@@ -535,7 +535,10 @@ class YourInstrumentScreenTest {
             YourInstrument(FrettedInstrument.MANDOLIN, reads = Reads.TAB_AND_NOTATION) to "Mandolin · Standard · Tab and notation",
         )) {
             store.save(mine)
-            rule.runOnUiThread { vm.home(); vm.navigate(Screen.SETTINGS) }
+            // (Settings reads the answer when it is opened.)
+            rule.runOnUiThread { vm.home() }
+            rule.waitForIdle()
+            rule.runOnUiThread { vm.navigate(Screen.SETTINGS) }
             rule.waitUntil(5_000) { rule.onAllNodesWithText(value).fetchSemanticsNodes().isNotEmpty() }
         }
     }
