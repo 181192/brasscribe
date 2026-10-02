@@ -77,6 +77,8 @@ brasscribe-core meter --beats b.beats --notes notes.json --out meter.json
 brasscribe-core normalize --composition composition.json --out composition.json
 brasscribe-core fret --request request.json --out fingering.json
 brasscribe-core tab --request tab-request.json --out tab.json
+brasscribe-core tab --request tab-request.json --out tab.txt --format text [--width 72]
+brasscribe-core tab --request tab-request.json --out instructions.txt --format instructions [--lang nb]
 brasscribe-core version
 ```
 
@@ -206,6 +208,11 @@ in; the fingering with each note's alternatives, the violations and the tuning s
 `fretted_tab_json` (the tab request in; `{"musicxml": …, "adjusted_notes": …}` out). They are
 `frettedFingeringJson` and `frettedTabJson` in Swift and Kotlin, `BrasscribeCore.FrettedFingeringJson`
 and `FrettedTabJson` in C#, and `bc_fretted_fingering_json` and `bc_fretted_tab_json` in C.
+`fretted_tab_text_json` and `fretted_playing_instructions_json` take the same tab request and answer
+with plain text: the tab for a monospace font (`"text": {"width": 72}`), and the tab in words for a
+screen reader or a braille display (`"text": {"lang": "en"}` or `"nb"`). Their names follow the same
+pattern in each language (`frettedTabTextJson`, `BrasscribeCore.FrettedPlayingInstructionsJson`,
+`bc_fretted_tab_text_json`).
 
 ```kotlin
 val answer = frettedFingeringJson("""{"instrument": {"preset": "bass-4-standard"},

@@ -181,7 +181,9 @@ def test_a_song_is_separated_and_its_bass_stem_transcribed_as_in_pop_rock():
     assert "transcribe.bass.swift-f0" not in [s.name for s in pop.stages]
     assert tab.stage("beats").params == {}  # the adapter's own beat model, not the device's small one
     assert profiles.build("bass-tab", Path("bass.wav"), params={"recording": "instrument"}).stage("beats").params == {}
-    assert set(tab.outputs) == {"tab.json", "composition.json", "tab.musicxml", "tab.pdf", "tab.mid"}
+    assert set(tab.outputs) == {"tab.json", "composition.json", "tab.musicxml", "tab.txt", "tab-instructions.en.txt",
+                                "tab-instructions.nb.txt", "tab.pdf", "tab.mid"}
+    assert set(bass_tab.TEXT_OUTPUTS) <= set(tab.stage("arrange").outputs)
 
 
 def test_a_recording_of_the_bass_alone_is_not_separated_and_is_retuned_like_any_whole_recording():
@@ -697,6 +699,91 @@ def test_the_core_writes_each_layout_with_the_title_and_the_frets_of_the_tab(lay
     assert xml.count("<note") >= len(LOW_LINE)
 
 
+def test_the_text_exports_are_asked_for_with_the_request_of_the_musicxml(tmp_path):
+    tab = bass_tab.fingered(_doc(LOW_LINE), bass_tab.options({"capo": 2}), _fake_solver([]))
+    asked: list[tuple] = []
+
+    def stub(request: dict, fmt: str, lang: str | None) -> str:
+        asked.append((request, fmt, lang))
+        return f"{fmt} {lang} æøå\n"
+
+    bass_tab.export_text(tab, "My song", tmp_path, stub)
+    assert [(fmt, lang) for _, fmt, lang in asked] == [("text", None), ("instructions", "en"), ("instructions", "nb")]
+    assert all(request == bass_tab.tab_request(tab, "My song", "tab") for request, _, _ in asked)
+    assert set(asked[0][0]) == {"title", "instrument", "notes", "fingering", "tempo_bpm", "meter", "key", "tab"}
+    assert sorted(p.name for p in tmp_path.iterdir()) == sorted(bass_tab.TEXT_OUTPUTS)
+    assert (tmp_path / "tab.txt").read_text(encoding="utf-8") == "text None æøå\n"
+    assert (tmp_path / "tab-instructions.nb.txt").read_bytes() == "instructions nb æøå\n".encode()  # UTF-8 on every system
+
+
+@needs_core
+def test_the_core_writes_the_tab_as_text_and_as_playing_instructions_in_both_languages(tmp_path):
+    tab = bass_tab.fingered(_doc(LOW_LINE), bass_tab.options({}))
+    tab["notes"][1]["confidence"] = 0.2
+    bass_tab.export_text(tab, "Low & slow", tmp_path)
+    text = (tmp_path / "tab.txt").read_text(encoding="utf-8")
+    assert text.startswith("Low & slow\nBass\nTuning: Standard (E A D G), bottom line to top\nCapo: none\nTempo: 120 quarter notes per minute\n")
+    lines = [line for line in text.splitlines() if re.match(r"[A-G]\|", line)]
+    assert [line[0] for line in lines[:4]] == ["G", "D", "A", "E"] and len(lines) % 4 == 0
+    assert all(len(line) <= 72 for line in lines)
+    # Every note of tab.json is a number on its string's line, once.
+    frets = {s: [int(n) for line in lines if line[0] == name for n in re.findall(r"\d+", line)] for s, name in enumerate("GDAE", 1)}
+    assert frets == {s: [n["fret"] for n in tab["notes"] if n["string"] == s] for s in (1, 2, 3, 4)}
+    assert "\n?  a note to check" in text and "?" in text.split("G|")[0].splitlines()[-1]
+
+    en = (tmp_path / "tab-instructions.en.txt").read_text(encoding="utf-8")
+    nb = (tmp_path / "tab-instructions.nb.txt").read_text(encoding="utf-8")
+    assert en.startswith("Low & slow\n\nBass, 4 strings.\n") and nb.startswith("Low & slow\n\nBass, 4 strenger.\n")
+    first = tab["notes"][0]
+    assert f"\nBar 1\n  Beat 1. String {first['string']}, open. Quarter note.\n" in en
+    assert f"\nTakt 1\n  Slag 1. Streng {first['string']}, løs. Fjerdedelsnote.\n" in nb
+    assert "to check" in en and "bør sjekkes" in nb
+    assert [(not line, line.startswith("  ")) for line in en.splitlines()] == [(not line, line.startswith("  ")) for line in nb.splitlines()]
+
+
+@pytest.mark.skipif(os.name == "nt", reason="a shell script stands in for the core")
+def test_a_core_from_before_the_text_formats_is_told_apart(tmp_path, monkeypatch):
+    core = tmp_path / "brasscribe-core"
+    core.write_text('#!/bin/sh\necho \'{"musicxml": "<x/>", "adjusted_notes": 0}\' > "$5"\n')  # it ignores --format
+    core.chmod(0o755)
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))
+    with pytest.raises(RuntimeError, match="too old to write the tab as text"):
+        bass_tab.tab_text({"notes": []}, "text")
+    core.write_text('#!/bin/sh\nprintf \'{"musicxml" riff}\\nBass\\n\' > "$5"\n')  # a title in braces is a title
+    assert bass_tab.tab_text({"notes": []}, "text") == '{"musicxml" riff}\nBass\n'
+    core.write_text('#!/bin/sh\necho "$6 $7 $8 $9" > "$5"\n')
+    assert bass_tab.tab_text({"notes": []}, "instructions", "nb") == "--format instructions --lang nb\n"
+    assert bass_tab.tab_text({"notes": []}, "text") == "--format text  \n"
+
+
+def test_renaming_a_tab_retitles_its_text_and_its_playing_instructions(settings, audio):
+    from brasscribe_engine.jobs import JobManager
+
+    assert bass_tab.retitled_text("Old\nBass\n", "Old", "New") == "New\nBass\n"
+    assert bass_tab.retitled_text("Old\n\nBass, 4 strings.\n", "Old", "New", "\n") == "New\n\nBass, 4 strings.\n"
+    assert bass_tab.retitled_text("Bass\n", "", "New") == "New\nBass\n"  # written without a title
+    assert bass_tab.retitled_text("Old\n\nBass\n", "Old", "", "\n") == "Bass\n"
+    assert bass_tab.retitled_text("Bass\nOld\n", "Old", "New") == "Bass\nOld\n"  # not where it was written: left alone
+    long = "x" * 200
+    assert bass_tab.retitled_text(bass_tab.page_title(long) + "\nBass\n", long, "y" * 200) == "y" * 47 + "…\nBass\n"
+
+    jobs = JobManager(settings)
+    m1 = runner.run(settings, audio, "test")
+    out = settings.runs_dir / m1["run_id"] / "outputs"
+    old = jobs.get(m1["run_id"]).title
+    (out / "tab.musicxml").write_text("<score-partwise><work><work-title>Old</work-title></work></score-partwise>")
+    (out / "tab.txt").write_text(f"{old}\nBass\nTuning: Standard (E A D G), bottom line to top\n", encoding="utf-8")
+    (out / "tab-instructions.en.txt").write_text(f"{old}\n\nBass, 4 strings.\n", encoding="utf-8")
+    (out / "tab-instructions.nb.txt").write_text(f"{old}\n\nBass, 4 strenger.\nStreng 1 er strengen nærmest gulvet når du spiller.\n", encoding="utf-8")
+    assert jobs.rename(m1["run_id"], "Blå tone") == "renamed"
+    assert (out / "tab.txt").read_text(encoding="utf-8") == "Blå tone\nBass\nTuning: Standard (E A D G), bottom line to top\n"
+    assert (out / "tab-instructions.en.txt").read_text(encoding="utf-8") == "Blå tone\n\nBass, 4 strings.\n"
+    assert (out / "tab-instructions.nb.txt").read_bytes() == "Blå tone\n\nBass, 4 strenger.\nStreng 1 er strengen nærmest gulvet når du spiller.\n".encode()
+    assert jobs.rename(m1["run_id"], "Again") == "renamed"  # from the title it was given, not the first one
+    assert (out / "tab.txt").read_text(encoding="utf-8").startswith("Again\nBass\n")
+    jobs.shutdown()
+
+
 def test_a_long_title_is_cut_to_the_page_and_the_job_keeps_its_name(tmp_path):
     assert bass_tab.page_title("Old Hundredth") == "Old Hundredth"
     assert bass_tab.page_title("  Old\tHundredth \n take\x01 2 ") == "Old Hundredth take 2"
@@ -745,6 +832,10 @@ def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings,
     monkeypatch.setattr(musescore, "binary", lambda: None)
     without = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert without["status"] == "succeeded" and "tab.pdf" not in without["outputs"] and "tab.musicxml" in without["outputs"]
+    assert set(bass_tab.TEXT_OUTPUTS) <= set(without["outputs"])  # the text exports need no MuseScore
+    written = settings.runs_dir / without["run_id"] / "outputs"
+    assert (written / "tab.txt").read_text(encoding="utf-8").splitlines()[1] == "Bass"
+    assert "\nTakt 1\n" in (written / "tab-instructions.nb.txt").read_text(encoding="utf-8")
 
     exe = tmp_path / "mscore"
     exe.write_text("#!/bin/sh\n")
@@ -843,7 +934,12 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
         job = _wait(c, r.json()["id"])
         assert job["status"] == "succeeded", job["error"]
         assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export"]
-        assert job["outputs"] == ["composition.json", "tab.json", "tab.musicxml"]
+        assert job["outputs"] == ["composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml",
+                                  "tab.txt"]
+        for name in bass_tab.TEXT_OUTPUTS:  # served as the other outputs are, as text
+            text = c.get(f"/v1/jobs/{job['id']}/artifacts/{name}")
+            assert text.status_code == 200 and text.headers["content-type"] == "text/plain; charset=utf-8", name
+            assert text.text.splitlines()[0] == bass_tab.page_title(job["title"]), name
 
         tab = c.get(f"/v1/jobs/{job['id']}/tab")
         assert tab.status_code == 200 and tab.headers["content-type"] == "application/json"
@@ -1039,7 +1135,13 @@ def test_a_job_renders_the_tab_as_pdf_and_midi_and_serves_them(settings, audio, 
         job = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument"}).json()
         job = _wait(c, job["id"], timeout=300)
         assert job["status"] == "succeeded", job["error"]
-        assert job["outputs"] == ["composition.json", "tab.json", "tab.mid", "tab.musicxml", "tab.pdf"]
+        assert job["outputs"] == ["composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.mid",
+                                  "tab.musicxml", "tab.pdf", "tab.txt"]
+        for name in bass_tab.TEXT_OUTPUTS:
+            text = c.get(f"/v1/jobs/{job['id']}/artifacts/{name}")
+            assert text.status_code == 200 and text.headers["content-type"] == "text/plain; charset=utf-8", name
+            assert text.text.splitlines()[0] == bass_tab.page_title(job["title"]), name
+        assert "Streng" in c.get(f"/v1/jobs/{job['id']}/artifacts/tab-instructions.nb.txt").text
         pdf = c.get(f"/v1/jobs/{job['id']}/pdf")
         assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf" and pdf.content[:5] == b"%PDF-"
         midi = c.get(f"/v1/jobs/{job['id']}/midi")

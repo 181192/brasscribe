@@ -46,7 +46,7 @@ are in Fretscribe Tab, registered with alphaSkia (`AlphaSkiaTypeface.register`).
 | Provenance and saved repeats | device, beside the saved song |
 | `Profile.BASS_TAB`, `Tab` models, `getTab` | `engine-client` |
 | Guitar instruments in the engine | engine, when guitar comes |
-| Text tab and playing instructions exports | core, later |
+| Text tab and playing instructions in Share or print | device: the core writes both (`fretted_tab_text_json`, `fretted_playing_instructions_json`), and a job on the computer has them as `tab.txt`, `tab-instructions.en.txt` and `tab-instructions.nb.txt` |
 | The core command line in Bandroom (the Docker image has it) | packaging (blocks the paired-computer flow with Bandroom) |
 | The recording on the phone for songs opened from the job list | `GET /v1/jobs/{id}/input` |
 

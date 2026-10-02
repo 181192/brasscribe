@@ -252,7 +252,7 @@ impl TabScore {
 
 /// A slur-like link between a note and the note it leads to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Link {
+pub(crate) enum Link {
     HammerOn,
     PullOff,
     Slide,
@@ -264,52 +264,52 @@ enum Link {
 
 impl Link {
     /// Drawn as a slur.
-    fn is_arc(self) -> bool {
+    pub(crate) fn is_arc(self) -> bool {
         matches!(self, Link::HammerOn | Link::PullOff | Link::BendArc)
     }
 }
 
 /// One written note of a chord, after notes that sound as one are merged.
 #[derive(Debug, Clone)]
-struct Written {
+pub(crate) struct Written {
     /// Position in the score's notes. Of notes merged into one, the first in the score.
-    source: usize,
-    pitch: i32,
-    confidence: f64,
-    place: Option<(u8, u8)>,
-    vibrato: bool,
-    let_ring: bool,
-    dead: bool,
+    pub(crate) source: usize,
+    pub(crate) pitch: i32,
+    pub(crate) confidence: f64,
+    pub(crate) place: Option<(u8, u8)>,
+    pub(crate) vibrato: bool,
+    pub(crate) let_ring: bool,
+    pub(crate) dead: bool,
     /// Links that start here, with their number.
-    starts: Vec<(Link, u8)>,
+    pub(crate) starts: Vec<(Link, u8)>,
     /// Links that end here.
-    stops: Vec<(Link, u8)>,
-    spelled: Spelled,
+    pub(crate) stops: Vec<(Link, u8)>,
+    pub(crate) spelled: Spelled,
 }
 
 /// Notes that start together, low to high.
 #[derive(Debug, Clone)]
-struct Event {
-    start: i64,
-    end: i64,
-    notes: Vec<Written>,
+pub(crate) struct Event {
+    pub(crate) start: i64,
+    pub(crate) end: i64,
+    pub(crate) notes: Vec<Written>,
 }
 
 /// A note, chord or rest as written: one symbol.
 #[derive(Debug, Clone)]
-struct Symbol {
-    start: i64,
-    end: i64,
+pub(crate) struct Symbol {
+    pub(crate) start: i64,
+    pub(crate) end: i64,
     /// None for a rest.
-    event: Option<usize>,
+    pub(crate) event: Option<usize>,
     /// First and last symbol of its event (a tied note has several).
-    first: bool,
-    last: bool,
+    pub(crate) first: bool,
+    pub(crate) last: bool,
     /// A rest that fills its measure.
-    whole_measure: bool,
-    tuplet_start: bool,
-    tuplet_stop: bool,
-    beams: Vec<&'static str>,
+    pub(crate) whole_measure: bool,
+    pub(crate) tuplet_start: bool,
+    pub(crate) tuplet_stop: bool,
+    pub(crate) beams: Vec<&'static str>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -319,7 +319,7 @@ enum Staff {
 }
 
 /// Written type, dots and whether it is a triplet value, for a length in ticks.
-fn value(len: i64) -> Option<(&'static str, u8, bool)> {
+pub(crate) fn value(len: i64) -> Option<(&'static str, u8, bool)> {
     Some(match len {
         96 => ("whole", 0, false),
         72 => ("half", 1, false),
@@ -370,7 +370,7 @@ fn beam_levels(len: i64) -> usize {
 }
 
 /// A tempo as text: a whole number without a fraction, any other with two decimals.
-fn number(x: f64) -> String {
+pub(crate) fn number(x: f64) -> String {
     if x.fract() == 0.0 {
         format!("{x:.0}")
     } else {
@@ -384,7 +384,7 @@ const FLAT_NAMES: [(char, i32); 12] = [('C', 0), ('D', -1), ('D', 0), ('E', -1),
 /// Whether a tuning's open strings are named with flats. A tuning named with a flat or sharp sign
 /// decides it; otherwise the side whose accidentals come earlier in the order of key signatures
 /// wins, and sharps on a tie.
-fn uses_flats(name: &str, open_pitches: &[i32]) -> bool {
+pub(crate) fn uses_flats(name: &str, open_pitches: &[i32]) -> bool {
     if name.contains('\u{266d}') {
         return true;
     }
@@ -399,7 +399,7 @@ fn uses_flats(name: &str, open_pitches: &[i32]) -> bool {
 }
 
 /// Step, alter and octave of an open string.
-fn open_name(pitch: i32, flats: bool) -> (char, i32, i32) {
+pub(crate) fn open_name(pitch: i32, flats: bool) -> (char, i32, i32) {
     let (step, alter) = if flats { FLAT_NAMES } else { SHARP_NAMES }[pitch.rem_euclid(12) as usize];
     (step, alter, pitch.div_euclid(12) - 1)
 }
@@ -435,7 +435,7 @@ fn pitch_name(s: Spelled) -> String {
 
 /// Text without control characters: a tab or a line break becomes a space, the others are left
 /// out, so a name typed with one still gives a well-formed file.
-fn clean(text: &str) -> String {
+pub(crate) fn clean(text: &str) -> String {
     text.chars().filter_map(|c| if matches!(c, '\t' | '\n' | '\r') { Some(' ') } else { (!c.is_control()).then_some(c) }).collect()
 }
 
@@ -449,23 +449,23 @@ pub fn header_text(inst: &Instrument) -> String {
 }
 
 /// What the writer needs, with out-of-bounds values replaced by ones that can be written.
-struct Plan<'a> {
-    score: &'a TabScore,
-    opts: &'a TabOptions,
-    clef: NotationClef,
-    bar: i64,
+pub(crate) struct Plan<'a> {
+    pub(crate) score: &'a TabScore,
+    pub(crate) opts: &'a TabOptions,
+    pub(crate) clef: NotationClef,
+    pub(crate) bar: i64,
     /// 3/8, 6/8, 9/8, 12/8: the beat is a dotted quarter.
-    compound: bool,
+    pub(crate) compound: bool,
     /// Ticks of one beam group: the beat.
-    beam_group: i64,
-    events: Vec<Event>,
+    pub(crate) beam_group: i64,
+    pub(crate) events: Vec<Event>,
     /// Starts of the beats written in triplet values.
-    triplets: BTreeSet<i64>,
+    pub(crate) triplets: BTreeSet<i64>,
     /// Notes whose start or length was moved to a place that can be written.
-    adjusted: usize,
+    pub(crate) adjusted: usize,
     /// (start, end, number, implicit) per measure.
-    measures: Vec<(i64, i64, usize, bool)>,
-    symbols: Vec<Symbol>,
+    pub(crate) measures: Vec<(i64, i64, usize, bool)>,
+    pub(crate) symbols: Vec<Symbol>,
 }
 
 /// The beat cell a tick is in, as (start, end): a quarter note counted from the bar line, shorter
@@ -557,7 +557,7 @@ fn grid(score: &TabScore, bar: i64, compound: bool) -> Grid {
     Grid { spans, triplets, adjusted }
 }
 
-fn doubtful(n: &Written, opts: &TabOptions) -> bool {
+pub(crate) fn doubtful(n: &Written, opts: &TabOptions) -> bool {
     n.confidence < opts.doubt_below
 }
 
@@ -667,7 +667,7 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
 }
 
 impl<'a> Plan<'a> {
-    fn new(score: &'a TabScore, opts: &'a TabOptions) -> Result<Plan<'a>, String> {
+    pub(crate) fn new(score: &'a TabScore, opts: &'a TabOptions) -> Result<Plan<'a>, String> {
         score.validate()?;
         if !(0.0..=1.0).contains(&opts.doubt_below) {
             return Err(format!("the doubt threshold is a confidence from 0 to 1, not {}", opts.doubt_below));

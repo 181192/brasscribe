@@ -1,0 +1,44 @@
+Guitar line
+
+Guitar, 6 strings.
+String 1 is the string nearest the floor as you play. String 6 is nearest the ceiling.
+Tuning: Standard. Open strings from string 6 to string 1: E, A, D, G, B, E.
+No capo.
+Tempo: 51 quarter notes per minute.
+Time signature: 3 4.
+A note marked "to check" was not heard clearly.
+
+Bar 1
+  Beat 1. Chord, 6 notes: string 6, open; string 5, fret 2; string 4, fret 2; string 3, open; string 2, open; string 1, open. Quarter note.
+  Beat 2. Chord, 6 notes: string 6, open; string 5, fret 2; string 4, fret 2; string 3, open; string 2, open; string 1, open. Half note.
+
+Bar 2
+  Beat 1. Chord, 6 notes: string 6, fret 3; string 5, fret 2; string 4, open; string 3, open; string 2, open; string 1, fret 3. Half note.
+  Beat 3. Chord, 6 notes: string 6, fret 3; string 5, fret 2; string 4, open; string 3, open; string 2, open; string 1, fret 3. Quarter note.
+
+Bar 3
+  Beat 1. String 4, fret 2. Eighth note.
+  Beat 1 and. String 3, open. Eighth note.
+  Beat 2. String 3, fret 2. Eighth note.
+  Beat 2 and. String 2, open. Eighth note.
+  Beat 3. Chord, 4 notes: string 4, open; string 3, fret 2; string 2, fret 3; string 1, fret 2. Quarter note tied to dotted quarter note.
+
+Bar 4
+  Held from bar 3.
+  Beat 2 and. String 2, open. Eighth note.
+  Beat 3. Chord, 5 notes: string 5, fret 3; string 4, fret 2; string 3, open; string 2, fret 1; string 1, open. Quarter note.
+
+Bar 5
+  Beat 1. Chord, 5 notes: string 5, fret 3; string 4, fret 2; string 3, open; string 2, fret 1; string 1, open. Half note.
+  Beat 3. String 2, open. Eighth note.
+  Beat 3 and. String 3, fret 2. Eighth note.
+
+Bar 6
+  Beat 1. Chord, 2 notes: string 3, open; G 6, no string to play it on, to check. Eighth note.
+  Beat 1 and. String 4, fret 2. Eighth note.
+  Beat 2. Chord, 5 notes: string 5, open; string 4, fret 2; string 3, fret 2; string 2, fret 1; string 1, open. Quarter note.
+  Beat 3. Chord, 4 notes: string 4, open; string 3, fret 2; string 2, fret 3; string 1, fret 2. Quarter note.
+
+Bar 7
+  Beat 1. Chord, 7 notes: string 6, open; string 5, fret 2; string 4, fret 2; string 3, open; string 2, open, to check; string 1, open; D 2, no string to play it on, to check. Half note.
+  Beat 3. Quarter rest.

@@ -343,6 +343,27 @@ public class BrasscribeCoreTests
     }
 
     [Fact]
+    public void WritesABassLineAsTextTabAndAsPlayingInstructions()
+    {
+        var text = BrasscribeCore.FrettedTabTextJson(BassLine);
+        Assert.StartsWith("Bass\nTuning: Standard (E A D G), bottom line to top\n", text);
+        // D1 has no string; the hammer-on is an h before the fret it leads to.
+        Assert.Contains("\n   !\nG|----------------||\nD|----------------||\nA|---------5h7----||\nE|-----5----------||\n", text);
+        Assert.Contains("bar 1: D1", text);
+
+        var en = BrasscribeCore.FrettedPlayingInstructionsJson(BassLine);
+        Assert.Contains("\nBar 1\n  Beat 1. D 1, no string to play it on. Quarter note.\n  Beat 2. String 4, fret 5. Quarter note.\n", en);
+        var nb = BrasscribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"nb\"}, \"options\":"));
+        Assert.Contains("\nTakt 1\n  Slag 1. D 1, ingen streng å spille den på. Fjerdedelsnote.\n  Slag 2. Streng 4, bånd 5. Fjerdedelsnote.\n", nb);
+        Assert.Equal(en.Split('\n').Length, nb.Split('\n').Length);
+
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedTabTextJson("{")).Code);
+        var e = Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"de\"}, \"options\":")));
+        Assert.Equal(1, e.Code);
+        Assert.Contains("en or nb", e.Message);
+    }
+
+    [Fact]
     public void AFrettedRequestItCannotReadIsInvalidInput()
     {
         Assert.Equal(1, Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedFingeringJson("{")).Code);

@@ -53,6 +53,12 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
     `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore
     when it is installed; `/musicxml`, `/pdf` and `/midi` of the job serve them.
+  - The same tab is also written as text, by the same crate from the same request: `tab.txt` for a monospace
+    font (a page, a message), and `tab-instructions.en.txt` and `tab-instructions.nb.txt`, the tab in words bar
+    by bar and beat by beat, for a screen reader or a braille display
+    ([what they hold](../core/target-fretted/README.md#tablature-as-text)). They are outputs of the job like the
+    others: listed in its `outputs`, and served as `text/plain; charset=utf-8` by
+    `GET /v1/jobs/{id}/artifacts/{name}`. Renaming a job retitles them.
   - Options: `instrument`, `tuning`, `capo` (frets are counted from it, and the page names it), `style`, `octave`
     (`auto`, or the player's choice), `layout` (`tab`, `tab-and-notation`, `notation`) and `chords` (`heard`,
     `completed`; not for a bass), and none of the band options. `bass-tab` is the same profile with a bass under the id older apps use.

@@ -234,8 +234,9 @@ class JobManager:
         return "deleted"
 
     def rename(self, job_id: str, title: str) -> str:
-        """Retitle a finished run: its manifest, Composition, the score's and parts' MusicXML and the talking
-        score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.
+        """Retitle a finished run: its manifest, Composition, the score's and parts' MusicXML, the talking
+        score, and a tab's text and playing instructions. Rendered files (PDF, braille, MIDI, audio) keep the
+        title they were made with.
         Returns "renamed", "unknown" or "active"."""
         if not valid_id(job_id):
             return "unknown"
@@ -264,6 +265,13 @@ class JobManager:
             from . import bass_tab
 
             _write(tab, _retitle_musicxml(tab.read_text(), bass_tab.page_title(title)))
+            # The text exports start with the same title: tab.txt on its first line, the instructions with an
+            # empty line after it.
+            for name in bass_tab.TEXT_OUTPUTS:
+                if (out / name).exists():
+                    text = (out / name).read_text(encoding="utf-8")
+                    gap = "" if name == bass_tab.TEXT_TAB else "\n"
+                    _write(out / name, bass_tab.retitled_text(text, job.title or "", title, gap), encoding="utf-8")
         talking = out / "talking-score.json"
         if talking.exists():
             from . import talking_score
@@ -336,13 +344,13 @@ def _retitle_musicxml(text: str, title: str) -> str:
     return re.sub(r"(<score-partwise\b[^>]*>)", lambda mt: mt.group(1) + work, text, count=1)
 
 
-def _write(path: Path, text: str) -> None:
+def _write(path: Path, text: str, encoding: str | None = None) -> None:
     """Replace `path` with `text`. Outputs are read-only hardlinks into the artifact cache: replacing the name
     leaves the cache's copy as it was, but Windows refuses to replace a read-only file, so there the flag is
     cleared first. The flag belongs to the file, not the name, so the cache's copy loses it too (its content
     is unchanged, and the cache checks content by hash)."""
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(text)
+    tmp.write_text(text, encoding=encoding)
     try:
         os.replace(tmp, path)
     except PermissionError:

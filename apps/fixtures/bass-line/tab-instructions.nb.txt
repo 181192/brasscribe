@@ -1,0 +1,66 @@
+Bass line
+
+Bass, 4 strenger.
+Streng 1 er strengen nærmest gulvet når du spiller. Streng 4 er nærmest taket.
+Stemming: Standard. Løse strenger fra streng 4 til streng 1: E, A, D, G.
+Ingen capo.
+Tempo: 100 fjerdedelsnoter per minutt.
+Taktart: 2 fjerdedeler.
+
+Takt 1
+  Slag 1. Streng 4, løs. Fjerdedelsnote.
+  Slag 2. Streng 4, løs. Fjerdedelsnote.
+
+Takt 2
+  Slag 1. Streng 4, bånd 3. Fjerdedelsnote.
+  Slag 2. Streng 3, løs. Fjerdedelsnote.
+
+Takt 3
+  Slag 1. Streng 3, bånd 2. Fjerdedelsnote.
+  Slag 2. Streng 3, bånd 2. Fjerdedelsnote.
+
+Takt 4
+  Slag 1. Streng 3, løs. Fjerdedelsnote.
+  Slag 2. Streng 4, bånd 3. Fjerdedelsnote.
+
+Takt 5
+  Slag 1. Streng 4, løs. Halvnote.
+
+Takt 6
+  Slag 1. Streng 4, bånd 3. Fjerdedelsnote.
+  Slag 2. Streng 3, bånd 2. Fjerdedelsnote.
+
+Takt 7
+  Slag 1. Streng 2, bånd 2. Fjerdedelsnote.
+  Slag 2. Streng 2, løs. Fjerdedelsnote.
+
+Takt 8
+  Slag 1. Streng 3, bånd 2. Fjerdedelsnote.
+  Slag 2. Streng 3, løs. Fjerdedelsnote.
+
+Takt 9
+  Slag 1. Streng 3, bånd 3. Fjerdedelsnote.
+  Slag 2. Streng 3, bånd 3. Fjerdedelsnote.
+
+Takt 10
+  Slag 1. Streng 2, bånd 2. Fjerdedelsnote.
+  Slag 2. Streng 1, løs. Fjerdedelsnote.
+
+Takt 11
+  Slag 1. Streng 2, løs. Fjerdedelsnote.
+  Slag 2. Streng 2, løs. Fjerdedelsnote.
+
+Takt 12
+  Samme som takt 8.
+
+Takt 13
+  Slag 1. Streng 4, bånd 3. Åttendedelsnote.
+  Slag 1-og. Streng 3, løs. Åttendedelsnote.
+  Slag 2. Streng 3, bånd 2. Fjerdedelsnote.
+
+Takt 14
+  Slag 1. Streng 2, løs. Fjerdedelsnote.
+  Slag 2. Streng 3, bånd 2. Fjerdedelsnote.
+
+Takt 15
+  Samme som takt 5.

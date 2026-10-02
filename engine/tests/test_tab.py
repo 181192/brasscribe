@@ -249,7 +249,9 @@ def test_a_guitar_in_a_song_is_read_from_the_separators_guitar_stem():
         stage = p.stage(name)
         assert (stage.inputs["audio"].stage, stage.inputs["audio"].file, stage.derive) == ("stems", "guitar.wav", None)
     assert p.stage("notes").params == {"instrument": "guitar-6"} and p.stage("notes").run is tab.notes_stage
-    assert (p.pipeline, set(p.outputs)) == ("tab", {"composition.json", "tab.json", "tab.musicxml", "tab.pdf", "tab.mid"})
+    assert (p.pipeline, set(p.outputs)) == ("tab", {"composition.json", "tab.json", "tab.musicxml", "tab.txt", "tab-instructions.en.txt",
+                                                    "tab-instructions.nb.txt", "tab.pdf", "tab.mid"})
+    assert set(bass_tab.TEXT_OUTPUTS) <= set(p.stage("arrange").outputs)
     assert p.stage("export").run is bass_tab.export_stage and set(p.stage("export").params) == {"musescore"}
 
 
@@ -522,6 +524,14 @@ def test_a_capo_is_named_in_the_tabs_header(tmp_path):
     bass_tab.export_tab(t, "Capo", "tab", tmp_path)
     xml = (tmp_path / "tab.musicxml").read_text()
     assert re.search(r"[Cc]apo\D{0,12}2", xml), "the page does not say where the capo is"
+    bass_tab.export_text(t, "Capo", tmp_path)
+    text = (tmp_path / "tab.txt").read_text(encoding="utf-8")
+    assert "\nCapo: fret 2 (frets are counted from the capo)\n" in text
+    # The E shape two frets up is the open shape again, in one column on six lines.
+    assert "\nE|-0-" in text and "\nB|-0-" in text and "\nG|-1-" in text and "\nD|-2-" in text and "\nA|-2-" in text
+    assert "\nCapo on fret 2. Frets are counted from the capo.\n" in (tmp_path / "tab-instructions.en.txt").read_text(encoding="utf-8")
+    nb = (tmp_path / "tab-instructions.nb.txt").read_text(encoding="utf-8")
+    assert "\nCapo på bånd 2. Båndene telles fra capoen.\n" in nb and "Akkord, 6 toner" in nb
 
 
 @needs_core
@@ -664,6 +674,10 @@ def test_a_high_g_ukuleles_tab_is_written_with_four_lines_and_its_tuning(tmp_pat
     assert "<staff-lines>4</staff-lines>" in xml and "<work-title>Four strings</work-title>" in xml
     tunings = re.findall(r'<staff-tuning line="(\d)">\s*<tuning-step>(\w)</tuning-step>\s*<tuning-octave>(\d)</tuning-octave>', xml)
     assert sorted(tunings) == [("1", "G", "4"), ("2", "C", "4"), ("3", "E", "4"), ("4", "A", "4")]  # the bottom line is the high G
+    bass_tab.export_text(t, "Four strings", tmp_path)
+    lines = [line for line in (tmp_path / "tab.txt").read_text(encoding="utf-8").splitlines() if re.match(r"[A-G]\|", line)]
+    assert [line[0] for line in lines[:4]] == ["A", "E", "C", "G"]  # string 1 on top, the high G at the bottom
+    assert (tmp_path / "tab-instructions.nb.txt").read_text(encoding="utf-8").startswith("Four strings\n\nUkulele (høy G), 4 strenger.\n")
     assert re.search(r"<string>4</string>\s*<fret>0</fret>|<fret>0</fret>\s*<string>4</string>", xml)
 
 
@@ -744,7 +758,12 @@ def test_a_guitar_job_runs_to_a_tab_and_a_bass_job_of_either_profile_shares_its_
         assert job["status"] == "succeeded", job["error"]
         assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.guitar.basic-pitch", "transcribe.guitar.swift-f0", "notes",
                                                       "arrange", "export"]
-        assert job["outputs"] == ["composition.json", "tab.json", "tab.musicxml"]
+        assert job["outputs"] == ["composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml",
+                                  "tab.txt"]
+        for name in bass_tab.TEXT_OUTPUTS:  # served as the other outputs are, as text
+            text = c.get(f"/v1/jobs/{job['id']}/artifacts/{name}")
+            assert text.status_code == 200 and text.headers["content-type"] == "text/plain; charset=utf-8", name
+            assert text.text.splitlines()[0] == bass_tab.page_title(job["title"]), name
         t = m.Tab.model_validate(c.get(f"/v1/jobs/{job['id']}/tab").json())
         assert (t.preset, t.instrument.capo, t.instrument.notation, t.layout) == ("guitar-standard", 2, "treble-8vb", "tab-and-notation")
         assert not t.violations and len({n.start for n in t.notes}) == 12 and max(len([n for n in t.notes if n.start == s]) for s in (0, 48)) >= 5

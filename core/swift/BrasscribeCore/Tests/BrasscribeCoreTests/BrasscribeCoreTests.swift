@@ -107,6 +107,27 @@ final class BrasscribeCoreTests: XCTestCase {
         XCTAssertTrue(xml.contains("<sign>TAB</sign>") && xml.contains("<staff-lines>4</staff-lines>"))
     }
 
+    func testFrettedTextTabAndPlayingInstructions() throws {
+        let text = try frettedTabTextJson(request: bassLine(pinString: 3))
+        XCTAssertTrue(text.hasPrefix("Bass\nTuning: Standard (E A D G), bottom line to top\n"), text)
+        // D1 has no string; the hammer-on is an h before the fret it leads to.
+        XCTAssertTrue(text.contains("\n   !\nG|----------------||\nD|----------------||\nA|---------5h7----||\nE|-----5----------||\n"), text)
+
+        let en = try frettedPlayingInstructionsJson(request: bassLine(pinString: 3))
+        XCTAssertTrue(en.contains("\nBar 1\n  Beat 1. D 1, no string to play it on. Quarter note.\n  Beat 2. String 4, fret 5. Quarter note.\n"), en)
+        let inNorwegian = bassLine(pinString: 3).replacingOccurrences(of: "\"options\":", with: "\"text\": {\"lang\": \"nb\"}, \"options\":")
+        let nb = try frettedPlayingInstructionsJson(request: inNorwegian)
+        XCTAssertTrue(nb.contains("\nTakt 1\n  Slag 1. D 1, ingen streng å spille den på. Fjerdedelsnote.\n  Slag 2. Streng 4, bånd 5. Fjerdedelsnote.\n"), nb)
+        XCTAssertEqual(en.split(separator: "\n", omittingEmptySubsequences: false).count, nb.split(separator: "\n", omittingEmptySubsequences: false).count)
+
+        XCTAssertThrowsError(try frettedTabTextJson(request: "{"))
+        let german = bassLine(pinString: 3).replacingOccurrences(of: "\"options\":", with: "\"text\": {\"lang\": \"de\"}, \"options\":")
+        XCTAssertThrowsError(try frettedPlayingInstructionsJson(request: german)) { error in
+            guard case CoreError.Invalid(let reason) = error else { return XCTFail("\(error)") }
+            XCTAssertTrue(reason.contains("en or nb"), reason)
+        }
+    }
+
     func testFrettedInvalidInputThrows() throws {
         XCTAssertThrowsError(try frettedFingeringJson(request: "{")) { error in
             guard case CoreError.Invalid = error else { return XCTFail("\(error)") }

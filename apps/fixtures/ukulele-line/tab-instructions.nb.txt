@@ -1,0 +1,52 @@
+Ukulele line
+
+Ukulele (høy G), 4 strenger.
+Streng 1 er strengen nærmest gulvet når du spiller. Streng 4 er nærmest taket.
+Stemming: GCEA høy G. Løse strenger fra streng 4 til streng 1: G, C, E, A.
+Ingen capo.
+Tempo: 100 fjerdedelsnoter per minutt.
+Taktart: 4 fjerdedeler.
+En tone merket «bør sjekkes» ble ikke hørt tydelig.
+
+Takt 1
+  Pause hele takten.
+
+Takt 2
+  Slag 1. Akkord, 5 toner: streng 4, løs; streng 3, løs; streng 2, løs; streng 1, bånd 3; C 7, ingen streng å spille den på, bør sjekkes. Halvnote.
+  Slag 3. Akkord, 4 toner: streng 4, løs; streng 3, løs; streng 2, løs; streng 1, bånd 3. Halvnote.
+
+Takt 3
+  Slag 1. Akkord, 4 toner: streng 4, bånd 2; streng 3, løs; streng 2, bånd 1; streng 1, løs. Halvnote.
+  Slag 3. Akkord, 4 toner: streng 4, bånd 2; streng 3, løs; streng 2, bånd 1; streng 1, løs. Halvnote.
+
+Takt 4
+  Slag 1. Akkord, 2 toner: streng 2, løs; E 7, ingen streng å spille den på, bør sjekkes. Fjerdedelsnote.
+  Slag 2. Streng 4, løs. Fjerdedelsnote.
+  Slag 3. Streng 1, løs. Fjerdedelsnote.
+  Slag 4. Streng 4, løs. Fjerdedelsnote.
+
+Takt 5
+  Slag 1. Akkord, 4 toner: streng 4, løs; streng 3, bånd 2; streng 2, bånd 7; streng 1, bånd 10, bør sjekkes. Halvnote.
+  Slag 3. Akkord, 4 toner: streng 4, løs; streng 3, bånd 2; streng 2, bånd 7; streng 1, bånd 10, bør sjekkes. Halvnote.
+
+Takt 6
+  Slag 1. Akkord, 4 toner: streng 4, bånd 2; streng 3, løs; streng 2, løs; streng 1, løs. Halvnote.
+  Slag 3. Akkord, 4 toner: streng 4, bånd 2; streng 3, løs; streng 2, løs; streng 1, løs. Halvnote.
+
+Takt 7
+  Slag 1. Streng 1, løs. Åttendedelsnote.
+  Slag 1-og. Streng 4, løs. Åttendedelsnote.
+  Slag 2. Akkord, 2 toner: streng 2, løs; E 7, ingen streng å spille den på, bør sjekkes. Fjerdedelsnote.
+  Slag 3. Streng 3, bånd 2. Fjerdedelsnote.
+  Slag 4. Akkord, 4 toner: streng 4, bånd 2; streng 3, løs; streng 2, bånd 1; streng 1, løs. Fjerdedelsnote bundet til fjerdedelsnote.
+
+Takt 8
+  Holdes fra takt 7.
+  Slag 2. Akkord, 4 toner: streng 4, løs; streng 3, bånd 2; streng 2, bånd 3; streng 1, bånd 2. Fjerdedelsnote bundet til fjerdedelsnote.
+  Slag 4. Akkord, 5 toner: streng 4, løs; streng 3, løs; streng 2, løs; streng 1, bånd 3; C 7, ingen streng å spille den på. Fjerdedelsnote.
+
+Takt 9
+  Slag 1. C 7, ingen streng å spille den på. Åttendedelsnote.
+  Slag 1-og. Åttendedelspause.
+  Slag 2. Fjerdedelspause.
+  Slag 3. Halvpause.

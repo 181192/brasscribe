@@ -18,6 +18,8 @@ Writes apps/fixtures/bass-line/:
     tab.json          GET /v1/jobs/{id}/tab
     tab.musicxml      GET /v1/jobs/{id}/musicxml
     composition.json  GET /v1/jobs/{id}/composition
+    tab.txt, tab-instructions.en.txt, tab-instructions.nb.txt
+                      GET /v1/jobs/{id}/artifacts/{name}: the tab as text and as playing instructions
 The line is written in 4/4; the beat tracker hears this synthesized take in 2/4, and the fixture keeps
 what the engine answered.
 MuseScore is left out of the run, so there is no tab.pdf or tab.mid, as on a computer without it.
@@ -44,6 +46,7 @@ CREATED = 1767225600.0  # 2026-01-01T00:00:00Z
 
 E1, G1, A1, B1, C2, D2, E2, G2 = 28, 31, 33, 35, 36, 38, 40, 43
 R = None  # a rest
+TEXTS = ("tab.txt", "tab-instructions.en.txt", "tab-instructions.nb.txt")  # the tab as text and as playing instructions
 # (pitch, beats): eight bars of 4/4 in E minor.
 LINE = [
     (E1, 1), (E1, 1), (G1, 1), (A1, 1),
@@ -139,6 +142,7 @@ def main() -> int:
             answers = {"tab.json": c.get(f"/v1/jobs/{job['id']}/tab").text,
                        "tab.musicxml": c.get(f"/v1/jobs/{job['id']}/musicxml").text,
                        "composition.json": c.get(f"/v1/jobs/{job['id']}/composition").text,
+                       **{name: c.get(f"/v1/jobs/{job['id']}/artifacts/{name}").text for name in TEXTS},
                        "job.json": json.dumps(fixed(job), indent=1) + "\n",
                        "request.json": json.dumps(request, indent=1) + "\n"}
     OUT.mkdir(exist_ok=True)
@@ -146,7 +150,7 @@ def main() -> int:
         if tmp in text:
             print(f"{name} names the temporary directory", file=sys.stderr)
             return 1
-        (OUT / name).write_text(text)
+        (OUT / name).write_text(text, encoding="utf-8")
     tab = json.loads(answers["tab.json"])
     print(f"{OUT.name}: {len(tab['notes'])} notes on {tab['preset']}, {tab['key']['name']}, {tab['tempo_bpm']} BPM, "
           f"{sum(n['confidence'] < 0.4 for n in tab['notes'])} in doubt")

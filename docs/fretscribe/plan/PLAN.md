@@ -63,7 +63,8 @@ Bass tab, from a recording to a file:
   or bass alone → notes → shared beats and quantization → string and fret. The result is at
   `/v1/jobs/{id}/tab` with alternatives, tuning suggestions, octave shift, reference pitch, tempo, key
   and meter. Options: instrument, tuning, capo, style, recording, octave, layout.
-- Export: `tab.musicxml`, `tab.pdf`, `tab.mid`.
+- Export: `tab.musicxml`, `tab.pdf`, `tab.mid`, and as text `tab.txt` (the tab) and `tab-instructions.en.txt` and
+  `tab-instructions.nb.txt` (playing instructions in words).
 - The Docker image and a new worktree carry the core command line, so bass tabs work there.
 - The `bass-tab` benchmark, 16 Slakh tracks: onset and pitch F1 0.86 (song) and 0.89 (bass alone); hand
   travel 0.9 and 0.6 frets per note; "?" marks right about 9 times in 10, catching about a third of the
