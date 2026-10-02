@@ -126,7 +126,7 @@ data class JobCreate(
     val reads: String? = null,
     /** "lineup" or "seat": who plays the tune. */
     val lead: String? = null,
-    // The bass-tab profile's options (TabOptions). Null is not sent: the engine refuses them for any other profile.
+    // The tab profile's options (TabOptions). Null is not sent: the engine refuses them for any other profile.
     val instrument: FrettedInstrument? = null,
     /** One of the instrument's [FrettedInstrument.tunings]. */
     val tuning: String? = null,
@@ -136,13 +136,18 @@ data class JobCreate(
     val recording: Recording? = null,
     val octave: Octave? = null,
     val layout: TabLayout? = null,
+    val chords: TabChords? = null,
 ) {
-    /** This job with the bass-tab options of [options]. */
+    /** This job with the tab options of [options]. */
     fun withTab(options: TabOptions): JobCreate = copy(instrument = options.instrument, tuning = options.tuning, capo = options.capo,
-        style = options.style, recording = options.recording, octave = options.octave, layout = options.layout)
+        style = options.style, recording = options.recording, octave = options.octave, layout = options.layout, chords = options.chords)
 
     companion object {
-        /** A bass-tab job for an uploaded recording, with the options the player chose. */
+        /** A tab job for an uploaded recording, with the options the player chose. */
+        fun tab(audioId: String, options: TabOptions = TabOptions(), title: String? = null): JobCreate =
+            JobCreate(audioId, Profile.TAB.id, title = title).withTab(options)
+
+        /** The same under the id older engines know: a bass only. */
         fun bassTab(audioId: String, options: TabOptions = TabOptions(), title: String? = null): JobCreate =
             JobCreate(audioId, Profile.BASS_TAB.id, title = title).withTab(options)
     }
@@ -272,10 +277,18 @@ enum class Profile(val id: String) {
     BRASS_BAND("brass-band"),
     ORCHESTRA_WITH_SOLOIST("orchestra-with-soloist"),
     POP_ROCK("pop-rock"),
-    /** A bass line as tablature: its result is a [Tab], not a band score. */
+    /** One fretted instrument as tablature (bass, guitar, ukulele, mandolin): its result is a [Tab], not a band score. */
+    TAB("tab"),
+    /** [TAB] with a bass, under the id older apps sent: jobs made by them still carry it. */
     BASS_TAB("bass-tab");
+
+    /** The profile's result is a [Tab]. */
+    val writesTab: Boolean get() = this == TAB || this == BASS_TAB
 
     companion object {
         fun of(id: String): Profile? = entries.firstOrNull { it.id == id }
+
+        /** The profile [id] names writes a tab; false for an id this client does not know. */
+        fun writesTab(id: String): Boolean = of(id)?.writesTab == true
     }
 }

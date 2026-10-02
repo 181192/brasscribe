@@ -49,9 +49,13 @@ tasks.test {
     systemProperty("brasscribe.openapi", file("openapi.json").absolutePath)
     systemProperty("brasscribe.fixtures", File(repoRoot, "apps/fixtures").absolutePath)
     systemProperty("brasscribe.engine", File(repoRoot, "engine/src/brasscribe_engine").absolutePath)
+    systemProperty("brasscribe.presets", File(repoRoot, "core/target-fretted/src/instrument.rs").absolutePath)
     inputs.file("openapi.json").withPropertyName("openapi")
     inputs.files(fileTree(File(repoRoot, "apps/fixtures/bass-line"))).withPropertyName("bassLineFixture")
+    inputs.files(fileTree(File(repoRoot, "apps/fixtures/guitar-line"))).withPropertyName("guitarLineFixture")
+    inputs.files(fileTree(File(repoRoot, "apps/fixtures/ukulele-line"))).withPropertyName("ukuleleLineFixture")
     inputs.files(File(repoRoot, "engine/src/brasscribe_engine/profiles.py")).withPropertyName("engineRefusals")
+    inputs.files(File(repoRoot, "core/target-fretted/src/instrument.rs")).withPropertyName("cratePresets")
     inputs.files(fileTree(File(repoRoot, "data/golden/mikkel-arranged-band"))).withPropertyName("golden")
 }
 

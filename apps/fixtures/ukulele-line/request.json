@@ -1,0 +1,16 @@
+{
+ "audio_id": "a11073fc9a8a4924",
+ "profile": "tab",
+ "render_audio": true,
+ "allow_heavy": true,
+ "title": "Ukulele line",
+ "lineup": "full",
+ "difficulty": "faithful",
+ "muscriptor": true,
+ "instrument": "ukulele",
+ "tuning": "high-g",
+ "capo": 0,
+ "recording": "instrument",
+ "octave": "auto",
+ "layout": "tab"
+}

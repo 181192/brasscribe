@@ -1,0 +1,16 @@
+{
+ "audio_id": "ae3be0fa611d53ec",
+ "profile": "tab",
+ "render_audio": true,
+ "allow_heavy": true,
+ "title": "Guitar line",
+ "lineup": "full",
+ "difficulty": "faithful",
+ "muscriptor": true,
+ "instrument": "guitar-6",
+ "tuning": "standard",
+ "capo": 0,
+ "recording": "instrument",
+ "octave": "auto",
+ "layout": "tab"
+}
