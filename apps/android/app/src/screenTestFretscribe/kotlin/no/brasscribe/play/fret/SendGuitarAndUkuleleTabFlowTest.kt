@@ -17,7 +17,6 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -54,6 +53,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
@@ -61,65 +62,26 @@ import java.nio.ByteOrder
 
 /**
  * A guitar's and a ukulele's recording become tabs, on a fixture computer that answers as the engine did
- * for a short take of each (apps/fixtures/guitar-line and ukulele-line, packaged in the test APK only):
+ * for a short take of each (apps/fixtures/guitar-line and ukulele-line):
  * What is this? for each instrument, the job that is sent, Check the song with the capo and what was left
  * out, and the song's line in Your songs. In English and bokmål, with the accessibility checks on every
- * action, at 200 % text, and the capo's picker with the keyboard. Screenshots go to
- * /data/local/tmp/fretscribe-flow on the device.
+ * action, at 200 % text, and the capo's picker with the keyboard.
  */
 @RunWith(AndroidJUnit4::class)
-class SendGuitarAndUkuleleTabFlowTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
+class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
     private val store get() = yourInstrumentStore(rule.activity)
+
+    override val shots = "fretscribe/guitar-flow"
 
     @Before
     fun setUp() {
         assertEquals("Fretscribe", Product.NAME)
-        rule.enableAccessibilityChecks()
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
-        rule.runOnUiThread {
-            container.firstRunDone = true
-            container.updateAppearance(Appearance.LIGHT)
-            vm.scores.value.forEach(vm::deleteEntry)
-            vm.home()
-        }
-        shell("mkdir -p $SHOTS")
-        rule.waitForIdle()
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
     }
 
     @After
     fun tearDown() {
-        shell("cmd locale set-app-locales $PACKAGE --locales en-GB")
-        shell("settings put system font_scale 1.0")
         store.save(YourInstrument.DEFAULT)
-        rule.runOnUiThread {
-            container.fixtureSource = null
-            container.updateAppearance(Appearance.SYSTEM)
-            vm.home()
-        }
-    }
-
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(400)
-    }
-
-    private fun shot(name: String) {
-        rule.waitForIdle()
-        Thread.sleep(700)
-        shell("screencap -p $SHOTS/$name.png")
-        Thread.sleep(800)
-    }
-
-    private fun language(tag: String) {
-        shell("cmd locale set-app-locales $PACKAGE --locales $tag")
-        rule.activityRule.scenario.recreate()
-        rule.waitForIdle()
     }
 
     /**
@@ -127,75 +89,34 @@ class SendGuitarAndUkuleleTabFlowTest {
      * [older]: a computer whose Fretscribe is from before the tab profile; it has the bass tab's id only.
      */
     private fun computer(take: String, older: Boolean = false, profiles: (() -> ByteArray?)? = null, tab: ((JSONObject) -> Unit)? = null) {
-        val assets = instrumentation.context.assets
         // (Another computer than the one before: the app lets go of that one first.)
         container.fixtureSource = null
         container.engine()
         container.fixtureSource = FixtureSource { name ->
             // [profiles]: the computer's answer to which profiles it has, when a test makes it slow or makes it fail.
             if (name == FixtureEngineApi.PROFILES_FILE) return@FixtureSource if (profiles != null) profiles() else if (older) OLDER.toByteArray() else null
-            val bytes = runCatching { assets.open("$take/$name").use { it.readBytes() } }.getOrNull()
+            val bytes = ScreenDevice.fixture("$take/$name")
             if (name == "tab.json" && bytes != null && tab != null) JSONObject(String(bytes)).also(tab).toString().toByteArray() else bytes
         }
-    }
-
-    /** Two seconds of a tone as a WAV file: a recording to open. */
-    private fun recording(name: String): File {
-        val rate = 22_050
-        val samples = ShortArray(rate * 2) { i -> (Math.sin(2 * Math.PI * 196.0 * i / rate) * 9000).toInt().toShort() }
-        val data = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN).also { b -> samples.forEach(b::putShort) }.array()
-        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-            .put("RIFF".toByteArray()).putInt(36 + data.size).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
-            .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.size).array()
-        return File(rule.activity.cacheDir, name).apply { writeBytes(header + data) }
     }
 
     /** Open a recording from Home, as the file picker's answer does: What is this? follows. */
     private fun openARecording(name: String = "Riff.wav", answered: Boolean = true) {
         val file = recording(name)
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
-        rule.waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
         // (The computer is asked what it can write when the screen opens; Continue waits for its answer.)
-        if (answered) rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+        if (answered) waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
     }
-
-    private fun waitForTag(tag: String, ms: Long = 60_000) =
-        rule.waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
     private fun card(tag: String) = rule.onNode(
         SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             androidx.compose.ui.test.hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-$tag")),
     )
 
-    /** Every text now on screen. */
-    private fun shown(): String = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
-        .fetchSemanticsNodes().flatMap { it.config[SemanticsProperties.Text] }.joinToString(" | ") { it.text }
-
-    /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
-    private fun assertNoTextIsClipped() {
-        val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
-            .fetchSemanticsNodes().mapNotNull { node ->
-                val layouts = mutableListOf<TextLayoutResult>()
-                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                val l = layouts.firstOrNull() ?: return@mapNotNull null
-                val cut = l.didOverflowHeight || (0 until l.lineCount).any(l::isLineEllipsized) ||
-                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
-                l.layoutInput.text.text.takeIf { cut }
-            }
-        assertEquals("clipped text", emptyList<String>(), clipped)
-    }
-
-    private fun key(code: Int) {
-        instrumentation.sendKeyDownUpSync(code)
-        rule.waitForIdle()
-    }
-
     /** The element with the keyboard's focus: its tag, and what it says. With a dialog open it is the dialog's. */
     private fun focused() = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)).fetchSemanticsNodes().lastOrNull()?.config
     private fun focusedTag(): String? = focused()?.getOrNull(SemanticsProperties.TestTag)
-    private fun focusedWords(): String = focused()?.let { c ->
-        (c.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + c.getOrNull(SemanticsProperties.ContentDescription).orEmpty()).joinToString(" ")
-    }.orEmpty()
 
     /** The job the computer was last asked for, and the options the app made it with. */
     private fun lastJob() = runBlocking { container.engine()!!.job(vm.result.value!!.jobId!!) }
@@ -237,7 +158,7 @@ class SendGuitarAndUkuleleTabFlowTest {
             rule.onNodeWithTag("fs-what-continue").assertIsEnabled().performClick()
 
             // A song is separated first: the step names the player's instrument, never the bass.
-            rule.waitUntil(20_000) { shown().contains(w[2]) }
+            waitUntil(20_000) { shown().contains(w[2]) }
             assertFalse(shown(), Regex("\\bbass", RegexOption.IGNORE_CASE).containsMatchIn(shown()))
 
             // Check the song: the tuning that fits, the capo, and what was left out and added, each one element.
@@ -267,13 +188,13 @@ class SendGuitarAndUkuleleTabFlowTest {
             // Show the tab, and the song is in Your songs with its instrument and tuning.
             rule.onNodeWithTag("fs-show-tab").performClick()
             waitForTag("fs-tab", 30_000)
-            rule.waitUntil(30_000) {
+            waitUntil(30_000) {
                 rule.onNodeWithTag("fs-tab").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
                     ?.firstOrNull()?.let { d -> Regex("""\d+""").findAll(d).any { it.value.toInt() > 1 } } == true
             }
             if (lang == "en-GB") shot("guitar-the-tab-en-light")
             rule.runOnUiThread { vm.home() }
-            rule.waitUntil(10_000) { rule.onAllNodesWithText(w[9], substring = true).fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(10_000) { rule.onAllNodesWithText(w[9], substring = true).fetchSemanticsNodes().isNotEmpty() }
             rule.onAllNodesWithText(w[9], substring = true).onFirst().performScrollTo().assertIsDisplayed()
             if (lang == "en-GB") shot("guitar-home-song-en-light")
             rule.runOnUiThread { vm.scores.value.forEach(vm::deleteEntry) }
@@ -300,7 +221,7 @@ class SendGuitarAndUkuleleTabFlowTest {
         assertTrue("the keyboard reaches Change the capo: ${focusedWords()}", focusedWords().contains("Change the capo"))
         key(KeyEvent.KEYCODE_ENTER)
         waitForTag("fs-check-capo-0", 5_000)
-        rule.waitUntil(5_000) { focusedTag() == "fs-check-capo-0" }
+        waitUntil(5_000) { focusedTag() == "fs-check-capo-0" }
         // One radio group: no capo and the twelve frets, each named in words and a full-size target; exactly one is chosen.
         val radios = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).fetchSemanticsNodes()
             .filter { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("fs-check-capo-") == true }
@@ -319,22 +240,22 @@ class SendGuitarAndUkuleleTabFlowTest {
         key(KeyEvent.KEYCODE_DPAD_DOWN)
         assertEquals("fs-check-capo-2", focusedTag())
         key(KeyEvent.KEYCODE_ESCAPE)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-check-capo-0").fetchSemanticsNodes().isEmpty() }
-        rule.waitUntil(5_000) { focusedWords().contains("Change the capo") }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-check-capo-0").fetchSemanticsNodes().isEmpty() }
+        waitUntil(5_000) { focusedWords().contains("Change the capo") }
         assertEquals(first, vm.result.value!!.jobId)
         assertEquals(1, runBlocking { container.engine()!!.jobs() }.size)
         // Choosing the one the tab already has changes nothing either.
         rule.onNodeWithTag("fs-check-change-capo").performClick()
         waitForTag("fs-check-capo-0", 5_000)
         rule.onNodeWithTag("fs-check-capo-0").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-check-capo-0").fetchSemanticsNodes().isEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-check-capo-0").fetchSemanticsNodes().isEmpty() }
         assertEquals(1, runBlocking { container.engine()!!.jobs() }.size)
 
         // The second fret: the recording is written down again for it, and Check the song comes back.
         rule.onNodeWithTag("fs-check-change-capo").performClick()
         waitForTag("fs-check-capo-2", 5_000)
         rule.onNodeWithTag("fs-check-capo-2").performScrollTo().performClick()
-        rule.waitUntil(60_000) { vm.result.value?.jobId != first && vm.screen.value == listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT) }
+        waitUntil(60_000) { vm.result.value?.jobId != first && vm.screen.value == listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT) }
         waitForTag("fs-show-tab")
         val sent = sent()
         assertEquals(listOf(FrettedInstrument.GUITAR_6, "standard", 2, Recording.INSTRUMENT, Octave.AUTO), listOf(sent.instrument, sent.tuning, sent.capo, sent.recording, sent.octave))
@@ -402,20 +323,20 @@ class SendGuitarAndUkuleleTabFlowTest {
             // The answer stays with this recording: back on What is this?, it is still the one chosen.
             rule.runOnUiThread { vm.back() }
             waitForTag("fs-what-continue", 10_000)
-            rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+            waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
             card(if (whole) "song" else "instrument").assertIsSelected()
             rule.onNodeWithTag("fs-what-continue").performClick()
             waitForTag("fs-show-tab")
 
             rule.onNodeWithTag("fs-show-tab").performClick()
             waitForTag("fs-tab", 30_000)
-            rule.waitUntil(30_000) {
+            waitUntil(30_000) {
                 rule.onNodeWithTag("fs-tab").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
                     ?.firstOrNull()?.let { d -> Regex("""\d+""").findAll(d).any { it.value.toInt() > 1 } } == true
             }
             if (whole) shot("ukulele-the-tab-en-light")
             rule.runOnUiThread { vm.home() }
-            rule.waitUntil(10_000) { rule.onAllNodesWithText(w[3], substring = true).fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(10_000) { rule.onAllNodesWithText(w[3], substring = true).fetchSemanticsNodes().isNotEmpty() }
             rule.runOnUiThread { vm.scores.value.forEach(vm::deleteEntry) }
         }
     }
@@ -456,8 +377,7 @@ class SendGuitarAndUkuleleTabFlowTest {
         for (lang in listOf("en-GB", "nb-NO")) {
             language(lang)
             computer("ukulele-line") { tab -> tab.getJSONObject("instrument").put("capo", 12); tab.put("unplayable_dropped", 1).put("inferred_notes", 1) }
-            shell("settings put system font_scale 2.0")
-            rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale >= 1.9f }
+            textSize(2.0f)
             openARecording("Uke.wav")
             assertNoTextIsClipped()
             card("instrument").performScrollTo().assertIsDisplayed()
@@ -480,8 +400,7 @@ class SendGuitarAndUkuleleTabFlowTest {
             rule.onNodeWithTag("fs-check-capo-12").assertIsSelected()
             shot("ukulele-capo-picker-200-${lang.take(2)}")
             rule.onNodeWithText(rule.activity.getString(no.brasscribe.play.R.string.cancel)).performClick()
-            shell("settings put system font_scale 1.0")
-            rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale <= 1.1f }
+            textSize(1.0f)
         }
     }
 
@@ -503,7 +422,7 @@ class SendGuitarAndUkuleleTabFlowTest {
         // And written down again under it.
         val first = vm.result.value!!.jobId
         rule.onNodeWithTag("fs-check-change-octave").performScrollTo().performClick()
-        rule.waitUntil(60_000) { vm.result.value?.jobId != first && vm.screen.value == listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT) }
+        waitUntil(60_000) { vm.result.value?.jobId != first && vm.screen.value == listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT) }
         waitForTag("fs-show-tab")
         assertEquals("bass-tab", lastJob().profile)
         assertEquals(Octave.AS_HEARD, sent().octave)
@@ -518,7 +437,7 @@ class SendGuitarAndUkuleleTabFlowTest {
         openARecording("Bass.wav")
         card("instrument").performClick()
         // (The computer has said what it can write before the job is made.)
-        rule.waitUntil(10_000) { ComputerProfiles.listed?.contains("tab") == true }
+        waitUntil(10_000) { ComputerProfiles.listed?.contains("tab") == true }
         rule.onNodeWithTag("fs-what-continue").performClick()
         waitForTag("fs-show-tab")
         assertEquals("tab", lastJob().profile)
@@ -543,7 +462,7 @@ class SendGuitarAndUkuleleTabFlowTest {
                 store.save(YourInstrument(kind))
                 openARecording("${kind.name}.wav")
                 // The computer is there, and says what it can write: the reason is on screen, in true words.
-                rule.waitUntil(10_000) { rule.onAllNodesWithText(why).fetchSemanticsNodes().isNotEmpty() }
+                waitUntil(10_000) { rule.onAllNodesWithText(why).fetchSemanticsNodes().isNotEmpty() }
                 rule.onNodeWithText(why).assertIsDisplayed()
                 // With an answer chosen there is still no way on.
                 card("song").performClick()
@@ -610,7 +529,7 @@ class SendGuitarAndUkuleleTabFlowTest {
         // The computer answers: it is too old. The line changes where a screen reader is told of it, and the button says why.
         answer.countDown()
         val why = "Fretscribe on your computer is too old to write guitar tabs. Update it there."
-        rule.waitUntil(10_000) { rule.onAllNodesWithText(why).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(10_000) { rule.onAllNodesWithText(why).fetchSemanticsNodes().isNotEmpty() }
         val line = rule.onNodeWithTag("fs-what-missing").assert(hasText(why)).fetchSemanticsNode()
         assertEquals(androidx.compose.ui.semantics.LiveRegionMode.Polite, line.config.getOrNull(SemanticsProperties.LiveRegion))
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
@@ -640,18 +559,16 @@ class SendGuitarAndUkuleleTabFlowTest {
         val answer = java.util.concurrent.CountDownLatch(1)
         computer("guitar-line", profiles = { answer.await(30, java.util.concurrent.TimeUnit.SECONDS); OLDER.toByteArray() })
         openARecording(answered = false)
-        rule.waitUntil(10_000) { ComputerProfiles.answer?.asking == true }
+        waitUntil(10_000) { ComputerProfiles.answer?.asking == true }
         assertNull(ComputerProfiles.listed)
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         answer.countDown()
-        rule.waitUntil(10_000) { ComputerProfiles.answer?.asking == false }
+        waitUntil(10_000) { ComputerProfiles.answer?.asking == false }
         assertFalse("tab" in ComputerProfiles.listed!!)
     }
 
     private companion object {
         /** The profiles of a computer from before the tab profile. */
         const val OLDER = """["solo","brass-band","orchestra-with-soloist","pop-rock","bass-tab"]"""
-        const val PACKAGE = "no.fretscribe.play"
-        const val SHOTS = "/data/local/tmp/fretscribe-flow"
     }
 }

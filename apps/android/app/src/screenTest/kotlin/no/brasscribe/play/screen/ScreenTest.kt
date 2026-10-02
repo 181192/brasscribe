@@ -1,5 +1,6 @@
 package no.brasscribe.play.screen
 
+import android.graphics.Bitmap
 import android.view.KeyEvent
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -67,7 +68,10 @@ abstract class ScreenTest {
 
     protected fun textSize(scale: Float) = ScreenDevice.textSize(rule, scale)
 
-    protected fun key(code: Int) = ScreenDevice.key(rule, code)
+    protected fun key(code: Int, meta: Int = 0) = ScreenDevice.key(rule, code, meta)
+
+    /** The whole screen as it is drawn now. */
+    protected fun screen(): Bitmap = ScreenDevice.screen(rule)
 
     /** Where this test's screenshots go, under the app's screenshots. */
     protected open val shots: String = "screens"

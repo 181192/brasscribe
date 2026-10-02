@@ -22,7 +22,6 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -56,45 +55,34 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * "Your instrument" on the device, with the accessibility checks on: asked after the first run in place
+ * "Your instrument", with the accessibility checks on: asked after the first run in place
  * of Brasscribe's "What do you play?", in English and bokmål, each row one element that says its answer,
  * radio choices in the pickers, 48 dp targets, 200 % text, the keyboard, Not now, and the way in from Settings.
- * Screenshots of the first run, Your instrument and Home, light and dark, go to the app's files,
- * fretscribe/.
+ * With screenshots of the first run, Your instrument and Home, light and dark.
  */
 @RunWith(AndroidJUnit4::class)
-class YourInstrumentScreenTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
+class YourInstrumentScreenTest : ScreenTest() {
     private val store get() = yourInstrumentStore(rule.activity)
-    private val dir by lazy { File(rule.activity.getExternalFilesDir(null), "fretscribe").apply { mkdirs() } }
+    override val shots = "fretscribe/your-instrument"
 
     @Before
     fun setUp() {
         assertEquals("Fretscribe", Product.NAME)
         // The first run asks its question only when the core's seats are there: both come with the native core.
         assumeTrue("the native core is not in this build (scripts/build-core.sh)", container.seats.isNotEmpty())
-        rule.enableAccessibilityChecks()
         forget()
     }
 
     @After
     fun tearDown() {
-        shell("cmd locale set-app-locales $PACKAGE --locales en-GB")
-        shell("settings put system font_scale 1.0")
         forget()
-        rule.runOnUiThread {
-            container.updateAppearance(Appearance.SYSTEM)
-            container.firstRunDone = true
-        }
+        rule.runOnUiThread { container.firstRunDone = true }
     }
 
     /** No answer stored, as on a new phone. */
@@ -105,17 +93,10 @@ class YourInstrumentScreenTest {
         prefs.commit()
     }
 
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(400)
-    }
-
-    private fun shot(name: String): Bitmap {
-        rule.waitForIdle()
-        Thread.sleep(700)
-        val shot = checkNotNull(instrumentation.uiAutomation.takeScreenshot()) { "no screenshot" }
-        File(dir, "$name.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        return shot.copy(Bitmap.Config.ARGB_8888, false)
+    /** The screen, kept as the screenshot [name] and given back to look at. */
+    private fun shotOf(name: String): Bitmap {
+        shot(name)
+        return screen()
     }
 
     /** How many pixels of the screenshot have exactly this colour (anti-aliased edges don't count). */
@@ -125,14 +106,6 @@ class YourInstrumentScreenTest {
         return pixels.count { it == want }
     }
 
-    private fun language(tag: String) {
-        shell("cmd locale set-app-locales $PACKAGE --locales $tag")
-        rule.activityRule.scenario.recreate()
-        rule.waitForIdle()
-    }
-
-    private fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
-
     /** The first-run screen, as a new phone opens on it. */
     private fun firstRun() {
         rule.runOnUiThread {
@@ -140,27 +113,27 @@ class YourInstrumentScreenTest {
             vm.home()
             vm.navigate(Screen.FIRST_RUN)
         }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText(text(R.string.first_run_start)).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithText(text(R.string.first_run_start)).fetchSemanticsNodes().isNotEmpty() }
     }
 
     /** Get started on the first run: Your instrument is next. */
     private fun getStarted() {
         firstRun()
         rule.onNodeWithText(text(R.string.first_run_start)).performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun row(tag: String): SemanticsNodeInteraction = rule.onNodeWithTag("fs-row-$tag")
 
     private fun open(tag: String, option: String) {
         row(tag).performScrollTo().performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-$tag-$option").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-$tag-$option").fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun pick(tag: String, option: String) {
         open(tag, option)
         rule.onNodeWithTag("fs-$tag-$option").performScrollTo().performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-$tag-$option").fetchSemanticsNodes().isEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-$tag-$option").fetchSemanticsNodes().isEmpty() }
     }
 
     private fun closePicker() {
@@ -192,22 +165,6 @@ class YourInstrumentScreenTest {
     private val isRadio = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
     private val isPicker = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.DropdownList)
     private val isNotAButton = SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick) and SemanticsMatcher.keyNotDefined(SemanticsProperties.Role)
-
-    /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
-    private fun assertNoTextIsClipped() {
-        val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
-            .fetchSemanticsNodes().mapNotNull { node ->
-                val layouts = mutableListOf<TextLayoutResult>()
-                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                val l = layouts.firstOrNull() ?: return@mapNotNull null
-                // Wrapped text can only run out of lines; one-line text can also be wider than its box.
-                // (didOverflowWidth is no use here: it is true for any text narrower than the room it was offered.)
-                val cut = l.didOverflowHeight || (0 until l.lineCount).any(l::isLineEllipsized) ||
-                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
-                l.layoutInput.text.text.takeIf { cut }
-            }
-        assertEquals("clipped text", emptyList<String>(), clipped)
-    }
 
     @Test
     fun theFirstRunAsksYourInstrumentInEnglishAndBokmal() {
@@ -355,11 +312,6 @@ class YourInstrumentScreenTest {
         }
     }
 
-    private fun key(code: Int) {
-        instrumentation.sendKeyDownUpSync(code)
-        rule.waitForIdle()
-    }
-
     /**
      * The tag of the element with the keyboard's focus, or null. With a dialog open, the screen under it
      * still has its own focused element; the dialog's window is the later one, and it has the keys.
@@ -372,13 +324,11 @@ class YourInstrumentScreenTest {
      * from a screenshot of the whole screen, so an element in a dialog's window is looked at where it is shown.
      */
     private fun ringed(tag: String, colour: Color): Boolean {
-        rule.waitForIdle()
-        Thread.sleep(400)
         val node = rule.onNodeWithTag(tag).fetchSemanticsNode()
         val at = node.positionOnScreen
         val x = at.x.toInt() + (4 * rule.activity.resources.displayMetrics.density).toInt() - 1
         val y = at.y.toInt() + node.size.height / 2
-        val shot = checkNotNull(instrumentation.uiAutomation.takeScreenshot()) { "no screenshot" }.copy(Bitmap.Config.ARGB_8888, false)
+        val shot = screen()
         val want = android.graphics.Color.argb(255, (colour.red * 255 + 0.5f).toInt(), (colour.green * 255 + 0.5f).toInt(), (colour.blue * 255 + 0.5f).toInt())
         return shot.getPixel(x, y) == want
     }
@@ -409,12 +359,12 @@ class YourInstrumentScreenTest {
         shot("your-instrument-focus-light")
 
         // Back up to Usual tuning. Enter opens its picker with the focus on the chosen tuning.
-        repeat(2) { instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)); instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)) }
+        repeat(2) { key(KeyEvent.KEYCODE_TAB, KeyEvent.META_SHIFT_ON) }
         rule.waitForIdle()
         assertEquals("fs-row-tuning", focusedTag())
         key(KeyEvent.KEYCODE_ENTER)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-standard").fetchSemanticsNodes().isNotEmpty() }
-        rule.waitUntil(5_000) { focusedTag() == "fs-tuning-standard" }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-standard").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { focusedTag() == "fs-tuning-standard" }
         assertTrue("the chosen tuning has the ring", ringed("fs-tuning-standard", focus))
         // The arrows move through the group, one choice at a time, both ways.
         key(KeyEvent.KEYCODE_DPAD_DOWN)
@@ -431,33 +381,33 @@ class YourInstrumentScreenTest {
         // Moving chooses nothing; Enter does, and the focus is back on the row, which says the new answer.
         rule.onNodeWithTag("fs-tuning-standard").assertIsSelected()
         key(KeyEvent.KEYCODE_ENTER)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
         row("tuning").assertContentDescriptionEquals("Usual tuning, Drop D")
-        rule.waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
+        waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
 
         // Space opens it too, and Escape closes it with nothing changed.
         key(KeyEvent.KEYCODE_SPACE)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isNotEmpty() }
-        rule.waitUntil(5_000) { focusedTag() == "fs-tuning-drop-d" }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { focusedTag() == "fs-tuning-drop-d" }
         key(KeyEvent.KEYCODE_DPAD_UP)
         key(KeyEvent.KEYCODE_ESCAPE)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
         row("tuning").assertContentDescriptionEquals("Usual tuning, Drop D")
-        rule.waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
+        waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
         // So does Back; and Space chooses in the group as Enter does.
         key(KeyEvent.KEYCODE_ENTER)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isNotEmpty() }
         key(KeyEvent.KEYCODE_BACK)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-drop-d").fetchSemanticsNodes().isEmpty() }
         row("tuning").assertContentDescriptionEquals("Usual tuning, Drop D")
         assertEquals(listOf(Screen.WHAT_DO_YOU_PLAY), vm.screen.value)
-        rule.waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
+        waitUntil(5_000) { focusedTag() == "fs-row-tuning" }
         key(KeyEvent.KEYCODE_SPACE)
-        rule.waitUntil(5_000) { focusedTag() == "fs-tuning-drop-d" }
+        waitUntil(5_000) { focusedTag() == "fs-tuning-drop-d" }
         repeat(3) { key(KeyEvent.KEYCODE_DPAD_DOWN) }
         assertEquals("fs-tuning-dadgad", focusedTag())
         key(KeyEvent.KEYCODE_SPACE)
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-dadgad").fetchSemanticsNodes().isEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-tuning-dadgad").fetchSemanticsNodes().isEmpty() }
         row("tuning").assertContentDescriptionEquals("Usual tuning, D, A, D, G, A, D")
         // Nothing is stored by any of it until Continue, which the keyboard reaches and presses.
         assertEquals(YourInstrument.DEFAULT, store.load())
@@ -465,7 +415,7 @@ class YourInstrumentScreenTest {
         while (focusedTag() != "fs-keep" && tabs++ < 8) key(KeyEvent.KEYCODE_TAB)
         assertEquals("fs-keep", focusedTag())
         key(KeyEvent.KEYCODE_ENTER)
-        rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
+        waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
         assertEquals(YourInstrument(tuning = "dadgad"), store.load())
     }
 
@@ -476,7 +426,7 @@ class YourInstrumentScreenTest {
         // Choices made and then skipped are not kept.
         pick("strings", "guitar-7")
         rule.onNodeWithTag("fs-not-now").performClick()
-        rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
+        waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
         assertTrue(container.firstRunDone)
         assertEquals(YourInstrument.DEFAULT, store.load())
         assertEquals(TabJobOptions("guitar-6", "standard", "tab"), store.load().jobOptions())
@@ -501,14 +451,14 @@ class YourInstrumentScreenTest {
         // Nothing is kept until Continue.
         assertEquals(YourInstrument.DEFAULT, store.load())
         rule.onNodeWithTag("fs-keep").performClick()
-        rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
+        waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
         val chosen = YourInstrument(FrettedInstrument.BASS_5, "drop-a", FrettingHand.RIGHT_UPSIDE_DOWN, Reads.TAB_AND_NOTATION)
         assertEquals(chosen, store.load())
         assertTrue(container.firstRunDone)
 
         // Settings shows it on its row, and the row opens the same screen with Save and a way back.
         rule.runOnUiThread { vm.navigate(Screen.SETTINGS) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("5-string bass · Drop A · Tab and notation").assertIsDisplayed()
         // The row is named as the screen it opens, and the band's sound choice is not offered.
         rule.onNodeWithTag("setting-seat").assert(hasText("Your instrument"))
@@ -516,7 +466,7 @@ class YourInstrumentScreenTest {
         assertTrue(rule.onAllNodesWithText("Sound", ignoreCase = true).fetchSemanticsNodes().isEmpty())
         shot("settings-light")
         rule.onNodeWithTag("setting-seat").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
         assertTrue(rule.onAllNodesWithTag("fs-not-now").fetchSemanticsNodes().isEmpty())
         // Inside Settings the screen doesn't point to Settings.
         rule.onNodeWithText("Fretscribe remembers this for your tabs.").assertIsDisplayed()
@@ -530,14 +480,14 @@ class YourInstrumentScreenTest {
         // Back without Save changes nothing.
         pick("reads", "notation")
         rule.runOnUiThread { vm.back() }
-        rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
+        waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
         assertEquals(chosen, store.load())
         // Save keeps it and goes back to Settings.
         rule.onNodeWithTag("setting-seat").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
         pick("reads", "notation")
         rule.onNodeWithTag("fs-keep").performClick()
-        rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
+        waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
         assertEquals(chosen.copy(reads = Reads.NOTATION), store.load())
         rule.onNodeWithText("5-string bass · Drop A · Notation").assertIsDisplayed()
         // The row names the other instruments as they are.
@@ -552,7 +502,7 @@ class YourInstrumentScreenTest {
             rule.runOnUiThread { vm.home() }
             rule.waitForIdle()
             rule.runOnUiThread { vm.navigate(Screen.SETTINGS) }
-            rule.waitUntil(5_000) { rule.onAllNodesWithText(value).fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(5_000) { rule.onAllNodesWithText(value).fetchSemanticsNodes().isNotEmpty() }
         }
     }
 
@@ -565,10 +515,10 @@ class YourInstrumentScreenTest {
             .putString("fret_hand", "right").putString("fret_reads", "notation").commit()
         assertEquals(YourInstrument(FrettedInstrument.BASS_5, "drop-a", FrettingHand.RIGHT, Reads.NOTATION), store.load())
         rule.runOnUiThread { container.firstRunDone = true; vm.home(); vm.navigate(Screen.SETTINGS) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("5-string bass · Drop A · Notation").assertIsDisplayed()
         rule.onNodeWithTag("setting-seat").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
         row("instrument").assertContentDescriptionEquals("Instrument, Bass")
         row("strings").assertContentDescriptionEquals("Strings, 5 strings")
         row("tuning").assertContentDescriptionEquals("Usual tuning, Drop A")
@@ -586,13 +536,13 @@ class YourInstrumentScreenTest {
             val stored = YourInstrument(FrettedInstrument.BASS_5, tuning = "drop-a")
             store.save(stored)
             rule.runOnUiThread { vm.home(); vm.navigate(Screen.SETTINGS); vm.openSeatPicker(SeatPickerMode.SETTINGS) }
-            rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
             pick("reads", "notation")
             pick("tuning", "standard")
             // Restored in the middle of choosing (the activity is destroyed and made again from its saved
             // state): the choices are still there, and still not stored.
             rule.activityRule.scenario.recreate()
-            rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
             row("reads").assertContentDescriptionEquals(w[0])
             row("tuning").assertContentDescriptionEquals(w[1])
             assertEquals(stored, store.load())
@@ -602,15 +552,15 @@ class YourInstrumentScreenTest {
             // together, so the state is saved while the screen is still composed.
             rule.runOnUiThread { vm.back(); rule.activity.recreate() }
             rule.waitForIdle()
-            rule.waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(5_000) { rule.onAllNodesWithTag("setting-seat").fetchSemanticsNodes().isNotEmpty() }
             // The row opens on what is stored, and Save stores that.
             rule.onNodeWithTag("setting-seat").performClick()
-            rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
             row("reads").assertContentDescriptionEquals(w[2])
             row("tuning").assertContentDescriptionEquals(w[3])
             row("strings").assertContentDescriptionEquals(w[4])
             rule.onNodeWithTag("fs-keep").performClick()
-            rule.waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
+            waitUntil(5_000) { vm.screen.value.last() == Screen.SETTINGS }
             assertEquals(stored, store.load())
         }
     }
@@ -619,8 +569,7 @@ class YourInstrumentScreenTest {
     fun at200PercentTextNothingIsClipped() {
         for (lang in listOf("en-GB", "nb-NO")) {
             language(lang)
-            shell("settings put system font_scale 2.0")
-            rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale >= 1.9f }
+            textSize(2.0f)
             getStarted()
             assertNoTextIsClipped()
             listOf("instrument", "strings", "tuning", "hand", "reads").forEach { tag ->
@@ -643,8 +592,7 @@ class YourInstrumentScreenTest {
             assertNoTextIsClipped()
             row("strings").performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(48.dp)
             shot("your-instrument-200-ukulele-${lang.take(2)}")
-            shell("settings put system font_scale 1.0")
-            rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale <= 1.1f }
+            textSize(1.0f)
         }
     }
 
@@ -664,15 +612,15 @@ class YourInstrumentScreenTest {
                 assertFalse(shown, BRASSCRIBE_WORDS.containsMatchIn(shown))
                 // The first run is a brand moment: the tinted band with the mark in blue ink, on Fretscribe's paper.
                 val colours = if (appearance == Appearance.DARK) BrasscribeDarkColors else BrasscribeLightColors
-                val first = shot("first-run-$tag")
+                val first = shotOf("first-run-$tag")
                 val all = first.width * first.height
                 assertTrue("$tag: the first run is on Fretscribe's paper", first.count(colours.bg) > all / 3)
                 assertTrue("$tag: the band is the brand tint", first.count(colours.brassTint) > all / 10)
                 assertTrue("$tag: the mark is in blue ink", first.count(colours.brass) > 200)
                 rule.onNodeWithText(text(R.string.first_run_start)).performClick()
-                rule.waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
+                waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
                 // Your instrument: paper, the rows on the raised surface, and one primary button in ink.
-                val yours = shot("your-instrument-$tag")
+                val yours = shotOf("your-instrument-$tag")
                 assertTrue("$tag: Your instrument is on Fretscribe's paper", yours.count(colours.bg) > all / 3)
                 assertTrue("$tag: the rows are a raised group", yours.count(colours.surfaceRaised) > all / 10)
                 assertTrue("$tag: the primary button is ink", yours.count(colours.primary) > all / 50)
@@ -687,7 +635,7 @@ class YourInstrumentScreenTest {
                 shot("your-instrument-ukulele-$tag")
                 pick("instrument", "guitar")
                 rule.onNodeWithTag("fs-keep").performClick()
-                rule.waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
+                waitUntil(5_000) { vm.screen.value == listOf(Screen.HOME) }
                 val home = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text)).fetchSemanticsNodes()
                     .flatMap { it.config[SemanticsProperties.Text] }.joinToString(" ") { it.text }
                 assertFalse(home, BRASSCRIBE_WORDS.containsMatchIn(home))
@@ -697,8 +645,6 @@ class YourInstrumentScreenTest {
     }
 
     private companion object {
-        const val PACKAGE = "no.fretscribe.play"
-
         /** Words of Brasscribe's that Fretscribe's first run and Home don't use, as whole words ("MuseScore" is fine). */
         val BRASSCRIBE_WORDS = Regex("""\b(Brasscribe|bands?|scores?|parts?|brass|partitur\w*|stemme\w*|bandet|korps\w*)\b""", RegexOption.IGNORE_CASE)
     }

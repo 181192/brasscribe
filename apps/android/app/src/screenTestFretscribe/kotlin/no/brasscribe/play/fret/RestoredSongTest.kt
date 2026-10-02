@@ -10,7 +10,6 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -42,6 +41,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
@@ -55,54 +56,22 @@ import java.nio.ByteOrder
  * gone, and for a song opened from Your songs: the computer still has the recording it was sent.
  */
 @RunWith(AndroidJUnit4::class)
-class RestoredSongTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
+class RestoredSongTest : ScreenTest() {
     private val first get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
 
     @Before
     fun setUp() {
-        rule.enableAccessibilityChecks()
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
         yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
         // The computer answers as it did for the bass line, as if the line sounded like drop D: a change is on offer.
-        val assets = instrumentation.context.assets
-        container.fixtureSource = FixtureSource { name ->
-            val bytes = runCatching { assets.open("bass-line/$name").use { it.readBytes() } }.getOrNull()
+        computer("bass-line") { name, bytes ->
             if (name != "tab.json" || bytes == null) bytes else JSONObject(String(bytes)).also { tab ->
                 val fits = tab.getJSONArray("tuning_suggestions")
                 val all = (0 until fits.length()).map(fits::getJSONObject)
                 tab.put("tuning_suggestions", JSONArray(all.sortedBy { if (it.getString("preset") == "bass-4-drop-d") 0 else 1 }))
             }.toString().toByteArray()
         }
-        rule.runOnUiThread {
-            container.firstRunDone = true
-            first.scores.value.forEach(first::deleteEntry)
-            first.home()
-        }
-        rule.waitUntil(10_000) { first.savedScores.value.isEmpty() }
+        waitUntil(10_000) { first.savedScores.value.isEmpty() }
     }
-
-    @After
-    fun tearDown() {
-        rule.runOnUiThread { container.fixtureSource = null; first.home() }
-    }
-
-    private fun recording(): File {
-        val rate = 22_050
-        val samples = ShortArray(rate * 2) { i -> (Math.sin(2 * Math.PI * 82.4 * i / rate) * 9000).toInt().toShort() }
-        val data = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN).also { b -> samples.forEach(b::putShort) }.array()
-        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-            .put("RIFF".toByteArray()).putInt(36 + data.size).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
-            .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.size).array()
-        return File(rule.activity.cacheDir, "Bass line.wav").apply { writeBytes(header + data) }
-    }
-
-    private fun waitForTag(tag: String, ms: Long = 60_000) =
-        rule.waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
     private fun card(tag: String) = rule.onNode(
         SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
@@ -113,12 +82,12 @@ class RestoredSongTest {
     private fun open(toTheSong: Boolean): File {
         val file = recording()
         rule.runOnUiThread { first.importUri(Uri.fromFile(file)) }
-        waitForTag("fs-what-continue", 20_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+        waitForTag("fs-what-continue", 20_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         card("instrument").performClick()
         if (toTheSong) {
             rule.onNodeWithTag("fs-what-continue").performClick()
             waitForTag("fs-check-change-tuning")
-            rule.waitUntil(10_000) { first.savedScores.value.size == 1 }
+            waitUntil(10_000) { first.savedScores.value.size == 1 }
         }
         val take = first.source.value!!.file!!
         assertTrue("the phone's copy is among the takes", take.isFile && take.parentFile?.name == "takes")
@@ -152,7 +121,7 @@ class RestoredSongTest {
     private fun useDropD(vm: PlayViewModel, back: List<Screen>) {
         val before = jobOf(vm)
         rule.onNodeWithTag("fs-check-change-tuning").performClick()
-        rule.waitUntil(60_000) { vm.result.value?.jobId != before.id && vm.screen.value == back }
+        waitUntil(60_000) { vm.result.value?.jobId != before.id && vm.screen.value == back }
         waitForTag("fs-show-tab")
         val again = jobOf(vm)
         assertNotEquals(before.id, again.id)
@@ -169,9 +138,9 @@ class RestoredSongTest {
     fun endedAtWhatIsThisTheRecordingIsStillThereAndIsAskedAboutAgain() {
         val take = open(toTheSong = false)
         val vm = afterTheProcessEnded(listOf(Screen.HOME, Screen.PROFILE))
-        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+        waitForTag("fs-what-continue", 10_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
-        Thread.sleep(1500)
+        ScreenDevice.pass(1500)
         assertTrue("the recording is kept", take.isFile)
         assertEquals(take, vm.source.value?.file)
         // The answer was in memory only: nothing is chosen, and nothing is sent until it is.
@@ -189,14 +158,14 @@ class RestoredSongTest {
     fun endedWhileTheNotesWereWrittenDownWhatIsThisComesBackWithTheRecording() {
         val take = open(toTheSong = false)
         rule.onNodeWithTag("fs-what-continue").performClick()
-        rule.waitUntil(10_000) { first.screen.value.last() == Screen.TRANSCRIBE }
+        waitUntil(10_000) { first.screen.value.last() == Screen.TRANSCRIBE }
         val stack = first.screen.value
         rule.runOnUiThread { first.cancelTranscription() }
         val vm = afterTheProcessEnded(stack)
-        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+        waitForTag("fs-what-continue", 10_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         // Writing down the notes cannot be taken up again: the screen before it comes back.
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
-        Thread.sleep(1500)
+        ScreenDevice.pass(1500)
         assertTrue("the recording is kept", take.isFile)
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         card("song").performClick()
@@ -211,7 +180,7 @@ class RestoredSongTest {
         val vm = afterTheProcessEnded(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT))
         waitForTag("fs-check-change-tuning")
         assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT), vm.screen.value)
-        Thread.sleep(1500)
+        ScreenDevice.pass(1500)
         // The song is shown again from what was saved, and the recording under it is still the one in hand.
         assertTrue("the recording is kept", take.isFile)
         assertEquals(take, vm.source.value?.file)
@@ -219,7 +188,7 @@ class RestoredSongTest {
 
         // Back: What is this? has the recording, so Continue is there once the question is answered.
         rule.runOnUiThread { vm.back() }
-        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+        waitForTag("fs-what-continue", 10_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertTrue(rule.onAllNodesWithText("This recording is no longer on the phone. Open it again from Home.").fetchSemanticsNodes().isEmpty())
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         card("instrument").performClick()
@@ -250,7 +219,7 @@ class RestoredSongTest {
     fun aSongOpenedFromYourSongsCanBeWrittenDownAgain() {
         open(toTheSong = true)
         rule.runOnUiThread { first.home() }
-        rule.waitUntil(10_000) { first.scores.value.size == 1 }
+        waitUntil(10_000) { first.scores.value.size == 1 }
         // Check the song from the row's menu: the song has no recording in hand, and offers its change all the same.
         rule.runOnUiThread { first.openEntry(first.scores.value.single(), review = true) }
         waitForTag("fs-check-change-tuning")
@@ -258,6 +227,6 @@ class RestoredSongTest {
         assertNull(first.source.value?.file)
         useDropD(first, listOf(Screen.HOME, Screen.OUTPUT))
         // Still one song: the same one, written down again.
-        rule.waitUntil(10_000) { first.savedScores.value.size == 1 && first.savedScores.value.single().jobId == first.result.value?.jobId }
+        waitUntil(10_000) { first.savedScores.value.size == 1 && first.savedScores.value.single().jobId == first.result.value?.jobId }
     }
 }

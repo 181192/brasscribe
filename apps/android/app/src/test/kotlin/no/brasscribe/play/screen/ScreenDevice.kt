@@ -1,6 +1,7 @@
 package no.brasscribe.play.screen
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.media.MediaFormat
 import android.net.Uri
 import android.os.Looper
@@ -10,14 +11,17 @@ import android.view.WindowManager
 import android.view.inspector.WindowInspector
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.test.ext.junit.rules.ActivityScenarioRule
+import androidx.test.platform.app.InstrumentationRegistry
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import no.brasscribe.play.MainActivity
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.shadows.ShadowMediaExtractor
+import org.robolectric.shadows.ShadowWindowManagerGlobal
 import org.robolectric.shadows.util.DataSource
 import java.io.File
+import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -76,25 +80,52 @@ object ScreenDevice {
     }
 
     /** A key pressed and let go on the keyboard. As on a phone, the first key ends touch mode, so focus can be seen and moved. */
-    fun key(rule: AppRule, code: Int) {
+    fun key(rule: AppRule, code: Int, meta: Int = 0) {
         rule.runOnUiThread {
             // The window in front takes the keys: a dialog's, when one is open.
-            val window = WindowInspector.getGlobalWindowViews().last { v ->
-                (v.layoutParams as? WindowManager.LayoutParams)?.let { it.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE == 0 } ?: true
-            }
-            if (!window.hasWindowFocus()) window.dispatchWindowFocusChanged(true)
-            touchMode(window, false)
+            val window = frontWindow()
             val now = android.os.SystemClock.uptimeMillis()
-            if (!window.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0))) moveFocus(window, code)
-            window.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0))
+            val down = KeyEvent(now, now, KeyEvent.ACTION_DOWN, code, 0, meta)
+            // As Android's window does (ViewRootImpl): a key ends touch mode, and a navigation key that gave the
+            // window its first focus by that is used up.
+            val navigation = down.hasNoModifiers() && code in NAVIGATION_KEYS
+            val entered = (navigation || down.isPrintingKey) && window.isInTouchMode && touchMode(window, false)
+            if (!(navigation && entered) && !window.dispatchKeyEvent(down)) moveFocus(window, code, meta)
+            window.dispatchKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, code, 0, meta))
         }
         rule.waitForIdle()
     }
 
+    /**
+     * The window in front: the last one opened that takes input. The phone's window manager gives it the window
+     * focus when it opens and takes it from the one behind; here that is done for it.
+     */
+    private fun frontWindow(): View {
+        val windows = WindowInspector.getGlobalWindowViews()
+        val top = windows.last { v ->
+            (v.layoutParams as? WindowManager.LayoutParams)?.let { it.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE == 0 } ?: true
+        }
+        if (front?.get() !== top) {
+            front = WeakReference(top)
+            for (w in windows) if (w !== top && w.hasWindowFocus()) windowFocus(w, false)
+            if (!top.hasWindowFocus()) windowFocus(top, true)
+        }
+        return top
+    }
+
+    private var front: WeakReference<View>? = null
+
+    private fun windowFocus(window: View, focused: Boolean) {
+        val root = View::class.java.getMethod("getViewRootImpl").invoke(window)
+        val change = root?.javaClass?.methods?.firstOrNull { it.name == "windowFocusChanged" && it.parameterTypes.contentEquals(arrayOf(Boolean::class.javaPrimitiveType)) }
+        if (change != null) change.invoke(root, focused) else window.dispatchWindowFocusChanged(focused)
+        shadowOf(Looper.getMainLooper()).idle()
+    }
+
     /** A Tab or an arrow nothing took moves the focus: what Android's window does with it (ViewRootImpl's focus navigation). */
-    private fun moveFocus(root: View, code: Int) {
+    private fun moveFocus(root: View, code: Int, meta: Int) {
         val direction = when (code) {
-            KeyEvent.KEYCODE_TAB -> View.FOCUS_FORWARD
+            KeyEvent.KEYCODE_TAB -> if (meta and KeyEvent.META_SHIFT_ON != 0) View.FOCUS_BACKWARD else View.FOCUS_FORWARD
             KeyEvent.KEYCODE_DPAD_LEFT -> View.FOCUS_LEFT
             KeyEvent.KEYCODE_DPAD_RIGHT -> View.FOCUS_RIGHT
             KeyEvent.KEYCODE_DPAD_UP -> View.FOCUS_UP
@@ -112,10 +143,19 @@ object ScreenDevice {
     }
 
     /** What the window does itself when a key or a finger arrives: Android's own call, which a test has no public way to. */
-    private fun touchMode(window: View, touch: Boolean) {
-        val root = View::class.java.getMethod("getViewRootImpl").invoke(window) ?: return
-        root.javaClass.getDeclaredMethod("ensureTouchMode", Boolean::class.javaPrimitiveType).apply { isAccessible = true }.invoke(root, touch)
+    private fun touchMode(window: View, touch: Boolean): Boolean {
+        // For the windows opened from now on (a dialog, a menu), as the phone's one touch mode is for all its windows.
+        ShadowWindowManagerGlobal::class.java.getDeclaredMethod("setInTouchMode", Boolean::class.javaPrimitiveType)
+            .apply { isAccessible = true }.invoke(null, touch)
+        val root = View::class.java.getMethod("getViewRootImpl").invoke(window) ?: return false
+        return root.javaClass.getDeclaredMethod("ensureTouchMode", Boolean::class.javaPrimitiveType).apply { isAccessible = true }.invoke(root, touch) as Boolean
     }
+
+    private val NAVIGATION_KEYS = setOf(
+        KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_CENTER,
+        KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.KEYCODE_MOVE_END,
+        KeyEvent.KEYCODE_TAB, KeyEvent.KEYCODE_SPACE, KeyEvent.KEYCODE_ENTER,
+    )
 
     /**
      * A recording to open: [wav] (16-bit mono PCM in a WAV file) written as [name]. Android's media classes
@@ -142,6 +182,7 @@ object ScreenDevice {
         val end = System.nanoTime() + ms * 1_000_000
         while (true) {
             rule.waitForIdle()
+            if (frontWindow().isLayoutRequested) rule.waitForIdle()
             if (condition()) return
             if (System.nanoTime() > end) throw AssertionError("not within $ms ms")
             pass(50)
@@ -158,6 +199,13 @@ object ScreenDevice {
     /** Lets [ms] of the app's time pass. */
     fun pass(ms: Long) {
         shadowOf(Looper.getMainLooper()).idleFor(ms, TimeUnit.MILLISECONDS)
+    }
+
+    /** The whole screen as it is drawn now, every window of it. */
+    fun screen(rule: AppRule): Bitmap {
+        rule.waitForIdle()
+        val shot = checkNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()) { "no screenshot" }
+        return shot.copy(Bitmap.Config.ARGB_8888, false)
     }
 
     /** The screen as it is now, as the screenshot [name] ("fretscribe/home-light"): recorded or compared when Roborazzi is asked to. */

@@ -3,6 +3,8 @@ package no.brasscribe.play.screen
 import android.app.UiAutomation
 import android.app.UiModeManager
 import android.content.Context
+import android.graphics.Bitmap
+import android.view.KeyEvent
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
@@ -70,9 +72,17 @@ object ScreenDevice {
     }
 
     /** A key pressed and let go on the keyboard. */
-    fun key(rule: AppRule, code: Int) {
-        instrumentation.sendKeyDownUpSync(code)
+    fun key(rule: AppRule, code: Int, meta: Int = 0) {
+        if (meta == 0) instrumentation.sendKeyDownUpSync(code)
+        else for (action in listOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) instrumentation.sendKeySync(KeyEvent(0, 0, action, code, 0, meta))
         rule.waitForIdle()
+    }
+
+    /** The whole screen as it is drawn now, every window of it. */
+    fun screen(rule: AppRule): Bitmap {
+        settle(rule)
+        val shot = checkNotNull(instrumentation.uiAutomation.takeScreenshot()) { "no screenshot" }
+        return shot.copy(Bitmap.Config.ARGB_8888, false)
     }
 
     /** A recording to open: [wav] written as [name]. The phone decodes it itself. */
