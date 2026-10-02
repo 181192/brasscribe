@@ -7,7 +7,9 @@ presets: one instrument each, one player-less performance, no room. That is weak
 all the evidence. The rules that read the notes were set on GuitarSet (guitar_tab_bench); the few that
 were chosen while looking at passages of this file say so where they are defined (engine tab.py). Each
 group has a `heldout` one, with other chords, scales and tempos and one more pattern (a melody high on the
-top string over a ringing chord): no rule was chosen on those, they are only reported.
+top string over a ringing chord). They are reported, not tuned on, with one exception: the
+threshold of the ukulele's overtone rule above the 12th fret was tried against them too, so they are
+not a clean test of that rule.
 
 Each passage is rendered twice, alone (`instrument`) and under a bass and drums (`song`), and the
 `song` mix is separated. Which of the separator's stems carries the instrument is measured, not
@@ -50,7 +52,7 @@ GROUPS = {
                  {"G": (3, 2, 0, 0), "C": (0, 3, 2, 0), "D": (2, 0, 0, 2), "Em": (0, 2, 2, 0)}, (62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79)),
 }
 # Held out: other chords (one shape up the neck each), other scales, other tempos and one more pattern, a
-# melody high on the top string over a ringing chord. No rule is chosen on these groups; they are only reported.
+# melody high on the top string over a ringing chord. These groups are reported, not tuned on (see the module docstring for the one exception).
 HELDOUT = "-heldout"
 _UKE = {"D": (0, 2, 2, 2), "Bm": (2, 2, 2, 4), "G7": (2, 1, 2, 0), "A": (0, 0, 1, 2), "C at 5": (7, 8, 7, 5)}
 GROUPS.update({
