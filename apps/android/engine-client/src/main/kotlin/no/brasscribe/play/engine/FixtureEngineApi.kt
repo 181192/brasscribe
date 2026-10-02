@@ -150,6 +150,13 @@ class FixtureEngineApi(
     override suspend fun pdf(jobId: String): ByteArray = file("${stem(jobId)}.pdf")
     override suspend fun renderedAudio(jobId: String): ByteArray = file("brass-band.mp3")
 
+    /** The fixture's [INPUT_FILE], when it has one: a computer that still holds the recording. */
+    override suspend fun jobInput(jobId: String, into: File, maxBytes: Long) {
+        val sound = file(INPUT_FILE)
+        if (sound.size > maxBytes) throw EngineException(413, "the fixture's recording is larger than $maxBytes bytes")
+        into.writeBytes(sound)
+    }
+
     override suspend fun tab(jobId: String): Tab {
         if (!isTab(jobId)) throw EngineException(404, "job $jobId has no tab")
         return no.brasscribe.play.model.BrasscribeJson.decodeFromString(Tab.serializer(), String(file("tab.json")))
@@ -200,6 +207,8 @@ class FixtureEngineApi(
     companion object {
         const val SERVER_ID = "fixture"
         const val SERVER_NAME = "Brasscribe (test fixture)"
+        /** A fixture file that is the recording the job was made from. */
+        const val INPUT_FILE = "input.wav"
         /** A fixture file that lists the profile ids the computer has, when it has not all of them. */
         const val PROFILES_FILE = "profiles.json"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")

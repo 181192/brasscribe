@@ -624,7 +624,7 @@ class TabViewTest {
         computer("bass-line-marks")
         showTheTab()
         val reached = LinkedHashSet<String>()
-        repeat(14) { key(KeyEvent.KEYCODE_TAB); reached += focusedWords() }
+        repeat(24) { key(KeyEvent.KEYCODE_TAB); reached += focusedWords() }
         listOf("Zoom out", "Zoom in", "Tuning: Standard, no capo", "2 notes marked ? · Check them", expected[0], expected[1], expected[2]).forEach { w ->
             assertTrue("\"$w\" in $reached", reached.any { it.contains(w) })
         }
@@ -633,7 +633,7 @@ class TabViewTest {
         assertTrue(order.toString(), order.indexOfFirst { it.contains(expected[0]) } < order.indexOfFirst { it.contains(expected[1]) } &&
             order.indexOfFirst { it.contains(expected[1]) } < order.indexOfFirst { it.contains(expected[2]) })
         // Enter on a mark says its note.
-        repeat(14) { if (!focusedWords().contains(expected[1])) key(KeyEvent.KEYCODE_TAB) }
+        repeat(24) { if (!focusedWords().contains(expected[1])) key(KeyEvent.KEYCODE_TAB) }
         assertTrue(focusedWords(), focusedWords().contains(expected[1]))
         shot("tab-keyboard-focus")
         key(KeyEvent.KEYCODE_ENTER)

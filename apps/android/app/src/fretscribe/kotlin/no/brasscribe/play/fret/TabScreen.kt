@@ -3,8 +3,8 @@ package no.brasscribe.play.fret
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.gestures.scrollBy
@@ -62,6 +62,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -169,6 +174,8 @@ internal fun tabPalette(c: BrasscribeColors) = TabPalette(
         c.bg.luminance() > 0.5f -> TabTokens.UNCERTAIN_TINT_LIGHT
         else -> TabTokens.UNCERTAIN_TINT_DARK
     },
+    cursor = c.cursor.toArgb(), cursorTint = c.cursorTint.toArgb().takeIf { !c.isHighContrast },
+    repeat = c.loopEdge.toArgb(), repeatBand = c.loopTint.toArgb().takeIf { !c.isHighContrast },
 )
 
 /**
@@ -176,6 +183,12 @@ internal fun tabPalette(c: BrasscribeColors) = TabPalette(
  * above it, and under that what there is to check. A "?" stands above every note Fretscribe is not sure
  * of and a boxed "!" above a note with no place; each can be tapped, or reached with the keyboard or a
  * screen reader, and says which note it is. The page gets more lines of fewer bars as it is made larger.
+ *
+ * It is also where the song is practised (design/fretscribe/flows.md §9): the recording is the sound, a
+ * cursor stands at the beat it is at and the page follows it, and the player under the tab ([PracticeBar])
+ * slows it down with its pitch kept and repeats the bars chosen. Space plays and pauses; with the screen or
+ * the tab in focus, the left arrow goes back to the start of the repeat (a bar back when nothing is repeated)
+ * and the right arrow a bar on.
  */
 @Composable
 fun TabScreen(vm: PlayViewModel) {
@@ -206,11 +219,42 @@ fun TabScreen(vm: PlayViewModel) {
 
     val title = source?.name?.substringBeforeLast('.').orEmpty()
     val s = sheet
+    // Practice. The recording follows the tab by the beats the computer tracked; the notes saved with a song have them too.
+    val practice: PracticeModel = viewModel()
+    val clock = remember(s, r.composition) { s?.let { TabClock.of(it.index, it.tab, r.composition) } }
+    val recording = source?.file
+    LaunchedEffect(practice, song, s, clock, recording) {
+        if (s != null) practice.open(song, r.jobId, clock, recording, vm.savedScores.value.mapNotNull { it.jobId }.toSet())
+    }
+    // Leaving the tab, or the app, stops the sound; the song stays where it was.
+    DisposableEffect(practice) { onDispose { practice.leave() } }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, practice) {
+        val stopped = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) practice.pause() }
+        lifecycle.addObserver(stopped)
+        onDispose { lifecycle.removeObserver(stopped) }
+    }
+    // The screen stays on while the recording plays: the hands are on the instrument.
+    val window = LocalView.current
+    DisposableEffect(window, practice.playing) {
+        window.keepScreenOn = practice.playing
+        onDispose { window.keepScreenOn = false }
+    }
+    // The bar (counted from 0) and the beat the recording is at, for the player's line.
+    var place by remember(song) { mutableStateOf<Pair<Int, Int>?>(null) }
+    val reducedMotion = remember { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
+    val canPlay = clock != null && practice.recording == RecordingState.HERE
+    var playerHeight by remember { mutableIntStateOf(0) }
     // One scroll moves the header (when it is not pinned), the marks and alphaTab's page.
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
     var canZoomIn by remember { mutableStateOf(true) }
     Scaffold(
+        // Space plays and pauses from anywhere on the screen, unless a button in focus takes it as its own press.
+        modifier = Modifier.onKeyEvent {
+            // A key held down sends its press again and again: only the first one counts.
+            if (it.type == KeyEventType.KeyDown && it.key == Key.Spacebar && canPlay) { if (it.nativeKeyEvent.repeatCount == 0) practice.toggle(); true } else false
+        },
         containerColor = c.bg,
         topBar = {
             PlayTopBar(title, vm::back, stringResource(R.string.back)) {
@@ -257,7 +301,21 @@ fun TabScreen(vm: PlayViewModel) {
         // The screen itself takes the keyboard's focus when it opens, so the keys work before anything on it has been reached.
         val keys = remember { FocusRequester() }
         LaunchedEffect(Unit) { runCatching { keys.requestFocus() } }
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).onKeyEvent { it.type == KeyEventType.KeyDown && page(it.key) }.focusRequester(keys).focusable()) {
+        // With the screen itself or the tab (one of its marks) in focus, the arrows move the song: left is back to the start of
+        // the repeat, or a bar back; right a bar on. Elsewhere they move the focus, as arrows do.
+        var screenFocused by remember { mutableStateOf(false) }
+        var tabFocused by remember { mutableStateOf(false) }
+        fun bar(key: Key): Boolean {
+            if (!canPlay || !(screenFocused || tabFocused)) return false
+            when (key) {
+                Key.DirectionLeft -> if (practice.repeat != null) practice.toStart() else practice.step(-1)
+                Key.DirectionRight -> practice.step(1)
+                else -> return false
+            }
+            return true
+        }
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).onKeyEvent { it.type == KeyEventType.KeyDown && (page(it.key) || bar(it.key)) }
+            .focusRequester(keys).onFocusChanged { screenFocused = it.isFocused }.focusable()) {
             if (s == null) {
                 Column(Modifier.padding(horizontal = BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                     Text(stringResource(R.string.fs_tab_reading), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
@@ -309,7 +367,8 @@ fun TabScreen(vm: PlayViewModel) {
             var headerHeight by remember { mutableIntStateOf(0) }
             // The header stays above the tab while it leaves the tab most of the screen. On a phone on its side, or
             // with large text, it would take the room of the tab itself: then it is the top of the page and scrolls away with it.
-            val pinned = !landscape && headerHeight * 3 <= area
+            // (The player under the tab has its own room.)
+            val pinned = !landscape && headerHeight * 3 <= area - playerHeight
             val inset = if (pinned) 0 else headerHeight
             val header: @Composable () -> Unit = {
                 Column(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }.padding(horizontal = BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
@@ -371,6 +430,52 @@ fun TabScreen(vm: PlayViewModel) {
                 }
             }
 
+            // The repeat's band and brackets, and the cursor at the beat the recording is at. The cursor moves from beat to
+            // beat, and only while the recording plays or the player moved it: a still song draws nothing.
+            LaunchedEffect(tab, practice.repeat) { tab.repeat = practice.repeat?.let { it.first..it.last } }
+            var followed by remember(song) { mutableStateOf<Int?>(null) }
+            var jumpsSeen by remember(song) { mutableIntStateOf(practice.jumps) }
+            LaunchedEffect(tab, e, clock, canPlay, practice.playing, practice.at, practice.jumps, inset) {
+                if (clock == null || e == null || !canPlay) {
+                    tab.cursorAt(null)
+                    place = null
+                    return@LaunchedEffect
+                }
+                fun show(moved: Boolean) {
+                    val now = clock.placeAt(practice.now())
+                    tab.cursorAt(now)
+                    val said = now.bar to clock.beatAt(now)
+                    if (place != said) place = said
+                    val line = e.lineOf(now.bar) ?: return
+                    val newLine = followed?.let { it !in line.firstBar..line.lastBar } == true
+                    followed = now.bar
+                    val top = inset + line.top
+                    val inView = top >= scroll.value && inset + line.bottom <= scroll.value + viewport
+                    // The page follows the recording from line to line, with the line being played at the top and the ones to
+                    // come under it; and it goes to where the player moved the song when that is out of view.
+                    if ((newLine && practice.playing) || (moved && !inView)) scope.launch {
+                        if (reducedMotion) scroll.scrollTo(top) else scroll.animateScrollTo(top)
+                    }
+                }
+                show(moved = practice.playing || practice.jumps != jumpsSeen)
+                jumpsSeen = practice.jumps
+                if (!practice.playing) return@LaunchedEffect
+                // While it plays, the recording is asked where it is about once a frame, on the main thread's own clock.
+                val main = android.os.Handler(android.os.Looper.getMainLooper())
+                val look = object : Runnable {
+                    override fun run() {
+                        show(moved = false)
+                        main.postDelayed(this, 16)
+                    }
+                }
+                main.postDelayed(look, 16)
+                try {
+                    kotlinx.coroutines.awaitCancellation()
+                } finally {
+                    main.removeCallbacks(look)
+                }
+            }
+
             val summary = listOfNotNull(
                 title.takeIf { it.isNotEmpty() },
                 stringResource(when (s.layout) {
@@ -386,7 +491,7 @@ fun TabScreen(vm: PlayViewModel) {
             ).joinToString(". ") + "."
             Column(Modifier.fillMaxSize()) {
                 if (pinned) header()
-                Box(Modifier.weight(1f).fillMaxWidth().clipToBounds().onSizeChanged { viewport = it.height }) {
+                Box(Modifier.weight(1f).fillMaxWidth().clipToBounds().onSizeChanged { viewport = it.height }.onFocusChanged { tabFocused = it.hasFocus }) {
                     // alphaTab's view fills the room and scrolls its own page (it draws the lines in view). While the header
                     // is still on screen above the page, the view is moved down under it.
                     key(tab) {
@@ -420,6 +525,12 @@ fun TabScreen(vm: PlayViewModel) {
                             }
                         }
                     }
+                }
+                // The player, under the tab and after it in the keyboard's and a screen reader's order: the recording is the sound.
+                Box(Modifier.fillMaxWidth().onSizeChanged { playerHeight = it.height }) {
+                    PracticeBar(practice, s.index.measures, place, follows = clock != null,
+                        canFetch = r.jobId != null && remember(practice.recording) { vm.container.engine() != null },
+                        onFetch = { vm.container.engine()?.let(practice::fetch) })
                 }
             }
         }

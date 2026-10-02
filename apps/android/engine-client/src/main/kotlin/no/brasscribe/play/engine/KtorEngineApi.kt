@@ -31,6 +31,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.jvm.javaio.copyTo
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.CancellationException
@@ -201,6 +202,21 @@ class KtorEngineApi(
     override suspend fun pdf(jobId: String): ByteArray = bytes("v1/jobs/$jobId/pdf")
     override suspend fun tab(jobId: String): Tab = http.get("v1/jobs/$jobId/tab") { auth() }.ok().body()
     override suspend fun renderedAudio(jobId: String): ByteArray = bytes("v1/jobs/$jobId/audio")
+    override suspend fun jobInput(jobId: String, into: java.io.File, maxBytes: Long) {
+        fun tooLarge(): Nothing = throw EngineException(413, "v1/jobs/$jobId/input: larger than $maxBytes bytes")
+        http.prepareGet("v1/jobs/$jobId/input") { auth() }.execute { response ->
+            response.ok()
+            // What the computer says it will send, and what it does send: neither may pass the limit.
+            response.headers[HttpHeaders.ContentLength]?.toLongOrNull()?.let { if (it > maxBytes) tooLarge() }
+            val body = response.bodyAsChannel()
+            val written = into.outputStream().use { out -> body.copyTo(out, maxBytes + 1) }
+            if (written > maxBytes) {
+                into.delete()
+                tooLarge()
+            }
+        }
+    }
+
     override suspend fun artifacts(jobId: String): List<Artifact> = http.get("v1/jobs/$jobId/artifacts") { auth() }.ok().body()
     override suspend fun artifact(jobId: String, name: String): ByteArray = bytes("v1/jobs/$jobId/artifacts/$name")
     override suspend fun manifest(jobId: String): String = http.get("v1/jobs/$jobId/manifest") { auth() }.ok().bodyAsText()

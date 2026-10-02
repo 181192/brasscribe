@@ -223,4 +223,32 @@
         <item>7th</item>
         <item>8th</item>
     </string-array>
+
+    <!-- Practice: the recording as the sound of the tab -->
+    <string name="fs_practice_to_start">Back to the start</string>
+    <string name="fs_practice_to_repeat_start">Back to the start of the repeat</string>
+    <string name="fs_practice_bar_beat">Bar %1$s, beat %2$d</string>
+    <string name="fs_practice_pickup_beat">Pickup bar, beat %1$d</string>
+    <string name="fs_practice_slower">Slower</string>
+    <string name="fs_practice_faster">Faster</string>
+    <string name="fs_practice_repeat">Repeat bars</string>
+    <string name="fs_practice_repeat_on">Repeating %1$s–%2$s</string>
+    <string name="fs_practice_repeat_on_one">Repeating %1$s</string>
+    <string name="fs_practice_repeat_tip">The recording plays these bars again and again.</string>
+    <string name="fs_practice_repeat_pickup">Bar 0 is the pickup bar.</string>
+    <string name="fs_practice_bar_earlier">%1$s: one bar earlier</string>
+    <string name="fs_practice_bar_later">%1$s: one bar later</string>
+    <string name="fs_practice_bar_value">%1$s %2$s</string>
+    <string name="fs_practice_repeat_set">Repeat bars %1$s to %2$s</string>
+    <string name="fs_practice_repeat_set_one">Repeat bar %1$s</string>
+    <string name="fs_practice_not_here">The recording is not on this phone.</string>
+    <string name="fs_practice_not_here_alone">The recording is not on this phone. Connect to your computer to get it. You can still read the tab.</string>
+    <string name="fs_practice_get">Get it from your computer</string>
+    <string name="fs_practice_getting">Getting the recording from your computer…</string>
+    <string name="fs_practice_gone">Your computer doesn\'t have the recording any more. You can still read the tab.</string>
+    <string name="fs_practice_no_answer">The recording didn\'t come. Is your computer on?</string>
+    <string name="fs_practice_unplayable">This phone can\'t play the recording. You can still read the tab.</string>
+    <string name="fs_practice_no_beats">Fretscribe can\'t follow the recording in this tab. You can still read it.</string>
+    <string name="fs_practice_no_room">There is no room on this phone for the recording. You can still read the tab.</string>
+    <string name="fs_practice_too_large">The recording is too large to keep on this phone. You can still read the tab.</string>
 </resources>

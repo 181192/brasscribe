@@ -32,8 +32,12 @@ is in `design/fretscribe/`, the research and the plan in `docs/fretscribe/`.
 **Tab rendering.** alphaTab from `tab.musicxml`; the `/tab` JSON is the data model for Check the song,
 Fix a note and the screen reader. "?" and boxed "!" are drawn by an overlay of Fretscribe's own
 (`fret/TabView.kt`), placed in alphaTab's render wrapper as `score/NotationOverlay.kt` is. The fret numbers
-are in Fretscribe Tab, registered with alphaSkia (`AlphaSkiaTypeface.register`). The recording plays through alphaTab's external-media mode driving Media3
-(keeps pitch when slowed; a new dependency), synced from `Tab.beat_times`.
+are in Fretscribe Tab, registered with alphaSkia (`AlphaSkiaTypeface.register`). The recording plays through Media3's ExoPlayer (keeps pitch when slowed; a
+dependency of the Fretscribe app only), and the app follows it in the tab itself: `Tab.beat_times` says
+where the tab is at a second of the recording, and the cursor and the repeat are drawn over alphaTab's
+layout as the marks are. alphaTab's own player (its external-media mode) stays off: a tab view is made
+anew for every size and theme and the screen owns its scroll, and a player inside the view would start
+over with each of them.
 
 **What the app needs that isn't there yet.**
 
@@ -48,7 +52,8 @@ are in Fretscribe Tab, registered with alphaSkia (`AlphaSkiaTypeface.register`).
 | Guitar instruments in the engine | engine, when guitar comes |
 | Text tab and playing instructions in Share or print | device: the core writes both (`fretted_tab_text_json`, `fretted_playing_instructions_json`), and a job on the computer has them as `tab.txt`, `tab-instructions.en.txt` and `tab-instructions.nb.txt` |
 | The core command line in Bandroom (the Docker image has it) | packaging (blocks the paired-computer flow with Bandroom) |
-| The recording on the phone for songs opened from the job list | `GET /v1/jobs/{id}/input` |
+| The recording of a job the computer made from a file outside its own audio folders (`brasscribe run <file>`): `GET /v1/jobs/{id}/input` gives a paired phone only what is in its uploads, captures and datasets | engine |
+| Fretscribe's own About text and credits (it shows Brasscribe's) | app |
 
 ## Roadmap
 
@@ -63,7 +68,7 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 | d | Done: open a recording, send a `tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
 | e | Done in a first form: Check the song from `/tab` (tuning, capo, octave, reference pitch, key and tempo, notes to check, notes left out); a change is a new job. Still to come: Other… tunings, and the capo that would fit (the computer does not suggest one) | none |
 | f1 | Done: the tab view to read: alphaTab, "?" and "!" from the data, fret numbers in Fretscribe Tab. Still to come: the layers menu, Show ? for, the tuning and capo sheet | low |
-| f2 | Practice: the recording as the sound, 5% speed steps, repeat by bar, 64 dp transport | low |
+| f2 | Done in a first form: Practice. The recording as the sound with a cursor that follows it, 5% speed steps with the pitch kept, repeat by bar, a 64 dp transport, and the recording fetched from the computer for a song opened without it. Still to come: count-in and metronome, Sound (Tab, Both), the speed trainer and 1% steps, saved repeats, hiding the controls while it plays, Lock the tab, and the line that scrolls past a fixed cursor | low |
 | g0 | Core: FFI export (the note index is done) | medium (bindings) |
 | g | Fix a note: fretboard strip, pitch stepper, pins, provenance, undo | low |
 | h | Share or print | low |

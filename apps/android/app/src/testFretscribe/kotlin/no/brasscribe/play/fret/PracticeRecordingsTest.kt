@@ -1,0 +1,120 @@
+package no.brasscribe.play.fret
+
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.File
+import java.nio.file.Files
+
+/** The recordings kept on the phone for practising ([PracticeRecordings]): one to a song, by its job on the computer. */
+class PracticeRecordingsTest {
+    private val dir: File = Files.createTempDirectory("recordings").toFile()
+    private val store = PracticeRecordings(File(dir, "kept"))
+
+    @After
+    fun tearDown() {
+        dir.deleteRecursively()
+    }
+
+    private fun take(bytes: Int): File = File(dir, "take.wav").apply { writeBytes(ByteArray(bytes) { it.toByte() }) }
+
+    @Test
+    fun aRecordingInHandIsCopiedAndFoundAgain() {
+        assertNull(store.find("job-1"))
+        val take = take(1000)
+        val kept = store.keep("job-1", take)
+        assertTrue("the copy is the store's own file", kept != take && kept.isFile)
+        assertEquals(1000L, kept.length())
+        // The take can go: the song still has its recording.
+        take.delete()
+        assertEquals(kept, store.find("job-1"))
+        // Kept once: the same recording again is the same file.
+        assertEquals(kept, store.keep("job-1", take(1000)))
+        assertNull(store.find("job-2"))
+    }
+
+    @Test
+    fun aRecordingBeingFetchedIsNotThereUntilItIsWhole() {
+        val part = store.arriving("job-1")!!
+        part.writeBytes(ByteArray(10))
+        assertNull("half a recording is no recording", store.find("job-1"))
+        val whole = store.arrived("job-1")
+        assertNotNull(whole)
+        assertEquals(whole, store.find("job-1"))
+        // One that came empty is dropped.
+        store.arriving("job-2")!!.writeBytes(ByteArray(0))
+        assertNull(store.arrived("job-2"))
+        assertNull(store.find("job-2"))
+    }
+
+    @Test
+    fun aSongThatIsGoneTakesItsRecordingWithIt() {
+        store.keep("job-1", take(10))
+        store.keep("job-2", take(20))
+        store.arriving("job-3")!!.writeBytes(ByteArray(5))
+        store.prune(setOf("job-2"))
+        assertNull(store.find("job-1"))
+        assertNotNull(store.find("job-2"))
+        assertEquals(listOf(store.find("job-2")!!.name), File(dir, "kept").list()!!.toList())
+    }
+
+    @Test
+    fun aJobsIdNeverLeavesTheFolder() {
+        val kept = store.keep("../../outside", take(10))
+        assertEquals(File(dir, "kept"), kept.parentFile)
+        assertEquals(File(dir, "kept"), store.keep("/..", take(10)).parentFile)
+        // No id keeps nothing.
+        val take = take(10)
+        assertEquals(take, store.keep("", take))
+        assertNull(store.find(""))
+    }
+
+    @Test
+    fun idsThatReadAlikeAreStillTwoSongs() {
+        val a = store.keep("job/1", take(10))
+        val b = store.keep("job1", take(20))
+        assertTrue("two files ($a, $b)", a != b)
+        assertEquals(10L, store.find("job/1")!!.length())
+        assertEquals(20L, store.find("job1")!!.length())
+        // Also past the length a file name keeps of the id.
+        val long = "x".repeat(200)
+        val c = store.keep(long + "a", take(30))
+        val d = store.keep(long + "b", take(40))
+        assertTrue(c != d && c.name.length < 100)
+        assertEquals(30L, store.find(long + "a")!!.length())
+    }
+
+    @Test
+    fun whatATryLeftBehindIsCleared() {
+        // A fetch that stopped half way: its part is gone before the next try, when it is given up, and when the songs are gone through.
+        store.arriving("job-1")!!.writeBytes(ByteArray(7))
+        val again = store.arriving("job-1")!!
+        assertEquals(false, again.exists())
+        again.writeBytes(ByteArray(7))
+        store.dropped("job-1")
+        assertEquals(false, again.exists())
+        store.arriving("job-1")!!.writeBytes(ByteArray(7))
+        store.keep("job-2", take(5))
+        store.prune(setOf("job-1", "job-2"))
+        assertEquals(1, File(dir, "kept").list()!!.size)
+        assertNotNull(store.find("job-2"))
+        assertTrue(store.room > 0)
+    }
+
+    @Test
+    fun aRecordingThatDidNotComeSaysWhy() {
+        val plenty = 1L shl 30
+        assertEquals(RecordingState.GONE, PracticeRecordings.whyNot(no.brasscribe.play.engine.EngineException(404, "gone"), plenty))
+        assertEquals(RecordingState.TOO_LARGE, PracticeRecordings.whyNot(no.brasscribe.play.engine.EngineException(413, "too large"), plenty))
+        assertEquals(RecordingState.NO_ANSWER, PracticeRecordings.whyNot(no.brasscribe.play.engine.EngineException(500, "broken"), plenty))
+        assertEquals(RecordingState.NO_ANSWER, PracticeRecordings.whyNot(java.net.ConnectException("refused"), plenty))
+        assertEquals(RecordingState.NO_ANSWER, PracticeRecordings.whyNot(java.io.IOException("the recording came empty"), plenty))
+        // The phone is full, or the file could not be made: it is not the computer that is away.
+        assertEquals(RecordingState.NO_ROOM, PracticeRecordings.whyNot(java.io.IOException("write failed: ENOSPC"), 1000))
+        assertEquals(RecordingState.NO_ROOM, PracticeRecordings.whyNot(java.io.FileNotFoundException("no such directory"), plenty))
+        assertEquals(RecordingState.NO_ROOM, PracticeRecordings.whyNot(IllegalStateException("no place to keep the recording"), plenty))
+    }
+}
