@@ -576,8 +576,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                dependencies=[Depends(auth)],
                responses={404: {"description": "unknown run"}, 409: {"description": "run is queued or running"}})
     def update_run(job_id: str, body: m.RunUpdate) -> m.Job:
-        """Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML and
-        the talking score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with."""
+        """Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML, the
+        talking score, and a tab's text and playing instructions. Rendered files (PDF, braille, MIDI, audio) keep
+        the title they were made with."""
         title = body.title.strip()
         if not title:
             raise HTTPException(422, "title must not be blank")
@@ -650,7 +651,10 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/jobs/{job_id}/tab", operation_id="getTab", tags=["results"], dependencies=[Depends(auth)],
              response_model=m.Tab,
-             responses={200: {"description": "tab.json as written by the tab profile (and bass-tab)"},
+             responses={200: {"description": "tab.json as written by the tab profile (and bass-tab). The tab as plain "
+                                             "text (tab.txt) and as playing instructions in words "
+                                             "(tab-instructions.en.txt, tab-instructions.nb.txt) are among the "
+                                             "job's artifacts"},
                         404: {"description": "the job has no tab: another profile, or not finished"}})
     def get_tab(job_id: str):
         """The tab of a tab job: a string and fret for every note, and what the song check asks about."""

@@ -10,8 +10,9 @@
                                  written durations (the shared quantization and durations); the octave
                                  check, for the line and for single notes; each note's confidence; meter,
                                  key, tempo, and the recording's offset from A = 440
-    arrange                      a string and a fret for every note, and the tab as MusicXML, both from
-                                 the Rust crate target-fretted (core/target-fretted)
+    arrange                      a string and a fret for every note, and the tab as MusicXML, as plain text
+                                 and as playing instructions in words, all from the Rust crate target-fretted
+                                 (core/target-fretted)
     export                       PDF and MIDI of that MusicXML through MuseScore, as the band profiles'
 
 The instrument (instrument, tuning, capo, style) is a parameter of the last stage only, so choosing
@@ -23,7 +24,9 @@ fingering, `brasscribe-core tab` for the MusicXML), which passes the crate's JSO
 through unchanged.
 
 The result is tab.json (schemas.Tab), a composition.json with the one bass voice, tab.musicxml
-(export_tab), and tab.pdf and tab.mid when MuseScore is installed.
+(export_tab), the same tab as text for a monospace font (tab.txt) and in words for a screen reader or a
+braille display (tab-instructions.en.txt and .nb.txt; export_text), and tab.pdf and tab.mid when MuseScore
+is installed.
 """
 
 from __future__ import annotations
@@ -195,9 +198,32 @@ def tablature(request: dict, cancel: threading.Event | None = None, log: Callabl
     return core_call("tab", request, cancel, log)
 
 
+def tab_text(request: dict, fmt: str, lang: str | None = None, cancel: threading.Event | None = None,
+             log: Callable[[str], None] | None = None) -> str:
+    """target-fretted's tablature request answered as plain text: `fmt` "text" is the tab for a monospace
+    font, "instructions" the tab in words, in `lang` (TEXT_LANGS)."""
+    text = core_call("tab", request, cancel, log, ("--format", fmt, *(("--lang", lang) if lang else ())), parse=False)
+    if _answered_in_json(text):
+        raise RuntimeError("brasscribe-core is too old to write the tab as text: build it again with "
+                           "`cargo build --release -p brasscribe-cli` in core/")
+    return text
+
+
+def _answered_in_json(text: str) -> bool:
+    """Whether `text` is the tab command's JSON answer: a core from before the text formats ignores the format
+    asked for and answers with {"musicxml": ...}. A title may start with a brace; only that answer is refused."""
+    if not text.startswith('{"musicxml"'):
+        return False
+    try:
+        return isinstance(json.loads(text), dict)
+    except ValueError:
+        return False
+
+
 def core_call(command: str, request: dict, cancel: threading.Event | None = None,
-              log: Callable[[str], None] | None = None) -> dict:
-    """One call of the core's command line: the JSON `request` in, its JSON answer out.
+              log: Callable[[str], None] | None = None, args: tuple[str, ...] = (), parse: bool = True):
+    """One call of the core's command line: the JSON `request` in, its JSON answer out (or, with `parse` off,
+    the text it wrote). `args` follow `--request` and `--out`.
 
     Setting `cancel` stops the core, and so does FRET_TIMEOUT_S. No error names a path on this computer."""
     cli = core_cli()
@@ -211,7 +237,7 @@ def core_call(command: str, request: dict, cancel: threading.Event | None = None
         req, out = Path(tmp) / "request.json", Path(tmp) / "answer.json"
         req.write_text(json.dumps(request))
         try:
-            proc = subprocess.Popen([str(cli), command, "--request", str(req), "--out", str(out)], stdin=subprocess.DEVNULL,
+            proc = subprocess.Popen([str(cli), command, "--request", str(req), "--out", str(out), *args], stdin=subprocess.DEVNULL,
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=child_env())
         except OSError as e:  # not a program this computer can run; the message would name its path
             raise RuntimeError(f"brasscribe-core could not be started ({type(e).__name__}): build it with "
@@ -233,7 +259,8 @@ def core_call(command: str, request: dict, cancel: threading.Event | None = None
                 raise
         if proc.returncode != 0:
             raise RuntimeError(f"brasscribe-core {command} failed: {stderr.strip()[-2000:].replace(tmp, '.')}")
-        return json.loads(out.read_text())
+        text = out.read_text(encoding="utf-8")
+        return json.loads(text) if parse else text
 
 
 # ---------------------------------------------------------------- notes
@@ -530,13 +557,10 @@ def page_title(title: str) -> str:
     return (cut[:word] if word >= PAGE_TITLE_MAX // 2 else cut).rstrip() + "…"
 
 
-def export_tab(tab: dict, title: str, layout: str, out: Path, tablature: Callable[[dict], dict] = tablature) -> int:
-    """Write `tab` as MusicXML to `out`/tab.musicxml, laid out as `layout` (LAYOUTS), in one call of the core.
-
-    The notes are written where tab.json has them, not fingered again. Returns how many notes the
-    writer had to move to a start or length it can spell."""
+def tab_request(tab: dict, title: str, layout: str) -> dict:
+    """target-fretted's tablature request for `tab`: the notes where tab.json has them, not fingered again."""
     places = ("pitch", "string", "fret", "alternatives", "out_of_range", "pinned")
-    answer = tablature({
+    return {
         "title": page_title(title),
         "instrument": {"preset": tab["preset"], "capo": tab["instrument"]["capo"]},
         "notes": [{"pitch": n["pitch"], "start": n["start"], "dur": n["dur"], "confidence": n["confidence"]} for n in tab["notes"]],
@@ -544,9 +568,43 @@ def export_tab(tab: dict, title: str, layout: str, out: Path, tablature: Callabl
         "tempo_bpm": round(tab["tempo_bpm"]),  # the page says a whole number of beats per minute
         "meter": tab["meter"],
         "key": {"fifths": tab["key"]["fifths"], "mode": tab["key"]["mode"]},
-        "tab": {"layout": layout}})
+        "tab": {"layout": layout}}
+
+
+def export_tab(tab: dict, title: str, layout: str, out: Path, tablature: Callable[[dict], dict] = tablature) -> int:
+    """Write `tab` as MusicXML to `out`/tab.musicxml, laid out as `layout` (LAYOUTS), in one call of the core.
+
+    The notes are written where tab.json has them, not fingered again. Returns how many notes the
+    writer had to move to a start or length it can spell."""
+    answer = tablature(tab_request(tab, title, layout))
     (out / "tab.musicxml").write_text(answer["musicxml"])
     return int(answer["adjusted_notes"])
+
+
+TEXT_TAB = "tab.txt"
+TEXT_LANGS = ("en", "nb")  # the languages the playing instructions are written in
+TEXT_OUTPUTS = (TEXT_TAB, *(f"tab-instructions.{lang}.txt" for lang in TEXT_LANGS))
+
+
+def export_text(tab: dict, title: str, out: Path, text: Callable[[dict, str, str | None], str] = tab_text) -> None:
+    """Write `tab` as plain text to `out` (TEXT_OUTPUTS): tab.txt, the tab for a monospace font, and the playing
+    instructions in each of TEXT_LANGS, the tab in words for a screen reader or a braille display.
+
+    The same request as the MusicXML's, so the same notes in the same places; the layout does not show in text."""
+    request = tab_request(tab, title, DEFAULTS["layout"])
+    (out / TEXT_TAB).write_text(text(request, "text", None), encoding="utf-8")
+    for lang in TEXT_LANGS:
+        (out / f"tab-instructions.{lang}.txt").write_text(text(request, "instructions", lang), encoding="utf-8")
+
+
+def retitled_text(text: str, old: str, new: str, gap: str = "") -> str:
+    """A text export with the title `old` in its first line, retitled `new`; `gap` is what follows the title's
+    line (the instructions have an empty line there). A text without a title gets one, and loses it for no title."""
+    old, new = page_title(old), page_title(new)
+    head = f"{old}\n{gap}" if old else ""
+    if not text.startswith(head):  # not as it was written: left alone
+        return text
+    return (f"{new}\n{gap}" if new else "") + text[len(head):]
 
 
 def arrange_stage(ctx: StageContext) -> None:
@@ -557,6 +615,8 @@ def arrange_stage(ctx: StageContext) -> None:
         tab["layout"] = layout
         tab["adjusted_notes"] = export_tab(tab, ctx.params["title"], layout, ctx.out,
                                            lambda request: tablature(request, ctx.executor.cancel, ctx.log))
+        export_text(tab, ctx.params["title"], ctx.out,
+                    lambda request, fmt, lang: tab_text(request, fmt, lang, ctx.executor.cancel, ctx.log))
     except RuntimeError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
     unplayable = sum(n["out_of_range"] for n in tab["notes"])
@@ -645,9 +705,10 @@ def build(title: str, params: dict) -> Pipeline:
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "bass-notes.json")}, arrange_stage,
                     params={"title": title, "fingering": fingering, "layout": opts["layout"]},
                     # The core binary is part of the cache key: a new target-fretted fingers again.
-                    code=(THIS, core_cli_path()), outputs=("composition.json", "tab.json", "tab.musicxml")))
+                    code=(THIS, core_cli_path()), outputs=("composition.json", "tab.json", "tab.musicxml", *TEXT_OUTPUTS)))
     st.append(Stage("export", "export", {"score": Input("arrange")}, export_stage,
                     params={"musescore": musescore_fingerprint()}, code=(THIS,), outputs=("export.json",)))
     outputs = {"composition.json": ("arrange", "composition.json"), "tab.json": ("arrange", "tab.json"),
-               "tab.musicxml": ("arrange", "tab.musicxml"), "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
+               "tab.musicxml": ("arrange", "tab.musicxml"), **{name: ("arrange", name) for name in TEXT_OUTPUTS},
+               "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
     return Pipeline(PROFILE, "tab", st, outputs, opts)

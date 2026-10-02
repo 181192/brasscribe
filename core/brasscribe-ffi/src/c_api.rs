@@ -457,6 +457,30 @@ pub unsafe extern "C" fn bc_fretted_tab_json(request: *const c_char, out: *mut *
     run(out, err, || crate::fretted::fretted_tab_json(req).map_err(map_err))
 }
 
+/// Tablature as plain text for a monospace font. `request` is the tab request of
+/// [`bc_fretted_tab_json`], with `"text": {"width": 72}` for the longest line in characters;
+/// writes the text itself, not JSON. See `fretted_tab_text_json`.
+///
+/// # Safety
+/// As [`bc_fretted_fingering_json`].
+#[no_mangle]
+pub unsafe extern "C" fn bc_fretted_tab_text_json(request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || crate::fretted::fretted_tab_text_json(req).map_err(map_err))
+}
+
+/// Playing instructions: the tab in words, for a screen reader or a braille display. `request` is
+/// the tab request of [`bc_fretted_tab_json`], with `"text": {"lang": "en"}` or `"nb"`; writes the
+/// text itself, not JSON. See `fretted_playing_instructions_json`.
+///
+/// # Safety
+/// As [`bc_fretted_fingering_json`].
+#[no_mangle]
+pub unsafe extern "C" fn bc_fretted_playing_instructions_json(request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+    let Some(req) = from_c(request) else { return BC_NULL };
+    run(out, err, || crate::fretted::fretted_playing_instructions_json(req).map_err(map_err))
+}
+
 /// Opaque talking-score document.
 pub struct BcTalkingScore(crate::talking::TalkingScore);
 

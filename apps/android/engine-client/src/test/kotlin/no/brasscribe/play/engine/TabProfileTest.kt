@@ -120,7 +120,7 @@ class TabProfileTest {
             assertEquals(JobStatus.SUCCEEDED, job.status)
             assertEquals(FixtureEngineApi.stagesOf(Profile.TAB, wholeRecording = true, instrument = recorded.getValue(take).instrument), job.stages.map { it.name })
             assertEquals(job.stages.map { it.kind }, job.stages.map { FixtureEngineApi.kindOf(it.name) })
-            assertEquals(listOf("composition.json", "tab.json", "tab.musicxml"), job.outputs)
+            assertEquals(listOf("composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml", "tab.txt"), job.outputs)
             val xml = text(take, "tab.musicxml")
             assertTrue(xml.contains("<work-title>${job.title}</work-title>") && xml.contains("<sign>TAB</sign>"))
             assertTrue(Regex("<fret>").findAll(xml).count() >= tab(take).notes.count { it.position != null })
@@ -131,7 +131,10 @@ class TabProfileTest {
     fun nothingInTheFixturesNamesTheComputerTheyWereRecordedOn() {
         for (take in takes) {
             val files = File(fixtures, take).listFiles()!!.filter { it.isFile }
-            assertEquals(setOf("request.json", "job.json", "tab.json", "tab.musicxml", "composition.json"), files.map { it.name }.toSet())
+            assertEquals(
+                setOf("request.json", "job.json", "tab.json", "tab.musicxml", "composition.json", "tab.txt", "tab-instructions.en.txt", "tab-instructions.nb.txt"),
+                files.map { it.name }.toSet(),
+            )
             for (f in files) {
                 val machine = Regex("/Users/|/home/|/tmp/|/var/|[A-Za-z]:\\\\\\\\|\\.local\\b|\\b\\d{1,3}(\\.\\d{1,3}){3}\\b").find(f.readText())
                 assertNull("$take/${f.name}: ${machine?.value}", machine)

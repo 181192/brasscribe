@@ -17,7 +17,9 @@ use crate::instrument::{preset, preset_family, Instrument};
 use crate::solve::{assign_with_techniques, Fingering, Options};
 use crate::suggest::{suggest_tunings, TuningFit};
 use crate::tab::{write_tab_musicxml, TabDocument, TabOptions, TabScore};
+use crate::instructions::write_playing_instructions;
 use crate::technique::Technique;
+use crate::text::{write_tab_text, TextOptions};
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
@@ -173,10 +175,11 @@ fn major() -> String {
 /// {"title": "Study", "instrument": {"preset": "guitar-standard", "capo": 2},
 ///  "notes": [{"pitch": 66, "start": 0, "dur": 24, "confidence": 0.3}],
 ///  "tempo_bpm": 96, "meter": {"beats": 3, "beat_unit": 4}, "key": {"fifths": 2},
-///  "tab": {"layout": "tab", "doubt_below": 0.4}}
+///  "tab": {"layout": "tab", "doubt_below": 0.4}, "text": {"width": 72, "lang": "nb"}}
 /// ```
 /// Without `fingering` the notes are solved with `options` first; with it (a fingering from an
-/// earlier response, perhaps edited) they are written where it says.
+/// earlier response, perhaps edited) they are written where it says. `text` is read by the text
+/// exports only: the text tab's line width and the language of the playing instructions.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TabRequest {
@@ -197,11 +200,12 @@ pub struct TabRequest {
     pub key: Option<KeyChoice>,
     #[serde(default)]
     pub tab: TabOptions,
+    #[serde(default)]
+    pub text: TextOptions,
 }
 
-/// The tablature of a [`TabRequest`]: the MusicXML document and how many notes were moved to a
-/// start or length that can be written.
-pub fn tab(req: &TabRequest) -> Result<TabDocument, String> {
+/// The score a [`TabRequest`] asks for: its notes where its fingering has them, or solved first.
+fn score(req: &TabRequest) -> Result<TabScore, String> {
     let instrument = req.instrument.resolve()?;
     let notes: Vec<Note> = req.notes.iter().map(|n| n.note.clone()).collect();
     let techniques: Vec<Vec<Technique>> = req.notes.iter().map(|n| n.techniques.clone()).collect();
@@ -219,10 +223,27 @@ pub fn tab(req: &TabRequest) -> Result<TabDocument, String> {
     if let Some(k) = &req.key {
         score = score.with_key(k.fifths, &k.mode);
     }
-    write_tab_musicxml(&score, &req.tab)
+    Ok(score)
 }
 
-fn tab_request(request: &str) -> Result<TabRequest, String> {
+/// The tablature of a [`TabRequest`]: the MusicXML document and how many notes were moved to a
+/// start or length that can be written.
+pub fn tab(req: &TabRequest) -> Result<TabDocument, String> {
+    write_tab_musicxml(&score(req)?, &req.tab)
+}
+
+/// The tablature of a [`TabRequest`] as plain text, its lines as wide as `text.width` allows.
+pub fn tab_text(req: &TabRequest) -> Result<String, String> {
+    write_tab_text(&score(req)?, &req.tab, &req.text)
+}
+
+/// The playing instructions of a [`TabRequest`], in the language of `text.lang`.
+pub fn playing_instructions(req: &TabRequest) -> Result<String, String> {
+    write_playing_instructions(&score(req)?, &req.tab, &req.text)
+}
+
+/// A JSON [`TabRequest`], read; Err names what is not one.
+pub fn tab_request(request: &str) -> Result<TabRequest, String> {
     serde_json::from_str(request).map_err(|e| format!("not a tablature request: {e}"))
 }
 
@@ -235,4 +256,14 @@ pub fn tab_json(request: &str) -> Result<String, String> {
 /// The MusicXML tablature of a JSON [`TabRequest`], without the count of adjusted notes.
 pub fn tab_musicxml_json(request: &str) -> Result<String, String> {
     Ok(tab(&tab_request(request)?)?.musicxml)
+}
+
+/// The text tab of a JSON [`TabRequest`]: plain text, not JSON.
+pub fn tab_text_json(request: &str) -> Result<String, String> {
+    tab_text(&tab_request(request)?)
+}
+
+/// The playing instructions of a JSON [`TabRequest`]: plain text, not JSON.
+pub fn playing_instructions_json(request: &str) -> Result<String, String> {
+    playing_instructions(&tab_request(request)?)
 }

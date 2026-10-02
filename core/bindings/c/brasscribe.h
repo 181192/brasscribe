@@ -172,6 +172,22 @@ int32_t bc_fretted_fingering_json(const char *request,
 // As [`bc_fretted_fingering_json`].
 int32_t bc_fretted_tab_json(const char *request, char **out, char **err);
 
+// Tablature as plain text for a monospace font. `request` is the tab request of
+// [`bc_fretted_tab_json`], with `"text": {"width": 72}` for the longest line in characters;
+// writes the text itself, not JSON. See `fretted_tab_text_json`.
+//
+// # Safety
+// As [`bc_fretted_fingering_json`].
+int32_t bc_fretted_tab_text_json(const char *request, char **out, char **err);
+
+// Playing instructions: the tab in words, for a screen reader or a braille display. `request` is
+// the tab request of [`bc_fretted_tab_json`], with `"text": {"lang": "en"}` or `"nb"`; writes the
+// text itself, not JSON. See `fretted_playing_instructions_json`.
+//
+// # Safety
+// As [`bc_fretted_fingering_json`].
+int32_t bc_fretted_playing_instructions_json(const char *request, char **out, char **err);
+
 // Build a talking score from MusicXML and (optionally, may be null) the
 // Composition JSON. Writes a handle to `*out`; release with
 // [`bc_talking_score_free`].

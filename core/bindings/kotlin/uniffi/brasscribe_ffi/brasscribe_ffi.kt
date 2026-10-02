@@ -713,7 +713,11 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json(
     ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_fretted_playing_instructions_json(
+    ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_fretted_tab_json(
+    ): Int
+    external fun uniffi_brasscribe_ffi_checksum_func_fretted_tab_text_json(
     ): Int
     external fun uniffi_brasscribe_ffi_checksum_func_humanize_part(
     ): Int
@@ -845,7 +849,11 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_fretted_playing_instructions_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_fretted_tab_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_brasscribe_ffi_fn_func_fretted_tab_text_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_brasscribe_ffi_fn_func_humanize_part(`notes`: RustBuffer.ByValue,`part`: RustBuffer.ByValue,`player`: Long,`seed`: RustBuffer.ByValue,`performance`: RustBuffer.ByValue,`performedTiming`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1031,7 +1039,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json() and 0xFFFF) != 8683) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_playing_instructions_json() and 0xFFFF) != 40396) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_tab_json() and 0xFFFF) != 63499) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_tab_text_json() and 0xFFFF) != 23317) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if ((lib.uniffi_brasscribe_ffi_checksum_func_humanize_part() and 0xFFFF) != 14286) {
@@ -4995,6 +5009,23 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     
 
         /**
+         * Playing instructions: the tab in words, bar by bar and beat by beat, for a screen reader or a
+         * braille display. `request` is the tab request of [`fretted_tab_json`]; its `text.lang` is "en"
+         * (when left out) or "nb". Answers with the text itself, not JSON.
+         */
+    @Throws(CoreException::class) fun `frettedPlayingInstructionsJson`(`request`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_playing_instructions_json(
+    
+        
+        FfiConverterString.lower(`request`),_status)
+}
+    )
+    }
+    
+
+        /**
          * Tablature as MusicXML. `request` is `target-fretted`'s tab request: the fingering request plus
          * `title`, `tempo_bpm`, `meter`, `key`, `tab` (layout, capo encoding, clef, doubt threshold) and,
          * to write a fingering as it is instead of solving, `fingering`. Answers with
@@ -5004,6 +5035,24 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
     UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_tab_json(
+    
+        
+        FfiConverterString.lower(`request`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Tablature as plain text for a monospace font: one line per string, the fret numbers on it.
+         * `request` is the tab request of [`fretted_tab_json`]; its `text.width` is the longest line in
+         * characters (24 to 400, 72 when left out), and `tab.doubt_below` decides which notes get a "?".
+         * Answers with the text itself, not JSON.
+         */
+    @Throws(CoreException::class) fun `frettedTabTextJson`(`request`: kotlin.String): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCallWithError(CoreException) { _status ->
+    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_tab_text_json(
     
         
         FfiConverterString.lower(`request`),_status)

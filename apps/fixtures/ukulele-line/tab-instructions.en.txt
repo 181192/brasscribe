@@ -1,0 +1,52 @@
+Ukulele line
+
+Ukulele (high G), 4 strings.
+String 1 is the string nearest the floor as you play. String 4 is nearest the ceiling.
+Tuning: GCEA high G. Open strings from string 4 to string 1: G, C, E, A.
+No capo.
+Tempo: 100 quarter notes per minute.
+Time signature: 4 4.
+A note marked "to check" was not heard clearly.
+
+Bar 1
+  Whole-bar rest.
+
+Bar 2
+  Beat 1. Chord, 5 notes: string 4, open; string 3, open; string 2, open; string 1, fret 3; C 7, no string to play it on, to check. Half note.
+  Beat 3. Chord, 4 notes: string 4, open; string 3, open; string 2, open; string 1, fret 3. Half note.
+
+Bar 3
+  Beat 1. Chord, 4 notes: string 4, fret 2; string 3, open; string 2, fret 1; string 1, open. Half note.
+  Beat 3. Chord, 4 notes: string 4, fret 2; string 3, open; string 2, fret 1; string 1, open. Half note.
+
+Bar 4
+  Beat 1. Chord, 2 notes: string 2, open; E 7, no string to play it on, to check. Quarter note.
+  Beat 2. String 4, open. Quarter note.
+  Beat 3. String 1, open. Quarter note.
+  Beat 4. String 4, open. Quarter note.
+
+Bar 5
+  Beat 1. Chord, 4 notes: string 4, open; string 3, fret 2; string 2, fret 7; string 1, fret 10, to check. Half note.
+  Beat 3. Chord, 4 notes: string 4, open; string 3, fret 2; string 2, fret 7; string 1, fret 10, to check. Half note.
+
+Bar 6
+  Beat 1. Chord, 4 notes: string 4, fret 2; string 3, open; string 2, open; string 1, open. Half note.
+  Beat 3. Chord, 4 notes: string 4, fret 2; string 3, open; string 2, open; string 1, open. Half note.
+
+Bar 7
+  Beat 1. String 1, open. Eighth note.
+  Beat 1 and. String 4, open. Eighth note.
+  Beat 2. Chord, 2 notes: string 2, open; E 7, no string to play it on, to check. Quarter note.
+  Beat 3. String 3, fret 2. Quarter note.
+  Beat 4. Chord, 4 notes: string 4, fret 2; string 3, open; string 2, fret 1; string 1, open. Quarter note tied to quarter note.
+
+Bar 8
+  Held from bar 7.
+  Beat 2. Chord, 4 notes: string 4, open; string 3, fret 2; string 2, fret 3; string 1, fret 2. Quarter note tied to quarter note.
+  Beat 4. Chord, 5 notes: string 4, open; string 3, open; string 2, open; string 1, fret 3; C 7, no string to play it on. Quarter note.
+
+Bar 9
+  Beat 1. C 7, no string to play it on. Eighth note.
+  Beat 1 and. Eighth rest.
+  Beat 2. Quarter rest.
+  Beat 3. Half rest.

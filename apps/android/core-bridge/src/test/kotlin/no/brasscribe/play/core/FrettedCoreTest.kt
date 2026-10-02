@@ -15,9 +15,11 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import uniffi.brasscribe_ffi.CoreException
 import uniffi.brasscribe_ffi.frettedFingeringJson
+import uniffi.brasscribe_ffi.frettedPlayingInstructionsJson
 import uniffi.brasscribe_ffi.frettedTabJson
+import uniffi.brasscribe_ffi.frettedTabTextJson
 
-/** Tab fingering through the core: target-fretted's JSON request in, its JSON answer out. Skips without the host library. */
+/** Tab fingering through the core: target-fretted's JSON request in, its JSON answer or its text out. Skips without the host library. */
 class FrettedCoreTest {
     private fun requireCore() = assumeTrue("host build of the Rust core not found", RustCoreBridge.load() != null)
 
@@ -56,6 +58,28 @@ class FrettedCoreTest {
         assertTrue(xml.contains("<sign>TAB</sign>") && xml.contains("<staff-lines>4</staff-lines>"))
         val again = JsonObject(parse(request(pinString = 3)) + ("fingering" to answer.getValue("fingering")))
         assertEquals(xml, parse(frettedTabJson(again.toString())).getValue("musicxml").jsonPrimitive.content)
+    }
+
+    @Test
+    fun theSameRequestComesBackAsATextTabAndAsPlayingInstructions() {
+        requireCore()
+        val text = frettedTabTextJson(request(pinString = 3))
+        assertTrue(text, text.startsWith("Bass\nTuning: Standard (E A D G), bottom line to top\n"))
+        // D1 has no string; the hammer-on is an h before the fret it leads to.
+        assertTrue(text, text.contains("\n   !\nG|----------------||\nD|----------------||\nA|---------5h7----||\nE|-----5----------||\n"))
+        assertTrue(text, text.contains("bar 1: D1"))
+
+        val en = frettedPlayingInstructionsJson(request(pinString = 3))
+        assertTrue(en, en.contains("\nBar 1\n  Beat 1. D 1, no string to play it on. Quarter note.\n  Beat 2. String 4, fret 5. Quarter note.\n"))
+        val inNorwegian = JsonObject(parse(request(pinString = 3)) + ("text" to parse("""{"lang": "nb"}""")))
+        val nb = frettedPlayingInstructionsJson(inNorwegian.toString())
+        assertTrue(nb, nb.contains("\nTakt 1\n  Slag 1. D 1, ingen streng å spille den på. Fjerdedelsnote.\n  Slag 2. Streng 4, bånd 5. Fjerdedelsnote.\n"))
+        assertEquals(en.lines().size, nb.lines().size)
+
+        assertThrows(CoreException.Invalid::class.java) { frettedTabTextJson("{") }
+        val german = JsonObject(parse(request(pinString = 3)) + ("text" to parse("""{"lang": "de"}""")))
+        val refused = assertThrows(CoreException.Invalid::class.java) { frettedPlayingInstructionsJson(german.toString()) }
+        assertTrue(refused.reason, refused.reason.contains("en or nb"))
     }
 
     @Test
