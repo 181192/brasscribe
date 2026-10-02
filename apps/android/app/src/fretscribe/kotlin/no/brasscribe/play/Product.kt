@@ -13,6 +13,7 @@ import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.fret.CheckTheSongScreen
 import no.brasscribe.play.fret.ComputerProfiles
 import no.brasscribe.play.fret.SongAnswers
+import no.brasscribe.play.fret.TabScreen
 import no.brasscribe.play.fret.WhatIsThisScreen
 import no.brasscribe.play.fret.YourInstrumentScreen
 import no.brasscribe.play.fret.songRowSubtitle
@@ -32,11 +33,12 @@ object Product {
     const val BAND_SOUNDS = false
 
     /**
-     * Brasscribe's screens under Fretscribe's name, but for three:
+     * Brasscribe's screens under Fretscribe's name, but for four:
      * - where Brasscribe asks "What do you play?" (after the first run, and from Settings), Fretscribe asks
      *   Your instrument ("Who played this?" on a finished take is still Brasscribe's);
      * - What is this? has Fretscribe's two choices;
-     * - a tab's place for Brasscribe's output choices and Check the notes is Check the song.
+     * - a tab's place for Brasscribe's output choices and Check the notes is Check the song;
+     * - a tab is shown in the tab view, where Brasscribe shows a score.
      */
     @Composable
     fun Root(vm: PlayViewModel) {
@@ -52,6 +54,7 @@ object Product {
             asking -> ({ YourInstrumentScreen(vm, visit) })
             top == Screen.PROFILE -> ({ WhatIsThisScreen(vm) })
             (top == Screen.OUTPUT || top == Screen.REVIEW) && result?.profile?.writesTab == true -> ({ CheckTheSongScreen(vm) })
+            top == Screen.SCORE && result?.profile?.writesTab == true -> ({ TabScreen(vm) })
             else -> null
         }
         if (own != null) {

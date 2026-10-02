@@ -155,4 +155,50 @@
     <string name="check_notes">Sjekk sangen</string>
     <string name="other_product_row">Bandpartitur · åpnes i Brasscribe</string>
     <string name="other_product_opens">Dette er et bandpartitur. Åpne det i Brasscribe.</string>
+
+    <!-- The tab -->
+    <string name="fs_tab_reading">Åpner tabben…</string>
+    <string name="fs_tab_failed">Denne tabben kan ikke vises. Gå tilbake og åpne den på nytt.</string>
+    <string name="fs_tab_chip">%1$s · %2$s</string>
+    <string name="fs_tab_no_capo">uten capo</string>
+    <string name="fs_tab_capo">capo %1$d</string>
+    <string name="fs_tab_chip_name">Stemming: %1$s, %2$s</string>
+    <plurals name="fs_tab_marked">
+        <item quantity="one">%1$d tone merket ? · Sjekk den</item>
+        <item quantity="other">%1$d toner merket ? · Sjekk dem</item>
+    </plurals>
+    <plurals name="fs_tab_no_place_count">
+        <item quantity="one">%1$d tone uten plass</item>
+        <item quantity="other">%1$d toner uten plass</item>
+    </plurals>
+    <plurals name="fs_tab_bars">
+        <item quantity="one">%1$d takt</item>
+        <item quantity="other">%1$d takter</item>
+    </plurals>
+    <string name="fs_tab_summary_tab">Tab</string>
+    <string name="fs_tab_summary_tab_and_notation">Tab og noter</string>
+    <string name="fs_tab_summary_notation">Noter</string>
+    <string name="fs_tab_zoom">Størrelse %1$d %%</string>
+    <string name="fs_tab_bar_beat">Takt %1$s, slag %2$d.</string>
+    <string name="fs_tab_pickup_beat">Opptakten, slag %1$d.</string>
+    <string name="fs_tab_tempo">♩ = %1$d</string>
+    <string name="fs_tab_tempo_spoken">%1$d slag i minuttet</string>
+    <string name="fs_tab_place">%1$s streng, bånd %2$d, %3$s.</string>
+    <string name="fs_tab_place_open">%1$s streng, åpen, %2$s.</string>
+    <string name="fs_tab_not_sure">Fretscribe er ikke sikker på denne.</string>
+    <string name="fs_tab_no_place">En tone her har ingen plass på instrumentet ditt. Er stemmingen riktig?</string>
+    <string name="fs_tab_no_place_named">%1$s har ingen plass på instrumentet ditt her. Er stemmingen riktig?</string>
+    <string name="fs_tab_no_place_low">%1$s er lavere enn den laveste strengen din. Er stemmingen riktig?</string>
+    <string name="fs_tab_no_place_high">%1$s er høyere enn det høyeste båndet ditt. Er stemmingen riktig?</string>
+    <string name="fs_tab_note_close">Lukk</string>
+    <string-array name="fs_tab_ordinals">
+        <item>1.</item>
+        <item>2.</item>
+        <item>3.</item>
+        <item>4.</item>
+        <item>5.</item>
+        <item>6.</item>
+        <item>7.</item>
+        <item>8.</item>
+    </string-array>
 </resources>

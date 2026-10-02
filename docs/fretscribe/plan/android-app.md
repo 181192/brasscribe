@@ -1,7 +1,7 @@
 # Fretscribe on Android: implementation plan
 
 The first Fretscribe app is an Android flavour of Brasscribe's app shell in `apps/android`. Paths are
-from the repository root. alphaTab facts come from the 1.8.4 jar's class list and are not yet run on a device.
+from the repository root. alphaTab facts come from the 1.8.4 jar's class list; what the tab view uses has been run on an emulator.
 
 ## Architecture
 
@@ -30,8 +30,9 @@ roles are aliased (`brass*` from `brand*`, `staff` from `string`, `veryUncertain
 is in `design/fretscribe/`, the research and the plan in `docs/fretscribe/`.
 
 **Tab rendering.** alphaTab from `tab.musicxml`; the `/tab` JSON is the data model for Check the song,
-Fix a note and the screen reader. "?" and boxed "!" are drawn with the existing
-`score/NotationOverlay.kt`. The recording plays through alphaTab's external-media mode driving Media3
+Fix a note and the screen reader. "?" and boxed "!" are drawn by an overlay of Fretscribe's own
+(`fret/TabView.kt`), placed in alphaTab's render wrapper as `score/NotationOverlay.kt` is. The fret numbers
+are in Fretscribe Tab, registered with alphaSkia (`AlphaSkiaTypeface.register`). The recording plays through alphaTab's external-media mode driving Media3
 (keeps pitch when slowed; a new dependency), synced from `Tab.beat_times`.
 
 **What the app needs that isn't there yet.**
@@ -61,7 +62,7 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 | d0 | `engine-client`: bass tab profile, `Tab` models, `getTab`, a fixture | low |
 | d | Done: open a recording, send a `tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
 | e | Done in a first form: Check the song from `/tab` (tuning, capo, octave, reference pitch, key and tempo, notes to check, notes left out); a change is a new job. Still to come: Other… tunings, and the capo that would fit (the computer does not suggest one) | none |
-| f1 | Tab view: alphaTab, "?" and "!" overlay, font test | low |
+| f1 | Done: the tab view to read: alphaTab, "?" and "!" from the data, fret numbers in Fretscribe Tab. Still to come: the layers menu, Show ? for, the tuning and capo sheet | low |
 | f2 | Practice: the recording as the sound, 5% speed steps, repeat by bar, 64 dp transport | low |
 | g0 | Core: FFI export (the note index is done) | medium (bindings) |
 | g | Fix a note: fretboard strip, pitch stepper, pins, provenance, undo | low |
@@ -86,8 +87,8 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 6. **Launcher icon.** Drawn from the mark with the art at 64% (`design/fretscribe/brand/build.py`); the
    owner has not yet looked at it on a phone's launcher shapes.
 7. **Min SDK** stays 29; portrait practice is an open design question.
-8. **Tab font.** alphaTab on Android resolves fonts by system family name; if the test fails, the first
-   version ships without Fretscribe Tab numerals.
+8. **Tab font.** Settled for Android: alphaTab draws with alphaSkia there, and a face registered with
+   alphaSkia is found by its family name, so the fret numbers are in Fretscribe Tab.
 
 ## Not decided here
 

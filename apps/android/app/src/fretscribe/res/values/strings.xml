@@ -171,4 +171,56 @@
     <!-- A band score in the computer's list is Brasscribe's. -->
     <string name="other_product_row">Band score · opens in Brasscribe</string>
     <string name="other_product_opens">This is a band score. Open it in Brasscribe.</string>
+
+    <!-- The tab -->
+    <string name="fs_tab_reading">Opening the tab…</string>
+    <string name="fs_tab_failed">This tab can\'t be shown. Go back and open it again.</string>
+    <!-- The tuning chip: "Standard · no capo" -->
+    <string name="fs_tab_chip">%1$s · %2$s</string>
+    <string name="fs_tab_no_capo">no capo</string>
+    <string name="fs_tab_capo">capo %1$d</string>
+    <!-- The chip as it is read: "Tuning: Standard, no capo" -->
+    <string name="fs_tab_chip_name">Tuning: %1$s, %2$s</string>
+    <plurals name="fs_tab_marked">
+        <item quantity="one">%1$d note marked ? · Check it</item>
+        <item quantity="other">%1$d notes marked ? · Check them</item>
+    </plurals>
+    <plurals name="fs_tab_no_place_count">
+        <item quantity="one">%1$d note with no place</item>
+        <item quantity="other">%1$d notes with no place</item>
+    </plurals>
+    <plurals name="fs_tab_bars">
+        <item quantity="one">%1$d bar</item>
+        <item quantity="other">%1$d bars</item>
+    </plurals>
+    <!-- The tab as one element: "Bass line. Tab. Tuning: Standard, no capo. 16 bars. 2 notes marked ?. 1 note with no place." -->
+    <string name="fs_tab_summary_tab">Tab</string>
+    <string name="fs_tab_summary_tab_and_notation">Tab and notation</string>
+    <string name="fs_tab_summary_notation">Notation</string>
+    <string name="fs_tab_zoom">Size %1$d%%</string>
+    <!-- A mark, as it is read: "Bar 13, beat 2. 3rd string, fret 7, D-flat. Fretscribe isn't sure about this one." -->
+    <string name="fs_tab_bar_beat">Bar %1$s, beat %2$d.</string>
+    <!-- A note before the first full bar. -->
+    <string name="fs_tab_pickup_beat">The pickup bar, beat %1$d.</string>
+    <!-- Beside the tuning chip: "♩ = 100", read as "100 beats a minute" -->
+    <string name="fs_tab_tempo">♩ = %1$d</string>
+    <string name="fs_tab_tempo_spoken">%1$d beats a minute</string>
+    <string name="fs_tab_place">%1$s string, fret %2$d, %3$s.</string>
+    <string name="fs_tab_place_open">%1$s string, open, %2$s.</string>
+    <string name="fs_tab_not_sure">Fretscribe isn\'t sure about this one.</string>
+    <string name="fs_tab_no_place">A note here has no place on your instrument. Is the tuning right?</string>
+    <string name="fs_tab_no_place_named">%1$s has no place on your instrument here. Is the tuning right?</string>
+    <string name="fs_tab_no_place_low">%1$s is lower than your lowest string. Is the tuning right?</string>
+    <string name="fs_tab_no_place_high">%1$s is higher than your highest fret. Is the tuning right?</string>
+    <string name="fs_tab_note_close">Close</string>
+    <string-array name="fs_tab_ordinals">
+        <item>1st</item>
+        <item>2nd</item>
+        <item>3rd</item>
+        <item>4th</item>
+        <item>5th</item>
+        <item>6th</item>
+        <item>7th</item>
+        <item>8th</item>
+    </string-array>
 </resources>

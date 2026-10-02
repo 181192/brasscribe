@@ -266,9 +266,9 @@ class SendGuitarAndUkuleleTabFlowTest {
 
             // Show the tab, and the song is in Your songs with its instrument and tuning.
             rule.onNodeWithTag("fs-show-tab").performClick()
-            waitForTag("score-view", 30_000)
+            waitForTag("fs-tab", 30_000)
             rule.waitUntil(30_000) {
-                rule.onNodeWithTag("score-view").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
+                rule.onNodeWithTag("fs-tab").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
                     ?.firstOrNull()?.let { d -> Regex("""\d+""").findAll(d).any { it.value.toInt() > 1 } } == true
             }
             if (lang == "en-GB") shot("guitar-the-tab-en-light")
@@ -408,9 +408,9 @@ class SendGuitarAndUkuleleTabFlowTest {
             waitForTag("fs-show-tab")
 
             rule.onNodeWithTag("fs-show-tab").performClick()
-            waitForTag("score-view", 30_000)
+            waitForTag("fs-tab", 30_000)
             rule.waitUntil(30_000) {
-                rule.onNodeWithTag("score-view").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
+                rule.onNodeWithTag("fs-tab").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
                     ?.firstOrNull()?.let { d -> Regex("""\d+""").findAll(d).any { it.value.toInt() > 1 } } == true
             }
             if (whole) shot("ukulele-the-tab-en-light")
