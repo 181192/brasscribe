@@ -1,10 +1,13 @@
 package no.brasscribe.play.screen
 
+import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.media.MediaFormat
 import android.net.Uri
 import android.os.Looper
+import android.view.Display
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
@@ -14,9 +17,10 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import no.brasscribe.play.MainActivity
+import org.junit.rules.TestRule
+import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.android.controller.ActivityController
 import org.robolectric.shadows.ShadowMediaExtractor
 import org.robolectric.shadows.ShadowWindowManagerGlobal
 import org.robolectric.shadows.util.DataSource
@@ -35,6 +39,30 @@ typealias AppRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity>, M
 object ScreenDevice {
     /** True on the JVM: nothing here needs a device. */
     const val JVM = true
+
+    /**
+     * Whether what alphaTab engraves has its colours as the theme gave them. Not on the JVM: alphaSkia's build
+     * for a desktop draws into a bitmap whose red and blue are the other way round from Android's, and alphaTab
+     * copies it as it is. Ink and the lines' grey are the same either way; a coloured numeral is checked on a device.
+     */
+    const val ENGRAVES_IN_COLOUR = false
+
+    /**
+     * The phone itself, before the app is started on it: a status bar and gesture navigation, as a phone has
+     * (Robolectric's own phone has neither until asked; its class for them is not public yet).
+     */
+    fun phone(): TestRule = TestRule { test, _ ->
+        object : Statement() {
+            override fun evaluate() {
+                val ui = Class.forName("org.robolectric.shadows.SystemUi")
+                fun member(name: String) = ui.getDeclaredField(name).apply { isAccessible = true }.get(null)
+                val display = ui.getDeclaredMethod("systemUiForDefaultDisplay").apply { isAccessible = true }.invoke(null)
+                ui.declaredMethods.first { it.name == "setBehavior" }.apply { isAccessible = true }
+                    .invoke(display, member("STANDARD_STATUS_BAR"), member("GESTURAL_NAVIGATION"))
+                test.evaluate()
+            }
+        }
+    }
 
     private val fixtures = File(checkNotNull(System.getProperty("brasscribe.fixtures")) { "brasscribe.fixtures is not set (app/build.gradle.kts)" })
 
@@ -75,7 +103,21 @@ object ScreenDevice {
     private fun qualifiers(rule: AppRule, qualifiers: String, restart: Boolean) {
         RuntimeEnvironment.setQualifiers(qualifiers)
         if (restart) rule.activityRule.scenario.recreate()
-        else rule.runOnUiThread { ActivityController.of(rule.activity).configurationChange(RuntimeEnvironment.getApplication().resources.configuration) }
+        else rule.runOnUiThread {
+            // A change the activity takes itself (its manifest's configChanges): told to it and to its windows, as the phone does.
+            val app = RuntimeEnvironment.getApplication().resources
+            val config = Configuration(app.configuration)
+            val activity = rule.activity
+            @Suppress("DEPRECATION")
+            activity.resources.updateConfiguration(config, app.displayMetrics)
+            (Activity::class.java.getDeclaredField("mCurrentConfig").apply { isAccessible = true }.get(activity) as Configuration).setTo(config)
+            activity.onConfigurationChanged(config)
+            for (window in WindowInspector.getGlobalWindowViews()) {
+                val root = View::class.java.getMethod("getViewRootImpl").invoke(window) ?: continue
+                root.javaClass.getMethod("updateConfiguration", Int::class.javaPrimitiveType).invoke(root, Display.INVALID_DISPLAY)
+                window.requestLayout()
+            }
+        }
         rule.waitForIdle()
     }
 
@@ -185,20 +227,21 @@ object ScreenDevice {
             if (frontWindow().isLayoutRequested) rule.waitForIdle()
             if (condition()) return
             if (System.nanoTime() > end) throw AssertionError("not within $ms ms")
-            pass(50)
+            pass(rule, 50)
             Thread.sleep(2)
         }
     }
 
     /** Lets the screen come to rest: a second of the app's time, with its frames. */
     fun settle(rule: AppRule) {
-        repeat(20) { rule.waitForIdle(); pass(50) }
+        repeat(20) { rule.waitForIdle(); pass(rule, 50) }
         rule.waitForIdle()
     }
 
-    /** Lets [ms] of the app's time pass. */
-    fun pass(ms: Long) {
+    /** Lets [ms] of the app's time pass: Android's clock (its handlers and animations) and Compose's own (a delay in an effect). */
+    fun pass(rule: AppRule, ms: Long) {
         shadowOf(Looper.getMainLooper()).idleFor(ms, TimeUnit.MILLISECONDS)
+        rule.mainClock.advanceTimeBy(ms)
     }
 
     /** The whole screen as it is drawn now, every window of it. */

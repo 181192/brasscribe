@@ -140,7 +140,7 @@ class RestoredSongTest : ScreenTest() {
         val vm = afterTheProcessEnded(listOf(Screen.HOME, Screen.PROFILE))
         waitForTag("fs-what-continue", 10_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
-        ScreenDevice.pass(1500)
+        pass(1500)
         assertTrue("the recording is kept", take.isFile)
         assertEquals(take, vm.source.value?.file)
         // The answer was in memory only: nothing is chosen, and nothing is sent until it is.
@@ -165,7 +165,7 @@ class RestoredSongTest : ScreenTest() {
         waitForTag("fs-what-continue", 10_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         // Writing down the notes cannot be taken up again: the screen before it comes back.
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
-        ScreenDevice.pass(1500)
+        pass(1500)
         assertTrue("the recording is kept", take.isFile)
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         card("song").performClick()
@@ -180,7 +180,7 @@ class RestoredSongTest : ScreenTest() {
         val vm = afterTheProcessEnded(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT))
         waitForTag("fs-check-change-tuning")
         assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT), vm.screen.value)
-        ScreenDevice.pass(1500)
+        pass(1500)
         // The song is shown again from what was saved, and the recording under it is still the one in hand.
         assertTrue("the recording is kept", take.isFile)
         assertEquals(take, vm.source.value?.file)

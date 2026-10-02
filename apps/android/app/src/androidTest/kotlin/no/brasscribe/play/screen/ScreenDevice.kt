@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import no.brasscribe.play.MainActivity
+import org.junit.rules.TestRule
 import java.io.File
 
 typealias AppRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity>, MainActivity>
@@ -20,6 +21,12 @@ typealias AppRule = AndroidComposeTestRule<ActivityScenarioRule<MainActivity>, M
 object ScreenDevice {
     /** False on a device. */
     const val JVM = false
+
+    /** Whether what alphaTab engraves has its colours as the theme gave them: on a device it has (see the JVM's). */
+    const val ENGRAVES_IN_COLOUR = true
+
+    /** The phone itself, before the app is started on it: a device is what it is. */
+    fun phone(): TestRule = TestRule { test, _ -> test }
 
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
 
@@ -101,7 +108,8 @@ object ScreenDevice {
     }
 
     /** Lets [ms] pass. */
-    fun pass(ms: Long) = Thread.sleep(ms)
+    @Suppress("UNUSED_PARAMETER")
+    fun pass(rule: AppRule, ms: Long) = Thread.sleep(ms)
 
     /** The screenshots are the JVM run's (Roborazzi); a device takes none. */
     @Suppress("UNUSED_PARAMETER")

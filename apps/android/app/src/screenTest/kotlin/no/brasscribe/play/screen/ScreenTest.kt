@@ -23,6 +23,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -33,8 +35,11 @@ import java.nio.ByteOrder
  * accessibility checks on every action. What the two runs do differently is in [ScreenDevice].
  */
 abstract class ScreenTest {
-    @get:Rule
     val rule: AppRule = createAndroidComposeRule<MainActivity>()
+
+    /** The phone first, then the app on it. */
+    @get:Rule
+    val onThePhone: TestRule = RuleChain.outerRule(ScreenDevice.phone()).around(rule)
 
     protected val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
     protected val container get() = (rule.activity.application as PlayApplication).container
@@ -85,6 +90,9 @@ abstract class ScreenTest {
 
     /** Waits until [condition] holds; the app's time passes meanwhile. */
     protected fun waitUntil(ms: Long = 5_000, condition: () -> Boolean) = ScreenDevice.waitUntil(rule, ms, condition)
+
+    /** Lets [ms] of the app's time pass. */
+    protected fun pass(ms: Long) = ScreenDevice.pass(rule, ms)
 
     /** Lets the screen come to rest: what was started is drawn, and nothing more is on its way. */
     protected fun settle() = ScreenDevice.settle(rule)

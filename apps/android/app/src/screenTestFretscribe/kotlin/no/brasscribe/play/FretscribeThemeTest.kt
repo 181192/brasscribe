@@ -1,61 +1,35 @@
 package no.brasscribe.play
 
-import android.app.UiModeManager
 import android.graphics.Bitmap
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import no.brasscribe.design.BrasscribeDarkColors
 import no.brasscribe.design.BrasscribeHighContrastColors
 import no.brasscribe.design.BrasscribeLightColors
 import no.brasscribe.design.brasscribeTypography
-import org.junit.After
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 /**
  * Fretscribe wears its own brand: Home in light, dark and high contrast has Fretscribe's paper and its
- * blue-ink mark, and the titles are set in Atkinson Hyperlegible Next. Screenshots go to the app's
- * files, fretscribe/.
+ * blue-ink mark, and the titles are set in Atkinson Hyperlegible Next.
  */
 @RunWith(AndroidJUnit4::class)
-class FretscribeThemeTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
-    private val dir by lazy { File(rule.activity.getExternalFilesDir(null), "fretscribe").apply { mkdirs() } }
-
-    @After
-    fun tearDown() {
-        shell("settings delete secure contrast_level")
-        shell("cmd uimode night no")
-        rule.runOnUiThread { container.updateAppearance(Appearance.SYSTEM) }
-    }
-
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(600)
-    }
+class FretscribeThemeTest : ScreenTest() {
+    override val shots = "fretscribe/theme"
 
     private fun home(name: String): Bitmap {
         rule.runOnUiThread { vm.home() }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText(Product.NAME).fetchSemanticsNodes().isNotEmpty() }
-        rule.waitForIdle()
-        Thread.sleep(700)
-        val shot = checkNotNull(instrumentation.uiAutomation.takeScreenshot()) { "no screenshot" }
-        File(dir, "$name.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        return shot.copy(Bitmap.Config.ARGB_8888, false)
+        waitUntil(5_000) { rule.onAllNodesWithText(Product.NAME).fetchSemanticsNodes().isNotEmpty() }
+        settle()
+        shot(name)
+        return screen()
     }
 
     /** How many pixels of the screenshot have exactly this colour (anti-aliased edges don't count). */
@@ -84,7 +58,7 @@ class FretscribeThemeTest {
         assertEquals(androidx.compose.ui.graphics.Color(0xFF1F5FAD), BrasscribeLightColors.brass)
         assertEquals(androidx.compose.ui.graphics.Color(0xFF8AB8F2), BrasscribeDarkColors.brass)
 
-        shell("cmd uimode night no")
+        ScreenDevice.night(rule, false)
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         assertWears(home("home-light"), BrasscribeLightColors, "light")
 
@@ -93,10 +67,7 @@ class FretscribeThemeTest {
         assertWears(home("home-dark"), BrasscribeDarkColors, "dark")
 
         // The phone's contrast setting (Android 14 and later) wins over both.
-        shell("settings put secure contrast_level 1.0")
-        val contrast = rule.activity.getSystemService(UiModeManager::class.java).contrast
-        assumeTrue("this device does not take the contrast setting ($contrast)", contrast >= 0.5f)
-        rule.activityRule.scenario.recreate()
+        assumeTrue("this device does not take the contrast setting", ScreenDevice.highContrast(rule, true))
         assertWears(home("home-high-contrast"), BrasscribeHighContrastColors, "high contrast")
     }
 }

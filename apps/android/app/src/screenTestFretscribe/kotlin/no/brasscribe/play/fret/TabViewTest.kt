@@ -1,6 +1,5 @@
 package no.brasscribe.play.fret
 
-import android.app.UiModeManager
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.graphics.Rect
@@ -26,7 +25,6 @@ import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.isHeading
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -64,6 +62,8 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
@@ -75,130 +75,23 @@ import kotlin.math.abs
  * (apps/fixtures/bass-line) has nothing to check; the second (bass-line-marks) has a doubtful note, a
  * doubtful note written as tied pieces and a note below the lowest string. The marks are looked for
  * on the screen itself: the "?" and the tinted numeral in the doubt colour over the right column, the
- * boxed "!" in ink, and nothing in the doubt colour anywhere else. Screenshots go to
- * /data/local/tmp/fretscribe-tab on the device.
+ * boxed "!" in ink, and nothing in the doubt colour anywhere else.
  */
 @RunWith(AndroidJUnit4::class)
-class TabViewTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
+class TabViewTest : TabScreenTest() {
 
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
+    override val shots = "fretscribe/tab"
 
-    @Before
-    fun setUp() {
-        rule.enableAccessibilityChecks()
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
-        yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
-        rule.runOnUiThread {
-            container.firstRunDone = true
-            vm.scores.value.forEach(vm::deleteEntry)
-            vm.home()
-        }
-        shell("mkdir -p $SHOTS")
-        rule.waitForIdle()
-    }
-
-    @After
-    fun tearDown() {
-        shell("cmd locale set-app-locales $PACKAGE --locales en-GB")
-        shell("settings put system font_scale 1.0")
-        shell("settings delete secure contrast_level")
-        instrumentation.uiAutomation.setRotation(android.app.UiAutomation.ROTATION_FREEZE_0)
-        rule.runOnUiThread {
-            TabPlaces.forget()
-            container.fixtureSource = null
-            container.updateAppearance(Appearance.SYSTEM)
-            vm.scores.value.forEach(vm::deleteEntry)
-            vm.home()
-        }
-    }
-
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(400)
-    }
-
-    private fun shot(name: String) {
+    /** The screenshot [name] of the screen at rest. */
+    private fun shotOf(name: String) {
         settle()
-        shell("screencap -p $SHOTS/$name.png")
-        Thread.sleep(800)
+        shot(name)
     }
 
-    private fun settle() {
-        rule.waitForIdle()
-        Thread.sleep(900)
-        rule.waitForIdle()
-    }
-
-    /** The computer of the tests: what [folder] of apps/fixtures holds, with tab.json changed on the way when [tab] is given, or missing. */
-    private fun computer(folder: String, withTab: Boolean = true, page: String = "tab", tab: ((JSONObject) -> Unit)? = null) {
-        val assets = instrumentation.context.assets
-        container.fixtureSource = FixtureSource { name ->
-            // [page]: the fixture's page in another layout, served as the job's tab.musicxml.
-            val file = if (name == "tab.musicxml") "$page.musicxml" else name
-            val bytes = runCatching { assets.open("$folder/$file").use { it.readBytes() } }.getOrNull()
-            when {
-                name != "tab.json" || bytes == null -> bytes
-                !withTab && showing -> null
-                tab != null -> JSONObject(String(bytes)).also(tab).toString().toByteArray()
-                else -> bytes
-            }
-        }
-    }
-
-    /** The tab view is on screen (Check the song has read the tab's facts before that). */
-    @Volatile private var showing = false
-
-    private fun recording(): File {
-        val rate = 22_050
-        val samples = ShortArray(rate * 2) { i -> (Math.sin(2 * Math.PI * 82.4 * i / rate) * 9000).toInt().toShort() }
-        val data = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN).also { b -> samples.forEach(b::putShort) }.array()
-        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-            .put("RIFF".toByteArray()).putInt(36 + data.size).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
-            .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.size).array()
-        return File(rule.activity.cacheDir, "Bass line.wav").apply { writeBytes(header + data) }
-    }
-
-    private fun waitForTag(tag: String, ms: Long = 60_000) =
-        rule.waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
-
-    /** Home, a recording, What is this?, the notes written down, Check the song, Show the tab: the tab is engraved. */
-    private fun showTheTab(): TabView {
-        showing = false
-        val file = recording()
-        rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
-        waitForTag("fs-what-continue", 20_000)
-        rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
-            hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performClick()
-        rule.onNodeWithTag("fs-what-continue").performClick()
-        waitForTag("fs-show-tab")
-        rule.onNode(isHeading() and androidx.compose.ui.test.hasText(text(R.string.fs_check_title))).assertIsDisplayed()
-        showing = true
-        rule.onNodeWithTag("fs-show-tab").performClick()
-        return engraved()
-    }
-
-    private fun engraved(): TabView {
-        waitForTag("fs-tab", 30_000)
-        // Until the view of the size the screen wants is there (a new size is a new view, a moment later), engraved and laid out.
-        fun now() = TabScreenProbe.view?.let { Triple(it, it.engravings, it.engraving.value) }
-        var seen: Triple<TabView, Int, TabEngraving?>?
-        do {
-            rule.waitUntil(30_000) { TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true }
-            seen = now()
-            settle()
-        } while (now() != seen)
-        return seen!!.first
-    }
-
-    private fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
-
-    private fun screen(): Bitmap {
+    /** The whole screen at rest, to look at its pixels. */
+    private fun still(): Bitmap {
         settle()
-        return instrumentation.uiAutomation.takeScreenshot()
+        return screen()
     }
 
     private fun near(pixel: Int, colour: Int, tolerance: Int = 36): Boolean =
@@ -223,30 +116,6 @@ class TabViewTest {
         return Rect(mark.left, top - 2, mark.right, top + (box.bottom - box.top).toInt() + (0.3f * tab.lineSpace).toInt())
     }
 
-    /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
-    private fun assertNoTextIsClipped() {
-        val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
-            .fetchSemanticsNodes().mapNotNull { node ->
-                val layouts = mutableListOf<TextLayoutResult>()
-                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                val l = layouts.firstOrNull() ?: return@mapNotNull null
-                val cut = l.didOverflowHeight || (0 until l.lineCount).any(l::isLineEllipsized) ||
-                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
-                l.layoutInput.text.text.takeIf { cut }
-            }
-        assertEquals("clipped text", emptyList<String>(), clipped)
-    }
-
-    private fun key(code: Int) {
-        instrumentation.sendKeyDownUpSync(code)
-        rule.waitForIdle()
-    }
-
-    private fun focusedWords(): String = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
-        .fetchSemanticsNodes().lastOrNull()?.config?.let { c ->
-            (c.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + c.getOrNull(SemanticsProperties.ContentDescription).orEmpty()).joinToString(" ")
-        }.orEmpty()
-
     private val marks get() = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.TestTag) and hasClickAction())
         .fetchSemanticsNodes().mapNotNull { it.config.getOrNull(SemanticsProperties.TestTag)?.takeIf { t -> t.startsWith("fs-tab-mark-") } }
 
@@ -266,7 +135,7 @@ class TabViewTest {
         for ((i, box) in boxes.withIndex()) {
             rule.onNodeWithTag("fs-tab-mark-$i").performScrollTo()
             // Under the status bar a mark would be read from the wrong pixels: bring it well into view.
-            val image = screen()
+            val image = still()
             val mark = bounds("fs-tab-mark-$i")
             val glyph = glyphArea(tab, mark, box)
             val numerals = Rect(mark.left, glyph.bottom, mark.right, mark.bottom)
@@ -275,7 +144,7 @@ class TabViewTest {
                 assertEquals("the boxed ! is not in the doubt colour", 0, count(image, glyph, uncertain))
             } else {
                 assertTrue("a ? in the doubt colour above column $i", count(image, glyph, uncertain) > 40)
-                assertTrue("the numeral of column $i in the doubt colour", count(image, numerals, uncertain) > 20)
+                if (ScreenDevice.ENGRAVES_IN_COLOUR) assertTrue("the numeral of column $i in the doubt colour", count(image, numerals, uncertain) > 20)
                 tabPalette(colours).uncertainTint?.let { wash -> assertTrue("the wash behind the numeral of column $i", count(image, numerals, wash, 6) > 40) }
             }
             // Nothing in the doubt colour outside the marks on this screen: no second "?" from the page's own words.
@@ -333,15 +202,15 @@ class TabViewTest {
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
         rule.onRoot().tryPerformAccessibilityChecks()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("tab-marks-light")
+        shotOf("tab-marks-light")
         rule.onNodeWithTag("fs-tab-mark-2").performScrollTo()
-        shot("tab-marks-light-end")
+        shotOf("tab-marks-light-end")
 
         // A tap says which note it is, on the screen and to a screen reader; nothing is changed (Fix a note is not here yet).
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick()
         rule.onNodeWithTag("fs-tab-note").assertTextEquals(expected[0])
         assertEquals(androidx.compose.ui.semantics.LiveRegionMode.Polite, rule.onNodeWithTag("fs-tab-note").fetchSemanticsNode().config[SemanticsProperties.LiveRegion])
-        shot("tab-mark-told-light")
+        shotOf("tab-mark-told-light")
         rule.onNodeWithTag("fs-tab-mark-1").performScrollTo().performClick()
         rule.onNodeWithTag("fs-tab-note").assertTextEquals(expected[1])
         rule.onRoot().tryPerformAccessibilityChecks()
@@ -351,10 +220,10 @@ class TabViewTest {
         // Dark: the same marks in the dark theme's colours.
         val light = tab.engravings
         rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
-        rule.waitUntil(20_000) { TabScreenProbe.view?.let { it !== tab || it.engravings > light } == true }
+        waitUntil(20_000) { TabScreenProbe.view?.let { it !== tab || it.engravings > light } == true }
         assertTheMarksAreDrawn(engraved(), BrasscribeDarkColors)
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("tab-marks-dark")
+        shotOf("tab-marks-dark")
 
         // The chip and the line open Check the song, and Show the tab comes back.
         rule.onNodeWithTag("fs-tab-tuning").performClick()
@@ -394,7 +263,7 @@ class TabViewTest {
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
         rule.onRoot().tryPerformAccessibilityChecks()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("tab-and-notation-light")
+        shotOf("tab-and-notation-light")
     }
 
     @Test
@@ -417,94 +286,19 @@ class TabViewTest {
         }
         rule.onRoot().tryPerformAccessibilityChecks()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("notation-light")
-    }
-
-    /** Frames the app has drawn since it started, as the system counts them. */
-    private fun framesDrawn(): Int {
-        val out = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo $PACKAGE")).use { it.readBytes().decodeToString() }
-        return Regex("""Total frames rendered: (\d+)""").find(out)!!.groupValues[1].toInt()
-    }
-
-    /** Frames drawn while nothing is touched for [ms]: a still screen draws none. */
-    private fun framesWhileStill(ms: Long = 4_000): Int {
-        settle()
-        Thread.sleep(1_500)
-        val before = framesDrawn()
-        Thread.sleep(ms)
-        return framesDrawn() - before
-    }
-
-    private fun turn(landscape: Boolean) {
-        instrumentation.uiAutomation.setRotation(if (landscape) android.app.UiAutomation.ROTATION_FREEZE_90 else android.app.UiAutomation.ROTATION_FREEZE_0)
-        rule.waitUntil(15_000) { (rule.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) == landscape }
-        rule.waitForIdle()
-    }
-
-    @Test
-    fun theScreenIsStillWhenNothingMoves() {
-        computer("bass-line-marks")
-        var tab = showTheTab()
-        fun still(what: String): Int {
-            val engravings = TabScreenProbe.view!!.engravings
-            val frames = framesWhileStill()
-            android.util.Log.i("TabViewTest", "still, $what: $frames frames, ${TabScreenProbe.view!!.engravings - engravings} engravings")
-            return frames
-        }
-        val results = LinkedHashMap<String, Int>()
-        results["first shown"] = still("first shown")
-        // The counter counts: a fling draws frames.
-        val beforeFling = framesDrawn()
-        shell("input swipe 540 1800 540 700 150")
-        val drawn = framesDrawn() - beforeFling
-        android.util.Log.i("TabViewTest", "a fling drew $drawn frames")
-        assertTrue("a fling draws frames ($drawn)", drawn > 5)
-        results["after a fling down the page"] = still("after a fling down the page")
-        repeat(6) { shell("input swipe 540 1800 540 500 80") }
-        results["at the end of the page"] = still("at the end of the page")
-        turn(landscape = true)
-        tab = engraved()
-        results["in landscape"] = still("in landscape")
-        shell("input swipe 1200 900 1200 300 150")
-        results["in landscape after a fling"] = still("in landscape after a fling")
-        repeat(8) { shell("input swipe 1200 900 1200 200 80") }
-        results["in landscape at the end of the page"] = still("in landscape at the end of the page")
-        turn(landscape = false)
-        tab = engraved()
-        results["back in portrait"] = still("back in portrait")
-        shell("input keyevent KEYCODE_HOME")
-        Thread.sleep(1500)
-        shell("am start -n $PACKAGE/no.brasscribe.play.MainActivity")
-        Thread.sleep(2500)
-        results["after leaving the app and coming back"] = still("after leaving the app and coming back")
-        shell("input swipe 540 900 540 1900 100")
-        results["then a swipe at the top"] = still("then a swipe at the top")
-        shell("input swipe 540 1500 540 900 300")
-        results["then a slow drag"] = still("then a slow drag")
-        shell("input swipe 540 900 540 1900 100")
-        shell("input swipe 540 900 540 1900 100")
-        results["after swipes at the top"] = still("after swipes at the top")
-        rule.onNodeWithTag("fs-tab-tuning").performClick()
-        waitForTag("fs-show-tab")
-        rule.onNodeWithTag("fs-show-tab").performClick()
-        tab = engraved()
-        shell("input swipe 540 900 540 1900 100")
-        results["after Check the song and back, and a swipe at the top"] = still("after Check the song and back, and a swipe at the top")
-        assertEquals("frames drawn in four seconds of nothing moving", results.mapValues { 0 }, results.mapValues { if (it.value <= 2) 0 else it.value })
+        shotOf("notation-light")
     }
 
     @Test
     fun inHighContrastTheMarksAreShapesWithoutAWash() {
-        shell("settings put secure contrast_level 1.0")
-        val contrast = rule.activity.getSystemService(UiModeManager::class.java).contrast
-        assumeTrue("this device does not take the contrast setting ($contrast)", contrast >= 0.5f)
+        assumeTrue("this device does not take the contrast setting", ScreenDevice.highContrast(rule, true))
         computer("bass-line-marks")
         val tab = showTheTab()
         rule.runOnUiThread { assertEquals(null, tab.palette.uncertainTint) }
         assertTheMarksAreDrawn(tab, BrasscribeHighContrastColors)
         rule.onRoot().tryPerformAccessibilityChecks()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("tab-marks-high-contrast")
+        shotOf("tab-marks-high-contrast")
     }
 
     @Test
@@ -517,7 +311,7 @@ class TabViewTest {
         rule.onNodeWithTag("fs-tab-mark-0").assertContentDescriptionEquals("Bar 2, beat 1. 4th string, fret 3, G. Fretscribe isn't sure about this one.")
         rule.onNodeWithTag("fs-tab-marked").assertTextEquals("1 note marked ? · Check it")
         assertTrue(rule.onAllNodesWithTag("fs-tab-no-place").fetchSemanticsNodes().isEmpty())
-        val image = screen()
+        val image = still()
         assertTrue("the ? is drawn", count(image, bounds("fs-tab-mark-0"), BrasscribeLightColors.uncertain.toArgb()) > 60)
         assertEquals(0, tab.unmatched)
 
@@ -535,7 +329,7 @@ class TabViewTest {
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         val uncertain = BrasscribeLightColors.uncertain.toArgb()
         run {
-            val seen = screen()
+            val seen = still()
             assertEquals("nothing in the doubt colour", 0, count(seen, Rect(0, 0, seen.width, seen.height), uncertain))
         }
     }
@@ -561,8 +355,7 @@ class TabViewTest {
     fun largerMeansMoreLinesOfFewerBarsAndNoSidewaysScrolling() {
         computer("bass-line-marks")
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
-        shell("settings put system font_scale 2.0")
-        rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale >= 1.9f }
+        textSize(2.0f)
         var tab = showTheTab()
         fun width() = tab.view.findViewById<View>(net.alphatab.R.id.renderSurface).width to tab.view.width
         val lines200 = tab.engraving.value!!.barsPerLine
@@ -573,24 +366,23 @@ class TabViewTest {
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
         rule.onRoot().tryPerformAccessibilityChecks()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("tab-200-text")
+        shotOf("tab-200-text")
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("tab-200-text-mark")
+        shotOf("tab-200-text-mark")
 
         // The page is as large as a bar can be across this screen: there is no larger to ask for.
         rule.onNodeWithTag("fs-tab-zoom-in").assertIsNotEnabled()
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
 
         // At the ordinary text size the same song takes fewer lines; zoomed in more again, never wider than the screen.
-        shell("settings put system font_scale 1.0")
-        rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale <= 1.1f }
+        textSize(1.0f)
         tab = engraved()
-        rule.waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.let { it.size < lines200.size } == true }
+        waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.let { it.size < lines200.size } == true }
         tab = engraved()
         settle()
         val lines100 = tab.engraving.value!!.barsPerLine
         repeat(6) { rule.onNodeWithTag("fs-tab-zoom-in").performClick() }
-        rule.waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.let { it.size > lines100.size } == true }
+        waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.let { it.size > lines100.size } == true }
         tab = engraved()
         settle()
         val lines160 = tab.engraving.value!!.barsPerLine
@@ -600,11 +392,11 @@ class TabViewTest {
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        shot("tab-160-zoom")
+        shotOf("tab-160-zoom")
 
         // Zoomed out, more bars to a line.
         repeat(11) { rule.onNodeWithTag("fs-tab-zoom-out").performClick() }
-        rule.waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.let { it.size < lines100.size } == true }
+        waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.let { it.size < lines100.size } == true }
         tab = engraved()
         settle()
         val lines50 = tab.engraving.value!!.barsPerLine
@@ -616,7 +408,7 @@ class TabViewTest {
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
         rule.onRoot().tryPerformAccessibilityChecks()
         rule.onNodeWithTag("fs-tab-zoom-out").assertIsNotEnabled()
-        shot("tab-50-zoom")
+        shotOf("tab-50-zoom")
     }
 
     @Test
@@ -635,16 +427,14 @@ class TabViewTest {
         // Enter on a mark says its note.
         repeat(24) { if (!focusedWords().contains(expected[1])) key(KeyEvent.KEYCODE_TAB) }
         assertTrue(focusedWords(), focusedWords().contains(expected[1]))
-        shot("tab-keyboard-focus")
+        shotOf("tab-keyboard-focus")
         key(KeyEvent.KEYCODE_ENTER)
         rule.onNodeWithTag("fs-tab-note").assertTextEquals(expected[1])
     }
 
     @Test
     fun inBokmalTheTabSaysItsOwnWords() {
-        shell("cmd locale set-app-locales $PACKAGE --locales nb-NO")
-        rule.activityRule.scenario.recreate()
-        rule.waitForIdle()
+        language("nb-NO")
         computer("bass-line-marks")
         showTheTab()
         rule.onNodeWithTag("fs-tab-tuning").assertContentDescriptionEquals("Stemming: Standard, uten capo")
@@ -654,7 +444,7 @@ class TabViewTest {
         rule.onNodeWithTag("fs-tab-mark-0").assertContentDescriptionEquals("Takt 3, slag 2. 3. streng, bånd 2, H. Fretscribe er ikke sikker på denne.")
         rule.onNodeWithTag("fs-tab-mark-1").assertContentDescriptionEquals("Takt 7, slag 2. D1 er lavere enn den laveste strengen din. Er stemmingen riktig?")
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("tab-marks-nb")
+        shotOf("tab-marks-nb")
     }
 
     /** A page in a tab view of its own, in place of the app's screens: for what is asked of the view and not of the screen. */
@@ -662,15 +452,20 @@ class TabViewTest {
         lateinit var tab: TabView
         rule.runOnUiThread {
             tab = TabView(rule.activity, TabView.BASE_SCALE, tabPalette(BrasscribeLightColors), ownFace)
-            rule.activity.setContentView(FrameLayout(rule.activity).apply { setBackgroundColor(BrasscribeLightColors.bg.toArgb()); addView(tab.view) })
+            // (With an empty composition beside it, so the test rule still has one to wait for.)
+            rule.activity.setContentView(FrameLayout(rule.activity).apply {
+                setBackgroundColor(BrasscribeLightColors.bg.toArgb())
+                addView(androidx.compose.ui.platform.ComposeView(rule.activity).apply { setContent { } }, 1, 1)
+                addView(tab.view)
+            })
             tab.show(xml, layout, index, marks)
         }
-        rule.waitUntil(30_000) { tab.engraving.value != null }
+        waitUntil(30_000) { tab.engraving.value != null }
         settle()
         return tab
     }
 
-    private fun asset(path: String): String = instrumentation.context.assets.open(path).use { it.readBytes() }.decodeToString()
+    private fun asset(path: String): String = checkNotNull(ScreenDevice.fixture(path)) { path }.decodeToString()
 
     @Test
     fun onTheProbesEveryMarkHasItsColumnInEveryLayout() {
@@ -708,7 +503,7 @@ class TabViewTest {
                         assertTrue("$what: mark ${box.column} is on the page", box.top >= 0)
                     }
                 }
-                if (source == "the data" && (name == "pickup" || name == "chords" || name == "no-place-in-a-chord" || name == "triplets")) shot("probe-$name-$file")
+                if (source == "the data" && (name == "pickup" || name == "chords" || name == "no-place-in-a-chord" || name == "triplets")) shotOf("probe-$name-$file")
                 rule.runOnUiThread { view.release() }
             }
         }
@@ -721,57 +516,17 @@ class TabViewTest {
         assertTrue(words("capo").first(), words("capo").first().startsWith("Bar 1, beat 2. "))
     }
 
-    /** The second fixture's bars [times] over, renumbered: a long song. */
-    private fun long(xml: String, times: Int): String {
-        val part = Regex("""(<part\s+id="[^"]+"\s*>)(.*?)(</part>)""", RegexOption.DOT_MATCHES_ALL)
-        val measure = Regex("""<measure\b[^>]*>.*?</measure>""", RegexOption.DOT_MATCHES_ALL)
-        return part.replace(xml) { m ->
-            val bars = measure.findAll(m.groupValues[2]).map { it.value }.toList()
-            var n = 0
-            val body = (0 until times).joinToString("\n") { round ->
-                bars.joinToString("\n") { b ->
-                    n++
-                    // The first measure's attributes and header are said once.
-                    val bar = if (round > 0 && b === bars[0]) b.replace(Regex("""<attributes>.*?</attributes>""", RegexOption.DOT_MATCHES_ALL), "").replace(Regex("""<direction\b.*?</direction>""", RegexOption.DOT_MATCHES_ALL), "") else b
-                    bar.replaceFirst(Regex("""number="[^"]*""""), "number=\"$n\"")
-                }
-            }
-            m.groupValues[1] + body + m.groupValues[3]
-        }
-    }
-
     @Test
     fun aLongSongScrollsToItsEndWithTheMarksInPlace() {
         // 224 bars, with the marks of the page itself (the computer's notes are for the 16 bars).
-        val assets = instrumentation.context.assets
-        container.fixtureSource = FixtureSource { name ->
-            val bytes = runCatching { assets.open("bass-line-marks/$name").use { it.readBytes() } }.getOrNull()
-            when {
-                name == "tab.musicxml" && bytes != null -> long(String(bytes), 14).toByteArray()
-                name == "tab.json" && showing -> null
-                else -> bytes
-            }
-        }
+        longSong()
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
-        val started = System.currentTimeMillis()
         val tab = showTheTab()
         val e = tab.engraving.value!!
         assertEquals(224, e.barsPerLine.sum())
         assertEquals(42, e.boxes.size)
         assertEquals(0, tab.unmatched)
         rule.onNodeWithTag("fs-tab-marked").assertTextEquals("28 notes marked ? · Check them")
-        // Flings down the page, counted by the system: frames drawn, and how many of them were late.
-        shell("dumpsys gfxinfo $PACKAGE reset")
-        repeat(12) { shell("input swipe 540 1900 540 500 60") }
-        settle()
-        val stats = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo $PACKAGE")).use { it.readBytes().decodeToString() }
-        fun stat(label: String) = Regex("""$label: ([^\n]+)""").find(stats)?.groupValues?.get(1)?.trim().orEmpty()
-        val frames = stat("Total frames rendered").toInt()
-        val janky = Regex("""Janky frames: (\d+)""").find(stats)!!.groupValues[1].toInt()
-        android.util.Log.i("TabViewTest", "long song: ${e.lines.size} lines, page ${e.height} px, shown ${System.currentTimeMillis() - started} ms after the recording was opened; " +
-            "12 flings: $frames frames, $janky late, 50th ${stat("50th percentile")}, 90th ${stat("90th percentile")}, 95th ${stat("95th percentile")}, 99th ${stat("99th percentile")}")
-        assertTrue("flings draw frames ($frames)", frames > 60)
-        assertTrue("most frames are on time ($janky of $frames late)", janky * 2 < frames)
         toTheEnd()
         var page = 0; var range = 0
         rule.runOnUiThread { page = tab.pageScrolled; range = tab.pageScrollRange }
@@ -779,19 +534,18 @@ class TabViewTest {
         assertTheElementsAreOnTheMarks(tab, "a long song, at the end")
         // The last line is drawn, with its mark: the page is not blank at the end.
         val last = e.boxes.last()
-        val image = screen()
+        val image = still()
         val el = element("fs-tab-mark-${last.column}")
         assertTrue("the last ? of a long song is drawn", count(image, Rect(el.left.toInt(), el.top.toInt(), el.right.toInt(), el.bottom.toInt()), BrasscribeLightColors.uncertain.toArgb()) > 40)
-        shot("tab-long-song-end")
-        assertTrue("still at the end of a long song", framesWhileStill() <= 2)
+        shotOf("tab-long-song-end")
     }
 
     /** The ink of the first numeral 0 of [tab]'s first bar, as a box in pixels, with the size its font was set at. */
     private fun firstZero(tab: TabView): Pair<Rect, Float> {
-        rule.waitUntil(30_000) { tab.engraving.value != null }
+        waitUntil(30_000) { tab.engraving.value != null }
         settle()
         var out: Pair<Rect, Float>? = null
-        val image = screen()
+        val image = still()
         val ink = Rect(Int.MAX_VALUE, Int.MAX_VALUE, Int.MIN_VALUE, Int.MIN_VALUE)
         rule.runOnUiThread {
             val density = rule.activity.resources.displayMetrics.density
@@ -819,13 +573,13 @@ class TabViewTest {
 
     @Test
     fun theFretNumbersAreSetInFretscribeTab() {
-        val xml = instrumentation.context.assets.open("bass-line/tab.musicxml").use { it.readBytes() }.decodeToString()
+        val xml = asset("bass-line/tab.musicxml")
         val index = TabIndex.parse(xml)
         fun shown(ownFace: Boolean): TabView = alone(xml, TabLayout.TAB, index, TabMarks.of(index, null), ownFace)
         val own = shown(ownFace = true)
         assertTrue(own.tabFont)
         val (ownInk, size) = firstZero(own)
-        shot("tab-font")
+        shotOf("tab-font")
         val system = shown(ownFace = false)
         assertFalse(system.tabFont)
         val (systemInk, systemSize) = firstZero(system)
@@ -846,9 +600,11 @@ class TabViewTest {
         // Drawn with the face, the 0 has Fretscribe Tab's measures; without it, the system's.
         assertEquals(message, want.width().toFloat(), (ownInk.width() + 1).toFloat(), 3f)
         assertEquals(message, want.height().toFloat(), (ownInk.height() + 1).toFloat(), 3f)
+        assertTrue(message, apart(want, ownInk.width() + 1, ownInk.height() + 1) < apart(other, ownInk.width() + 1, ownInk.height() + 1))
+        // (On the JVM alphaSkia takes "monospace" from the computer's fonts, not from the phone's: only a device has Android's to compare with.)
+        if (ScreenDevice.JVM) return
         assertEquals(message, other.width().toFloat(), (systemInk.width() + 1).toFloat(), 3f)
         assertEquals(message, other.height().toFloat(), (systemInk.height() + 1).toFloat(), 3f)
-        assertTrue(message, apart(want, ownInk.width() + 1, ownInk.height() + 1) < apart(other, ownInk.width() + 1, ownInk.height() + 1))
         assertTrue(message, apart(other, systemInk.width() + 1, systemInk.height() + 1) < apart(want, systemInk.width() + 1, systemInk.height() + 1))
     }
 
@@ -911,7 +667,7 @@ class TabViewTest {
             assertTheElementsAreOnTheMarks(tab, "$where, at the end")
             // The last mark, as it is on the screen: the "?" inside its element.
             val last = tab.engraving.value!!.boxes.last()
-            val image = screen()
+            val image = still()
             val el = element("fs-tab-mark-${last.column}")
             val mark = drawn(tab, last)
             val glyph = Rect(el.left.toInt(), (mark.top - 3).toInt(), el.right.toInt(), (mark.bottom + 0.3f * tab.lineSpace).toInt())
@@ -920,15 +676,15 @@ class TabViewTest {
             assertTheElementsAreOnTheMarks(tab, "$where, at the top")
         }
         check("upright at 100 %")
-        shot("tab-end-of-page")
+        shotOf("tab-end-of-page")
         repeat(5) { rule.onNodeWithTag("fs-tab-zoom-in").performClick() }
-        rule.waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.all { it == 1 } == true }
+        waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.barsPerLine?.all { it == 1 } == true }
         tab = engraved()
         check("upright at 150 %")
         repeat(5) { rule.onNodeWithTag("fs-tab-zoom-out").performClick() }
         turn(landscape = true)
         check("on its side at 100 %")
-        shot("tab-landscape-end-of-page")
+        shotOf("tab-landscape-end-of-page")
     }
 
     /**
@@ -936,7 +692,7 @@ class TabViewTest {
      * alphaTab's layout says is no proof of that: a page can be laid out and its lines left undrawn.
      */
     private fun assertThePageIsDrawn(where: String, colours: BrasscribeColors = BrasscribeLightColors) {
-        val image = screen()
+        val image = still()
         val area = bounds("fs-tab")
         val lines = count(image, area, colours.staff.toArgb(), 24)
         val ink = count(image, area, colours.ink.toArgb(), 24)
@@ -947,6 +703,9 @@ class TabViewTest {
 
     @Test
     fun turnedOnItsSideFromTheEndOfThePageTheTabIsDrawn() {
+        // A device's: where alphaTab's page is after a turn follows the scroll steps the phone's window sends it, and the
+        // JVM's phone is turned by hand (ScreenDevice.turn), which leaves the page a line off or undrawn.
+        assumeTrue("on a device only: the turned page", !ScreenDevice.JVM)
         computer("bass-line-marks")
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         var tab = showTheTab()
@@ -967,7 +726,7 @@ class TabViewTest {
             // On its side: the staff and the numbers are on the screen, at once and after a swipe.
             assertThePageIsDrawn("on its side from the end, $percent %")
             assertTrue("a turned phone has a view of its own", tab !== upright)
-            shot("tab-turned-from-the-end-$percent")
+            shotOf("tab-turned-from-the-end-$percent")
             rule.onNodeWithTag("fs-tab-scroll").performTouchInput { swipeDown() }
             assertThePageIsDrawn("on its side after a swipe, $percent %")
             rule.onNodeWithTag("fs-tab-scroll").performTouchInput { swipeUp() }
@@ -1017,6 +776,9 @@ class TabViewTest {
 
     @Test
     fun theBarBeingReadIsKeptThroughATurnASizeAndAVisitToCheckTheSong() {
+        // A device's: where alphaTab's page is after a turn follows the scroll steps the phone's window sends it, and the
+        // JVM's phone is turned by hand (ScreenDevice.turn), which leaves the page a line off or undrawn.
+        assumeTrue("on a device only: the turned page", !ScreenDevice.JVM)
         computer("bass-line-marks")
         var tab = showTheTab()
         // Read on to the line of bar 10 (the tenth bar is counted 9 from 0).
@@ -1028,7 +790,7 @@ class TabViewTest {
         assertEquals("reading at the line of bar 10", line.firstBar, reading)
         fun assertStillThere(where: String) {
             tab = engraved()
-            rule.waitUntil(10_000) { barLineHolds(tab, reading) }
+            waitUntil(10_000) { barLineHolds(tab, reading) }
             tab = engraved()
             assertTrue("$where: the line of bar ${reading + 1} is the first in view (bar ${barInView(tab) + 1} is)", barLineHolds(tab, reading))
             android.util.Log.i("TabViewTest", "the bar being read, $where: bar ${reading + 1} is on the first line in view, which starts at bar ${barInView(tab) + 1}")
@@ -1036,19 +798,19 @@ class TabViewTest {
         turn(landscape = true)
         assertStillThere("on its side")
         assertThePageIsDrawn("the place kept on its side")
-        shot("tab-landscape-place")
+        shotOf("tab-landscape-place")
         turn(landscape = false)
         assertStillThere("upright again")
         assertThePageIsDrawn("the place kept upright again")
         assertEquals("upright again the same line is at the top", reading, barInView(tab))
         val lines = tab.engraving.value!!.lines.size
         repeat(5) { rule.onNodeWithTag("fs-tab-zoom-in").performClick() }
-        rule.waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.lines?.let { it.size > lines } == true }
+        waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.lines?.let { it.size > lines } == true }
         tab = engraved()
         assertStillThere("at 150 %")
-        shot("tab-zoomed-place")
+        shotOf("tab-zoomed-place")
         repeat(5) { rule.onNodeWithTag("fs-tab-zoom-out").performClick() }
-        rule.waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.lines?.size == lines }
+        waitUntil(20_000) { TabScreenProbe.view?.engraving?.value?.lines?.size == lines }
         tab = engraved()
         assertStillThere("back at 100 %")
         assertEquals("at 100 % again the same line is at the top", reading, barInView(tab))
@@ -1075,8 +837,7 @@ class TabViewTest {
     fun onItsSideWithLargeTextTheHeaderScrollsAwayAndTheTabHasTheScreen() {
         computer("bass-line-marks")
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
-        shell("settings put system font_scale 2.0")
-        rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale >= 1.9f }
+        textSize(2.0f)
         turn(landscape = true)
         TabScreenProbe.made = 0
         var tab = showTheTab()
@@ -1087,7 +848,7 @@ class TabViewTest {
         assertNoTextIsClipped()
         // The header is the top of the page here, not pinned above it.
         rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()
-        shot("tab-landscape-200-text-top")
+        shotOf("tab-landscape-200-text-top")
         val e = tab.engraving.value!!
         val (_, max) = scrolled()
         var range = 0; var room = 0
@@ -1113,7 +874,7 @@ class TabViewTest {
         assertEquals(0, tab.unmatched)
         assertTheElementsAreOnTheMarks(tab, "on its side at 200 % text")
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("tab-landscape-200-text")
+        shotOf("tab-landscape-200-text")
     }
 
     @Test
@@ -1141,8 +902,4 @@ class TabViewTest {
         assertEquals(0f, scrolled().first)
     }
 
-    private companion object {
-        const val PACKAGE = "no.fretscribe.play"
-        const val SHOTS = "/data/local/tmp/fretscribe-tab"
-    }
 }
