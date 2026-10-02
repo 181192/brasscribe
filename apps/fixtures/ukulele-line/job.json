@@ -1,0 +1,75 @@
+{
+ "id": "ukulele-line",
+ "profile": "tab",
+ "title": "Ukulele line",
+ "audio_id": "a11073fc9a8a4924",
+ "status": "succeeded",
+ "created": 1767225600.0,
+ "started": 1767225600.0,
+ "finished": 1767225606.0,
+ "error": null,
+ "progress": 1.0,
+ "previous_run_id": null,
+ "device_name": null,
+ "stages": [
+  {
+   "name": "beats",
+   "kind": "beats",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  },
+  {
+   "name": "transcribe.ukulele.basic-pitch",
+   "kind": "transcribe",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  },
+  {
+   "name": "transcribe.ukulele.swift-f0",
+   "kind": "transcribe",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  },
+  {
+   "name": "notes",
+   "kind": "notes",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  },
+  {
+   "name": "arrange",
+   "kind": "arrange",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  },
+  {
+   "name": "export",
+   "kind": "export",
+   "status": "ran",
+   "seconds": 1.0,
+   "queue_wait_s": 0.0,
+   "run_s": 1.0,
+   "device": null
+  }
+ ],
+ "outputs": [
+  "composition.json",
+  "tab.json",
+  "tab.musicxml"
+ ]
+}

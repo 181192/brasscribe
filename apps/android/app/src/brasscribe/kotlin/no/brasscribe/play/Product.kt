@@ -22,8 +22,8 @@ object Product {
     @Composable
     fun instrumentValue(vm: PlayViewModel): String = no.brasscribe.play.ui.seatValue(vm.container.seat, vm.container.seats)
 
-    /** The computer's scores this app opens: every band score. A bass tab is Fretscribe's. */
-    fun makes(profile: String): Boolean = profile != Profile.BASS_TAB.id
+    /** The computer's scores this app opens: every band score. A tab is Fretscribe's. */
+    fun makes(profile: String): Boolean = !Profile.writesTab(profile)
 
     /** Check the notes and the output choices are offered for this profile's scores. */
     fun arranges(profile: Profile): Boolean = makes(profile.id)
@@ -49,7 +49,7 @@ object Product {
     @Suppress("UNUSED_PARAMETER")
     fun afterTranscription(result: TranscriptionResult): Screen = Screen.REVIEW
 
-    /** A row in Your scores that is not a band score: a bass tab says where it opens. Null for the usual line. */
+    /** A row in Your scores that is not a band score: a tab says where it opens. Null for the usual line. */
     @Composable
     fun rowSubtitle(entry: ScoreEntry): String? =
         if (entry.onComputer && !makes(entry.profile)) stringResource(R.string.other_product_row) else null

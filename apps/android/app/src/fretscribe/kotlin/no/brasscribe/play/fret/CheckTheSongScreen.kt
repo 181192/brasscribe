@@ -12,6 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -59,13 +62,19 @@ private sealed interface Heard {
     data class Missing(val why: Int) : Heard
 }
 
-/** What a row's button asks for: the same recording written down again with this changed. */
-private class Change(val label: String, val tag: String, val options: (TabOptions) -> TabOptions)
+/**
+ * What a row's button asks for: the same recording written down again with this changed. A change that
+ * has something to [ask] opens a picker first, and the change is the one chosen there.
+ */
+private class Change(val label: String, val tag: String, val ask: Ask? = null, val options: (TabOptions) -> TabOptions)
+
+/** A picker's [question] and [choices], the one the tab has now [selected]; [pick] is the change for a choice, null for the one it has. */
+private class Ask(val question: String, val choices: List<Choice>, val selected: String, val pick: (String) -> Change?)
 
 /**
  * "Check the song" (design/fretscribe/flows.md §7), in its first form: what Fretscribe heard, one row per
- * finding the result has (tuning, octave, reference pitch, key and tempo, notes marked ? and notes with
- * no place), and Show the tab. A row's button sends the recording to the computer again with that one
+ * finding the result has (tuning, capo, octave, reference pitch, key and tempo, notes marked ?, notes with
+ * no place, notes left out and notes added), and Show the tab. A row's button sends the recording to the computer again with that one
  * thing changed; the computer keeps what it already worked out, so only the fingering is done again.
  */
 @Composable
@@ -92,15 +101,22 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
         }
     }
     val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
+    val asked = computerProfiles(vm, there)
+    val listed = asked?.listed
     // The computer keeps the recording it was sent: a change is a new job on it, also for a song opened from Your songs.
-    val canChange = there
+    // A computer from before this tab's instrument cannot write it again.
+    val made = (heard as? Heard.Ready)?.tab?.preset?.let(SongCheck::kindOf)
+    val asking = there && asked?.asking != false
+    val tooOld = there && !asking && heard is Heard.Ready && tabProfile(made, listed) == null
+    // No change is offered until the computer has said what it can write.
+    val canChange = there && !asking && !tooOld
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
     fun writeAgain(change: Change, made: Heard.Ready) {
         val options = change.options(SongCheck.optionsOf(made.tab, made.stages))
         SongAnswers.set(source, SongAnswer(options.recording, again = options))
-        vm.chooseProfile(Profile.BASS_TAB)
+        vm.chooseProfile(Profile.TAB)
         // Writing down the notes takes this screen's place, and it comes back when they are written.
         vm.back()
         vm.startTranscription()
@@ -128,7 +144,8 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
                 val rows = remember(h.tab) { SongCheck.rows(h.tab) }
                 val changes = rows.map { changeFor(it) }
                 // Above the rows, so it is seen: why the buttons are not there.
-                if (changes.any { it != null } && !canChange) InfoNote(stringResource(R.string.fs_check_connect), Modifier.testTag("fs-check-connect"))
+                if (changes.any { it != null } && !canChange && !asking)
+                    InfoNote(stringResource(if (tooOld) tooOldWords(made) else R.string.fs_check_connect), Modifier.testTag("fs-check-connect"))
                 RowGroup {
                     rows.forEachIndexed { i, row ->
                         if (i > 0) RowDivider()
@@ -143,6 +160,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
 /** Whether a row offers a change. */
 private fun changes(row: SongRow): Boolean = when (row) {
     is SongRow.Tuning -> row.soundsLike != null
+    is SongRow.Capo -> true
     is SongRow.Octave -> row.chosen || row.shift != 0
     else -> false
 }
@@ -153,6 +171,13 @@ private fun changeFor(row: SongRow): Change? = when (row) {
     is SongRow.Tuning -> row.soundsLike?.let { id ->
         Change(stringResource(R.string.fs_check_use, tuningName(id)), "tuning") { it.copy(tuning = id) }
     }
+    is SongRow.Capo -> {
+        // The capo is this song's: the frets are counted from it, so the notes are placed again for the one chosen.
+        val frets = SongCheck.CAPO_FRETS.map { Choice(it.toString(), capoName(it)) }
+        Change(stringResource(R.string.fs_check_capo_change), "capo", Ask(stringResource(R.string.fs_check_capo), frets, row.fret.toString()) { id ->
+            id.toIntOrNull()?.takeIf { it in SongCheck.CAPO_FRETS && it != row.fret }?.let { fret -> Change(id, "capo") { it.copy(capo = fret) } }
+        }) { it }
+    }
     is SongRow.Octave ->
         if (row.chosen) Change(stringResource(R.string.fs_check_octave_auto), "octave") { it.copy(octave = Octave.AUTO) }
         else if (row.shift != 0) Change(stringResource(R.string.fs_check_as_heard), "octave") { it.copy(octave = Octave.AS_HEARD) }
@@ -160,15 +185,26 @@ private fun changeFor(row: SongRow): Change? = when (row) {
     else -> null
 }
 
+/** A capo's place in words: "No capo", "Capo on fret 2". */
+@Composable
+internal fun capoName(fret: Int): String = if (fret == 0) stringResource(R.string.fs_check_capo_none) else stringResource(R.string.fs_check_capo_on, fret)
+
 /** What a row says, as shown and as spoken (the tempo sign and the time signature are said in words). */
 @Composable
 private fun rowWords(row: SongRow): Triple<String, String, String> = when (row) {
     is SongRow.Tuning -> {
-        val written = tuningName(row.written)
+        val written = tuningName(row.written, kind = row.kind)
         val shown = row.soundsLike?.let { stringResource(R.string.fs_check_sounds_like, tuningName(it), written) } ?: written
-        val spoken = row.soundsLike?.let { stringResource(R.string.fs_check_sounds_like, tuningName(it, spoken = true), tuningName(row.written, spoken = true)) }
-            ?: tuningName(row.written, spoken = true)
+        val spoken = row.soundsLike?.let { stringResource(R.string.fs_check_sounds_like, tuningName(it, spoken = true), tuningName(row.written, spoken = true, kind = row.kind)) }
+            ?: tuningName(row.written, spoken = true, kind = row.kind)
         Triple(stringResource(R.string.fs_check_tuning), shown, spoken)
+    }
+    is SongRow.Capo -> capoName(row.fret).let { Triple(stringResource(R.string.fs_check_capo), it, it) }
+    is SongRow.LeftOut -> pluralStringResource(R.plurals.fs_check_left_out, row.count, row.count).let {
+        Triple(stringResource(R.string.fs_check_left_out_title), it, it)
+    }
+    is SongRow.Added -> pluralStringResource(R.plurals.fs_check_added, row.count, row.count).let {
+        Triple(stringResource(R.string.fs_check_added_title), it, it)
     }
     is SongRow.Octave -> {
         val text = when {
@@ -210,6 +246,9 @@ private fun tagOf(row: SongRow): String = when (row) {
     is SongRow.KeyAndTempo -> "key"
     is SongRow.Doubtful -> "marked"
     is SongRow.NoPlace -> "no-place"
+    is SongRow.Capo -> "capo"
+    is SongRow.LeftOut -> "left-out"
+    is SongRow.Added -> "added"
 }
 
 /** One finding: its name and what was heard, read as one element, and its button under them. */
@@ -217,26 +256,41 @@ private fun tagOf(row: SongRow): String = when (row) {
 private fun SongRowView(row: SongRow, change: Change?, onChange: (Change) -> Unit) {
     val c = BrasscribeTheme.colors
     val (label, shown, spoken) = rowWords(row)
+    // A change of capo keeps the sound: the same notes, with the frets counted from the capo. The computer has no
+    // other way (the same shapes, sounding higher), so the row says what will happen instead of asking.
+    val caption = if (row is SongRow.Capo && change != null) stringResource(R.string.fs_check_capo_keeps) else null
     Column(
         Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
         verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
     ) {
-        Column(Modifier.fillMaxWidth().testTag("fs-check-${tagOf(row)}").semantics(mergeDescendants = true) { contentDescription = "$label: $spoken" }) {
+        Column(Modifier.fillMaxWidth().testTag("fs-check-${tagOf(row)}").semantics(mergeDescendants = true) { contentDescription = listOfNotNull("$label: $spoken", caption).joinToString(". ") }) {
             Text(label, style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.clearAndSetSemantics { })
             Text(shown, style = MaterialTheme.typography.titleMedium, color = c.text, modifier = Modifier.clearAndSetSemantics { })
+            if (caption != null) Text(caption, style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.clearAndSetSemantics { })
         }
-        if (change != null) OutlineButton(change.label, { onChange(change) }, Modifier.testTag("fs-check-change-${change.tag}"), fill = false)
+        if (change != null) {
+            var asking by rememberSaveable { mutableStateOf(false) }
+            val button = remember { FocusRequester() }
+            // A change with choices asks which first; nothing is written down again until one is chosen.
+            val ask = change.ask
+            OutlineButton(change.label, { if (ask == null) onChange(change) else asking = true },
+                Modifier.focusRequester(button).testTag("fs-check-change-${change.tag}"), fill = false)
+            if (asking && ask != null) PickerDialog(ask.question, "check-${change.tag}", ask.selected, ask.choices,
+                // When the dialog closes, the keyboard's focus is back on the button that opened it.
+                close = { asking = false; runCatching { button.requestFocus() } },
+            ) { id -> ask.pick(id)?.let(onChange) }
+        }
     }
 }
 
 /**
- * A song's line in Your songs: "4-string bass · Drop D · 3 notes to check · Today" for a tab on this phone,
+ * A song's line in Your songs: "6-string guitar · Drop D · 3 notes to check · Today" for a tab on this phone,
  * and where it is or where it opens for what the computer lists. Null leaves the row to the shared line
  * (a tab file opened from the phone).
  */
 @Composable
 fun songRowSubtitle(entry: ScoreEntry): String? {
-    val tab = entry.profile == Profile.BASS_TAB.id
+    val tab = Profile.writesTab(entry.profile)
     val saved = entry.saved
     if (!tab && saved != null) return null
     if (!tab) return stringResource(R.string.other_product_row)
@@ -250,8 +304,8 @@ fun songRowSubtitle(entry: ScoreEntry): String? {
     }
     val f = facts ?: return listOf(stringResource(R.string.fs_song_tab), date).joinToString(" · ")
     return listOfNotNull(
-        f.strings?.let { stringResource(R.string.fs_bass_with_strings, it) } ?: stringResource(R.string.fs_song_tab),
-        f.tuning?.let { tuningName(it) },
+        f.kind?.let { kindName(it) } ?: stringResource(R.string.fs_song_tab),
+        f.tuning?.let { tuningName(it, kind = f.kind) },
         f.toCheck.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_song_to_check, it, it) },
         date,
     ).joinToString(" · ")

@@ -1,5 +1,7 @@
 package no.brasscribe.play.engine
 
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -21,10 +23,12 @@ class DirectoryFixtureSource(private val dir: File) : FixtureSource {
 
 /**
  * Plays the part of the engine from a folder laid out like its output (composition.json,
- * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present; for a bass-tab job
+ * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present; for a tab job
  * tab.json, tab.musicxml, and tab.pdf and tab.mid when present): every job walks the stages of its
- * profile with timed progress events and then serves those files. Tests only: the JVM tests replay
- * data/golden and apps/fixtures/bass-line, the instrumented tests apps/fixtures/old-hundredth.
+ * profile with timed progress events and then serves those files. A folder with a profiles.json (a list of
+ * profile ids) plays a computer that has only those: an older one, from before the tab profile. (The file is
+ * read each time the profiles are asked for, so a source may take its time over it, or fail.) Tests only: the JVM tests replay
+ * data/golden and the tab fixtures of apps/fixtures (bass-line, guitar-line, ukulele-line), the instrumented tests apps/fixtures/old-hundredth.
  */
 class FixtureEngineApi(
     private val source: FixtureSource,
@@ -46,8 +50,14 @@ class FixtureEngineApi(
         PairRequestInfo("fixture-request", deviceName ?: "Phone", platform ?: "android", "0000", "2026-01-01T00:00:00+00:00", "pending")
     override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
-    override suspend fun profiles(): List<ProfileInfo> = Profile.entries.map {
+    override suspend fun profiles(): List<ProfileInfo> = known().map {
         ProfileInfo(it.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
+    }
+
+    /** The profiles this computer has: all of them, or the ones the fixture's profiles.json lists. */
+    private fun known(): List<Profile> {
+        val listed = source.read(PROFILES_FILE)?.let { no.brasscribe.play.model.BrasscribeJson.decodeFromString(ListSerializer(String.serializer()), String(it)) }
+        return Profile.entries.filter { listed == null || it.id in listed }
     }
 
     // Hashes the stream in chunks, as the engine does, so a fixture upload holds no more than a buffer.
@@ -69,10 +79,18 @@ class FixtureEngineApi(
     }
 
     override suspend fun createJob(request: JobCreate): Job {
-        val profile = Profile.of(request.profile) ?: throw EngineException(422, "unknown profile ${request.profile}")
+        // As the engine: a profile it does not have is refused without a code.
+        // (A source that cannot say which profiles there are is a computer with all of them.)
+        val has = runCatching { known() }.getOrDefault(Profile.entries)
+        val profile = Profile.of(request.profile)?.takeIf { it in has } ?: throw EngineException(422, "unknown profile ${request.profile}")
         val id = "fixture-${counter.incrementAndGet()}"
-        if (profile != Profile.BASS_TAB && request.tabOptionsNamed()) throw EngineException(422, "only the bass-tab profile takes the tab options", Refusal.INVALID_OPTIONS.code)
-        val stages = stagesOf(profile, wholeRecording = request.recording == Recording.INSTRUMENT)
+        if (!profile.writesTab && request.tabOptionsNamed()) throw EngineException(422, "only the tab profile takes the tab options", Refusal.INVALID_OPTIONS.code)
+        // As the engine: the older id is for a bass only, and an instrument takes its own tunings.
+        val instrument = request.instrument ?: if (profile == Profile.BASS_TAB) FrettedInstrument.BASS_4 else FrettedInstrument.GUITAR_6
+        if (profile.writesTab && (instrument.id == null || (profile == Profile.BASS_TAB && !instrument.isBass) ||
+                (request.tuning != null && request.tuning !in instrument.tunings) || (instrument.isBass && request.chords == TabChords.COMPLETED)))
+            throw EngineException(422, "not an instrument, a tuning or a chords choice of the ${profile.id} profile", Refusal.INVALID_OPTIONS.code)
+        val stages = stagesOf(profile, wholeRecording = (request.recording ?: instrument.defaultRecording) == Recording.INSTRUMENT, instrument = instrument)
         val job = Job(id, profile.id, JobStatus.QUEUED, now(), stages.map { StageState(it, StageStatus.PENDING, kindOf(it)) },
             audioId = request.audioId, title = request.title)
         jobs[id] = job
@@ -83,7 +101,7 @@ class FixtureEngineApi(
                                              tab: TabOptions?): Job =
         createJob(JobCreate(uploadAudio(source, onProgress).audioId, profile.id, renderAudio, title = title).withTab(tab ?: TabOptions()))
 
-    private fun JobCreate.tabOptionsNamed() = listOf(instrument, tuning, capo, style, recording, octave, layout).any { it != null }
+    private fun JobCreate.tabOptionsNamed() = listOf(instrument, tuning, capo, style, recording, octave, layout, chords).any { it != null }
 
     override suspend fun job(jobId: String): Job = jobs[jobId] ?: throw EngineException(404, "no job $jobId")
     override suspend fun jobs(): List<Job> = jobs.values.sortedBy { it.created }
@@ -140,7 +158,7 @@ class FixtureEngineApi(
         source.read(name)?.let { Artifact(name, it.size.toLong(), mediaOf(name), "/v1/jobs/$jobId/artifacts/$name") }
     }
 
-    private fun isTab(jobId: String) = jobs[jobId]?.profile == Profile.BASS_TAB.id
+    private fun isTab(jobId: String) = jobs[jobId]?.profile?.let(Profile::writesTab) == true
 
     /** The name the job's score files go by, as the engine's /musicxml, /pdf and /midi choose it. */
     private fun stem(jobId: String) = if (isTab(jobId)) "tab" else "brass-band"
@@ -181,8 +199,10 @@ class FixtureEngineApi(
     companion object {
         const val SERVER_ID = "fixture"
         const val SERVER_NAME = "Brasscribe (test fixture)"
+        /** A fixture file that lists the profile ids the computer has, when it has not all of them. */
+        const val PROFILES_FILE = "profiles.json"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
-        /** What a bass-tab job leaves; the PDF and the MIDI only on a computer with MuseScore. */
+        /** What a tab job leaves; the PDF and the MIDI only on a computer with MuseScore. */
         val TAB_OUTPUTS = listOf("composition.json", "tab.json", "tab.musicxml", "tab.pdf", "tab.mid")
         /** The brass band's parts in order, as the engine's file names spell them. */
         val PART_NAMES = listOf(
@@ -202,12 +222,21 @@ class FixtureEngineApi(
         )
 
         /**
-         * Stage names per profile, as the engine's profiles define them. [wholeRecording]: a bass-tab job
-         * for a recording of the bass alone, which is not separated.
+         * Stage names per profile, as the engine's profiles define them. [wholeRecording]: a tab job for a
+         * recording of the instrument alone, which is not separated. [instrument]: the one a tab job is for,
+         * which names its transcription stages; a job that names none is for a guitar (bass-tab: a bass).
          */
-        fun stagesOf(profile: Profile, wholeRecording: Boolean = false): List<String> = when (profile) {
-            Profile.BASS_TAB -> listOf("beats") + (if (wholeRecording) emptyList() else listOf("stems")) +
-                listOf("transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export")
+        fun stagesOf(profile: Profile, wholeRecording: Boolean = false, instrument: FrettedInstrument? = null): List<String> = when (profile) {
+            Profile.TAB, Profile.BASS_TAB -> {
+                val kind = when (instrument ?: if (profile == Profile.BASS_TAB) FrettedInstrument.BASS_4 else FrettedInstrument.GUITAR_6) {
+                    FrettedInstrument.UKULELE, FrettedInstrument.UKULELE_BARITONE -> "ukulele"
+                    FrettedInstrument.MANDOLIN -> "mandolin"
+                    FrettedInstrument.GUITAR_6, FrettedInstrument.GUITAR_7, FrettedInstrument.GUITAR_8 -> "guitar"
+                    else -> "bass"
+                }
+                listOf("beats") + (if (wholeRecording) emptyList() else listOf("stems")) +
+                    listOf("transcribe.$kind.basic-pitch", "transcribe.$kind.swift-f0", "notes", "arrange", "export")
+            }
             Profile.SOLO -> listOf("beats", "transcribe.mix.swift-f0", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
             Profile.BRASS_BAND -> listOf("beats", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
             Profile.POP_ROCK -> listOf("beats", "stems") + listOf("vocals", "other", "guitar", "piano").map { "transcribe.$it.muscriptor" } +

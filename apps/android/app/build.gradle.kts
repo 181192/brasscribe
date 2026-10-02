@@ -74,6 +74,12 @@ android {
             // The shared resolver vectors (sounds/partsound-vectors.json) and part map.
             it.systemProperty("brasscribe.sounds", System.getenv("BRASSCRIBE_SOUNDS_DIR") ?: File(repoRoot, "sounds").absolutePath)
             it.systemProperty("brasscribe.bandSounds", bandSoundsDir.absolutePath)
+            // Fretscribe's tests ask the engine's own option check about the jobs the app sends, and read the
+            // tab fixtures and the crate's presets: a change to any of them runs the tests again.
+            it.inputs.files(fileTree(File(repoRoot, "engine/src/brasscribe_engine")) { include("*.py") }).withPropertyName("engineOptionCheck")
+            it.inputs.files(File(repoRoot, "apps/android/scripts/check-tab-options.py"), File(repoRoot, "core/target-fretted/src/instrument.rs"))
+                .withPropertyName("tabOptionSources")
+            it.inputs.files(fileTree(File(repoRoot, "apps/fixtures")) { include("*-line/*") }).withPropertyName("tabFixtures")
         }
     }
 

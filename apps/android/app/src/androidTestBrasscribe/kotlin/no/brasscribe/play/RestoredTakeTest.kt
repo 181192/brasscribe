@@ -119,13 +119,18 @@ class RestoredTakeTest {
 
     @Test
     fun openOnTheMusicStandOnABassTabsRowOpensNothingAndLeavesNoStandBehind() {
-        val tab = ScoreEntry("job:tab-1", "Bass line", System.currentTimeMillis(), "bass-tab", jobId = "tab-1")
-        rule.runOnUiThread { vm.openEntry(tab, stand = true) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("This is a bass tab. Open it in Fretscribe.").fetchSemanticsNodes().isNotEmpty() }
-        assertEquals(listOf(Screen.HOME), vm.screen.value)
-        // The next score opened is not put on the music stand.
-        assertNull(vm.standFromLibrary.value)
-        assertNull(vm.openingScore.value)
+        // A tab of any instrument, and a bass tab an older app made: neither is this app's.
+        for (profile in listOf("bass-tab", "tab")) {
+            val tab = ScoreEntry("job:$profile-1", "Riff", System.currentTimeMillis(), profile, jobId = "$profile-1")
+            rule.runOnUiThread { vm.openEntry(tab, stand = true) }
+            rule.waitUntil(5_000) { rule.onAllNodesWithText("This is a tab. Open it in Fretscribe.").fetchSemanticsNodes().isNotEmpty() }
+            assertEquals(profile, listOf(Screen.HOME), vm.screen.value)
+            // The next score opened is not put on the music stand.
+            assertNull(vm.standFromLibrary.value)
+            assertNull(vm.openingScore.value)
+            // (The message goes away before the next one is asked for.)
+            rule.waitUntil(15_000) { rule.onAllNodesWithText("This is a tab. Open it in Fretscribe.").fetchSemanticsNodes().isEmpty() }
+        }
     }
 
     /** The row menu of [entry], opened: the actions it offers. */
@@ -143,6 +148,7 @@ class RestoredTakeTest {
     fun aBassTabsRowOffersNeitherTheMusicStandNorCheckTheNotes() {
         val now = System.currentTimeMillis()
         assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:tab-1", "Bass line", now, "bass-tab", jobId = "tab-1")))
+        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:tab-2", "Guitar line", now, "tab", jobId = "tab-2")))
         // A band score in the same list has them all, as before.
         assertEquals(listOf("Edit title", "Open on the music stand", "Check the notes", "Delete"),
             menuOf(ScoreEntry("job:band-1", "Old Hundredth", now, "brass-band", jobId = "band-1")))

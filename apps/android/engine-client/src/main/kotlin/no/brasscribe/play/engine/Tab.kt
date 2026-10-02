@@ -10,7 +10,8 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 /*
- * The bass-tab profile: the job's options and its result (GET /v1/jobs/{id}/tab, the engine's schemas.Tab).
+ * The tab profile (and bass-tab, its id for a bass in older apps): the job's options and its result
+ * (GET /v1/jobs/{id}/tab, the engine's schemas.Tab).
  * EngineContractTest checks the fields, their nullability and the enums against the vendored spec.
  */
 
@@ -31,21 +32,59 @@ open class WireEnumSerializer<E>(name: String, values: List<E>, private val unkn
         encoder.encodeString(value.id ?: throw SerializationException("${value.name} is not a value to send"))
 }
 
-/** The instrument a tab is written for, by its number of strings, with the tunings the engine has for it (standard first). */
+/**
+ * The instrument a tab is written for, with the tunings the engine has for it (its default first).
+ *
+ * [family] names the instrument's presets in the core's `target-fretted` crate: "<family>-<tuning>", or the
+ * family alone for an instrument with [onePreset]. A six-string guitar's family is "guitar".
+ */
 @Serializable(with = FrettedInstrument.Serializer::class)
-enum class FrettedInstrument(override val id: String?, val tunings: List<String>) : WireEnum {
+enum class FrettedInstrument(
+    override val id: String?,
+    val tunings: List<String>,
+    private val family: String? = id,
+    private val onePreset: Boolean = false,
+    /**
+     * The engine reads this instrument from the guitar's part of a song (it can't tell the two apart there), so
+     * a song only works when no guitar plays in it, and a job that does not say what was recorded is taken as
+     * the instrument alone.
+     */
+    val aloneByDefault: Boolean = false,
+) : WireEnum {
     BASS_4("bass-4", listOf("standard", "eb-standard", "d-standard", "drop-d", "bead")),
     BASS_5("bass-5", listOf("standard", "drop-a")),
     BASS_6("bass-6", listOf("standard")),
+    GUITAR_6("guitar-6", listOf("standard", "eb-standard", "d-standard", "c-standard", "drop-d", "drop-c", "drop-b", "dadgad", "open-g",
+        "open-d", "open-e"), family = "guitar"),
+    GUITAR_7("guitar-7", listOf("standard", "eb-standard")),
+    GUITAR_8("guitar-8", listOf("standard")),
+    /** Soprano, concert and tenor: one tuning, with the fourth string high or low. */
+    UKULELE("ukulele", listOf("high-g", "low-g"), aloneByDefault = true),
+    UKULELE_BARITONE("ukulele-baritone", listOf("standard"), onePreset = true, aloneByDefault = true),
+    MANDOLIN("mandolin", listOf("standard"), onePreset = true, aloneByDefault = true),
     UNKNOWN(null, emptyList());
 
+    /** The tuning of a job that names none. */
+    val defaultTuning: String get() = tunings.firstOrNull() ?: STANDARD_TUNING
+
+    /** A bass: one line, and the only instruments the bass-tab profile takes. */
+    val isBass: Boolean get() = this == BASS_4 || this == BASS_5 || this == BASS_6
+
+    /** What a job that does not say what was recorded is taken as. */
+    val defaultRecording: Recording get() = if (aloneByDefault) Recording.INSTRUMENT else Recording.SONG
+
     /** The engine's preset id for this instrument in [tuning], as [Tab.preset] and [TuningFit.preset] name it. */
-    fun preset(tuning: String = STANDARD_TUNING): String = "$id-$tuning"
+    fun preset(tuning: String = defaultTuning): String = if (onePreset) "$family" else "$family-$tuning"
 
     internal object Serializer : WireEnumSerializer<FrettedInstrument>("FrettedInstrument", entries, UNKNOWN)
 
     companion object {
         const val STANDARD_TUNING = "standard"
+
+        /** The instrument and tuning a preset id names ("guitar-drop-d", "ukulele-baritone"); null for one this client does not know. */
+        fun ofPreset(preset: String): Pair<FrettedInstrument, String>? = entries.firstNotNullOfOrNull { i ->
+            i.tunings.firstOrNull { i.preset(it) == preset }?.let { i to it }
+        }
     }
 }
 
@@ -66,19 +105,19 @@ enum class FingeringStyle(override val id: String?) : WireEnum {
 /** What was recorded. */
 @Serializable(with = Recording.Serializer::class)
 enum class Recording(override val id: String?) : WireEnum {
-    /** A band or a record: the bass is separated from it. */
+    /** A band or a record: the instrument is separated from it. */
     SONG("song"),
-    /** The bass alone: no separation. */
+    /** The instrument alone: no separation. */
     INSTRUMENT("instrument"),
     UNKNOWN(null);
 
     internal object Serializer : WireEnumSerializer<Recording>("Recording", entries, UNKNOWN)
 }
 
-/** The octave the line is written in. */
+/** The octave the notes are written in. */
 @Serializable(with = Octave.Serializer::class)
 enum class Octave(override val id: String?) : WireEnum {
-    /** An octave lower when the line was heard an octave above where a bass plays. */
+    /** An octave lower when the notes were heard an octave above where the instrument plays (a guitar: also higher when heard below it). */
     AUTO("auto"),
     /** As it was heard. */
     AS_HEARD("0"),
@@ -103,6 +142,32 @@ enum class TabLayout(override val id: String?) : WireEnum {
     internal object Serializer : WireEnumSerializer<TabLayout>("TabLayout", entries, UNKNOWN)
 }
 
+/** What a chord holds. Not for a bass, whose line is one note at a time. */
+@Serializable(with = TabChords.Serializer::class)
+enum class TabChords(override val id: String?) : WireEnum {
+    /** The notes that were heard. */
+    HEARD("heard"),
+    /** Also a note the same chord has in the strums around it: marked [TabNote.inferred], with a "?". */
+    COMPLETED("completed"),
+    UNKNOWN(null);
+
+    internal object Serializer : WireEnumSerializer<TabChords>("TabChords", entries, UNKNOWN)
+}
+
+/** The clef of an instrument's notation staff. */
+@Serializable(with = NotationClef.Serializer::class)
+enum class NotationClef(override val id: String?) : WireEnum {
+    /** Ukulele and mandolin. */
+    TREBLE("treble"),
+    /** Guitar and baritone ukulele: written an octave above their sound. */
+    TREBLE_8VB("treble-8vb"),
+    /** Bass. */
+    BASS_8VB("bass-8vb"),
+    UNKNOWN(null);
+
+    internal object Serializer : WireEnumSerializer<NotationClef>("NotationClef", entries, UNKNOWN)
+}
+
 /** Who decided [Tab.octaveShift]: the engine's octave check, or the job's octave option. */
 @Serializable(with = OctaveSource.Serializer::class)
 enum class OctaveSource(override val id: String?) : WireEnum {
@@ -123,9 +188,10 @@ enum class KeyMode(override val id: String?) : WireEnum {
 }
 
 /**
- * The options of a bass-tab job. One left null is not sent, and the engine uses its default: a
- * four-string bass in standard tuning with no capo, as played, separated from a song, the octave
- * checked, the tab staff alone.
+ * The options of a tab job. One left null is not sent, and the engine uses its default: a six-string
+ * guitar (the bass-tab profile: a four-string bass) in the instrument's first tuning with no capo, as
+ * played, separated from a song (a ukulele or a mandolin: the instrument alone), the octave checked, the
+ * tab staff alone, the chords as they were heard.
  */
 data class TabOptions(
     val instrument: FrettedInstrument? = null,
@@ -137,12 +203,14 @@ data class TabOptions(
     val recording: Recording? = null,
     val octave: Octave? = null,
     val layout: TabLayout? = null,
+    /** Not for a bass: the engine refuses it there. */
+    val chords: TabChords? = null,
 ) {
     /** The options as form fields, for a job made from an upload. */
     internal fun formFields(): List<Pair<String, String>> = listOfNotNull(
         instrument?.let { "instrument" to it.wire() }, tuning?.let { "tuning" to it }, capo?.let { "capo" to it.toString() },
         style?.let { "style" to it.wire() }, recording?.let { "recording" to it.wire() }, octave?.let { "octave" to it.wire() },
-        layout?.let { "layout" to it.wire() },
+        layout?.let { "layout" to it.wire() }, chords?.let { "chords" to it.wire() },
     )
 
     private fun <E> E.wire(): String where E : Enum<E>, E : WireEnum = id ?: throw IllegalArgumentException("$name is not a value to send")
@@ -185,6 +253,10 @@ data class TabNote(
     val pinned: Boolean = false,
     /** Written an octave below where the first transcriber heard it, where the second heard it. It gets no "?". */
     @SerialName("octave_moved") val octaveMoved: Boolean = false,
+    /** Heard once and written twice: a unison that a strummed open chord of a ukulele or a mandolin plays on two strings. */
+    val doubled: Boolean = false,
+    /** Not heard: added to its chord because the same chord around it has this note ([TabChords.COMPLETED]). It is one to check. */
+    val inferred: Boolean = false,
 ) {
     /** Where the note is played; null when it has no place on the instrument. */
     val position: TabPosition? get() = if (string != null && fret != null) TabPosition(string, fret) else null
@@ -220,6 +292,8 @@ data class TabInstrument(
     val frets: Int,
     @SerialName("scale_length_mm") val scaleLengthMm: Double,
     val capo: Int = 0,
+    /** The clef of the instrument's notation staff; null from an engine that does not say. */
+    val notation: NotationClef? = null,
 )
 
 /**
@@ -250,7 +324,7 @@ data class TabViolation(
 /** How well one tuning of the instrument fits the notes. */
 @Serializable
 data class TuningFit(
-    /** `<instrument>-<tuning>`, e.g. bass-4-drop-d. */
+    /** A preset id, e.g. bass-4-drop-d ([FrettedInstrument.ofPreset]). */
     val preset: String,
     /** Display name, e.g. Drop D. */
     val tuning: String,
@@ -288,12 +362,12 @@ data class ReferencePitch(
 )
 
 /**
- * The bass-tab profile's result: every note with its string and fret, and what the song check shows
+ * The tab profile's result (and bass-tab's): every note with its string and fret, and what the song check shows
  * before the tab (tuning, reference pitch, capo, octave, key and tempo).
  */
 @Serializable
 data class Tab(
-    /** The instrument and tuning the tab was made for, e.g. bass-4-standard. */
+    /** The instrument and tuning the tab was made for, e.g. bass-4-standard ([FrettedInstrument.ofPreset]). */
     val preset: String,
     val style: FingeringStyle,
     val instrument: TabInstrument,
@@ -322,6 +396,17 @@ data class Tab(
     /** Single notes written an octave lower than they were heard (with the octave on auto). */
     @SerialName("octave_notes_moved") val octaveNotesMoved: Int = 0,
     @SerialName("ticks_per_beat") val ticksPerBeat: Int = 24,
+    /**
+     * Notes heard that are not in the tab because the instrument cannot play them with the others: more notes on
+     * one onset than it has strings, or a chord no hand spans. Always 0 for a bass line.
+     */
+    @SerialName("unplayable_dropped") val unplayableDropped: Int = 0,
+    /** Notes heard that are not in the tab because they were not played: overtones and notes heard very faintly. */
+    @SerialName("leftovers_dropped") val leftoversDropped: Int = 0,
+    /** Notes written on a second string as the unison of a strummed chord; each has [TabNote.doubled]. */
+    @SerialName("doubled_notes") val doubledNotes: Int = 0,
+    /** Notes in the tab that were not heard ([TabChords.COMPLETED]); each has [TabNote.inferred]. */
+    @SerialName("inferred_notes") val inferredNotes: Int = 0,
 ) {
     /** The tuning the song sounds like when it is not the one the tab was made for; null when [preset] fits best. */
     val suggestedTuning: TuningFit? get() = tuningSuggestions.firstOrNull()?.takeIf { it.preset != preset }

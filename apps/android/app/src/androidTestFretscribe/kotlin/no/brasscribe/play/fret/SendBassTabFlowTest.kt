@@ -81,7 +81,7 @@ class SendBassTabFlowTest {
         assertEquals("Fretscribe", Product.NAME)
         rule.enableAccessibilityChecks()
         rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
-        yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
+        yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
         rule.runOnUiThread {
             container.firstRunDone = true
             vm.scores.value.forEach(vm::deleteEntry)
@@ -147,6 +147,8 @@ class SendBassTabFlowTest {
         val file = recording()
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
+        // (The computer is asked what it can write when the screen opens; Continue waits for its answer.)
+        rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
     }
 
     private fun waitForTag(tag: String, ms: Long = 60_000) =
@@ -211,7 +213,7 @@ class SendBassTabFlowTest {
         val steps = mapOf(
             "en-GB" to listOf("Sending the recording to your computer", "Listening for the beat", "Writing down the notes",
                 "Placing the notes in bars", "Choosing strings and frets", "Laying out the tab"),
-            "nb-NO" to listOf("Sender opptaket til datamaskinen", "Lytter etter pulsen", "Skiller ut bassen", "Skriver ned tonene",
+            "nb-NO" to listOf("Sender opptaket til datamaskinen", "Lytter etter pulsen", "Plukker ut instrumentet ditt", "Skriver ned tonene",
                 "Plasserer tonene i takter", "Velger strenger og bånd", "Setter opp tabben"),
         )
         for ((lang, w) in words) {
@@ -251,7 +253,7 @@ class SendBassTabFlowTest {
             rule.onNodeWithText(w[7]).assertIsDisplayed()
             if (whole) shot("writing-down-cancel-en-light")
             rule.onNodeWithText(w[8]).performClick()
-            waitForTag("fs-what-continue", 10_000)
+            waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
             (if (whole) alone else song).assertIsSelected()
             rule.onNodeWithTag("fs-what-continue").assertIsEnabled().performClick()
 
@@ -262,7 +264,7 @@ class SendBassTabFlowTest {
             val during = shown().replace(no.brasscribe.play.engine.FixtureEngineApi.SERVER_NAME, "")
             steps.getValue(lang).forEach { assertTrue("$it in: $during", during.contains(it)) }
             assertFalse(during, Regex("Brasscribe|brass band|brassband|score|partitur", RegexOption.IGNORE_CASE).containsMatchIn(during))
-            assertEquals(whole, !during.contains(if (lang == "en-GB") "Separating the bass" else "Skiller ut bassen"))
+            assertEquals(whole, !during.contains(if (lang == "en-GB") "Picking out your instrument" else "Plukker ut instrumentet ditt"))
             // What is true while it runs: keep the app open (the screen stays on), and no time left that is not known.
             assertTrue(during, during.contains(w[15]))
             assertFalse(during, Regex("minute|minutt|left|igjen|tell you|sier fra").containsMatchIn(during))
@@ -299,7 +301,7 @@ class SendBassTabFlowTest {
             assertEquals(if (whole) Recording.INSTRUMENT else Recording.SONG, sent.recording)
             assertEquals(listOf("bass-4", "standard", 0, Octave.AUTO), listOf(sent.instrument?.id, sent.tuning, sent.capo, sent.octave))
             val job = runBlocking { container.engine()!!.job(vm.result.value!!.jobId!!) }
-            assertEquals("bass-tab", job.profile)
+            assertEquals("tab", job.profile)
             assertEquals(!whole, job.stages.any { it.name == "stems" })
 
             // Show the tab opens the tab in the score view.
@@ -348,7 +350,7 @@ class SendBassTabFlowTest {
         rule.onNodeWithText("You can change this later.").assertIsDisplayed()
         rule.onNodeWithTag("fs-check-marked").performScrollTo().assertContentDescriptionEquals("Notes to check: 3 notes marked ?")
         rule.onNodeWithTag("fs-check-no-place").performScrollTo()
-            .assertContentDescriptionEquals("Notes with no place: 1 note with no place on your bass. Is the tuning right?")
+            .assertContentDescriptionEquals("Notes with no place: 1 note with no place on your instrument. Is the tuning right?")
         rule.onNodeWithTag("fs-check-change-octave").performScrollTo().assert(hasText("Write it as it was heard")).assertHeightIsAtLeast(48.dp)
         rule.onNodeWithTag("fs-check-change-tuning").performScrollTo().assert(hasText("Use Drop D")).assertHeightIsAtLeast(48.dp)
         rule.onRoot().tryPerformAccessibilityChecks()
@@ -367,7 +369,7 @@ class SendBassTabFlowTest {
         assertEquals(listOf("drop-d", Recording.INSTRUMENT, Octave.AUTO), listOf(sent.tuning, sent.recording, sent.octave))
         assertEquals(2, runBlocking { container.engine()!!.jobs() }.size)
         // The player's usual tuning is as it was, and the song is saved once.
-        assertEquals(YourInstrument.DEFAULT, yourInstrumentStore(rule.activity).load())
+        assertEquals(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
         rule.waitUntil(10_000) { vm.savedScores.value.size == 1 }
     }
 
@@ -387,7 +389,7 @@ class SendBassTabFlowTest {
         rule.waitUntil(5_000) { vm.screen.value.last() == Screen.COMPANION }
         // Back from pairing, the answer is still there.
         rule.runOnUiThread { vm.back() }
-        waitForTag("fs-what-continue", 5_000)
+        waitForTag("fs-what-continue", 5_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         card("song").assertIsSelected()
     }
 

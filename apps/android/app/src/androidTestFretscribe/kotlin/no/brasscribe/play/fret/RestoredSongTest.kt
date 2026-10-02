@@ -67,7 +67,7 @@ class RestoredSongTest {
     fun setUp() {
         rule.enableAccessibilityChecks()
         rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
-        yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
+        yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
         // The computer answers as it did for the bass line, as if the line sounded like drop D: a change is on offer.
         val assets = instrumentation.context.assets
         container.fixtureSource = FixtureSource { name ->
@@ -113,7 +113,7 @@ class RestoredSongTest {
     private fun open(toTheSong: Boolean): File {
         val file = recording()
         rule.runOnUiThread { first.importUri(Uri.fromFile(file)) }
-        waitForTag("fs-what-continue", 20_000)
+        waitForTag("fs-what-continue", 20_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         card("instrument").performClick()
         if (toTheSong) {
             rule.onNodeWithTag("fs-what-continue").performClick()
@@ -157,19 +157,19 @@ class RestoredSongTest {
         val again = jobOf(vm)
         assertNotEquals(before.id, again.id)
         assertEquals("the same recording on the computer", before.audioId, again.audioId)
-        assertEquals("bass-tab", again.profile)
+        assertEquals("tab", again.profile)
         // As it was made: the bass alone, not separated, now for drop D.
         assertTrue(again.stages.none { it.name == "stems" })
         val sent = tabOptions(yourInstrumentStore(rule.activity).load(), SongAnswers.of(vm.source.value))
         assertEquals(listOf("drop-d", Recording.INSTRUMENT), listOf(sent.tuning, sent.recording))
-        assertEquals(YourInstrument.DEFAULT, yourInstrumentStore(rule.activity).load())
+        assertEquals(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
     }
 
     @Test
     fun endedAtWhatIsThisTheRecordingIsStillThereAndIsAskedAboutAgain() {
         val take = open(toTheSong = false)
         val vm = afterTheProcessEnded(listOf(Screen.HOME, Screen.PROFILE))
-        waitForTag("fs-what-continue", 10_000)
+        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
         Thread.sleep(1500)
         assertTrue("the recording is kept", take.isFile)
@@ -193,7 +193,7 @@ class RestoredSongTest {
         val stack = first.screen.value
         rule.runOnUiThread { first.cancelTranscription() }
         val vm = afterTheProcessEnded(stack)
-        waitForTag("fs-what-continue", 10_000)
+        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         // Writing down the notes cannot be taken up again: the screen before it comes back.
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
         Thread.sleep(1500)
@@ -219,7 +219,7 @@ class RestoredSongTest {
 
         // Back: What is this? has the recording, so Continue is there once the question is answered.
         rule.runOnUiThread { vm.back() }
-        waitForTag("fs-what-continue", 10_000)
+        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertTrue(rule.onAllNodesWithText("This recording is no longer on the phone. Open it again from Home.").fetchSemanticsNodes().isEmpty())
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         card("instrument").performClick()

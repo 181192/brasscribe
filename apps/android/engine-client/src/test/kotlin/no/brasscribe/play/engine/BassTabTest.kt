@@ -117,7 +117,7 @@ class BassTabTest {
 
     @Test
     fun anOptionLeftOutIsNotSent() {
-        val tabKeys = setOf("instrument", "tuning", "capo", "style", "recording", "octave", "layout")
+        val tabKeys = setOf("instrument", "tuning", "capo", "style", "recording", "octave", "layout", "chords")
         // The engine refuses a tab option on any other profile, and fills in its own defaults for a tab.
         assertEquals(emptySet<String>(), encoded(JobCreate("a1", Profile.BRASS_BAND.id)).keys intersect tabKeys)
         assertEquals(emptySet<String>(), encoded(JobCreate.bassTab("a1")).keys intersect tabKeys)

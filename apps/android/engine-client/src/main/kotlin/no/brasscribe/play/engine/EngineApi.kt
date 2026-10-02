@@ -53,7 +53,7 @@ interface EngineApi {
     /** Streams [source] to the engine; [onProgress] reports bytes sent. */
     suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress = { _, _ -> }): AudioRef
     suspend fun createJob(request: JobCreate): Job
-    /** [tab]: the options of a [Profile.BASS_TAB] job; the engine refuses them for any other profile. */
+    /** [tab]: the options of a [Profile.TAB] job (or [Profile.BASS_TAB]); the engine refuses them for any other profile. */
     suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean = true,
                                     onProgress: UploadProgress = { _, _ -> }, tab: TabOptions? = null): Job
     suspend fun job(jobId: String): Job
@@ -65,16 +65,16 @@ interface EngineApi {
 
     suspend fun composition(jobId: String): Composition
 
-    /** The job's score: the band score, or tab.musicxml of a bass-tab job. */
+    /** The job's score: the band score, or tab.musicxml of a tab job. */
     suspend fun musicXml(jobId: String): String
 
-    /** As [musicXml]; of a bass-tab job, tab.mid, which is there only when the computer has MuseScore (404 otherwise). */
+    /** As [musicXml]; of a tab job, tab.mid, which is there only when the computer has MuseScore (404 otherwise). */
     suspend fun midi(jobId: String): ByteArray
 
-    /** As [musicXml]; of a bass-tab job, tab.pdf, which is there only when the computer has MuseScore (404 otherwise). */
+    /** As [musicXml]; of a tab job, tab.pdf, which is there only when the computer has MuseScore (404 otherwise). */
     suspend fun pdf(jobId: String): ByteArray
 
-    /** The tab of a finished bass-tab job: a string and a fret for every note. 404 for another profile, or before it is done. */
+    /** The tab of a finished tab job: a string and a fret for every note. 404 for another profile, or before it is done. */
     suspend fun tab(jobId: String): Tab
     suspend fun renderedAudio(jobId: String): ByteArray
     suspend fun artifacts(jobId: String): List<Artifact>

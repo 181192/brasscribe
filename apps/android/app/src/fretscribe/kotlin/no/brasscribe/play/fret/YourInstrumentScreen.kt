@@ -26,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -59,6 +58,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.SeatPickerMode
 import no.brasscribe.play.connection.PrefsStore
+import no.brasscribe.play.engine.FrettedInstrument
 import no.brasscribe.play.ui.BcIcon
 import no.brasscribe.play.ui.Lead
 import no.brasscribe.play.ui.ListRow
@@ -81,16 +81,53 @@ private fun instrumentName(i: Instrument): Int = when (i) {
     Instrument.MANDOLIN -> R.string.fs_instrument_mandolin
 }
 
-/** A tuning's name, as shown or as spoken ("BEAD" is read letter by letter). An id without words of its own shows as it is. */
+/**
+ * A tuning's name, as shown or as spoken ("BEAD" and "DADGAD" are read letter by letter). The one tuning of a
+ * baritone ukulele and of a mandolin ([kind]) is named by its strings, lowest first. An id without words of
+ * its own shows as it is.
+ */
 @Composable
-internal fun tuningName(id: String, spoken: Boolean = false): String = when (id) {
-    "standard" -> stringResource(R.string.fs_tuning_standard)
+internal fun tuningName(id: String, spoken: Boolean = false, kind: FrettedInstrument? = null): String = when (id) {
+    "standard" -> stringResource(when (kind) {
+        FrettedInstrument.UKULELE_BARITONE -> if (spoken) R.string.fs_tuning_dgbe_spoken else R.string.fs_tuning_dgbe
+        FrettedInstrument.MANDOLIN -> if (spoken) R.string.fs_tuning_gdae_spoken else R.string.fs_tuning_gdae
+        else -> R.string.fs_tuning_standard
+    })
     "eb-standard" -> stringResource(R.string.fs_tuning_eb_standard)
     "d-standard" -> stringResource(R.string.fs_tuning_d_standard)
+    "c-standard" -> stringResource(R.string.fs_tuning_c_standard)
     "drop-d" -> stringResource(R.string.fs_tuning_drop_d)
+    "drop-c" -> stringResource(R.string.fs_tuning_drop_c)
+    "drop-b" -> stringResource(R.string.fs_tuning_drop_b)
+    "dadgad" -> stringResource(if (spoken) R.string.fs_tuning_dadgad_spoken else R.string.fs_tuning_dadgad)
+    "open-g" -> stringResource(R.string.fs_tuning_open_g)
+    "open-d" -> stringResource(R.string.fs_tuning_open_d)
+    "open-e" -> stringResource(R.string.fs_tuning_open_e)
     "bead" -> stringResource(if (spoken) R.string.fs_tuning_bead_spoken else R.string.fs_tuning_bead)
     "drop-a" -> stringResource(R.string.fs_tuning_drop_a)
+    "high-g" -> stringResource(R.string.fs_tuning_high_g)
+    "low-g" -> stringResource(R.string.fs_tuning_low_g)
     else -> id
+}
+
+/** An instrument as a song's line and Settings name it: "6-string guitar", "5-string bass", "Ukulele", "Baritone ukulele", "Mandolin". */
+@Composable
+internal fun kindName(kind: FrettedInstrument): String {
+    val strings = YourInstrument.stringsOf(kind)
+    return when (Instrument.of(kind)) {
+        Instrument.GUITAR -> stringResource(R.string.fs_guitar_with_strings, strings ?: 6)
+        Instrument.BASS -> stringResource(R.string.fs_bass_with_strings, strings ?: 4)
+        Instrument.UKULELE -> stringResource(if (kind == FrettedInstrument.UKULELE_BARITONE) R.string.fs_ukulele_baritone else R.string.fs_instrument_ukulele)
+        Instrument.MANDOLIN -> stringResource(R.string.fs_instrument_mandolin)
+        null -> stringResource(R.string.fs_song_tab)
+    }
+}
+
+/** A kind of [instrument] as its picker lists it: "6 strings" for a guitar or a bass, the size for a ukulele. */
+@Composable
+private fun kindChoice(instrument: Instrument, kind: FrettedInstrument): String = when (instrument) {
+    Instrument.UKULELE -> stringResource(if (kind == FrettedInstrument.UKULELE_BARITONE) R.string.fs_size_baritone else R.string.fs_size_small)
+    else -> (YourInstrument.stringsOf(kind) ?: 0).let { pluralStringResource(R.plurals.fs_strings_count, it, it) }
 }
 
 @StringRes
@@ -107,17 +144,17 @@ private fun readsName(r: Reads): Int = when (r) {
     Reads.NOTATION -> R.string.fs_reads_notation
 }
 
-/** Settings' value for the row: "4-string bass · Standard · Tab". */
+/** Settings' value for the row: "6-string guitar · Standard · Tab". */
 @Composable
 fun yourInstrumentValue(): String {
     val context = LocalContext.current
     val value = remember { yourInstrumentStore(context).load() }
-    return stringResource(R.string.fs_instrument_value, stringResource(R.string.fs_bass_with_strings, value.strings),
-        tuningName(value.tuning), stringResource(readsName(value.reads)))
+    return stringResource(R.string.fs_instrument_value, kindName(value.kind),
+        tuningName(value.tuning, kind = value.kind), stringResource(readsName(value.reads)))
 }
 
-/** One choice of a picker: its id, the words shown, the words spoken, and whether it can be chosen yet. */
-private class Choice(val id: String, val label: String, val spoken: String = label, val available: Boolean = true)
+/** One choice of a picker: its id, the words shown and the words spoken. */
+internal class Choice(val id: String, val label: String, val spoken: String = label)
 
 /**
  * "Your instrument" (design/fretscribe/flows.md §2, system.md §5): one question per row, each a picker
@@ -135,12 +172,12 @@ fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
     val store = remember { yourInstrumentStore(context) }
     val firstRun = vm.seatPicker == SeatPickerMode.FIRST_RUN
     val start = remember { store.load() }
-    var instrument by rememberSaveable(key = "your-instrument-$visit-instrument") { mutableStateOf(start.instrument) }
-    var strings by rememberSaveable(key = "your-instrument-$visit-strings") { mutableIntStateOf(start.strings) }
+    var kind by rememberSaveable(key = "your-instrument-$visit-kind") { mutableStateOf(start.kind) }
     var tuning by rememberSaveable(key = "your-instrument-$visit-tuning") { mutableStateOf(start.tuning) }
     var hand by rememberSaveable(key = "your-instrument-$visit-hand") { mutableStateOf(start.hand) }
     var reads by rememberSaveable(key = "your-instrument-$visit-reads") { mutableStateOf(start.reads) }
-    val chosen = YourInstrument(instrument, strings, tuning, hand, reads)
+    val chosen = YourInstrument(kind, tuning, hand, reads)
+    val instrument = chosen.instrument
 
     fun keep() {
         store.save(chosen)
@@ -162,45 +199,46 @@ fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
             ScreenTitle(stringResource(R.string.fs_instrument_title))
             Lead(stringResource(if (firstRun) R.string.fs_instrument_body else R.string.fs_instrument_body_settings))
         }
-        val later = stringResource(R.string.fs_later)
         RowGroup {
             PickerRow(
                 stringResource(R.string.fs_instrument), "instrument", instrument.id,
-                Instrument.entries.map { i ->
-                    val name = stringResource(instrumentName(i))
-                    Choice(i.id, name, available = i.available)
-                },
-                later,
-            ) { id -> instrument = Instrument.entries.first { it.id == id } }
-            RowDivider()
-            PickerRow(
-                stringResource(R.string.fs_strings), "strings", strings.toString(),
-                YourInstrument.stringsOf(instrument).map { Choice(it.toString(), pluralStringResource(R.plurals.fs_strings_count, it, it)) },
-                later,
+                Instrument.entries.map { Choice(it.id, stringResource(instrumentName(it))) },
             ) { id ->
-                // A tuning the new string count doesn't have goes back to standard.
-                val next = chosen.withStrings(id.toInt())
-                strings = next.strings
+                // Another instrument starts in its own usual tuning.
+                val next = chosen.withInstrument(Instrument.entries.first { it.id == id })
+                kind = next.kind
                 tuning = next.tuning
             }
             RowDivider()
-            PickerRow(
+            // A mandolin comes in one kind: nothing to ask.
+            if (instrument.kinds.size > 1) {
+                PickerRow(
+                    stringResource(if (instrument == Instrument.UKULELE) R.string.fs_size else R.string.fs_strings), "strings", kind.id.orEmpty(),
+                    instrument.kinds.map { Choice(it.id.orEmpty(), kindChoice(instrument, it)) },
+                ) { id ->
+                    // A tuning the new kind doesn't have goes back to its usual one.
+                    val next = chosen.withKind(instrument.kinds.first { it.id == id })
+                    kind = next.kind
+                    tuning = next.tuning
+                }
+                RowDivider()
+            }
+            // An instrument with one tuning has nothing to choose: the row says what it is, and opens nothing.
+            if (chosen.tunings.size > 1) PickerRow(
                 stringResource(R.string.fs_tuning), "tuning", tuning,
-                chosen.tunings.map { Choice(it, tuningName(it), tuningName(it, spoken = true)) },
-                later,
+                chosen.tunings.map { Choice(it, tuningName(it, kind = kind), tuningName(it, spoken = true, kind = kind)) },
             ) { tuning = it }
+            else FactRow(stringResource(R.string.fs_tuning_only), "tuning", tuningName(tuning, kind = kind), tuningName(tuning, spoken = true, kind = kind))
             RowDivider()
             PickerRow(
                 stringResource(R.string.fs_hand), "hand", hand.id,
                 FrettingHand.entries.map { Choice(it.id, stringResource(handName(it))) },
-                later,
                 note = stringResource(R.string.fs_hand_note),
             ) { id -> hand = FrettingHand.entries.first { it.id == id } }
             RowDivider()
             PickerRow(
                 stringResource(R.string.fs_reads), "reads", reads.id,
                 Reads.entries.map { Choice(it.id, stringResource(readsName(it))) },
-                later,
             ) { id -> reads = Reads.entries.first { it.id == id } }
         }
     }
@@ -210,7 +248,7 @@ fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
  * The family's keyboard focus ring: a 2 dp line in the focus colour (ink, paper in dark), 2 dp inside the
  * element's edge, drawn only while the element has the keyboard's focus.
  */
-private fun Modifier.focusRing(focused: Boolean, colour: Color): Modifier = if (!focused) this else drawWithContent {
+internal fun Modifier.focusRing(focused: Boolean, colour: Color): Modifier = if (!focused) this else drawWithContent {
     drawContent()
     val width = BrasscribeScore.focusWidth.toPx()
     val inset = BrasscribeScore.focusGap.toPx() + width / 2
@@ -220,14 +258,22 @@ private fun Modifier.focusRing(focused: Boolean, colour: Color): Modifier = if (
     )
 }
 
+/** A row that says one thing and asks nothing: its name and its value, read as one element, with no mark to open it. */
+@Composable
+private fun FactRow(label: String, tag: String, value: String, spoken: String) {
+    Box(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "$label, $spoken" }.testTag("fs-row-$tag")) {
+        ListRow(label, null, modifier = Modifier.clearAndSetSemantics { }, subtitle = value)
+    }
+}
+
 /**
  * A picker row: the question, its answer under it, and the system's dialog of radio choices on a tap or
  * on Enter. The row is one element whose name is the question and the answer; [note] is one more line of
- * the same row. A choice that isn't [Choice.available] is listed, marked [later], and can't be chosen.
+ * the same row.
  */
 @Composable
 private fun PickerRow(
-    label: String, tag: String, selected: String, choices: List<Choice>, later: String,
+    label: String, tag: String, selected: String, choices: List<Choice>,
     note: String? = null, onPick: (String) -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
@@ -260,15 +306,23 @@ private fun PickerRow(
             trailing = { BcIcon(R.drawable.ic_bc_choose, null, tint = c.textMuted) },
         )
     }
-    if (!open) return
+    if (open) PickerDialog(label, tag, selected, choices, ::close, onPick)
+}
+
+/**
+ * The dialog of a picker: [choices] as one radio group under the question, the chosen one marked, each a
+ * full-size target with the keyboard's focus ring. A choice picks and closes; Cancel and Back close.
+ */
+@Composable
+internal fun PickerDialog(label: String, tag: String, selected: String, choices: List<Choice>, close: () -> Unit, onPick: (String) -> Unit) {
+    val c = BrasscribeTheme.colors
     AlertDialog(
-        onDismissRequest = ::close,
+        onDismissRequest = close,
         title = { Text(label) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()).selectableGroup()) {
                 choices.forEach { choice ->
                     val on = choice.id == selected
-                    val name = if (choice.available) choice.spoken else "${choice.spoken}, $later"
                     val source = remember { MutableInteractionSource() }
                     val onKeys by source.collectIsFocusedAsState()
                     // With a keyboard, the dialog opens on the chosen one, and the arrows move from there.
@@ -280,26 +334,22 @@ private fun PickerRow(
                         Modifier.fillMaxWidth().heightIn(min = 48.dp)
                             .focusRing(onKeys, c.focus)
                             .then(if (on) Modifier.focusRequester(start) else Modifier)
-                            .selectable(selected = on, interactionSource = source, indication = LocalIndication.current,
-                                enabled = choice.available, role = Role.RadioButton) {
+                            .selectable(selected = on, interactionSource = source, indication = LocalIndication.current, role = Role.RadioButton) {
                                 onPick(choice.id); close()
                             }
-                            .semantics { contentDescription = name }
+                            .semantics { contentDescription = choice.spoken }
                             .testTag("fs-$tag-${choice.id}")
                             .padding(horizontal = BrasscribeSpace.s2, vertical = BrasscribeSpace.s1),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
                     ) {
-                        RadioButton(selected = on, onClick = null, enabled = choice.available,
-                            colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong, disabledUnselectedColor = c.border))
-                        Column(Modifier.weight(1f).clearAndSetSemantics { }) {
-                            Text(choice.label, style = MaterialTheme.typography.bodyLarge, color = if (choice.available) c.text else c.textMuted)
-                            if (!choice.available) Text(later, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
-                        }
+                        RadioButton(selected = on, onClick = null,
+                            colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
+                        Text(choice.label, Modifier.weight(1f).clearAndSetSemantics { }, style = MaterialTheme.typography.bodyLarge, color = c.text)
                     }
                 }
             }
         },
-        confirmButton = { PlainButton(stringResource(R.string.cancel), ::close) },
+        confirmButton = { PlainButton(stringResource(R.string.cancel), close) },
     )
 }

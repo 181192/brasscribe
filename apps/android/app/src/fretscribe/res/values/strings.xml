@@ -56,8 +56,6 @@
     <string name="fs_instrument_guitar">Guitar</string>
     <string name="fs_instrument_ukulele">Ukulele</string>
     <string name="fs_instrument_mandolin">Mandolin</string>
-    <!-- Beside an instrument that can't be chosen yet. -->
-    <string name="fs_later">Later</string>
     <plurals name="fs_strings_count">
         <item quantity="one">%1$d string</item>
         <item quantity="other">%1$d strings</item>
@@ -77,7 +75,7 @@
     <string name="fs_reads_tab">Tab</string>
     <string name="fs_reads_tab_and_notation">Tab and notation</string>
     <string name="fs_reads_notation">Notation</string>
-    <!-- Settings: "4-string bass · Standard · Tab" -->
+    <!-- Settings: "6-string guitar · Standard · Tab" -->
     <string name="fs_bass_with_strings">%1$d-string bass</string>
     <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
 
@@ -85,7 +83,7 @@
     <string name="fs_what_hint">Your answer decides how Fretscribe listens.</string>
     <string name="fs_what_no_recording">This recording is no longer on the phone. Open it again from Home.</string>
     <string name="fs_what_instrument">Just my instrument</string>
-    <string name="fs_what_instrument_desc">A recording of the bass alone.</string>
+    <string name="fs_what_instrument_desc">One instrument playing, with nothing else.</string>
     <string name="fs_what_song">A full song</string>
     <string name="fs_what_song_desc">A band or a record. Fretscribe picks out the bass.</string>
     <string name="fs_where_desc">Fretscribe on your computer writes down the notes. Nothing goes online.</string>
@@ -95,7 +93,7 @@
 
     <!-- Writing down the notes (flows.md §6): the computer's steps for a tab, in plain words. -->
     <string name="stage_beats">Listening for the beat</string>
-    <string name="stage_stems">Separating the bass</string>
+    <string name="stage_stems">Picking out your instrument</string>
     <string name="stage_transcribe">Writing down the notes</string>
     <string name="stage_quantize">Placing the notes in bars</string>
     <string name="stage_arrange">Choosing strings and frets</string>
@@ -159,12 +157,12 @@
     </plurals>
     <string name="fs_check_no_place_title">Notes with no place</string>
     <plurals name="fs_check_no_place">
-        <item quantity="one">%1$d note with no place on your bass. Is the tuning right?</item>
-        <item quantity="other">%1$d notes with no place on your bass. Is the tuning right?</item>
+        <item quantity="one">%1$d note with no place on your instrument. Is the tuning right?</item>
+        <item quantity="other">%1$d notes with no place on your instrument. Is the tuning right?</item>
     </plurals>
 
     <!-- Your songs -->
-    <string name="fs_song_tab">Bass tab</string>
+    <string name="fs_song_tab">Tab</string>
     <plurals name="fs_song_to_check">
         <item quantity="one">%1$d note to check</item>
         <item quantity="other">%1$d notes to check</item>
