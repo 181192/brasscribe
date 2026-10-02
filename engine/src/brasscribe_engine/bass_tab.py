@@ -203,10 +203,21 @@ def tab_text(request: dict, fmt: str, lang: str | None = None, cancel: threading
     """target-fretted's tablature request answered as plain text: `fmt` "text" is the tab for a monospace
     font, "instructions" the tab in words, in `lang` (TEXT_LANGS)."""
     text = core_call("tab", request, cancel, log, ("--format", fmt, *(("--lang", lang) if lang else ())), parse=False)
-    if text.lstrip().startswith("{"):  # a core from before the text formats ignores the argument and answers in JSON
+    if _answered_in_json(text):
         raise RuntimeError("brasscribe-core is too old to write the tab as text: build it again with "
                            "`cargo build --release -p brasscribe-cli` in core/")
     return text
+
+
+def _answered_in_json(text: str) -> bool:
+    """Whether `text` is the tab command's JSON answer: a core from before the text formats ignores the format
+    asked for and answers with {"musicxml": ...}. A title may start with a brace; only that answer is refused."""
+    if not text.startswith('{"musicxml"'):
+        return False
+    try:
+        return isinstance(json.loads(text), dict)
+    except ValueError:
+        return False
 
 
 def core_call(command: str, request: dict, cancel: threading.Event | None = None,

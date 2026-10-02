@@ -11,6 +11,8 @@
 //! with "nb" or "no" is Norwegian. Strings are named by number, never by note, and accidentals are
 //! written as words.
 
+use std::collections::HashMap;
+
 use crate::tab::{doubtful, number, open_name, uses_flats, value, Plan, Symbol, TabOptions, TabScore, Written};
 use crate::text::{arrivals, ring_starts, Arrival, TextOptions};
 
@@ -294,9 +296,11 @@ fn opening(l: &Lex, score: &TabScore, any_doubt: bool) -> Vec<String> {
     let name = l.instrument(&crate::tab::clean(&inst.name));
     let tuning = l.tuning_name(&crate::tab::clean(&inst.tuning.name));
     let tempo = l.decimal(number(score.tempo_bpm));
+    // A mandolin's strings are pairs: a reader who cannot see the instrument is told that a number is a pair.
+    let courses = inst.name == "Mandolin";
     let mut out = if l.nb {
         vec![
-            format!("{name}, {strings} strenger."),
+            if courses { format!("{name}, {strings} strengepar. Hvert par spilles som én streng og har ett nummer.") } else { format!("{name}, {strings} strenger.") },
             format!("Streng 1 er strengen nærmest gulvet når du spiller. Streng {strings} er nærmest taket."),
             format!("Stemming: {tuning}. Løse strenger fra streng {strings} til streng 1: {}.", names.join(", ")),
             if inst.capo > 0 { format!("Capo på bånd {}. Båndene telles fra capoen.", inst.capo) } else { "Ingen capo.".into() },
@@ -304,7 +308,7 @@ fn opening(l: &Lex, score: &TabScore, any_doubt: bool) -> Vec<String> {
         ]
     } else {
         vec![
-            format!("{name}, {strings} strings."),
+            if courses { format!("{name}, {strings} pairs of strings. Each pair is played as one string and has one number.") } else { format!("{name}, {strings} strings.") },
             format!("String 1 is the string nearest the floor as you play. String {strings} is nearest the ceiling."),
             format!("Tuning: {tuning}. Open strings from string {strings} to string 1: {}.", names.join(", ")),
             if inst.capo > 0 { format!("Capo on fret {}. Frets are counted from the capo.", inst.capo) } else { "No capo.".into() },
@@ -374,17 +378,30 @@ pub fn write_playing_instructions(score: &TabScore, tab: &TabOptions, text: &Tex
     let mut bars: Vec<(Option<usize>, Vec<String>)> = Vec::new();
     // The measure each event starts in, for a bar that only holds a note on.
     let mut started_in: Vec<Option<usize>> = vec![None; plan.events.len()];
-    for &(a, b, number, implicit) in &plan.measures {
+    // The tied values of each event, in order.
+    let mut values: Vec<Vec<i64>> = vec![Vec::new(); plan.events.len()];
+    for s in &plan.symbols {
+        if let Some(e) = s.event {
+            values[e].push(s.end - s.start);
+        }
+    }
+    // The symbols are in time order, and so are the measures: each measure takes the next ones.
+    let mut next = 0;
+    for &(_, b, number, implicit) in &plan.measures {
         let number = (!implicit).then_some(number);
-        let bar_start = if implicit { b - plan.bar } else { a };
-        let symbols: Vec<&Symbol> = plan.symbols.iter().filter(|s| a <= s.start && s.start < b).collect();
+        let bar_start = b - plan.bar;
+        let from = next;
+        while next < plan.symbols.len() && plan.symbols[next].start < b {
+            next += 1;
+        }
+        let symbols: &[Symbol] = &plan.symbols[from..next];
         let mut lines = Vec::new();
         // A bar that starts inside a note says where the note came from.
         if let Some(e) = symbols.first().filter(|s| !s.first).and_then(|s| s.event) {
             let from = l.in_measure(started_in[e]);
             lines.push(if l.nb { format!("Holdes fra {from}.") } else { format!("Held from {from}.") });
         }
-        for sym in &symbols {
+        for sym in symbols {
             let (beat, num, den) = beat_of(score, sym.start, bar_start);
             let position = l.position(beat, num, den);
             let Some(e) = sym.event else {
@@ -419,12 +436,14 @@ pub fn write_playing_instructions(score: &TabScore, tab: &TabOptions, text: &Tex
             } else {
                 capitalised(&words[0])
             };
-            let lengths: Vec<String> = plan.symbols.iter().filter(|s| s.event == Some(e)).map(|s| l.length(s.end - s.start, false)).collect();
+            let lengths: Vec<String> = values[e].iter().map(|&ticks| l.length(ticks, false)).collect();
             lines.push(format!("{position}. {what}. {}.", capitalised(&l.tied(&lengths))));
         }
         bars.push((number, lines));
     }
 
+    // The first bar that says each set of lines.
+    let mut first_said: HashMap<&[String], usize> = HashMap::new();
     let mut i = 0;
     while i < bars.len() {
         let (number, lines) = &bars[i];
@@ -452,13 +471,12 @@ pub fn write_playing_instructions(score: &TabScore, tab: &TabOptions, text: &Tex
         // The first earlier bar with the same notes. A bar that starts inside a held note is said in
         // full: what it holds depends on the bar before it.
         let held = !lines[0].starts_with(l.t("Beat", "Slag"));
-        let same = bars[..i].iter().find(|b| b.0.is_some() && b.1 == *lines && !held);
-        match same.and_then(|b| b.0) {
-            Some(first) => out.push_str(&if l.nb { format!("  Som takt {first}.\n") } else { format!("  Same as bar {first}.\n") }),
-            None => {
-                for line in lines {
-                    out.push_str(&format!("  {line}\n"));
-                }
+        let first = if held { n } else { *first_said.entry(lines.as_slice()).or_insert(n) };
+        if first < n {
+            out.push_str(&if l.nb { format!("  Som takt {first}.\n") } else { format!("  Same as bar {first}.\n") });
+        } else {
+            for line in lines {
+                out.push_str(&format!("  {line}\n"));
             }
         }
         i += 1;

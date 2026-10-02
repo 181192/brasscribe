@@ -560,6 +560,9 @@ h  hammer-on
 
 `write_tab_text` refuses what `write_tab_musicxml` refuses, and a width outside 24 to 400.
 
+Both text writers take time that grows with the length of the passage: at the cap of 20,000 notes
+each is written in a fraction of a second.
+
 ## Playing instructions
 
 `write_playing_instructions(&TabScore, &TabOptions, &TextOptions)` writes the score in words, for
@@ -603,8 +606,8 @@ Takt 1
   ("2 and", "2-og"), note values, and the Norwegian note names (H, B, Ess, Ass). The two languages
   are one table of word pairs in `src/instructions.rs`, chosen by `lang` as there. This crate does
   not use the talking score's code, which knows the brass band.
-- **Said once, at the top:** the instrument and its number of strings, how the strings are
-  numbered, the tuning with its open strings from the highest-numbered string to string 1, the capo,
+- **Said once, at the top:** the instrument and its number of strings (a mandolin's as pairs, each
+  played and numbered as one string), how the strings are numbered, the tuning with its open strings from the highest-numbered string to string 1, the capo,
   the tempo and the time signature.
 - **Strings are named by number,** never by note: the note names change with the tuning. Accidentals
   are words (`E-flat`, `Ess`), not signs.

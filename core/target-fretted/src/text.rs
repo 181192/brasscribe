@@ -181,7 +181,8 @@ struct Layout<'a> {
 /// narrow, else each beat on a grid of its own.
 fn columns_of(plan: &Plan, a: i64, b: i64, starts: &[i64]) -> Vec<i64> {
     let beat = plan.beam_group;
-    let within = |from: i64, to: i64| starts.iter().filter(move |&&t| from <= t && t < to).map(move |&t| t - from);
+    // The starts are in time order: those of a span are one run of them.
+    let within = |from: i64, to: i64| starts[starts.partition_point(|&t| t < from)..starts.partition_point(|&t| t < to)].iter().map(move |&t| t - from);
     let even = within(a, b).fold(gcd(b - a, beat), gcd);
     if (b - a) / even <= EVEN_GRID_COLUMNS {
         return (0..(b - a) / even).map(|k| a + k * even).collect();
@@ -269,7 +270,9 @@ impl<'a> Layout<'a> {
             }
             if !lost.is_empty() {
                 col.marks.push('!');
-                let bar = plan.measures.iter().find(|m| m.0 <= ev.start && ev.start < m.1).filter(|m| !m.3).map_or("pickup".to_string(), |m| format!("bar {}", m.2));
+                // The measures follow each other: the one an event starts in is the last that starts at or before it.
+                let measure = plan.measures.partition_point(|m| m.0 <= ev.start).checked_sub(1).map(|i| plan.measures[i]);
+                let bar = measure.filter(|m| !m.3).map_or("pickup".to_string(), |m| format!("bar {}", m.2));
                 legend.lost.push(format!("{bar}: {}", lost.join(" ")));
             }
             if doubt {

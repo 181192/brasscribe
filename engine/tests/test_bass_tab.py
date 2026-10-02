@@ -749,6 +749,8 @@ def test_a_core_from_before_the_text_formats_is_told_apart(tmp_path, monkeypatch
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))
     with pytest.raises(RuntimeError, match="too old to write the tab as text"):
         bass_tab.tab_text({"notes": []}, "text")
+    core.write_text('#!/bin/sh\nprintf \'{"musicxml" riff}\\nBass\\n\' > "$5"\n')  # a title in braces is a title
+    assert bass_tab.tab_text({"notes": []}, "text") == '{"musicxml" riff}\nBass\n'
     core.write_text('#!/bin/sh\necho "$6 $7 $8 $9" > "$5"\n')
     assert bass_tab.tab_text({"notes": []}, "instructions", "nb") == "--format instructions --lang nb\n"
     assert bass_tab.tab_text({"notes": []}, "text") == "--format text  \n"

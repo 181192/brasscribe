@@ -45,6 +45,7 @@ impl Passage {
         Passage { notes: Vec::new(), techniques: Vec::new(), fingering: Fingering { notes: Vec::new() } }
     }
 
+    #[allow(clippy::too_many_arguments)] // a note is this many things
     fn placed(&mut self, inst: &Instrument, string: u8, fret: u8, start: i64, dur: i64, confidence: f64, techniques: &[Technique]) {
         let pitch = inst.pitch_at(Position { string, fret }).unwrap();
         self.notes.push(Note::new(pitch, start, dur, confidence, Vec::new()));
@@ -356,6 +357,18 @@ fn every_instrument_has_one_line_per_string_named_after_its_tuning() {
         // One line per course of two strings.
         ("mandolin", vec!["E", "A", "D", "G"]),
     ] {
+        let said = instructions(&{
+            let inst = preset(id).unwrap();
+            let mut p = Passage::new();
+            p.placed(&inst, 1, 2, 0, 96, 1.0, &[]);
+            p.score(&inst)
+        }, "en");
+        let strings = labels.len();
+        if id == "mandolin" {
+            assert!(said.contains("\nMandolin, 4 pairs of strings. Each pair is played as one string and has one number.\n"), "{said}");
+        } else {
+            assert!(said.contains(&format!(", {strings} strings.\nString 1 is the string nearest the floor as you play. String {strings} is nearest the ceiling.\n")), "{id}\n{said}");
+        }
         let inst = preset(id).unwrap();
         let mut p = Passage::new();
         p.placed(&inst, 1, 2, 0, 96, 1.0, &[]);
@@ -892,6 +905,19 @@ fn the_json_request_is_the_tab_request_with_text_options() {
         let e = tab_text_json(&request(1, bad)).and_then(|_| playing_instructions_json(&request(1, bad))).unwrap_err();
         assert!(e.contains(says), "{bad}: {e}");
     }
+}
+
+#[test]
+fn a_passage_at_the_cap_is_written_in_time_that_grows_with_its_length() {
+    // 20,000 sixteenths: 1,250 bars. Written in well under a second each; a minute would mean a
+    // loop over the whole passage per note or per bar.
+    let notes: Vec<String> = (0..MAX_NOTES).map(|i| format!(r#"{{"pitch": {}, "start": {}, "dur": 6}}"#, 40 + (i * 7) % 12, 6 * i)).collect();
+    let request = format!(r#"{{"instrument": {{"preset": "bass-5-standard"}}, "notes": [{}], "text": {{"lang": "nb"}}}}"#, notes.join(","));
+    let started = std::time::Instant::now();
+    let text = tab_text_json(&request).unwrap();
+    let said = playing_instructions_json(&request).unwrap();
+    assert!(started.elapsed().as_secs() < 60, "{:?}", started.elapsed());
+    assert!(text.contains("\n  1249") && said.contains("\nTakt 1250\n"));
 }
 
 #[test]
