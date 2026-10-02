@@ -147,6 +147,8 @@ class SendBassTabFlowTest {
         val file = recording()
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
+        // (The computer is asked what it can write when the screen opens; Continue waits for its answer.)
+        rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
     }
 
     private fun waitForTag(tag: String, ms: Long = 60_000) =
@@ -251,7 +253,7 @@ class SendBassTabFlowTest {
             rule.onNodeWithText(w[7]).assertIsDisplayed()
             if (whole) shot("writing-down-cancel-en-light")
             rule.onNodeWithText(w[8]).performClick()
-            waitForTag("fs-what-continue", 10_000)
+            waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
             (if (whole) alone else song).assertIsSelected()
             rule.onNodeWithTag("fs-what-continue").assertIsEnabled().performClick()
 
@@ -387,7 +389,7 @@ class SendBassTabFlowTest {
         rule.waitUntil(5_000) { vm.screen.value.last() == Screen.COMPANION }
         // Back from pairing, the answer is still there.
         rule.runOnUiThread { vm.back() }
-        waitForTag("fs-what-continue", 5_000)
+        waitForTag("fs-what-continue", 5_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         card("song").assertIsSelected()
     }
 

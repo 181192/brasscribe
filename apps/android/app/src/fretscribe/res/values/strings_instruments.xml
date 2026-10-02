@@ -59,4 +59,7 @@
     <string name="fs_too_old_guitar">Fretscribe on your computer is too old to write guitar tabs. Update it there.</string>
     <string name="fs_too_old_ukulele">Fretscribe on your computer is too old to write ukulele tabs. Update it there.</string>
     <string name="fs_too_old_mandolin">Fretscribe on your computer is too old to write mandolin tabs. Update it there.</string>
+
+    <!-- What is this?: until the computer has said what it can write, nothing is sent. -->
+    <string name="fs_what_asking">Asking your computer…</string>
 </resources>

@@ -26,7 +26,8 @@ class DirectoryFixtureSource(private val dir: File) : FixtureSource {
  * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present; for a tab job
  * tab.json, tab.musicxml, and tab.pdf and tab.mid when present): every job walks the stages of its
  * profile with timed progress events and then serves those files. A folder with a profiles.json (a list of
- * profile ids) plays a computer that has only those: an older one, from before the tab profile. Tests only: the JVM tests replay
+ * profile ids) plays a computer that has only those: an older one, from before the tab profile. (The file is
+ * read each time the profiles are asked for, so a source may take its time over it, or fail.) Tests only: the JVM tests replay
  * data/golden and the tab fixtures of apps/fixtures (bass-line, guitar-line, ukulele-line), the instrumented tests apps/fixtures/old-hundredth.
  */
 class FixtureEngineApi(
@@ -49,14 +50,14 @@ class FixtureEngineApi(
         PairRequestInfo("fixture-request", deviceName ?: "Phone", platform ?: "android", "0000", "2026-01-01T00:00:00+00:00", "pending")
     override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
-    override suspend fun profiles(): List<ProfileInfo> = known.map {
+    override suspend fun profiles(): List<ProfileInfo> = known().map {
         ProfileInfo(it.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
     }
 
     /** The profiles this computer has: all of them, or the ones the fixture's profiles.json lists. */
-    private val known: List<Profile> by lazy {
+    private fun known(): List<Profile> {
         val listed = source.read(PROFILES_FILE)?.let { no.brasscribe.play.model.BrasscribeJson.decodeFromString(ListSerializer(String.serializer()), String(it)) }
-        Profile.entries.filter { listed == null || it.id in listed }
+        return Profile.entries.filter { listed == null || it.id in listed }
     }
 
     // Hashes the stream in chunks, as the engine does, so a fixture upload holds no more than a buffer.
@@ -79,7 +80,9 @@ class FixtureEngineApi(
 
     override suspend fun createJob(request: JobCreate): Job {
         // As the engine: a profile it does not have is refused without a code.
-        val profile = Profile.of(request.profile)?.takeIf { it in known } ?: throw EngineException(422, "unknown profile ${request.profile}")
+        // (A source that cannot say which profiles there are is a computer with all of them.)
+        val has = runCatching { known() }.getOrDefault(Profile.entries)
+        val profile = Profile.of(request.profile)?.takeIf { it in has } ?: throw EngineException(422, "unknown profile ${request.profile}")
         val id = "fixture-${counter.incrementAndGet()}"
         if (!profile.writesTab && request.tabOptionsNamed()) throw EngineException(422, "only the tab profile takes the tab options", Refusal.INVALID_OPTIONS.code)
         // As the engine: the older id is for a bass only, and an instrument takes its own tunings.

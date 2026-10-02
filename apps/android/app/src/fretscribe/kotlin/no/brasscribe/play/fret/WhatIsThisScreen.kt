@@ -8,7 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.brasscribe.play.engine.FrettedInstrument
@@ -61,18 +64,27 @@ internal fun tooOldWords(kind: FrettedInstrument?): Int = when (kind?.let(Instru
 }
 
 /**
- * The profile ids the computer has, asked when the screen opens and whenever the computer comes or goes
- * ([there]); null until it has answered, and when it could not be asked. Kept in [ComputerProfiles] for the job.
+ * Asks the computer in use which profiles it has: when the screen opens, and whenever the computer comes, goes
+ * or is another one ([there]). The answer is [ComputerProfiles.answer]: while it is asked nothing is known, and a
+ * failed request leaves the list unknown, which sends a bass under the id every computer has.
  */
 @Composable
-internal fun computerProfiles(vm: PlayViewModel, there: Boolean): Set<String>? {
-    val listed by produceState<Set<String>?>(null, there) {
-        value = if (!there) null else withContext(Dispatchers.IO) {
-            runCatching { vm.container.engine()?.profiles()?.map { it.name }?.toSet() }.getOrNull()
-        }
-        ComputerProfiles.listed = value
+internal fun computerProfiles(vm: PlayViewModel, there: Boolean): ComputerProfiles.Answer? {
+    val container = vm.container
+    // The computer's own id, so another computer is asked afresh. (A test's fixture computer is its source.)
+    val computer = if (!there) null else if (container.usingFixture) "fixture-${System.identityHashCode(container.fixtureSource)}"
+        else container.settings.serverId ?: container.settings.url
+    LaunchedEffect(computer) {
+        if (computer == null) { ComputerProfiles.clear(); return@LaunchedEffect }
+        // This computer has already said what it has: the next screen need not ask it again. Another computer,
+        // or one that could not be asked, is asked, and until it answers nothing is known.
+        if (ComputerProfiles.answer?.let { it.computer == computer && !it.asking && it.listed != null } == true) return@LaunchedEffect
+        ComputerProfiles.asking(computer)
+        val listed = withContext(Dispatchers.IO) { runCatching { container.engine()?.profiles()?.map { it.name }?.toSet() }.getOrNull() }
+        ComputerProfiles.answered(computer, listed)
     }
-    return listed
+    // Until the effect has run, an answer for another computer is not this one's.
+    return ComputerProfiles.answer?.takeIf { it.computer == computer } ?: computer?.let { ComputerProfiles.Answer(it, asking = true, listed = null) }
 }
 
 /**
@@ -101,8 +113,10 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
     // The recording is sent from its file: without it there is nothing to continue with.
     val inHand = source?.file?.isFile == true
     // What this computer's Fretscribe can write: one from before the guitar still writes a bass, and nothing else.
-    val listed = computerProfiles(vm, there)
-    val tooOld = there && tabProfile(mine.kind, listed) == null
+    val asked = computerProfiles(vm, there)
+    // Nothing is sent until the computer has said what it can write, or could not be asked.
+    val asking = there && asked?.asking != false
+    val tooOld = there && !asking && tabProfile(mine.kind, asked?.listed) == null
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
@@ -114,17 +128,23 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
             val missing = when {
                 !inHand -> R.string.fs_what_no_recording
                 !there -> R.string.fs_what_connect_first
+                asking -> R.string.fs_what_asking
                 tooOld -> tooOldWords(mine.kind)
                 answer.recording == null -> R.string.profile_choose_one
                 else -> null
             }
-            if (missing != null) Text(stringResource(missing), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
+            val why = missing?.let { stringResource(it) }
+            // The line can change while the screen is open (the computer answers): a screen reader is told, without interrupting.
+            if (why != null) Text(why, Modifier.testTag("fs-what-missing").semantics { liveRegion = LiveRegionMode.Polite },
+                style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
             PrimaryButton(stringResource(R.string.continue_label), {
                 // From here the recording is written down afresh, for the player's instrument as it is now.
                 SongAnswers.set(source, SongAnswer(answer.recording))
                 vm.chooseProfile(Profile.TAB)
                 vm.startTranscription()
-            }, Modifier.testTag("fs-what-continue"), enabled = inHand && there && !tooOld && answer.recording != null)
+                // The button says why it can't be pressed: "Continue, disabled" alone leaves that out.
+            }, Modifier.testTag("fs-what-continue").then(if (why != null) Modifier.semantics { stateDescription = why } else Modifier),
+                enabled = inHand && there && !asking && !tooOld && answer.recording != null)
         },
     ) {
         ScreenTitle(stringResource(R.string.profile_title), Modifier.focusRequester(headingFocus).focusable())

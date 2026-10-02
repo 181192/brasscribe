@@ -164,6 +164,32 @@ class TabJobOptionsTest {
     }
 
     @Test
+    fun whatAComputerSaidIsKeptForThatComputerOnlyAndIsGoneWhileItIsAskedAgain() {
+        ComputerProfiles.clear()
+        assertNull(ComputerProfiles.listed)
+        ComputerProfiles.asking("mac-1")
+        assertEquals(ComputerProfiles.Answer("mac-1", asking = true, listed = null), ComputerProfiles.answer)
+        ComputerProfiles.answered("mac-1", current)
+        assertEquals(current, ComputerProfiles.listed)
+        // Another computer is asked: what the first said does not count for it, also before it answers.
+        ComputerProfiles.asking("mac-2")
+        assertNull(ComputerProfiles.listed)
+        // The first one's late answer is not taken for the second's.
+        ComputerProfiles.answered("mac-1", current)
+        assertNull(ComputerProfiles.listed)
+        assertTrue(ComputerProfiles.answer!!.asking)
+        ComputerProfiles.answered("mac-2", older)
+        assertEquals(older, ComputerProfiles.listed)
+        // Asked again, its own earlier answer is gone until the new one is there; a request that fails leaves nothing known.
+        ComputerProfiles.asking("mac-2")
+        assertNull(ComputerProfiles.listed)
+        ComputerProfiles.answered("mac-2", null)
+        assertEquals(ComputerProfiles.Answer("mac-2", asking = false, listed = null), ComputerProfiles.answer)
+        ComputerProfiles.clear()
+        assertNull(ComputerProfiles.answer)
+    }
+
+    @Test
     fun aJobOfEitherIdIsSentAsATabJobAndABandJobIsLeftAlone() {
         val options = tabOptions(YourInstrument(FrettedInstrument.UKULELE, "low-g"), SongAnswer(Recording.INSTRUMENT))
         for (profile in listOf(Profile.TAB, Profile.BASS_TAB)) {

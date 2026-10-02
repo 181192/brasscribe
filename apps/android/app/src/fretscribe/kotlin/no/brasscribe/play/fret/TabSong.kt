@@ -73,11 +73,33 @@ fun tabOptions(instrument: YourInstrument, answer: SongAnswer): TabOptions {
 fun startingAnswer(instrument: YourInstrument): Recording? = instrument.valid().kind.let { if (it.aloneByDefault) it.defaultRecording else null }
 
 /**
- * The profile ids the computer in use says it has, as it last answered; null until it has, or when it could
- * not be asked. What is this? and Check the song ask when they open.
+ * The profile ids the computer in use says it has. What is this? and Check the song ask when they open and
+ * whenever the computer changes; the answer is kept for that [computer] only, and is gone while it is asked again.
  */
 object ComputerProfiles {
-    var listed: Set<String>? by mutableStateOf(null)
+    /** What is known of one computer: still [asking], or its answer ([listed]; null when it could not be asked). */
+    data class Answer(val computer: String, val asking: Boolean, val listed: Set<String>?)
+
+    var answer: Answer? by mutableStateOf(null)
+        private set
+
+    /** The ids to choose a job's profile from; null while nothing is known. */
+    val listed: Set<String>? get() = answer?.takeIf { !it.asking }?.listed
+
+    /** [computer] is being asked: whatever was known, of it or of another computer, no longer counts. */
+    fun asking(computer: String) {
+        answer = Answer(computer, asking = true, listed = null)
+    }
+
+    /** [computer] answered with [listed], or could not be asked (null). An answer that is no longer the one waited for is dropped. */
+    fun answered(computer: String, listed: Set<String>?) {
+        if (answer?.computer == computer) answer = Answer(computer, asking = false, listed = listed)
+    }
+
+    /** No computer is there. */
+    fun clear() {
+        answer = null
+    }
 }
 
 /**

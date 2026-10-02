@@ -52,4 +52,7 @@
     <string name="fs_too_old_guitar">Fretscribe på datamaskinen er for gammel til å skrive gitartab. Oppdater den der.</string>
     <string name="fs_too_old_ukulele">Fretscribe på datamaskinen er for gammel til å skrive ukuleletab. Oppdater den der.</string>
     <string name="fs_too_old_mandolin">Fretscribe på datamaskinen er for gammel til å skrive mandolintab. Oppdater den der.</string>
+
+    <!-- What is this?: until the computer has said what it can write, nothing is sent. -->
+    <string name="fs_what_asking">Spør datamaskinen …</string>
 </resources>

@@ -101,12 +101,15 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
         }
     }
     val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
-    val listed = computerProfiles(vm, there)
+    val asked = computerProfiles(vm, there)
+    val listed = asked?.listed
     // The computer keeps the recording it was sent: a change is a new job on it, also for a song opened from Your songs.
     // A computer from before this tab's instrument cannot write it again.
     val made = (heard as? Heard.Ready)?.tab?.preset?.let(SongCheck::kindOf)
-    val tooOld = there && heard is Heard.Ready && tabProfile(made, listed) == null
-    val canChange = there && !tooOld
+    val asking = there && asked?.asking != false
+    val tooOld = there && !asking && heard is Heard.Ready && tabProfile(made, listed) == null
+    // No change is offered until the computer has said what it can write.
+    val canChange = there && !asking && !tooOld
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
@@ -141,7 +144,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
                 val rows = remember(h.tab) { SongCheck.rows(h.tab) }
                 val changes = rows.map { changeFor(it) }
                 // Above the rows, so it is seen: why the buttons are not there.
-                if (changes.any { it != null } && !canChange)
+                if (changes.any { it != null } && !canChange && !asking)
                     InfoNote(stringResource(if (tooOld) tooOldWords(made) else R.string.fs_check_connect), Modifier.testTag("fs-check-connect"))
                 RowGroup {
                     rows.forEachIndexed { i, row ->

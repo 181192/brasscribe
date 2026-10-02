@@ -126,10 +126,14 @@ class SendGuitarAndUkuleleTabFlowTest {
      * The computer of the tests: what the engine answered for [take], with [tab] changed on the way when given.
      * [older]: a computer whose Fretscribe is from before the tab profile; it has the bass tab's id only.
      */
-    private fun computer(take: String, older: Boolean = false, tab: ((JSONObject) -> Unit)? = null) {
+    private fun computer(take: String, older: Boolean = false, profiles: (() -> ByteArray?)? = null, tab: ((JSONObject) -> Unit)? = null) {
         val assets = instrumentation.context.assets
+        // (Another computer than the one before: the app lets go of that one first.)
+        container.fixtureSource = null
+        container.engine()
         container.fixtureSource = FixtureSource { name ->
-            if (name == FixtureEngineApi.PROFILES_FILE) return@FixtureSource if (older) OLDER.toByteArray() else null
+            // [profiles]: the computer's answer to which profiles it has, when a test makes it slow or makes it fail.
+            if (name == FixtureEngineApi.PROFILES_FILE) return@FixtureSource if (profiles != null) profiles() else if (older) OLDER.toByteArray() else null
             val bytes = runCatching { assets.open("$take/$name").use { it.readBytes() } }.getOrNull()
             if (name == "tab.json" && bytes != null && tab != null) JSONObject(String(bytes)).also(tab).toString().toByteArray() else bytes
         }
@@ -147,10 +151,12 @@ class SendGuitarAndUkuleleTabFlowTest {
     }
 
     /** Open a recording from Home, as the file picker's answer does: What is this? follows. */
-    private fun openARecording(name: String = "Riff.wav") {
+    private fun openARecording(name: String = "Riff.wav", answered: Boolean = true) {
         val file = recording(name)
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
         rule.waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
+        // (The computer is asked what it can write when the screen opens; Continue waits for its answer.)
+        if (answered) rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
     }
 
     private fun waitForTag(tag: String, ms: Long = 60_000) =
@@ -396,6 +402,7 @@ class SendGuitarAndUkuleleTabFlowTest {
             // The answer stays with this recording: back on What is this?, it is still the one chosen.
             rule.runOnUiThread { vm.back() }
             waitForTag("fs-what-continue", 10_000)
+            rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
             card(if (whole) "song" else "instrument").assertIsSelected()
             rule.onNodeWithTag("fs-what-continue").performClick()
             waitForTag("fs-show-tab")
@@ -552,6 +559,93 @@ class SendGuitarAndUkuleleTabFlowTest {
             assertNull(vm.result.value)
             rule.runOnUiThread { container.fixtureSource = null }
         }
+    }
+
+    /** The Continue button's state, as a screen reader says it after "disabled". */
+    private fun continueSays(): String? = rule.onNodeWithTag("fs-what-continue").fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription)
+
+    @Test
+    fun whenTheComputerCannotSayWhatItHasABassGoesUnderTheOlderIdAndTheRestAsTabs() {
+        language("en-GB")
+        // The computer is there and takes jobs, but its list of profiles can't be had.
+        computer("guitar-line", profiles = { throw java.io.IOException("no answer") })
+        for ((kind, profile) in listOf(FrettedInstrument.BASS_4 to "bass-tab", FrettedInstrument.GUITAR_6 to "tab", FrettedInstrument.UKULELE to "tab", FrettedInstrument.MANDOLIN to "tab")) {
+            store.save(YourInstrument(kind))
+            openARecording("${kind.name}.wav")
+            assertEquals(ComputerProfiles.Answer(ComputerProfiles.answer!!.computer, asking = false, listed = null), ComputerProfiles.answer)
+            // Nothing says the computer is too old or still being asked, and Continue works once there is an answer.
+            assertFalse(shown(), Regex("too old|Asking your computer").containsMatchIn(shown()))
+            card("song").performClick()
+            rule.onNodeWithTag("fs-what-continue").assertIsEnabled()
+            assertNull(continueSays())
+            rule.onNodeWithTag("fs-what-continue").performClick()
+            waitForTag("fs-show-tab")
+            assertEquals(kind.name, profile, lastJob().profile)
+            assertEquals(kind, sent().instrument)
+        }
+    }
+
+    @Test
+    fun aFastTapBeforeTheComputerHasAnsweredSendsNothing() {
+        language("en-GB")
+        store.save(YourInstrument(FrettedInstrument.GUITAR_6))
+        // A computer from before the tab profile that takes its time to say so.
+        val answer = java.util.concurrent.CountDownLatch(1)
+        computer("guitar-line", profiles = { answer.await(30, java.util.concurrent.TimeUnit.SECONDS); OLDER.toByteArray() })
+        openARecording(answered = false)
+        // While it is asked, Continue is off and says why, also with an answer chosen.
+        rule.onNodeWithTag("fs-what-missing").assertIsDisplayed().assert(hasText("Asking your computer…"))
+        card("song").performClick()
+        card("song").assertIsSelected()
+        rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
+        assertEquals("Asking your computer…", continueSays())
+        assertTrue(ComputerProfiles.answer?.asking == true)
+        assertNull(ComputerProfiles.listed)
+        rule.onRoot().tryPerformAccessibilityChecks()
+        shot("guitar-asking-en-light")
+        // A tap on it does nothing: no recording goes, no job is made.
+        rule.onNodeWithTag("fs-what-continue").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
+        // The computer answers: it is too old. The line changes where a screen reader is told of it, and the button says why.
+        answer.countDown()
+        val why = "Fretscribe on your computer is too old to write guitar tabs. Update it there."
+        rule.waitUntil(10_000) { rule.onAllNodesWithText(why).fetchSemanticsNodes().isNotEmpty() }
+        val line = rule.onNodeWithTag("fs-what-missing").assert(hasText(why)).fetchSemanticsNode()
+        assertEquals(androidx.compose.ui.semantics.LiveRegionMode.Polite, line.config.getOrNull(SemanticsProperties.LiveRegion))
+        rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
+        assertEquals(why, continueSays())
+        rule.onNodeWithTag("fs-what-continue").performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
+        assertEquals(emptyList<String>(), runBlocking { container.engine()!!.jobs() }.map { it.id })
+        assertNull(vm.result.value)
+    }
+
+    @Test
+    fun theButtonSaysWhyItIsOffAndAnotherComputerIsAskedAfresh() {
+        language("en-GB")
+        store.save(YourInstrument(FrettedInstrument.GUITAR_6))
+        computer("guitar-line")
+        openARecording()
+        // Nothing chosen yet: the line and the button both say so.
+        rule.onNodeWithTag("fs-what-missing").assert(hasText("Choose one to continue."))
+        assertEquals("Choose one to continue.", continueSays())
+        assertEquals(setOf("tab", "bass-tab"), ComputerProfiles.listed!!.filter { it.contains("tab") }.toSet())
+        card("instrument").performClick()
+        rule.onNodeWithTag("fs-what-continue").assertIsEnabled()
+        assertNull(continueSays())
+        assertTrue(rule.onAllNodesWithTag("fs-what-missing").fetchSemanticsNodes().isEmpty())
+        // Another computer, an older one, slow to answer: what the first one said is not kept for it.
+        val answer = java.util.concurrent.CountDownLatch(1)
+        computer("guitar-line", profiles = { answer.await(30, java.util.concurrent.TimeUnit.SECONDS); OLDER.toByteArray() })
+        openARecording(answered = false)
+        rule.waitUntil(10_000) { ComputerProfiles.answer?.asking == true }
+        assertNull(ComputerProfiles.listed)
+        rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
+        answer.countDown()
+        rule.waitUntil(10_000) { ComputerProfiles.answer?.asking == false }
+        assertFalse("tab" in ComputerProfiles.listed!!)
     }
 
     private companion object {

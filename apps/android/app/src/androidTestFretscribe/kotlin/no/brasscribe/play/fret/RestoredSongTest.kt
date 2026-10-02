@@ -113,7 +113,7 @@ class RestoredSongTest {
     private fun open(toTheSong: Boolean): File {
         val file = recording()
         rule.runOnUiThread { first.importUri(Uri.fromFile(file)) }
-        waitForTag("fs-what-continue", 20_000)
+        waitForTag("fs-what-continue", 20_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         card("instrument").performClick()
         if (toTheSong) {
             rule.onNodeWithTag("fs-what-continue").performClick()
@@ -169,7 +169,7 @@ class RestoredSongTest {
     fun endedAtWhatIsThisTheRecordingIsStillThereAndIsAskedAboutAgain() {
         val take = open(toTheSong = false)
         val vm = afterTheProcessEnded(listOf(Screen.HOME, Screen.PROFILE))
-        waitForTag("fs-what-continue", 10_000)
+        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
         Thread.sleep(1500)
         assertTrue("the recording is kept", take.isFile)
@@ -193,7 +193,7 @@ class RestoredSongTest {
         val stack = first.screen.value
         rule.runOnUiThread { first.cancelTranscription() }
         val vm = afterTheProcessEnded(stack)
-        waitForTag("fs-what-continue", 10_000)
+        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         // Writing down the notes cannot be taken up again: the screen before it comes back.
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
         Thread.sleep(1500)
@@ -219,7 +219,7 @@ class RestoredSongTest {
 
         // Back: What is this? has the recording, so Continue is there once the question is answered.
         rule.runOnUiThread { vm.back() }
-        waitForTag("fs-what-continue", 10_000)
+        waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertTrue(rule.onAllNodesWithText("This recording is no longer on the phone. Open it again from Home.").fetchSemanticsNodes().isEmpty())
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         card("instrument").performClick()
