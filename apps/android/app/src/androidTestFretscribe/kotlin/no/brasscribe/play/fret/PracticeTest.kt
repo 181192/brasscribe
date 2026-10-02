@@ -339,10 +339,19 @@ class PracticeTest {
         rule.runOnUiThread { staysOn = generateSequence(tab.view as android.view.View?) { it.parent as? android.view.View }.any { it.keepScreenOn } }
         assertTrue("the screen stays on while the recording plays", staysOn)
 
+        val said = java.util.Collections.synchronizedList(ArrayList<String>())
+        instrumentation.uiAutomation.setOnAccessibilityEventListener { event ->
+            if (event.eventType == android.view.accessibility.AccessibilityEvent.TYPE_ANNOUNCEMENT) said += event.text.joinToString(" ")
+        }
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)
         assertEquals("Play", described("fs-practice-play"))
         val stopped = now()
+        // The place it stopped at is said, once.
+        rule.waitUntil(5_000) { said.isNotEmpty() }
+        settle()
+        instrumentation.uiAutomation.setOnAccessibilityEventListener(null)
+        assertEquals(listOf(words("fs-practice-place")), said.toList())
         assertTrue("it stopped where it was ($stopped s)", stopped >= clock.secondsAt(6) - 0.2 && stopped < clock.secondsAt(8))
         val there = clock.placeAt(stopped)
         assertEquals(text(no.brasscribe.play.R.string.fs_practice_bar_beat, index.measures[there.bar].number, clock.beatAt(there)), words("fs-practice-place"))
@@ -409,7 +418,7 @@ class PracticeTest {
     fun chosenBarsRepeat() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         val tab = practise()
-        assertEquals("Repeat bars", described("fs-practice-repeat"))
+        assertEquals("Repeat bars", words("fs-practice-repeat"))
         rule.onNodeWithTag("fs-practice-repeat").performClick()
         waitForTag("fs-practice-repeat-set")
         // Four bars from the bar the song is in; each end is moved a bar at a time, and neither passes the other.
@@ -433,7 +442,9 @@ class PracticeTest {
         rule.waitForIdle()
 
         // The chip says it, the tab shows it, and the song is at its first bar.
-        assertEquals("Repeating bars 3 to 4", described("fs-practice-repeat"))
+        // What the chip shows is what it is called.
+        assertEquals("Repeating 3–4", words("fs-practice-repeat"))
+        assertEquals("", described("fs-practice-repeat"))
         assertEquals("Back to the start of the repeat", described("fs-practice-start"))
         assertEquals("Bar 3, beat 1", words("fs-practice-place"))
         rule.runOnUiThread { assertEquals(2..3, tab.repeat) }
@@ -473,8 +484,23 @@ class PracticeTest {
         // Steps stay inside the bars too.
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)
+        rule.runOnUiThread { practice.toBar(2) }
         repeat(3) { rule.onNodeWithTag("fs-practice-next").performClick() }
         assertEquals("Bar 4, beat 1", words("fs-practice-place"))
+        // In the last of the bars there is no bar on: the song stays where it is, also part of the way into the bar.
+        // (Slowly, so the bar does not end and turn back to the first while the test looks.)
+        repeat(25) { rule.onNodeWithTag("fs-practice-slower").performClick() }
+        val into = clock.secondsAt(3, 10)
+        rule.runOnUiThread { practice.recordingPlayer!!.seekTo(into) }
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        waitUntilPlaying()
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        waitUntilPlaying(false)
+        val inTheLast = now()
+        assertTrue("in bar 4 ($inTheLast s)", clock.placeAt(inTheLast).let { it.bar == 3 && it.tick > 0 })
+        rule.onNodeWithTag("fs-practice-next").performClick()
+        rule.waitForIdle()
+        assertEquals(inTheLast, now(), 0.0)
         repeat(3) { rule.onNodeWithTag("fs-practice-previous").performClick() }
         assertEquals("Bar 3, beat 1", words("fs-practice-place"))
 
@@ -484,7 +510,7 @@ class PracticeTest {
         assertEquals("Repeat bars 3 to 4", words("fs-practice-repeat-set"))
         rule.onNodeWithTag("fs-practice-repeat-stop").performClick()
         rule.waitForIdle()
-        assertEquals("Repeat bars", described("fs-practice-repeat"))
+        assertEquals("Repeat bars", words("fs-practice-repeat"))
         rule.runOnUiThread { assertNull(tab.repeat) }
         assertEquals(0, count(screen(), open, edge))
     }
@@ -550,8 +576,13 @@ class PracticeTest {
         key(KeyEvent.KEYCODE_DPAD_LEFT)
         assertEquals("Bar 2, beat 1", words("fs-practice-place"))
         assertEquals(1, cursor(tab)!!.first.bar)
-        key(KeyEvent.KEYCODE_SPACE)
+        // Space plays. Held down, it plays once, not once more for every repeat of the key.
+        val down = android.os.SystemClock.uptimeMillis()
+        for (again in 0..3) instrumentation.sendKeySync(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SPACE, again))
+        instrumentation.sendKeySync(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SPACE, 0))
         waitUntilPlaying()
+        Thread.sleep(500)
+        assertTrue("still playing after Space was held", practice.playing)
         rule.waitUntil(10_000) { now() > clock.secondsAt(1) + 0.3 }
         key(KeyEvent.KEYCODE_SPACE)
         waitUntilPlaying(false)
@@ -574,6 +605,14 @@ class PracticeTest {
         shot("practice-keyboard-focus")
         key(KeyEvent.KEYCODE_DPAD_LEFT)
         assertEquals("Bar 5, beat 1", words("fs-practice-place"))
+        // In the last bar of the tab the right arrow has nowhere to go.
+        rule.runOnUiThread { practice.repeat(null); practice.toBar(clock.bars - 1) }
+        rule.waitForIdle()
+        val last = now()
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        assertEquals(last, now(), 0.0)
+        rule.runOnUiThread { practice.repeat(RepeatBars(4, 6)); practice.toBar(4) }
+        rule.waitForIdle()
         // On the player the arrows are the focus's own.
         repeat(30) { if (focusedTag() != "fs-practice-next") key(KeyEvent.KEYCODE_TAB) }
         key(KeyEvent.KEYCODE_DPAD_LEFT)
@@ -634,6 +673,25 @@ class PracticeTest {
         settle()
         assertNotNull(cursor(tab))
         assertTheCursorIsDrawn(tab, BrasscribeHighContrastColors, "in high contrast")
+        // A repeat over every line of the tab: each line has the rail under its bars, also the ones between the two brackets.
+        val e = tab.engraving.value!!
+        assumeTrue("the tab is not three lines here", e.lines.size >= 3)
+        rule.runOnUiThread { practice.repeat(RepeatBars(e.lines[0].firstBar, e.lines[2].lastBar)) }
+        val image = screen()
+        val density = rule.activity.resources.displayMetrics.density
+        val inView = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow.bottom
+        var middle = false
+        for ((n, line) in e.lines.take(3).withIndex()) {
+            val first = e.bar(line.firstBar)!!
+            val lastOfLine = e.bar(line.lastBar)!!
+            val bottom = first.bottom + 0.5f * tab.lineSpace
+            val rail = onScreen(tab, first.left + 40 * density, bottom - TabTokens.CURSOR_DP * density, lastOfLine.right - 40 * density, bottom - 1)
+            if (rail.bottom > inView) continue
+            if (n == 1) middle = true
+            val drawn = count(image, rail, BrasscribeHighContrastColors.loopEdge.toArgb())
+            assertTrue("the rail under bars ${line.firstBar}–${line.lastBar} ($drawn of ${rail.width() * rail.height()} px)", drawn >= rail.width() * rail.height() * 0.8)
+        }
+        assertTrue("the line between the brackets was in view", middle)
         rule.onRoot().tryPerformAccessibilityChecks()
         shot("practice-high-contrast")
     }
@@ -708,7 +766,7 @@ class PracticeTest {
         assertEquals("Neste takt", described("fs-practice-next"))
         assertEquals("Saktere", described("fs-practice-slower"))
         assertEquals("Raskere", described("fs-practice-faster"))
-        assertEquals("Gjentar takt 2 til 3", described("fs-practice-repeat"))
+        assertEquals("Gjentar 2–3", words("fs-practice-repeat"))
         assertTrue(words("fs-practice-place"), words("fs-practice-place").startsWith("Takt "))
         assertTrue(described("fs-practice-speed"), described("fs-practice-speed").startsWith("Tempo 100"))
         rule.onRoot().tryPerformAccessibilityChecks()

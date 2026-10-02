@@ -24,13 +24,17 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -78,6 +82,8 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 state == RecordingState.GETTING -> R.string.fs_practice_getting
                 state == RecordingState.GONE -> R.string.fs_practice_gone
                 state == RecordingState.NO_ANSWER -> R.string.fs_practice_no_answer
+                state == RecordingState.NO_ROOM -> R.string.fs_practice_no_room
+                state == RecordingState.TOO_LARGE -> R.string.fs_practice_too_large
                 state == RecordingState.UNPLAYABLE -> R.string.fs_practice_unplayable
                 canFetch -> R.string.fs_practice_not_here
                 else -> R.string.fs_practice_not_here_alone
@@ -87,8 +93,8 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 Text(words, style = MaterialTheme.typography.bodyLarge, color = c.text,
                     modifier = Modifier.testTag("fs-practice-says").semantics { liveRegion = LiveRegionMode.Polite })
                 if (follows && state == RecordingState.GETTING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
-                if (follows && canFetch && (state == RecordingState.NOT_HERE || state == RecordingState.NO_ANSWER)) OutlineButton(
-                    stringResource(if (state == RecordingState.NO_ANSWER) R.string.retry else R.string.fs_practice_get), onFetch,
+                if (follows && canFetch && (state == RecordingState.NOT_HERE || state == RecordingState.NO_ANSWER || state == RecordingState.NO_ROOM)) OutlineButton(
+                    stringResource(if (state == RecordingState.NOT_HERE) R.string.fs_practice_get else R.string.retry), onFetch,
                     Modifier.testTag("fs-practice-get"), icon = R.drawable.ic_bc_download, fill = false)
             }
             return@Column
@@ -121,6 +127,15 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 else -> stringResource(R.string.fs_practice_bar_beat, measure.number, place.second)
             }
             val quiet = practice.playing
+            // When the recording stops, the place it stopped at is said once: the text under a screen reader's finger did
+            // not change at that moment, so nothing else would say it.
+            val view = LocalView.current
+            val said by rememberUpdatedState(where)
+            var wasPlaying by remember { mutableStateOf(false) }
+            LaunchedEffect(practice.playing) {
+                if (wasPlaying && !practice.playing && said.isNotEmpty()) view.announceForAccessibility(said)
+                wasPlaying = practice.playing
+            }
             Text(where, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = c.text,
                 modifier = Modifier.testTag("fs-practice-place").semantics { if (!quiet) liveRegion = LiveRegionMode.Polite })
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -130,13 +145,13 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                     modifier = Modifier.widthIn(min = 56.dp).testTag("fs-practice-speed").semantics { contentDescription = speed; liveRegion = LiveRegionMode.Polite })
                 StepButton("+", stringResource(R.string.fs_practice_faster), "fs-practice-faster", practice.speed < PracticeSpeed.MAX, practice::faster)
             }
-            val (shown, spoken) = when {
-                repeat == null -> stringResource(R.string.fs_practice_repeat).let { it to it }
-                repeat.first == repeat.last -> stringResource(R.string.fs_practice_repeat_on_one, number(repeat.first)) to stringResource(R.string.fs_practice_repeating_one, number(repeat.first))
-                else -> stringResource(R.string.fs_practice_repeat_on, number(repeat.first), number(repeat.last)) to
-                    stringResource(R.string.fs_practice_repeating, number(repeat.first), number(repeat.last))
+            // The chip's words are its name: what is seen is what is said.
+            val shown = when {
+                repeat == null -> stringResource(R.string.fs_practice_repeat)
+                repeat.first == repeat.last -> stringResource(R.string.fs_practice_repeat_on_one, number(repeat.first))
+                else -> stringResource(R.string.fs_practice_repeat_on, number(repeat.first), number(repeat.last))
             }
-            PracticeChip(shown, repeat != null, { choosing = true }, Modifier.testTag("fs-practice-repeat"), icon = R.drawable.ic_bc_loop, role = Role.Button, accessibleName = spoken)
+            PracticeChip(shown, repeat != null, { choosing = true }, Modifier.testTag("fs-practice-repeat"), icon = R.drawable.ic_bc_loop, role = Role.Button)
         }
         if (choosing) RepeatDialog(measures, repeat, place?.first ?: 0, { practice.repeat(it); choosing = false }) { choosing = false }
     }

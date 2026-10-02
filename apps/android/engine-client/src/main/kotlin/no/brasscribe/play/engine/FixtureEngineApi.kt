@@ -151,7 +151,11 @@ class FixtureEngineApi(
     override suspend fun renderedAudio(jobId: String): ByteArray = file("brass-band.mp3")
 
     /** The fixture's [INPUT_FILE], when it has one: a computer that still holds the recording. */
-    override suspend fun jobInput(jobId: String, into: File) = into.writeBytes(file(INPUT_FILE))
+    override suspend fun jobInput(jobId: String, into: File, maxBytes: Long) {
+        val sound = file(INPUT_FILE)
+        if (sound.size > maxBytes) throw EngineException(413, "the fixture's recording is larger than $maxBytes bytes")
+        into.writeBytes(sound)
+    }
 
     override suspend fun tab(jobId: String): Tab {
         if (!isTab(jobId)) throw EngineException(404, "job $jobId has no tab")

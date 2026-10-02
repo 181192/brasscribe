@@ -252,7 +252,8 @@ fun TabScreen(vm: PlayViewModel) {
     Scaffold(
         // Space plays and pauses from anywhere on the screen, unless a button in focus takes it as its own press.
         modifier = Modifier.onKeyEvent {
-            if (it.type == KeyEventType.KeyDown && it.key == Key.Spacebar && canPlay) { practice.toggle(); true } else false
+            // A key held down sends its press again and again: only the first one counts.
+            if (it.type == KeyEventType.KeyDown && it.key == Key.Spacebar && canPlay) { if (it.nativeKeyEvent.repeatCount == 0) practice.toggle(); true } else false
         },
         containerColor = c.bg,
         topBar = {

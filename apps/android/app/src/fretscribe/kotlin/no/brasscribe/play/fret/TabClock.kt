@@ -12,10 +12,12 @@ data class RepeatBars(val first: Int, val last: Int)
 
 /**
  * Where in the tab the recording is at any second, and the other way round. The computer tracked the
- * recording's beats (`beat_times`: the second of every quarter note, with `first_downbeat` the one tick 0
- * falls on); the page says how long each of its bars is. Between two tracked beats time runs evenly, and
- * before the first and after the last it runs as between the nearest two, so a recording that speeds up
- * or drags keeps its cursor on the note being played.
+ * recording's beats (`beat_times`, with `first_downbeat` the one tick 0 falls on) and counts the notes'
+ * ticks from them: one step of `beat_times` is `ticks_per_beat` ticks, which the page writes as a quarter
+ * note in every time signature (a bar of six-eight is three steps; a song the computer hears in two with
+ * its beats divided in three it writes in two-four). The page says how long each of its bars is. Between
+ * two tracked beats time runs evenly, and before the first and after the last it runs as between the
+ * nearest two, so a recording that speeds up or drags keeps its cursor on the note being played.
  */
 class TabClock(
     private val beatTimes: List<Double>,
@@ -76,6 +78,13 @@ class TabClock(
 
     companion object {
         /**
+         * [seconds] as the millisecond a player is sent to: the first whole one at or after it, so the place there
+         * is not before the place at [seconds] (a bar's line that falls between two milliseconds is reached, not
+         * stopped short of).
+         */
+        fun millisAt(seconds: Double): Long = Math.ceil(seconds * 1000 - 1e-6).toLong().coerceAtLeast(0)
+
+        /**
          * The clock of a tab: from the tab's data when the computer gave it, else from the notes saved with the
          * song (the same beats). Null when neither has the recording's beats, or the page has no bars.
          */
@@ -117,3 +126,10 @@ object PracticeSpeed {
     fun slower(percent: Int): Int = (percent - STEP).coerceAtLeast(MIN)
     fun faster(percent: Int): Int = (percent + STEP).coerceAtMost(MAX)
 }
+
+/**
+ * A stretch that starts at [start] seconds can be played again when the recording, [duration] seconds long
+ * (0 while that is not known), has reached its end: it starts before that end. A tab can be longer than its
+ * recording, and a repeat of bars past the recording's end has nothing to play.
+ */
+fun turnsBack(start: Double, duration: Double): Boolean = duration <= 0.0 || start < duration - 0.05

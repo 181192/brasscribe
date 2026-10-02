@@ -202,11 +202,18 @@ class KtorEngineApi(
     override suspend fun pdf(jobId: String): ByteArray = bytes("v1/jobs/$jobId/pdf")
     override suspend fun tab(jobId: String): Tab = http.get("v1/jobs/$jobId/tab") { auth() }.ok().body()
     override suspend fun renderedAudio(jobId: String): ByteArray = bytes("v1/jobs/$jobId/audio")
-    override suspend fun jobInput(jobId: String, into: java.io.File) {
+    override suspend fun jobInput(jobId: String, into: java.io.File, maxBytes: Long) {
+        fun tooLarge(): Nothing = throw EngineException(413, "v1/jobs/$jobId/input: larger than $maxBytes bytes")
         http.prepareGet("v1/jobs/$jobId/input") { auth() }.execute { response ->
             response.ok()
+            // What the computer says it will send, and what it does send: neither may pass the limit.
+            response.headers[HttpHeaders.ContentLength]?.toLongOrNull()?.let { if (it > maxBytes) tooLarge() }
             val body = response.bodyAsChannel()
-            into.outputStream().use { out -> body.copyTo(out) }
+            val written = into.outputStream().use { out -> body.copyTo(out, maxBytes + 1) }
+            if (written > maxBytes) {
+                into.delete()
+                tooLarge()
+            }
         }
     }
 

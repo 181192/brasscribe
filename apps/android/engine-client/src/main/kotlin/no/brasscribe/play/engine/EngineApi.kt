@@ -80,9 +80,10 @@ interface EngineApi {
 
     /**
      * The recording the job was made from, written to [into] a buffer at a time (it can be a whole song).
-     * 404 when the computer no longer has it, or made the job from a file outside its own audio folders.
+     * 404 when the computer no longer has it, or made the job from a file outside its own audio folders; 413
+     * (and nothing left in [into]) when it is larger than [maxBytes].
      */
-    suspend fun jobInput(jobId: String, into: java.io.File)
+    suspend fun jobInput(jobId: String, into: java.io.File, maxBytes: Long = MAX_INPUT_BYTES)
     suspend fun artifacts(jobId: String): List<Artifact>
     suspend fun artifact(jobId: String, name: String): ByteArray
     suspend fun manifest(jobId: String): String
@@ -114,6 +115,9 @@ interface EngineApi {
         )
 
         const val PLATFORM = "android"
+
+        /** The largest recording taken from the computer: the largest upload the engine itself accepts by default (2 GiB), so everything it was sent fits and nothing else does. */
+        const val MAX_INPUT_BYTES = 2L shl 30
 
         /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools, and the computer's own. */
         val NOT_USED = setOf(

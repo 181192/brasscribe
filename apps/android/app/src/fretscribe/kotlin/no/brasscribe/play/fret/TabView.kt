@@ -626,7 +626,10 @@ internal class TabOverlay(context: Context, private val tab: TabView, private va
             stroke.strokeWidth = TabTokens.CURSOR_DP * density
             val half = stroke.strokeWidth / 2
             val arm = 0.9f * ls
-            for (b in tab.engraving.value?.bars.orEmpty()) {
+            val boxes = tab.engraving.value?.bars.orEmpty()
+            // And a rail under the bars on every line they run over, so a line in the middle of a long repeat is marked too.
+            for (b in boxes) if (b.bar in bars) canvas.drawLine(b.left, b.bottom + reach - half, b.right, b.bottom + reach - half, stroke)
+            for (b in boxes) {
                 if (b.bar != bars.first && b.bar != bars.last) continue
                 val top = b.staffTop - half
                 val bottom = b.bottom + reach

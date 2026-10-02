@@ -20,8 +20,14 @@ import java.io.File
  * second, and over a stretch again and again. Used from the main thread only.
  */
 interface RecordingPlayer {
-    /** It has been asked to play and has not reached the end (a moment of reading the file after a jump is still playing). */
+    /**
+     * The recording is sounding, or about to: asked to play, not at its end, and the phone lets it (a moment of
+     * reading the file after a jump is still playing; a phone call that takes the sound away for a while is not).
+     */
     val playing: Boolean
+
+    /** It was asked to play and has not been paused, whether or not the phone lets it sound now. */
+    val asked: Boolean
 
     /** Where the recording is, in seconds. */
     val position: Double
@@ -63,14 +69,21 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
         player.setHandleAudioBecomingNoisy(true)
         if (silent) player.volume = 0f
         player.addListener(object : Player.Listener {
-            // Also when the phone takes the sound away: another app plays, or headphones are pulled out.
-            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = listener.onPlaying(playWhenReady)
+            // Pause and play; headphones pulled out (the player pauses itself); and the phone taking the sound away for
+            // a while (a call, another app's announcement): the player stays asked to play and goes on by itself after,
+            // but nothing sounds meanwhile, so it is not playing.
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = tell()
+            override fun onPlaybackSuppressionReasonChanged(playbackSuppressionReason: Int) = tell()
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState != Player.STATE_ENDED) return
-                // A stretch that reaches the end of the recording turns here; else the recording has been played.
-                val again = repeat
-                if (again != null && player.playWhenReady) seekTo(again.start) else { player.playWhenReady = false; listener.onEnded() }
+                if (playbackState == Player.STATE_ENDED) {
+                    // A stretch that reaches the end of the recording turns here, when it starts before that end (one that
+                    // starts past it would end again at once, for ever); else the recording has been played.
+                    val again = repeat
+                    if (again != null && player.playWhenReady && turnsBack(again.start, duration)) seekTo(again.start)
+                    else { player.playWhenReady = false; listener.onEnded() }
+                }
+                tell()
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -82,7 +95,20 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
         player.prepare()
     }
 
-    override val playing: Boolean get() = player.playWhenReady && player.playbackState != Player.STATE_ENDED
+    override val playing: Boolean
+        get() = player.playWhenReady && player.playbackSuppressionReason == Player.PLAYBACK_SUPPRESSION_REASON_NONE &&
+            player.playbackState != Player.STATE_ENDED && player.playbackState != Player.STATE_IDLE
+    override val asked: Boolean get() = player.playWhenReady
+
+    private var told = false
+
+    /** Tells the listener when [playing] has changed. */
+    private fun tell() {
+        val now = playing
+        if (now == told) return
+        told = now
+        listener.onPlaying(now)
+    }
     override val position: Double get() = player.currentPosition / 1000.0
     override val duration: Double get() = player.duration.takeIf { it != C.TIME_UNSET }?.let { it / 1000.0 } ?: 0.0
 
@@ -99,7 +125,7 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
             turn?.cancel()
             turn = value?.let { stretch ->
                 // Told on the playback thread at the stretch's last millisecond, every time it is reached.
-                player.createMessage { _, _ -> if (repeat == stretch) player.seekTo((stretch.start * 1000).toLong()) }
+                player.createMessage { _, _ -> if (repeat == stretch) seekTo(stretch.start) }
                     .setLooper(Looper.getMainLooper())
                     .setPosition((stretch.endInclusive * 1000).toLong().coerceAtLeast(1))
                     .setDeleteAfterDelivery(false)
@@ -109,7 +135,7 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
 
     override fun play() {
         if (player.playbackState == Player.STATE_IDLE) player.prepare()
-        if (player.playbackState == Player.STATE_ENDED) player.seekTo(((repeat?.start ?: 0.0) * 1000).toLong())
+        if (player.playbackState == Player.STATE_ENDED) seekTo(repeat?.start?.takeIf { turnsBack(it, duration) } ?: 0.0)
         player.playWhenReady = true
     }
 
@@ -117,7 +143,7 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
         player.playWhenReady = false
     }
 
-    override fun seekTo(seconds: Double) = player.seekTo((seconds * 1000).toLong().coerceAtLeast(0))
+    override fun seekTo(seconds: Double) = player.seekTo(TabClock.millisAt(seconds))
 
     override fun release() {
         turn?.cancel()

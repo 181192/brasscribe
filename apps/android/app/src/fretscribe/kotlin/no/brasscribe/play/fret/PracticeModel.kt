@@ -33,6 +33,10 @@ enum class RecordingState {
     GONE,
     /** The computer could not be asked. */
     NO_ANSWER,
+    /** The phone has no room to keep it. */
+    NO_ROOM,
+    /** It is larger than the phone takes. */
+    TOO_LARGE,
     /** On the phone, and the phone cannot play it. */
     UNPLAYABLE,
 }
@@ -43,12 +47,29 @@ enum class RecordingState {
  * or when it is fetched from the computer, so the song can be practised when it is opened again.
  */
 class PracticeRecordings(private val dir: File) {
-    private fun named(job: String): File? = job.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.take(80).takeIf { it.isNotEmpty() }?.let { File(dir, it) }
+    /**
+     * The file of [job]: what a file name can hold of the id, and a short hash of the whole id, so two ids that
+     * read the same once their other characters are gone, or past the length kept, are still two files.
+     */
+    private fun named(job: String): File? {
+        if (job.isEmpty()) return null
+        val plain = job.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.take(60)
+        val hash = java.security.MessageDigest.getInstance("SHA-256").digest(job.toByteArray()).take(4).joinToString("") { "%02x".format(it) }
+        return File(dir, "$plain.$hash")
+    }
 
     fun find(job: String): File? = named(job)?.takeIf { it.isFile && it.length() > 0 }
 
-    /** Where a recording being fetched is written, until it is whole ([arrived]). */
-    fun arriving(job: String): File? = named(job)?.let { dir.mkdirs(); File(dir, it.name + PART) }
+    /** Where a recording being fetched or copied is written, until it is whole ([arrived]); what an earlier try left there is gone. */
+    fun arriving(job: String): File? = named(job)?.let { dir.mkdirs(); File(dir, it.name + PART).also(File::delete) }
+
+    /** The try at [job]'s recording did not get through: what there is of it goes. */
+    fun dropped(job: String) {
+        named(job)?.let { File(dir, it.name + PART).delete() }
+    }
+
+    /** Room left for recordings, in bytes. */
+    val room: Long get() = generateSequence(dir) { it.parentFile }.firstOrNull { it.exists() }?.usableSpace ?: 0L
 
     fun arrived(job: String): File? {
         val to = named(job) ?: return null
@@ -60,17 +81,36 @@ class PracticeRecordings(private val dir: File) {
     fun keep(job: String, from: File): File {
         find(job)?.let { if (it.length() == from.length()) return it }
         val part = arriving(job) ?: return from
-        return runCatching { from.copyTo(part, overwrite = true); arrived(job) }.getOrNull() ?: from
+        return runCatching { from.copyTo(part, overwrite = true); arrived(job) }.getOrNull() ?: from.also { dropped(job) }
     }
 
-    /** Drops the recordings of every song but [jobs]: a song deleted from Your songs takes its recording with it. */
+    /**
+     * Drops the recordings of every song but [jobs]: a song deleted from Your songs takes its recording with it.
+     * What a fetch or a copy that did not finish left behind goes too (none is running when this is asked).
+     */
     fun prune(jobs: Set<String>) {
         val kept = jobs.mapNotNull { named(it)?.name }.toSet()
-        dir.listFiles()?.filter { it.name.removeSuffix(PART) !in kept }?.forEach { it.delete() }
+        dir.listFiles()?.filter { it.name !in kept }?.forEach { it.delete() }
     }
 
-    private companion object {
-        const val PART = ".part"
+    companion object {
+        private const val PART = ".part"
+
+        /** Less room than this after a fetch failed: the phone is full. */
+        const val FULL_BYTES = 16L shl 20
+
+        /**
+         * Why a recording did not come from the computer, from what went wrong ([error]) and the [room] left on the
+         * phone: the computer does not have it; it is larger than the phone takes; the phone could not keep it
+         * (no room, or the file could not be written); or the computer was not reached.
+         */
+        fun whyNot(error: Throwable, room: Long): RecordingState = when {
+            (error as? EngineException)?.status == 404 -> RecordingState.GONE
+            (error as? EngineException)?.status == 413 -> RecordingState.TOO_LARGE
+            error is EngineException -> RecordingState.NO_ANSWER
+            error is java.io.FileNotFoundException || error is IllegalStateException || room < FULL_BYTES -> RecordingState.NO_ROOM
+            else -> RecordingState.NO_ANSWER
+        }
     }
 }
 
@@ -86,6 +126,7 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     private var song: String? = null
     private var job: String? = null
     private var looking = 0
+    private var fetching: kotlinx.coroutines.Job? = null
 
     private class Left(val at: Double, val speed: Int, val repeat: RepeatBars?)
     private val left = HashMap<String, Left>()
@@ -130,7 +171,7 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         }
         this.job = job
         repeat = repeat?.takeIf { clock == null || (it.first in 0..it.last && it.last < clock.bars) }
-        if (player != null || recording == RecordingState.GETTING) { stretch(); return }
+        if (player != null || fetching?.isActive == true) { stretch(); return }
         val file = inHand?.takeIf { it.isFile && it.length() > 0 }
         val look = ++looking
         recording = RecordingState.LOOKING
@@ -161,21 +202,24 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     /** Copies the recording from the computer, which holds what it was sent. */
     fun fetch(engine: EngineApi) {
         val job = job ?: return
-        if (recording == RecordingState.GETTING || player != null) return
+        // One fetch at a time: a second press while one runs does nothing.
+        if (fetching?.isActive == true || player != null) return
         val look = ++looking
         recording = RecordingState.GETTING
-        viewModelScope.launch {
+        fetching = viewModelScope.launch {
             val got = try {
                 withContext(Dispatchers.IO) {
                     val part = store.arriving(job) ?: throw IllegalStateException("no place to keep the recording")
                     engine.jobInput(job, part)
-                    store.arrived(job) ?: throw IllegalStateException("the recording came empty")
+                    store.arrived(job) ?: throw java.io.IOException("the recording came empty")
                 }
             } catch (e: CancellationException) {
+                withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) { store.dropped(job) }
                 throw e
             } catch (e: Exception) {
                 android.util.Log.w(PlayViewModel.TAG, "the recording could not be fetched", e)
-                if (look == looking) recording = if ((e as? EngineException)?.status == 404) RecordingState.GONE else RecordingState.NO_ANSWER
+                val why = withContext(Dispatchers.IO) { store.dropped(job); PracticeRecordings.whyNot(e, store.room) }
+                if (look == looking) recording = why
                 null
             }
             if (got != null && look == looking) load(got)
@@ -185,6 +229,8 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     fun toggle() {
         val p = player ?: return
         if (playing || p.playing) { p.pause(); return }
+        // Asked to play while the phone holds the sound back: asked again, from the start of the asking.
+        if (p.asked) p.pause()
         // From the end, or from outside the bars being repeated, it starts over.
         val span = repeat?.let { clock?.span(it) }
         val end = clock?.end
@@ -212,10 +258,12 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         seek(clock.secondsAt(within))
     }
 
-    /** A bar back or on from the bar the song is in. */
+    /** A bar back or on from the bar the song is in. In the last bar (of the tab, or of the bars being repeated) there is no bar on: nothing happens. */
     fun step(bars: Int) {
         val clock = clock ?: return
-        toBar(clock.placeAt(now()).bar + bars)
+        val bar = clock.placeAt(now()).bar
+        if (bars > 0 && bar >= (repeat?.last ?: (clock.bars - 1))) return
+        toBar(bar + bars)
     }
 
     /** Back to where the repeat starts; to the start of the tab when nothing is repeated. */
@@ -239,9 +287,11 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         remember()
     }
 
-    /** The tab is left: the sound stops, and the song is kept where it was. */
+    /** The tab is left: the sound stops, a fetch that is running is given up, and the song is kept where it was. */
     fun leave() {
         looking++
+        fetching?.cancel()
+        fetching = null
         remember()
         release()
         recording = RecordingState.LOOKING

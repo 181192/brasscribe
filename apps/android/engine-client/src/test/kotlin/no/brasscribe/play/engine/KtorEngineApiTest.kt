@@ -251,4 +251,27 @@ class KtorEngineApiTest {
             file.delete()
         }
     }
+
+    @Test
+    fun aRecordingLargerThanTheLimitIsRefusedAndLeavesNothing() = runTest {
+        val sound = ByteArray(50_000)
+        // One computer says how much it will send, the other only sends it.
+        for (declared in listOf(true, false)) {
+            val engine = MockEngine { _ ->
+                if (declared) respond(sound, HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, sound.size.toString()))
+                else respond(io.ktor.utils.io.ByteReadChannel(sound), HttpStatusCode.OK)
+            }
+            val api = KtorEngineApi("http://host", engine)
+            val file = java.io.File.createTempFile("input", ".wav")
+            try {
+                val refused = runCatching { api.jobInput("r1", file, maxBytes = 10_000) }.exceptionOrNull()
+                assertEquals(413, (refused as? EngineException)?.status)
+                assertTrue("nothing over the limit is kept (${file.length()})", file.length() <= 10_001)
+                api.jobInput("r1", file, maxBytes = 50_000)
+                assertEquals(50_000L, file.length())
+            } finally {
+                file.delete()
+            }
+        }
+    }
 }

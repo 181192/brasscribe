@@ -232,10 +232,8 @@
     <string name="fs_practice_slower">Slower</string>
     <string name="fs_practice_faster">Faster</string>
     <string name="fs_practice_repeat">Repeat bars</string>
-    <string name="fs_practice_repeat_on">Repeat %1$s–%2$s</string>
-    <string name="fs_practice_repeat_on_one">Repeat %1$s</string>
-    <string name="fs_practice_repeating">Repeating bars %1$s to %2$s</string>
-    <string name="fs_practice_repeating_one">Repeating bar %1$s</string>
+    <string name="fs_practice_repeat_on">Repeating %1$s–%2$s</string>
+    <string name="fs_practice_repeat_on_one">Repeating %1$s</string>
     <string name="fs_practice_repeat_tip">The recording plays these bars again and again.</string>
     <string name="fs_practice_repeat_pickup">Bar 0 is the pickup bar.</string>
     <string name="fs_practice_bar_earlier">%1$s: one bar earlier</string>
@@ -251,4 +249,6 @@
     <string name="fs_practice_no_answer">The recording didn\'t come. Is your computer on?</string>
     <string name="fs_practice_unplayable">This phone can\'t play the recording. You can still read the tab.</string>
     <string name="fs_practice_no_beats">Fretscribe can\'t follow the recording in this tab. You can still read it.</string>
+    <string name="fs_practice_no_room">There is no room on this phone for the recording. You can still read the tab.</string>
+    <string name="fs_practice_too_large">The recording is too large to keep on this phone. You can still read the tab.</string>
 </resources>

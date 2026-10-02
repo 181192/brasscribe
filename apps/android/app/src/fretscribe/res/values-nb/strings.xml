@@ -212,8 +212,6 @@
     <string name="fs_practice_repeat">Gjenta takter</string>
     <string name="fs_practice_repeat_on">Gjentar %1$s–%2$s</string>
     <string name="fs_practice_repeat_on_one">Gjentar %1$s</string>
-    <string name="fs_practice_repeating">Gjentar takt %1$s til %2$s</string>
-    <string name="fs_practice_repeating_one">Gjentar takt %1$s</string>
     <string name="fs_practice_repeat_tip">Opptaket spiller disse taktene om og om igjen.</string>
     <string name="fs_practice_repeat_pickup">Takt 0 er opptakten.</string>
     <string name="fs_practice_bar_earlier">%1$s: én takt tidligere</string>
@@ -229,4 +227,6 @@
     <string name="fs_practice_no_answer">Opptaket kom ikke. Er datamaskinen på?</string>
     <string name="fs_practice_unplayable">Denne telefonen kan ikke spille av opptaket. Du kan fortsatt lese tabben.</string>
     <string name="fs_practice_no_beats">Fretscribe kan ikke følge opptaket i denne tabben. Du kan fortsatt lese den.</string>
+    <string name="fs_practice_no_room">Det er ikke plass til opptaket på denne telefonen. Du kan fortsatt lese tabben.</string>
+    <string name="fs_practice_too_large">Opptaket er for stort til å ligge på denne telefonen. Du kan fortsatt lese tabben.</string>
 </resources>
