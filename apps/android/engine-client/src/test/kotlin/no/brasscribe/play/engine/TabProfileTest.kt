@@ -181,6 +181,28 @@ class TabProfileTest {
     }
 
     @Test
+    fun aFixtureComputerFromBeforeTheTabProfileHasTheBassTabOnly() = runTest {
+        val folder = File(fixtures, "bass-line")
+        val olderIds = Profile.entries.map { it.id } - "tab"
+        val api = FixtureEngineApi(FixtureSource { name ->
+            if (name == FixtureEngineApi.PROFILES_FILE) olderIds.joinToString(",", "[", "]") { "\"$it\"" }.toByteArray() else File(folder, name).takeIf { it.isFile }?.readBytes()
+        }, stageSeconds = 0.0)
+        assertEquals(olderIds, api.profiles().map { it.name })
+        // As the engine of that time: a profile it does not have is refused without a code.
+        val refused = runCatching { api.createJob(JobCreate.tab("a1", TabOptions(FrettedInstrument.BASS_4))) }.exceptionOrNull() as EngineException
+        assertEquals(422, refused.status)
+        assertNull(refused.refusal)
+        assertTrue(refused.message.orEmpty().contains("unknown profile"))
+        // A bass under the id it knows is written as ever.
+        val job = api.createJob(JobCreate.bassTab("a1", TabOptions(FrettedInstrument.BASS_4, recording = Recording.INSTRUMENT)))
+        api.events(job.id).toList()
+        assertEquals(JobStatus.SUCCEEDED, api.job(job.id).status)
+        assertEquals("bass-4-standard", api.tab(job.id).preset)
+        // A folder with no such file is a computer with every profile.
+        assertTrue("tab" in FixtureEngineApi(DirectoryFixtureSource(folder)).profiles().map { it.name })
+    }
+
+    @Test
     fun theFixtureEngineReplaysTheRecordedJobsAndRefusesWhatTheEngineRefuses() = runTest {
         for (take in takes) {
             val api = FixtureEngineApi(DirectoryFixtureSource(File(fixtures, take)), stageSeconds = 0.0)

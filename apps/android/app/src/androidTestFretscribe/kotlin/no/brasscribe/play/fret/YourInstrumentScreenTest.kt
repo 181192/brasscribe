@@ -191,6 +191,7 @@ class YourInstrumentScreenTest {
 
     private val isRadio = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
     private val isPicker = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.DropdownList)
+    private val isNotAButton = SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick) and SemanticsMatcher.keyNotDefined(SemanticsProperties.Role)
 
     /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
     private fun assertNoTextIsClipped() {
@@ -221,9 +222,9 @@ class YourInstrumentScreenTest {
         // What the rows say as the instrument changes: the bass, the ukulele in its two sizes, the mandolin.
         val others = mapOf(
             "en-GB" to listOf("Instrument, Bass", "Strings, 4 strings", "Instrument, Ukulele", "Size, Soprano, concert or tenor", "Usual tuning, High G",
-                "Usual tuning, Low G", "Size, Baritone", "Usual tuning, Standard", "Instrument, Mandolin"),
+                "Usual tuning, Low G", "Size, Baritone", "Tuning, D, G, B, E", "Instrument, Mandolin", "Tuning, G, D, A, E"),
             "nb-NO" to listOf("Instrument, Bass", "Strenger, 4 strenger", "Instrument, Ukulele", "Størrelse, Sopran, konsert eller tenor", "Vanlig stemming, Høy G",
-                "Vanlig stemming, Lav G", "Størrelse, Baryton", "Vanlig stemming, Standard", "Instrument, Mandolin"),
+                "Vanlig stemming, Lav G", "Størrelse, Baryton", "Stemming, D, G, H, E", "Instrument, Mandolin", "Stemming, G, D, A, E"),
         )
         for ((lang, w) in words) {
             language(lang)
@@ -260,12 +261,21 @@ class YourInstrumentScreenTest {
             row("tuning").assertContentDescriptionEquals(o[5])
             pick("strings", "ukulele-baritone")
             row("strings").assertContentDescriptionEquals(o[6])
-            row("tuning").assertContentDescriptionEquals(o[7])
+            // A baritone has one tuning: the row says its strings, and is not something to open.
+            row("tuning").assertContentDescriptionEquals(o[7]).assert(isNotAButton)
             pick("instrument", "mandolin")
             row("instrument").assertContentDescriptionEquals(o[8])
-            row("tuning").assertContentDescriptionEquals(o[7])
+            row("tuning").assertContentDescriptionEquals(o[9]).assert(isNotAButton)
             assertTrue(rule.onAllNodesWithTag("fs-row-strings").fetchSemanticsNodes().isEmpty())
-            listOf("instrument", "tuning", "hand", "reads").forEach { assertSaidOnce(it) }
+            listOf("instrument", "hand", "reads").forEach { assertSaidOnce(it) }
+            // Read once, as one element with nothing under it.
+            rule.onNodeWithTag("fs-row-tuning").fetchSemanticsNode().let { read ->
+                assertEquals(1, read.config.getOrNull(SemanticsProperties.ContentDescription)?.size)
+                assertEquals(emptyList<String>(), read.children.map { it.config.toString() })
+            }
+            // No mark that it opens, where the rows that open have one: nothing tapped, nothing shown.
+            row("tuning").performClick()
+            assertTrue(rule.onAllNodes(isRadio).fetchSemanticsNodes().isEmpty())
             // Nothing of it is kept until Continue.
             assertEquals(YourInstrument.DEFAULT, store.load())
         }
@@ -294,7 +304,7 @@ class YourInstrumentScreenTest {
                 "instrument" to listOf("Gitar", "Bass", "Ukulele", "Mandolin"),
                 "strings" to listOf("6 strenger", "7 strenger", "8 strenger"),
                 "tuning" to listOf("Standard", "Ess-standard (en halvtone ned)", "D-standard (en heltone ned)", "C-standard (to heltoner ned)",
-                    "Drop D", "Drop C", "Drop B", "D, A, D, G, A, D", "Åpen G", "Åpen D", "Åpen E"),
+                    "Drop D", "Drop C", "Drop H", "D, A, D, G, A, D", "Åpen G", "Åpen D", "Åpen E"),
                 "hand" to listOf("Venstre hånd på halsen (de fleste)", "Høyre hånd på halsen (venstrehendt instrument)", "Høyre hånd på halsen (instrumentet opp ned)"),
                 "reads" to listOf("Tab", "Tab og noter", "Noter"),
             ),
@@ -333,12 +343,15 @@ class YourInstrumentScreenTest {
             val nb = lang == "nb-NO"
             pick("instrument", "bass")
             assertEquals(if (nb) listOf("4 strenger", "5 strenger", "6 strenger") else listOf("4 strings", "5 strings", "6 strings"), said("strings", "bass-4"))
-            assertEquals(spoken.getValue("tuning").take(3) + listOf("Drop D", "B, E, A, D"), said("tuning", "standard"))
+            // (In Norwegian the note B is H: the tuning is HEAD, said letter by letter.)
+            assertEquals(spoken.getValue("tuning").take(3) + listOf("Drop D", if (nb) "H, E, A, D" else "B, E, A, D"), said("tuning", "standard"))
             pick("instrument", "ukulele")
             assertEquals(if (nb) listOf("Sopran, konsert eller tenor", "Baryton") else listOf("Soprano, concert or tenor", "Baritone"), said("strings", "ukulele"))
             assertEquals(if (nb) listOf("Høy G", "Lav G") else listOf("High G", "Low G"), said("tuning", "high-g"))
-            pick("instrument", "mandolin")
-            assertEquals(listOf("Standard"), said("tuning", "standard"))
+            // Six strings on a bass and eight on a guitar have one tuning: said, not asked.
+            pick("instrument", "bass")
+            pick("strings", "bass-6")
+            row("tuning").assertContentDescriptionEquals(if (nb) "Stemming, Standard" else "Tuning, Standard").assert(isNotAButton)
         }
     }
 
@@ -531,8 +544,8 @@ class YourInstrumentScreenTest {
         for ((mine, value) in listOf(
             YourInstrument(FrettedInstrument.GUITAR_7, "eb-standard") to "7-string guitar · E-flat standard (half a step down) · Tab",
             YourInstrument(FrettedInstrument.UKULELE, "low-g") to "Ukulele · Low G · Tab",
-            YourInstrument(FrettedInstrument.UKULELE_BARITONE) to "Baritone ukulele · Standard · Tab",
-            YourInstrument(FrettedInstrument.MANDOLIN, reads = Reads.TAB_AND_NOTATION) to "Mandolin · Standard · Tab and notation",
+            YourInstrument(FrettedInstrument.UKULELE_BARITONE) to "Baritone ukulele · D G B E · Tab",
+            YourInstrument(FrettedInstrument.MANDOLIN, reads = Reads.TAB_AND_NOTATION) to "Mandolin · G D A E · Tab and notation",
         )) {
             store.save(mine)
             // (Settings reads the answer when it is opened.)

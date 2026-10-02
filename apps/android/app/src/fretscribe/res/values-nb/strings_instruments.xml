@@ -8,7 +8,8 @@
     <string name="fs_size_baritone">Baryton</string>
     <string name="fs_tuning_c_standard">C-standard (to heltoner ned)</string>
     <string name="fs_tuning_drop_c">Drop C</string>
-    <string name="fs_tuning_drop_b">Drop B</string>
+    <!-- På norsk heter tonen B «H». -->
+    <string name="fs_tuning_drop_b">Drop H</string>
     <string name="fs_tuning_dadgad">DADGAD</string>
     <string name="fs_tuning_dadgad_spoken">D, A, D, G, A, D</string>
     <string name="fs_tuning_open_g">Åpen G</string>
@@ -39,4 +40,16 @@
         <item quantity="one">%1$d tone er lagt til for å fullføre en akkord. Den er merket ?.</item>
         <item quantity="other">%1$d toner er lagt til for å fullføre en akkord. De er merket ?.</item>
     </plurals>
+
+    <string name="fs_tuning_only">Stemming</string>
+    <string name="fs_tuning_dgbe">D G H E</string>
+    <string name="fs_tuning_dgbe_spoken">D, G, H, E</string>
+    <string name="fs_tuning_gdae">G D A E</string>
+    <string name="fs_tuning_gdae_spoken">G, D, A, E</string>
+
+    <string name="fs_check_capo_keeps">Endrer du capo, endres båndene. Tonene er de samme.</string>
+
+    <string name="fs_too_old_guitar">Fretscribe på datamaskinen er for gammel til å skrive gitartab. Oppdater den der.</string>
+    <string name="fs_too_old_ukulele">Fretscribe på datamaskinen er for gammel til å skrive ukuleletab. Oppdater den der.</string>
+    <string name="fs_too_old_mandolin">Fretscribe på datamaskinen er for gammel til å skrive mandolintab. Oppdater den der.</string>
 </resources>

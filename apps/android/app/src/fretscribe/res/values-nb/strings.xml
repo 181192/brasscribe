@@ -56,8 +56,9 @@
     <string name="fs_tuning_eb_standard">Ess-standard (en halvtone ned)</string>
     <string name="fs_tuning_d_standard">D-standard (en heltone ned)</string>
     <string name="fs_tuning_drop_d">Drop D</string>
-    <string name="fs_tuning_bead">BEAD</string>
-    <string name="fs_tuning_bead_spoken">B, E, A, D</string>
+    <!-- På norsk heter tonen B «H» (og B er en senket H). -->
+    <string name="fs_tuning_bead">HEAD</string>
+    <string name="fs_tuning_bead_spoken">H, E, A, D</string>
     <string name="fs_tuning_drop_a">Drop A</string>
     <string name="fs_hand_left">Venstre hånd på halsen (de fleste)</string>
     <string name="fs_hand_right">Høyre hånd på halsen (venstrehendt instrument)</string>

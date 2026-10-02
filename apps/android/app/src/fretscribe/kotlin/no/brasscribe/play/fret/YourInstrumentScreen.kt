@@ -81,10 +81,18 @@ private fun instrumentName(i: Instrument): Int = when (i) {
     Instrument.MANDOLIN -> R.string.fs_instrument_mandolin
 }
 
-/** A tuning's name, as shown or as spoken ("BEAD" and "DADGAD" are read letter by letter). An id without words of its own shows as it is. */
+/**
+ * A tuning's name, as shown or as spoken ("BEAD" and "DADGAD" are read letter by letter). The one tuning of a
+ * baritone ukulele and of a mandolin ([kind]) is named by its strings, lowest first. An id without words of
+ * its own shows as it is.
+ */
 @Composable
-internal fun tuningName(id: String, spoken: Boolean = false): String = when (id) {
-    "standard" -> stringResource(R.string.fs_tuning_standard)
+internal fun tuningName(id: String, spoken: Boolean = false, kind: FrettedInstrument? = null): String = when (id) {
+    "standard" -> stringResource(when (kind) {
+        FrettedInstrument.UKULELE_BARITONE -> if (spoken) R.string.fs_tuning_dgbe_spoken else R.string.fs_tuning_dgbe
+        FrettedInstrument.MANDOLIN -> if (spoken) R.string.fs_tuning_gdae_spoken else R.string.fs_tuning_gdae
+        else -> R.string.fs_tuning_standard
+    })
     "eb-standard" -> stringResource(R.string.fs_tuning_eb_standard)
     "d-standard" -> stringResource(R.string.fs_tuning_d_standard)
     "c-standard" -> stringResource(R.string.fs_tuning_c_standard)
@@ -142,7 +150,7 @@ fun yourInstrumentValue(): String {
     val context = LocalContext.current
     val value = remember { yourInstrumentStore(context).load() }
     return stringResource(R.string.fs_instrument_value, kindName(value.kind),
-        tuningName(value.tuning), stringResource(readsName(value.reads)))
+        tuningName(value.tuning, kind = value.kind), stringResource(readsName(value.reads)))
 }
 
 /** One choice of a picker: its id, the words shown and the words spoken. */
@@ -215,10 +223,12 @@ fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
                 }
                 RowDivider()
             }
-            PickerRow(
+            // An instrument with one tuning has nothing to choose: the row says what it is, and opens nothing.
+            if (chosen.tunings.size > 1) PickerRow(
                 stringResource(R.string.fs_tuning), "tuning", tuning,
-                chosen.tunings.map { Choice(it, tuningName(it), tuningName(it, spoken = true)) },
+                chosen.tunings.map { Choice(it, tuningName(it, kind = kind), tuningName(it, spoken = true, kind = kind)) },
             ) { tuning = it }
+            else FactRow(stringResource(R.string.fs_tuning_only), "tuning", tuningName(tuning, kind = kind), tuningName(tuning, spoken = true, kind = kind))
             RowDivider()
             PickerRow(
                 stringResource(R.string.fs_hand), "hand", hand.id,
@@ -246,6 +256,14 @@ internal fun Modifier.focusRing(focused: Boolean, colour: Color): Modifier = if 
         colour, Offset(inset, inset), Size(size.width - 2 * inset, size.height - 2 * inset),
         CornerRadius(BrasscribeSpace.s2.toPx()), Stroke(width),
     )
+}
+
+/** A row that says one thing and asks nothing: its name and its value, read as one element, with no mark to open it. */
+@Composable
+private fun FactRow(label: String, tag: String, value: String, spoken: String) {
+    Box(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "$label, $spoken" }.testTag("fs-row-$tag")) {
+        ListRow(label, null, modifier = Modifier.clearAndSetSemantics { }, subtitle = value)
+    }
 }
 
 /**

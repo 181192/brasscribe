@@ -101,8 +101,12 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
         }
     }
     val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
+    val listed = computerProfiles(vm, there)
     // The computer keeps the recording it was sent: a change is a new job on it, also for a song opened from Your songs.
-    val canChange = there
+    // A computer from before this tab's instrument cannot write it again.
+    val made = (heard as? Heard.Ready)?.tab?.preset?.let(SongCheck::kindOf)
+    val tooOld = there && heard is Heard.Ready && tabProfile(made, listed) == null
+    val canChange = there && !tooOld
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
@@ -137,7 +141,8 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
                 val rows = remember(h.tab) { SongCheck.rows(h.tab) }
                 val changes = rows.map { changeFor(it) }
                 // Above the rows, so it is seen: why the buttons are not there.
-                if (changes.any { it != null } && !canChange) InfoNote(stringResource(R.string.fs_check_connect), Modifier.testTag("fs-check-connect"))
+                if (changes.any { it != null } && !canChange)
+                    InfoNote(stringResource(if (tooOld) tooOldWords(made) else R.string.fs_check_connect), Modifier.testTag("fs-check-connect"))
                 RowGroup {
                     rows.forEachIndexed { i, row ->
                         if (i > 0) RowDivider()
@@ -185,10 +190,10 @@ internal fun capoName(fret: Int): String = if (fret == 0) stringResource(R.strin
 @Composable
 private fun rowWords(row: SongRow): Triple<String, String, String> = when (row) {
     is SongRow.Tuning -> {
-        val written = tuningName(row.written)
+        val written = tuningName(row.written, kind = row.kind)
         val shown = row.soundsLike?.let { stringResource(R.string.fs_check_sounds_like, tuningName(it), written) } ?: written
-        val spoken = row.soundsLike?.let { stringResource(R.string.fs_check_sounds_like, tuningName(it, spoken = true), tuningName(row.written, spoken = true)) }
-            ?: tuningName(row.written, spoken = true)
+        val spoken = row.soundsLike?.let { stringResource(R.string.fs_check_sounds_like, tuningName(it, spoken = true), tuningName(row.written, spoken = true, kind = row.kind)) }
+            ?: tuningName(row.written, spoken = true, kind = row.kind)
         Triple(stringResource(R.string.fs_check_tuning), shown, spoken)
     }
     is SongRow.Capo -> capoName(row.fret).let { Triple(stringResource(R.string.fs_check_capo), it, it) }
@@ -248,13 +253,17 @@ private fun tagOf(row: SongRow): String = when (row) {
 private fun SongRowView(row: SongRow, change: Change?, onChange: (Change) -> Unit) {
     val c = BrasscribeTheme.colors
     val (label, shown, spoken) = rowWords(row)
+    // A change of capo keeps the sound: the same notes, with the frets counted from the capo. The computer has no
+    // other way (the same shapes, sounding higher), so the row says what will happen instead of asking.
+    val caption = if (row is SongRow.Capo && change != null) stringResource(R.string.fs_check_capo_keeps) else null
     Column(
         Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
         verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
     ) {
-        Column(Modifier.fillMaxWidth().testTag("fs-check-${tagOf(row)}").semantics(mergeDescendants = true) { contentDescription = "$label: $spoken" }) {
+        Column(Modifier.fillMaxWidth().testTag("fs-check-${tagOf(row)}").semantics(mergeDescendants = true) { contentDescription = listOfNotNull("$label: $spoken", caption).joinToString(". ") }) {
             Text(label, style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.clearAndSetSemantics { })
             Text(shown, style = MaterialTheme.typography.titleMedium, color = c.text, modifier = Modifier.clearAndSetSemantics { })
+            if (caption != null) Text(caption, style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.clearAndSetSemantics { })
         }
         if (change != null) {
             var asking by rememberSaveable { mutableStateOf(false) }
@@ -293,7 +302,7 @@ fun songRowSubtitle(entry: ScoreEntry): String? {
     val f = facts ?: return listOf(stringResource(R.string.fs_song_tab), date).joinToString(" · ")
     return listOfNotNull(
         f.kind?.let { kindName(it) } ?: stringResource(R.string.fs_song_tab),
-        f.tuning?.let { tuningName(it) },
+        f.tuning?.let { tuningName(it, kind = f.kind) },
         f.toCheck.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_song_to_check, it, it) },
         date,
     ).joinToString(" · ")

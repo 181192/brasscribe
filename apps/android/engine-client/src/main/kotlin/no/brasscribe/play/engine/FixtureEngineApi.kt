@@ -1,5 +1,7 @@
 package no.brasscribe.play.engine
 
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -23,7 +25,8 @@ class DirectoryFixtureSource(private val dir: File) : FixtureSource {
  * Plays the part of the engine from a folder laid out like its output (composition.json,
  * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present; for a tab job
  * tab.json, tab.musicxml, and tab.pdf and tab.mid when present): every job walks the stages of its
- * profile with timed progress events and then serves those files. Tests only: the JVM tests replay
+ * profile with timed progress events and then serves those files. A folder with a profiles.json (a list of
+ * profile ids) plays a computer that has only those: an older one, from before the tab profile. Tests only: the JVM tests replay
  * data/golden and the tab fixtures of apps/fixtures (bass-line, guitar-line, ukulele-line), the instrumented tests apps/fixtures/old-hundredth.
  */
 class FixtureEngineApi(
@@ -46,8 +49,14 @@ class FixtureEngineApi(
         PairRequestInfo("fixture-request", deviceName ?: "Phone", platform ?: "android", "0000", "2026-01-01T00:00:00+00:00", "pending")
     override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
-    override suspend fun profiles(): List<ProfileInfo> = Profile.entries.map {
+    override suspend fun profiles(): List<ProfileInfo> = known.map {
         ProfileInfo(it.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
+    }
+
+    /** The profiles this computer has: all of them, or the ones the fixture's profiles.json lists. */
+    private val known: List<Profile> by lazy {
+        val listed = source.read(PROFILES_FILE)?.let { no.brasscribe.play.model.BrasscribeJson.decodeFromString(ListSerializer(String.serializer()), String(it)) }
+        Profile.entries.filter { listed == null || it.id in listed }
     }
 
     // Hashes the stream in chunks, as the engine does, so a fixture upload holds no more than a buffer.
@@ -69,7 +78,8 @@ class FixtureEngineApi(
     }
 
     override suspend fun createJob(request: JobCreate): Job {
-        val profile = Profile.of(request.profile) ?: throw EngineException(422, "unknown profile ${request.profile}")
+        // As the engine: a profile it does not have is refused without a code.
+        val profile = Profile.of(request.profile)?.takeIf { it in known } ?: throw EngineException(422, "unknown profile ${request.profile}")
         val id = "fixture-${counter.incrementAndGet()}"
         if (!profile.writesTab && request.tabOptionsNamed()) throw EngineException(422, "only the tab profile takes the tab options", Refusal.INVALID_OPTIONS.code)
         // As the engine: the older id is for a bass only, and an instrument takes its own tunings.
@@ -186,6 +196,8 @@ class FixtureEngineApi(
     companion object {
         const val SERVER_ID = "fixture"
         const val SERVER_NAME = "Brasscribe (test fixture)"
+        /** A fixture file that lists the profile ids the computer has, when it has not all of them. */
+        const val PROFILES_FILE = "profiles.json"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
         /** What a tab job leaves; the PDF and the MIDI only on a computer with MuseScore. */
         val TAB_OUTPUTS = listOf("composition.json", "tab.json", "tab.musicxml", "tab.pdf", "tab.mid")

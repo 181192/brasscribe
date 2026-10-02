@@ -40,6 +40,7 @@ import no.brasscribe.play.PlayApplication
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Product
 import no.brasscribe.play.Screen
+import no.brasscribe.play.engine.FixtureEngineApi
 import no.brasscribe.play.engine.FixtureSource
 import no.brasscribe.play.engine.FrettedInstrument
 import no.brasscribe.play.engine.Octave
@@ -121,10 +122,14 @@ class SendGuitarAndUkuleleTabFlowTest {
         rule.waitForIdle()
     }
 
-    /** The computer of the tests: what the engine answered for [take], with [tab] changed on the way when given. */
-    private fun computer(take: String, tab: ((JSONObject) -> Unit)? = null) {
+    /**
+     * The computer of the tests: what the engine answered for [take], with [tab] changed on the way when given.
+     * [older]: a computer whose Fretscribe is from before the tab profile; it has the bass tab's id only.
+     */
+    private fun computer(take: String, older: Boolean = false, tab: ((JSONObject) -> Unit)? = null) {
         val assets = instrumentation.context.assets
         container.fixtureSource = FixtureSource { name ->
+            if (name == FixtureEngineApi.PROFILES_FILE) return@FixtureSource if (older) OLDER.toByteArray() else null
             val bytes = runCatching { assets.open("$take/$name").use { it.readBytes() } }.getOrNull()
             if (name == "tab.json" && bytes != null && tab != null) JSONObject(String(bytes)).also(tab).toString().toByteArray() else bytes
         }
@@ -194,11 +199,11 @@ class SendGuitarAndUkuleleTabFlowTest {
     fun aGuitarInASongBecomesATabInEnglishAndBokmal() {
         val words = mapOf(
             "en-GB" to listOf("A band or a record. Fretscribe picks out the guitar.", "One instrument playing, with nothing else.", "Picking out your instrument",
-                "Tuning: Sounds like Drop D. Written for Standard.", "Capo: Capo on fret 2", "Change the capo",
+                "Tuning: Sounds like Drop D. Written for Standard.", "Capo: Capo on fret 2. Changing the capo changes the frets. The notes stay the same.", "Change the capo",
                 "Notes left out: 3 notes left out. They can't be played together with the rest.",
                 "Notes added: 2 notes added to complete a chord. They are marked ?.", "You can change this later.", "6-string guitar · Standard", "Use Drop D"),
             "nb-NO" to listOf("Et band eller en plate. Fretscribe plukker ut gitaren.", "Ett instrument som spiller, uten noe annet.", "Plukker ut instrumentet ditt",
-                "Stemming: Høres ut som Drop D. Skrevet for Standard.", "Capo: Capo på bånd 2", "Endre capo",
+                "Stemming: Høres ut som Drop D. Skrevet for Standard.", "Capo: Capo på bånd 2. Endrer du capo, endres båndene. Tonene er de samme.", "Endre capo",
                 "Utelatte toner: 3 toner er utelatt. De kan ikke spilles sammen med resten.",
                 "Toner lagt til: 2 toner er lagt til for å fullføre en akkord. De er merket ?.", "Du kan endre dette senere.", "6-strengs gitar · Standard", "Bruk Drop D"),
         )
@@ -278,7 +283,7 @@ class SendGuitarAndUkuleleTabFlowTest {
         card("instrument").performClick()
         rule.onNodeWithTag("fs-what-continue").performClick()
         waitForTag("fs-check-change-capo")
-        rule.onNodeWithTag("fs-check-capo").performScrollTo().assertContentDescriptionEquals("Capo: No capo")
+        rule.onNodeWithTag("fs-check-capo").performScrollTo().assertContentDescriptionEquals("Capo: No capo. Changing the capo changes the frets. The notes stay the same.")
         // The guitar alone is not separated, and a first job never has a capo.
         assertEquals(listOf("beats", "transcribe.guitar.basic-pitch", "transcribe.guitar.swift-f0", "notes", "arrange", "export"), lastJob().stages.map { it.name })
         assertEquals(0, sent().capo)
@@ -338,9 +343,9 @@ class SendGuitarAndUkuleleTabFlowTest {
     fun aUkuleleStartsOnItsOwnAndAFullSongSaysWhenItWorksInEnglishAndBokmal() {
         val words = mapOf(
             "en-GB" to listOf("A band or a record. This only works when no guitar is playing: in a song, Fretscribe can't tell a ukulele from a guitar.",
-                "Tuning: High G", "Capo: No capo", "Ukulele · High G", "Continue"),
+                "Tuning: High G", "Capo: No capo. Changing the capo changes the frets. The notes stay the same.", "Ukulele · High G", "Continue"),
             "nb-NO" to listOf("Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en ukulele fra en gitar.",
-                "Stemming: Høy G", "Capo: Ingen capo", "Ukulele · Høy G", "Fortsett"),
+                "Stemming: Høy G", "Capo: Ingen capo. Endrer du capo, endres båndene. Tonene er de samme.", "Ukulele · Høy G", "Fortsett"),
         )
         store.save(YourInstrument(FrettedInstrument.UKULELE))
         for ((lang, w) in words) {
@@ -473,7 +478,85 @@ class SendGuitarAndUkuleleTabFlowTest {
         }
     }
 
+    @Test
+    fun aBassStillBecomesATabOnAComputerFromBeforeTheOtherInstruments() {
+        language("en-GB")
+        store.save(YourInstrument(FrettedInstrument.BASS_4))
+        // The bass line, as if it had been heard an octave up: a change is on offer.
+        computer("bass-line", older = true) { tab -> tab.put("octave_shift", -12) }
+        openARecording("Bass.wav")
+        // Nothing says the computer is too old: for a bass it is not.
+        assertFalse(shown(), shown().contains("too old"))
+        card("instrument").performClick()
+        rule.onNodeWithTag("fs-what-continue").assertIsEnabled().performClick()
+        waitForTag("fs-check-change-octave")
+        // Sent under the id that computer knows.
+        assertEquals("bass-tab", lastJob().profile)
+        assertEquals(FrettedInstrument.BASS_4, sent().instrument)
+        // And written down again under it.
+        val first = vm.result.value!!.jobId
+        rule.onNodeWithTag("fs-check-change-octave").performScrollTo().performClick()
+        rule.waitUntil(60_000) { vm.result.value?.jobId != first && vm.screen.value == listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT) }
+        waitForTag("fs-show-tab")
+        assertEquals("bass-tab", lastJob().profile)
+        assertEquals(Octave.AS_HEARD, sent().octave)
+        assertEquals(listOf("bass-tab", "bass-tab"), runBlocking { container.engine()!!.jobs() }.map { it.profile })
+    }
+
+    @Test
+    fun onAComputerWithTheTabProfileABassGoesAsATabLikeTheRest() {
+        language("en-GB")
+        store.save(YourInstrument(FrettedInstrument.BASS_5))
+        computer("bass-line")
+        openARecording("Bass.wav")
+        card("instrument").performClick()
+        // (The computer has said what it can write before the job is made.)
+        rule.waitUntil(10_000) { ComputerProfiles.listed?.contains("tab") == true }
+        rule.onNodeWithTag("fs-what-continue").performClick()
+        waitForTag("fs-show-tab")
+        assertEquals("tab", lastJob().profile)
+    }
+
+    @Test
+    fun aGuitarAUkuleleAndAMandolinAreRefusedBeforeAnythingIsSentToAComputerThatIsTooOld() {
+        val words = mapOf(
+            "en-GB" to mapOf(
+                FrettedInstrument.GUITAR_6 to "Fretscribe on your computer is too old to write guitar tabs. Update it there.",
+                FrettedInstrument.UKULELE to "Fretscribe on your computer is too old to write ukulele tabs. Update it there.",
+                FrettedInstrument.MANDOLIN to "Fretscribe on your computer is too old to write mandolin tabs. Update it there."),
+            "nb-NO" to mapOf(
+                FrettedInstrument.GUITAR_6 to "Fretscribe på datamaskinen er for gammel til å skrive gitartab. Oppdater den der.",
+                FrettedInstrument.UKULELE to "Fretscribe på datamaskinen er for gammel til å skrive ukuleletab. Oppdater den der.",
+                FrettedInstrument.MANDOLIN to "Fretscribe på datamaskinen er for gammel til å skrive mandolintab. Oppdater den der."),
+        )
+        for ((lang, said) in words) {
+            language(lang)
+            computer("guitar-line", older = true)
+            for ((kind, why) in said) {
+                store.save(YourInstrument(kind))
+                openARecording("${kind.name}.wav")
+                // The computer is there, and says what it can write: the reason is on screen, in true words.
+                rule.waitUntil(10_000) { rule.onAllNodesWithText(why).fetchSemanticsNodes().isNotEmpty() }
+                rule.onNodeWithText(why).assertIsDisplayed()
+                // With an answer chosen there is still no way on.
+                card("song").performClick()
+                card("song").assertIsSelected()
+                rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
+                assertFalse(shown(), Regex("didn't accept|godtok ikke").containsMatchIn(shown()))
+                assertNoTextIsClipped()
+                rule.onRoot().tryPerformAccessibilityChecks()
+                if (kind == FrettedInstrument.GUITAR_6) shot("guitar-too-old-${lang.take(2)}-light")
+            }
+            // Nothing was sent: no recording, no job.
+            assertEquals(emptyList<String>(), runBlocking { container.engine()!!.jobs() }.map { it.id })
+            assertNull(vm.result.value)
+            rule.runOnUiThread { container.fixtureSource = null }
+        }
+    }
+
     private companion object {
+        /** The profiles of a computer from before the tab profile. */
+        const val OLDER = """["solo","brass-band","orchestra-with-soloist","pop-rock","bass-tab"]"""
         const val PACKAGE = "no.fretscribe.play"
         const val SHOTS = "/data/local/tmp/fretscribe-flow"
     }

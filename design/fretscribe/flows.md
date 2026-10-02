@@ -69,7 +69,9 @@ tuning. One question per row, on one screen:
 
 ## 5. What is this?
 
-Two choices, nothing pre-selected on the first run, remembered per song:
+Two choices, remembered per song. For a guitar or a bass nothing is pre-selected. For a ukulele or a mandolin
+**Just my instrument** is: the computer finds them where it finds a guitar, so a full song is only reliable for
+them when no guitar plays in it, and the choice they start on is the one that works.
 
 - **Just my instrument**: one instrument playing. "Made on this phone."
 - **A full song**: a band or a record. "Needs Fretscribe on your computer." Shows whether the computer
@@ -92,9 +94,13 @@ makes every fret wrong. Each row shows what Fretscribe heard, with **Change** be
 |---|---|---|
 | Tuning | "Sounds like E♭ standard (half a step down)" | Use E♭ standard · Write it for standard tuning · Other… |
 | Reference pitch | shown only when off: "Tuned 30 cents sharp of A = 440" | Keep · Ignore |
-| Capo | "Open shapes with a capo on 2 would fit" | Capo 2 · No capo |
-| Octave | bass and ukulele only: "Bass, as it sounds (low E = 41 Hz)" | One octave up · One octave down |
+| Capo | guitar and ukulele: "No capo" · "Capo on fret 2", and under it "Changing the capo changes the frets. The notes stay the same." | Change the capo: No capo · fret 1 to 12 |
+| Octave | shown when the notes were moved, for every instrument (a guitar line can be heard an octave off too): "Written one octave lower than it was heard." | Write it as it was heard · Let Fretscribe choose |
 | Key and tempo | "G major · ♩ = 96, 4/4" | Change |
+
+A capo change keeps the sound: the same notes, with the frets counted from the capo. The computer cannot yet
+keep the shapes instead (the same frets, sounding higher), so the row says what will happen and does not ask.
+It does not suggest a capo either.
 
 Primary: **Show the tab**. "You can change this later. Your changes to notes are kept."
 

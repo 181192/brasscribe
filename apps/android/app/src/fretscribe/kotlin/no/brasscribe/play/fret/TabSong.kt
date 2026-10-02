@@ -72,14 +72,43 @@ fun tabOptions(instrument: YourInstrument, answer: SongAnswer): TabOptions {
  */
 fun startingAnswer(instrument: YourInstrument): Recording? = instrument.valid().kind.let { if (it.aloneByDefault) it.defaultRecording else null }
 
-/** [request] as a tab job: the tab options, and none of the band's (a seat, a clef, who plays the tune). */
-fun tabJob(request: JobCreate, options: TabOptions): JobCreate =
-    request.copy(profile = Profile.TAB.id, seat = null, reads = null, lead = null).withTab(options)
+/**
+ * The profile ids the computer in use says it has, as it last answered; null until it has, or when it could
+ * not be asked. What is this? and Check the song ask when they open.
+ */
+object ComputerProfiles {
+    var listed: Set<String>? by mutableStateOf(null)
+}
+
+/**
+ * The profile id a tab for [kind] is sent under, on a computer that has the profiles [listed] (null: not
+ * known). `tab` where the computer has it. A computer from before it knows `bass-tab` only, which is the same
+ * profile for a bass: a bass still goes there, under that id. Null: this computer cannot write a tab for the
+ * instrument, and nothing is sent.
+ */
+fun tabProfile(kind: FrettedInstrument?, listed: Set<String>?): Profile? {
+    val bass = kind?.isBass == true
+    return when {
+        // Not known: the id every computer that writes tab for the instrument has.
+        listed == null -> if (bass) Profile.BASS_TAB else Profile.TAB
+        Profile.TAB.id in listed -> Profile.TAB
+        bass && Profile.BASS_TAB.id in listed -> Profile.BASS_TAB
+        else -> null
+    }
+}
+
+/**
+ * [request] as a tab job: the tab options, and none of the band's (a seat, a clef, who plays the tune), under
+ * the profile id the computer with [listed] has for the instrument ([tabProfile]; the usual id when it has none,
+ * which the screens do not let through).
+ */
+fun tabJob(request: JobCreate, options: TabOptions, listed: Set<String>? = null): JobCreate =
+    request.copy(profile = (tabProfile(options.instrument, listed) ?: Profile.TAB).id, seat = null, reads = null, lead = null).withTab(options)
 
 /** One row of Check the song (design/fretscribe/flows.md §7): what Fretscribe heard, as the result tells it. */
 sealed interface SongRow {
-    /** The tuning the tab is written for, and the one the notes fit better when there is one. */
-    data class Tuning(val written: String, val soundsLike: String?) : SongRow
+    /** The tuning the tab is written for, and the one the notes fit better when there is one; [kind]: the instrument, when it is known. */
+    data class Tuning(val written: String, val soundsLike: String?, val kind: FrettedInstrument? = null) : SongRow
 
     /**
      * The line was moved by [shift] semitones, by the octave check or because the player [chosen] it; or
@@ -160,7 +189,7 @@ object SongCheck {
 
     /** The rows the result has something to say for, in the order of the screen. */
     fun rows(tab: Tab): List<SongRow> = buildList {
-        add(SongRow.Tuning(tuningOf(tab.preset) ?: tab.preset, tab.suggestedTuning?.let { tuningOf(it.preset) }))
+        add(SongRow.Tuning(tuningOf(tab.preset) ?: tab.preset, tab.suggestedTuning?.let { tuningOf(it.preset) }, kindOf(tab.preset)))
         if (asksCapo(tab)) add(SongRow.Capo(tab.instrument.capo))
         val chosen = tab.octaveSource == OctaveSource.CHOSEN
         if (tab.octaveShift != 0 || tab.octaveNotesMoved > 0 || chosen) add(SongRow.Octave(tab.octaveShift, chosen, tab.octaveNotesMoved))

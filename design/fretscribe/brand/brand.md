@@ -125,7 +125,8 @@ alone; no jargon; English and Norwegian both first-class; never "we").
 | Where on the neck | string · fret · position | streng · bånd · posisjon | |
 | Move a note to another string | Play it somewhere else | Spill den et annet sted | re-finger, reassign |
 | A phrase in one place | Play this around fret 7 | Spill dette rundt bånd 7 | position lock |
-| Capo change | Keep the sound / Keep the shapes | Behold klangen / Behold grepene | transpose (alone) |
+| Capo change | Changing the capo changes the frets. The notes stay the same. (Once the shapes can be kept instead: Keep the sound / Keep the shapes) | Endrer du capo, endres båndene. Tonene er de samme. (Senere: Behold klangen / Behold grepene) | transpose (alone) |
+| Note names in Norwegian | B (the note) | H; «Drop H», «HEAD», «D G H E». B is B flat, and E flat is Ess | B for the note H |
 | Repeat a passage | Repeat bars 12 to 16 · Stop repeating | Gjenta takt 12 til 16 · Slutt å gjenta | Loop, A–B |
 | Hands-free | Pedals and keys | Pedaler og taster | HID, MIDI (in Settings detail only) |
 | Stop touches on the tab | Lock the tab | Lås tabben | Lock screen |

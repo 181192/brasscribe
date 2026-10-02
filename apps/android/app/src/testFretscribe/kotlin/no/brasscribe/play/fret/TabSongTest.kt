@@ -162,7 +162,7 @@ class TabSongTest {
         assertEquals(SongCheck.tuningOf(tab.tuningSuggestions.first().preset), row.soundsLike)
         assertTrue(row.soundsLike in FrettedInstrument.GUITAR_6.tunings && row.soundsLike != "standard")
         // The ukulele's take fits the tuning it was written for.
-        assertEquals(SongRow.Tuning("high-g", null), SongCheck.rows(recorded("ukulele-line")).filterIsInstance<SongRow.Tuning>().single())
+        assertEquals(SongRow.Tuning("high-g", null, FrettedInstrument.UKULELE), SongCheck.rows(recorded("ukulele-line")).filterIsInstance<SongRow.Tuning>().single())
     }
 
     @Test
@@ -180,7 +180,7 @@ class TabSongTest {
     @Test
     fun theJobIsATabJobWithNoneOfTheBandsOptions() {
         val request = JobCreate("audio-1", Profile.TAB.id, title = "Riff", seat = "2nd-cornet", reads = "treble", lead = "seat")
-        val job = tabJob(request, tabOptions(YourInstrument(FrettedInstrument.BASS_4, tuning = "bead"), SongAnswer(Recording.INSTRUMENT)))
+        val job = tabJob(request, tabOptions(YourInstrument(FrettedInstrument.BASS_4, tuning = "bead"), SongAnswer(Recording.INSTRUMENT)), setOf("tab", "bass-tab"))
         assertEquals("tab", job.profile)
         assertEquals("audio-1", job.audioId)
         assertEquals("Riff", job.title)
@@ -229,7 +229,7 @@ class TabSongTest {
     fun theRecordedTabHasNothingUnusualSoItShowsTheTuningAndTheKeyAndTempo() {
         val tab = recorded()
         assertEquals(
-            listOf(SongRow.Tuning("standard", null), SongRow.KeyAndTempo(fifths = 1, minor = true, bpm = 100, beats = 2, beatUnit = 4)),
+            listOf(SongRow.Tuning("standard", null, FrettedInstrument.BASS_4), SongRow.KeyAndTempo(fifths = 1, minor = true, bpm = 100, beats = 2, beatUnit = 4)),
             SongCheck.rows(tab),
         )
     }
@@ -239,9 +239,9 @@ class TabSongTest {
         val tab = recorded()
         val dropD = tab.tuningSuggestions.first { it.preset == "bass-4-drop-d" }
         val suggested = tab.copy(tuningSuggestions = listOf(dropD) + tab.tuningSuggestions.filter { it != dropD })
-        assertEquals(SongRow.Tuning("standard", "drop-d"), SongCheck.rows(suggested).first())
+        assertEquals(SongRow.Tuning("standard", "drop-d", FrettedInstrument.BASS_4), SongCheck.rows(suggested).first())
         // Written for the tuning that fits best: nothing to offer.
-        assertEquals(SongRow.Tuning("drop-d", null), SongCheck.rows(suggested.copy(preset = "bass-4-drop-d")).first())
+        assertEquals(SongRow.Tuning("drop-d", null, FrettedInstrument.BASS_4), SongCheck.rows(suggested.copy(preset = "bass-4-drop-d")).first())
         assertEquals("drop-a", SongCheck.tuningOf("bass-5-drop-a"))
         assertEquals("eb-standard", SongCheck.tuningOf("bass-4-eb-standard"))
         assertEquals("standard", SongCheck.tuningOf("guitar-standard"))

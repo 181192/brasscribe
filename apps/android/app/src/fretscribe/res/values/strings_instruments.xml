@@ -44,4 +44,19 @@
         <item quantity="one">%1$d note added to complete a chord. It is marked ?.</item>
         <item quantity="other">%1$d notes added to complete a chord. They are marked ?.</item>
     </plurals>
+
+    <!-- An instrument with one tuning: the row says what it is, by its strings, lowest first. -->
+    <string name="fs_tuning_only">Tuning</string>
+    <string name="fs_tuning_dgbe">D G B E</string>
+    <string name="fs_tuning_dgbe_spoken">D, G, B, E</string>
+    <string name="fs_tuning_gdae">G D A E</string>
+    <string name="fs_tuning_gdae_spoken">G, D, A, E</string>
+
+    <!-- A change of capo keeps the sound: said under the capo, where it can be changed. -->
+    <string name="fs_check_capo_keeps">Changing the capo changes the frets. The notes stay the same.</string>
+
+    <!-- A computer whose Fretscribe is from before this instrument: said before anything is sent. -->
+    <string name="fs_too_old_guitar">Fretscribe on your computer is too old to write guitar tabs. Update it there.</string>
+    <string name="fs_too_old_ukulele">Fretscribe on your computer is too old to write ukulele tabs. Update it there.</string>
+    <string name="fs_too_old_mandolin">Fretscribe on your computer is too old to write mandolin tabs. Update it there.</string>
 </resources>

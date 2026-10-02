@@ -8,6 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import no.brasscribe.play.engine.FrettedInstrument
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -47,6 +51,30 @@ internal fun songWords(instrument: Instrument): Int = when (instrument) {
     Instrument.MANDOLIN -> R.string.fs_what_song_desc_mandolin
 }
 
+/** Why this computer cannot write a tab for [kind]: its Fretscribe is from before that instrument. Said before anything is sent. */
+@StringRes
+internal fun tooOldWords(kind: FrettedInstrument?): Int = when (kind?.let(Instrument::of)) {
+    Instrument.GUITAR -> R.string.fs_too_old_guitar
+    Instrument.UKULELE -> R.string.fs_too_old_ukulele
+    Instrument.MANDOLIN -> R.string.fs_too_old_mandolin
+    else -> R.string.error_core_missing
+}
+
+/**
+ * The profile ids the computer has, asked when the screen opens and whenever the computer comes or goes
+ * ([there]); null until it has answered, and when it could not be asked. Kept in [ComputerProfiles] for the job.
+ */
+@Composable
+internal fun computerProfiles(vm: PlayViewModel, there: Boolean): Set<String>? {
+    val listed by produceState<Set<String>?>(null, there) {
+        value = if (!there) null else withContext(Dispatchers.IO) {
+            runCatching { vm.container.engine()?.profiles()?.map { it.name }?.toSet() }.getOrNull()
+        }
+        ComputerProfiles.listed = value
+    }
+    return listed
+}
+
 /**
  * "What is this?" (design/fretscribe/flows.md §5): the instrument alone, or a full song it is picked out
  * of. For a guitar or a bass nothing is chosen until the player chooses; a ukulele or a mandolin starts on
@@ -72,6 +100,9 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
     val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
     // The recording is sent from its file: without it there is nothing to continue with.
     val inHand = source?.file?.isFile == true
+    // What this computer's Fretscribe can write: one from before the guitar still writes a bass, and nothing else.
+    val listed = computerProfiles(vm, there)
+    val tooOld = there && tabProfile(mine.kind, listed) == null
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
@@ -83,6 +114,7 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
             val missing = when {
                 !inHand -> R.string.fs_what_no_recording
                 !there -> R.string.fs_what_connect_first
+                tooOld -> tooOldWords(mine.kind)
                 answer.recording == null -> R.string.profile_choose_one
                 else -> null
             }
@@ -92,7 +124,7 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
                 SongAnswers.set(source, SongAnswer(answer.recording))
                 vm.chooseProfile(Profile.TAB)
                 vm.startTranscription()
-            }, Modifier.testTag("fs-what-continue"), enabled = inHand && there && answer.recording != null)
+            }, Modifier.testTag("fs-what-continue"), enabled = inHand && there && !tooOld && answer.recording != null)
         },
     ) {
         ScreenTitle(stringResource(R.string.profile_title), Modifier.focusRequester(headingFocus).focusable())

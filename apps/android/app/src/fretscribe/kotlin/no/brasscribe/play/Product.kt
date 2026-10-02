@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.fret.CheckTheSongScreen
+import no.brasscribe.play.fret.ComputerProfiles
 import no.brasscribe.play.fret.SongAnswers
 import no.brasscribe.play.fret.WhatIsThisScreen
 import no.brasscribe.play.fret.YourInstrumentScreen
@@ -70,10 +71,13 @@ object Product {
     @Suppress("UNUSED_PARAMETER")
     fun arranges(profile: Profile): Boolean = false
 
-    /** The job as it is sent to the computer: a tab takes the player's instrument and the answers for this song. */
+    /**
+     * The job as it is sent to the computer: a tab takes the player's instrument and the answers for this song,
+     * under the profile id the computer has for it (a computer from before the tab profile still takes a bass).
+     */
     fun job(vm: PlayViewModel, request: JobCreate): JobCreate =
         if (!Profile.writesTab(request.profile)) request
-        else tabJob(request, tabOptions(yourInstrumentStore(vm.getApplication()).load(), SongAnswers.of(vm.source.value)))
+        else tabJob(request, tabOptions(yourInstrumentStore(vm.getApplication()).load(), SongAnswers.of(vm.source.value)), ComputerProfiles.listed)
 
     /**
      * The recording as the computer already holds it, when Check the song has the song written down again:

@@ -9,6 +9,8 @@ import no.brasscribe.play.Product
 import no.brasscribe.play.engine.FrettedInstrument
 import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Octave
+import no.brasscribe.play.engine.OctaveSource
+import no.brasscribe.play.engine.Tab
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.Recording
 import no.brasscribe.play.engine.TabLayout
@@ -29,43 +31,69 @@ import java.util.concurrent.TimeUnit
  */
 class TabJobOptionsTest {
     /** One job: the body as it goes to the computer, and what it is meant to be once the computer has filled in its defaults. */
-    private class Sent(val body: JsonObject, val instrument: String, val tuning: String, val capo: Int, val layout: String, val recording: String)
+    private class Sent(val body: JsonObject, val instrument: String, val tuning: String, val capo: Int, val layout: String, val recording: String, val octave: String)
 
     /** The request as the app makes it before the product completes it: the recording, a title, and a band seat left from Brasscribe's choices. */
     private fun request(profile: Profile) = JobCreate("audio-1", profile.id, renderAudio = true, allowHeavy = true, title = "Riff", seat = "2nd-cornet", reads = "treble")
 
-    private fun sent(options: TabOptions): Sent {
-        val job = tabJob(request(Profile.TAB), options)
+    /** A computer with every profile, and one from before the tab profile: it has the bass tab's id only. */
+    private val current = Profile.entries.map { it.id }.toSet()
+    private val older = current - Profile.TAB.id
+
+    private fun sent(options: TabOptions, listed: Set<String>? = current): Sent {
+        val job = tabJob(request(Profile.TAB), options, listed)
         val kind = options.instrument!!
         return Sent(BrasscribeJson.encodeToJsonElement(JobCreate.serializer(), job).jsonObject, kind.id!!, options.tuning!!, options.capo!!,
-            options.layout!!.id!!, (options.recording ?: kind.defaultRecording).id!!)
+            options.layout!!.id!!, (options.recording ?: kind.defaultRecording).id!!, options.octave!!.id!!)
     }
 
-    /** Your instrument's choices with What is this?'s answers: the first job of a song. */
+    /** The computers a job for [kind] is sent to: one with the tab profile, and for a bass also one from before it. */
+    private fun computers(kind: FrettedInstrument): List<Set<String>> = if (kind.isBass) listOf(current, older) else listOf(current)
+
+    /**
+     * Your instrument's choices with What is this?'s answers: the first job of a song. (The hand on the neck is
+     * not among them: it never reaches the job, which YourInstrumentTest checks.)
+     */
     private fun firstJobs(): List<Sent> = buildList {
         for (instrument in Instrument.entries) for (kind in instrument.kinds) for (tuning in kind.tunings) for (reads in Reads.entries)
-            for (hand in FrettingHand.entries) for (answer in listOf(Recording.INSTRUMENT, Recording.SONG, null)) {
-                add(sent(tabOptions(YourInstrument(kind, tuning, hand, reads), SongAnswer(answer))))
+            for (answer in listOf(Recording.INSTRUMENT, Recording.SONG, null)) for (listed in computers(kind)) {
+                add(sent(tabOptions(YourInstrument(kind, tuning, reads = reads), SongAnswer(answer)), listed))
             }
-    }
+        // (No answer is sent as the computer's own default for the instrument: the same job as that answer.)
+    }.distinctBy { it.body.toString() }
 
-    /** Check the song's changes: the song written down again with another capo, the tuning it sounds like, or another octave. */
-    private fun changedJobs(): List<Sent> = buildList {
+    /** The recorded guitar tab: what Check the song reads a song's options back from. */
+    private fun recorded(): Tab? = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/fixtures/guitar-line/tab.json")
+        ?.takeIf { it.isFile }?.let { BrasscribeJson.decodeFromString(Tab.serializer(), it.readText()) }
+
+    /**
+     * Check the song's changes, as the screen makes them: the options are read back from the tab and its job's
+     * stages (SongCheck.optionsOf), for a tab of every instrument, tuning, layout and answer, with the octave
+     * as Fretscribe chose it or as the player did; then one thing is changed: the capo, the tuning, or the octave.
+     */
+    private fun changedJobs(tab: Tab): List<Sent> = buildList {
+        val octaves = listOf(OctaveSource.AUTO to 0, OctaveSource.AUTO to -12, OctaveSource.CHOSEN to -12, OctaveSource.CHOSEN to 12, OctaveSource.CHOSEN to 0)
         for (instrument in Instrument.entries) for (kind in instrument.kinds) for (tuning in kind.tunings) for (layout in TabLayout.entries.filter { it.id != null })
-            for (recording in listOf(Recording.INSTRUMENT, Recording.SONG)) {
-                // What a song's options read back as: the fingering style is the computer's, named.
-                val made = TabOptions(kind, tuning, 0, no.brasscribe.play.engine.FingeringStyle.AS_PLAYED, recording, Octave.AUTO, layout)
-                fun again(options: TabOptions) = add(sent(tabOptions(YourInstrument(), SongAnswer(options.recording, again = options))))
+            for (song in listOf(false, true)) for ((source, shift) in octaves) for (listed in computers(kind)) {
+                val written = tab.copy(preset = kind.preset(tuning), layout = layout, octaveSource = source, octaveShift = shift)
+                val stages = listOf("beats") + (if (song) listOf("stems") else emptyList()) + listOf("transcribe.x.basic-pitch", "transcribe.x.swift-f0", "notes", "arrange", "export")
+                val made = SongCheck.optionsOf(written, stages)
+                assertEquals(kind to tuning, made.instrument to made.tuning)
+                assertEquals(if (song) Recording.SONG else Recording.INSTRUMENT, made.recording)
+                fun again(options: TabOptions) = add(sent(tabOptions(YourInstrument(), SongAnswer(options.recording, again = options)), listed))
                 for (fret in SongCheck.CAPO_FRETS) again(made.copy(capo = fret))
-                for (other in kind.tunings) again(made.copy(tuning = other, capo = 3))
-                for (octave in Octave.entries.filter { it.id != null }) again(made.copy(octave = octave))
+                for (other in kind.tunings) again(made.copy(tuning = other))
+                // The octave row's two buttons.
+                again(made.copy(octave = Octave.AUTO))
+                again(made.copy(octave = Octave.AS_HEARD))
             }
-    }
+    }.distinctBy { it.body.toString() }
 
     @Test
     fun everyChoiceOfYourInstrumentAndWhatIsThisReachesTheJob() {
         val jobs = firstJobs()
-        assertEquals((11 + 2 + 1 + 5 + 2 + 1 + 2 + 1 + 1) * 3 * 3 * 3, jobs.size)
+        // Every instrument and tuning, read three ways, with either answer; a bass also for the older computer.
+        assertEquals((11 + 2 + 1 + 5 + 2 + 1 + 2 + 1 + 1) * 3 * 2 + (5 + 2 + 1) * 3 * 2, jobs.size)
         // Every instrument and tuning the computer has is among them, in every layout.
         assertEquals(
             FrettedInstrument.entries.filter { it.id != null }.flatMap { k -> k.tunings.flatMap { t -> listOf("tab", "tab-and-notation", "notation").map { Triple(k.id, t, it) } } }.toSet(),
@@ -73,7 +101,8 @@ class TabJobOptionsTest {
         )
         for (job in jobs) {
             fun text(name: String) = (job.body[name] as? JsonPrimitive)?.content
-            assertEquals("tab", text("profile"))
+            // Every instrument goes as a tab job; a bass goes under the older id too, for the computer that has only that.
+            assertTrue(text("profile"), text("profile") == "tab" || (text("profile") == "bass-tab" && job.instrument.startsWith("bass-")))
             assertEquals(job.instrument, text("instrument"))
             assertEquals(job.tuning, text("tuning"))
             assertEquals(job.layout, text("layout"))
@@ -101,10 +130,44 @@ class TabJobOptionsTest {
     }
 
     @Test
+    fun theProfileIdIsTheOneTheComputerHasForTheInstrument() {
+        val all = Instrument.entries.flatMap { it.kinds }
+        for (kind in all) {
+            // A computer with the tab profile: every instrument goes under it, a bass too.
+            assertEquals(kind.name, Profile.TAB, tabProfile(kind, current))
+            assertEquals(kind.name, Profile.TAB, tabProfile(kind, setOf("tab")))
+            // A computer from before it: a bass still goes, under the id it knows; nothing else can be written there.
+            assertEquals(kind.name, if (kind.isBass) Profile.BASS_TAB else null, tabProfile(kind, older))
+            // A computer that writes no tab at all.
+            assertNull(kind.name, tabProfile(kind, setOf("solo", "brass-band")))
+            assertNull(kind.name, tabProfile(kind, emptySet()))
+            // Not known (the computer could not be asked): the id every computer that writes the instrument has.
+            assertEquals(kind.name, if (kind.isBass) Profile.BASS_TAB else Profile.TAB, tabProfile(kind, null))
+        }
+        assertEquals(Profile.TAB, tabProfile(null, null))
+        assertNull(tabProfile(null, older))
+        // The job carries that id, whatever the request said, also for a song written down again.
+        val bass = tabOptions(YourInstrument(FrettedInstrument.BASS_5, "drop-a"), SongAnswer(Recording.SONG))
+        assertEquals("bass-tab", tabJob(request(Profile.TAB), bass, older).profile)
+        assertEquals("bass-tab", tabJob(request(Profile.TAB), bass, null).profile)
+        assertEquals("tab", tabJob(request(Profile.BASS_TAB), bass, current).profile)
+        val again = SongAnswer(Recording.INSTRUMENT, again = bass.copy(tuning = "standard", capo = 2))
+        assertEquals("bass-tab", tabJob(request(Profile.TAB), tabOptions(YourInstrument(), again), older).profile)
+        val guitar = tabOptions(YourInstrument(), SongAnswer(Recording.SONG))
+        assertEquals("tab", tabJob(request(Profile.TAB), guitar, current).profile)
+        assertEquals("tab", tabJob(request(Profile.TAB), guitar, null).profile)
+        // The words for a computer that is too old name the instrument; a bass that can't be written gets the tab words.
+        assertEquals(no.brasscribe.play.R.string.fs_too_old_guitar, tooOldWords(FrettedInstrument.GUITAR_7))
+        assertEquals(no.brasscribe.play.R.string.fs_too_old_ukulele, tooOldWords(FrettedInstrument.UKULELE_BARITONE))
+        assertEquals(no.brasscribe.play.R.string.fs_too_old_mandolin, tooOldWords(FrettedInstrument.MANDOLIN))
+        assertEquals(no.brasscribe.play.R.string.error_core_missing, tooOldWords(FrettedInstrument.BASS_4))
+    }
+
+    @Test
     fun aJobOfEitherIdIsSentAsATabJobAndABandJobIsLeftAlone() {
         val options = tabOptions(YourInstrument(FrettedInstrument.UKULELE, "low-g"), SongAnswer(Recording.INSTRUMENT))
         for (profile in listOf(Profile.TAB, Profile.BASS_TAB)) {
-            val job = tabJob(request(profile), options)
+            val job = tabJob(request(profile), options, current)
             assertEquals("tab", job.profile)
             assertEquals(listOf(null, null, null), listOf(job.seat, job.reads, job.lead))
             assertEquals(FrettedInstrument.UKULELE to "low-g", job.instrument to job.tuning)
@@ -120,7 +183,9 @@ class TabJobOptionsTest {
         val root = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }
         val script = root?.resolve("apps/android/scripts/check-tab-options.py")
         assumeTrue("the engine is not in this checkout", script?.isFile == true && root.resolve("engine/src/brasscribe_engine/tab.py").isFile)
-        val jobs = firstJobs() + changedJobs()
+        val tab = recorded()
+        assumeTrue("apps/fixtures/guitar-line is not in this checkout", tab != null)
+        val jobs = firstJobs() + changedJobs(tab!!)
         val file = File.createTempFile("tab-jobs", ".jsonl")
         try {
             file.writeText(jobs.joinToString("\n") { job ->
@@ -128,7 +193,7 @@ class TabJobOptionsTest {
                     put("body", job.body)
                     put("expect", buildJsonObject {
                         put("instrument", job.instrument); put("tuning", job.tuning); put("capo", job.capo)
-                        put("layout", job.layout); put("recording", job.recording)
+                        put("layout", job.layout); put("recording", job.recording); put("octave", job.octave)
                     })
                 }.toString()
             })
