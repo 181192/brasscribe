@@ -931,6 +931,83 @@ class TabViewTest {
         shot("tab-landscape-end-of-page")
     }
 
+    /**
+     * The page is drawn where the tab is on the screen: string lines and ink numerals, by their pixels. What
+     * alphaTab's layout says is no proof of that: a page can be laid out and its lines left undrawn.
+     */
+    private fun assertThePageIsDrawn(where: String, colours: BrasscribeColors = BrasscribeLightColors) {
+        val image = screen()
+        val area = bounds("fs-tab")
+        val lines = count(image, area, colours.staff.toArgb(), 24)
+        val ink = count(image, area, colours.ink.toArgb(), 24)
+        android.util.Log.i("TabViewTest", "drawn, $where: $lines pixels of string lines and $ink of ink in $area")
+        assertTrue("$where: the staff is drawn ($lines pixels of string lines)", lines > 3000)
+        assertTrue("$where: the numbers are drawn ($ink pixels of ink)", ink > 800)
+    }
+
+    @Test
+    fun turnedOnItsSideFromTheEndOfThePageTheTabIsDrawn() {
+        computer("bass-line-marks")
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        var tab = showTheTab()
+        for (percent in listOf(100, 150)) {
+            if (percent == 150) {
+                repeat(5) { rule.onNodeWithTag("fs-tab-zoom-in").performClick() }
+                tab = engraved()
+            }
+            // Upright, scrolled to the end: bar 10 or later is at the top.
+            toTheEnd()
+            rule.onNodeWithTag("fs-tab-scroll").performTouchInput { down(center); moveBy(androidx.compose.ui.geometry.Offset(0f, -40f)); up() }
+            settle()
+            assertTrue("at $percent %, bar ${barInView(tab) + 1} is at the top before the turn", barInView(tab) >= 9)
+            assertThePageIsDrawn("upright at the end, $percent %")
+            val upright = tab
+            turn(landscape = true)
+            tab = engraved()
+            // On its side: the staff and the numbers are on the screen, at once and after a swipe.
+            assertThePageIsDrawn("on its side from the end, $percent %")
+            assertTrue("a turned phone has a view of its own", tab !== upright)
+            shot("tab-turned-from-the-end-$percent")
+            rule.onNodeWithTag("fs-tab-scroll").performTouchInput { swipeDown() }
+            assertThePageIsDrawn("on its side after a swipe, $percent %")
+            rule.onNodeWithTag("fs-tab-scroll").performTouchInput { swipeUp() }
+            assertThePageIsDrawn("on its side after a swipe back, $percent %")
+            assertEquals(0, tab.unmatched)
+            turn(landscape = false)
+            tab = engraved()
+            assertThePageIsDrawn("upright again, $percent %")
+        }
+    }
+
+    @Test
+    fun theKeysMoveThePageBeforeAnythingHasTheFocus() {
+        computer("bass-line-marks")
+        showTheTab()
+        // No Tab has been pressed: nothing on the screen was reached with the keyboard.
+        assertEquals(0f, scrolled().first)
+        key(KeyEvent.KEYCODE_PAGE_DOWN)
+        settle()
+        val one = scrolled().first
+        assertTrue("Page Down moves the page ($one)", one > 300f)
+        key(KeyEvent.KEYCODE_MOVE_END)
+        settle()
+        scrolled().let { (at, max) -> assertEquals("End", max, at, 0.5f) }
+        key(KeyEvent.KEYCODE_MOVE_HOME)
+        settle()
+        assertEquals("Home, from the end of the page", 0f, scrolled().first)
+        key(KeyEvent.KEYCODE_MOVE_END)
+        settle()
+        key(KeyEvent.KEYCODE_PAGE_UP)
+        settle()
+        scrolled().let { (at, max) -> assertTrue("Page Up from the end ($at of $max)", at < max - 300f) }
+        // After a tap on the page (a mark told, then closed) the keys still move it.
+        rule.onNodeWithTag("fs-tab-mark-2").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-tab-note-close").performClick()
+        key(KeyEvent.KEYCODE_MOVE_HOME)
+        settle()
+        assertEquals("Home after a tap", 0f, scrolled().first)
+    }
+
     /** The bar the page is read at: the first bar of the first line that is not scrolled past. */
     private fun barInView(tab: TabView): Int {
         var bar = -1
@@ -958,9 +1035,11 @@ class TabViewTest {
         }
         turn(landscape = true)
         assertStillThere("on its side")
+        assertThePageIsDrawn("the place kept on its side")
         shot("tab-landscape-place")
         turn(landscape = false)
         assertStillThere("upright again")
+        assertThePageIsDrawn("the place kept upright again")
         assertEquals("upright again the same line is at the top", reading, barInView(tab))
         val lines = tab.engraving.value!!.lines.size
         repeat(5) { rule.onNodeWithTag("fs-tab-zoom-in").performClick() }
@@ -999,8 +1078,12 @@ class TabViewTest {
         shell("settings put system font_scale 2.0")
         rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale >= 1.9f }
         turn(landscape = true)
+        TabScreenProbe.made = 0
         var tab = showTheTab()
         tab = engraved()
+        // The size was known before the page was engraved: one view, engraved at the size it is shown at.
+        assertEquals("views made for the page", 1, TabScreenProbe.made)
+        assertEquals(TabView.BASE_SCALE, tab.scale, 0.01)
         assertNoTextIsClipped()
         // The header is the top of the page here, not pinned above it.
         rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()

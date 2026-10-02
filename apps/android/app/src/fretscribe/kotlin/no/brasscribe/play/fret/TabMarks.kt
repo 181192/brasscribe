@@ -29,13 +29,27 @@ object TabSize {
      * - [base] makes the numerals [TabTokens.NUMERAL_SCALE] times body text, and they follow the text size ([fontScale]).
      * - On a screen wider than it is tall ([landscape]) a larger text size does not make the page larger than two
      *   lines to the [roomDp] there is, nor smaller than at the ordinary text size ([lineUnits]: the height of a
-     *   line in alphaTab's units, once one has been engraved). On a phone on its side that leaves the ordinary size:
+     *   line in alphaTab's units). On a phone on its side that leaves the ordinary size:
      *   with the numerals twice as large, less than one line would be in view. The zoom is on top of it.
      * - Never larger than a page of [MIN_PAGE_UNITS] across [widthDp]: past that a bar no longer fits the width, and
      *   alphaTab presses its notes together instead of letting the page scroll sideways.
      */
-    fun scale(base: Double, percent: Int, fontScale: Float, widthDp: Float, roomDp: Float, landscape: Boolean, lineUnits: Double?): Double {
-        val twoLines = if (landscape && lineUnits != null && lineUnits > 0) maxOf(base, roomDp / (2 * lineUnits)) else Double.MAX_VALUE
+    /**
+     * About how tall a line of the page is with the space around it, in alphaTab's units, for an instrument of
+     * [strings] strings in [layout]: the staff's line spaces, the stems or the notation staff, and the space between
+     * lines. It is reckoned, not measured, so the size is known before the page is engraved.
+     */
+    fun lineUnits(strings: Int, layout: no.brasscribe.play.engine.TabLayout?): Double {
+        val tab = 60.0 + 13.0 * (strings - 1)
+        return when (layout) {
+            no.brasscribe.play.engine.TabLayout.NOTATION -> 105.0
+            no.brasscribe.play.engine.TabLayout.TAB_AND_NOTATION -> tab + 110.0
+            else -> tab
+        }
+    }
+
+    fun scale(base: Double, percent: Int, fontScale: Float, widthDp: Float, roomDp: Float, landscape: Boolean, lineUnits: Double): Double {
+        val twoLines = if (landscape && lineUnits > 0) maxOf(base, roomDp / (2 * lineUnits)) else Double.MAX_VALUE
         return minOf(minOf(base * fontScale, twoLines) * percent / 100.0, widthDp / MIN_PAGE_UNITS)
     }
 }

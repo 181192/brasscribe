@@ -295,8 +295,10 @@ class TabIndexTest {
         assertEquals(1.7, TabSize.scale(base, 100, 2f, 890f, 300f, true, 99.0), 1e-9)
         assertEquals(1.7, TabSize.scale(base, 100, 1f, 890f, 300f, true, 99.0), 1e-9)
         assertEquals(3.4, TabSize.scale(base, 200, 2f, 890f, 300f, true, 99.0), 1e-9)
-        // Before a line has been engraved its height is not known: the text size alone.
-        assertEquals(3.4, TabSize.scale(base, 100, 2f, 890f, 300f, true, null), 1e-6)
+        // A line's height is reckoned from the strings and the layout: a four-string tab is about 99 units, a guitar's taller, a pair taller still.
+        assertEquals(99.0, TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB), 1e-9)
+        assertTrue(TabSize.lineUnits(6, no.brasscribe.play.engine.TabLayout.TAB) > TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB))
+        assertTrue(TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB_AND_NOTATION) > TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB))
     }
 
     @Test

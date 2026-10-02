@@ -3,6 +3,7 @@ package no.brasscribe.play.fret
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
@@ -106,6 +109,9 @@ class TabSheet(val musicXml: String, val index: TabIndex, val tab: Tab?, val mar
 
     val capo: Int get() = tab?.instrument?.capo ?: index.capo
 
+    /** The strings of the instrument, as the data or the page's staff tuning has them; four when neither says. */
+    val strings: Int get() = tab?.instrument?.tuning?.strings?.size?.takeIf { it > 0 } ?: SongFacts.openStrings(musicXml).size.takeIf { it > 0 } ?: 4
+
     /** Quarter notes a minute. */
     val tempo: Int? get() = tab?.tempoBpm?.let { Math.round(it).toInt() } ?: index.tempo
 
@@ -151,6 +157,8 @@ internal object TabScreenProbe {
     @Volatile var view: TabView? = null
     /** The size the screen wants the page at; the view on screen has it once it has been made. */
     @Volatile var wanted: Double = 0.0
+    /** Views made so far. */
+    @Volatile var made: Int = 0
 }
 
 /** The tab's colours from the theme: ink numerals, the lines in the string colour, the doubt colour and its wash. */
@@ -189,8 +197,6 @@ fun TabScreen(vm: PlayViewModel) {
     val fontScale = density.fontScale
     val scope = rememberCoroutineScope()
     val palette = tabPalette(c)
-    // A line's height in alphaTab's units, from the last engraving: the same at every size.
-    var lineUnits by remember { mutableStateOf<Double?>(null) }
 
     fun checkTheSong() {
         val stack = vm.screen.value
@@ -248,41 +254,10 @@ fun TabScreen(vm: PlayViewModel) {
             scope.launch { scroll.scrollBy(by) }
             return true
         }
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).onKeyEvent { it.type == KeyEventType.KeyDown && page(it.key) }) {
-            // The size: the text size and the zoom, never wider than a bar fits; on its side, large text stops at two lines to
-            // the screen.
-            val landscape = maxWidth > maxHeight
-            val area = constraints.maxHeight
-            val width = maxWidth.value
-            val room = with(density) { (if (viewport > 0) viewport else area).toDp().value }
-            fun scaleAt(percent: Int) = TabSize.scale(TabView.BASE_SCALE, percent, fontScale, width, room, landscape, lineUnits)
-            val wanted = scaleAt(zoom)
-            val larger = scaleAt(zoom + BrasscribeScore.zoomStep) > wanted
-            SideEffect {
-                canZoomIn = larger
-                TabScreenProbe.wanted = wanted
-            }
-            // A size or a set of colours is a view of its own (see TabView). Several steps of the zoom in a row are one new view.
-            val scale by produceState(wanted, wanted) {
-                if (value != wanted) {
-                    delay(250)
-                    value = wanted
-                }
-            }
-            val tab = remember(scale, palette) { TabView(context, scale, palette) }
-            DisposableEffect(tab) {
-                TabScreenProbe.view = tab
-                onDispose {
-                    if (TabScreenProbe.view === tab) TabScreenProbe.view = null
-                    tab.release()
-                }
-            }
-            val engraving by tab.engraving.collectAsState()
-            val e = engraving
-            LaunchedEffect(e) { e?.let { lineUnits = it.lineUnits } }
-            var placedFor by remember { mutableStateOf<TabEngraving?>(null) }
-            var placedInset by remember { mutableIntStateOf(-1) }
-            LaunchedEffect(tab, sheet) { sheet?.let { tab.show(it.musicXml, it.layout, it.index, it.marks) } }
+        // The screen itself takes the keyboard's focus when it opens, so the keys work before anything on it has been reached.
+        val keys = remember { FocusRequester() }
+        LaunchedEffect(Unit) { runCatching { keys.requestFocus() } }
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).onKeyEvent { it.type == KeyEventType.KeyDown && page(it.key) }.focusRequester(keys).focusable()) {
             if (s == null) {
                 Column(Modifier.padding(horizontal = BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                     Text(stringResource(R.string.fs_tab_reading), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
@@ -290,6 +265,42 @@ fun TabScreen(vm: PlayViewModel) {
                 }
                 return@BoxWithConstraints
             }
+            // The size: the text size and the zoom, never wider than a bar fits; on its side, large text stops at two lines to
+            // the screen. It is known before the page is engraved, so the page is engraved once.
+            val landscape = maxWidth > maxHeight
+            val area = constraints.maxHeight
+            val width = maxWidth.value
+            val room = with(density) { area.toDp().value }
+            val lineUnits = TabSize.lineUnits(s.strings, s.layout)
+            fun scaleAt(percent: Int) = TabSize.scale(TabView.BASE_SCALE, percent, fontScale, width, room, landscape, lineUnits)
+            val wanted = scaleAt(zoom)
+            val larger = scaleAt(zoom + BrasscribeScore.zoomStep) > wanted
+            SideEffect {
+                canZoomIn = larger
+                TabScreenProbe.wanted = wanted
+            }
+            // A size, a width or a set of colours is a view of its own (see TabView): a turned phone has a new one, as a new
+            // size has. Several steps of the zoom in a row are one new view.
+            val scale by produceState(wanted, wanted) {
+                if (value != wanted) {
+                    delay(250)
+                    value = wanted
+                }
+            }
+            val tab = remember(scale, palette, constraints.maxWidth) { TabView(context, scale, palette) }
+            DisposableEffect(tab) {
+                TabScreenProbe.view = tab
+                TabScreenProbe.made++
+                onDispose {
+                    if (TabScreenProbe.view === tab) TabScreenProbe.view = null
+                    tab.release()
+                }
+            }
+            val engraving by tab.engraving.collectAsState()
+            val e = engraving
+            var placedFor by remember { mutableStateOf<TabEngraving?>(null) }
+            var placedInset by remember { mutableIntStateOf(-1) }
+            LaunchedEffect(tab, s) { tab.show(s.musicXml, s.layout, s.index, s.marks) }
             val tuning = tuningName(s.tuning)
             val capo = if (s.capo > 0) stringResource(R.string.fs_tab_capo, s.capo) else stringResource(R.string.fs_tab_no_capo)
             val chipName = stringResource(R.string.fs_tab_chip_name, tuningName(s.tuning, spoken = true), capo)

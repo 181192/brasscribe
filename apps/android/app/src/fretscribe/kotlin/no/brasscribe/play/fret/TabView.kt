@@ -45,10 +45,9 @@ data class TabLine(val top: Int, val bottom: Int, val firstBar: Int, val lastBar
 
 /**
  * One engraving of the tab, as alphaTab laid it out: the height of its page in pixels (the height alphaTab
- * scrolls, so a scroll over it ends where alphaTab's does), its lines, where the marks are, and how tall its
- * tallest line is in alphaTab's units (the same at every size).
+ * scrolls, so a scroll over it ends where alphaTab's does), its lines, and where the marks are.
  */
-data class TabEngraving(val height: Int, val lines: List<TabLine>, val boxes: List<MarkBox>, val lineUnits: Double) {
+data class TabEngraving(val height: Int, val lines: List<TabLine>, val boxes: List<MarkBox>) {
     val barsPerLine: List<Int> get() = lines.map { it.lastBar - it.firstBar + 1 }
 
     /** The first bar of the line that [y] pixels down the page is in: the last line that starts at or above it. */
@@ -182,6 +181,12 @@ class TabView(
                 if (bottom - top != oldBottom - oldTop) view.post { publish() }
             }
         }
+        view.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
+            if (right > left) waiting?.let { engrave ->
+                waiting = null
+                view.post { if (!released) engrave() }
+            }
+        }
         view.api.postRenderFinished.on {
             hideCredit()
             washes.refresh(); glyphs.refresh()
@@ -223,7 +228,10 @@ class TabView(
         columns = marks.columns
         place(s)
         tint(s)
-        view.api.renderScore(s, DoubleList(0.0))
+        // alphaTab skips an engraving asked of a view that has no width yet, and does not always make it up when the
+        // view gets one (a view made as the phone is turned): the page is engraved once the view has been laid out.
+        val engrave = { view.api.renderScore(s, DoubleList(0.0)) }
+        if (view.width > 0) engrave() else waiting = engrave
     }
 
     /**
@@ -332,8 +340,11 @@ class TabView(
         }
     }
 
+    /** The engraving to make once the view has a width. */
+    private var waiting: (() -> Unit)? = null
+
     private var tries = 0
-    private var waiting = false
+    private var looking = false
 
     /**
      * Puts the page where the screen's scroll says, and tells the screen of the engraving. alphaTab says an
@@ -342,16 +353,16 @@ class TabView(
      */
     private fun publish() {
         tries = 0
-        if (!waiting) look()
+        if (!looking) look()
     }
 
     private fun look() {
-        waiting = false
+        looking = false
         val page = pageScroll?.getChildAt(0)?.height ?: 0
         val music = musicBottom()
         if (music != null && page < music) {
             if (tries++ < 100) {
-                waiting = true
+                looking = true
                 view.postDelayed({ if (!released) look() }, 50)
             }
             return
@@ -388,7 +399,7 @@ class TabView(
             val b = systems[i].realBounds
             TabLine((b.y * density).toInt(), Math.ceil((b.y + b.h) * density).toInt(), bars[0].index.toInt(), bars[n - 1].index.toInt())
         }
-        return TabEngraving(page, lines, boxes(), (lines.maxOfOrNull { it.bottom - it.top } ?: 0) / density / scale)
+        return TabEngraving(page, lines, boxes())
     }
 
     private val pageScroll: android.widget.ScrollView? = view.findViewById(net.alphatab.R.id.innerScroll)
