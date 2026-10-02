@@ -11,7 +11,6 @@ import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -34,6 +33,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import kotlin.math.abs
 
@@ -45,22 +46,14 @@ import kotlin.math.abs
  */
 @OptIn(ExperimentalTestApi::class)
 @RunWith(AndroidJUnit4::class)
-class ReviewChangeNoteTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val vm by lazy { ViewModelProvider(rule.activity)[PlayViewModel::class.java] }
-
+class ReviewChangeNoteTest : ScreenTest() {
     @Before
     fun setUp() {
         // ATF checks on every action, the Change note sheet included (its drag handle is a 48 dp target).
-        rule.enableAccessibilityChecks()
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
+        checkAccessibility()
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
         if (rule.onAllNodesWithTag("seat-skip").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithTag("seat-skip").performClick()
-        val assets = InstrumentationRegistry.getInstrumentation().context.assets
-        (rule.activity.application as PlayApplication).container.fixtureSource =
-            FixtureSource { name -> runCatching { assets.open("old-hundredth/$name").use { it.readBytes() } }.getOrNull() }
+        computer("old-hundredth")
         rule.runOnUiThread {
             vm.setSource(Source("Old Hundredth.wav", SourceKind.FILE, 67.0))
             vm.navigate(Screen.PROFILE)
@@ -68,7 +61,7 @@ class ReviewChangeNoteTest {
         rule.waitForIdle()
         rule.onNodeWithText("Soloist with orchestra or band").performClick()
         rule.onNodeWithText("Continue").performClick()
-        rule.waitUntil(60_000) {
+        waitUntil(60_000) {
             rule.onAllNodes(isHeading() and hasText("Check ", substring = true)).fetchSemanticsNodes().isNotEmpty()
         }
     }
@@ -90,7 +83,7 @@ class ReviewChangeNoteTest {
 
     /** The score is arranged again in the background after Save and Undo. */
     private fun changeLanded() {
-        rule.waitUntil(20_000) { !vm.changingNote.value }
+        waitUntil(20_000) { !vm.changingNote.value }
         rule.waitForIdle()
     }
 
@@ -107,11 +100,11 @@ class ReviewChangeNoteTest {
         val changed = changedText()
         assertNotNull(changed)
         // Saved in the background.
-        rule.waitUntil(10_000) { vm.savedScores.value.firstOrNull()?.reviewChanges?.size == 1 }
+        waitUntil(10_000) { vm.savedScores.value.firstOrNull()?.reviewChanges?.size == 1 }
         val saved = vm.savedScores.value.first()
 
         rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
-        rule.waitUntil(20_000) { changedText() != null }
+        waitUntil(20_000) { changedText() != null }
         assertEquals(changed, changedText())
         assertTrue(vm.result.value!!.changedOnPhone)
         rule.onRoot().tryPerformAccessibilityChecks()
@@ -120,9 +113,9 @@ class ReviewChangeNoteTest {
         changeLanded()
         assertEquals(null, changedText())
         assertEquals(pitchesBefore, melodyPitches())
-        rule.waitUntil(10_000) { vm.savedScores.value.first { it.id == saved.id }.reviewChanges.isEmpty() }
+        waitUntil(10_000) { vm.savedScores.value.first { it.id == saved.id }.reviewChanges.isEmpty() }
         rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == saved.id }, review = true) }
-        rule.waitUntil(10_000) { vm.openingScore.value == null }
+        waitUntil(10_000) { vm.openingScore.value == null }
         rule.waitForIdle()
         assertEquals(null, changedText())
     }
@@ -135,11 +128,11 @@ class ReviewChangeNoteTest {
         rule.onNodeWithText("Change note…").performScrollTo().performClick()
         rule.onNodeWithText("Up a semitone").performClick()
         rule.onNodeWithTag("preview-note").performScrollTo().assertHeightIsAtLeast(48.dp).performClick()
-        rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
         val bar = vm.clipPlaying.value
         assertNotNull("the preview plays", bar)
         // What plays is the bar with the candidate: another score, and the bar sounds different.
-        rule.waitUntil(20_000) { vm.lastPreviewXml != null }
+        waitUntil(20_000) { vm.lastPreviewXml != null }
         val candidate = vm.lastPreviewXml!!
         assertTrue("the preview has the candidate", candidate != xmlBefore)
         val context = rule.activity.applicationContext
@@ -148,7 +141,7 @@ class ReviewChangeNoteTest {
         assertTrue("the candidate sounds different", old.samples.size != heard.samples.size ||
             old.samples.indices.any { abs(old.samples[it] - heard.samples[it]) > 1e-3f })
         rule.onNodeWithTag("preview-note").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Play the bar with this note").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithText("Play the bar with this note").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(null, vm.clipPlaying.value)
         // Nothing was written: same score, no change on the card.
         assertEquals(xmlBefore, vm.result.value!!.musicXml)
@@ -205,9 +198,9 @@ class ReviewChangeNoteTest {
         assertTrue("the new note sounds different", old.samples.size != now.samples.size ||
             old.samples.indices.any { abs(old.samples[it] - now.samples[it]) > 1e-3f })
         rule.onNodeWithTag("listen-bar").performScrollTo().performClick()
-        rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithTag("listen-bar").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() }
 
         // Change again: still this note, "was" is still what Brasscribe wrote.
         changeUp()
@@ -226,7 +219,7 @@ class ReviewChangeNoteTest {
         // Change and Keep: checked, and the review goes on with one fewer.
         changeUp()
         rule.onNodeWithText("Keep, go to next").performClick()
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Kept.", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithText("Kept.", substring = true).fetchSemanticsNodes().isNotEmpty() }
         val total = { p: String -> p.substringAfter(" of ").toInt() }
         assertEquals(total(before) - 1, total(position()))
         assertTrue(vm.checked.value.values.sumOf { it.size } > checkedBefore.values.sumOf { it.size })

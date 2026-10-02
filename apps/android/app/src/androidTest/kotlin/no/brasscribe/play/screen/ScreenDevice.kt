@@ -92,6 +92,19 @@ object ScreenDevice {
         return shot.copy(Bitmap.Config.ARGB_8888, false)
     }
 
+    /** A keyboard is in use from now on: touch mode ends, as with the first key pressed. */
+    fun keyboard(rule: AppRule) {
+        instrumentation.setInTouchMode(false)
+        rule.waitForIdle()
+    }
+
+    /** The system's own sheet over the app (the share chooser) is closed. */
+    fun closeSystemSheet(rule: AppRule) {
+        Thread.sleep(1500)
+        instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        rule.waitForIdle()
+    }
+
     /** A recording to open: [wav] written as [name]. The phone decodes it itself. */
     @Suppress("UNUSED_PARAMETER")
     fun recording(context: Context, name: String, wav: ByteArray, sampleRate: Int): File =

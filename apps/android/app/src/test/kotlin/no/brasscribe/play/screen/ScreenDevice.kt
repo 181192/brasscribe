@@ -164,6 +164,16 @@ object ScreenDevice {
         shadowOf(Looper.getMainLooper()).idle()
     }
 
+    /** A keyboard is in use from now on: touch mode ends, as with the first key pressed. */
+    fun keyboard(rule: AppRule) {
+        rule.runOnUiThread { touchMode(frontWindow(), false) }
+        rule.waitForIdle()
+    }
+
+    /** The system's own sheet over the app (the share chooser) is closed. Here none is shown: the request for it is only noted. */
+    @Suppress("UNUSED_PARAMETER")
+    fun closeSystemSheet(rule: AppRule) = Unit
+
     /** A Tab or an arrow nothing took moves the focus: what Android's window does with it (ViewRootImpl's focus navigation). */
     private fun moveFocus(root: View, code: Int, meta: Int) {
         val direction = when (code) {

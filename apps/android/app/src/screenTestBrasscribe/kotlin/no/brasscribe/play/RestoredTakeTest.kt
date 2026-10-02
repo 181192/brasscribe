@@ -22,6 +22,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
@@ -34,46 +36,23 @@ import java.nio.ByteOrder
  * opens in Fretscribe: Open on the music stand on its row opens nothing and leaves nothing behind.
  */
 @RunWith(AndroidJUnit4::class)
-class RestoredTakeTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
+class RestoredTakeTest : ScreenTest() {
 
     @Before
     fun setUp() {
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
         if (rule.onAllNodesWithTag("seat-skip").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithTag("seat-skip").performClick()
-        val assets = InstrumentationRegistry.getInstrumentation().context.assets
-        container.fixtureSource = FixtureSource { name -> runCatching { assets.open("old-hundredth/$name").use { it.readBytes() } }.getOrNull() }
-        rule.runOnUiThread { vm.scores.value.forEach(vm::deleteEntry); vm.home() }
-        rule.waitUntil(10_000) { vm.savedScores.value.isEmpty() }
-    }
-
-    @After
-    fun tearDown() {
-        rule.runOnUiThread { container.fixtureSource = null; vm.home() }
-    }
-
-    private fun recording(): File {
-        val rate = 22_050
-        val samples = ShortArray(rate * 2) { i -> (Math.sin(2 * Math.PI * 233.1 * i / rate) * 9000).toInt().toShort() }
-        val data = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN).also { b -> samples.forEach(b::putShort) }.array()
-        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-            .put("RIFF".toByteArray()).putInt(36 + data.size).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
-            .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.size).array()
-        return File(rule.activity.cacheDir, "Old Hundredth.wav").apply { writeBytes(header + data) }
+        computer("old-hundredth")
+        waitUntil(10_000) { vm.savedScores.value.isEmpty() }
     }
 
     @Test
     fun theRecordingUnderARestoredScoreIsKeptAndIsStillTheOneInHand() {
         val file = recording()
         rule.runOnUiThread { vm.importUri(Uri.fromFile(file)) }
-        rule.waitUntil(20_000) { vm.screen.value.last() == Screen.PROFILE }
+        waitUntil(20_000) { vm.screen.value.last() == Screen.PROFILE }
         rule.runOnUiThread { vm.chooseProfile(Profile.BRASS_BAND); vm.where.value = Where.COMPANION; vm.startTranscription() }
-        rule.waitUntil(60_000) { vm.screen.value.last() == Screen.REVIEW && vm.savedScores.value.size == 1 }
+        waitUntil(60_000) { vm.screen.value.last() == Screen.REVIEW && vm.savedScores.value.size == 1 }
         val take = vm.source.value!!.file!!
         assertTrue(take.isFile && take.parentFile?.name == "takes")
         val stack = vm.screen.value
@@ -87,9 +66,9 @@ class RestoredTakeTest {
         ))
         lateinit var restored: PlayViewModel
         rule.runOnUiThread { restored = PlayViewModel(rule.activity.application, state) }
-        rule.waitUntil(20_000) { restored.result.value != null && restored.screen.value == stack }
+        waitUntil(20_000) { restored.result.value != null && restored.screen.value == stack }
         // The copies nothing refers to are cleared after a restore: this one is still referred to.
-        Thread.sleep(1500)
+        pass(1500)
         assertTrue("the recording is still on the phone", take.isFile)
         assertEquals(take, restored.source.value?.file)
         assertEquals(SourceKind.FILE, restored.source.value?.kind)
@@ -103,7 +82,7 @@ class RestoredTakeTest {
     fun aScoreOpenedFromYourScoresStillComesBackAsAScore() {
         // No recording under it: the restored source is the score itself, as before.
         rule.runOnUiThread { vm.setSource(Source("Old Hundredth.wav", SourceKind.FILE, 67.0)); vm.chooseProfile(Profile.BRASS_BAND); vm.where.value = Where.COMPANION; vm.startTranscription() }
-        rule.waitUntil(60_000) { vm.screen.value.last() == Screen.REVIEW && vm.savedScores.value.size == 1 }
+        waitUntil(60_000) { vm.screen.value.last() == Screen.REVIEW && vm.savedScores.value.size == 1 }
         val saved = vm.savedScores.value.single()
         val state = SavedStateHandle(mapOf(
             "stack" to arrayListOf(Screen.HOME.name, Screen.SCORE.name),
@@ -112,7 +91,7 @@ class RestoredTakeTest {
         ))
         lateinit var restored: PlayViewModel
         rule.runOnUiThread { restored = PlayViewModel(rule.activity.application, state) }
-        rule.waitUntil(20_000) { restored.result.value != null }
+        waitUntil(20_000) { restored.result.value != null }
         assertEquals(listOf(Screen.HOME, Screen.SCORE), restored.screen.value)
         assertEquals(Source(saved.title, SourceKind.SCORE, 0.0), restored.source.value)
     }
@@ -123,13 +102,13 @@ class RestoredTakeTest {
         for (profile in listOf("bass-tab", "tab")) {
             val tab = ScoreEntry("job:$profile-1", "Riff", System.currentTimeMillis(), profile, jobId = "$profile-1")
             rule.runOnUiThread { vm.openEntry(tab, stand = true) }
-            rule.waitUntil(5_000) { rule.onAllNodesWithText("This is a tab. Open it in Fretscribe.").fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(5_000) { rule.onAllNodesWithText("This is a tab. Open it in Fretscribe.").fetchSemanticsNodes().isNotEmpty() }
             assertEquals(profile, listOf(Screen.HOME), vm.screen.value)
             // The next score opened is not put on the music stand.
             assertNull(vm.standFromLibrary.value)
             assertNull(vm.openingScore.value)
             // (The message goes away before the next one is asked for.)
-            rule.waitUntil(15_000) { rule.onAllNodesWithText("This is a tab. Open it in Fretscribe.").fetchSemanticsNodes().isEmpty() }
+            waitUntil(15_000) { rule.onAllNodesWithText("This is a tab. Open it in Fretscribe.").fetchSemanticsNodes().isEmpty() }
         }
     }
 

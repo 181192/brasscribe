@@ -16,7 +16,6 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -45,25 +44,22 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 
 /**
  * Walks the main flow on a fixture engine that serves "Old Hundredth" (apps/fixtures/old-hundredth, a
- * public-domain hymn arranged by the core, packaged in the test APK only) with
+ * public-domain hymn arranged by the core) with
  * Compose accessibility checks (ATF) on every action, and asserts the semantics TalkBack depends on:
  * headings, radio roles with collection positions, progress range info, the per-note announcements with
  * their custom actions, and bar navigation on the score.
  */
 @OptIn(ExperimentalTestApi::class)
 @RunWith(AndroidJUnit4::class)
-class PlayFlowA11yTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
+class PlayFlowA11yTest : ScreenTest() {
     @Before
     fun setUp() {
-        rule.enableAccessibilityChecks()
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
         // A fresh install opens on the first-run screen once, and Get started asks "What do you play?" next.
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
         if (rule.onAllNodesWithTag("seat-skip").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithTag("seat-skip").performClick()
@@ -74,10 +70,7 @@ class PlayFlowA11yTest {
      * computer: the file picker can't be driven from a test.
      */
     private fun openOldHundredth() {
-        val assets = InstrumentationRegistry.getInstrumentation().context.assets
-        (rule.activity.application as PlayApplication).container.fixtureSource =
-            FixtureSource { name -> runCatching { assets.open("old-hundredth/$name").use { it.readBytes() } }.getOrNull() }
-        val vm = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+        computer("old-hundredth")
         rule.runOnUiThread {
             vm.setSource(Source("Old Hundredth.wav", SourceKind.FILE, 67.0))
             vm.navigate(Screen.PROFILE)
@@ -87,10 +80,10 @@ class PlayFlowA11yTest {
 
     /** Whether the fixture has an engine file (the PDF, MP3 and braille are engine renders it may lack). */
     private fun fixtureHas(name: String) =
-        runCatching { InstrumentationRegistry.getInstrumentation().context.assets.open("old-hundredth/$name").close() }.isSuccess
+        ScreenDevice.fixture("old-hundredth/$name") != null
 
     private fun waitFor(matcher: SemanticsMatcher, ms: Long = 20_000) =
-        rule.waitUntil(ms) { rule.onAllNodes(matcher, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(ms) { rule.onAllNodes(matcher, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
 
     private fun SemanticsNode.customAction(label: String) =
         config.getOrNull(SemanticsActions.CustomActions)?.firstOrNull { it.label == label }
@@ -145,7 +138,7 @@ class PlayFlowA11yTest {
         assertTrue(first.customAction("Listen to this bar") != null)
         assertTrue(first.customAction("Next uncertain note") != null)
         rule.runOnUiThread { first.customAction("Keep")!!.action() }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Kept.", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithText("Kept.", substring = true).fetchSemanticsNodes().isNotEmpty() }
 
         // Finish later asks first; then Output, then the score with bar and part navigation as custom actions.
         rule.onNodeWithText("Finish later (", substring = true).assertHeightIsAtLeast(48.dp).performClick()
@@ -153,7 +146,7 @@ class PlayFlowA11yTest {
         rule.onNode(isHeading() and hasText("How should the score be?")).assertExists()
         rule.onNodeWithText("Show the score").performClick()
         waitFor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "score-view"))
-        rule.waitUntil(20_000) {
+        waitUntil(20_000) {
             rule.onNodeWithTag("score-view").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
                 ?.firstOrNull()?.let { Regex("""Bar 1 of \d+""").containsMatchIn(it) && !it.contains("of 1.") } == true
         }
@@ -250,13 +243,10 @@ class PlayFlowA11yTest {
         if (pdf) {
             // My part and PDF are the default (print your own part): that makes the Solo Cornet's PDF.
             rule.onNodeWithTag("share").performClick()
-            rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == "pdf" && it.name.contains("Solo Cornet") && it.length() > 0 } }
+            waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == "pdf" && it.name.contains("Solo Cornet") && it.length() > 0 } }
             val part = exports.listFiles()!!.first { it.extension == "pdf" }
             assertEquals("%PDF", String(part.readBytes(), 0, 4))
-            Thread.sleep(1500)
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
-                .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
-            rule.waitForIdle()
+            ScreenDevice.closeSystemSheet(rule)
             exports.deleteRecursively()
         }
         // The conductor's score, with the other formats.
@@ -272,14 +262,11 @@ class PlayFlowA11yTest {
         // One Share builds every chosen file (MusicXML, PDF, alphaTab MIDI, talking-score HTML, BRF), then opens the chooser.
         rule.onNodeWithTag("share").performClick()
         for (ext in listOf("musicxml", "mid", "html") + listOfNotNull("pdf".takeIf { pdf }, "brf".takeIf { braille })) {
-            runCatching { rule.waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } } }.onFailure {
+            runCatching { waitUntil(20_000) { exports.listFiles().orEmpty().any { it.extension == ext && it.length() > 0 } } }.onFailure {
                 throw AssertionError("no .$ext; files ${exports.listFiles().orEmpty().map { f -> f.name }}", it)
             }
         }
-        Thread.sleep(1500)
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
-            .performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
-        rule.waitForIdle()
+        ScreenDevice.closeSystemSheet(rule)
         val midi = exports.listFiles()!!.first { it.extension == "mid" }.readBytes()
         assertEquals("MThd", String(midi, 0, 4))
         val html = exports.listFiles()!!.first { it.extension == "html" }.readText()
@@ -306,25 +293,24 @@ class PlayFlowA11yTest {
         val before = button.fetchSemanticsNode().boundsInRoot
         button.performClick()
         // The score's bar is decoded from the rendered MP3 first.
-        rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
         val during = button.fetchSemanticsNode().boundsInRoot
         assertEquals("same place and size", before, during)
         rule.onNodeWithText("Listen to this bar").assertDoesNotExist()
         // A hardware keyboard: out of touch mode, so the button can take focus.
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
-        rule.waitForIdle()
+        ScreenDevice.keyboard(rule)
         button.requestFocus()
         button.performKeyInput { pressKey(Key.Spacebar) }
-        runCatching { rule.waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() } }.onFailure {
+        runCatching { waitUntil(5_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() } }.onFailure {
             throw AssertionError("after Space: " + button.fetchSemanticsNode().config.toString(), it)
         }
         // Announced without a bar over the card.
-        rule.waitUntil(5_000) { rule.onAllNodes(hasContentDescription("Stopped"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodes(hasContentDescription("Stopped"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         button.requestFocus()
         button.performKeyInput { pressKey(Key.Enter) }
-        rule.waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
         // A bar lasts a few seconds: then it is Listen again, without a press.
-        rule.waitUntil(30_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(30_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() }
         rule.onRoot().tryPerformAccessibilityChecks()
     }
 }
