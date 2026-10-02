@@ -40,10 +40,13 @@ impl Default for TextOptions {
 
 /// Text without what could make one line look like two, or hide or reorder what it says: control
 /// characters as [`clean`] leaves them out, and also the line and paragraph separators, the
-/// bidirectional controls, the zero-width characters and the byte order mark. A title or a name is
+/// bidirectional controls, the soft hyphen, the word joiner, the zero-width characters and the byte
+/// order mark. The zero-width joiner stays: without it a joined emoji falls apart. A title or a name is
 /// one line of the text exports, and cannot pass for a header line of its own.
 pub(crate) fn clean_text(text: &str) -> String {
-    let hidden = |c: char| matches!(c, '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200B}'..='\u{200F}' | '\u{FEFF}');
+    let hidden = |c: char| {
+        matches!(c, '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{061C}' | '\u{200B}' | '\u{200C}' | '\u{200E}' | '\u{200F}' | '\u{2060}' | '\u{00AD}' | '\u{FEFF}')
+    };
     let kept: String = clean(text).chars().map(|c| if matches!(c, '\u{2028}' | '\u{2029}') { ' ' } else { c }).filter(|c| !hidden(*c)).collect();
     // One space where there were several, or a break: a line of words.
     kept.split_whitespace().collect::<Vec<_>>().join(" ")
@@ -188,8 +191,9 @@ struct Column {
 
 /// Stands for a space the legend is not broken at, until its lines are made.
 const GLUE: &str = "\u{a0}";
-/// The most bars the legend names notes of; the rest are counted.
+/// The most bars the legend names notes of, and the most notes; the rest are counted.
 const LEGEND_BARS: usize = 12;
+const LEGEND_NOTES: usize = 24;
 
 /// Notes that are not on the lines, bar by bar: ("bar 3", ["D1", "C#1"]).
 type Missing = Vec<(String, Vec<String>)>;
@@ -498,11 +502,21 @@ impl<'a> Layout<'a> {
         if l.doubt {
             rows.push(("?".into(), "a note to check: it was not heard clearly".into()));
         }
-        // Bar by bar, the first LEGEND_BARS of them; the notes of the others are counted.
+        // Bar by bar, the first LEGEND_BARS of them and LEGEND_NOTES notes; the others are counted.
         let named = |missing: &Missing| {
-            // A bar and its notes stay on one line: the spaces inside an entry are not places to break.
-            let mut bars: Vec<String> = missing.iter().take(LEGEND_BARS).map(|(bar, names)| format!("{bar}: {}", names.join(" ")).replace(' ', GLUE)).collect();
-            let more: usize = missing.iter().skip(LEGEND_BARS).map(|(_, names)| names.len()).sum();
+            let (mut bars, mut left): (Vec<String>, usize) = (Vec::new(), LEGEND_NOTES);
+            for (bar, names) in missing.iter().take(LEGEND_BARS) {
+                if left == 0 {
+                    break;
+                }
+                let said = &names[..names.len().min(left)];
+                left -= said.len();
+                // A line may end between two notes of a bar, not inside a note's name, and not
+                // between the bar and its first note.
+                let notes: Vec<String> = said.iter().map(|name| name.replace(' ', GLUE)).collect();
+                bars.push(format!("{}:{GLUE}{}", bar.replace(' ', GLUE), notes.join(" ")));
+            }
+            let more = missing.iter().map(|(_, names)| names.len()).sum::<usize>() - (LEGEND_NOTES - left);
             if more > 0 {
                 bars.push(format!("and{GLUE}{more}{GLUE}more"));
             }
@@ -572,7 +586,7 @@ impl<'a> Layout<'a> {
 ///   `x` is a dead note; "let ring" stands above the first note that rings.
 /// - A "?" above a column marks a doubtful note ([`TabOptions::doubt_below`]), a "!" a note that
 ///   is not on the lines: no string can play it, or its string holds another note of its chord.
-///   The legend names such notes bar by bar, the first twelve bars of them.
+///   The legend names such notes bar by bar: at most twelve bars and 24 notes, and counts the rest.
 pub fn write_tab_text(score: &TabScore, tab: &TabOptions, text: &TextOptions) -> Result<String, String> {
     if !(MIN_TEXT_WIDTH..=MAX_TEXT_WIDTH).contains(&text.width) {
         return Err(format!("a line of the text tab is {MIN_TEXT_WIDTH} to {MAX_TEXT_WIDTH} characters, not {}", text.width));

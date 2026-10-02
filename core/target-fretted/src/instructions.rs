@@ -7,8 +7,8 @@
 //!
 //! The words follow the talking score of the brass parts (`docs/accessibility/talking-score-spec.md`):
 //! bar headings, beat positions ("2 and", "2-og"), note values, and the Norwegian note names (H,
-//! B, Ess, Ass). One [`Lex`] holds both languages, chosen by `lang`: "en" or "nb", with or without
-//! a region. Strings are named by number, never by note, and accidentals are written as words.
+//! B, Ess, Ass). One [`Lex`] holds both languages, chosen by `lang`: "en", or "nb" or "no", with or
+//! without a region. Strings are named by number, never by note, and accidentals are written as words.
 
 use std::collections::HashMap;
 
@@ -53,12 +53,13 @@ const NB_INSTRUMENTS: [(&str, &str); 9] = [
 ];
 
 /// "en" or "nb" for a language tag that is one of them, in any case, alone or followed by a region
-/// or other subtags ("en-GB", "nb_NO"); None for any other tag.
+/// or other subtags ("en-GB", "nb_NO"). "no" is Norwegian Bokmål too, as the talking score takes
+/// it. None for any other tag.
 pub fn instructions_language(lang: &str) -> Option<&'static str> {
     let l = lang.to_lowercase();
     match l.split(['-', '_']).next() {
         Some("en") => Some("en"),
-        Some("nb") => Some("nb"),
+        Some("nb") | Some("no") => Some("nb"),
         _ => None,
     }
 }

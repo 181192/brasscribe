@@ -978,6 +978,27 @@ fn a_triplet_is_only_said_where_one_is_written_and_three_eight_counts_its_eighth
 }
 
 #[test]
+fn one_bar_with_many_missing_notes_is_broken_at_the_width_and_capped_too() {
+    let bass = preset("bass-4-standard").unwrap();
+    let mut p = Passage::new();
+    for k in 0..32 {
+        p.lost(k % 12, 3 * i64::from(k), 3);
+    }
+    let score = p.score(&bass);
+    for width in [MIN_TEXT_WIDTH, TEXT_WIDTH, MAX_TEXT_WIDTH] {
+        let text = tab_text(&score, width);
+        let legend: Vec<&str> = text.rsplit("\n\n").next().unwrap().lines().collect();
+        assert!(legend[0].starts_with("!  a note with no string"), "{text}");
+        assert!(legend.iter().all(|l| l.chars().count() <= width), "width {width}\n{text}");
+        let joined = legend.iter().map(|l| l.trim()).collect::<Vec<_>>().join(" ");
+        let (_, notes) = joined.split_once("not in the lines: bar 1: ").unwrap();
+        let (named, more) = notes.split_once("; ").unwrap();
+        assert_eq!((named.split(' ').count(), more), (24, "and 8 more"), "{joined}");
+        assert!(legend.iter().all(|l| !l.ends_with("1:") && !l.ends_with(" and")), "{text}");
+    }
+}
+
+#[test]
 fn a_tuning_is_named_in_norwegian_with_h_for_b_on_every_preset() {
     let names = [
         ("guitar-standard", "Standard", "Standard"),
@@ -1054,10 +1075,10 @@ fn a_language_is_en_or_nb_with_or_without_a_region() {
     for tag in ["EN", "en-GB", "en_US", "en-Latn-US"] {
         assert_eq!(instructions(&score, tag), en, "{tag}");
     }
-    for tag in ["NB", "nb-NO", "nb_NO"] {
+    for tag in ["NB", "nb-NO", "nb_NO", "no", "no-NO", "no_NO", "NO"] {
         assert_eq!(instructions(&score, tag), nb, "{tag}");
     }
-    for tag in ["", "no", "nn", "english", "norsk", "nbx", "enx", "e", "de", " en"] {
+    for tag in ["", "nn", "nn-NO", "english", "norsk", "nox", "nbx", "enx", "e", "de", " en"] {
         let e = write_playing_instructions(&score, &TabOptions::default(), &text_options(TEXT_WIDTH, tag)).unwrap_err();
         assert!(e.contains("en or nb"), "{tag}: {e}");
     }
@@ -1122,11 +1143,11 @@ fn a_title_cannot_pass_for_a_line_of_the_header() {
     let bass = preset("bass-4-standard").unwrap();
     let mut p = Passage::new();
     p.placed(&bass, 1, 2, 0, 96, 1.0, &[]);
-    let title = "Song\u{2028}Capo: fret 7\u{2029}\nTempo: 300\r\u{202E}txt.exe\u{202C}\u{2066}a\u{2069}\u{200B}\u{200E}\u{200F}\u{FEFF}";
+    let title = "Song\u{2028}Capo: fret 7\u{2029}\nTempo: 300\r\u{202E}txt.exe\u{202C}\u{2066}a\u{2069}\u{200B}\u{200C}\u{200E}\u{200F}\u{061C}\u{2060}\u{00AD}\u{FEFF}";
     let mut own = bass.clone();
     own.name = "Bass\u{2028}Capo: fret 9".into();
     own.tuning.name = "Standard\u{2029}Time: 9/8\u{202E}".into();
-    let hidden = |c: char| c.is_control() && c != '\n' || matches!(c, '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200B}'..='\u{200F}' | '\u{FEFF}');
+    let hidden = |c: char| c.is_control() && c != '\n' || matches!(c, '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200B}'..='\u{200F}' | '\u{061C}' | '\u{2060}' | '\u{00AD}' | '\u{FEFF}');
     let score = TabScore::new(title, &own, &p.notes, &p.techniques, &p.fingering).unwrap();
     let text = tab_text(&score, TEXT_WIDTH);
     assert!(text.starts_with("Song Capo: fret 7 Tempo: 300 txt.exea\nBass Capo: fret 9\nTuning: Standard Time: 9/8 (E A D G), bottom line to top\nCapo: none\nTempo: 120 quarter notes per minute\nTime: 4/4\n\n"), "{text:?}");
@@ -1137,6 +1158,10 @@ fn a_title_cannot_pass_for_a_line_of_the_header() {
         assert!(!said.contains(hidden), "{said:?}");
         assert_eq!(said.lines().filter(|l| l.starts_with("Capo") || l.starts_with("No capo") || l.starts_with("Ingen capo")).count(), 1, "{said}");
     }
+    // The joiner inside an emoji stays, so the emoji stays whole.
+    let family = "Song for \u{1F469}\u{200D}\u{1F3A4}";
+    let joined = TabScore::new(family, &bass, &p.notes, &p.techniques, &p.fingering).unwrap();
+    assert!(tab_text(&joined, TEXT_WIDTH).starts_with(&format!("{family}\nBass\n")) && instructions(&joined, "nb").starts_with(&format!("{family}\n\n")));
     // A title of nothing but such characters is no title.
     let blank = TabScore::new("\u{200B}\u{FEFF} \u{2028}", &bass, &p.notes, &p.techniques, &p.fingering).unwrap();
     assert!(tab_text(&blank, TEXT_WIDTH).starts_with("Bass\n") && instructions(&blank, "en").starts_with("Bass, 4 strings.\n"));
@@ -1187,7 +1212,7 @@ fn a_width_or_a_language_that_cannot_be_written_is_refused() {
         let e = write_tab_text(&score, &TabOptions::default(), &text_options(width, "en")).unwrap_err();
         assert!(e.contains("characters"), "{e}");
     }
-    for lang in ["", "de", "sv", "no"] {
+    for lang in ["", "de", "sv", "nn"] {
         let e = write_playing_instructions(&score, &TabOptions::default(), &text_options(TEXT_WIDTH, lang)).unwrap_err();
         assert!(e.contains("en or nb"), "{e}");
     }

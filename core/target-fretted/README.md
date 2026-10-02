@@ -562,11 +562,12 @@ h  hammer-on
     `a note that cannot be played together with another note on its string` (`bar 1: G2 (string
     2)`). The lower note of the two is written; a line holds one number per column.
 - **Legend:** one entry per mark that occurs in the tab, and none when there are no marks. The notes
-  behind the `!` are listed bar by bar for the first twelve bars that have any; the rest are
-  counted (`and 4 more`).
+  behind the `!` are listed bar by bar, at most twelve bars and 24 notes; the rest are counted
+  (`and 4 more`).
 - **Names:** the title and the names of the instrument and the tuning are each one line. Control
-  characters, line and paragraph separators, bidirectional controls, zero-width characters and the
-  byte order mark are left out, and runs of spaces are one space, so a title cannot pass for a
+  characters, line and paragraph separators, bidirectional controls, the soft hyphen, the word
+  joiner, zero-width characters (but not the joiner that holds an emoji together) and the byte
+  order mark are left out, and runs of spaces are one space, so a title cannot pass for a
   line of the header or hide what it says. The playing instructions do the same.
 
 `write_tab_text` refuses what `write_tab_musicxml` refuses, and a width outside 24 to 400.
@@ -579,7 +580,8 @@ each is written in a fraction of a second.
 `write_playing_instructions(&TabScore, &TabOptions, &TextOptions)` writes the score in words, for
 someone who reads with a screen reader or a braille display: bar by bar and beat by beat, which
 string and fret to play and for how long. `TextOptions::lang` is `en` or `nb`, in any case and
-with or without a region (`en-GB`, `nb_NO`); any other tag is refused, `no` and `english` too.
+with or without a region (`en-GB`, `nb_NO`); `no` is Norwegian Bokmål too. Any other tag is refused,
+`nn` and `english` among them.
 
 ```text
 Bass, 4 strings.
