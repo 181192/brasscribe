@@ -86,11 +86,13 @@ processing instruction on the note (an `<other-notation>` element makes MuseScor
 ## Type
 
 - **Fretscribe Tab** (`fonts/FretscribeTab-Regular.ttf`): fret numbers only. It is Atkinson
-  Hyperlegible Mono at a fixed weight of 600 with the plain zero as the default glyph. The original
-  needs the `zero` OpenType feature for a plain 0, and alphaTab, canvas renderers and PDF export may not
-  apply features, so the plain zero is built in. 1 has a flag and a foot; 6 and 9 have open tails; 0 and
+  Hyperlegible Mono at a fixed weight of 600 with a plain zero as the default glyph. The original has
+  no plain 0: its default zero has a slash and its `zero` OpenType feature gives one with a dot. Tab is
+  written with a plain 0, the most common number on a tab page, so the dot is taken out of the dotted
+  zero (the outer shape and the counter stay) and that glyph is built in as the default: alphaTab, canvas
+  renderers and PDF export may not apply features. 1 has a flag and a foot; 6 and 9 have open tails; 0 and
   8 stay apart under blur. Built by `fonts/build_tab_font.py` (`uv run build_tab_font.py AtkinsonHyperlegibleMono[wght].ttf FretscribeTab-Regular.ttf`); OFL 1.1 (`fonts/OFL-FretscribeTab.txt`), renamed as a modified version.
-  Still to confirm: alphaTab takes a custom font for tab numbers on every platform.
+  alphaTab takes it for the tab numbers on Android (registered with alphaSkia); the other platforms are still to confirm.
 - **Atkinson Hyperlegible Next** 600 (`fonts/AtkinsonHyperlegibleNext-wght.ttf`, `fonts/OFL-AtkinsonHyperlegibleNext.txt`): the wordmark, onboarding and screen titles of 28 px and up.
 - **Everything else: the platform's UI face** (SF Pro, Roboto, Segoe UI Variable, system-ui), which
   follows the system text size.

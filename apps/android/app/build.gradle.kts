@@ -178,6 +178,15 @@ val designSyncs = designs.flatMap { (product, design) ->
     )
 }
 
+// Fretscribe Tab, the face of the fret numbers (design/fretscribe/brand/fonts, OFL), with its licence: in the
+// Fretscribe app only.
+val tabFont = tasks.register<Sync>("syncFretscribeTabFont") {
+    val fonts = File(repoRoot, "design/fretscribe/brand/fonts")
+    into(layout.buildDirectory.dir("generated/fretscribe/tab-font"))
+    into("assets/fonts") { from(fonts) { include("FretscribeTab-Regular.ttf") } }
+    into("assets/licences") { from(fonts) { include("OFL-FretscribeTab.txt"); rename { "fretscribe-tab-OFL.txt" } } }
+}
+
 androidComponents {
     // Fretscribe has no release build yet.
     beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
@@ -189,9 +198,10 @@ androidComponents {
         variant.sources.assets?.addStaticSourceDirectory(generated("$product/design/assets"))
         variant.sources.assets?.addStaticSourceDirectory(generated("shared/sounds"))
         if (product == "brasscribe") variant.sources.assets?.addStaticSourceDirectory(generated("brasscribe/models"))
+        if (product == "fretscribe") variant.sources.assets?.addStaticSourceDirectory(generated("fretscribe/tab-font/assets"))
     }
 }
-tasks.named("preBuild") { dependsOn(modelAssets, soundMap, designSyncs) }
+tasks.named("preBuild") { dependsOn(modelAssets, soundMap, designSyncs, tabFont) }
 
 // The task names from before there were two products stay, and mean the Brasscribe app.
 mapOf(
@@ -223,6 +233,9 @@ dependencies {
     implementation(libs.play.services.code.scanner)
     implementation(libs.alphatab)
     implementation(libs.alphaskia.android)
+    // alphaSkia's Java API, to register the tab's own face for the fret numbers. Every build already carries
+    // the library (alphaTab brings it in); this only lets Fretscribe's code name it.
+    "fretscribeImplementation"(libs.alphaskia)
     // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
     // 13.4 MB instead of 33.0 MB per arm64 APK. Otherwise the full Maven build.
     val reducedOrt = rootProject.file("third_party/onnxruntime/onnxruntime-android-reduced.aar")

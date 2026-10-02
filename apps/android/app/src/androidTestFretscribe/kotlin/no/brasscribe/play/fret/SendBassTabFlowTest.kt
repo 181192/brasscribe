@@ -304,13 +304,13 @@ class SendBassTabFlowTest {
             assertEquals("tab", job.profile)
             assertEquals(!whole, job.stages.any { it.name == "stems" })
 
-            // Show the tab opens the tab in the score view.
+            // Show the tab opens the tab view.
             rule.onNodeWithTag("fs-show-tab").performClick()
-            waitForTag("score-view", 30_000)
+            waitForTag("fs-tab", 30_000)
             assertEquals(Screen.SCORE, vm.screen.value.last())
-            // The tab is engraved: the view says its bars.
+            // The tab is there: the view says its bars.
             rule.waitUntil(30_000) {
-                rule.onNodeWithTag("score-view").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
+                rule.onNodeWithTag("fs-tab").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
                     ?.firstOrNull()?.let { d -> Regex("""\d+""").findAll(d).any { it.value.toInt() > 1 } } == true
             }
             if (whole) shot("the-tab-en-light")
@@ -457,7 +457,7 @@ class SendBassTabFlowTest {
         listOf("Back", "Write it as it was heard", "Show the tab").forEach { w -> assertTrue("$w in $here", here.any { it.contains(w) }) }
         tabTo("Show the tab")
         key(KeyEvent.KEYCODE_ENTER)
-        waitForTag("score-view", 30_000)
+        waitForTag("fs-tab", 30_000)
         assertEquals(Screen.SCORE, vm.screen.value.last())
     }
 

@@ -14,7 +14,7 @@ tools use.
 | [alphaTab](https://alphatab.net) 1.8.4 | MPL-2.0 | Play for Android and Windows, Studio | Unmodified package (npm `@coderline/alphatab`, Maven `net.alphatab:alphaTab`, NuGet `AlphaTab`). Its source is at https://github.com/CoderLine/alphaTab. |
 | Bravura font (shipped with alphaTab) | SIL OFL 1.1 | Play for Android and Windows, Studio | Music glyphs for alphaTab. |
 | Sonivox SoundFont (shipped with alphaTab) | Apache-2.0, Copyright (c) 2004-2006 Sonic Network Inc. | Studio, Play for Android | alphaTab's default General MIDI sounds, used when the band sounds are missing. |
-| [alphaSkia](https://github.com/CoderLine/alphaSkia) 3.4.135 | BSD-3-Clause (Skia: BSD-3-Clause) | Play for Android and Windows | Drawing backend for alphaTab. |
+| [alphaSkia](https://github.com/CoderLine/alphaSkia) 3.5.147 (Android), 3.4.135 (Windows) | BSD-3-Clause (Skia: BSD-3-Clause) | Play for Android and Windows | Drawing backend for alphaTab. |
 | [UniFFI](https://github.com/mozilla/uniffi-rs) runtime | MPL-2.0 | Every app that links the Rust core | Unmodified crate, linked into `brasscribe_ffi`. |
 
 ## Band sounds
@@ -40,7 +40,7 @@ for Mac, iPhone and iPad when the band SoundFont is missing. It is not committed
 |---|---|---|
 | [Instrument Serif](https://github.com/Instrument/instrument-serif), Copyright 2022 The Instrument Serif Project Authors | SIL OFL 1.1 | Display face of every app and the site; `OFL.txt` ships beside the font (`design/brand/fonts/`, `design/dist/*/`). |
 | [Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next), Copyright 2020-2024 The Atkinson Hyperlegible Next Project Authors | SIL OFL 1.1 | Display face of Fretscribe; `OFL-AtkinsonHyperlegibleNext.txt` ships beside the font (`design/fretscribe/brand/fonts/`, and as `OFL.txt` in `design/fretscribe/dist/android/res/font/`). |
-| Fretscribe Tab, a modified version of [Atkinson Hyperlegible Mono](https://github.com/googlefonts/atkinson-hyperlegible-next-mono), Copyright 2020-2024 The Atkinson Hyperlegible Mono Project Authors | SIL OFL 1.1 | Fret numbers in Fretscribe's design (`design/fretscribe/brand/fonts/`, with `OFL-FretscribeTab.txt` and the script that builds it); the weight is fixed at 600 and the plain zero is the default, under a new name as the licence requires. Not in any app yet. |
+| Fretscribe Tab, a modified version of [Atkinson Hyperlegible Mono](https://github.com/googlefonts/atkinson-hyperlegible-next-mono), Copyright 2020-2024 The Atkinson Hyperlegible Mono Project Authors | SIL OFL 1.1 | Fret numbers in Fretscribe's design (`design/fretscribe/brand/fonts/`, with `OFL-FretscribeTab.txt` and the script that builds it); the weight is fixed at 600 and a plain zero (the dotted zero without its dot) is the default, under a new name as the licence requires. Bundled in the Fretscribe Android app, with the licence text in its assets. |
 
 ## Machine-learning models
 

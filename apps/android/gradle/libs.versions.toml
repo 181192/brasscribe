@@ -55,6 +55,7 @@ compose-material3 = { module = "androidx.compose.material3:material3" }
 
 alphatab = { module = "net.alphatab:alphaTab", version.ref = "alphaTab" }
 alphaskia-android = { module = "net.alphatab:alphaSkia-android", version.ref = "alphaSkia" }
+alphaskia = { module = "net.alphatab:alphaSkia", version.ref = "alphaSkia" }
 oboe = { module = "com.google.oboe:oboe", version.ref = "oboe" }
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
 onnxruntime-jvm = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
