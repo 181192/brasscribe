@@ -299,6 +299,9 @@ def score_tab(ref: dict, tab: dict) -> dict:
         out["tempo_ok_level"] = float(any(abs(ratio / k - 1) <= TEMPO_TOL for k in (0.5, 1, 2)))
     if ref.get("beats_per_bar"):
         out["meter_ok"] = float(tab["meter"]["beats"] == ref["beats_per_bar"])
+        if ref.get("tempo_bpm"):  # the bar as it sounds: its length in seconds, whatever the level and the count
+            bar, true = tab["meter"]["beats"] / tab["tempo_bpm"], ref["beats_per_bar"] / ref["tempo_bpm"]
+            out["bar_ok"] = float(abs(bar / true - 1) <= TEMPO_TOL)
     # A triplet's length on a note that starts on the 16th grid and is followed by one: a bracket over a straight line.
     out["triplet_lengths"] = float(np.mean([n["start"] % 6 == 0 and n["dur"] % 6 != 0
                                             and (i + 1 == len(notes) or notes[i + 1]["start"] % 6 == 0) for i, n in enumerate(notes)]))
@@ -310,7 +313,7 @@ def score_tab(ref: dict, tab: dict) -> dict:
 
 
 MEANS = ("onset_f1", "onset_p", "onset_r", "octave_err_rate", "out_of_range", "hand_travel", "high_fret_share",
-         "doubt_share", "triplet_lengths", "tempo_ok", "tempo_ok_level", "meter_ok")
+         "doubt_share", "triplet_lengths", "tempo_ok", "tempo_ok_level", "meter_ok", "bar_ok")
 
 
 def evaluate(data: Path, mode: str, params: dict | None = None, eval_set: str = SET,

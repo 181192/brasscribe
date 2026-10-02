@@ -100,6 +100,39 @@ def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
         assert f"{group}.onset_f1" in base and f"{group}.chord_recall" in base
     assert "report.comp.string_agreement" in base and "song.string_agreement" not in base  # Slakh has no strings
     assert "report.comp.string_recall" in base and "song.string_recall" not in base
-    slakh_free = {k: (v["value"] if isinstance(v, dict) else v) for k, v in base.items() if not k.startswith("song.")}
-    report = suites.gate([{"suite": "guitar-tab", "status": "ran", "metrics": slakh_free, "skipped_parts": ["song"], "seconds": 0.0}])
+    optional = ("song.", "song_one.", "idmt.")  # Slakh's songs and IDMT-SMT-Guitar: scored where they are
+    slakh_free = {k: (v["value"] if isinstance(v, dict) else v) for k, v in base.items() if not k.startswith(optional)}
+    report = suites.gate([{"suite": "guitar-tab", "status": "ran", "metrics": slakh_free, "skipped_parts": ["song", "song_one", "idmt"],
+                           "seconds": 0.0}])
     assert report["passed"]  # without the Slakh tracks the song part is skipped, not missing
+
+
+def test_an_idmt_annotation_is_read_with_its_strings_counted_from_the_high_e(tmp_path):
+    root = tmp_path / "IDMT"
+    for d in ("dataset2/annotation", "dataset2/audio", "dataset3/annotation", "dataset3/audio"):
+        (root / d).mkdir(parents=True)
+    event = ("<event><pitch>{p}</pitch><onsetSec>{a}</onsetSec><offsetSec>{b}</offsetSec><excitationStyle>FS</excitationStyle>"
+             "<stringNumber>{s}</stringNumber><fretNumber>{f}</fretNumber></event>")
+    notes = [(45, 0.5, 1.0, 1, 5), (61, 0.5, 1.0, 4, 6), (64, 1.0, 1.5, 6, 0), (59, 1.5, 2.0, 5, 0)]
+    xml = "<instrumentRecording><transcription>" + "".join(event.format(p=p, a=a, b=b, s=s_, f=f) for p, a, b, s_, f in notes) + "</transcription></instrumentRecording>"
+    for name in ("dataset2/annotation/AR_Lick1_FN.xml", "dataset2/annotation/LP_Lick1_FN.xml", "dataset2/annotation/AR_G_fret_0-20.xml",
+                 "dataset3/annotation/nocturne.xml"):
+        (root / name).write_text(xml)
+        (root / name.replace("annotation", "audio").replace(".xml", ".wav")).write_bytes(b"")
+    assert [(x.stem, style) for x, _, style in G.idmt_sources(root)] == [("AR_Lick1_FN", "lick"), ("LP_Lick1_FN", "lick"), ("nocturne", "piece")]
+    made = G.build_idmt(root, tmp_path)
+    refs = {d.name: json.loads((d / "reference.json").read_text()) for d in made}
+    assert {k: (v["player"], v["split"]) for k, v in refs.items()} == {
+        "lick-AR_Lick1_FN": ("AR", "tune"), "lick-LP_Lick1_FN": ("LP", "report"), "piece-nocturne": ("piece", "report")}
+    first = refs["piece-nocturne"]["notes"]
+    assert [(n["pitch"], n["string"]) for n in first] == [(45, 6), (61, 3), (64, 1), (59, 2)]  # its string 1 is the low E
+    assert G.evaluate_idmt(tmp_path, "tune") == ({}, [])  # no model outputs: nothing to score
+
+
+def test_notes_that_were_not_heard_are_counted_and_scored_apart():
+    chord = [(p, 0.01 * k, 0, 6 - k, f, 1.0) for k, (p, f) in enumerate([(43, 3), (47, 2), (50, 0), (55, 0), (59, 0), (67, 3)])]
+    t = _tab(chord)
+    t["notes"][1]["inferred"] = True  # in the reference: a right guess
+    t["notes"].append({**t["notes"][0], "pitch": 62, "inferred": True})  # not in the reference: a wrong one
+    s = G.summarize([G.score_tab(REF, t)])
+    assert s["inferred_share"] == pytest.approx(2 / 7) and s["inferred_right"] == 0.5

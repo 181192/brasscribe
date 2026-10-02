@@ -52,7 +52,7 @@ def cmd_run(args) -> int:
                                                                      "transpose": args.transpose, "seat": args.seat,
                                                                      "reads": args.reads, "lead": args.lead,
                                                                      **({"muscriptor": False} if args.no_muscriptor else {}),
-                                                                     **bass_tab.given(**vars(args))},
+                                                                     **tab.given(**vars(args))},
                    emit=_print_event)
     run_dir = s.runs_dir / m["run_id"]
     print(f"{m['status']}: {run_dir}  ({m['seconds']:.1f}s, devices {', '.join(m['devices']) or '-'})")
@@ -261,6 +261,9 @@ def main(argv: list[str] | None = None) -> int:
                         "moved an octave when they were heard an octave from the instrument)")
     r.add_argument("--layout", choices=list(bass_tab.LAYOUTS),
                    help="tab: what the page shows: the tab staff alone (default), with notation above it, or notation alone")
+    r.add_argument("--chords", choices=list(tab.CHORDS),
+                   help="tab: heard writes the notes that were heard (default); completed adds a note the same chord has "
+                        "in the strums around it, marked as inferred")
     r.add_argument("--check-golden", type=Path, help="compare outputs with a reference directory; exit 2 on difference")
     r.set_defaults(fn=cmd_run)
 

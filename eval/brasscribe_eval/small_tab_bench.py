@@ -1,4 +1,4 @@
-"""Ukulele and mandolin tab benchmark: the engine's tab profile on passages written here and rendered.
+"""Ukulele, mandolin and rendered-guitar tab benchmark: the engine's tab profile on passages written here and rendered.
 
 No recordings of a ukulele or a mandolin with their notes annotated were found (OpenMIC-2018 has clips
 labelled as containing either, without notes). So the passages are written in this file and rendered
@@ -10,6 +10,8 @@ group has a `heldout` one, with other chords, scales and tempos and one more pat
 top string over a ringing chord). They are reported, not tuned on, with one exception: the
 threshold of the ukulele's overtone rule above the 12th fret was tried against them too, so they are
 not a clean test of that rule.
+
+The guitar groups are open chords picked and strummed, which GuitarSet's players do not play.
 
 Each passage is rendered twice, alone (`instrument`) and under a bass and drums (`song`), and the
 `song` mix is separated. Which of the separator's stems carries the instrument is measured, not
@@ -39,6 +41,7 @@ SOUNDFONT = "soundfonts/MuseScore_General.sf2"
 SR = 44100
 MODES = ("song", "instrument")
 BARS = 12
+GUITAR = (64, 59, 55, 50, 45, 40)
 # group -> (the job's instrument and tuning, SoundFont bank and program, the open strings from string 1,
 # chord shapes as frets from string 1 (None: not played), a scale for the melody)
 GROUPS = {
@@ -50,6 +53,23 @@ GROUPS = {
                          {"G": (3, 0, 0, 0), "Em": (0, 0, 0, 2), "C": (0, 1, 0, 2), "D": (2, 3, 2, 0)}, (50, 52, 54, 55, 57, 59, 60, 62)),
     "mandolin": ({"instrument": "mandolin"}, (16, 25), (76, 69, 62, 55),
                  {"G": (3, 2, 0, 0), "C": (0, 3, 2, 0), "D": (2, 0, 0, 2), "Em": (0, 2, 2, 0)}, (62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79)),
+    # A guitar's open chords, picked and strummed: what GuitarSet's players do not play. The rules for the
+    # overtones over ringing strings were chosen on the first two groups and on GuitarSet's players 00 to 02;
+    # the two "heldout" groups (other chords, another preset, other tempos) are only reported.
+    "guitar-nylon": ({"instrument": "guitar-6"}, (0, 24), GUITAR,
+                     {"C": (0, 1, 0, 2, 3, None), "Am": (0, 1, 2, 2, 0, None), "F": (1, 1, 2, 3, 3, 1), "G": (3, 0, 0, 0, 2, 3)},
+                     (52, 53, 55, 57, 59, 60, 62, 64, 65, 67)),
+    "guitar-steel": ({"instrument": "guitar-6"}, (0, 25), GUITAR,
+                     {"G": (3, 0, 0, 0, 2, 3), "Em": (0, 0, 0, 2, 2, 0), "C": (0, 1, 0, 2, 3, None), "D": (2, 3, 2, 0, None, None)},
+                     (55, 57, 59, 60, 62, 64, 66, 67, 69, 71)),
+    "guitar-nylon-heldout": ({"instrument": "guitar-6"}, (0, 24), GUITAR,
+                             {"A": (0, 2, 2, 2, 0, None), "E": (0, 0, 1, 2, 2, 0), "Dm": (1, 3, 2, 0, None, None),
+                              "Bm": (2, 3, 4, 4, 2, None), "E7": (0, 3, 1, 0, 2, 0)},
+                             (57, 59, 61, 62, 64, 66, 68, 69, 71, 73, 74)),
+    "guitar-clean-heldout": ({"instrument": "guitar-6"}, (0, 27), GUITAR,
+                             {"D": (2, 3, 2, 0, None, None), "A7": (0, 2, 0, 2, 0, None), "Em7": (0, 3, 0, 2, 2, 0),
+                              "F#m": (2, 2, 2, 4, 4, 2), "Cadd9": (0, 3, 0, 2, 3, None)},
+                             (50, 52, 54, 55, 57, 59, 61, 62, 64, 66, 67)),
 }
 # Held out: other chords (one shape up the neck each), other scales, other tempos and one more pattern, a
 # melody high on the top string over a ringing chord. These groups are reported, not tuned on (see the module docstring for the one exception).
@@ -70,13 +90,21 @@ PATTERNS = ("melody", "strummed", "picked")
 HELDOUT_PATTERNS = (*PATTERNS, "chord-melody")
 TEMPOS = {"melody": 104.0, "strummed": 92.0, "picked": 80.0}
 HELDOUT_TEMPOS = {"melody": 116.0, "strummed": 84.0, "picked": 72.0, "chord-melody": 88.0}
+GUITAR_HELDOUT_TEMPOS = {"melody": 118.0, "strummed": 86.0, "picked": 70.0, "chord-melody": 88.0}
 SUITES = {"ukulele": ("ukulele-high-g", "ukulele-low-g", "ukulele-baritone",
                       "ukulele-high-g" + HELDOUT, "ukulele-low-g" + HELDOUT, "ukulele-baritone" + HELDOUT),
-          "mandolin": ("mandolin", "mandolin" + HELDOUT)}
+          "mandolin": ("mandolin", "mandolin" + HELDOUT),
+          "guitar-rendered": ("guitar-nylon", "guitar-steel", "guitar-nylon" + HELDOUT, "guitar-clean" + HELDOUT)}
 
 
 def patterns(group: str) -> tuple[str, ...]:
     return HELDOUT_PATTERNS if group.endswith(HELDOUT) else PATTERNS
+
+
+def tempo(group: str, pattern: str) -> float:
+    if not group.endswith(HELDOUT):
+        return TEMPOS[pattern]
+    return (GUITAR_HELDOUT_TEMPOS if group.startswith("guitar") else HELDOUT_TEMPOS)[pattern]
 STEMS = ("guitar", "other", "piano", "vocals")  # where a plucked instrument could land; bass and drums are not asked
 FILES = {"instrument": {"beats": "alone.beats", "bp": "alone-bp.mid", "sw": "alone-sw.mid"}}
 
@@ -114,7 +142,8 @@ def passage(group: str, pattern: str, bpm: float) -> list[dict]:
                 for j, (p, s) in enumerate(order):
                     add(p, at + when + 0.012 * j * bpm / 60, 0.45, s)
         else:  # picked: each string of the shape in turn, ringing on
-            order = [chord[3], chord[1], chord[2], chord[0], chord[2], chord[1], chord[2], chord[0]]
+            order = ([chord[3], chord[1], chord[2], chord[0], chord[2], chord[1], chord[2], chord[0]] if len(strings) == 4 else
+                     [chord[-1], chord[2], chord[1], chord[0], chord[1], chord[2], chord[1], chord[0]])  # the bass, then the top three
             for k, (p, s) in enumerate(order):
                 add(p, at + k / 2, 0.9, s)
     return sorted(notes, key=lambda n: (n["onset"], n["pitch"]))
@@ -167,7 +196,7 @@ def synthesize(data: Path, only_new: bool = False) -> list[Path]:
     shifts: dict[str, int] = {}
     for group, (params, (bank, program), strings, shapes, _) in GROUPS.items():
         for pattern in patterns(group):
-            bpm = (HELDOUT_TEMPOS if group.endswith(HELDOUT) else TEMPOS)[pattern]
+            bpm = tempo(group, pattern)
             beat = 60 / bpm
             notes = passage(group, pattern, bpm)
             lead = (bank, program, False, [(n["pitch"], n["onset"], n["offset"], 92) for n in notes])

@@ -945,7 +945,7 @@
         "song.doubt_recall": 0.355,
         "song.tempo_ok": 0.7,
         "song.tempo_ok_level": 0.7,
-        "song.meter_ok": 0.769,
+        "song.meter_ok": 0.923,
         "song.violations": {
           "value": 0,
           "tolerance": 0,
@@ -983,7 +983,7 @@
         "instrument.doubt_recall": 0.272,
         "instrument.tempo_ok": 0.6,
         "instrument.tempo_ok_level": 0.7,
-        "instrument.meter_ok": 0.692,
+        "instrument.meter_ok": 0.923,
         "instrument.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1104,7 +1104,13 @@
         "low_b.instrument.tracks": {
           "value": 4,
           "tolerance": 0
-        }
+        },
+        "song.bar_ok": 0.778,
+        "instrument.bar_ok": 0.889,
+        "low_e.song.bar_ok": 1.0,
+        "low_e.instrument.bar_ok": 1.0,
+        "low_b.song.bar_ok": 1.0,
+        "low_b.instrument.bar_ok": 0.25
       }
     },
     "guitar-tab": {
@@ -1117,11 +1123,11 @@
           "value": 0.004,
           "higher_is_better": false
         },
-        "tune.solo.chord_recall": 0.873,
-        "tune.solo.chord_precision": 0.581,
+        "tune.solo.chord_recall": 0.877,
+        "tune.solo.chord_precision": 0.584,
         "tune.solo.chords_whole": 1.0,
-        "tune.solo.string_agreement": 0.373,
-        "tune.solo.string_recall": 0.312,
+        "tune.solo.string_agreement": 0.378,
+        "tune.solo.string_recall": 0.317,
         "tune.solo.out_of_range": {
           "value": 0.001,
           "higher_is_better": false
@@ -1131,16 +1137,16 @@
           "higher_is_better": false
         },
         "tune.solo.leftovers_dropped": {
-          "value": 0.064,
+          "value": 0.066,
           "higher_is_better": false
         },
         "tune.solo.hand_travel": {
-          "value": 1.24,
+          "value": 1.238,
           "higher_is_better": false,
           "tolerance": 0.05
         },
         "tune.solo.high_fret_share": {
-          "value": 0.09,
+          "value": 0.089,
           "higher_is_better": false
         },
         "tune.solo.triplet_lengths": {
@@ -1148,10 +1154,10 @@
           "higher_is_better": false
         },
         "tune.solo.doubt_precision": 0.927,
-        "tune.solo.doubt_recall": 0.275,
+        "tune.solo.doubt_recall": 0.268,
         "tune.solo.tempo_ok": 0.722,
         "tune.solo.tempo_ok_level": 0.867,
-        "tune.solo.meter_ok": 0.189,
+        "tune.solo.meter_ok": 0.967,
         "tune.solo.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1161,18 +1167,18 @@
           "value": 90,
           "tolerance": 0
         },
-        "tune.comp.onset_f1": 0.72,
-        "tune.comp.onset_p": 0.779,
+        "tune.comp.onset_f1": 0.724,
+        "tune.comp.onset_p": 0.787,
         "tune.comp.onset_r": 0.688,
         "tune.comp.octave_err_rate": {
-          "value": 0.059,
+          "value": 0.058,
           "higher_is_better": false
         },
         "tune.comp.chord_recall": 0.671,
-        "tune.comp.chord_precision": 0.775,
+        "tune.comp.chord_precision": 0.779,
         "tune.comp.chords_whole": 0.999,
-        "tune.comp.string_agreement": 0.706,
-        "tune.comp.string_recall": 0.468,
+        "tune.comp.string_agreement": 0.705,
+        "tune.comp.string_recall": 0.467,
         "tune.comp.out_of_range": {
           "value": 0.002,
           "higher_is_better": false
@@ -1182,11 +1188,11 @@
           "higher_is_better": false
         },
         "tune.comp.leftovers_dropped": {
-          "value": 0.01,
+          "value": 0.022,
           "higher_is_better": false
         },
         "tune.comp.hand_travel": {
-          "value": 0.731,
+          "value": 0.728,
           "higher_is_better": false,
           "tolerance": 0.05
         },
@@ -1198,11 +1204,11 @@
           "value": 0.0,
           "higher_is_better": false
         },
-        "tune.comp.doubt_precision": 0.713,
-        "tune.comp.doubt_recall": 0.248,
+        "tune.comp.doubt_precision": 0.682,
+        "tune.comp.doubt_recall": 0.221,
         "tune.comp.tempo_ok": 0.867,
         "tune.comp.tempo_ok_level": 0.989,
-        "tune.comp.meter_ok": 0.922,
+        "tune.comp.meter_ok": 1.0,
         "tune.comp.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1222,8 +1228,8 @@
         "report.solo.chord_recall": 0.333,
         "report.solo.chord_precision": 0.746,
         "report.solo.chords_whole": 1.0,
-        "report.solo.string_agreement": 0.453,
-        "report.solo.string_recall": 0.38,
+        "report.solo.string_agreement": 0.457,
+        "report.solo.string_recall": 0.383,
         "report.solo.out_of_range": {
           "value": 0.001,
           "higher_is_better": false
@@ -1233,7 +1239,7 @@
           "higher_is_better": false
         },
         "report.solo.leftovers_dropped": {
-          "value": 0.045,
+          "value": 0.046,
           "higher_is_better": false
         },
         "report.solo.hand_travel": {
@@ -1253,7 +1259,7 @@
         "report.solo.doubt_recall": 0.186,
         "report.solo.tempo_ok": 0.611,
         "report.solo.tempo_ok_level": 0.711,
-        "report.solo.meter_ok": 0.167,
+        "report.solo.meter_ok": 0.967,
         "report.solo.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1263,20 +1269,20 @@
           "value": 90,
           "tolerance": 0
         },
-        "report.comp.onset_f1": 0.717,
-        "report.comp.onset_p": 0.738,
+        "report.comp.onset_f1": 0.722,
+        "report.comp.onset_p": 0.747,
         "report.comp.onset_r": 0.726,
         "report.comp.octave_err_rate": {
           "value": 0.029,
           "higher_is_better": false
         },
-        "report.comp.chord_recall": 0.721,
-        "report.comp.chord_precision": 0.72,
+        "report.comp.chord_recall": 0.72,
+        "report.comp.chord_precision": 0.724,
         "report.comp.chords_whole": 0.999,
-        "report.comp.string_agreement": 0.695,
-        "report.comp.string_recall": 0.489,
+        "report.comp.string_agreement": 0.701,
+        "report.comp.string_recall": 0.493,
         "report.comp.out_of_range": {
-          "value": 0.001,
+          "value": 0.002,
           "higher_is_better": false
         },
         "report.comp.unplayable_dropped": {
@@ -1284,27 +1290,27 @@
           "higher_is_better": false
         },
         "report.comp.leftovers_dropped": {
-          "value": 0.008,
+          "value": 0.024,
           "higher_is_better": false
         },
         "report.comp.hand_travel": {
-          "value": 0.814,
+          "value": 0.816,
           "higher_is_better": false,
           "tolerance": 0.05
         },
         "report.comp.high_fret_share": {
-          "value": 0.039,
+          "value": 0.037,
           "higher_is_better": false
         },
         "report.comp.triplet_lengths": {
           "value": 0.0,
           "higher_is_better": false
         },
-        "report.comp.doubt_precision": 0.801,
-        "report.comp.doubt_recall": 0.25,
+        "report.comp.doubt_precision": 0.773,
+        "report.comp.doubt_recall": 0.219,
         "report.comp.tempo_ok": 0.944,
         "report.comp.tempo_ok_level": 1.0,
-        "report.comp.meter_ok": 0.956,
+        "report.comp.meter_ok": 1.0,
         "report.comp.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1314,15 +1320,15 @@
           "value": 90,
           "tolerance": 0
         },
-        "song.onset_f1": 0.348,
-        "song.onset_p": 0.443,
-        "song.onset_r": 0.326,
+        "song.onset_f1": 0.43,
+        "song.onset_p": 0.544,
+        "song.onset_r": 0.4,
         "song.octave_err_rate": {
-          "value": 0.132,
+          "value": 0.049,
           "higher_is_better": false
         },
-        "song.chord_recall": 0.252,
-        "song.chord_precision": 0.386,
+        "song.chord_recall": 0.389,
+        "song.chord_precision": 0.625,
         "song.out_of_range": {
           "value": 0.023,
           "higher_is_better": false
@@ -1332,27 +1338,27 @@
           "higher_is_better": false
         },
         "song.leftovers_dropped": {
-          "value": 0.081,
+          "value": 0.092,
           "higher_is_better": false
         },
         "song.hand_travel": {
-          "value": 1.253,
+          "value": 1.248,
           "higher_is_better": false,
           "tolerance": 0.05
         },
         "song.high_fret_share": {
-          "value": 0.223,
+          "value": 0.217,
           "higher_is_better": false
         },
         "song.triplet_lengths": {
           "value": 0.0,
           "higher_is_better": false
         },
-        "song.doubt_precision": 0.764,
-        "song.doubt_recall": 0.161,
+        "song.doubt_precision": 0.738,
+        "song.doubt_recall": 0.205,
         "song.tempo_ok": 0.769,
         "song.tempo_ok_level": 0.769,
-        "song.meter_ok": 0.75,
+        "song.meter_ok": 0.938,
         "song.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1361,7 +1367,137 @@
         "song.excerpts": {
           "value": 20,
           "tolerance": 0
-        }
+        },
+        "song_one.onset_f1": 0.355,
+        "song_one.onset_p": 0.553,
+        "song_one.onset_r": 0.322,
+        "song_one.octave_err_rate": {
+          "value": 0.011,
+          "higher_is_better": false
+        },
+        "song_one.chord_recall": 0.456,
+        "song_one.chord_precision": 0.803,
+        "song_one.out_of_range": {
+          "value": 0.013,
+          "higher_is_better": false
+        },
+        "song_one.leftovers_dropped": {
+          "value": 0.05,
+          "higher_is_better": false
+        },
+        "song_one.unplayable_dropped": {
+          "value": 0.003,
+          "higher_is_better": false
+        },
+        "song_one.hand_travel": {
+          "value": 0.929,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "song_one.high_fret_share": {
+          "value": 0.115,
+          "higher_is_better": false
+        },
+        "song_one.doubt_precision": 0.798,
+        "song_one.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "song_one.excerpts": {
+          "value": 8,
+          "tolerance": 0
+        },
+        "idmt.tune.onset_f1": 0.702,
+        "idmt.tune.onset_p": 0.619,
+        "idmt.tune.onset_r": 0.849,
+        "idmt.tune.octave_err_rate": {
+          "value": 0.017,
+          "higher_is_better": false
+        },
+        "idmt.tune.chord_recall": 0.6,
+        "idmt.tune.chord_precision": 0.474,
+        "idmt.tune.string_agreement": 0.434,
+        "idmt.tune.string_recall": 0.362,
+        "idmt.tune.out_of_range": {
+          "value": 0.078,
+          "higher_is_better": false
+        },
+        "idmt.tune.leftovers_dropped": {
+          "value": 0.145,
+          "higher_is_better": false
+        },
+        "idmt.tune.unplayable_dropped": {
+          "value": 0.008,
+          "higher_is_better": false
+        },
+        "idmt.tune.hand_travel": {
+          "value": 1.076,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "idmt.tune.high_fret_share": {
+          "value": 0.081,
+          "higher_is_better": false
+        },
+        "idmt.tune.doubt_precision": 0.956,
+        "idmt.tune.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "idmt.tune.excerpts": {
+          "value": 114,
+          "tolerance": 0
+        },
+        "idmt.report.onset_f1": 0.72,
+        "idmt.report.onset_p": 0.641,
+        "idmt.report.onset_r": 0.846,
+        "idmt.report.octave_err_rate": {
+          "value": 0.017,
+          "higher_is_better": false
+        },
+        "idmt.report.chord_recall": 0.648,
+        "idmt.report.chord_precision": 0.55,
+        "idmt.report.string_agreement": 0.435,
+        "idmt.report.string_recall": 0.362,
+        "idmt.report.out_of_range": {
+          "value": 0.033,
+          "higher_is_better": false
+        },
+        "idmt.report.leftovers_dropped": {
+          "value": 0.168,
+          "higher_is_better": false
+        },
+        "idmt.report.unplayable_dropped": {
+          "value": 0.008,
+          "higher_is_better": false
+        },
+        "idmt.report.hand_travel": {
+          "value": 1.188,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "idmt.report.high_fret_share": {
+          "value": 0.061,
+          "higher_is_better": false
+        },
+        "idmt.report.doubt_precision": 0.926,
+        "idmt.report.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "idmt.report.excerpts": {
+          "value": 60,
+          "tolerance": 0
+        },
+        "tune.solo.bar_ok": 0.7,
+        "tune.comp.bar_ok": 0.867,
+        "report.solo.bar_ok": 0.589,
+        "report.comp.bar_ok": 0.944,
+        "song.bar_ok": 0.818,
+        "song_one.bar_ok": 0.833
       }
     },
     "ukulele-tab": {
@@ -1401,7 +1537,7 @@
         },
         "ukulele_baritone.instrument.doubt_precision": 0.0,
         "ukulele_baritone.instrument.tempo_ok": 1.0,
-        "ukulele_baritone.instrument.meter_ok": 0.667,
+        "ukulele_baritone.instrument.meter_ok": 1.0,
         "ukulele_baritone.instrument.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1489,7 +1625,7 @@
         },
         "ukulele_baritone_heldout.instrument.doubt_precision": 0.786,
         "ukulele_baritone_heldout.instrument.tempo_ok": 0.75,
-        "ukulele_baritone_heldout.instrument.meter_ok": 0.75,
+        "ukulele_baritone_heldout.instrument.meter_ok": 1.0,
         "ukulele_baritone_heldout.instrument.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1665,7 +1801,7 @@
         },
         "ukulele_high_g_heldout.instrument.doubt_precision": 1.0,
         "ukulele_high_g_heldout.instrument.tempo_ok": 0.5,
-        "ukulele_high_g_heldout.instrument.meter_ok": 0.5,
+        "ukulele_high_g_heldout.instrument.meter_ok": 0.75,
         "ukulele_high_g_heldout.instrument.violations": {
           "value": 0,
           "tolerance": 0,
@@ -1898,7 +2034,19 @@
         "stem.guitar.recall": 0.918,
         "stem.other.recall": 0.082,
         "stem.piano.recall": 0.013,
-        "stem.vocals.recall": 0.0
+        "stem.vocals.recall": 0.0,
+        "ukulele_high_g.song.bar_ok": 1.0,
+        "ukulele_high_g.instrument.bar_ok": 1.0,
+        "ukulele_low_g.song.bar_ok": 1.0,
+        "ukulele_low_g.instrument.bar_ok": 1.0,
+        "ukulele_baritone.song.bar_ok": 1.0,
+        "ukulele_baritone.instrument.bar_ok": 1.0,
+        "ukulele_high_g_heldout.song.bar_ok": 1.0,
+        "ukulele_high_g_heldout.instrument.bar_ok": 0.5,
+        "ukulele_low_g_heldout.song.bar_ok": 1.0,
+        "ukulele_low_g_heldout.instrument.bar_ok": 0.75,
+        "ukulele_baritone_heldout.song.bar_ok": 1.0,
+        "ukulele_baritone_heldout.instrument.bar_ok": 0.75
       }
     },
     "mandolin-tab": {
@@ -2026,7 +2174,7 @@
         },
         "mandolin_heldout.instrument.doubt_precision": 0.821,
         "mandolin_heldout.instrument.tempo_ok": 1.0,
-        "mandolin_heldout.instrument.meter_ok": 0.5,
+        "mandolin_heldout.instrument.meter_ok": 0.75,
         "mandolin_heldout.instrument.violations": {
           "value": 0,
           "tolerance": 0,
@@ -2083,7 +2231,384 @@
         "stem.guitar.recall": 0.842,
         "stem.other.recall": 0.133,
         "stem.piano.recall": 0.0,
-        "stem.vocals.recall": 0.0
+        "stem.vocals.recall": 0.0,
+        "mandolin.song.bar_ok": 1.0,
+        "mandolin.instrument.bar_ok": 0.667,
+        "mandolin_heldout.song.bar_ok": 1.0,
+        "mandolin_heldout.instrument.bar_ok": 0.75
+      }
+    },
+    "guitar-rendered-tab": {
+      "source": "measured by this suite (brasscribe bench guitar-rendered-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont: a guitar's open chords picked and strummed, and a melody, alone (instrument) and separated from a mix with a bass and drums (song). The rules for overtones were chosen with guitar_nylon and guitar_steel (and GuitarSet's players 00 to 02); the two heldout groups were not used. Rendered: weak evidence. Not in 10-benchmark-results.md. violations is a hard gate",
+      "metrics": {
+        "guitar_clean_heldout.instrument.onset_f1": 0.702,
+        "guitar_clean_heldout.instrument.onset_p": 0.59,
+        "guitar_clean_heldout.instrument.onset_r": 0.913,
+        "guitar_clean_heldout.instrument.octave_err_rate": {
+          "value": 0.027,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.instrument.chord_recall": 0.812,
+        "guitar_clean_heldout.instrument.chord_precision": 0.654,
+        "guitar_clean_heldout.instrument.string_agreement": 0.585,
+        "guitar_clean_heldout.instrument.string_recall": 0.496,
+        "guitar_clean_heldout.instrument.out_of_range": {
+          "value": 0.134,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.instrument.leftovers_dropped": {
+          "value": 0.167,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.instrument.unplayable_dropped": {
+          "value": 0.038,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.instrument.hand_travel": {
+          "value": 1.328,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_clean_heldout.instrument.high_fret_share": {
+          "value": 0.27,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.instrument.doubt_precision": 0.874,
+        "guitar_clean_heldout.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.instrument.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "guitar_clean_heldout.song.onset_f1": 0.646,
+        "guitar_clean_heldout.song.onset_p": 0.53,
+        "guitar_clean_heldout.song.onset_r": 0.88,
+        "guitar_clean_heldout.song.octave_err_rate": {
+          "value": 0.064,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.song.chord_recall": 0.774,
+        "guitar_clean_heldout.song.chord_precision": 0.565,
+        "guitar_clean_heldout.song.string_agreement": 0.602,
+        "guitar_clean_heldout.song.string_recall": 0.482,
+        "guitar_clean_heldout.song.out_of_range": {
+          "value": 0.159,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.song.leftovers_dropped": {
+          "value": 0.164,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.song.unplayable_dropped": {
+          "value": 0.04,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.song.hand_travel": {
+          "value": 1.453,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_clean_heldout.song.high_fret_share": {
+          "value": 0.274,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.song.doubt_precision": 0.905,
+        "guitar_clean_heldout.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_clean_heldout.song.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "guitar_nylon.instrument.onset_f1": 0.879,
+        "guitar_nylon.instrument.onset_p": 0.843,
+        "guitar_nylon.instrument.onset_r": 0.948,
+        "guitar_nylon.instrument.octave_err_rate": {
+          "value": 0.03,
+          "higher_is_better": false
+        },
+        "guitar_nylon.instrument.chord_recall": 0.836,
+        "guitar_nylon.instrument.chord_precision": 0.905,
+        "guitar_nylon.instrument.string_agreement": 1.0,
+        "guitar_nylon.instrument.string_recall": 0.874,
+        "guitar_nylon.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_nylon.instrument.leftovers_dropped": {
+          "value": 0.075,
+          "higher_is_better": false
+        },
+        "guitar_nylon.instrument.unplayable_dropped": {
+          "value": 0.007,
+          "higher_is_better": false
+        },
+        "guitar_nylon.instrument.hand_travel": {
+          "value": 0.627,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_nylon.instrument.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_nylon.instrument.doubt_precision": 0.25,
+        "guitar_nylon.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_nylon.instrument.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "guitar_nylon.song.onset_f1": 0.846,
+        "guitar_nylon.song.onset_p": 0.805,
+        "guitar_nylon.song.onset_r": 0.931,
+        "guitar_nylon.song.octave_err_rate": {
+          "value": 0.047,
+          "higher_is_better": false
+        },
+        "guitar_nylon.song.chord_recall": 0.842,
+        "guitar_nylon.song.chord_precision": 0.821,
+        "guitar_nylon.song.string_agreement": 0.95,
+        "guitar_nylon.song.string_recall": 0.809,
+        "guitar_nylon.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_nylon.song.leftovers_dropped": {
+          "value": 0.093,
+          "higher_is_better": false
+        },
+        "guitar_nylon.song.unplayable_dropped": {
+          "value": 0.005,
+          "higher_is_better": false
+        },
+        "guitar_nylon.song.hand_travel": {
+          "value": 0.614,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_nylon.song.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_nylon.song.doubt_precision": 0.808,
+        "guitar_nylon.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_nylon.song.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "guitar_nylon_heldout.instrument.onset_f1": 0.771,
+        "guitar_nylon_heldout.instrument.onset_p": 0.701,
+        "guitar_nylon_heldout.instrument.onset_r": 0.897,
+        "guitar_nylon_heldout.instrument.octave_err_rate": {
+          "value": 0.046,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.instrument.chord_recall": 0.828,
+        "guitar_nylon_heldout.instrument.chord_precision": 0.712,
+        "guitar_nylon_heldout.instrument.string_agreement": 0.912,
+        "guitar_nylon_heldout.instrument.string_recall": 0.768,
+        "guitar_nylon_heldout.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.instrument.leftovers_dropped": {
+          "value": 0.122,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.instrument.unplayable_dropped": {
+          "value": 0.023,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.instrument.hand_travel": {
+          "value": 1.609,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_nylon_heldout.instrument.high_fret_share": {
+          "value": 0.235,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.instrument.doubt_precision": 0.81,
+        "guitar_nylon_heldout.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.instrument.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "guitar_nylon_heldout.song.onset_f1": 0.756,
+        "guitar_nylon_heldout.song.onset_p": 0.765,
+        "guitar_nylon_heldout.song.onset_r": 0.792,
+        "guitar_nylon_heldout.song.octave_err_rate": {
+          "value": 0.049,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.song.chord_recall": 0.805,
+        "guitar_nylon_heldout.song.chord_precision": 0.861,
+        "guitar_nylon_heldout.song.string_agreement": 0.871,
+        "guitar_nylon_heldout.song.string_recall": 0.644,
+        "guitar_nylon_heldout.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.song.leftovers_dropped": {
+          "value": 0.099,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.song.unplayable_dropped": {
+          "value": 0.028,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.song.hand_travel": {
+          "value": 1.252,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_nylon_heldout.song.high_fret_share": {
+          "value": 0.136,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.song.doubt_precision": 0.829,
+        "guitar_nylon_heldout.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_nylon_heldout.song.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "guitar_steel.instrument.onset_f1": 0.8,
+        "guitar_steel.instrument.onset_p": 0.737,
+        "guitar_steel.instrument.onset_r": 0.926,
+        "guitar_steel.instrument.octave_err_rate": {
+          "value": 0.047,
+          "higher_is_better": false
+        },
+        "guitar_steel.instrument.chord_recall": 0.789,
+        "guitar_steel.instrument.chord_precision": 0.688,
+        "guitar_steel.instrument.string_agreement": 0.456,
+        "guitar_steel.instrument.string_recall": 0.376,
+        "guitar_steel.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_steel.instrument.leftovers_dropped": {
+          "value": 0.09,
+          "higher_is_better": false
+        },
+        "guitar_steel.instrument.unplayable_dropped": {
+          "value": 0.034,
+          "higher_is_better": false
+        },
+        "guitar_steel.instrument.hand_travel": {
+          "value": 1.371,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_steel.instrument.high_fret_share": {
+          "value": 0.185,
+          "higher_is_better": false
+        },
+        "guitar_steel.instrument.doubt_precision": 0.919,
+        "guitar_steel.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_steel.instrument.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "guitar_steel.song.onset_f1": 0.771,
+        "guitar_steel.song.onset_p": 0.705,
+        "guitar_steel.song.onset_r": 0.91,
+        "guitar_steel.song.octave_err_rate": {
+          "value": 0.065,
+          "higher_is_better": false
+        },
+        "guitar_steel.song.chord_recall": 0.766,
+        "guitar_steel.song.chord_precision": 0.645,
+        "guitar_steel.song.string_agreement": 0.391,
+        "guitar_steel.song.string_recall": 0.314,
+        "guitar_steel.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "guitar_steel.song.leftovers_dropped": {
+          "value": 0.091,
+          "higher_is_better": false
+        },
+        "guitar_steel.song.unplayable_dropped": {
+          "value": 0.025,
+          "higher_is_better": false
+        },
+        "guitar_steel.song.hand_travel": {
+          "value": 1.268,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "guitar_steel.song.high_fret_share": {
+          "value": 0.159,
+          "higher_is_better": false
+        },
+        "guitar_steel.song.doubt_precision": 0.852,
+        "guitar_steel.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "guitar_steel.song.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "stem.guitar.recall": 0.892,
+        "stem.other.recall": 0.038,
+        "stem.piano.recall": 0.038,
+        "stem.vocals.recall": 0.0,
+        "guitar_nylon.song.bar_ok": 1.0,
+        "guitar_nylon.instrument.bar_ok": 0.667,
+        "guitar_steel.song.bar_ok": 1.0,
+        "guitar_steel.instrument.bar_ok": 1.0,
+        "guitar_nylon_heldout.song.bar_ok": 1.0,
+        "guitar_nylon_heldout.instrument.bar_ok": 0.75,
+        "guitar_clean_heldout.song.bar_ok": 1.0,
+        "guitar_clean_heldout.instrument.bar_ok": 1.0
+      }
+    },
+    "meter-tab": {
+      "source": "measured by this suite (brasscribe bench meter-tab) on eight passages written in meter_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, one instrument alone. tracked_ok is the bar as the beat tracker found it (what the tab had before bar_beats), meter_ok the bar that is written. Rendered, one take each: weak evidence. Not in 10-benchmark-results.md",
+      "metrics": {
+        "tracked_ok": 0.5,
+        "meter_ok": 0.5,
+        "right_became_wrong": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "wrong_became_right": {
+          "value": 0,
+          "tolerance": 0
+        },
+        "excerpts": {
+          "value": 8,
+          "tolerance": 0
+        }
       }
     }
   }

@@ -78,10 +78,81 @@ def test_an_instrument_and_tuning_name_one_preset(instrument, tuning, preset):
 
 def test_defaults_are_a_six_string_guitar_in_a_song_and_each_instruments_first_tuning():
     assert tab.options({}) == {"instrument": "guitar-6", "tuning": "standard", "capo": 0, "style": "as-played", "recording": "song",
-                               "octave": "auto", "layout": "tab"}
+                               "octave": "auto", "layout": "tab", "chords": "heard"}
     assert tab.options({"instrument": "ukulele", "recording": "instrument"})["tuning"] == "high-g"
     assert tab.options({"instrument": "bass-4"}) == {**bass_tab.options({}), "instrument": "bass-4"}
-    assert set(tab.options({})) == set(bass_tab.DEFAULTS)  # the same option names as bass-tab: no new field for clients
+    assert set(tab.options({})) == {*bass_tab.DEFAULTS, "chords"}  # bass-tab's option names, and one a bass does not have
+
+
+def test_chords_are_written_as_heard_unless_the_job_asks_for_them_completed():
+    assert tab.options({"chords": "completed"})["chords"] == "completed"
+    with pytest.raises(ValueError, match="chords must be one of heard, completed"):
+        tab.options({"chords": "guessed"})
+    for profile, params in (("tab", {"instrument": "bass-4", "chords": "completed"}), ("bass-tab", {"chords": "completed"})):
+        with pytest.raises(ValueError, match="a bass line is one note at a time"):
+            tab.job_options(profile, params)
+    assert "chords" not in tab.job_options("tab", {"instrument": "bass-4", "chords": "heard"})  # a bass job's options are bass-tab's
+    with pytest.raises(ValueError, match="chords: only the tab profile takes this, not pop-rock"):
+        profiles.build("pop-rock", Path("song.wav"), params={"chords": "completed"})
+    heard = profiles.build("tab", Path("g.wav"), "T", {}).stage("notes").params
+    assert "chords" not in heard  # a job that does not ask has the stage it had before the option
+    assert profiles.build("tab", Path("g.wav"), "T", {"chords": "completed"}).stage("notes").params == {**heard, "chords": "completed"}
+    assert tab.given(chords="completed", layout=None, lineup="quartet") == {"chords": "completed"}
+
+
+def test_a_chord_gets_the_note_the_same_chord_around_it_has_and_it_is_marked():
+    full, thin = OPEN_E, [E2, 47, 52, 56, E4]  # the third strum lacks the open B string
+    other = [A2, 52, 57, 61, E4]  # an A chord: other pitch classes, no evidence for an E chord
+    heard = sorted(_strummed([full, full, thin, full, other, other, other]), key=lambda n: n["onset"])
+    as_heard = tab.played_notes(heard, _beats(), "guitar-6")
+    assert not any(n.get("inferred") for n in as_heard["notes"])
+    doc = tab.played_notes(heard, _beats(), "guitar-6", chords="completed")
+    added = [n for n in doc["notes"] if n.get("inferred")]
+    assert [(n["pitch"], n["start"]) for n in added] == [(B3, 96)] and added[0]["confidence"] < tab.DOUBT
+    assert len(doc["notes"]) == len(as_heard["notes"]) + 1
+    assert added[0]["dur"] == next(n["dur"] for n in doc["notes"] if n["start"] == 96 and not n.get("inferred"))
+    # Only chords with the same pitch classes are evidence, a line gets nothing, and a full chord gets nothing.
+    line = [{"pitch": 60 + i % 3, "start": 24 * i, "dur": 24, "confidence": 1.0, "onset_s": 0.5 * i, "offset_s": 0.5 * i + 0.4} for i in range(8)]
+    assert tab.completed_chords(line, 6, 24) == []
+    four = [{"pitch": p, "start": 24 * i, "dur": 24, "confidence": 1.0, "onset_s": 0.5 * i, "offset_s": 0.5 * i + 0.4}
+            for i, chord in enumerate([UKE_C, UKE_C, [60, 64, 67], UKE_C]) for p in chord]
+    assert [(n["pitch"], n["start"]) for n in tab.completed_chords(four, 4, 24)] == [(72, 48)]
+    assert tab.completed_chords(four, 3, 24) == []  # no string left for it
+
+
+def test_a_faint_overtone_that_starts_apart_from_a_strum_is_left_out():
+    chords = sorted(_strummed([OPEN_E] * 4), key=lambda n: n["onset"])
+    ghost, played = _note(E2 + 31, 0.4, 0.3, amplitude=0.3), _note(E2 + 31, 2.4, 0.3, amplitude=0.6)  # the sixth partial of the low E
+    notes = sorted(chords + [ghost, played], key=lambda n: n["onset"])
+    gone, _ = tab.leftovers(notes, tab.chordal(notes), 76, apart=True)
+    assert [notes[i] for i in gone] == [ghost]  # under 0.6 of the note it rings over, and on its own between two strums
+    in_strum = sorted(chords + [_note(E2 + 31, 1.02, 0.3, amplitude=0.3)], key=lambda n: n["onset"])
+    assert tab.leftovers(in_strum, tab.chordal(in_strum), 76, apart=True)[0] == []  # the same note inside a strum is a doubling: it stays
+    # A guitar's rule: a ukulele and a mandolin keep the note.
+    assert tab.leftovers(notes, tab.chordal(notes), 76)[0] == []
+    assert {i for i, h in tab.HEARD.items() if h.apart_overtones_out} == {"guitar-6", "guitar-7", "guitar-8"}
+    uke = tab.played_notes([{**n, "pitch": n["pitch"] + 24} for n in notes], _beats(), "ukulele")
+    assert uke["leftovers_dropped"] == 0 and not any("on_top" in n for n in uke["notes"])
+    doc = tab.played_notes(notes, _beats(), "guitar-6")
+    assert doc["leftovers_dropped"] == 1 and sum(n["pitch"] == E2 + 31 for n in doc["notes"]) == 1
+
+
+@needs_core
+def test_in_the_open_position_style_an_overtone_on_top_does_not_move_a_chord_up_the_neck():
+    c_major = [48, 52, 55, 60, 64]  # x-3-2-0-1-0
+    heard = sorted([n for i in range(4) for n in (_strummed([c_major], amplitude=0.7) + [_note(72, 0.045, 0.9, amplitude=0.45)])
+                    for n in [{**n, "onset": n["onset"] + i, "offset": n["offset"] + i}]], key=lambda n: n["onset"])
+    doc = {**tab.played_notes(heard, _beats(), "guitar-6"), "reference_pitch": None}
+    assert sum(n["pitch"] == 72 for n in doc["notes"]) == 4 and all("on_top" in n for n in doc["notes"] if n["pitch"] == 72)
+    as_played = tab.fingered(doc, tab.options({}))
+    assert sum(n["pitch"] == 72 for n in as_played["notes"]) == 4 and min(n["fret"] for n in as_played["notes"] if n["pitch"] == 48) >= 8
+    assert all("on_top" not in n for n in as_played["notes"])
+    low = tab.fingered(doc, tab.options({"style": "open-position"}))
+    assert not any(n["pitch"] == 72 for n in low["notes"]) and low["leftovers_dropped"] == doc["leftovers_dropped"] + 4
+    assert sorted({(n["string"], n["fret"]) for n in low["notes"]}) == [(1, 0), (2, 1), (3, 0), (4, 2), (5, 3)]
+    # A top note that is where the chord is anyway stays: an open E chord with its high E.
+    e = {**tab.played_notes(sorted(_strummed([OPEN_E] * 4), key=lambda n: n["onset"]), _beats(), "guitar-6"), "reference_pitch": None}
+    assert len(tab.fingered(e, tab.options({"style": "open-position"}))["notes"]) == 24
 
 
 @pytest.mark.parametrize("params", [
