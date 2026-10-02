@@ -516,16 +516,17 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             say(R.string.reading_file, name)
             try {
                 // Never the whole file in memory: a video's sound is taken out on disk, the PCM decoded a buffer at a time.
-                val imported = withContext(Dispatchers.IO) {
-                    var extracting = false
-                    MediaImport.import(ctx, uri, name, File(ctx.cacheDir, "takes")) { phase, f ->
-                        if (phase == MediaImport.Phase.EXTRACT && !extracting) {
-                            extracting = true
-                            sayQuietly(R.string.extracting_sound, name)
-                        }
-                        // Copying and taking the sound out are the long part; decoding the result is quick.
-                        importProgress.value = (if (phase == MediaImport.Phase.DECODE) 0.8 + 0.2 * f else 0.8 * f).toFloat()
+                // The file is read on a worker; how far it has got is shown from here, on the main thread.
+                var extracting = false
+                val imported = reportedHere<Pair<MediaImport.Phase, Double>, _>(Dispatchers.IO, show = { (phase, f) ->
+                    if (phase == MediaImport.Phase.EXTRACT && !extracting) {
+                        extracting = true
+                        sayQuietly(R.string.extracting_sound, name)
                     }
+                    // Copying and taking the sound out are the long part; decoding the result is quick.
+                    importProgress.value = (if (phase == MediaImport.Phase.DECODE) 0.8 + 0.2 * f else 0.8 * f).toFloat()
+                }) { report ->
+                    MediaImport.import(ctx, uri, name, File(ctx.cacheDir, "takes")) { phase, f -> report(phase to f) }
                 }
                 val kind = if (imported.hasVideo) SourceKind.VIDEO else SourceKind.FILE
                 setSource(Source(name, kind, imported.durationS, imported.audio, imported.file))
