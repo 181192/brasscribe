@@ -33,10 +33,14 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     string, and only a note that starts with the note it is an overtone of and is fainter: a melody played up there
     stays), not on a mandolin, where that made no measurable difference. A unison that a strummed open chord of a
     ukulele plays on two strings (the G of 0232) is heard once and written on both, marked `doubled`. A faint
-    overtone that starts apart from a strum is left out too. With `style: open-position` an overtone on top of a
-    chord that alone moves the chord three or more frets up the neck is left out, so an open C stays an open C.
+    overtone that starts apart from a strum is left out too. With `style: open-position` an overtone on top of an
+    open chord (one with an open string) that alone moves the chord three or more frets up the neck is left out.
+    Both rules are a guitar's.
   - The bar: on one instrument alone the beat tracker often marks every beat, or every other one, as a downbeat.
-    A bar of one, two or eight tracked beats is written as a bar of four (a bass too).
+    A bar of one, two or eight tracked beats is written as a bar of four (a bass too). On held-out single-line
+    guitar takes that makes the time signature right for 0.97 of them (0.17 before) and the bar's length in
+    seconds for 0.59 (0.21 before): where the tracker also runs at half tempo, a written bar holds two played
+    ones. Music that really is in two (2/4, 2/2, 6/8 counted in two) is written two bars to the bar.
   - `chords: completed` (off by default) adds to a chord a note the same chord has in the strums around it; the
     note is marked `inferred` in `tab.json`, counted in `inferred_notes`, and gets the "?".
   - Nothing is left out silently: `tab.json` counts the notes heard but not written, `leftovers_dropped` (overtones,

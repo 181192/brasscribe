@@ -124,10 +124,15 @@ def test_a_faint_overtone_that_starts_apart_from_a_strum_is_left_out():
     chords = sorted(_strummed([OPEN_E] * 4), key=lambda n: n["onset"])
     ghost, played = _note(E2 + 31, 0.4, 0.3, amplitude=0.3), _note(E2 + 31, 2.4, 0.3, amplitude=0.6)  # the sixth partial of the low E
     notes = sorted(chords + [ghost, played], key=lambda n: n["onset"])
-    gone, _ = tab.leftovers(notes, tab.chordal(notes), 76)
+    gone, _ = tab.leftovers(notes, tab.chordal(notes), 76, apart=True)
     assert [notes[i] for i in gone] == [ghost]  # under 0.6 of the note it rings over, and on its own between two strums
     in_strum = sorted(chords + [_note(E2 + 31, 1.02, 0.3, amplitude=0.3)], key=lambda n: n["onset"])
-    assert tab.leftovers(in_strum, tab.chordal(in_strum), 76)[0] == []  # the same note inside a strum is a doubling: it stays
+    assert tab.leftovers(in_strum, tab.chordal(in_strum), 76, apart=True)[0] == []  # the same note inside a strum is a doubling: it stays
+    # A guitar's rule: a ukulele and a mandolin keep the note.
+    assert tab.leftovers(notes, tab.chordal(notes), 76)[0] == []
+    assert {i for i, h in tab.HEARD.items() if h.apart_overtones_out} == {"guitar-6", "guitar-7", "guitar-8"}
+    uke = tab.played_notes([{**n, "pitch": n["pitch"] + 24} for n in notes], _beats(), "ukulele")
+    assert uke["leftovers_dropped"] == 0 and not any("on_top" in n for n in uke["notes"])
     doc = tab.played_notes(notes, _beats(), "guitar-6")
     assert doc["leftovers_dropped"] == 1 and sum(n["pitch"] == E2 + 31 for n in doc["notes"]) == 1
 

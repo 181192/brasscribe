@@ -344,6 +344,9 @@ def score_tab(ref: dict, tab: dict) -> dict:
         out["tempo_ok_level"] = float(any(abs(ratio / k - 1) <= TEMPO_TOL for k in (0.5, 1, 2)))
     if ref.get("beats_per_bar"):
         out["meter_ok"] = float(tab["meter"]["beats"] == ref["beats_per_bar"])
+        if ref.get("tempo_bpm"):  # the bar as it sounds: its length in seconds, whatever the level and the count
+            bar, true = tab["meter"]["beats"] / tab["tempo_bpm"], ref["beats_per_bar"] / ref["tempo_bpm"]
+            out["bar_ok"] = float(abs(bar / true - 1) <= TEMPO_TOL)
     out["triplet_lengths"] = float(np.mean([n["dur"] % 6 != 0 and n["start"] % 6 == 0 for n in notes])) if notes else 0.0
     # The hand: the lowest fretted note of each onset. An open string leaves it where it is.
     hand = []
@@ -358,7 +361,7 @@ def score_tab(ref: dict, tab: dict) -> dict:
 
 
 MEANS = ("onset_f1", "onset_p", "onset_r", "octave_err_rate", "out_of_range", "hand_travel", "high_fret_share", "triplet_lengths",
-         "tempo_ok", "tempo_ok_level", "meter_ok")
+         "tempo_ok", "tempo_ok_level", "meter_ok", "bar_ok")
 
 
 def summarize(rows: list[dict]) -> dict[str, float]:

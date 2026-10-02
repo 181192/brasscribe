@@ -696,6 +696,32 @@ def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
     return fn
 
 
+def _meter_tab(data: Path, mode: str) -> dict[str, float]:
+    """The bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4 (meter_tab_bench):
+    rendered passages, the beats in a bar as tracked and as written."""
+    from brasscribe_engine import bass_tab
+
+    from . import meter_tab_bench as M
+
+    if not M.entries(data):
+        from .small_tab_bench import SOUNDFONT
+
+        if mode != "live" or not shutil.which("fluidsynth") or not (data / SOUNDFONT).exists():
+            raise SkipSuite(f"missing data: eval/{M.SET} (synthesized in live mode, with FluidSynth and {SOUNDFONT})")
+        M.synthesize(data)
+    try:
+        bass_tab.core_cli()
+    except bass_tab.CoreCliMissing as e:
+        raise SkipSuite(str(e)) from e
+    for entry in M.entries(data):
+        missing = [f for f in M.FILES.values() if not (entry / f).exists()]
+        if missing and mode != "live":
+            raise SkipSuite(f"no cached {missing[0]} for {entry.name}")
+        if missing:
+            M.prepare(entry)
+    return M.evaluate(data)[0]
+
+
 # -------------------------------------------------------------------- registry
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
@@ -764,6 +790,8 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           "outputs)", _small_tab("mandolin"), ("eval/small-tab",)),
     Suite("guitar-rendered-tab", "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two "
           "groups the rules were chosen with and two held out (cached model outputs)", _small_tab("guitar-rendered"), ("eval/small-tab",)),
+    Suite("meter-tab", "the bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4: rendered passages, "
+          "the beats in a bar as tracked and as written (cached model outputs)", _meter_tab, ("eval/meter-tab",)),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}

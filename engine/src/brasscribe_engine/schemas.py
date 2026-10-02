@@ -218,8 +218,9 @@ class JobCreate(BaseModel):
     chords: TabChords | None = Field(None, description="tab profile, not a bass: heard writes the notes that were heard; "
                                                        "completed also adds to a chord a note that the same chord has "
                                                        "in the strums around it. An added note is marked inferred and "
-                                                       "gets the \"?\". On comping by jazz players one added note in "
-                                                       "three was played, on strummed open chords most; default: heard")
+                                                       "gets the \"?\". On held-out recordings of comping one added "
+                                                       "note in five was played (63 of 303); on held-out rendered open "
+                                                       "chords seven in ten (32 of 45); default: heard")
     octave: Octave | None = Field(None, description="tab profile: the octave the notes are written in. auto: an "
                                                     "octave lower when they were heard an octave above where the "
                                                     "instrument plays (a guitar: also an octave higher when heard "

@@ -93,6 +93,10 @@ class Heard:
     # The stem it is read from in a song is another instrument's, which may be playing too: taken alone
     # unless the job says it is a song.
     alone_by_default: bool = False
+    # The rules for overtones apart from a strum and on top of an open chord (APART_RATIO, DRAG_FRETS) apply:
+    # a guitar, where they were measured. On a ukulele and a mandolin they changed notes without making the
+    # held-out passages better.
+    apart_overtones_out: bool = False
 
 
 GUITAR_CHORD_HIGH = 76  # E5: the 12th fret of a guitar's top string in standard tuning (six, seven and eight strings alike)
@@ -100,9 +104,9 @@ GUITAR_CHORD_HIGH = 76  # E5: the 12th fret of a guitar's top string in standard
 # Guitar ranges: the lowest tuning offered (drop B on six strings, B standard and F# on seven and eight) to
 # the 22nd or 24th fret of the top string.
 HEARD = {
-    "guitar-6": Heard("guitar", "guitar", 35, 86, 6, GUITAR_CHORD_HIGH),
-    "guitar-7": Heard("guitar", "guitar", 34, 88, 7, GUITAR_CHORD_HIGH),
-    "guitar-8": Heard("guitar", "guitar", 30, 88, 8, GUITAR_CHORD_HIGH),
+    "guitar-6": Heard("guitar", "guitar", 35, 86, 6, GUITAR_CHORD_HIGH, apart_overtones_out=True),
+    "guitar-7": Heard("guitar", "guitar", 34, 88, 7, GUITAR_CHORD_HIGH, apart_overtones_out=True),
+    "guitar-8": Heard("guitar", "guitar", 30, 88, 8, GUITAR_CHORD_HIGH, apart_overtones_out=True),
     # The separator has no stem for a ukulele or a mandolin. Rendered ones under a bass and drums came out in its
     # guitar stem almost whole (recall 0.96) and nowhere else (small_tab_bench). In a song that also has a guitar
     # the two share the stem and the tab holds both, so a song is not their default (alone_by_default).
@@ -164,10 +168,12 @@ APART_RATIO = 0.6
 # A chord is fingered where all its notes can be reached, so one overtone heard on top of an open chord
 # moves the whole chord up the neck: an open C comes out at the 8th fret. A player who asks for the
 # open-position style has said where the chords are: there such a note (top_overtones) is left out when
-# the rest of its chord is fingered DRAG_FRETS or more frets lower without it. In the other styles it
-# stays: GuitarSet's players comp up the neck, and there the same step moved chords away from where they
-# were played (string agreement 0.705 to 0.680).
+# the rest of its chord is fingered DRAG_FRETS or more frets lower without it and then uses an open string
+# (DRAG_OPEN_STRINGS): an open chord. Without the open string the rule took as many played notes as
+# overtones out of GuitarSet's comping, whose voicings up the neck have a real note on top. In the other
+# styles the note always stays.
 DRAG_FRETS = 3
+DRAG_OPEN_STRINGS = 1
 DRAG_STYLE = "open-position"
 # The whole passage an octave from where the instrument plays: more than half of its notes outside the
 # instrument's range on one side, and OCTAVE_FIT of them inside it an octave the other way.
@@ -178,8 +184,9 @@ OCTAVE_FIT = 0.9
 # neighbours have: a string the pick missed, or one Basic Pitch did not hear. A note is added to a chord
 # when at least COMPLETE_SHARE of the chords around it with the same pitch classes (COMPLETE_REACH on each
 # side, within COMPLETE_BEATS, at least COMPLETE_NEED of them) have that pitch. It is marked as inferred
-# and gets the "?". Off by default: on GuitarSet's comping one added note in three was played (the players
-# vary their voicings from strum to strum); on rendered open chords nine in ten.
+# and gets the "?". Off by default: on the held-out players' comping one added note in five was played (63 of
+# 303: the players vary their voicings from strum to strum); on held-out rendered open chords seven in ten
+# (32 of 45).
 CHORDS = ("heard", "completed")
 COMPLETE_SHARE = 0.8
 COMPLETE_REACH = 3
@@ -297,13 +304,13 @@ def chordal(notes: list[dict]) -> list[bool]:
 
 
 def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None = None,
-              with_its_note: bool = False) -> tuple[list[int], list[int]]:
+              with_its_note: bool = False, apart: bool = False) -> tuple[list[int], list[int]]:
     """Indices of the notes of `notes` (sorted by onset) that were not played, and of those that may not have been.
 
     Left out: in a line, the faint overtones of a note sounding under them and the notes heard too faintly
     to be played ones; among chords, an overtone above `chord_high` (Heard.chord_high) when the instrument
     has one, with `with_its_note` only when it starts with the note under it and is fainter (HIGH_WITH), and a
-    faint overtone that does not start with a strum (APART_SIZE, APART_RATIO). In doubt: among chords, a faint
+    faint overtone that does not start with a strum when `apart` (APART_SIZE, APART_RATIO). In doubt: among chords, a faint
     overtone standing over the top of its strum (TOP_RATIO, TOP_GAP)."""
     out, doubt = [], []
     for i, (n, others) in enumerate(zip(notes, sounding_with(notes))):
@@ -323,7 +330,7 @@ def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None =
         if under and chord_high is not None and n["pitch"] > chord_high and (not with_its_note or any(
                 n["onset"] - low["onset"] <= HIGH_WITH and amplitude < TOP_RATIO * low.get("amplitude", 1.0) for low in under)):
             out.append(i)
-        elif len(together) + 1 < APART_SIZE and fainter(APART_RATIO):
+        elif apart and len(together) + 1 < APART_SIZE and fainter(APART_RATIO):
             out.append(i)
         elif fainter(TOP_RATIO) and together and n["pitch"] - max(together) >= TOP_GAP:
             doubt.append(i)
@@ -437,10 +444,10 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     notes = sorted((dict(n) for n in raw if n["offset"] - n["onset"] >= MIN_SECONDS), key=lambda n: (n["onset"], n["pitch"]))
     dropped = len(raw) - len(notes)  # too short to be a note: counted with the other leftovers
     if clean and notes:
-        gone, unsure = leftovers(notes, chordal(notes), heard.chord_high, heard.high_with_its_note)
+        gone, unsure = leftovers(notes, chordal(notes), heard.chord_high, heard.high_with_its_note, heard.apart_overtones_out)
         for i in unsure:
             notes[i]["top_overtone"] = True
-        for i in top_overtones(notes, chordal(notes)):
+        for i in top_overtones(notes, chordal(notes)) if heard.apart_overtones_out else ():
             notes[i]["on_top"] = True
         kept = [n for i, n in enumerate(notes) if i not in set(gone)] or notes  # never the whole passage
         dropped += len(notes) - len(kept)
@@ -634,9 +641,13 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
     dragging = 0
     if DRAG_FRETS and opts["style"] == DRAG_STYLE and any(n.get("on_top") for n in notes):
         rest = [n for n in notes if not n.get("on_top")]
-        with_top, without = hands(notes, places), hands(rest, playable(rest, False)[1])
+        rest_places = playable(rest, False)[1]
+        with_top, without = hands(notes, places), hands(rest, rest_places)
+        open_strings: dict[int, int] = {}
+        for n, place in zip(rest, rest_places):
+            open_strings[n["start"]] = open_strings.get(n["start"], 0) + (place.get("fret") == 0)
         drags = {(n["start"], n["pitch"]) for n in notes if n.get("on_top") and n["start"] in without
-                 and with_top[n["start"]] - without[n["start"]] >= DRAG_FRETS}
+                 and with_top[n["start"]] - without[n["start"]] >= DRAG_FRETS and open_strings[n["start"]] >= DRAG_OPEN_STRINGS}
         if drags:
             dragging = len(drags)
             notes, places, answer, dropped, _ = playable([n for n in doc["notes"] if (n["start"], n["pitch"]) not in drags], unisons_doubled)
