@@ -432,9 +432,19 @@ RustBuffer uniffi_brasscribe_ffi_fn_func_spell_pitches(RustBuffer onsets_beats, 
 RustBuffer uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(RustBuffer request, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_PLAYING_INSTRUCTIONS_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_PLAYING_INSTRUCTIONS_JSON
+RustBuffer uniffi_brasscribe_ffi_fn_func_fretted_playing_instructions_json(RustBuffer request, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_TAB_JSON
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_TAB_JSON
 RustBuffer uniffi_brasscribe_ffi_fn_func_fretted_tab_json(RustBuffer request, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_TAB_TEXT_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_FRETTED_TAB_TEXT_JSON
+RustBuffer uniffi_brasscribe_ffi_fn_func_fretted_tab_text_json(RustBuffer request, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_FN_FUNC_HUMANIZE_PART
@@ -832,9 +842,21 @@ uint16_t uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_PLAYING_INSTRUCTIONS_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_PLAYING_INSTRUCTIONS_JSON
+uint16_t uniffi_brasscribe_ffi_checksum_func_fretted_playing_instructions_json(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_TAB_JSON
 #define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_TAB_JSON
 uint16_t uniffi_brasscribe_ffi_checksum_func_fretted_tab_json(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_TAB_TEXT_JSON
+#define UNIFFI_FFIDEF_UNIFFI_BRASSCRIBE_FFI_CHECKSUM_FUNC_FRETTED_TAB_TEXT_JSON
+uint16_t uniffi_brasscribe_ffi_checksum_func_fretted_tab_text_json(void
     
 );
 #endif

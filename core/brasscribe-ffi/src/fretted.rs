@@ -1,5 +1,6 @@
 //! Tab fingering for fretted instruments (`target-fretted`): its JSON requests in, its JSON answers
-//! out, both unchanged, as the command line's `fret` and `tab` pass them.
+//! out, both unchanged, as the command line's `fret` and `tab` pass them. The text exports take
+//! the tab request and answer with plain text.
 //!
 //! Everything the crate refuses is something the request said (JSON that is not a request, an
 //! unknown preset, a pin on a note or string that does not exist, a note that cannot be written),
@@ -32,4 +33,21 @@ pub fn fretted_fingering_json(request: String) -> Result<String, CoreError> {
 #[uniffi::export]
 pub fn fretted_tab_json(request: String) -> Result<String, CoreError> {
     target_fretted::json::tab_json(&request).map_err(invalid)
+}
+
+/// Tablature as plain text for a monospace font: one line per string, the fret numbers on it.
+/// `request` is the tab request of [`fretted_tab_json`]; its `text.width` is the longest line in
+/// characters (24 to 400, 72 when left out), and `tab.doubt_below` decides which notes get a "?".
+/// Answers with the text itself, not JSON.
+#[uniffi::export]
+pub fn fretted_tab_text_json(request: String) -> Result<String, CoreError> {
+    target_fretted::json::tab_text_json(&request).map_err(invalid)
+}
+
+/// Playing instructions: the tab in words, bar by bar and beat by beat, for a screen reader or a
+/// braille display. `request` is the tab request of [`fretted_tab_json`]; its `text.lang` is "en"
+/// (when left out) or "nb". Answers with the text itself, not JSON.
+#[uniffi::export]
+pub fn fretted_playing_instructions_json(request: String) -> Result<String, CoreError> {
+    target_fretted::json::playing_instructions_json(&request).map_err(invalid)
 }

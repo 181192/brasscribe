@@ -17,7 +17,9 @@
 //! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
 //! brasscribe-core fret --request JSON --out FILE     (a string and fret for every note: target-fretted's JSON request and response)
-//! brasscribe-core tab --request JSON --out FILE      (tablature: target-fretted's tab request in, {"musicxml", "adjusted_notes"} out)
+//! brasscribe-core tab --request JSON --out FILE [--format json|text|instructions] [--lang en|nb] [--width N]
+//!                               (tablature: target-fretted's tab request in; out {"musicxml", "adjusted_notes"} (json, the default),
+//!                                the tab as plain text at most N characters wide, or playing instructions in words)
 //! ```
 
 use std::collections::HashMap;
@@ -331,9 +333,28 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             write(Path::new(&a.one("out")?), &target_fretted::json::solve_json(&request)?)
         }
         "tab" => {
-            // target-fretted's tablature request, answered with its {"musicxml", "adjusted_notes"}.
+            // target-fretted's tablature request, answered with its {"musicxml", "adjusted_notes"}, or
+            // with the same tab as plain text or as playing instructions.
             let request = String::from_utf8(read(Path::new(&a.one("request")?))?).map_err(|e| format!("the request is not UTF-8: {e}"))?;
-            write(Path::new(&a.one("out")?), &target_fretted::json::tab_json(&request)?)
+            let format = a.opt("format").unwrap_or_else(|| "json".into());
+            let text = |write_text: fn(&target_fretted::json::TabRequest) -> R<String>| -> R<String> {
+                // The flags stand in for the request's own `text` options.
+                let mut req = target_fretted::json::tab_request(&request)?;
+                if let Some(lang) = a.opt("lang") {
+                    req.text.lang = lang;
+                }
+                if let Some(width) = a.opt("width") {
+                    req.text.width = width.parse().map_err(|_| format!("--width is a number of characters, not {width}"))?;
+                }
+                write_text(&req)
+            };
+            let answer = match format.as_str() {
+                "json" => target_fretted::json::tab_json(&request)?,
+                "text" => text(target_fretted::json::tab_text)?,
+                "instructions" => text(target_fretted::json::playing_instructions)?,
+                other => return Err(format!("unknown format {other}: json, text or instructions")),
+            };
+            write(Path::new(&a.one("out")?), &answer)
         }
         "version" => {
             println!("brasscribe-core {}", brasscribe_core::VERSION);

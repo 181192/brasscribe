@@ -1,12 +1,12 @@
 //! Tab fingering through the bindings: `target-fretted`'s JSON request in and its JSON answer out,
-//! through the UniFFI functions and the C ABI. What a request gets wrong is invalid input, never a
-//! panic.
+//! through the UniFFI functions and the C ABI, and the text exports of the same request. What a
+//! request gets wrong is invalid input, never a panic.
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use brasscribe_ffi::c_api::{bc_fretted_fingering_json, bc_fretted_tab_json, bc_string_free, BC_INVALID, BC_NULL, BC_OK};
-use brasscribe_ffi::fretted::{fretted_fingering_json, fretted_tab_json};
+use brasscribe_ffi::c_api::{bc_fretted_fingering_json, bc_fretted_playing_instructions_json, bc_fretted_tab_json, bc_fretted_tab_text_json, bc_string_free, BC_INVALID, BC_NULL, BC_OK};
+use brasscribe_ffi::fretted::{fretted_fingering_json, fretted_playing_instructions_json, fretted_tab_json, fretted_tab_text_json};
 use brasscribe_ffi::CoreError;
 use serde_json::{json, Value};
 
@@ -141,6 +141,42 @@ fn tab_answers_with_musicxml_and_the_count_of_moved_notes() {
 }
 
 #[test]
+fn the_text_exports_answer_with_the_crates_own_text() {
+    let mut r = request();
+    r["title"] = json!("Line");
+    let request = r.to_string();
+    let text = fretted_tab_text_json(request.clone()).unwrap();
+    assert_eq!(text, target_fretted::json::tab_text_json(&request).unwrap(), "the crate's text, unchanged");
+    assert_eq!(c_call(bc_fretted_tab_text_json, &request), (BC_OK, text.clone()), "the C ABI gives the same text");
+    // D1 has no string, the open A is doubtful, and the hammer-on leads to the second fret.
+    assert!(text.starts_with("Line\nBass\nTuning: Standard (E A D G), bottom line to top\nCapo: none\nTempo: 96 quarter notes per minute\nTime: 4/4\n"), "{text}");
+    assert!(text.contains("\n   !   ?\nG|----------------||\nD|---------0h2----||\nA|-----0----------||\nE|----------------||\n"), "{text}");
+    assert!(text.contains("\n?  a note to check") && text.contains("bar 1: D1\n") && text.contains("\nh  hammer-on\n"), "{text}");
+
+    let en = fretted_playing_instructions_json(request.clone()).unwrap();
+    assert_eq!(en, target_fretted::json::playing_instructions_json(&request).unwrap());
+    assert_eq!(c_call(bc_fretted_playing_instructions_json, &request), (BC_OK, en.clone()));
+    assert!(en.contains("\nBar 1\n  Beat 1. D 1, no string to play it on. Quarter note.\n  Beat 2. String 3, open, to check. Quarter note.\n"), "{en}");
+    r["text"] = json!({"lang": "nb", "width": 40});
+    let nb = fretted_playing_instructions_json(r.to_string()).unwrap();
+    assert_eq!(c_call(bc_fretted_playing_instructions_json, &r.to_string()), (BC_OK, nb.clone()), "Norwegian letters cross the C ABI as UTF-8");
+    assert!(nb.contains("\nTakt 1\n  Slag 1. D 1, ingen streng å spille den på. Fjerdedelsnote.\n  Slag 2. Streng 3, løs, bør sjekkes. Fjerdedelsnote.\n"), "{nb}");
+    assert_eq!(en.lines().count(), nb.lines().count(), "the same lines in both languages");
+    // The other writers take a request with `text` and do not read it.
+    assert!(fretted_tab_json(r.to_string()).is_ok());
+
+    // What only the text exports can get wrong.
+    for (text, says) in [(json!({"width": 10}), "24 to 400 characters"), (json!({"width": -1}), "not a tablature request"), (json!({"lang": "de"}), "en or nb"), (json!({"font": "mono"}), "unknown field `font`")] {
+        let mut r = self::request();
+        r["text"] = text;
+        let said = [reason(fretted_tab_text_json(r.to_string()).and_then(|_| fretted_playing_instructions_json(r.to_string())))];
+        assert!(said[0].contains(says), "{r}: {}", said[0]);
+        let codes = (c_call(bc_fretted_tab_text_json, &r.to_string()).0, c_call(bc_fretted_playing_instructions_json, &r.to_string()).0);
+        assert!(codes.0 == BC_INVALID || codes.1 == BC_INVALID, "{r}");
+    }
+}
+
+#[test]
 fn what_is_not_a_request_is_invalid_input() {
     let with = |edit: &dyn Fn(&mut Value)| {
         let mut r = request();
@@ -181,7 +217,12 @@ fn what_is_not_a_request_is_invalid_input() {
         with(&|r| r["notes"][0]["dur"] = json!(i64::MAX)),
     ];
     for request in &bad {
-        for (uniffi, c) in [(fretted_fingering_json as fn(String) -> Result<String, CoreError>, bc_fretted_fingering_json as unsafe extern "C" fn(_, _, _) -> i32), (fretted_tab_json, bc_fretted_tab_json)] {
+        for (uniffi, c) in [
+            (fretted_fingering_json as fn(String) -> Result<String, CoreError>, bc_fretted_fingering_json as unsafe extern "C" fn(_, _, _) -> i32),
+            (fretted_tab_json, bc_fretted_tab_json),
+            (fretted_tab_text_json, bc_fretted_tab_text_json),
+            (fretted_playing_instructions_json, bc_fretted_playing_instructions_json),
+        ] {
             let said = reason(uniffi(request.clone()));
             assert!(!said.is_empty(), "{request}");
             assert_eq!(c_call(c, request), (BC_INVALID, format!("invalid input: {said}")), "{request}");
@@ -198,6 +239,8 @@ fn what_is_not_a_request_is_invalid_input() {
         }
         assert!(!reason(fretted_tab_json(r.to_string())).is_empty());
         assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_INVALID, "{r}");
+        assert_eq!(reason(fretted_tab_text_json(r.to_string())), reason(fretted_tab_json(r.to_string())), "{r}");
+        assert_eq!(c_call(bc_fretted_playing_instructions_json, &r.to_string()).0, BC_INVALID, "{r}");
     }
     // A full instrument that makes sense is taken as it is, and has no tuning suggestions.
     let mut r = request();
@@ -228,6 +271,8 @@ fn a_null_request_is_a_null_argument() {
     let (mut out, mut err): (*mut c_char, *mut c_char) = (std::ptr::null_mut(), std::ptr::null_mut());
     assert_eq!(unsafe { bc_fretted_fingering_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
     assert_eq!(unsafe { bc_fretted_tab_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
+    assert_eq!(unsafe { bc_fretted_tab_text_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
+    assert_eq!(unsafe { bc_fretted_playing_instructions_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
     assert!(out.is_null() && err.is_null());
 }
 
@@ -241,5 +286,7 @@ fn large_and_odd_passages_come_back_without_a_panic() {
         let v: Value = serde_json::from_str(&fretted_fingering_json(r.clone()).unwrap()).unwrap();
         assert_eq!(v["fingering"]["notes"].as_array().unwrap().len(), notes.len());
         assert_eq!(c_call(bc_fretted_tab_json, &r).0, BC_OK);
+        assert_eq!(c_call(bc_fretted_tab_text_json, &r).0, BC_OK);
+        assert_eq!(c_call(bc_fretted_playing_instructions_json, &r).0, BC_OK);
     }
 }

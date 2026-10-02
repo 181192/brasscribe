@@ -138,3 +138,71 @@ fn a_bad_tab_request_fails_with_the_crates_message_and_writes_nothing() {
     assert!(!ok && written.is_empty());
     assert!(stderr.contains("string 1 fret 0 sounds pitch 43, not the note's 33"), "{stderr}");
 }
+
+/// `tab` with more arguments after `--request` and `--out`.
+fn tab_as(name: &str, request: &str, args: &[&str]) -> (bool, String, String) {
+    let d = dir(&format!("tab-as-{name}"));
+    let (req, out) = (d.join("request.json"), d.join("out").join("answer.txt"));
+    fs::write(&req, request).unwrap();
+    let run = Command::new(env!("CARGO_BIN_EXE_brasscribe-core")).arg("tab").arg("--request").arg(&req).arg("--out").arg(&out).args(args).output().unwrap();
+    let written = fs::read_to_string(&out).unwrap_or_default();
+    fs::remove_dir_all(&d).ok();
+    (run.status.success(), written, String::from_utf8_lossy(&run.stderr).into_owned())
+}
+
+#[test]
+fn tab_writes_the_text_tab_and_the_playing_instructions_as_plain_text() {
+    let request = tab_request("tab").to_string();
+    let (ok, json, stderr) = tab_as("json", &request, &["--format", "json"]);
+    assert!(ok, "{stderr}");
+    assert_eq!(json, target_fretted::json::tab_json(&request).unwrap(), "json is the default format");
+
+    let (ok, text, stderr) = tab_as("text", &request, &["--format", "text"]);
+    assert!(ok, "{stderr}");
+    assert_eq!(text, target_fretted::json::tab_text_json(&request).unwrap());
+    assert!(text.starts_with("Open strings\nBass\nTuning: Standard (E A D G), bottom line to top\nCapo: fret 2 "), "{text}");
+    assert!(text.contains("\n   ?\nG|------||\nD|-----0||\nA|---0--||\nE|-0----||\n"), "{text}");
+
+    let (ok, en, stderr) = tab_as("en", &request, &["--format", "instructions"]);
+    assert!(ok, "{stderr}");
+    assert_eq!(en, target_fretted::json::playing_instructions_json(&request).unwrap());
+    assert!(en.contains("\nBar 1\n  Beat 1. String 4, open, to check. Quarter note.\n  Beat 2. String 3, open. Quarter note.\n"), "{en}");
+    let (ok, nb, stderr) = tab_as("nb", &request, &["--format", "instructions", "--lang", "nb"]);
+    assert!(ok, "{stderr}");
+    assert!(nb.contains("\nTakt 1\n  Slag 1. Streng 4, løs, bør sjekkes. Fjerdedelsnote.\n  Slag 2. Streng 3, løs. Fjerdedelsnote.\n"), "{nb}");
+    assert_eq!(en.lines().count(), nb.lines().count());
+
+    // The flags stand in for the request's `text` options.
+    let mut asks = tab_request("tab");
+    asks["text"] = json!({"lang": "nb", "width": 30});
+    assert_eq!(tab_as("request-lang", &asks.to_string(), &["--format", "instructions"]).1, nb);
+    assert_eq!(tab_as("flag-wins", &asks.to_string(), &["--format", "instructions", "--lang", "en"]).1, en);
+}
+
+#[test]
+fn the_text_tab_is_wrapped_at_the_width_asked_for() {
+    let notes: Vec<Value> = (0..32).map(|i| json!({"pitch": 33 + i % 5, "start": 24 * i, "dur": 24})).collect();
+    let request = json!({"instrument": {"preset": "bass-4-standard"}, "notes": notes}).to_string();
+    let lines_of = |text: &str| text.lines().filter(|l| l.starts_with("G|")).map(str::to_string).collect::<Vec<_>>();
+    let wide = lines_of(&tab_as("wide", &request, &["--format", "text"]).1);
+    let narrow = lines_of(&tab_as("thirty", &request, &["--format", "text", "--width", "30"]).1);
+    assert_eq!((wide.len(), narrow.len()), (2, 3), "eight bars: seven and one, or three to a line");
+    assert!(wide.iter().all(|l| l.chars().count() <= 72) && narrow.iter().all(|l| l.chars().count() <= 30));
+}
+
+#[test]
+fn a_format_language_or_width_that_does_not_exist_is_refused() {
+    let request = tab_request("tab").to_string();
+    for (name, args, says) in [
+        ("format", vec!["--format", "pdf"], "unknown format pdf"),
+        ("lang", vec!["--format", "instructions", "--lang", "de"], "en or nb"),
+        ("width", vec!["--format", "text", "--width", "wide"], "--width is a number"),
+        ("narrow", vec!["--format", "text", "--width", "5"], "24 to 400 characters"),
+    ] {
+        let (ok, written, stderr) = tab_as(name, &request, &args);
+        assert!(!ok && written.is_empty(), "{name}");
+        assert!(stderr.contains(says), "{name}: {stderr}");
+    }
+    let (ok, _, stderr) = tab_as("bad-request", r#"{"instrument": {"preset": "bass-4-standard"}, "notes": [], "frets": 3}"#, &["--format", "text"]);
+    assert!(!ok && stderr.contains("not a tablature request"), "{stderr}");
+}

@@ -2,7 +2,7 @@
 
 Tablature fingering for fretted instruments. It chooses a string and a fret for each note of a
 passage, so the passage can be written as tab for guitar, bass, ukulele or mandolin, and writes the
-result as tablature in MusicXML.
+result as tablature in MusicXML, as a plain-text tab, and as playing instructions in words.
 
 The input is the shared symbolic model's notes from `brasscribe-core` (`Note`: concert MIDI
 `pitch`, and `start` and `dur` in ticks at `TICKS_PER_BEAT`). The output gives each note a string
@@ -503,6 +503,126 @@ study with the note index in it: MuseScore must write a file with every note, st
 starts MuseScore (`MSCORE`, `mscore` on the path, or the macOS application), so it only runs when
 asked for, and says so when MuseScore is missing.
 
+## Tablature as text
+
+`write_tab_text(&TabScore, &TabOptions, &TextOptions)` writes the same score as a text tab for a
+monospace font: a printed page, a message or a forum post. It reads the plan the MusicXML is written
+from, so both hold the same notes, chords, bars and marks. The same input always gives the same
+text.
+
+```text
+Made-up passage
+Bass
+Tuning: Standard (E A D G), bottom line to top
+Capo: none
+Tempo: 96 quarter notes per minute
+Time: 4/4
+
+     1                2
+          ?
+G|--|-------------0--|--------||
+D|--|---------0h2----|--------||
+A|--|-0---3----------|-----5/7||
+E|-3|----------------|--------||
+
+?  a note to check: it was not heard clearly
+h  hammer-on
+/  slide up
+```
+
+- **Header:** title, instrument, tuning (its name and the open strings from the bottom line to the
+  top), capo, tempo and time signature. The capo line is always there: `Capo: none` without one.
+- **Lines:** one per string, string 1 on top, named after its open string. A mandolin has one line
+  per course. Sharps and flats are `#` and `b`, and the labels are filled to one width, so apart
+  from the title and the names of the instrument and the tuning the text is ASCII and lines up in
+  any monospace font.
+- **Columns:** notes that start together stand in one column. Every column is as wide as the widest
+  number of the score, so frets of two digits keep the columns in line.
+- **Time:** inside a bar the columns are an even grid, as fine as the bar's notes need, so a
+  quarter note takes twice the room of an eighth. A bar that would need more than 16 columns that
+  way is drawn beat by beat, each beat as wide as its own notes need. A rest is empty line.
+- **Ties:** a note held over a beat or a bar line is written once, where it starts; the line stays
+  empty while it sounds. No number is ever repeated in parentheses.
+- **Bars:** a bar line after every bar, two after the last, and the bar's number above its first
+  column where there is room. A pickup has no number.
+- **Width:** a line holds as many whole bars as fit in `TextOptions::width` characters (72 by
+  default, 24 to 400). A bar is only divided when it alone is wider than the page; then it takes
+  lines of its own. The header and the legend are not wrapped.
+- **Techniques:** `h`, `p`, `/`, `\` and `b` stand before the note they lead to (`5h7`, `7p5`,
+  `5/7`, `7\5`, `7b9`); `~` after a note with vibrato; `x` in place of the fret of a dead note;
+  `let ring` above the first note that rings, shortened to `l.r.` or `r` where the next one leaves
+  no room.
+- **Doubt and range:** a `?` above the column of a doubtful note (`TabOptions::doubt_below`; 0
+  writes none), never a parenthesis. A `!` above the column of a note without a place; the note is
+  not on the lines, and the legend names it with its bar (`bar 2: F#1`). A second note given the
+  same string in one chord is treated the same way: a line holds one number per column.
+- **Legend:** one line per mark that occurs in the tab, and none when there are no marks.
+
+`write_tab_text` refuses what `write_tab_musicxml` refuses, and a width outside 24 to 400.
+
+## Playing instructions
+
+`write_playing_instructions(&TabScore, &TabOptions, &TextOptions)` writes the score in words, for
+someone who reads with a screen reader or a braille display: bar by bar and beat by beat, which
+string and fret to play and for how long. `TextOptions::lang` is `en` or `nb` (a tag that starts
+with `nb` or `no` is Norwegian Bokmål); any other language is refused.
+
+```text
+Bass, 4 strings.
+String 1 is the string nearest the floor as you play. String 4 is nearest the ceiling.
+Tuning: Standard. Open strings from string 4 to string 1: E, A, D, G.
+Capo on fret 2. Frets are counted from the capo.
+Tempo: 96 quarter notes per minute.
+Time: 4 4 time.
+A note marked "to check" was not heard clearly.
+
+Bar 1
+  Beat 1. String 3, open. Quarter note.
+  Beat 2. Eighth rest.
+  Beat 2 and. String 3, fret 3, to check. Eighth note.
+  Beat 3. String 2, open. Eighth note.
+  Beat 3 and. String 2, fret 2, hammer-on. Eighth note.
+  Beat 4. String 1, open, let ring. Quarter note tied to whole note.
+
+Bar 2
+  Held from bar 1.
+```
+
+```text
+Takt 1
+  Slag 1. Streng 3, løs. Fjerdedelsnote.
+  Slag 2. Åttendedelspause.
+  Slag 2-og. Streng 3, bånd 3, bør sjekkes. Åttendedelsnote.
+  Slag 3. Streng 2, løs. Åttendedelsnote.
+  Slag 3-og. Streng 2, bånd 2, hammer-on. Åttendedelsnote.
+  Slag 4. Streng 1, løs, la klinge. Fjerdedelsnote bundet til helnote.
+```
+
+- The words follow the talking score of the brass parts
+  ([the spec](../../docs/accessibility/talking-score-spec.md)): bar headings, beat positions
+  ("2 and", "2-og"), note values, and the Norwegian note names (H, B, Ess, Ass). The two languages
+  are one table of word pairs in `src/instructions.rs`, chosen by `lang` as there. This crate does
+  not use the talking score's code, which knows the brass band.
+- **Said once, at the top:** the instrument and its number of strings, how the strings are
+  numbered, the tuning with its open strings from the highest-numbered string to string 1, the capo,
+  the tempo and the time signature.
+- **Strings are named by number,** never by note: the note names change with the tuning. Accidentals
+  are words (`E-flat`, `Ess`), not signs.
+- **One line per note, chord or rest,** in the order they are played: the beat, each note's string
+  and fret (`open` for fret 0), and the note value. A chord says how many notes it has and names
+  them from its highest-numbered string to its lowest.
+- **Ties:** a held note is said once, where it starts, with every tied value. A bar that starts
+  inside a held note says which bar it is held from.
+- **Rests:** a rest inside a bar is a line; bars of rest that follow each other share one heading
+  (`Bars 3–4`, `Rest, 2 bars.`).
+- **Repeats:** a bar with the same lines as an earlier bar says `Same as bar 1.`
+- **Techniques:** hammer-on, pull-off, slide and bend are said on the note they lead to, a slide and
+  a bend with the fret they come from; vibrato, dead note and let ring on their own note (let ring
+  where the ringing starts, once for a chord).
+- **Doubt and range:** a doubtful note is `to check`; a note without a place is named by its pitch
+  (`D 1, no string to play it on`).
+- The two languages have the same lines in the same order: only the words differ.
+
 ## JSON
 
 `json::solve_json` takes a request. It answers with:
@@ -553,10 +673,18 @@ alone.
 
 `cargo run -p target-fretted --example tab < request.json` prints the document for a request.
 
-The same two requests and answers reach the apps through the bindings in `brasscribe-ffi`
-(`fretted_fingering_json` for `solve_json`, `fretted_tab_json` for `tab_json`; see
-[the core's README](../README.md#bindings)) and the command line (`brasscribe-core fret` and `tab`).
-Every refusal is invalid input there.
+`json::tab_text_json` and `json::playing_instructions_json` take the same tab request and answer
+with plain text, not JSON: the text tab and the playing instructions. They read one more key,
+`"text": {"width": 72, "lang": "en"}` (each field may be left out); the other writers accept the key
+and do not read it. `tab.doubt_below` decides the `?` and the "to check" as it does in the MusicXML;
+`tab.layout`, `tab.capo` and `tab.clef` have no meaning in text.
+
+The same requests and answers reach the apps through the bindings in `brasscribe-ffi`
+(`fretted_fingering_json` for `solve_json`, `fretted_tab_json` for `tab_json`,
+`fretted_tab_text_json` and `fretted_playing_instructions_json` for the two texts; see
+[the core's README](../README.md#bindings)) and the command line (`brasscribe-core fret`, and `tab`
+with `--format json`, `text` or `instructions`, where `--lang` and `--width` stand in for the
+request's `text`). Every refusal is invalid input there.
 
 ## Not modelled yet
 
@@ -567,6 +695,14 @@ Every refusal is invalid input there.
   model. Guitar open chords come from the span, height and open-string terms.
 - **Vibrato** has no position constraint.
 - **String crossing.** Skipping strings costs nothing.
+
+Known limits of the text exports:
+
+- The text tab shows where notes start, not how long they last: there is no rhythm line under it.
+- The text tab is written in English. The playing instructions know English and Norwegian Bokmål.
+- A tuning's name is kept as it is in Norwegian ("B standard", "Drop B"); the open strings after it
+  are named the Norwegian way.
+- The playing instructions name no chord shapes ("G chord, open"): a chord is its strings and frets.
 
 Known limits of the MusicXML:
 
@@ -664,6 +800,26 @@ checked to hold exactly their length on each staff.
   layouts; the same input gives the same text; the JSON entry point.
 - **Fixture:** `tests/fixtures/study.json` (an original four-bar study with every feature) must give
   `tests/fixtures/study.musicxml`. Regenerate it on purpose with the `tab` example.
+
+`tests/tab_text.rs` covers the text tab and the playing instructions:
+
+- **What they look like:** a bass line and guitar chords as whole documents; the lines and labels of
+  every instrument family; the legend; `let ring` in its three forms; a bar wider than the page; a
+  line in both languages.
+- **Properties** over made-up passages on every preset, with chords, rests, ties over bar lines,
+  triplets, frets above 9, every technique, doubtful notes, notes without a place and pickups:
+  - bar for bar, the numbers on the lines are the notes of the MusicXML tab staff where they start,
+    each once, at three page widths; a `?` and a `!` per marked column, and each note without a
+    place named once;
+  - all lines of a system have one length, bar lines stand under each other, every number starts a
+    whole cell from the bar line, and marks and bar numbers stand over their column;
+  - no line is longer than the page, the bars are the same at every width, and a bar is only
+    divided when it is wider than the page;
+  - the same score gives the same text;
+  - the instructions in the two languages have the same headings, blank lines and lines, and bar
+    for bar say the notes of the tab staff, each once.
+- **Refusals:** widths and languages that cannot be written, the doubt threshold, unknown keys in
+  `text`, and more notes than `MAX_NOTES`.
 
 Unit tests in `src/instrument.rs` cover positions, the capo, short strings, fret distances and
 families. Unit tests in `src/shapes.rs` cover the shape tables.
