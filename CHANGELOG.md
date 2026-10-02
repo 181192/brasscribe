@@ -2,6 +2,63 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.4.0 (2026-10-02)
+
+### New features
+
+- **Android:** Build Fretscribe as a second app from the same code ([#82](https://github.com/181192/brasscribe/pull/82))
+- **Android:** Give Fretscribe its own colours, title font and icon ([#87](https://github.com/181192/brasscribe/pull/87))
+- **Bandroom:** Show the band writer's terms before downloading it ([#47](https://github.com/181192/brasscribe/pull/47))
+- **Bandroom:** Bass tabs work with Bandroom for Mac and Windows ([#85](https://github.com/181192/brasscribe/pull/85))
+- **Core:** Choose a string and fret for every note on fretted instruments ([#50](https://github.com/181192/brasscribe/pull/50))
+- **Core:** Suggest tunings, honour playing techniques and prefer chord shapes on fretted instruments ([#62](https://github.com/181192/brasscribe/pull/62))
+- **Core:** Write fretted tablature as MusicXML ([#64](https://github.com/181192/brasscribe/pull/64))
+- **Core:** Name the source note on every note of the tab MusicXML ([#81](https://github.com/181192/brasscribe/pull/81))
+- **Core:** Tab fingering for fretted instruments through the bindings ([#84](https://github.com/181192/brasscribe/pull/84))
+- **Design:** Generate the Claude design system from design/ ([#48](https://github.com/181192/brasscribe/pull/48))
+- **Engine:** Correct the recording's tuning before writing the notes ([#59](https://github.com/181192/brasscribe/pull/59))
+- **Engine:** Write a bass line as tablature ([#65](https://github.com/181192/brasscribe/pull/65))
+- **Engine:** Give a bass tab as MusicXML, PDF and MIDI ([#73](https://github.com/181192/brasscribe/pull/73))
+- **Engine:** A cleaner bass tab that marks the notes to check ([#80](https://github.com/181192/brasscribe/pull/80))
+- **Engine:** Bass tabs work in the Docker image ([#83](https://github.com/181192/brasscribe/pull/83))
+- **Engine:** Write guitar as tablature, and one tab profile for every fretted instrument ([#106](https://github.com/181192/brasscribe/pull/106))
+- **Engine:** Ukulele and mandolin tabs, from a song or the instrument alone ([#108](https://github.com/181192/brasscribe/pull/108))
+- **Fretscribe:** Choose your instrument, tuning and what you read ([#91](https://github.com/181192/brasscribe/pull/91))
+- **Fretscribe:** Send a recording to your computer and check the song ([#93](https://github.com/181192/brasscribe/pull/93))
+- **Fretscribe:** Guitar, ukulele and mandolin, beside bass ([#113](https://github.com/181192/brasscribe/pull/113))
+- **Fretscribe:** A tab as plain text and as playing instructions in words ([#114](https://github.com/181192/brasscribe/pull/114))
+- **Fretscribe:** Read the tab, with the notes to check marked ([#104](https://github.com/181192/brasscribe/pull/104))
+- **Fretscribe:** Practise with the recording under the tab, slowed down and bar by bar ([#117](https://github.com/181192/brasscribe/pull/117))
+- Make a band draft on the phone when no computer is paired ([#60](https://github.com/181192/brasscribe/pull/60))
+
+### Fixes
+
+- **Engine:** Give MuScriptor the original audio again ([#46](https://github.com/181192/brasscribe/pull/46))
+- **Bandroom for Mac:** Bundle a pixi the engine accepts ([#102](https://github.com/181192/brasscribe/pull/102))
+- **Core:** Build the core artifacts from every workspace member ([#63](https://github.com/181192/brasscribe/pull/63))
+- **Core:** Keep bass tab low on the neck when a line has stray high notes ([#78](https://github.com/181192/brasscribe/pull/78))
+- **Engine:** Tabs of a lone instrument are written in 4/4, and open guitar chords can stay in open position ([#111](https://github.com/181192/brasscribe/pull/111))
+- **Windows:** Keep the repeat band readable in dark themes ([#58](https://github.com/181192/brasscribe/pull/58))
+
+<details><summary>Under the hood (13 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Android:** Teach the engine client to read bass tabs ([#89](https://github.com/181192/brasscribe/pull/89))
+- **Appearance:** Split the hidden palette into light and dark ([#32](https://github.com/181192/brasscribe/pull/32))
+- **Core:** Keep instrument knowledge out of the shared modules ([#43](https://github.com/181192/brasscribe/pull/43))
+- **Engine:** Let the bass tab option tests run without a built core ([#79](https://github.com/181192/brasscribe/pull/79))
+- **Eval:** Gate Basic Pitch on the retuned recording ([#61](https://github.com/181192/brasscribe/pull/61))
+- **QA:** Read the token file's own extension in the contrast check ([#42](https://github.com/181192/brasscribe/pull/42))
+- **Scripts:** Find the squash-merged release commit when tagging ([#56](https://github.com/181192/brasscribe/pull/56))
+- Bump actions/checkout from 4 to 7 ([#52](https://github.com/181192/brasscribe/pull/52))
+- Bump github/codeql-action from 3 to 4 ([#53](https://github.com/181192/brasscribe/pull/53))
+- Bump actions/configure-pages from 5 to 6 ([#55](https://github.com/181192/brasscribe/pull/55))
+- Bump gradle/actions/dependency-submission from 4.4.3 to 6.3.0 ([#54](https://github.com/181192/brasscribe/pull/54))
+- Bump android-actions/setup-android from 3.2.2 to 4.0.4 ([#51](https://github.com/181192/brasscribe/pull/51))
+- Use documentation addresses in tests and the guide ([#57](https://github.com/181192/brasscribe/pull/57))
+
+</details>
+
 ## 0.3.2 (2026-09-30)
 
 ### New features
