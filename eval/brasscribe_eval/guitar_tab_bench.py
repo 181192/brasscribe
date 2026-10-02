@@ -99,7 +99,10 @@ def prepare(entry: Path, audio: Path, only: str | None = None) -> None:
 # GuitarSet is a guitar alone. For `recording: song` the guitar is first separated from a band, and the
 # only songs here with a note reference are Slakh's: the separator's guitar stem is scored against the
 # notes of all the track's Guitar-class stems together (it holds all of them). No strings are known.
-SONG_SET = "slakh-guitar"
+# The references with every guitar as its MIDI has it are in a folder of their own: `slakh-guitar` holds the
+# earlier ones (seven stems an octave low), which the baselines before this correction were measured against.
+SONG_SET = "slakh-guitar-as-written"
+SONG_SET_BEFORE = "slakh-guitar"
 SONG_SOURCE = "slakh/babyslakh_16k"
 SONG_FILES = {"beats": "song.beats", "bp": "song-bp.mid", "sw": "song-sw.mid"}
 
@@ -111,6 +114,8 @@ def build_songs(slakh: Path, data: Path) -> list[Path]:
     octave lower; on a guitar's chords that reading is not reliable, and it had put seven of these stems an
     octave down. Basic Pitch on each of the 43 stems by itself agrees with the MIDI as written, F1 0.4 to
     0.96 against 0 to 0.38 an octave lower, for every stem it hears at all.)"""
+    import shutil
+
     import pretty_midi
     import yaml
 
@@ -136,6 +141,11 @@ def build_songs(slakh: Path, data: Path) -> list[Path]:
         meters = whole.time_signature_changes
         dest = Path(data) / "eval" / SONG_SET / track.name
         dest.mkdir(parents=True, exist_ok=True)
+        # The models' outputs do not depend on the reference: the ones made for the earlier references are taken over.
+        earlier = Path(data) / "eval" / SONG_SET_BEFORE / track.name
+        for name in (*SONG_FILES.values(), "song-guitar.wav"):
+            if (earlier / name).exists() and not (dest / name).exists():
+                shutil.copy2(earlier / name, dest / name)
         (dest / "reference.json").write_text(json.dumps({
             "style": "song", "player": "slakh", "programs": programs, "guitars": len(programs),
             "tempo_bpm": float(tempi[0]) if len(tempi) == 1 else None,
