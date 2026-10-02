@@ -5,8 +5,8 @@
     bass-4, bass-5, bass-6      one line. The stages, parameters and results are the bass-tab profile's
                                 (bass_tab.py), stage for stage, so the two share their cache entries.
     guitar-6, guitar-7, guitar-8
-    ukulele, ukulele-baritone   chords and lines. The stages below.
-    mandolin
+    ukulele, ukulele-baritone   chords and lines. The stages below. All of them are read from the separator's
+    mandolin                    guitar stem in a song: it has no stem for a ukulele or a mandolin.
 
     beats                              Beat This! on the recording
     stems                              BS-RoFormer SW, as in pop-rock and bass-tab; left out when the
@@ -30,6 +30,7 @@ The profile's id for older apps is bass-tab, which is this profile with a bass a
 from __future__ import annotations
 
 import bisect
+import itertools
 import json
 from collections import Counter
 from dataclasses import dataclass
@@ -69,13 +70,29 @@ class Heard:
     """How an instrument is listened to and its notes are read."""
 
     kind: str  # names the transcription stages and the voice of the composition
-    stem: str | None  # the separator's stem that carries it in a song; None: not known yet
+    stem: str  # the separator's stem that carries it in a song
     lowest: int  # the lowest pitch any tuning of the instrument reaches (MIDI)
     highest: int  # the highest fret of its top string in standard tuning
     strings: int
-    # Among chords an overtone above this pitch is left out (leftovers). It was measured on guitars only, where it
-    # is the 12th fret of the top string in standard tuning; an instrument without a measurement has none.
+    # Among chords an overtone above this pitch is left out (leftovers): the 12th fret of the top string in
+    # standard tuning. The rule was set on guitars (GuitarSet). A ukulele has the same fret of its own top
+    # string, and only for a note with the evidence of an overtone (high_with_its_note): on rendered passages it
+    # was not chosen on, that made chord precision 0.10 better and kept a melody played above the 12th fret.
+    # A mandolin has none (None): there the limit changed nothing that could be measured.
     chord_high: int | None = None
+    # A note below the lowest string that is the lower octave of a note in the same strum is left out
+    # (fingered). Only where that was measured: a ukulele and a mandolin. On a guitar a note below the lowest
+    # string is the sign of a lower tuning (the D of a drop-D power chord is the lower octave of its top
+    # note), so there it always stays, flagged, and the tuning suggestions see it.
+    low_octaves_out: bool = False
+    # The limit of chord_high needs the evidence of an overtone (HIGH_WITH). Not on a guitar, where the limit
+    # was measured without it.
+    high_with_its_note: bool = False
+    # A unison that a strummed open chord plays on two strings is written on both (doubled_unisons).
+    unisons_doubled: bool = False
+    # The stem it is read from in a song is another instrument's, which may be playing too: taken alone
+    # unless the job says it is a song.
+    alone_by_default: bool = False
 
 
 GUITAR_CHORD_HIGH = 76  # E5: the 12th fret of a guitar's top string in standard tuning (six, seven and eight strings alike)
@@ -86,9 +103,12 @@ HEARD = {
     "guitar-6": Heard("guitar", "guitar", 35, 86, 6, GUITAR_CHORD_HIGH),
     "guitar-7": Heard("guitar", "guitar", 34, 88, 7, GUITAR_CHORD_HIGH),
     "guitar-8": Heard("guitar", "guitar", 30, 88, 8, GUITAR_CHORD_HIGH),
-    "ukulele": Heard("ukulele", None, 55, 87, 4),
-    "ukulele-baritone": Heard("ukulele", None, 50, 83, 4),
-    "mandolin": Heard("mandolin", None, 55, 96, 4),
+    # The separator has no stem for a ukulele or a mandolin. Rendered ones under a bass and drums came out in its
+    # guitar stem almost whole (recall 0.96) and nowhere else (small_tab_bench). In a song that also has a guitar
+    # the two share the stem and the tab holds both, so a song is not their default (alone_by_default).
+    "ukulele": Heard("ukulele", "guitar", 55, 87, 4, 69 + 12, True, True, True, True),
+    "ukulele-baritone": Heard("ukulele", "guitar", 50, 83, 4, 64 + 12, True, True, True, True),
+    "mandolin": Heard("mandolin", "guitar", 55, 96, 4, None, True, False, True, True),
 }
 DEFAULT_LAYOUT = "tab"
 DEFAULT_INSTRUMENT = "guitar-6"
@@ -122,15 +142,19 @@ LINE_DOUBT = 0.45
 CHORD_FAINT = 0.35
 CHORD_DOUBT = 0.45
 REPEAT = 2.0
-# Among chords an overtone is told from a played note only at the top of a strum. On a guitar the top note is
-# left out when it is an overtone of a note under it and above the 12th fret of the top string (Heard.chord_high;
-# 99% wrong). It is in doubt, on any instrument, when it is an overtone heard at under TOP_RATIO of the note
+# Among chords an overtone is told from a played note only at the top of a strum. The top note is left out
+# when it is an overtone of a note under it and above the 12th fret of the top string (Heard.chord_high, on
+# guitars and ukuleles; on guitars 99% wrong). It is in doubt when it is an overtone heard at under TOP_RATIO of the note
 # under it and stands TOP_GAP semitones or more over the rest of the strum (84% wrong): one such note
 # would otherwise move the whole chord up the neck.
 #
 # Every other number here is about the transcriber (how strongly and how long Basic Pitch hears a played
 # note) or about intervals, not about a guitar; the instrument's own limits are in Heard.
 TOP_RATIO = 0.8
+# On a ukulele (Heard.high_with_its_note) a note above the 12th fret is left out only with the evidence of an
+# overtone: it starts within HIGH_WITH seconds of a note it is an overtone of, and is heard at under TOP_RATIO
+# of it. A melody played up there over a ringing chord starts later than the chord, or as strongly, and stays.
+HIGH_WITH = 0.1
 TOP_GAP = 9
 # The whole passage an octave from where the instrument plays: more than half of its notes outside the
 # instrument's range on one side, and OCTAVE_FIT of them inside it an octave the other way.
@@ -140,8 +164,7 @@ OCTAVE_FIT = 0.9
 # ---------------------------------------------------------------- options
 
 def options(params: dict) -> dict:
-    """The job's options with the defaults filled in: a six-string guitar in standard tuning, heard in a song.
-    A ukulele or mandolin is heard alone by default."""
+    """The job's options with the defaults filled in: a six-string guitar in standard tuning, heard in a song."""
     from .profiles import ARRANGEMENT_DEFAULTS
 
     band = [k for k, default in ARRANGEMENT_DEFAULTS.items() if params.get(k) not in (None, default)]
@@ -153,10 +176,8 @@ def options(params: dict) -> dict:
     instrument = params.get("instrument") or DEFAULT_INSTRUMENT
     if instrument not in TUNINGS:
         raise ValueError(f"instrument must be one of {', '.join(TUNINGS)}")
-    # An instrument whose stem in a song is not known yet is taken alone unless the job says otherwise.
-    alone_only = instrument in HEARD and HEARD[instrument].stem is None
     defaults = {**bass_tab.DEFAULTS, "instrument": instrument, "tuning": TUNINGS[instrument][0], "layout": DEFAULT_LAYOUT,
-                **({"recording": "instrument"} if alone_only else {})}
+                **({"recording": "instrument"} if instrument in HEARD and HEARD[instrument].alone_by_default else {})}
     opts = {k: params[k] if params.get(k) is not None else default for k, default in defaults.items()}
     if opts["tuning"] not in TUNINGS[instrument]:
         raise ValueError(f"tuning of {instrument} must be one of {', '.join(TUNINGS[instrument])}")
@@ -165,9 +186,6 @@ def options(params: dict) -> dict:
     for name, allowed in (("style", STYLES), ("recording", RECORDINGS), ("octave", OCTAVES), ("layout", LAYOUTS)):
         if opts[name] not in allowed:
             raise ValueError(f"{name} must be one of {', '.join(allowed)}")
-    if alone_only and opts["recording"] == "song":
-        raise ValueError(f"recording of {instrument} must be instrument: which of the separator's stems carries it in a "
-                         f"song is not measured yet")
     return opts
 
 
@@ -238,12 +256,13 @@ def chordal(notes: list[dict]) -> list[bool]:
     return out
 
 
-def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None = None) -> tuple[list[int], list[int]]:
+def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None = None,
+              with_its_note: bool = False) -> tuple[list[int], list[int]]:
     """Indices of the notes of `notes` (sorted by onset) that were not played, and of those that may not have been.
 
     Left out: in a line, the faint overtones of a note sounding under them and the notes heard too faintly
     to be played ones; among chords, an overtone above `chord_high` (Heard.chord_high) when the instrument
-    has one. In doubt: among chords, a faint overtone standing over the top of its strum (TOP_RATIO, TOP_GAP)."""
+    has one, with `with_its_note` only when it starts with the note under it and is fainter (HIGH_WITH). In doubt: among chords, a faint overtone standing over the top of its strum (TOP_RATIO, TOP_GAP)."""
     out, doubt = [], []
     for i, (n, others) in enumerate(zip(notes, sounding_with(notes))):
         amplitude = n.get("amplitude", 1.0)
@@ -253,7 +272,8 @@ def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None =
         if not in_chords[i]:
             if any(amplitude < OVERTONE_RATIO * low.get("amplitude", 1.0) for low in under) or amplitude < LINE_FAINT:
                 out.append(i)
-        elif under and chord_high is not None and n["pitch"] > chord_high:
+        elif under and chord_high is not None and n["pitch"] > chord_high and (not with_its_note or any(
+                n["onset"] - low["onset"] <= HIGH_WITH and amplitude < TOP_RATIO * low.get("amplitude", 1.0) for low in under)):
             out.append(i)
         elif any(amplitude < TOP_RATIO * low.get("amplitude", 1.0) for low in under):
             together = [o["pitch"] for o in others if abs(o["onset"] - n["onset"]) <= STRUM_SECONDS]
@@ -326,7 +346,7 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     notes = sorted((dict(n) for n in raw if n["offset"] - n["onset"] >= MIN_SECONDS), key=lambda n: (n["onset"], n["pitch"]))
     dropped = len(raw) - len(notes)  # too short to be a note: counted with the other leftovers
     if clean and notes:
-        gone, unsure = leftovers(notes, chordal(notes), heard.chord_high)
+        gone, unsure = leftovers(notes, chordal(notes), heard.chord_high, heard.high_with_its_note)
         for i in unsure:
             notes[i]["top_overtone"] = True
         kept = [n for i, n in enumerate(notes) if i not in set(gone)] or notes  # never the whole passage
@@ -379,30 +399,6 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
             "beat_times": [float(t) for t in times], "first_downbeat": first_down}
 
 
-def _second_opinion(ctx: StageContext, transcribe: Callable[[StageContext], None]) -> None:
-    """SwiftF0 on the instrument's audio. It refuses to write a file when it hears no note at all (a stem
-    of chords and noise can do that): that is no opinion, not a failed job, and an empty file says so."""
-    import pretty_midi
-
-    from .adapters import AdapterError
-
-    try:
-        transcribe(ctx)
-    except AdapterError as e:
-        if ctx.executor.cancel.is_set() or "empty notes list" not in str(e):
-            raise
-        ctx.log("SwiftF0 heard no single line: the notes have no second opinion")
-        pretty_midi.PrettyMIDI().write(str(ctx.out / ctx.params["output"]))
-
-
-def second_opinion(ctx: StageContext) -> None:
-    _second_opinion(ctx, S.transcribe)
-
-
-def second_opinion_retuned(ctx: StageContext) -> None:
-    _second_opinion(ctx, tuning.transcribe)
-
-
 def notes_stage(ctx: StageContext) -> None:
     instrument = ctx.params["instrument"]
     try:
@@ -423,8 +419,44 @@ def notes_stage(ctx: StageContext) -> None:
 # ---------------------------------------------------------------- fingering
 
 def least_wanted(involved: list[int], notes: list[dict]) -> int:
-    """Of the notes of a violation, the one to leave out: the least sure, and of equally sure ones the lowest."""
-    return min(involved, key=lambda i: (notes[i]["confidence"], notes[i]["pitch"]))
+    """Of the notes of a violation, the one to leave out: a doubling that was added before a note that was
+    heard, then the least sure, and of equally sure ones the lowest."""
+    return min(involved, key=lambda i: (not notes[i].get("doubled", False), notes[i]["confidence"], notes[i]["pitch"]))
+
+
+# A strummed chord in the first frets (DOUBLE_FRETS) that lacks one string, where one of its notes can be
+# played on two strings at once: that note is a unison, struck on both.
+DOUBLE_FRETS = 4
+
+
+def doubled_unisons(notes: list[dict], open_strings: list[int]) -> list[dict]:
+    """The notes to add so that a chord's unison is written on both of its strings.
+
+    A ukulele's open G chord (0232) sounds G on two strings, and the transcriber hears one G; written from
+    what was heard, the chord has a string left out (02x2). For each onset with one note fewer than the
+    instrument has strings (and three or more), a note is added again when it can take two strings with
+    every note within DOUBLE_FRETS of the nut (or the capo); of several such notes the one whose shape
+    stays lowest, and none when two are as low. The added note has `doubled` set; target-fretted then
+    gives each its own string."""
+    by: dict[int, list[dict]] = {}
+    for n in notes:
+        by.setdefault(n["start"], []).append(n)
+    count = len(open_strings)
+    added = []
+    for ns in by.values():
+        pitches = [n["pitch"] for n in ns]
+        if len(ns) != count - 1 or len(ns) < CHORD_SIZE or len(set(pitches)) != len(pitches):
+            continue
+        reach = {}  # per note that could be doubled: the highest fret of the lowest such shape
+        for i, n in enumerate(ns):
+            shapes = [max(p - o for p, o in zip(order, open_strings)) for order in itertools.permutations(pitches + [n["pitch"]])
+                      if all(0 <= p - o <= DOUBLE_FRETS for p, o in zip(order, open_strings))]
+            if shapes:
+                reach[i] = min(shapes)
+        lowest = [i for i, fret in reach.items() if fret == min(reach.values())]
+        if len(lowest) == 1:
+            added.append({**ns[lowest[0]], "doubled": True})
+    return added
 
 
 def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.solve) -> dict:
@@ -434,10 +466,20 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
     instrument has strings, or a chord no hand spans: target-fretted, which has by then tried every
     other place for each note, reports those as violations. One note of each violation is then left out
     (least_wanted) and the passage fingered again, until there is no violation: every round leaves out
-    at least one note, so it ends, and the tab that is written can be played. `unplayable_dropped`
-    counts every note left out this way."""
+    at least one note, so it ends, and the tab that is written can be played.
+
+    On a ukulele and a mandolin (Heard.low_octaves_out) a note below the lowest string is left out the
+    same way when a note an octave or two above it starts with it: Basic Pitch hears a string's lower
+    octave as a note of its own, and under a high-G ukulele's chords that is a row of notes the
+    instrument does not have. `unplayable_dropped` counts both. The tuning suggestions are then the ones
+    made with those notes still there: a low G under a high-G ukulele's chords is also what a low-G
+    ukulele sounds like. Any other note below the instrument stays, flagged out of range, on every
+    instrument: it says the tuning or the instrument may be another."""
     notes = list(doc["notes"])
     dropped = 0
+    low_octaves_out = HEARD[opts["instrument"]].low_octaves_out
+    unisons = HEARD[opts["instrument"]].unisons_doubled
+    suggestions = None
     while True:
         answer = solve({"instrument": {"preset": preset(opts), "capo": opts["capo"]},
                         "notes": [{"pitch": n["pitch"], "start": n["start"], "dur": n["dur"]} for n in notes],
@@ -453,15 +495,36 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
                 out.add(least_wanted(involved, notes))
         if answer["violations"] and not out:  # a violation that names no note cannot be answered by leaving one out
             raise RuntimeError(f"target-fretted reports a violation without a note: {answer['violations'][0].get('kind')}")
+        lowest = min(s_["open_pitch"] for s_ in answer["instrument"]["tuning"]["strings"]) + answer["instrument"]["capo"]
+        together: dict[int, set[int]] = {}
+        for n in notes:
+            together.setdefault(n["start"], set()).add(n["pitch"])
+        low = {i for i, (n, place) in enumerate(zip(notes, places)) if place["out_of_range"] and n["pitch"] < lowest
+               and together[n["start"]] & {n["pitch"] + 12, n["pitch"] + 24}} if low_octaves_out else set()
+        if low and suggestions is None:
+            suggestions = answer["tuning_suggestions"]
+        out |= low
+        if not out and unisons:  # once, when what was heard is playable: the unisons, and the fingering again with them
+            unisons = False
+            more = doubled_unisons(notes, [s_["open_pitch"] + answer["instrument"]["capo"] for s_ in answer["instrument"]["tuning"]["strings"]])
+            if more:
+                notes = sorted(notes + more, key=lambda n: (n["start"], n["pitch"]))
+                continue
         if not out:
             break
-        dropped += len(out)
+        dropped += sum(not notes[i].get("doubled") for i in out)
         notes = [n for i, n in enumerate(notes) if i not in out]
+    # A doubling that did not get a string of its own is not written.
+    taken = {(n["start"], place["string"]) for n, place in zip(notes, places) if not n.get("doubled")}
+    keep = [i for i, (n, place) in enumerate(zip(notes, places)) if not n.get("doubled") or (n["start"], place["string"]) not in taken]
+    notes, places = [notes[i] for i in keep], [places[i] for i in keep]
     return {"preset": preset(opts), "style": opts["style"], "instrument": answer["instrument"],
             "notes": [{**n, **place} for n, place in zip(notes, places)],
-            "violations": answer["violations"], "tuning_suggestions": answer["tuning_suggestions"],
+            "violations": answer["violations"],
+            "tuning_suggestions": answer["tuning_suggestions"] if suggestions is None else suggestions,
             "octave_shift": doc["octave_shift"], "octave_source": doc["octave_source"],
             "octave_notes_moved": sum(n.get("octave_moved", False) for n in notes),
+            **({"doubled_notes": sum(n.get("doubled", False) for n in notes)} if HEARD[opts["instrument"]].unisons_doubled else {}),
             "unplayable_dropped": dropped, "leftovers_dropped": doc.get("leftovers_dropped", 0),
             "reference_pitch": doc["reference_pitch"],
             "tempo_bpm": doc["tempo_bpm"], "key": doc["key"], "meter": doc["meter"],
@@ -518,7 +581,7 @@ def build(title: str, params: dict) -> Pipeline:
         audio = Input("stems", f"{heard.stem}.wav")
     kind = heard.kind
     st.append(P._transcribe(kind, "basic-pitch", "bp", audio, None, retune=whole))
-    st.append(Stage(f"transcribe.{kind}.swift-f0", "transcribe", {"audio": audio}, second_opinion_retuned if whole else second_opinion,
+    st.append(Stage(f"transcribe.{kind}.swift-f0", "transcribe", {"audio": audio}, tuning.transcribe if whole else S.transcribe,
                     adapter="swift-f0", params={"output": f"{kind}-sw.mid"}, outputs=(f"{kind}-sw.mid",),
                     derive=tuning.derive if whole else None))
     listened = {"instrument": opts["instrument"], **({"whole_recording": True} if whole else {}),

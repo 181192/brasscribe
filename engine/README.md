@@ -16,8 +16,9 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   score. `instrument` says which: a bass (`bass-4`, `bass-5`, `bass-6`), a guitar (`guitar-6`, `guitar-7`,
   `guitar-8`), a ukulele (`ukulele` with tuning `high-g` or `low-g`, `ukulele-baritone`) or a mandolin; its tunings
   are the presets of the Rust crate [`target-fretted`](../core/target-fretted/README.md). The instrument's stem is
-  separated from the song (bass and guitar; a ukulele or mandolin is taken alone for now), or the recording itself
-  is read when it is the instrument alone (`recording: instrument`); then Basic Pitch, the shared beat grid and
+  separated from the song (the separator has no stem for a ukulele or a mandolin: they are read from its guitar
+  stem, which only works in a song where no guitar plays, so their default is `recording: instrument`), or the recording itself is read when it is the instrument alone
+  (`recording: instrument`); then Basic Pitch, the shared beat grid and
   durations, and a string and fret for every note from the crate, which the engine calls through the core's command
   line (`brasscribe-core fret`).
   - A bass is one line (`bass_tab.py`): SwiftF0 listens to the same audio as a second opinion; a note it did not
@@ -27,11 +28,16 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     octave or a fifth over a sounding note is played on purpose) and a faint note that no other strum repeats gets
     the "?". In a line the overtones and faint leftovers are left out and SwiftF0 is the second opinion. A chord the
     hand cannot play as heard loses its least sure note, again until none is left that it cannot play, so the tab
-    that is written has no playability violation. Any other instrument is read by the same rules, without the one
-    limit that was measured on guitars (an overtone above the 12th fret of the top string, among chords).
+    that is written has no playability violation. A ukulele or a mandolin is read by the same rules. Among
+    chords an overtone above the 12th fret of the top string is left out on a guitar and on a ukulele (its own top
+    string, and only a note that starts with the note it is an overtone of and is fainter: a melody played up there
+    stays), not on a mandolin, where that made no measurable difference. A unison that a strummed open chord of a
+    ukulele plays on two strings (the G of 0232) is heard once and written on both, marked `doubled`.
   - Nothing is left out silently: `tab.json` counts the notes heard but not written, `leftovers_dropped` (overtones,
-    faint notes and notes too short to be one, taken as not played) and `unplayable_dropped` (notes the instrument or the hand cannot play
-    with the rest of their chord). A ukulele or mandolin is taken alone (`recording: instrument`, their default).
+    faint notes and notes too short to be one, taken as not played) and `unplayable_dropped` (notes the instrument
+    or the hand cannot play with the rest of their chord, or, on a ukulele or a mandolin only, that lie under
+    its lowest string as the lower octave of a note in the strum). A guitar's or a bass's note below the lowest
+    string always stays, flagged, and the tuning suggestions are ranked on it.
   - The result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the fingered notes, the tunings
     ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
     `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore
@@ -39,10 +45,11 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   - Options: `instrument`, `tuning`, `capo` (frets are counted from it, and the page names it), `style`, `octave`
     (`auto`, or the player's choice) and `layout` (`tab`, `tab-and-notation`, `notation`), and none of the band
     options. `bass-tab` is the same profile with a bass under the id older apps use.
-  - `brasscribe bench bass-tab` and `brasscribe bench guitar-tab` measure it, on Slakh's bass lines and synthesized
-    low ones, and on GuitarSet and Slakh's guitars
+  - `brasscribe bench bass-tab`, `guitar-tab`, `ukulele-tab` and `mandolin-tab` measure it: on Slakh's bass lines
+    and synthesized low ones, on GuitarSet and Slakh's guitars, and on rendered ukulele and mandolin passages
     ([`bass_tab_bench.py`](../eval/brasscribe_eval/bass_tab_bench.py),
-    [`guitar_tab_bench.py`](../eval/brasscribe_eval/guitar_tab_bench.py)); they run where the data and the models
+    [`guitar_tab_bench.py`](../eval/brasscribe_eval/guitar_tab_bench.py),
+    [`small_tab_bench.py`](../eval/brasscribe_eval/small_tab_bench.py)); they run where the data and the models
     are, not in CI.
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS

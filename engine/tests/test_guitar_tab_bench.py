@@ -82,6 +82,15 @@ def test_missed_chord_notes_other_strings_split_chords_and_doubt_are_counted():
     assert G.summarize([G.score_tab(no_strings, _tab(chord + line))])["string_agreement"] == 0.0  # Slakh: nothing to agree with
 
 
+def test_a_unison_on_two_strings_agrees_whichever_way_its_notes_are_matched():
+    ref = {"notes": [{"pitch": p, "onset": 0.0, "offset": 0.5, "string": s} for p, s in ((67, 4), (62, 3), (67, 2), (71, 1))]}  # a ukulele's G: 0232
+    written = [(67, 0.0, 0, 2, 3, 1.0), (62, 0.0, 0, 3, 2, 1.0), (67, 0.0, 0, 4, 0, 1.0), (71, 0.0, 0, 1, 2, 1.0)]
+    assert G.summarize([G.score_tab(ref, _tab(written))])["string_agreement"] == 1.0
+    one = [(67, 0.0, 0, 2, 3, 1.0), (62, 0.0, 0, 3, 2, 1.0), (71, 0.0, 0, 1, 2, 1.0)]  # the unison written once
+    s = G.summarize([G.score_tab(ref, _tab(one))])
+    assert s["string_agreement"] == 1.0 and s["string_recall"] == 0.75
+
+
 def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
     r = suites.run_suite("guitar-tab", data=tmp_path)
     assert r["status"] == "skipped" and "eval/guitarset" in r["reason"]

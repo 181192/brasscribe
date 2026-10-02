@@ -206,8 +206,10 @@ class JobCreate(BaseModel):
                                                            "low frets and open strings; lead: a phrase stays in one "
                                                            "position; default: as-played")
     recording: Recording | None = Field(None, description="tab profile: what was recorded. song: a band or a record, "
-                                                          "the instrument is separated from it (bass and guitar; not yet "
-                                                          "ukulele or mandolin); instrument: the instrument alone, no "
+                                                          "the instrument is separated from it. A ukulele or mandolin "
+                                                          "is read from the separator's guitar stem, so this only works "
+                                                          "for them in a song without a guitar: with one, the tab holds "
+                                                          "both instruments; instrument: the instrument alone, no "
                                                           "separation; default: song (instrument for a ukulele or a mandolin)")
     layout: TabLayout | None = Field(None, description="tab profile: what the page shows. tab: the tab staff alone, "
                                                        "with stems for the rhythm; tab-and-notation: a notation staff "
@@ -358,6 +360,8 @@ class TabNote(BaseModel):
     out_of_range: bool = Field(description="no string of the instrument sounds this pitch; the usual cause is "
                                            "another tuning or instrument than the player's")
     pinned: bool = False
+    doubled: bool = Field(False, description="heard once and written twice: a unison that a strummed open chord of a "
+                                             "ukulele or a mandolin plays on two strings (the G of a ukulele's G chord, 0232)")
     octave_moved: bool = Field(False, description="written an octave below where Basic Pitch heard it, where the second "
                                                   "transcriber heard it. Its confidence is that of any note both heard: in "
                                                   "the benchmark four in five of these are right, so it gets no \"?\"")
@@ -443,10 +447,15 @@ class Tab(BaseModel):
                                           "that choice, 0, -12 or 12")
     unplayable_dropped: int = Field(0, description="notes heard that are not in the tab because the instrument cannot "
                                                    "play them with the others: more notes on one onset than it has "
-                                                   "strings, or a chord no hand spans. Always 0 for a bass line")
+                                                   "strings, a chord no hand spans, or, on a ukulele or a mandolin, a "
+                                                   "note below its lowest string that is the lower octave of a note "
+                                                   "in the same strum (a guitar's stays, out of range). Always 0 "
+                                                   "for a bass line")
+    doubled_notes: int = Field(0, description="notes written on a second string as the unison of a strummed chord; "
+                                              "each has doubled set")
     leftovers_dropped: int = Field(0, description="notes Basic Pitch heard that are not in the tab because they were "
                                                   "not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and "
-                                                  "notes heard very faintly; among a guitar's chords, overtones above "
+                                                  "notes heard very faintly; among a guitar's or a ukulele's chords, overtones above "
                                                   "the 12th fret of the top string. One pitch heard twice on one onset "
                                                   "is one note and is not counted. Always 0 for a bass line, whose "
                                                   "own count is in the job's log")

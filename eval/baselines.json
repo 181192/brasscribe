@@ -1363,6 +1363,728 @@
           "tolerance": 0
         }
       }
+    },
+    "ukulele-tab": {
+      "source": "measured by this suite (brasscribe bench ukulele-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate",
+      "metrics": {
+        "ukulele_baritone.instrument.onset_f1": 0.896,
+        "ukulele_baritone.instrument.onset_p": 0.838,
+        "ukulele_baritone.instrument.onset_r": 0.98,
+        "ukulele_baritone.instrument.octave_err_rate": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.instrument.chord_recall": 1.0,
+        "ukulele_baritone.instrument.chord_precision": 0.98,
+        "ukulele_baritone.instrument.string_agreement": 0.992,
+        "ukulele_baritone.instrument.string_recall": 0.992,
+        "ukulele_baritone.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.instrument.leftovers_dropped": {
+          "value": 0.076,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.instrument.unplayable_dropped": {
+          "value": 0.062,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.instrument.hand_travel": {
+          "value": 0.664,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_baritone.instrument.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.instrument.doubt_precision": 0.0,
+        "ukulele_baritone.instrument.tempo_ok": 1.0,
+        "ukulele_baritone.instrument.meter_ok": 0.667,
+        "ukulele_baritone.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.instrument.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "ukulele_baritone.song.onset_f1": 0.884,
+        "ukulele_baritone.song.onset_p": 0.833,
+        "ukulele_baritone.song.onset_r": 0.974,
+        "ukulele_baritone.song.octave_err_rate": {
+          "value": 0.007,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.song.chord_recall": 0.944,
+        "ukulele_baritone.song.chord_precision": 0.936,
+        "ukulele_baritone.song.string_agreement": 0.989,
+        "ukulele_baritone.song.string_recall": 0.948,
+        "ukulele_baritone.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.song.leftovers_dropped": {
+          "value": 0.089,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.song.unplayable_dropped": {
+          "value": 0.047,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.song.hand_travel": {
+          "value": 0.654,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_baritone.song.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.song.doubt_precision": 0.6,
+        "ukulele_baritone.song.tempo_ok": 1.0,
+        "ukulele_baritone.song.meter_ok": 1.0,
+        "ukulele_baritone.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone.song.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "ukulele_baritone_heldout.instrument.onset_f1": 0.798,
+        "ukulele_baritone_heldout.instrument.onset_p": 0.733,
+        "ukulele_baritone_heldout.instrument.onset_r": 0.904,
+        "ukulele_baritone_heldout.instrument.octave_err_rate": {
+          "value": 0.025,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.instrument.chord_recall": 0.94,
+        "ukulele_baritone_heldout.instrument.chord_precision": 0.815,
+        "ukulele_baritone_heldout.instrument.string_agreement": 0.933,
+        "ukulele_baritone_heldout.instrument.string_recall": 0.831,
+        "ukulele_baritone_heldout.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.instrument.leftovers_dropped": {
+          "value": 0.086,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.instrument.unplayable_dropped": {
+          "value": 0.214,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.instrument.hand_travel": {
+          "value": 1.355,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_baritone_heldout.instrument.high_fret_share": {
+          "value": 0.056,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.instrument.doubt_precision": 0.786,
+        "ukulele_baritone_heldout.instrument.tempo_ok": 0.75,
+        "ukulele_baritone_heldout.instrument.meter_ok": 0.75,
+        "ukulele_baritone_heldout.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.instrument.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "ukulele_baritone_heldout.song.onset_f1": 0.798,
+        "ukulele_baritone_heldout.song.onset_p": 0.795,
+        "ukulele_baritone_heldout.song.onset_r": 0.841,
+        "ukulele_baritone_heldout.song.octave_err_rate": {
+          "value": 0.015,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.song.chord_recall": 0.935,
+        "ukulele_baritone_heldout.song.chord_precision": 0.903,
+        "ukulele_baritone_heldout.song.string_agreement": 0.916,
+        "ukulele_baritone_heldout.song.string_recall": 0.758,
+        "ukulele_baritone_heldout.song.out_of_range": {
+          "value": 0.003,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.song.leftovers_dropped": {
+          "value": 0.121,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.song.unplayable_dropped": {
+          "value": 0.125,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.song.hand_travel": {
+          "value": 1.599,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_baritone_heldout.song.high_fret_share": {
+          "value": 0.026,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.song.doubt_precision": 0.647,
+        "ukulele_baritone_heldout.song.tempo_ok": 1.0,
+        "ukulele_baritone_heldout.song.meter_ok": 1.0,
+        "ukulele_baritone_heldout.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_baritone_heldout.song.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "ukulele_high_g.instrument.onset_f1": 0.903,
+        "ukulele_high_g.instrument.onset_p": 0.843,
+        "ukulele_high_g.instrument.onset_r": 0.995,
+        "ukulele_high_g.instrument.octave_err_rate": {
+          "value": 0.003,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.instrument.chord_recall": 0.986,
+        "ukulele_high_g.instrument.chord_precision": 0.957,
+        "ukulele_high_g.instrument.string_agreement": 0.968,
+        "ukulele_high_g.instrument.string_recall": 0.958,
+        "ukulele_high_g.instrument.out_of_range": {
+          "value": 0.013,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.instrument.leftovers_dropped": {
+          "value": 0.105,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.instrument.unplayable_dropped": {
+          "value": 0.069,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.instrument.hand_travel": {
+          "value": 0.683,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_high_g.instrument.high_fret_share": {
+          "value": 0.015,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.instrument.doubt_precision": 0.933,
+        "ukulele_high_g.instrument.tempo_ok": 1.0,
+        "ukulele_high_g.instrument.meter_ok": 1.0,
+        "ukulele_high_g.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.instrument.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "ukulele_high_g.song.onset_f1": 0.882,
+        "ukulele_high_g.song.onset_p": 0.817,
+        "ukulele_high_g.song.onset_r": 0.991,
+        "ukulele_high_g.song.octave_err_rate": {
+          "value": 0.006,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.song.chord_recall": 0.972,
+        "ukulele_high_g.song.chord_precision": 0.918,
+        "ukulele_high_g.song.string_agreement": 0.971,
+        "ukulele_high_g.song.string_recall": 0.951,
+        "ukulele_high_g.song.out_of_range": {
+          "value": 0.009,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.song.leftovers_dropped": {
+          "value": 0.127,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.song.unplayable_dropped": {
+          "value": 0.067,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.song.hand_travel": {
+          "value": 0.684,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_high_g.song.high_fret_share": {
+          "value": 0.019,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.song.doubt_precision": 1.0,
+        "ukulele_high_g.song.tempo_ok": 1.0,
+        "ukulele_high_g.song.meter_ok": 1.0,
+        "ukulele_high_g.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_high_g.song.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "ukulele_high_g_heldout.instrument.onset_f1": 0.824,
+        "ukulele_high_g_heldout.instrument.onset_p": 0.765,
+        "ukulele_high_g_heldout.instrument.onset_r": 0.915,
+        "ukulele_high_g_heldout.instrument.octave_err_rate": {
+          "value": 0.008,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.instrument.chord_recall": 0.866,
+        "ukulele_high_g_heldout.instrument.chord_precision": 0.903,
+        "ukulele_high_g_heldout.instrument.string_agreement": 0.894,
+        "ukulele_high_g_heldout.instrument.string_recall": 0.784,
+        "ukulele_high_g_heldout.instrument.out_of_range": {
+          "value": 0.019,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.instrument.leftovers_dropped": {
+          "value": 0.192,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.instrument.unplayable_dropped": {
+          "value": 0.194,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.instrument.hand_travel": {
+          "value": 2.011,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_high_g_heldout.instrument.high_fret_share": {
+          "value": 0.168,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.instrument.doubt_precision": 1.0,
+        "ukulele_high_g_heldout.instrument.tempo_ok": 0.5,
+        "ukulele_high_g_heldout.instrument.meter_ok": 0.5,
+        "ukulele_high_g_heldout.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.instrument.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "ukulele_high_g_heldout.song.onset_f1": 0.805,
+        "ukulele_high_g_heldout.song.onset_p": 0.775,
+        "ukulele_high_g_heldout.song.onset_r": 0.874,
+        "ukulele_high_g_heldout.song.octave_err_rate": {
+          "value": 0.004,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.song.chord_recall": 0.866,
+        "ukulele_high_g_heldout.song.chord_precision": 0.903,
+        "ukulele_high_g_heldout.song.string_agreement": 0.893,
+        "ukulele_high_g_heldout.song.string_recall": 0.748,
+        "ukulele_high_g_heldout.song.out_of_range": {
+          "value": 0.022,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.song.leftovers_dropped": {
+          "value": 0.194,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.song.unplayable_dropped": {
+          "value": 0.153,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.song.hand_travel": {
+          "value": 1.815,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_high_g_heldout.song.high_fret_share": {
+          "value": 0.172,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.song.doubt_precision": 1.0,
+        "ukulele_high_g_heldout.song.tempo_ok": 1.0,
+        "ukulele_high_g_heldout.song.meter_ok": 1.0,
+        "ukulele_high_g_heldout.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_high_g_heldout.song.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "ukulele_low_g.instrument.onset_f1": 0.889,
+        "ukulele_low_g.instrument.onset_p": 0.849,
+        "ukulele_low_g.instrument.onset_r": 0.964,
+        "ukulele_low_g.instrument.octave_err_rate": {
+          "value": 0.023,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.instrument.chord_recall": 0.903,
+        "ukulele_low_g.instrument.chord_precision": 0.964,
+        "ukulele_low_g.instrument.string_agreement": 0.989,
+        "ukulele_low_g.instrument.string_recall": 0.917,
+        "ukulele_low_g.instrument.out_of_range": {
+          "value": 0.006,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.instrument.leftovers_dropped": {
+          "value": 0.035,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.instrument.unplayable_dropped": {
+          "value": 0.049,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.instrument.hand_travel": {
+          "value": 0.738,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_low_g.instrument.high_fret_share": {
+          "value": 0.002,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.instrument.doubt_precision": 0.444,
+        "ukulele_low_g.instrument.tempo_ok": 1.0,
+        "ukulele_low_g.instrument.meter_ok": 1.0,
+        "ukulele_low_g.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.instrument.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "ukulele_low_g.song.onset_f1": 0.886,
+        "ukulele_low_g.song.onset_p": 0.84,
+        "ukulele_low_g.song.onset_r": 0.975,
+        "ukulele_low_g.song.octave_err_rate": {
+          "value": 0.019,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.song.chord_recall": 0.924,
+        "ukulele_low_g.song.chord_precision": 0.938,
+        "ukulele_low_g.song.string_agreement": 0.992,
+        "ukulele_low_g.song.string_recall": 0.935,
+        "ukulele_low_g.song.out_of_range": {
+          "value": 0.004,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.song.leftovers_dropped": {
+          "value": 0.074,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.song.unplayable_dropped": {
+          "value": 0.04,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.song.hand_travel": {
+          "value": 0.644,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_low_g.song.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.song.doubt_precision": 0.588,
+        "ukulele_low_g.song.tempo_ok": 1.0,
+        "ukulele_low_g.song.meter_ok": 1.0,
+        "ukulele_low_g.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_low_g.song.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "ukulele_low_g_heldout.instrument.onset_f1": 0.844,
+        "ukulele_low_g_heldout.instrument.onset_p": 0.78,
+        "ukulele_low_g_heldout.instrument.onset_r": 0.945,
+        "ukulele_low_g_heldout.instrument.octave_err_rate": {
+          "value": 0.016,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.instrument.chord_recall": 0.973,
+        "ukulele_low_g_heldout.instrument.chord_precision": 0.931,
+        "ukulele_low_g_heldout.instrument.string_agreement": 0.924,
+        "ukulele_low_g_heldout.instrument.string_recall": 0.867,
+        "ukulele_low_g_heldout.instrument.out_of_range": {
+          "value": 0.012,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.instrument.leftovers_dropped": {
+          "value": 0.102,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.instrument.unplayable_dropped": {
+          "value": 0.211,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.instrument.hand_travel": {
+          "value": 1.517,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_low_g_heldout.instrument.high_fret_share": {
+          "value": 0.096,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.instrument.doubt_precision": 0.714,
+        "ukulele_low_g_heldout.instrument.tempo_ok": 0.75,
+        "ukulele_low_g_heldout.instrument.meter_ok": 0.75,
+        "ukulele_low_g_heldout.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.instrument.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "ukulele_low_g_heldout.song.onset_f1": 0.798,
+        "ukulele_low_g_heldout.song.onset_p": 0.747,
+        "ukulele_low_g_heldout.song.onset_r": 0.892,
+        "ukulele_low_g_heldout.song.octave_err_rate": {
+          "value": 0.016,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.song.chord_recall": 0.97,
+        "ukulele_low_g_heldout.song.chord_precision": 0.888,
+        "ukulele_low_g_heldout.song.string_agreement": 0.919,
+        "ukulele_low_g_heldout.song.string_recall": 0.815,
+        "ukulele_low_g_heldout.song.out_of_range": {
+          "value": 0.025,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.song.leftovers_dropped": {
+          "value": 0.122,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.song.unplayable_dropped": {
+          "value": 0.115,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.song.hand_travel": {
+          "value": 1.81,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "ukulele_low_g_heldout.song.high_fret_share": {
+          "value": 0.097,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.song.doubt_precision": 0.72,
+        "ukulele_low_g_heldout.song.tempo_ok": 1.0,
+        "ukulele_low_g_heldout.song.meter_ok": 1.0,
+        "ukulele_low_g_heldout.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "ukulele_low_g_heldout.song.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "stem.guitar.recall": 0.918,
+        "stem.other.recall": 0.082,
+        "stem.piano.recall": 0.013,
+        "stem.vocals.recall": 0.0
+      }
+    },
+    "mandolin-tab": {
+      "source": "measured by this suite (brasscribe bench mandolin-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate",
+      "metrics": {
+        "mandolin.instrument.onset_f1": 0.847,
+        "mandolin.instrument.onset_p": 0.8,
+        "mandolin.instrument.onset_r": 0.948,
+        "mandolin.instrument.octave_err_rate": {
+          "value": 0.039,
+          "higher_is_better": false
+        },
+        "mandolin.instrument.chord_recall": 0.854,
+        "mandolin.instrument.chord_precision": 0.881,
+        "mandolin.instrument.string_agreement": 0.985,
+        "mandolin.instrument.string_recall": 0.875,
+        "mandolin.instrument.out_of_range": {
+          "value": 0.003,
+          "higher_is_better": false
+        },
+        "mandolin.instrument.leftovers_dropped": {
+          "value": 0.055,
+          "higher_is_better": false
+        },
+        "mandolin.instrument.unplayable_dropped": {
+          "value": 0.142,
+          "higher_is_better": false
+        },
+        "mandolin.instrument.hand_travel": {
+          "value": 0.731,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin.instrument.high_fret_share": {
+          "value": 0.004,
+          "higher_is_better": false
+        },
+        "mandolin.instrument.doubt_precision": 0.826,
+        "mandolin.instrument.tempo_ok": 1.0,
+        "mandolin.instrument.meter_ok": 0.667,
+        "mandolin.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin.instrument.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "mandolin.song.onset_f1": 0.831,
+        "mandolin.song.onset_p": 0.783,
+        "mandolin.song.onset_r": 0.95,
+        "mandolin.song.octave_err_rate": {
+          "value": 0.038,
+          "higher_is_better": false
+        },
+        "mandolin.song.chord_recall": 0.872,
+        "mandolin.song.chord_precision": 0.788,
+        "mandolin.song.string_agreement": 0.945,
+        "mandolin.song.string_recall": 0.849,
+        "mandolin.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin.song.leftovers_dropped": {
+          "value": 0.036,
+          "higher_is_better": false
+        },
+        "mandolin.song.unplayable_dropped": {
+          "value": 0.113,
+          "higher_is_better": false
+        },
+        "mandolin.song.hand_travel": {
+          "value": 0.959,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin.song.high_fret_share": {
+          "value": 0.011,
+          "higher_is_better": false
+        },
+        "mandolin.song.doubt_precision": 0.857,
+        "mandolin.song.tempo_ok": 1.0,
+        "mandolin.song.meter_ok": 1.0,
+        "mandolin.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin.song.excerpts": {
+          "value": 3,
+          "tolerance": 0
+        },
+        "mandolin_heldout.instrument.onset_f1": 0.76,
+        "mandolin_heldout.instrument.onset_p": 0.699,
+        "mandolin_heldout.instrument.onset_r": 0.894,
+        "mandolin_heldout.instrument.octave_err_rate": {
+          "value": 0.097,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.instrument.chord_recall": 0.786,
+        "mandolin_heldout.instrument.chord_precision": 0.659,
+        "mandolin_heldout.instrument.string_agreement": 0.893,
+        "mandolin_heldout.instrument.string_recall": 0.742,
+        "mandolin_heldout.instrument.out_of_range": {
+          "value": 0.044,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.instrument.leftovers_dropped": {
+          "value": 0.062,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.instrument.unplayable_dropped": {
+          "value": 0.146,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.instrument.hand_travel": {
+          "value": 1.746,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin_heldout.instrument.high_fret_share": {
+          "value": 0.105,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.instrument.doubt_precision": 0.821,
+        "mandolin_heldout.instrument.tempo_ok": 1.0,
+        "mandolin_heldout.instrument.meter_ok": 0.5,
+        "mandolin_heldout.instrument.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.instrument.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "mandolin_heldout.song.onset_f1": 0.722,
+        "mandolin_heldout.song.onset_p": 0.787,
+        "mandolin_heldout.song.onset_r": 0.738,
+        "mandolin_heldout.song.octave_err_rate": {
+          "value": 0.066,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.song.chord_recall": 0.798,
+        "mandolin_heldout.song.chord_precision": 0.866,
+        "mandolin_heldout.song.string_agreement": 0.948,
+        "mandolin_heldout.song.string_recall": 0.683,
+        "mandolin_heldout.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.song.leftovers_dropped": {
+          "value": 0.083,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.song.unplayable_dropped": {
+          "value": 0.094,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.song.hand_travel": {
+          "value": 1.06,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin_heldout.song.high_fret_share": {
+          "value": 0.033,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.song.doubt_precision": 0.75,
+        "mandolin_heldout.song.tempo_ok": 1.0,
+        "mandolin_heldout.song.meter_ok": 1.0,
+        "mandolin_heldout.song.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout.song.excerpts": {
+          "value": 4,
+          "tolerance": 0
+        },
+        "stem.guitar.recall": 0.842,
+        "stem.other.recall": 0.133,
+        "stem.piano.recall": 0.0,
+        "stem.vocals.recall": 0.0
+      }
     }
   }
 }
