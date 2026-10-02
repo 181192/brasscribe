@@ -24,4 +24,5 @@ A|-2----||
 E|-0----||
 
 ?  a note to check: it was not heard clearly
-!  a note with no string to play it on, not in the lines: bar 6: G6; bar 7: D2
+!  a note with no string to play it on, not in the lines: bar 6: G6;
+   bar 7: D2

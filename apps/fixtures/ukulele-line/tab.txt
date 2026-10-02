@@ -20,4 +20,5 @@ C|-0-----0----|-------------2-----0----|----2-----0-|------------||
 G|-2-----2----|----0--------------2----|----0-----0-|------------||
 
 ?  a note to check: it was not heard clearly
-!  a note with no string to play it on, not in the lines: bar 2: C7; bar 4: E7; bar 7: E7; bar 8: C7; bar 9: C7
+!  a note with no string to play it on, not in the lines: bar 2: C7;
+   bar 4: E7; bar 7: E7; bar 8: C7; bar 9: C7

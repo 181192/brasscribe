@@ -402,9 +402,19 @@ fn a_second_note_on_one_string_is_named_not_dropped() {
     let mut p = Passage::new();
     p.placed(&bass, 2, 2, 0, 96, 1.0, &[]);
     p.placed(&bass, 2, 5, 0, 96, 1.0, &[]);
-    let text = tab_text(&p.score(&bass), TEXT_WIDTH);
+    let score = p.score(&bass);
+    let text = tab_text(&score, TEXT_WIDTH);
     assert!(text.contains("\n   !\nG|--------||\nD|-2------||\n"), "{text}");
-    assert!(text.ends_with("not in the lines: bar 1: G2\n"), "{text}");
+    assert!(
+        text.ends_with("\n\n!  a note that cannot be played together with another note on its\n   string, not in the lines: bar 1: G2 (string 2)\n"),
+        "{text}"
+    );
+    // The instructions say the same: the note that is written, and the note that is not.
+    let en = instructions(&score, "en");
+    assert!(en.ends_with("\nBar 1\n  Beat 1. Chord, 2 notes: string 2, fret 2; G 2, cannot be played together with the note on string 2. Whole note.\n"), "{en}");
+    let nb = instructions(&score, "nb");
+    assert!(nb.ends_with("\nTakt 1\n  Slag 1. Akkord, 2 toner: streng 2, bånd 2; G 2, kan ikke spilles sammen med tonen på streng 2. Helnote.\n"), "{nb}");
+    assert!(!text.contains("no string to play it on") && !en.contains("no string to play it on"));
 }
 
 #[test]
@@ -477,7 +487,12 @@ fn every_note_is_in_the_text_exactly_once() {
             assert_eq!((above.matches('?').count(), above.matches('!').count()), (doubt, lost), "{name}, width {width}\n{text}");
             // Each of those notes is named once in the legend.
             let no_place = p.fingering.notes.iter().filter(|n| n.string.is_none()).count();
-            let named = text.lines().find(|l| l.starts_with("!  ")).map_or(0, |l| l.split_once("not in the lines: ").unwrap().1.split("; ").map(|at| at.split_once(": ").unwrap().1.split(' ').count()).sum());
+            // The legend's line may run on over indented lines, and names the notes of twelve bars.
+            let legend: Vec<&str> = text.rsplit("\n\n").next().unwrap().lines().skip_while(|l| !l.starts_with("!  ")).enumerate().take_while(|(i, l)| *i == 0 || l.starts_with(' ')).map(|(_, l)| l.trim()).collect();
+            let legend = legend.join(" ");
+            let named: usize = legend.split_once("not in the lines: ").map_or(0, |(_, bars)| {
+                bars.split("; ").map(|at| at.strip_prefix("and ").and_then(|n| n.strip_suffix(" more")).map_or_else(|| at.split_once(": ").unwrap().1.split(' ').count(), |n| n.parse().unwrap())).sum()
+            });
             assert_eq!(named, no_place, "{name}: notes named after the !\n{text}");
         }
     }
@@ -632,7 +647,7 @@ String 1 is the string nearest the floor as you play. String 4 is nearest the ce
 Tuning: Standard. Open strings from string 4 to string 1: E, A, D, G.
 Capo on fret 2. Frets are counted from the capo.
 Tempo: 96 quarter notes per minute.
-Time: 4 4 time.
+Time signature: 4 4.
 A note marked \"to check\" was not heard clearly.
 
 Pickup
@@ -665,7 +680,7 @@ Streng 1 er strengen nærmest gulvet når du spiller. Streng 4 er nærmest taket
 Stemming: Standard. Løse strenger fra streng 4 til streng 1: E, A, D, G.
 Capo på bånd 2. Båndene telles fra capoen.
 Tempo: 96 fjerdedelsnoter per minutt.
-Taktart: 4 fjerdedels takt.
+Taktart: 4 fjerdedeler.
 En tone merket «bør sjekkes» ble ikke hørt tydelig.
 
 Opptakt
@@ -693,7 +708,6 @@ Takt 4
     assert_eq!(instructions(&score, "en"), en);
     assert_eq!(instructions(&score, "nb"), nb);
     assert_eq!(instructions(&score, "nb-NO"), nb);
-    assert_eq!(instructions(&score, "no"), nb);
 }
 
 #[test]
@@ -743,13 +757,13 @@ Takt 1
   Slag 4. Streng 1, dempet tone. Fjerdedelsnote.
 
 Takt 2
-  Som takt 1.
+  Samme som takt 1.
 
 Takt 3\u{2013}4
   Pause, 2 takter.
 
 Takt 5
-  Som takt 1.
+  Samme som takt 1.
 "
         ),
         "{nb}"
@@ -824,7 +838,7 @@ fn the_instructions_say_every_note_once_and_the_same_in_both_languages() {
         let shape = |text: &str| text.lines().skip(1).map(|l| (l.is_empty(), l.starts_with("  "))).collect::<Vec<_>>();
         assert_eq!(shape(&en), shape(&nb), "{name}\n{en}\n{nb}");
         let en_bars = bar_lines(&en, "Bar", "Pickup", "Same as bar ");
-        let nb_bars = bar_lines(&nb, "Takt", "Opptakt", "Som takt ");
+        let nb_bars = bar_lines(&nb, "Takt", "Opptakt", "Samme som takt ");
         assert_eq!(en_bars.keys().collect::<Vec<_>>(), nb_bars.keys().collect::<Vec<_>>(), "{name}");
 
         // Bar for bar the notes of the tab staff, where they start. A dead note has no fret said,
@@ -857,6 +871,304 @@ fn the_instructions_say_every_note_once_and_the_same_in_both_languages() {
     }
 }
 
+// ---------------------------------------------------------------- wording
+
+/// Where each line of the bars says it is: what stands before the string or the rest.
+fn positions(text: &str, bar: &str) -> Vec<String> {
+    text.lines().skip_while(|l| !l.starts_with(bar)).filter_map(|l| l.strip_prefix("  ")).map(|l| l.split(". ").take_while(|part| !part.starts_with("Str") && !part.ends_with("rest.") && !part.ends_with("pause.")).collect::<Vec<_>>().join(". ")).collect()
+}
+
+#[test]
+fn in_six_eight_the_parts_of_a_beat_are_its_eighths_and_sixteenths_not_a_triplet() {
+    let guitar = preset("guitar-standard").unwrap();
+    let mut p = Passage::new();
+    for k in 0..3 {
+        p.placed(&guitar, 1, k as u8, 12 * k, 12, 1.0, &[]);
+    }
+    for k in 0..6 {
+        p.placed(&guitar, 2, k as u8, 36 + 6 * k, 6, 1.0, &[]);
+    }
+    // The second bar: a dotted quarter, a rest of an eighth, and two eighths.
+    p.placed(&guitar, 3, 0, 72, 36, 1.0, &[]);
+    p.placed(&guitar, 3, 2, 120, 12, 1.0, &[]);
+    p.placed(&guitar, 3, 4, 132, 12, 1.0, &[]);
+    let score = p.score(&guitar).with_meter(6, 8);
+    let (en, nb) = (instructions(&score, "en"), instructions(&score, "nb"));
+    assert_eq!(
+        positions(&en, "Bar 1"),
+        [
+            "Beat 1",
+            "Beat 1, eighth 2",
+            "Beat 1, eighth 3",
+            "Beat 2",
+            "Beat 2, sixteenth 2",
+            "Beat 2, eighth 2",
+            "Beat 2, sixteenth 4",
+            "Beat 2, eighth 3",
+            "Beat 2, sixteenth 6",
+            "Beat 1",
+            "Beat 2",
+            "Beat 2, eighth 2",
+            "Beat 2, eighth 3",
+        ],
+        "{en}"
+    );
+    assert_eq!(
+        positions(&nb, "Takt 1"),
+        [
+            "Slag 1",
+            "Slag 1, 2. åttendedel",
+            "Slag 1, 3. åttendedel",
+            "Slag 2",
+            "Slag 2, 2. sekstendedel",
+            "Slag 2, 2. åttendedel",
+            "Slag 2, 4. sekstendedel",
+            "Slag 2, 3. åttendedel",
+            "Slag 2, 6. sekstendedel",
+            "Slag 1",
+            "Slag 2",
+            "Slag 2, 2. åttendedel",
+            "Slag 2, 3. åttendedel",
+        ],
+        "{nb}"
+    );
+    assert!(en.contains("\n  Beat 1, eighth 2. String 1, fret 1. Eighth note.\n") && en.contains("\n  Beat 2, sixteenth 2. String 2, fret 1. Sixteenth note.\n"), "{en}");
+    assert!(en.contains("\nBar 2\n  Beat 1. String 3, open. Dotted quarter note.\n  Beat 2. Eighth rest.\n"), "{en}");
+    assert!(nb.contains("\n  Slag 1, 2. åttendedel. Streng 1, bånd 1. Åttendedelsnote.\n"), "{nb}");
+    for text in [&en, &nb] {
+        assert!(!text.contains("triplet") && !text.contains("triol") && !text.contains("plus"), "{text}");
+    }
+    assert!(en.contains("\nTime signature: 6 8.\n") && nb.contains("\nTaktart: 6 åttendedeler.\n"));
+
+    // Twelve eighths are four beats of three, nine are three.
+    for (beats, last) in [(12, "Beat 4, eighth 3"), (9, "Beat 3, eighth 3")] {
+        let mut p = Passage::new();
+        for k in 0..beats {
+            p.placed(&guitar, 1, 0, 12 * k, 12, 1.0, &[]);
+        }
+        let en = instructions(&p.score(&guitar).with_meter(beats, 8), "en");
+        assert_eq!(positions(&en, "Bar 1").last().map(String::as_str), Some(last), "{en}");
+        assert!(!en.contains("triplet"), "{en}");
+    }
+}
+
+#[test]
+fn a_triplet_is_only_said_where_one_is_written_and_three_eight_counts_its_eighths() {
+    let guitar = preset("guitar-standard").unwrap();
+    // Three eighths in the time of two, in 4/4: a triplet.
+    let mut p = Passage::new();
+    for k in 0..3 {
+        p.placed(&guitar, 1, 0, 8 * k, 8, 1.0, &[]);
+    }
+    p.placed(&guitar, 1, 0, 24, 12, 1.0, &[]);
+    p.placed(&guitar, 1, 0, 36, 12, 1.0, &[]);
+    let en = instructions(&p.score(&guitar), "en");
+    assert_eq!(positions(&en, "Bar 1"), ["Beat 1", "Beat 1, triplet 2", "Beat 1, triplet 3", "Beat 2", "Beat 2 and", "Beat 3"], "{en}");
+    assert!(en.contains("  Beat 1, triplet 2. String 1, open. Eighth note in a triplet.\n"), "{en}");
+    let nb = instructions(&p.score(&guitar), "nb");
+    assert_eq!(positions(&nb, "Takt 1")[..5], ["Slag 1", "Slag 1, triol 2", "Slag 1, triol 3", "Slag 2", "Slag 2-og"], "{nb}");
+
+    // 3/8 is counted in eighths: each is a beat, and a sixteenth is the "and".
+    let mut p = Passage::new();
+    for (k, start) in [0, 12, 18, 24].into_iter().enumerate() {
+        p.placed(&guitar, 1, k as u8, start, 6, 1.0, &[]);
+    }
+    let en = instructions(&p.score(&guitar).with_meter(3, 8), "en");
+    assert_eq!(positions(&en, "Bar 1"), ["Beat 1", "Beat 1 and", "Beat 2", "Beat 2 and", "Beat 3", "Beat 3 and"], "{en}");
+}
+
+#[test]
+fn a_tuning_is_named_in_norwegian_with_h_for_b_on_every_preset() {
+    let names = [
+        ("guitar-standard", "Standard", "Standard"),
+        ("guitar-eb-standard", "E-flat standard", "Ess standard"),
+        ("guitar-d-standard", "D standard", "D standard"),
+        ("guitar-c-standard", "C standard", "C standard"),
+        ("guitar-drop-d", "Drop D", "Drop D"),
+        ("guitar-drop-c", "Drop C", "Drop C"),
+        ("guitar-drop-b", "Drop B", "Drop H"),
+        ("guitar-dadgad", "DADGAD", "DADGAD"),
+        ("guitar-open-g", "Open G", "Open G"),
+        ("guitar-open-d", "Open D", "Open D"),
+        ("guitar-open-e", "Open E", "Open E"),
+        ("guitar-7-standard", "B standard", "H standard"),
+        ("guitar-7-eb-standard", "E-flat standard", "Ess standard"),
+        ("guitar-8-standard", "F-sharp standard", "Fiss standard"),
+        ("bass-4-standard", "Standard", "Standard"),
+        ("bass-4-eb-standard", "E-flat standard", "Ess standard"),
+        ("bass-4-d-standard", "D standard", "D standard"),
+        ("bass-4-drop-d", "Drop D", "Drop D"),
+        ("bass-4-bead", "BEAD", "HEAD"),
+        ("bass-5-standard", "Standard", "Standard"),
+        ("bass-5-drop-a", "Drop A", "Drop A"),
+        ("bass-6-standard", "Standard", "Standard"),
+        ("ukulele-high-g", "GCEA high G", "GCEA høy G"),
+        ("ukulele-low-g", "GCEA low G", "GCEA lav G"),
+        ("ukulele-baritone", "DGBE", "DGHE"),
+        ("mandolin", "GDAE", "GDAE"),
+    ];
+    assert_eq!(names.iter().map(|n| n.0).collect::<Vec<_>>(), PRESET_IDS, "every preset");
+    for (id, en, nb) in names {
+        let inst = preset(id).unwrap();
+        let mut p = Passage::new();
+        p.placed(&inst, 1, 0, 0, 96, 1.0, &[]);
+        let score = p.score(&inst);
+        assert!(instructions(&score, "en").contains(&format!("\nTuning: {en}. Open strings from string ")), "{id}\n{}", instructions(&score, "en"));
+        let said = instructions(&score, "nb");
+        assert!(said.contains(&format!("\nStemming: {nb}. Løse strenger fra streng ")), "{id}\n{said}");
+    }
+    // A name of someone's own is kept, but for its note names and its signs.
+    let mut own = preset("guitar-standard").unwrap();
+    own.tuning.name = "Bob's B\u{266d} thing".into();
+    let mut p = Passage::new();
+    p.placed(&own, 1, 0, 0, 96, 1.0, &[]);
+    assert!(instructions(&p.score(&own), "nb").contains("\nStemming: Bob's B thing. "));
+    assert!(instructions(&p.score(&own), "en").contains("\nTuning: Bob's B-flat thing. "));
+}
+
+#[test]
+fn time_signatures_are_said_plainly_in_each_language() {
+    let bass = preset("bass-4-standard").unwrap();
+    for (beats, unit, en, nb) in [
+        (4, 4, "Time signature: 4 4.", "Taktart: 4 fjerdedeler."),
+        (3, 4, "Time signature: 3 4.", "Taktart: 3 fjerdedeler."),
+        (2, 2, "Time signature: 2 2.", "Taktart: 2 halve."),
+        (1, 1, "Time signature: 1 1.", "Taktart: 1 hel."),
+        (2, 1, "Time signature: 2 1.", "Taktart: 2 hele."),
+        (1, 2, "Time signature: 1 2.", "Taktart: 1 halv."),
+        (1, 4, "Time signature: 1 4.", "Taktart: 1 fjerdedel."),
+        (6, 8, "Time signature: 6 8.", "Taktart: 6 åttendedeler."),
+        (5, 16, "Time signature: 5 16.", "Taktart: 5 sekstendedeler."),
+    ] {
+        let score = Passage::new().score(&bass).with_meter(beats, unit);
+        assert!(instructions(&score, "en").contains(&format!("\n{en}\n")), "{}", instructions(&score, "en"));
+        assert!(instructions(&score, "nb").contains(&format!("\n{nb}\n")), "{}", instructions(&score, "nb"));
+    }
+}
+
+#[test]
+fn a_language_is_en_or_nb_with_or_without_a_region() {
+    let bass = preset("bass-4-standard").unwrap();
+    let score = Passage::new().score(&bass);
+    let (en, nb) = (instructions(&score, "en"), instructions(&score, "nb"));
+    for tag in ["EN", "en-GB", "en_US", "en-Latn-US"] {
+        assert_eq!(instructions(&score, tag), en, "{tag}");
+    }
+    for tag in ["NB", "nb-NO", "nb_NO"] {
+        assert_eq!(instructions(&score, tag), nb, "{tag}");
+    }
+    for tag in ["", "no", "nn", "english", "norsk", "nbx", "enx", "e", "de", " en"] {
+        let e = write_playing_instructions(&score, &TabOptions::default(), &text_options(TEXT_WIDTH, tag)).unwrap_err();
+        assert!(e.contains("en or nb"), "{tag}: {e}");
+    }
+}
+
+#[test]
+fn a_mandolin_is_known_by_its_strings_not_by_what_it_is_called() {
+    let said = |inst: &Instrument| {
+        let mut p = Passage::new();
+        p.placed(inst, 1, 2, 0, 96, 1.0, &[]);
+        instructions(&p.score(inst), "en")
+    };
+    let mut renamed = preset("mandolin").unwrap().with_capo(2);
+    renamed.name = "My F-style".into();
+    assert!(said(&renamed).contains("\nMy F-style, 4 pairs of strings. Each pair is played as one string and has one number.\n"), "{}", said(&renamed));
+    let mut guitar = preset("guitar-standard").unwrap();
+    guitar.name = "Mandolin".into();
+    assert!(said(&guitar).contains("\nMandolin, 6 strings.\n"), "{}", said(&guitar));
+    let nb = {
+        let inst = preset("mandolin").unwrap();
+        let mut p = Passage::new();
+        p.placed(&inst, 1, 2, 0, 96, 1.0, &[]);
+        instructions(&p.score(&inst), "nb")
+    };
+    assert!(nb.contains("\nMandolin, 4 strengepar. Hvert par spilles som én streng og har ett nummer.\n"), "{nb}");
+}
+
+#[test]
+fn a_slide_or_a_bend_names_the_fret_it_comes_from_only_on_its_own_string() {
+    let guitar = preset("guitar-standard").unwrap();
+    for (technique, mark, en_from, en_bare, nb_bare) in [(Technique::Slide, '/', "slide from fret 5", "slide", "slide"), (Technique::Bend, 'b', "bend up from fret 5", "bend up", "bend opp")] {
+        // From the fifth fret to the seventh of the same string.
+        let mut same = Passage::new();
+        same.placed(&guitar, 2, 5, 0, 48, 1.0, &[]);
+        same.placed(&guitar, 2, 7, 48, 48, 1.0, &[technique]);
+        let score = same.score(&guitar);
+        assert!(tab_text(&score, TEXT_WIDTH).contains(&format!("\nB|-5--{mark}7--||\n")), "{}", tab_text(&score, TEXT_WIDTH));
+        assert!(instructions(&score, "en").contains(&format!("  Beat 3. String 2, fret 7, {en_from}. Half note.\n")), "{}", instructions(&score, "en"));
+
+        // The note before is on another string, a whole step below: its fret is not where this note comes from.
+        let mut other = Passage::new();
+        other.placed(&guitar, 3, 9, 0, 48, 1.0, &[]);
+        other.placed(&guitar, 2, 7, 48, 48, 1.0, &[technique]);
+        let score = other.score(&guitar);
+        let text = tab_text(&score, TEXT_WIDTH);
+        assert!(text.contains(&format!("\nB|----{mark}7--||\nG|-9------||\n")), "{text}");
+        let en = instructions(&score, "en");
+        assert!(en.contains(&format!("  Beat 3. String 2, fret 7, {en_bare}. Half note.\n")), "{en}");
+        assert!(!en.contains("from fret"), "{en}");
+        let nb = instructions(&score, "nb");
+        assert!(nb.contains(&format!("  Slag 3. Streng 2, bånd 7, {nb_bare}. Halvnote.\n")) && !nb.contains("fra bånd"), "{nb}");
+    }
+    // A slide down is drawn down only when it is known to come from above.
+    let mut down = Passage::new();
+    down.placed(&guitar, 2, 9, 0, 48, 1.0, &[]);
+    down.placed(&guitar, 2, 7, 48, 48, 1.0, &[Technique::Slide]);
+    assert!(tab_text(&down.score(&guitar), TEXT_WIDTH).contains("\nB|-9--\\7--||\n"));
+}
+
+#[test]
+fn a_title_cannot_pass_for_a_line_of_the_header() {
+    let bass = preset("bass-4-standard").unwrap();
+    let mut p = Passage::new();
+    p.placed(&bass, 1, 2, 0, 96, 1.0, &[]);
+    let title = "Song\u{2028}Capo: fret 7\u{2029}\nTempo: 300\r\u{202E}txt.exe\u{202C}\u{2066}a\u{2069}\u{200B}\u{200E}\u{200F}\u{FEFF}";
+    let mut own = bass.clone();
+    own.name = "Bass\u{2028}Capo: fret 9".into();
+    own.tuning.name = "Standard\u{2029}Time: 9/8\u{202E}".into();
+    let hidden = |c: char| c.is_control() && c != '\n' || matches!(c, '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200B}'..='\u{200F}' | '\u{FEFF}');
+    let score = TabScore::new(title, &own, &p.notes, &p.techniques, &p.fingering).unwrap();
+    let text = tab_text(&score, TEXT_WIDTH);
+    assert!(text.starts_with("Song Capo: fret 7 Tempo: 300 txt.exea\nBass Capo: fret 9\nTuning: Standard Time: 9/8 (E A D G), bottom line to top\nCapo: none\nTempo: 120 quarter notes per minute\nTime: 4/4\n\n"), "{text:?}");
+    assert!(!text.contains(hidden), "{text:?}");
+    for lang in ["en", "nb"] {
+        let said = instructions(&score, lang);
+        assert!(said.starts_with("Song Capo: fret 7 Tempo: 300 txt.exea\n\nBass Capo: fret 9, 4 str"), "{said:?}");
+        assert!(!said.contains(hidden), "{said:?}");
+        assert_eq!(said.lines().filter(|l| l.starts_with("Capo") || l.starts_with("No capo") || l.starts_with("Ingen capo")).count(), 1, "{said}");
+    }
+    // A title of nothing but such characters is no title.
+    let blank = TabScore::new("\u{200B}\u{FEFF} \u{2028}", &bass, &p.notes, &p.techniques, &p.fingering).unwrap();
+    assert!(tab_text(&blank, TEXT_WIDTH).starts_with("Bass\n") && instructions(&blank, "en").starts_with("Bass, 4 strings.\n"));
+}
+
+#[test]
+fn the_legend_names_missing_notes_bar_by_bar_within_the_width_and_counts_the_rest() {
+    let bass = preset("bass-4-standard").unwrap();
+    let mut p = Passage::new();
+    p.lost(5, 0, 24);
+    p.lost(7, 24, 24);
+    for bar in 1..15 {
+        p.lost(5 + bar as i32 % 3, 96 * bar, 48);
+    }
+    p.lost(7, 96 * 14 + 48, 48);
+    let score = p.score(&bass);
+    for width in [MIN_TEXT_WIDTH, 40, TEXT_WIDTH] {
+        let text = tab_text(&score, width);
+        let legend: Vec<&str> = text.rsplit("\n\n").next().unwrap().lines().collect();
+        assert!(legend[0].starts_with("!  a note with no string"), "{text}");
+        assert!(legend.iter().all(|l| l.chars().count() <= width), "width {width}\n{text}");
+        assert!(legend[1..].iter().all(|l| l.starts_with("   ") && !l.starts_with("    ")), "the words go on under the first\n{text}");
+        // A bar stays with its notes: no line ends between them.
+        assert!(legend.iter().all(|l| !l.ends_with("bar") && !l.ends_with(':') || l.ends_with("lines:")), "{text}");
+        assert!(legend.iter().all(|l| !l.ends_with(" and") && !l.trim().starts_with("more")), "{text}");
+        let joined = legend.iter().map(|l| l.trim()).collect::<Vec<_>>().join(" ");
+        assert!(joined.contains("not in the lines: bar 1: F-1 G-1; bar 2: Gb-1; bar 3: G-1; "), "{joined}");
+        assert!(joined.ends_with("; bar 12: G-1; and 4 more"), "{joined}");
+        assert!(!joined.contains("bar 13"), "{joined}");
+    }
+}
+
 // ---------------------------------------------------------------- what is refused
 
 #[test]
@@ -875,7 +1187,7 @@ fn a_width_or_a_language_that_cannot_be_written_is_refused() {
         let e = write_tab_text(&score, &TabOptions::default(), &text_options(width, "en")).unwrap_err();
         assert!(e.contains("characters"), "{e}");
     }
-    for lang in ["", "de", "sv"] {
+    for lang in ["", "de", "sv", "no"] {
         let e = write_playing_instructions(&score, &TabOptions::default(), &text_options(TEXT_WIDTH, lang)).unwrap_err();
         assert!(e.contains("en or nb"), "{e}");
     }

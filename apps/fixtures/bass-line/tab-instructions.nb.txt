@@ -5,7 +5,7 @@ Streng 1 er strengen nærmest gulvet når du spiller. Streng 4 er nærmest taket
 Stemming: Standard. Løse strenger fra streng 4 til streng 1: E, A, D, G.
 Ingen capo.
 Tempo: 100 fjerdedelsnoter per minutt.
-Taktart: 2 fjerdedels takt.
+Taktart: 2 fjerdedeler.
 
 Takt 1
   Slag 1. Streng 4, løs. Fjerdedelsnote.
@@ -51,7 +51,7 @@ Takt 11
   Slag 2. Streng 2, løs. Fjerdedelsnote.
 
 Takt 12
-  Som takt 8.
+  Samme som takt 8.
 
 Takt 13
   Slag 1. Streng 4, bånd 3. Åttendedelsnote.
@@ -63,4 +63,4 @@ Takt 14
   Slag 2. Streng 3, bånd 2. Fjerdedelsnote.
 
 Takt 15
-  Som takt 5.
+  Samme som takt 5.

@@ -38,34 +38,69 @@ impl Default for TextOptions {
     }
 }
 
+/// Text without what could make one line look like two, or hide or reorder what it says: control
+/// characters as [`clean`] leaves them out, and also the line and paragraph separators, the
+/// bidirectional controls, the zero-width characters and the byte order mark. A title or a name is
+/// one line of the text exports, and cannot pass for a header line of its own.
+pub(crate) fn clean_text(text: &str) -> String {
+    let hidden = |c: char| matches!(c, '\u{2028}' | '\u{2029}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200B}'..='\u{200F}' | '\u{FEFF}');
+    let kept: String = clean(text).chars().map(|c| if matches!(c, '\u{2028}' | '\u{2029}') { ' ' } else { c }).filter(|c| !hidden(*c)).collect();
+    // One space where there were several, or a break: a line of words.
+    kept.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Per note of an event: the string it shares with an earlier note of the event, if it does. A
+/// string sounds one note at a time, so the later note cannot be played with the earlier one: it is
+/// not written on the string, and both text exports say so.
+pub(crate) fn crowded(ev: &Event) -> Vec<Option<u8>> {
+    let mut taken: Vec<u8> = Vec::new();
+    ev.notes
+        .iter()
+        .map(|w| {
+            let (string, _) = w.place?;
+            if taken.contains(&string) {
+                return Some(string);
+            }
+            taken.push(string);
+            None
+        })
+        .collect()
+}
+
 /// How a note is reached from the note before it on its string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Arrival {
     HammerOn,
     PullOff,
-    /// Slid into from this fret.
-    Slide(u8),
-    /// Bent up to from this fret.
-    Bend(u8),
+    /// Slid into, from this fret when the note before it is on the same string.
+    Slide(Option<u8>),
+    /// Bent up to, from this fret when the note before it is on the same string.
+    Bend(Option<u8>),
 }
 
-/// Per event and written note: how the note is reached, for the notes a technique leads to.
+/// Per event and written note: how the note is reached, for the notes a technique leads to. A note
+/// that is not written on its string ([`crowded`]) is reached by none.
 pub(crate) fn arrivals(events: &[Event]) -> Vec<Vec<Option<Arrival>>> {
-    // The fret each open link started from. Numbers are reused from chord to chord, so the latest
-    // start is the one a stop belongs to.
-    let mut open: Vec<((Link, u8), u8)> = Vec::new();
+    // The string and fret each open link started from. Numbers are reused from chord to chord, so
+    // the latest start is the one a stop belongs to.
+    let mut open: Vec<((Link, u8), (u8, u8))> = Vec::new();
     let mut out = Vec::with_capacity(events.len());
     for ev in events {
+        let apart = crowded(ev);
         let reached = ev
             .notes
             .iter()
-            .map(|w| {
-                let from = |link: &(Link, u8)| open.iter().rev().find(|(l, _)| l == link).map(|&(_, fret)| fret);
+            .zip(&apart)
+            .map(|(w, apart)| {
+                let (string, _) = w.place.filter(|_| apart.is_none())?;
+                // The fret a slide or bend comes from is only said when it is on this note's string:
+                // a fret of another string is not where the finger starts.
+                let from = |link: &(Link, u8)| open.iter().rev().find(|(l, _)| l == link).filter(|(_, place)| place.0 == string).map(|&(_, place)| place.1);
                 let by = |want: fn(Link) -> bool| w.stops.iter().find(|(l, _)| want(*l));
                 if let Some(link) = by(|l| matches!(l, Link::Bend(_))) {
-                    from(link).map(Arrival::Bend)
+                    Some(Arrival::Bend(from(link)))
                 } else if let Some(link) = by(|l| l == Link::Slide) {
-                    from(link).map(Arrival::Slide)
+                    Some(Arrival::Slide(from(link)))
                 } else if by(|l| l == Link::HammerOn).is_some() {
                     Some(Arrival::HammerOn)
                 } else if by(|l| l == Link::PullOff).is_some() {
@@ -75,9 +110,9 @@ pub(crate) fn arrivals(events: &[Event]) -> Vec<Vec<Option<Arrival>>> {
                 }
             })
             .collect();
-        for w in &ev.notes {
-            if let Some((_, fret)) = w.place {
-                open.extend(w.starts.iter().map(|&link| (link, fret)));
+        for (w, apart) in ev.notes.iter().zip(&apart) {
+            if let Some(place) = w.place.filter(|_| apart.is_none()) {
+                open.extend(w.starts.iter().map(|&link| (link, place)));
             }
         }
         // Only the previous event's links can be stopped: older ones are dropped.
@@ -151,10 +186,20 @@ struct Column {
     ring: bool,
 }
 
+/// Stands for a space the legend is not broken at, until its lines are made.
+const GLUE: &str = "\u{a0}";
+/// The most bars the legend names notes of; the rest are counted.
+const LEGEND_BARS: usize = 12;
+
+/// Notes that are not on the lines, bar by bar: ("bar 3", ["D1", "C#1"]).
+type Missing = Vec<(String, Vec<String>)>;
+
 struct Legend {
     doubt: bool,
-    /// "bar 3: D1" for every note that is not on the lines.
-    lost: Vec<String>,
+    /// The notes no string can play.
+    lost: Missing,
+    /// The notes whose string holds another note of their chord: "G2 (string 2)".
+    crowded: Missing,
     hammer: bool,
     pull: bool,
     slide_up: bool,
@@ -219,18 +264,23 @@ impl<'a> Layout<'a> {
         }
 
         let reached = arrivals(&plan.events);
-        let mut legend = Legend { doubt: false, lost: Vec::new(), hammer: false, pull: false, slide_up: false, slide_down: false, bend: false, vibrato: false, dead: false, ring: Vec::new() };
+        let mut legend = Legend { doubt: false, lost: Vec::new(), crowded: Vec::new(), hammer: false, pull: false, slide_up: false, slide_down: false, bend: false, vibrato: false, dead: false, ring: Vec::new() };
         let mut columns = std::collections::BTreeMap::new();
         let mut cell = 1;
         for (e, ev) in plan.events.iter().enumerate() {
             let mut col = Column { cells: vec![None; strings], marks: String::new(), ring: ring_starts(&plan.events, e) };
-            let (mut lost, mut doubt) = (Vec::new(), false);
+            let (mut lost, mut apart, mut doubt) = (Vec::new(), Vec::new(), false);
+            let shared = crowded(ev);
             for (k, w) in ev.notes.iter().enumerate() {
                 doubt |= doubtful(w, plan.opts);
-                // A string holds one number per column: a second note on it has no cell to stand in.
-                let free = w.place.filter(|&(string, _)| col.cells[usize::from(string) - 1].is_none());
-                let Some((string, fret)) = free else {
-                    lost.push(format!("{}{}{}", w.spelled.step, accidental(w.spelled.alter), w.spelled.octave));
+                let name = format!("{}{}{}", w.spelled.step, accidental(w.spelled.alter), w.spelled.octave);
+                // A string holds one number per column: a second note on it is named, not written.
+                if let Some(string) = shared[k] {
+                    apart.push(format!("{name} (string {string})"));
+                    continue;
+                }
+                let Some((string, fret)) = w.place else {
+                    lost.push(name);
                     continue;
                 };
                 let lead = match reached[e][k] {
@@ -242,7 +292,7 @@ impl<'a> Layout<'a> {
                         legend.pull = true;
                         'p'
                     }
-                    Some(Arrival::Slide(from)) if from > fret => {
+                    Some(Arrival::Slide(Some(from))) if from > fret => {
                         legend.slide_down = true;
                         '\\'
                     }
@@ -268,12 +318,18 @@ impl<'a> Layout<'a> {
                 cell = cell.max(text.len());
                 col.cells[usize::from(string) - 1] = Some(Cell { lead, text });
             }
-            if !lost.is_empty() {
+            if !lost.is_empty() || !apart.is_empty() {
                 col.marks.push('!');
                 // The measures follow each other: the one an event starts in is the last that starts at or before it.
                 let measure = plan.measures.partition_point(|m| m.0 <= ev.start).checked_sub(1).map(|i| plan.measures[i]);
                 let bar = measure.filter(|m| !m.3).map_or("pickup".to_string(), |m| format!("bar {}", m.2));
-                legend.lost.push(format!("{bar}: {}", lost.join(" ")));
+                for (names, missing) in [(lost, &mut legend.lost), (apart, &mut legend.crowded)] {
+                    match missing.last_mut().filter(|(b, _)| *b == bar) {
+                        _ if names.is_empty() => {}
+                        Some((_, of_bar)) => of_bar.extend(names),
+                        None => missing.push((bar.clone(), names)),
+                    }
+                }
             }
             if doubt {
                 col.marks.push('?');
@@ -416,15 +472,15 @@ impl<'a> Layout<'a> {
         let score = self.plan.score;
         let inst = &score.instrument;
         let mut out = String::new();
-        let title = clean(&score.title);
-        if !title.trim().is_empty() {
-            out.push_str(title.trim());
+        let title = clean_text(&score.title);
+        if !title.is_empty() {
+            out.push_str(&title);
             out.push('\n');
         }
-        out.push_str(&format!("{}\n", clean(&inst.name)));
+        out.push_str(&format!("{}\n", clean_text(&inst.name)));
         // The bottom line first, as the strings are named from low to high.
         let open: Vec<&str> = self.labels.iter().rev().map(|l| l.trim_end()).collect();
-        out.push_str(&format!("Tuning: {} ({}), bottom line to top\n", ascii_signs(&clean(&inst.tuning.name)), open.join(" ")));
+        out.push_str(&format!("Tuning: {} ({}), bottom line to top\n", ascii_signs(&clean_text(&inst.tuning.name)), open.join(" ")));
         if inst.capo > 0 {
             out.push_str(&format!("Capo: fret {} (frets are counted from the capo)\n", inst.capo));
         } else {
@@ -435,15 +491,28 @@ impl<'a> Layout<'a> {
         out
     }
 
-    /// The marks that occur, each with what it means.
-    fn legend(&self) -> String {
+    /// The marks that occur, each with what it means, in lines of at most `width` characters.
+    fn legend(&self, width: usize) -> String {
         let l = &self.legend;
         let mut rows: Vec<(String, String)> = Vec::new();
         if l.doubt {
             rows.push(("?".into(), "a note to check: it was not heard clearly".into()));
         }
+        // Bar by bar, the first LEGEND_BARS of them; the notes of the others are counted.
+        let named = |missing: &Missing| {
+            // A bar and its notes stay on one line: the spaces inside an entry are not places to break.
+            let mut bars: Vec<String> = missing.iter().take(LEGEND_BARS).map(|(bar, names)| format!("{bar}: {}", names.join(" ")).replace(' ', GLUE)).collect();
+            let more: usize = missing.iter().skip(LEGEND_BARS).map(|(_, names)| names.len()).sum();
+            if more > 0 {
+                bars.push(format!("and{GLUE}{more}{GLUE}more"));
+            }
+            bars.join("; ")
+        };
         if !l.lost.is_empty() {
-            rows.push(("!".into(), format!("a note with no string to play it on, not in the lines: {}", l.lost.join("; "))));
+            rows.push(("!".into(), format!("a note with no string to play it on, not in the lines: {}", named(&l.lost))));
+        }
+        if !l.crowded.is_empty() {
+            rows.push(("!".into(), format!("a note that cannot be played together with another note on its string, not in the lines: {}", named(&l.crowded))));
         }
         for (on, mark, means) in [
             (l.hammer, "h", "hammer-on"),
@@ -468,12 +537,30 @@ impl<'a> Layout<'a> {
             }
         }
         let wide = rows.iter().map(|r| r.0.len()).max().unwrap_or(0);
-        rows.iter().map(|(mark, means)| format!("{mark:<wide$}  {means}\n")).collect()
+        // What a mark means is broken between words, and goes on under its first word.
+        let mut out = String::new();
+        for (mark, means) in &rows {
+            let mut line = format!("{mark:<wide$} ");
+            let mut empty = true;
+            for word in means.split(' ') {
+                if !empty && line.chars().count() + 1 + word.chars().count() > width {
+                    out.push_str(&line);
+                    out.push('\n');
+                    line = " ".repeat(wide + 1);
+                }
+                line.push(' ');
+                line.push_str(word);
+                empty = false;
+            }
+            out.push_str(&line);
+            out.push('\n');
+        }
+        out.replace(GLUE, " ")
     }
 }
 
-/// The score as a text tab, each line at most [`TextOptions::width`] characters (the header and
-/// the legend are not wrapped). Err when the score or the options cannot be written: see
+/// The score as a text tab, each line at most [`TextOptions::width`] characters (the header is not
+/// wrapped). Err when the score or the options cannot be written: see
 /// [`TabScore::validate`].
 ///
 /// - One line per string, string 1 on top, with the open string's name at its left.
@@ -484,7 +571,8 @@ impl<'a> Layout<'a> {
 /// - `h`, `p`, `/`, `\` and `b` stand before the note they lead to; `~` after a note with vibrato;
 ///   `x` is a dead note; "let ring" stands above the first note that rings.
 /// - A "?" above a column marks a doubtful note ([`TabOptions::doubt_below`]), a "!" a note that
-///   has no string: the legend names it.
+///   is not on the lines: no string can play it, or its string holds another note of its chord.
+///   The legend names such notes bar by bar, the first twelve bars of them.
 pub fn write_tab_text(score: &TabScore, tab: &TabOptions, text: &TextOptions) -> Result<String, String> {
     if !(MIN_TEXT_WIDTH..=MAX_TEXT_WIDTH).contains(&text.width) {
         return Err(format!("a line of the text tab is {MIN_TEXT_WIDTH} to {MAX_TEXT_WIDTH} characters, not {}", text.width));
@@ -496,7 +584,7 @@ pub fn write_tab_text(score: &TabScore, tab: &TabOptions, text: &TextOptions) ->
         out.push('\n');
         layout.system(&pieces, &mut out);
     }
-    let legend = layout.legend();
+    let legend = layout.legend(text.width);
     if !legend.is_empty() {
         out.push('\n');
         out.push_str(&legend);

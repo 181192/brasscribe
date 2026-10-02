@@ -5,7 +5,7 @@ String 1 is the string nearest the floor as you play. String 4 is nearest the ce
 Tuning: Standard. Open strings from string 4 to string 1: E, A, D, G.
 No capo.
 Tempo: 100 quarter notes per minute.
-Time: 2 4 time.
+Time signature: 2 4.
 
 Bar 1
   Beat 1. String 4, open. Quarter note.

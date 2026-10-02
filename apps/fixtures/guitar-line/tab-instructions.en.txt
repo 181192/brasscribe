@@ -5,7 +5,7 @@ String 1 is the string nearest the floor as you play. String 6 is nearest the ce
 Tuning: Standard. Open strings from string 6 to string 1: E, A, D, G, B, E.
 No capo.
 Tempo: 51 quarter notes per minute.
-Time: 3 4 time.
+Time signature: 3 4.
 A note marked "to check" was not heard clearly.
 
 Bar 1

@@ -5,7 +5,7 @@ Streng 1 er strengen nærmest gulvet når du spiller. Streng 6 er nærmest taket
 Stemming: Standard. Løse strenger fra streng 6 til streng 1: E, A, D, G, H, E.
 Ingen capo.
 Tempo: 51 fjerdedelsnoter per minutt.
-Taktart: 3 fjerdedels takt.
+Taktart: 3 fjerdedeler.
 En tone merket «bør sjekkes» ble ikke hørt tydelig.
 
 Takt 1

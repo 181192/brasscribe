@@ -5,7 +5,7 @@ String 1 is the string nearest the floor as you play. String 4 is nearest the ce
 Tuning: GCEA high G. Open strings from string 4 to string 1: G, C, E, A.
 No capo.
 Tempo: 100 quarter notes per minute.
-Time: 4 4 time.
+Time signature: 4 4.
 A note marked "to check" was not heard clearly.
 
 Bar 1

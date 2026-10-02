@@ -547,16 +547,27 @@ h  hammer-on
   column where there is room. A pickup has no number.
 - **Width:** a line holds as many whole bars as fit in `TextOptions::width` characters (72 by
   default, 24 to 400). A bar is only divided when it alone is wider than the page; then it takes
-  lines of its own. The header and the legend are not wrapped.
+  lines of its own. The legend is broken between words at the same width; the header is not
+  wrapped.
 - **Techniques:** `h`, `p`, `/`, `\` and `b` stand before the note they lead to (`5h7`, `7p5`,
   `5/7`, `7\5`, `7b9`); `~` after a note with vibrato; `x` in place of the fret of a dead note;
   `let ring` above the first note that rings, shortened to `l.r.` or `r` where the next one leaves
-  no room.
+  no room. A slide is drawn `\` only when the note before it is on the same string and higher up;
+  a slide or bend that comes from another string keeps its mark, and no fret is taken as its start.
 - **Doubt and range:** a `?` above the column of a doubtful note (`TabOptions::doubt_below`; 0
-  writes none), never a parenthesis. A `!` above the column of a note without a place; the note is
-  not on the lines, and the legend names it with its bar (`bar 2: F#1`). A second note given the
-  same string in one chord is treated the same way: a line holds one number per column.
-- **Legend:** one line per mark that occurs in the tab, and none when there are no marks.
+  writes none), never a parenthesis. A `!` above the column of a note that is not on the lines,
+  which the legend names with its bar. There are two kinds, and the legend says which:
+  - a note without a place: `a note with no string to play it on` (`bar 2: F#1`);
+  - a second note given the same string in one chord, as a fingering edited by hand can have it:
+    `a note that cannot be played together with another note on its string` (`bar 1: G2 (string
+    2)`). The lower note of the two is written; a line holds one number per column.
+- **Legend:** one entry per mark that occurs in the tab, and none when there are no marks. The notes
+  behind the `!` are listed bar by bar for the first twelve bars that have any; the rest are
+  counted (`and 4 more`).
+- **Names:** the title and the names of the instrument and the tuning are each one line. Control
+  characters, line and paragraph separators, bidirectional controls, zero-width characters and the
+  byte order mark are left out, and runs of spaces are one space, so a title cannot pass for a
+  line of the header or hide what it says. The playing instructions do the same.
 
 `write_tab_text` refuses what `write_tab_musicxml` refuses, and a width outside 24 to 400.
 
@@ -567,8 +578,8 @@ each is written in a fraction of a second.
 
 `write_playing_instructions(&TabScore, &TabOptions, &TextOptions)` writes the score in words, for
 someone who reads with a screen reader or a braille display: bar by bar and beat by beat, which
-string and fret to play and for how long. `TextOptions::lang` is `en` or `nb` (a tag that starts
-with `nb` or `no` is Norwegian Bokmål); any other language is refused.
+string and fret to play and for how long. `TextOptions::lang` is `en` or `nb`, in any case and
+with or without a region (`en-GB`, `nb_NO`); any other tag is refused, `no` and `english` too.
 
 ```text
 Bass, 4 strings.
@@ -576,7 +587,7 @@ String 1 is the string nearest the floor as you play. String 4 is nearest the ce
 Tuning: Standard. Open strings from string 4 to string 1: E, A, D, G.
 Capo on fret 2. Frets are counted from the capo.
 Tempo: 96 quarter notes per minute.
-Time: 4 4 time.
+Time signature: 4 4.
 A note marked "to check" was not heard clearly.
 
 Bar 1
@@ -604,11 +615,21 @@ Takt 1
 - The words follow the talking score of the brass parts
   ([the spec](../../docs/accessibility/talking-score-spec.md)): bar headings, beat positions
   ("2 and", "2-og"), note values, and the Norwegian note names (H, B, Ess, Ass). The two languages
-  are one table of word pairs in `src/instructions.rs`, chosen by `lang` as there. This crate does
-  not use the talking score's code, which knows the brass band.
-- **Said once, at the top:** the instrument and its number of strings (a mandolin's as pairs, each
-  played and numbered as one string), how the strings are numbered, the tuning with its open strings from the highest-numbered string to string 1, the capo,
-  the tempo and the time signature.
+  are one table of word pairs in `src/instructions.rs`. This crate does not use the talking score's
+  code, which knows the brass band.
+- **Said once, at the top:** the instrument and its number of strings, how the strings are
+  numbered, the tuning with its open strings from the highest-numbered string to string 1, the
+  capo, the tempo and the time signature (`Time signature: 4 4.`; in Norwegian what a bar holds:
+  `Taktart: 4 fjerdedeler.`, `2 halve.`, `1 hel.`).
+  - An instrument with the mandolin preset's strings and scale is said as pairs of strings, each
+    played and numbered as one, whatever it is called.
+  - In Norwegian the tuning's name uses the Norwegian note names, like the open strings after it:
+    `H standard`, `Drop H`, `HEAD`, `DGHE`, `Ess standard`, `GCEA høy G`. A word of the name is read
+    as notes when it holds only the capitals A to G, each with or without a sign; other words are
+    kept.
+- **Beats:** in 6/8, 9/8 and 12/8 the beat is the dotted quarter, and a place inside it is one of
+  its eighths or sixteenths: `Beat 1, eighth 2`, `Beat 2, sixteenth 4` (`Slag 1, 2. åttendedel`).
+  `triplet` is only said where a triplet is written. 3/8 is counted in eighths.
 - **Strings are named by number,** never by note: the note names change with the tuning. Accidentals
   are words (`E-flat`, `Ess`), not signs.
 - **One line per note, chord or rest,** in the order they are played: the beat, each note's string
@@ -618,12 +639,15 @@ Takt 1
   inside a held note says which bar it is held from.
 - **Rests:** a rest inside a bar is a line; bars of rest that follow each other share one heading
   (`Bars 3–4`, `Rest, 2 bars.`).
-- **Repeats:** a bar with the same lines as an earlier bar says `Same as bar 1.`
+- **Repeats:** a bar with the same lines as an earlier bar says `Same as bar 1.` (`Samme som takt
+  1.`).
 - **Techniques:** hammer-on, pull-off, slide and bend are said on the note they lead to, a slide and
-  a bend with the fret they come from; vibrato, dead note and let ring on their own note (let ring
-  where the ringing starts, once for a chord).
+  a bend with the fret they come from when the note before is on the same string (`slide from fret
+  5`, else `slide`); vibrato, dead note and let ring on their own note (let ring where the ringing
+  starts, once for a chord).
 - **Doubt and range:** a doubtful note is `to check`; a note without a place is named by its pitch
-  (`D 1, no string to play it on`).
+  (`D 1, no string to play it on`), and so is a second note given the same string in one chord
+  (`G 2, cannot be played together with the note on string 2`), as in the text tab.
 - The two languages have the same lines in the same order: only the words differ.
 
 ## JSON
@@ -703,8 +727,8 @@ Known limits of the text exports:
 
 - The text tab shows where notes start, not how long they last: there is no rhythm line under it.
 - The text tab is written in English. The playing instructions know English and Norwegian Bokmål.
-- A tuning's name is kept as it is in Norwegian ("B standard", "Drop B"); the open strings after it
-  are named the Norwegian way.
+- In a tuning's name only note names and "high" and "low" are put into Norwegian ("Drop H",
+  "Open G"). A word of someone's own tuning name in capitals A to G is read as notes too.
 - The playing instructions name no chord shapes ("G chord, open"): a chord is its strings and frets.
 
 Known limits of the MusicXML:
@@ -808,7 +832,10 @@ checked to hold exactly their length on each staff.
 
 - **What they look like:** a bass line and guitar chords as whole documents; the lines and labels of
   every instrument family; the legend; `let ring` in its three forms; a bar wider than the page; a
-  line in both languages.
+  line in both languages; the wording of beats in 6/8, 9/8, 12/8 and 3/8 and of written triplets;
+  the tuning's name in both languages on every preset; time signatures; a slide and a bend from
+  the same and from another string; two notes on one string, in both exports; the legend wrapped and
+  capped; a title that tries to pass for a header line.
 - **Properties** over made-up passages on every preset, with chords, rests, ties over bar lines,
   triplets, frets above 9, every technique, doubtful notes, notes without a place and pickups:
   - bar for bar, the numbers on the lines are the notes of the MusicXML tab staff where they start,
@@ -821,7 +848,7 @@ checked to hold exactly their length on each staff.
   - the same score gives the same text;
   - the instructions in the two languages have the same headings, blank lines and lines, and bar
     for bar say the notes of the tab staff, each once.
-- **Refusals:** widths and languages that cannot be written, the doubt threshold, unknown keys in
+- **Refusals:** widths and languages that cannot be written (language tags are matched exactly), the doubt threshold, unknown keys in
   `text`, and more notes than `MAX_NOTES`.
 
 Unit tests in `src/instrument.rs` cover positions, the capo, short strings, fret distances and
