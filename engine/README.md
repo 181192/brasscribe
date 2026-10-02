@@ -33,8 +33,9 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     string), not on a mandolin, where that made no measurable difference.
   - Nothing is left out silently: `tab.json` counts the notes heard but not written, `leftovers_dropped` (overtones,
     faint notes and notes too short to be one, taken as not played) and `unplayable_dropped` (notes the instrument
-    or the hand cannot play with the rest of their chord, or that lie under its lowest string as the lower octave
-    of a note in the strum).
+    or the hand cannot play with the rest of their chord, or, on a ukulele or a mandolin only, that lie under
+    its lowest string as the lower octave of a note in the strum). A guitar's or a bass's note below the lowest
+    string always stays, flagged, and the tuning suggestions are ranked on it.
   - The result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the fingered notes, the tunings
     ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
     `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore

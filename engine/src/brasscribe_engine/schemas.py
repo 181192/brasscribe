@@ -443,8 +443,9 @@ class Tab(BaseModel):
                                           "that choice, 0, -12 or 12")
     unplayable_dropped: int = Field(0, description="notes heard that are not in the tab because the instrument cannot "
                                                    "play them with the others: more notes on one onset than it has "
-                                                   "strings, a chord no hand spans, or a note below its lowest string "
-                                                   "that is the lower octave of a note in the same strum. Always 0 "
+                                                   "strings, a chord no hand spans, or, on a ukulele or a mandolin, a "
+                                                   "note below its lowest string that is the lower octave of a note "
+                                                   "in the same strum (a guitar's stays, out of range). Always 0 "
                                                    "for a bass line")
     leftovers_dropped: int = Field(0, description="notes Basic Pitch heard that are not in the tab because they were "
                                                   "not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and "

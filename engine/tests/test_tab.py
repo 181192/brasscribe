@@ -512,6 +512,27 @@ def test_a_lower_octave_heard_under_a_chord_is_left_out_and_a_low_note_on_its_ow
     assert [(n["pitch"], n["out_of_range"]) for n in t["notes"] if n["start"] >= 96] == [(52, True), (64, False), (100, True)]
     low = tab.fingered(doc, tab.options({"instrument": "ukulele", "tuning": "low-g", "recording": "instrument"}))
     assert 55 in [n["pitch"] for n in low["notes"] if n["start"] == 48]  # on a low-G ukulele that G3 is its open fourth string
+    # The notes that were left out are still what the tunings are ranked on.
+    seen = []
+    tab.fingered(doc, opts, lambda request: seen.append(request) or bass_tab.solve(request))
+    assert len(seen) == 2 and len(seen[0]["notes"]) == len(seen[1]["notes"]) + 3
+    assert t["tuning_suggestions"] == bass_tab.solve(seen[0])["tuning_suggestions"]
+
+
+@needs_core
+def test_a_guitars_note_below_its_lowest_string_is_never_left_out():
+    """A drop-D power chord under the standard-tuning option: the low D is the lower octave of the chord's top note, and
+    it is the evidence for the other tuning."""
+    power = [38, 45, 50]  # D2 A2 D3
+    heard = sorted(_strummed([power] * 4 + [[40, 47, 52]] * 2), key=lambda n: n["onset"])
+    doc = {**tab.played_notes(heard, _beats(), "guitar-6"), "reference_pitch": None}
+    t = tab.fingered(doc, tab.options({}))
+    low = [n for n in t["notes"] if n["pitch"] == 38]
+    assert len(low) == 4 and all(n["out_of_range"] and n["string"] is None for n in low) and t["unplayable_dropped"] == 0
+    assert t["tuning_suggestions"][0]["preset"] == "guitar-drop-d"
+    assert not any(h.low_octaves_out for i, h in tab.HEARD.items() if i.startswith("guitar"))
+    in_drop_d = tab.fingered(doc, tab.options({"tuning": "drop-d"}))
+    assert not any(n["out_of_range"] for n in in_drop_d["notes"])
 
 
 @needs_core

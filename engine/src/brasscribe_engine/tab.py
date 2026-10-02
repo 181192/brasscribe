@@ -78,6 +78,11 @@ class Heard:
     # on rendered passages it was not chosen on, that made chord precision 0.07 to 0.17 better at no cost in
     # recall. A mandolin has none (None): there the limit changed nothing that could be measured.
     chord_high: int | None = None
+    # A note below the lowest string that is the lower octave of a note in the same strum is left out
+    # (fingered). Only where that was measured: a ukulele and a mandolin. On a guitar a note below the lowest
+    # string is the sign of a lower tuning (the D of a drop-D power chord is the lower octave of its top
+    # note), so there it always stays, flagged, and the tuning suggestions see it.
+    low_octaves_out: bool = False
 
 
 GUITAR_CHORD_HIGH = 76  # E5: the 12th fret of a guitar's top string in standard tuning (six, seven and eight strings alike)
@@ -91,9 +96,9 @@ HEARD = {
     # The separator has no stem for a ukulele or a mandolin. Rendered ones under a bass and drums came out in its
     # guitar stem almost whole (recall 0.96) and nowhere else (small_tab_bench): in a song that also has a guitar the
     # two will share the stem.
-    "ukulele": Heard("ukulele", "guitar", 55, 87, 4, 69 + 12),
-    "ukulele-baritone": Heard("ukulele", "guitar", 50, 83, 4, 64 + 12),
-    "mandolin": Heard("mandolin", "guitar", 55, 96, 4),
+    "ukulele": Heard("ukulele", "guitar", 55, 87, 4, 69 + 12, True),
+    "ukulele-baritone": Heard("ukulele", "guitar", 50, 83, 4, 64 + 12, True),
+    "mandolin": Heard("mandolin", "guitar", 55, 96, 4, None, True),
 }
 DEFAULT_LAYOUT = "tab"
 DEFAULT_INSTRUMENT = "guitar-6"
@@ -410,13 +415,17 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
     (least_wanted) and the passage fingered again, until there is no violation: every round leaves out
     at least one note, so it ends, and the tab that is written can be played.
 
-    A note below the instrument's lowest string is left out the same way when a note an octave or two
-    above it starts with it: Basic Pitch hears a string's lower octave as a note of its own, and under a
-    high-G ukulele's chords that is a row of notes the instrument does not have. A note below the
-    instrument with nothing above it stays, flagged out of range: it says the tuning or the instrument
-    may be another. `unplayable_dropped` counts both."""
+    On a ukulele and a mandolin (Heard.low_octaves_out) a note below the lowest string is left out the
+    same way when a note an octave or two above it starts with it: Basic Pitch hears a string's lower
+    octave as a note of its own, and under a high-G ukulele's chords that is a row of notes the
+    instrument does not have. `unplayable_dropped` counts both. The tuning suggestions are then the ones
+    made with those notes still there: a low G under a high-G ukulele's chords is also what a low-G
+    ukulele sounds like. Any other note below the instrument stays, flagged out of range, on every
+    instrument: it says the tuning or the instrument may be another."""
     notes = list(doc["notes"])
     dropped = 0
+    low_octaves_out = HEARD[opts["instrument"]].low_octaves_out
+    suggestions = None
     while True:
         answer = solve({"instrument": {"preset": preset(opts), "capo": opts["capo"]},
                         "notes": [{"pitch": n["pitch"], "start": n["start"], "dur": n["dur"]} for n in notes],
@@ -436,15 +445,19 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
         together: dict[int, set[int]] = {}
         for n in notes:
             together.setdefault(n["start"], set()).add(n["pitch"])
-        out |= {i for i, (n, place) in enumerate(zip(notes, places)) if place["out_of_range"] and n["pitch"] < lowest
-                and together[n["start"]] & {n["pitch"] + 12, n["pitch"] + 24}}
+        low = {i for i, (n, place) in enumerate(zip(notes, places)) if place["out_of_range"] and n["pitch"] < lowest
+               and together[n["start"]] & {n["pitch"] + 12, n["pitch"] + 24}} if low_octaves_out else set()
+        if low and suggestions is None:
+            suggestions = answer["tuning_suggestions"]
+        out |= low
         if not out:
             break
         dropped += len(out)
         notes = [n for i, n in enumerate(notes) if i not in out]
     return {"preset": preset(opts), "style": opts["style"], "instrument": answer["instrument"],
             "notes": [{**n, **place} for n, place in zip(notes, places)],
-            "violations": answer["violations"], "tuning_suggestions": answer["tuning_suggestions"],
+            "violations": answer["violations"],
+            "tuning_suggestions": answer["tuning_suggestions"] if suggestions is None else suggestions,
             "octave_shift": doc["octave_shift"], "octave_source": doc["octave_source"],
             "octave_notes_moved": sum(n.get("octave_moved", False) for n in notes),
             "unplayable_dropped": dropped, "leftovers_dropped": doc.get("leftovers_dropped", 0),
