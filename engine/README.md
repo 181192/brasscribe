@@ -17,7 +17,7 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   `guitar-8`), a ukulele (`ukulele` with tuning `high-g` or `low-g`, `ukulele-baritone`) or a mandolin; its tunings
   are the presets of the Rust crate [`target-fretted`](../core/target-fretted/README.md). The instrument's stem is
   separated from the song (the separator has no stem for a ukulele or a mandolin: they are read from its guitar
-  stem, with any guitar in the song), or the recording itself is read when it is the instrument alone
+  stem, which only works in a song where no guitar plays, so their default is `recording: instrument`), or the recording itself is read when it is the instrument alone
   (`recording: instrument`); then Basic Pitch, the shared beat grid and
   durations, and a string and fret for every note from the crate, which the engine calls through the core's command
   line (`brasscribe-core fret`).
@@ -30,7 +30,9 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     hand cannot play as heard loses its least sure note, again until none is left that it cannot play, so the tab
     that is written has no playability violation. A ukulele or a mandolin is read by the same rules. Among
     chords an overtone above the 12th fret of the top string is left out on a guitar and on a ukulele (its own top
-    string), not on a mandolin, where that made no measurable difference.
+    string, and only a note that starts with the note it is an overtone of and is fainter: a melody played up there
+    stays), not on a mandolin, where that made no measurable difference. A unison that a strummed open chord of a
+    ukulele plays on two strings (the G of 0232) is heard once and written on both, marked `doubled`.
   - Nothing is left out silently: `tab.json` counts the notes heard but not written, `leftovers_dropped` (overtones,
     faint notes and notes too short to be one, taken as not played) and `unplayable_dropped` (notes the instrument
     or the hand cannot play with the rest of their chord, or, on a ukulele or a mandolin only, that lie under

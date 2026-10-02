@@ -675,7 +675,7 @@ def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
                 B.prepare(entry)
         out: dict[str, float] = {}
         for group in groups:
-            label = group.replace("-", "_") + "." if len(groups) > 1 else ""
+            label = group.replace("-", "_") + "."
             for m in B.MODES:
                 metrics, _ = B.evaluate(data, (group,), m)
                 out.update({f"{label}{m}.{k}": v for k, v in metrics.items()})

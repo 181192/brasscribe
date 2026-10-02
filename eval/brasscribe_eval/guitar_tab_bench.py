@@ -232,8 +232,15 @@ def score_tab(ref: dict, tab: dict) -> dict:
     heard = [e for e in heard if len(e) >= 2]
     out["chords_heard"], out["chords_whole"] = float(len(heard)), float(sum(len({notes[j]["start"] for j in e}) == 1 for e in heard))
     # Where the right notes are played: the string the player used (so the fret too).
+    # A unison (one pitch on two strings of a chord) is matched either way round: its strings are compared as a set.
     placed = [(i, j) for i, j in pairs if notes[j]["string"] is not None and "string" in ref["notes"][i]]
-    out["placed"], out["same_string"] = float(len(placed)), float(sum(notes[j]["string"] == ref["notes"][i]["string"] for i, j in placed))
+    together: dict[tuple, tuple[list, list]] = {}
+    for i, j in placed:
+        mine, theirs = together.setdefault((notes[j]["start"], notes[j]["pitch"]), ([], []))
+        mine.append(notes[j]["string"])
+        r = ref["notes"][i]
+        theirs += [o["string"] for o in ref["notes"] if o["pitch"] == r["pitch"] and abs(o["onset"] - r["onset"]) <= ONSET_TOL and "string" in o]
+    out["placed"], out["same_string"] = float(len(placed)), float(sum(len(set(mine) & set(theirs)) for mine, theirs in together.values()))
     out["ref_strings"] = float(sum("string" in n for n in ref["notes"]))
     out["notes"] = float(len(notes))
     out["out_of_range"] = float(np.mean([n["out_of_range"] for n in notes])) if notes else 0.0

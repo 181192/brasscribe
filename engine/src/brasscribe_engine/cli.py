@@ -254,7 +254,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--capo", type=int, help="tab: the capo's fret (default 0, none)")
     r.add_argument("--style", choices=list(bass_tab.STYLES), help="tab: where the notes sit on the neck (default as-played)")
     r.add_argument("--recording", choices=list(bass_tab.RECORDINGS),
-                   help="tab: song separates the instrument from a band or a record (default); instrument: the instrument alone")
+                   help="tab: song separates the instrument from a band or a record (default; for a ukulele or a mandolin only "
+                        "where no guitar plays); instrument: the instrument alone (their default)")
     r.add_argument("--octave", choices=list(bass_tab.OCTAVES),
                    help="tab: the octave the notes are written in, in semitones from what was heard (default auto: "
                         "moved an octave when they were heard an octave from the instrument)")

@@ -1434,7 +1434,7 @@
                 "type": "null"
               }
             ],
-            "description": "tab profile: what was recorded. song: a band or a record, the instrument is separated from it (a ukulele or mandolin from the guitar stem, with any guitar in the song); instrument: the instrument alone, no separation; default: song",
+            "description": "tab profile: what was recorded. song: a band or a record, the instrument is separated from it. A ukulele or mandolin is read from the separator's guitar stem, so this only works for them in a song without a guitar: with one, the tab holds both instruments; instrument: the instrument alone, no separation; default: song (instrument for a ukulele or a mandolin)",
             "title": "Recording"
           },
           "render_audio": {
@@ -2914,6 +2914,12 @@
             "title": "Beat Times",
             "type": "array"
           },
+          "doubled_notes": {
+            "default": 0,
+            "description": "notes written on a second string as the unison of a strummed chord; each has doubled set",
+            "title": "Doubled Notes",
+            "type": "integer"
+          },
           "first_downbeat": {
             "description": "index into beat_times of tick 0; negative when the line starts before the first tracked downbeat (a pickup): tick 0 is then a bar line before beat_times[0]",
             "title": "First Downbeat",
@@ -3161,6 +3167,12 @@
             "description": "0 to 1. Below 0.4 the note is one to check (the tab marks it \"?\"): the second transcriber did not hear it at this pitch, or, where there is no second opinion, it was heard faintly",
             "title": "Confidence",
             "type": "number"
+          },
+          "doubled": {
+            "default": false,
+            "description": "heard once and written twice: a unison that a strummed open chord of a ukulele or a mandolin plays on two strings (the G of a ukulele's G chord, 0232)",
+            "title": "Doubled",
+            "type": "boolean"
           },
           "dur": {
             "description": "written duration in ticks",

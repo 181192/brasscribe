@@ -101,13 +101,14 @@ def test_what_does_not_fit_the_instrument_is_refused(params):
 @pytest.mark.parametrize("instrument", ["ukulele", "ukulele-baritone", "mandolin"])
 def test_a_ukulele_or_mandolin_is_read_from_the_guitar_stem_of_a_song_or_alone(instrument):
     kind = tab.HEARD[instrument].kind
-    song = profiles.build("tab", Path("song.wav"), "T", {"instrument": instrument})
+    assert tab.options({"instrument": instrument})["recording"] == "instrument"  # a guitar in the song would be in the same stem
+    song = profiles.build("tab", Path("song.wav"), "T", {"instrument": instrument, "recording": "song"})
     assert [s.name for s in song.stages] == ["beats", "stems", f"transcribe.{kind}.basic-pitch", f"transcribe.{kind}.swift-f0", "notes",
                                              "arrange", "export"]
     for name in (f"transcribe.{kind}.basic-pitch", f"transcribe.{kind}.swift-f0"):
         assert (song.stage(name).inputs["audio"].stage, song.stage(name).inputs["audio"].file) == ("stems", "guitar.wav")
     assert song.stage("notes").params == {"instrument": instrument}
-    alone = profiles.build("tab", Path("uke.wav"), "T", {"instrument": instrument, "recording": "instrument"})
+    alone = profiles.build("tab", Path("uke.wav"), "T", {"instrument": instrument})
     assert [s.name for s in alone.stages][1] == f"transcribe.{kind}.basic-pitch" and "stems" not in [s.name for s in alone.stages]
     assert alone.stage("notes").params == {"instrument": instrument, "whole_recording": True}
 
@@ -275,9 +276,16 @@ def test_the_top_of_a_chord_is_judged_by_the_instruments_own_neck_not_a_guitars(
         doc = tab.played_notes(notes, _beats(), instrument)
         assert sorted({n["pitch"] for n in doc["notes"]}) == sorted(chord) and len(doc["notes"]) == 16, instrument
         assert doc["leftovers_dropped"] == 0
-    # Above its own 12th fret an octave of a chord note is taken as an overtone, and counted.
-    high = tab.played_notes(sorted(_strummed([[60, 64, 67, 84]] * 4), key=lambda n: n["onset"]), _beats(), "ukulele")
+    # Above its own 12th fret an octave of a chord note is an overtone when it starts with the chord and is fainter: left out, counted.
+    chords = _strummed([[60, 64, 67, 72]] * 4)
+    faint = [_note(84, i + 0.03, 0.5, amplitude=0.4) for i in range(4)]
+    high = tab.played_notes(sorted(chords + faint, key=lambda n: n["onset"]), _beats(), "ukulele")
     assert 84 not in {n["pitch"] for n in high["notes"]} and high["leftovers_dropped"] == 4
+    # The same pitch as strong as the chord is a played note, and so is a melody that starts after the chord: both stay.
+    for melody in ([_note(84, i + 0.03, 0.5, amplitude=0.7) for i in range(4)],
+                   [_note(p, i + 0.5 + 0.2 * k, 0.18, amplitude=0.45) for i in range(4) for k, p in enumerate((81, 83, 84))]):
+        doc = tab.played_notes(sorted(chords + melody, key=lambda n: n["onset"]), _beats(), "ukulele")
+        assert doc["leftovers_dropped"] == 0 and sum(n["pitch"] > 80 for n in doc["notes"]) == len(melody)
     # On a guitar the same shape of evidence, an overtone above the 12th fret of the top string, is left out and counted.
     guitar = sorted(_strummed([[43, 55, 67, 79]] * 4), key=lambda n: n["onset"])
     assert {tab.HEARD[i].chord_high for i in ("guitar-6", "guitar-7", "guitar-8")} == {76}
@@ -470,6 +478,46 @@ def test_a_swiftf0_that_heard_nothing_is_no_opinion():
 UKE_C, UKE_G = [60, 64, 67, 72], [62, 67, 71, 67]  # C: g c e c' ; G: g d g b, as they sound on a high-G ukulele
 
 
+def _shapes(instrument: str, chords: dict[str, list[int]], **params) -> dict[str, str]:
+    """The frets a strummed chord is written with, fourth string first (x: a string left out), by chord name."""
+    opts = tab.options({"instrument": instrument, "recording": "instrument", **params})
+    names = list(chords)
+    doc = {**tab.played_notes(_strummed([chords[n] for n in names for _ in range(2)]), _beats(), instrument), "reference_pitch": None}
+    t = tab.fingered(doc, opts)
+    out = {}
+    for k, name in enumerate(names):
+        frets = ["x"] * 4
+        for n in t["notes"]:
+            if n["start"] == 96 * k:
+                frets[4 - n["string"]] = str(n["fret"])
+        out[name] = "".join(frets)
+    return out, t
+
+
+@needs_core
+def test_a_strummed_chords_unison_is_written_on_both_of_its_strings():
+    """The transcriber hears a unison once. The G of a ukulele's G chord is on the open fourth string and the third fret of
+    the second: written from what was heard the chord had a string left out (02x2)."""
+    heard = {"C": [60, 64, 67, 72], "Am": [60, 64, 69], "F": [60, 65, 69], "G": [62, 67, 71]}  # one note for each unison
+    shapes, t = _shapes("ukulele", heard)
+    assert shapes == {"C": "0003", "Am": "2000", "F": "2010", "G": "0232"}
+    doubled = [n for n in t["notes"] if n.get("doubled")]
+    assert t["doubled_notes"] == len(doubled) == 6 and {n["pitch"] for n in doubled} == {69, 67} and t["unplayable_dropped"] == 0
+    assert m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0}).doubled_notes == 6
+    # A mandolin's open chords have no unison (its strings are a fifth apart): nothing is added.
+    mandolin, tm = _shapes("mandolin", {"G": [55, 62, 71, 79], "C": [55, 64, 72, 76], "D": [57, 62, 69, 78]})
+    assert mandolin == {"G": "0023", "C": "0230", "D": "2002"} and tm["doubled_notes"] == 0
+    # Nothing is added to a chord that is not in the first frets, to one with two candidates, to a line, or to a guitar.
+    assert _shapes("ukulele", {"up the neck": [67, 72, 76]})[1]["doubled_notes"] == 0
+    assert tab.doubled_unisons([{"pitch": p, "start": 0, "dur": 24} for p in (60, 64, 69)], [69, 64, 60, 67]) == [
+        {"pitch": 69, "start": 0, "dur": 24, "doubled": True}]
+    assert tab.doubled_unisons([{"pitch": p, "start": 0, "dur": 24} for p in (60, 64)], [69, 64, 60, 67]) == []
+    assert tab.doubled_unisons([{"pitch": p, "start": 24 * i, "dur": 24} for i, p in enumerate((60, 64, 69))], [69, 64, 60, 67]) == []
+    assert not any(h.unisons_doubled for i, h in tab.HEARD.items() if i.startswith("guitar"))
+    # On a low-G ukulele the fourth string is an octave lower: the same notes have no unison there.
+    assert _shapes("ukulele", {"Am": [60, 64, 69]}, tuning="low-g")[0] == {"Am": "x000"}
+
+
 @needs_core
 def test_a_high_g_ukulele_is_fingered_with_its_fourth_string_above_its_third():
     """Re-entrant tuning: string 4 (G4) is higher than string 3 (C4), and the tab must use it as such."""
@@ -479,10 +527,10 @@ def test_a_high_g_ukulele_is_fingered_with_its_fourth_string_above_its_third():
     assert [s["open_pitch"] for s in t["instrument"]["tuning"]["strings"]] == [69, 64, 60, 67]
     by_start = {}
     for n in t["notes"]:
-        by_start.setdefault(n["start"], {})[n["pitch"]] = (n["string"], n["fret"])
-    assert by_start[0] == {67: (4, 0), 60: (3, 0), 64: (2, 0), 72: (1, 3)}  # C: 0003, the G on the open fourth string
-    assert by_start[48][62] == (3, 2) and by_start[48][71] == (1, 2)  # G: the D on the C string, the B on the A string
-    assert by_start[96] == {65: (2, 1), 60: (3, 0), 69: (1, 0)}  # F without its fourth string: 010
+        by_start.setdefault(n["start"], set()).add((n["pitch"], n["string"], n["fret"]))
+    assert by_start[0] == {(67, 4, 0), (60, 3, 0), (64, 2, 0), (72, 1, 3)}  # C: 0003, the G on the open fourth string
+    assert {(62, 3, 2), (71, 1, 2)} < by_start[48]  # G: the D on the C string, the B on the A string
+    assert by_start[96] == {(65, 2, 1), (60, 3, 0), (69, 1, 0), (69, 4, 2)}  # F: 2010, its A on the first and the fourth string
     assert t["violations"] == [] and not any(n["out_of_range"] for n in t["notes"]) and t["instrument"]["notation"] == "treble"
 
     # A line around G4 and A4 uses the open fourth string, which a low-G ukulele does not have there.
@@ -506,7 +554,7 @@ def test_a_lower_octave_heard_under_a_chord_is_left_out_and_a_low_note_on_its_ow
     assert {48, 43, 55} <= {n["pitch"] for n in doc["notes"]}  # the notes stage does not know the tuning
     t = tab.fingered(doc, opts)
     assert sorted(n["pitch"] for n in t["notes"] if n["start"] == 0) == sorted(UKE_C)  # C3 under the chord's C4 went
-    assert sorted(n["pitch"] for n in t["notes"] if n["start"] == 48) == sorted(set(UKE_G))  # G2 and G3 under its G4
+    assert sorted(n["pitch"] for n in t["notes"] if n["start"] == 48) == sorted(UKE_G)  # G2 and G3 under its G4 went; the G4 is on two strings
     assert t["unplayable_dropped"] == 3 and t["violations"] == []
     # E3 with nothing above it, and a note above the neck: kept and flagged, the sign of another tuning or instrument.
     assert [(n["pitch"], n["out_of_range"]) for n in t["notes"] if n["start"] >= 96] == [(52, True), (64, False), (100, True)]
@@ -515,7 +563,7 @@ def test_a_lower_octave_heard_under_a_chord_is_left_out_and_a_low_note_on_its_ow
     # The notes that were left out are still what the tunings are ranked on.
     seen = []
     tab.fingered(doc, opts, lambda request: seen.append(request) or bass_tab.solve(request))
-    assert len(seen) == 2 and len(seen[0]["notes"]) == len(seen[1]["notes"]) + 3
+    assert len(seen) == 3 and len(seen[0]["notes"]) == len(seen[1]["notes"]) + 3  # all that was heard; without the three; with the unison
     assert t["tuning_suggestions"] == bass_tab.solve(seen[0])["tuning_suggestions"]
 
 

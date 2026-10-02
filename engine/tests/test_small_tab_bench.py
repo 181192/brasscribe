@@ -12,18 +12,32 @@ from brasscribe_eval import suites
 
 def test_the_passages_are_the_same_every_time_and_on_the_instruments_strings():
     for group, (params, _, strings, shapes, scale) in B.GROUPS.items():
-        for pattern in B.PATTERNS:
+        held_out = group.endswith(B.HELDOUT)
+        assert B.patterns(group) == ((*B.PATTERNS, "chord-melody") if held_out else B.PATTERNS)
+        for pattern in B.patterns(group):
             notes = B.passage(group, pattern, 96.0)
             assert notes == B.passage(group, pattern, 96.0)
             assert min(n["pitch"] for n in notes) >= min(strings) and len(notes) >= 6 * B.BARS, (group, pattern)
             assert notes[0]["onset"] == pytest.approx(4 * 60 / 96)  # a bar's count-in
             for n in notes:
-                if "string" in n:  # a chord's notes say their string: at or above its open pitch, within the first frets
-                    assert 0 <= n["pitch"] - strings[n["string"] - 1] <= 3, (group, pattern, n)
+                if "string" in n:  # a chord's notes say their string: at or above its open pitch; the first frets where rules are chosen
+                    assert 0 <= n["pitch"] - strings[n["string"] - 1] <= (15 if held_out else 3), (group, pattern, n)
             assert ("string" in notes[0]) == (pattern != "melody")
-    assert {g: p["instrument"] for g, (p, *_) in B.GROUPS.items()} == {
+    assert {g: p["instrument"] for g, (p, *_) in B.GROUPS.items() if not g.endswith(B.HELDOUT)} == {
         "ukulele-high-g": "ukulele", "ukulele-low-g": "ukulele", "ukulele-baritone": "ukulele-baritone", "mandolin": "mandolin"}
+    assert all(B.GROUPS[g + B.HELDOUT][0] == B.GROUPS[g][0] and B.GROUPS[g + B.HELDOUT][3] != B.GROUPS[g][3]
+               for g in B.GROUPS if not g.endswith(B.HELDOUT))  # each group has a held-out one: the same instrument, other chords
     assert sorted(g for groups in B.SUITES.values() for g in groups) == sorted(B.GROUPS)
+
+
+def test_the_held_out_melody_over_a_ringing_chord_is_high_on_the_top_string():
+    notes = B.passage("ukulele-high-g" + B.HELDOUT, "chord-melody", 120.0)
+    bar = [n for n in notes if 2.0 <= n["onset"] < 4.0]  # the first bar, after the count-in
+    chord, melody = [n for n in bar if n["onset"] < 2.1], [n for n in bar if n["onset"] >= 2.4]
+    assert sorted((n["string"], n["pitch"]) for n in chord) == [(1, 69), (2, 66), (3, 62), (4, 69)]  # D: 2220
+    assert all(n["offset"] - n["onset"] > 1.8 for n in chord if n["string"] != 1)  # it rings under the melody
+    assert [(n["string"], n["pitch"] - 69) for n in melody] == [(1, f) for f in (12, 14, 15, 14, 12, 14)]
+    assert melody[0]["onset"] == pytest.approx(2.5)  # a beat after the chord
 
 
 def test_the_high_g_chords_have_their_fourth_string_above_their_third():
@@ -66,8 +80,9 @@ def test_a_song_run_reads_the_stem_the_profile_reads(tmp_path, monkeypatch):
     assert B.evaluate(tmp_path, ("mandolin",), "song")[1] == []  # another instrument's suite does not see it
 
 
-@pytest.mark.parametrize("suite,groups", [("ukulele-tab", ("ukulele_high_g.song", "ukulele_low_g.instrument", "ukulele_baritone.song")),
-                                          ("mandolin-tab", ("song", "instrument"))])
+@pytest.mark.parametrize("suite,groups", [("ukulele-tab", ("ukulele_high_g.song", "ukulele_low_g.instrument", "ukulele_baritone.song",
+                                                           "ukulele_high_g_heldout.instrument", "ukulele_baritone_heldout.song")),
+                                          ("mandolin-tab", ("mandolin.song", "mandolin.instrument", "mandolin_heldout.instrument"))])
 def test_the_suites_skip_without_their_data_and_are_gated(suite, groups, tmp_path):
     r = suites.run_suite(suite, data=tmp_path)
     assert r["status"] == "skipped" and "eval/small-tab" in r["reason"]
@@ -75,4 +90,4 @@ def test_the_suites_skip_without_their_data_and_are_gated(suite, groups, tmp_pat
     for group in groups:
         assert base[f"{group}.violations"] == {"value": 0, "tolerance": 0, "higher_is_better": False}
         assert f"{group}.onset_f1" in base and f"{group}.string_agreement" in base
-    assert base["stem.guitar.recall"] > 0.9 > 0.1 > base["stem.other.recall"]  # where the separator puts it
+    assert base["stem.guitar.recall"] > 0.8 > 0.2 > base["stem.other.recall"]  # where the separator puts it

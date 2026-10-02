@@ -4,8 +4,10 @@ No recordings of a ukulele or a mandolin with their notes annotated were found (
 labelled as containing either, without notes). So the passages are written in this file and rendered
 with FluidSynth and the MuseScore General SoundFont (MIT), which has sampled Ukulele and Mandolin
 presets: one instrument each, one player-less performance, no room. That is weak evidence, and it is
-all the evidence: the rules that read the notes were set on GuitarSet (guitar_tab_bench) and are not
-adjusted on these passages, so nothing here is tuned on what it reports.
+all the evidence. The rules that read the notes were set on GuitarSet (guitar_tab_bench); the few that
+were chosen while looking at passages of this file say so where they are defined (engine tab.py). Each
+group has a `heldout` one, with other chords, scales and tempos and one more pattern (a melody high on the
+top string over a ringing chord): no rule was chosen on those, they are only reported.
 
 Each passage is rendered twice, alone (`instrument`) and under a bass and drums (`song`), and the
 `song` mix is separated. Which of the separator's stems carries the instrument is measured, not
@@ -47,8 +49,32 @@ GROUPS = {
     "mandolin": ({"instrument": "mandolin"}, (16, 25), (76, 69, 62, 55),
                  {"G": (3, 2, 0, 0), "C": (0, 3, 2, 0), "D": (2, 0, 0, 2), "Em": (0, 2, 2, 0)}, (62, 64, 66, 67, 69, 71, 73, 74, 76, 78, 79)),
 }
+# Held out: other chords (one shape up the neck each), other scales, other tempos and one more pattern, a
+# melody high on the top string over a ringing chord. No rule is chosen on these groups; they are only reported.
+HELDOUT = "-heldout"
+_UKE = {"D": (0, 2, 2, 2), "Bm": (2, 2, 2, 4), "G7": (2, 1, 2, 0), "A": (0, 0, 1, 2), "C at 5": (7, 8, 7, 5)}
+GROUPS.update({
+    "ukulele-high-g" + HELDOUT: (GROUPS["ukulele-high-g"][0], (8, 24), (69, 64, 60, 67), _UKE, (62, 64, 66, 67, 69, 71, 73, 74, 76, 78)),
+    "ukulele-low-g" + HELDOUT: (GROUPS["ukulele-low-g"][0], (8, 24), (69, 64, 60, 55), _UKE, (57, 59, 61, 62, 64, 66, 67, 69, 71)),
+    "ukulele-baritone" + HELDOUT: (GROUPS["ukulele-baritone"][0], (8, 24), (64, 59, 55, 50),
+                                   {"A": (0, 2, 2, 2), "F#m": (2, 2, 2, 4), "D7": (2, 1, 2, 0), "E": (0, 0, 1, 2), "G at 5": (7, 8, 7, 5)},
+                                   (52, 54, 56, 57, 59, 61, 62, 64, 66)),
+    "mandolin" + HELDOUT: (GROUPS["mandolin"][0], (16, 25), (76, 69, 62, 55),
+                           {"A": (0, 0, 2, 2), "E": (0, 2, 2, 1), "F": (1, 0, 3, 5), "A again": (0, 0, 2, 2), "G at 7": (7, 5, 5, 7),
+                            "D at 10": (10, 9, 7, 7)},
+                           (57, 59, 61, 62, 64, 66, 68, 69, 71, 73, 74, 76, 78, 80, 81)),
+})
 PATTERNS = ("melody", "strummed", "picked")
-SUITES = {"ukulele": ("ukulele-high-g", "ukulele-low-g", "ukulele-baritone"), "mandolin": ("mandolin",)}
+HELDOUT_PATTERNS = (*PATTERNS, "chord-melody")
+TEMPOS = {"melody": 104.0, "strummed": 92.0, "picked": 80.0}
+HELDOUT_TEMPOS = {"melody": 116.0, "strummed": 84.0, "picked": 72.0, "chord-melody": 88.0}
+SUITES = {"ukulele": ("ukulele-high-g", "ukulele-low-g", "ukulele-baritone",
+                      "ukulele-high-g" + HELDOUT, "ukulele-low-g" + HELDOUT, "ukulele-baritone" + HELDOUT),
+          "mandolin": ("mandolin", "mandolin" + HELDOUT)}
+
+
+def patterns(group: str) -> tuple[str, ...]:
+    return HELDOUT_PATTERNS if group.endswith(HELDOUT) else PATTERNS
 STEMS = ("guitar", "other", "piano", "vocals")  # where a plucked instrument could land; bass and drums are not asked
 FILES = {"instrument": {"beats": "alone.beats", "bp": "alone-bp.mid", "sw": "alone-sw.mid"}}
 
@@ -74,6 +100,11 @@ def passage(group: str, pattern: str, bpm: float) -> list[dict]:
             for k, p in enumerate(run):
                 add(p, at + k / 2, 0.45)
             add(scale[bar % len(scale)], at + 3, 0.9)
+        elif pattern == "chord-melody":  # the chord struck once and left to ring; a melody at frets 12 to 15 of the top string
+            for j, (p, s) in enumerate(chord[::-1]):
+                add(p, at + 0.012 * j * bpm / 60, 0.9 if s == 1 else 3.8, s)
+            for k, fret in enumerate((12, 14, 15, 14, 12, 14)):
+                add(strings[0] + fret, at + 1 + k / 2, 0.45, 1)
         elif pattern == "strummed":  # down, down-up, up-down-up: the lowest-numbered string last on a down stroke
             for k, when in enumerate((0, 1, 1.5, 2.5, 3, 3.5)):
                 down = k in (0, 1, 4)
@@ -122,17 +153,19 @@ def _render(tracks: list[tuple[int, int, bool, list[tuple[int, float, float, int
                         str(soundfont), str(path)], check=True, capture_output=True)
 
 
-def synthesize(data: Path) -> list[Path]:
-    """Every group's passages: reference.json, alone.wav (the instrument) and mix.wav (with a bass and drums)."""
+def synthesize(data: Path, only_new: bool = False) -> list[Path]:
+    """Every group's passages: reference.json, alone.wav (the instrument) and mix.wav (with a bass and drums).
+    `only_new`: leave the passages that are already there as they are."""
     import soundfile as sf
 
     from .bass_tab_bench import sounding_shift
 
     soundfont = Path(data) / SOUNDFONT
     made = []
+    shifts: dict[str, int] = {}
     for group, (params, (bank, program), strings, shapes, _) in GROUPS.items():
-        for i, pattern in enumerate(PATTERNS):
-            bpm = (104.0, 92.0, 80.0)[i]
+        for pattern in patterns(group):
+            bpm = (HELDOUT_TEMPOS if group.endswith(HELDOUT) else TEMPOS)[pattern]
             beat = 60 / bpm
             notes = passage(group, pattern, bpm)
             lead = (bank, program, False, [(n["pitch"], n["onset"], n["offset"], 92) for n in notes])
@@ -147,12 +180,18 @@ def synthesize(data: Path) -> list[Path]:
                     root = roots[(bar - 1) % len(roots)]
                     bass += [(root, t + k * beat, t + (k + 0.9) * beat, 90) for k in range(4)]
             dest = Path(data) / "eval" / SET / f"{group}-{pattern}"
+            if only_new and (dest / "reference.json").exists():
+                shifts.setdefault(group, json.loads((dest / "reference.json").read_text())["written_to_sounding"])
+                continue
             dest.mkdir(parents=True, exist_ok=True)
             _render([lead], bpm, soundfont, dest / "alone.wav")
             _render([lead, (0, 33, False, bass), (0, 0, True, drums)], bpm, soundfont, dest / "mix.wav")
-            # A preset may sound an octave from what it is sent: the reference is what sounds, read from the render.
-            audio, sr = sf.read(str(dest / "alone.wav"), dtype="float64", always_2d=True)
-            shift = sounding_shift(audio.mean(axis=1), sr, notes, lowest=0)
+            # A preset may sound an octave from what it is sent: the reference is what sounds, read from the render
+            # of the group's melody (one note at a time; among chords the reading is not reliable).
+            if pattern == PATTERNS[0]:
+                audio, sr = sf.read(str(dest / "alone.wav"), dtype="float64", always_2d=True)
+                shifts[group] = sounding_shift(audio.mean(axis=1), sr, notes, lowest=0)
+            shift = shifts[group]
             (dest / "reference.json").write_text(json.dumps({
                 "group": group, "pattern": pattern, "style": pattern, "player": "synthesized", "params": params,
                 "written_to_sounding": shift, "tempo_bpm": bpm, "beats_per_bar": 4,
@@ -252,9 +291,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("command", choices=["synthesize", "prepare", "stems", "report"])
     ap.add_argument("--data", type=Path, default=DATA)
+    ap.add_argument("--only-new", action="store_true", help="synthesize: keep the passages that are already rendered")
     args = ap.parse_args()
     if args.command == "synthesize":
-        for d in synthesize(args.data):
+        for d in synthesize(args.data, args.only_new):
             notes = json.loads((d / "reference.json").read_text())["notes"]
             print(f"{d.name}: {len(notes)} notes, {min(n['pitch'] for n in notes)} to {max(n['pitch'] for n in notes)}")
     elif args.command == "prepare":
