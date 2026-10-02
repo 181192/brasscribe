@@ -1,0 +1,140 @@
+package no.brasscribe.play.screen
+
+import android.view.KeyEvent
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.lifecycle.ViewModelProvider
+import no.brasscribe.play.Appearance
+import no.brasscribe.play.MainActivity
+import no.brasscribe.play.PlayApplication
+import no.brasscribe.play.PlayViewModel
+import no.brasscribe.play.engine.FixtureSource
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
+/**
+ * A test of the app's screens that runs both on the JVM (with the unit tests, under Robolectric) and on a
+ * device (with the instrumented tests): the real activity and view model, a fixture computer, and the
+ * accessibility checks on every action. What the two runs do differently is in [ScreenDevice].
+ */
+abstract class ScreenTest {
+    @get:Rule
+    val rule: AppRule = createAndroidComposeRule<MainActivity>()
+
+    protected val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+    protected val container get() = (rule.activity.application as PlayApplication).container
+
+    @Before
+    fun startClean() {
+        rule.enableAccessibilityChecks(ScreenAccessibility.validator())
+        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
+        rule.runOnUiThread {
+            container.firstRunDone = true
+            vm.scores.value.forEach(vm::deleteEntry)
+            vm.home()
+        }
+        rule.waitForIdle()
+    }
+
+    @After
+    fun leaveClean() {
+        ScreenDevice.reset(rule)
+        rule.runOnUiThread {
+            container.fixtureSource = null
+            container.updateAppearance(Appearance.SYSTEM)
+            vm.scores.value.forEach(vm::deleteEntry)
+            vm.home()
+        }
+    }
+
+    protected fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
+
+    protected fun language(tag: String) = ScreenDevice.language(rule, tag)
+
+    protected fun textSize(scale: Float) = ScreenDevice.textSize(rule, scale)
+
+    protected fun key(code: Int) = ScreenDevice.key(rule, code)
+
+    /** Where this test's screenshots go, under the app's screenshots. */
+    protected open val shots: String = "screens"
+
+    protected fun shot(name: String) = ScreenDevice.shot(rule, "$shots/$name")
+
+    /** The accessibility checks on what is on the screen now (they also run on every action a test performs). */
+    protected fun checkAccessibility() {
+        rule.onRoot().tryPerformAccessibilityChecks()
+    }
+
+    /** Waits until [condition] holds; the app's time passes meanwhile. */
+    protected fun waitUntil(ms: Long = 5_000, condition: () -> Boolean) = ScreenDevice.waitUntil(rule, ms, condition)
+
+    /** Lets the screen come to rest: what was started is drawn, and nothing more is on its way. */
+    protected fun settle() = ScreenDevice.settle(rule)
+
+    protected fun waitForTag(tag: String, ms: Long = 60_000) =
+        waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
+
+    /** The fixture computer: the files of [folder] in apps/fixtures, each changed by [change] on the way when it answers one. */
+    protected fun computer(folder: String, change: (name: String, bytes: ByteArray?) -> ByteArray? = { _, bytes -> bytes }) {
+        container.fixtureSource = FixtureSource { name -> change(name, ScreenDevice.fixture("$folder/$name")) }
+    }
+
+    /** Two seconds of a low E as a WAV file: a recording to open. */
+    protected fun recording(name: String = "Bass line.wav"): File {
+        val rate = 22_050
+        val samples = ShortArray(rate * 2) { i -> (Math.sin(2 * Math.PI * 82.4 * i / rate) * 9000).toInt().toShort() }
+        val data = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN).also { b -> samples.forEach(b::putShort) }.array()
+        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
+            .put("RIFF".toByteArray()).putInt(36 + data.size).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
+            .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.size).array()
+        return ScreenDevice.recording(rule.activity, name, header + data, rate)
+    }
+
+    /** Every text now on screen. */
+    protected fun shown(): String = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
+        .fetchSemanticsNodes().flatMap { it.config[SemanticsProperties.Text] }.joinToString(" | ") { it.text }
+
+    /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
+    protected fun assertNoTextIsClipped() {
+        val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
+            .fetchSemanticsNodes().mapNotNull { node ->
+                val layouts = mutableListOf<TextLayoutResult>()
+                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
+                val l = layouts.firstOrNull() ?: return@mapNotNull null
+                val cut = l.didOverflowHeight || (0 until l.lineCount).any(l::isLineEllipsized) ||
+                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
+                l.layoutInput.text.text.takeIf { cut }
+            }
+        assertEquals("clipped text", emptyList<String>(), clipped)
+    }
+
+    /** What the element with the keyboard's focus says: its texts and its name. */
+    protected fun focusedWords(): String = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
+        .fetchSemanticsNodes().lastOrNull()?.config?.let { c ->
+            (c.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + c.getOrNull(SemanticsProperties.ContentDescription).orEmpty()).joinToString(" ")
+        }.orEmpty()
+
+    /** Tab until the focused element says [words]; fails when the keyboard never gets there. */
+    protected fun tabTo(words: String, seen: MutableSet<String> = mutableSetOf()) {
+        repeat(12) {
+            if (focusedWords().contains(words)) return
+            key(KeyEvent.KEYCODE_TAB)
+            seen += focusedWords()
+        }
+        assertTrue("the keyboard never reached \"$words\"; it reached $seen", focusedWords().contains(words))
+    }
+}

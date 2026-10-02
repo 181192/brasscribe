@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.roborazzi)
 }
 
 val repoRoot = rootProject.extra["repoRoot"] as File
@@ -68,9 +69,34 @@ android {
     // test APK only: no app build carries it.
     sourceSets["androidTest"].assets.srcDir(File(repoRoot, "apps/fixtures"))
 
+    // The screen tests (src/screenTest*) are one source for two runs: on the JVM with the unit tests
+    // (Robolectric), and on a device with the instrumented ones. What differs between the two (the text size,
+    // the language, a key press, where the fixtures are read from) is behind ScreenDevice, which each run has
+    // its own of (src/test and src/androidTest).
+    for ((shared, runs) in mapOf(
+        "screenTest" to listOf("test", "androidTest"),
+        "screenTestBrasscribe" to listOf("testBrasscribe", "androidTestBrasscribe"),
+        "screenTestFretscribe" to listOf("testFretscribe", "androidTestFretscribe"),
+    )) for (run in runs) sourceSets[run].kotlin.directories.add("src/$shared/kotlin")
+    // alphaTab draws with alphaSkia's native library. The app carries the Android build of it; the unit tests
+    // load the build for the machine they run on (syncHostSkia below), found like a test's own JNI library.
+    sourceSets["test"].jniLibs.directories.add(layout.buildDirectory.dir("host-skia").get().asFile.path)
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
+            // The screens run against the host build of the core (as core-bridge's tests do) and read the
+            // fixtures the instrumented tests carry as assets.
+            it.systemProperty("jna.library.path", File(repoRoot, "core/target/release").absolutePath)
+            it.systemProperty("brasscribe.fixtures", File(repoRoot, "apps/fixtures").absolutePath)
+            it.inputs.dir(File(repoRoot, "apps/fixtures")).withPropertyName("screenFixtures")
+            it.inputs.files(fileTree(File(repoRoot, "core/target/release")) { include("libbrasscribe_ffi.*") }).withPropertyName("hostCore")
+            // (Robolectric reaches into the JDK for Android's file descriptors; a newer JDK asks for the export.)
+            it.jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+            it.systemProperty("robolectric.graphicsMode", "NATIVE")
+            it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
+            // Robolectric keeps one Android per SDK in memory, with native graphics beside it.
+            it.maxHeapSize = "3g"
             // The shared resolver vectors (sounds/partsound-vectors.json) and part map.
             it.systemProperty("brasscribe.sounds", System.getenv("BRASSCRIBE_SOUNDS_DIR") ?: File(repoRoot, "sounds").absolutePath)
             it.systemProperty("brasscribe.bandSounds", bandSoundsDir.absolutePath)
@@ -203,6 +229,36 @@ androidComponents {
 }
 tasks.named("preBuild") { dependsOn(modelAssets, soundMap, designSyncs, tabFont) }
 
+// alphaSkia for the machine the unit tests run on: the same drawing code as the app's, from the same release.
+val hostOs = System.getProperty("os.name").lowercase().let { if ("mac" in it) "macos" else if ("win" in it) "windows" else "linux" }
+val hostArch = System.getProperty("os.arch").let { if (it == "aarch64" || it == "arm64") "arm64" else "x64" }
+val hostSkia by configurations.creating { isTransitive = false }
+val hostSkiaLibrary = when (hostOs) { "macos" -> libs.alphaskia.macos; "windows" -> libs.alphaskia.windows; else -> libs.alphaskia.linux }
+abstract class HostSkia @Inject constructor(private val archives: ArchiveOperations, private val files: FileSystemOperations) : DefaultTask() {
+    @get:InputFiles abstract val jars: ConfigurableFileCollection
+    @get:Input abstract val platform: Property<String>
+    @get:OutputDirectory abstract val into: DirectoryProperty
+
+    @TaskAction
+    fun sync() {
+        val folder = "native/${platform.get()}/*"
+        files.sync {
+            from(jars.map { archives.zipTree(it) }) {
+                include(folder)
+                eachFile { path = name }
+                includeEmptyDirs = false
+            }
+            into(into)
+        }
+    }
+}
+val syncHostSkia = tasks.register<HostSkia>("syncHostSkia") {
+    jars.from(hostSkia)
+    platform.set("$hostOs-$hostArch")
+    into.set(layout.buildDirectory.dir("host-skia"))
+}
+tasks.withType<Test>().configureEach { dependsOn(syncHostSkia) }
+
 // The task names from before there were two products stay, and mean the Brasscribe app.
 mapOf(
     "testDebugUnitTest" to "testBrasscribeDebugUnitTest",
@@ -248,6 +304,20 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // The screens on the JVM (src/screenTest*): Robolectric, the Compose test rule with the accessibility
+    // checks, and Roborazzi for the screenshots. The desktop JNA loads the host build of the core.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.compose.ui.test.junit4.accessibility)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.androidx.test.espresso.core)
+    testImplementation(libs.androidx.test.espresso.accessibility)
+    testImplementation(libs.atf)
+    testImplementation(libs.jna)
+    hostSkia(hostSkiaLibrary)
 
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)

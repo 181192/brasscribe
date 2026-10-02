@@ -55,6 +55,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
 import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
@@ -62,141 +64,39 @@ import java.nio.ByteOrder
 
 /**
  * A recording becomes a tab, on a fixture computer that answers as the engine did for a short bass line
- * (apps/fixtures/bass-line, packaged in the test APK only): Home, open a recording, What is this?,
+ * (apps/fixtures/bass-line): Home, open a recording, What is this?,
  * writing down the notes, Check the song, Show the tab. In English and bokmål, with the accessibility
- * checks on every action, at 200 % text, and with the keyboard alone. Screenshots, light and dark, go to
- * /data/local/tmp/fretscribe-flow on the device.
+ * checks on every action, at 200 % text, and with the keyboard alone, with screenshots in light and dark.
  */
 @RunWith(AndroidJUnit4::class)
-class SendBassTabFlowTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
+class SendBassTabFlowTest : ScreenTest() {
 
     @Before
     fun setUp() {
         assertEquals("Fretscribe", Product.NAME)
-        rule.enableAccessibilityChecks()
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
         yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
-        rule.runOnUiThread {
-            container.firstRunDone = true
-            vm.scores.value.forEach(vm::deleteEntry)
-            vm.home()
-        }
-        shell("mkdir -p $SHOTS")
-        rule.waitForIdle()
     }
-
-    @After
-    fun tearDown() {
-        shell("cmd locale set-app-locales $PACKAGE --locales en-GB")
-        shell("settings put system font_scale 1.0")
-        rule.runOnUiThread {
-            container.fixtureSource = null
-            container.updateAppearance(Appearance.SYSTEM)
-            vm.home()
-        }
-    }
-
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(400)
-    }
-
-    private fun shot(name: String) {
-        rule.waitForIdle()
-        Thread.sleep(700)
-        shell("screencap -p $SHOTS/$name.png")
-        Thread.sleep(800)
-    }
-
-    private fun language(tag: String) {
-        shell("cmd locale set-app-locales $PACKAGE --locales $tag")
-        rule.activityRule.scenario.recreate()
-        rule.waitForIdle()
-    }
-
-    private fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
 
     /** The computer of the tests: what the engine answered for the bass line, with [tab] changed on the way when given. */
-    private fun computer(tab: ((JSONObject) -> Unit)? = null) {
-        val assets = instrumentation.context.assets
-        container.fixtureSource = FixtureSource { name ->
-            val bytes = runCatching { assets.open("bass-line/$name").use { it.readBytes() } }.getOrNull()
-            if (name == "tab.json" && bytes != null && tab != null) JSONObject(String(bytes)).also(tab).toString().toByteArray() else bytes
-        }
+    private fun computer(tab: ((JSONObject) -> Unit)? = null) = computer("bass-line") { name, bytes ->
+        if (name == "tab.json" && bytes != null && tab != null) JSONObject(String(bytes)).also(tab).toString().toByteArray() else bytes
     }
 
-    /** Two seconds of a low E as a WAV file: a recording to open. */
-    private fun recording(name: String = "Bass line.wav"): File {
-        val rate = 22_050
-        val samples = ShortArray(rate * 2) { i -> (Math.sin(2 * Math.PI * 82.4 * i / rate) * 9000).toInt().toShort() }
-        val data = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN).also { b -> samples.forEach(b::putShort) }.array()
-        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-            .put("RIFF".toByteArray()).putInt(36 + data.size).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
-            .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.size).array()
-        return File(rule.activity.cacheDir, name).apply { writeBytes(header + data) }
-    }
+    override val shots = "fretscribe/bass-flow"
 
     /** Open a recording from Home, as the file picker's answer does: What is this? follows. */
     private fun openARecording() {
         val file = recording()
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
-        rule.waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
         // (The computer is asked what it can write when the screen opens; Continue waits for its answer.)
-        rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+        waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
     }
-
-    private fun waitForTag(tag: String, ms: Long = 60_000) =
-        rule.waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
     private fun card(tag: String) = rule.onNode(
         SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             androidx.compose.ui.test.hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-$tag")),
     )
-
-    /** Every text now on screen. */
-    private fun shown(): String = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
-        .fetchSemanticsNodes().flatMap { it.config[SemanticsProperties.Text] }.joinToString(" | ") { it.text }
-
-    /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
-    private fun assertNoTextIsClipped() {
-        val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
-            .fetchSemanticsNodes().mapNotNull { node ->
-                val layouts = mutableListOf<TextLayoutResult>()
-                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                val l = layouts.firstOrNull() ?: return@mapNotNull null
-                val cut = l.didOverflowHeight || (0 until l.lineCount).any(l::isLineEllipsized) ||
-                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
-                l.layoutInput.text.text.takeIf { cut }
-            }
-        assertEquals("clipped text", emptyList<String>(), clipped)
-    }
-
-    private fun key(code: Int) {
-        instrumentation.sendKeyDownUpSync(code)
-        rule.waitForIdle()
-    }
-
-    /** What the element with the keyboard's focus says: its texts and its name. */
-    private fun focusedWords(): String = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
-        .fetchSemanticsNodes().lastOrNull()?.config?.let { c ->
-            (c.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text } + c.getOrNull(SemanticsProperties.ContentDescription).orEmpty()).joinToString(" ")
-        }.orEmpty()
-
-    /** Tab until the focused element says [words]; fails when the keyboard never gets there. */
-    private fun tabTo(words: String, seen: MutableSet<String> = mutableSetOf()) {
-        repeat(12) {
-            if (focusedWords().contains(words)) return
-            key(KeyEvent.KEYCODE_TAB)
-            seen += focusedWords()
-        }
-        assertTrue("the keyboard never reached \"$words\"; it reached $seen", focusedWords().contains(words))
-    }
 
     @Test
     fun aRecordingBecomesATabInEnglishAndBokmal() {
@@ -248,18 +148,18 @@ class SendBassTabFlowTest {
             rule.onNodeWithTag("fs-what-continue").performClick()
 
             // Writing down the notes: Cancel asks first, and the answer is still there afterwards.
-            rule.waitUntil(20_000) { rule.onAllNodes(hasContentDescription(text(no.brasscribe.play.R.string.transcribe_progress_label)), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(20_000) { rule.onAllNodes(hasContentDescription(text(no.brasscribe.play.R.string.transcribe_progress_label)), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
             rule.onNodeWithText(text(no.brasscribe.play.R.string.cancel)).assertHeightIsAtLeast(48.dp).performClick()
             rule.onNodeWithText(w[7]).assertIsDisplayed()
             if (whole) shot("writing-down-cancel-en-light")
             rule.onNodeWithText(w[8]).performClick()
-            waitForTag("fs-what-continue", 10_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+            waitForTag("fs-what-continue", 10_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
             (if (whole) alone else song).assertIsSelected()
             rule.onNodeWithTag("fs-what-continue").assertIsEnabled().performClick()
 
             // The steps, in Fretscribe's words: a full song is separated first, the bass alone is not.
             val last = steps.getValue(lang).last()
-            rule.waitUntil(20_000) { rule.onAllNodesWithText(last).fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(20_000) { rule.onAllNodesWithText(last).fetchSemanticsNodes().isNotEmpty() }
             // (The fixture computer has a name of its own; a real one shows its address there.)
             val during = shown().replace(no.brasscribe.play.engine.FixtureEngineApi.SERVER_NAME, "")
             steps.getValue(lang).forEach { assertTrue("$it in: $during", during.contains(it)) }
@@ -309,7 +209,7 @@ class SendBassTabFlowTest {
             waitForTag("fs-tab", 30_000)
             assertEquals(Screen.SCORE, vm.screen.value.last())
             // The tab is there: the view says its bars.
-            rule.waitUntil(30_000) {
+            waitUntil(30_000) {
                 rule.onNodeWithTag("fs-tab").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
                     ?.firstOrNull()?.let { d -> Regex("""\d+""").findAll(d).any { it.value.toInt() > 1 } } == true
             }
@@ -317,7 +217,7 @@ class SendBassTabFlowTest {
 
             // The song is in Your songs, with its instrument and tuning.
             rule.runOnUiThread { vm.home() }
-            rule.waitUntil(10_000) { rule.onAllNodesWithText(w[14], substring = true).fetchSemanticsNodes().isNotEmpty() }
+            waitUntil(10_000) { rule.onAllNodesWithText(w[14], substring = true).fetchSemanticsNodes().isNotEmpty() }
             rule.onAllNodesWithText(w[14], substring = true).onFirst().performScrollTo().assertIsDisplayed()
             if (whole) shot("home-song-en-light")
         }
@@ -362,15 +262,15 @@ class SendBassTabFlowTest {
         // Use Drop D: the recording is written down again for that tuning, and Check the song comes back.
         val first = vm.result.value!!.jobId
         rule.onNodeWithTag("fs-check-change-tuning").performClick()
-        rule.waitUntil(20_000) { vm.screen.value.last() == Screen.TRANSCRIBE || vm.result.value?.jobId != first }
-        rule.waitUntil(60_000) { vm.result.value?.jobId != first && vm.screen.value == listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT) }
+        waitUntil(20_000) { vm.screen.value.last() == Screen.TRANSCRIBE || vm.result.value?.jobId != first }
+        waitUntil(60_000) { vm.result.value?.jobId != first && vm.screen.value == listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT) }
         waitForTag("fs-show-tab")
         val sent = tabOptions(yourInstrumentStore(rule.activity).load(), SongAnswers.of(vm.source.value))
         assertEquals(listOf("drop-d", Recording.INSTRUMENT, Octave.AUTO), listOf(sent.tuning, sent.recording, sent.octave))
         assertEquals(2, runBlocking { container.engine()!!.jobs() }.size)
         // The player's usual tuning is as it was, and the song is saved once.
         assertEquals(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
-        rule.waitUntil(10_000) { vm.savedScores.value.size == 1 }
+        waitUntil(10_000) { vm.savedScores.value.size == 1 }
     }
 
     @Test
@@ -386,10 +286,10 @@ class SendBassTabFlowTest {
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         shot("what-is-this-not-connected-en-light")
         rule.onNodeWithText("Connect").assertHeightIsAtLeast(44.dp).performClick()
-        rule.waitUntil(5_000) { vm.screen.value.last() == Screen.COMPANION }
+        waitUntil(5_000) { vm.screen.value.last() == Screen.COMPANION }
         // Back from pairing, the answer is still there.
         rule.runOnUiThread { vm.back() }
-        waitForTag("fs-what-continue", 5_000); rule.waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+        waitForTag("fs-what-continue", 5_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         card("song").assertIsSelected()
     }
 
@@ -398,8 +298,7 @@ class SendBassTabFlowTest {
         for (lang in listOf("en-GB", "nb-NO")) {
             language(lang)
             computer { tab -> tab.put("octave_shift", -12); tab.getJSONObject("reference_pitch").put("cents", -22.0) }
-            shell("settings put system font_scale 2.0")
-            rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale >= 1.9f }
+            textSize(2.0f)
             openARecording()
             assertNoTextIsClipped()
             card("instrument").performScrollTo().assertIsDisplayed()
@@ -419,8 +318,7 @@ class SendBassTabFlowTest {
             rule.onNodeWithTag("fs-show-tab").assertIsDisplayed()
             rule.onNodeWithTag("fs-check-tuning").performScrollTo()
             shot("check-the-song-200-${lang.take(2)}")
-            shell("settings put system font_scale 1.0")
-            rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale <= 1.1f }
+            textSize(1.0f)
         }
     }
 
@@ -439,12 +337,12 @@ class SendBassTabFlowTest {
         card("instrument").assertIsSelected()
         tabTo("Continue")
         key(KeyEvent.KEYCODE_ENTER)
-        rule.waitUntil(20_000) { vm.screen.value.last() == Screen.TRANSCRIBE || vm.screen.value.last() == Screen.OUTPUT }
+        waitUntil(20_000) { vm.screen.value.last() == Screen.TRANSCRIBE || vm.screen.value.last() == Screen.OUTPUT }
         // Writing down the notes: Cancel is reached, asks, and Keep going is reached too.
         if (vm.screen.value.last() == Screen.TRANSCRIBE) {
             tabTo("Cancel")
             key(KeyEvent.KEYCODE_ENTER)
-            rule.waitUntil(5_000) { rule.onAllNodesWithText("Stop writing down the notes?").fetchSemanticsNodes().isNotEmpty() || vm.screen.value.last() == Screen.OUTPUT }
+            waitUntil(5_000) { rule.onAllNodesWithText("Stop writing down the notes?").fetchSemanticsNodes().isNotEmpty() || vm.screen.value.last() == Screen.OUTPUT }
             if (vm.screen.value.last() == Screen.TRANSCRIBE) {
                 tabTo("Keep going")
                 key(KeyEvent.KEYCODE_ENTER)
@@ -466,7 +364,7 @@ class SendBassTabFlowTest {
         language("en-GB")
         computer()
         rule.runOnUiThread { vm.openEntry(ScoreEntry("job:band-1", "Old Hundredth", System.currentTimeMillis(), "brass-band", jobId = "band-1")) }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("This is a band score. Open it in Brasscribe.").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(5_000) { rule.onAllNodesWithText("This is a band score. Open it in Brasscribe.").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(listOf(Screen.HOME), vm.screen.value)
         assertEquals(null, vm.result.value)
         assertEquals(null, vm.standFromLibrary.value)
@@ -486,10 +384,5 @@ class SendBassTabFlowTest {
         rule.waitForIdle()
         return listOf(no.brasscribe.play.R.string.edit_title, no.brasscribe.play.R.string.stand_open_from_library, no.brasscribe.play.R.string.check_notes, no.brasscribe.play.R.string.delete)
             .map { rule.activity.getString(it) }.filter { rule.onAllNodesWithText(it).fetchSemanticsNodes().isNotEmpty() }
-    }
-
-    private companion object {
-        const val PACKAGE = "no.fretscribe.play"
-        const val SHOTS = "/data/local/tmp/fretscribe-flow"
     }
 }
