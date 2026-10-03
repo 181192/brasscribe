@@ -951,6 +951,83 @@ fn slides_bends_vibrato_let_ring_and_dead_notes() {
     assert!(!n[3].descendants().any(|c| c.has_tag_name("tied")));
 }
 
+/// A score with each note on the string and fret given: (string, fret, start, length, techniques).
+fn placed(inst: &Instrument, notes: &[(u8, u8, i64, i64, &[Technique])]) -> TabScore {
+    let pitch = |s: u8, f: u8| inst.pitch_at(target_fretted::Position { string: s, fret: f }).unwrap();
+    let model: Vec<Note> = notes.iter().map(|&(s, f, start, dur, _)| note(pitch(s, f), start, dur)).collect();
+    let t: Vec<Vec<Technique>> = notes.iter().map(|n| n.4.to_vec()).collect();
+    let places = notes.iter().map(|&(s, f, ..)| NotePlace { pitch: pitch(s, f), string: Some(s), fret: Some(f), alternatives: Vec::new(), out_of_range: false, pinned: false }).collect();
+    TabScore::new("Test", inst, &model, &t, &Fingering { notes: places }).unwrap()
+}
+
+#[test]
+fn a_slide_or_a_bend_comes_from_the_note_before_it_on_its_string() {
+    let inst = preset("guitar-standard").unwrap();
+    for (t, name) in [(Technique::Slide, "slide"), (Technique::Bend, "bend"), (Technique::HammerOn, "hammer-on")] {
+        // String 1 fret 3, the open sixth string, then string 1 fret 5: the third note comes from
+        // the first, and the bass note between is left alone.
+        let score = placed(&inst, &[(1, 3, 0, 12, &[]), (6, 0, 12, 12, &[]), (1, 5, 24, 24, &[t])]);
+        let xml = write(&score, &layout(Layout::Tab));
+        let doc = parse(&xml);
+        let n = sounding(&doc);
+        assert_eq!(n.iter().map(|x| place(*x).unwrap()).collect::<Vec<_>>(), [(1, 3), (6, 0), (1, 5)]);
+        assert!(marks_on(n[1], &["slide", "slur", "hammer-on"]).is_empty() && descendant(n[1], "bend").is_none(), "{name}: the open string has no part in it");
+        match t {
+            Technique::Slide => {
+                assert_eq!(marks_on(n[0], &["slide"]), [("slide", "start", "1")]);
+                assert_eq!(marks_on(n[2], &["slide"]), [("slide", "stop", "1")]);
+            }
+            Technique::Bend => {
+                assert_eq!(text(n[0], "bend-alter"), Some("2"));
+                assert_eq!(marks_on(n[0], &["slur"]), [("slur", "start", "1")]);
+                assert_eq!(marks_on(n[2], &["slur"]), [("slur", "stop", "1")]);
+            }
+            _ => {
+                assert_eq!(marks_on(n[0], &["hammer-on"]), [("hammer-on", "start", "1")]);
+                assert_eq!(marks_on(n[2], &["hammer-on"]), [("hammer-on", "stop", "1")]);
+            }
+        }
+
+        // With no note on its string before it, nothing is linked.
+        let score = placed(&inst, &[(3, 9, 0, 24, &[]), (2, 7, 24, 24, &[t])]);
+        let xml = write(&score, &layout(Layout::Tab));
+        let doc = parse(&xml);
+        for mark in ["slide", "slur", "hammer-on", "bend"] {
+            assert!(all(&doc, mark).is_empty(), "{name}: {mark}");
+        }
+
+        // A rest ends the search: a note on the string before it is from another phrase.
+        let score = placed(&inst, &[(1, 3, 0, 12, &[]), (6, 0, 12, 6, &[]), (1, 5, 24, 24, &[t])]);
+        let xml = write(&score, &layout(Layout::Tab));
+        let doc = parse(&xml);
+        for mark in ["slide", "slur", "hammer-on", "bend"] {
+            assert!(all(&doc, mark).is_empty(), "{name} after a rest: {mark}");
+        }
+        // The note just before is looked at even after a rest, as it always was.
+        let score = placed(&inst, &[(1, 3, 0, 12, &[]), (1, 5, 24, 24, &[t])]);
+        let xml = write(&score, &layout(Layout::Tab));
+        let doc = parse(&xml);
+        assert!(!all(&doc, if t == Technique::Bend { "bend" } else { name }).is_empty(), "{name} over a rest from the note before");
+    }
+}
+
+#[test]
+fn slides_open_at_once_are_numbered_apart() {
+    let inst = preset("guitar-standard").unwrap();
+    // A slide on string 1 from the first note to the third stays open while the bass slides from
+    // the second note to the third.
+    let score = placed(&inst, &[(1, 3, 0, 12, &[]), (6, 3, 12, 12, &[]), (6, 5, 24, 24, &[Technique::Slide]), (1, 5, 24, 24, &[Technique::Slide])]);
+    let xml = write(&score, &layout(Layout::Tab));
+    let doc = parse(&xml);
+    let n = sounding(&doc);
+    let at = |s: u8| n.iter().copied().filter(|x| place(*x).unwrap().0 == s).collect::<Vec<_>>();
+    let (high, low) = (at(1), at(6));
+    let number = |x: Node| marks_on(x, &["slide"]).first().map(|m| m.2.to_string()).unwrap();
+    assert_eq!(number(high[0]), number(high[1]));
+    assert_eq!(number(low[0]), number(low[1]));
+    assert_ne!(number(high[0]), number(low[0]));
+}
+
 #[test]
 fn technique_marks_sit_at_the_ends_of_a_tied_note() {
     let inst = preset("guitar-standard").unwrap();

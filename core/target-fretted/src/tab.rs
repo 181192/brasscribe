@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, NotationClef};
 use crate::solve::{check_note_count, Fingering};
-use crate::technique::{per_note, previous_notes, Technique};
+use crate::technique::{per_note, Technique};
 
 /// Notes below this confidence are marked as doubtful unless [`TabOptions::doubt_below`] says
 /// otherwise.
@@ -284,6 +284,11 @@ pub(crate) struct Written {
     pub(crate) starts: Vec<(Link, u8)>,
     /// Links that end here.
     pub(crate) stops: Vec<(Link, u8)>,
+    /// The slides, hammer-ons, pull-offs and bends that lead to this note, whether or not they
+    /// come from a note that can be linked.
+    pub(crate) leads: Vec<Technique>,
+    /// The note they come from ([`origin`]): event and note in it.
+    pub(crate) from: Option<(usize, usize)>,
     pub(crate) spelled: Spelled,
 }
 
@@ -604,6 +609,8 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
             dead: has(Technique::DeadNote),
             starts: Vec::new(),
             stops: Vec::new(),
+            leads: Vec::new(),
+            from: None,
             spelled: Spelled { step: 'C', alter: 0, octave: 4 },
         });
     }
@@ -621,49 +628,90 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
         events[e].notes[k].spelled = s;
     }
 
-    // A slide, hammer-on, pull-off or bend links the note it comes from to the note that has it.
-    let model: Vec<Note> = notes.iter().zip(spans).map(|(n, &(start, end))| Note::new(n.pitch, start, end - start, n.confidence, Vec::new())).collect();
-    let previous = previous_notes(&model);
+    // The techniques that lead to each written note, in the order they are given.
     for &i in &kept {
-        let Some(to) = slot[i] else { continue };
-        for &t in &notes[i].techniques {
-            if !t.keeps_string() {
+        let Some((e, k)) = slot[i] else { continue };
+        let w = &mut events[e].notes[k];
+        for &t in notes[i].techniques.iter().filter(|t| t.keeps_string()) {
+            if !w.leads.contains(&t) {
+                w.leads.push(t);
+            }
+        }
+    }
+    // A slide, hammer-on, pull-off or bend links the note it comes from on its string to the note
+    // that has it.
+    // The links numbered so far: the events they leave and reach, whether they are arcs, and their number.
+    let mut numbered: Vec<(usize, usize, bool, u8)> = Vec::new();
+    for e in 0..events.len() {
+        for k in 0..events[e].notes.len() {
+            let Some((string, _)) = events[e].notes[k].place else { continue };
+            if events[e].notes[k].leads.is_empty() {
                 continue;
             }
-            let Some(from) = previous[i].and_then(|j| slot[j]) else { continue };
-            // A note without a place is a rest on the tab staff, and nothing can lead to or from it.
-            if events[from.0].notes[from.1].place.is_none() || events[to.0].notes[to.1].place.is_none() {
-                continue;
-            }
-            let links: &[Link] = match t {
-                Technique::HammerOn => &[Link::HammerOn],
-                Technique::PullOff => &[Link::PullOff],
-                Technique::Slide => &[Link::Slide],
-                Technique::Bend => {
-                    let up = notes[i].pitch - events[from.0].notes[from.1].pitch;
-                    if (1..=MAX_BEND).contains(&up) {
-                        &[Link::Bend(up), Link::BendArc]
-                    } else {
+            let from = origin(&events, e, string);
+            events[e].notes[k].from = from;
+            let Some(from) = from else { continue };
+            for t in events[e].notes[k].leads.clone() {
+                let links: &[Link] = match t {
+                    Technique::HammerOn => &[Link::HammerOn],
+                    Technique::PullOff => &[Link::PullOff],
+                    Technique::Slide => &[Link::Slide],
+                    Technique::Bend => match bend(&events, from, (e, k)) {
+                        Some(up) => &[Link::Bend(up), Link::BendArc],
+                        None => continue,
+                    },
+                    _ => continue,
+                };
+                for &link in links {
+                    if events[from.0].notes[from.1].starts.iter().any(|&(l, _)| l == link) {
                         continue;
                     }
+                    // Arcs that are open at once are numbered apart, and so are slides. A link that
+                    // ends where another starts may share its number.
+                    let number = match link {
+                        Link::Bend(_) => 1,
+                        _ => {
+                            let taken = |n: u8| numbered.iter().any(|&(a, b, arc, m)| m == n && arc == link.is_arc() && a < e && from.0 < b);
+                            let number = (1..=6).find(|&n| !taken(n)).unwrap_or(6);
+                            numbered.push((from.0, e, link.is_arc(), number));
+                            number
+                        }
+                    };
+                    events[from.0].notes[from.1].starts.push((link, number));
+                    events[e].notes[k].stops.push((link, number));
                 }
-                _ => continue,
-            };
-            for &link in links {
-                if events[from.0].notes[from.1].starts.iter().any(|&(l, _)| l == link) {
-                    continue;
-                }
-                // Arcs that leave the same chord are numbered apart, and so are slides.
-                let number = match link {
-                    Link::Bend(_) => 1,
-                    _ => 1 + events[from.0].notes.iter().flat_map(|w| &w.starts).filter(|&&(l, _)| !matches!(l, Link::Bend(_)) && l.is_arc() == link.is_arc()).count().min(5) as u8,
-                };
-                events[from.0].notes[from.1].starts.push((link, number));
-                events[to.0].notes[to.1].stops.push((link, number));
             }
         }
     }
     events
+}
+
+/// The note a slide, hammer-on, pull-off or bend on `string` at event `e` comes from: the latest
+/// note on that string before it. The search looks at the event before, and goes further back only
+/// while notes follow each other without a rest, so a phrase never links to an earlier one. It stops
+/// at a note without a place, which might have been played on the string.
+pub(crate) fn origin(events: &[Event], e: usize, string: u8) -> Option<(usize, usize)> {
+    let mut at = e.checked_sub(1)?;
+    loop {
+        // The first note on the string: of two in one chord, that is the one written on it.
+        if let Some(k) = events[at].notes.iter().position(|w| w.place.is_some_and(|p| p.0 == string)) {
+            return Some((at, k));
+        }
+        if events[at].notes.iter().any(|w| w.place.is_none()) {
+            return None;
+        }
+        // Going further back passes this event, so it must lead into the next one without a rest.
+        if events[at].end < events[at + 1].start {
+            return None;
+        }
+        at = at.checked_sub(1)?;
+    }
+}
+
+/// The semitones a note is bent up from the note it comes from, when that can be written.
+fn bend(events: &[Event], from: (usize, usize), to: (usize, usize)) -> Option<i32> {
+    let up = events[to.0].notes[to.1].pitch - events[from.0].notes[from.1].pitch;
+    (1..=MAX_BEND).contains(&up).then_some(up)
 }
 
 impl<'a> Plan<'a> {
