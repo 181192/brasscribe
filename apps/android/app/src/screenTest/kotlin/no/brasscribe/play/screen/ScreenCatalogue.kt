@@ -33,7 +33,7 @@ abstract class ScreenCatalogue : ScreenTest() {
      */
     class Entry(
         val name: String, val steady: Boolean = true, val ownOrder: String? = null,
-        val cutAtLargeText: Set<String> = emptySet(), val notReached: Set<String> = emptySet(), val open: () -> Unit,
+        val cutAtLargeText: Set<String> = emptySet(), val notReached: Set<Control> = emptySet(), val open: () -> Unit,
     )
 
     /**
@@ -126,7 +126,7 @@ abstract class ScreenCatalogue : ScreenTest() {
                 settle()
                 val all = tabThrough()
                 // Whatever its order, the keyboard reaches everything a finger can act on.
-                (missedByTheKeyboard(all) - notForTheKeyboard - screen.notReached).takeIf { it.isNotEmpty() }?.let { failed += "${screen.name}: the keyboard never reaches $it; it goes ${all.map(FocusOrder::words)}" }
+                missedByTheKeyboard(all).filter { it.words !in notForTheKeyboard && it !in screen.notReached }.takeIf { it.isNotEmpty() }?.let { failed += "${screen.name}: the keyboard never reaches $it; it goes ${all.map(FocusOrder::words)}" }
                 if (screen.ownOrder != null) continue
                 val round = all
                 val read = FocusOrder.reading(round, scrolling())

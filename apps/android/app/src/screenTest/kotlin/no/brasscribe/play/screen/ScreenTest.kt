@@ -2,7 +2,7 @@ package no.brasscribe.play.screen
 
 import android.graphics.Bitmap
 import android.view.KeyEvent
-import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -170,22 +170,51 @@ abstract class ScreenTest {
         assertEquals("clipped text", emptyList<String>(), clipped.filter { it !in except })
     }
 
-    /** Whether [node] is drawn only in part, cut by an ancestor that clips it, and not because a part that scrolls moved it. */
+    /**
+     * Whether [node] is drawn only in part, cut by a box it is in that clips it. The text is measured inside the nearest
+     * part that scrolls (or the root): what that part's viewport hides, where it has not been scrolled to, is not a cut,
+     * while a box inside it that clips is, in view or not.
+     */
     private fun cutByWhatItIsIn(node: SemanticsNode): Boolean {
-        val whole = Rect(node.positionInWindow.x, node.positionInWindow.y, node.positionInWindow.x + node.size.width, node.positionInWindow.y + node.size.height)
-        val shown = node.boundsInWindow
-        if (shown.isEmpty || (whole.width - shown.width <= 1f && whole.height - shown.height <= 1f)) return false
-        val scrolls = generateSequence(node.parent) { it.parent }.any {
-            it.config.contains(SemanticsProperties.VerticalScrollAxisRange) || it.config.contains(SemanticsProperties.HorizontalScrollAxisRange)
-        }
-        return !scrolls
+        // Measured inside the nearest part that scrolls (below its viewport, where its content moves as it scrolls), or the root.
+        val scroller = generateSequence(node.parent) { it.parent }
+            .firstOrNull { it.config.contains(SemanticsProperties.VerticalScrollAxisRange) || it.config.contains(SemanticsProperties.HorizontalScrollAxisRange) }
+        val holder = scroller?.layoutInfo ?: generateSequence(node.layoutInfo) { it.parentInfo }.last()
+        val text = node.layoutInfo.coordinates
+        val within = holder.coordinates
+        if (!text.isAttached || !within.isAttached) return false
+        val whole = within.localBoundingBoxOf(text, clipBounds = false)
+        val shown = within.localBoundingBoxOf(text, clipBounds = true)
+        return whole.width - shown.width > 1f || whole.height - shown.height > 1f
     }
 
-    /** The elements Tab reaches, in the order it reaches them, until it is back at the first. */
+    /** A control a finger can act on: what it says, and what it is. */
+    data class Control(val words: String, val role: Role? = null) {
+        override fun toString() = if (role != null) "$words ($role)" else words
+    }
+
+    private class Seen(val control: Control, val window: Int)
+
+    /** Every actionable control seen during the last [tabThrough], before its first Tab and after each, by node id. */
+    private val seenInRound = mutableMapOf<Int, Seen>()
+
+    private fun windowOf(node: SemanticsNode): Int = generateSequence(node) { it.parent }.last().id
+
+    private fun noteActionable() {
+        for (n in actionable()) seenInRound.getOrPut(n.id) { Seen(Control(FocusOrder.words(n), n.config.getOrNull(SemanticsProperties.Role)), windowOf(n)) }
+    }
+
+    /**
+     * The elements Tab reaches, in the order it reaches them, until it is back at the first. On the way it notes every
+     * control a finger could act on, also those that Tab has scrolled out of view by the end, for [missedByTheKeyboard].
+     */
     protected fun tabThrough(): List<SemanticsNode> {
+        seenInRound.clear()
+        noteActionable()
         val reached = mutableListOf<SemanticsNode>()
         repeat(120) {
             key(KeyEvent.KEYCODE_TAB)
+            noteActionable()
             val now = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)).fetchSemanticsNodes().lastOrNull() ?: return@repeat
             if (reached.any { it.id == now.id }) return reached
             reached += now
@@ -193,20 +222,19 @@ abstract class ScreenTest {
         return reached
     }
 
-    /** Every element a finger can act on (a click, a toggle, a choice) that is on the screen and not turned off. */
+    /** Every element a finger can act on (a click, a toggle, a choice) that is laid out and not turned off, in view or scrolled out of it. */
     protected fun actionable(): List<SemanticsNode> =
         rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick) and !SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
-            .fetchSemanticsNodes().filter { it.layoutInfo.isPlaced && !it.boundsInWindow.isEmpty }
+            .fetchSemanticsNodes().filter { it.layoutInfo.isPlaced && it.size.width > 0 && it.size.height > 0 }
 
     /**
-     * What a finger can act on and Tab, going round the screen ([reached]), does not reach: their words. Only the window
-     * the keyboard is in counts (a dialog, and not the screen under it), as a finger can reach only that one too.
+     * What a finger can act on and Tab, going round the screen ([reached], from [tabThrough]), does not reach. Only the
+     * window the keyboard is in counts (a dialog, and not the screen under it), as a finger can reach only that one too.
      */
-    protected fun missedByTheKeyboard(reached: List<SemanticsNode>): List<String> {
-        fun windowOf(node: SemanticsNode): Int = generateSequence(node) { it.parent }.last().id
+    protected fun missedByTheKeyboard(reached: List<SemanticsNode>): List<Control> {
         val ids = reached.map { it.id }.toSet()
         val windows = reached.map(::windowOf).toSet()
-        return actionable().filter { it.id !in ids && (windows.isEmpty() || windowOf(it) in windows) }.map(FocusOrder::words)
+        return seenInRound.filter { (id, seen) -> id !in ids && (windows.isEmpty() || seen.window in windows) }.values.map { it.control }
     }
 
     /** What the element with the keyboard's focus says: its texts and its name. */

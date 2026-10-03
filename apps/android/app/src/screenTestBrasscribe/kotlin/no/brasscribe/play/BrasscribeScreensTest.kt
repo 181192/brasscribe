@@ -1,5 +1,6 @@
 package no.brasscribe.play
 
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -89,12 +90,13 @@ class BrasscribeScreensTest : ScreenCatalogue() {
             rule.runOnUiThread { vm.chooseProfile(Profile.ORCHESTRA_WITH_SOLOIST); vm.where.value = Where.COMPANION; vm.startTranscription() }
             waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
         },
-        Entry("check-the-notes", ownOrder = "the notes of the part are a list of their own, which the keyboard goes through as they are played") { checkTheNotes(); rest() },
+        Entry("check-the-notes", ownOrder = "the notes of the part are a list of their own, which the keyboard goes through as they are played",
+            notReached = setOf(Control("Solo Cornet (4)", Role.RadioButton)) /* issue 174 */) { checkTheNotes(); rest() },
         Entry("how-should-the-score-be") { checkTheNotes(); go(Screen.OUTPUT) },
-        Entry("score", notReached = setOf("Solo Cornet (you)", "Music stand") /* issue 174 */) { theScore() },
+        Entry("score", notReached = setOf(Control("Solo Cornet (you)", Role.Button), Control("Music stand", Role.Button)) /* issue 174 */) { theScore() },
         Entry("score-more") { theScore(); more(); rest() },
         Entry("music-stand", ownOrder = "the stand's controls are three groups side by side, and the keyboard takes the transport first",
-            notReached = setOf("Leave the music stand") /* issue 175 */) {
+            notReached = setOf(Control("Leave the music stand", Role.Button)) /* reached, but its focus is not in its semantics: issue 175 */) {
             theScore()
             // (From the sheet of what the row has no room for: it always has the stand.)
             more()

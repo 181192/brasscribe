@@ -327,26 +327,46 @@ jobs:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-${{ hashFiles('apps/android/gradle/libs.versions.toml', 'apps/android/app/src/test/resources/robolectric.properties') }}
 
+      # The pull request's own code runs here, without the token: the label is read in a step of its own.
       - name: Screen catalogues, compared with the merge base
+        id: compare
         if: github.event_name == 'pull_request'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-          PR: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           git fetch --no-tags origin "$BASE"
           status=0
           scripts/screenshots.sh compare "$(git merge-base HEAD "$BASE")" || status=$?
           cat app/build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
-          # The labels as they are now, not as they were when the run started (a re-run keeps the event's).
-          meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")')
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      # Only when screens changed. The labels as they are now, not as they were when the run started (a re-run keeps
+      # the event's); when they cannot be read, the change is taken as not meant.
+      - name: Is the change meant (label screenshots-changed)
+        id: label
+        if: github.event_name == 'pull_request' && steps.compare.outputs.status == '1'
+        working-directory: .
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")') || meant=false
+          echo "meant=$meant" >> "$GITHUB_OUTPUT"
+
+      - name: Screenshot result
+        if: github.event_name == 'pull_request'
+        working-directory: .
+        env:
+          STATUS: ${{ steps.compare.outputs.status }}
+          MEANT: ${{ steps.label.outputs.meant }}
+        run: |
           # 1: screens changed (shown in the artefact). 2: a screen's own checks failed; 3: the base's screenshots
           # could not be taken. No label lets 2 or 3 through.
-          if [ "$status" -eq 1 ] && [ "$meant" = true ]; then
+          if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
             echo "Screens changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
-            status=0
+            exit 0
           fi
-          exit "$status"
+          exit "${STATUS:-1}"
 
       - name: Screen catalogues
         if: github.event_name != 'pull_request'
