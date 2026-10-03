@@ -65,10 +65,10 @@ data class TsBar(
 )
 
 @Serializable
-data class TsPos(val beat: Int, val num: Int = 0, val den: Int = 1)
+data class TsPos(val beat: Int, val num: Int = 0, val den: Int = 1, val compound: Boolean? = null)
 
 @Serializable
-data class TsHeldFrom(val bar: Int, val beat: Int, val num: Int = 0, val den: Int = 1)
+data class TsHeldFrom(val bar: Int, val beat: Int, val num: Int = 0, val den: Int = 1, val compound: Boolean? = null)
 
 @Serializable
 data class TsTieNext(val bar: Int, val type: String, val dots: Int = 0)
@@ -173,7 +173,7 @@ object Announcer {
                 val p = pitchOf(e, s, keyFifths, w)
                 val from = e.heldFrom
                 return if (from == null) w.held(p, null, null) else {
-                    val fromPos = w.positionShort(TsPos(from.beat, from.num, from.den))
+                    val fromPos = w.positionShort(TsPos(from.beat, from.num, from.den, from.compound))
                     w.held(p, if (from.bar != bar?.number) from.bar else null, fromPos)
                 }
             }
@@ -314,13 +314,21 @@ internal class Words(val lang: Lang) {
 
     fun position(p: TsPos): String = (if (en) "beat " else "slag ") + positionShort(p)
 
-    /** Position without the word "beat": "4 and", "4-og", "3, triplet 2". */
+    /** Position without the word "beat": "4 and", "4-og", "3, triplet 2", "2, eighth 3" in compound time. */
     fun positionShort(p: TsPos): String {
         val b = p.beat
         if (p.num == 0) return "$b"
         val g = gcd(p.num, p.den)
         val num = p.num / g
         val den = p.den / g
+        // In compound time, in sixths of the beat: the even ones are its three eighths, all six its sixteenths.
+        if (p.compound == true && 6 % den == 0) {
+            val k = num * 6 / den
+            return when {
+                k % 2 == 0 -> if (en) "$b, eighth ${k / 2 + 1}" else "$b, ${k / 2 + 1}. åttendedel"
+                else -> if (en) "$b, sixteenth ${k + 1}" else "$b, ${k + 1}. sekstendedel"
+            }
+        }
         return when {
             num == 1 && den == 2 -> if (en) "$b and" else "$b-og"
             num == 1 && den == 4 -> if (en) "$b e" else "$b, 2. av 4"

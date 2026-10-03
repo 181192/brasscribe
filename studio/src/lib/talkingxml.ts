@@ -191,11 +191,13 @@ export function buildTalkingScore(xml: string): TalkingScore {
             lastEvent.instruments_nb = [...(lastEvent.instruments_nb ?? []), NB_INSTRUMENTS[nm] ?? nm];
             continue;
           }
-          const beatDiv = (divisions * 4) / beatType * (beatType === 8 && beats % 3 === 0 && beats > 3 ? 3 : 1);
+          const compound = beatType === 8 && beats % 3 === 0 && beats > 3;
+          const beatDiv = (divisions * 4) / beatType * (compound ? 3 : 1);
           const beatIdx = Math.floor(onset / beatDiv) + 1;
           const off = onset - (beatIdx - 1) * beatDiv;
           const g = gcd(Math.round(off * 1000), Math.round(beatDiv * 1000)) || 1;
           const pos_: Pos = off === 0 ? { beat: beatIdx, num: 0, den: 1 } : { beat: beatIdx, num: Math.round(off * 1000) / g, den: Math.round(beatDiv * 1000) / g };
+          if (compound) pos_.compound = true;
           const type = text(el, "type") ?? "quarter";
           const dots = el.querySelectorAll(":scope > dot").length;
           const tm = child(el, "time-modification");

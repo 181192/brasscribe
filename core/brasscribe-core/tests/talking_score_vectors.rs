@@ -90,3 +90,37 @@ fn navigation_walks_a_built_score() {
     let ctx2 = Context { bar: Some(2), ..ctx };
     assert_eq!(announce_at(&doc, Cursor { part: 0, bar: 2, event: 0 }, &ctx2, &s, true).unwrap(), "bar 3: rest, whole bar");
 }
+
+#[test]
+fn compound_time_names_eighths_not_triplets() {
+    use brasscribe_core::talking_score::{build, part_lines};
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><work><work-title>T</work-title></work>
+<part-list><score-part id="P1"><part-name>Solo Cornet</part-name><score-instrument id="I1"><instrument-name>Cornet in B♭</instrument-name></score-instrument></score-part></part-list>
+<part id="P1">
+<measure number="1"><attributes><divisions>2</divisions><key><fifths>2</fifths></key><time><beats>6</beats><beat-type>8</beat-type></time><transpose><diatonic>-1</diatonic><chromatic>-2</chromatic></transpose></attributes>
+<note><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type></note>
+<note><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type></note>
+<note><pitch><step>F</step><alter>1</alter><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type></note>
+<note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note>
+<note><pitch><step>A</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type><tie type="start"/></note></measure>
+<measure number="2"><note><pitch><step>A</step><octave>5</octave></pitch><duration>6</duration><voice>1</voice><type>half</type><dot/><tie type="stop"/></note></measure>
+</part></score-partwise>"#;
+    let doc = build(xml, None).unwrap();
+    assert_eq!(doc["parts"][0]["bars"][0]["events"][1]["pos"], json!({"beat": 1, "num": 1, "den": 3, "compound": true}));
+    let lines = part_lines(&doc, 0, &Settings::default());
+    assert_eq!(
+        lines[0].1,
+        [
+            "bar 1, beat 1: D 5, eighth note",
+            "beat 1, eighth 2: E 5, eighth note",
+            "beat 1, eighth 3: F-sharp 5, eighth note",
+            "beat 2: G 5, quarter note",
+            "beat 2, eighth 3: A 5, eighth note, tied to dotted half note in bar 2",
+        ]
+    );
+    assert_eq!(lines[1].1, ["bar 2, beat 1: A 5 held, from bar 1 beat 2, eighth 3"]);
+    let nb = part_lines(&doc, 0, &Settings { lang: "nb".into(), ..Default::default() });
+    assert_eq!(nb[0].1[1], "slag 1, 2. åttendedel: E 5, åttendedelsnote");
+    assert_eq!(nb[1].1, ["takt 2, slag 1: A 5 holdes, fra takt 1 slag 2, 3. åttendedel"]);
+}

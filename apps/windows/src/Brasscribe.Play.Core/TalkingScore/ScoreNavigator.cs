@@ -298,7 +298,7 @@ public sealed class ScoreNavigator
                 Tick = tick,
                 Written = src.Written,
                 Concert = src.Concert,
-                HeldFrom = new TsHeldFrom(_doc.Parts[p].Bars[headBar].Number, headPos.Beat, headPos.Num, headPos.Den),
+                HeldFrom = new TsHeldFrom(_doc.Parts[p].Bars[headBar].Number, headPos.Beat, headPos.Num, headPos.Den, headPos.Compound),
             };
         }
         else

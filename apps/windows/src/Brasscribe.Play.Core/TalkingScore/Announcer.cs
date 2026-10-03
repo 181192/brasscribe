@@ -71,7 +71,7 @@ public static class Announcer
                 if (ev.HeldFrom is { } from)
                 {
                     if (from.Bar != bar.Number) sb.Append(L.Bar(from.Bar)).Append(' ');
-                    sb.Append(L.Position(new TsPos(from.Beat, from.Num, from.Den)));
+                    sb.Append(L.Position(new TsPos(from.Beat, from.Num, from.Den, from.Compound)));
                 }
                 return sb.ToString();
             }
@@ -306,6 +306,11 @@ internal abstract class Lexicon
 
     protected static string Fraction(TsPos p) => $"{p.Num}/{p.Den}";
 
+    /// <summary>In compound time, the offset in sixths of the beat when it is one: the even sixths are
+    /// the beat's three eighths, all six its sixteenths; none is a triplet.</summary>
+    protected static int? Sixths(TsPos p, int num, int den) =>
+        p.Compound == true && num > 0 && 6 % den == 0 ? num * 6 / den : null;
+
     protected static (int Num, int Den) Reduce(int num, int den)
     {
         int g = Gcd(Math.Abs(num), Math.Abs(den));
@@ -338,6 +343,8 @@ internal sealed class EnLexicon : Lexicon
     public override string PositionBrief(TsPos p)
     {
         var (num, den) = Reduce(p.Num, p.Den);
+        if (Sixths(p, num, den) is { } k)
+            return k % 2 == 0 ? $"{p.Beat}, eighth {k / 2 + 1}" : $"{p.Beat}, sixteenth {k + 1}";
         return (num, den) switch
         {
             (0, _) => $"{p.Beat}",
@@ -470,6 +477,8 @@ internal sealed class NbLexicon : Lexicon
     public override string PositionBrief(TsPos p)
     {
         var (num, den) = Reduce(p.Num, p.Den);
+        if (Sixths(p, num, den) is { } k)
+            return k % 2 == 0 ? $"{p.Beat}, {k / 2 + 1}. åttendedel" : $"{p.Beat}, {k + 1}. sekstendedel";
         return (num, den) switch
         {
             (0, _) => $"{p.Beat}",

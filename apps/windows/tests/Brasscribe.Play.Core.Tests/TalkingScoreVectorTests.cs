@@ -29,7 +29,7 @@ public class TalkingScoreVectorTests
     }
 
     [Fact]
-    public void Vector_file_has_the_expected_cases() => Assert.Equal(24, Cases().Count);
+    public void Vector_file_has_the_expected_cases() => Assert.Equal(28, Cases().Count);
 
     [Theory]
     [MemberData(nameof(All))]

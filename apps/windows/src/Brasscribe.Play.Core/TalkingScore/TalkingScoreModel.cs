@@ -7,8 +7,9 @@ namespace Brasscribe.Play.Core.TalkingScore;
 
 public sealed record TsPitch(string Step, int Alter, int Octave);
 
-/// <summary>Exact position inside a bar: beat number (1-based) plus num/den of a beat.</summary>
-public sealed record TsPos(int Beat, int Num = 0, int Den = 1)
+/// <summary>Exact position inside a bar: beat number (1-based) plus num/den of a beat. <c>Compound</c>
+/// is true in compound time, where the beat is a dotted quarter.</summary>
+public sealed record TsPos(int Beat, int Num = 0, int Den = 1, bool? Compound = null)
 {
     public bool OnBeat => Num == 0;
 }
@@ -19,7 +20,7 @@ public sealed record TsTie(bool Start = false, bool Stop = false, TsTieNext? Nex
 
 public sealed record TsTuplet(int Actual, int Normal, int Index);
 
-public sealed record TsHeldFrom(int Bar, int Beat, int Num = 0, int Den = 1);
+public sealed record TsHeldFrom(int Bar, int Beat, int Num = 0, int Den = 1, bool? Compound = null);
 
 public sealed record TsChordPitch(TsPitch Written, TsPitch Concert);
 

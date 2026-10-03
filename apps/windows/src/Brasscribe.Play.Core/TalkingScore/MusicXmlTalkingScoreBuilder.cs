@@ -359,7 +359,8 @@ public static class MusicXmlTalkingScoreBuilder
         long beat = offset / beatDiv;
         long rem = offset % beatDiv;
         long g = Gcd(rem, beatDiv);
-        return rem == 0 ? new TsPos((int)beat + 1) : new TsPos((int)beat + 1, (int)(rem / g), (int)(beatDiv / g));
+        bool? c = compound ? true : null;
+        return rem == 0 ? new TsPos((int)beat + 1, Compound: c) : new TsPos((int)beat + 1, (int)(rem / g), (int)(beatDiv / g), c);
     }
 
     private static long Gcd(long a, long b) => b == 0 ? a : Gcd(b, a % b);
