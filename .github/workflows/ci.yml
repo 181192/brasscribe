@@ -48,9 +48,9 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           filters: |
-            python: ['engine/**', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.github/workflows/ci.yml']
+            python: ['engine/**', 'apps/android/engine-client/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.github/workflows/ci.yml']
             core: ['core/**', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
-            studio: ['studio/**', 'design/**', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
+            studio: ['studio/**', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
