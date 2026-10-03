@@ -138,20 +138,21 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
         }
     }
 
-    /**
-     * Where each mark is drawn, in this view's pixels: its beat, and the centre of its "?" (the first note head of each
-     * place the beat is drawn). The same layout as [onDraw].
-     */
-    fun markCentres(): List<Pair<Beat, android.graphics.PointF>> {
+    /** A mark as drawn: its beat, the centre of its "?" and the top of its staff, in this view's pixels. */
+    class MarkSpot(val beat: Beat, val centre: android.graphics.PointF, val staffTop: Float)
+
+    /** Every mark as drawn (each place its beat is drawn, at its first note head): the same layout as [onDraw]. */
+    fun markSpots(): List<MarkSpot> {
         val lookup = tab.api.boundsLookup ?: return emptyList()
         val ss = staffSpacePx
         val markH = 1.6f * ss
-        val out = ArrayList<Pair<Beat, android.graphics.PointF>>()
+        val out = ArrayList<MarkSpot>()
         for (beat in marks.keys) {
             val all = lookup.findBeats(beat) ?: continue
             for (i in 0 until all.length.toInt()) {
                 val bb = all[i]
-                var top = minOf((bb.barBounds.visualBounds.y * f).toFloat(), (bb.visualBounds.y * f).toFloat())
+                val staffTop = (bb.barBounds.visualBounds.y * f).toFloat()
+                var top = minOf(staffTop, (bb.visualBounds.y * f).toFloat())
                 var cx = ((bb.onNotesX.takeIf { it > 0 } ?: (bb.visualBounds.x + bb.visualBounds.w / 2)) * f).toFloat()
                 val notes = bb.notes
                 if (notes != null && notes.length > 0) for (j in 0 until notes.length.toInt()) {
@@ -159,17 +160,23 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
                     top = minOf(top, (h.y * f).toFloat())
                     if (j == 0) cx = ((h.x + h.w / 2) * f).toFloat()
                 }
-                out += beat to android.graphics.PointF(cx, top - 0.4f * ss - markH / 2)
+                out += MarkSpot(beat, android.graphics.PointF(cx, top - 0.4f * ss - markH / 2), minOf(staffTop, top))
             }
         }
         return out
     }
 
-    /** The mark whose 48 dp target holds ([x], [y]), the nearest when targets overlap. */
+    /** Where each mark is drawn: its beat, and the centre of its "?". */
+    fun markCentres(): List<Pair<Beat, android.graphics.PointF>> = markSpots().map { it.beat to it.centre }
+
+    /**
+     * The mark whose 48 dp target holds ([x], [y]), the nearest when targets overlap. The target stops at the top of the
+     * staff (and of the notes above it): a tap on the music itself is alphaTab's (the cursor, a bar to select).
+     */
     private fun markAt(x: Float, y: Float): Beat? {
         val half = 24 * density
-        return markCentres().filter { (_, c) -> kotlin.math.abs(c.x - x) <= half && kotlin.math.abs(c.y - y) <= half }
-            .minByOrNull { (_, c) -> (c.x - x) * (c.x - x) + (c.y - y) * (c.y - y) }?.first
+        return markSpots().filter { s -> kotlin.math.abs(s.centre.x - x) <= half && kotlin.math.abs(s.centre.y - y) <= half && y < s.staffTop }
+            .minByOrNull { s -> (s.centre.x - x) * (s.centre.x - x) + (s.centre.y - y) * (s.centre.y - y) }?.beat
     }
 
     private var pressed: Beat? = null

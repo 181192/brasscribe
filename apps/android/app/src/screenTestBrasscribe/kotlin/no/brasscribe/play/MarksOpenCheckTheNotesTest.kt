@@ -1,6 +1,7 @@
 package no.brasscribe.play
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -68,25 +69,89 @@ class MarksOpenCheckTheNotesTest : ScreenTest() {
         settle()
     }
 
+    /** A mark on screen: the bar as the score numbers it, its "?" and the top of its staff, in the score view's own pixels. */
+    private class Mark(val bar: Int, val at: Offset, val staffTop: Float)
+
+    private fun marksOnScreen(): List<Mark> {
+        val controller = vm.scoreController!!
+        val box = rule.onNodeWithTag("score-view").fetchSemanticsNode().boundsInWindow
+        val origin = IntArray(2).also { controller.overlay.getLocationInWindow(it) }
+        return controller.overlay.markSpots().map { s ->
+            Mark(controller.reviewBar(s.beat.voice.bar.index.toInt() + 1),
+                Offset(origin[0] + s.centre.x - box.left, origin[1] + s.centre.y - box.top), origin[1] + s.staffTop - box.top)
+        }.filter { m -> m.at.x in 0f..box.width && m.at.y > 40 && m.staffTop < box.height - 40 }
+    }
+
+    private fun tap(at: Offset) = rule.onNodeWithTag("score-view").performTouchInput { click(at) }
+
     @Test
     fun aTapOnAMarkOpensCheckTheNotesAtThatNote() {
         val first = cardBars()
         showScore()
-        val controller = vm.scoreController!!
-        // The marks in view, in the window's pixels, with their bars; one in another bar than the card the queue starts with.
-        val view = rule.onNodeWithTag("score-view").fetchSemanticsNode()
-        val box = view.boundsInWindow
-        val origin = IntArray(2).also { controller.overlay.getLocationInWindow(it) }
-        val marks = controller.overlay.markCentres().map { (beat, c) -> (beat.voice.bar.index.toInt() + 1) to Offset(origin[0] + c.x, origin[1] + c.y) }
-            .filter { (_, at) -> box.contains(at) && at.y > box.top + 40 && at.y < box.bottom - 40 }
-        assertTrue("marks on screen: ${controller.overlay.markCentres().size}", marks.isNotEmpty())
-        val other = marks.filter { it.first !in first }
-        assertTrue("a mark in another bar than $first: ${marks.map { it.first }}", other.isNotEmpty())
-        val (bar, at) = other.first()
-        rule.onNodeWithTag("score-view").performTouchInput { click(at - box.topLeft) }
+        // A mark in view, in another bar than the card the queue starts with.
+        val marks = marksOnScreen()
+        assertTrue("marks on screen", marks.isNotEmpty())
+        val other = marks.filter { it.bar !in first }
+        assertTrue("a mark in another bar than $first: ${marks.map { it.bar }}", other.isNotEmpty())
+        val mark = other.first()
+        tap(mark.at)
         waitUntil(10_000) { vm.screen.value.last() == Screen.REVIEW && cardTitle() != null }
-        assertTrue("the card ${cardTitle()} is the note of bar $bar", bar in cardBars())
+        assertTrue("the card ${cardTitle()} is the note of bar ${mark.bar}", mark.bar in cardBars())
         checkAccessibility()
+    }
+
+    @Test
+    fun aTapOnTheMusicUnderAMarkIsTheScores() {
+        showScore()
+        val mark = marksOnScreen().first()
+        // On the staff, under the "?" but inside its old 48 dp square: alphaTab's (the cursor), not Check the notes.
+        tap(Offset(mark.at.x, mark.staffTop + 3f))
+        rest()
+        assertEquals(Screen.SCORE, vm.screen.value.last())
+        tap(mark.at)
+        waitUntil(10_000) { vm.screen.value.last() == Screen.REVIEW }
+    }
+
+    @Test
+    fun theNotesPutOffStayPutOffWhenAMarkOpensCheckTheNotes() {
+        rule.onNodeWithText(text(R.string.review_skip)).performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText(text(R.string.review_skip)).performClick()
+        rule.waitForIdle()
+        val put = vm.reviewPlace()!!
+        assertEquals(2, put.skipped.size)
+        showScore()
+        tap(marksOnScreen().first().at)
+        waitUntil(10_000) { vm.screen.value.last() == Screen.REVIEW && cardTitle() != null }
+        rule.waitForIdle()
+        assertEquals(put.voice, vm.reviewPlace()!!.voice)
+        assertEquals(put.skipped, vm.reviewPlace()!!.skipped)
+    }
+
+    @Test
+    fun theScoreOffersTheMarksOfItsBarToTalkBack() {
+        val first = cardBars()
+        showScore()
+        val controller = vm.scoreController!!
+        val bar = marksOnScreen().first { it.bar !in first }.bar
+        val name = text(R.string.action_check_marks)
+        fun action() = rule.onNodeWithTag("score-view").fetchSemanticsNode().config.getOrNull(SemanticsActions.CustomActions).orEmpty().firstOrNull { it.label == name }
+        // In a bar with no "?", there is no such action.
+        val plain = (1..controller.state.value.totalBars).firstOrNull { !controller.marksIn(it) }
+        if (plain != null) {
+            rule.runOnUiThread { controller.goToBar(plain) }
+            rule.waitForIdle()
+            assertEquals(null, action())
+        }
+        // Shown bar of the score's numbering bar: the pickup, when there is one, is alphaTab's bar 1.
+        val shown = (1..controller.state.value.totalBars).first { controller.reviewBar(it) == bar }
+        rule.runOnUiThread { controller.goToBar(shown) }
+        rule.waitForIdle()
+        val check = action()
+        assertTrue("the action is there in bar $bar", check != null)
+        rule.runOnUiThread { check!!.action() }
+        waitUntil(10_000) { vm.screen.value.last() == Screen.REVIEW && cardTitle() != null }
+        assertTrue("the card ${cardTitle()} is in bar $bar", bar in cardBars())
     }
 
     @Test

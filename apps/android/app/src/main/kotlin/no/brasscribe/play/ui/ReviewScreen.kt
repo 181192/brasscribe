@@ -174,12 +174,14 @@ fun ReviewScreen(vm: PlayViewModel) {
     // Opened from a "?" on the score: at that note. Else where Check the notes was left for this score, so Check them
     // goes on from there rather than from the start.
     val target = remember { vm.takeReviewTarget() }
-    val resume = remember { if (target == null) vm.reviewPlace() else null }
+    val place = remember { vm.reviewPlace() }
+    val resume = place.takeIf { target == null }
     val targetVoice = remember(target) { target?.part?.let { voiceOfPart(vm, r, composition, it) } ?: melodyVoice.takeIf { target != null } }
     var voiceId by rememberSaveable {
         mutableStateOf((targetVoice ?: resume?.voice)?.takeIf { v -> voices.any { it.id == v } } ?: mine.voice ?: melodyVoice ?: firstVoice.id)
     }
-    val startVoice = remember { voiceId }
+    // The place it opens at is taken once: back on this part later, the queue starts as usual.
+    val seeding = remember { booleanArrayOf(true, true) }
     val checked = checkedMap[voiceId].orEmpty()
     val lang = currentLang()
     val view = remember(r, voiceId, checked) { partViewFor(composition, voiceId, checked, vm.container.core) }
@@ -190,7 +192,10 @@ fun ReviewScreen(vm: PlayViewModel) {
     val grouped = composition.review?.filter { it.voice == voiceId }?.takeIf { it.isNotEmpty() }
     val allItems = remember(view, grouped) { reviewGroups(composition, voiceId, view) }
     // Triage: the very unsure first, then in bar order; skipped items go to the back of the queue.
-    var skipped by rememberSaveable(voiceId) { mutableStateOf(resume?.takeIf { it.voice == voiceId }?.skipped ?: listOf()) }
+    // The notes put off stay put off, also when a "?" on the score opened it in the same part.
+    var skipped by rememberSaveable(voiceId) {
+        mutableStateOf(place?.takeIf { seeding[0] && it.voice == voiceId }?.skipped ?: listOf()).also { seeding[0] = false }
+    }
     val items = allItems.filter { g -> g.members.any { it.index !in checked } }
         .sortedWith(compareBy({ skipped.indexOf(it.head.index) }, { if (it.very) 0 else 1 }, { it.head.index }))
     val groupOf = items.associateBy { it.head.index }
@@ -204,9 +209,9 @@ fun ReviewScreen(vm: PlayViewModel) {
     // The note being checked: the head of the queue, or the one picked from "Still to check".
     var picked by rememberSaveable(voiceId) {
         mutableStateOf(
-            if (voiceId != startVoice) null
+            if (!seeding[1]) null
             else target?.let { itemAt(items, composition, it.bar, it.quarters)?.head?.index } ?: resume?.takeIf { it.voice == voiceId }?.index
-        )
+        ).also { seeding[1] = false }
     }
     val current = todo.firstOrNull { it.index == picked } ?: todo.firstOrNull()
     LaunchedEffect(voiceId, current?.index, skipped) { vm.keepReviewPlace(no.brasscribe.play.ReviewPlace(voiceId, current?.index, skipped)) }

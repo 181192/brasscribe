@@ -629,6 +629,7 @@ class ScoreController(
      */
     private fun collectMarks(s: Score) {
         val (found, adLib) = no.brasscribe.play.score.collectMarks(s)
+        pickup = s.masterBars.length.toInt() > 0 && s.masterBars[0].isAnacrusis
         marks = found
         overlay.marks = found
         tints.adLibBars = adLib
@@ -642,9 +643,23 @@ class ScoreController(
         set(value) {
             field = value
             overlay.onMark = value?.let { f -> { beat: alphaTab.model.Beat ->
-                f(beat.voice.bar.index.toInt() + 1, beat.playbackStart / 960.0, beat.voice.bar.staff.track.index.toInt())
+                f(reviewBar(beat.voice.bar.index.toInt() + 1), beat.playbackStart / 960.0, beat.voice.bar.staff.track.index.toInt())
             } }
         }
+
+    /** The score opens with a pickup: alphaTab counts it as a bar, the score's own numbers (and Check the notes) do not. */
+    private var pickup = false
+
+    /** Bar [shown] as alphaTab counts it (1-based, the pickup included), as the score numbers it. */
+    fun reviewBar(shown: Int): Int = if (pickup) shown - 1 else shown
+
+    /** Bar [shown] (as alphaTab counts it) of a part on screen has a "?". */
+    fun marksIn(shown: Int): Boolean =
+        marks.keys.any { it.voice.bar.index.toInt() + 1 == shown && it.voice.bar.staff.track.index.toInt() in _state.value.shown }
+
+    /** The part on screen with a "?" in bar [shown]: the first such part. */
+    fun markedPart(shown: Int): Int? = marks.keys.filter { it.voice.bar.index.toInt() + 1 == shown }
+        .map { it.voice.bar.staff.track.index.toInt() }.filter { it in _state.value.shown }.minOrNull()
 
     /** Rings one note of the rendered score (the review's note card). */
     fun ringNote(bar: Int, noteIndexInBar: Int) {

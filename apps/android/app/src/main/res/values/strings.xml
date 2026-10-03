@@ -367,6 +367,7 @@
     <string name="action_prev_part">Previous part</string>
     <string name="action_read_bar">Read bar</string>
     <string name="action_play_bar">Play this bar</string>
+    <string name="action_check_marks">Check the ? notes in this bar</string>
     <string name="player_loading">Opening the score</string>
     <string name="player_playing">Playing</string>
     <string name="player_paused">Paused</string>
