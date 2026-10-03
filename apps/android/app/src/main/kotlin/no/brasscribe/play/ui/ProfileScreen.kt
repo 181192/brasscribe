@@ -279,7 +279,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
         AlertDialog(
             onDismissRequest = { confirmCancel = false },
             title = { Text(stringResource(R.string.transcribe_cancel_title)) },
-            text = { Text(stringResource(R.string.transcribe_cancel_text)) },
+            text = { Text(stringResource(if (no.brasscribe.play.Product.KEEPS_RECORDINGS) R.string.transcribe_cancel_text_kept else R.string.transcribe_cancel_text)) },
             confirmButton = { PlainButton(stringResource(R.string.transcribe_cancel_confirm), { confirmCancel = false; vm.cancelTranscription(); vm.back() }) },
             dismissButton = { PlainButton(stringResource(R.string.transcribe_cancel_keep), { confirmCancel = false }) },
         )

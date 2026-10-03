@@ -90,6 +90,55 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
     }
 }
 
+/**
+ * A recording kept in Your scores before it has a score: its name, its length and "Not written down yet". A tap
+ * opens What is this? with it; its only option is Delete, which removes the recording from the phone.
+ */
+@Composable
+fun KeptRecordingRow(vm: PlayViewModel, k: no.brasscribe.play.KeptRecording, enabled: Boolean) {
+    var menu by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+    val c = BrasscribeTheme.colors
+    // The recording's name as Your scores shows names: without its file's extension.
+    val name = no.brasscribe.play.ScoreTitles.display(k.title, k.updated)
+    ListRow(
+        name, { vm.openKept(k) },
+        Modifier.semantics { testTag = "kept-${k.id}" },
+        subtitle = stringResource(R.string.kept_row_subtitle, clock(k.seconds)),
+        icon = R.drawable.ic_bc_record_mic,
+        chevron = false,
+        enabled = enabled,
+        trailing = {
+            Box {
+                IconButton({ menu = true }, Modifier.size(48.dp)) {
+                    BcIcon(R.drawable.ic_bc_more, stringResource(R.string.score_options, name), tint = c.textMuted)
+                }
+                DropdownMenu(menu, { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.delete), color = c.veryUncertain) },
+                        leadingIcon = { BcIcon(R.drawable.ic_bc_delete, null, tint = c.veryUncertain) },
+                        onClick = { menu = false; deleting = true },
+                        modifier = Modifier.semantics { testTag = "kept-delete" },
+                    )
+                }
+            }
+        },
+    )
+    if (deleting) {
+        AlertDialog(
+            onDismissRequest = { deleting = false },
+            title = { Text(stringResource(R.string.delete_score_title, name)) },
+            text = { Text(stringResource(R.string.kept_delete_text)) },
+            confirmButton = {
+                TextButton({ vm.deleteKept(k); deleting = false }, Modifier.semantics { testTag = "kept-delete-confirm" }) {
+                    Text(stringResource(R.string.delete), color = c.veryUncertain)
+                }
+            },
+            dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+}
+
 @Composable
 fun scoreSubtitle(entry: ScoreEntry): String {
     // The product's own line for what it lists differently: its own kind of score, or the other app's.

@@ -129,7 +129,18 @@ fun ProblemScreen(vm: PlayViewModel) {
                 }
             }
         }
-        copy.note?.let { InfoNote(stringResource(it)) }
+        // The note says the recording is kept only when there is one, and that it is in Your scores only once it is
+        // (a score that could not be opened has no recording; a keep that failed left it where it was).
+        val source by vm.source.collectAsState()
+        val kept by vm.keptRecordings.collectAsState()
+        val recording = source?.file?.takeIf { source?.kind != no.brasscribe.play.SourceKind.SCORE }
+        val inYourScores = recording != null && kept.any { it.file == recording }
+        val note = when (copy.note) {
+            R.string.problem_score_kept -> if (inYourScores) R.string.problem_score_kept_scores else R.string.problem_score_kept.takeIf { recording != null }
+            R.string.draft_too_long_kept -> if (inYourScores) R.string.draft_too_long_kept_scores else R.string.draft_too_long_kept
+            else -> copy.note
+        }
+        note?.let { InfoNote(stringResource(it)) }
         vm.problemWhy?.let { InfoNote(stringResource(it), Modifier.semantics { testTag = "problem-why" }) }
         val detail = vm.problemDetail
         if (!detail.isNullOrBlank()) {
@@ -210,6 +221,11 @@ fun SettingsScreen(vm: PlayViewModel) {
             RowDivider()
             SwitchRow(stringResource(R.string.settings_stand_controls), null, keep, "setting-stand-controls") { keep = it; vm.container.standKeepControls = it }
         }
+        // Recordings are large: what the ones kept in Your scores take, and where they are deleted.
+        val keptBytes by vm.keptBytes.collectAsState()
+        if (keptBytes > 0) Text(stringResource(R.string.kept_storage, android.text.format.Formatter.formatShortFileSize(context, keptBytes)),
+            style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted,
+            modifier = Modifier.padding(horizontal = BrasscribeSpace.s4).semantics { testTag = "kept-storage" })
         RowGroup {
             ListRow(stringResource(R.string.help), { vm.navigate(no.brasscribe.play.Screen.HELP) }, icon = R.drawable.ic_bc_help)
             RowDivider()

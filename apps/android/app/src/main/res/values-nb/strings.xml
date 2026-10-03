@@ -55,6 +55,9 @@
     <string name="delete_score_title">Slette «%1$s»?</string>
     <string name="delete_score_phone">Partituret fjernes fra denne telefonen.</string>
     <string name="delete_score_computer">Partituret fjernes fra datamaskinen din.</string>
+    <string name="kept_row_subtitle">%1$s · Ikke skrevet ned ennå</string>
+    <string name="kept_delete_text">Opptaket fjernes fra denne telefonen.</string>
+    <string name="kept_storage">Opptakene i Partiturene dine bruker %1$s.</string>
     <string name="on_your_computer">På datamaskinen din</string>
     <string name="opening_score">Åpner …</string>
     <string name="evidence_how_sure">Hvor sikker Brasscribe er</string>
@@ -171,9 +174,11 @@
     <string name="transcribe_leave_draft">%1$s. Du kan bytte til en annen app: utkastet lages videre, og det er på skjermen når du kommer tilbake.</string>
     <string name="transcribe_cancel_title">Slutte å lage dette partituret?</string>
     <string name="transcribe_cancel_text">Opptaket blir tatt vare på. Du kan starte på nytt fra det.</string>
+    <string name="transcribe_cancel_text_kept">Opptaket blir liggende i Partiturene dine. Du kan starte på nytt fra det.</string>
     <string name="transcribe_cancel_confirm">Stopp</string>
     <string name="transcribe_cancel_keep">Fortsett</string>
     <string name="transcribe_cancelled">Stoppet. Opptaket er tatt vare på.</string>
+    <string name="transcribe_cancelled_kept">Stoppet. Opptaket ligger i Partiturene dine.</string>
     <string name="transcribe_failed">Partituret kunne ikke lages: %1$s</string>
     <string name="transcribe_done">Partituret er klart</string>
     <string name="transcribe_where_device">På telefonen</string>
@@ -191,6 +196,7 @@
     <string name="draft_refused_body">Telefonen har stoppet Brasscribe fra å jobbe med det. Datamaskinen kan lage partituret, eller prøv igjen senere.</string>
     <string name="draft_refused_body_away">Telefonen har stoppet Brasscribe fra å jobbe med det. Prøv igjen senere.</string>
     <string name="draft_too_long_kept">Opptaket ditt er tatt vare på til du velger et annet.</string>
+    <string name="draft_too_long_kept_scores">Opptaket ditt er tatt vare på i Partiturene dine.</string>
     <string name="draft_make_on_computer">Lag det på datamaskinen</string>
     <string name="problem_choose_another_recording">Velg et annet opptak</string>
     <string name="notif_draft_channel">Bandutkast</string>
@@ -404,6 +410,7 @@
     <string name="problem_score_title">Partituret kunne ikke lages</string>
     <string name="problem_score_body">Noe gikk galt mens Brasscribe arbeidet med det.</string>
     <string name="problem_score_kept">Opptaket ditt er tatt vare på. Du kan prøve igjen nå eller senere.</string>
+    <string name="problem_score_kept_scores">Opptaket ditt er tatt vare på i Partiturene dine. Du kan prøve igjen nå eller senere.</string>
     <string name="problem_too_large_title">Denne filen er for stor for telefonen</string>
     <string name="problem_too_large_body">Telefonen fikk ikke nok minne til å arbeide med den.</string>
     <string name="problem_too_large_reason">Prøv et kortere opptak, eller del opp videoen.</string>

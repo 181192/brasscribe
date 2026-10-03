@@ -232,6 +232,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     val openingScore = MutableStateFlow<String?>(null)
     /** The entry last tapped that opens in the other app (its id, and the tap's count): its row says so, where the finger is. */
     val opensElsewhere = MutableStateFlow<Pair<String, Int>?>(null)
+    private val keptStore = container.keptRecordings
+    /** Recordings kept in Your scores before they have a score (Product.KEEPS_RECORDINGS), newest first. */
+    val keptRecordings = MutableStateFlow<List<KeptRecording>>(emptyList())
+    /** What the kept recordings take on the phone, in bytes (Settings says it). */
+    val keptBytes = MutableStateFlow(0L)
     /** "Open on the music stand" from the library: the score opens straight onto the stand (the entry id). */
     val standFromLibrary = MutableStateFlow<String?>(null)
     /** The library row that gets the focus back when a stand opened from the library closes. */
@@ -344,7 +349,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // A recording or import that is no longer the source is not needed again: its copy goes.
                 val old = previous
                 previous = s?.file
-                if (old != null && old != s?.file) withContext(Dispatchers.IO) { deleteCopy(old) }
+                // In order with the kept recordings' changes: a take is never deleted under a keep that is waiting.
+                if (old != null && old != s?.file) withContext(storage) { deleteCopy(old) }
             }
         }
     }
@@ -352,9 +358,13 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     /** Where recordings and imported copies are kept while they are the source. */
     private val takesDir get() = File(getApplication<Application>().cacheDir, "takes")
 
-    /** Deletes [file] when it is one of the app's own copies (a take or an import), never anything else. */
+    /**
+     * Deletes [file] when it is one of the app's own copies (a take or an import, or a kept recording that has
+     * left Your scores), never anything else: a recording kept in Your scores stays.
+     */
     private fun deleteCopy(file: File) {
         if (file.parentFile?.canonicalFile == takesDir.canonicalFile && file != CaptureController.activeFile()) file.delete()
+        else if (keptStore.owns(file)) keptStore.prune(inUse = source.value?.file)
     }
 
     /**
@@ -392,9 +402,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // Takes and imports from before, and the rendered scores fetched for "Listen to this bar".
                 takesDir.listFiles()?.filter { it != keep && it != CaptureController.activeFile() }?.forEach { it.delete() }
                 getApplication<Application>().cacheDir.listFiles { f -> f.name.startsWith("score-") && f.name.endsWith(".mp3") }?.forEach { it.delete() }
+                keptStore.prune(inUse = keep)
                 scoreLibrary.list()
             }
             savedScores.value = list
+            refreshKept()
         }
     }
 
@@ -706,6 +718,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 draftBehind = null
                 result.value = r
                 saveCurrentScore(r)
+                // It has a score now: a recording kept in Your scores leaves it (its file goes once it is not in hand).
+                forgetKept(s)
                 transcribe.update { it.copy(running = false, fraction = 1.0, etaSeconds = 0) }
                 // An engine that ignored the seat wrote for Solo Cornet: say so once, not silently.
                 if (ignored) sayText(res.getString(R.string.transcribe_done) + " " + res.getString(R.string.engine_too_old_seat))
@@ -715,12 +729,15 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 throw e
             } catch (e: OutOfMemoryError) {
                 transcribe.update { it.copy(running = false, error = e.toString()) }
+                keepRecording(s)
                 showProblem(Problem.TOO_LARGE, e.toString())
             } catch (e: DraftTooLongException) {
                 transcribe.update { it.copy(running = false, error = e.message) }
+                keepRecording(s)
                 showProblem(Problem.DRAFT_TOO_LONG, e.message)
             } catch (e: Exception) {
                 transcribe.update { it.copy(running = false, error = e.message ?: e.javaClass.simpleName) }
+                keepRecording(s)
                 showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString(),
                     ErrorWords.of(e).takeIf { it != R.string.error_generic })
             }
@@ -740,6 +757,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     internal fun draftRefused() {
         job?.cancel()
         transcribe.update { it.copy(running = false) }
+        source.value?.let(::keepRecording)
         showProblem(Problem.DRAFT_REFUSED)
     }
 
@@ -1010,7 +1028,94 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         engineJobId = null
         if (transcribe.value.running) {
             transcribe.update { it.copy(running = false) }
-            say(R.string.transcribe_cancelled)
+            val s = source.value
+            // Said once the recording is kept, and only then that it is in Your scores.
+            if (s != null && keepsRecording(s)) keepRecording(s) { kept -> say(if (kept) R.string.transcribe_cancelled_kept else R.string.transcribe_cancelled) }
+            else say(R.string.transcribe_cancelled)
+        }
+    }
+
+    // ---- Recordings kept in Your scores ----------------------------------------------------------------
+
+    /**
+     * Keeps the recording [s] in Your scores: its score was not made (it failed, was put off or was stopped). A take
+     * or an import moves out of the app's cache into the kept recordings, and stays the recording in hand. A score's
+     * own recording (a draft's, for Make the full score) stays with its score.
+     */
+    private fun keepRecording(s: Source, done: (Boolean) -> Unit = {}) {
+        if (!keepsRecording(s)) { done(false); return }
+        val file = s.file!!
+        viewModelScope.launch {
+            // A keep that fails leaves the recording where it was, and the source as it was: nothing says it is kept.
+            val kept = withContext(storage) {
+                runCatching { keptStore.keep(file, s.name, s.kind, s.durationS) }
+                    .onFailure { android.util.Log.w(TAG, "the recording could not be kept", it) }.getOrNull()
+            }
+            if (kept != null) {
+                // Still the recording in hand: it is the kept file from now on (the cache's copy is gone).
+                if (source.value?.file == file && kept.file != file) source.value = source.value?.copy(file = kept.file)
+                refreshKept()
+            }
+            done(kept != null)
+        }
+    }
+
+    /** Whether [s] is a recording this app keeps in Your scores: a take or an import of its own, not a score's. */
+    private fun keepsRecording(s: Source): Boolean {
+        if (!Product.KEEPS_RECORDINGS || s.kind == SourceKind.SCORE) return false
+        val file = s.file ?: return false
+        val ours = file.parentFile?.canonicalFile == takesDir.canonicalFile || keptStore.owns(file)
+        return ours && file != CaptureController.activeFile()
+    }
+
+    /** The recording [s] has a score now: it leaves Your scores. Its file stays while it is the recording in hand. */
+    private fun forgetKept(s: Source) {
+        val file = s.file ?: return
+        viewModelScope.launch {
+            val forgot = withContext(storage) { keptStore.entryOf(file)?.also { keptStore.forget(it.id) } }
+            if (forgot != null) refreshKept()
+        }
+    }
+
+    private fun refreshKept() {
+        if (!Product.KEEPS_RECORDINGS) return
+        viewModelScope.launch {
+            val (list, bytes) = withContext(storage) { keptStore.list().let { it to it.sumOf { k -> k.file.length() } } }
+            keptRecordings.value = list
+            keptBytes.value = bytes
+        }
+    }
+
+    /** Opens a kept recording in What is this?, as it was when it was kept. */
+    fun openKept(k: KeptRecording) {
+        val ctx = getApplication<Application>()
+        busy.value = true
+        viewModelScope.launch {
+            try {
+                // Read where it is: it is the app's own file already, so nothing is copied.
+                val decoded = withContext(Dispatchers.IO) {
+                    check(k.file.isFile) { "the recording is gone" }
+                    no.brasscribe.play.audio.AudioDecoder.decode(ctx, Uri.fromFile(k.file), {})
+                }
+                setSource(Source(k.title, k.kind, decoded.durationS, decoded.audio, k.file))
+                say(R.string.imported, k.title, durationText(decoded.durationS))
+                navigate(Screen.PROFILE)
+            } catch (e: OutOfMemoryError) {
+                showProblem(Problem.TOO_LARGE, e.toString())
+            } catch (e: Exception) {
+                showProblem(Problem.FILE_UNREADABLE, e.message ?: e.toString())
+            } finally {
+                busy.value = false
+            }
+        }
+    }
+
+    /** Deletes a kept recording: it leaves Your scores, and its file is removed from the phone. */
+    fun deleteKept(k: KeptRecording) {
+        if (source.value?.file == k.file) source.value = null
+        viewModelScope.launch {
+            withContext(storage) { keptStore.delete(k.id) }
+            refreshKept()
         }
     }
 

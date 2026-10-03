@@ -170,6 +170,9 @@ class AppContainer(private val context: Context) {
     /** The scores kept on this phone ("Your scores"). */
     val scoreLibrary = SavedScoreLibrary(java.io.File(context.filesDir, "scores"))
 
+    /** The recordings kept in Your scores before they have a score; out of the backup (`noBackupFilesDir`). */
+    val keptRecordings = KeptRecordingStore(java.io.File(context.noBackupFilesDir, "kept-recordings"))
+
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
     val core: CoreBridge = (RustCoreBridge.load() ?: KotlinCoreBridge).also { c -> no.brasscribe.play.ui.PartNames.nb = c::partNameNb }
 
