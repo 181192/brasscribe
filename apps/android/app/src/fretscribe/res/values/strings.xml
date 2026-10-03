@@ -127,11 +127,15 @@
     <string name="stage_quantize">Placing the notes in bars</string>
     <string name="stage_arrange">Choosing strings and frets</string>
     <string name="stage_export">Laying out the tab</string>
-    <!-- Nothing tells the player when the tab is ready while the app is away, so the screen says to stay, and stays on. -->
-    <string name="transcribe_leave">%1$s. Keep Fretscribe open until the tab is ready.</string>
+    <!-- The job runs on the computer: the player may switch apps. A finished tab is saved on the phone while the app
+         runs, and listed from the computer in Your songs while the phone is connected to it. -->
+    <string name="transcribe_leave">%1$s. You can switch to another app: when the tab is ready, it is in Your songs while your phone is connected to your computer.</string>
     <!-- "Fretscribe on Kari's Mac is writing down the notes" -->
     <string name="transcribe_where_companion">%1$s is writing down the notes</string>
     <string name="transcribe_cancel_title">Stop writing down the notes?</string>
+    <!-- Fretscribe keeps no recordings: after Stop the recording is the one in hand on What is this?, until another is made or opened. -->
+    <string name="transcribe_cancel_text">You go back to What is this? with the recording, and can start again from it. It isn\'t kept once you record or open another.</string>
+    <string name="transcribe_cancelled">Stopped. You can start again from the recording.</string>
     <string name="transcribe_done">Tab ready</string>
     <string name="transcribe_failed">The tab couldn\'t be made: %1$s</string>
 

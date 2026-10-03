@@ -116,9 +116,11 @@
     <string name="stage_quantize">Plasserer tonene i takter</string>
     <string name="stage_arrange">Velger strenger og bånd</string>
     <string name="stage_export">Setter opp tabben</string>
-    <string name="transcribe_leave">%1$s. Ha Fretscribe åpen til tabben er klar.</string>
+    <string name="transcribe_leave">%1$s. Du kan bytte til en annen app: når tabben er klar, ligger den i Sangene dine så lenge telefonen er koblet til datamaskinen.</string>
     <string name="transcribe_where_companion">%1$s skriver ned tonene</string>
     <string name="transcribe_cancel_title">Slutte å skrive ned tonene?</string>
+    <string name="transcribe_cancel_text">Du går tilbake til Hva er dette? med opptaket, og kan starte på nytt fra det. Det blir ikke tatt vare på når du spiller inn eller åpner et annet.</string>
+    <string name="transcribe_cancelled">Stoppet. Du kan starte på nytt fra opptaket.</string>
     <string name="transcribe_done">Tabben er klar</string>
     <string name="transcribe_failed">Tabben kunne ikke lages: %1$s</string>
 
