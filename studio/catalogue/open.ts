@@ -50,6 +50,23 @@ export async function openView(page: Page, view: Pick<View, "route" | "ready" | 
     await page.waitForTimeout(300);
     if (view.ready) await view.ready(page);
   }
+  // alphaTab lays a score out with the fonts it has when it renders; a face that arrives later (the text of a
+  // tempo or a bar number) moves a barline by a pixel, depending on timing. With every font in, each score is
+  // engraved once more, so the layout is the same every run.
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    type Api = { render(): void; postRenderFinished: { on(h: () => void): void; off(h: () => void): void } };
+    const apis = Array.from(document.querySelectorAll("bs-score")).map((s) => (s as unknown as { api?: Api }).api).filter((a): a is Api => !!a);
+    await Promise.all(apis.map((api) => new Promise<void>((done) => {
+      const finished = () => {
+        api.postRenderFinished.off(finished);
+        done();
+      };
+      api.postRenderFinished.on(finished);
+      setTimeout(finished, 10_000);
+      api.render();
+    })));
+  });
   if (view.prepare) await view.prepare(page);
   await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 30_000 });
   // Two frames for the last layout, then the fonts again (a view may have asked for a new face).
