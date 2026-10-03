@@ -96,7 +96,7 @@ fun OutputScreen(vm: PlayViewModel) {
         title = null, onBack = vm::back, backLabel = r?.composition?.title?.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.back), status = status,
         bottom = {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
-            PrimaryButton(stringResource(R.string.output_apply), { vm.applyOutput { vm.navigate(Screen.SCORE) } }, enabled = !busy)
+            PrimaryButton(stringResource(R.string.output_apply), { vm.applyOutput { vm.showScore() } }, enabled = !busy)
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {

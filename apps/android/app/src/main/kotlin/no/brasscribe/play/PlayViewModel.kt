@@ -417,6 +417,24 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     fun navigate(to: Screen) = backStack.update { it + to }
+
+    /**
+     * The score: back to the one already in the stack (from Check the notes, How should the score be?), so Check them
+     * and Show the score don't pile up scores one on another; else a new one.
+     */
+    fun showScore() = backStack.update { s ->
+        val at = s.lastIndexOf(Screen.SCORE)
+        if (at >= 0) s.take(at + 1) else s + Screen.SCORE
+    }
+
+    /**
+     * After a score is made, [next] takes the transcribing screen's place. Check the notes goes over the score, not over
+     * What is this?: Back from it shows the score that is already saved, and never sends the recording again.
+     */
+    private fun afterTranscription(next: Screen) = backStack.update { s ->
+        val below = s.dropLast(1)
+        if (next == Screen.REVIEW && below.lastOrNull() == Screen.PROFILE) below.dropLast(1) + Screen.SCORE + Screen.REVIEW else below + next
+    }
     fun replaceTop(to: Screen) = backStack.update { it.dropLast(1) + to }
     fun back(): Boolean {
         if (backStack.value.size <= 1) return false
@@ -731,7 +749,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // An engine that ignored the seat wrote for Solo Cornet: say so once, not silently.
                 if (ignored) sayText(res.getString(R.string.transcribe_done) + " " + res.getString(R.string.engine_too_old_seat))
                 else say(R.string.transcribe_done)
-                replaceTop(Product.afterTranscription(r))
+                afterTranscription(Product.afterTranscription(r))
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: OutOfMemoryError) {
