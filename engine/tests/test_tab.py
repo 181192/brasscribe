@@ -623,6 +623,87 @@ def test_a_strummed_chords_unison_is_written_on_both_of_its_strings():
     assert _shapes("ukulele", {"Am": [60, 64, 69]}, tuning="low-g")[0] == {"Am": "x000"}
 
 
+def _over_a_ringing_chord(chord: list[int], melody: list[int], beat: float = 0.5) -> list[dict]:
+    """A chord struck once and left to ring, and a melody over it from the second beat, as Basic Pitch hears it: every
+    note of the chord stops and starts anew on each onset of the melody."""
+    cuts = [beat * (1 + k) for k in range(len(melody))] + [beat * (1 + len(melody))]
+    notes = []
+    for p in chord:
+        at = 0.0
+        for cut in cuts:
+            notes.append({"pitch": p, "onset": at, "offset": cut, "amplitude": 0.7})
+            at = cut
+    notes += [_note(p, beat * (1 + k), 0.9 * beat, amplitude=0.6) for k, p in enumerate(melody)]
+    return sorted(notes, key=lambda n: (n["onset"], n["pitch"]))
+
+
+def test_a_chord_heard_again_under_a_melody_is_the_note_to_leave_out():
+    def note(pitch: int, confidence: float = 0.8, **more) -> dict:
+        return {"pitch": pitch, "start": 24, "dur": 12, "confidence": confidence, **more}
+
+    # A melody note more than an octave over the ring, and no octave of it: the ring goes first, though it is surer.
+    over = [note(62, 0.86, rings_on=True), note(66, 0.84, rings_on=True), note(83, 0.8)]
+    assert tab.rung(0, [0, 1, 2], over) and tab.rung(1, [0, 1, 2], over) and not tab.rung(2, [0, 1, 2], over)
+    assert tab.least_wanted([0, 1, 2], over) == 1
+    # A strum struck again goes straight on too, with an octave of its notes on top: that stays the note to leave out.
+    strum = [note(61, 0.87, rings_on=True), note(64, 0.85, rings_on=True), note(69, 0.87, rings_on=True), note(81, 0.7)]
+    assert not any(tab.rung(i, [0, 1, 2, 3], strum) for i in range(4)) and tab.least_wanted([0, 1, 2, 3], strum) == 3
+    # A top note within an octave of the ring can be a note of the strum.
+    close = [note(62, 0.86, rings_on=True), note(66, 0.82, rings_on=True), note(71, 0.78), note(83, 0.31)]
+    assert not tab.rung(0, [0, 1, 2, 3], close) and tab.least_wanted([0, 1, 2, 3], close) == 3
+    # Nor is anything taken for a melody when the top note is itself a ring heard again, or not in the violation.
+    assert not tab.rung(0, [0, 1, 2], [note(62, rings_on=True), note(66, rings_on=True), note(83, rings_on=True)])
+    assert not tab.rung(0, [0, 1], over)
+
+
+def test_a_note_that_starts_where_a_note_of_its_pitch_stops_rings_on():
+    notes = tab.strums(_over_a_ringing_chord([62, 66], [83, 84]))
+    ringing = tab.rings_on(notes)
+    assert {(n["pitch"], n["onset"]) for n in ringing} == {(62, 0.5), (66, 0.5), (62, 1.0), (66, 1.0)}
+    doc = tab.played_notes(_over_a_ringing_chord([62, 66], [83, 84]), _beats(), "ukulele")
+    assert sorted((n["pitch"], n["start"]) for n in doc["notes"] if n.get("rings_on")) == [(62, 24), (62, 48), (66, 24), (66, 48)]
+    struck = tab.played_notes(_strummed([UKE_C, UKE_C]), _beats(), "ukulele")  # the strings struck again, after a breath
+    assert not any(n.get("rings_on") for n in struck["notes"])
+
+
+@needs_core
+def test_a_melody_over_a_ringing_chord_keeps_its_high_notes():
+    """A D chord left to ring on a high-G ukulele and a melody at the 13th to 15th fret of the top string, on no overtone of the chord: no hand spans
+    both, and of each onset the chord heard again is left out, not the melody (fainter than the chord)."""
+    melody = [83, 84, 82, 84, 83, 82]
+    doc = {**tab.played_notes(_over_a_ringing_chord([62, 66, 69], melody), _beats(), "ukulele"), "reference_pitch": None}
+    t = tab.fingered(doc, tab.options({"instrument": "ukulele", "recording": "instrument"}))
+    assert [n["pitch"] for n in t["notes"] if n["pitch"] > 80] == melody and t["violations"] == []
+    assert {n["pitch"] for n in t["notes"] if n["start"] == 0} == {62, 66, 69}  # the chord itself is all there (its A on two strings)
+    assert t["unplayable_dropped"] > 0 and not any("rings_on" in n for n in t["notes"])
+    assert m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0})
+
+
+@needs_core
+@pytest.mark.parametrize("instrument,chord,overtone", [
+    ("ukulele", UKE_C, 83),  # the 12th of E4
+    ("ukulele", UKE_C, 86),  # the 12th of G4
+    ("mandolin", [57, 62, 69, 78], 85),  # D: the 5th partial of A3
+])
+def test_a_strum_struck_again_keeps_its_chord_under_a_confident_overtone(instrument, chord, overtone):
+    """A chord struck every half beat, its notes going straight on from one strike to the next, and an overtone
+    heard as strongly as the chord on every second strike: the overtone is no melody, and the chord stays."""
+    strikes = sorted(_strummed([chord] * 16, step=0.25), key=lambda n: n["onset"])
+    heard = sorted(strikes + [_note(overtone, 0.5 * k + 0.01, 0.2, amplitude=0.7) for k in range(8)], key=lambda n: n["onset"])
+    doc = {**tab.played_notes(heard, _beats(), instrument), "reference_pitch": None}
+    assert any(n.get("rings_on") for n in doc["notes"])
+    t = tab.fingered(doc, tab.options({"instrument": instrument, "recording": "instrument"}))
+    assert all(set(chord) <= {n["pitch"] for n in t["notes"] if n["start"] == 12 * k} for k in range(16))
+    assert t["violations"] == []
+
+
+def test_a_melody_note_on_a_ringing_chords_pitch_does_not_ring_on():
+    """Heard twice on one onset, a pitch was struck there: the melody note is not taken for the ring."""
+    notes = tab.strums([_note(69, 0.0, 0.5), _note(69, 0.5, 0.5), _note(69, 0.5, 0.3, amplitude=0.6), _note(62, 0.0, 0.5),
+                        _note(62, 0.5, 0.5)])
+    assert sorted((n["pitch"], n["onset"]) for n in tab.rings_on(notes)) == [(62, 0.5)]
+
+
 @needs_core
 def test_a_high_g_ukulele_is_fingered_with_its_fourth_string_above_its_third():
     """Re-entrant tuning: string 4 (G4) is higher than string 3 (C4), and the tab must use it as such."""

@@ -7,9 +7,12 @@ presets: one instrument each, one player-less performance, no room. That is weak
 all the evidence. The rules that read the notes were set on GuitarSet (guitar_tab_bench); the few that
 were chosen while looking at passages of this file say so where they are defined (engine tab.py). Each
 group has a `heldout` one, with other chords, scales and tempos and one more pattern (a melody high on the
-top string over a ringing chord). They are reported, not tuned on, with one exception: the
-threshold of the ukulele's overtone rule above the 12th fret was tried against them too, so they are
-not a clean test of that rule.
+top string over a ringing chord). They are reported, not tuned on, with two exceptions. The
+threshold of the ukulele's overtone rule above the 12th fret was tried against them too, so they are not
+a clean test of that rule. And the rule that tells a chord heard again under that melody from a strum
+struck again (engine tab.py, RING_*) was chosen on their chord-melody and strummed passages, the only ones
+that have the pattern: those are scored apart (DEVELOPMENT), and a held-out group's numbers are from its
+other passages.
 
 The guitar groups are open chords picked and strummed, which GuitarSet's players do not play.
 
@@ -88,6 +91,11 @@ GROUPS.update({
 })
 PATTERNS = ("melody", "strummed", "picked")
 HELDOUT_PATTERNS = (*PATTERNS, "chord-melody")
+# The held-out passages a rule was chosen on: the chord-melody and strummed ones were used to choose the rule
+# that tells a chord heard again under a melody from a strum struck again (engine tab.py, RING_*). They are
+# scored apart, under the group's DEV key, and the group's held-out numbers are from its other passages.
+DEVELOPMENT = ("chord-melody", "strummed")
+DEV = "_dev"
 TEMPOS = {"melody": 104.0, "strummed": 92.0, "picked": 80.0}
 HELDOUT_TEMPOS = {"melody": 116.0, "strummed": 84.0, "picked": 72.0, "chord-melody": 88.0}
 GUITAR_HELDOUT_TEMPOS = {"melody": 118.0, "strummed": 86.0, "picked": 70.0, "chord-melody": 88.0}
@@ -288,9 +296,18 @@ def stem_scores(data: Path, groups: tuple[str, ...] | None = None) -> dict[str, 
     return {stem: {k: float(np.mean([r[k] for r in rs])) for k in ("onset_r", "onset_p", "onset_f1")} for stem, rs in rows.items() if rs}
 
 
-def evaluate(data: Path, groups: tuple[str, ...], mode: str, clean: bool = True, stem: str | None = None) -> tuple[dict[str, float], list[dict]]:
+def split(group: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """The parts a group is scored in: (label suffix, patterns). A held-out group's DEVELOPMENT passages apart."""
+    if not group.endswith(HELDOUT):
+        return (("", patterns(group)),)
+    return (("", tuple(p for p in patterns(group) if p not in DEVELOPMENT)), (DEV, DEVELOPMENT))
+
+
+def evaluate(data: Path, groups: tuple[str, ...], mode: str, clean: bool = True, stem: str | None = None,
+             only: tuple[str, ...] | None = None) -> tuple[dict[str, float], list[dict]]:
     """The passages of `groups` in one recording mode, through the tab profile's own stages. `stem`: the
-    separator's stem a `song` run reads (default: the one the profile uses for the instrument)."""
+    separator's stem a `song` run reads (default: the one the profile uses for the instrument). `only`: the
+    patterns to score (default all)."""
     from brasscribe_engine import tab
 
     from .guitar_tab_bench import score_tab, summarize, tab_of
@@ -298,6 +315,8 @@ def evaluate(data: Path, groups: tuple[str, ...], mode: str, clean: bool = True,
     rows = []
     for entry in entries(data, groups):
         ref = json.loads((entry / "reference.json").read_text())
+        if only is not None and ref["pattern"] not in only:
+            continue
         params = {**ref["params"], "recording": mode}
         files = FILES["instrument"] if mode == "instrument" else song_files(stem or tab.HEARD[ref["params"]["instrument"]].stem)
         rows.append({"excerpt": entry.name, **score_tab(ref, tab_of(entry, clean, params, files))})
@@ -309,10 +328,11 @@ def report(data: Path) -> str:
     for suite, groups in SUITES.items():
         lines.append(f"{suite}: stems " + "  ".join(f"{s} r={v['onset_r']:.2f} p={v['onset_p']:.2f}" for s, v in stem_scores(data, groups).items()))
         for group in groups:
-            for mode in MODES:
-                for label, clean in (("straight", False), ("rules", True)):
-                    out, _ = evaluate(data, (group,), mode, clean)
-                    lines.append(f"  {group:18s} {mode:10s} {label:8s} " + " ".join(f"{k}={v:.3f}" for k, v in out.items()))
+            for part, only in split(group):
+                for mode in MODES:
+                    for label, clean in (("straight", False), ("rules", True)):
+                        out, _ = evaluate(data, (group,), mode, clean, only=only)
+                        lines.append(f"  {group + part:22s} {mode:10s} {label:8s} " + " ".join(f"{k}={v:.3f}" for k, v in out.items()))
     return "\n".join(lines)
 
 
