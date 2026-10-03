@@ -25,12 +25,12 @@ export async function openView(page: Page, view: Pick<View, "route" | "ready" | 
   });
   // Dates shown are the fixtures' own; a fixed clock keeps anything relative to now still.
   await page.clock.setFixedTime(new Date("2026-01-04T12:00:00Z"));
-  // The score's cursors slide into place (a transform transition, `will-change: transform`) and keep the raster
-  // of wherever they were caught mid-slide, so an edge differs by a pixel from one run to the next. In the
-  // catalogue they go straight to their place and are drawn there.
+  // The score's cursors (the bar and beat it is at) are left out of the pictures: a 100 px box that alphaTab scales
+  // and slides into place, whose edge falls between pixels and comes out differently from run to run, and which
+  // alphaTab may place again at any moment. Everything else of the score is pictured as drawn.
   await page.addInitScript(() => document.addEventListener("DOMContentLoaded", () => {
     const s = document.createElement("style");
-    s.textContent = ".at-cursor-bar, .at-cursor-beat { transition: none !important; will-change: auto !important; }";
+    s.textContent = ".at-cursors { visibility: hidden !important; }";
     document.head.append(s);
   }));
   await page.addInitScript((lang) => localStorage.setItem("brasscribe.studio.lang", lang), variant.lang);
@@ -80,21 +80,6 @@ export async function steady(page: Page): Promise<void> {
   });
   // Let any transition still running end before the picture.
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))).then(() => undefined));
-  // The score's cursors are a 100 px box scaled into place, and a scaled edge falls between pixels: drawn in
-  // software (CI) it comes out a pixel different from one run to the next. In the picture they are the same
-  // box at whole pixels, without the scale.
-  await page.evaluate(() => {
-    for (const el of Array.from(document.querySelectorAll<HTMLElement>(".at-cursor-bar, .at-cursor-beat"))) {
-      const m = new DOMMatrix(getComputedStyle(el).transform);
-      if (m.isIdentity) continue;
-      const [w, h] = [el.offsetWidth * m.a, el.offsetHeight * m.d];
-      el.style.transform = "none";
-      el.style.left = `${Math.round(el.offsetLeft + m.e)}px`;
-      el.style.top = `${Math.round(el.offsetTop + m.f)}px`;
-      el.style.width = `${Math.round(w)}px`;
-      el.style.height = `${Math.round(h)}px`;
-    }
-  });
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
