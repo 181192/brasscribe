@@ -80,13 +80,16 @@ run_area() {
     full:core) (cd core && cargo test --release) ;;
     # The Python reference and the extras take minutes; the fast tier compares the Rust side of the
     # Mikkel cases against reference outputs of an earlier run in this worktree, as long as the
-    # Python sources are the ones that run used (else, or with none yet, all of Mikkel).
+    # Python sources are the ones that run used (else, or with none yet, all of Mikkel), then the
+    # checked-in talking-score fixtures (under a second, no data/ needed).
     fast:conformance) stamp=$(py_ref_stamp)
                       if [ -d core/target/conformance/mikkel ] && [ "$(cat "$PY_REF_STAMP" 2>/dev/null)" = "$stamp" ]; then
                         conf=(--skip-python --no-extras); else conf=(); fi
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
                          && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
-                         --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" ;;
+                         --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" \
+                      && (cd core/conformance && uv run python -m brasscribe_conformance.run --only talking/ \
+                         --work "$ROOT/core/target/conformance-talking") ;;
     full:conformance) stamp=$(py_ref_stamp)
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
                          && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
