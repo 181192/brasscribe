@@ -227,8 +227,8 @@ fun TranscribeScreen(vm: PlayViewModel) {
     val stepText = stringResource(s.step.text)
     val steps = s.steps.ifEmpty { listOf(s.step) }
     val current = steps.indexOf(s.step).coerceAtLeast(0)
-    // Where the app says to keep it open while this runs, the screen stays on meanwhile. A draft on the phone goes
-    // on in its service when the player leaves the app, so the screen may sleep.
+    // Where the product asks for it (Product.KEEP_OPEN_WHILE_WRITING), the screen stays on while this runs. A draft on
+    // the phone goes on in its service when the player leaves the app, so the screen may sleep.
     if (no.brasscribe.play.Product.KEEP_OPEN_WHILE_WRITING && s.running && !s.draft) {
         val view = androidx.compose.ui.platform.LocalView.current
         androidx.compose.runtime.DisposableEffect(view) {
@@ -238,10 +238,13 @@ fun TranscribeScreen(vm: PlayViewModel) {
     }
     // Announce each new step once, politely, rather than every percent.
     LaunchedEffect(s.step) { if (s.running) vm.status.value = no.brasscribe.play.Status(stepText) }
+    // Back (the gesture or the top bar's button) asks first, as Cancel does: a stray swipe never ends a job of minutes.
+    fun leave() { if (s.running) confirmCancel = true else vm.back() }
+    androidx.activity.compose.BackHandler(enabled = s.running) { leave() }
 
     PlayScaffold(
         // The step title is the live region here; the status line would only repeat it.
-        title = source?.name?.substringBeforeLast('.'), onBack = vm::back, backLabel = stringResource(R.string.home), status = null,
+        title = source?.name?.substringBeforeLast('.'), onBack = ::leave, backLabel = stringResource(R.string.home), status = null,
         bottom = {
             InfoNote(stringResource(if (s.draft) R.string.transcribe_leave_draft else R.string.transcribe_leave, s.where),
                 icon = if (onPhone) R.drawable.ic_bc_info else R.drawable.ic_bc_computer)

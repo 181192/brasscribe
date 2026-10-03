@@ -120,7 +120,10 @@ object Product {
      */
     const val TIME_LEFT = false
 
-    /** Nothing tells the player when a tab is ready while the app is away, so the screen says to keep it open, and stays on. */
+    /**
+     * The transcribing screen stays on while the notes are written down, so the player can watch it. The job runs on
+     * the computer, so the screen also says the player may switch apps: a finished tab is in Your songs.
+     */
     const val KEEP_OPEN_WHILE_WRITING = true
 
     /** The screen that follows a finished transcription: Check the song for a tab (drawn in the output choices' place). */
