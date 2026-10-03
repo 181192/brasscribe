@@ -191,8 +191,8 @@ All times are in seconds.
 | `npm ci` | 12 | | 0 (cloned) | | |
 | vitest | 13 | 15 | 11 | 15 | 12, then 17 |
 | `test:browser` | 7 | 7 | 7 | 11 | |
-| Studio screen catalogue (`test:catalogue`, 6 workers) | | | | 43 | `fast studio` in all: 49, then 45 |
-| `screenshots.sh compare`, Studio (base with a catalogue) | | | | 71 | `full studio` in all: 60 (base without one) |
+| Studio screen catalogue (`test:catalogue`, 6 workers) | | | | 52 | `fast studio` in all: 55 |
+| `screenshots.sh compare`, Studio (base with a catalogue) | | | | 89 | |
 | `swift test`, BrasscribeKit | 100 | 64 | 65 | 74 | `package-test-fast`, both packages: 115, then 30 |
 | `swift test`, NotationKit | 29 | 10 | 13 | 10 | |
 | macOS app unit tests | 100 | 15 | 22¹ | 14 | `build-for-testing` plus `test-mac-unit`: 69, then 9 |
