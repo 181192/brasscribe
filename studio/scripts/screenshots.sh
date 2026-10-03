@@ -45,8 +45,8 @@ case "${1:-}" in
     # Anything that goes wrong on the base's side, whatever its own exit code, is 3: never "views changed",
     # which the label could let through.
     no_base() {
-      log "the screenshots could not be taken at ${base:-the base}: nothing was compared"
-      printf '# Screenshots\n\nThe screenshots could not be taken at the base, %s, so nothing was compared.\n' "${base:-(none)}" >"$report/summary.md"
+      log "the screenshots could not be taken at ${base:0:12}: nothing was compared"
+      printf '# Screenshots\n\nThe screenshots could not be taken at the base, %s, so nothing was compared.\n' "${base:0:12}" >"$report/summary.md"
       exit 3
     }
     base="${2:-}"
@@ -76,7 +76,11 @@ case "${1:-}" in
     # The comparison's answer is the result file it writes last; without it (it could not run), nothing was compared.
     rm -f "$report/result.json"
     node "$studio/catalogue/compare.mjs" "$report/before" "$shots" "$report" || true
-    if [ ! -f "$report/result.json" ]; then log "the screenshots could not be compared"; exit 3; fi
+    if [ ! -f "$report/result.json" ]; then
+      log "the screenshots could not be compared"
+      printf '# Screenshots\n\nThe comparison could not run, so nothing was compared.\n' >"$report/summary.md"
+      exit 3
+    fi
     [ "$checks" -ne 0 ] && { log "the catalogue's checks failed (see the test output above)"; exit 2; }
     grep -q '"any": *true' "$report/result.json" && exit 1
     exit 0
