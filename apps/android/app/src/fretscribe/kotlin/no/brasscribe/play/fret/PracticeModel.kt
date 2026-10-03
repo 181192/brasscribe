@@ -60,28 +60,31 @@ class PracticeRecordings(private val dir: File) {
 
     fun find(job: String): File? = named(job)?.takeIf { it.isFile && it.length() > 0 }
 
-    /** Where a recording being fetched or copied is written, until it is whole ([arrived]); what an earlier try left there is gone. */
-    fun arriving(job: String): File? = named(job)?.let { dir.mkdirs(); File(dir, it.name + PART).also(File::delete) }
+    /**
+     * Where a recording being fetched or copied is written, until it is whole ([arrived]): a file of this try's own,
+     * so a try that was given up and clears up after itself late never takes the file of the try after it.
+     */
+    fun arriving(job: String): File? = named(job)?.let { runCatching { dir.mkdirs(); File.createTempFile(it.name + ".", PART, dir) }.getOrNull() }
 
-    /** The try at [job]'s recording did not get through: what there is of it goes. */
-    fun dropped(job: String) {
-        named(job)?.let { File(dir, it.name + PART).delete() }
+    /** The try that wrote [part] did not get through: what there is of it goes. */
+    fun dropped(part: File?) {
+        part?.delete()
     }
 
     /** Room left for recordings, in bytes. */
     val room: Long get() = generateSequence(dir) { it.parentFile }.firstOrNull { it.exists() }?.usableSpace ?: 0L
 
-    fun arrived(job: String): File? {
-        val to = named(job) ?: return null
-        val part = File(dir, to.name + PART)
-        return if (part.length() > 0 && part.renameTo(to)) to else { part.delete(); null }
+    /** [part], written whole, becomes [job]'s recording; one that came empty goes. */
+    fun arrived(job: String, part: File): File? {
+        val to = named(job)
+        return if (to != null && part.length() > 0 && part.renameTo(to)) to else { part.delete(); null }
     }
 
     /** A copy of [from] kept for [job]; [from] itself when it cannot be copied. */
     fun keep(job: String, from: File): File {
         find(job)?.let { if (it.length() == from.length()) return it }
         val part = arriving(job) ?: return from
-        return runCatching { from.copyTo(part, overwrite = true); arrived(job) }.getOrNull() ?: from.also { dropped(job) }
+        return runCatching { from.copyTo(part, overwrite = true); arrived(job, part) }.getOrNull() ?: from.also { dropped(part) }
     }
 
     /**
@@ -207,18 +210,20 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         val look = ++looking
         recording = RecordingState.GETTING
         fetching = viewModelScope.launch {
+            // This fetch's own file: a fetch given up on leaving the screen clears it, also after the next one has begun.
+            var part: File? = null
             val got = try {
                 withContext(Dispatchers.IO) {
-                    val part = store.arriving(job) ?: throw IllegalStateException("no place to keep the recording")
-                    engine.jobInput(job, part)
-                    store.arrived(job) ?: throw java.io.IOException("the recording came empty")
+                    val into = store.arriving(job)?.also { part = it } ?: throw IllegalStateException("no place to keep the recording")
+                    engine.jobInput(job, into)
+                    store.arrived(job, into) ?: throw java.io.IOException("the recording came empty")
                 }
             } catch (e: CancellationException) {
-                withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) { store.dropped(job) }
+                withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) { store.dropped(part) }
                 throw e
             } catch (e: Exception) {
                 android.util.Log.w(PlayViewModel.TAG, "the recording could not be fetched", e)
-                val why = withContext(Dispatchers.IO) { store.dropped(job); PracticeRecordings.whyNot(e, store.room) }
+                val why = withContext(Dispatchers.IO) { store.dropped(part); PracticeRecordings.whyNot(e, store.room) }
                 if (look == looking) recording = why
                 null
             }
@@ -262,8 +267,14 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     fun step(bars: Int) {
         val clock = clock ?: return
         val bar = clock.placeAt(now()).bar
-        if (bars > 0 && bar >= (repeat?.last ?: (clock.bars - 1))) return
+        if (bars > 0 && !hasBarOn(bar)) return
         toBar(bar + bars)
+    }
+
+    /** There is a bar after [bar] to step on to: it is not the last of the tab, nor the last of the bars being repeated. */
+    fun hasBarOn(bar: Int): Boolean {
+        val clock = clock ?: return false
+        return bar < (repeat?.last ?: (clock.bars - 1))
     }
 
     /** Back to where the repeat starts; to the start of the tab when nothing is repeated. */

@@ -41,13 +41,30 @@ class PracticeRecordingsTest {
         val part = store.arriving("job-1")!!
         part.writeBytes(ByteArray(10))
         assertNull("half a recording is no recording", store.find("job-1"))
-        val whole = store.arrived("job-1")
+        val whole = store.arrived("job-1", part)
         assertNotNull(whole)
         assertEquals(whole, store.find("job-1"))
         // One that came empty is dropped.
-        store.arriving("job-2")!!.writeBytes(ByteArray(0))
-        assertNull(store.arrived("job-2"))
+        val empty = store.arriving("job-2")!!.apply { writeBytes(ByteArray(0)) }
+        assertNull(store.arrived("job-2", empty))
         assertNull(store.find("job-2"))
+        assertEquals(false, empty.exists())
+    }
+
+    @Test
+    fun aFetchGivenUpLateNeverTakesTheFileOfTheFetchAfterIt() {
+        // Leaving the screen gives the first fetch up; it clears its file only once the next fetch has begun.
+        val first = store.arriving("job-1")!!.apply { writeBytes(ByteArray(3)) }
+        val second = store.arriving("job-1")!!
+        assertTrue("each fetch writes its own file ($first, $second)", first != second)
+        second.writeBytes(ByteArray(12))
+        store.dropped(first)
+        assertTrue("the second fetch's file is still there", second.isFile)
+        assertEquals(12L, store.arrived("job-1", second)!!.length())
+        assertEquals(12L, store.find("job-1")!!.length())
+        // The first one coming to an end after that changes nothing either.
+        assertNull(store.arrived("job-1", first))
+        assertEquals(12L, store.find("job-1")!!.length())
     }
 
     @Test
@@ -89,13 +106,12 @@ class PracticeRecordingsTest {
 
     @Test
     fun whatATryLeftBehindIsCleared() {
-        // A fetch that stopped half way: its part is gone before the next try, when it is given up, and when the songs are gone through.
-        store.arriving("job-1")!!.writeBytes(ByteArray(7))
+        // A fetch that stopped half way: its part is gone when it is given up, and when the songs are gone through.
         val again = store.arriving("job-1")!!
-        assertEquals(false, again.exists())
         again.writeBytes(ByteArray(7))
-        store.dropped("job-1")
+        store.dropped(again)
         assertEquals(false, again.exists())
+        store.arriving("job-1")!!.writeBytes(ByteArray(7))
         store.arriving("job-1")!!.writeBytes(ByteArray(7))
         store.keep("job-2", take(5))
         store.prune(setOf("job-1", "job-2"))
