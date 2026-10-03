@@ -122,6 +122,8 @@ object PracticeSpeed {
     const val MAX = 150
     const val STEP = 5
     const val FULL = 100
+    /** Slow enough to hear each note of a bar being checked: the bar of a doubtful note repeats at this speed (design/fretscribe/flows.md). */
+    const val SLOW = 60
 
     fun slower(percent: Int): Int = (percent - STEP).coerceAtLeast(MIN)
     fun faster(percent: Int): Int = (percent + STEP).coerceAtMost(MAX)

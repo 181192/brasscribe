@@ -9,7 +9,7 @@
     <string name="first_run_1_title">Spill inn eller åpne et opptak</string>
     <string name="first_run_1_text">Spill det, eller åpne en sang du har. Fretscribe på datamaskinen skriver ned tonene.</string>
     <string name="first_run_2_title">Sjekk tonene merket ?</string>
-    <string name="first_run_2_text">Toner Fretscribe er usikker på, får et «?». Lytt og velg.</string>
+    <string name="first_run_2_text">Toner Fretscribe er usikker på, får et «?». Lytt til takten og bestem deg.</string>
     <string name="first_run_3_title">Øv med tabben</string>
     <string name="first_run_3_text">Sett ned tempoet og gjenta de vanskelige taktene.</string>
     <string name="first_run_privacy">Opptakene dine blir på telefonen og på din egen datamaskin. Gratis, og ingenting er låst.</string>
@@ -221,6 +221,11 @@
     <string name="fs_tab_no_place_low">%1$s er lavere enn den laveste strengen din. Er stemmingen riktig?</string>
     <string name="fs_tab_no_place_high">%1$s er høyere enn det høyeste båndet ditt. Er stemmingen riktig?</string>
     <string name="fs_tab_note_close">Lukk</string>
+    <string name="fs_tab_note_slowly">Spill denne takten sakte</string>
+    <string name="fs_tab_note_next">Neste ?</string>
+    <string name="fs_tab_note_next_name">Neste usikre tone</string>
+    <string name="fs_tab_note_last">Siste usikre tone</string>
+    <string name="fs_tab_note_actions">Deretter: %1$s.</string>
     <string-array name="fs_tab_ordinals">
         <item>1.</item>
         <item>2.</item>
