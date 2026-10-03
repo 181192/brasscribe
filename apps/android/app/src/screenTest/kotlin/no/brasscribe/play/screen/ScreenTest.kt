@@ -2,7 +2,9 @@ package no.brasscribe.play.screen
 
 import android.graphics.Bitmap
 import android.view.KeyEvent
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -138,7 +140,10 @@ abstract class ScreenTest {
     protected fun shown(): String = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true)
         .fetchSemanticsNodes().flatMap { it.config[SemanticsProperties.Text] }.joinToString(" | ") { it.text }
 
-    /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
+    /**
+     * Every text on screen is drawn whole: no line is cut off or ellipsized, and none is cut by what it is in (a
+     * text that runs out of a box that clips). A text that a part that scrolls has partly moved out of view is not cut.
+     */
     protected fun assertNoTextIsClipped(except: Set<String> = emptySet()) {
         val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
             .fetchSemanticsNodes().mapNotNull { node ->
@@ -148,10 +153,44 @@ abstract class ScreenTest {
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
                 val l = layouts.firstOrNull() ?: return@mapNotNull null
                 val cut = l.didOverflowHeight || (0 until l.lineCount).any(l::isLineEllipsized) ||
-                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
+                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f) || cutByWhatItIsIn(node)
                 l.layoutInput.text.text.takeIf { cut }
             }
         assertEquals("clipped text", emptyList<String>(), clipped.filter { it !in except })
+    }
+
+    /** Whether [node] is drawn only in part, cut by an ancestor that clips it, and not because a part that scrolls moved it. */
+    private fun cutByWhatItIsIn(node: SemanticsNode): Boolean {
+        val whole = Rect(node.positionInWindow.x, node.positionInWindow.y, node.positionInWindow.x + node.size.width, node.positionInWindow.y + node.size.height)
+        val shown = node.boundsInWindow
+        if (shown.isEmpty || (whole.width - shown.width <= 1f && whole.height - shown.height <= 1f)) return false
+        val scrolls = generateSequence(node.parent) { it.parent }.any {
+            it.config.contains(SemanticsProperties.VerticalScrollAxisRange) || it.config.contains(SemanticsProperties.HorizontalScrollAxisRange)
+        }
+        return !scrolls
+    }
+
+    /** The elements Tab reaches, in the order it reaches them, until it is back at the first. */
+    protected fun tabThrough(): List<SemanticsNode> {
+        val reached = mutableListOf<SemanticsNode>()
+        repeat(120) {
+            key(KeyEvent.KEYCODE_TAB)
+            val now = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)).fetchSemanticsNodes().lastOrNull() ?: return@repeat
+            if (reached.any { it.id == now.id }) return reached
+            reached += now
+        }
+        return reached
+    }
+
+    /** Every element a finger can act on (a click, a toggle, a choice) that is on the screen and not turned off. */
+    protected fun actionable(): List<SemanticsNode> =
+        rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick) and !SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
+            .fetchSemanticsNodes().filter { it.layoutInfo.isPlaced && !it.boundsInWindow.isEmpty }
+
+    /** What a finger can act on and Tab, going round the screen ([reached]), does not reach: their words. */
+    protected fun missedByTheKeyboard(reached: List<SemanticsNode>): List<String> {
+        val ids = reached.map { it.id }.toSet()
+        return actionable().filter { it.id !in ids }.map(FocusOrder::words)
     }
 
     /** What the element with the keyboard's focus says: its texts and its name. */

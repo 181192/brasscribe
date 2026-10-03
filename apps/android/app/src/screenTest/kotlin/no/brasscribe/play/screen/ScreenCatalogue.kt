@@ -27,7 +27,7 @@ abstract class ScreenCatalogue : ScreenTest() {
      * A screen: its [name] in the screenshots, and how to get to it from Home. [steady] is false for a screen
      * that shows a moment of something under way (its screenshot would differ from run to run, so none is kept).
      * [ownOrder] says why the keyboard does not go through this screen in the order it is read, for the few
-     * where that is so (the keyboard's order is then not compared). [cutAtLargeText] are
+     * where that is so (the keyboard's order is then not compared; it must still reach everything). [cutAtLargeText] are
      * texts known to be cut off at 200 %, each with the issue that says so: the list is for what is waiting to
      * be fixed, and an entry goes when its issue is closed.
      */
@@ -111,6 +111,8 @@ abstract class ScreenCatalogue : ScreenTest() {
                 screen.open()
                 settle()
                 val all = tabThrough()
+                // Whatever its order, the keyboard reaches everything a finger can act on.
+                missedByTheKeyboard(all).takeIf { it.isNotEmpty() }?.let { failed += "${screen.name}: the keyboard never reaches $it" }
                 if (screen.ownOrder != null) continue
                 val round = all
                 val read = FocusOrder.reading(round, scrolling())
@@ -130,17 +132,6 @@ abstract class ScreenCatalogue : ScreenTest() {
     private fun scrolling(): SemanticsNode? = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
         .fetchSemanticsNodes().maxByOrNull { it.boundsInWindow.width * it.boundsInWindow.height }
 
-    /** The elements Tab reaches, in the order it reaches them, until it is back at the first. */
-    private fun tabThrough(): List<SemanticsNode> {
-        val reached = mutableListOf<SemanticsNode>()
-        repeat(120) {
-            key(KeyEvent.KEYCODE_TAB)
-            val now = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)).fetchSemanticsNodes().lastOrNull() ?: return@repeat
-            if (reached.any { it.id == now.id }) return reached
-            reached += now
-        }
-        return reached
-    }
 }
 
 /** The order a screen is read in, for the elements the keyboard reaches. */
