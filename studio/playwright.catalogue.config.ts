@@ -20,6 +20,9 @@ export default defineConfig({
     reducedMotion: "reduce",
     // A service worker would answer before page.route sees the request.
     serviceWorkers: "block",
+    // Drawn by the CPU in software, with sRGB and no subpixel text: no emulated GPU, whose result can depend on
+    // the processor the runner happens to have.
+    launchOptions: { args: ["--disable-gpu", "--disable-gpu-rasterization", "--force-color-profile=srgb", "--disable-lcd-text"] },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } }],
   webServer: {
