@@ -389,7 +389,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val plain = RestoredStack.plain(restored, hasSource = sourceBack != null)
             backStack.value = plain
             if (scoreId != null && RestoredStack.needsScore(restored)) {
-                viewModelScope.launch {
+                // Dispatched, not immediate: this runs from the constructor, and a score read back before the
+                // constructor has finished would be shown on a view model whose later fields are not set yet.
+                viewModelScope.launch(Dispatchers.Main) {
                     val saved = withContext(storage) { scoreLibrary.get(scoreId)?.let { it to scoreLibrary.content(it.id) } }
                     val content = saved?.second ?: return@launch
                     if (backStack.value != plain) return@launch
