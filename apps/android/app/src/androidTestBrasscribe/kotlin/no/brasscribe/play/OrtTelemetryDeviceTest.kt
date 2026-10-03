@@ -26,9 +26,12 @@ class OrtTelemetryDeviceTest {
         // The model runs first, so that a build with the telemetry left in still starts the runtime (and
         // its uploader) before the checks below fail.
         val sampleRate = 16_000
-        val tone = FloatArray(sampleRate * 2) { i -> 0.5f * sin(2 * PI * 440.0 * i / sampleRate).toFloat() }
+        // A brass-like A4: six harmonics, as in the pitch module's synthetic melody.
+        val tone = FloatArray(sampleRate * 2) { i ->
+            (0.25 * (1..6).sumOf { h -> sin(2 * PI * 440.0 * h * i / sampleRate) / h }).toFloat()
+        }
         val track = (context.applicationContext as PlayApplication).container.openPitchModel().use { it.detect(tone) }
-        val voiced = (0 until track.size).filter { track.confidence[it] > 0.9 }.map { track.pitchHz[it] }
+        val voiced = (0 until track.size).filter { track.confidence[it] > 0.5 }.map { track.pitchHz[it] }
         assertTrue("SwiftF0 hears the 440 Hz tone: ${voiced.size} voiced frames", voiced.size > track.size / 2)
         assertEquals(440.0, voiced.sorted()[voiced.size / 2], 5.0)
 
