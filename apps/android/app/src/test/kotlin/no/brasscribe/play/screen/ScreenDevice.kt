@@ -295,6 +295,43 @@ object ScreenDevice {
         return all.contentHashCode()
     }
 
+    /** [ms] of real time, for what runs by the clock on the wall (a recording that plays), with the app's time beside it. */
+    fun elapse(rule: AppRule, ms: Long) {
+        val end = System.nanoTime() + ms * 1_000_000
+        while (System.nanoTime() < end) {
+            pass(rule, 10)
+            Thread.sleep(10)
+        }
+        rule.waitForIdle()
+    }
+
+    /** A key held down: pressed, repeated [repeats] times as a held key is, and let go. */
+    fun hold(rule: AppRule, code: Int, repeats: Int) {
+        rule.runOnUiThread {
+            val window = frontWindow()
+            val down = android.os.SystemClock.uptimeMillis()
+            for (again in 0..repeats) window.dispatchKeyEvent(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, code, again))
+            window.dispatchKeyEvent(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, code, 0))
+        }
+        rule.waitForIdle()
+    }
+
+    /** What the app announces to a screen reader, each to [heard], until the returned handle is closed. */
+    fun announcements(rule: AppRule, heard: (String) -> Unit): AutoCloseable {
+        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.setOnAccessibilityEventListener { event ->
+            if (event.eventType == android.view.accessibility.AccessibilityEvent.TYPE_ANNOUNCEMENT) heard(event.text.joinToString(" "))
+        }
+        return AutoCloseable { automation.setOnAccessibilityEventListener(null) }
+    }
+
+    /** Frames the app has drawn: counted by a device's system only. */
+    @Suppress("UNUSED_PARAMETER")
+    fun framesDrawn(rule: AppRule): Int = throw UnsupportedOperationException("frames are counted on a device")
+
+    @Suppress("UNUSED_PARAMETER")
+    fun framesWhileStill(rule: AppRule, ms: Long = 4_000): Int = throw UnsupportedOperationException("frames are counted on a device")
+
     /** Lets [ms] of the app's time pass: Android's clock (its handlers and animations) and Compose's own (a delay in an effect). */
     fun pass(rule: AppRule, ms: Long) {
         shadowOf(Looper.getMainLooper()).idleFor(ms, TimeUnit.MILLISECONDS)

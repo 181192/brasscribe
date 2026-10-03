@@ -22,7 +22,6 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -57,6 +56,10 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import no.brasscribe.play.screen.ScreenDevice
+import no.brasscribe.play.screen.ScreenTest
+import no.brasscribe.play.test.Slow
+import org.junit.experimental.categories.Category
 import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
@@ -67,17 +70,12 @@ import kotlin.math.abs
  * Practice, on a fixture computer (apps/fixtures/bass-line-marks): the recording plays under the tab, the
  * cursor stands at the beat it is at, it slows down with its pitch kept, and chosen bars repeat. The
  * recording is made here: a short tone on every note of the fixture's tab, at the second the computer heard
- * it. Screenshots go to /data/local/tmp/fretscribe-practice on the device.
+ * it.
  */
 @RunWith(AndroidJUnit4::class)
-class PracticeTest {
-    @get:Rule
-    val rule = createAndroidComposeRule<MainActivity>()
-
-    private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
-    private val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+@Category(Slow::class)
+class PracticeTest : ScreenTest() {
     private val practice get() = ViewModelProvider(rule.activity)[PracticeModel::class.java]
-    private val container get() = (rule.activity.application as PlayApplication).container
     private val kept get() = File(rule.activity.noBackupFilesDir, "recordings")
 
     /** The computer still holds the recording it was sent. */
@@ -85,58 +83,29 @@ class PracticeTest {
 
     @Before
     fun setUp() {
-        rule.enableAccessibilityChecks()
-        rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
         yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
         kept.deleteRecursively()
-        rule.runOnUiThread {
-            container.firstRunDone = true
-            vm.scores.value.forEach(vm::deleteEntry)
-            vm.home()
-        }
-        shell("mkdir -p $SHOTS")
-        rule.waitForIdle()
-        val assets = instrumentation.context.assets
         container.fixtureSource = FixtureSource { name ->
             if (name == FixtureEngineApi.INPUT_FILE) sound().takeIf { computerHasRecording }
-            else runCatching { assets.open("$FIXTURE/$name").use { it.readBytes() } }.getOrNull()
+            else ScreenDevice.fixture("$FIXTURE/$name")
         }
     }
 
     @After
     fun tearDown() {
-        shell("cmd locale set-app-locales $PACKAGE --locales en-GB")
-        shell("settings put system font_scale 1.0")
-        shell("settings delete secure contrast_level")
-        instrumentation.uiAutomation.setRotation(android.app.UiAutomation.ROTATION_FREEZE_0)
-        rule.runOnUiThread {
-            TabPlaces.forget()
-            container.fixtureSource = null
-            container.updateAppearance(Appearance.SYSTEM)
-            vm.scores.value.forEach(vm::deleteEntry)
-            vm.home()
-        }
+        TabPlaces.forget()
         kept.deleteRecursively()
     }
 
-    private fun shell(cmd: String) {
-        instrumentation.uiAutomation.executeShellCommand(cmd).close()
-        Thread.sleep(400)
-    }
+    override val shots = "fretscribe/practice"
 
-    private fun settle() {
-        rule.waitForIdle()
-        Thread.sleep(900)
-        rule.waitForIdle()
-    }
-
-    private fun shot(name: String) {
+    /** The picture [name] of the screen at rest. */
+    private fun shotOf(name: String) {
         settle()
-        shell("screencap -p $SHOTS/$name.png")
-        Thread.sleep(800)
+        shot(name)
     }
 
-    private fun asset(name: String): String = instrumentation.context.assets.open("$FIXTURE/$name").use { it.readBytes() }.decodeToString()
+    private fun asset(name: String): String = checkNotNull(ScreenDevice.fixture("$FIXTURE/$name")) { name }.decodeToString()
     private val tabData: Tab by lazy { BrasscribeJson.decodeFromString(Tab.serializer(), asset("tab.json")) }
     private val index: TabIndex by lazy { TabIndex.parse(asset("tab.musicxml")) }
     private val clock: TabClock by lazy { TabClock.of(index, tabData, null)!! }
@@ -161,12 +130,9 @@ class PracticeTest {
         return header + data
     }
 
-    private fun waitForTag(tag: String, ms: Long = 60_000) =
-        rule.waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
-
     /** Home, the recording, What is this?, the notes written down, Check the song, Show the tab: the tab is engraved and the player is there. */
     private fun practise(): TabView {
-        val file = File(rule.activity.cacheDir, "Bass line.wav").apply { writeBytes(sound()) }
+        val file = ScreenDevice.recording(rule.activity, "Bass line.wav", sound(), 22_050)
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
         waitForTag("fs-what-continue", 20_000)
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
@@ -184,14 +150,13 @@ class PracticeTest {
         fun now() = TabScreenProbe.view?.let { Triple(it, it.engravings, it.engraving.value) }
         var seen: Triple<TabView, Int, TabEngraving?>?
         do {
-            rule.waitUntil(30_000) { TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true }
+            waitUntil(30_000) { TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true }
             seen = now()
             settle()
         } while (now() != seen)
         return seen!!.first
     }
 
-    private fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
     private fun words(tag: String): String = rule.onNodeWithTag(tag).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text).orEmpty().joinToString(" ") { it.text }
     private fun described(tag: String): String = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().let { n ->
         (n.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() + n.children.flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }).joinToString(" ")
@@ -207,11 +172,12 @@ class PracticeTest {
         return at
     }
 
-    private fun waitUntilPlaying(playing: Boolean = true) = rule.waitUntil(10_000) { practice.playing == playing }
+    private fun waitUntilPlaying(playing: Boolean = true) = waitUntil(10_000) { practice.playing == playing }
 
-    private fun screen(): Bitmap {
+    /** The whole screen at rest, to look at its pixels. */
+    private fun still(): Bitmap {
         settle()
-        return instrumentation.uiAutomation.takeScreenshot()
+        return screen()
     }
 
     private fun near(pixel: Int, colour: Int, tolerance: Int = 30): Boolean =
@@ -244,7 +210,7 @@ class PracticeTest {
 
     /** The cursor's line is on the screen in [colours], at the left edge of its beat's column. */
     private fun assertTheCursorIsDrawn(tab: TabView, colours: BrasscribeColors, where: String) {
-        val image = screen()
+        val image = still()
         val (bar, stop) = cursor(tab) ?: throw AssertionError("$where: no cursor")
         val density = rule.activity.resources.displayMetrics.density
         val line = onScreen(tab, stop.left - TabTokens.CURSOR_DP * density, bar.top, stop.left, bar.bottom)
@@ -256,45 +222,10 @@ class PracticeTest {
         assertEquals("$where: the cursor's colour away from the cursor", 0, elsewhere)
     }
 
-    private fun assertNoTextIsClipped() {
-        val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
-            .fetchSemanticsNodes().mapNotNull { node ->
-                val layouts = mutableListOf<TextLayoutResult>()
-                node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
-                val l = layouts.firstOrNull() ?: return@mapNotNull null
-                val cut = l.didOverflowHeight || (0 until l.lineCount).any(l::isLineEllipsized) ||
-                    (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
-                l.layoutInput.text.text.takeIf { cut }
-            }
-        assertEquals("clipped text", emptyList<String>(), clipped)
-    }
-
-    private fun key(code: Int) {
-        instrumentation.sendKeyDownUpSync(code)
-        rule.waitForIdle()
-    }
-
     private fun focusedTag(): String = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
         .fetchSemanticsNodes().lastOrNull()?.config?.getOrNull(SemanticsProperties.TestTag).orEmpty()
 
-    private fun framesDrawn(): Int {
-        val out = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo $PACKAGE")).use { it.readBytes().decodeToString() }
-        return Regex("""Total frames rendered: (\d+)""").find(out)!!.groupValues[1].toInt()
-    }
-
-    private fun framesWhileStill(ms: Long = 4_000): Int {
-        settle()
-        Thread.sleep(1_500)
-        val before = framesDrawn()
-        Thread.sleep(ms)
-        return framesDrawn() - before
-    }
-
-    private fun turn(landscape: Boolean) {
-        instrumentation.uiAutomation.setRotation(if (landscape) android.app.UiAutomation.ROTATION_FREEZE_90 else android.app.UiAutomation.ROTATION_FREEZE_0)
-        rule.waitUntil(15_000) { (rule.activity.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) == landscape }
-        rule.waitForIdle()
-    }
+    private fun turn(landscape: Boolean) = ScreenDevice.turn(rule, landscape)
 
     @Test
     fun theRecordingPlaysAndTheCursorFollowsIt() {
@@ -316,7 +247,7 @@ class PracticeTest {
         // The cursor stands at the first beat before anything plays.
         assertEquals(0, cursor(tab)!!.first.bar)
         assertTheCursorIsDrawn(tab, BrasscribeLightColors, "at the start")
-        shot("practice-light")
+        shotOf("practice-light")
 
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
@@ -336,7 +267,7 @@ class PracticeTest {
             assertTrue("at $at s the cursor is in bar ${bar.bar} at tick ${stop.tick}, the recording at ${clock.placeAt(at)}", fits)
             ahead += bar.bar
             checked++
-            Thread.sleep(40)
+            ScreenDevice.elapse(rule, 40)
         }
         assertTrue("the cursor was looked at often ($checked)", checked > 30)
         assertTrue("it went through the bars one after another ($ahead)", ahead.containsAll((1..5).toList()))
@@ -345,18 +276,16 @@ class PracticeTest {
         assertTrue("the screen stays on while the recording plays", staysOn)
 
         val said = java.util.Collections.synchronizedList(ArrayList<String>())
-        instrumentation.uiAutomation.setOnAccessibilityEventListener { event ->
-            if (event.eventType == android.view.accessibility.AccessibilityEvent.TYPE_ANNOUNCEMENT) said += event.text.joinToString(" ")
-        }
+        val listening = ScreenDevice.announcements(rule) { said += it }
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)
         assertEquals("Play", described("fs-practice-play"))
         val stopped = now()
-        // The place it stopped at is said, once.
-        rule.waitUntil(5_000) { said.isNotEmpty() }
+        // The place it stopped at is said, once. (What is said reaches a screen reader on a device; on the JVM nothing listens.)
+        if (!ScreenDevice.JVM) waitUntil(5_000) { said.isNotEmpty() }
         settle()
-        instrumentation.uiAutomation.setOnAccessibilityEventListener(null)
-        assertEquals(listOf(words("fs-practice-place")), said.toList())
+        listening.close()
+        if (!ScreenDevice.JVM) assertEquals(listOf(words("fs-practice-place")), said.toList())
         assertTrue("it stopped where it was ($stopped s)", stopped >= clock.secondsAt(6) - 0.2 && stopped < clock.secondsAt(8))
         val there = clock.placeAt(stopped)
         assertEquals(text(no.brasscribe.play.R.string.fs_practice_bar_beat, index.measures[there.bar].number, clock.beatAt(there)), words("fs-practice-place"))
@@ -364,7 +293,7 @@ class PracticeTest {
         assertEquals(there.bar, cursor(tab)!!.first.bar)
         assertTheCursorIsDrawn(tab, BrasscribeLightColors, "after a pause")
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-paused")
+        shotOf("practice-paused")
 
         // A bar on, a bar back, and back to the start.
         rule.onNodeWithTag("fs-practice-next").performClick()
@@ -395,13 +324,15 @@ class PracticeTest {
         assertEquals("50%", words("fs-practice-speed"))
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
-        rule.waitUntil(10_000) { now() > 0.3 }
+        waitUntil(10_000) { now() > 0.3 }
         val from = now()
         val began = System.nanoTime()
-        Thread.sleep(4_000)
+        ScreenDevice.elapse(rule, 4_000)
         val went = now() - from
         val took = (System.nanoTime() - began) / 1e9
-        assertEquals("at half speed the recording goes half as fast ($went s in $took s)", 0.5, went / took, 0.06)
+        // (How fast it goes by the clock on the wall is the phone's sound output's: on the JVM nothing plays it out.)
+        if (!ScreenDevice.JVM) assertEquals("at half speed the recording goes half as fast ($went s in $took s)", 0.5, went / took, 0.06)
+        assertTrue("it plays on ($went s in $took s)", went > 0.2)
         rule.runOnUiThread {
             val player = practice.recordingPlayer as MediaRecordingPlayer
             assertEquals(0.5f, player.speed, 0.001f)
@@ -442,7 +373,7 @@ class PracticeTest {
         rule.onNodeWithTag("fs-practice-to-up").performClick()
         assertEquals("Repeat bars 3 to 4", words("fs-practice-repeat-set"))
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-repeat-dialog")
+        shotOf("practice-repeat-dialog")
         rule.onNodeWithTag("fs-practice-repeat-set").performClick()
         rule.waitForIdle()
 
@@ -460,7 +391,7 @@ class PracticeTest {
         val first = bars.first { it.bar == 2 }
         val last = bars.first { it.bar == 3 }
         val density = rule.activity.resources.displayMetrics.density
-        val image = screen()
+        val image = still()
         val edge = BrasscribeLightColors.loopEdge.toArgb()
         val open = onScreen(tab, first.left, first.staffTop, first.left + TabTokens.CURSOR_DP * density, first.bottom)
         val close = onScreen(tab, last.right - TabTokens.CURSOR_DP * density, last.staffTop, last.right, last.bottom)
@@ -469,7 +400,7 @@ class PracticeTest {
         val band = onScreen(tab, first.left + 8 * density, first.top - 0.3f * tab.lineSpace, first.left + 16 * density, first.top - 0.1f * tab.lineSpace)
         assertTrue("the band behind the bars", count(image, band, BrasscribeLightColors.loopTint.toArgb()) >= band.width() * band.height() * 0.9)
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-repeat")
+        shotOf("practice-repeat")
 
         // It plays those bars again and again: the recording never leaves them, and turns back at their end.
         repeat(10) { rule.onNodeWithTag("fs-practice-faster").performClick() }
@@ -483,7 +414,7 @@ class PracticeTest {
             assertTrue("the recording stays in its bars ($at s of ${span.start}–${span.endInclusive})", at >= span.start - 0.05 && at <= span.endInclusive + 0.25)
             if (at < before - 0.5) turns++
             before = at
-            Thread.sleep(30)
+            ScreenDevice.elapse(rule, 30)
         }
         assertTrue("it turned back at the end of the bars ($turns times in 7 s)", turns >= 2)
         // Steps stay inside the bars too.
@@ -531,7 +462,7 @@ class PracticeTest {
         practise()
         // The song is in Your songs now. Opened from there on a phone that no longer has the recording:
         rule.runOnUiThread { vm.home() }
-        rule.waitUntil(10_000) { vm.scores.value.isNotEmpty() }
+        waitUntil(10_000) { vm.scores.value.isNotEmpty() }
         settle()
         kept.deleteRecursively()
         computerHasRecording = false
@@ -543,10 +474,10 @@ class PracticeTest {
         assertEquals(0, rule.onAllNodesWithTag("fs-practice-play").fetchSemanticsNodes().size)
         rule.onNodeWithTag("fs-practice-get").assertHeightIsAtLeast(48.dp)
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-not-on-this-phone")
+        shotOf("practice-not-on-this-phone")
         // The computer does not have it either.
         rule.onNodeWithTag("fs-practice-get").performClick()
-        rule.waitUntil(10_000) { practice.recording == RecordingState.GONE }
+        waitUntil(10_000) { practice.recording == RecordingState.GONE }
         rule.onNodeWithTag("fs-practice-says").assertTextEquals("Your computer doesn't have the recording any more. You can still read the tab.")
         assertEquals(0, rule.onAllNodesWithTag("fs-practice-get").fetchSemanticsNodes().size)
         // The tab is still there to read.
@@ -564,10 +495,10 @@ class PracticeTest {
         assertEquals(1, kept.listFiles()?.size)
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
-        rule.waitUntil(10_000) { now() > 1.0 }
+        waitUntil(10_000) { now() > 1.0 }
         // Leaving the tab stops the sound.
         rule.runOnUiThread { vm.home() }
-        rule.waitUntil(10_000) { !practice.playing && practice.recordingPlayer == null }
+        waitUntil(10_000) { !practice.playing && practice.recordingPlayer == null }
         // Opened again, the recording is on the phone, and the song is where it was left.
         computerHasRecording = false
         rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
@@ -588,13 +519,11 @@ class PracticeTest {
         assertEquals("Bar 2, beat 1", words("fs-practice-place"))
         assertEquals(1, cursor(tab)!!.first.bar)
         // Space plays. Held down, it plays once, not once more for every repeat of the key.
-        val down = android.os.SystemClock.uptimeMillis()
-        for (again in 0..3) instrumentation.sendKeySync(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SPACE, again))
-        instrumentation.sendKeySync(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SPACE, 0))
+        ScreenDevice.hold(rule, KeyEvent.KEYCODE_SPACE, repeats = 3)
         waitUntilPlaying()
-        Thread.sleep(500)
+        ScreenDevice.elapse(rule, 500)
         assertTrue("still playing after Space was held", practice.playing)
-        rule.waitUntil(10_000) { now() > clock.secondsAt(1) + 0.3 }
+        waitUntil(10_000) { now() > clock.secondsAt(1) + 0.3 }
         key(KeyEvent.KEYCODE_SPACE)
         waitUntilPlaying(false)
         // Page Down still moves the page, not the song.
@@ -613,7 +542,7 @@ class PracticeTest {
         rule.runOnUiThread { practice.repeat(RepeatBars(4, 6)); practice.toBar(6) }
         repeat(30) { if (!focusedTag().startsWith("fs-tab-mark-")) key(KeyEvent.KEYCODE_TAB) }
         assertTrue(focusedTag(), focusedTag().startsWith("fs-tab-mark-"))
-        shot("practice-keyboard-focus")
+        shotOf("practice-keyboard-focus")
         key(KeyEvent.KEYCODE_DPAD_LEFT)
         assertEquals("Bar 5, beat 1", words("fs-practice-place"))
         // In the last bar of the tab the right arrow has nowhere to go.
@@ -683,18 +612,19 @@ class PracticeTest {
 
     @Test
     fun aPausedSongDrawsNothing() {
+        assumeTrue("on a device only: the frames are counted by its system", !ScreenDevice.JVM)
         practise()
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
         // While it plays, the cursor moves: frames are drawn.
-        val before = framesDrawn()
-        rule.waitUntil(15_000) { now() > clock.secondsAt(3) }
-        assertTrue("playing draws frames", framesDrawn() - before > 3)
+        val before = ScreenDevice.framesDrawn(rule)
+        waitUntil(15_000) { now() > clock.secondsAt(3) }
+        assertTrue("playing draws frames", ScreenDevice.framesDrawn(rule) - before > 3)
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)
-        val paused = framesWhileStill()
+        val paused = ScreenDevice.framesWhileStill(rule)
         rule.runOnUiThread { practice.repeat(RepeatBars(1, 2)) }
-        val withRepeat = framesWhileStill()
+        val withRepeat = ScreenDevice.framesWhileStill(rule)
         assertEquals("frames drawn in four seconds of a paused song, and of one with a repeat", listOf(0, 0), listOf(paused, withRepeat).map { if (it <= 2) 0 else it })
     }
 
@@ -711,7 +641,7 @@ class PracticeTest {
         rule.runOnUiThread { practice.toBar(third.firstBar - 1) }
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
-        rule.waitUntil(15_000) { cursor(tab)?.first?.bar == third.firstBar }
+        waitUntil(15_000) { cursor(tab)?.first?.bar == third.firstBar }
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)
         settle()
@@ -723,9 +653,7 @@ class PracticeTest {
 
     @Test
     fun inHighContrastTheCursorAndTheRepeatAreShapesWithoutWashes() {
-        shell("settings put secure contrast_level 1.0")
-        val contrast = rule.activity.getSystemService(UiModeManager::class.java).contrast
-        assumeTrue("this device does not take the contrast setting ($contrast)", contrast >= 0.5f)
+        assumeTrue("this device does not take the contrast setting", ScreenDevice.highContrast(rule, true))
         val tab = practise()
         rule.runOnUiThread {
             assertNull(tab.palette.cursorTint)
@@ -739,7 +667,7 @@ class PracticeTest {
         val e = tab.engraving.value!!
         assumeTrue("the tab is not three lines here", e.lines.size >= 3)
         rule.runOnUiThread { practice.repeat(RepeatBars(e.lines[0].firstBar, e.lines[2].lastBar)) }
-        val image = screen()
+        val image = still()
         val density = rule.activity.resources.displayMetrics.density
         val inView = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow.bottom
         var middle = false
@@ -755,7 +683,7 @@ class PracticeTest {
         }
         assertTrue("the line between the brackets was in view", middle)
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-high-contrast")
+        shotOf("practice-high-contrast")
     }
 
     @Test
@@ -766,7 +694,7 @@ class PracticeTest {
         assertTheCursorIsDrawn(tab, BrasscribeDarkColors, "in the dark")
         assertNoTextIsClipped()
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-dark")
+        shotOf("practice-dark")
 
         // On its side the player is one row, and the tab keeps most of the height.
         turn(landscape = true)
@@ -780,11 +708,10 @@ class PracticeTest {
         val page = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow
         assertTrue("on its side the tab (${page.height} px) has more room than the player (${player.height} px)", page.height > player.height)
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-landscape")
+        shotOf("practice-landscape")
 
         // At 200 % text everything is still there, whole, and large enough to press.
-        shell("settings put system font_scale 2.0")
-        rule.waitUntil(10_000) { rule.activity.resources.configuration.fontScale >= 1.9f }
+        textSize(2.0f)
         tab = engraved()
         waitForTag("fs-practice-play", 20_000)
         assertNoTextIsClipped()
@@ -792,13 +719,13 @@ class PracticeTest {
             rule.onNodeWithTag(tag).assertIsDisplayed().assertWidthIsAtLeast(64.dp).assertHeightIsAtLeast(64.dp)
         }
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-landscape-200-text")
+        shotOf("practice-landscape-200-text")
         // The dialog is taller than the screen here: it scrolls, down to its last button.
         rule.onNodeWithTag("fs-practice-repeat").performClick()
         waitForTag("fs-practice-repeat-set")
         assertNoTextIsClipped()
         rule.onNodeWithTag("fs-practice-repeat-cancel").performScrollTo().assertIsDisplayed()
-        shot("practice-landscape-200-text-repeat-dialog")
+        shotOf("practice-landscape-200-text-repeat-dialog")
         rule.onNodeWithTag("fs-practice-repeat-cancel").performClick()
         rule.waitForIdle()
         turn(landscape = false)
@@ -809,17 +736,15 @@ class PracticeTest {
         waitForTag("fs-practice-repeat-set")
         assertNoTextIsClipped()
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-200-text-repeat-dialog")
+        shotOf("practice-200-text-repeat-dialog")
         rule.onNodeWithTag("fs-practice-repeat-stop").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
         rule.onNodeWithTag("fs-practice-repeat-cancel").performScrollTo().performClick()
         rule.waitForIdle()
-        shot("practice-200-text")
+        shotOf("practice-200-text")
 
         // In bokmål.
-        shell("settings put system font_scale 1.0")
-        shell("cmd locale set-app-locales $PACKAGE --locales nb-NO")
-        rule.activityRule.scenario.recreate()
-        rule.waitForIdle()
+        textSize(1.0f)
+        language("nb-NO")
         engraved()
         waitForTag("fs-practice-play", 20_000)
         assertEquals("Spill av", described("fs-practice-play"))
@@ -832,12 +757,10 @@ class PracticeTest {
         assertTrue(words("fs-practice-place"), words("fs-practice-place").startsWith("Takt "))
         assertTrue(described("fs-practice-speed"), described("fs-practice-speed").startsWith("Tempo 100"))
         rule.onRoot().tryPerformAccessibilityChecks()
-        shot("practice-nb")
+        shotOf("practice-nb")
     }
 
     private companion object {
-        const val PACKAGE = "no.fretscribe.play"
-        const val SHOTS = "/data/local/tmp/fretscribe-practice"
         const val FIXTURE = "bass-line-marks"
     }
 }

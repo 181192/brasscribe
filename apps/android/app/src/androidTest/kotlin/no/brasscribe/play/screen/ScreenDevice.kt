@@ -142,6 +142,45 @@ object ScreenDevice {
         settle(rule)
     }
 
+    /** [ms] of real time, for what runs by the clock on the wall (a recording that plays). */
+    @Suppress("UNUSED_PARAMETER")
+    fun elapse(rule: AppRule, ms: Long) = Thread.sleep(ms)
+
+    /** A key held down: pressed, repeated [repeats] times as a held key is, and let go. */
+    fun hold(rule: AppRule, code: Int, repeats: Int) {
+        val down = android.os.SystemClock.uptimeMillis()
+        for (again in 0..repeats) instrumentation.sendKeySync(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_DOWN, code, again))
+        instrumentation.sendKeySync(KeyEvent(down, android.os.SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, code, 0))
+        rule.waitForIdle()
+    }
+
+    /** What the app announces to a screen reader, each to [heard], until the returned handle is closed. */
+    @Suppress("UNUSED_PARAMETER")
+    fun announcements(rule: AppRule, heard: (String) -> Unit): AutoCloseable {
+        val automation = instrumentation.uiAutomation
+        automation.setOnAccessibilityEventListener { event ->
+            if (event.eventType == android.view.accessibility.AccessibilityEvent.TYPE_ANNOUNCEMENT) heard(event.text.joinToString(" "))
+        }
+        return AutoCloseable { automation.setOnAccessibilityEventListener(null) }
+    }
+
+    /** Frames the app has drawn since it started, as the system counts them. */
+    @Suppress("UNUSED_PARAMETER")
+    fun framesDrawn(rule: AppRule): Int {
+        val out = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo ${instrumentation.targetContext.packageName}"))
+            .use { it.readBytes().decodeToString() }
+        return Regex("""Total frames rendered: (\d+)""").find(out)!!.groupValues[1].toInt()
+    }
+
+    /** Frames drawn while nothing is touched for [ms]: a still screen draws none. */
+    fun framesWhileStill(rule: AppRule, ms: Long = 4_000): Int {
+        settle(rule)
+        Thread.sleep(1_500)
+        val before = framesDrawn(rule)
+        Thread.sleep(ms)
+        return framesDrawn(rule) - before
+    }
+
     /** Lets [ms] pass. */
     @Suppress("UNUSED_PARAMETER")
     fun pass(rule: AppRule, ms: Long) = Thread.sleep(ms)

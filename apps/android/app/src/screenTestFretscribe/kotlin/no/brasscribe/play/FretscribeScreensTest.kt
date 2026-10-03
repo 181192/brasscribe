@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -20,6 +21,7 @@ import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
+import java.io.File
 
 /** Fretscribe's screens (see [ScreenCatalogue]), on the fixture computer that answers as the engine did for a short bass line. */
 @RunWith(AndroidJUnit4::class)
@@ -35,6 +37,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
     fun asItWas() {
         yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
         TabPlaces.forget()
+        File(rule.activity.noBackupFilesDir, "recordings").deleteRecursively()
         rule.runOnUiThread { container.firstRunDone = true }
     }
 
@@ -70,6 +73,18 @@ class FretscribeScreensTest : ScreenCatalogue() {
         rest()
     }
 
+    /** A song from Your songs on a phone that no longer has its recording (and a computer that has it no more either). */
+    private fun aSongWithoutItsRecording() {
+        theTab()
+        rule.runOnUiThread { vm.home() }
+        waitUntil(10_000) { vm.scores.value.isNotEmpty() }
+        settle()
+        File(rule.activity.noBackupFilesDir, "recordings").deleteRecursively()
+        rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
+        waitForTag("fs-practice-get", 20_000)
+        rest()
+    }
+
     private fun go(vararg to: Screen) = rule.runOnUiThread { to.forEach(vm::navigate) }
 
     override val screens = listOf(
@@ -88,6 +103,14 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("check-the-song") { checkTheSong() },
         Entry("tab") { theTab() },
         Entry("tab-note") { theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000); rest() },
+        Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
+        Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },
+        Entry("practice-recording-gone") {
+            aSongWithoutItsRecording()
+            rule.onNodeWithTag("fs-practice-get").performClick()
+            waitUntil(10_000) { rule.onAllNodesWithTag("fs-practice-get").fetchSemanticsNodes().isEmpty() }
+            rest()
+        },
         Entry("settings") { go(Screen.SETTINGS) },
         Entry("computer") { go(Screen.SETTINGS, Screen.COMPANION) },
         Entry("about") { go(Screen.SETTINGS, Screen.ABOUT) },
