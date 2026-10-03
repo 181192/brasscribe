@@ -32,6 +32,15 @@ export async function openView(page: Page, view: Pick<View, "route" | "ready" | 
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 30_000 });
   if (view.ready) await view.ready(page);
+  // A narrow variant is also reached the way a reader gets there: the window made narrow (or zoomed in)
+  // after the view opened wide. What lays itself out once (the score) must fit after that too.
+  if (variant.viewport.width < 1280) {
+    await page.setViewportSize({ width: 1280, height: variant.viewport.height });
+    await page.waitForTimeout(300);
+    await page.setViewportSize(variant.viewport);
+    await page.waitForTimeout(300);
+    if (view.ready) await view.ready(page);
+  }
   if (view.prepare) await view.prepare(page);
   await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 30_000 });
   // Two frames for the last layout, then the fonts again (a view may have asked for a new face).
