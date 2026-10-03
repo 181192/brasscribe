@@ -278,3 +278,26 @@ def test_a_band_run_made_without_musescore_is_rendered_once_it_is_installed(sett
     assert {"brass-band.pdf", "brass-band.mid"} <= set(installed["outputs"])
     again = runner.run(settings, audio, "test")
     assert again["stages"][-1]["status"] == "cached" and "brass-band.pdf" in again["outputs"]
+
+
+def test_the_band_export_renders_only_with_the_musescore_it_was_keyed_on(tmp_path, monkeypatch):
+    """A MuseScore installed between keying and running is not used: the stored export would say otherwise
+    than its key."""
+    from types import SimpleNamespace
+
+    from brasscribe_engine import stages as S
+    from brasscribe_music import musescore
+
+    (tmp_path / "score").mkdir()
+    (tmp_path / "score" / "brass-band.musicxml").write_text("<score-partwise/>")
+    monkeypatch.setattr(S, "accessible_exports", lambda score, ctx: {"written": []})
+    monkeypatch.setattr(musescore, "binary", lambda: "mscore")
+    launched = []
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs, style=None: launched.append(jobs) or [])
+    ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=lambda m: None,
+                          stage=SimpleNamespace(name="export"), params={"audio": False, "musescore": None})
+    S.export(ctx)
+    assert launched == [] and json.loads((tmp_path / "export.json").read_text())["skipped"] == ["pdf", "mid"]
+    ctx.params = {"audio": False, "musescore": "0123456789abcdef"}
+    S.export(ctx)
+    assert launched and json.loads((tmp_path / "export.json").read_text())["musescore"] == "mscore"

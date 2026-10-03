@@ -169,7 +169,7 @@ def export(ctx: StageContext) -> None:
     formats = ["pdf", "mid"] + (["mp3"] if ctx.params.get("audio", True) else [])
     from brasscribe_music import musescore
 
-    mscore = musescore.binary()
+    mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
     written = []
     if mscore:
         dsts = [ctx.out / f"brass-band.{ext}" for ext in formats]
