@@ -44,13 +44,22 @@ abstract class ScreenCatalogue : ScreenTest() {
 
     protected abstract val screens: List<Entry>
 
+    /**
+     * Back to Home, with nothing of the screen before still under way: a screen that shows the notes being written
+     * down leaves that work running, and its result would otherwise arrive on the next screen and take it away.
+     */
+    private fun fromHome() {
+        waitUntil(30_000) { !vm.transcribe.value.running }
+        rule.runOnUiThread { vm.home() }
+        rule.waitForIdle()
+    }
+
     /** Shows every screen in turn and does [check] on it; all that failed are reported together. */
     private fun onEveryScreen(how: String, check: (Entry) -> Unit = {}) {
         val failed = mutableListOf<String>()
         for (screen in screens) {
             try {
-                rule.runOnUiThread { vm.home() }
-                rule.waitForIdle()
+                fromHome()
                 screen.open()
                 // (A moment of something under way is looked at as it is: time that passes would end it.)
                 if (screen.steady) settle() else rule.waitForIdle()
@@ -112,8 +121,7 @@ abstract class ScreenCatalogue : ScreenTest() {
         val failed = mutableListOf<String>()
         for (screen in screens) {
             try {
-                rule.runOnUiThread { vm.home() }
-                rule.waitForIdle()
+                fromHome()
                 screen.open()
                 settle()
                 val all = tabThrough()
