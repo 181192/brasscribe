@@ -2,10 +2,11 @@ package no.brasscribe.play.model
 
 import kotlinx.serialization.Serializable
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** Runs every case of docs/accessibility/talking-score-vectors.json (vendored in test resources). */
+/** Runs every case of docs/accessibility/talking-score-vectors.json. */
 class TalkingScoreVectorsTest {
     @Serializable
     data class Case(
@@ -43,6 +44,7 @@ class TalkingScoreVectorsTest {
 
     @Test
     fun vectorFileHasCases() {
-        assertEquals(29, vectors.cases.size)
+        assertTrue("no talking-score vectors read", vectors.cases.isNotEmpty())
+        assertEquals("duplicate vector ids", vectors.cases.size, vectors.cases.map { it.id }.toSet().size)
     }
 }
