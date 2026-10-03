@@ -634,6 +634,18 @@ class ScoreController(
         tints.adLibBars = adLib
     }
 
+    /**
+     * A tap on a "?" of the score: its bar (1-based), how far into the bar in quarter notes, and the part it is on.
+     * Null leaves taps to alphaTab (the music stand sets it so).
+     */
+    var onMark: ((bar: Int, quarters: Double, part: Int) -> Unit)? = null
+        set(value) {
+            field = value
+            overlay.onMark = value?.let { f -> { beat: alphaTab.model.Beat ->
+                f(beat.voice.bar.index.toInt() + 1, beat.playbackStart / 960.0, beat.voice.bar.staff.track.index.toInt())
+            } }
+        }
+
     /** Rings one note of the rendered score (the review's note card). */
     fun ringNote(bar: Int, noteIndexInBar: Int) {
         val s = score ?: return

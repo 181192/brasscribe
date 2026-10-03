@@ -208,6 +208,12 @@ class QuartetNeedsGroupException : Exception("quartet needs a recording of the w
 /** The engine refused the tune on the seat's part (its lineup or seat cannot carry it). */
 class LeadSeatRefusedException : Exception("the seat cannot carry the tune here")
 
+/** Where Check the notes is: the part being checked ([voice]), the note on its card ([index]), and the notes put off. */
+data class ReviewPlace(val voice: String, val index: Int?, val skipped: List<Int>)
+
+/** A "?" on the score: its bar (1-based), how far into the bar in quarter notes, and the part it is on. */
+data class ReviewTarget(val bar: Int, val quarters: Double, val part: String?)
+
 /** A status line for sighted users that screen readers also hear (polite live region). */
 data class Status(
     val text: String,
@@ -1127,6 +1133,27 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     // ---- Review ---------------------------------------------------------------------------------------
+
+    /** Where Check the notes was left for each score while the app runs, by the saved score's id. */
+    private val reviewPlaces = HashMap<String, ReviewPlace>()
+
+    /** A "?" tapped on the score, for Check the notes to open at; taken once. */
+    private var reviewTarget: ReviewTarget? = null
+
+    /** Where Check the notes was left for the score on screen: Check them comes back to it. */
+    fun reviewPlace(): ReviewPlace? = currentSavedScoreId?.let { reviewPlaces[it] }
+
+    fun keepReviewPlace(place: ReviewPlace) {
+        currentSavedScoreId?.let { reviewPlaces[it] = place }
+    }
+
+    /** Opens Check the notes at the "?" the player tapped on the score. */
+    fun checkAt(target: ReviewTarget) {
+        reviewTarget = target
+        navigate(Screen.REVIEW)
+    }
+
+    fun takeReviewTarget(): ReviewTarget? = reviewTarget.also { reviewTarget = null }
 
     /**
      * Saves [r] as the score on screen. What it is saved with is taken now; the writing happens off the

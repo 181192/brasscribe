@@ -226,6 +226,13 @@ fun ScoreScreen(vm: PlayViewModel) {
     var libraryEntry by rememberSaveable { mutableStateOf<String?>(null) }
     var focusOpener by remember { mutableStateOf(false) }
     StandWindow(ms.open)
+    // A tap on a "?" opens Check the notes at that note; on the music stand a tap shows the controls instead.
+    val checksMarks = r.composition != null && no.brasscribe.play.Product.arranges(r.profile)
+    androidx.compose.runtime.SideEffect {
+        controller.onMark = if (ms.open || !checksMarks) null else { bar, quarters, part ->
+            vm.checkAt(no.brasscribe.play.ReviewTarget(bar, quarters, controller.state.value.parts.getOrNull(part)))
+        }
+    }
 
     fun quiet(text: String) { vm.status.value = no.brasscribe.play.Status(text, quiet = true) }
     fun enterStand(origin: StandOrigin) {

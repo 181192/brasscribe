@@ -32,6 +32,8 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
     var loop: IntRange? = null
     var ring: Beat? = null
     var palette: ScorePalette? = null
+    /** A tap on a mark: its beat. Null leaves every tap to alphaTab (the music stand). */
+    var onMark: ((Beat) -> Unit)? = null
 
     private val density = context.resources.displayMetrics.density
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -134,6 +136,67 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
             caret.moveTo(cx, bottom); caret.lineTo(cx - 0.7f * ss, bottom + 0.9f * ss); caret.lineTo(cx + 0.7f * ss, bottom + 0.9f * ss); caret.close()
             canvas.drawPath(caret, fill)
         }
+    }
+
+    /**
+     * Where each mark is drawn, in this view's pixels: its beat, and the centre of its "?" (the first note head of each
+     * place the beat is drawn). The same layout as [onDraw].
+     */
+    fun markCentres(): List<Pair<Beat, android.graphics.PointF>> {
+        val lookup = tab.api.boundsLookup ?: return emptyList()
+        val ss = staffSpacePx
+        val markH = 1.6f * ss
+        val out = ArrayList<Pair<Beat, android.graphics.PointF>>()
+        for (beat in marks.keys) {
+            val all = lookup.findBeats(beat) ?: continue
+            for (i in 0 until all.length.toInt()) {
+                val bb = all[i]
+                var top = minOf((bb.barBounds.visualBounds.y * f).toFloat(), (bb.visualBounds.y * f).toFloat())
+                var cx = ((bb.onNotesX.takeIf { it > 0 } ?: (bb.visualBounds.x + bb.visualBounds.w / 2)) * f).toFloat()
+                val notes = bb.notes
+                if (notes != null && notes.length > 0) for (j in 0 until notes.length.toInt()) {
+                    val h = notes[j].noteHeadBounds
+                    top = minOf(top, (h.y * f).toFloat())
+                    if (j == 0) cx = ((h.x + h.w / 2) * f).toFloat()
+                }
+                out += beat to android.graphics.PointF(cx, top - 0.4f * ss - markH / 2)
+            }
+        }
+        return out
+    }
+
+    /** The mark whose 48 dp target holds ([x], [y]), the nearest when targets overlap. */
+    private fun markAt(x: Float, y: Float): Beat? {
+        val half = 24 * density
+        return markCentres().filter { (_, c) -> kotlin.math.abs(c.x - x) <= half && kotlin.math.abs(c.y - y) <= half }
+            .minByOrNull { (_, c) -> (c.x - x) * (c.x - x) + (c.y - y) * (c.y - y) }?.first
+    }
+
+    private var pressed: Beat? = null
+
+    /**
+     * A tap on a mark opens it ([onMark]); any other touch, and a drag that starts on a mark (the score scrolls, and its
+     * scroll view takes the gesture), is left to alphaTab and the scroll view.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(e: android.view.MotionEvent): Boolean {
+        if (under || onMark == null) return false
+        when (e.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> { pressed = markAt(e.x, e.y); return pressed != null }
+            android.view.MotionEvent.ACTION_UP -> {
+                val beat = pressed
+                pressed = null
+                if (beat != null && markAt(e.x, e.y) === beat) { performClick(); onMark?.invoke(beat) }
+                return beat != null
+            }
+            android.view.MotionEvent.ACTION_CANCEL -> pressed = null
+        }
+        return pressed != null
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
     }
 
     private var surface: View? = null
