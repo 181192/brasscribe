@@ -47,16 +47,7 @@ enum class RecordingState {
  * or when it is fetched from the computer, so the song can be practised when it is opened again.
  */
 class PracticeRecordings(private val dir: File) {
-    /**
-     * The file of [job]: what a file name can hold of the id, and a short hash of the whole id, so two ids that
-     * read the same once their other characters are gone, or past the length kept, are still two files.
-     */
-    private fun named(job: String): File? {
-        if (job.isEmpty()) return null
-        val plain = job.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.take(60)
-        val hash = java.security.MessageDigest.getInstance("SHA-256").digest(job.toByteArray()).take(4).joinToString("") { "%02x".format(it) }
-        return File(dir, "$plain.$hash")
-    }
+    private fun named(job: String): File? = fileName(job)?.let { File(dir, it) }
 
     fun find(job: String): File? = named(job)?.takeIf { it.isFile && it.length() > 0 }
 
@@ -99,6 +90,17 @@ class PracticeRecordings(private val dir: File) {
     companion object {
         private const val PART = ".part"
 
+        /**
+         * The name of [job]'s file: what a file name can hold of the id, and a short hash of the whole id, so two ids
+         * that read the same once their other characters are gone, or past the length kept, are still two files.
+         */
+        fun fileName(job: String): String? {
+            if (job.isEmpty()) return null
+            val plain = job.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.take(60)
+            val hash = java.security.MessageDigest.getInstance("SHA-256").digest(job.toByteArray()).take(4).joinToString("") { "%02x".format(it) }
+            return "$plain.$hash"
+        }
+
         /** Less room than this after a fetch failed: the phone is full. */
         const val FULL_BYTES = 16L shl 20
 
@@ -138,22 +140,73 @@ class PracticeRecordings(private val dir: File) {
     }
 }
 
+/** Where a song was left in practice: the second of the recording, the speed in per cent, and the bars repeated. */
+data class PracticePlace(val at: Double, val speed: Int, val repeat: RepeatBars?)
+
+/**
+ * Where each song was left in practice, kept on the phone beside the song's recording ([PracticeRecordings]), by the
+ * id of the song's job: one small file to a song, which goes when the song leaves Your songs.
+ */
+class PracticePlaces(private val dir: File) {
+    private fun named(job: String): File? = PracticeRecordings.fileName(job)?.let { File(dir, it) }
+
+    /** Where [job]'s song was left; null when it was never practised, or what is kept can't be read. */
+    fun read(job: String): PracticePlace? {
+        val words = named(job)?.takeIf { it.isFile }?.let { runCatching { it.readText() }.getOrNull() }?.trim()?.split(' ') ?: return null
+        val at = words.getOrNull(0)?.toDoubleOrNull()?.takeIf { it >= 0 } ?: return null
+        val speed = words.getOrNull(1)?.toIntOrNull() ?: return null
+        val first = words.getOrNull(2)?.toIntOrNull()
+        val last = words.getOrNull(3)?.toIntOrNull()
+        return PracticePlace(at, speed, if (first != null && last != null && first in 0..last) RepeatBars(first, last) else null)
+    }
+
+    /** Keeps [place] for [job]'s song: written whole, then put in the place of what was there. */
+    fun save(job: String, place: PracticePlace) {
+        val to = named(job) ?: return
+        runCatching {
+            dir.mkdirs()
+            val part = File(dir, to.name + ".part")
+            part.writeText(listOfNotNull(place.at.toString(), place.speed.toString(), place.repeat?.first?.toString(), place.repeat?.last?.toString()).joinToString(" "))
+            if (!part.renameTo(to)) part.delete()
+        }.onFailure { android.util.Log.w(PlayViewModel.TAG, "where the song was left could not be kept", it) }
+    }
+
+    /** Drops the places of every song but [jobs]: a song deleted from Your songs takes its place with it. */
+    fun prune(jobs: Set<String>) {
+        val kept = jobs.mapNotNull { PracticeRecordings.fileName(it) }.toSet()
+        dir.listFiles()?.filter { it.name !in kept }?.forEach { it.delete() }
+    }
+
+    companion object {
+        /** The places of the app on [context]. */
+        fun of(context: android.content.Context): PracticePlaces = PracticePlaces(File(context.noBackupFilesDir, "practice"))
+    }
+}
+
 /**
  * Practice: the recording of the song on screen, where it is, how fast it plays and which bars it repeats.
  * It outlives the tab's views (a new size or a turn of the phone is a new view) and is kept for each song
- * while the app runs; the song being practised is also kept through the app being stopped.
+ * while the app runs, in the saved state for the song being practised, and on the phone ([PracticePlaces])
+ * for every song in Your songs, so a song opened after the app was closed is where it was left.
  */
 class PracticeModel(app: Application, private val saved: SavedStateHandle) : AndroidViewModel(app), RecordingPlayer.Listener {
     private val store = PracticeRecordings.of(app)
+    private val places = PracticePlaces.of(app)
+    /** The places are written one at a time, in order: an older one never lands after a newer one. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val writing = Dispatchers.IO.limitedParallelism(1)
     private var player: RecordingPlayer? = null
     private var clock: TabClock? = null
     private var song: String? = null
     private var job: String? = null
     private var looking = 0
     private var fetching: kotlinx.coroutines.Job? = null
+    /** Counts the player's changes: a place read from the phone is not taken over one made since it was asked for. */
+    private var changes = 0
+    /** The song on screen has a place on the phone that is not read yet. */
+    private var unread = false
 
-    private class Left(val at: Double, val speed: Int, val repeat: RepeatBars?)
-    private val left = HashMap<String, Left>()
+    private val left = HashMap<String, PracticePlace>()
 
     var recording by mutableStateOf(RecordingState.LOOKING)
         private set
@@ -186,28 +239,48 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
             remember()
             release()
             this.song = song
-            val was = left[song] ?: Left(
-                saved.get<Double>(KEY_AT)?.takeIf { saved.get<String>(KEY_SONG) == song } ?: 0.0,
-                saved.get<Int>(KEY_SPEED)?.takeIf { saved.get<String>(KEY_SONG) == song } ?: PracticeSpeed.FULL,
-                saved.get<IntArray>(KEY_REPEAT)?.takeIf { saved.get<String>(KEY_SONG) == song && it.size == 2 }?.let { RepeatBars(it[0], it[1]) },
-            )
-            at = was.at; speed = was.speed.coerceIn(PracticeSpeed.MIN, PracticeSpeed.MAX); repeat = was.repeat
+            val state = saved.get<String>(KEY_SONG) == song
+            val was = left[song] ?: if (state) PracticePlace(
+                saved.get<Double>(KEY_AT) ?: 0.0,
+                saved.get<Int>(KEY_SPEED) ?: PracticeSpeed.FULL,
+                saved.get<IntArray>(KEY_REPEAT)?.takeIf { it.size == 2 }?.let { RepeatBars(it[0], it[1]) },
+            ) else null
+            // Neither in memory nor in the saved state: the place kept on the phone is read with the recording.
+            unread = was == null
+            take(was ?: PracticePlace(0.0, PracticeSpeed.FULL, null))
         }
         this.job = job
-        repeat = repeat?.takeIf { clock == null || (it.first in 0..it.last && it.last < clock.bars) }
+        repeat = repeat?.takeIf { fits(it) }
         if (player != null || fetching?.isActive == true) { stretch(); return }
         val file = inHand?.takeIf { it.isFile && it.length() > 0 }
         val look = ++looking
+        val since = changes
+        val ask = unread
         recording = RecordingState.LOOKING
         viewModelScope.launch {
-            val found = withContext(Dispatchers.IO) {
-                if (job != null && songs != null && job in songs) store.prune(songs)
-                if (job == null) file else file?.let { store.keep(job, it) } ?: store.find(job)
+            val (found, kept) = withContext(Dispatchers.IO) {
+                if (job != null && songs != null && job in songs) { store.prune(songs); places.prune(songs) }
+                val found = if (job == null) file else file?.let { store.keep(job, it) } ?: store.find(job)
+                found to job?.takeIf { ask }?.let(places::read)
             }
             if (look != looking) return@launch
+            if (unread && kept != null && changes == since) {
+                take(kept)
+                repeat = repeat?.takeIf { fits(it) }
+                // The page goes to where the song was left, as it does when the player moves it.
+                jumps++
+            }
+            unread = false
             if (found != null) load(found) else recording = RecordingState.NOT_HERE
         }
     }
+
+    private fun take(place: PracticePlace) {
+        at = place.at; speed = place.speed.coerceIn(PracticeSpeed.MIN, PracticeSpeed.MAX); repeat = place.repeat
+    }
+
+    /** [bars] are bars of the tab on screen. */
+    private fun fits(bars: RepeatBars): Boolean = clock.let { it == null || (bars.first in 0..bars.last && bars.last < it.bars) }
 
     private fun load(file: File) {
         player = MediaRecordingPlayer(getApplication(), file, this, silent).also {
@@ -270,6 +343,7 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     }
 
     private fun seek(seconds: Double) {
+        changes++
         val to = seconds.coerceAtLeast(0.0)
         player?.seekTo(to)
         at = to
@@ -305,6 +379,7 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     fun faster() = speedTo(PracticeSpeed.faster(speed))
 
     private fun speedTo(percent: Int) {
+        changes++
         speed = percent
         player?.speed = percent / 100f
         remember()
@@ -312,6 +387,7 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
 
     /** Repeats [bars]; null plays on. The song goes to the first of them when it is outside them. */
     fun repeat(bars: RepeatBars?) {
+        changes++
         repeat = bars
         stretch()
         val clock = clock
@@ -338,11 +414,15 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     private fun remember() {
         val song = song ?: return
         val now = now()
-        left[song] = Left(now, speed, repeat)
+        val place = PracticePlace(now, speed, repeat)
+        left[song] = place
         saved[KEY_SONG] = song
         saved[KEY_AT] = now
         saved[KEY_SPEED] = speed
         saved[KEY_REPEAT] = repeat?.let { intArrayOf(it.first, it.last) }
+        // Not before the place kept on the phone was read: what is there is not written over with the defaults.
+        val job = job?.takeIf { !unread } ?: return
+        viewModelScope.launch(writing) { places.save(job, place) }
     }
 
     override fun onPlaying(playing: Boolean) {
@@ -362,6 +442,20 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     }
 
     override fun onCleared() = release()
+
+    /**
+     * As a new process would start: nothing in memory and nothing in the saved state, only what is kept on the phone.
+     * For the tests (a JVM test can't end the process).
+     */
+    @VisibleForTesting
+    internal fun forgetAllButThePhone() {
+        leave()
+        left.clear()
+        saved.keys().forEach { saved.remove<Any>(it) }
+        song = null
+        job = null
+        at = 0.0; speed = PracticeSpeed.FULL; repeat = null
+    }
 
     /** The player, for the tests that listen to what it does. */
     @get:VisibleForTesting
