@@ -261,15 +261,17 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-marks-dark")
 
-        // The chip and the line open Check the song, and Show the tab comes back.
+        // The chip opens Check the song, and Show the tab comes back.
         rule.onNodeWithTag("fs-tab-tuning").performClick()
         waitForTag("fs-show-tab")
-        assertEquals(Screen.OUTPUT, vm.screen.value.last())
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT), vm.screen.value)
         rule.onNodeWithTag("fs-show-tab").performClick()
         engraved()
+        // The line goes to the first "?" on the page, with its note open, and stays on the tab.
         rule.onNodeWithTag("fs-tab-marked").performClick()
-        waitForTag("fs-show-tab")
-        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT), vm.screen.value)
+        waitForTag("fs-tab-note", 5_000)
+        rule.onNodeWithTag("fs-tab-note").assertTextEquals(expected[0])
+        assertEquals(Screen.SCORE, vm.screen.value.last())
     }
 
     @Test
@@ -862,7 +864,7 @@ class TabViewTest : TabScreenTest() {
         tab = engraved()
         assertStillThere("back at 100 %")
         assertEquals("at 100 % again the same line is at the top", reading, barInView(tab))
-        rule.onNodeWithTag("fs-tab-marked").performClick()
+        rule.onNodeWithTag("fs-tab-tuning").performClick()
         waitForTag("fs-show-tab")
         rule.onNodeWithTag("fs-show-tab").performClick()
         assertStillThere("after Check the song")

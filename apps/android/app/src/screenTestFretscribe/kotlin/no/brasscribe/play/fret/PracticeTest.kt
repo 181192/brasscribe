@@ -349,6 +349,57 @@ class PracticeTest : ScreenTest() {
     }
 
     @Test
+    fun aMarkLeadsToItsBarPlayedSlowlyAndOnToTheNextMark() {
+        practise()
+        val marks = TabMarks.of(index, tabData)
+        val doubts = marks.columns.indices.filter { i -> marks.columns[i].notes.any { it.kind == MarkKind.DOUBT } }
+        // The fixture has a "?", a "!" and a "?": Next ? passes over the "!".
+        assertEquals(listOf(0, 2), doubts)
+        val first = marks.columns[0]
+        val second = marks.columns[2]
+
+        // "Check them" goes to the first "?", on the tab, with its note open.
+        rule.onNodeWithTag("fs-tab-marked").performClick()
+        waitForTag("fs-tab-note", 5_000)
+        assertEquals(TabWords.describe(rule.activity.resources, first, false), words("fs-tab-note"))
+        assertEquals(no.brasscribe.play.Screen.SCORE, vm.screen.value.last())
+        rule.onNodeWithTag("fs-tab-mark-0").assertIsDisplayed()
+        assertEquals("Play this bar slowly", words("fs-tab-note-slowly"))
+        rule.onNodeWithTag("fs-tab-note-slowly").assertHeightIsAtLeast(48.dp)
+        rule.onNodeWithTag("fs-tab-note-next").assertHeightIsAtLeast(48.dp)
+        checkAccessibility()
+
+        // Play this bar slowly: that bar repeats at 60 %, from its start, and plays.
+        rule.onNodeWithTag("fs-tab-note-slowly").performClick()
+        waitUntilPlaying()
+        assertEquals(PracticeSpeed.SLOW, practice.speed)
+        assertEquals(RepeatBars(first.bar, first.bar), practice.repeat)
+        assertEquals("Repeating ${first.barNumber}", words("fs-practice-repeat"))
+        assertEquals("60%", words("fs-practice-speed"))
+        val span = clock.span(RepeatBars(first.bar, first.bar))
+        val until = System.nanoTime() + 2_000_000_000L
+        while (System.nanoTime() < until) {
+            val at = now()
+            assertTrue("the recording stays in the bar ($at s of ${span.start}–${span.endInclusive})", at >= span.start - 0.05 && at <= span.endInclusive + 0.25)
+            ScreenDevice.elapse(rule, 50)
+        }
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        waitUntilPlaying(false)
+
+        // Next ? goes to the next "?" (over the "!"); at the last one there is no Next ?.
+        rule.onNodeWithTag("fs-tab-note-next").performClick()
+        rule.waitForIdle()
+        assertEquals(TabWords.describe(rule.activity.resources, second, false), words("fs-tab-note"))
+        settle()
+        rule.onNodeWithTag("fs-tab-mark-2").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodesWithTag("fs-tab-note-next").fetchSemanticsNodes().size)
+        rule.onNodeWithTag("fs-tab-note-slowly").performClick()
+        waitUntilPlaying()
+        assertEquals(RepeatBars(second.bar, second.bar), practice.repeat)
+        assertEquals("Repeating ${second.barNumber}", words("fs-practice-repeat"))
+    }
+
+    @Test
     fun chosenBarsRepeat() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         val tab = practise()

@@ -385,6 +385,19 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         remember()
     }
 
+    /**
+     * One bar again and again, slowly, from its start: to listen to a note Fretscribe is not sure of. [bar] is counted
+     * from 0; it plays when the recording is on the phone.
+     */
+    fun playBarSlowly(bar: Int) {
+        val clock = clock ?: return
+        if (bar !in 0 until clock.bars) return
+        speedTo(PracticeSpeed.SLOW)
+        repeat(RepeatBars(bar, bar))
+        toBar(bar)
+        if (!playing) toggle()
+    }
+
     /** Repeats [bars]; null plays on. The song goes to the first of them when it is outside them. */
     fun repeat(bars: RepeatBars?) {
         changes++
