@@ -893,6 +893,8 @@ class TabViewTest : TabScreenTest() {
         assertTrue("Page Down moves the page ($one)", one > 300f)
         key(KeyEvent.KEYCODE_PAGE_UP)
         settle()
+        // (The page is put back at the bar being read once alphaTab has published its layout again, a moment later.)
+        runCatching { waitUntil(5_000) { scrolled().first == 0f } }
         assertEquals(0f, scrolled().first)
         key(KeyEvent.KEYCODE_PAGE_DOWN)
         settle()
