@@ -153,6 +153,37 @@ fun ScoreScreen(vm: PlayViewModel) {
     // Settings > Sound: open with the realistic instruments when the player chose them.
     LaunchedEffect(st.loaded) { if (st.loaded && vm.container.realisticByDefault && !st.realistic) controller.setRealistic(true) }
 
+    // Practice comes back where it was left: the speed, the bars repeated and the bar, for each score in Your scores.
+    val placeId = remember(r) { vm.practiceScoreId }
+    var placeRead by remember(controller) { mutableStateOf(false) }
+    LaunchedEffect(controller, st.loaded) {
+        if (!st.loaded || placeRead) return@LaunchedEffect
+        val id = placeId ?: run { placeRead = true; return@LaunchedEffect }
+        val asked = controller.state.value
+        val kept = vm.practicePlace(id)
+        val now = controller.state.value
+        // Only if the player changed nothing while it was read; and only what this score has.
+        if (kept != null && now.bar == asked.bar && now.speed == asked.speed && now.loop == asked.loop) {
+            controller.setSpeed(kept.speed)
+            kept.repeat?.takeIf { it.last <= now.totalBars }?.let { controller.setLoop(it); ms.lastLoop = it }
+            if (kept.bar <= now.totalBars) controller.goToBar(kept.bar)
+        }
+        // Until it has been read, nothing is written over it.
+        placeRead = true
+    }
+    // Kept whenever it stands still: paused, a new speed or repeat, a bar moved; while it plays, where it stops.
+    LaunchedEffect(placeRead, st.speed, st.loop, st.playing, if (st.playing) 0 else st.bar) {
+        val id = placeId ?: return@LaunchedEffect
+        if (placeRead && !st.playing) vm.keepPracticePlace(id, no.brasscribe.play.ScorePlace(st.bar, st.speed, st.loop))
+    }
+    // Left while it plays: where it got to.
+    DisposableEffect(controller) {
+        onDispose {
+            val s = controller.state.value
+            if (placeRead && s.loaded) placeId?.let { vm.keepPracticePlace(it, no.brasscribe.play.ScorePlace(s.bar, s.speed, s.loop)) }
+        }
+    }
+
     val single = st.shown.size == 1
     val partName = st.parts.getOrNull(st.shown.minOrNull() ?: 0).orEmpty()
     val shownText = if (single) PartNames.display(partName) else stringResource(R.string.show_all_parts)

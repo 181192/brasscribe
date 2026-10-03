@@ -245,6 +245,28 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     val standFromLibrary = MutableStateFlow<String?>(null)
     /** The library row that gets the focus back when a stand opened from the library closes. */
     val focusEntry = MutableStateFlow<String?>(null)
+    /** Where each score was left in practice: on the phone, and the latest of each in memory while the app runs. */
+    private val practicePlaces = ScorePlaces.of(app)
+    private val practiceLeft = HashMap<String, ScorePlace>()
+
+    /** The saved score on screen, whose practice place is kept; null for none. */
+    val practiceScoreId: String? get() = currentSavedScoreId
+
+    /** Where the score [id] was left in practice, or null. */
+    suspend fun practicePlace(id: String): ScorePlace? = practiceLeft[id] ?: withContext(storage) { practicePlaces.read(id) }
+
+    /** Keeps where the score [id] is in practice: written in order with every other write, an older one never last. */
+    fun keepPracticePlace(id: String, place: ScorePlace) {
+        if (practiceLeft[id] == place) return
+        practiceLeft[id] = place
+        // Only for a score still in Your scores: a place written after its score was deleted would stay for good.
+        viewModelScope.launch { withContext(storage) { if (scoreLibrary.get(id) != null) practicePlaces.save(id, place) } }
+    }
+
+    /** Forgets what a new process would not have in memory (tests). */
+    @androidx.annotation.VisibleForTesting
+    internal fun forgetPracticeInMemory() = practiceLeft.clear()
+
     /** The saved copy of the score on screen; kept across process death, so the score can be reopened. */
     private var currentSavedScoreId: String?
         get() = savedState[KEY_SCORE]
@@ -409,7 +431,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 takesDir.listFiles()?.filter { it != keep && it != CaptureController.activeFile() }?.forEach { it.delete() }
                 getApplication<Application>().cacheDir.listFiles { f -> f.name.startsWith("score-") && f.name.endsWith(".mp3") }?.forEach { it.delete() }
                 keptStore.prune(inUse = keep)
-                scoreLibrary.list()
+                // A score deleted while its place was being written leaves nothing behind.
+                scoreLibrary.list().also { list -> practicePlaces.prune(list.map { it.id }.toSet()) }
             }
             savedScores.value = list
             refreshKept()
@@ -1213,8 +1236,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     fun deleteEntry(entry: ScoreEntry) {
         entry.saved?.let { saved ->
             if (currentSavedScoreId == saved.id) currentSavedScoreId = null
+            practiceLeft.remove(saved.id)
             viewModelScope.launch {
-                savedScores.value = withContext(storage) { scoreLibrary.delete(saved.id); scoreLibrary.list() }
+                savedScores.value = withContext(storage) { scoreLibrary.delete(saved.id); practicePlaces.forget(saved.id); scoreLibrary.list() }
             }
             return
         }
