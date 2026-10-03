@@ -123,3 +123,30 @@ def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
     (entry / "reference.json").write_text(json.dumps(REF))
     r = suites.run_suite("bass-tab", data=tmp_path)  # a reference without the models' outputs: still skipped, with the file
     assert r["status"] == "skipped" and ("song.beats" in r["reason"] or "brasscribe-core" in r["reason"])
+
+
+def test_a_phone_set_not_prepared_whole_is_skipped_not_scored(tmp_path, monkeypatch):
+    from brasscribe_engine import bass_tab
+
+    def entry(name: str, files: list[str]):
+        d = tmp_path / name
+        d.mkdir()
+        for f in files:
+            (d / f).write_text("")
+        return d
+
+    every = [f for m in B.MODES for f in B.FILES[m].values()]
+    slakh = [entry("Track1", every)]
+    phone = [entry("p-hp0", list(B.PHONE_FILES["phone"].values())), entry("p-hp100", ["alone.beats"])]  # one half-prepared
+    sets = {B.SET: slakh, B.SYNTH_SET: [], B.PHONE_SET: phone}
+    scored = []
+    monkeypatch.setattr(B, "entries", lambda data, eval_set=B.SET: sets[eval_set])
+    monkeypatch.setattr(B, "evaluate", lambda data, mode, *a, eval_set=B.SET, **k: scored.append(eval_set) or ({"onset_f1": 1.0}, []))
+    monkeypatch.setattr(bass_tab, "core_cli", lambda: tmp_path)
+    r = suites.run_suite("bass-tab", data=tmp_path)
+    assert r["status"] == "ran" and "phone" in r["skipped_parts"] and B.PHONE_SET not in scored
+    assert not any(m.startswith("phone.") for m in r["metrics"])
+    for f in ("alone-bp.mid", "alone-sw.mid"):
+        (phone[1] / f).write_text("")
+    r = suites.run_suite("bass-tab", data=tmp_path)  # prepared whole: every cut is scored
+    assert "phone" not in r["skipped_parts"] and scored.count(B.PHONE_SET) == 1 + len(B.PHONE_CUTS)

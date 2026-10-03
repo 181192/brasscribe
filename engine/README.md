@@ -23,7 +23,8 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   line (`brasscribe-core fret`).
   - A bass is one line (`bass_tab.py`): SwiftF0 listens to the same audio as a second opinion; a note it did not
     hear at that pitch gets a confidence below 0.4 and a "?" in the tab, a single note it heard an octave lower is
-    written there, and overtones heard as notes are left out.
+    written there, and overtones heard as notes are left out. A whole line above where a bass plays is written an
+    octave lower only when SwiftF0 did not hear it there too: a line that really sits high stays.
   - A guitar plays chords and lines, and the two are read differently. Among chords every note heard is kept (an
     octave or a fifth over a sounding note is played on purpose) and a faint note that no other strum repeats gets
     the "?". In a line the overtones and faint leftovers are left out and SwiftF0 is the second opinion. A chord the

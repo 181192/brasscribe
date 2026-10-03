@@ -598,6 +598,15 @@ def _bass_tab(data: Path, mode: str) -> dict[str, float]:
         for m in B.MODES:
             metrics, _ = B.evaluate(data, m, eval_set=B.SYNTH_SET, group=group)
             out.update({f"{label}.{m}.{k}": v for k, v in metrics.items()})
+    # The bass alone as a phone hears it (build-phone and prepare-phone make it): each cut apart. A set that
+    # is not prepared whole is not scored: an entry without the models' outputs would be missing from its cut.
+    phone = B.entries(data, B.PHONE_SET)
+    if not phone or not all(all((e / f).exists() for f in B.PHONE_FILES["phone"].values()) for e in phone):
+        out[SKIPPED].append("phone")
+        phone = []
+    for cut in (0, *B.PHONE_CUTS) if phone else ():
+        metrics, _ = B.evaluate(data, "phone", eval_set=B.PHONE_SET, cut=cut)
+        out.update({f"phone.hp{cut}.{k}": v for k, v in metrics.items()})
     return out
 
 
@@ -736,6 +745,7 @@ def _solo_beat_model(data: Path, mode: str) -> dict[str, float]:
 
     _need(data, M.SMALL)
     if mode == "live":
+        _need(data, *(f"{M.SMALL}/{set_name}" for set_name in M.SETS))  # the parts to run final0 on
         urmp, chorales = data / "urmp" / "Dataset", data / "choralebricks" / "01_AudioAndAnnotations"
         final = data / M.FINAL
         for set_name in M.SETS:
@@ -751,7 +761,7 @@ def _solo_beat_model(data: Path, mode: str) -> dict[str, float]:
                     (pieces / song.name).symlink_to(urmp / song.name)
             if urmp.is_dir():
                 solo_beats.urmp_songs(pieces, final, "final0")
-        if chorales.is_dir():
+        if chorales.is_dir() and (data / "eval" / "choralebricks-brass4").is_dir():
             solo_beats.choralebricks_songs(chorales, data / "eval" / "choralebricks-brass4", final, "final0")
     out: dict[str, float] = {}
     for set_name in M.SETS:

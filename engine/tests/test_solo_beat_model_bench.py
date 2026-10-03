@@ -44,3 +44,9 @@ def test_the_suite_skips_without_final0_beats_and_is_gated(tmp_path):
         assert base[f"{set_name}.parts"]["tolerance"] == 0
         for model in M.MODELS:
             assert all(f"{set_name}.{model}.{k}" in base for k in ("onset_f1", "written_f1", "bar_position_acc", "meter_match"))
+
+
+def test_live_mode_skips_when_a_set_has_no_small0_beats(tmp_path):
+    (tmp_path / M.SMALL / "urmp").mkdir(parents=True)  # no choralebricks folder
+    r = suites.run_suite("solo-beat-model", "live", data=tmp_path)
+    assert r["status"] == "skipped" and f"{M.SMALL}/choralebricks" in r["reason"]
