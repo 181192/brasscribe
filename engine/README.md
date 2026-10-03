@@ -28,7 +28,9 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     octave or a fifth over a sounding note is played on purpose) and a faint note that no other strum repeats gets
     the "?". In a line the overtones and faint leftovers are left out and SwiftF0 is the second opinion. A chord the
     hand cannot play as heard loses its least sure note, again until none is left that it cannot play, so the tab
-    that is written has no playability violation. A ukulele or a mandolin is read by the same rules. Among
+    that is written has no playability violation. A ukulele or a mandolin is read by the same rules. On a
+    ukulele, an overtone in a line that SwiftF0 did not hear and Basic Pitch heard faintly is left out as well,
+    not written with a "?" high on the neck, where it would pull the note under it up there too. Among
     chords an overtone above the 12th fret of the top string is left out on a guitar and on a ukulele (its own top
     string, and only a note that starts with the note it is an overtone of and is fainter: a melody played up there
     stays), not on a mandolin, where that made no measurable difference. A unison that a strummed open chord of a
