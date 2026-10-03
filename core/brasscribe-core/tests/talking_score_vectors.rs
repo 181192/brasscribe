@@ -123,4 +123,13 @@ fn compound_time_names_eighths_not_triplets() {
     let nb = part_lines(&doc, 0, &Settings { lang: "nb".into(), ..Default::default() });
     assert_eq!(nb[0].1[1], "slag 1, 2. åttendedel: E 5, åttendedelsnote");
     assert_eq!(nb[1].1, ["takt 2, slag 1: A 5 holdes, fra takt 1 slag 2, 3. åttendedel"]);
+
+    let rest = xml.replace(
+        r#"<measure number="2"><note><pitch><step>A</step><octave>5</octave></pitch><duration>6</duration><voice>1</voice><type>half</type><dot/><tie type="stop"/></note></measure>"#,
+        r#"<measure number="2"><note><rest measure="yes"/><duration>6</duration><voice>1</voice></note></measure>"#,
+    );
+    let doc = build(&rest, None).unwrap();
+    let ev = &doc["parts"][0]["bars"][1]["events"][0];
+    assert_eq!(ev["kind"], "bar-rest");
+    assert_eq!(ev["pos"], json!({"beat": 1, "num": 0, "den": 1, "compound": true}));
 }

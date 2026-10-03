@@ -156,3 +156,9 @@ def test_compound_time_names_eighths_not_triplets():
     nb = T.part_lines(doc, 0, T.Settings(lang="nb"))
     assert nb[0][1][1] == "slag 1, 2. åttendedel: E 5, åttendedelsnote"
     assert nb[1][1] == ["takt 2, slag 1: A 5 holdes, fra takt 1 slag 2, 3. åttendedel"]
+
+
+def test_whole_bar_rest_in_compound_time_says_so():
+    doc = T.build(SMALL.replace("<beats>4</beats><beat-type>4</beat-type>", "<beats>12</beats><beat-type>8</beat-type>"), None)
+    rest = doc["parts"][0]["bars"][2]["events"][0]
+    assert rest["kind"] == "bar-rest" and rest["pos"] == {"beat": 1, "num": 0, "den": 1, "compound": True}

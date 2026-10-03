@@ -160,4 +160,15 @@ public class ScoreNavigatorTests
             Assert.StartsWith("A tempo, ", first.Text);
         }
     }
+
+    [Fact]
+    public void Positions_in_compound_time_say_so_whole_bar_rests_included()
+    {
+        var xml = File.ReadAllText(TestPaths.Fixture("two-parts.musicxml"))
+            .Replace("<beats>4</beats><beat-type>4</beat-type>", "<beats>12</beats><beat-type>8</beat-type>");
+        var bars = MusicXmlTalkingScoreBuilder.Build(xml, nameNb: FixtureNb).Parts[0].Bars;
+        Assert.Equal(new TsPos(1, Compound: true), bars[0].Events[0].Pos);
+        Assert.Equal(EventKind.BarRest, bars[2].Events[0].Kind);
+        Assert.Equal(new TsPos(1, Compound: true), bars[2].Events[0].Pos);
+    }
 }
