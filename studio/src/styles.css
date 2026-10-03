@@ -447,7 +447,9 @@ pre.json { background: var(--bc-surface); padding: var(--bc-space-3); border-rad
   .header-end { margin-left: 0; width: 100%; }
   .stage-node { min-width: 0; }
   .transport details.menu { margin-left: 0; }
-  .transport .group { flex-wrap: wrap; }
+  .transport .group { flex-wrap: wrap; max-width: 100%; }
+  /* A long part name must not widen the page: the select shrinks and shows what fits. */
+  .transport .group select { min-width: 0; flex: 1 1 auto; }
   /* Menus open in the flow on narrow screens, so they never run off the edge. */
   .menu-list { position: static; margin-top: var(--bc-space-2); min-width: 0; }
   details.menu[open] { flex-basis: 100%; }
