@@ -201,8 +201,11 @@ def _transcribe(layer: str, tool: str, suffix: str, src: Input, reuse_subdir: st
 
 
 def _export(arrange: str, audio: bool) -> Stage:
+    """The band score's PDF, MIDI, MP3 and part PDFs. Keyed on the MuseScore that would render them, as the tab's
+    export is: a run made without MuseScore is rendered once it is installed, and again after an update."""
     code = S.EXPORT_CODE + ((S.PART_STYLE,) if S.PART_STYLE.exists() else ())
-    return Stage("export", "export", {"score": Input(arrange)}, S.export, params={"audio": audio}, code=code,
+    return Stage("export", "export", {"score": Input(arrange)}, S.export,
+                 params={"audio": audio, "musescore": bass_tab.musescore_fingerprint()}, code=code,
                  outputs=("export.json",))
 
 
