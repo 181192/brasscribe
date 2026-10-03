@@ -914,6 +914,35 @@
         }
       }
     },
+    "solo-beat-model": {
+      "source": "measured by this suite (brasscribe bench solo-beat-model) on the single parts of URMP and ChoraleBricks that solo_beats.py has beats for, the solo path once on Beat This! small0 beats and once on final0 beats of each part; not in 10-benchmark-results.md",
+      "metrics": {
+        "urmp.parts": {
+          "value": 144.0,
+          "tolerance": 0
+        },
+        "urmp.small0.onset_f1": 0.803,
+        "urmp.small0.written_f1": 0.272,
+        "urmp.small0.bar_position_acc": 0.344,
+        "urmp.small0.meter_match": 0.236,
+        "urmp.final0.onset_f1": 0.8,
+        "urmp.final0.written_f1": 0.267,
+        "urmp.final0.bar_position_acc": 0.338,
+        "urmp.final0.meter_match": 0.292,
+        "choralebricks.parts": {
+          "value": 40.0,
+          "tolerance": 0
+        },
+        "choralebricks.small0.onset_f1": 0.717,
+        "choralebricks.small0.written_f1": 0.239,
+        "choralebricks.small0.bar_position_acc": 0.248,
+        "choralebricks.small0.meter_match": 0.425,
+        "choralebricks.final0.onset_f1": 0.717,
+        "choralebricks.final0.written_f1": 0.271,
+        "choralebricks.final0.bar_position_acc": 0.281,
+        "choralebricks.final0.meter_match": 0.6
+      }
+    },
     "bass-tab": {
       "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
       "metrics": {

@@ -722,6 +722,45 @@ def _meter_tab(data: Path, mode: str) -> dict[str, float]:
     return M.evaluate(data)[0]
 
 
+# ------------------------------------------------------------ solo beat model
+
+def _solo_beat_model(data: Path, mode: str) -> dict[str, float]:
+    """The solo path on Beat This! small0 and final0 beats of each single part of URMP and ChoraleBricks
+    (solo_beat_model_bench): onset and written-position F1, bar position and metre, per checkpoint.
+
+    Cached mode scores the beats solo_beats.py left in both folders. Live mode runs final0 on the parts that
+    lack it, from the datasets under <data>/urmp and <data>/choralebricks."""
+    from . import solo_beat_model_bench as M
+    from . import solo_beats
+
+    _need(data, M.SMALL)
+    if mode == "live":
+        urmp, chorales = data / "urmp" / "Dataset", data / "choralebricks" / "01_AudioAndAnnotations"
+        final = data / M.FINAL
+        for set_name in M.SETS:
+            for song in sorted(p for p in (data / M.SMALL / set_name).iterdir() if (p / "reference.json").exists()):
+                dest = final / set_name / song.name
+                dest.mkdir(parents=True, exist_ok=True)
+                if not (dest / "reference.json").exists():
+                    shutil.copy(song / "reference.json", dest / "reference.json")
+        with tempfile.TemporaryDirectory() as tmp:  # only the pieces the small0 folder has
+            pieces = Path(tmp)
+            for song in (data / M.SMALL / "urmp").iterdir():
+                if (urmp / song.name).is_dir():
+                    (pieces / song.name).symlink_to(urmp / song.name)
+            if urmp.is_dir():
+                solo_beats.urmp_songs(pieces, final, "final0")
+        if chorales.is_dir():
+            solo_beats.choralebricks_songs(chorales, data / "eval" / "choralebricks-brass4", final, "final0")
+    out: dict[str, float] = {}
+    for set_name in M.SETS:
+        if not M.parts(data, set_name):
+            raise SkipSuite(f"missing data: {M.FINAL}/{set_name} (final0 beats; made in live mode)")
+        metrics, _ = M.evaluate(data, set_name)
+        out.update({f"{set_name}.{k}": v for k, v in metrics.items()})
+    return out
+
+
 # -------------------------------------------------------------------- registry
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
@@ -778,6 +817,9 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
     Suite("solo-ondevice", "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
           _solo_ondevice, (ONDEVICE_REF, "runs/apple/entertainer-tpt1-30s.wav")),
+    Suite("solo-beat-model", "the solo path on Beat This! small0 (the device's) and final0 beats of every single part of URMP "
+          "and ChoraleBricks: onset and written-position F1, bar position and metre per checkpoint (cached beats and "
+          "transcriptions)", _solo_beat_model, ("runs/music-core/solo-beats",)),
     Suite("bass-tab", "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, "
           "range, playability, tempo and meter, hand travel (cached model outputs)", _bass_tab, ("eval/slakh-bass",)),
     Suite("guitar-tab", "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and "
