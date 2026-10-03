@@ -50,6 +50,8 @@ abstract class ScreenTest {
     fun startClean() {
         rule.enableAccessibilityChecks(ScreenAccessibility.validator())
         rule.activity.getSharedPreferences("engine", 0).edit().clear().commit()
+        // (On the JVM the app's time follows the wall's: the fixture computer's stages are kept short.)
+        if (ScreenDevice.JVM) container.fixtureStageSeconds = 0.2
         rule.runOnUiThread {
             container.firstRunDone = true
             vm.scores.value.forEach(vm::deleteEntry)

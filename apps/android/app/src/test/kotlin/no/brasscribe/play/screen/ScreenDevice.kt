@@ -278,13 +278,19 @@ object ScreenDevice {
      */
     fun waitUntil(rule: AppRule, ms: Long, condition: () -> Boolean) {
         val end = System.nanoTime() + ms * slower * 1_000_000
+        var last = System.nanoTime()
         while (true) {
             rule.waitForIdle()
-            if (frontWindow().isLayoutRequested) rule.waitForIdle()
+            frontWindow()
             if (condition()) return
             if (System.nanoTime() > end) throw AssertionError("not within $ms ms")
-            pass(rule, 50)
-            Thread.sleep(2)
+            Thread.sleep(5)
+            // The app's clock goes as fast as the wall's, and no faster: while a test waits for work on another thread
+            // (a file read, the fixture computer's answer), the app's own timers (a heartbeat, a "not found" after two
+            // minutes, a status that clears) must not run ahead and fire as they never would on a phone in that time.
+            val now = System.nanoTime()
+            pass(rule, ((now - last) / 1_000_000).coerceAtLeast(1))
+            last = now
         }
     }
 

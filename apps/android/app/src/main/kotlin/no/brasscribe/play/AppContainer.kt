@@ -188,6 +188,10 @@ class AppContainer(private val context: Context) {
 
     val usingFixture: Boolean get() = fixtureSource != null
 
+    /** Tests only: how long each of the fixture computer's stages takes. */
+    var fixtureStageSeconds: Double = 0.7
+        set(v) { field = v; cachedEngine = null }
+
     private var cachedEngine: Pair<String, EngineApi>? = null
 
     /**
@@ -202,7 +206,7 @@ class AppContainer(private val context: Context) {
         val key = if (usingFixture) "fixture" else "${settings.url}|${network?.networkHandle}"
         val api = cachedEngine?.takeIf { it.first == key }?.second ?: run {
             dropEngine()
-            val created: EngineApi = if (usingFixture) FixtureEngineApi(fixtureSource!!, stageSeconds = 0.7)
+            val created: EngineApi = if (usingFixture) FixtureEngineApi(fixtureSource!!, stageSeconds = fixtureStageSeconds)
             else KtorEngineApi(settings.url, httpEngine(network))
             cachedEngine = key to created
             created
