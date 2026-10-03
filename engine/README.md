@@ -133,9 +133,10 @@ pixi run test          # everything, and checks that openapi.json is up to date
 pixi run openapi       # rewrite openapi.json after an API change
 ```
 
-After an API change, also refresh the two copies made from it: `npm run gen:api` in `studio/` (Studio's types) and
-`./gradlew :engine-client:syncOpenApi` in `apps/android/`. The engine's tests fail while the Android copy is behind, and Studio's
-while its types are.
+After an API change, also refresh the copies made from it: `npm run gen:api` in `studio/` (Studio's types),
+`./gradlew :engine-client:syncOpenApi` in `apps/android/`, and a copy into
+`apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/` (then the Windows DTOs, until `OpenApiContractTests` pass). The
+engine's tests fail while the Android or Windows copy is behind, and Studio's while its types are.
 
 `scripts/check.sh fast engine` and `full engine` are the same tiers
 ([docs/dev/verify.md](../docs/dev/verify.md)). Tests that need recordings or reference output under

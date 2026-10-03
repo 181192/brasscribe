@@ -135,6 +135,13 @@ def test_the_android_client_vendors_the_committed_openapi():
         "apps/android/engine-client/openapi.json is stale: run `./gradlew :engine-client:syncOpenApi` in apps/android"
 
 
+def test_the_windows_contract_snapshot_is_the_committed_openapi():
+    """Play for Windows checks its DTOs against this copy (OpenApiContractTests)."""
+    snapshot = ENGINE.parent / "apps" / "windows" / "tests" / "Brasscribe.Play.Core.Tests" / "Fixtures" / "openapi.json"
+    assert snapshot.read_bytes() == (ENGINE / "openapi.json").read_bytes(), \
+        f"{snapshot.relative_to(ENGINE.parent)} is stale: copy engine/openapi.json there and run the Windows tests"
+
+
 def test_serve_banner_lists_lan_url_and_pairing_code(settings):
     from brasscribe_engine.cli import serve_banner
 

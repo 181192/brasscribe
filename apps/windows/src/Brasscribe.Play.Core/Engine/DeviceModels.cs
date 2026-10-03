@@ -24,7 +24,8 @@ public sealed record RotateResponse(string Token, string DeviceId);
 public sealed record PairRequestCreate(string? DeviceName = null, string? Platform = null);
 
 /// <summary>The waiting request, with the match code both screens show.</summary>
-public sealed record PairRequestInfo(string RequestId, string Name, string Platform, string MatchCode, string CreatedAt, string Status);
+public sealed record PairRequestInfo(string RequestId, string Name, string Platform, string MatchCode, string CreatedAt, string Status,
+    bool NameInUse = false);
 
 /// <summary>GET /v1/pair/requests/{id}: pending, denied, or approved with the token (handed out once).</summary>
 public sealed record PairRequestResult(
