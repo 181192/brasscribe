@@ -70,10 +70,13 @@ jobs:
           git diff --exit-code -- bindings swift android \
             || { echo "::error::Bindings are stale; run core/scripts/bindings.sh and commit the result."; exit 1; }
 
-      # Archived here: artifact uploads do not keep the executable bit.
+      # Archived here: artifact uploads do not keep the executable bit. On Windows with the C runtime
+      # linked in, so a PC without the Visual C++ runtime (vcruntime140.dll) can run it. Only the
+      # command line is built here, so the flag does not reach the FFI library.
       - name: Build the CLI
         if: ${{ inputs.release }}
         run: |
+          if [ "$RUNNER_OS" = Windows ]; then export RUSTFLAGS="-C target-feature=+crt-static"; fi
           cargo build --release --locked -p brasscribe-cli
           name="brasscribe-core-${{ matrix.artifact }}"; name="${name/dist-core-cli-/}"
           mkdir -p "$RUNNER_TEMP/out"
@@ -81,6 +84,22 @@ jobs:
             (cd target/release && 7z a -bd "$RUNNER_TEMP/out/$name.zip" brasscribe-core.exe >/dev/null)
           else
             tar -czf "$RUNNER_TEMP/out/$name.tar.gz" -C target/release brasscribe-core
+          fi
+
+      # The DLLs the exe loads, from its import table: system DLLs only, no Visual C++ runtime
+      # (vcruntime, msvcp) and no dynamic Universal CRT (api-ms-win-crt-*, ucrtbase).
+      - name: The Windows CLI needs no C runtime DLL
+        if: ${{ inputs.release && runner.os == 'Windows' }}
+        run: |
+          rustup component add llvm-tools
+          host="$(rustc -vV | sed -n 's/^host: //p')"
+          readobj="$(rustc --print sysroot)/lib/rustlib/$host/bin/llvm-readobj.exe"
+          dlls="$("$readobj" --coff-imports target/release/brasscribe-core.exe | sed -n 's/^ *Name: //p' | sort -fu)"
+          echo "brasscribe-core.exe imports:"; echo "$dlls"
+          grep -qi '^kernel32\.dll$' <<<"$dlls" || { echo "::error::no imports read from brasscribe-core.exe"; exit 1; }
+          if grep -iE '^(vcruntime|msvcp|ucrtbase|api-ms-win-crt-)' <<<"$dlls"; then
+            echo "::error::brasscribe-core.exe needs a C runtime DLL; build it with -C target-feature=+crt-static"
+            exit 1
           fi
 
       - uses: actions/upload-artifact@v7
