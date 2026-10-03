@@ -187,10 +187,44 @@ val tabFont = tasks.register<Sync>("syncFretscribeTabFont") {
     into("assets/licences") { from(fonts) { include("OFL-FretscribeTab.txt"); rename { "fretscribe-tab-OFL.txt" } } }
 }
 
+/**
+ * Fails when any ONNX Runtime component (provider, receiver, service, activity) is in a variant's merged manifest.
+ * The AAR adds its telemetry provider, the app's manifest removes it (tools:node="remove"); a new AAR, a renamed
+ * class or a lost line would bring it, or something like it, back.
+ */
+abstract class VerifyNoOrtTelemetry : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val mergedManifest: RegularFileProperty
+
+    @get:OutputFile
+    abstract val report: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        val manifest = mergedManifest.get().asFile.readText()
+        val found = Regex("""android:(?:name|authorities)="([^"]*onnxruntime[^"]*)"""").findAll(manifest).map { it.groupValues[1] }.toList()
+        check(found.isEmpty()) {
+            "ONNX Runtime components are in ${mergedManifest.get().asFile}: $found. " +
+                "Remove them in app/src/main/AndroidManifest.xml (tools:node=\"remove\")."
+        }
+        report.get().asFile.writeText("no ONNX Runtime component\n")
+    }
+}
+
 androidComponents {
     // Fretscribe has no release build yet.
     beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
     onVariants { variant ->
+        val variantName = variant.name.replaceFirstChar(Char::uppercase)
+        val verifyOrt = tasks.register<VerifyNoOrtTelemetry>("verifyNoOrtTelemetry$variantName") {
+            mergedManifest.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
+            report.set(layout.buildDirectory.file("reports/ort-telemetry/${variant.name}.txt"))
+        }
+        // Every APK and bundle, every install, and every unit-test run (the fast checks) goes through the check.
+        val checked = setOf("assemble", "package", "bundle", "install").map { "$it$variantName" }.toSet() +
+            "test${variantName}UnitTest"
+        tasks.matching { it.name in checked }.configureEach { dependsOn(verifyOrt) }
         val product = variant.productFlavors.single { it.first == "product" }.second
         fun generated(path: String) = layout.buildDirectory.dir("generated/$path").get().asFile.path
         variant.sources.kotlin?.addStaticSourceDirectory(File(designs.getValue(product).dist, "android/kotlin").path)

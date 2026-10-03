@@ -104,6 +104,8 @@ public struct EngineConfiguration: Equatable, Sendable {
         env["BRASSCRIBE_COMPUTER_NAME"] = computerName
         env["BRASSCRIBE_ADMIN_TOKEN"] = adminToken
         env["PYTHONUNBUFFERED"] = "1"
+        // ONNX Runtime (in the adapters) reports to Microsoft unless this is set.
+        env["ORT_DISABLE_TELEMETRY"] = "1"
         env.removeValue(forKey: "BRASSCRIBE_TOKEN")
         if let bandSounds { env["BRASSCRIBE_BAND_SOUNDS_DIR"] = bandSounds.path }
         env["BRASSCRIBE_MODELS"] = source.modelsFolder(paths: paths).path

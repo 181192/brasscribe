@@ -56,9 +56,10 @@ CREDENTIAL_ENV = ("BRASSCRIBE_ADMIN_TOKEN", "BRASSCRIBE_ADMIN_TOKEN_FILE", "BRAS
 
 
 def child_env(extra: dict[str, str] | None = None) -> dict[str, str]:
-    """The environment for a program the engine starts: its own, without the credentials, plus `extra`."""
+    """The environment for a program the engine starts: its own, without the credentials, plus `extra`.
+    ONNX Runtime in an adapter reports to Microsoft unless ORT_DISABLE_TELEMETRY is set, so it always is."""
     env = {k: v for k, v in os.environ.items() if k not in CREDENTIAL_ENV}
-    return {**env, **(extra or {})}
+    return {**env, **(extra or {}), "ORT_DISABLE_TELEMETRY": "1"}
 
 
 def _env_flag(name: str, default: bool) -> bool:
