@@ -40,17 +40,16 @@ class PrintEveryPartTest : ScreenTest() {
     /** The jobs [files] make: each job's name and its file's pages. */
     private fun jobs(files: List<ExportFile>): List<Pair<String, Int?>> {
         val exporter = Exporter(rule.activity, container.core)
-        val jobs = ArrayList<Pair<String, Int?>>()
-        exporter.printJob = { _, name, file -> jobs += name to PdfJoin.pageCount(file.readBytes()) }
-        rule.runOnUiThread { exporter.print(rule.activity, files) }
-        return jobs
+        val jobs = kotlinx.coroutines.runBlocking { exporter.printJobs(files, "Abide - With Me") }
+        return jobs.map { (name, file) -> name to PdfJoin.pageCount(file.readBytes()) }
     }
 
     @Test
     fun everyPartIsOnePrintJob() {
         val parts = listOf(pdf("Old Hundredth - Solo Cornet", "Solo Cornet", 2), pdf("Old Hundredth - Repiano Cornet", "Repiano", 1),
             pdf("Old Hundredth - Flugelhorn", "Flugelhorn", 3))
-        assertEquals(listOf("Old Hundredth" to 6), jobs(parts))
+        // Named by the score's title, whole, also when it has " - " in it.
+        assertEquals(listOf("Abide - With Me" to 6), jobs(parts))
     }
 
     @Test

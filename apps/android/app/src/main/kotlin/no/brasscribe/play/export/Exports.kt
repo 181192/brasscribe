@@ -146,30 +146,27 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         return Intent.createChooser(send, null)
     }
 
-    /** Starts one print job of the PDF [file], named [name]: the system's print dialog. Tests count the jobs here. */
-    @androidx.annotation.VisibleForTesting
-    internal var printJob: (android.app.Activity, String, File) -> Unit = { activity, name, file ->
-        activity.getSystemService(android.print.PrintManager::class.java)?.print(name, PdfPrintAdapter(file), null)
-    }
-
     /**
-     * Sends [pdfs] to the system print dialog as one job: one file as it is, several (every player's part) joined page
-     * after page into one PDF ([PdfJoin]), so the band's parts are one print, not a dialog for each. Files that can't be
-     * joined are printed one job each, as before.
+     * The print jobs for [pdfs] of the score [title], each a name and a PDF: one file as it is; several (every player's
+     * part) joined page after page into one PDF ([PdfJoin]), so the band's parts are one print, not a dialog for each.
+     * Files that can't be joined are one job each, as before. The files are read, joined and written off the main thread.
      */
-    fun print(activity: android.app.Activity, pdfs: List<ExportFile>) {
-        val first = pdfs.firstOrNull() ?: return
-        if (pdfs.size == 1) { printJob(activity, first.file.nameWithoutExtension, first.file); return }
+    suspend fun printJobs(pdfs: List<ExportFile>, title: String): List<Pair<String, File>> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val single = pdfs.singleOrNull()
+        if (single != null || pdfs.isEmpty()) return@withContext pdfs.map { it.file.nameWithoutExtension to it.file }
         val joined = runCatching { PdfJoin.join(pdfs.map { it.file.readBytes() }) }.getOrNull()
         if (joined == null) {
             android.util.Log.w(no.brasscribe.play.PlayViewModel.TAG, "the parts could not be joined: one print job each")
-            pdfs.forEach { printJob(activity, it.file.nameWithoutExtension, it.file) }
-            return
+            return@withContext pdfs.map { it.file.nameWithoutExtension to it.file }
         }
-        // "Old Hundredth - Solo Cornet": the job is named by the score.
-        val name = first.file.nameWithoutExtension.substringBefore(" - ")
-        val all = File(dir, "$name.parts.pdf").apply { writeBytes(joined) }
-        printJob(activity, name, all)
+        val name = title.ifBlank { "score" }
+        listOf(name to File(dir, "${safe(name).ifBlank { "score" }}.parts.pdf").apply { writeBytes(joined) })
+    }
+
+    /** Sends the PDF [file] to the system print dialog as one job named [name] (on the main thread). */
+    fun print(activity: android.app.Activity, name: String, file: File) {
+        val pm = activity.getSystemService(android.print.PrintManager::class.java) ?: return
+        pm.print(name, PdfPrintAdapter(file), null)
     }
 
     /** Writes the files into a folder the user picked (Storage Access Framework tree). */

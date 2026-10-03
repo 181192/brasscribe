@@ -3,6 +3,7 @@ package no.brasscribe.play.export
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Every part as one PDF: the files are joined page after page, each page's drawing as it was. */
@@ -98,5 +99,47 @@ class PdfJoinTest {
         val length = Regex("""/Length (\d+)""").find(text(ok))!!
         val longer = text(ok).replaceRange(length.groups[1]!!.range, (length.groupValues[1].toInt() + 100_000).toString())
         assertNull(PdfJoin.join(listOf(ok, longer.toByteArray(Charsets.ISO_8859_1))))
+    }
+
+    /** One page drawing [mark], with [title] as a string in its page, its page object of generation [generation], and a trailer /Size of [size]. */
+    private fun odd(mark: String, title: String, generation: Int, size: Int): ByteArray {
+        val content = "BT /F1 12 Tf 72 720 Td ($mark) Tj ET\n"
+        val objects = listOf(
+            0 to "<< /Type /Catalog /Pages 2 0 R >>",
+            0 to "<< /Type /Pages /Kids [4 $generation R] /Count 1 /MediaBox [0 0 595 842] >>",
+            0 to "<< /Length ${content.length} >>\nstream\n${content}endstream",
+            generation to "<< /Type /Page /Parent 2 0 R /Contents 3 0 R /T ($title) >>",
+        )
+        val out = StringBuilder("%PDF-1.4\n")
+        val offsets = objects.mapIndexed { i, (g, body) -> out.length.also { out.append("${i + 1} $g obj\n$body\nendobj\n") } }
+        val xref = out.length
+        out.append("xref\n0 5\n0000000000 65535 f \n")
+        offsets.forEachIndexed { i, o -> out.append("%010d %05d n \n".format(o, objects[i].first)) }
+        out.append("trailer\n<< /Size $size /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n")
+        return out.toString().toByteArray(Charsets.ISO_8859_1)
+    }
+
+    @Test
+    fun textGenerationsAndNumbersStayAsTheyWere() {
+        // A title that reads like references, a page of generation 2, and a trailer whose /Size is far too large.
+        val first = odd("Solo Cornet", "Bar 1 0 R \\) 2 0 R", generation = 2, size = 9999)
+        val joined = PdfJoin.join(listOf(pdf("Flugelhorn", 1), first))!!
+        val t = text(joined)
+        assertTrue("the title's text is as it was", t.contains("/T (Bar 1 0 R \\) 2 0 R)"))
+        val xref = Regex("""startxref\s+(\d+)""").find(t)!!.groupValues[1].toInt()
+        val entries = Regex("""(\d{10}) (\d{5}) ([nf]) ?\r?\n""").findAll(t.substring(xref)).toList()
+        var gen2 = 0
+        entries.forEachIndexed { number, e ->
+            if (e.groupValues[3] != "n") return@forEachIndexed
+            val g = e.groupValues[2].toInt()
+            if (g == 2) gen2++
+            assertEquals("object $number", "$number $g obj", t.substring(e.groupValues[1].toInt()).substringBefore('\n'))
+        }
+        assertEquals("the page of generation 2 keeps it in the table", 1, gen2)
+        // Its reference to the page kept generation 2 as well.
+        assertTrue(Regex("""/Kids \[\d+ 2 R]""").containsMatchIn(t))
+        // No run of thousands of free numbers from a /Size too large.
+        assertTrue("the numbers are what the files use (${entries.size})", entries.size < 30)
+        assertEquals(2, PdfJoin.pageCount(joined))
     }
 }

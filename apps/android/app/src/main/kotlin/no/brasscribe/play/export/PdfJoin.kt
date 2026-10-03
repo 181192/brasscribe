@@ -18,12 +18,13 @@ object PdfJoin {
         fun write(s: String) = out.write(s.toByteArray(Charsets.ISO_8859_1))
         write("%PDF-1.4\n%âãÏÓ\n")
         val offsets = HashMap<Int, Int>()
+        val generations = HashMap<Int, Int>()
         val treeNumber = docs.sumOf { it.size } + 1
         val catalogNumber = treeNumber + 1
         val roots = ArrayList<Int>()
         var base = 0
         for (doc in docs) {
-            fun moved(text: String) = REF.replace(text) { m -> "${m.groupValues[1].toInt() + base} ${m.groupValues[2]} R" }
+            fun moved(text: String) = outsideStrings(text) { part -> REF.replace(part) { m -> "${m.groupValues[1].toInt() + base} ${m.groupValues[2]} R" } }
             for ((number, obj) in doc.objects.toSortedMap()) {
                 // The file's catalog is replaced by the joined file's.
                 if (number == doc.catalog) continue
@@ -31,6 +32,7 @@ object PdfJoin {
                 // The file's page tree hangs from the joined one.
                 if (number == doc.pageTree) head = head.replaceFirst("<<", "<< /Parent $treeNumber 0 R")
                 offsets[number + base] = out.size()
+                generations[number + base] = obj.generation
                 write("${number + base} ${obj.generation} obj\n")
                 write(head.trim())
                 obj.stream?.let { data -> write("\nstream\n"); out.write(data); write("\nendstream") }
@@ -47,7 +49,7 @@ object PdfJoin {
         val xref = out.size()
         // Each entry is 20 bytes; numbers not used are free.
         write("xref\n0 $size\n0000000000 65535 f \n")
-        for (n in 1 until size) write(offsets[n]?.let { "%010d 00000 n \n".format(it) } ?: "0000000000 65535 f \n")
+        for (n in 1 until size) write(offsets[n]?.let { "%010d %05d n \n".format(it, generations[n] ?: 0) } ?: "0000000000 65535 f \n")
         write("trailer\n<< /Size $size /Root $catalogNumber 0 R >>\nstartxref\n$xref\n%%EOF\n")
         return out.toByteArray()
     }
@@ -130,7 +132,38 @@ object PdfJoin {
         val tree = objects[pageTree]?.head ?: return null
         if ("/Parent" in tree || !tree.trimStart().startsWith("<<")) return null
         val count = Regex("""/Count\s+(\d+)""").find(tree)?.groupValues?.get(1)?.toInt() ?: return null
-        return Doc(objects, catalog, pageTree, count, maxOf(size, (objects.keys.maxOrNull() ?: 0) + 1))
+        // The numbers it uses, whatever its trailer says: a /Size far too large would leave a gap of free numbers.
+        if (size <= 0) return null
+        return Doc(objects, catalog, pageTree, count, (objects.keys.maxOrNull() ?: 0) + 1)
+    }
+
+    /**
+     * [text] with [change] applied to what is outside its literal strings: "(1 0 R)" in a title is text, not a reference.
+     */
+    private fun outsideStrings(text: String, change: (String) -> String): String {
+        val out = StringBuilder()
+        var from = 0
+        var i = 0
+        while (i < text.length) {
+            if (text[i] == '(') {
+                out.append(change(text.substring(from, i)))
+                val start = i
+                var nest = 0
+                while (i < text.length) {
+                    when (text[i]) {
+                        '\\' -> i++
+                        '(' -> nest++
+                        ')' -> if (--nest == 0) break
+                    }
+                    i++
+                }
+                i = minOf(i + 1, text.length)
+                out.append(text, start, i)
+                from = i
+            } else i++
+        }
+        out.append(change(text.substring(from)))
+        return out.toString()
     }
 
     private fun skipSpace(text: String, from: Int): Int {

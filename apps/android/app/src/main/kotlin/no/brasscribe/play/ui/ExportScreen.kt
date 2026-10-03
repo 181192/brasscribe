@@ -113,7 +113,12 @@ fun ExportScreen(vm: PlayViewModel) {
         bottom = {
             if (print) PrimaryButton(stringResource(R.string.export_print), {
                 // Every part: one print job, the players' PDFs one after another.
-                make { files -> exporter.print(context as Activity, files.filter { it.format == ExportFormat.PDF }) }
+                make { files ->
+                    scope.launch {
+                        val jobs = exporter.printJobs(files.filter { it.format == ExportFormat.PDF }, r.composition?.title.orEmpty())
+                        jobs.forEach { (name, file) -> exporter.print(context as Activity, name, file) }
+                    }
+                }
             }, icon = R.drawable.ic_bc_print, modifier = Modifier.semantics { testTag = "print" })
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                 val share = stringResource(R.string.export_share)
