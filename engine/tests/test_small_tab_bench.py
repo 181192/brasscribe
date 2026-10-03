@@ -53,6 +53,13 @@ def test_the_high_g_chords_have_their_fourth_string_above_their_third():
     assert sorted((n["string"], n["pitch"]) for n in mandolin) == [(1, 79), (2, 71), (3, 62), (4, 55)]  # G: 0023
 
 
+def test_every_preset_has_its_sounding_octave_pinned():
+    """A strum's partials read as an octave lower (sounding_shift's ratio up to 0.32 on rendered strums, against 0.25):
+    the reference octave is pinned per preset, not read from each passage."""
+    assert {preset for _, preset, *_ in B.GROUPS.values()} <= set(B.SOUNDING)
+    assert set(B.SOUNDING.values()) == {0}
+
+
 def test_the_bank_is_selected_before_the_program():
     mid = B.midi_file([(8, 24, False, [(67, 0.0, 0.5, 90)]), (0, 33, False, [(36, 0.0, 0.5, 90)]), (0, 0, True, [(36, 0.0, 0.1, 90)])], 120.0)
     lead = [m for m in mid.tracks[0] if not m.is_meta]
