@@ -6721,7 +6721,7 @@
         ]
       },
       "patch": {
-        "description": "Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML, the\ntalking score, and a tab's text and playing instructions. Rendered files (PDF, braille, MIDI, audio) keep\nthe title they were made with.",
+        "description": "Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML, the\ntalking score, and a tab's text and playing instructions. Its PDFs, MIDI and braille are made again with\nthe new title after the response, one run at a time; until they are, they keep the old title (and so do\nthe PDFs and MIDI on an engine without MuseScore). The audio has no title.",
         "operationId": "updateRun",
         "parameters": [
           {

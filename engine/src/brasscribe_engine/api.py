@@ -577,8 +577,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                responses={404: {"description": "unknown run"}, 409: {"description": "run is queued or running"}})
     def update_run(job_id: str, body: m.RunUpdate) -> m.Job:
         """Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML, the
-        talking score, and a tab's text and playing instructions. Rendered files (PDF, braille, MIDI, audio) keep
-        the title they were made with."""
+        talking score, and a tab's text and playing instructions. Its PDFs, MIDI and braille are made again with
+        the new title after the response, one run at a time; until they are, they keep the old title (and so do
+        the PDFs and MIDI on an engine without MuseScore). The audio has no title."""
         title = body.title.strip()
         if not title:
             raise HTTPException(422, "title must not be blank")
