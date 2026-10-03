@@ -99,6 +99,8 @@ object Product {
      * has: it is sent again. Named by the song, with the kind of file it is (the copy has no name of its own).
      */
     fun keptRecording(vm: PlayViewModel): no.brasscribe.play.engine.UploadSource? {
+        // Only for the song on screen written down again: a first send is of the recording opened, never of another song's.
+        if (vm.profile.value?.writesTab != true || SongAnswers.of(vm.source.value).again == null) return null
         val job = vm.result.value?.jobId ?: return null
         val file = PracticeRecordings.of(vm.getApplication()).find(job) ?: return null
         val name = (vm.source.value?.name ?: vm.result.value?.composition?.title).orEmpty().substringBeforeLast('.').ifBlank { "recording" }
