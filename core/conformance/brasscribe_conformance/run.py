@@ -66,6 +66,20 @@ def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
     raise ValueError(case.kind)
 
 
+def _entry(args, case: Case, d: Path, rows: list, t_py: float, t_rs: float) -> dict:
+    return {"case": case.id, "ok": all(r[1] for r in rows), "py_s": round(t_py, 2), "rs_s": round(t_rs, 3),
+            "checks": [{"file": n, "ok": s, "detail": det} for n, s, det in rows],
+            "paths": {"py": str((d / "py").relative_to(args.work)), "rust": str((d / "rust").relative_to(args.work))}}
+
+
+def _print(case: Case, rows: list, t_py: float, t_rs: float) -> None:
+    mark = "OK  " if all(r[1] for r in rows) else "DIFF"
+    print(f"{mark} {case.id:70s} py {t_py:6.2f}s rs {t_rs:6.3f}s files {sum(r[1] for r in rows)}/{len(rows)}", flush=True)
+    for n, s, det in rows:
+        if not s:
+            print(f"     {n}: {det[:1500]}")
+
+
 def outputs_of(ref_dir: Path, kind: str) -> list[str]:
     """Every symbolic file the reference wrote (relative paths), scores and parts included."""
     names = set(OUTPUTS[kind])
@@ -164,6 +178,18 @@ def main() -> None:
     for case in cases:
         d = args.work / case.id
         py, rs = d / "py", d / "rust"
+        if case.kind == "talking":
+            if binary is None:
+                continue
+            for out in (py, rs):
+                shutil.rmtree(out, ignore_errors=True)
+                out.mkdir(parents=True)
+            t0 = time.time()
+            rows = extras.talking_rows(binary, case.args["dir"], py, rs) or [("talking", False, "no score")]
+            t_py = t_rs = time.time() - t0
+            results.append(_entry(args, case, d, rows, t_py, t_rs))
+            _print(case, rows, t_py, t_rs)
+            continue
         if case.kind == "layers" and "song" in case.args:
             synth_layers(case.args["song"], case.args["layers"])
         t0 = time.time()
@@ -196,20 +222,13 @@ def main() -> None:
                 rows += [(f"golden:{n}", s, det) for n, s, det in compare(case.golden, rs, gold)]
             else:
                 rows.append(("golden", False, f"missing: no golden output in {case.golden}"))
-        ok = all(r[1] for r in rows)
-        entry = {"case": case.id, "ok": ok, "py_s": round(t_py, 2), "rs_s": round(t_rs, 3),
-                 "checks": [{"file": n, "ok": s, "detail": det} for n, s, det in rows],
-                 "paths": {"py": str(py.relative_to(args.work)), "rust": str(rs.relative_to(args.work))}}
+        entry = _entry(args, case, d, rows, t_py, t_rs)
         if args.musescore and p.returncode == 0 and case.kind in ("layers", "song", "bench"):
             ms_items.append((case.id, rs / "brass-band.musicxml", rs / "composition.json"))
         elif args.musescore and p.returncode == 0 and case.kind == "lead":
             ms_items.append((case.id, rs / "lead.musicxml", None))
         results.append(entry)
-        mark = "OK  " if ok else "DIFF"
-        print(f"{mark} {case.id:70s} py {t_py:6.2f}s rs {t_rs:6.3f}s files {sum(r[1] for r in rows)}/{len(rows)}", flush=True)
-        for n, s, det in rows:
-            if not s:
-                print(f"     {n}: {det[:1500]}")
+        _print(case, rows, t_py, t_rs)
     if ms_items:
         ms = musescore_batch(ms_items)
         for r in results:

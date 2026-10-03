@@ -420,6 +420,15 @@ staves the notation staff gets only the slurs and the x noteheads.
 | let ring | the words "let ring" where a run of ringing notes starts, and `<tied type="let-ring">` on each |
 | dead note | `<notehead>x</notehead>` |
 
+- The note a technique comes from is the latest note before it on the same string: string 1 fret 3,
+  the open sixth string, then a slide to string 1 fret 5 slides from fret 3. It is linked only when
+  the string is silent for at most an eighth between the two, counted from where the earlier note
+  ends as played (also when it is held under later notes), with no bar line in that silence, and no
+  note without a place (which might have been on the string) came after its chord. Otherwise nothing
+  is linked, though the solver and `check` still mean the note before in time. The text exports use
+  the same note.
+- Slurs and slides open at the same time have numbers of their own, 1 to 8 on each staff (the tab
+  staff of a pair uses 9 to 16).
 - A tied note carries the marks that end on it on its first piece and the marks that leave it on its
   last.
 - A bend is only written when the note it comes from is 1 to 4 semitones lower.
@@ -552,8 +561,9 @@ h  hammer-on
 - **Techniques:** `h`, `p`, `/`, `\` and `b` stand before the note they lead to (`5h7`, `7p5`,
   `5/7`, `7\5`, `7b9`); `~` after a note with vibrato; `x` in place of the fret of a dead note;
   `let ring` above the first note that rings, shortened to `l.r.` or `r` where the next one leaves
-  no room. A slide is drawn `\` only when the note before it is on the same string and higher up;
-  a slide or bend that comes from another string keeps its mark, and no fret is taken as its start.
+  no room. A slide is drawn `\` only when the note it comes from (the one the MusicXML links it
+  from, on the same string) is higher up; a slide or bend with no such note keeps its mark, and no
+  fret is taken as its start.
 - **Doubt and range:** a `?` above the column of a doubtful note (`TabOptions::doubt_below`; 0
   writes none), never a parenthesis. A `!` above the column of a note that is not on the lines,
   which the legend names with its bar. There are two kinds, and the legend says which:
@@ -644,7 +654,7 @@ Takt 1
 - **Repeats:** a bar with the same lines as an earlier bar says `Same as bar 1.` (`Samme som takt
   1.`).
 - **Techniques:** hammer-on, pull-off, slide and bend are said on the note they lead to, a slide and
-  a bend with the fret they come from when the note before is on the same string (`slide from fret
+  a bend with the fret they come from when the MusicXML links them from a note (`slide from fret
   5`, else `slide`); vibrato, dead note and let ring on their own note (let ring where the ringing
   starts, once for a chord).
 - **Doubt and range:** a doubtful note is `to check`; a note without a place is named by its pitch

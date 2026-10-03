@@ -8,6 +8,10 @@
 //!    onset and the silence before that onset is at most `MAX_HELD_GAP`;
 //!    otherwise it is written as the readable value nearest its performed
 //!    length. A note performed under half its written length gets a staccato mark.
+//!    With [`WriteOptions::keep_grid`] a detached note only takes the values of its
+//!    beat's grid ([`beat_values`]).
+
+use std::collections::{HashMap, HashSet};
 
 use crate::model::TICKS_PER_BEAT;
 use crate::quantize::{BeatMap, QNote};
@@ -18,6 +22,12 @@ pub const MAX_HELD_GAP: f64 = 18.0;
 pub const STACCATO_RATIO: f64 = 0.5;
 /// Readable written lengths in ticks (24 per beat).
 pub const READABLE: [i64; 10] = [6, 8, 12, 16, 18, 24, 36, 48, 72, 96];
+/// The readable lengths of a beat quantized in 1, 2, 4 or 8: multiples of a 16th.
+pub const STRAIGHT: [i64; 8] = [6, 12, 18, 24, 36, 48, 72, 96];
+/// The readable lengths of a beat quantized in 3 or 6: multiples of a triplet 8th.
+pub const TRIPLET: [i64; 6] = [8, 16, 24, 48, 72, 96];
+/// Where in a beat (ticks) only a grid of 3 or 6 puts an onset.
+pub const TRIPLET_SLOTS: [i64; 4] = [4, 8, 16, 20];
 /// SwiftF0 frame period (s).
 pub const FRAME: f64 = 0.016;
 
@@ -157,8 +167,31 @@ fn stub(start: i64, end: i64) -> bool {
     crate::py::floordiv(start, b) != crate::py::floordiv(end - 1, b) && (e == 6 || e == 18) && e < end - start
 }
 
-fn readable(performed: f64, room: Option<i64>, start: i64) -> i64 {
-    let mut cands: Vec<i64> = READABLE.iter().copied().filter(|&c| room.map_or(true, |r| c <= r)).collect();
+/// The readable lengths of each beat (index from tick 0) that holds a start of `notes`:
+/// [`TRIPLET`] where a note starts on a slot only a grid of 3 or 6 has, else [`STRAIGHT`].
+pub fn beat_values(notes: &[QNote]) -> HashMap<i64, &'static [i64]> {
+    let beat = |q: &QNote| crate::py::floordiv(q.start, TICKS_PER_BEAT);
+    let triplet: HashSet<i64> = notes.iter().filter(|q| TRIPLET_SLOTS.contains(&crate::py::pymod(q.start, TICKS_PER_BEAT))).map(beat).collect();
+    notes.iter().map(|q| (beat(q), if triplet.contains(&beat(q)) { &TRIPLET[..] } else { &STRAIGHT[..] })).collect()
+}
+
+/// A note ending at `end` ends on a slot of the grid of the beat it ends in: one of a grid of 3 or 6
+/// in a beat of [`TRIPLET`] values, one of a straight grid (32nds included) in any other.
+fn ends_on_grid(end: i64, values: &HashMap<i64, &'static [i64]>) -> bool {
+    let at = crate::py::pymod(end, TICKS_PER_BEAT);
+    let triplet = values.get(&crate::py::floordiv(end, TICKS_PER_BEAT)).is_some_and(|v| *v == &TRIPLET[..]);
+    at == 0 || at % (if triplet { 4 } else { 3 }) == 0
+}
+
+fn readable(performed: f64, room: Option<i64>, start: i64, values: &[i64], grids: Option<&HashMap<i64, &'static [i64]>>) -> i64 {
+    let mut cands: Vec<i64> = values.iter().copied().filter(|&c| room.map_or(true, |r| c <= r)).collect();
+    // Also end on the grid of the beat the note ends in, where a value can.
+    if let Some(g) = grids {
+        let on: Vec<i64> = cands.iter().copied().filter(|&c| ends_on_grid(start + c, g)).collect();
+        if !on.is_empty() {
+            cands = on;
+        }
+    }
     if let Some(r) = room {
         if !cands.contains(&r) && r <= READABLE[READABLE.len() - 1] {
             cands.push(r);
@@ -179,13 +212,15 @@ fn readable(performed: f64, room: Option<i64>, start: i64) -> i64 {
     best
 }
 
-/// Part-writing choices of [`written_durations`] (both 0 by default).
+/// Part-writing choices of [`written_durations`] (0 and off by default).
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct WriteOptions {
     /// Write every note whose next onset is at most this far away (ticks) up to it.
     pub hold_within: i64,
     /// The shortest value a detached note gets (ticks).
     pub min_detached: i64,
+    /// A detached note takes only the values of its beat's grid ([`beat_values`]).
+    pub keep_grid: bool,
 }
 
 /// Written length and staccato flag per note of one voice (chords share an
@@ -210,6 +245,7 @@ pub fn written_durations_with(notes: &[QNote], bm: Option<&BeatMap>, o: WriteOpt
         Some(bm) => notes.iter().map(|q| (bm.to_beats(q.offset_s) - bm.to_beats(q.onset_s)).max(0.0) * TICKS_PER_BEAT as f64).collect(),
         None => notes.iter().map(|q| (q.end - q.start) as f64).collect(),
     };
+    let values = if o.keep_grid { beat_values(notes) } else { HashMap::new() };
     notes
         .iter()
         .zip(perf)
@@ -218,7 +254,7 @@ pub fn written_durations_with(notes: &[QNote], bm: Option<&BeatMap>, o: WriteOpt
             let dur = match room {
                 Some(r) if r <= o.hold_within || (p >= LEGATO_RATIO * r as f64 && r as f64 - p <= MAX_HELD_GAP) => r,
                 _ => {
-                    let d = readable(p, room, q.start);
+                    let d = readable(p, room, q.start, values.get(&crate::py::floordiv(q.start, TICKS_PER_BEAT)).copied().unwrap_or(&READABLE[..]), o.keep_grid.then_some(&values));
                     if d < o.min_detached {
                         room.map_or(o.min_detached, |r| o.min_detached.min(r))
                     } else {

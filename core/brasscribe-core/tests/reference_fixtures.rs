@@ -231,7 +231,7 @@ fn free_time_plans_match_reference() {
 
 #[test]
 fn contour_offsets_and_written_durations_match_reference() {
-    use brasscribe_core::durations::{contour_offsets, written_durations, Contour, ContourSettings, SEPARATED_STEM};
+    use brasscribe_core::durations::{contour_offsets, written_durations, written_durations_with, Contour, ContourSettings, WriteOptions, SEPARATED_STEM};
     use brasscribe_core::quantize::{BeatMap, QNote};
     for (i, c) in load("durations").iter().enumerate() {
         let contour = Contour::from_hz(f64s(&c["t"]), &f64s(&c["hz"]), f64s(&c["db"]));
@@ -266,6 +266,11 @@ fn contour_offsets_and_written_durations_match_reference() {
         let got: Vec<(i64, f64, bool)> = w.iter().map(|x| (x.dur, x.performed, x.staccato)).collect();
         let want: Vec<(i64, f64, bool)> = c["written"].as_array().unwrap().iter().map(|x| (x[0].as_i64().unwrap(), x[1].as_f64().unwrap(), x[2].as_bool().unwrap())).collect();
         assert_eq!(got, want, "written durations case {i}");
+        let o = WriteOptions { keep_grid: true, ..WriteOptions::default() };
+        let w = written_durations_with(&q, if c["use_beat_map"].as_bool().unwrap() { Some(&bm) } else { None }, o);
+        let got: Vec<(i64, f64, bool)> = w.iter().map(|x| (x.dur, x.performed, x.staccato)).collect();
+        let want: Vec<(i64, f64, bool)> = c["written_on_grid"].as_array().unwrap().iter().map(|x| (x[0].as_i64().unwrap(), x[1].as_f64().unwrap(), x[2].as_bool().unwrap())).collect();
+        assert_eq!(got, want, "written durations on the beats' grids case {i}");
     }
 }
 

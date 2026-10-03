@@ -115,7 +115,10 @@ Cases: the Mikkel layers (with the SwiftF0 contour) and its option variants
 `data/eval/*` the song arrangement, the lead sheet, synthetic layers (the
 song's full-mix transcriptions as every layer), the arranger benchmark
 (reference notes, where they carry notated positions) and quantization of the
-reference notes. Every arranged case also compares the talking score (document
+reference notes. The arranger writes only simple time, so each score in
+`conformance/fixtures/*/brass-band.musicxml` (6/8, 9/8 and 12/8 among them) is a
+`talking/` case: only its talking score is compared. Every arranged case also
+compares the talking score (document
 JSON, text and HTML under four settings) and humanization (every voice as a
 part, on and off its ticks, two players, score and performed timing, with and
 without the Composition) against their Python references. The Mikkel case is

@@ -1139,6 +1139,24 @@ fn a_slide_or_a_bend_names_the_fret_it_comes_from_only_on_its_own_string() {
 }
 
 #[test]
+fn a_slide_or_a_bend_over_a_note_on_another_string_names_the_fret_it_comes_from() {
+    let guitar = preset("guitar-standard").unwrap();
+    for (technique, mark, en) in [(Technique::Slide, '/', "slide from fret 3"), (Technique::Bend, 'b', "bend up from fret 3")] {
+        // String 1 fret 3, the open sixth string, then string 1 fret 5: the same note the MusicXML
+        // links it from.
+        let mut p = Passage::new();
+        p.placed(&guitar, 1, 3, 0, 12, 1.0, &[]);
+        p.placed(&guitar, 6, 0, 12, 12, 1.0, &[]);
+        p.placed(&guitar, 1, 5, 24, 72, 1.0, &[technique]);
+        let score = p.score(&guitar);
+        let text = tab_text(&score, TEXT_WIDTH);
+        assert!(text.contains(&format!("\nE|-3--{mark}5----------||\n")), "{text}");
+        let said = instructions(&score, "en");
+        assert!(said.contains(&format!("  Beat 2. String 1, fret 5, {en}. Quarter note tied to half note.\n")), "{said}");
+    }
+}
+
+#[test]
 fn a_title_cannot_pass_for_a_line_of_the_header() {
     let bass = preset("bass-4-standard").unwrap();
     let mut p = Passage::new();

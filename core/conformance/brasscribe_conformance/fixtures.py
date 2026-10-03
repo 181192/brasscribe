@@ -261,11 +261,14 @@ def durations_cases(rng) -> list[dict]:
             q.append(QNote(p, pos, pos + int(rng.choice([6, 12, 24])), on, float(e)))
         use_bm = bool(k % 3)
         w = written_durations(q, BeatMap(beats) if use_bm else None) if q else []
+        # the same voice on the grids of its beats (no draws, so the later fixtures stay as they were)
+        wg = written_durations(q, BeatMap(beats) if use_bm else None, keep_grid=True) if q else []
         out.append({"t": t.tolist(), "hz": hz.tolist(), "db": db.tolist(), "midi": [None if np.isnan(x) else x for x in midi],
                     "notes": [[o, p] for o, p in notes], "separated": bool(settings), "ends": [float(e) for e in ends],
                     "beats": beats.tolist(), "use_beat_map": use_bm,
                     "qnotes": [[x.pitch, x.start, x.end, x.onset_s, x.offset_s] for x in q],
-                    "written": [[int(x.dur), float(x.performed), bool(x.staccato)] for x in w]})
+                    "written": [[int(x.dur), float(x.performed), bool(x.staccato)] for x in w],
+                    "written_on_grid": [[int(x.dur), float(x.performed), bool(x.staccato)] for x in wg]})
     return out
 
 

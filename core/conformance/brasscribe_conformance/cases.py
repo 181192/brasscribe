@@ -139,11 +139,16 @@ def synth_layers(song: Path, out: Path) -> Path:
 def all_cases(work: Path, only: str | None = None) -> list[Case]:
     mikkel = {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
               **({"contour": c} if (c := mikkel_contour()) else {})}
-    cases = [Case("mikkel/layers", "layers", mikkel, golden=MIKKEL_GOLDEN)]
+    # Checked-in scores (compound time: no arranged input is), first since they need no data/: only their
+    # talking score is compared.
+    cases = [Case(f"talking/{score.parent.name}", "talking", {"dir": score.parent})
+             for score in sorted((REPO / "core" / "conformance" / "fixtures").glob("*/brass-band.musicxml"))]
+    cases.append(Case("mikkel/layers", "layers", mikkel, golden=MIKKEL_GOLDEN))
     # Arrangement options (lineup, difficulty, key) against the Python reference.
     for stage, options in MIKKEL_VARIANTS:
         cases.append(Case(f"mikkel/{stage}", "layers", {**mikkel, "options": options}, golden=variant_golden(stage)))
-    for eval_set in sorted(p for p in (DATA / "eval").iterdir() if p.is_dir()):
+    eval_sets = sorted(p for p in (DATA / "eval").iterdir() if p.is_dir()) if (DATA / "eval").is_dir() else []
+    for eval_set in eval_sets:
         for song in sorted(p for p in eval_set.iterdir() if (p / "reference.json").exists()):
             base = f"{eval_set.name}/{song.name}"
             beats = song / "beat-this.beats"
@@ -232,7 +237,7 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
     # Meter and bar phase on single-instrument beat tracks (every URMP and ChoraleBricks part, Beat This!
     # small0 on the part's own recording): meter_of alone, and the layered song with that part's beats.
     solo = DATA / "runs" / "music-core" / "solo-beats"
-    eval_songs = {s.name: s for es in (DATA / "eval").iterdir() if es.is_dir() for s in es.iterdir()
+    eval_songs = {s.name: s for es in eval_sets for s in es.iterdir()
                   if (s / "reference.json").exists()}
     for song in sorted(solo.glob("*/*")) if solo.exists() else []:
         if not (song / "reference.json").exists():

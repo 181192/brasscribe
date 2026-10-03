@@ -501,18 +501,16 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
         first_down -= beats_per_bar
     pickup = first_down * TICKS_PER_BEAT
     quantized = quantize(notes, times, monophonic=False, auto_level=False)
-    starts = sorted({int(q.start) for q in quantized})
-    following = dict(zip(starts, starts[1:]))
     heard_at = {(n["onset"], n["pitch"]): n["heard_at"] for n in notes if "heard_at" in n}
     on_top = {(n["onset"], n["pitch"]) for n in notes if n.get("on_top")}
     ringing = {(n["onset"], n["pitch"]) for n in notes if n.get("rings_on")}
     seen, out = set(), []
-    for q, w in apply_written(quantized, bm):
+    for q, w in apply_written(quantized, bm, keep_grid=clean):  # a detached note keeps to its beat's grid
         if (q.start, q.pitch) in seen:  # the same pitch twice on one onset is one note
             continue
         seen.add((q.start, q.pitch))
         out.append({"pitch": int(q.pitch) + shift, "start": int(q.start - pickup),
-                    "dur": bass_tab.straight_length(int(q.start), int(w.dur), following.get(int(q.start))) if clean else int(w.dur),
+                    "dur": int(w.dur),
                     "confidence": float(q.confidence), "onset_s": float(heard_at.get((q.onset_s, q.pitch), q.onset_s)), "offset_s": float(q.offset_s),
                     **({"on_top": True} if (q.onset_s, q.pitch) in on_top else {}),
                     **({"rings_on": True} if (q.onset_s, q.pitch) in ringing else {})})

@@ -11,6 +11,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::tab::{clean, doubtful, number, open_name, uses_flats, Event, Link, Plan, TabOptions, TabScore};
+use crate::technique::Technique;
 
 /// Characters per line unless [`TextOptions::width`] says otherwise: a line fits an A4 page in a
 /// 10 or 11 point monospace font, and a phone held sideways.
@@ -82,49 +83,39 @@ pub(crate) enum Arrival {
 }
 
 /// Per event and written note: how the note is reached, for the notes a technique leads to. A note
-/// that is not written on its string ([`crowded`]) is reached by none.
+/// that is not written on its string ([`crowded`]) is reached by none. The fret a slide or bend
+/// comes from is the one of the note the MusicXML links it from (`Written::from`), which is always
+/// on this note's string.
 pub(crate) fn arrivals(events: &[Event]) -> Vec<Vec<Option<Arrival>>> {
-    // The string and fret each open link started from. Numbers are reused from chord to chord, so
-    // the latest start is the one a stop belongs to.
-    let mut open: Vec<((Link, u8), (u8, u8))> = Vec::new();
-    let mut out = Vec::with_capacity(events.len());
-    for ev in events {
-        let apart = crowded(ev);
-        let reached = ev
-            .notes
-            .iter()
-            .zip(&apart)
-            .map(|(w, apart)| {
-                let (string, _) = w.place.filter(|_| apart.is_none())?;
-                // The fret a slide or bend comes from is only said when it is on this note's string:
-                // a fret of another string is not where the finger starts.
-                let from = |link: &(Link, u8)| open.iter().rev().find(|(l, _)| l == link).filter(|(_, place)| place.0 == string).map(|&(_, place)| place.1);
-                let by = |want: fn(Link) -> bool| w.stops.iter().find(|(l, _)| want(*l));
-                if let Some(link) = by(|l| matches!(l, Link::Bend(_))) {
-                    Some(Arrival::Bend(from(link)))
-                } else if let Some(link) = by(|l| l == Link::Slide) {
-                    Some(Arrival::Slide(from(link)))
-                } else if by(|l| l == Link::HammerOn).is_some() {
-                    Some(Arrival::HammerOn)
-                } else if by(|l| l == Link::PullOff).is_some() {
-                    Some(Arrival::PullOff)
-                } else {
-                    None
-                }
-            })
-            .collect();
-        for (w, apart) in ev.notes.iter().zip(&apart) {
-            if let Some(place) = w.place.filter(|_| apart.is_none()) {
-                open.extend(w.starts.iter().map(|&link| (link, place)));
-            }
-        }
-        // Only the previous event's links can be stopped: older ones are dropped.
-        let keep = ev.notes.iter().map(|w| w.starts.len()).sum::<usize>();
-        let drop = open.len() - keep;
-        open.drain(..drop);
-        out.push(reached);
-    }
-    out
+    let apart: Vec<Vec<Option<u8>>> = events.iter().map(crowded).collect();
+    events
+        .iter()
+        .enumerate()
+        .map(|(e, ev)| {
+            ev.notes
+                .iter()
+                .enumerate()
+                .map(|(k, w)| {
+                    w.place.filter(|_| apart[e][k].is_none())?;
+                    let from = w.from.filter(|&(fe, fk)| apart[fe][fk].is_none()).and_then(|(fe, fk)| events[fe].notes[fk].place).map(|p| p.1);
+                    let has = |t: Technique| w.leads.contains(&t);
+                    // A bend that cannot be written from the note it comes from is not a bend.
+                    let bent = |l: &(Link, u8)| matches!(l.0, Link::Bend(_));
+                    if has(Technique::Bend) && (w.from.is_none() || w.stops.iter().any(bent)) {
+                        Some(Arrival::Bend(from))
+                    } else if has(Technique::Slide) {
+                        Some(Arrival::Slide(from))
+                    } else if has(Technique::HammerOn) {
+                        Some(Arrival::HammerOn)
+                    } else if has(Technique::PullOff) {
+                        Some(Arrival::PullOff)
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        })
+        .collect()
 }
 
 /// Whether an event starts a run of ringing notes: the words "let ring" go there, once per run.

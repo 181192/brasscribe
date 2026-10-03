@@ -50,10 +50,10 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           filters: |
-            python: ['engine/**', 'apps/android/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*', '.github/workflows/ci.yml']
-            core: ['core/**', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
-            studio: ['studio/**', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
-            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'design/**', 'sounds/**', '.github/workflows/ci.yml']
+            python: ['engine/**', 'docs/accessibility/talking-score-vectors.json', 'apps/android/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*', '.github/workflows/ci.yml']
+            core: ['core/**', 'docs/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
+            studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
+            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)

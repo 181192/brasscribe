@@ -338,20 +338,6 @@ def _stands_above(line: list[dict], j: int) -> bool:
     return len(around) >= 2 and line[j]["pitch"] - float(np.median(around)) > OUTLIER_ABOVE
 
 
-STRAIGHT_LENGTHS = (6, 12, 18, 24, 36, 48, 72, 96)  # ticks: a 16th to a whole note, with the dotted values
-
-
-def straight_length(start: int, dur: int, next_start: int | None) -> int:
-    """`dur`, or the nearest straight value when a note on the 16th grid, followed by one on it, was given a
-    triplet's length. The shared durations choose among triplet and straight values alike; under a tab a
-    lone triplet value draws a bracket over a line that has no triplets."""
-    if dur % 6 == 0 or start % 6 != 0 or (next_start is not None and next_start % 6 != 0):
-        return dur
-    room = None if next_start is None else next_start - start
-    fits = [c for c in STRAIGHT_LENGTHS if room is None or c <= room] or [6]
-    return min(fits, key=lambda c: (abs(np.log(c / dur)), c))
-
-
 def note_confidence(note: dict, second: list[dict] | None) -> float:
     """How sure the note is, 0 to 1; below DOUBT it is one to check (the tab marks it "?").
 
@@ -455,14 +441,15 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
         first_down -= beats_per_bar
     pickup = first_down * TICKS_PER_BEAT
 
-    written = apply_written(quantize(bottom, times, monophonic=True, auto_level=False), BeatMap(times))
+    # A detached note keeps to its beat's grid: under a tab a lone triplet value draws a bracket over a line that has
+    # no triplets.
+    written = apply_written(quantize(bottom, times, monophonic=True, auto_level=False), BeatMap(times), keep_grid=True)
     shift = octave_shift([q.pitch for q, _ in written]) if octave == "auto" else int(octave)
-    starts = [int(q.start) for q, _ in written]
     notes = [{"pitch": int(q.pitch) + shift, "start": int(q.start - pickup),
-              "dur": straight_length(int(q.start), int(w.dur), starts[i + 1] if i + 1 < len(starts) else None),
+              "dur": int(w.dur),
               "confidence": float(q.confidence), "onset_s": float(q.onset_s), "offset_s": float(q.offset_s),
               **({"octave_moved": True} if (q.onset_s, q.pitch) in moved_at else {})}
-             for i, (q, w) in enumerate(written)]
+             for q, w in written]
     name, fifths = key_of([n["start"] / TICKS_PER_BEAT for n in notes], [n["dur"] / TICKS_PER_BEAT for n in notes],
                           [n["pitch"] for n in notes])
     return {"ticks_per_beat": TICKS_PER_BEAT, "notes": notes, "octave_shift": shift,

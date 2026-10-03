@@ -277,7 +277,7 @@ object ScreenDevice {
      * the app's time is passed here (in steps, as fast as the machine goes), while the app's own threads get on.
      */
     fun waitUntil(rule: AppRule, ms: Long, condition: () -> Boolean) {
-        val end = System.nanoTime() + ms * 1_000_000
+        val end = System.nanoTime() + ms * slower * 1_000_000
         while (true) {
             rule.waitForIdle()
             if (frontWindow().isLayoutRequested) rule.waitForIdle()
@@ -379,6 +379,9 @@ object ScreenDevice {
 
     @Suppress("UNUSED_PARAMETER")
     fun framesWhileStill(rule: AppRule, ms: Long = 4_000): Int = throw UnsupportedOperationException("frames are counted on a device")
+
+    /** How much longer a wait may take on a CI runner, whose two cores the app's threads share with the build. */
+    private val slower = if (System.getenv("CI") != null) 3 else 1
 
     /** Lets [ms] of the app's time pass: Android's clock (its handlers and animations) and Compose's own (a delay in an effect). */
     fun pass(rule: AppRule, ms: Long) {

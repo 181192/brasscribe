@@ -70,3 +70,61 @@ def test_contour_level_gate_cuts_quiet_tail():
     assert end < 0.2
     loose, = contour_offsets(c, [(0.0, 72)], drop_db=80, floor_db=-115)
     assert abs(loose - 2.0) < 2 * FRAME
+
+
+def test_keep_grid_gives_a_detached_note_on_a_straight_beat_a_straight_value():
+    # 0.4 of a beat, then rests to the next onset two beats later: the nearest readable value is a triplet 8th
+    # (8 ticks); on the beat's own straight grid it is an 8th (12), the nearer of a 16th and an 8th.
+    notes = [q(0, 0.0, 0.2), q(2, 1.0, 1.4)]
+    assert written_durations(notes, BM)[0].dur == 8
+    assert written_durations(notes, BM, keep_grid=True)[0].dur == 12
+
+
+def test_keep_grid_gives_a_detached_note_on_a_triplet_beat_a_triplet_value():
+    # Triplet 8ths on beat 0; the last is played a 16th long, then two beats rest.
+    notes = [q(0, 0.0, 0.3), q(1 / 3, 1 / 6, 0.3), q(2 / 3, 1 / 3, 1 / 3 + 0.125), q(3, 1.5, 1.9)]
+    assert written_durations(notes, BM)[2].dur == 6
+    assert written_durations(notes, BM, keep_grid=True)[2].dur == 8
+
+
+def test_beat_values_follow_the_grid_quantize_chose():
+    from brasscribe_music.durations import STRAIGHT, TRIPLET, beat_values
+    from brasscribe_music.quantize import TICKS_PER_BEAT, choose_grids, choose_grids_dense, quantize
+
+    rng = np.random.default_rng(70)
+    beats = np.arange(0, 40, 0.5)
+    bm = BeatMap(beats)
+    seen = {"triplet": 0, "shared": 0, "straight": 0}
+    for case in range(200):
+        dense = bool(case % 2)
+        grid = rng.choice([2, 3, 4, 6])
+        steps = rng.choice([1, 1, 2, 3], size=60) / grid
+        on_beats = np.cumsum(steps) + rng.normal(0, 0.03, size=60)
+        on_beats = on_beats[(on_beats > 0) & (on_beats < 70)]
+        onsets = bm.to_seconds(on_beats)
+        raw = [{"pitch": 60, "onset": float(o), "offset": float(o) + 0.1} for o in onsets]
+        notes = quantize(raw, beats, monophonic=dense, auto_level=False, dense=dense)
+        on = bm.to_beats(onsets)
+        grids = choose_grids_dense(on, None, np.r_[np.diff(bm.t), bm.t[-1] - bm.t[-2]]) if dense else choose_grids(on)
+        values = beat_values(notes)
+        for n in notes:
+            k = n.start // TICKS_PER_BEAT
+            # Triplet values only on a beat quantized in threes ...
+            if values[k] is TRIPLET:
+                assert grids.get(k, 4) in (3, 6), (case, n)
+                seen["triplet"] += 1
+            # ... and on every such beat, unless all its starts are on slots a straight grid has too.
+            elif grids.get(k, 4) in (3, 6):
+                assert all(m.start % TICKS_PER_BEAT in (0, 12) for m in notes if m.start // TICKS_PER_BEAT == k), (case, n)
+                seen["shared"] += 1
+            else:
+                assert values[k] is STRAIGHT, (case, n)
+                seen["straight"] += 1
+    assert seen["triplet"] > 0 and seen["straight"] > 0, seen  # both kinds of beat occur
+
+
+def test_keep_grid_ends_a_detached_note_on_the_grid_of_the_beat_it_ends_in():
+    # Sextuplets on beat 0, the last one played a triplet 8th long, then nothing until beat 2. A triplet 8th would end
+    # 4 ticks into beat 1, which is straight; a triplet quarter ends on its 8th.
+    notes = [q(0, 0.0, 0.08), q(1 / 6, 1 / 12, 1 / 6), q(5 / 6, 5 / 12, 5 / 12 + 1 / 6), q(2, 1.0, 1.4)]
+    assert written_durations(notes, BM, keep_grid=True)[2].dur == 16
