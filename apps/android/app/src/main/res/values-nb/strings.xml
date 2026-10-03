@@ -266,9 +266,11 @@
     <string name="error_reads_not_offered">Instrumentet ditt skrives ikke i den nøkkelen. Velg på nytt under Hva du spiller.</string>
     <string name="error_invalid_options">Brasscribe på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering.</string>
     <string name="error_core_missing">Brasscribe på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.</string>
-    <string name="recording_sent_again">Datamaskinen hadde ikke lenger opptaket, så telefonen sendte sin kopi.</string>
+    <string name="recording_sent_again">Datamaskinen hadde ikke lenger opptaket, så telefonen sender sin kopi.</string>
     <string name="error_recording_gone">Datamaskinen har ikke lenger dette opptaket, og telefonen har ingen kopi av det. Åpne opptaket på nytt fra Hjem.</string>
-    <string name="error_no_notes">Fant ingen noter i dette opptaket. Svært dype eller svake toner kan bli borte: prøv et sterkere opptak, eller datamaskinen.</string>
+    <string name="problem_no_notes_title">Fant ingen toner</string>
+    <string name="problem_no_notes_body">Svært dype eller svake toner blir ikke alltid hørt.</string>
+    <string name="problem_record_again">Spill inn på nytt</string>
     <string name="other_product_row">Tab · åpnes i Fretscribe</string>
     <string name="other_product_opens">Dette er en tab. Åpne den i Fretscribe.</string>
     <string name="lineup_full_not_yet">Kommer senere for opptak av hele bandet</string>

@@ -61,7 +61,17 @@ import java.util.zip.ZipInputStream
 enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED }
+enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES }
+
+/** [r] is to be checked note by note, and holds no note to check: it opens on the problem screen instead. */
+fun foundNoNotes(r: TranscriptionResult, then: Screen): Boolean =
+    then == Screen.REVIEW && r.composition?.voices?.all { it.notes.isEmpty() } == true
+
+/**
+ * No notes were found: the computer is the way forward only when the phone wrote it down and the computer is there.
+ * The computer hears more than the phone; when it made the result itself, it has nothing more to give.
+ */
+fun noNotesOffersComputer(madeOnPhone: Boolean, computerThere: Boolean): Boolean = madeOnPhone && computerThere
 
 enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SCORE }
 
@@ -218,8 +228,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         ScoreEntry.merge(local, jobs)
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
     val openingScore = MutableStateFlow<String?>(null)
-    /** The entry last tapped that opens in the other app (its id): its row says so, where the finger is. */
-    val opensElsewhere = MutableStateFlow<String?>(null)
+    /** The entry last tapped that opens in the other app (its id, and the tap's count): its row says so, where the finger is. */
+    val opensElsewhere = MutableStateFlow<Pair<String, Int>?>(null)
     /** "Open on the music stand" from the library: the score opens straight onto the stand (the entry id). */
     val standFromLibrary = MutableStateFlow<String?>(null)
     /** The library row that gets the focus back when a stand opened from the library closes. */
@@ -272,6 +282,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         private set
     /** What went wrong in the player's words, when it is known (ErrorWords): shown above the details. */
     var problemWhy: Int? = null
+        private set
+    /** The recording with no notes found in it was written down on the phone (not by the computer). */
+    var noNotesOnPhone = false
         private set
 
     /** Set while the score screen is open: MIDI export and "Play this bar" go through it. */
@@ -680,7 +693,12 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     else -> transcribeOnDevice(s)
                 }
                 // Check the notes needs a note to check (a very low recording can have none on the phone).
-                if (foundNoNotes(r, Product.afterTranscription(r))) throw NoNotesFoundException()
+                if (foundNoNotes(r, Product.afterTranscription(r))) {
+                    transcribe.update { it.copy(running = false) }
+                    noNotesOnPhone = r.onDevice
+                    showProblem(Problem.NO_NOTES)
+                    return@launch
+                }
                 val ignored = seatIgnored(r)
                 reviewChanges.value = emptyMap()
                 draftBehind = null
@@ -1036,7 +1054,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
         val opening = entry.opening(review, stand, Product::makes)
         // The computer's list also holds what the other app made: that opens there, not here, and leaves nothing behind.
-        if (!opening.here) { opensElsewhere.value = entry.id; say(R.string.other_product_opens); return }
+        if (!opening.here) { opensElsewhere.value = entry.id to (opensElsewhere.value?.second ?: 0) + 1; say(R.string.other_product_opens); return }
         standFromLibrary.value = opening.standFor
         entry.saved?.let { openSavedScore(it, review); return }
         val jobId = entry.jobId ?: return

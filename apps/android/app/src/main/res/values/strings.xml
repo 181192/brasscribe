@@ -269,9 +269,12 @@
     <string name="error_invalid_options">Brasscribe on your computer didn\'t accept these choices. It may need an update.</string>
     <string name="error_core_missing">Brasscribe on your computer needs an update to write tabs. Update it there, then try again.</string>
     <!-- Writing a song down again from the recording the computer holds, when it no longer has it. -->
-    <string name="recording_sent_again">Your computer no longer had the recording, so the phone sent its copy.</string>
+    <string name="recording_sent_again">Your computer no longer had the recording, so the phone is sending its copy.</string>
     <string name="error_recording_gone">Your computer no longer has this recording, and the phone has no copy of it. Open the recording again from Home.</string>
-    <string name="error_no_notes">No notes were found in this recording. Very low or very quiet notes can be missed: try a louder recording, or your computer.</string>
+    <!-- A recording in which no note was found. -->
+    <string name="problem_no_notes_title">No notes found</string>
+    <string name="problem_no_notes_body">Very low or very quiet notes can be missed.</string>
+    <string name="problem_record_again">Record again</string>
     <!-- A score in the computer's list that the other app made (a tab is Fretscribe's). -->
     <string name="other_product_row">Tab · opens in Fretscribe</string>
     <string name="other_product_opens">This is a tab. Open it in Fretscribe.</string>

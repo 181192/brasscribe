@@ -243,7 +243,7 @@ fun HomeScreen(vm: PlayViewModel) {
                             if (entry.id == focusEntry) Modifier.focusRequester(rowFocus) else Modifier,
                             subtitle = when (entry.id) {
                                 opening -> stringResource(R.string.opening_score)
-                                elsewhere -> stringResource(R.string.other_product_opens)
+                                elsewhere?.first -> stringResource(R.string.other_product_opens)
                                 else -> scoreSubtitle(entry)
                             },
                             icon = if (entry.onComputer) R.drawable.ic_bc_computer else R.drawable.ic_bc_score,

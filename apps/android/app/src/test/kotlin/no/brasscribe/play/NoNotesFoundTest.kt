@@ -7,12 +7,11 @@ import no.brasscribe.play.model.Meter
 import no.brasscribe.play.model.Note
 import no.brasscribe.play.model.Voice
 import no.brasscribe.play.model.VoiceRole
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** A transcription with no note in it opens on the problem screen, not in Check the notes, which had none to show. */
+/** A transcription with no note in it opens on its own problem screen, not in Check the notes, which had none to show. */
 class NoNotesFoundTest {
     private fun result(vararg notes: List<Note>) = TranscriptionResult(
         Composition("T", notes.mapIndexed { i, n -> Voice("v$i", if (i == 0) VoiceRole.MELODY else VoiceRole.BASS, n) }, listOf(Meter(0, 4)), listOf(KeySig(0, 0))),
@@ -28,6 +27,14 @@ class NoNotesFoundTest {
         // A tab goes to Check the song, which shows what was heard either way; an opened score has no composition.
         assertFalse(foundNoNotes(result(emptyList()), Screen.OUTPUT))
         assertFalse(foundNoNotes(TranscriptionResult(null, "<score-partwise/>", Profile.SOLO, onDevice = false), Screen.REVIEW))
-        assertEquals(R.string.error_no_notes, ErrorWords.of(NoNotesFoundException()))
+    }
+
+    @Test
+    fun theComputerIsOfferedOnlyWhenThePhoneWroteItDownAndTheComputerIsThere() {
+        assertTrue(noNotesOffersComputer(madeOnPhone = true, computerThere = true))
+        assertFalse(noNotesOffersComputer(madeOnPhone = true, computerThere = false))
+        // The computer made it: it has nothing more to give.
+        assertFalse(noNotesOffersComputer(madeOnPhone = false, computerThere = true))
+        assertFalse(noNotesOffersComputer(madeOnPhone = false, computerThere = false))
     }
 }

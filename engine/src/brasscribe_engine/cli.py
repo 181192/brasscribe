@@ -22,6 +22,10 @@ from brasscribe_music.instruments import SEAT_IDS
 
 from . import bass_tab, config, profiles, runner, tab
 
+# How long an idle connection is kept open for the next request. uvicorn closes one after 5 s by default; a phone
+# that sent a recording a few seconds after its last request found it closed (the upload failed).
+KEEP_ALIVE_S = 65
+
 
 def _print_event(e: dict) -> None:
     if e.get("type") == "stage" and e["status"] != "started":
@@ -175,7 +179,7 @@ def cmd_serve(args, open_browser: bool = False) -> int:
     with advertise(args.port, addresses, server_id=app.state.identity.server_id) as name:
         if name:
             print(f"Advertised on the LAN as \"{name}\" (_brasscribe._tcp)", flush=True)
-        uvicorn.run(app, host=host, port=args.port, log_level="warning")
+        uvicorn.run(app, host=host, port=args.port, log_level="warning", timeout_keep_alive=KEEP_ALIVE_S)
     return 0
 
 
