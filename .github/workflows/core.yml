@@ -86,21 +86,10 @@ jobs:
             tar -czf "$RUNNER_TEMP/out/$name.tar.gz" -C target/release brasscribe-core
           fi
 
-      # The DLLs the exe loads, from its import table: system DLLs only, no Visual C++ runtime
-      # (vcruntime, msvcp) and no dynamic Universal CRT (api-ms-win-crt-*, ucrtbase).
       - name: The Windows CLI needs no C runtime DLL
         if: ${{ inputs.release && runner.os == 'Windows' }}
-        run: |
-          rustup component add llvm-tools
-          host="$(rustc -vV | sed -n 's/^host: //p')"
-          readobj="$(rustc --print sysroot)/lib/rustlib/$host/bin/llvm-readobj.exe"
-          dlls="$("$readobj" --coff-imports target/release/brasscribe-core.exe | sed -n 's/^ *Name: //p' | sort -fu)"
-          echo "brasscribe-core.exe imports:"; echo "$dlls"
-          grep -qi '^kernel32\.dll$' <<<"$dlls" || { echo "::error::no imports read from brasscribe-core.exe"; exit 1; }
-          if grep -iE '^(vcruntime|msvcp|ucrtbase|api-ms-win-crt-)' <<<"$dlls"; then
-            echo "::error::brasscribe-core.exe needs a C runtime DLL; build it with -C target-feature=+crt-static"
-            exit 1
-          fi
+        working-directory: .
+        run: scripts/check-windows-imports.sh --static core/target/release/brasscribe-core.exe
 
       - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}
