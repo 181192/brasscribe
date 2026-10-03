@@ -60,6 +60,8 @@
     <string name="help_5_text">Fretscribe on your computer writes down the notes. Open it there, and connect in Settings.</string>
     <!-- The keys while a tab plays: Fretscribe has no music stand. -->
     <string name="help_stand_title">Page turners and keys</string>
+    <!-- What the keys do on the tab (TabScreen): Space anywhere, the arrows while the tab has the focus, the page keys scroll. -->
+    <string name="help_stand_pedal">Space plays and pauses the recording. While the tab has the keyboard\'s focus, as it has when it opens, the right arrow goes a bar on, and the left arrow a bar back or to the start of the bars being repeated. Page Up and Page Down scroll the tab. A page turner or pedal works when it sends these keys.</string>
 
     <!-- Problems -->
     <string name="problem_file_body">Fretscribe couldn\'t read the sound in it.</string>
