@@ -46,6 +46,11 @@ const MIN_TEMPO: f64 = 10.0;
 const MAX_TEMPO: f64 = 600.0;
 /// The largest bend written, in semitones.
 const MAX_BEND: i32 = 4;
+/// The longest silence on a string (ticks, an eighth) that a slide, hammer-on, pull-off or bend
+/// still crosses from the note before it on the string: a rest that long is a new start.
+const MAX_LINK_GAP: i64 = 12;
+/// Numbers for the slurs and slides of one staff: MusicXML has 16, and a pair of staves splits them.
+const LINK_NUMBERS: u8 = 8;
 
 /// Which staves are written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -276,6 +281,8 @@ pub(crate) struct Written {
     pub(crate) source: usize,
     pub(crate) pitch: i32,
     pub(crate) confidence: f64,
+    /// Where the longest of its notes ends as written.
+    pub(crate) end: i64,
     pub(crate) place: Option<(u8, u8)>,
     pub(crate) vibrato: bool,
     pub(crate) let_ring: bool,
@@ -287,7 +294,9 @@ pub(crate) struct Written {
     /// The slides, hammer-ons, pull-offs and bends that lead to this note, whether or not they
     /// come from a note that can be linked.
     pub(crate) leads: Vec<Technique>,
-    /// The note they come from ([`origin`]): event and note in it.
+    /// The note they come from, event and note in it: the latest note before it on its string, when
+    /// that one ends at most [`MAX_LINK_GAP`] before it in the same bar or still sounds, and no note
+    /// without a place (which might have been on the string) came between.
     pub(crate) from: Option<(usize, usize)>,
     pub(crate) spelled: Spelled,
 }
@@ -567,7 +576,7 @@ pub(crate) fn doubtful(n: &Written, opts: &TabOptions) -> bool {
 }
 
 /// Group the notes into chords, merge notes that sound as one, and pair up the techniques.
-fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
+fn events(score: &TabScore, spans: &[(i64, i64)], bar: i64) -> Vec<Event> {
     let notes = &score.notes;
     let kept: Vec<usize> = {
         let mut k: Vec<usize> = (0..notes.len()).collect();
@@ -592,6 +601,7 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
         if let Some(k) = ev.notes.iter().position(|w| w.pitch == n.pitch && w.place == place(i)) {
             let w = &mut ev.notes[k];
             w.confidence = w.confidence.max(n.confidence);
+            w.end = w.end.max(end);
             w.vibrato |= has(Technique::Vibrato);
             w.let_ring |= has(Technique::LetRing);
             w.dead |= has(Technique::DeadNote);
@@ -603,6 +613,7 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
             source: i,
             pitch: n.pitch,
             confidence: n.confidence,
+            end,
             place: place(i),
             vibrato: has(Technique::Vibrato),
             let_ring: has(Technique::LetRing),
@@ -640,15 +651,19 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
     }
     // A slide, hammer-on, pull-off or bend links the note it comes from on its string to the note
     // that has it.
-    // The links numbered so far: the events they leave and reach, whether they are arcs, and their number.
-    let mut numbered: Vec<(usize, usize, bool, u8)> = Vec::new();
+    // The links numbered so far: the event and note each stops at, whether it is an arc, its number,
+    // and the event it leaves.
+    let mut numbered: Vec<(usize, usize, usize, bool, u8)> = Vec::new();
+    // The latest note on each string so far, and the latest event with a note without a place.
+    let mut last: BTreeMap<u8, (usize, usize)> = BTreeMap::new();
+    let mut lost: Option<usize> = None;
     for e in 0..events.len() {
         for k in 0..events[e].notes.len() {
             let Some((string, _)) = events[e].notes[k].place else { continue };
             if events[e].notes[k].leads.is_empty() {
                 continue;
             }
-            let from = origin(&events, e, string);
+            let from = last.get(&string).copied().filter(|&(fe, fk)| lost.is_none_or(|l| fe > l) && near(events[fe].notes[fk].end, events[e].start, bar));
             events[e].notes[k].from = from;
             let Some(from) = from else { continue };
             for t in events[e].notes[k].leads.clone() {
@@ -667,13 +682,16 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
                         continue;
                     }
                     // Arcs that are open at once are numbered apart, and so are slides. A link that
-                    // ends where another starts may share its number.
+                    // stops in the chord this one leaves may share its number only when the note it
+                    // stops at is written before the note this one leaves (a chord is written low to
+                    // high), so the stop comes first.
                     let number = match link {
                         Link::Bend(_) => 1,
                         _ => {
-                            let taken = |n: u8| numbered.iter().any(|&(a, b, arc, m)| m == n && arc == link.is_arc() && a < e && from.0 < b);
-                            let number = (1..=6).find(|&n| !taken(n)).unwrap_or(6);
-                            numbered.push((from.0, e, link.is_arc(), number));
+                            let open = |&(to, at, _, _, _): &(usize, usize, usize, bool, u8)| from.0 < to || (from.0 == to && from.1 < at);
+                            let taken = |n: u8| numbered.iter().any(|l| l.4 == n && l.3 == link.is_arc() && open(l));
+                            let number = (1..=LINK_NUMBERS).find(|&n| !taken(n)).unwrap_or(LINK_NUMBERS);
+                            numbered.push((e, k, from.0, link.is_arc(), number));
                             number
                         }
                     };
@@ -682,30 +700,24 @@ fn events(score: &TabScore, spans: &[(i64, i64)]) -> Vec<Event> {
                 }
             }
         }
+        if events[e].notes.iter().any(|w| w.place.is_none()) {
+            lost = Some(e);
+        }
+        for (k, w) in events[e].notes.iter().enumerate().rev() {
+            // Of two notes on one string in one chord, the first is the one written on it.
+            if let Some((string, _)) = w.place {
+                last.insert(string, (e, k));
+            }
+        }
     }
     events
 }
 
-/// The note a slide, hammer-on, pull-off or bend on `string` at event `e` comes from: the latest
-/// note on that string before it. The search looks at the event before, and goes further back only
-/// while notes follow each other without a rest, so a phrase never links to an earlier one. It stops
-/// at a note without a place, which might have been played on the string.
-pub(crate) fn origin(events: &[Event], e: usize, string: u8) -> Option<(usize, usize)> {
-    let mut at = e.checked_sub(1)?;
-    loop {
-        // The first note on the string: of two in one chord, that is the one written on it.
-        if let Some(k) = events[at].notes.iter().position(|w| w.place.is_some_and(|p| p.0 == string)) {
-            return Some((at, k));
-        }
-        if events[at].notes.iter().any(|w| w.place.is_none()) {
-            return None;
-        }
-        // Going further back passes this event, so it must lead into the next one without a rest.
-        if events[at].end < events[at + 1].start {
-            return None;
-        }
-        at = at.checked_sub(1)?;
-    }
+/// Whether a note that ends at `end` can lead to one on its string that starts at `start`: the string
+/// is silent for at most [`MAX_LINK_GAP`] in between, and not over a bar line.
+fn near(end: i64, start: i64, bar: i64) -> bool {
+    let gap = start - end;
+    gap <= 0 || (gap <= MAX_LINK_GAP && end.div_euclid(bar) == start.div_euclid(bar) && end.rem_euclid(bar) != 0)
 }
 
 /// The semitones a note is bent up from the note it comes from, when that can be written.
@@ -724,7 +736,7 @@ impl<'a> Plan<'a> {
         let compound = score.beat_unit == 8 && score.beats % 3 == 0;
         let beam_group = if compound { DOTTED_QUARTER } else { TICKS_PER_BEAT };
         let Grid { spans, triplets, adjusted } = grid(score, bar, compound);
-        let events = events(score, &spans);
+        let events = events(score, &spans, bar);
 
         let first = events.first().map_or(0, |e| e.start);
         let last = events.last().map_or(0, |e| e.end);
@@ -1068,7 +1080,7 @@ impl<'a> Plan<'a> {
             out.push(El::new("tied").attr("type", "let-ring"));
         }
         // Arcs on the second staff of a pair are numbered apart from the first's.
-        let offset = if staff == Staff::Tab && self.two_staves() { 6 } else { 0 };
+        let offset = if staff == Staff::Tab && self.two_staves() { LINK_NUMBERS } else { 0 };
         let stops = || w.stops.iter().filter(|_| sym.first);
         let starts = || w.starts.iter().filter(|_| sym.last);
         for &(_, n) in stops().filter(|(l, _)| l.is_arc()) {

@@ -420,11 +420,14 @@ staves the notation staff gets only the slurs and the x noteheads.
 | let ring | the words "let ring" where a run of ringing notes starts, and `<tied type="let-ring">` on each |
 | dead note | `<notehead>x</notehead>` |
 
-- The note a technique comes from is the latest note before it on the same string. The writer looks
-  at the notes that start just before it, and further back only while the notes follow each other
-  without a rest or a note without a place: string 1 fret 3, the open sixth string, then a slide to
-  string 1 fret 5 slides from fret 3. When no note qualifies, nothing is linked, though the solver
-  and `check` still mean the note before in time. The text exports use the same note.
+- The note a technique comes from is the latest note before it on the same string: string 1 fret 3,
+  the open sixth string, then a slide to string 1 fret 5 slides from fret 3. It is linked only when
+  the string is silent for at most an eighth between the two, with no bar line in that silence, and
+  no note without a place (which might have been on the string) came between. Otherwise nothing is
+  linked, though the solver and `check` still mean the note before in time. The text exports use the
+  same note.
+- Slurs and slides open at the same time have numbers of their own, 1 to 8 on each staff (the tab
+  staff of a pair uses 9 to 16).
 - A tied note carries the marks that end on it on its first piece and the marks that leave it on its
   last.
 - A bend is only written when the note it comes from is 1 to 4 semitones lower.

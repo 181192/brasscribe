@@ -84,8 +84,8 @@ pub(crate) enum Arrival {
 
 /// Per event and written note: how the note is reached, for the notes a technique leads to. A note
 /// that is not written on its string ([`crowded`]) is reached by none. The fret a slide or bend
-/// comes from is the one of the note the MusicXML links it from ([`crate::tab::origin`]), which is
-/// always on this note's string.
+/// comes from is the one of the note the MusicXML links it from (`Written::from`), which is always
+/// on this note's string.
 pub(crate) fn arrivals(events: &[Event]) -> Vec<Vec<Option<Arrival>>> {
     let apart: Vec<Vec<Option<u8>>> = events.iter().map(crowded).collect();
     events

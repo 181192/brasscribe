@@ -913,8 +913,8 @@ fn techniques_in_a_pair_go_on_the_tab_staff_and_slurs_on_both() {
     assert_eq!(slurs.iter().map(|s| (staff(s).unwrap(), s.attribute("type").unwrap(), s.attribute("number").unwrap())).collect::<Vec<_>>(), [
         ("1".to_string(), "start", "1"),
         ("1".to_string(), "stop", "1"),
-        ("2".to_string(), "start", "7"),
-        ("2".to_string(), "stop", "7")
+        ("2".to_string(), "start", "9"),
+        ("2".to_string(), "stop", "9")
     ]);
 }
 
@@ -996,18 +996,24 @@ fn a_slide_or_a_bend_comes_from_the_note_before_it_on_its_string() {
             assert!(all(&doc, mark).is_empty(), "{name}: {mark}");
         }
 
-        // A rest ends the search: a note on the string before it is from another phrase.
-        let score = placed(&inst, &[(1, 3, 0, 12, &[]), (6, 0, 12, 6, &[]), (1, 5, 24, 24, &[t])]);
-        let xml = write(&score, &layout(Layout::Tab));
-        let doc = parse(&xml);
-        for mark in ["slide", "slur", "hammer-on", "bend"] {
-            assert!(all(&doc, mark).is_empty(), "{name} after a rest: {mark}");
-        }
-        // The note just before is looked at even after a rest, as it always was.
-        let score = placed(&inst, &[(1, 3, 0, 12, &[]), (1, 5, 24, 24, &[t])]);
-        let xml = write(&score, &layout(Layout::Tab));
-        let doc = parse(&xml);
-        assert!(!all(&doc, if t == Technique::Bend { "bend" } else { name }).is_empty(), "{name} over a rest from the note before");
+        // How long the string is silent decides, not the notes on other strings: (string, fret, start,
+        // length) of the note it comes from, and whether it is linked.
+        let linked = |from: (u8, u8, i64, i64), to_start: i64| {
+            let score = placed(&inst, &[(from.0, from.1, from.2, from.3, &[]), (6, 0, from.2 + from.3, 6, &[]), (1, 5, to_start, 24, &[t])]);
+            let xml = write(&score, &layout(Layout::Tab));
+            let doc = parse(&xml);
+            !all(&doc, if t == Technique::Bend { "bend" } else { name }).is_empty()
+        };
+        // An eighth of silence, with the open string between: linked.
+        assert!(linked((1, 3, 0, 12), 24), "{name} over an eighth's silence");
+        // A dotted quarter of silence: not linked.
+        assert!(!linked((1, 3, 0, 12), 48), "{name} over a dotted quarter's silence");
+        // Three beats of silence and a bar line: not linked.
+        assert!(!linked((1, 3, 0, 24), 96), "{name} over three beats and a bar line");
+        // An eighth of silence that ends at a bar line: not linked over it.
+        assert!(!linked((1, 3, 72, 12), 96), "{name} over a rest and a bar line");
+        // Held up to the bar line: linked over it.
+        assert!(linked((1, 3, 72, 24), 96), "{name} into the next bar");
     }
 }
 
@@ -1026,6 +1032,33 @@ fn slides_open_at_once_are_numbered_apart() {
     assert_eq!(number(high[0]), number(high[1]));
     assert_eq!(number(low[0]), number(low[1]));
     assert_ne!(number(high[0]), number(low[0]));
+}
+
+#[test]
+fn a_link_that_starts_in_a_chord_where_another_stops_is_numbered_apart_when_it_is_written_first() {
+    let inst = preset("guitar-standard").unwrap();
+    for (t, mark) in [(Technique::Slide, "slide"), (Technique::HammerOn, "slur")] {
+        // String 1 fret 3; then a chord of string 6 fret 3 (written first, low to high) and string 1
+        // fret 5 slid into; then string 6 fret 5 slid into from the chord. The link that starts at
+        // the chord's low note is written before the one that stops at its high note.
+        let score = placed(&inst, &[(1, 3, 0, 24, &[]), (1, 5, 24, 24, &[t]), (6, 3, 24, 24, &[]), (6, 5, 48, 24, &[t])]);
+        let xml = write(&score, &layout(Layout::Tab));
+        let doc = parse(&xml);
+        let n = sounding(&doc);
+        assert_eq!(n.iter().map(|x| place(*x).unwrap()).collect::<Vec<_>>(), [(1, 3), (6, 3), (1, 5), (6, 5)]);
+        let number = |x: Node, typ: &str| marks_on(x, &[mark]).iter().find(|m| m.1 == typ).map(|m| m.2.to_string()).unwrap();
+        assert_ne!(number(n[1], "start"), number(n[2], "stop"), "{mark}");
+        assert_eq!(number(n[0], "start"), number(n[2], "stop"), "{mark}");
+        assert_eq!(number(n[1], "start"), number(n[3], "stop"), "{mark}");
+
+        // Written the other way round in the chord (the stop first), the number may be shared.
+        let score = placed(&inst, &[(6, 3, 0, 24, &[]), (6, 5, 24, 24, &[t]), (1, 3, 24, 24, &[]), (1, 5, 48, 24, &[t])]);
+        let xml = write(&score, &layout(Layout::Tab));
+        let doc = parse(&xml);
+        let n = sounding(&doc);
+        assert_eq!(n.iter().map(|x| place(*x).unwrap()).collect::<Vec<_>>(), [(6, 3), (6, 5), (1, 3), (1, 5)]);
+        assert_eq!(number(n[1], "stop"), number(n[2], "start"), "{mark}");
+    }
 }
 
 #[test]
