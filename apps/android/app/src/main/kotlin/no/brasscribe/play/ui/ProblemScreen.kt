@@ -126,7 +126,10 @@ fun ProblemScreen(vm: PlayViewModel) {
         ) { BcIcon(R.drawable.ic_bc_error, null, tint = c.error) }
         ScreenTitle(stringResource(copy.title), Modifier.semantics { liveRegion = LiveRegionMode.Assertive })
         // Without the computer the words say how to get it: open Brasscribe there, and pair first when nothing is paired.
+        // Nothing ran: the recording needed the computer, and none is paired.
+        val needsComputer = vm.problemWhy == R.string.where_companion_missing
         val body = when {
+            p == Problem.SCORE_FAILED && needsComputer && connectFirst -> R.string.problem_score_body_unpaired
             !draft || computerThere -> copy.body
             !tooLong -> R.string.draft_refused_body_away
             vm.container.settings.paired -> R.string.draft_too_long_body_away
@@ -153,7 +156,8 @@ fun ProblemScreen(vm: PlayViewModel) {
             else -> copy.note
         }
         note?.let { InfoNote(stringResource(it)) }
-        vm.problemWhy?.let { InfoNote(stringResource(it), Modifier.semantics { testTag = "problem-why" }) }
+        // Once the computer is there (paired from here), "connect it first" is no longer true.
+        vm.problemWhy?.takeIf { !(needsComputer && computerThere) }?.let { InfoNote(stringResource(it), Modifier.semantics { testTag = "problem-why" }) }
         val detail = vm.problemDetail
         if (!detail.isNullOrBlank()) {
             PlainButton(stringResource(if (details) R.string.details_hide else R.string.details_show), { details = !details })

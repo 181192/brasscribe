@@ -112,7 +112,7 @@ A brass band recording can be written down on the phone, tablet or Mac without t
 | Your scores, the row's subtitle | Brass band · Draft · 32 bars | Brassband · Utkast · 32 takter |
 | Too long for the device, title | Too long for a draft on this device (Android: *this phone*) | For langt for et utkast på denne enheten (Android: *på telefonen*) |
 | Too long, body with the computer there | Your computer can make the score from this recording. | Datamaskinen kan lage partituret fra dette opptaket. |
-| Too long, body with nothing paired | Your computer can make the score from this recording. Open Brasscribe there and choose Pair a phone, then connect in Settings here. Or choose a shorter recording. | Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble til i Innstillinger her. Eller velg et kortere opptak. |
+| Too long, body with nothing paired | Your computer can make the score from this recording. Open Brasscribe there and choose Pair a phone (Apple: then connect in Settings here; Android: then connect it here with Connect your computer). Or choose a shorter recording. | Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon (Apple: og koble til i Innstillinger her; Android: og koble den til her med Koble til datamaskinen). Eller velg et kortere opptak. |
 | Too long, body with the computer paired but away | Open Brasscribe on your computer to make the score from this recording, or choose a shorter one. | Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere. |
 | Too long, the primary (only when the computer is there) | Make it on your computer | Lag det på datamaskinen |
 | Too long, the primary with nothing paired (Android) | Connect your computer (opens the pairing screen) | Koble til datamaskinen |
@@ -152,6 +152,7 @@ A recording whose score was not made is kept in Your scores, so it outlives the 
 | Transcribing, stopped | Stopped. The recording is in Your scores. | Stoppet. Opptaket ligger i Partiturene dine. |
 | The score couldn't be made, the note | Your recording is kept in Your scores. You can try again now or later. | Opptaket ditt er tatt vare på i Partiturene dine. Du kan prøve igjen nå eller senere. |
 | The score couldn't be made because nothing is paired (Android): the primary, then Try again as the secondary | Connect your computer | Koble til datamaskinen |
+| The score couldn't be made because nothing is paired (Android), the body; the reason "connect first" goes once the computer is there | This recording needs your computer, and none is connected to this phone. | Dette opptaket trenger datamaskinen din, og ingen er koblet til denne telefonen. |
 
 ## 4. Navigation per platform
 

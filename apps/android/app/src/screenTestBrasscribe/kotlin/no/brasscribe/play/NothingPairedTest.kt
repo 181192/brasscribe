@@ -59,9 +59,22 @@ class NothingPairedTest : ScreenTest() {
         assertEquals(text(R.string.problem_connect_computer), primary())
         // Try again stays, for once the computer is connected.
         assertTrue(shows(R.string.retry))
+        // Nothing ran, and the words say why rather than "something went wrong".
+        assertTrue(shows(R.string.problem_score_body_unpaired) && !shows(R.string.problem_score_body))
         checkAccessibility()
         connectLeadsToPairing()
         assertEquals("Band practice.wav", vm.source.value?.name)
+
+        // Paired from there (here the fixture computer comes): back on the problem, "connect first" is gone, and Try again
+        // is the way forward.
+        rule.onNodeWithTag("problem-primary").performClick()
+        waitUntil(5_000) { vm.screen.value.last() == Screen.COMPANION }
+        computer("old-hundredth")
+        rule.runOnUiThread { vm.back() }
+        waitUntil(5_000) { vm.screen.value.last() == Screen.PROBLEM }
+        rule.waitForIdle()
+        assertTrue("no longer 'connect first'", !shows(R.string.where_companion_missing))
+        assertEquals(text(R.string.retry), primary())
     }
 
     @Test
