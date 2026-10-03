@@ -213,7 +213,7 @@ jobs:
   # screen in light, dark, high contrast, 200 % text, on its side and in bokmål, with their checks), whose
   # screenshots are compared on a pull request with the same taken at the merge base
   # (apps/android/scripts/screenshots.sh). A screen that changed fails that job and is shown in the
-  # android-screenshots artefact, unless the pull request has the label screenshots-changed, which says the
+  # android-screenshots-<app> artefact, unless the pull request has the label screenshots-changed, which says the
   # change is meant.
   android:
     name: Android unit and screen tests (Ubuntu 24.04)
@@ -269,11 +269,17 @@ jobs:
           if-no-files-found: ignore
 
   android-screens:
-    name: Android screen catalogues and screenshots (Ubuntu 24.04)
+    name: Android screen catalogue and screenshots, ${{ matrix.app }} (Ubuntu 24.04)
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [brasscribe, fretscribe]
+    env:
+      SCREENSHOT_APPS: ${{ matrix.app }}
     defaults:
       run:
         working-directory: apps/android
@@ -335,7 +341,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: android-screenshots
+          name: android-screenshots-${{ matrix.app }}
           path: |
             apps/android/app/build/reports/screenshots
             apps/android/app/build/outputs/roborazzi
@@ -345,7 +351,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: android-screen-reports
+          name: android-screen-reports-${{ matrix.app }}
           path: |
             apps/android/app/build/reports/tests
             apps/android/app/build/test-results

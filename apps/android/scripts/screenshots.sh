@@ -6,6 +6,8 @@
 #   apps/android/scripts/screenshots.sh compare [base]    take them at <base> (default: the merge base with
 #                                                         origin/main), then here, and report what differs
 #
+# SCREENSHOT_APPS="brasscribe" (or "fretscribe") limits both to one app; the default is both.
+#
 # The screenshots are not kept in git: a few hundred PNGs that change with every design change would
 # grow the repository for good. A change is compared instead with the commit it started from, in the
 # same run on the same machine, so the fonts and the drawing code are the same on both sides.
@@ -20,7 +22,14 @@ here="$(cd "$(dirname "$0")" && pwd)"
 android="$(cd "$here/.." && pwd)"
 repo="$(cd "$android/../.." && pwd)"
 report="$android/app/build/reports/screenshots"
-catalogues=(":app:testBrasscribeDebugUnitTest" --tests "*BrasscribeScreensTest" ":app:testFretscribeDebugUnitTest" --tests "*FretscribeScreensTest")
+catalogues=()
+for app in ${SCREENSHOT_APPS:-brasscribe fretscribe}; do
+  case "$app" in
+    brasscribe) catalogues+=(":app:testBrasscribeDebugUnitTest" --tests "*BrasscribeScreensTest") ;;
+    fretscribe) catalogues+=(":app:testFretscribeDebugUnitTest" --tests "*FretscribeScreensTest") ;;
+    *) echo "screenshots: no app $app (brasscribe, fretscribe)" >&2; exit 2 ;;
+  esac
+done
 
 log() { printf 'screenshots: %s\n' "$*" >&2; }
 
