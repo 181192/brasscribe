@@ -136,6 +136,12 @@ object ScreenDevice {
         rule.waitForIdle()
     }
 
+    /** Waits until the screen is at rest also where the app's other threads have a hand in it. */
+    fun rest(rule: AppRule) {
+        settle(rule)
+        settle(rule)
+    }
+
     /** Lets [ms] pass. */
     @Suppress("UNUSED_PARAMETER")
     fun pass(rule: AppRule, ms: Long) = Thread.sleep(ms)
@@ -143,6 +149,10 @@ object ScreenDevice {
     /** The screenshots are the JVM run's (Roborazzi); a device takes none. */
     @Suppress("UNUSED_PARAMETER")
     fun shot(rule: AppRule, name: String) = rule.waitForIdle()
+
+    /** The pictures of a flow's moments are the JVM run's too. */
+    @Suppress("UNUSED_PARAMETER")
+    fun picture(rule: AppRule, name: String) = rule.waitForIdle()
 
     /** Back to the phone as a test finds it. */
     fun reset(rule: AppRule) {

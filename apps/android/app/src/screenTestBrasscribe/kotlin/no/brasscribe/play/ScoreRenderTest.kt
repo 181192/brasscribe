@@ -91,8 +91,9 @@ class ScoreRenderTest : ScreenTest() {
         android.util.Log.i("ScoreRenderTest", "$label: $detail")
         assertTrue("$label: the score is clipped to less than its width ($detail)", !clipped)
         if (!onScreen) return
-        val bmp = rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()
-        val ink = inkShare(bmp)
+        // alphaTab hands its page over in pieces once the render is done: the notation is there a moment later.
+        var ink = 0.0
+        runCatching { waitUntil(5_000) { ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()); ink >= MIN_INK } }
         assertTrue("$label: no notation on screen (ink ${"%.4f".format(ink)}; $detail)", ink >= MIN_INK)
     }
 

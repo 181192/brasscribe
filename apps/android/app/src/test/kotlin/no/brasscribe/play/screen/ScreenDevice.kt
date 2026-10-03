@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.media.MediaFormat
 import android.net.Uri
 import android.os.Looper
+import android.provider.Settings
 import android.view.Display
 import android.view.KeyEvent
 import android.view.View
@@ -59,6 +60,9 @@ object ScreenDevice {
                 val display = ui.getDeclaredMethod("systemUiForDefaultDisplay").apply { isAccessible = true }.invoke(null)
                 ui.declaredMethods.first { it.name == "setBehavior" }.apply { isAccessible = true }
                     .invoke(display, member("STANDARD_STATUS_BAR"), member("GESTURAL_NAVIGATION"))
+                // Nothing moves by itself: the phone's animations are off, as they are on the emulators the device tests
+                // run on, so a score is put at its place at once and a screenshot does not catch it on its way.
+                Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
                 test.evaluate()
             }
         }
@@ -265,6 +269,32 @@ object ScreenDevice {
         rule.waitForIdle()
     }
 
+    /**
+     * Waits until the screen is at rest also where the app's other threads have a hand in it (a score is
+     * engraved on one, its sounds are loaded on another, a list's details are read on a third): the app's time
+     * passes and they get on, until what is drawn has stayed the same for a while. For a screenshot that is to
+     * be the same from run to run.
+     */
+    fun rest(rule: AppRule) {
+        val end = System.nanoTime() + 6_000_000_000
+        var drawn = 0
+        var same = 0
+        while (same < 5 && System.nanoTime() < end) {
+            repeat(4) { rule.waitForIdle(); pass(rule, 50) }
+            Thread.sleep(40)
+            rule.waitForIdle()
+            val now = pixels()
+            if (now == drawn) same++ else { same = 0; drawn = now }
+        }
+    }
+
+    private fun pixels(): Int {
+        val shot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() ?: return 0
+        val all = IntArray(shot.width * shot.height).also { shot.getPixels(it, 0, shot.width, 0, 0, shot.width, shot.height) }
+        shot.recycle()
+        return all.contentHashCode()
+    }
+
     /** Lets [ms] of the app's time pass: Android's clock (its handlers and animations) and Compose's own (a delay in an effect). */
     fun pass(rule: AppRule, ms: Long) {
         shadowOf(Looper.getMainLooper()).idleFor(ms, TimeUnit.MILLISECONDS)
@@ -278,10 +308,24 @@ object ScreenDevice {
         return shot.copy(Bitmap.Config.ARGB_8888, false)
     }
 
-    /** The screen as it is now, as the screenshot [name] ("fretscribe/home-light"): recorded or compared when Roborazzi is asked to. */
+    /**
+     * The screen at rest, as the screenshot [name] ("fretscribe/home-light") of the screen catalogue: recorded or
+     * compared when Roborazzi is asked to (apps/android/scripts/screenshots.sh), and nothing otherwise.
+     */
     fun shot(rule: AppRule, name: String) {
         rule.waitForIdle()
-        captureScreenRoboImage("src/screenshots/$name.png")
+        captureScreenRoboImage("build/outputs/roborazzi/$name.png")
+    }
+
+    /**
+     * The screen as it is at this moment of a flow, as the picture [name], to look at: kept under
+     * build/outputs/screen-pictures while screenshots are recorded, and never compared (a moment of a flow is
+     * not the same from run to run).
+     */
+    fun picture(rule: AppRule, name: String) {
+        if (System.getProperty("roborazzi.test.record") != "true") return
+        val file = File("build/outputs/screen-pictures/$name.png").apply { parentFile?.mkdirs() }
+        file.outputStream().use { screen(rule).compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
     /** Back to the phone as a test finds it. */

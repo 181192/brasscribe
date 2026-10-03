@@ -109,6 +109,8 @@ class ReviewChangeNoteTest : ScreenTest() {
         assertTrue(vm.result.value!!.changedOnPhone)
         rule.onRoot().tryPerformAccessibilityChecks()
 
+        // (The opened score is still being read in on other threads; a change made before it is all there is dropped.)
+        rest()
         rule.onNodeWithTag("undo-change").performScrollTo().performClick()
         changeLanded()
         assertEquals(null, changedText())
@@ -209,6 +211,8 @@ class ReviewChangeNoteTest : ScreenTest() {
         assertEquals(1, melodyPitches().zip(pitchesBefore).count { (a, b) -> a == b + 2 })
 
         // Undo: back to the transcription, still this note, still open.
+        // (The opened score is still being read in on other threads; a change made before it is all there is dropped.)
+        rest()
         rule.onNodeWithTag("undo-change").performScrollTo().performClick()
         changeLanded()
         assertEquals(null, changedText())

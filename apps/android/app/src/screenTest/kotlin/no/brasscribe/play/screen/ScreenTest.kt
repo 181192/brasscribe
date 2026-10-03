@@ -78,10 +78,11 @@ abstract class ScreenTest {
     /** The whole screen as it is drawn now. */
     protected fun screen(): Bitmap = ScreenDevice.screen(rule)
 
-    /** Where this test's screenshots go, under the app's screenshots. */
+    /** Where this test's pictures go. */
     protected open val shots: String = "screens"
 
-    protected fun shot(name: String) = ScreenDevice.shot(rule, "$shots/$name")
+    /** A picture of the screen at this moment, to look at (see [ScreenDevice.picture]). */
+    protected fun shot(name: String) = ScreenDevice.picture(rule, "$shots/$name")
 
     /** The accessibility checks on what is on the screen now (they also run on every action a test performs). */
     protected fun checkAccessibility() {
@@ -90,6 +91,9 @@ abstract class ScreenTest {
 
     /** Waits until [condition] holds; the app's time passes meanwhile. */
     protected fun waitUntil(ms: Long = 5_000, condition: () -> Boolean) = ScreenDevice.waitUntil(rule, ms, condition)
+
+    /** Waits until the screen is at rest also where the app's other threads have a hand in it (see [ScreenDevice.rest]). */
+    protected fun rest() = ScreenDevice.rest(rule)
 
     /** Lets [ms] of the app's time pass. */
     protected fun pass(ms: Long) = ScreenDevice.pass(rule, ms)
@@ -121,9 +125,11 @@ abstract class ScreenTest {
         .fetchSemanticsNodes().flatMap { it.config[SemanticsProperties.Text] }.joinToString(" | ") { it.text }
 
     /** Every text on screen is drawn whole: no line is cut off or ellipsized. */
-    protected fun assertNoTextIsClipped() {
+    protected fun assertNoTextIsClipped(except: Set<String> = emptySet()) {
         val clipped = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
             .fetchSemanticsNodes().mapNotNull { node ->
+                // (A text that is laid out and then left out, as a control with no room in its row is, is not on the screen.)
+                if (!node.layoutInfo.isPlaced) return@mapNotNull null
                 val layouts = mutableListOf<TextLayoutResult>()
                 node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(layouts)
                 val l = layouts.firstOrNull() ?: return@mapNotNull null
@@ -131,7 +137,7 @@ abstract class ScreenTest {
                     (!l.layoutInput.softWrap && l.multiParagraph.maxIntrinsicWidth > l.size.width + 1f)
                 l.layoutInput.text.text.takeIf { cut }
             }
-        assertEquals("clipped text", emptyList<String>(), clipped)
+        assertEquals("clipped text", emptyList<String>(), clipped.filter { it !in except })
     }
 
     /** What the element with the keyboard's focus says: its texts and its name. */
