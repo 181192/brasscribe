@@ -52,7 +52,8 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     its lowest string as the lower octave of a note in the strum). A guitar's or a bass's note below the lowest
     string always stays, flagged, and the tuning suggestions are ranked on it. Of a melody high over a chord left
     to ring, which the transcriber hears again on every note of the melody, the chord heard again is what is left
-    out, not the melody.
+    out, not the melody, unless the melody note sits on an overtone (partials 2 to 6) of a sounding note, which
+    includes the chord's own notes in higher octaves; those are still left out.
   - The result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the fingered notes, the tunings
     ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
     `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore

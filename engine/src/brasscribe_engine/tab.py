@@ -181,7 +181,8 @@ RING_GAP = 0.03
 # Of the notes of a violation, such a note is left out before a note that starts anew on top of its onset more
 # than RING_ABOVE semitones over it and is no overtone of a note there or ringing through it (rung). Below that
 # the top note can be one of a strum struck again, and an overtone over a strum is what Basic Pitch hears on
-# top of one. A melody note that happens to sit on an overtone of the chord is then still left out. Chosen on
+# top of one. A melody note that happens to sit on an overtone of the chord, which includes a note of the
+# chord itself in a higher octave, is then still left out. Chosen on
 # the development passages of small_tab_bench (the held-out chord-melody and strummed ones, the only ones with
 # a melody over a ringing chord); eval/README.md lists the split.
 RING_ABOVE = 12
