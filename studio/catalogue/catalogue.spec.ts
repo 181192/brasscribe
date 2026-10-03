@@ -7,7 +7,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
 import { isKnown } from "./known";
-import { openView, steady } from "./open";
+import { openView, stableScreenshot, steady } from "./open";
 import { VARIANTS, VIEWS } from "./views";
 
 const shots = process.env.CATALOGUE_SHOTS;
@@ -21,7 +21,7 @@ for (const variant of VARIANTS) {
       const opened = await openView(page, view, variant);
       if (shots) {
         await steady(page);
-        await page.screenshot({ path: join(shots, `${view.name}--${variant.name}.png`), fullPage: true, animations: "disabled", caret: "hide" });
+        await stableScreenshot(page, join(shots, `${view.name}--${variant.name}.png`));
       }
       if (!checks) return;
       expect(opened.problems, "errors and requests without a fixture").toEqual([]);

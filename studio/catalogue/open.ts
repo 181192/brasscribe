@@ -1,6 +1,7 @@
 // Opens a view of the catalogue in a variant, with the API answered from the fixtures, and waits until it
 // has settled.
 import type { Page } from "@playwright/test";
+import { writeFileSync } from "node:fs";
 import { serveApi } from "./api";
 import type { Variant, View } from "./views";
 
@@ -52,4 +53,17 @@ export async function steady(page: Page): Promise<void> {
       if (n.textContent && /\d+ ms\b/.test(n.textContent)) n.textContent = n.textContent.replace(/\d+ ms\b/g, "– ms");
     }
   });
+}
+
+/** A screenshot taken once two in a row are the same (a score may still move into place after it is drawn). */
+export async function stableScreenshot(page: Page, path: string): Promise<void> {
+  const take = () => page.screenshot({ fullPage: true, animations: "disabled", caret: "hide" });
+  let last = await take();
+  for (let i = 0; i < 10; i++) {
+    await page.waitForTimeout(150);
+    const now = await take();
+    if (now.equals(last)) break;
+    last = now;
+  }
+  writeFileSync(path, last);
 }

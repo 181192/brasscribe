@@ -39,11 +39,12 @@ export const VARIANTS: Variant[] = [
   { name: "reflow320", colorScheme: "light", contrast: "no-preference", lang: "en", viewport: { width: 320, height: 800 }, keyboard: true, reflow: true },
 ];
 
-const scoreRendered = (selector: string) => async (page: Page) => {
-  await expect.poll(() => page.evaluate((s) => {
-    const scores = Array.from(document.querySelectorAll(s)) as (HTMLElement & { rendered?: boolean })[];
-    return scores.length > 0 && scores.every((x) => x.rendered);
-  }, selector), { timeout: 30_000 }).toBe(true);
+/** Engraved, and with `player` the player loaded too (its status line changes once it has its sounds). */
+const scoreRendered = (selector: string, player = true) => async (page: Page) => {
+  await expect.poll(() => page.evaluate(([s, player]) => {
+    const scores = Array.from(document.querySelectorAll(s)) as (HTMLElement & { rendered?: boolean; ready?: boolean })[];
+    return scores.length > 0 && scores.every((x) => x.rendered && (!player || x.ready));
+  }, [selector, player] as const), { timeout: 30_000 }).toBe(true);
 };
 
 const run = "runs/old-hundredth-a";
@@ -61,7 +62,7 @@ export const VIEWS: View[] = [
   { name: "run-failed", route: "runs/old-hundredth-failed", ready: async (p) => { await expect(p.locator(".notice-error").first()).toBeVisible(); } },
   { name: "viewer", route: "viewer" },
   { name: "viewer-score", route: "viewer?example=old-hundredth", ready: scoreRendered("#main bs-score") },
-  { name: "compare", route: "compare?a=old-hundredth-a&b=old-hundredth-b" },
+  { name: "compare", route: "compare?a=old-hundredth-a&b=old-hundredth-b", ready: scoreRendered("#main bs-score", false) },
   { name: "bench", route: "bench" },
   { name: "parity", route: "parity" },
   { name: "conformance", route: "conformance" },
