@@ -9,6 +9,7 @@ import no.brasscribe.play.screen.ScreenTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,6 +56,15 @@ class ScorePracticeKeptTest : ScreenTest() {
         assertEquals(70, st.speed)
         assertEquals(9..10, st.loop)
         assertEquals(10, st.bar)
+        // And the player has them, once it is ready: it repeats bars 9–10, and it is there.
+        val api = controller().view.api
+        waitUntil(30_000) { api.isReadyForPlayback }
+        rest()
+        val bars = api.score!!.masterBars
+        assertTrue("the player repeats", api.isLooping)
+        assertEquals(bars[8].start, api.playbackRange!!.startTick, 0.0)
+        assertEquals(bars[10].start, api.playbackRange!!.endTick, 0.0)
+        assertTrue("the player is in bars 9–10 (tick ${api.tickPosition})", api.tickPosition >= bars[8].start && api.tickPosition < bars[10].start)
 
         // Deleted from Your scores, its place goes.
         rule.runOnUiThread { vm.home() }
