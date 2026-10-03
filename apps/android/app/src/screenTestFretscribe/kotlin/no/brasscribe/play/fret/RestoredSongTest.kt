@@ -141,6 +141,7 @@ class RestoredSongTest : ScreenTest() {
         waitForTag("fs-what-continue", 10_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
         pass(1500)
+        checkAccessibility()
         assertTrue("the recording is kept", take.isFile)
         assertEquals(take, vm.source.value?.file)
         // The answer was in memory only: nothing is chosen, and nothing is sent until it is.
@@ -166,6 +167,7 @@ class RestoredSongTest : ScreenTest() {
         // Writing down the notes cannot be taken up again: the screen before it comes back.
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
         pass(1500)
+        checkAccessibility()
         assertTrue("the recording is kept", take.isFile)
         rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
         card("song").performClick()
@@ -185,6 +187,7 @@ class RestoredSongTest : ScreenTest() {
         assertTrue("the recording is kept", take.isFile)
         assertEquals(take, vm.source.value?.file)
         rule.onNodeWithText("You can change this later.").assertIsDisplayed()
+        checkAccessibility()
 
         // Back: What is this? has the recording, so Continue is there once the question is answered.
         rule.runOnUiThread { vm.back() }
@@ -212,6 +215,7 @@ class RestoredSongTest : ScreenTest() {
         assertEquals(listOf(Screen.HOME, Screen.OUTPUT), vm.screen.value)
         assertNull(vm.source.value?.file)
         rule.onNodeWithText("You can change this later.").assertIsDisplayed()
+        checkAccessibility()
         useDropD(vm, listOf(Screen.HOME, Screen.OUTPUT))
     }
 
@@ -225,6 +229,7 @@ class RestoredSongTest : ScreenTest() {
         waitForTag("fs-check-change-tuning")
         assertEquals(listOf(Screen.HOME, Screen.REVIEW), first.screen.value)
         assertNull(first.source.value?.file)
+        checkAccessibility()
         useDropD(first, listOf(Screen.HOME, Screen.OUTPUT))
         // Still one song: the same one, written down again.
         waitUntil(10_000) { first.savedScores.value.size == 1 && first.savedScores.value.single().jobId == first.result.value?.jobId }

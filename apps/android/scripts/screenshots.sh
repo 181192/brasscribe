@@ -14,8 +14,9 @@
 #
 # compare writes app/build/reports/screenshots/: index.html (before, the difference and after, for
 # each screen that changed), summary.md (the same as a list) and the images. It exits 0 when no screen
-# changed, 1 when one changed, appeared or went away, and 2 when the catalogues' own checks failed
-# (accessibility, text cut off at 200 %, the keyboard's order).
+# changed, 1 when one changed, appeared or went away, 2 when the catalogues' own checks failed
+# (accessibility, text cut off at 200 %, the keyboard's order), and 3 when the screenshots could not be
+# taken at the base (nothing was compared; summary.md says so).
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -61,7 +62,11 @@ case "${1:-}" in
         (cd "$tree/core" && cargo build --release -p brasscribe-ffi)
       fi
       rm -rf "$tree/apps/android/app/build/outputs/roborazzi"
-      catalogues "$tree/apps/android" record
+      if ! catalogues "$tree/apps/android" record; then
+        log "the screenshots could not be taken at ${base:0:12}: nothing was compared"
+        printf '# Screenshots\n\nThe screenshots could not be taken at the base, %s, so nothing was compared.\n' "${base:0:12}" >"$report/summary.md"
+        exit 3
+      fi
       cp -R "$tree/apps/android/app/build/outputs/roborazzi/." "$report/before/"
     else
       log "${base:0:12} has no screen catalogue: every screen is new"

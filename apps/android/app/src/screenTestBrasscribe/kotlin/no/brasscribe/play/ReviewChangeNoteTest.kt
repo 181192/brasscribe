@@ -49,7 +49,8 @@ import kotlin.math.abs
 class ReviewChangeNoteTest : ScreenTest() {
     @Before
     fun setUp() {
-        // ATF checks on every action, the Change note sheet included (its drag handle is a 48 dp target).
+        // On a device ATF then checks on every action; on the JVM it checks where a test calls checkAccessibility(),
+        // the Change note sheet among them (its drag handle is a 48 dp target), and on the screen each test ends on.
         checkAccessibility()
         if (rule.onAllNodesWithText("Get started").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Get started").performClick()
         if (rule.onAllNodesWithTag("seat-skip").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithTag("seat-skip").performClick()

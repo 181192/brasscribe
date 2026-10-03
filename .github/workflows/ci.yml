@@ -16,7 +16,9 @@ on:
       - "apps/*/docs/screenshots/**"
       - ".github/workflows/pages.yml"
   # Every pull request, so `CI result` is always reported; the `changes` job skips what it doesn't touch.
+  # labeled/unlabeled: the screenshot check reads the label screenshots-changed when it runs.
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_call:
   workflow_dispatch:
 
@@ -53,7 +55,7 @@ jobs:
             python: ['engine/**', 'docs/accessibility/talking-score-vectors.json', 'apps/android/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*', '.github/workflows/ci.yml']
             core: ['core/**', 'docs/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
             studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
-            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json', '.github/workflows/ci.yml']
+            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/brasscribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -278,7 +280,10 @@ jobs:
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
     strategy:
       fail-fast: false
       matrix:
@@ -326,14 +331,18 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-          MEANT: ${{ contains(github.event.pull_request.labels.*.name, 'screenshots-changed') }}
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git fetch --no-tags origin "$BASE"
           status=0
           scripts/screenshots.sh compare "$(git merge-base HEAD "$BASE")" || status=$?
           cat app/build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
-          # 1: screens changed (shown in the artefact); 2: a screen's own checks failed, which no label lets through.
-          if [ "$status" -eq 1 ] && [ "$MEANT" = true ]; then
+          # The labels as they are now, not as they were when the run started (a re-run keeps the event's).
+          meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")')
+          # 1: screens changed (shown in the artefact). 2: a screen's own checks failed; 3: the base's screenshots
+          # could not be taken. No label lets 2 or 3 through.
+          if [ "$status" -eq 1 ] && [ "$meant" = true ]; then
             echo "Screens changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
             status=0
           fi

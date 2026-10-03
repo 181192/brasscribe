@@ -1,5 +1,6 @@
 package no.brasscribe.play.fret
 
+import alphaTab.model.NoteSubElement
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.graphics.Rect
@@ -56,6 +57,7 @@ import no.brasscribe.play.engine.TabLayout
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -128,8 +130,31 @@ class TabViewTest : TabScreenTest() {
         "Bar 15, beat 1. 4th string, open, E. Fretscribe isn't sure about this one.",
     )
 
+    /**
+     * The tab view was given [colours], and alphaTab is told to engrave every doubtful numeral (or note head) in their
+     * doubt colour and every other note in ink. (That it then draws them so is theDoubtfulNumeralsAreDrawnInTheDoubtColour's,
+     * on a device: alphaSkia's desktop build swaps red and blue.)
+     */
+    private fun assertTheDoubtColourIsGiven(tab: TabView, colours: BrasscribeColors) {
+        rule.runOnUiThread {
+            assertEquals(tabPalette(colours), tab.palette)
+            val uncertain = colours.uncertain.toArgb()
+            val doubtful = tab.placed.flatMap { it.doubtful }
+            assertTrue("doubtful notes", doubtful.isNotEmpty())
+            for (note in doubtful) {
+                val c = note.style?.colors?.get(NoteSubElement.GuitarTabFretNumber) ?: throw AssertionError("a doubtful numeral with no colour of its own")
+                assertEquals("the doubtful numeral's colour", listOf(uncertain shr 16 and 0xFF, uncertain shr 8 and 0xFF, uncertain and 0xFF), listOf(c.r.toInt(), c.g.toInt(), c.b.toInt()))
+            }
+            val score = tab.view.api.score!!
+            for (track in score.tracks) for (staff in track.staves) for (bar in staff.bars) for (voice in bar.voices) for (beat in voice.beats) for (n in beat.notes) {
+                if (doubtful.none { it === n }) assertNull("a sure note is in ink", n.style)
+            }
+        }
+    }
+
     /** The marks of the second fixture are over their columns, in [colours]; nothing else on the screen is in the doubt colour. */
-    private fun assertTheMarksAreDrawn(tab: TabView, colours: BrasscribeColors) {
+    private fun assertTheMarksAreDrawn(tab: TabView, colours: BrasscribeColors, numeralsToo: Boolean = false) {
+        assertTheDoubtColourIsGiven(tab, colours)
         val uncertain = colours.uncertain.toArgb()
         val ink = colours.ink.toArgb()
         val boxes = tab.engraving.value!!.boxes
@@ -146,7 +171,7 @@ class TabViewTest : TabScreenTest() {
                 assertEquals("the boxed ! is not in the doubt colour", 0, count(image, glyph, uncertain))
             } else {
                 assertTrue("a ? in the doubt colour above column $i", count(image, glyph, uncertain) > 40)
-                if (ScreenDevice.ENGRAVES_IN_COLOUR) assertTrue("the numeral of column $i in the doubt colour", count(image, numerals, uncertain) > 20)
+                if (numeralsToo) assertTrue("the numeral of column $i in the doubt colour", count(image, numerals, uncertain) > 20)
                 tabPalette(colours).uncertainTint?.let { wash -> assertTrue("the wash behind the numeral of column $i", count(image, numerals, wash, 6) > 40) }
             }
             // Nothing in the doubt colour outside the marks on this screen: no second "?" from the page's own words.
@@ -157,6 +182,15 @@ class TabViewTest : TabScreenTest() {
             }
             assertEquals("pixels in the doubt colour outside the marks", 0, stray)
         }
+    }
+
+    @Test
+    @DeviceOnly
+    fun theDoubtfulNumeralsAreDrawnInTheDoubtColour() {
+        assumeTrue("on a device only: alphaSkia's desktop build swaps red and blue", ScreenDevice.ENGRAVES_IN_COLOUR)
+        computer("bass-line-marks")
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        assertTheMarksAreDrawn(showTheTab(), BrasscribeLightColors, numeralsToo = true)
     }
 
     @Test
@@ -574,7 +608,18 @@ class TabViewTest : TabScreenTest() {
     }
 
     @Test
-    fun theFretNumbersAreSetInFretscribeTab() {
+    fun theFretNumbersAreSetInFretscribeTab() = fretNumbers(systemsToo = false)
+
+    @Test
+    @DeviceOnly
+    fun withoutItsFaceTheFretNumbersAreInTheSystemsMonospace() {
+        // On the JVM alphaSkia takes "monospace" from the computer's fonts, not from the phone's: only a device has Android's to compare with.
+        assumeTrue("on a device only: the system's monospace face", !ScreenDevice.JVM)
+        fretNumbers(systemsToo = true)
+    }
+
+    /** A 0 drawn with Fretscribe Tab has its measures; with [systemsToo], one drawn without it has the system monospace's. */
+    private fun fretNumbers(systemsToo: Boolean) {
         val xml = asset("bass-line/tab.musicxml")
         val index = TabIndex.parse(xml)
         fun shown(ownFace: Boolean): TabView = alone(xml, TabLayout.TAB, index, TabMarks.of(index, null), ownFace)
@@ -603,8 +648,7 @@ class TabViewTest : TabScreenTest() {
         assertEquals(message, want.width().toFloat(), (ownInk.width() + 1).toFloat(), 3f)
         assertEquals(message, want.height().toFloat(), (ownInk.height() + 1).toFloat(), 3f)
         assertTrue(message, apart(want, ownInk.width() + 1, ownInk.height() + 1) < apart(other, ownInk.width() + 1, ownInk.height() + 1))
-        // (On the JVM alphaSkia takes "monospace" from the computer's fonts, not from the phone's: only a device has Android's to compare with.)
-        if (ScreenDevice.JVM) return
+        if (!systemsToo) return
         assertEquals(message, other.width().toFloat(), (systemInk.width() + 1).toFloat(), 3f)
         assertEquals(message, other.height().toFloat(), (systemInk.height() + 1).toFloat(), 3f)
         assertTrue(message, apart(other, systemInk.width() + 1, systemInk.height() + 1) < apart(want, systemInk.width() + 1, systemInk.height() + 1))

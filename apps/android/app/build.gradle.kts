@@ -94,9 +94,14 @@ android {
             // (Robolectric reaches into the JDK for Android's file descriptors; a newer JDK asks for the export.)
             it.jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
             it.systemProperty("robolectric.graphicsMode", "NATIVE")
+            // For the message when a part of Robolectric the screen tests reach into has moved.
+            it.systemProperty("brasscribe.robolectric", libs.versions.robolectric.get())
             it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
             // -Pbrasscribe.withoutCatalogues: the screen catalogues are left to scripts/screenshots.sh (CI runs them there).
-            if (providers.gradleProperty("brasscribe.withoutCatalogues").isPresent) it.filter.excludeTestsMatching("*ScreensTest")
+            if (providers.gradleProperty("brasscribe.withoutCatalogues").isPresent) {
+                it.filter.excludeTestsMatching("no.brasscribe.play.BrasscribeScreensTest")
+                it.filter.excludeTestsMatching("no.brasscribe.play.FretscribeScreensTest")
+            }
             // Robolectric keeps one Android per SDK in memory, with native graphics beside it.
             it.maxHeapSize = "3g"
             // The shared resolver vectors (sounds/partsound-vectors.json) and part map.

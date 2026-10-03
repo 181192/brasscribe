@@ -187,10 +187,15 @@ abstract class ScreenTest {
         rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick) and !SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
             .fetchSemanticsNodes().filter { it.layoutInfo.isPlaced && !it.boundsInWindow.isEmpty }
 
-    /** What a finger can act on and Tab, going round the screen ([reached]), does not reach: their words. */
+    /**
+     * What a finger can act on and Tab, going round the screen ([reached]), does not reach: their words. Only the window
+     * the keyboard is in counts (a dialog, and not the screen under it), as a finger can reach only that one too.
+     */
     protected fun missedByTheKeyboard(reached: List<SemanticsNode>): List<String> {
+        fun windowOf(node: SemanticsNode): Int = generateSequence(node) { it.parent }.last().id
         val ids = reached.map { it.id }.toSet()
-        return actionable().filter { it.id !in ids }.map(FocusOrder::words)
+        val windows = reached.map(::windowOf).toSet()
+        return actionable().filter { it.id !in ids && (windows.isEmpty() || windowOf(it) in windows) }.map(FocusOrder::words)
     }
 
     /** What the element with the keyboard's focus says: its texts and its name. */

@@ -200,6 +200,7 @@ class YourInstrumentScreenTest : ScreenTest() {
             rule.onNodeWithTag("fs-not-now").assertIsDisplayed().assert(hasText(w[6]))
                 .assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
             rule.onNodeWithTag("fs-keep").assertIsDisplayed().assert(hasText(w[7])).assertHeightIsAtLeast(48.dp)
+            checkAccessibility()
             // Every instrument can be chosen, and the rows under it follow: a bass by its strings, a ukulele by its
             // size with a high or a low G, a mandolin with nothing more to ask.
             val o = others.getValue(lang)
@@ -214,6 +215,7 @@ class YourInstrumentScreenTest : ScreenTest() {
             row("strings").assertContentDescriptionEquals(o[3]).assert(isPicker).assertHeightIsAtLeast(48.dp)
             row("tuning").assertContentDescriptionEquals(o[4])
             assertSaidOnce("strings")
+            checkAccessibility()
             pick("tuning", "low-g")
             row("tuning").assertContentDescriptionEquals(o[5])
             pick("strings", "ukulele-baritone")
@@ -225,6 +227,7 @@ class YourInstrumentScreenTest : ScreenTest() {
             row("tuning").assertContentDescriptionEquals(o[9]).assert(isNotAButton)
             assertTrue(rule.onAllNodesWithTag("fs-row-strings").fetchSemanticsNodes().isEmpty())
             listOf("instrument", "hand", "reads").forEach { assertSaidOnce(it) }
+            checkAccessibility()
             // Read once, as one element with nothing under it.
             rule.onNodeWithTag("fs-row-tuning").fetchSemanticsNode().let { read ->
                 assertEquals(1, read.config.getOrNull(SemanticsProperties.ContentDescription)?.size)
@@ -443,6 +446,7 @@ class YourInstrumentScreenTest : ScreenTest() {
         pick("strings", "bass-5")
         row("strings").assertContentDescriptionEquals("Strings, 5 strings")
         row("tuning").assertContentDescriptionEquals("Usual tuning, Standard")
+        checkAccessibility()
         pick("tuning", "drop-a")
         pick("hand", "right-upside-down")
         pick("reads", "tab-and-notation")
@@ -462,6 +466,7 @@ class YourInstrumentScreenTest : ScreenTest() {
         rule.onNodeWithTag("setting-seat").assert(hasText("Your instrument"))
         assertTrue(rule.onAllNodesWithText("Realistic").fetchSemanticsNodes().isEmpty())
         assertTrue(rule.onAllNodesWithText("Sound", ignoreCase = true).fetchSemanticsNodes().isEmpty())
+        checkAccessibility()
         shot("settings-light")
         rule.onNodeWithTag("setting-seat").performClick()
         waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }

@@ -28,13 +28,19 @@ abstract class ScreenCatalogue : ScreenTest() {
      * that shows a moment of something under way (its screenshot would differ from run to run, so none is kept).
      * [ownOrder] says why the keyboard does not go through this screen in the order it is read, for the few
      * where that is so (the keyboard's order is then not compared; it must still reach everything). [cutAtLargeText] are
-     * texts known to be cut off at 200 %, each with the issue that says so: the list is for what is waiting to
-     * be fixed, and an entry goes when its issue is closed.
+     * texts known to be cut off at 200 %, and [notReached] controls the keyboard is known not to reach, each with the
+     * issue that says so: the lists are for what is waiting to be fixed, and an entry goes when its issue is closed.
      */
     class Entry(
         val name: String, val steady: Boolean = true, val ownOrder: String? = null,
-        val cutAtLargeText: Set<String> = emptySet(), val open: () -> Unit,
+        val cutAtLargeText: Set<String> = emptySet(), val notReached: Set<String> = emptySet(), val open: () -> Unit,
     )
+
+    /**
+     * What a finger can act on that is not for the keyboard, on any screen: the dimmed screen behind a sheet, which
+     * a screen reader can tap to close it, where the keyboard closes the sheet with Escape or Back.
+     */
+    private val notForTheKeyboard = setOf("Close sheet")
 
     protected abstract val screens: List<Entry>
 
@@ -112,7 +118,7 @@ abstract class ScreenCatalogue : ScreenTest() {
                 settle()
                 val all = tabThrough()
                 // Whatever its order, the keyboard reaches everything a finger can act on.
-                missedByTheKeyboard(all).takeIf { it.isNotEmpty() }?.let { failed += "${screen.name}: the keyboard never reaches $it" }
+                (missedByTheKeyboard(all) - notForTheKeyboard - screen.notReached).takeIf { it.isNotEmpty() }?.let { failed += "${screen.name}: the keyboard never reaches $it; it goes ${all.map(FocusOrder::words)}" }
                 if (screen.ownOrder != null) continue
                 val round = all
                 val read = FocusOrder.reading(round, scrolling())

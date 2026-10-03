@@ -53,7 +53,8 @@ class BrasscribeSmokeTest : ScreenTest() {
         ScreenDevice.turn(rule, sideways = true)
         waitUntil(30_000) { (vm.scoreController?.renders?.value ?: 0) > 0 }
         settle()
-        assertTrue("the score has its render on its side", (vm.scoreController?.renders?.value ?: 0) > 0)
+        waitUntil(10_000) { ink() > 0.005 }
+        assertTrue("the score has notation on its side", ink() > 0.005)
         ScreenDevice.turn(rule, sideways = false)
         waitUntil(10_000) { ink() > 0.005 }
     }

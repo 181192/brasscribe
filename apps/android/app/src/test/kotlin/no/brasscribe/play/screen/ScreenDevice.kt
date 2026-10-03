@@ -62,12 +62,17 @@ object ScreenDevice {
                 // The screens are the app's with its native core (the host build of it here): without it they would be
                 // other screens (no What do you play?, no Your instrument, no arranger), so they are not tested then.
                 val core = File(System.getProperty("jna.library.path").orEmpty()).listFiles().orEmpty().any { it.name.startsWith("libbrasscribe_ffi.") }
-                Assume.assumeTrue("the host build of the core is missing: scripts/core-artifacts.sh ensure host (or cargo build --release -p brasscribe-ffi in core/)", core)
-                val ui = Class.forName("org.robolectric.shadows.SystemUi")
-                fun member(name: String) = ui.getDeclaredField(name).apply { isAccessible = true }.get(null)
-                val display = ui.getDeclaredMethod("systemUiForDefaultDisplay").apply { isAccessible = true }.invoke(null)
-                ui.declaredMethods.first { it.name == "setBehavior" }.apply { isAccessible = true }
-                    .invoke(display, member("STANDARD_STATUS_BAR"), member("GESTURAL_NAVIGATION"))
+                val missing = "the host build of the core is missing: scripts/core-artifacts.sh ensure host (or cargo build --release -p brasscribe-ffi in core/)"
+                // In CI a missing core is a broken job, not a reason to test nothing.
+                if (!core && System.getenv("CI") != null) throw AssertionError(missing)
+                Assume.assumeTrue(missing, core)
+                internals("the status bar and gesture navigation (org.robolectric.shadows.SystemUi)") {
+                    val ui = Class.forName("org.robolectric.shadows.SystemUi")
+                    fun member(name: String) = ui.getDeclaredField(name).apply { isAccessible = true }.get(null)
+                    val display = ui.getDeclaredMethod("systemUiForDefaultDisplay").apply { isAccessible = true }.invoke(null)
+                    ui.declaredMethods.first { it.name == "setBehavior" }.apply { isAccessible = true }
+                        .invoke(display, member("STANDARD_STATUS_BAR"), member("GESTURAL_NAVIGATION"))
+                }
                 // Nothing moves by itself: the phone's animations are off, as they are on the emulators the device tests
                 // run on, so a score is put at its place at once and a screenshot does not catch it on its way.
                 Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
@@ -128,11 +133,15 @@ object ScreenDevice {
             val activity = rule.activity
             @Suppress("DEPRECATION")
             activity.resources.updateConfiguration(config, app.displayMetrics)
-            (Activity::class.java.getDeclaredField("mCurrentConfig").apply { isAccessible = true }.get(activity) as Configuration).setTo(config)
+            internals("a turn told to the activity (Activity.mCurrentConfig)") {
+                (Activity::class.java.getDeclaredField("mCurrentConfig").apply { isAccessible = true }.get(activity) as Configuration).setTo(config)
+            }
             activity.onConfigurationChanged(config)
             for (window in WindowInspector.getGlobalWindowViews()) {
-                val root = View::class.java.getMethod("getViewRootImpl").invoke(window) ?: continue
-                root.javaClass.getMethod("updateConfiguration", Int::class.javaPrimitiveType).invoke(root, Display.INVALID_DISPLAY)
+                internals("a turn told to a window (ViewRootImpl.updateConfiguration)") {
+                    val root = View::class.java.getMethod("getViewRootImpl").invoke(window)
+                    root?.javaClass?.getMethod("updateConfiguration", Int::class.javaPrimitiveType)?.invoke(root, Display.INVALID_DISPLAY)
+                }
                 window.requestLayout()
             }
         }
@@ -198,9 +207,11 @@ object ScreenDevice {
     private var front: WeakReference<View>? = null
 
     private fun windowFocus(window: View, focused: Boolean) {
-        val root = View::class.java.getMethod("getViewRootImpl").invoke(window)
-        val change = root?.javaClass?.methods?.firstOrNull { it.name == "windowFocusChanged" && it.parameterTypes.contentEquals(arrayOf(Boolean::class.javaPrimitiveType)) }
-        if (change != null) change.invoke(root, focused) else window.dispatchWindowFocusChanged(focused)
+        internals("a window's focus (ViewRootImpl.windowFocusChanged)") {
+            val root = View::class.java.getMethod("getViewRootImpl").invoke(window)
+            val change = root?.javaClass?.methods?.firstOrNull { it.name == "windowFocusChanged" && it.parameterTypes.contentEquals(arrayOf(Boolean::class.javaPrimitiveType)) }
+            if (change != null) change.invoke(root, focused) else window.dispatchWindowFocusChanged(focused)
+        }
         shadowOf(Looper.getMainLooper()).idle()
     }
 
@@ -241,12 +252,26 @@ object ScreenDevice {
     }
 
     /** What the window does itself when a key or a finger arrives: Android's own call, which a test has no public way to. */
-    private fun touchMode(window: View, touch: Boolean): Boolean {
+    private fun touchMode(window: View, touch: Boolean): Boolean = internals("touch mode (ShadowWindowManagerGlobal.setInTouchMode, ViewRootImpl.ensureTouchMode)") {
         // For the windows opened from now on (a dialog, a menu), as the phone's one touch mode is for all its windows.
         ShadowWindowManagerGlobal::class.java.getDeclaredMethod("setInTouchMode", Boolean::class.javaPrimitiveType)
             .apply { isAccessible = true }.invoke(null, touch)
-        val root = View::class.java.getMethod("getViewRootImpl").invoke(window) ?: return false
-        return root.javaClass.getDeclaredMethod("ensureTouchMode", Boolean::class.javaPrimitiveType).apply { isAccessible = true }.invoke(root, touch) as Boolean
+        val root = View::class.java.getMethod("getViewRootImpl").invoke(window) ?: return@internals false
+        root.javaClass.getDeclaredMethod("ensureTouchMode", Boolean::class.javaPrimitiveType).apply { isAccessible = true }.invoke(root, touch) as Boolean
+    }
+
+    /**
+     * [block] reaches into Robolectric's or Android's own classes, which have no public way to do [what]. When one of
+     * them has moved (a newer Robolectric), the test says which, and with which Robolectric it was written for.
+     */
+    private inline fun <T> internals(what: String, block: () -> T): T = try {
+        block()
+    } catch (e: ReflectiveOperationException) {
+        throw IllegalStateException("the screen tests could not reach $what in Robolectric ${System.getProperty("brasscribe.robolectric") ?: "(version unknown)"}: " +
+            "it is not public, and has moved or changed; ScreenDevice (src/test) has to follow it", e)
+    } catch (e: NoSuchElementException) {
+        throw IllegalStateException("the screen tests could not reach $what in Robolectric ${System.getProperty("brasscribe.robolectric") ?: "(version unknown)"}: " +
+            "it is not public, and has moved or changed; ScreenDevice (src/test) has to follow it", e)
     }
 
     private val NAVIGATION_KEYS = setOf(

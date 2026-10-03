@@ -16,11 +16,14 @@ import org.hamcrest.Description
  * too low (the framework calls those warnings: it estimates the colours from a picture of the screen).
  *
  * [known] is the list of findings that are not real: each says why. It is kept short on purpose; a finding
- * that is real is fixed, not listed.
+ * that is real is fixed, not listed. It lets through only the framework's estimates (warnings), never an error:
+ * low contrast that the framework is sure of fails whatever the list says.
  */
 object ScreenAccessibility {
-    /** A finding that is not a real one, and why. */
-    class Known(val why: String, val matches: (AccessibilityViewCheckResult) -> Boolean)
+    /** A finding that is not a real one, and why. It matches a warning only. */
+    class Known(val why: String, private val test: (AccessibilityViewCheckResult) -> Boolean) {
+        fun matches(r: AccessibilityViewCheckResult): Boolean = r.type == AccessibilityCheckResultType.WARNING && test(r)
+    }
 
     val known: List<Known> = listOf(
         Known("the faint label of a button that is turned off (Continue before a choice is made): WCAG 1.4.3 leaves inactive controls out of its contrast rule") { r ->

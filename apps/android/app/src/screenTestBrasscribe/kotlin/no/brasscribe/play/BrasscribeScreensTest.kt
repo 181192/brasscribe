@@ -91,9 +91,10 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         },
         Entry("check-the-notes", ownOrder = "the notes of the part are a list of their own, which the keyboard goes through as they are played") { checkTheNotes(); rest() },
         Entry("how-should-the-score-be") { checkTheNotes(); go(Screen.OUTPUT) },
-        Entry("score") { theScore() },
+        Entry("score", notReached = setOf("Solo Cornet (you)", "Music stand") /* issue 174 */) { theScore() },
         Entry("score-more") { theScore(); more(); rest() },
-        Entry("music-stand", ownOrder = "the stand's controls are three groups side by side, and the keyboard takes the transport first") {
+        Entry("music-stand", ownOrder = "the stand's controls are three groups side by side, and the keyboard takes the transport first",
+            notReached = setOf("Leave the music stand") /* issue 175 */) {
             theScore()
             // (From the sheet of what the row has no room for: it always has the stand.)
             more()

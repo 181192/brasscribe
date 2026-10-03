@@ -276,17 +276,11 @@ class PracticeTest : ScreenTest() {
         rule.runOnUiThread { staysOn = generateSequence(tab.view as android.view.View?) { it.parent as? android.view.View }.any { it.keepScreenOn } }
         assertTrue("the screen stays on while the recording plays", staysOn)
 
-        val said = java.util.Collections.synchronizedList(ArrayList<String>())
-        val listening = ScreenDevice.announcements(rule) { said += it }
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)
         assertEquals("Play", described("fs-practice-play"))
         val stopped = now()
-        // The place it stopped at is said, once. (What is said reaches a screen reader on a device; on the JVM nothing listens.)
-        if (!ScreenDevice.JVM) waitUntil(5_000) { said.isNotEmpty() }
-        settle()
-        listening.close()
-        if (!ScreenDevice.JVM) assertEquals(listOf(words("fs-practice-place")), said.toList())
+        // (That the place it stopped at is said, once, is thePlaceItStopsAtIsSaidOnce's, on a device.)
         assertTrue("it stopped where it was ($stopped s)", stopped >= clock.secondsAt(6) - 0.2 && stopped < clock.secondsAt(8))
         val there = clock.placeAt(stopped)
         assertEquals(text(no.brasscribe.play.R.string.fs_practice_bar_beat, index.measures[there.bar].number, clock.beatAt(there)), words("fs-practice-place"))
@@ -331,12 +325,13 @@ class PracticeTest : ScreenTest() {
         ScreenDevice.elapse(rule, 4_000)
         val went = now() - from
         val took = (System.nanoTime() - began) / 1e9
-        // (How fast it goes by the clock on the wall is the phone's sound output's: on the JVM nothing plays it out.)
-        if (!ScreenDevice.JVM) assertEquals("at half speed the recording goes half as fast ($went s in $took s)", 0.5, went / took, 0.06)
+        // (How fast it goes by the clock on the wall is the phone's sound output's: halfSpeedIsHalfAsFastByTheClock, on a device.)
         assertTrue("it plays on ($went s in $took s)", went > 0.2)
         rule.runOnUiThread {
+            // What the player itself was told to run at, not only what the screen asked for.
             val player = practice.recordingPlayer as MediaRecordingPlayer
             assertEquals(0.5f, player.speed, 0.001f)
+            assertEquals("the player runs at half speed", 0.5f, player.appliedSpeed, 0.001f)
             assertEquals("the pitch is the recording's own", 1f, player.pitch, 0f)
         }
         rule.onNodeWithTag("fs-practice-play").performClick()
@@ -575,6 +570,42 @@ class PracticeTest : ScreenTest() {
         rule.waitForIdle()
         assertEquals("fs-practice-next", focusedTag())
         assertEquals("Last bar", state("fs-practice-next"))
+    }
+
+    @Test
+    @DeviceOnly
+    fun thePlaceItStopsAtIsSaidOnce() {
+        assumeTrue("on a device only: what is said reaches a screen reader there; on the JVM nothing listens", !ScreenDevice.JVM)
+        practise()
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        waitUntilPlaying()
+        waitUntil(10_000) { now() > 1.0 }
+        val said = java.util.Collections.synchronizedList(ArrayList<String>())
+        val listening = ScreenDevice.announcements(rule) { said += it }
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        waitUntilPlaying(false)
+        waitUntil(5_000) { said.isNotEmpty() }
+        settle()
+        listening.close()
+        assertEquals(listOf(words("fs-practice-place")), said.toList())
+    }
+
+    @Test
+    @DeviceOnly
+    fun halfSpeedIsHalfAsFastByTheClock() {
+        assumeTrue("on a device only: on the JVM nothing plays the sound out, so nothing keeps its time", !ScreenDevice.JVM)
+        practise()
+        repeat(10) { rule.onNodeWithTag("fs-practice-slower").performClick() }
+        assertEquals("50%", words("fs-practice-speed"))
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        waitUntilPlaying()
+        waitUntil(10_000) { now() > 0.3 }
+        val from = now()
+        val began = System.nanoTime()
+        ScreenDevice.elapse(rule, 4_000)
+        val went = now() - from
+        val took = (System.nanoTime() - began) / 1e9
+        assertEquals("at half speed the recording goes half as fast ($went s in $took s)", 0.5, went / took, 0.06)
     }
 
     @Test

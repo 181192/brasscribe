@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.math.PI
 import kotlin.math.sin
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * ONNX Runtime runs on the phone without reporting to Microsoft: its telemetry provider is not in the
@@ -18,6 +19,7 @@ import kotlin.math.sin
  * argument `ortWaitSeconds` keeps the process alive afterwards, for a network capture around the test.
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class OrtTelemetryDeviceTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
