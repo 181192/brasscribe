@@ -27,6 +27,7 @@ object ErrorWords {
         is LeadSeatRefusedException -> R.string.lead_seat_refused
         is NoCompanionException -> R.string.where_companion_missing
         is EngineJobFailedException -> R.string.error_engine_failed
+        is RecordingGoneException -> R.string.error_recording_gone
         is EngineException -> when (e.code) {
             "quartet_needs_group" -> R.string.lineup_quartet_needs_group
             "percussion_solo" -> R.string.percussion_solo_refused

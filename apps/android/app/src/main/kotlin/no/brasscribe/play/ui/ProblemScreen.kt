@@ -46,6 +46,7 @@ private val COPY = mapOf(
     Problem.TOO_LARGE to ProblemCopy(R.string.problem_too_large_title, R.string.problem_too_large_body, listOf(R.string.problem_too_large_reason), null),
     Problem.DRAFT_TOO_LONG to ProblemCopy(R.string.draft_too_long_title, R.string.draft_too_long_body, emptyList(), R.string.draft_too_long_kept),
     Problem.DRAFT_REFUSED to ProblemCopy(R.string.draft_refused_title, R.string.draft_refused_body, emptyList(), R.string.draft_too_long_kept),
+    Problem.NO_NOTES to ProblemCopy(R.string.problem_no_notes_title, R.string.problem_no_notes_body, emptyList(), null),
 )
 
 /**
@@ -88,6 +89,13 @@ fun ProblemScreen(vm: PlayViewModel) {
                 Problem.SCORE_FAILED -> {
                     PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
                     SecondaryButton(stringResource(R.string.back_home), vm::home)
+                }
+                // Trying the same again finds the same: no Retry. The computer only when the phone wrote it down.
+                Problem.NO_NOTES -> {
+                    if (no.brasscribe.play.noNotesOffersComputer(vm.noNotesOnPhone, computerThere))
+                        PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
+                    else PrimaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
+                    SecondaryButton(stringResource(R.string.problem_record_again), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
                 }
                 Problem.NOTHING_HEARD -> {
                     PrimaryButton(stringResource(R.string.problem_import_instead), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)

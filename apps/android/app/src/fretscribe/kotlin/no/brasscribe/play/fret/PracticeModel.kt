@@ -114,6 +114,27 @@ class PracticeRecordings(private val dir: File) {
             error is java.io.FileNotFoundException || error is IllegalStateException || room < FULL_BYTES -> RecordingState.NO_ROOM
             else -> RecordingState.NO_ANSWER
         }
+
+        /** The recordings of the app on [context]. */
+        fun of(context: android.content.Context): PracticeRecordings = PracticeRecordings(File(context.noBackupFilesDir, "recordings"))
+
+        /**
+         * The kind of sound file [file] is, as a file name's extension, read from its first bytes (a kept recording's
+         * name says nothing of it): WAV, MP4 sound (M4A), MP3, Ogg, FLAC or WebM; "wav" when it is none of these.
+         */
+        fun extensionOf(file: File): String {
+            val head = runCatching { file.inputStream().use { s -> ByteArray(12).also { s.read(it) } } }.getOrNull() ?: return "wav"
+            fun at(offset: Int, text: String) = text.indices.all { head[offset + it] == text[it].code.toByte() }
+            return when {
+                at(0, "RIFF") && at(8, "WAVE") -> "wav"
+                at(4, "ftyp") -> "m4a"
+                at(0, "ID3") || (head[0] == 0xFF.toByte() && (head[1].toInt() and 0xE0) == 0xE0) -> "mp3"
+                at(0, "OggS") -> "ogg"
+                at(0, "fLaC") -> "flac"
+                head[0] == 0x1A.toByte() && head[1] == 0x45.toByte() && head[2] == 0xDF.toByte() && head[3] == 0xA3.toByte() -> "webm"
+                else -> "wav"
+            }
+        }
     }
 }
 
@@ -123,7 +144,7 @@ class PracticeRecordings(private val dir: File) {
  * while the app runs; the song being practised is also kept through the app being stopped.
  */
 class PracticeModel(app: Application, private val saved: SavedStateHandle) : AndroidViewModel(app), RecordingPlayer.Listener {
-    private val store = PracticeRecordings(File(app.noBackupFilesDir, "recordings"))
+    private val store = PracticeRecordings.of(app)
     private var player: RecordingPlayer? = null
     private var clock: TabClock? = null
     private var song: String? = null

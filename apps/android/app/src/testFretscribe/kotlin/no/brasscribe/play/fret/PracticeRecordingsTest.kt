@@ -133,4 +133,23 @@ class PracticeRecordingsTest {
         assertEquals(RecordingState.NO_ROOM, PracticeRecordings.whyNot(java.io.FileNotFoundException("no such directory"), plenty))
         assertEquals(RecordingState.NO_ROOM, PracticeRecordings.whyNot(IllegalStateException("no place to keep the recording"), plenty))
     }
+
+    @Test
+    fun aKeptRecordingIsSentAgainNamedForTheKindOfFileItIs() {
+        fun kind(vararg head: Int): String = PracticeRecordings.extensionOf(File(dir, "kind").apply { writeBytes(ByteArray(head.size) { head[it].toByte() } + ByteArray(16)) })
+        fun kind(text: String, at: Int = 0): String = kind(*(IntArray(at) + text.map { it.code }.toIntArray()))
+        assertEquals("wav", kind("RIFF\u0000\u0000\u0000\u0000WAVE"))
+        assertEquals("m4a", kind("ftypM4A ", at = 4))
+        assertEquals("mp3", kind("ID3"))
+        assertEquals("mp3", kind(0xFF, 0xFB, 0x90))
+        assertEquals("ogg", kind("OggS"))
+        assertEquals("flac", kind("fLaC"))
+        assertEquals("webm", kind(0x1A, 0x45, 0xDF, 0xA3))
+        // Anything else is taken as it was before there was a name: the computer reads it as a WAV file.
+        assertEquals("wav", kind("hello"))
+        assertEquals("wav", PracticeRecordings.extensionOf(File(dir, "none")))
+        // A kept recording is found by the song's job, under the name the store gives it.
+        val kept = store.keep("job-1", File(dir, "take.m4a").apply { writeBytes(IntArray(4).map { 0.toByte() }.toByteArray() + "ftypM4A ".toByteArray()) })
+        assertEquals("m4a", PracticeRecordings.extensionOf(kept))
+    }
 }
