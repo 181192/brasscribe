@@ -95,8 +95,6 @@ android {
             it.jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
             it.systemProperty("robolectric.graphicsMode", "NATIVE")
             it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
-            // Android's own AccessibilityNodeInfo, so the accessibility checks see what a screen reader would.
-            it.systemProperty("robolectric.useRealAni", "true")
             // -Pbrasscribe.withoutCatalogues: the screen catalogues are left to scripts/screenshots.sh (CI runs them there).
             if (providers.gradleProperty("brasscribe.withoutCatalogues").isPresent) it.filter.excludeTestsMatching("*ScreensTest")
             // Robolectric keeps one Android per SDK in memory, with native graphics beside it.

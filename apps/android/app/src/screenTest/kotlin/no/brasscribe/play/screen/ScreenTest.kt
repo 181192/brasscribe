@@ -7,7 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
@@ -35,6 +35,8 @@ import java.nio.ByteOrder
  * accessibility checks on every action. What the two runs do differently is in [ScreenDevice].
  */
 abstract class ScreenTest {
+    // (The rule whose effects run on a StandardTestDispatcher: an effect's coroutine that comes back from Dispatchers.IO
+    // is resumed on the main thread, as on a phone, and not on the worker it came back on, where Compose would recompose.)
     val rule: AppRule = createAndroidComposeRule<MainActivity>()
 
     /** The phone first, then the app on it. */
@@ -55,6 +57,15 @@ abstract class ScreenTest {
         }
         rule.waitForIdle()
     }
+
+    /** The accessibility checks on the screen a test ends on, so every screen test runs them at least once. */
+    @After
+    fun checkTheLastScreen() {
+        if (checksTheLastScreen) checkAccessibility()
+    }
+
+    /** False for a test whose last screen is not the app's own (a view put up by the test itself). */
+    protected open val checksTheLastScreen: Boolean = true
 
     @After
     fun leaveClean() {

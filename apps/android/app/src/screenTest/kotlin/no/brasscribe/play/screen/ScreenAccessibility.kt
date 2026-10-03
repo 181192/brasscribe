@@ -11,8 +11,8 @@ import org.hamcrest.Description
 
 /**
  * The Accessibility Test Framework's checks, as every screen test runs them, on the whole window: touch
- * target size, a missing or repeated name, a link in text that can't be reached, an element that traps the
- * screen reader, and contrast. An error fails the test, and so does text or an image whose contrast is
+ * target size, a missing or repeated name, traversal order, and contrast. (Its check of links in text runs
+ * only below Android 8; the phone of the tests is Android 16.) An error fails the test, and so does text or an image whose contrast is
  * too low (the framework calls those warnings: it estimates the colours from a picture of the screen).
  *
  * [known] is the list of findings that are not real: each says why. It is kept short on purpose; a finding

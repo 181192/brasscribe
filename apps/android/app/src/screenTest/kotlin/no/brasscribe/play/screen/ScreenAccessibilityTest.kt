@@ -21,6 +21,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ScreenAccessibilityTest : ScreenTest() {
+    // (Each test ends on a screen made to fail the checks.)
+    override val checksTheLastScreen = false
+
     /** What the checks say about [content], or null when they find nothing. */
     private fun findings(content: @androidx.compose.runtime.Composable () -> Unit): String? {
         rule.runOnUiThread { rule.activity.setContent { Column { content() } } }

@@ -27,7 +27,7 @@ abstract class ScreenCatalogue : ScreenTest() {
      * A screen: its [name] in the screenshots, and how to get to it from Home. [steady] is false for a screen
      * that shows a moment of something under way (its screenshot would differ from run to run, so none is kept).
      * [ownOrder] says why the keyboard does not go through this screen in the order it is read, for the few
-     * where that is so; the keyboard must still reach everything and come round again. [cutAtLargeText] are
+     * where that is so (the keyboard's order is then not compared). [cutAtLargeText] are
      * texts known to be cut off at 200 %, each with the issue that says so: the list is for what is waiting to
      * be fixed, and an entry goes when its issue is closed.
      */
