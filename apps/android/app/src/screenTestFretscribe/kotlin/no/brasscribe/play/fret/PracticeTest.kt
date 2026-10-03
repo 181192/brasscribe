@@ -134,7 +134,7 @@ class PracticeTest : ScreenTest() {
     /** Home, the recording, What is this?, the notes written down, Check the song, Show the tab: the tab is engraved and the player is there. */
     private fun practise(): TabView {
         val file = ScreenDevice.recording(rule.activity, "Bass line.wav", sound(), 22_050)
-        rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
+        openFromHome(file)
         waitForTag("fs-what-continue", 20_000)
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performClick()

@@ -64,7 +64,7 @@ abstract class TabScreenTest : ScreenTest() {
     protected fun showTheTab(): TabView {
         showing = false
         val file = recording()
-        rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
+        openFromHome(file)
         waitForTag("fs-what-continue", 20_000)
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performClick()

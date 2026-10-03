@@ -52,7 +52,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
     private fun whatIsThis() {
         theComputer()
         val file = recording()
-        rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
+        openFromHome(file)
         waitForTag("fs-what-continue", 20_000)
         waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
     }

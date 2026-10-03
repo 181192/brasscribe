@@ -103,7 +103,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
     /** Open a recording from Home, as the file picker's answer does: What is this? follows. */
     private fun openARecording(name: String = "Riff.wav", answered: Boolean = true) {
         val file = recording(name)
-        rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(file)) }
+        openFromHome(file)
         waitUntil(20_000) { rule.onAllNodesWithTag("fs-what-continue").fetchSemanticsNodes().isNotEmpty() }
         // (The computer is asked what it can write when the screen opens; Continue waits for its answer.)
         if (answered) waitUntil(20_000) { ComputerProfiles.answer?.asking != true }

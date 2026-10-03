@@ -46,6 +46,17 @@ abstract class ScreenTest {
     val onThePhone: TestRule = RuleChain.outerRule(ScreenDevice.phone()).around(rule)
 
     protected val vm get() = ViewModelProvider(rule.activity)[PlayViewModel::class.java]
+
+    /**
+     * Opens [file] from Home, as the user does. Home is shown first: going there and opening the file in one step
+     * can bring the screen it opens on back before Home was ever drawn, and that screen would keep what it
+     * remembered from the last time it was shown.
+     */
+    protected fun openFromHome(file: File) {
+        rule.runOnUiThread { vm.home() }
+        rule.waitForIdle()
+        rule.runOnUiThread { vm.importUri(android.net.Uri.fromFile(file)) }
+    }
     protected val container get() = (rule.activity.application as PlayApplication).container
 
     @Before
