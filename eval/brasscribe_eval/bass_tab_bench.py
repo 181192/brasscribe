@@ -271,7 +271,8 @@ def synthesize(data: Path) -> list[Path]:
 # lines. Only the bass-alone mode exists here. At 100 and 200 Hz (4th order) Basic Pitch still hears every line
 # in its octave; at 300 Hz (8th order), harsher than a phone, it hears most of them one or two octaves high,
 # which is what the check is there for. The cut is a stand-in for a phone; a real phone recording with its
-# notes annotated would be better evidence and was not found.
+# notes annotated would be better evidence and was not found. This is development data: the octave check's
+# OCTAVE_CONFIRMED was chosen on it, so it does not test that threshold (#163 says what a held-out check needs).
 PHONE_SET = "phone-bass"
 PHONE_CUTS = {100: 4, 200: 4, 300: 8}
 PHONE_FILES = {"phone": FILES["instrument"]}
