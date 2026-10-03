@@ -64,7 +64,7 @@
     <string name="opening_score">Opening…</string>
     <string name="evidence_how_sure">How sure Brasscribe is</string>
     <string name="evidence_percent">%1$d%%</string>
-    <string name="evidence_heard">What each transcriber heard</string>
+    <string name="evidence_heard">What Brasscribe heard each time</string>
     <string name="evidence_same">Same, %1$s</string>
     <string name="evidence_no_note">No note</string>
     <string name="review_could_also_be">%1$s: it could also be %2$s.</string>
@@ -134,7 +134,7 @@
     <string name="profile_orchestra_desc">You get the solo part, plus the accompaniment arranged for brass band.</string>
     <string name="profile_pop">Pop or rock</string>
     <string name="profile_pop_desc">Singing, guitars, keys, bass and drums.</string>
-    <string name="profile_not_sure">Not sure? Choose Brass band. You can change it later.</string>
+    <string name="profile_not_sure">Not sure? Choose Brass band for a group, or One instrument for just you. You can change it later.</string>
     <string name="profile_choose_one">Choose one to continue.</string>
     <string name="where_title">Where the score is made</string>
     <string name="where_device">On this phone</string>
@@ -247,7 +247,7 @@
     <string name="listen_unavailable">There\'s no recording to play for this bar.</string>
     <string name="bar_heading">Bar %1$d</string>
     <string name="bar_rest_heading">Bars %1$d to %2$d</string>
-    <string name="review_continue">Choose output</string>
+    <string name="review_continue">Next: band and key</string>
     <string name="dur_whole">semibreve</string>
     <string name="dur_half">minim</string>
     <string name="dur_quarter">crotchet</string>
@@ -436,7 +436,7 @@
     <string name="companion_code">Six-digit code</string>
     <string name="companion_connect">Connect</string>
     <string name="companion_connecting">Connecting</string>
-    <string name="companion_tech_details">Brasscribe Bandroom shows the address under Details for the band\'s tech person. Without it: “pixi run serve-lan”.</string>
+    <string name="companion_tech_details">Brasscribe Bandroom shows the address under Details for the band\'s tech person.</string>
     <string name="companion_allow_heavy">Let the computer do the heavy work</string>
     <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
 
@@ -540,9 +540,9 @@
     <string name="help_3_title">Practise</string>
     <string name="help_3_text">Slow the music down with Speed, repeat the hard bars, and mute your part to play along with the band.</string>
     <string name="help_4_title">Share or print</string>
-    <string name="help_4_text">Print your own part, every part for the band, or the conductor\'s score.</string>
-    <string name="help_5_title">A whole band needs your computer</string>
-    <string name="help_5_text">One instrument can be written down on the phone. For a full band, open Brasscribe on your computer and connect in Settings.</string>
+    <string name="help_4_text">Share the score as a file. When Brasscribe on your computer made it, you can also print your own part, every part for the band, or the conductor\'s score.</string>
+    <string name="help_5_title">The phone and your computer</string>
+    <string name="help_5_text">On the phone: one instrument, or a quick draft of a brass band. For the full band score, a soloist with a band, or pop and rock, open Brasscribe on your computer and connect in Settings.</string>
     <string name="help_6_title">Links and streaming apps</string>
     <string name="help_6_text">Links can\'t be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.</string>
     <string name="octave_down">Octave down</string>
