@@ -135,7 +135,7 @@ class MusicStandTest : ScreenTest() {
             rule.onNodeWithTag(tag).assertHeightIsAtLeast(48.dp)
         }
         rule.onNodeWithContentDescription("Leave the music stand").assertExists()
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.mainClock.advanceTimeBy(6_000)
         assertTrue("paused: the layer stays", layerShown())
         // The stand's speed steppers: 5 % a step.

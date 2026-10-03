@@ -200,7 +200,7 @@ class TabViewTest : TabScreenTest() {
             }
         }
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-marks-light")
         rule.onNodeWithTag("fs-tab-mark-2").performScrollTo()
@@ -213,7 +213,7 @@ class TabViewTest : TabScreenTest() {
         shotOf("tab-mark-told-light")
         rule.onNodeWithTag("fs-tab-mark-1").performScrollTo().performClick()
         rule.onNodeWithTag("fs-tab-note").assertTextEquals(expected[1])
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithTag("fs-tab-note-close").assertHeightIsAtLeast(48.dp).performClick()
         assertTrue(rule.onAllNodesWithTag("fs-tab-note").fetchSemanticsNodes().isEmpty())
 
@@ -261,7 +261,7 @@ class TabViewTest : TabScreenTest() {
             assertEquals(alphaTab.TabRhythmMode.Hidden, tab.view.settings.notation.rhythmMode)
         }
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-and-notation-light")
     }
@@ -284,7 +284,7 @@ class TabViewTest : TabScreenTest() {
             assertEquals(listOf(MarkKind.DOUBT, MarkKind.NO_PLACE, MarkKind.DOUBT), tab.placed.map { it.kind })
             assertEquals(listOf(1, 0, 1), tab.placed.map { it.doubtful.size })
         }
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("notation-light")
     }
@@ -296,7 +296,7 @@ class TabViewTest : TabScreenTest() {
         val tab = showTheTab()
         rule.runOnUiThread { assertEquals(null, tab.palette.uncertainTint) }
         assertTheMarksAreDrawn(tab, BrasscribeHighContrastColors)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-marks-high-contrast")
     }
@@ -364,7 +364,7 @@ class TabViewTest : TabScreenTest() {
         assertNoTextIsClipped()
         assertEquals(0, tab.unmatched)
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-200-text")
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
@@ -406,7 +406,7 @@ class TabViewTest : TabScreenTest() {
         // The marks are small at 50 %; their elements are not.
         for (i in 0..2) rule.onNodeWithTag("fs-tab-mark-$i").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
         assertTheMarksAreDrawn(tab, BrasscribeLightColors)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithTag("fs-tab-zoom-out").assertIsNotEnabled()
         shotOf("tab-50-zoom")
     }
@@ -443,7 +443,7 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Bass line. Tab. Stemming: Standard, uten capo. 100 slag i minuttet. 16 takter. 2 toner merket ?. 1 tone uten plass.")
         rule.onNodeWithTag("fs-tab-mark-0").assertContentDescriptionEquals("Takt 3, slag 2. 3. streng, bånd 2, H. Fretscribe er ikke sikker på denne.")
         rule.onNodeWithTag("fs-tab-mark-1").assertContentDescriptionEquals("Takt 7, slag 2. D1 er lavere enn den laveste strengen din. Er stemmingen riktig?")
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("tab-marks-nb")
     }
 
@@ -873,7 +873,7 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-zoom-in").assertIsEnabled()
         assertEquals(0, tab.unmatched)
         assertTheElementsAreOnTheMarks(tab, "on its side at 200 % text")
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("tab-landscape-200-text")
     }
 

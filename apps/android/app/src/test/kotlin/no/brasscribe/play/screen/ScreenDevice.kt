@@ -22,6 +22,9 @@ import org.junit.rules.TestRule
 import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import com.google.android.apps.common.testing.accessibility.framework.Parameters
+import com.google.android.apps.common.testing.accessibility.framework.utils.contrast.BitmapImage
+import org.robolectric.shadows.ShadowBuild
 import org.robolectric.shadows.ShadowMediaExtractor
 import org.robolectric.shadows.ShadowWindowManagerGlobal
 import org.robolectric.shadows.util.DataSource
@@ -63,6 +66,12 @@ object ScreenDevice {
                 // Nothing moves by itself: the phone's animations are off, as they are on the emulators the device tests
                 // run on, so a score is put at its place at once and a screenshot does not catch it on its way.
                 Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+                // A service is listening to the accessibility tree, as the test's own connection does on a device, so Compose
+                // builds that tree and the accessibility checks have something to check. It is not a screen reader: touch
+                // exploration stays off, as on a device under test.
+                val accessibility = RuntimeEnvironment.getApplication().getSystemService(android.view.accessibility.AccessibilityManager::class.java)
+                shadowOf(accessibility).setEnabled(true)
+                shadowOf(accessibility).setEnabledAccessibilityServiceList(listOf(android.accessibilityservice.AccessibilityServiceInfo()))
                 test.evaluate()
             }
         }
@@ -123,6 +132,28 @@ object ScreenDevice {
             }
         }
         rule.waitForIdle()
+    }
+
+    /**
+     * The Accessibility Test Framework's checks on the whole screen, with a picture of it for the contrast checks;
+     * an error fails the test. (The framework leaves Compose's content alone on a phone that says it is
+     * Robolectric's, so for the checks it says it is not: what Roborazzi does for its own checks.)
+     */
+    fun checkAccessibility(rule: AppRule) {
+        rule.waitForIdle()
+        val picture = screen(rule)
+        rule.runOnUiThread {
+            val fingerprint = android.os.Build.FINGERPRINT
+            ShadowBuild.setFingerprint("brasscribe-jvm")
+            try {
+                val window = frontWindow()
+                ScreenAccessibility.validator()
+                    .setParameters(Parameters().apply { putScreenCapture(BitmapImage(picture)) })
+                    .check(window)
+            } finally {
+                ShadowBuild.setFingerprint(fingerprint)
+            }
+        }
     }
 
     /** A key pressed and let go on the keyboard. As on a phone, the first key ends touch mode, so focus can be seen and moved. */

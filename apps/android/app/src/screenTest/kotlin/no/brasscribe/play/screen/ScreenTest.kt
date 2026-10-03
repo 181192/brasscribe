@@ -84,10 +84,11 @@ abstract class ScreenTest {
     /** A picture of the screen at this moment, to look at (see [ScreenDevice.picture]). */
     protected fun shot(name: String) = ScreenDevice.picture(rule, "$shots/$name")
 
-    /** The accessibility checks on what is on the screen now (they also run on every action a test performs). */
-    protected fun checkAccessibility() {
-        rule.onRoot().tryPerformAccessibilityChecks()
-    }
+    /**
+     * The accessibility checks on what is on the screen now. On a device they also run on every action a test
+     * performs; on the JVM where a test calls this (and on every screen of the catalogue).
+     */
+    protected fun checkAccessibility() = ScreenDevice.checkAccessibility(rule)
 
     /** Waits until [condition] holds; the app's time passes meanwhile. */
     protected fun waitUntil(ms: Long = 5_000, condition: () -> Boolean) = ScreenDevice.waitUntil(rule, ms, condition)

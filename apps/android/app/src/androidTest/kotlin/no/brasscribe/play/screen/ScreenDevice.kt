@@ -6,6 +6,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.view.KeyEvent
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import no.brasscribe.play.MainActivity
@@ -76,6 +78,11 @@ object ScreenDevice {
         rule.activityRule.scenario.recreate()
         rule.waitForIdle()
         return true
+    }
+
+    /** The Accessibility Test Framework's checks on the whole screen; an error fails the test. */
+    fun checkAccessibility(rule: AppRule) {
+        rule.onRoot().tryPerformAccessibilityChecks()
     }
 
     /** A key pressed and let go on the keyboard. */

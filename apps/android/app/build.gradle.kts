@@ -95,6 +95,8 @@ android {
             it.jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
             it.systemProperty("robolectric.graphicsMode", "NATIVE")
             it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
+            // Android's own AccessibilityNodeInfo, so the accessibility checks see what a screen reader would.
+            it.systemProperty("robolectric.useRealAni", "true")
             // Robolectric keeps one Android per SDK in memory, with native graphics beside it.
             it.maxHeapSize = "3g"
             // The shared resolver vectors (sounds/partsound-vectors.json) and part map.

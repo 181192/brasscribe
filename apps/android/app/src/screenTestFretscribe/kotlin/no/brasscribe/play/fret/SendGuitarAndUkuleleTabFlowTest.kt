@@ -150,7 +150,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
             val song = card("song").assert(hasText(w[0])).assertIsNotSelected().assertHeightIsAtLeast(48.dp)
             rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
             assertFalse(shown(), Regex("bass|guitar is playing|gitar spiller", RegexOption.IGNORE_CASE).containsMatchIn(shown()))
-            rule.onRoot().tryPerformAccessibilityChecks()
+            checkAccessibility()
             shot("guitar-what-is-this-${lang.take(2)}-light")
             song.performClick()
             song.assertIsSelected()
@@ -171,7 +171,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
             rule.onNodeWithTag("fs-check-left-out").performScrollTo().assertContentDescriptionEquals(w[6])
             rule.onNodeWithTag("fs-check-added").performScrollTo().assertContentDescriptionEquals(w[7])
             rule.onNodeWithText(w[8]).assertIsDisplayed()
-            rule.onRoot().tryPerformAccessibilityChecks()
+            checkAccessibility()
             rule.onNodeWithTag("fs-check-tuning").performScrollTo()
             shot("guitar-check-the-song-${lang.take(2)}-light")
             rule.onNodeWithTag("fs-check-added").performScrollTo()
@@ -232,7 +232,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
         assertEquals(listOf("fs-check-capo-0"), radios.filter { it.config.getOrNull(SemanticsProperties.Selected) == true }.map { it.config.getOrNull(SemanticsProperties.TestTag) })
         (0..12).forEach { rule.onNodeWithTag("fs-check-capo-$it").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp) }
         rule.onNodeWithTag("fs-check-capo-0").performScrollTo()
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shot("guitar-capo-picker-en-light")
         // The arrows move without choosing, and Escape closes it with nothing written down again and the focus back on the button.
         val first = vm.result.value!!.jobId
@@ -287,7 +287,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
             assertEquals(2, rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).fetchSemanticsNodes().size)
             rule.onNodeWithTag("fs-what-continue").assert(hasText(w[4])).assertIsEnabled()
             assertNoTextIsClipped()
-            rule.onRoot().tryPerformAccessibilityChecks()
+            checkAccessibility()
             shot("ukulele-what-is-this-${lang.take(2)}-light")
 
             // English sends a full song, bokmål what it started on.
@@ -309,7 +309,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
             rule.onNodeWithTag("fs-check-capo").performScrollTo().assertContentDescriptionEquals(w[2])
             // The take fits its tuning and nothing was left out: no change of tuning is offered, and no row says notes were left out.
             listOf("change-tuning", "left-out", "added").forEach { assertTrue(it, rule.onAllNodesWithTag("fs-check-$it").fetchSemanticsNodes().isEmpty()) }
-            rule.onRoot().tryPerformAccessibilityChecks()
+            checkAccessibility()
             rule.onNodeWithTag("fs-check-tuning").performScrollTo()
             shot("ukulele-check-the-song-${lang.take(2)}-light")
 
@@ -470,7 +470,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
                 rule.onNodeWithTag("fs-what-continue").assertIsNotEnabled()
                 assertFalse(shown(), Regex("didn't accept|godtok ikke").containsMatchIn(shown()))
                 assertNoTextIsClipped()
-                rule.onRoot().tryPerformAccessibilityChecks()
+                checkAccessibility()
                 if (kind == FrettedInstrument.GUITAR_6) shot("guitar-too-old-${lang.take(2)}-light")
             }
             // Nothing was sent: no recording, no job.
@@ -520,7 +520,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
         assertEquals("Asking your computer…", continueSays())
         assertTrue(ComputerProfiles.answer?.asking == true)
         assertNull(ComputerProfiles.listed)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shot("guitar-asking-en-light")
         // A tap on it does nothing: no recording goes, no job is made.
         rule.onNodeWithTag("fs-what-continue").performClick()

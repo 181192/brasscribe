@@ -292,7 +292,7 @@ class PracticeTest : ScreenTest() {
         assertTrue("the place is announced when the player moves it", isLive("fs-practice-place"))
         assertEquals(there.bar, cursor(tab)!!.first.bar)
         assertTheCursorIsDrawn(tab, BrasscribeLightColors, "after a pause")
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-paused")
 
         // A bar on, a bar back, and back to the start.
@@ -372,7 +372,7 @@ class PracticeTest : ScreenTest() {
         assertEquals("Repeat bar 3", words("fs-practice-repeat-set"))
         rule.onNodeWithTag("fs-practice-to-up").performClick()
         assertEquals("Repeat bars 3 to 4", words("fs-practice-repeat-set"))
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-repeat-dialog")
         rule.onNodeWithTag("fs-practice-repeat-set").performClick()
         rule.waitForIdle()
@@ -399,7 +399,7 @@ class PracticeTest : ScreenTest() {
         assertTrue("the bracket after bar 4", count(image, close, edge) >= close.width() * close.height() * 0.6)
         val band = onScreen(tab, first.left + 8 * density, first.top - 0.3f * tab.lineSpace, first.left + 16 * density, first.top - 0.1f * tab.lineSpace)
         assertTrue("the band behind the bars", count(image, band, BrasscribeLightColors.loopTint.toArgb()) >= band.width() * band.height() * 0.9)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-repeat")
 
         // It plays those bars again and again: the recording never leaves them, and turns back at their end.
@@ -473,7 +473,7 @@ class PracticeTest : ScreenTest() {
         assertTrue(isLive("fs-practice-says"))
         assertEquals(0, rule.onAllNodesWithTag("fs-practice-play").fetchSemanticsNodes().size)
         rule.onNodeWithTag("fs-practice-get").assertHeightIsAtLeast(48.dp)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-not-on-this-phone")
         // The computer does not have it either.
         rule.onNodeWithTag("fs-practice-get").performClick()
@@ -682,7 +682,7 @@ class PracticeTest : ScreenTest() {
             assertTrue("the rail under bars ${line.firstBar}–${line.lastBar} ($drawn of ${rail.width() * rail.height()} px)", drawn >= rail.width() * rail.height() * 0.8)
         }
         assertTrue("the line between the brackets was in view", middle)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-high-contrast")
     }
 
@@ -693,7 +693,7 @@ class PracticeTest : ScreenTest() {
         rule.runOnUiThread { practice.repeat(RepeatBars(1, 2)) }
         assertTheCursorIsDrawn(tab, BrasscribeDarkColors, "in the dark")
         assertNoTextIsClipped()
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-dark")
 
         // On its side the player is one row, and the tab keeps most of the height.
@@ -707,7 +707,7 @@ class PracticeTest : ScreenTest() {
         val player = rule.onNodeWithTag("fs-practice").fetchSemanticsNode().boundsInWindow
         val page = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow
         assertTrue("on its side the tab (${page.height} px) has more room than the player (${player.height} px)", page.height > player.height)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-landscape")
 
         // At 200 % text everything is still there, whole, and large enough to press.
@@ -718,7 +718,7 @@ class PracticeTest : ScreenTest() {
         for (tag in listOf("fs-practice-play", "fs-practice-start", "fs-practice-previous", "fs-practice-next")) {
             rule.onNodeWithTag(tag).assertIsDisplayed().assertWidthIsAtLeast(64.dp).assertHeightIsAtLeast(64.dp)
         }
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-landscape-200-text")
         // The dialog is taller than the screen here: it scrolls, down to its last button.
         rule.onNodeWithTag("fs-practice-repeat").performClick()
@@ -735,7 +735,7 @@ class PracticeTest : ScreenTest() {
         rule.onNodeWithTag("fs-practice-repeat").performClick()
         waitForTag("fs-practice-repeat-set")
         assertNoTextIsClipped()
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-200-text-repeat-dialog")
         rule.onNodeWithTag("fs-practice-repeat-stop").assertIsDisplayed().assertHeightIsAtLeast(48.dp)
         rule.onNodeWithTag("fs-practice-repeat-cancel").performScrollTo().performClick()
@@ -756,7 +756,7 @@ class PracticeTest : ScreenTest() {
         assertEquals("Gjentar 2–3", words("fs-practice-repeat"))
         assertTrue(words("fs-practice-place"), words("fs-practice-place").startsWith("Takt "))
         assertTrue(described("fs-practice-speed"), described("fs-practice-speed").startsWith("Tempo 100"))
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shotOf("practice-nb")
     }
 

@@ -96,7 +96,7 @@ class PlayFlowA11yTest : ScreenTest() {
         }
         rule.onNode(isHeading() and hasText("Turn a recording into", substring = true)).assertExists()
         rule.onNodeWithContentDescription("Settings").assertHeightIsAtLeast(48.dp)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
     }
 
     @Test
@@ -214,7 +214,7 @@ class PlayFlowA11yTest : ScreenTest() {
         for (gone in listOf("Read aloud", "Metronome", "Count-in", "Mute my part", "As written", "Concert")) {
             rule.onAllNodesWithText(gone).assertCountEquals(0)
         }
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
 
         rule.onNodeWithTag("performance-exit").performClick()
         rule.waitForIdle()
@@ -311,6 +311,6 @@ class PlayFlowA11yTest : ScreenTest() {
         waitUntil(20_000) { rule.onAllNodesWithText("Stop").fetchSemanticsNodes().isNotEmpty() }
         // A bar lasts a few seconds: then it is Listen again, without a press.
         waitUntil(30_000) { rule.onAllNodesWithText("Listen to this bar").fetchSemanticsNodes().isNotEmpty() }
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
     }
 }

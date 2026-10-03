@@ -190,7 +190,7 @@ class SendBassTabFlowTest : ScreenTest() {
             rule.onNodeWithTag("fs-show-tab").assert(hasText(w[12])).assertHeightIsAtLeast(48.dp)
             // Nothing here can be changed, so nothing says it can.
             assertTrue(rule.onAllNodesWithText(w[13]).fetchSemanticsNodes().isEmpty())
-            rule.onRoot().tryPerformAccessibilityChecks()
+            checkAccessibility()
             shot("check-the-song-${lang.take(2)}-light")
             rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
             shot("check-the-song-${lang.take(2)}-dark")
@@ -253,7 +253,7 @@ class SendBassTabFlowTest : ScreenTest() {
             .assertContentDescriptionEquals("Notes with no place: 1 note with no place on your instrument. Is the tuning right?")
         rule.onNodeWithTag("fs-check-change-octave").performScrollTo().assert(hasText("Write it as it was heard")).assertHeightIsAtLeast(48.dp)
         rule.onNodeWithTag("fs-check-change-tuning").performScrollTo().assert(hasText("Use Drop D")).assertHeightIsAtLeast(48.dp)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         shot("check-the-song-findings-en-light")
         rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
         shot("check-the-song-findings-en-dark")

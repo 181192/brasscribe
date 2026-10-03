@@ -107,7 +107,7 @@ class ReviewChangeNoteTest : ScreenTest() {
         waitUntil(20_000) { changedText() != null }
         assertEquals(changed, changedText())
         assertTrue(vm.result.value!!.changedOnPhone)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
 
         // (The opened score is still being read in on other threads; a change made before it is all there is dropped.)
         rest()
@@ -166,7 +166,7 @@ class ReviewChangeNoteTest : ScreenTest() {
         rule.onNodeWithText("Save").assertIsNotEnabled()
         // The sheet's drag handle (TalkBack's dismiss and expand actions) is a full-size target.
         rule.onNode(hasContentDescription("Drag handle", substring = true)).assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
         rule.onNodeWithText("Cancel").performClick()
         rule.waitForIdle()
 
@@ -188,7 +188,7 @@ class ReviewChangeNoteTest : ScreenTest() {
             n.config.getOrNull(SemanticsProperties.ContentDescription)?.any { it.contains("Changed to") } == true
         }).fetchSemanticsNodes().first()
         assertTrue(card.config[SemanticsActions.CustomActions].any { it.label == "Undo change" })
-        rule.onRoot().tryPerformAccessibilityChecks()
+        checkAccessibility()
 
         // Listen plays the bar as it is now: rendered on the phone from the changed score.
         val context = rule.activity.applicationContext
