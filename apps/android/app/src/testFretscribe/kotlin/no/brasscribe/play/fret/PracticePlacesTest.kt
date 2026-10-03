@@ -39,6 +39,11 @@ class PracticePlacesTest {
         File(dir, "places/${PracticeRecordings.fileName("job-2")}").writeText("4.0 80 5 2")
         assertEquals(PracticePlace(4.0, 80, null), places.read("job-2"))
         assertNull(places.read(""))
+        // A second that is no number is no place.
+        for (at in listOf("NaN", "Infinity")) {
+            File(dir, "places/${PracticeRecordings.fileName("job-3")}").writeText("$at 80")
+            assertNull(at, places.read("job-3"))
+        }
     }
 
     @Test

@@ -267,6 +267,8 @@
     <string name="fs_practice_last_bar_of_repeat">Last bar of the repeat</string>
     <string name="fs_practice_bar_beat">Bar %1$s, beat %2$d</string>
     <string name="fs_practice_pickup_beat">Pickup bar, beat %1$d</string>
+    <!-- Beside the speed, for the eye only: the value is read as "Speed 100 %". -->
+    <string name="fs_practice_speed">Speed</string>
     <string name="fs_practice_slower">Slower</string>
     <string name="fs_practice_faster">Faster</string>
     <string name="fs_practice_repeat">Repeat bars</string>

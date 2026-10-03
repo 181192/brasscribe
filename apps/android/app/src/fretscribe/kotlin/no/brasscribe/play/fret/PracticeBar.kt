@@ -1,6 +1,8 @@
 package no.brasscribe.play.fret
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -36,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -45,12 +48,15 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import no.brasscribe.design.BrasscribeButtonShape
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
@@ -158,10 +164,14 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 modifier = Modifier.testTag("fs-practice-place").semantics { if (!quiet) liveRegion = LiveRegionMode.Polite })
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val speed = stringResource(R.string.speed_chip, practice.speed)
-                StepButton("−", stringResource(R.string.fs_practice_slower), "fs-practice-slower", practice.speed > PracticeSpeed.MIN, practice::slower)
+                // The word is for the eye: the value's own name already says "Speed 100 %". With large text it is left out,
+                // as the top bar leaves out the back button's word: the player would take another row for it.
+                if (LocalDensity.current.fontScale < 1.3f) Text(stringResource(R.string.fs_practice_speed), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
+                    modifier = Modifier.padding(end = BrasscribeSpace.s1).testTag("fs-practice-speed-label").semantics { hideFromAccessibility() })
+                StepButton("−", stringResource(R.string.fs_practice_slower), "fs-practice-slower", practice.speed > PracticeSpeed.MIN, repeats = true, onClick = practice::slower)
                 Text(stringResource(R.string.speed_value, practice.speed), style = MaterialTheme.typography.bodyLarge, color = c.text, textAlign = TextAlign.Center,
                     modifier = Modifier.widthIn(min = 56.dp).testTag("fs-practice-speed").semantics { contentDescription = speed; liveRegion = LiveRegionMode.Polite })
-                StepButton("+", stringResource(R.string.fs_practice_faster), "fs-practice-faster", practice.speed < PracticeSpeed.MAX, practice::faster)
+                StepButton("+", stringResource(R.string.fs_practice_faster), "fs-practice-faster", practice.speed < PracticeSpeed.MAX, repeats = true, onClick = practice::faster)
             }
             // The chip's words are its name: what is seen is what is said.
             val shown = when {
@@ -175,10 +185,43 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
     }
 }
 
-/** A step down or up: a 48 dp button with a plain sign, named by what it does. */
+/** How long a step button is held before it steps again on its own, and how often it then steps, in milliseconds. */
+internal const val STEP_HOLD_MS = 400L
+internal const val STEP_REPEAT_MS = 100L
+
+/**
+ * A step down or up: a 48 dp button with a plain sign, named by what it does. A tap is one step. With [repeats],
+ * holding it down steps again every [STEP_REPEAT_MS] after [STEP_HOLD_MS], until it is let go or can step no further;
+ * letting go after that adds no step of its own.
+ */
 @Composable
-private fun StepButton(sign: String, name: String, tag: String, enabled: Boolean, onClick: () -> Unit) {
-    IconButton(onClick, Modifier.size(48.dp).testTag(tag).semantics { contentDescription = name }, enabled = enabled) {
+private fun StepButton(sign: String, name: String, tag: String, enabled: Boolean, repeats: Boolean = false, onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    var held by remember { mutableStateOf(false) }
+    if (repeats) {
+        val step by rememberUpdatedState(onClick)
+        val can by rememberUpdatedState(enabled)
+        LaunchedEffect(source) {
+            // A new press, a release or a cancel ends the steps of the press before it.
+            source.interactions.collectLatest { i ->
+                // A press that was cancelled (the finger slid off, the page scrolled) is followed by no click to swallow.
+                if (i is PressInteraction.Cancel) held = false
+                if (i !is PressInteraction.Press) return@collectLatest
+                held = false
+                delay(STEP_HOLD_MS)
+                while (can) {
+                    held = true
+                    step()
+                    delay(STEP_REPEAT_MS)
+                }
+            }
+        }
+    }
+    // Held to the end, the button is off when it is let go: no click comes, and the next one (a tap, or a screen
+    // reader's, switch's or voice's press) must step.
+    LaunchedEffect(enabled) { if (!enabled) held = false }
+    IconButton({ if (held) held = false else onClick() }, Modifier.size(48.dp).testTag(tag).semantics { contentDescription = name },
+        enabled = enabled, interactionSource = source) {
         Text(sign, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.clearAndSetSemantics { })
     }
 }
@@ -228,9 +271,9 @@ private fun BarStepper(label: String, value: String, tag: String, canGoDown: Boo
     val spoken = stringResource(R.string.fs_practice_bar_value, label, value)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f).clearAndSetSemantics { }, style = MaterialTheme.typography.bodyLarge, color = c.text)
-        StepButton("−", stringResource(R.string.fs_practice_bar_earlier, label), "fs-practice-$tag-down", canGoDown, down)
+        StepButton("−", stringResource(R.string.fs_practice_bar_earlier, label), "fs-practice-$tag-down", canGoDown, onClick = down)
         Text(value, style = MaterialTheme.typography.titleMedium, color = c.text, textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(min = 40.dp).testTag("fs-practice-$tag").semantics { contentDescription = spoken; liveRegion = LiveRegionMode.Polite })
-        StepButton("+", stringResource(R.string.fs_practice_bar_later, label), "fs-practice-$tag-up", canGoUp, up)
+        StepButton("+", stringResource(R.string.fs_practice_bar_later, label), "fs-practice-$tag-up", canGoUp, onClick = up)
     }
 }
