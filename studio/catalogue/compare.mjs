@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Differing pixels up to this many in one screenshot are noise (reported, not a change). */
-export const FLOOR_PIXELS = 40;
+export const FLOOR_PIXELS = 10;
 
 const pngs = (dir) => (existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".png")).sort() : []);
 const esc = (s) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
