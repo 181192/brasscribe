@@ -2,6 +2,55 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.5.0 (2026-10-03)
+
+### New features
+
+- **Android:** A recording waits in Your scores until its score is made ([#143](https://github.com/181192/brasscribe/pull/143))
+
+### Fixes
+
+- **Accessibility:** The talking score names plain eighths in 6/8, 9/8 and 12/8 as eighths, not triplets ([#139](https://github.com/181192/brasscribe/pull/139))
+- **Accessibility:** Whole-bar rests in compound time carry the compound flag ([#155](https://github.com/181192/brasscribe/pull/155))
+- **Android:** Music stand in the score's ⋯ sheet is no longer cut off at large text ([#129](https://github.com/181192/brasscribe/pull/129))
+- **Android:** The keyboard reaches a screen's choices before the button under them ([#140](https://github.com/181192/brasscribe/pull/140))
+- **Android:** A band draft opens on the score, not in Check the notes ([#132](https://github.com/181192/brasscribe/pull/132))
+- **Android:** The transcribing screen says to keep Brasscribe open, and no longer shows a time left that stands still ([#135](https://github.com/181192/brasscribe/pull/135))
+- **Android:** Sending a recording works the first time, and again when the computer has let go of it ([#147](https://github.com/181192/brasscribe/pull/147))
+- **Android:** A recording is not sent twice after a timeout, and No notes found offers the microphone after a file ([#164](https://github.com/181192/brasscribe/pull/164))
+- **Android:** Keep ONNX Runtime from reporting to Microsoft ([#169](https://github.com/181192/brasscribe/pull/169))
+- **Bandroom:** Say why the engine can't start when pixi refuses the workspace ([#128](https://github.com/181192/brasscribe/pull/128))
+- **Bandroom:** After an update that can't finish, say so while the previous version keeps running ([#138](https://github.com/181192/brasscribe/pull/138))
+- **Core:** Name the C calling convention on every .NET import ([#123](https://github.com/181192/brasscribe/pull/123))
+- **Core:** The Windows command line download runs without the Visual C++ runtime ([#130](https://github.com/181192/brasscribe/pull/130))
+- **Core:** A tab's slide or bend starts from the note before it on the same string ([#134](https://github.com/181192/brasscribe/pull/134))
+- **Engine:** Make the band score's PDF once MuseScore is installed or updated ([#127](https://github.com/181192/brasscribe/pull/127))
+- **Engine:** Open chords and 6/8 bars no longer misread when a note is left out or the beat swings ([#124](https://github.com/181192/brasscribe/pull/124))
+- **Engine:** A renamed score's PDF, MIDI and braille carry the new title ([#131](https://github.com/181192/brasscribe/pull/131))
+- **Engine:** A melody played high over a ringing chord keeps its notes in the tab ([#137](https://github.com/181192/brasscribe/pull/137))
+- **Engine:** A short note in a tab gets the straight length nearest to how it was played ([#141](https://github.com/181192/brasscribe/pull/141))
+- **Engine:** Leave out the overtones a ukulele melody pulled up the neck ([#149](https://github.com/181192/brasscribe/pull/149))
+- **Engine:** Keep a bass line that really sits high in its octave ([#145](https://github.com/181192/brasscribe/pull/145))
+- **Fretscribe:** Next bar says when you are in the last bar, and a fetched recording is no longer lost ([#146](https://github.com/181192/brasscribe/pull/146))
+- **Fretscribe:** Pairing, Help, About and problem screens say Fretscribe, not Brasscribe ([#148](https://github.com/181192/brasscribe/pull/148))
+- **Scripts:** Tag a release whose commit is on main's own line ([#122](https://github.com/181192/brasscribe/pull/122))
+- **Windows:** Name the C calling convention on the core bridge imports ([#153](https://github.com/181192/brasscribe/pull/153))
+- **Windows:** Play for Windows runs without the Visual C++ runtime installed ([#160](https://github.com/181192/brasscribe/pull/160))
+
+<details><summary>Under the hood (8 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Android:** Stop the JVM tests aborting at exit when ONNX Runtime uploads telemetry ([#126](https://github.com/181192/brasscribe/pull/126))
+- **CI:** Stricter Windows import check, and vector changes run the tests that read them ([#167](https://github.com/181192/brasscribe/pull/167))
+- **Core:** Compare the talking score of a score in compound time ([#158](https://github.com/181192/brasscribe/pull/158))
+- **Engine:** Say what the 6/8 rule costs and which takes its numbers come from ([#151](https://github.com/181192/brasscribe/pull/151))
+- **Eval:** Measure Beat This! small0 against final0 for solo scores ([#144](https://github.com/181192/brasscribe/pull/144))
+- **Studio:** Regenerate the engine API types and check the copies stay in step ([#125](https://github.com/181192/brasscribe/pull/125))
+- **Talking-score:** Android and Windows read the conformance vectors from docs/ ([#157](https://github.com/181192/brasscribe/pull/157))
+- **Windows:** Bring the engine client's API snapshot up to date and keep it in step ([#136](https://github.com/181192/brasscribe/pull/136))
+
+</details>
+
 ## 0.4.0 (2026-10-02)
 
 ### New features
