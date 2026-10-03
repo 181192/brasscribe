@@ -76,6 +76,7 @@ flowchart LR
   H -->|open a score| S
   S -. talking score .-> TS[Talking score<br/>text view]
   S -->|a draft · Make the full score| T
+  T -->|a draft, done| S
 ```
 
 **Focus rules**
@@ -92,6 +93,7 @@ A brass band recording can be written down on the phone, tablet or Mac without t
 - With no computer paired, or one that is **Offline** or needs pairing again, Brass band is made on the device as a draft.
 - The player can choose the draft anyway: Android's **Change** sheet in What is this? has it as a card; on Apple, **Change** opens Settings, which has the switch **Make band drafts on this device** («Lag bandutkast på denne enheten»).
 - The where-it-runs row says it is a draft before anything starts. It is not a second primary: **Continue** stays the one primary.
+- A finished draft opens on the **score**, not in Check the notes. Only Basic Pitch hears its tune, so every melody note is marked "?" and Check the notes would list them all; the draft notice already says it is rough. Check the notes stays a tap away on the score ("N notes marked ? · Check them"). Android does this; Apple still opens Check the notes.
 
 **Words** (the voice rules in [`brand/brand.md`](brand/brand.md) apply; say *draft* / *utkast*, never preview, lite or beta):
 

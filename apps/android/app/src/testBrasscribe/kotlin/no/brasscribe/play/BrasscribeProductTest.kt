@@ -30,6 +30,16 @@ class BrasscribeProductTest {
     }
 
     @Test
+    fun aDraftOpensOnTheScoreAndEveryOtherTranscriptionInCheckTheNotes() {
+        // A draft marks every melody note "?" (Basic Pitch alone votes on it): Check the notes would list them all.
+        val draft = TranscriptionResult(null, "<score-partwise/>", Profile.BRASS_BAND, onDevice = true, draft = true)
+        assertEquals(Screen.SCORE, Product.afterTranscription(draft))
+        assertEquals(Screen.REVIEW, Product.afterTranscription(draft.copy(draft = false)))
+        assertEquals(Screen.REVIEW, Product.afterTranscription(TranscriptionResult(null, "<score-partwise/>", Profile.BRASS_BAND, onDevice = false, jobId = "j")))
+        assertEquals(Screen.REVIEW, Product.afterTranscription(TranscriptionResult(null, "<score-partwise/>", Profile.SOLO, onDevice = true)))
+    }
+
+    @Test
     fun aTabInTheComputersListOpensInFretscribeAndIsListedApartFromTheBandScoreOfTheSameRecording() {
         fun job(id: String, profile: String, created: Double) = no.brasscribe.play.engine.Job(id, profile, no.brasscribe.play.engine.JobStatus.SUCCEEDED, created,
             emptyList(), audioId = "audio-1", title = id, outputs = listOf(if (Profile.writesTab(profile)) "tab.musicxml" else "brass-band.musicxml"))
