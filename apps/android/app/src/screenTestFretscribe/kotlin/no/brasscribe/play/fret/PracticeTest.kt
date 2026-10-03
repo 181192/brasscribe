@@ -86,6 +86,7 @@ class PracticeTest : ScreenTest() {
     fun setUp() {
         yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
         kept.deleteRecursively()
+        File(rule.activity.noBackupFilesDir, "practice").deleteRecursively()
         container.fixtureSource = FixtureSource { name ->
             if (name == FixtureEngineApi.INPUT_FILE) sound().takeIf { computerHasRecording }
             else ScreenDevice.fixture("$FIXTURE/$name")
@@ -96,6 +97,7 @@ class PracticeTest : ScreenTest() {
     fun tearDown() {
         TabPlaces.forget()
         kept.deleteRecursively()
+        File(rule.activity.noBackupFilesDir, "practice").deleteRecursively()
     }
 
     override val shots = "fretscribe/practice"
@@ -344,6 +346,52 @@ class PracticeTest : ScreenTest() {
         assertEquals("150%", words("fs-practice-speed"))
         rule.onNodeWithTag("fs-practice-faster").assertIsNotEnabled()
         rule.onNodeWithTag("fs-practice-slower").assertIsEnabled()
+    }
+
+    @Test
+    fun aSongOpensWhereItWasLeftAfterTheAppWasClosed() {
+        practise()
+        // Practised: bars 9 to 10 repeated, at 70 %.
+        rule.runOnUiThread { practice.repeat(RepeatBars(8, 9)) }
+        repeat(6) { rule.onNodeWithTag("fs-practice-slower").performClick() }
+        rule.waitForIdle()
+        assertEquals("Repeating 9–10", words("fs-practice-repeat"))
+        rule.runOnUiThread { vm.home() }
+        waitUntil(10_000) { vm.scores.value.isNotEmpty() }
+        val places = PracticePlaces.of(rule.activity)
+        val job = vm.scores.value.first().jobId!!
+        waitUntil(5_000) { places.read(job)?.let { it.speed == 70 && it.repeat == RepeatBars(8, 9) } == true }
+
+        // The app is closed: nothing is left in memory or in the saved state, only what the phone keeps.
+        rule.runOnUiThread { practice.forgetAllButThePhone() }
+        TabPlaces.forget()
+        rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
+        val tab = engraved()
+        waitForTag("fs-practice-play", 20_000)
+        settle()
+        assertEquals("Repeating 9–10", words("fs-practice-repeat"))
+        assertEquals("70%", words("fs-practice-speed"))
+        assertEquals("Bar 9, beat 1", words("fs-practice-place"))
+        assertEquals(clock.span(RepeatBars(8, 9)).start, now(), 0.002)
+        // The page shows the line the song is in.
+        rule.runOnUiThread {
+            val line = tab.engraving.value!!.lines.first { 8 in it.firstBar..it.lastBar }
+            assertTrue("the line of bar 9 is in view (${line.top}–${line.bottom}, page at ${tab.pageScrolled})",
+                line.top >= tab.pageScrolled - 2 && line.top < tab.pageScrolled + tab.view.height)
+            assertTrue("the page was moved to it", tab.pageScrolled > 0)
+        }
+
+        // A song deleted from Your songs takes its place with it.
+        rule.runOnUiThread { vm.home() }
+        rule.runOnUiThread { vm.scores.value.forEach(vm::deleteEntry) }
+        waitUntil(10_000) { vm.scores.value.isEmpty() }
+        // (The places of songs no longer there are cleared when a song in Your songs is opened.)
+        practise()
+        rule.runOnUiThread { vm.home() }
+        waitUntil(10_000) { vm.savedScores.value.isNotEmpty() }
+        rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
+        engraved()
+        waitUntil(5_000) { places.read(job) == null }
     }
 
     @Test
