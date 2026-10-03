@@ -170,7 +170,8 @@ export async function keyboard(page: Page): Promise<Finding[]> {
         if (now === last) break;
         last = now;
       }
-      const r = el.getBoundingClientRect();
+      // A link that wraps onto a second line has a box per line; the box around both covers the text between.
+      const r = el.getClientRects()[0] ?? el.getBoundingClientRect();
       const visible = r.width > 0 && r.height > 0 && el.checkVisibility();
       // WCAG 2.4.11: focus is not hidden. What is on top at the focused element's centre must be the element
       // itself, something inside it, or its label (a file input hidden behind the button that is its label).

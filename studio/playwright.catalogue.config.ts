@@ -11,7 +11,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 20_000 },
   fullyParallel: true,
-  workers: process.env.CATALOGUE_WORKERS ? Number(process.env.CATALOGUE_WORKERS) : process.env.CI ? 2 : 6,
+  workers: process.env.CATALOGUE_WORKERS ? Number(process.env.CATALOGUE_WORKERS) : process.env.CI ? 4 : 6,
   reporter: [["list"]],
   use: {
     locale: "en-GB",
