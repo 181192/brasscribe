@@ -256,8 +256,13 @@ jobs:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-${{ hashFiles('apps/android/gradle/libs.versions.toml', 'apps/android/app/src/test/resources/robolectric.properties') }}
 
-      - name: Unit tests and the screens' tests, lint and the debug builds (both apps, without the screen catalogues)
-        run: ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint lintFretscribeDebug assembleDebug -Pbrasscribe.withoutCatalogues --stacktrace
+      # The tests on their own: the screen tests wait by the clock on the wall for what the app does on its other
+      # threads, and lint beside them on a two-core runner would take that time from them.
+      - name: Unit tests and the screens' tests (both apps, without the screen catalogues)
+        run: ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.withoutCatalogues --stacktrace
+
+      - name: Lint and the debug builds (both apps)
+        run: ./gradlew lint lintFretscribeDebug assembleDebug --stacktrace
 
       - uses: actions/upload-artifact@v7
         if: failure()
