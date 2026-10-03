@@ -52,6 +52,7 @@
     <string name="help_5_title">Tab skrives på datamaskinen</string>
     <string name="help_5_text">Fretscribe på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger.</string>
     <string name="help_stand_title">Sidevendere og taster</string>
+    <string name="help_stand_pedal">Mellomrom spiller og pauser opptaket. Når tabben har tastaturfokuset, slik den har når den åpnes, går høyre piltast én takt fram, og venstre piltast én takt tilbake eller til starten av taktene som gjentas. Page Up og Page Down blar i tabben. En sidevender eller pedal virker når den sender disse tastene.</string>
 
     <!-- Problemer -->
     <string name="problem_file_body">Fretscribe klarte ikke å lese lyden i den.</string>
