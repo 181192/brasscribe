@@ -102,8 +102,12 @@ run_area() {
                 && (cd apps/apple/Packages/NotationKit && swift test --no-parallel) \
                 && (cd capture && swift test --no-parallel) \
                 && make -C apps/apple build-for-testing-mac test-mac-unit ;;
-    fast:android) (cd apps/android && ./gradlew testDebugUnitTest -Pbrasscribe.fast --console=plain -q) ;;
-    full:android) (cd apps/android && ./gradlew testDebugUnitTest lint assembleDebug --console=plain) ;;
+    # Both apps' unit tests and their screens on the JVM (apps/android/README.md, Testing); fast leaves out the
+    # Slow ones (the screen catalogues, practice in real time), full adds them through the screenshots' comparison
+    # with the merge base, which also runs every screen's own checks.
+    fast:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast --console=plain -q) ;;
+    full:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint lintFretscribeDebug assembleDebug -Pbrasscribe.withoutCatalogues --console=plain \
+                     && scripts/screenshots.sh compare) ;;
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;

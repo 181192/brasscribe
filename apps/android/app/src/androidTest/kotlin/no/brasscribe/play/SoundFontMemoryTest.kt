@@ -16,6 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * The band SoundFont is held once: after alphaTab has loaded it (on the first Play), nothing in Play keeps the file's
@@ -23,6 +24,7 @@ import java.io.File
  * app's files, sounds/brasscribe-band-mobile.sf2; skipped without it.
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class SoundFontMemoryTest {
     @get:Rule
     val scenario = ActivityScenarioRule(MainActivity::class.java)

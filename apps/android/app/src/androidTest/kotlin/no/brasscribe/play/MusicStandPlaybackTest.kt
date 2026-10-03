@@ -19,6 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * The music stand while the music plays, in real time. A Compose test rule drives Compose on a test
@@ -27,6 +28,7 @@ import java.io.File
  * accessibility tree. Assistive tech is simulated with AppContainer.assistiveOverride.
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class MusicStandPlaybackTest {
     @get:Rule
     val scenario = ActivityScenarioRule(MainActivity::class.java)

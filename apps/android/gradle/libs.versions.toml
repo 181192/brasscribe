@@ -23,6 +23,8 @@ espresso = "3.7.0"
 atf = "4.1.1"
 jna = "5.19.1"
 codeScanner = "16.1.0"
+robolectric = "4.17"
+roborazzi = "1.76.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -73,7 +75,17 @@ play-services-code-scanner = { module = "com.google.android.gms:play-services-co
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 atf = { module = "com.google.android.apps.common.testing.accessibility.framework:accessibility-test-framework", version.ref = "atf" }
 
+# The screens on the JVM: Robolectric runs the app's unit tests against Android itself, Roborazzi takes their screenshots.
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+# alphaSkia's native library for the machine the tests run on, so alphaTab engraves there as on a phone.
+alphaskia-macos = { module = "net.alphatab:alphaSkia-macos", version.ref = "alphaSkia" }
+alphaskia-linux = { module = "net.alphatab:alphaSkia-linux", version.ref = "alphaSkia" }
+alphaskia-windows = { module = "net.alphatab:alphaSkia-windows", version.ref = "alphaSkia" }
+
 [plugins]
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

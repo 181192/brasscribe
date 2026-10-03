@@ -16,7 +16,8 @@ import javax.crypto.spec.GCMParameterSpec
  * 12-byte IV the Keystore chose, then the ciphertext and tag.
  */
 class KeystoreCipher(private val alias: String = "brasscribe.credentials") : SecretCipher {
-    private val keyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
+    // Opened when a credential is first sealed or read: the app also starts where there is no Android Keystore (the JVM tests).
+    private val keyStore by lazy { KeyStore.getInstance(PROVIDER).apply { load(null) } }
 
     @Synchronized
     private fun key(): SecretKey =

@@ -389,7 +389,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val plain = RestoredStack.plain(restored, hasSource = sourceBack != null)
             backStack.value = plain
             if (scoreId != null && RestoredStack.needsScore(restored)) {
-                viewModelScope.launch {
+                // Dispatched, not immediate: this runs from the constructor, and a score read back before the
+                // constructor has finished would be shown on a view model whose later fields are not set yet.
+                viewModelScope.launch(Dispatchers.Main) {
                     val saved = withContext(storage) { scoreLibrary.get(scoreId)?.let { it to scoreLibrary.content(it.id) } }
                     val content = saved?.second ?: return@launch
                     if (backStack.value != plain) return@launch
@@ -549,16 +551,17 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             say(R.string.reading_file, name)
             try {
                 // Never the whole file in memory: a video's sound is taken out on disk, the PCM decoded a buffer at a time.
-                val imported = withContext(Dispatchers.IO) {
-                    var extracting = false
-                    MediaImport.import(ctx, uri, name, File(ctx.cacheDir, "takes")) { phase, f ->
-                        if (phase == MediaImport.Phase.EXTRACT && !extracting) {
-                            extracting = true
-                            sayQuietly(R.string.extracting_sound, name)
-                        }
-                        // Copying and taking the sound out are the long part; decoding the result is quick.
-                        importProgress.value = (if (phase == MediaImport.Phase.DECODE) 0.8 + 0.2 * f else 0.8 * f).toFloat()
+                // The file is read on a worker; how far it has got is shown from here, on the main thread.
+                var extracting = false
+                val imported = reportedHere<Pair<MediaImport.Phase, Double>, _>(Dispatchers.IO, show = { (phase, f) ->
+                    if (phase == MediaImport.Phase.EXTRACT && !extracting) {
+                        extracting = true
+                        sayQuietly(R.string.extracting_sound, name)
                     }
+                    // Copying and taking the sound out are the long part; decoding the result is quick.
+                    importProgress.value = (if (phase == MediaImport.Phase.DECODE) 0.8 + 0.2 * f else 0.8 * f).toFloat()
+                }) { report ->
+                    MediaImport.import(ctx, uri, name, File(ctx.cacheDir, "takes")) { phase, f -> report(phase to f) }
                 }
                 val kind = if (imported.hasVideo) SourceKind.VIDEO else SourceKind.FILE
                 setSource(Source(name, kind, imported.durationS, imported.audio, imported.file))

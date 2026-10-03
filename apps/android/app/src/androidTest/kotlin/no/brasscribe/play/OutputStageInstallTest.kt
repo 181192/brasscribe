@@ -14,6 +14,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * The app's own score player plays through the shared output stage: after a score opens and the band
@@ -21,6 +22,7 @@ import java.io.File
  * playing and stopping.
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class OutputStageInstallTest {
     @get:Rule
     val scenario = ActivityScenarioRule(MainActivity::class.java)

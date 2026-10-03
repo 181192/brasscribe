@@ -150,6 +150,7 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
         player.release()
     }
 
-    /** The pitch factor the player runs at, for the test that slows it down: 1 is the recording's own. */
+    /** The speed and the pitch factor the player itself runs at, for the test that slows it down: 1 is the recording's own. */
+    val appliedSpeed: Float get() = player.playbackParameters.speed
     val pitch: Float get() = player.playbackParameters.pitch
 }

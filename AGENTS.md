@@ -25,6 +25,10 @@ on memory or on this file.
 - **Verify before you claim.** Run the tier the change needs (`make check-fast` while working,
   `make check` before handing off). Report what you ran and its result; if you skipped a check,
   say so. Never describe a test as passing that you did not run.
+- **Android: the JVM first.** The app's screens, flows, screenshots and accessibility checks run on the JVM
+  in the unit tests; an emulator is for what only a device can do. A new screen comes with its JVM tests and
+  an entry in its app's screen catalogue, and a reviewer's probe is a JVM test. The rules and the list of
+  device-only cases are in [apps/android/README.md](apps/android/README.md#testing).
 - **Change one thing per branch**, on a branch or worktree, never directly on `main` unless told to.
 - **Follow the surrounding code.** Each part has its own language and idioms (Python, Rust, Swift,
   Kotlin, C#, TypeScript); match the file you are in, its naming and its comment density.

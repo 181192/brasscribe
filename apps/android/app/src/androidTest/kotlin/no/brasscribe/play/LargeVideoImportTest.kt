@@ -27,6 +27,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.PI
 import kotlin.math.sin
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * A video larger than the app's whole heap goes through import (its AAC track remuxed to .m4a,
@@ -35,6 +36,7 @@ import kotlin.math.sin
  * samples of filler bytes behind a real H.264 codec config (nothing decodes the pictures).
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class LargeVideoImportTest {
     @get:Rule
     val scenario = ActivityScenarioRule(MainActivity::class.java)
