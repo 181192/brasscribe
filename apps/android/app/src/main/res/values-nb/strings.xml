@@ -132,7 +132,7 @@
     <string name="profile_orchestra_desc">Du får solostemmen, og akkompagnementet arrangert for brassband.</string>
     <string name="profile_pop">Pop eller rock</string>
     <string name="profile_pop_desc">Sang, gitarer, tangenter, bass og trommer.</string>
-    <string name="profile_not_sure">Usikker? Velg Brassband for en gruppe, eller Ett instrument for bare deg. Du kan endre det senere.</string>
+    <string name="profile_not_sure">Usikker? Velg Brassband for en gruppe, eller Ett instrument når det bare er deg. Du kan endre det senere.</string>
     <string name="profile_choose_one">Velg ett for å fortsette.</string>
     <string name="where_title">Hvor partituret lages</string>
     <string name="where_device">På telefonen</string>
@@ -245,7 +245,7 @@
     <string name="listen_unavailable">Det finnes ikke noe opptak å spille for denne takten.</string>
     <string name="bar_heading">Takt %1$d</string>
     <string name="bar_rest_heading">Takt %1$d til %2$d</string>
-    <string name="review_continue">Neste: band og toneart</string>
+    <string name="review_continue">Neste: Hvordan skal partituret bli?</string>
     <string name="dur_whole">helnote</string>
     <string name="dur_half">halvnote</string>
     <string name="dur_quarter">firedelsnote</string>

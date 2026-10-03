@@ -39,11 +39,11 @@ class BrasscribeWordsTest {
 
     @Test
     fun theButtonAfterCheckingSaysWhatComesNext() {
-        // Not "Choose output" / «Velg resultat»: the next screen asks for the band and the key.
+        // Not "Choose output" / «Velg resultat»: it names the next screen (a solo take is not asked for a band there).
         assertTrue(en.getValue("review_continue"), !Regex("output|choose", RegexOption.IGNORE_CASE).containsMatchIn(en.getValue("review_continue")))
         assertTrue(nb.getValue("review_continue"), !Regex("resultat|velg", RegexOption.IGNORE_CASE).containsMatchIn(nb.getValue("review_continue")))
-        assertTrue(en.getValue("review_continue").contains("band"))
-        assertTrue(nb.getValue("review_continue").contains("band"))
+        assertTrue(en.getValue("review_continue").endsWith(en.getValue("output_title")))
+        assertTrue(nb.getValue("review_continue").endsWith(nb.getValue("output_title")))
     }
 
     @Test

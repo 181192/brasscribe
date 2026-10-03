@@ -247,7 +247,7 @@
     <string name="listen_unavailable">There\'s no recording to play for this bar.</string>
     <string name="bar_heading">Bar %1$d</string>
     <string name="bar_rest_heading">Bars %1$d to %2$d</string>
-    <string name="review_continue">Next: band and key</string>
+    <string name="review_continue">Next: How should the score be?</string>
     <string name="dur_whole">semibreve</string>
     <string name="dur_half">minim</string>
     <string name="dur_quarter">crotchet</string>
