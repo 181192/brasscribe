@@ -112,7 +112,7 @@ abstract class ScreenCatalogue : ScreenTest() {
                 settle()
                 val all = tabThrough()
                 if (screen.ownOrder != null) continue
-                val round = FocusOrder.withoutTheDocked(all, scrolling())
+                val round = all
                 val read = FocusOrder.reading(round, scrolling())
                 // (Where on the screen the first Tab lands depends on what was touched last: the round is what is compared.)
                 val reached = round.indexOfFirst { it.id == read.firstOrNull()?.id }.let { at -> if (at <= 0) round else round.drop(at) + round.take(at) }
@@ -153,21 +153,14 @@ object FocusOrder {
         Rect(node.positionInWindow.x, node.positionInWindow.y, node.positionInWindow.x + node.size.width, node.positionInWindow.y + node.size.height)
 
     /**
-     * [nodes] without what is docked under the part that scrolls (a screen's one primary button, the note
-     * under the tab). That is the one place where the keyboard's order is the order the screens are built in
-     * and not the order they are read in: a screen's bars come before its content, so the keyboard reaches
-     * the docked button after the top bar and before the content above it.
-     */
-    fun withoutTheDocked(nodes: List<SemanticsNode>, scroll: SemanticsNode?): List<SemanticsNode> =
-        nodes.filter { scroll == null || within(it, scroll) || place(it).top < scroll.boundsInWindow.bottom - 1f }
-
-    /**
-     * [nodes] as they are read: what is outside the part that scrolls first (the top bar, and what is pinned
-     * above the content), then what is in it; each from top to bottom, and from the start of a row to its end.
+     * [nodes] as they are read: what is above the part that scrolls first (the top bar, and what is pinned over
+     * the content), then what is in it, then what is docked under it (a screen's one primary button); each
+     * from top to bottom, and from the start of a row to its end.
      */
     fun reading(nodes: List<SemanticsNode>, scroll: SemanticsNode?): List<SemanticsNode> {
         val (inside, outside) = nodes.partition { within(it, scroll) }
-        return byPlace(outside) + byPlace(inside)
+        val (docked, above) = outside.partition { scroll != null && place(it).top >= scroll.boundsInWindow.bottom - 1f }
+        return byPlace(above) + byPlace(inside) + byPlace(docked)
     }
 
     /** Rows from the top; two elements that share most of their height are in one row, read from its start. */

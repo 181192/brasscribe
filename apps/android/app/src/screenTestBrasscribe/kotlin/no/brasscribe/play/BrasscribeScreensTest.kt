@@ -81,8 +81,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("check-the-notes", ownOrder = "the notes of the part are a list of their own, which the keyboard goes through as they are played") { checkTheNotes(); rest() },
         Entry("how-should-the-score-be") { checkTheNotes(); go(Screen.OUTPUT) },
         Entry("score") { theScore() },
-        // (Music stand shares its row with Read aloud and is cut to "Music" at 200 %: issue 119.)
-        Entry("score-more", cutAtLargeText = setOf("Music stand")) { theScore(); more(); rest() },
+        Entry("score-more") { theScore(); more(); rest() },
         Entry("music-stand", ownOrder = "the stand's controls are three groups side by side, and the keyboard takes the transport first") {
             theScore()
             // (From the sheet of what the row has no room for: it always has the stand.)
@@ -97,5 +96,6 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("about") { go(Screen.SETTINGS, Screen.ABOUT) },
         Entry("help") { go(Screen.HELP) },
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },
+        Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
     )
 }

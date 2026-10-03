@@ -270,6 +270,22 @@ def test_serve_banner_records_hosts_for_the_payload(settings):
     assert any(app.state.pairing.code in line for line in lines)
 
 
+def test_serve_keeps_an_idle_connection_for_a_minute(settings, monkeypatch, capsys):
+    # uvicorn's own 5 s closed the connection a phone was about to send a recording on.
+    import argparse
+
+    import uvicorn
+
+    from brasscribe_engine import api, cli
+
+    ran = {}
+    monkeypatch.setattr(api, "create_app", lambda **_: create_app(settings))
+    monkeypatch.setattr(uvicorn, "run", lambda app, **kw: ran.update(kw))
+    args = argparse.Namespace(lan=False, host="127.0.0.1", port=8765, no_trust_local=False, no_advertise=True)
+    assert cli.cmd_serve(args) == 0
+    assert ran["timeout_keep_alive"] == cli.KEEP_ALIVE_S >= 60
+
+
 # ---------------------------------------------------------------------------- approve on the computer
 
 

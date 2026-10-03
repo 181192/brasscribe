@@ -106,8 +106,21 @@ class KtorEngineApi(
 
     override suspend fun profiles(): List<ProfileInfo> = http.get("v1/profiles") { auth() }.ok().body()
 
-    override suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress): AudioRef =
-        http.submitFormWithBinaryData("v1/audio", formData { appendFile(source) }) { auth(); onUpload { sent, total -> onProgress(sent, total ?: source.size) } }.ok().body()
+    /**
+     * The upload is sent once more when the connection broke before any answer came (a connection the computer had
+     * already closed, after the phone slept). That is safe: the engine keeps an upload by its SHA-256, so the same
+     * recording twice is one upload, and [UploadSource] opens the file again. A timeout is not tried again.
+     */
+    override suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress): AudioRef {
+        suspend fun send(): AudioRef =
+            http.submitFormWithBinaryData("v1/audio", formData { appendFile(source) }) { auth(); onUpload { sent, total -> onProgress(sent, total ?: source.size) } }.ok().body()
+        return try {
+            send()
+        } catch (e: java.io.IOException) {
+            if (e.javaClass.simpleName.contains("Timeout")) throw e
+            send()
+        }
+    }
 
     override suspend fun createJob(request: JobCreate): Job =
         http.post("v1/jobs") {

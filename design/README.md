@@ -72,7 +72,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] Put the copy through the voice rules in `brand/brand.md`, and use the glossary for both en and nb. Rename "companion engine" and "motor" to "Brasscribe on your computer" / "Brasscribe på datamaskinen".
 - [ ] Give every error a title, a reason and a recovery button (`mockups/png/error-*`).
 - [ ] Follow the player-bar order: Play first, bar fields for the loop, a beat counter that never flashes, and "Mute my part".
-- [ ] Transcribing shows the plain-language steps, the percentage and the time left, and Cancel. Announce at most every 10% or 10 s.
+- [ ] Transcribing shows the plain-language steps, the percentage and, for a score made on the device, the time left, and Cancel. Announce at most every 10% or 10 s.
 - [ ] Check reduced motion, 200% text and high contrast against the mockups.
 
 **From the usability review** (`reviews/usability-review.md`; the specs in `system.md` and `brand/brand.md` are updated):
