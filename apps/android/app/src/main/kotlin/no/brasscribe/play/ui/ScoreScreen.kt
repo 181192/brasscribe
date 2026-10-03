@@ -666,7 +666,8 @@ fun ScoreScreen(vm: PlayViewModel) {
             }
             // The View menu (the review's P2): Read aloud and the music stand, then the sound.
             SubHeading(stringResource(R.string.view_menu))
-            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+            // Wraps like the pitch row below: at large text the music stand takes a row of its own.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
                 PracticeChip(stringResource(R.string.read_aloud), textView, { textView = !textView; sheet = null }, icon = R.drawable.ic_bc_talking_score)
                 PracticeChip(stringResource(R.string.stand_enter), false, { sheet = null; enterStand(StandOrigin.BUTTON) },
                     Modifier.semantics { testTag = "performance" }, icon = R.drawable.ic_stand_music_stand, role = Role.Button)
