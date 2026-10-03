@@ -84,6 +84,13 @@ def test_a_song_run_reads_the_stem_the_profile_reads(tmp_path, monkeypatch):
     assert B.evaluate(tmp_path, ("mandolin",), "song")[1] == []  # another instrument's suite does not see it
 
 
+def test_a_held_out_groups_development_passages_are_scored_apart():
+    """The held-out passages a rule was chosen on are not in the group's held-out numbers."""
+    assert B.split("ukulele-high-g") == (("", B.PATTERNS),)
+    parts = dict(B.split("mandolin" + B.HELDOUT))
+    assert parts[B.DEV] == B.DEVELOPMENT and set(parts[""]) == set(B.HELDOUT_PATTERNS) - set(B.DEVELOPMENT)
+
+
 @pytest.mark.parametrize("suite,groups", [("ukulele-tab", ("ukulele_high_g.song", "ukulele_low_g.instrument", "ukulele_baritone.song",
                                                            "ukulele_high_g_heldout.instrument", "ukulele_baritone_heldout.song")),
                                           ("mandolin-tab", ("mandolin.song", "mandolin.instrument", "mandolin_heldout.instrument"))])

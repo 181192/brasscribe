@@ -668,15 +668,40 @@ def test_a_note_that_starts_where_a_note_of_its_pitch_stops_rings_on():
 
 @needs_core
 def test_a_melody_over_a_ringing_chord_keeps_its_high_notes():
-    """A D chord left to ring on a high-G ukulele and a melody at the 14th to 16th fret of the top string: no hand spans
+    """A D chord left to ring on a high-G ukulele and a melody at the 13th to 15th fret of the top string, on no overtone of the chord: no hand spans
     both, and of each onset the chord heard again is left out, not the melody (fainter than the chord)."""
-    melody = [83, 84, 85, 84, 83, 85]
+    melody = [83, 84, 82, 84, 83, 82]
     doc = {**tab.played_notes(_over_a_ringing_chord([62, 66, 69], melody), _beats(), "ukulele"), "reference_pitch": None}
     t = tab.fingered(doc, tab.options({"instrument": "ukulele", "recording": "instrument"}))
     assert [n["pitch"] for n in t["notes"] if n["pitch"] > 80] == melody and t["violations"] == []
     assert {n["pitch"] for n in t["notes"] if n["start"] == 0} == {62, 66, 69}  # the chord itself is all there (its A on two strings)
     assert t["unplayable_dropped"] > 0 and not any("rings_on" in n for n in t["notes"])
     assert m.Tab.model_validate({**t, "layout": "tab", "adjusted_notes": 0})
+
+
+@needs_core
+@pytest.mark.parametrize("instrument,chord,overtone", [
+    ("ukulele", UKE_C, 83),  # the 12th of E4
+    ("ukulele", UKE_C, 86),  # the 12th of G4
+    ("mandolin", [57, 62, 69, 78], 85),  # D: the 5th partial of A3
+])
+def test_a_strum_struck_again_keeps_its_chord_under_a_confident_overtone(instrument, chord, overtone):
+    """A chord struck every half beat, its notes going straight on from one strike to the next, and an overtone
+    heard as strongly as the chord on every second strike: the overtone is no melody, and the chord stays."""
+    strikes = sorted(_strummed([chord] * 16, step=0.25), key=lambda n: n["onset"])
+    heard = sorted(strikes + [_note(overtone, 0.5 * k + 0.01, 0.2, amplitude=0.7) for k in range(8)], key=lambda n: n["onset"])
+    doc = {**tab.played_notes(heard, _beats(), instrument), "reference_pitch": None}
+    assert any(n.get("rings_on") for n in doc["notes"])
+    t = tab.fingered(doc, tab.options({"instrument": instrument, "recording": "instrument"}))
+    assert all(set(chord) <= {n["pitch"] for n in t["notes"] if n["start"] == 12 * k} for k in range(16))
+    assert t["violations"] == []
+
+
+def test_a_melody_note_on_a_ringing_chords_pitch_does_not_ring_on():
+    """Heard twice on one onset, a pitch was struck there: the melody note is not taken for the ring."""
+    notes = tab.strums([_note(69, 0.0, 0.5), _note(69, 0.5, 0.5), _note(69, 0.5, 0.3, amplitude=0.6), _note(62, 0.0, 0.5),
+                        _note(62, 0.5, 0.5)])
+    assert sorted((n["pitch"], n["onset"]) for n in tab.rings_on(notes)) == [(62, 0.5)]
 
 
 @needs_core

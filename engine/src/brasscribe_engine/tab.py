@@ -179,11 +179,11 @@ DRAG_STYLE = "open-position"
 # and start anew there, within RING_GAP seconds (`rings_on`). A string struck again looks the same.
 RING_GAP = 0.03
 # Of the notes of a violation, such a note is left out before a note that starts anew on top of its onset more
-# than RING_ABOVE semitones over it, and is no octave of a note there (rung). Below that the top note can be
-# one of a strum struck again, and an octave over it is what an overtone on top of a strum is (on the rendered
-# held-out strums, every such overtone not in doubt was an octave of a note of the strum). Chosen on the
-# held-out chord-melody and strummed passages of small_tab_bench, the only ones with a melody over a ringing
-# chord (eval/README.md).
+# than RING_ABOVE semitones over it and is no overtone of a note there or ringing through it (rung). Below that
+# the top note can be one of a strum struck again, and an overtone over a strum is what Basic Pitch hears on
+# top of one. A melody note that happens to sit on an overtone of the chord is then still left out. Chosen on
+# the development passages of small_tab_bench (the held-out chord-melody and strummed ones, the only ones with
+# a melody over a ringing chord); eval/README.md lists the split.
 RING_ABOVE = 12
 # The whole passage an octave from where the instrument plays: more than half of its notes outside the
 # instrument's range on one side, and OCTAVE_FIT of them inside it an octave the other way.
@@ -435,11 +435,14 @@ def repeated(notes: list[dict]) -> list[bool]:
 
 
 def rings_on(notes: list[dict]) -> list[dict]:
-    """The notes of `notes` that start within RING_GAP of where a note of their pitch stops."""
+    """The notes of `notes` that start within RING_GAP of where a note of their pitch stops. A pitch heard twice
+    on one onset was struck there as well (a melody note on a ringing chord's pitch): neither rings on."""
     ends: dict[int, list[float]] = {}
     for n in notes:
         ends.setdefault(n["pitch"], []).append(n["offset"])
-    return [n for n in notes if any(abs(n.get("heard_at", n["onset"]) - end) <= RING_GAP for end in ends[n["pitch"]])]
+    twice = {k for k, c in Counter((n["onset"], n["pitch"]) for n in notes).items() if c > 1}
+    return [n for n in notes if (n["onset"], n["pitch"]) not in twice
+            and any(abs(n.get("heard_at", n["onset"]) - end) <= RING_GAP for end in ends[n["pitch"]])]
 
 
 def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: str = "auto",
@@ -550,17 +553,18 @@ def rung(i: int, involved: list[int], notes: list[dict]) -> bool:
     """Note `i` of a violation is the ring of a chord heard again under a melody (RING_*).
 
     It goes straight on from a note of its pitch (`rings_on`), and the top note of its onset (of those not in
-    doubt) is in the violation, starts anew, is no octave of a note on the onset and stands more than RING_ABOVE
-    over note `i`: a melody played over the chord. A strum struck again, whose notes go straight on too, has
-    its own notes or their octave on top."""
+    doubt) is in the violation, starts anew, stands more than RING_ABOVE over note `i`, and is no overtone
+    (bass_tab.OVERTONES) of a note that starts on the onset or sounds through it: a melody played over the
+    chord. A strum struck again, whose notes go straight on too, has its own notes or their overtones on top."""
     if not notes[i].get("rings_on"):
         return False
-    at = [n["pitch"] for n in notes if n["start"] == notes[i]["start"]]
-    sure = [n["pitch"] for n in notes if n["start"] == notes[i]["start"] and n["confidence"] >= DOUBT]
+    start = notes[i]["start"]
+    sure = [n["pitch"] for n in notes if n["start"] == start and n["confidence"] >= DOUBT]
     if not sure:
         return False
     top = max(sure)
-    return top - notes[i]["pitch"] > RING_ABOVE and not any((top - p) % 12 == 0 for p in at if p < top) and any(
+    under = [n["pitch"] for n in notes if n["start"] <= start < n["start"] + max(n["dur"], 1) and n["pitch"] < top]
+    return top - notes[i]["pitch"] > RING_ABOVE and not any(top - p in bass_tab.OVERTONES for p in under) and any(
         notes[j]["pitch"] == top and not notes[j].get("rings_on") for j in involved if j != i)
 
 

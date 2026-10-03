@@ -684,10 +684,11 @@ def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
                 B.prepare(entry)
         out: dict[str, float] = {}
         for group in groups:
-            label = group.replace("-", "_") + "."
-            for m in B.MODES:
-                metrics, _ = B.evaluate(data, (group,), m)
-                out.update({f"{label}{m}.{k}": v for k, v in metrics.items()})
+            for part, only in B.split(group):  # a held-out group's development passages apart (B.DEVELOPMENT)
+                label = group.replace("-", "_") + part + "."
+                for m in B.MODES:
+                    metrics, _ = B.evaluate(data, (group,), m, only=only)
+                    out.update({f"{label}{m}.{k}": v for k, v in metrics.items()})
         # Where the separator puts the instrument: the stem the profile reads, against the others.
         for stem, scores in B.stem_scores(data, groups).items():
             out[f"stem.{stem}.recall"] = scores["onset_r"]
