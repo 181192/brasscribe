@@ -54,6 +54,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -96,6 +97,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import no.brasscribe.design.BrasscribeButtonShape
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
@@ -566,7 +568,7 @@ private fun StandLayer(
         if (!shape.landscape) Column(Modifier.padding(BrasscribeSpace.s3), verticalArrangement = gap) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { transport() }
             FlowRow(horizontalArrangement = gap, verticalArrangement = gap) {
-                SpeedStepper(st.speed, onSpeed)
+                SpeedStepper(st.speed, onSpeed) { ms.touches++ }
                 repeat()
             }
             if (onlyMine || shape.lockAvailable) FlowRow(horizontalArrangement = gap, verticalArrangement = gap) {
@@ -580,7 +582,7 @@ private fun StandLayer(
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalAlignment = Alignment.CenterVertically) { transport() }
             Spacer(Modifier.size(BrasscribeSpace.s2))
-            SpeedStepper(st.speed, onSpeed)
+            SpeedStepper(st.speed, onSpeed) { ms.touches++ }
             repeat()
             if (shape.tablet && onlyMine) OnlyMineToggle(ms.onlyMine, onOnlyMine)
             onTurnMusic?.let { TurnMusicPill(it, Modifier) }
@@ -599,22 +601,64 @@ private fun PageButton(icon: Int, label: String, enabled: Boolean, tag: String, 
     ) { BcIcon(icon, label) }
 }
 
-/** − Speed 75% +: two steppers around the value (2.5.7), 5 % a step, 25 % to 150 %. No slider on the stand. */
+/**
+ * − Speed 75% +: two steppers around the value (2.5.7), 5 % a step, 25 % to 150 %. No slider on the stand. Holding one
+ * keeps stepping ([HoldStepper]); [held] hears each step of a hold, so the controls stay up under the finger.
+ */
 @Composable
-private fun SpeedStepper(speed: Int, onSpeed: (Int) -> Unit) {
+private fun SpeedStepper(speed: Int, onSpeed: (Int) -> Unit, held: () -> Unit = {}) {
     val c = BrasscribeTheme.colors
+    val now by rememberUpdatedState(speed)
     Row(
         Modifier.heightIn(min = 48.dp).border(1.dp, c.borderStrong, BrasscribeButtonShape).background(c.surfaceRaised, BrasscribeButtonShape),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton({ onSpeed(speed - MusicStandRules.SPEED_STEP) }, Modifier.size(48.dp).semantics { testTag = "stand-slower" }, enabled = speed > 25) {
-            BcIcon(R.drawable.ic_stand_minus, stringResource(R.string.stand_slower))
+        HoldStepper(R.drawable.ic_stand_minus, stringResource(R.string.stand_slower), "stand-slower", speed > MusicStandRules.SPEED_MIN, held) {
+            onSpeed(now - MusicStandRules.SPEED_STEP)
         }
         Text(stringResource(R.string.speed_chip, speed), style = MaterialTheme.typography.labelLarge, color = c.text,
             modifier = Modifier.padding(horizontal = BrasscribeSpace.s1))
-        IconButton({ onSpeed(speed + MusicStandRules.SPEED_STEP) }, Modifier.size(48.dp).semantics { testTag = "stand-faster" }, enabled = speed < 150) {
-            BcIcon(R.drawable.ic_stand_plus, stringResource(R.string.stand_faster))
+        HoldStepper(R.drawable.ic_stand_plus, stringResource(R.string.stand_faster), "stand-faster", speed < MusicStandRules.SPEED_MAX, held) {
+            onSpeed(now + MusicStandRules.SPEED_STEP)
         }
+    }
+}
+
+/** How long a stepper is held before it steps again on its own, and how often it then steps, in milliseconds. */
+internal const val STEP_HOLD_MS = 400L
+internal const val STEP_REPEAT_MS = 100L
+
+/**
+ * A 48 dp step button. A tap is one step; held down, it steps again every [STEP_REPEAT_MS] after [STEP_HOLD_MS], until
+ * it is let go or can step no further, and letting go then adds no step of its own. A press that is cancelled (the
+ * finger slid off) or a button that turned off on the way ends the hold, so the next click (a tap, or a screen
+ * reader's, switch's or voice's press) always steps.
+ */
+@Composable
+private fun HoldStepper(icon: Int, label: String, tag: String, enabled: Boolean, held: () -> Unit, step: () -> Unit) {
+    val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    var holding by remember { mutableStateOf(false) }
+    val stepNow by rememberUpdatedState(step)
+    val heldNow by rememberUpdatedState(held)
+    val can by rememberUpdatedState(enabled)
+    LaunchedEffect(source) {
+        // A new press, a release or a cancel ends the steps of the press before it.
+        source.interactions.collectLatest { i ->
+            if (i is androidx.compose.foundation.interaction.PressInteraction.Cancel) holding = false
+            if (i !is androidx.compose.foundation.interaction.PressInteraction.Press) return@collectLatest
+            holding = false
+            delay(STEP_HOLD_MS)
+            while (can) {
+                holding = true
+                stepNow()
+                heldNow()
+                delay(STEP_REPEAT_MS)
+            }
+        }
+    }
+    LaunchedEffect(enabled) { if (!enabled) holding = false }
+    IconButton({ if (holding) holding = false else step() }, Modifier.size(48.dp).semantics { testTag = tag }, enabled = enabled, interactionSource = source) {
+        BcIcon(icon, label)
     }
 }
 

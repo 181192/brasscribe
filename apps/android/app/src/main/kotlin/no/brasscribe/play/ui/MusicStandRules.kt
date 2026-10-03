@@ -14,6 +14,8 @@ object MusicStandRules {
     const val EDGE_DP = 24
     /** Speed steppers: 5 % a step, 25 % to 150 %. */
     const val SPEED_STEP = 5
+    const val SPEED_MIN = 25
+    const val SPEED_MAX = 150
 
     /**
      * Arrows and Page Up/Down turn pages (what Bluetooth page turners send), Space plays, Home/End go
