@@ -598,6 +598,13 @@ def _bass_tab(data: Path, mode: str) -> dict[str, float]:
         for m in B.MODES:
             metrics, _ = B.evaluate(data, m, eval_set=B.SYNTH_SET, group=group)
             out.update({f"{label}.{m}.{k}": v for k, v in metrics.items()})
+    # The bass alone as a phone hears it (build-phone and prepare-phone make it): each cut apart.
+    phone = [e for e in B.entries(data, B.PHONE_SET) if all((e / f).exists() for f in B.PHONE_FILES["phone"].values())]
+    if not phone:
+        out[SKIPPED].append("phone")
+    for cut in (0, *B.PHONE_CUTS) if phone else ():
+        metrics, _ = B.evaluate(data, "phone", eval_set=B.PHONE_SET, cut=cut)
+        out.update({f"phone.hp{cut}.{k}": v for k, v in metrics.items()})
     return out
 
 

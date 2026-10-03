@@ -76,14 +76,23 @@ DEFAULTS = {"instrument": "bass-4", "tuning": "standard", "capo": 0, "style": "a
 
 # The octave check. Transcribers hear a bass an octave high when its fundamental is weak (a phone's
 # microphone barely carries a low E). The whole line is written an octave lower when its median pitch
-# is above OCTAVE_MEDIAN and at least OCTAVE_FIT of its notes stay at or above BASS_LOWEST an octave
-# lower. It is decided from what was heard, against one bass for every job: the player's tuning and
-# capo do not change which octave the recording is in.
+# is above OCTAVE_MEDIAN, at least OCTAVE_FIT of its notes stay at or above BASS_LOWEST an octave
+# lower, and the second transcriber heard under OCTAVE_CONFIRMED of its notes at their own pitch. It is
+# decided from what was heard, against one bass for every job: the player's tuning and capo do not change
+# which octave the recording is in.
 BASS_LOWEST = 28  # E1, the low string of a four-string bass
 # A#2. The bass lines of the Slakh excerpts have their median at B1 to G2 (38 to 43), so the same lines
-# heard an octave high have it at 50 to 55; this is the middle of the gap.
+# heard an octave high have it at 50 to 55; this is the middle of the gap. As Basic Pitch hears them, separated
+# from the song, alone, and alone with their bottom cut as a phone would (bass_tab_bench's phone set, a
+# high-pass at 100 and 200 Hz), the medians of those lines are 38 to 46.
 OCTAVE_MEDIAN = 46
 OCTAVE_FIT = 0.9
+# A line that really sits high, and that the median alone would move down: SwiftF0 hears it where Basic Pitch
+# does (0.43 to 0.87 of its notes on the two Slakh lines that sit at E3 to C4), while a line heard an octave or
+# two high because its bottom is gone is heard there at 0.30 or less, all but one (8th-order high-pass at 300
+# and 500 Hz). On the bench's ordinary lines it changes nothing; on the phone set it takes back the 4 moves of
+# 82 lines that were wrong, all of them real high lines.
+OCTAVE_CONFIRMED = 0.4
 OCTAVE_MAX_SHIFTS = 2
 # Single notes heard an octave high, after the whole line is placed (octave_outliers).
 OUTLIER_WINDOW = 4  # neighbours on each side
@@ -424,6 +433,7 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
         raise ValueError("no bass notes heard in the recording")
     strays = set(stray_notes(bottom, second))
     bottom = [n for j, n in enumerate(bottom) if j not in strays] or bottom  # never the whole line
+    confirmed = line_confirmed(bottom, second)
     moved = set(octave_outliers(bottom, second)) if octave == "auto" else set()
     bottom = [{**n, "pitch": n["pitch"] - 12} if j in moved else n for j, n in enumerate(bottom)]
     bottom = [{**n, "confidence": note_confidence(n, second)} for n in bottom]
@@ -444,7 +454,7 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     # A detached note keeps to its beat's grid: under a tab a lone triplet value draws a bracket over a line that has
     # no triplets.
     written = apply_written(quantize(bottom, times, monophonic=True, auto_level=False), BeatMap(times), keep_grid=True)
-    shift = octave_shift([q.pitch for q, _ in written]) if octave == "auto" else int(octave)
+    shift = octave_shift([q.pitch for q, _ in written], confirmed) if octave == "auto" else int(octave)
     notes = [{"pitch": int(q.pitch) + shift, "start": int(q.start - pickup),
               "dur": int(w.dur),
               "confidence": float(q.confidence), "onset_s": float(q.onset_s), "offset_s": float(q.offset_s),
@@ -477,10 +487,22 @@ def reference_pitch(audio: Path, whole_recording: bool) -> dict | None:
             "retuned": whole_recording and tuning.decide(cents, concentration) != 0}
 
 
-def octave_shift(pitches: list[int]) -> int:
+def line_confirmed(line: list[dict], second: list[dict] | None) -> float | None:
+    """The share of the notes of `line` the second transcriber heard at their own pitch (of those it can hear,
+    at SECOND_LOWEST and up); None without a second transcriber or a note it can hear."""
+    audible = [n for n in line if n["pitch"] >= SECOND_LOWEST]
+    if not second or not audible:
+        return None
+    return float(np.mean([_heard(second, n, n["pitch"]) for n in audible]))
+
+
+def octave_shift(pitches: list[int], confirmed: float | None = None) -> int:
     """Semitones to move the whole line by: 0, or whole octaves down when it was heard an octave (or
-    two) above where a bass plays (OCTAVE_MEDIAN, OCTAVE_FIT)."""
+    two) above where a bass plays (OCTAVE_MEDIAN, OCTAVE_FIT) and the second transcriber did not hear it
+    there (`confirmed`, line_confirmed, under OCTAVE_CONFIRMED)."""
     shift = 0
+    if confirmed is not None and confirmed >= OCTAVE_CONFIRMED:
+        return shift
     for _ in range(OCTAVE_MAX_SHIFTS if pitches else 0):
         moved = np.array(pitches) + shift
         if np.median(moved) <= OCTAVE_MEDIAN or np.mean(moved - 12 >= BASS_LOWEST) < OCTAVE_FIT:

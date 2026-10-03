@@ -944,7 +944,7 @@
       }
     },
     "bass-tab": {
-      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
+      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable. phone: every Slakh bass stem and the synthesized low lines alone, high-passed at 100 and 200 Hz as a phone's microphone would (hp0: the Slakh stems unfiltered, the tracks with two bass stems among them); made by bass_tab_bench build-phone and prepare-phone, skipped where absent",
       "metrics": {
         "song.onset_f1": 0.86,
         "song.onset_p": 0.887,
@@ -1139,7 +1139,61 @@
         "low_e.song.bar_ok": 1.0,
         "low_e.instrument.bar_ok": 1.0,
         "low_b.song.bar_ok": 1.0,
-        "low_b.instrument.bar_ok": 0.25
+        "low_b.instrument.bar_ok": 0.25,
+        "phone.hp0.onset_f1": 0.831,
+        "phone.hp0.octave_err_rate": {
+          "value": 0.024,
+          "higher_is_better": false
+        },
+        "phone.hp0.line_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "phone.hp0.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "phone.hp0.tracks": {
+          "value": 22.0,
+          "tolerance": 0
+        },
+        "phone.hp100.onset_f1": 0.756,
+        "phone.hp100.octave_err_rate": {
+          "value": 0.04,
+          "higher_is_better": false
+        },
+        "phone.hp100.line_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "phone.hp100.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "phone.hp100.tracks": {
+          "value": 30.0,
+          "tolerance": 0
+        },
+        "phone.hp200.onset_f1": 0.612,
+        "phone.hp200.octave_err_rate": {
+          "value": 0.031,
+          "higher_is_better": false
+        },
+        "phone.hp200.line_moved": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "phone.hp200.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "phone.hp200.tracks": {
+          "value": 30.0,
+          "tolerance": 0
+        }
       }
     },
     "guitar-tab": {

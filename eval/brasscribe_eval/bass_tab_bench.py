@@ -15,11 +15,17 @@ A second set covers what Slakh's lines never reach, the bottom of the instrument
 between B0 and E2 and rendered with FluidSynth and the MuseScore General SoundFont (`synthesize`), alone
 and under drums and a keyboard. Its numbers are reported apart from Slakh's, as low_e and low_b.
 
-Both sets are rendered instruments. Nothing here measures a real recording.
+A third set, `phone`, is every Slakh bass stem and every synthesized line alone with its bottom cut as a phone's
+microphone would (build_phone), for the octave check: whether a line heard above where a bass plays was heard
+there or really is there. It is reported apart, by cut.
+
+All three sets are rendered instruments. Nothing here measures a real recording.
 
     python -m brasscribe_eval.bass_tab_bench build <slakh root> [--data DIR]     reference.json per Slakh track
     python -m brasscribe_eval.bass_tab_bench synthesize [--data DIR]             the low-register set (FluidSynth)
     python -m brasscribe_eval.bass_tab_bench prepare <slakh root> [--data DIR]   run the models (GPU)
+    python -m brasscribe_eval.bass_tab_bench build-phone <slakh root> [--data DIR]  the bass alone as a phone hears it
+    python -m brasscribe_eval.bass_tab_bench prepare-phone [--data DIR]          run the models on it
     python -m brasscribe_eval.bass_tab_bench report [--data DIR]                 per-track numbers
 
 It runs on a computer that has the data and the models, not in CI: `brasscribe bench bass-tab` scores
@@ -256,13 +262,86 @@ def synthesize(data: Path) -> list[Path]:
     return made
 
 
+# ---------------------------------------------------------------- the bass alone, as a phone hears it
+
+# What the octave check is for: a recording whose fundamental is weak, so that the transcribers hear the line an
+# octave high. A phone's microphone and its recording chain roll off the bottom; that is imitated here with a
+# high-pass filter (PHONE_CUTS, Hz, PHONE_ORDER-th order Butterworth) on every Slakh bass stem (also those of
+# the tracks with two bass stems, which `build` leaves out, among them the synth lines that really sit high) and
+# on the synthesized low lines. Only the bass-alone mode exists here. The cut is a stand-in for a phone; a real
+# phone recording with its notes annotated would be better evidence and was not found.
+PHONE_SET = "phone-bass"
+PHONE_CUTS = (100, 200)
+PHONE_ORDER = 4
+PHONE_FILES = {"phone": FILES["instrument"]}
+
+
+def _phone_filter(audio: np.ndarray, sr: int, cut: float) -> np.ndarray:
+    from scipy.signal import butter, sosfilt
+
+    out = sosfilt(butter(PHONE_ORDER, cut, btype="highpass", fs=sr, output="sos"), audio, axis=0)
+    return out / max(1e-9, float(np.max(np.abs(out)))) * 0.9
+
+
+def build_phone(slakh: Path | None, data: Path) -> list[Path]:
+    """The phone set: per bass line and cut, bass.wav (filtered), reference.json (the unfiltered line's), and
+    `cut_hz`. Each Slakh entry also gets a `cut_hz` 0 entry, the stem as rendered, so a line that sits high
+    is there unfiltered too."""
+    import pretty_midi
+    import soundfile as sf
+    import yaml
+
+    sources = []  # (name, audio, sample rate, reference without the notes' shift applied, notes)
+    for track in sorted(p for p in Path(slakh).iterdir() if (p / "metadata.yaml").exists()) if slakh else ():
+        meta = yaml.safe_load((track / "metadata.yaml").read_text())
+        for sid, stem in meta["stems"].items():
+            wav = track / "stems" / f"{sid}.wav"
+            if stem["inst_class"] != "Bass" or not wav.exists():
+                continue
+            pm = pretty_midi.PrettyMIDI(str(track / "MIDI" / f"{sid}.mid"))
+            notes = sorted(({"pitch": n.pitch, "onset": float(n.start), "offset": float(n.end)}
+                            for inst in pm.instruments for n in inst.notes), key=lambda n: (n["onset"], n["pitch"]))
+            if len(notes) < MIN_NOTES:
+                continue
+            audio, sr = sf.read(str(wav), dtype="float64", always_2d=True)
+            shift = sounding_shift(audio.mean(axis=1), sr, notes)
+            sources.append((f"{track.name}-{sid}", audio, sr, {"program": stem["midi_program_name"], "written_to_sounding": shift},
+                            [{**n, "pitch": n["pitch"] + shift} for n in notes]))
+    for entry in entries(data, SYNTH_SET):
+        ref = json.loads((entry / "reference.json").read_text())
+        audio, sr = sf.read(str(entry / "bass.wav"), dtype="float64", always_2d=True)
+        sources.append((entry.name, audio, sr, {"group": ref["group"], "params": ref["params"]}, ref["notes"]))
+    made = []
+    for name, audio, sr, about, notes in sources:
+        for cut in ((0,) if "program" in about else ()) + PHONE_CUTS:
+            dest = Path(data) / "eval" / PHONE_SET / f"{name}-hp{cut}"
+            dest.mkdir(parents=True, exist_ok=True)
+            sf.write(str(dest / "bass.wav"), _phone_filter(audio, sr, cut) if cut else audio, sr)
+            (dest / "reference.json").write_text(json.dumps({**about, "cut_hz": cut, "notes": notes}, indent=1))
+            made.append(dest)
+    return made
+
+
+def prepare_phone(entry: Path) -> None:
+    """Beat This!, Basic Pitch and SwiftF0 on a phone entry's bass, as the profile runs them on a recording."""
+    from .suites import _run_adapter, _run_retuned
+
+    f = PHONE_FILES["phone"]
+    if not (entry / f["beats"]).exists():
+        _run_adapter("beat-this", entry / "bass.wav", entry / f["beats"])
+    if not (entry / f["bp"]).exists():
+        _run_retuned("basic-pitch", entry / "bass.wav", entry / f["bp"])
+    if not (entry / f["sw"]).exists():
+        _run_retuned("swift-f0", entry / "bass.wav", entry / f["sw"])
+
+
 # ---------------------------------------------------------------- the tab and its score
 
 def tab_of(entry: Path, mode: str, params: dict | None = None) -> dict:
     """tab.json's content for one entry, made by the profile's own stages from the cached model outputs."""
     from brasscribe_engine import bass_tab
 
-    files = FILES[mode]
+    files = {**FILES, **PHONE_FILES}[mode]
     # An entry may say what the job would be given: a five-string for a line below E1.
     opts = bass_tab.options({**json.loads((entry / "reference.json").read_text()).get("params", {}), **(params or {})})
     doc = bass_tab.transcribed_line(bass_tab.load_transcription(entry / files["bp"]),
@@ -283,7 +362,8 @@ def score_tab(ref: dict, tab: dict) -> dict:
     s = score(ref["notes"], est)
     out = {"onset_f1": s["onset_f1"], "onset_p": s["onset_p"], "onset_r": s["onset_r"], "octave_err_rate": s["octave_err_rate"],
            "notes": float(len(notes)), "out_of_range": float(np.mean([n["out_of_range"] for n in notes])),
-           "violations": float(len(tab["violations"])), "octave_moved": float(tab.get("octave_notes_moved", 0))}
+           "violations": float(len(tab["violations"])), "octave_moved": float(tab.get("octave_notes_moved", 0)),
+           "line_moved": float(tab.get("octave_shift", 0) != 0)}
     # Which written notes are right: matched to a reference note in onset and pitch.
     ri, rp = to_arrays(ref["notes"])
     ei, ep = to_arrays(est)
@@ -313,16 +393,17 @@ def score_tab(ref: dict, tab: dict) -> dict:
 
 
 MEANS = ("onset_f1", "onset_p", "onset_r", "octave_err_rate", "out_of_range", "hand_travel", "high_fret_share",
-         "doubt_share", "triplet_lengths", "tempo_ok", "tempo_ok_level", "meter_ok", "bar_ok")
+         "doubt_share", "triplet_lengths", "tempo_ok", "tempo_ok_level", "meter_ok", "bar_ok", "line_moved")
 
 
 def evaluate(data: Path, mode: str, params: dict | None = None, eval_set: str = SET,
-             group: str | None = None) -> tuple[dict[str, float], list[dict]]:
-    """Mean metrics over a set (or one group of it) for one recording mode, and the per-track rows."""
+             group: str | None = None, cut: int | None = None) -> tuple[dict[str, float], list[dict]]:
+    """Mean metrics over a set (or one group of it, or the phone set's entries of one cut) for one recording
+    mode, and the per-track rows."""
     rows = []
     for entry in entries(data, eval_set):
         ref = json.loads((entry / "reference.json").read_text())
-        if group is None or ref.get("group") == group:
+        if (group is None or ref.get("group") == group) and (cut is None or ref.get("cut_hz") == cut):
             rows.append({"track": entry.name, **score_tab(ref, tab_of(entry, mode, params))})
     out = {k: float(np.mean([r[k] for r in rows if k in r])) for k in MEANS}
     out["violations"] = float(sum(r["violations"] for r in rows))
@@ -352,7 +433,7 @@ def main() -> None:
     from .paths import DATA
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=["build", "synthesize", "prepare", "report"])
+    ap.add_argument("command", choices=["build", "synthesize", "prepare", "build-phone", "prepare-phone", "report"])
     ap.add_argument("slakh", type=Path, nargs="?")
     ap.add_argument("--data", type=Path, default=DATA)
     args = ap.parse_args()
@@ -366,6 +447,12 @@ def main() -> None:
             ref = json.loads((d / "reference.json").read_text())
             pitches = [n["pitch"] for n in ref["notes"]]
             print(f"{d.name}: {len(pitches)} notes, {min(pitches)} to {max(pitches)}, written to sounding {ref['written_to_sounding']}")
+    elif args.command == "build-phone":
+        print(f"{len(build_phone(args.slakh, args.data))} phone entries")
+    elif args.command == "prepare-phone":
+        for d in entries(args.data, PHONE_SET):
+            prepare_phone(d)
+            print(d.name, "ready", flush=True)
     elif args.command == "prepare":
         for d in entries(args.data) + entries(args.data, SYNTH_SET):
             prepare(d, *audio_of(d, args.slakh))

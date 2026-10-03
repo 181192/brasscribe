@@ -306,6 +306,23 @@ def test_the_bottom_line_is_kept_whatever_its_register_and_the_octave_check_sees
     assert doc["octave_source"] == low["octave_source"] == "auto"
 
 
+def test_a_high_line_the_second_transcriber_hears_there_stays_where_it_is():
+    """A line heard an octave high because its bottom is gone is moved down; one that really sits high, which
+    SwiftF0 hears at the same pitches, is not, however high its median."""
+    high = [p + 12 for p in TYPICAL_LINE]
+    heard = _played(high)
+    agrees = [{"pitch": n["pitch"], "onset": n["onset"], "offset": n["offset"]} for n in heard]
+    below = [{**n, "pitch": n["pitch"] - 12} for n in agrees]
+    assert bass_tab.transcribed_line(heard, _beats(17))["octave_shift"] == -12  # no second opinion: the median decides
+    assert bass_tab.transcribed_line(heard, _beats(17), second=below)["octave_shift"] == -12
+    kept = bass_tab.transcribed_line(heard, _beats(17), second=agrees)
+    assert kept["octave_shift"] == 0 and [n["pitch"] for n in kept["notes"]] == high
+    some = agrees[: int(len(agrees) * 0.3)] + below[int(len(agrees) * 0.3):]  # heard there under OCTAVE_CONFIRMED of the time
+    assert bass_tab.line_confirmed(heard, some) < bass_tab.OCTAVE_CONFIRMED
+    assert bass_tab.transcribed_line(heard, _beats(17), second=some)["octave_shift"] == -12
+    assert bass_tab.line_confirmed(heard, None) is None and bass_tab.line_confirmed([], agrees) is None
+
+
 @pytest.mark.parametrize("octave,shift", [("0", 0), ("-12", -12), ("+12", 12)])
 def test_a_chosen_octave_replaces_the_check(octave, shift):
     high = [p + 12 for p in TYPICAL_LINE]  # the check would write this an octave lower
@@ -912,10 +929,14 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
     from brasscribe_music import musescore
 
     heard = _played([p + 12 for p in TYPICAL_LINE])
+    # Basic Pitch heard the line an octave high; SwiftF0 heard it where it is (the octave check moves it down).
+    def transcribe(ctx):
+        _write_midi(ctx.out / ctx.params["output"], heard if ctx.params["output"].endswith("-bp.mid") else _played(TYPICAL_LINE))
+
     monkeypatch.setattr(musescore, "binary", lambda: None)  # the rendering has a test of its own
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
-    monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], heard))
-    monkeypatch.setattr(S, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], heard))
+    monkeypatch.setattr(tuning, "transcribe", transcribe)
+    monkeypatch.setattr(S, "transcribe", transcribe)
     with TestClient(create_app(settings)) as c:
         audio_id = c.post("/v1/audio", files={"file": ("my_bass.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
         r = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument",
