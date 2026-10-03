@@ -25,6 +25,14 @@ export async function openView(page: Page, view: Pick<View, "route" | "ready" | 
   });
   // Dates shown are the fixtures' own; a fixed clock keeps anything relative to now still.
   await page.clock.setFixedTime(new Date("2026-01-04T12:00:00Z"));
+  // The score's cursors slide into place (a transform transition, `will-change: transform`) and keep the raster
+  // of wherever they were caught mid-slide, so an edge differs by a pixel from one run to the next. In the
+  // catalogue they go straight to their place and are drawn there.
+  await page.addInitScript(() => document.addEventListener("DOMContentLoaded", () => {
+    const s = document.createElement("style");
+    s.textContent = ".at-cursor-bar, .at-cursor-beat { transition: none !important; will-change: auto !important; }";
+    document.head.append(s);
+  }));
   await page.addInitScript((lang) => localStorage.setItem("brasscribe.studio.lang", lang), variant.lang);
   await page.setViewportSize(variant.viewport);
   await page.emulateMedia({ colorScheme: variant.colorScheme, contrast: variant.contrast, reducedMotion: "reduce" });
@@ -65,11 +73,8 @@ export async function steady(page: Page): Promise<void> {
     // the toolbar that sticks to the top then lands in a different place. Every screenshot starts at the top.
     window.scrollTo(0, 0);
   });
-  // The score's bar cursor slides into place (a transform transition) and, as `will-change: transform`, keeps
-  // the raster of wherever it was caught mid-slide: its edge then differs by a pixel from run to run. Let every
-  // transition end, then have the cursor drawn afresh at its final place.
+  // Let any transition still running end before the picture.
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))).then(() => undefined));
-  await page.addStyleTag({ content: ".at-cursor-bar, .at-cursor-beat { will-change: auto !important; }" });
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
