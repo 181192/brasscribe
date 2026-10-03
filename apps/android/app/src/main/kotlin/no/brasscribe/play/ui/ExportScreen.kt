@@ -112,8 +112,8 @@ fun ExportScreen(vm: PlayViewModel) {
         title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
             if (print) PrimaryButton(stringResource(R.string.export_print), {
-                // Every part: one print job per player's PDF, as on Windows.
-                make { files -> files.filter { it.format == ExportFormat.PDF }.forEach { exporter.print(context as Activity, it) } }
+                // Every part: one print job, the players' PDFs one after another.
+                make { files -> exporter.print(context as Activity, files.filter { it.format == ExportFormat.PDF }) }
             }, icon = R.drawable.ic_bc_print, modifier = Modifier.semantics { testTag = "print" })
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                 val share = stringResource(R.string.export_share)

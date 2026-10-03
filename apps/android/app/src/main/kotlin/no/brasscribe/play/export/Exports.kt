@@ -146,10 +146,30 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         return Intent.createChooser(send, null)
     }
 
-    /** Sends a PDF to the system print dialog. */
-    fun print(activity: android.app.Activity, pdf: ExportFile) {
-        val pm = activity.getSystemService(android.print.PrintManager::class.java) ?: return
-        pm.print(pdf.file.nameWithoutExtension, PdfPrintAdapter(pdf.file), null)
+    /** Starts one print job of the PDF [file], named [name]: the system's print dialog. Tests count the jobs here. */
+    @androidx.annotation.VisibleForTesting
+    internal var printJob: (android.app.Activity, String, File) -> Unit = { activity, name, file ->
+        activity.getSystemService(android.print.PrintManager::class.java)?.print(name, PdfPrintAdapter(file), null)
+    }
+
+    /**
+     * Sends [pdfs] to the system print dialog as one job: one file as it is, several (every player's part) joined page
+     * after page into one PDF ([PdfJoin]), so the band's parts are one print, not a dialog for each. Files that can't be
+     * joined are printed one job each, as before.
+     */
+    fun print(activity: android.app.Activity, pdfs: List<ExportFile>) {
+        val first = pdfs.firstOrNull() ?: return
+        if (pdfs.size == 1) { printJob(activity, first.file.nameWithoutExtension, first.file); return }
+        val joined = runCatching { PdfJoin.join(pdfs.map { it.file.readBytes() }) }.getOrNull()
+        if (joined == null) {
+            android.util.Log.w(no.brasscribe.play.PlayViewModel.TAG, "the parts could not be joined: one print job each")
+            pdfs.forEach { printJob(activity, it.file.nameWithoutExtension, it.file) }
+            return
+        }
+        // "Old Hundredth - Solo Cornet": the job is named by the score.
+        val name = first.file.nameWithoutExtension.substringBefore(" - ")
+        val all = File(dir, "$name.parts.pdf").apply { writeBytes(joined) }
+        printJob(activity, name, all)
     }
 
     /** Writes the files into a folder the user picked (Storage Access Framework tree). */
