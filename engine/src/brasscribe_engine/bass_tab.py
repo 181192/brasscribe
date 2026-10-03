@@ -89,8 +89,9 @@ OCTAVE_MEDIAN = 46
 OCTAVE_FIT = 0.9
 # A line that really sits high, and that the median alone would move down: SwiftF0 hears it where Basic Pitch
 # does (0.43 to 0.87 of its notes on the two Slakh lines that sit at E3 to C4). A line heard an octave or two
-# high because its bottom is gone is heard there less, but up to 0.36 at an 8th-order high-pass at 300 Hz and
-# higher at 500 Hz: the two classes touch, and there is no margin. Such lines were heard only at cuts harsher
+# high because its bottom is gone is heard there less, but up to 0.43 at an 8th-order high-pass at 300 Hz (three
+# such lines, at 0.41 to 0.43, are kept where moving them was right) and higher at 500 Hz: the two classes touch,
+# and there is no margin. Such lines were heard only at cuts harsher
 # than a phone; at 100 and 200 Hz no whole line was heard high, and the errors left are at the harsher cuts or
 # on a low riff heard partly high, which SwiftF0 cannot hear below SECOND_LOWEST. Development data: the
 # threshold was chosen on the phone set of bass_tab_bench, nothing was held out, and it is frozen at 0.40 until
