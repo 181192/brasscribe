@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
-    "test:browser": "playwright test -c playwright.static.config.ts"
+    "test:browser": "playwright test -c playwright.static.config.ts",
+    "test:catalogue": "playwright test -c playwright.catalogue.config.ts"
   },
   "license": "MIT OR Apache-2.0",
   "dependencies": {
