@@ -98,7 +98,9 @@ class ScorePracticeKeptTest : ScreenTest() {
         rule.runOnUiThread { controller().setLoop(9..10); controller().playBar(3) }
         rule.waitForIdle()
         assertEquals(9..10, controller().state.value.loop)
-        rule.runOnUiThread { if (controller().state.value.playing) controller().togglePlay() }
+        // (It plays once the band's sounds are in; then it is stopped.)
+        waitUntil(20_000) { controller().state.value.playing }
+        rule.runOnUiThread { controller().togglePlay() }
         waitUntil(10_000) { !controller().state.value.playing && controller().view.api.isLooping }
         assertEquals(controller().view.api.score!!.masterBars[8].start, controller().view.api.playbackRange!!.startTick, 0.0)
         rule.runOnUiThread { vm.home() }
