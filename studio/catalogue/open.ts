@@ -86,13 +86,27 @@ export async function steady(page: Page): Promise<void> {
 
 /** A screenshot taken once two in a row are the same (a score may still move into place after it is drawn). */
 export async function stableScreenshot(page: Page, path: string): Promise<void> {
-  const take = () => page.screenshot({ fullPage: true, animations: "disabled", caret: "hide" });
+  // alphaTab scrolls the score to its cursor, smoothly and when it likes (after a render, on focus), so every
+  // picture starts from every scroll at the top again, and counts only if no scroll moved while it was taken.
+  const scrolls = () => page.evaluate(() => {
+    window.scrollTo(0, 0);
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) if (el.scrollTop || el.scrollLeft) el.scrollTo(0, 0);
+    return new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+  });
+  const where = () => page.evaluate(() => [scrollX, scrollY, ...Array.from(document.querySelectorAll<HTMLElement>("*"))
+    .filter((el) => el.scrollTop || el.scrollLeft).map((el) => `${el.localName}.${el.className}:${el.scrollLeft},${el.scrollTop}`)].join(" "));
+  const take = async () => {
+    await scrolls();
+    const before = await where();
+    const png = await page.screenshot({ fullPage: true, animations: "disabled", caret: "hide" });
+    return { png, still: before === (await where()) && before === "0 0" };
+  };
   let last = await take();
-  for (let i = 0; i < 10; i++) {
-    await page.waitForTimeout(150);
+  for (let i = 0; i < 12; i++) {
+    await page.waitForTimeout(200);
     const now = await take();
-    if (now.equals(last)) break;
+    if (now.still && last.still && now.png.equals(last.png)) break;
     last = now;
   }
-  writeFileSync(path, last);
+  writeFileSync(path, last.png);
 }
