@@ -236,6 +236,7 @@
     <string name="fs_practice_last_bar_of_repeat">Siste takt i gjentakelsen</string>
     <string name="fs_practice_bar_beat">Takt %1$s, slag %2$d</string>
     <string name="fs_practice_pickup_beat">Opptakten, slag %1$d</string>
+    <string name="fs_practice_speed">Tempo</string>
     <string name="fs_practice_slower">Saktere</string>
     <string name="fs_practice_faster">Raskere</string>
     <string name="fs_practice_repeat">Gjenta takter</string>
