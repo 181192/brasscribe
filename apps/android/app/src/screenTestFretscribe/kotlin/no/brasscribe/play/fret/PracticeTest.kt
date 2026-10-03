@@ -361,23 +361,25 @@ class PracticeTest : ScreenTest() {
         rule.onNodeWithTag("fs-practice-slower").performClick()
         rule.waitForIdle()
         assertEquals(95, practice.speed)
-        // Held, it steps again and again until it is let go; letting go adds no step of its own.
+        // Held, it steps again and again until it is let go; letting go adds no step of its own. Compose's clock is moved
+        // by hand, on the JVM and on a device alike.
+        fun composeTime(ms: Long) { rule.mainClock.advanceTimeBy(ms); rule.waitForIdle() }
         rule.mainClock.autoAdvance = false
         try {
             rule.onNodeWithTag("fs-practice-slower").performTouchInput { down(center) }
-            pass(STEP_HOLD_MS / 2)
+            composeTime(STEP_HOLD_MS / 2)
             assertEquals("no step before the hold", 95, practice.speed)
-            pass(STEP_HOLD_MS / 2 + 3 * STEP_REPEAT_MS + STEP_REPEAT_MS / 2)
+            composeTime(STEP_HOLD_MS / 2 + 3 * STEP_REPEAT_MS + STEP_REPEAT_MS / 2)
             val held = practice.speed
             assertTrue("held, it stepped again ($held %)", held in (95 - 5 * PracticeSpeed.STEP)..(95 - 3 * PracticeSpeed.STEP))
             rule.onNodeWithTag("fs-practice-slower").performTouchInput { up() }
-            pass(1_000)
+            composeTime(1_000)
             assertEquals("let go, it stops", held, practice.speed)
             // Held long enough, it stops at the end.
             rule.onNodeWithTag("fs-practice-faster").performTouchInput { down(center) }
-            pass(STEP_HOLD_MS + 40 * STEP_REPEAT_MS)
+            composeTime(STEP_HOLD_MS + 40 * STEP_REPEAT_MS)
             rule.onNodeWithTag("fs-practice-faster").performTouchInput { up() }
-            pass(500)
+            composeTime(500)
             assertEquals(PracticeSpeed.MAX, practice.speed)
         } finally {
             rule.mainClock.autoAdvance = true
