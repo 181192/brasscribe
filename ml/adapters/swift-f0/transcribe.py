@@ -18,9 +18,18 @@ def write_notes(notes, dst: str) -> None:
         pretty_midi.PrettyMIDI().write(dst)
 
 
+def quiet_onnxruntime() -> None:
+    """ORT_DISABLE_TELEMETRY (run_adapter.py) keeps ONNX Runtime from reporting to Microsoft, except on
+    Windows, where it reports through ETW and only this call turns its events off."""
+    import onnxruntime
+
+    getattr(onnxruntime, "disable_telemetry_events", lambda: None)()
+
+
 def main(src: str, dst: str) -> None:
     from swift_f0 import SwiftF0, segment_notes
 
+    quiet_onnxruntime()
     result = SwiftF0().detect_file(src)
     notes = segment_notes(result, pitch_hold_ms=80.0)
     write_notes(notes, dst)

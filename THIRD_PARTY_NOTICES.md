@@ -86,6 +86,13 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   NAudio (MIT), CommunityToolkit.Mvvm (MIT). Play for Windows also ships `vcruntime140.dll`, a
   redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
   needs.
+- **ONNX Runtime's telemetry.** Microsoft's builds of ONNX Runtime report to Microsoft by default
+  (its `Privacy.md`): on Android, macOS and Linux through their own uploader, on Windows through ETW.
+  Brasscribe turns it off where it runs: Play for Android removes the AAR's telemetry provider and
+  sets `ORT_DISABLE_TELEMETRY=1`, the engine and Bandroom set `ORT_DISABLE_TELEMETRY=1` for every
+  adapter, and on Windows (Play, and the swift-f0 adapter) the runtime's telemetry events are turned
+  off before the first session. On Windows the runtime's start-up event still goes to ETW before that
+  call can be made.
 - **Studio:** alphaTab (above); build and test tools only in development.
 
 ## Not distributed
