@@ -266,20 +266,21 @@ def synthesize(data: Path) -> list[Path]:
 
 # What the octave check is for: a recording whose fundamental is weak, so that the transcribers hear the line an
 # octave high. A phone's microphone and its recording chain roll off the bottom; that is imitated here with a
-# high-pass filter (PHONE_CUTS, Hz, PHONE_ORDER-th order Butterworth) on every Slakh bass stem (also those of
-# the tracks with two bass stems, which `build` leaves out, among them the synth lines that really sit high) and
-# on the synthesized low lines. Only the bass-alone mode exists here. The cut is a stand-in for a phone; a real
-# phone recording with its notes annotated would be better evidence and was not found.
+# Butterworth high-pass (PHONE_CUTS: Hz -> order) on every Slakh bass stem (also those of the tracks with two
+# bass stems, which `build` leaves out, among them two lines that really sit high) and on the synthesized low
+# lines. Only the bass-alone mode exists here. At 100 and 200 Hz (4th order) Basic Pitch still hears every line
+# in its octave; at 300 Hz (8th order), harsher than a phone, it hears most of them one or two octaves high,
+# which is what the check is there for. The cut is a stand-in for a phone; a real phone recording with its
+# notes annotated would be better evidence and was not found.
 PHONE_SET = "phone-bass"
-PHONE_CUTS = (100, 200)
-PHONE_ORDER = 4
+PHONE_CUTS = {100: 4, 200: 4, 300: 8}
 PHONE_FILES = {"phone": FILES["instrument"]}
 
 
-def _phone_filter(audio: np.ndarray, sr: int, cut: float) -> np.ndarray:
+def _phone_filter(audio: np.ndarray, sr: int, cut: int) -> np.ndarray:
     from scipy.signal import butter, sosfilt
 
-    out = sosfilt(butter(PHONE_ORDER, cut, btype="highpass", fs=sr, output="sos"), audio, axis=0)
+    out = sosfilt(butter(PHONE_CUTS[cut], cut, btype="highpass", fs=sr, output="sos"), audio, axis=0)
     return out / max(1e-9, float(np.max(np.abs(out)))) * 0.9
 
 
@@ -313,7 +314,7 @@ def build_phone(slakh: Path | None, data: Path) -> list[Path]:
         sources.append((entry.name, audio, sr, {"group": ref["group"], "params": ref["params"]}, ref["notes"]))
     made = []
     for name, audio, sr, about, notes in sources:
-        for cut in ((0,) if "program" in about else ()) + PHONE_CUTS:
+        for cut in ((0,) if "program" in about else ()) + tuple(PHONE_CUTS):
             dest = Path(data) / "eval" / PHONE_SET / f"{name}-hp{cut}"
             dest.mkdir(parents=True, exist_ok=True)
             sf.write(str(dest / "bass.wav"), _phone_filter(audio, sr, cut) if cut else audio, sr)

@@ -944,7 +944,7 @@
       }
     },
     "bass-tab": {
-      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable. phone: every Slakh bass stem and the synthesized low lines alone, high-passed at 100 and 200 Hz as a phone's microphone would (hp0: the Slakh stems unfiltered, the tracks with two bass stems among them); made by bass_tab_bench build-phone and prepare-phone, skipped where absent",
+      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable. phone: every Slakh bass stem and the synthesized low lines alone, high-passed at 100 and 200 Hz (4th order) as a phone's microphone would, and at 300 Hz (8th order), harsher, where most lines are heard an octave or two high (hp0: the Slakh stems unfiltered, the tracks with two bass stems among them); made by bass_tab_bench build-phone and prepare-phone, skipped where absent",
       "metrics": {
         "song.onset_f1": 0.86,
         "song.onset_p": 0.887,
@@ -1191,6 +1191,23 @@
           "higher_is_better": false
         },
         "phone.hp200.tracks": {
+          "value": 30.0,
+          "tolerance": 0
+        },
+        "phone.hp300.onset_f1": 0.167,
+        "phone.hp300.octave_err_rate": {
+          "value": 0.104,
+          "higher_is_better": false
+        },
+        "phone.hp300.line_moved": {
+          "value": 0.633
+        },
+        "phone.hp300.violations": {
+          "value": 0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "phone.hp300.tracks": {
           "value": 30.0,
           "tolerance": 0
         }
