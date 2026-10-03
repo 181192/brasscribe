@@ -30,9 +30,38 @@ class PairingWordsTest {
             val wrong = names.mapNotNull { name -> words[name]?.takeIf { Regex("Brasscribe|Bandroom").containsMatchIn(it) }?.let { "$name: $it" } }
             assertEquals(dir, emptyList<String>(), wrong)
         }
+        assertEquals("Update the Fretscribe app on this phone to connect to this computer.", strings(File(src, "fretscribe/res/values/strings.xml"))["pair_needs_update"])
         assertEquals("Open Fretscribe on your computer and choose Pair a phone. Type the six digits it shows.",
             strings(File(src, "fretscribe/res/values/strings.xml"))["companion_explain"])
         assertEquals("Åpne Fretscribe på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.",
             strings(File(src, "fretscribe/res/values-nb/strings.xml"))["companion_explain"])
+    }
+
+    /** The R.string names used in [function] of [file], up to the next top-level function. */
+    private fun used(file: String, function: String): Set<String> {
+        val text = File(src, "main/kotlin/no/brasscribe/play/ui/$file").readText().substringAfter("fun $function(")
+        val body = Regex("""\n(?:private |internal )?fun """).split(text, limit = 2).first()
+        return Regex("""R\.string\.([a-z0-9_]+)""").findAll(body).map { it.groupValues[1] }.toSet()
+    }
+
+    @Test
+    fun helpAboutAndTheProblemsAFretscribePlayerCanMeetAreFretscribesWords() {
+        val screen = src?.resolve("main/kotlin/no/brasscribe/play/ui/ProblemScreen.kt")
+        assumeTrue("the app's sources are not in this checkout", screen?.isFile == true)
+        val help = used("ProblemScreen.kt", "HelpScreen")
+        val about = used("CompanionScreen.kt", "AboutScreen")
+        assertTrue(help.containsAll(setOf("help_1_text", "help_2_text", "help_5_text")))
+        // The problems of every app, not the drafts made on the phone: Fretscribe makes none there.
+        val reachable = listOf("FILE_UNREADABLE", "NO_SOUND_TRACK", "NOTHING_HEARD", "RECORDING_FAILED", "SCORE_FAILED", "TOO_LARGE")
+        val problems = screen!!.readLines().filter { line -> reachable.any { line.trimStart().startsWith("Problem.$it to") } }
+            .flatMap { Regex("""R\.string\.([a-z0-9_]+)""").findAll(it).map { m -> m.groupValues[1] } }.toSet() + "details_show"
+        assertTrue(problems.containsAll(setOf("problem_file_body", "problem_record_body")))
+        for (dir in listOf("values", "values-nb")) {
+            val words = strings(File(src, "main/res/$dir/strings.xml")) + strings(File(src, "fretscribe/res/$dir/strings.xml"))
+            val wrong = (help + about + problems).mapNotNull { name ->
+                words[name]?.takeIf { Regex("Brasscribe|Bandroom|brass ?band|brassband|band|partitur|score", RegexOption.IGNORE_CASE).containsMatchIn(it) }?.let { "$name: $it" }
+            }
+            assertEquals(dir, emptyList<String>(), wrong)
+        }
     }
 }

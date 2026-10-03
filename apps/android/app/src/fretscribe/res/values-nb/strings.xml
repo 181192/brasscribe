@@ -36,11 +36,29 @@
     <!-- Fretscribe på datamaskinen (tilkoblingsskjermen) -->
     <string name="companion_explain">Åpne Fretscribe på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.</string>
     <string name="companion_searching">Ser etter Fretscribe på nettverket … Du kan også skrive inn adressen nedenfor.</string>
-    <string name="companion_tech_details">Fretscribe på datamaskinen viser adressen sin i detaljene. Uten den: «pixi run serve-lan».</string>
+    <string name="companion_tech_details">Fretscribe på datamaskinen viser adressen sin under Detaljer. Uten den: «pixi run serve-lan».</string>
     <string name="companion_failed_plain">Kunne ikke koble til. Sjekk at Fretscribe på datamaskinen sier Kjører, og at begge er på samme wifi.</string>
     <string name="pair_link_invalid">Den koden er ikke fra Fretscribe på en datamaskin.</string>
     <string name="pair_link_address_by_name">Fretscribe leter etter den på nettverket ditt etter navn.</string>
-    <string name="pair_needs_update">Oppdater Fretscribe for å koble til denne datamaskinen.</string>
+    <string name="pair_needs_update">Oppdater Fretscribe-appen på telefonen for å koble til denne datamaskinen.</string>
+
+    <!-- Hjelp -->
+    <string name="help_1_title">Lag en tab</string>
+    <string name="help_1_text">Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Fretscribe på datamaskinen ned tonene som tab for instrumentet ditt.</string>
+    <string name="help_2_text">Et «?» over en tone betyr at Fretscribe var usikker. «?» i en boks betyr svært usikker. Lytt til den takten i opptaket for å sjekke den.</string>
+    <string name="help_3_text">Sett ned farten på opptaket, og gjenta de vanskelige taktene.</string>
+    <string name="help_4_title">Sangene dine</string>
+    <string name="help_4_text">Hver tab du lager, ligger under Sangene dine, på telefonen og på datamaskinen.</string>
+    <string name="help_5_title">Tab skrives på datamaskinen</string>
+    <string name="help_5_text">Fretscribe på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger.</string>
+
+    <!-- Problemer -->
+    <string name="problem_file_body">Fretscribe klarte ikke å lese lyden i den.</string>
+    <string name="problem_record_body">Telefonen lot ikke Fretscribe spille inn.</string>
+
+    <!-- Om -->
+    <string name="about_text">Fretscribe er et ikke-kommersielt prosjekt. Appen bruker alphaTab (MPL-2.0) til å tegne tabben og AndroidX Media3 (Apache-2.0) til å spille av opptaket. Fretscribe på datamaskinen skriver ned tonene.</string>
+    <string name="about_font">Titler er satt i Atkinson Hyperlegible Next, og båndtallene i Fretscribe Tab (SIL Open Font License 1.1).</string>
     <string name="settings_text_motion_desc">Fretscribe følger telefonens tekststørrelse, kontrast og animasjoner</string>
     <string name="appearance_contrast_note">Kontrastinnstillingen din er på, så Fretscribe bruker høykontrastfargene.</string>
 
