@@ -259,3 +259,4 @@ spent in `open_code`, about 6 ms per file, while the CPU is almost idle.
 
 Excluding `~/.cache/brasscribe` and the worktree root from on-access scanning would probably remove
 most of the remaining cold cost. That is an IT policy decision.
+
