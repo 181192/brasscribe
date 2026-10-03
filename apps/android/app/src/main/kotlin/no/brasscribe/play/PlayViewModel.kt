@@ -108,6 +108,8 @@ data class TranscribeState(
     val error: String? = null,
     /** Every step of this run in order, for the step list. */
     val steps: List<Step> = emptyList(),
+    /** A band draft on the phone: its service keeps it going while the player is out of the app. */
+    val draft: Boolean = false,
 )
 
 /** A finished transcription. [musicXml] is what the score view renders; [jobId] is set for engine results. */
@@ -790,7 +792,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val steps = listOf(Step.TRANSCRIBE, Step.BEATS, Step.ARRANGE)
         val eta = estimateDeviceSeconds(audio)
         transcribe.value = TranscribeState(true, steps[0], 0.0, 0, steps.size, eta,
-            res.getString(OnDeviceRouting.transcribingWhere(draft = true)), steps = steps)
+            res.getString(OnDeviceRouting.transcribingWhere(draft = true)), steps = steps, draft = true)
         val title = ScoreTitles.withoutExtension(s.name)
         // A band draft is re-arranged from its Composition (Output), never from a solo take.
         soloTake = null

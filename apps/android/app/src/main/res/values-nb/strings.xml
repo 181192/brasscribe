@@ -167,7 +167,8 @@
     <string name="step_done">ferdig</string>
     <string name="step_now">nå</string>
     <string name="step_waiting">gjenstår</string>
-    <string name="transcribe_leave">%1$s. Du kan gå fra denne skjermen; Brasscribe sier fra når partituret er klart.</string>
+    <string name="transcribe_leave">%1$s. Hold Brasscribe åpen til partituret er klart.</string>
+    <string name="transcribe_leave_draft">%1$s. Du kan bytte til en annen app: utkastet lages videre, og det er på skjermen når du kommer tilbake.</string>
     <string name="transcribe_cancel_title">Slutte å lage dette partituret?</string>
     <string name="transcribe_cancel_text">Opptaket blir tatt vare på. Du kan starte på nytt fra det.</string>
     <string name="transcribe_cancel_confirm">Stopp</string>
