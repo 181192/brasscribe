@@ -69,6 +69,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * The tab view, on a fixture computer: Check the song, then Show the tab. The first fixture
@@ -702,6 +703,7 @@ class TabViewTest : TabScreenTest() {
     }
 
     @Test
+    @DeviceOnly
     fun turnedOnItsSideFromTheEndOfThePageTheTabIsDrawn() {
         // A device's: where alphaTab's page is after a turn follows the scroll steps the phone's window sends it, and the
         // JVM's phone is turned by hand (ScreenDevice.turn), which leaves the page a line off or undrawn.
@@ -775,6 +777,7 @@ class TabViewTest : TabScreenTest() {
     }
 
     @Test
+    @DeviceOnly
     fun theBarBeingReadIsKeptThroughATurnASizeAndAVisitToCheckTheSong() {
         // A device's: where alphaTab's page is after a turn follows the scroll steps the phone's window sends it, and the
         // JVM's phone is turned by hand (ScreenDevice.turn), which leaves the page a line off or undrawn.

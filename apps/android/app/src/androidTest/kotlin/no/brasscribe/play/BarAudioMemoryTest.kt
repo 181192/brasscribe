@@ -9,6 +9,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * "Listen to this bar" with the band SoundFont on the phone: a few bars of a full band render from
@@ -17,6 +18,7 @@ import java.io.File
  * /data/local/tmp/brasscribe/band.musicxml (the golden arrangement); skipped without them.
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class BarAudioMemoryTest {
     private val target get() = InstrumentationRegistry.getInstrumentation().targetContext
 

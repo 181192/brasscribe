@@ -19,9 +19,11 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import no.brasscribe.play.test.DeviceOnly
 
 /** The microphone recorder writes the take to its WAV as it records; stopping hands over the file and the samples. */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class MicTakeTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 

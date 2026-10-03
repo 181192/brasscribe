@@ -39,6 +39,7 @@ import java.io.File
 import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.roundToInt
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * Playback loudness on the device (sounds/playback-levels.json): the full-band test phrase rendered
@@ -47,6 +48,7 @@ import kotlin.math.roundToInt
  * sounds/phrases.py's phrases.json pushed to /data/local/tmp/brasscribe/phrases.json (skipped without it).
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class PlaybackLevelTest {
     private val target get() = InstrumentationRegistry.getInstrumentation().targetContext
 

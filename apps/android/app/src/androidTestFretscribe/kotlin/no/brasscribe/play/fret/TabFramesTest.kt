@@ -10,12 +10,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * What the tab view costs a phone, as its system counts the frames: a still screen draws none, and flings
  * down a long song are drawn on time. A device's own: the JVM run has no display to count frames on.
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class TabFramesTest : TabScreenTest() {
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
 

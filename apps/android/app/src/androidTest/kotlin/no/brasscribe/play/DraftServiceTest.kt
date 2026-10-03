@@ -10,12 +10,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * The service that holds the app in front while a band draft is made. A service started with
  * startForegroundService must reach startForeground before it stops, or the system ends the app.
  */
 @RunWith(AndroidJUnit4::class)
+@DeviceOnly
 class DraftServiceTest {
     // The app must be in front to start a foreground service.
     @get:Rule

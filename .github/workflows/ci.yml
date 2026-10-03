@@ -1,8 +1,9 @@
 name: ci
 
 # Fast checks on every push and pull request, all on Linux (the cheapest runner).
-# macOS, Windows and Android builds run only for releases (release.yml) or by hand
-# (workflow_dispatch on apple.yml, android.yml, windows.yml, core.yml).
+# macOS, Windows and Android app builds run only for releases (release.yml) or by hand
+# (workflow_dispatch on apple.yml, android.yml, windows.yml, core.yml); the Android app's unit, screen,
+# accessibility and screenshot tests run here, on the JVM.
 # Branch pushes only: a release tag doesn't start this workflow; release.yml calls it instead.
 on:
   # Pushes to main and pull requests: a branch is checked once, through its pull request.
@@ -39,6 +40,7 @@ jobs:
       python: ${{ github.event_name != 'pull_request' || steps.filter.outputs.python == 'true' }}
       core: ${{ github.event_name != 'pull_request' || steps.filter.outputs.core == 'true' }}
       studio: ${{ github.event_name != 'pull_request' || steps.filter.outputs.studio == 'true' }}
+      android: ${{ github.event_name != 'pull_request' || steps.filter.outputs.android == 'true' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,6 +53,7 @@ jobs:
             python: ['engine/**', 'apps/android/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*', '.github/workflows/ci.yml']
             core: ['core/**', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
             studio: ['studio/**', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
+            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'design/**', 'sounds/**', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -205,16 +208,108 @@ jobs:
             exit 1
           fi
 
+  # The Android app's tests on the JVM (Robolectric): the unit tests, the screens' flows with the accessibility
+  # checks, and the screen catalogues of both apps. On a pull request the catalogues' screenshots are taken at
+  # the merge base too and compared (apps/android/scripts/screenshots.sh): a screen that changed fails the job
+  # and is shown in the screenshots artefact, unless the pull request has the label screenshots-changed, which
+  # says the change is meant. No emulator.
+  android:
+    name: Android unit, screen and screenshot tests (Ubuntu 24.04)
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/android
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The merge base is taken out next to this checkout for the screenshots.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: platform-tools
+
+      # The screens run against the host build of the core (the JVM tests load it through JNA).
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: core
+
+      - name: Host build of the core
+        working-directory: core
+        run: cargo build --release -p brasscribe-ffi
+
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+
+      # Robolectric's Android (one jar per SDK) is fetched into the Maven cache, not Gradle's.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('apps/android/gradle/libs.versions.toml', 'apps/android/app/src/test/resources/robolectric.properties') }}
+
+      - name: Unit tests and the screens' tests (both apps, without the screen catalogues)
+        run: ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.withoutCatalogues --stacktrace
+
+      - name: Screen catalogues, compared with the merge base
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          MEANT: ${{ contains(github.event.pull_request.labels.*.name, 'screenshots-changed') }}
+        run: |
+          git fetch --no-tags origin "$BASE"
+          status=0
+          scripts/screenshots.sh compare "$(git merge-base HEAD "$BASE")" || status=$?
+          cat app/build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+          # 1: screens changed (shown in the artefact); 2: a screen's own checks failed, which no label lets through.
+          if [ "$status" -eq 1 ] && [ "$MEANT" = true ]; then
+            echo "Screens changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
+            status=0
+          fi
+          exit "$status"
+
+      - name: Screen catalogues
+        if: github.event_name != 'pull_request'
+        run: scripts/screenshots.sh record
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-screenshots
+          path: |
+            apps/android/app/build/reports/screenshots
+            apps/android/app/build/outputs/roborazzi
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: android-test-reports
+          path: |
+            apps/android/**/build/reports/tests
+            apps/android/**/build/test-results
+            apps/android/app/build/outputs/screen-pictures
+          if-no-files-found: ignore
+
   # One check that is always reported, whichever jobs ran: the one to make required.
   result:
     name: CI result
-    needs: [changes, linux, core, studio]
+    needs: [changes, linux, core, studio, android]
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - env:
           CHANGES: ${{ needs.changes.result }}
-          RESULTS: ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }}
+          RESULTS: ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }} ${{ needs.android.result }}
         run: |
           echo "changes: $CHANGES, jobs: $RESULTS"
           [ "$CHANGES" = success ] || exit 1

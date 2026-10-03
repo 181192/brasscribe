@@ -65,6 +65,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
+import no.brasscribe.play.test.DeviceOnly
 
 /**
  * Practice, on a fixture computer (apps/fixtures/bass-line-marks): the recording plays under the tab, the
@@ -611,6 +612,7 @@ class PracticeTest : ScreenTest() {
     }
 
     @Test
+    @DeviceOnly
     fun aPausedSongDrawsNothing() {
         assumeTrue("on a device only: the frames are counted by its system", !ScreenDevice.JVM)
         practise()

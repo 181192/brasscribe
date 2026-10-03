@@ -71,7 +71,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | studio | `cd studio && npx vitest run` | the browser tests |
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
-| android | `./gradlew testDebugUnitTest -Pbrasscribe.fast` | JUnit category `Slow`, release unit tests, instrumented tests |
+| android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, the screenshot comparison, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Brasscribe.Core.Tests && dotnet test` | nothing (seconds) |
 | bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]` | the app build (tier 2 adds `make build`) |
@@ -97,8 +97,9 @@ build for testing again.
 - conformance on every case
 - vitest and the Playwright browser tests
 - the Swift packages (BrasscribeKit, NotationKit, `capture`) and the macOS app unit tests
-- `./gradlew testDebugUnitTest lint assembleDebug` (tests and lint for the Brasscribe app; the debug build is
-  both apps, Brasscribe and Fretscribe)
+- `./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug` (both apps' tests on the JVM, lint
+  for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh compare`: the
+  screen catalogues at the merge base and on the branch, and what changed ([apps/android/README.md](../../apps/android/README.md#testing))
 - `apps/windows/tools/check-macos.sh`
 - the core .NET tests
 - Bandroom for macOS: the BandroomKit tests and `make -C apps/bandroom/macos build`
@@ -126,11 +127,13 @@ fail instead of skipping.
 
 ## Tier 3: devices and UI
 
-- **Android emulators.** Each checkout or shell gets its own emulator from the pool:
+- **Android emulators.** The app's screens are tested on the JVM (tiers 1 and 2). A device is for what
+  only a device can do, listed in [apps/android/README.md](../../apps/android/README.md#testing), and for the
+  smoke test. Each checkout or shell gets its own emulator from the pool:
 
   ```sh
   serial=$(apps/android/scripts/emulator-pool.sh acquire)   # headless; about 6 s once the pool AVD exists
-  ANDROID_SERIAL=$serial ./gradlew connectedDebugAndroidTest
+  ANDROID_SERIAL=$serial apps/android/scripts/device-tests.sh smoke   # or device-only
   apps/android/scripts/emulator-pool.sh release "$serial"
   ```
 
