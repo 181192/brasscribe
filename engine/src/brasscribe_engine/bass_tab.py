@@ -371,9 +371,12 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
 # half or a quarter, and there are at least COMPOUND_ONSETS of them. The share is above every two-beat-bar
 # take of GuitarSet's players 00 to 02 (their highest is 0.75). Swing and shuffles divide the beat in three
 # too, but play its second third only (long-short): of the onsets near a third, COMPOUND_BOTH or more lie on
-# each of the two. GuitarSet's jazz takes put at most 0.19 of them on the first third (with shares up to
-# 0.84 when tracked in four), a rendered 12/8 shuffle 0.02; three eighths to the beat put 0.5 there, and a
-# jig's long-short-then-three-eighths a third.
+# each of the two. GuitarSet's jazz takes with a share of 0.7 or more (five, of players 00 to 05: three of the
+# players the rules are set on, two of the held-out ones; up to 0.84 when tracked in four) put at most 0.10 of
+# them on the first third; at lower shares, which COMPOUND_SHARE already turns down, they put up to 0.5 there.
+# A rendered 12/8 shuffle puts 0.02 there, three eighths to the beat 0.5, and a jig's
+# long-short-then-three-eighths a third. A 6/8 tune played mostly long-short is read as a shuffle (two simple
+# beats, written two bars to the bar of four): the two cannot be told apart by where the onsets fall.
 COMPOUND_SHARE = 0.8
 COMPOUND_NEAR = 0.07
 COMPOUND_ONSETS = 12
