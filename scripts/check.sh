@@ -44,7 +44,7 @@ changed_areas() {
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
       apps/apple/*|capture/*) add apple ;;
-      apps/bandroom/macos/*) add bandroom-mac ;;
+      apps/bandroom/macos/*|.pixi-version) add bandroom-mac ;;
       apps/android/*) add android ;;
       apps/windows/*) add windows ;;
     esac
@@ -104,8 +104,8 @@ run_area() {
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;
-    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-kit.sh) ;;
-    full:bandroom-mac) (cd apps/bandroom/macos && scripts/test-kit.sh && make build) ;;
+    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) ;;
+    full:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && make build) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac
 }

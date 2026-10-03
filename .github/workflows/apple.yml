@@ -126,12 +126,11 @@ jobs:
       # here for the macOS Bandroom supports; the engine needs it for bass tabs), and it bundles pixi so
       # a Mac without it can install the engine. Re-signed ad hoc, the two programs first, then the app.
       # The pixi Bandroom bundles must be one the engine workspace accepts (requires-pixi in pixi.toml):
-      # the same pinned version the other jobs use, not whatever Homebrew has on the runner.
+      # the version pinned in .pixi-version, as the other jobs use, not whatever Homebrew has on the runner.
       - name: pixi for Bandroom to bundle
         if: ${{ inputs.release }}
-        uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
+        uses: ./.github/actions/pixi
         with:
-          pixi-version: v0.81.0
           run-install: false
 
       - name: Release build of Bandroom for Mac

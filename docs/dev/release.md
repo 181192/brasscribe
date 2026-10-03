@@ -162,6 +162,11 @@ The build's post-build scripts stage what the first run installs from:
   `pixi install` again only when the lock hash changed. Check that the stamp's commit is the release
   commit before shipping.
 
+The pixi version CI installs, and so the one both Bandroom builds bundle, is pinned once, in
+`.pixi-version` (read by `.github/actions/pixi` and `engine/Dockerfile`). `requires-pixi` in `pixi.toml` stays
+the requirement; `check-bundled-pixi.sh` fails when the pin or a bundled pixi doesn't meet it, so raise the pin
+first when the requirement goes up.
+
 The app bundles `pixi`, so a Mac without it can install the engine. Bandroom takes `BRASSCRIBE_PIXI` when set,
 then the bundled `Contents/Resources/bin/pixi`, then `~/.pixi/bin` and Homebrew. Copy it in,
 then re-sign **pixi and `brasscribe-core` first, then the app**:
@@ -171,7 +176,7 @@ B="$S/stage/Brasscribe Bandroom.app"
 ditto "$S/dd-band/Build/Products/Release/Brasscribe Bandroom.app" "$B"
 mkdir -p "$B/Contents/Resources/bin"
 cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
-scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"   # stops if it is older than pixi.toml asks for (CI bundles v0.81.0)
+scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"   # stops unless it and .pixi-version (what CI bundles) meet requires-pixi in pixi.toml
 codesign -d --entitlements - --xml "$B" > "$S/band.entitlements"
 "$B/Contents/Resources/bin/brasscribe-core" version    # staged by the build
 codesign --force --sign - "$B/Contents/Resources/bin/pixi"

@@ -1,0 +1,43 @@
+name: pixi
+description: >
+  Install the pixi version pinned in .pixi-version (the one source for CI, the Bandroom builds and
+  the engine image) with prefix-dev/setup-pixi, and check that the engine workspace accepts it
+  (requires-pixi in pixi.toml). Bandroom bundles this pixi, so a pin the workspace refuses stops here.
+inputs:
+  run-install:
+    description: setup-pixi's run-install (empty for its default)
+    required: false
+    default: ""
+  environments:
+    description: setup-pixi's environments (empty for its default)
+    required: false
+    default: ""
+  frozen:
+    description: setup-pixi's frozen (empty for its default)
+    required: false
+    default: ""
+  cache:
+    description: setup-pixi's cache (empty for its default)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: The pinned pixi version
+      id: pin
+      shell: bash
+      run: |
+        v=$(tr -d ' \r\n' < .pixi-version)
+        echo "version=${v#v}" >> "$GITHUB_OUTPUT"
+
+    - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
+      with:
+        pixi-version: v${{ steps.pin.outputs.version }}
+        run-install: ${{ inputs.run-install }}
+        environments: ${{ inputs.environments }}
+        frozen: ${{ inputs.frozen }}
+        cache: ${{ inputs.cache }}
+
+    - name: pixi is one the engine workspace accepts
+      shell: bash
+      run: bash apps/bandroom/macos/scripts/check-bundled-pixi.sh "$(command -v pixi)"
