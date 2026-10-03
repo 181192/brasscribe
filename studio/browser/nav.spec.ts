@@ -44,3 +44,22 @@ test("on a wide screen the navigation stays open whatever has focus", async ({ p
   await page.keyboard.press("Escape");
   expect(await isOpen(page)).toBe(true);
 });
+
+test("closing the shortcut sheet opened from the menu puts focus on the Menu button, not nowhere", async ({ page }) => {
+  await page.locator("#nav-menu a[data-route=runs]").focus();
+  await page.keyboard.press("F1");
+  await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeVisible();
+  // Focus went into the sheet, so the menu closed and the link that had focus is hidden.
+  expect(await isOpen(page)).toBe(false);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator(".nav-toggle")).toBeFocused();
+});
+
+test("closing the shortcut sheet gives focus back to what had it when that is still there", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.locator("#lang-select").focus();
+  await page.keyboard.press("F1");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#lang-select")).toBeFocused();
+});

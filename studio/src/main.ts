@@ -143,6 +143,8 @@ function renderTheme(): void {
 }
 
 let dialog: HTMLDialogElement | null = null;
+/** What had focus when the shortcut sheet opened. */
+let opener: HTMLElement | null = null;
 
 function shortcutsDialog(): HTMLDialogElement {
   dialog?.remove();
@@ -177,6 +179,15 @@ function shortcutsDialog(): HTMLDialogElement {
       row("Tab / Shift+Tab / Esc", t("shortcuts.s.leave")))),
     h("p", { class: "hint" }, t("shortcuts.hint")),
     h("form", { method: "dialog" }, h("button", { type: "submit", class: "primary" }, t("shortcuts.closeBtn"))));
+  // The dialog gives focus back to what had it, unless that is hidden by now (a link of the narrow menu, which
+  // closed when focus moved into the dialog): then to the Menu button, or the page's content.
+  dlg.addEventListener("close", () => {
+    const back = opener;
+    opener = null;
+    if (!back || (back.isConnected && back.checkVisibility())) return;
+    const toggle = navMenu.querySelector<HTMLElement>(".nav-toggle");
+    (navMenu.contains(back) && toggle?.checkVisibility() ? toggle : document.getElementById("main"))?.focus();
+  });
   document.body.append(dlg);
   dialog = dlg;
   return dlg;
@@ -196,7 +207,10 @@ function globalKeys(): void {
     const mod = e.ctrlKey || e.metaKey;
     if (e.key === "F1" || (e.key === "?" && !typing(e) && !mod)) {
       e.preventDefault();
-      if (dialog && !dialog.open) dialog.showModal();
+      if (dialog && !dialog.open) {
+        opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+        dialog.showModal();
+      }
     } else if (mod && !e.shiftKey && (e.key === "o" || e.key === "O")) {
       e.preventDefault();
       if (!location.hash.startsWith("#/viewer")) location.hash = "#/viewer";
