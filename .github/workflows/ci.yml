@@ -3,7 +3,8 @@ name: ci
 # Fast checks on every push and pull request, on Linux (the cheapest runner), plus the Windows apps'
 # checks (windows.yml, on Windows) when a change reaches them. macOS and Android app builds run only for
 # releases (release.yml) or by hand (workflow_dispatch on apple.yml, android.yml, windows.yml, core.yml);
-# the Android app's unit, screen, accessibility and screenshot tests run here, on the JVM.
+# the Android app's unit, screen, accessibility and screenshot tests run here, on the JVM, and Studio's
+# screen catalogue on its built bundle.
 # Branch pushes only: a release tag doesn't start this workflow; release.yml calls it instead.
 on:
   # Pushes to main and pull requests: a branch is checked once, through its pull request.
@@ -180,14 +181,26 @@ jobs:
       - name: Bandroom for Windows core logic
         run: dotnet test apps/bandroom/windows/tests/Brasscribe.Bandroom.Core.Tests
 
+  # Studio's unit tests, then its browser tests and its screen catalogue on the built bundle, with the API
+  # answered from committed fixtures (no engine): every view in light, dark, high contrast, bokmål, 200 % and
+  # 320 px, with its checks (studio/README.md, Test). On a pull request the catalogue's screenshots are
+  # compared with the same taken at the merge base (studio/scripts/screenshots.sh); a changed view fails the job
+  # and is shown in the studio-screenshots artefact, unless the pull request has the label screenshots-changed.
   studio:
     name: Studio (Ubuntu 24.04)
     needs: changes
     if: needs.changes.outputs.studio == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The merge base is taken out next to this checkout for the screenshots.
+          fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
@@ -213,6 +226,86 @@ jobs:
             echo "::error::The committed Studio bundle is out of date: run 'npm run build' in studio/ and commit engine/src/brasscribe_engine/static."
             exit 1
           fi
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('studio/package-lock.json') }}
+
+      - name: Chromium for the browser tests
+        working-directory: studio
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (the built bundle, no engine)
+        working-directory: studio
+        run: npm run test:browser
+
+      # The pull request's own code runs here, without the token: the label is read in a step of its own.
+      - name: Screen catalogue, compared with the merge base
+        id: compare
+        if: github.event_name == 'pull_request'
+        working-directory: studio
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags origin "$BASE"
+          status=0
+          scripts/screenshots.sh compare "$(git merge-base HEAD "$BASE")" || status=$?
+          cat build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      # Only when views changed. The labels as they are now, not as they were when the run started (a re-run keeps
+      # the event's); when they cannot be read, the change is taken as not meant.
+      - name: Is the change meant (label screenshots-changed)
+        id: label
+        if: github.event_name == 'pull_request' && steps.compare.outputs.status == '1'
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        # Earlier steps ran the pull request's code, which can add to the job's environment and PATH: this step
+        # starts bash and gh by their full paths, with only the variables gh needs.
+        shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
+        run: |
+          names=$(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" GH_TOKEN="$GH_TOKEN" \
+            /usr/bin/gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name') || names=""
+          if printf '%s\n' "$names" | /usr/bin/grep -qx 'screenshots-changed'; then meant=true; else meant=false; fi
+          echo "meant=$meant" >> "$GITHUB_OUTPUT"
+
+      - name: Screenshot result
+        if: github.event_name == 'pull_request'
+        env:
+          STATUS: ${{ steps.compare.outputs.status }}
+          MEANT: ${{ steps.label.outputs.meant }}
+        run: |
+          # 1: views changed (shown in the artefact). 2: a view's own checks failed; 3: the base's screenshots could
+          # not be taken. No label lets 2 or 3 through.
+          if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
+            echo "Views changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          exit "${STATUS:-1}"
+
+      - name: Screen catalogue
+        if: github.event_name != 'pull_request'
+        working-directory: studio
+        run: scripts/screenshots.sh record
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: studio-screenshots
+          path: |
+            studio/build/reports/screenshots
+            studio/build/catalogue/screenshots
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: studio-catalogue-results
+          path: studio/build/catalogue/test-results
+          if-no-files-found: ignore
 
   # The Android app's tests on the JVM (Robolectric), no emulator, in two jobs side by side: the unit tests
   # with the screens' flows and their accessibility checks; and the screen catalogues of both apps (every

@@ -68,7 +68,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | engine, affected only | `pixi run test-affected` | tests the change cannot reach (pytest-testmon; the first run records `.testmondata`) |
 | core | `cd core && cargo test --profile fast` | nothing. The `fast` profile is release without LTO, with parallel and incremental codegen, in `target/fast` |
 | conformance | `scripts/check.sh fast conformance` | every case but Mikkel. With reference outputs from an earlier run in `core/target/conformance` made from the same Python sources (`music/src`, `eval/brasscribe_eval`, the conformance runner; a hash in `.python-reference-stamp`), it also skips the Python side and the extras (`--skip-python --no-extras`) |
-| studio | `cd studio && npx vitest run` | the browser tests |
+| studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, the screenshot comparison, e2e |
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
 | android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, the screenshot comparison, instrumented tests |
@@ -95,7 +95,8 @@ build for testing again.
 - `pixi run test`
 - `cargo test --release`
 - conformance on every case
-- vitest and the Playwright browser tests
+- vitest, the Playwright browser tests, then `studio/scripts/screenshots.sh compare`: Studio's screen catalogue at the
+  merge base and on the branch, with its checks, and what changed ([studio/README.md](../../studio/README.md#test))
 - the Swift packages (BrasscribeKit, NotationKit, `capture`) and the macOS app unit tests
 - `./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug` (both apps' tests on the JVM, lint
   for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh compare`: the
@@ -190,6 +191,8 @@ All times are in seconds.
 | `npm ci` | 12 | | 0 (cloned) | | |
 | vitest | 13 | 15 | 11 | 15 | 12, then 17 |
 | `test:browser` | 7 | 7 | 7 | 11 | |
+| Studio screen catalogue (`test:catalogue`, 6 workers) | | | | 52 | `fast studio` in all: 55 |
+| `screenshots.sh compare`, Studio (base with a catalogue) | | | | 89 | |
 | `swift test`, BrasscribeKit | 100 | 64 | 65 | 74 | `package-test-fast`, both packages: 115, then 30 |
 | `swift test`, NotationKit | 29 | 10 | 13 | 10 | |
 | macOS app unit tests | 100 | 15 | 22¹ | 14 | `build-for-testing` plus `test-mac-unit`: 69, then 9 |

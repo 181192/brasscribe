@@ -1,0 +1,2205 @@
+{
+ "/v1/conformance": {
+  "status": 200,
+  "body": [
+   {
+    "time": "2026-01-03T10:00:00+0100",
+    "git_sha": "0000003",
+    "core_version": "brasscribe-core 0.1.0",
+    "sets": [
+     {
+      "set": "old-hundredth",
+      "item": "old-hundredth",
+      "stage": "layers",
+      "status": "pass",
+      "diffs": 0,
+      "files": 24,
+      "py": "old-hundredth/layers/py",
+      "rust": "old-hundredth/layers/rust"
+     },
+     {
+      "set": "old-hundredth",
+      "item": "old-hundredth",
+      "stage": "layers-quartet",
+      "status": "pass",
+      "diffs": 0,
+      "files": 10,
+      "py": "old-hundredth/layers-quartet/py",
+      "rust": "old-hundredth/layers-quartet/rust"
+     },
+     {
+      "set": "talking",
+      "item": "old-hundredth",
+      "stage": "talking-score",
+      "status": "fail",
+      "diffs": 2,
+      "files": 3,
+      "py": "talking/old-hundredth/py",
+      "rust": "talking/old-hundredth/rust"
+     }
+    ],
+    "_file": "report.json"
+   }
+  ]
+ },
+ "/v1/conformance/run": {
+  "status": 200,
+  "body": {
+   "status": "idle",
+   "available": true,
+   "started": null,
+   "finished": null,
+   "exit_code": null,
+   "command": [],
+   "log": null,
+   "log_tail": null
+  }
+ },
+ "/v1/health": {
+  "status": 200,
+  "body": {
+   "status": "ok",
+   "version": "0.1.0",
+   "build": "catalogue",
+   "device": "cpu",
+   "auth_required": false,
+   "server_id": "00000000000000000000000000000000",
+   "server_name": "Brasscribe Studio catalogue"
+  }
+ },
+ "/v1/jobs": {
+  "status": 200,
+  "body": [
+   {
+    "id": "old-hundredth-failed",
+    "profile": "brass-band",
+    "title": "Old Hundredth (beat grid failed)",
+    "audio_id": null,
+    "status": "failed",
+    "created": 1767346200.0,
+    "started": null,
+    "finished": null,
+    "error": "beats: ValueError: the beat grid has no downbeat in the first 8 bars\nTraceback (most recent call last):\n  File \"runner.py\", line 1, in run\nValueError: the beat grid has no downbeat in the first 8 bars",
+    "progress": 0.0,
+    "previous_run_id": null,
+    "device_name": null,
+    "stages": [
+     {
+      "name": "beats",
+      "kind": "beats",
+      "status": "failed",
+      "seconds": 1.4,
+      "queue_wait_s": null,
+      "run_s": null,
+      "device": null
+     }
+    ],
+    "outputs": []
+   },
+   {
+    "id": "old-hundredth-b",
+    "profile": "orchestra-with-soloist",
+    "title": "Old Hundredth (two notes changed)",
+    "audio_id": null,
+    "status": "succeeded",
+    "created": 1767225600.0,
+    "started": null,
+    "finished": null,
+    "error": null,
+    "progress": 0.0,
+    "previous_run_id": null,
+    "device_name": null,
+    "stages": [],
+    "outputs": [
+     "brass-band.musicxml",
+     "composition.json"
+    ]
+   },
+   {
+    "id": "old-hundredth-a",
+    "profile": "orchestra-with-soloist",
+    "title": "Old Hundredth",
+    "audio_id": null,
+    "status": "succeeded",
+    "created": 1767225600.0,
+    "started": null,
+    "finished": null,
+    "error": null,
+    "progress": 0.0,
+    "previous_run_id": null,
+    "device_name": null,
+    "stages": [],
+    "outputs": [
+     "brass-band.musicxml",
+     "composition.json"
+    ]
+   }
+  ]
+ },
+ "/v1/jobs/old-hundredth-a": {
+  "status": 200,
+  "body": {
+   "id": "old-hundredth-a",
+   "profile": "orchestra-with-soloist",
+   "title": "Old Hundredth",
+   "audio_id": null,
+   "status": "succeeded",
+   "created": 1767225600.0,
+   "started": null,
+   "finished": null,
+   "error": null,
+   "progress": 0.0,
+   "previous_run_id": null,
+   "device_name": null,
+   "stages": [],
+   "outputs": [
+    "brass-band.musicxml",
+    "composition.json"
+   ]
+  }
+ },
+ "/v1/jobs/old-hundredth-a/compare?job=old-hundredth-b": {
+  "status": 200,
+  "body": {
+   "composition_identical": true,
+   "musicxml_identical": false,
+   "ok": false,
+   "parts": [
+    {
+     "name": "Soprano Cornet",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    },
+    {
+     "name": "Solo Cornet",
+     "notes": 32,
+     "reference_notes": 32,
+     "identical": false
+    },
+    {
+     "name": "Repiano Cornet",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    },
+    {
+     "name": "2nd Cornet",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    },
+    {
+     "name": "3rd Cornet",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    },
+    {
+     "name": "Flugelhorn",
+     "notes": 31,
+     "reference_notes": 31,
+     "identical": true
+    },
+    {
+     "name": "Solo Horn",
+     "notes": 31,
+     "reference_notes": 31,
+     "identical": true
+    },
+    {
+     "name": "1st Horn",
+     "notes": 31,
+     "reference_notes": 31,
+     "identical": true
+    },
+    {
+     "name": "2nd Horn",
+     "notes": 31,
+     "reference_notes": 31,
+     "identical": true
+    },
+    {
+     "name": "1st Baritone",
+     "notes": 31,
+     "reference_notes": 31,
+     "identical": true
+    },
+    {
+     "name": "2nd Baritone",
+     "notes": 31,
+     "reference_notes": 31,
+     "identical": true
+    },
+    {
+     "name": "1st Trombone",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    },
+    {
+     "name": "2nd Trombone",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    },
+    {
+     "name": "Bass Trombone",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    },
+    {
+     "name": "Euphonium",
+     "notes": 24,
+     "reference_notes": 24,
+     "identical": true
+    },
+    {
+     "name": "E♭ Bass",
+     "notes": 32,
+     "reference_notes": 32,
+     "identical": true
+    },
+    {
+     "name": "B♭ Bass",
+     "notes": 32,
+     "reference_notes": 32,
+     "identical": true
+    },
+    {
+     "name": "Percussion",
+     "notes": 0,
+     "reference_notes": 0,
+     "identical": true
+    }
+   ],
+   "parts_identical": 17,
+   "parts_total": 18,
+   "notes_identical": 274,
+   "notes_total": 306,
+   "extra_files": {}
+  }
+ },
+ "/v1/jobs/old-hundredth-a/composition": {
+  "status": 200,
+  "file": "../compare/runs/old-hundredth-a/outputs/composition.json"
+ },
+ "/v1/jobs/old-hundredth-a/input": {
+  "status": 404,
+  "body": {
+   "detail": "input audio no longer exists, or is not in the engine's audio folders"
+  }
+ },
+ "/v1/jobs/old-hundredth-a/manifest": {
+  "status": 200,
+  "body": {
+   "schema": 1,
+   "run_id": "old-hundredth-a",
+   "created": "2026-01-01T00:00:00+00:00",
+   "profile": "orchestra-with-soloist",
+   "pipeline": "layered",
+   "title": "Old Hundredth",
+   "params": {},
+   "options": {
+    "allow_heavy": false,
+    "cold": []
+   },
+   "input": {
+    "path": "apps/fixtures/old-hundredth/composition.json"
+   },
+   "status": "succeeded",
+   "stages": []
+  }
+ },
+ "/v1/jobs/old-hundredth-a/musicxml": {
+  "status": 200,
+  "type": "application/vnd.recordare.musicxml+xml",
+  "file": "../compare/runs/old-hundredth-a/outputs/brass-band.musicxml"
+ },
+ "/v1/jobs/old-hundredth-a/part-sources": {
+  "status": 200,
+  "body": {
+   "parts": {
+    "Soprano Cornet": "empty",
+    "Solo Cornet": "recording",
+    "Repiano Cornet": "arranged",
+    "2nd Cornet": "arranged",
+    "3rd Cornet": "arranged",
+    "Flugelhorn": "arranged",
+    "Solo Horn": "arranged",
+    "1st Horn": "arranged",
+    "2nd Horn": "arranged",
+    "1st Baritone": "arranged",
+    "2nd Baritone": "arranged",
+    "1st Trombone": "arranged",
+    "2nd Trombone": "arranged",
+    "Bass Trombone": "recording",
+    "Euphonium": "recording",
+    "E♭ Bass": "recording",
+    "B♭ Bass": "recording",
+    "Percussion": "empty"
+   }
+  }
+ },
+ "/v1/jobs/old-hundredth-a/roundtrip": {
+  "status": 200,
+  "body": {
+   "status": "not_run",
+   "musescore": null,
+   "parts": null,
+   "notes_in": null,
+   "notes_out": null,
+   "detail": null,
+   "part_results": []
+  }
+ },
+ "/v1/jobs/old-hundredth-a/stages": {
+  "status": 200,
+  "body": []
+ },
+ "/v1/jobs/old-hundredth-a/validation": {
+  "status": 200,
+  "body": []
+ },
+ "/v1/jobs/old-hundredth-b/composition": {
+  "status": 200,
+  "file": "../compare/runs/old-hundredth-b/outputs/composition.json"
+ },
+ "/v1/jobs/old-hundredth-b/musicxml": {
+  "status": 200,
+  "type": "application/vnd.recordare.musicxml+xml",
+  "file": "../compare/runs/old-hundredth-b/outputs/brass-band.musicxml"
+ },
+ "/v1/jobs/old-hundredth-failed": {
+  "status": 200,
+  "body": {
+   "id": "old-hundredth-failed",
+   "profile": "brass-band",
+   "title": "Old Hundredth (beat grid failed)",
+   "audio_id": null,
+   "status": "failed",
+   "created": 1767346200.0,
+   "started": null,
+   "finished": null,
+   "error": "beats: ValueError: the beat grid has no downbeat in the first 8 bars\nTraceback (most recent call last):\n  File \"runner.py\", line 1, in run\nValueError: the beat grid has no downbeat in the first 8 bars",
+   "progress": 0.0,
+   "previous_run_id": null,
+   "device_name": null,
+   "stages": [
+    {
+     "name": "beats",
+     "kind": "beats",
+     "status": "failed",
+     "seconds": 1.4,
+     "queue_wait_s": null,
+     "run_s": null,
+     "device": null
+    }
+   ],
+   "outputs": []
+  }
+ },
+ "/v1/jobs/old-hundredth-failed/composition": {
+  "status": 404,
+  "body": {
+   "detail": "composition.json not available for job old-hundredth-failed (status failed)"
+  }
+ },
+ "/v1/jobs/old-hundredth-failed/manifest": {
+  "status": 200,
+  "body": {
+   "schema": 1,
+   "run_id": "old-hundredth-failed",
+   "created": "2026-01-02T09:30:00+00:00",
+   "profile": "brass-band",
+   "pipeline": "A",
+   "title": "Old Hundredth (beat grid failed)",
+   "params": {},
+   "options": {
+    "allow_heavy": false,
+    "cold": []
+   },
+   "input": {
+    "path": "apps/fixtures/old-hundredth/composition.json"
+   },
+   "status": "failed",
+   "error": "beats: ValueError: the beat grid has no downbeat in the first 8 bars\nTraceback (most recent call last):\n  File \"runner.py\", line 1, in run\nValueError: the beat grid has no downbeat in the first 8 bars",
+   "stages": [
+    {
+     "stage": "beats",
+     "kind": "beats",
+     "status": "failed",
+     "seconds": 1.4
+    }
+   ]
+  }
+ },
+ "/v1/jobs/old-hundredth-failed/musicxml": {
+  "status": 404,
+  "body": {
+   "detail": "brass-band.musicxml not available for job old-hundredth-failed (status failed)"
+  }
+ },
+ "/v1/jobs/old-hundredth-failed/stages": {
+  "status": 200,
+  "body": [
+   {
+    "stage": "beats",
+    "kind": "beats",
+    "status": "failed",
+    "key": null,
+    "seconds": 1.4,
+    "queue_wait_s": null,
+    "run_s": null,
+    "device": null,
+    "files": []
+   }
+  ]
+ },
+ "/v1/parity": {
+  "status": 200,
+  "body": [
+   {
+    "model": "bs-roformer-sw",
+    "device": "Apple M5 Pro",
+    "threshold_f1": 0.98,
+    "reference": {
+     "runtime": "PyTorch CPU fp32",
+     "model": "MSST BSRoformer, BS-Roformer-SW.yaml",
+     "pipeline": "MSST utils.model_utils.demix (chunk_size and num_overlap from the config)",
+     "chunk_samples": 588800
+    },
+    "graph_boundary": "STFT and complex mask + iSTFT on the host; the core is band split, transformers, mask estimators",
+    "metric": "stem SDR vs PyTorch stem; note F1 (50 ms onsets) of SwiftF0 and Basic Pitch on converted vs PyTorch other, vocals, bass stems; gate on both note F1s",
+    "clips": [
+     "choralebricks-brass4/Bach_IchStehAnDeinerKrippe [0.0s +30.0s]",
+     "urmp-brass/05_Entertainer_tpt_tpt [0.0s +30.0s]",
+     "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba [0.0s +30.0s]",
+     "mikkel/excerpt-60s [60.0s +30.0s]"
+    ],
+    "artifacts": {
+     "bs-roformer-sw-core-fp16.mlpackage": {
+      "size_bytes": 351393727
+     },
+     "bs-roformer-sw-core-fp16.onnx": {
+      "size_bytes": 351957398
+     },
+     "bs-roformer-sw-core-fp32.onnx": {
+      "size_bytes": 700641924
+     },
+     "checkpoint/BS-Roformer-SW.ckpt": {
+      "size_bytes": 699412152,
+      "sha256": "24e7d35ee9c64415673d3fd33e06a67cac2c103c5df6267ba1576459c775916e"
+     }
+    },
+    "parity": {
+     "onnx-fp32-ort-cpu": {
+      "sdr_db": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "bass": 80.4,
+        "drums": 85.23,
+        "other": 137.88,
+        "vocals": 74.26,
+        "guitar": 88.75,
+        "piano": 88.37
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "bass": 74.89,
+        "drums": 105.76,
+        "other": 137.93,
+        "vocals": 74.49,
+        "guitar": 87.79,
+        "piano": 107.21
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "bass": 90.53,
+        "drums": 92.55,
+        "other": 137.53,
+        "vocals": 75.08,
+        "guitar": 86.57,
+        "piano": 92.13
+       },
+       "mikkel/excerpt-60s": {
+        "bass": 123.6,
+        "drums": 123.48,
+        "other": 122.69,
+        "vocals": 74.09,
+        "guitar": 85.56,
+        "piano": 114.77
+       }
+      },
+      "sdr_db_min": 74.09,
+      "sdr_db_median": 89.64,
+      "swift_f0_note_f1": {
+       "n_ref": 343,
+       "n_est": 343,
+       "matched": 343,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+       "n_clips": 12
+      },
+      "basic_pitch_note_f1": {
+       "n_ref": 1028,
+       "n_est": 1028,
+       "matched": 1028,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+       "n_clips": 12
+      },
+      "per_stem_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       }
+      }
+     },
+     "onnx-fp16-ort-cpu": {
+      "sdr_db": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "bass": 32.56,
+        "drums": 32.27,
+        "other": 78.03,
+        "vocals": 31.8,
+        "guitar": 32.3,
+        "piano": 30.57
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "bass": 23.89,
+        "drums": 23.06,
+        "other": 77.51,
+        "vocals": 34.76,
+        "guitar": 34.15,
+        "piano": 25.28
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "bass": 7.49,
+        "drums": 29.85,
+        "other": 75.72,
+        "vocals": 25.49,
+        "guitar": 31.93,
+        "piano": 23.86
+       },
+       "mikkel/excerpt-60s": {
+        "bass": 42.33,
+        "drums": 40.9,
+        "other": 44.23,
+        "vocals": 25.18,
+        "guitar": 6.72,
+        "piano": 35.5
+       }
+      },
+      "sdr_db_min": 6.72,
+      "sdr_db_median": 32.1,
+      "swift_f0_note_f1": {
+       "n_ref": 343,
+       "n_est": 343,
+       "matched": 342,
+       "p": 0.9970845481049563,
+       "r": 0.9970845481049563,
+       "f1": 0.9970845481049563,
+       "min_f1": 0.9375,
+       "min_clip": "mikkel/excerpt-60s:bass",
+       "n_clips": 12
+      },
+      "basic_pitch_note_f1": {
+       "n_ref": 1028,
+       "n_est": 1028,
+       "matched": 1020,
+       "p": 0.9922178988326849,
+       "r": 0.9922178988326849,
+       "f1": 0.9922178988326849,
+       "min_f1": 0.8636363636363636,
+       "min_clip": "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass",
+       "n_clips": 12
+      },
+      "per_stem_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 0.9091
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 0.8636
+       },
+       "mikkel/excerpt-60s:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 0.9854
+       },
+       "mikkel/excerpt-60s:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:bass": {
+        "swift_f0": 0.9375,
+        "basic_pitch": 0.991
+       }
+      }
+     },
+     "coreml-fp16-ALL": {
+      "sdr_db": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "bass": 35.82,
+        "drums": 35.1,
+        "other": 78.03,
+        "vocals": 35.57,
+        "guitar": 35.05,
+        "piano": 34.81
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "bass": 38.9,
+        "drums": 45.44,
+        "other": 78.03,
+        "vocals": 36.81,
+        "guitar": 35.8,
+        "piano": 46.16
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "bass": 30.76,
+        "drums": 38.08,
+        "other": 78.03,
+        "vocals": 37.62,
+        "guitar": 38.21,
+        "piano": 39.01
+       },
+       "mikkel/excerpt-60s": {
+        "bass": 64.36,
+        "drums": 63.88,
+        "other": 64.34,
+        "vocals": 42.15,
+        "guitar": 27.31,
+        "piano": 55.16
+       }
+      },
+      "sdr_db_min": 27.31,
+      "sdr_db_median": 38.555,
+      "swift_f0_note_f1": {
+       "n_ref": 343,
+       "n_est": 343,
+       "matched": 343,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+       "n_clips": 12
+      },
+      "basic_pitch_note_f1": {
+       "n_ref": 1028,
+       "n_est": 1028,
+       "matched": 1027,
+       "p": 0.9990272373540856,
+       "r": 0.9990272373540856,
+       "f1": 0.9990272373540856,
+       "min_f1": 0.9523809523809523,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass",
+       "n_clips": 12
+      },
+      "per_stem_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 0.9524
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 0.9778
+       },
+       "mikkel/excerpt-60s:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       }
+      }
+     },
+     "coreml-fp16-CPU_AND_GPU": {
+      "sdr_db": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "bass": 35.82,
+        "drums": 35.1,
+        "other": 78.03,
+        "vocals": 35.57,
+        "guitar": 35.05,
+        "piano": 34.81
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "bass": 38.9,
+        "drums": 45.44,
+        "other": 78.03,
+        "vocals": 36.81,
+        "guitar": 35.8,
+        "piano": 46.16
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "bass": 30.76,
+        "drums": 38.08,
+        "other": 78.03,
+        "vocals": 37.62,
+        "guitar": 38.21,
+        "piano": 39.01
+       },
+       "mikkel/excerpt-60s": {
+        "bass": 64.36,
+        "drums": 63.88,
+        "other": 64.34,
+        "vocals": 42.15,
+        "guitar": 27.31,
+        "piano": 55.16
+       }
+      },
+      "sdr_db_min": 27.31,
+      "sdr_db_median": 38.555,
+      "swift_f0_note_f1": {
+       "n_ref": 343,
+       "n_est": 343,
+       "matched": 343,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other",
+       "n_clips": 12
+      },
+      "basic_pitch_note_f1": {
+       "n_ref": 1028,
+       "n_est": 1028,
+       "matched": 1027,
+       "p": 0.9990272373540856,
+       "r": 0.9990272373540856,
+       "f1": 0.9990272373540856,
+       "min_f1": 0.9523809523809523,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass",
+       "n_clips": 12
+      },
+      "per_stem_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 0.9524
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 0.9778
+       },
+       "mikkel/excerpt-60s:other": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:vocals": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       },
+       "mikkel/excerpt-60s:bass": {
+        "swift_f0": 1.0,
+        "basic_pitch": 1.0
+       }
+      }
+     }
+    },
+    "benchmarks": {
+     "torch-cpu": {
+      "model": "sw",
+      "backend": "torch-cpu",
+      "audio_s": 30.0,
+      "load_s": 7.834101624903269,
+      "median_s": 63.157857583020814,
+      "min_s": 63.157857583020814,
+      "runs": 1,
+      "rtf": 2.105261919434027,
+      "peak_rss_mb": 3710.515625,
+      "baseline_rss_mb": 178.359375,
+      "model_rss_mb": 3532.15625,
+      "note": "one warm-up run, then one timed run"
+     },
+     "onnx-fp32-ort-cpu": {
+      "model": "sw",
+      "backend": "onnx-fp32-ort-cpu",
+      "audio_s": 30.0,
+      "load_s": 5.70637141703628,
+      "median_s": 87.91037591698114,
+      "min_s": 87.91037591698114,
+      "runs": 1,
+      "rtf": 2.930345863899371,
+      "peak_rss_mb": 14224.8125,
+      "baseline_rss_mb": 177.953125,
+      "model_rss_mb": 14046.859375,
+      "note": "one warm-up run, then one timed run"
+     },
+     "onnx-fp16-ort-cpu": {
+      "model": "sw",
+      "backend": "onnx-fp16-ort-cpu",
+      "audio_s": 30.0,
+      "load_s": 3.052397374995053,
+      "median_s": 162.34084550000262,
+      "min_s": 162.34084550000262,
+      "runs": 1,
+      "rtf": 5.411361516666754,
+      "peak_rss_mb": 22544.734375,
+      "baseline_rss_mb": 177.953125,
+      "model_rss_mb": 22366.78125,
+      "note": "one warm-up run, then one timed run"
+     },
+     "coreml-fp16-ALL": {
+      "model": "sw",
+      "backend": "coreml-fp16-ALL",
+      "audio_s": 30.0,
+      "load_s": 6.389815874979831,
+      "median_s": 6.314896999974735,
+      "min_s": 6.314896999974735,
+      "runs": 1,
+      "rtf": 0.2104965666658245,
+      "peak_rss_mb": 3903.046875,
+      "baseline_rss_mb": 379.4375,
+      "model_rss_mb": 3523.609375,
+      "note": "one warm-up run, then one timed run"
+     },
+     "coreml-fp16-CPU_AND_GPU": {
+      "model": "sw",
+      "backend": "coreml-fp16-CPU_AND_GPU",
+      "audio_s": 30.0,
+      "load_s": 3.0475141250062734,
+      "median_s": 5.9292847920442,
+      "min_s": 5.9292847920442,
+      "runs": 1,
+      "rtf": 0.19764282640147332,
+      "peak_rss_mb": 3898.390625,
+      "baseline_rss_mb": 380.296875,
+      "model_rss_mb": 3518.09375,
+      "note": "one warm-up run, then one timed run"
+     }
+    },
+    "coreml_compute_plan": {
+     "CPU_AND_GPU": {
+      "MLGPU": 4526
+     },
+     "CPU_AND_NE": {
+      "MLNeuralEngine": 3826,
+      "MLCPU": 327
+     },
+     "ALL": {
+      "MLGPU": 4526
+     }
+    },
+    "blocked": {
+     "onnx-fp32-ort-coreml": "process killed by the OS (exit 137, out of memory) on the first 13.4 s chunk while the CoreML execution provider compiled/ran the graph (48 GB machine)"
+    },
+    "pass": {
+     "onnx-fp32-ort-cpu": true,
+     "onnx-fp16-ort-cpu": true,
+     "coreml-fp16-ALL": true,
+     "coreml-fp16-CPU_AND_GPU": true
+    },
+    "pass_all": true,
+    "versions": {
+     "python": "3.12.14",
+     "macos": "26.6.2",
+     "machine": "arm64",
+     "torch": "2.7.0",
+     "onnxruntime": "1.30.0",
+     "onnx": "1.23.0",
+     "coremltools": "9.0",
+     "swift-f0": "0.3.0",
+     "mir_eval": "0.8.2"
+    },
+    "command": "cd convert/roformer && uv run python convert.py sw && uv run python parity.py sw",
+    "_file": "bs-roformer-sw.json"
+   },
+   {
+    "model": "muscriptor",
+    "device": "Apple M5 Pro",
+    "threshold_f1": 0.98,
+    "reference": {
+     "runtime": "PyTorch CPU fp32",
+     "model": "MuScriptor medium (HF MuScriptor/muscriptor-medium)",
+     "pipeline": "TranscriptionModel.transcribe_to_midi, greedy, prelude forcing, detect_tempo=False"
+    },
+    "graph_boundary": "conditioning (log-mel + projection + class embeddings) on the host; transformer as prefill and decode-with-past ONNX graphs; greedy loop on the host",
+    "metric": "gate: exact token agreement on every 5 s chunk; also note F1 (50 ms onsets) of the MIDI vs PyTorch",
+    "clips": [
+     "choralebricks-brass4/Bach_IchStehAnDeinerKrippe [0.0s +30.0s]",
+     "urmp-brass/05_Entertainer_tpt_tpt [0.0s +30.0s]",
+     "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba [0.0s +30.0s]",
+     "mikkel/excerpt-60s [60.0s +30.0s]"
+    ],
+    "artifacts": {
+     "muscriptor-medium-decode.onnx": {
+      "size_bytes": 1219939428
+     },
+     "muscriptor-medium-prefill.onnx": {
+      "size_bytes": 1220024749
+     },
+     "muscriptor-medium-q1.onnx": {
+      "size_bytes": 1214201785
+     },
+     "muscriptor-medium-q64.onnx": {
+      "size_bytes": 1214202488
+     },
+     "muscriptor-medium-kv-fp32.mlpackage": {
+      "size_bytes": 1214616499
+     },
+     "muscriptor-medium-kv-fp16.mlpackage": {
+      "size_bytes": 607554386
+     }
+    },
+    "parity": {
+     "onnx-ort-cpu": {
+      "note_f1": {
+       "n_ref": 1057,
+       "n_est": 1057,
+       "matched": 1057,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe",
+       "n_clips": 4
+      },
+      "per_clip_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+       "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+       "mikkel/excerpt-60s": 1.0
+      },
+      "tokens": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 738,
+        "first_divergence": null
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 634,
+        "first_divergence": null
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 965,
+        "first_divergence": null
+       },
+       "mikkel/excerpt-60s": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 2178,
+        "first_divergence": null
+       }
+      }
+     },
+     "static-ort-cpu": {
+      "note_f1": {
+       "n_ref": 1057,
+       "n_est": 1057,
+       "matched": 1057,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe",
+       "n_clips": 4
+      },
+      "per_clip_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+       "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+       "mikkel/excerpt-60s": 1.0
+      },
+      "tokens": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 738,
+        "first_divergence": null
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 634,
+        "first_divergence": null
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 965,
+        "first_divergence": null
+       },
+       "mikkel/excerpt-60s": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 2178,
+        "first_divergence": null
+       }
+      }
+     },
+     "static-ort-coreml": {
+      "note_f1": {
+       "n_ref": 1057,
+       "n_est": 1057,
+       "matched": 1057,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe",
+       "n_clips": 4
+      },
+      "per_clip_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+       "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+       "mikkel/excerpt-60s": 1.0
+      },
+      "tokens": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 738,
+        "first_divergence": null
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 634,
+        "first_divergence": null
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 965,
+        "first_divergence": null
+       },
+       "mikkel/excerpt-60s": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 2178,
+        "first_divergence": null
+       }
+      }
+     },
+     "coreml-fp16-ALL": {
+      "note_f1": {
+       "n_ref": 1057,
+       "n_est": 1057,
+       "matched": 1056,
+       "p": 0.9990539262062441,
+       "r": 0.9990539262062441,
+       "f1": 0.9990539262062441,
+       "min_f1": 0.9977324263038548,
+       "min_clip": "mikkel/excerpt-60s",
+       "n_clips": 4
+      },
+      "per_clip_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+       "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+       "mikkel/excerpt-60s": 0.9977
+      },
+      "tokens": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 738,
+        "first_divergence": null
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 634,
+        "first_divergence": null
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "chunks": 6,
+        "identical_chunks": 5,
+        "tokens_ref": 965,
+        "first_divergence": [
+         3,
+         115
+        ]
+       },
+       "mikkel/excerpt-60s": {
+        "chunks": 6,
+        "identical_chunks": 4,
+        "tokens_ref": 2178,
+        "first_divergence": [
+         2,
+         264
+        ]
+       }
+      }
+     },
+     "coreml-fp16-CPU_AND_GPU": {
+      "note_f1": {
+       "n_ref": 1057,
+       "n_est": 1057,
+       "matched": 1056,
+       "p": 0.9990539262062441,
+       "r": 0.9990539262062441,
+       "f1": 0.9990539262062441,
+       "min_f1": 0.9977324263038548,
+       "min_clip": "mikkel/excerpt-60s",
+       "n_clips": 4
+      },
+      "per_clip_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+       "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+       "mikkel/excerpt-60s": 0.9977
+      },
+      "tokens": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 738,
+        "first_divergence": null
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 634,
+        "first_divergence": null
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "chunks": 6,
+        "identical_chunks": 5,
+        "tokens_ref": 965,
+        "first_divergence": [
+         3,
+         115
+        ]
+       },
+       "mikkel/excerpt-60s": {
+        "chunks": 6,
+        "identical_chunks": 4,
+        "tokens_ref": 2178,
+        "first_divergence": [
+         2,
+         264
+        ]
+       }
+      }
+     },
+     "coreml-fp32-ALL": {
+      "note_f1": {
+       "n_ref": 1057,
+       "n_est": 1057,
+       "matched": 1057,
+       "p": 1.0,
+       "r": 1.0,
+       "f1": 1.0,
+       "min_f1": 1.0,
+       "min_clip": "choralebricks-brass4/Bach_IchStehAnDeinerKrippe",
+       "n_clips": 4
+      },
+      "per_clip_f1": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": 1.0,
+       "urmp-brass/05_Entertainer_tpt_tpt": 1.0,
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": 1.0,
+       "mikkel/excerpt-60s": 1.0
+      },
+      "tokens": {
+       "choralebricks-brass4/Bach_IchStehAnDeinerKrippe": {
+        "chunks": 6,
+        "identical_chunks": 5,
+        "tokens_ref": 738,
+        "first_divergence": [
+         0,
+         44
+        ]
+       },
+       "urmp-brass/05_Entertainer_tpt_tpt": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 634,
+        "first_divergence": null
+       },
+       "urmp-brass/43_Chorale_tpt_tpt_hn_tbn_tba": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 965,
+        "first_divergence": null
+       },
+       "mikkel/excerpt-60s": {
+        "chunks": 6,
+        "identical_chunks": 6,
+        "tokens_ref": 2178,
+        "first_divergence": null
+       }
+      }
+     }
+    },
+    "benchmarks": {
+     "torch-cpu": {
+      "backend": "torch-cpu",
+      "size": "medium",
+      "audio_s": 30.0,
+      "load_s": 1.8576478329487145,
+      "median_s": 42.10755762504414,
+      "runs": 1,
+      "rtf": 1.403585254168138,
+      "tokens": 2178,
+      "ms_per_token": 19.333130222701623,
+      "peak_rss_mb": 2550.921875,
+      "baseline_rss_mb": 187.921875,
+      "model_rss_mb": 2363.0,
+      "note": "single cold run incl. conditioning and detokenisation"
+     },
+     "onnx-ort-cpu": {
+      "backend": "onnx-ort-cpu",
+      "size": "medium",
+      "audio_s": 30.0,
+      "load_s": 2.433278333977796,
+      "median_s": 48.41348991706036,
+      "runs": 1,
+      "rtf": 1.6137829972353452,
+      "tokens": 2178,
+      "ms_per_token": 22.22841593988079,
+      "peak_rss_mb": 5078.71875,
+      "baseline_rss_mb": 187.796875,
+      "model_rss_mb": 4890.921875,
+      "note": "single cold run incl. conditioning and detokenisation"
+     },
+     "static-ort-cpu": {
+      "backend": "static-ort-cpu",
+      "size": "medium",
+      "audio_s": 30.0,
+      "load_s": 3.1198959589237347,
+      "median_s": 86.47482983302325,
+      "runs": 1,
+      "rtf": 2.8824943277674415,
+      "tokens": 2178,
+      "ms_per_token": 39.70377861938625,
+      "peak_rss_mb": 6094.640625,
+      "baseline_rss_mb": 187.4375,
+      "model_rss_mb": 5907.203125,
+      "note": "single cold run incl. conditioning and detokenisation"
+     },
+     "static-ort-coreml": {
+      "backend": "static-ort-coreml",
+      "size": "medium",
+      "audio_s": 30.0,
+      "load_s": 31.32223300007172,
+      "median_s": 121.85690720903222,
+      "runs": 1,
+      "rtf": 4.061896906967741,
+      "tokens": 2178,
+      "ms_per_token": 55.94899320892205,
+      "peak_rss_mb": 7494.796875,
+      "baseline_rss_mb": 187.140625,
+      "model_rss_mb": 7307.65625,
+      "note": "single cold run incl. conditioning and detokenisation",
+      "coreml_ep": {
+       "partitions": 25,
+       "nodes_total": 805,
+       "nodes_on_coreml": 685
+      }
+     },
+     "coreml-fp16-ALL": {
+      "backend": "coreml-fp16-ALL",
+      "size": "medium",
+      "audio_s": 30.0,
+      "load_s": 4.600205833092332,
+      "median_s": 21.243125209002756,
+      "runs": 1,
+      "rtf": 0.7081041736334251,
+      "tokens": 2178,
+      "ms_per_token": 9.753501014234507,
+      "peak_rss_mb": 3610.390625,
+      "baseline_rss_mb": 187.546875,
+      "model_rss_mb": 3422.84375,
+      "note": "single cold run incl. conditioning and detokenisation"
+     },
+     "coreml-fp16-CPU_AND_GPU": {
+      "backend": "coreml-fp16-CPU_AND_GPU",
+      "size": "medium",
+      "audio_s": 30.0,
+      "load_s": 3.418642916949466,
+      "median_s": 12.104439415968955,
+      "runs": 1,
+      "rtf": 0.4034813138656318,
+      "tokens": 2178,
+      "ms_per_token": 5.55759385489851,
+      "peak_rss_mb": 2725.296875,
+      "baseline_rss_mb": 187.203125,
+      "model_rss_mb": 2538.09375,
+      "note": "single cold run incl. conditioning and detokenisation"
+     },
+     "coreml-fp32-ALL": {
+      "backend": "coreml-fp32-ALL",
+      "size": "medium",
+      "audio_s": 30.0,
+      "load_s": 5.346860624966212,
+      "median_s": 497.91991879208945,
+      "runs": 1,
+      "rtf": 16.597330626402982,
+      "tokens": 2178,
+      "ms_per_token": 228.61336950968294,
+      "peak_rss_mb": 5065.09375,
+      "baseline_rss_mb": 187.671875,
+      "model_rss_mb": 4877.421875,
+      "note": "single cold run incl. conditioning and detokenisation"
+     }
+    },
+    "blocked": {
+     "onnx-ort-coreml": "the dynamic graphs: CoreML EP cannot build them ('unbounded dimension', error -7). Superseded by the static-shape graphs (static-ort-coreml).",
+     "coreml Neural Engine": "the stateful model has flexible query/cache lengths, which the Neural Engine does not run; it runs on GPU/CPU. A Neural Engine build would need fixed Q and E per function.",
+     "mlx-swift": "not attempted: no Swift port of the model, log-mel conditioner, MT3 detokeniser and prelude-forcing loop exists; the Core ML stateful model is the Apple path instead."
+    },
+    "pass": {
+     "onnx-ort-cpu": true,
+     "static-ort-cpu": true,
+     "static-ort-coreml": true,
+     "coreml-fp16-ALL": false,
+     "coreml-fp16-CPU_AND_GPU": false,
+     "coreml-fp32-ALL": false
+    },
+    "pass_all": false,
+    "versions": {
+     "python": "3.12.14",
+     "macos": "26.6.2",
+     "machine": "arm64",
+     "muscriptor": "0.3.0",
+     "torch": "2.7.0",
+     "onnxruntime": "1.30.0",
+     "onnx": "1.23.0",
+     "mir_eval": "0.8.2"
+    },
+    "command": "cd convert/muscriptor && uv run python convert.py medium && uv run python convert_static.py medium && uv run python parity.py medium",
+    "kv_cache": {
+     "lmax": 2560,
+     "coreml_state_dtype": "float16 (Core ML states must be fp16, also in the fp32 build)",
+     "divergence": "Core ML fp16: chunks diverge at token 115 and 264 (2 clips); fp32 compute with the fp16 cache: one chunk at token 44. Divergence is argmax flips from reduced precision; the rest of the chunk follows a different but valid path"
+    },
+    "_file": "muscriptor.json"
+   }
+  ]
+ },
+ "/v1/profiles": {
+  "status": 200,
+  "body": [
+   {
+    "name": "solo",
+    "pipeline": "layered-solo",
+    "description": "One brass line, no separation; SwiftF0 spine confirmed by MuScriptor or Basic Pitch, layered arranger (the on-device path), minimal band",
+    "validated": true,
+    "stages": [
+     "beats",
+     "transcribe.solo.swift-f0",
+     "transcribe.solo.basic-pitch",
+     "transcribe.solo.muscriptor",
+     "contour.solo.swift-f0",
+     "arrange",
+     "export"
+    ]
+   },
+   {
+    "name": "brass-band",
+    "pipeline": "A",
+    "description": "Brass-only ensemble; MuScriptor medium + Basic Pitch on the mix, minimal band",
+    "validated": false,
+    "stages": [
+     "beats",
+     "transcribe.mix.muscriptor",
+     "transcribe.mix.basic-pitch",
+     "arrange",
+     "export"
+    ]
+   },
+   {
+    "name": "pop-rock",
+    "pipeline": "B",
+    "description": "Full band; BS-RoFormer SW stems, per-stem transcription, minimal band",
+    "validated": false,
+    "stages": [
+     "beats",
+     "stems",
+     "transcribe.vocals.muscriptor",
+     "transcribe.other.muscriptor",
+     "transcribe.guitar.muscriptor",
+     "transcribe.piano.muscriptor",
+     "transcribe.vocals.basic-pitch",
+     "transcribe.bass.basic-pitch",
+     "arrange",
+     "export"
+    ]
+   },
+   {
+    "name": "orchestra-with-soloist",
+    "pipeline": "layered",
+    "description": "Soloist with orchestra; Mega-53 solo/bass/drums + orchestra residual, 18-part brass band",
+    "validated": true,
+    "stages": [
+     "beats",
+     "stems",
+     "layers",
+     "transcribe.solo.muscriptor",
+     "transcribe.solo.basic-pitch",
+     "transcribe.solo.swift-f0",
+     "transcribe.orchestra.muscriptor",
+     "transcribe.bass.muscriptor",
+     "transcribe.drums.muscriptor",
+     "contour.solo.swift-f0",
+     "arrange",
+     "export"
+    ]
+   },
+   {
+    "name": "tab",
+    "pipeline": "tab",
+    "description": "One fretted instrument as tablature: bass, guitar, ukulele or mandolin (instrument); its BS-RoFormer SW stem (or the recording itself), Basic Pitch with SwiftF0 as a second opinion, a string and fret per note",
+    "validated": false,
+    "stages": [
+     "beats",
+     "stems",
+     "transcribe.guitar.basic-pitch",
+     "transcribe.guitar.swift-f0",
+     "notes",
+     "arrange",
+     "export"
+    ]
+   },
+   {
+    "name": "bass-tab",
+    "pipeline": "tab",
+    "description": "The bass line as tablature; BS-RoFormer SW bass stem (or the recording itself), Basic Pitch, a string and fret per note. Kept for older apps: it is the tab profile with a bass",
+    "validated": false,
+    "stages": [
+     "beats",
+     "stems",
+     "transcribe.bass.basic-pitch",
+     "transcribe.bass.swift-f0",
+     "notes",
+     "arrange",
+     "export"
+    ]
+   }
+  ]
+ },
+ "/v1/references": {
+  "status": 200,
+  "body": []
+ },
+ "/v1/registry/adapters": {
+  "status": 200,
+  "body": [
+   {
+    "name": "beat-this",
+    "version": "0.1.0",
+    "fingerprint": "5c2f9d7402a4a973f604516cdec24b45ab3f23bce5de301f83227cca2388273f",
+    "heavy": true,
+    "device": "cpu",
+    "licence": "MIT",
+    "models": [
+     {
+      "name": "beat_this-final0.ckpt",
+      "sha256": "8c328b45f59d8dd3dff219253ff6a8d6482be57d0133a29140e2febbf8eb8331",
+      "revision": null,
+      "bytes": 81058141,
+      "licence": "MIT",
+      "present": true
+     },
+     {
+      "name": "beat_this-small0.ckpt",
+      "sha256": "6074be2c4d490c5f6101fcc374a1ec72ae93456e23bb6019783b849f5dc7d47b",
+      "revision": null,
+      "bytes": 8451101,
+      "licence": "MIT",
+      "present": true
+     }
+    ]
+   },
+   {
+    "name": "mega53",
+    "version": "0.1.0",
+    "fingerprint": "e28e474b38067549198012bf3d3ad2ca2bef791efc32842fb00fae395a5c127e",
+    "heavy": true,
+    "device": "cpu",
+    "licence": "not stated",
+    "models": [
+     {
+      "name": "mega53/mvsep_mega_model_bs_roformer_53_stems_v1.ckpt",
+      "sha256": "c62820893bbf86d4e734f966bd142d9157cfc8bb8e79e9d8f9ea553f3ff3519f",
+      "revision": null,
+      "bytes": 1368919887,
+      "licence": "not stated",
+      "present": true
+     },
+     {
+      "name": "mega53/mvsep_mega_model_bs_roformer_53_stems.yaml",
+      "sha256": "7e198062a251587088adb91215a4f44ab59e67bd62fcc805cf54d6e7dfc51103",
+      "revision": null,
+      "bytes": 4184,
+      "licence": "not stated",
+      "present": true
+     }
+    ]
+   },
+   {
+    "name": "separator",
+    "version": "0.1.0",
+    "fingerprint": "2d476a216058036829d079443ff9514472694e627018258a5a80531757cfd15d",
+    "heavy": true,
+    "device": "cpu",
+    "licence": "not stated",
+    "models": [
+     {
+      "name": "separator/BS-Roformer-SW.ckpt",
+      "sha256": "24e7d35ee9c64415673d3fd33e06a67cac2c103c5df6267ba1576459c775916e",
+      "revision": null,
+      "bytes": 699412152,
+      "licence": "not stated",
+      "present": true
+     },
+     {
+      "name": "separator/BS-Roformer-SW.yaml",
+      "sha256": "b558996f1e25eb48798bd6502505a5de94c4f966d6edfb1a0420f06cc40b501a",
+      "revision": null,
+      "bytes": 4653,
+      "licence": "not stated",
+      "present": true
+     }
+    ]
+   },
+   {
+    "name": "muscriptor",
+    "version": "0.1.0",
+    "fingerprint": "494aac279acf6a6a264393add4dd0df6292495243e1ef447aaa50900addd6082",
+    "heavy": true,
+    "device": "cpu",
+    "licence": "CC BY-NC 4.0",
+    "models": [
+     {
+      "name": "MuScriptor/muscriptor-medium",
+      "sha256": null,
+      "revision": "f32236969308476e01fd3aae67357de5feb05a2d",
+      "bytes": null,
+      "licence": "CC BY-NC 4.0",
+      "present": true
+     }
+    ]
+   },
+   {
+    "name": "basic-pitch",
+    "version": "0.1.0",
+    "fingerprint": "d8c53953df9b2f73a1e74039f6465f807adcd5f14afd542f5c87ebf6ecd18184",
+    "heavy": false,
+    "device": "cpu",
+    "licence": "Apache-2.0",
+    "models": []
+   },
+   {
+    "name": "swift-f0",
+    "version": "0.1.0",
+    "fingerprint": "6982ccb9a75bf7052efe5d46a572b398c35896c10950dab41fb48d04c0c68c37",
+    "heavy": false,
+    "device": "cpu",
+    "licence": "MIT",
+    "models": []
+   },
+   {
+    "name": "swift-f0-contour",
+    "version": "0.1.0",
+    "fingerprint": "a892255577a99cafbc3a387faefa64d4a101299540f5e8fa4b492dac542ff057",
+    "heavy": false,
+    "device": "cpu",
+    "licence": "MIT",
+    "models": []
+   }
+  ]
+ },
+ "/v1/registry/datasets": {
+  "status": 200,
+  "body": [
+   {
+    "name": "choralebricks-brass4",
+    "path": "eval/choralebricks-brass4",
+    "licence": "CC-BY 4.0",
+    "source_url": "https://zenodo.org/records/20849469",
+    "bytes": 0,
+    "files": 0,
+    "items": 0,
+    "present": false,
+    "cached_outputs": [],
+    "download": "python -m brasscribe_eval.choralebricks (from the downloaded ChoraleBricks v1.1.0)"
+   },
+   {
+    "name": "slakh-trumpet",
+    "path": "eval/slakh-trumpet",
+    "licence": null,
+    "source_url": null,
+    "bytes": 0,
+    "files": 0,
+    "items": 0,
+    "present": false,
+    "cached_outputs": [],
+    "download": "python -m brasscribe_eval.slakh (from the downloaded BabySlakh)"
+   },
+   {
+    "name": "urmp-brass",
+    "path": "eval/urmp-brass",
+    "licence": null,
+    "source_url": null,
+    "bytes": 0,
+    "files": 0,
+    "items": 0,
+    "present": false,
+    "cached_outputs": [],
+    "download": "python -m brasscribe_eval.urmp (from the downloaded URMP dataset)"
+   }
+  ]
+ },
+ "/v1/sources": {
+  "status": 200,
+  "body": []
+ },
+ "/v1/suites": {
+  "status": 200,
+  "body": [
+   {
+    "name": "chorales-transcription",
+    "description": "transcription per model on ChoraleBricks brass quartets (cached MIDI)",
+    "cpu": true,
+    "requires": [
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "urmp-transcription",
+    "description": "transcription per model on URMP brass (cached MIDI)",
+    "cpu": true,
+    "requires": [
+     "eval/urmp-brass"
+    ]
+   },
+   {
+    "name": "slakh-transcription",
+    "description": "pipelines A and B on Slakh trumpet-lead songs (cached MIDI)",
+    "cpu": true,
+    "requires": [
+     "eval/slakh-trumpet"
+    ]
+   },
+   {
+    "name": "quant-chorales",
+    "description": "beat grid + quantizer vs notated positions, chorales",
+    "cpu": true,
+    "requires": [
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "quant-urmp",
+    "description": "beat grid + quantizer vs notated positions, URMP",
+    "cpu": true,
+    "requires": [
+     "eval/urmp-brass"
+    ]
+   },
+   {
+    "name": "melody",
+    "description": "melody top line from MuScriptor/Basic Pitch consensus",
+    "cpu": true,
+    "requires": [
+     "eval/slakh-trumpet",
+     "eval/urmp-brass",
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "consensus-chorales",
+    "description": "MuScriptor + Basic Pitch consensus on chorales (leave-one-song-out precision)",
+    "cpu": true,
+    "requires": [
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "consensus-chorales-retuned",
+    "description": "the same, with Basic Pitch on the recording retuned to A = 440",
+    "cpu": true,
+    "requires": [
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "consensus-urmp",
+    "description": "MuScriptor + Basic Pitch consensus on URMP brass",
+    "cpu": true,
+    "requires": [
+     "eval/urmp-brass"
+    ]
+   },
+   {
+    "name": "consensus-slakh",
+    "description": "four-source consensus on Slakh (both models on mix and SW stems)",
+    "cpu": true,
+    "requires": [
+     "eval/slakh-trumpet"
+    ]
+   },
+   {
+    "name": "solo-vote",
+    "description": "SwiftF0 / MuScriptor / Basic Pitch vote on Mega-53 solo stems (cached MIDI)",
+    "cpu": true,
+    "requires": [
+     "mega53-out-bench",
+     "eval/choralebricks-brass4",
+     "eval/slakh-trumpet"
+    ]
+   },
+   {
+    "name": "arrange",
+    "description": "minimal-band and quartet arrangers on ground-truth scores (no audio)",
+    "cpu": true,
+    "requires": [
+     "eval/choralebricks-brass4",
+     "eval/urmp-brass"
+    ]
+   },
+   {
+    "name": "quartet-audio",
+    "description": "quartet from cached transcriptions of the ChoraleBricks recordings, vs the chorale",
+    "cpu": true,
+    "requires": [
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "mikkel-golden",
+    "description": "re-arrange cached Mikkel layers and compare with the golden output",
+    "cpu": true,
+    "requires": [
+     "mikkel/repro/layers",
+     "golden/mikkel-arranged-band"
+    ]
+   },
+   {
+    "name": "readability",
+    "description": "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
+    "cpu": true,
+    "requires": [
+     "mikkel/repro/layers",
+     "golden/mikkel-arranged-band"
+    ]
+   },
+   {
+    "name": "solo-instruments",
+    "description": "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
+    "cpu": true,
+    "requires": []
+   },
+   {
+    "name": "fast-notes",
+    "description": "fast runs, repeated notes and two-note alternations through the solo path, stage by stage (frozen SwiftF0/Basic Pitch/Beat This! outputs on real trumpet samples)",
+    "cpu": true,
+    "requires": []
+   },
+   {
+    "name": "seat-voices",
+    "description": "each seat's voice picked out of the brass4 mixes by its range (MuScriptor, Basic Pitch, consensus)",
+    "cpu": true,
+    "requires": [
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "durations",
+    "description": "written durations and staccato from performed lengths (duration_bench)",
+    "cpu": true,
+    "requires": [
+     "eval/urmp-brass",
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "freetime",
+    "description": "free-time detection on rubato/fermata material (freetime_bench)",
+    "cpu": true,
+    "requires": [
+     "eval/urmp-brass",
+     "eval/choralebricks-brass4"
+    ]
+   },
+   {
+    "name": "solo-ondevice",
+    "description": "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
+    "cpu": true,
+    "requires": [
+     "runs/apple/entertainer-ref",
+     "runs/apple/entertainer-tpt1-30s.wav"
+    ]
+   },
+   {
+    "name": "solo-beat-model",
+    "description": "the solo path on Beat This! small0 (the device's) and final0 beats of every single part of URMP and ChoraleBricks: onset and written-position F1, bar position and metre per checkpoint (cached beats and transcriptions)",
+    "cpu": true,
+    "requires": [
+     "runs/music-core/solo-beats"
+    ]
+   },
+   {
+    "name": "bass-tab",
+    "description": "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, range, playability, tempo and meter, hand travel (cached model outputs)",
+    "cpu": true,
+    "requires": [
+     "eval/slakh-bass"
+    ]
+   },
+   {
+    "name": "guitar-tab",
+    "description": "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and reporting players apart) and on Slakh's guitars in a song: notes, chords, string agreement, playability (cached model outputs)",
+    "cpu": true,
+    "requires": [
+     "eval/guitarset"
+    ]
+   },
+   {
+    "name": "ukulele-tab",
+    "description": "the tab profile with a ukulele (high G, low G, baritone) on rendered passages, alone and separated from a mix: notes, chords, the string of each note, playability (cached model outputs)",
+    "cpu": true,
+    "requires": [
+     "eval/small-tab"
+    ]
+   },
+   {
+    "name": "mandolin-tab",
+    "description": "the tab profile with a mandolin on rendered passages, alone and separated from a mix (cached model outputs)",
+    "cpu": true,
+    "requires": [
+     "eval/small-tab"
+    ]
+   },
+   {
+    "name": "guitar-rendered-tab",
+    "description": "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two groups the rules were chosen with and two held out (cached model outputs)",
+    "cpu": true,
+    "requires": [
+     "eval/small-tab"
+    ]
+   },
+   {
+    "name": "meter-tab",
+    "description": "the bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4: rendered passages, the beats in a bar as tracked and as written (cached model outputs)",
+    "cpu": true,
+    "requires": [
+     "eval/meter-tab"
+    ]
+   },
+   {
+    "name": "musescore-roundtrip",
+    "description": "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
+    "cpu": true,
+    "requires": [
+     "mikkel/repro/layers",
+     "golden/mikkel-arranged-band"
+    ]
+   }
+  ]
+ },
+ "/v1/suites/history?limit=500": {
+  "status": 200,
+  "body": [
+   {
+    "time": 1767430800.0,
+    "run_id": "20260103T090000000000Z",
+    "target": "cpu",
+    "suite": "quant-urmp",
+    "status": "fail",
+    "reason": null,
+    "metrics": {
+     "beat.f1": 0.889,
+     "downbeat.f1": 0.876
+    },
+    "checks": [
+     {
+      "metric": "beat.f1",
+      "value": 0.889,
+      "baseline": 0.912,
+      "tolerance": 0.01,
+      "status": "regressed"
+     },
+     {
+      "metric": "downbeat.f1",
+      "value": 0.876,
+      "baseline": 0.871,
+      "tolerance": 0.01,
+      "status": "pass"
+     }
+    ],
+    "manifest": "bench/history/20260103T090000000000Z.json",
+    "git_sha": "0000003000000000000000000000000000000000",
+    "device": "cpu"
+   },
+   {
+    "time": 1767430800.0,
+    "run_id": "20260103T090000000000Z",
+    "target": "cpu",
+    "suite": "quant-chorales",
+    "status": "pass",
+    "reason": null,
+    "metrics": {
+     "beat.f1": 0.97
+    },
+    "checks": [
+     {
+      "metric": "beat.f1",
+      "value": 0.97,
+      "baseline": 0.97,
+      "tolerance": 0.01,
+      "status": "pass"
+     }
+    ],
+    "manifest": "bench/history/20260103T090000000000Z.json",
+    "git_sha": "0000003000000000000000000000000000000000",
+    "device": "cpu"
+   },
+   {
+    "time": 1767344400.0,
+    "run_id": "20260102T090000000000Z",
+    "target": "cpu",
+    "suite": "quant-urmp",
+    "status": "pass",
+    "reason": null,
+    "metrics": {
+     "beat.f1": 0.915,
+     "downbeat.f1": 0.874
+    },
+    "checks": [
+     {
+      "metric": "beat.f1",
+      "value": 0.915,
+      "baseline": 0.912,
+      "tolerance": 0.01,
+      "status": "pass"
+     },
+     {
+      "metric": "downbeat.f1",
+      "value": 0.874,
+      "baseline": 0.871,
+      "tolerance": 0.01,
+      "status": "pass"
+     }
+    ],
+    "manifest": "bench/history/20260102T090000000000Z.json",
+    "git_sha": "0000002000000000000000000000000000000000",
+    "device": "cpu"
+   },
+   {
+    "time": 1767344400.0,
+    "run_id": "20260102T090000000000Z",
+    "target": "cpu",
+    "suite": "quant-chorales",
+    "status": "pass",
+    "reason": null,
+    "metrics": {
+     "beat.f1": 0.97
+    },
+    "checks": [
+     {
+      "metric": "beat.f1",
+      "value": 0.97,
+      "baseline": 0.97,
+      "tolerance": 0.01,
+      "status": "pass"
+     }
+    ],
+    "manifest": "bench/history/20260102T090000000000Z.json",
+    "git_sha": "0000002000000000000000000000000000000000",
+    "device": "cpu"
+   },
+   {
+    "time": 1767258000.0,
+    "run_id": "20260101T090000000000Z",
+    "target": "cpu",
+    "suite": "quant-urmp",
+    "status": "pass",
+    "reason": null,
+    "metrics": {
+     "beat.f1": 0.912,
+     "downbeat.f1": 0.871
+    },
+    "checks": [
+     {
+      "metric": "beat.f1",
+      "value": 0.912,
+      "baseline": 0.912,
+      "tolerance": 0.01,
+      "status": "pass"
+     },
+     {
+      "metric": "downbeat.f1",
+      "value": 0.871,
+      "baseline": 0.871,
+      "tolerance": 0.01,
+      "status": "pass"
+     }
+    ],
+    "manifest": "bench/history/20260101T090000000000Z.json",
+    "git_sha": "0000001000000000000000000000000000000000",
+    "device": "cpu"
+   },
+   {
+    "time": 1767258000.0,
+    "run_id": "20260101T090000000000Z",
+    "target": "cpu",
+    "suite": "quant-chorales",
+    "status": "pass",
+    "reason": null,
+    "metrics": {
+     "beat.f1": 0.97
+    },
+    "checks": [
+     {
+      "metric": "beat.f1",
+      "value": 0.97,
+      "baseline": 0.97,
+      "tolerance": 0.01,
+      "status": "pass"
+     }
+    ],
+    "manifest": "bench/history/20260101T090000000000Z.json",
+    "git_sha": "0000001000000000000000000000000000000000",
+    "device": "cpu"
+   }
+  ]
+ }
+}
