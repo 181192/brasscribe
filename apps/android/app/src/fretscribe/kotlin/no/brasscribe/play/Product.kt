@@ -12,6 +12,7 @@ import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.fret.CheckTheSongScreen
 import no.brasscribe.play.fret.ComputerProfiles
+import no.brasscribe.play.fret.PracticeRecordings
 import no.brasscribe.play.fret.SongAnswers
 import no.brasscribe.play.fret.TabScreen
 import no.brasscribe.play.fret.WhatIsThisScreen
@@ -91,6 +92,17 @@ object Product {
         if (vm.profile.value?.writesTab != true || SongAnswers.of(vm.source.value).again == null) return null
         val written = vm.result.value ?: return null
         return written.audioId ?: written.jobId?.let { engine.job(it).audioId }
+    }
+
+    /**
+     * The song's recording as practice keeps it on the phone, for a song whose recording the computer no longer
+     * has: it is sent again. Named by the song, with the kind of file it is (the copy has no name of its own).
+     */
+    fun keptRecording(vm: PlayViewModel): no.brasscribe.play.engine.UploadSource? {
+        val job = vm.result.value?.jobId ?: return null
+        val file = PracticeRecordings.of(vm.getApplication()).find(job) ?: return null
+        val name = (vm.source.value?.name ?: vm.result.value?.composition?.title).orEmpty().substringBeforeLast('.').ifBlank { "recording" }
+        return no.brasscribe.play.engine.UploadSource.of(file, "$name.${PracticeRecordings.extensionOf(file)}")
     }
 
     /** The computer, as the transcribing screen names it: "Fretscribe on Kari's Mac", never its address. */

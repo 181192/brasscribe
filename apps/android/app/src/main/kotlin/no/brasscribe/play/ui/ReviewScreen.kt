@@ -166,10 +166,12 @@ fun ReviewScreen(vm: PlayViewModel) {
     // Review checks a transcription; an opened score has nothing to check against.
     val composition = r.composition ?: return
     val voices = composition.voices.filter { it.notes.isNotEmpty() }
+    // No note to check: such a result opens on the problem screen, never here.
+    val firstVoice = voices.firstOrNull() ?: return
     // "Yours": the layer your part follows (the tune, the bass line, ...), or none when your part is arranged.
     val mine = yoursInReview(vm, r, composition)
     val melodyVoice = voices.firstOrNull { it.role == VoiceRole.MELODY }?.id
-    var voiceId by rememberSaveable { mutableStateOf(mine.voice ?: melodyVoice ?: voices.first().id) }
+    var voiceId by rememberSaveable { mutableStateOf(mine.voice ?: melodyVoice ?: firstVoice.id) }
     val checked = checkedMap[voiceId].orEmpty()
     val lang = currentLang()
     val view = remember(r, voiceId, checked) { partViewFor(composition, voiceId, checked, vm.container.core) }

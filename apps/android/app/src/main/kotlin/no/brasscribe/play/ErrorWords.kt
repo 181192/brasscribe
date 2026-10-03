@@ -9,6 +9,13 @@ class EngineJobFailedException(message: String) : Exception(message)
 /** The app has no computer to send the job to. */
 class NoCompanionException : Exception("no computer paired")
 
+/** A transcription that found no notes at all: there is nothing to check, and no score. */
+class NoNotesFoundException : Exception("no notes were found in the recording")
+
+/** [r] is to be checked note by note, and holds no note to check: it opens on the problem screen instead. */
+fun foundNoNotes(r: TranscriptionResult, then: Screen): Boolean =
+    then == Screen.REVIEW && r.composition?.voices?.all { it.notes.isEmpty() } == true
+
 /** The take is longer than the phone's free memory holds for a band draft. */
 class DraftTooLongException(detail: String) : Exception(detail)
 
@@ -27,6 +34,8 @@ object ErrorWords {
         is LeadSeatRefusedException -> R.string.lead_seat_refused
         is NoCompanionException -> R.string.where_companion_missing
         is EngineJobFailedException -> R.string.error_engine_failed
+        is RecordingGoneException -> R.string.error_recording_gone
+        is NoNotesFoundException -> R.string.error_no_notes
         is EngineException -> when (e.code) {
             "quartet_needs_group" -> R.string.lineup_quartet_needs_group
             "percussion_solo" -> R.string.percussion_solo_refused

@@ -218,6 +218,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         ScoreEntry.merge(local, jobs)
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
     val openingScore = MutableStateFlow<String?>(null)
+    /** The entry last tapped that opens in the other app (its id): its row says so, where the finger is. */
+    val opensElsewhere = MutableStateFlow<String?>(null)
     /** "Open on the music stand" from the library: the score opens straight onto the stand (the entry id). */
     val standFromLibrary = MutableStateFlow<String?>(null)
     /** The library row that gets the focus back when a stand opened from the library closes. */
@@ -677,6 +679,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     p == Profile.BRASS_BAND -> transcribeBandDraft(s)
                     else -> transcribeOnDevice(s)
                 }
+                // Check the notes needs a note to check (a very low recording can have none on the phone).
+                if (foundNoNotes(r, Product.afterTranscription(r))) throw NoNotesFoundException()
                 val ignored = seatIgnored(r)
                 reviewChanges.value = emptyMap()
                 draftBehind = null
@@ -933,21 +937,32 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, Product.computerName(this)))
         // Streamed from the file: memory stays flat whatever its size (a video arrives here as its sound only).
+        // The phone's copy: the recording opened, else the one the product kept for the song.
+        val copy = withContext(Dispatchers.IO) { s.file?.takeIf { it.isFile }?.let { UploadSource.of(it) } ?: Product.keptRecording(this@PlayViewModel) }
         // A source with no file (tests) sends an empty upload, as before.
-        val upload = s.file?.let { UploadSource.of(it) } ?: UploadSource.of(s.name, ByteArray(0))
-        // A product that writes a song down again names the recording the computer already holds: nothing is sent twice.
-        val audioId = Product.audioOnComputer(this, engine) ?: withContext(Dispatchers.IO) {
-            engine.uploadAudio(upload) { sent, total ->
-                if (total > 0) transcribe.update { it.copy(fraction = (sent.toDouble() / total).coerceIn(0.0, 1.0)) }
-            }
-        }.audioId
-        transcribe.update { it.copy(fraction = 0.0) }
-        seatFellBack = false
-        val created = engine.createJobForSeat(
-            // The product adds what its own profiles take (a bass tab's instrument and tuning).
-            Product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
-                title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
-        ).also { seatFellBack = it.second }.first
+        val upload = copy ?: s.file?.let { UploadSource.of(it) } ?: UploadSource.of(s.name, ByteArray(0))
+        // A product that writes a song down again names the recording the computer already holds: nothing is sent twice,
+        // unless the computer no longer has it.
+        val (audioId, created) = jobFromRecording(
+            held = { Product.audioOnComputer(this, engine) },
+            canSend = copy != null,
+            send = {
+                withContext(Dispatchers.IO) {
+                    engine.uploadAudio(upload) { sent, total ->
+                        if (total > 0) transcribe.update { it.copy(fraction = (sent.toDouble() / total).coerceIn(0.0, 1.0)) }
+                    }
+                }.audioId
+            },
+            resent = { say(R.string.recording_sent_again) },
+        ) { audioId ->
+            transcribe.update { it.copy(fraction = 0.0) }
+            seatFellBack = false
+            engine.createJobForSeat(
+                // The product adds what its own profiles take (a bass tab's instrument and tuning).
+                Product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
+                    title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
+            ).also { seatFellBack = it.second }.first
+        }
         engineJobId = created.id
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
         transcribe.update { it.copy(steps = listOf(Step.UPLOAD) + kinds.ifEmpty { listOf(Step.BEATS, Step.STEMS, Step.LAYERS, Step.TRANSCRIBE, Step.ARRANGE, Step.EXPORT) }) }
@@ -1021,7 +1036,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
         val opening = entry.opening(review, stand, Product::makes)
         // The computer's list also holds what the other app made: that opens there, not here, and leaves nothing behind.
-        if (!opening.here) { say(R.string.other_product_opens); return }
+        if (!opening.here) { opensElsewhere.value = entry.id; say(R.string.other_product_opens); return }
         standFromLibrary.value = opening.standFor
         entry.saved?.let { openSavedScore(it, review); return }
         val jobId = entry.jobId ?: return

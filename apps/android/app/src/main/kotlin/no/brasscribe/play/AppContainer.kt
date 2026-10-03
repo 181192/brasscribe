@@ -8,7 +8,6 @@ import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import java.net.InetAddress
-import io.ktor.client.engine.okhttp.OkHttp
 import no.brasscribe.play.engine.EngineApi
 import no.brasscribe.play.engine.FixtureEngineApi
 import no.brasscribe.play.engine.FixtureSource
@@ -217,9 +216,7 @@ class AppContainer(private val context: Context) {
 
     fun newEngineClient(url: String, token: String? = null): KtorEngineApi = KtorEngineApi(url, httpEngine(lanNetwork(url)), token)
 
-    private fun httpEngine(network: Network?) = OkHttp.create {
-        if (network != null) config { socketFactory(network.socketFactory) }
-    }
+    private fun httpEngine(network: Network?) = no.brasscribe.play.connection.EngineHttp.engine(network?.socketFactory)
 
     /**
      * The network whose link owns a private engine address. When Wi-Fi is weak, Android can make mobile

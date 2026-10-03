@@ -36,6 +36,10 @@ object Product {
     @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
     suspend fun audioOnComputer(vm: PlayViewModel, engine: no.brasscribe.play.engine.EngineApi): String? = null
 
+    /** A copy of the recording kept apart from the one opened: Brasscribe keeps none. */
+    @Suppress("UNUSED_PARAMETER")
+    fun keptRecording(vm: PlayViewModel): no.brasscribe.play.engine.UploadSource? = null
+
     /** The computer, as the transcribing screen names it. */
     fun computerName(vm: PlayViewModel): String = vm.container.engineLabel()
 

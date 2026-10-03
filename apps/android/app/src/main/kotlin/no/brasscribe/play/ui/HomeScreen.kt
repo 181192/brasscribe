@@ -148,6 +148,14 @@ fun HomeScreen(vm: PlayViewModel) {
     val busy by vm.busy.collectAsState()
     val scores by vm.scores.collectAsState()
     val opening by vm.openingScore.collectAsState()
+    // A tapped row that opens in the other app says so itself, as long as the status line does: the line is at the
+    // top of the page, out of sight when the row is far down the list.
+    val elsewhere by vm.opensElsewhere.collectAsState()
+    LaunchedEffect(elsewhere) {
+        if (elsewhere == null) return@LaunchedEffect
+        kotlinx.coroutines.delay(STATUS_MS)
+        vm.opensElsewhere.value = null
+    }
     val c = BrasscribeTheme.colors
     val pickFile = rememberFilePicker(vm)
     val pickScore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::openScoreUri) }
@@ -233,7 +241,11 @@ fun HomeScreen(vm: PlayViewModel) {
                             no.brasscribe.play.ScoreTitles.display(entry.title, entry.updated),
                             { vm.openEntry(entry) },
                             if (entry.id == focusEntry) Modifier.focusRequester(rowFocus) else Modifier,
-                            subtitle = if (opening == entry.id) stringResource(R.string.opening_score) else scoreSubtitle(entry),
+                            subtitle = when (entry.id) {
+                                opening -> stringResource(R.string.opening_score)
+                                elsewhere -> stringResource(R.string.other_product_opens)
+                                else -> scoreSubtitle(entry)
+                            },
                             icon = if (entry.onComputer) R.drawable.ic_bc_computer else R.drawable.ic_bc_score,
                             chevron = false,
                             enabled = opening == null,
