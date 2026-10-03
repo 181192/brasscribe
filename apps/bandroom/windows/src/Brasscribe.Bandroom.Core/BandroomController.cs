@@ -70,8 +70,10 @@ public sealed class BandroomController
     public string? UpdateFailure { get; set; }
     /// <summary>Why setup stopped (details for the tech person); Finish setting up tries again.</summary>
     public string? SetupFailure { get; set; }
-    /// <summary>Set when setup or an update stopped because pixi refused the workspace (too old for it).</summary>
+    /// <summary>Set when first-run setup stopped because pixi refused the workspace (too old for it).</summary>
     public PixiRefusal? SetupRefusal { get; set; }
+    /// <summary>Set with <see cref="UpdateFailure"/> when pixi refused the updated workspace; the previous engine stays.</summary>
+    public PixiRefusal? UpdateRefusal { get; set; }
     /// <summary>The app's own workspace stamp, for the tech-person details.</summary>
     public string? WorkspaceStamp { get; set; }
     /// <summary>Where a check that went wrong is written (engine.log).</summary>
@@ -211,10 +213,13 @@ public sealed class BandroomController
     public BandroomSnapshot Build()
     {
         var problems = new List<Problem>();
-        var refusal = (_sup.Problem == EngineProblem.PixiTooOld ? _sup.Refusal : null) ?? SetupRefusal;
+        // "Can't start" only while no engine runs: a refused start, or a refused setup with nothing started since.
+        var refusal = _sup.Problem == EngineProblem.PixiTooOld ? _sup.Refusal : null;
+        if (refusal is null && _sup.State is not (EngineState.Running or EngineState.Starting)) refusal = SetupRefusal;
         if (refusal is not null) problems.Add(Problems.PixiTooOld(_s, refusal));
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
-        if (UpdateFailure is { } failure && !Updating) problems.Add(Problems.UpdateFailed(_s, failure));
+        if (UpdateFailure is { } failure && !Updating)
+            problems.Add(UpdateRefusal is { } refused ? Problems.UpdateRefused(_s, refused) : Problems.UpdateFailed(_s, failure));
         if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
         string? downloading = null;

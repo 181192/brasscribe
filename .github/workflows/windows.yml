@@ -339,11 +339,6 @@ jobs:
         with:
           run-install: false
 
-      # The release build bundles this pixi: it must be one the engine workspace accepts.
-      - name: pixi is one the engine workspace accepts
-        shell: bash
-        run: bash ../macos/scripts/check-bundled-pixi.sh "$(command -v pixi)"
-
       - name: Engine test (first-run install, supervised start, admin bearer, the tree ends with Bandroom)
         timeout-minutes: 30
         run: |

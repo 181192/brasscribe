@@ -314,15 +314,15 @@ final class AppModel {
         if case .running = phase, monitor.isUnresponsive { list.append(.notResponding) }
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
         if let refusal = pixiRefusal { list.append(.pixiTooOld(refusal)) }
-        if updateFailure != nil, !updater.isUpdating, updater.pixiRefusal == nil { list.append(.updateFailed) }
+        if updateFailure != nil, !updater.isUpdating { list.append(.afterFailedUpdate(refusal: updater.pixiRefusal)) }
         if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }
         return list
     }
 
-    /// pixi refused the engine workspace during setup or an update (a refused start is the supervisor's failure).
+    /// pixi refused the engine workspace during first-run setup, so there is no engine to run. (A refused start is the
+    /// supervisor's failure; a refused update keeps the previous engine, `Problem.updateRefused`.)
     var pixiRefusal: PixiRefusal? {
         if case .failed = bootstrapper.phase, let r = bootstrapper.pixiRefusal { return r }
-        if updateFailure != nil, let r = updater.pixiRefusal { return r }
         return nil
     }
 
@@ -421,7 +421,9 @@ final class AppModel {
         }
         lines.append("Engine build: \(monitor.health?.build ?? "–"); this app's workspace: \(bundledStamp?.short ?? "–")")
         if let updateFailure { lines.append("Engine update failed: \(updateFailure)") }
-        if let r = pixiRefusal ?? { if case .pixiTooOld(let r) = failure { r } else { nil } }() {
+        let refusal = pixiRefusal ?? (updateFailure != nil ? updater.pixiRefusal : nil)
+            ?? { if case .pixiTooOld(let r) = failure { r } else { nil } }()
+        if let r = refusal {
             lines.append("pixi \(supervisor.configuration.pixi?.path ?? "–") refused the engine workspace: \(r.message)")
         }
         if let port = supervisor.port { lines.append("Port: \(port)") }

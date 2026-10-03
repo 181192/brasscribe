@@ -986,7 +986,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hent den nyeste Bandroom"
+            "value": "Last ned den nyeste Bandroom"
           }
         }
       }
@@ -2167,6 +2167,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før."
+          }
+        }
+      }
+    },
+    "The previous version is still running, so phones can keep sending recordings. This copy of Bandroom came with a setup tool that is too old for the update; the latest Bandroom has one that works.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før. Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen. Den nyeste Bandroom har et som virker."
           }
         }
       }

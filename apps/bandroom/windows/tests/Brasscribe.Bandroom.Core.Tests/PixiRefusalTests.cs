@@ -114,7 +114,7 @@ public sealed class PixiRefusalTests : IDisposable
 
     [Theory]
     [InlineData("en", "Brasscribe can't start", "Get the latest Bandroom")]
-    [InlineData("nb", "Brasscribe kan ikke starte", "Hent den nyeste Bandroom")]
+    [InlineData("nb", "Brasscribe kan ikke starte", "Last ned den nyeste Bandroom")]
     public async Task A_refused_start_needs_attention_with_the_way_forward_and_pixis_words_for_the_tech_person(
         string language, string title, string fix)
     {
@@ -153,5 +153,76 @@ public sealed class PixiRefusalTests : IDisposable
         var info = StateRules.Describe(ctl.Build().Inputs, Strings.En);
         Assert.Equal(DisplayState.NeedsAttention, info.State);
         Assert.Equal(ProblemKind.PixiTooOld, info.Problem!.Kind);
+    }
+
+    /// <summary>A supervisor whose engine answers while its process is there.</summary>
+    private EngineSupervisor RunningSupervisor(FakeLauncher launcher) => new(
+        launcher, new FakePorts(),
+        (_, _) => Task.FromResult<HealthInfo?>(launcher.Started.Count > 0 && !launcher.Last.WaitForExitAsync().IsCompleted
+            ? new HealthInfo("ok", "0.9.4", "cpu", false, "3f9c2a7e11", "Brasscribe on Kari's PC")
+            : null),
+        _ => new ProcessSpec("pixi", [], _dir, new Dictionary<string, string>()), new EngineLog(null, _time), _time);
+
+    [Theory]
+    [InlineData("en", "Brasscribe couldn't finish updating", "Get the latest Bandroom")]
+    [InlineData("nb", "Brasscribe fikk ikke fullført oppdateringen", "Last ned den nyeste Bandroom")]
+    public async Task A_refused_update_with_the_previous_engine_running_is_not_cant_start(string language, string title, string fix)
+    {
+        var s = language == "nb" ? Strings.Nb : Strings.En;
+        var launcher = new FakeLauncher();
+        await using var sup = RunningSupervisor(launcher);
+        await sup.StartAsync();
+        await Until(() => sup.State == EngineState.Running);
+        var ctl = new BandroomController(sup, _ => new FakeEngine(), new Metrics(), s, new BandroomPaths(_dir),
+            new MachineInfo("Kari's PC", "Health_Speed_Cpu", "CPU", []))
+        {
+            UpdateFailure = "pixi install -e default exited with 1",
+            UpdateRefusal = PixiRefusal.Find(Refused),
+        };
+        var snap = ctl.Build();
+        var info = StateRules.Describe(snap.Inputs, s);
+        Assert.Equal(DisplayState.NeedsAttention, info.State);
+        Assert.Equal(ProblemKind.UpdateRefused, info.Problem!.Kind);
+        Assert.Equal(title, info.Problem.Title);
+        Assert.Equal(s["Update_Refused_Why"], info.StatusSub);
+        Assert.Equal(fix, info.PrimaryLabel);
+        Assert.DoesNotContain(snap.Inputs.Problems, p => p.Kind == ProblemKind.PixiTooOld);
+
+        // The fix opens the latest release; the expander shows the problem and pixi's words.
+        var actions = new FakeActions();
+        var vm = new FlyoutViewModel(s, actions, new RecordingAnnouncer(), _time);
+        vm.Apply(snap);
+        Assert.StartsWith(title + Environment.NewLine, vm.TechText, StringComparison.Ordinal);
+        Assert.Contains(Refused[0], vm.TechText, StringComparison.Ordinal);
+        await vm.PrimaryCommand.ExecuteAsync(null);
+        Assert.Contains("fix:UpdateRefused", actions.Calls);
+
+        // Without pixi's words it stays the plain update failure, with Try again.
+        ctl.UpdateRefusal = null;
+        Assert.Equal(ProblemKind.UpdateFailed, StateRules.Describe(ctl.Build().Inputs, s).Problem!.Kind);
+    }
+
+    [Fact]
+    public async Task A_setup_refusal_is_not_shown_once_an_engine_runs()
+    {
+        var launcher = new FakeLauncher();
+        await using var sup = RunningSupervisor(launcher);
+        var ctl = Controller(sup, Strings.En);
+        ctl.SetupRefusal = PixiRefusal.Find(Refused);
+        Assert.Equal(ProblemKind.PixiTooOld, StateRules.Describe(ctl.Build().Inputs, Strings.En).Problem!.Kind);
+        await sup.StartAsync();
+        await Until(() => sup.State == EngineState.Running);
+        Assert.DoesNotContain(ctl.Build().Inputs.Problems, p => p.Kind == ProblemKind.PixiTooOld);
+    }
+
+    [Fact]
+    public void The_tech_details_lead_with_the_problem_shown()
+    {
+        var vm = new FlyoutViewModel(Strings.En, new FakeActions(), new RecordingAnnouncer(), _time);
+        var tech = new TechDetails(["192.0.2.20"], null, "–", "CPU", null, @"C:\data");
+        Assert.DoesNotContain("can't start", vm.FormatTech(tech), StringComparison.Ordinal);
+        var shown = vm.FormatTech(tech, Problems.PixiTooOld(Strings.En, PixiRefusal.Find(Refused)!));
+        Assert.StartsWith("Brasscribe can't start" + Environment.NewLine, shown, StringComparison.Ordinal);
+        Assert.Contains(Refused[0], shown, StringComparison.Ordinal);
     }
 }

@@ -198,7 +198,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
         }
         else HasHealth = false;
         SpeedCaption = _s[snap.SpeedKey];
-        TechText = FormatTech(snap.Tech);
+        TechText = FormatTech(snap.Tech, info.Problem);
 
         if (_lastState is { } last && last != info.State)
             _announcer.Announce(info.Problem is { } p ? StatusWord + ": " + p.Title : StatusWord);
@@ -222,10 +222,12 @@ public sealed partial class FlyoutViewModel : ObservableObject
             DevicesSummary = DeviceText.Summary(rows.Count(r => r.IsOnline), rows.Count, _s);
     }
 
-    public string FormatTech(TechDetails t)
+    /// <summary>The tech person's details: the problem shown, if any (its title and details), then the readings.</summary>
+    public string FormatTech(TechDetails t, Problem? problem = null)
     {
         var inv = CultureInfo.InvariantCulture;
         var sb = new StringBuilder();
+        if (problem is not null) sb.AppendLine(problem.Title).AppendLine(problem.Details).AppendLine();
         string[] labels = ["Tech_Address", "Tech_Port", "Tech_Version", "Tech_Build", "Tech_Workspace", "Tech_Device", "Tech_Server", "Tech_Data"];
         int width = Math.Max(10, labels.Max(k => _s[k].Length) + 1);
         string pad(string label) => label.PadRight(width);
@@ -283,11 +285,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
     {
         var sb = new StringBuilder();
         sb.AppendLine(Header).AppendLine(StatusWord);
-        if (_snapshot is { } s)
-        {
-            if (StateRules.Describe(s.Inputs, _s).Problem is { } p) sb.AppendLine(p.Title).AppendLine(p.Details);
-            sb.AppendLine(FormatTech(s.Tech));
-        }
+        if (_snapshot is { } s) sb.AppendLine(FormatTech(s.Tech, StateRules.Describe(s.Inputs, _s).Problem));
         _actions.CopyText(sb.ToString());
         _announcer.Announce(_s["Tech_Copied"]);
     }

@@ -23,6 +23,8 @@ ROWS = [
     ("Status_Updating_Sub", "Back in about a minute. Phones reconnect by themselves.", "Tilbake om et minutt. Telefonene kobler seg til igjen selv."),
     ("Update_Progress", "Updating Brasscribe… {0}%.", "Oppdaterer Brasscribe … {0} %."),  # (+) the engine after an app update
     ("Update_Failed_Title", "Brasscribe couldn't finish updating", "Brasscribe fikk ikke fullført oppdateringen"),  # (+)
+    ("Update_Refused_Why", "The previous version is still running, so phones can keep sending recordings. This copy of Bandroom came with a setup tool that is too old for the update; the latest Bandroom has one that works.",
+     "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før. Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen. Den nyeste Bandroom har et som virker."),  # (+)
     ("Update_Failed_Why", "The previous version is still running, so phones can keep sending recordings.",
      "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før."),  # (+)
     ("Status_Setup", "Setting up", "Gjøres klar"),
@@ -239,7 +241,7 @@ ROWS = [
     ("Pixi_Title", "Brasscribe can't start", "Brasscribe kan ikke starte"),
     ("Pixi_Why", "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.",
      "Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker."),
-    ("Pixi_Fix", "Get the latest Bandroom", "Hent den nyeste Bandroom"),
+    ("Pixi_Fix", "Get the latest Bandroom", "Last ned den nyeste Bandroom"),
     ("Error_Title", "Brasscribe stopped unexpectedly", "Brasscribe stoppet uventet"),
     ("Error_Why", "It tried to start three times. Recordings on your phones are safe.", "Den prøvde å starte tre ganger. Opptakene på telefonene er trygge."),
     ("Error_Copy", "Copy details for the tech person", "Kopier detaljer til den tekniske i bandet"),
