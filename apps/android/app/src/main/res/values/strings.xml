@@ -96,6 +96,10 @@
     <string name="record_started">Recording started</string>
     <string name="record_stopped">Recording stopped, %1$s</string>
     <string name="record_stop">Stop recording</string>
+    <string name="record_discard_title">Throw away this recording?</string>
+    <string name="record_discard_text">It is deleted from the phone. To keep it, choose Stop recording.</string>
+    <string name="record_discard_confirm">Throw away</string>
+    <string name="record_discard_keep">Keep recording</string>
     <string name="record_level">Sound level</string>
     <plurals name="record_limit">
         <item quantity="one">Recordings stop at %d hour.</item>

@@ -354,13 +354,26 @@ fun RecordScreen(vm: PlayViewModel) {
     // At the length limit, or when the input went away, the take ends as if Stop was pressed.
     LaunchedEffect(state.full, state.interrupted) { if (state.full || state.interrupted) finish() }
     // Back (the gesture or the button) throws the take away, as the toolbar's back does; while Stop is
-    // ending the take it waits for that.
-    fun leave() {
-        if (stopping) return
+    // ending the take it waits for that. While a take is being recorded it asks first: a stray swipe never loses it.
+    var confirmDiscard by remember { mutableStateOf(false) }
+    fun discard() {
         CaptureController.discard(context)
         vm.back()
     }
+    fun leave() {
+        if (stopping) return
+        if (state.recording) confirmDiscard = true else discard()
+    }
     androidx.activity.compose.BackHandler { leave() }
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text(stringResource(R.string.record_discard_title)) },
+            text = { Text(stringResource(R.string.record_discard_text)) },
+            confirmButton = { PlainButton(stringResource(R.string.record_discard_confirm), { confirmDiscard = false; if (!stopping) discard() }) },
+            dismissButton = { PlainButton(stringResource(R.string.record_discard_keep), { confirmDiscard = false }) },
+        )
+    }
     PlayScaffold(
         title = null,
         onBack = ::leave,
