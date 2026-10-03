@@ -28,6 +28,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
@@ -346,6 +347,43 @@ class PracticeTest : ScreenTest() {
         assertEquals("150%", words("fs-practice-speed"))
         rule.onNodeWithTag("fs-practice-faster").assertIsNotEnabled()
         rule.onNodeWithTag("fs-practice-slower").assertIsEnabled()
+    }
+
+    @Test
+    fun theSpeedIsLabelledAndHoldingItsButtonsSteps() {
+        practise()
+        // The word is shown and not read: the value's own name says it.
+        val label = rule.onNodeWithTag("fs-practice-speed-label").fetchSemanticsNode()
+        assertEquals("Speed", label.config[SemanticsProperties.Text].joinToString(" ") { it.text })
+        assertTrue("the word is for the eye only", label.config.contains(SemanticsProperties.HideFromAccessibility))
+        rule.onNodeWithTag("fs-practice-speed").assertContentDescriptionEquals("Speed 100%")
+        // A tap is one step.
+        rule.onNodeWithTag("fs-practice-slower").performClick()
+        rule.waitForIdle()
+        assertEquals(95, practice.speed)
+        // Held, it steps again and again until it is let go; letting go adds no step of its own.
+        rule.mainClock.autoAdvance = false
+        try {
+            rule.onNodeWithTag("fs-practice-slower").performTouchInput { down(center) }
+            pass(STEP_HOLD_MS / 2)
+            assertEquals("no step before the hold", 95, practice.speed)
+            pass(STEP_HOLD_MS / 2 + 3 * STEP_REPEAT_MS + STEP_REPEAT_MS / 2)
+            val held = practice.speed
+            assertTrue("held, it stepped again ($held %)", held in (95 - 5 * PracticeSpeed.STEP)..(95 - 3 * PracticeSpeed.STEP))
+            rule.onNodeWithTag("fs-practice-slower").performTouchInput { up() }
+            pass(1_000)
+            assertEquals("let go, it stops", held, practice.speed)
+            // Held long enough, it stops at the end.
+            rule.onNodeWithTag("fs-practice-faster").performTouchInput { down(center) }
+            pass(STEP_HOLD_MS + 40 * STEP_REPEAT_MS)
+            rule.onNodeWithTag("fs-practice-faster").performTouchInput { up() }
+            pass(500)
+            assertEquals(PracticeSpeed.MAX, practice.speed)
+        } finally {
+            rule.mainClock.autoAdvance = true
+        }
+        rule.waitForIdle()
+        assertEquals("150%", words("fs-practice-speed"))
     }
 
     @Test
