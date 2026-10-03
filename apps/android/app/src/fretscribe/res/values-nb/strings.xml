@@ -205,6 +205,8 @@
     <!-- Øving: opptaket er lyden til tabben -->
     <string name="fs_practice_to_start">Tilbake til starten</string>
     <string name="fs_practice_to_repeat_start">Tilbake til starten av gjentakelsen</string>
+    <string name="fs_practice_last_bar">Siste takt</string>
+    <string name="fs_practice_last_bar_of_repeat">Siste takt i gjentakelsen</string>
     <string name="fs_practice_bar_beat">Takt %1$s, slag %2$d</string>
     <string name="fs_practice_pickup_beat">Opptakten, slag %1$d</string>
     <string name="fs_practice_slower">Saktere</string>

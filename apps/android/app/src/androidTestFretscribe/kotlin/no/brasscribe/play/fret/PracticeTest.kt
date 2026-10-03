@@ -3,6 +3,9 @@ package no.brasscribe.play.fret
 import android.app.UiModeManager
 import android.graphics.Bitmap
 import android.graphics.Rect
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.net.Uri
 import android.view.KeyEvent
 import androidx.compose.ui.graphics.toArgb
@@ -193,6 +196,8 @@ class PracticeTest {
     private fun described(tag: String): String = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().let { n ->
         (n.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() + n.children.flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }).joinToString(" ")
     }
+    /** What a screen reader says of the state of [tag], beside its name. */
+    private fun state(tag: String): String? = rule.onNodeWithTag(tag).fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription)
     private fun isLive(tag: String): Boolean = rule.onNodeWithTag(tag).fetchSemanticsNode().config.contains(SemanticsProperties.LiveRegion)
 
     /** Where the recording is, in seconds, and whether it is playing, read together on the main thread. */
@@ -498,11 +503,17 @@ class PracticeTest {
         waitUntilPlaying(false)
         val inTheLast = now()
         assertTrue("in bar 4 ($inTheLast s)", clock.placeAt(inTheLast).let { it.bar == 3 && it.tick > 0 })
+        // Next bar says there is none: off, and why.
+        rule.onNodeWithTag("fs-practice-next").assertIsNotEnabled()
+        assertEquals("Last bar of the repeat", state("fs-practice-next"))
+        assertEquals("Next bar", described("fs-practice-next"))
         rule.onNodeWithTag("fs-practice-next").performClick()
         rule.waitForIdle()
         assertEquals(inTheLast, now(), 0.0)
         repeat(3) { rule.onNodeWithTag("fs-practice-previous").performClick() }
         assertEquals("Bar 3, beat 1", words("fs-practice-place"))
+        rule.onNodeWithTag("fs-practice-next").assertIsEnabled()
+        assertNull(state("fs-practice-next"))
 
         // Stop repeating.
         rule.onNodeWithTag("fs-practice-repeat").performClick()
@@ -617,6 +628,57 @@ class PracticeTest {
         repeat(30) { if (focusedTag() != "fs-practice-next") key(KeyEvent.KEYCODE_TAB) }
         key(KeyEvent.KEYCODE_DPAD_LEFT)
         assertEquals("Bar 5, beat 1", words("fs-practice-place"))
+        // Next bar pressed on to the last bar of the repeat: it says there is no bar on, and the focus stays on it.
+        // (The left arrow took the focus to Previous bar.)
+        repeat(30) { if (focusedTag() != "fs-practice-next") key(KeyEvent.KEYCODE_TAB) }
+        key(KeyEvent.KEYCODE_SPACE)
+        key(KeyEvent.KEYCODE_SPACE)
+        assertEquals("Bar 7, beat 1", words("fs-practice-place"))
+        assertEquals("fs-practice-next", focusedTag())
+        rule.onNodeWithTag("fs-practice-next").assertIsNotEnabled()
+        assertEquals("Last bar of the repeat", state("fs-practice-next"))
+        key(KeyEvent.KEYCODE_SPACE)
+        assertEquals("Bar 7, beat 1", words("fs-practice-place"))
+        assertEquals("fs-practice-next", focusedTag())
+        // Without the repeat, the last bar of the tab.
+        rule.runOnUiThread { practice.repeat(null); practice.toBar(clock.bars - 1) }
+        rule.waitForIdle()
+        assertEquals("fs-practice-next", focusedTag())
+        assertEquals("Last bar", state("fs-practice-next"))
+    }
+
+    @Test
+    fun aCallThatTakesTheSoundForAWhilePausesTheSongAndItGoesOnAfter() {
+        practise()
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        waitUntilPlaying()
+        rule.waitUntil(10_000) { now() > 0.5 }
+        // What a phone call does: it takes the sound for a while, from this app's own AudioManager.
+        val audio = rule.activity.getSystemService(AudioManager::class.java)
+        val call = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).build())
+            .build()
+        var abandoned = false
+        try {
+            assertEquals(AudioManager.AUDIOFOCUS_REQUEST_GRANTED, audio.requestAudioFocus(call))
+            waitUntilPlaying(false)
+            rule.waitForIdle()
+            assertEquals("Play", described("fs-practice-play"))
+            val held = now()
+            // Nothing moves while the call has the sound: no frames, and the recording stays where it is.
+            assertEquals("frames drawn in four seconds of the call", 0, framesWhileStill().let { if (it <= 2) 0 else it })
+            assertEquals(held, now(), 0.05)
+            // When the call ends, the song goes on by itself.
+            audio.abandonAudioFocusRequest(call)
+            abandoned = true
+            waitUntilPlaying()
+            rule.waitForIdle()
+            assertEquals("Pause", described("fs-practice-play"))
+            rule.waitUntil(10_000) { now() > held + 0.3 }
+        } finally {
+            // A later test never starts without the sound.
+            if (!abandoned) audio.abandonAudioFocusRequest(call)
+        }
     }
 
     @Test

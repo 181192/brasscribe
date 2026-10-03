@@ -21,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -41,9 +43,11 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +62,9 @@ import no.brasscribe.play.ui.PracticeChip
 
 /** The transport's targets: reachable with an instrument in the hands (design/fretscribe/system.md §1). */
 private val TRANSPORT = 64.dp
+
+/** A control that does nothing where it is looks off as Material draws one: its colour at this opacity. */
+private const val DISABLED_ALPHA = 0.38f
 
 /**
  * The player under the tab (design/fretscribe/system.md §4, Practice player), in its order: Play, back to
@@ -116,7 +123,18 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                     BcIcon(R.drawable.ic_bc_restart, stringResource(if (repeat != null) R.string.fs_practice_to_repeat_start else R.string.fs_practice_to_start))
                 }
                 IconButton({ practice.step(-1) }, Modifier.size(TRANSPORT).testTag("fs-practice-previous")) { BcIcon(R.drawable.ic_bc_previous_bar, stringResource(R.string.action_prev_bar)) }
-                IconButton({ practice.step(1) }, Modifier.size(TRANSPORT).testTag("fs-practice-next")) { BcIcon(R.drawable.ic_bc_next_bar, stringResource(R.string.action_next_bar)) }
+                // In the last bar there is no bar on: Next bar says so and looks off, but it stays where it is in the focus
+                // order and keeps the focus (a button that is switched off would lose it). While the recording plays the
+                // bar changes on its own, so the reason is only given once it stops, the way the place is only said then.
+                val noBarOn = place != null && !practice.hasBarOn(place.first)
+                val last = stringResource(if (repeat != null) R.string.fs_practice_last_bar_of_repeat else R.string.fs_practice_last_bar)
+                val still = !practice.playing
+                IconButton({ practice.step(1) }, Modifier.size(TRANSPORT).testTag("fs-practice-next").semantics {
+                    if (noBarOn) { disabled(); if (still) stateDescription = last }
+                }) {
+                    BcIcon(R.drawable.ic_bc_next_bar, stringResource(R.string.action_next_bar),
+                        tint = if (noBarOn) LocalContentColor.current.copy(alpha = DISABLED_ALPHA) else Color.Unspecified)
+                }
             }
             // Where the song is. It changes with every beat while the recording plays, so it is only announced when the
             // player moved it: a bar back or on, or back to the start.

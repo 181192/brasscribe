@@ -227,6 +227,9 @@
     <!-- Practice: the recording as the sound of the tab -->
     <string name="fs_practice_to_start">Back to the start</string>
     <string name="fs_practice_to_repeat_start">Back to the start of the repeat</string>
+    <!-- Said with "Next bar" when there is no bar on: "Next bar, Last bar, disabled". -->
+    <string name="fs_practice_last_bar">Last bar</string>
+    <string name="fs_practice_last_bar_of_repeat">Last bar of the repeat</string>
     <string name="fs_practice_bar_beat">Bar %1$s, beat %2$d</string>
     <string name="fs_practice_pickup_beat">Pickup bar, beat %1$d</string>
     <string name="fs_practice_slower">Slower</string>
