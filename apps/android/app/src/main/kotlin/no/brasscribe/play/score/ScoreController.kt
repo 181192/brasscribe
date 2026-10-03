@@ -121,6 +121,10 @@ class ScoreController(
             player.scrollMode = if (reducedMotion) ScrollMode.OffScreen else ScrollMode.Continuous
             // The overlay draws the uncertainty marks from the note heads.
             core.includeNoteBounds = true
+            // The top bar and the music stand's band name the score: the engraving starts with the music, and its
+            // title block takes no room from it (on a phone on its side, a third of it). Shared and printed files are
+            // not engraved here, and keep their titles.
+            for (e in SCORE_INFO) notation.elements.set(e, false)
         }
         view.api.updateSettings()
         // The shared output stage (gain + soft limiter) in front of alphaTab's output, on every new player.
@@ -814,6 +818,13 @@ data class ScorePalette(
     val paper: Int, val ink: Int, val staff: Int, val cursor: Int, val uncertain: Int, val veryUncertain: Int,
     val loopTint: Int, val highContrast: Boolean, val adlibTint: Int = loopTint,
     val selectionTint: Int = adlibTint, val selectionEdge: Int = ink,
+)
+
+/** The engraved title block: title, subtitle, composer, words, music, copyright. */
+private val SCORE_INFO = listOf(
+    alphaTab.NotationElement.ScoreTitle, alphaTab.NotationElement.ScoreSubTitle, alphaTab.NotationElement.ScoreArtist,
+    alphaTab.NotationElement.ScoreAlbum, alphaTab.NotationElement.ScoreWords, alphaTab.NotationElement.ScoreMusic,
+    alphaTab.NotationElement.ScoreWordsAndMusic, alphaTab.NotationElement.ScoreCopyright,
 )
 
 internal const val BOXED_QUESTION = "\u2370"
