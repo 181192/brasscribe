@@ -38,7 +38,7 @@ def main() -> int:
     lines = [f"Screenshots: {len(seen)} screens, {len(changed)} changed, {len(added)} new, {len(gone)} gone."]
     if not had:
         lines.append("The commit compared with has no screen catalogue: there was nothing to compare with.")
-    lines += [f"- changed: `{n}` ({p:.2f} % of its pixels)" if p is not None else f"- changed: `{n}`" for n, _, p in changed]
+    lines += [f"- changed: `{n}` ({p * 100:.2f} % of its pixels)" if p is not None else f"- changed: `{n}`" for n, _, p in changed]
     lines += [f"- new: `{n}`" for n, _ in added] + [f"- gone: `{n}`" for n in gone]
     (report / "summary.md").write_text("\n".join(lines) + "\n")
 

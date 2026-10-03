@@ -27,6 +27,9 @@ object ScreenAccessibility {
             r.sourceCheckClass == TextContrastCheck::class.java &&
                 generateSequence<ViewHierarchyElement>(r.element) { it.parentView }.any { it.isEnabled == false }
         },
+        Known("text cut by the edge of a part that scrolls: the framework reads its colours from the sliver that shows, and says itself it may be only partly visible") { r ->
+            r.sourceCheckClass == TextContrastCheck::class.java && r.getMessage(java.util.Locale.ENGLISH).toString().contains("partially visible")
+        },
     )
 
     private val contrast = setOf(TextContrastCheck::class.java, ImageContrastCheck::class.java)
