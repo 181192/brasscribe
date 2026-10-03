@@ -132,7 +132,7 @@
     <string name="profile_orchestra_desc">Du får solostemmen, og akkompagnementet arrangert for brassband.</string>
     <string name="profile_pop">Pop eller rock</string>
     <string name="profile_pop_desc">Sang, gitarer, tangenter, bass og trommer.</string>
-    <string name="profile_not_sure">Usikker? Velg Brassband for en gruppe, eller Ett instrument når det bare er deg. Du kan endre det senere.</string>
+    <string name="profile_not_sure">Usikker? Velg Brassband for en gruppe, eller Ett instrument for et opptak av bare deg. Du kan endre det senere.</string>
     <string name="profile_choose_one">Velg ett for å fortsette.</string>
     <string name="where_title">Hvor partituret lages</string>
     <string name="where_device">På telefonen</string>
@@ -534,7 +534,7 @@
     <string name="help_3_title">Øv</string>
     <string name="help_3_text">Sett ned tempoet, gjenta de vanskelige taktene, og demp stemmen din for å spille med bandet.</string>
     <string name="help_4_title">Del eller skriv ut</string>
-    <string name="help_4_text">Del partituret som en fil. Når Brasscribe på datamaskinen har laget det, kan du også skrive ut din egen stemme, alle stemmene til bandet eller dirigentpartituret.</string>
+    <string name="help_4_text">Del partituret som en fil. Et partitur som Brasscribe på datamaskinen har laget, kan også skrives ut (din stemme, alle stemmene eller dirigentpartituret), så lenge ingen toner er endret på telefonen.</string>
     <string name="help_5_title">Telefonen og datamaskinen</string>
     <string name="help_5_text">På telefonen: ett instrument, eller et raskt utkast for brassband. For hele bandpartituret, en solist med band, eller pop og rock, åpner du Brasscribe på datamaskinen og kobler til i Innstillinger.</string>
     <string name="help_6_title">Lenker og strømmeapper</string>

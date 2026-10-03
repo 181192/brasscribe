@@ -64,6 +64,9 @@ class BrasscribeWordsTest {
         // Print needs the computer's PDFs: the line says so.
         assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("your computer"))
         assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("datamaskinen"))
+        // And only while no note was changed on the phone: the computer's PDFs show the score as it made it.
+        assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("no note was changed on the phone"))
+        assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("ingen toner er endret på telefonen"))
     }
 
     @Test

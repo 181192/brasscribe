@@ -134,7 +134,7 @@
     <string name="profile_orchestra_desc">You get the solo part, plus the accompaniment arranged for brass band.</string>
     <string name="profile_pop">Pop or rock</string>
     <string name="profile_pop_desc">Singing, guitars, keys, bass and drums.</string>
-    <string name="profile_not_sure">Not sure? Choose Brass band for a group, or One instrument for just you. You can change it later.</string>
+    <string name="profile_not_sure">Not sure? Choose Brass band for a group, or One instrument for a recording of just you. You can change it later.</string>
     <string name="profile_choose_one">Choose one to continue.</string>
     <string name="where_title">Where the score is made</string>
     <string name="where_device">On this phone</string>
@@ -540,7 +540,7 @@
     <string name="help_3_title">Practise</string>
     <string name="help_3_text">Slow the music down with Speed, repeat the hard bars, and mute your part to play along with the band.</string>
     <string name="help_4_title">Share or print</string>
-    <string name="help_4_text">Share the score as a file. When Brasscribe on your computer made it, you can also print your own part, every part for the band, or the conductor\'s score.</string>
+    <string name="help_4_text">Share the score as a file. A score made by Brasscribe on your computer can also be printed (your part, every part or the conductor\'s score), as long as no note was changed on the phone.</string>
     <string name="help_5_title">The phone and your computer</string>
     <string name="help_5_text">On the phone: one instrument, or a quick draft of a brass band. For the full band score, a soloist with a band, or pop and rock, open Brasscribe on your computer and connect in Settings.</string>
     <string name="help_6_title">Links and streaming apps</string>
