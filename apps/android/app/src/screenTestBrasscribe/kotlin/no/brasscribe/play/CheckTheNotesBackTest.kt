@@ -19,8 +19,9 @@ import org.junit.runner.RunWith
 
 /**
  * Check the notes after a score is made: Back (the gesture or the top bar's button, which names the score) goes to
- * the score, which is already saved, never to What is this?, where Continue would send the recording again. Show the
- * score and Check them go back to that score instead of piling up new ones.
+ * the score, which is already saved, not straight to What is this?, where Continue would send the recording again; What
+ * is this? is under the score, so its answer can still be changed. From Your scores too, Check the notes goes over the
+ * score. Show the score and Check them go back to that score instead of piling up new ones.
  */
 @RunWith(AndroidJUnit4::class)
 class CheckTheNotesBackTest : ScreenTest() {
@@ -46,10 +47,10 @@ class CheckTheNotesBackTest : ScreenTest() {
 
     @Test
     fun backFromCheckTheNotesGoesToTheScore() {
-        assertEquals(listOf(Screen.HOME, Screen.SCORE, Screen.REVIEW), vm.screen.value)
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.SCORE, Screen.REVIEW), vm.screen.value)
         ScreenDevice.back(rule)
         waitUntil(5_000) { vm.screen.value.last() == Screen.SCORE }
-        assertEquals(listOf(Screen.HOME, Screen.SCORE), vm.screen.value)
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.SCORE), vm.screen.value)
         waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }
         checkAccessibility()
 
@@ -58,6 +59,23 @@ class CheckTheNotesBackTest : ScreenTest() {
         waitUntil(5_000) { vm.screen.value.last() == Screen.REVIEW }
         val title = vm.result.value!!.composition!!.title
         rule.onNodeWithText(no.brasscribe.play.ui.PartNames.shortTitle(title)).performClick()
+        waitUntil(5_000) { vm.screen.value.last() == Screen.SCORE }
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.SCORE), vm.screen.value)
+        // And under the score, What is this? with the recording, to answer again.
+        ScreenDevice.back(rule)
+        waitUntil(5_000) { vm.screen.value.last() == Screen.PROFILE }
+        assertEquals("Old Hundredth.wav", vm.source.value?.name)
+    }
+
+    @Test
+    fun checkTheNotesFromYourScoresGoesBackToTheScore() {
+        waitUntil(10_000) { vm.savedScores.value.isNotEmpty() }
+        val saved = vm.savedScores.value.first()
+        // Your scores, the row's ⋯ → Check the notes.
+        rule.runOnUiThread { vm.home(); vm.openEntry(vm.scores.value.first { it.saved?.id == saved.id }, review = true) }
+        waitUntil(20_000) { vm.screen.value.last() == Screen.REVIEW && vm.result.value != null }
+        assertEquals(listOf(Screen.HOME, Screen.SCORE, Screen.REVIEW), vm.screen.value)
+        ScreenDevice.back(rule)
         waitUntil(5_000) { vm.screen.value.last() == Screen.SCORE }
         assertEquals(listOf(Screen.HOME, Screen.SCORE), vm.screen.value)
     }
@@ -69,6 +87,6 @@ class CheckTheNotesBackTest : ScreenTest() {
         waitUntil(5_000) { vm.screen.value.last() == Screen.OUTPUT }
         rule.onNodeWithText(text(R.string.output_apply)).performClick()
         waitUntil(20_000) { vm.screen.value.last() == Screen.SCORE }
-        assertEquals(listOf(Screen.HOME, Screen.SCORE), vm.screen.value)
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.SCORE), vm.screen.value)
     }
 }
