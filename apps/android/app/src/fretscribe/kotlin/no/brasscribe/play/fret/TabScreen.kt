@@ -40,6 +40,13 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -211,6 +218,9 @@ fun TabScreen(vm: PlayViewModel) {
     var zoom by rememberSaveable { mutableIntStateOf(TabPlaces.zoom) }
     var reading by rememberSaveable(song) { mutableIntStateOf(TabPlaces.bar(song)) }
     var told by remember { mutableStateOf<Int?>(null) }
+    // Leaving a note (Close, Next ?, another mark) gives the player back the speed and repeat that Play this bar slowly took.
+    val practice: PracticeModel = viewModel()
+    LaunchedEffect(told) { practice.endSlowly() }
     // A mark the page is to show: asked for by "Check them" and Next ?, counted so the same mark can be asked for again.
     var reveal by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     val density = LocalDensity.current
@@ -228,19 +238,20 @@ fun TabScreen(vm: PlayViewModel) {
     val s = sheet
     // The columns with a note Fretscribe is not sure of, in reading order: where "Check them" and Next ? go.
     val doubts = remember(s) { s?.marks?.columns?.indices?.filter { i -> s.marks.columns[i].notes.any { it.kind == MarkKind.DOUBT } }.orEmpty() }
+    // A phone on its side has little height: the note under the tab is then one row.
+    val noteInOneRow = LocalConfiguration.current.screenHeightDp < 480
     fun showMark(column: Int) {
         told = column
         reveal = column to (reveal?.second ?: 0) + 1
     }
     // Practice. The recording follows the tab by the beats the computer tracked; the notes saved with a song have them too.
-    val practice: PracticeModel = viewModel()
     val clock = remember(s, r.composition) { s?.let { TabClock.of(it.index, it.tab, r.composition) } }
     val recording = source?.file
     LaunchedEffect(practice, song, s, clock, recording) {
         if (s != null) practice.open(song, r.jobId, clock, recording, vm.savedScores.value.mapNotNull { it.jobId }.toSet())
     }
     // Leaving the tab, or the app, stops the sound; the song stays where it was.
-    DisposableEffect(practice) { onDispose { practice.leave() } }
+    DisposableEffect(practice) { onDispose { practice.endSlowly(); practice.leave() } }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, practice) {
         val stopped = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) practice.pause() }
@@ -288,24 +299,62 @@ fun TabScreen(vm: PlayViewModel) {
             val column = at?.let { s?.marks?.columns?.getOrNull(it) }
             if (at != null && column != null) Column(Modifier.fillMaxWidth().background(c.bg).navigationBarsPadding()) {
                 HorizontalDivider(thickness = 1.dp, color = c.border)
-                Row(
-                    Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1, top = BrasscribeSpace.s2),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
-                ) {
-                    Text(TabWords.describe(resources, column, currentLang() == no.brasscribe.play.model.Lang.NB),
-                        style = MaterialTheme.typography.bodyLarge, color = c.text,
-                        modifier = Modifier.weight(1f).testTag("fs-tab-note").semantics { liveRegion = LiveRegionMode.Polite })
+                // Until a note can be fixed here: listen to its bar slowly, and go on to the next "?". Next ? stays at the last
+                // one, off and saying so, so the keyboard's focus is not lost (as the player's Next bar does).
+                val next = doubts.firstOrNull { it > at }
+                val showNext = next != null || doubts.size > 1
+                val slowly = stringResource(R.string.fs_tab_note_slowly)
+                val nextName = stringResource(R.string.fs_tab_note_next_name)
+                val lastState = stringResource(R.string.fs_tab_note_last)
+                // The note is read first, then what can be done about it, which is several keys away.
+                val then = listOfNotNull(slowly.takeIf { canPlay }, nextName.takeIf { next != null }).takeIf { it.isNotEmpty() }
+                    ?.let { stringResource(R.string.fs_tab_note_actions, it.joinToString(", ")) }
+                val words = TabWords.describe(resources, column, currentLang() == no.brasscribe.play.model.Lang.NB)
+                val note: @Composable (Modifier) -> Unit = { m ->
+                    // In one row the words are a size smaller: the tab keeps the room for a whole column of it.
+                    Text(words, style = if (noteInOneRow) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge, color = c.text,
+                        modifier = m.testTag("fs-tab-note").semantics { liveRegion = LiveRegionMode.Polite; if (then != null) contentDescription = "$words $then" })
+                }
+                val nextButton: @Composable () -> Unit = {
+                    TextButton({ next?.let(::showMark) }, Modifier.heightIn(min = 48.dp).testTag("fs-tab-note-next").semantics {
+                        contentDescription = nextName
+                        if (next == null) { disabled(); stateDescription = lastState }
+                    }, shape = BrasscribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = if (next == null) c.text.copy(alpha = 0.38f) else c.text)) {
+                        Text(stringResource(R.string.fs_tab_note_next), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
+                    }
+                }
+                val close: @Composable () -> Unit = {
                     IconButton({ told = null }, Modifier.size(48.dp).testTag("fs-tab-note-close")) { BcIcon(R.drawable.ic_bc_close, stringResource(R.string.fs_tab_note_close)) }
                 }
-                // Until a note can be fixed here: listen to its bar slowly, and go on to the next "?".
-                val next = doubts.firstOrNull { it > at }
-                FlowRow(
-                    Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s2),
-                    horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
-                ) {
-                    if (canPlay) OutlineButton(stringResource(R.string.fs_tab_note_slowly), { practice.playBarSlowly(column.bar) },
-                        Modifier.testTag("fs-tab-note-slowly"), icon = R.drawable.ic_bc_play, fill = false)
-                    if (next != null) PlainButton(stringResource(R.string.fs_tab_note_next), { showMark(next) }, Modifier.testTag("fs-tab-note-next"))
+                if (noteInOneRow) {
+                    // Low on height (a phone on its side): one row, Play this bar slowly as an icon that keeps its name.
+                    Row(
+                        Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+                    ) {
+                        note(Modifier.weight(1f))
+                        if (canPlay) IconButton({ practice.playBarSlowly(column.bar) }, Modifier.size(48.dp).testTag("fs-tab-note-slowly")) {
+                            BcIcon(R.drawable.ic_bc_play, slowly)
+                        }
+                        if (showNext) nextButton()
+                        close()
+                    }
+                } else {
+                    Row(
+                        Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1, top = BrasscribeSpace.s2),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+                    ) {
+                        note(Modifier.weight(1f))
+                        close()
+                    }
+                    FlowRow(
+                        Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s2),
+                        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+                    ) {
+                        if (canPlay) OutlineButton(slowly, { practice.playBarSlowly(column.bar) },
+                            Modifier.testTag("fs-tab-note-slowly"), icon = R.drawable.ic_bc_play, fill = false)
+                        if (showNext) nextButton()
+                    }
                 }
             }
         },
@@ -457,14 +506,21 @@ fun TabScreen(vm: PlayViewModel) {
             }
 
             // A mark asked for ("Check them", Next ?) is brought into view when it is not, a third of the way down.
+            // The request is done with once the mark is shown: a later engraving (a size, a turn, the text size) leaves the
+            // page where the player has it. The whole column, the mark and its numerals, is put above the note under the tab.
             LaunchedEffect(reveal, e, inset) {
                 val column = reveal?.first ?: return@LaunchedEffect
                 val box = e?.boxes?.firstOrNull { it.column == column } ?: return@LaunchedEffect
+                // The note under the tab opens with the request: the room left is known a frame later.
+                withFrameNanos { }
+                withFrameNanos { }
                 val top = inset + box.top.roundToInt()
                 val bottom = inset + box.columnBottom.roundToInt()
-                if (top >= scroll.value && bottom <= scroll.value + viewport) return@LaunchedEffect
-                val to = (top - viewport / 3).coerceIn(0, scroll.maxValue)
-                if (reducedMotion) scroll.scrollTo(to) else scroll.animateScrollTo(to)
+                if (top < scroll.value || bottom > scroll.value + viewport) {
+                    val to = (top - viewport / 3).coerceAtLeast(bottom - viewport).coerceAtMost(top).coerceIn(0, scroll.maxValue)
+                    if (reducedMotion) scroll.scrollTo(to) else scroll.animateScrollTo(to)
+                }
+                reveal = null
             }
 
             // The repeat's band and brackets, and the cursor at the beat the recording is at. The cursor moves from beat to

@@ -883,6 +883,63 @@ class TabViewTest : TabScreenTest() {
         return holds
     }
 
+    private fun nextIsOff(): Boolean = rule.onNodeWithTag("fs-tab-note-next").fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription) != null
+
+    /** The mark whose note is open: its element says what the note says. */
+    private fun toldMark(): android.graphics.RectF {
+        val words = rule.onNodeWithTag("fs-tab-note").fetchSemanticsNode().config[SemanticsProperties.Text].joinToString(" ") { it.text }
+        val node = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(words))).fetchSemanticsNodes().single()
+        return android.graphics.RectF(node.positionInWindow.x, node.positionInWindow.y, node.positionInWindow.x + node.size.width, node.positionInWindow.y + node.size.height)
+    }
+
+    @Test
+    fun aMarkShownOnceDoesNotPullThePageBackLater() {
+        longSong()
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        showTheTab()
+        // "Check them", then Next ? to the last "?".
+        rule.onNodeWithTag("fs-tab-marked").performClick()
+        waitForTag("fs-tab-note", 5_000)
+        repeat(60) { if (!nextIsOff()) { rule.onNodeWithTag("fs-tab-note-next").performClick(); settle() } }
+        assertTrue(nextIsOff())
+        val atTheLast = scrolled().first
+        assertTrue("the page went to the last ? ($atTheLast)", atTheLast > 1_000f)
+        // Closed, scrolled back to the top and made larger: the page stays where the player put it.
+        rule.onNodeWithTag("fs-tab-note-close").performClick()
+        scrollBy(-scrolled().first)
+        assertEquals(0f, scrolled().first)
+        rule.onNodeWithTag("fs-tab-zoom-in").performClick()
+        waitUntil(20_000) { TabScreenProbe.view?.let { it.scale == TabScreenProbe.wanted && it.engraving.value != null } == true }
+        engraved()
+        settle()
+        assertTrue("the page is not pulled back to the last ? (${scrolled().first})", scrolled().first < 100f)
+    }
+
+    @Test
+    fun onItsSideWithLargeTextEveryMarkIsShownAboveItsNote() {
+        longSong()
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        textSize(2.0f)
+        turn(landscape = true)
+        showTheTab()
+        engraved()
+        rule.onNodeWithTag("fs-tab-marked").performClick()
+        waitForTag("fs-tab-note", 5_000)
+        var shown = 0
+        while (true) {
+            settle()
+            val window = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow
+            val mark = toldMark()
+            assertTrue("mark ${shown + 1}: the mark and its numerals (${mark.top}–${mark.bottom}) are in view above the note (${window.top}–${window.bottom})",
+                mark.top >= window.top - 1 && mark.bottom <= window.bottom + 1)
+            shown++
+            if (nextIsOff()) break
+            rule.onNodeWithTag("fs-tab-note-next").performClick()
+        }
+        assertTrue("every ? was shown ($shown)", shown > 10)
+        assertNoTextIsClipped()
+    }
+
     @Test
     fun onItsSideWithLargeTextTheHeaderScrollsAwayAndTheTabHasTheScreen() {
         computer("bass-line-marks")

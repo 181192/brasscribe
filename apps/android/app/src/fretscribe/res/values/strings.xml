@@ -245,6 +245,11 @@
     <!-- Under a mark's note: the bar repeats at 60 % with the practice player, and the next "?" on the page. -->
     <string name="fs_tab_note_slowly">Play this bar slowly</string>
     <string name="fs_tab_note_next">Next ?</string>
+    <!-- What Next ? is called, without the mark a screen reader may leave out, and its state at the last one. -->
+    <string name="fs_tab_note_next_name">Next uncertain note</string>
+    <string name="fs_tab_note_last">Last uncertain note</string>
+    <!-- Read after the note: "Then: Play this bar slowly, Next uncertain note." -->
+    <string name="fs_tab_note_actions">Then: %1$s.</string>
     <string-array name="fs_tab_ordinals">
         <item>1st</item>
         <item>2nd</item>

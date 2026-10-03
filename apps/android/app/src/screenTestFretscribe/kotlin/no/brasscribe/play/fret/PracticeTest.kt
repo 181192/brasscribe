@@ -465,9 +465,16 @@ class PracticeTest : ScreenTest() {
         val first = marks.columns[0]
         val second = marks.columns[2]
 
+        // The player's own speed, which Play this bar slowly gives back.
+        repeat(4) { rule.onNodeWithTag("fs-practice-slower").performClick() }
+        assertEquals(80, practice.speed)
+
         // "Check them" goes to the first "?", on the tab, with its note open.
         rule.onNodeWithTag("fs-tab-marked").performClick()
         waitForTag("fs-tab-note", 5_000)
+        // Read with what can be done about it, which is several keys away; Next ? is named in words.
+        assertEquals(TabWords.describe(rule.activity.resources, first, false) + " Then: Play this bar slowly, Next uncertain note.", described("fs-tab-note"))
+        assertEquals("Next uncertain note", described("fs-tab-note-next"))
         assertEquals(TabWords.describe(rule.activity.resources, first, false), words("fs-tab-note"))
         assertEquals(no.brasscribe.play.Screen.SCORE, vm.screen.value.last())
         rule.onNodeWithTag("fs-tab-mark-0").assertIsDisplayed()
@@ -493,17 +500,35 @@ class PracticeTest : ScreenTest() {
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)
 
-        // Next ? goes to the next "?" (over the "!"); at the last one there is no Next ?.
-        rule.onNodeWithTag("fs-tab-note-next").performClick()
+        // Next ? (with the keyboard) goes to the next "?" (over the "!"), and the player's speed and repeat come back.
+        repeat(40) { if (focusedTag() != "fs-tab-note-next") key(KeyEvent.KEYCODE_TAB) }
+        assertEquals("fs-tab-note-next", focusedTag())
+        key(KeyEvent.KEYCODE_ENTER)
         rule.waitForIdle()
         assertEquals(TabWords.describe(rule.activity.resources, second, false), words("fs-tab-note"))
+        assertEquals(80, practice.speed)
+        assertNull(practice.repeat)
+        assertEquals("Repeat bars", words("fs-practice-repeat"))
         settle()
         rule.onNodeWithTag("fs-tab-mark-2").assertIsDisplayed()
-        assertEquals(0, rule.onAllNodesWithTag("fs-tab-note-next").fetchSemanticsNodes().size)
+        // At the last "?" Next ? stays, off and saying why, and keeps the focus.
+        assertEquals("fs-tab-note-next", focusedTag())
+        rule.onNodeWithTag("fs-tab-note-next").assertIsNotEnabled()
+        assertEquals("Last uncertain note", state("fs-tab-note-next"))
+        key(KeyEvent.KEYCODE_ENTER)
+        rule.waitForIdle()
+        assertEquals("fs-tab-note-next", focusedTag())
+        assertEquals(TabWords.describe(rule.activity.resources, second, false), words("fs-tab-note"))
+        checkAccessibility()
+        // Play this bar slowly there, then Close: the player's speed and repeat come back again.
         rule.onNodeWithTag("fs-tab-note-slowly").performClick()
         waitUntilPlaying()
         assertEquals(RepeatBars(second.bar, second.bar), practice.repeat)
         assertEquals("Repeating ${second.barNumber}", words("fs-practice-repeat"))
+        rule.onNodeWithTag("fs-tab-note-close").performClick()
+        rule.waitForIdle()
+        assertEquals(80, practice.speed)
+        assertNull(practice.repeat)
     }
 
     @Test
