@@ -111,6 +111,12 @@ def _reduce(num: int, den: int) -> tuple[int, int]:
     return (num // g, den // g) if g else (num, den)
 
 
+def _sixths(p: dict, num: int, den: int) -> int | None:
+    """In compound time, where the beat is a dotted quarter: the offset in sixths of the beat, when
+    it is one. The even sixths are the beat's three eighths, all six its sixteenths; none is a triplet."""
+    return num * 6 // den if p.get("compound") and num > 0 and 6 % den == 0 else None
+
+
 def _key_alters(step: str, fifths: int) -> bool:
     if fifths > 0:
         return step in "FCGDAEB"[:min(fifths, 7)]
@@ -158,6 +164,9 @@ class _En(_Lexicon):
     def position_brief(self, p):
         num, den = _reduce(p.get("num", 0), p.get("den", 1))
         b = p["beat"]
+        k = _sixths(p, num, den)
+        if k is not None:
+            return f"{b}, eighth {k // 2 + 1}" if k % 2 == 0 else f"{b}, sixteenth {k + 1}"
         return {(1, 2): f"{b} and", (1, 4): f"{b} e", (3, 4): f"{b} a", (1, 3): f"{b}, triplet 2",
                 (2, 3): f"{b}, triplet 3"}.get((num, den), f"{b}" if num == 0 else f"{b} plus {num}/{den}")
 
@@ -243,6 +252,9 @@ class _Nb(_Lexicon):
     def position_brief(self, p):
         num, den = _reduce(p.get("num", 0), p.get("den", 1))
         b = p["beat"]
+        k = _sixths(p, num, den)
+        if k is not None:
+            return f"{b}, {k // 2 + 1}. åttendedel" if k % 2 == 0 else f"{b}, {k + 1}. sekstendedel"
         return {(1, 2): f"{b}-og", (1, 4): f"{b}, 2. av 4", (3, 4): f"{b}, 4. av 4", (1, 3): f"{b}, triol 2",
                 (2, 3): f"{b}, triol 3"}.get((num, den), f"{b}" if num == 0 else f"{b} pluss {num}/{den}")
 
@@ -390,7 +402,7 @@ def announce(part: Part, bar: Bar, ev: dict, ctx: Context, s: Settings, by_bar: 
         if f:
             if f["bar"] != bar.number:
                 out.append(L.bar(f["bar"]) + " ")
-            out.append(L.position({"beat": f["beat"], "num": f.get("num", 0), "den": f.get("den", 1)}))
+            out.append(L.position({k: v for k, v in f.items() if k != "bar"}))
         return "".join(out)
     if kind == "rest":
         out.append(L.rest(typ, dots, brief))
@@ -500,10 +512,9 @@ def position(offset: int, divisions: int, time: dict) -> dict:
     if beat_div <= 0:
         return {"beat": 1, "num": 0, "den": 1}
     beat, rem = divmod(offset, beat_div)
-    if rem == 0:
-        return {"beat": beat + 1, "num": 0, "den": 1}
     f = Fraction(rem, beat_div)
-    return {"beat": beat + 1, "num": f.numerator, "den": f.denominator}
+    pos = {"beat": beat + 1, "num": f.numerator, "den": f.denominator}
+    return {**pos, "compound": True} if compound else pos
 
 
 def _type_from_duration(dur: int, divisions: int) -> str:

@@ -22,6 +22,8 @@ export interface Pos {
   beat: number;
   num: number;
   den: number;
+  /** Compound time: the beat is a dotted quarter. */
+  compound?: boolean;
 }
 
 export interface TsEvent {
@@ -178,6 +180,12 @@ export function position(p: Pos, lang: Lang, word = true): string {
   const f = p.num === 0 ? 0 : p.num / p.den;
   const is = (n: number, d: number) => p.num * d === n * p.den;
   if (f === 0) return b;
+  // In compound time, in sixths of the beat: the even ones are its three eighths, all six its sixteenths.
+  const k = (p.num * 6) / p.den;
+  if (p.compound && Number.isInteger(k)) {
+    if (k % 2 === 0) return lang === "nb" ? `${b}, ${k / 2 + 1}. åttendedel` : `${b}, eighth ${k / 2 + 1}`;
+    return lang === "nb" ? `${b}, ${k + 1}. sekstendedel` : `${b}, sixteenth ${k + 1}`;
+  }
   if (is(1, 2)) return lang === "nb" ? `${b}-og` : `${b} and`;
   if (is(1, 4)) return lang === "nb" ? `${b}, 2. av 4` : `${b} e`;
   if (is(3, 4)) return lang === "nb" ? `${b}, 4. av 4` : `${b} a`;

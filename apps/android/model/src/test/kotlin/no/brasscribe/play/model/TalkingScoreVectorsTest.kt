@@ -43,6 +43,6 @@ class TalkingScoreVectorsTest {
 
     @Test
     fun vectorFileHasCases() {
-        assertEquals(25, vectors.cases.size)
+        assertEquals(29, vectors.cases.size)
     }
 }

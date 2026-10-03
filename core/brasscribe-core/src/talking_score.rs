@@ -318,6 +318,17 @@ impl Lex {
     fn position_brief(&self, p: &Value) -> String {
         let (num, den) = reduce(gi(p, "num", 0), gi(p, "den", 1));
         let b = p.get("beat").map(fmt_num).unwrap_or_default();
+        // In compound time the beat is a dotted quarter: in sixths of it, the even ones are its three
+        // eighths and all six its sixteenths; none is a triplet.
+        let compound = p.get("compound").and_then(Value::as_bool).unwrap_or(false);
+        if let Some(k) = (compound && num > 0 && 6 % den == 0).then(|| num * 6 / den) {
+            return match (k % 2 == 0, self.nb) {
+                (true, false) => format!("{b}, eighth {}", k / 2 + 1),
+                (false, false) => format!("{b}, sixteenth {}", k + 1),
+                (true, true) => format!("{b}, {}. åttendedel", k / 2 + 1),
+                (false, true) => format!("{b}, {}. sekstendedel", k + 1),
+            };
+        }
         let named = match ((num, den), self.nb) {
             ((1, 2), false) => Some(format!("{b} and")),
             ((1, 4), false) => Some(format!("{b} e")),
@@ -722,7 +733,11 @@ pub fn announce(part: &Part, bar: &Bar, ev: &Value, ctx: &Context, s: &Settings,
                 out.push_str(&l.bar(gi(f, "bar", 0)));
                 out.push(' ');
             }
-            out.push_str(&l.position(&json!({"beat": f.get("beat").cloned().unwrap_or(Value::Null), "num": gi(f, "num", 0), "den": gi(f, "den", 1)})));
+            let mut from = f.clone();
+            if let Some(m) = from.as_object_mut() {
+                m.remove("bar");
+            }
+            out.push_str(&l.position(&from));
         }
         return out;
     }
@@ -918,11 +933,12 @@ fn position(offset: i64, divisions: i64, time: &Value) -> Value {
         return json!({"beat": 1, "num": 0, "den": 1});
     }
     let (beat, rem) = (floordiv(offset, beat_div), offset.rem_euclid(beat_div));
-    if rem == 0 {
-        return json!({"beat": beat + 1, "num": 0, "den": 1});
+    let (n, d) = if rem == 0 { (0, 1) } else { reduce(rem, beat_div) };
+    let mut pos = json!({"beat": beat + 1, "num": n, "den": d});
+    if compound {
+        pos["compound"] = json!(true);
     }
-    let (n, d) = reduce(rem, beat_div);
-    json!({"beat": beat + 1, "num": n, "den": d})
+    pos
 }
 
 fn type_from_duration(dur: i64, divisions: i64) -> &'static str {

@@ -127,4 +127,21 @@ describe("talking score from MusicXML", () => {
     tpt.setPitchMode("concert");
     expect(tpt.setPitchMode("written")).toBe("Written pitch, Trumpet in B-flat");
   });
+
+  it("names the eighths of a compound beat, not triplets", () => {
+    // Bar 1 of the cornet part in 6/8: three eighths on the first beat.
+    const six = XML.replace("<beats>4</beats><beat-type>4</beat-type>", "<beats>6</beats><beat-type>8</beat-type>")
+      .replace('<score-part id="P2"><part-name>Solo Horn</part-name></score-part>', "");
+    const compound = six.slice(0, six.indexOf("<direction>"))
+      + `${n("D", 5, 3, "eighth")}${n("E", 5, 3, "eighth")}${n("F", 5, 3, "eighth", "", 1)}</measure></part></score-partwise>`;
+    const ts6 = buildTalkingScore(compound);
+    expect(ts6.parts[0].bars[0].events[1].pos).toEqual({ beat: 1, num: 1, den: 3, compound: true });
+    const nav = new Navigator(ts6);
+    nav.goBar(0);
+    expect(nav.nextNote()!.text).toBe("beat 1, eighth 2: E 5, eighth note");
+    expect(nav.nextNote()!.text).toBe("beat 1, eighth 3: F-sharp 5, eighth note");
+    const nb = new Navigator(ts6, undefined, "nb");
+    nb.goBar(0);
+    expect(nb.nextNote()!.text).toBe("slag 1, 2. åttendedel: E 5, åttendedelsnote");
+  });
 });

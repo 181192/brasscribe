@@ -100,7 +100,7 @@ class PartView(
         val inBar = n.start - barStart
         val beat = inBar / beatTicks + 1
         val offset = inBar % beatTicks
-        val pos = TsPos(beat, offset, if (offset == 0) 1 else beatTicks).reduced()
+        val pos = TsPos(beat, offset, if (offset == 0) 1 else beatTicks, if (compound) true else null).reduced()
 
         val barEnd = tickMap.barEnd(bar)
         val firstLen = minOf(n.dur, barEnd - n.start).coerceAtLeast(1)
@@ -138,11 +138,11 @@ class PartView(
     }
 
     private fun TsPos.reduced(): TsPos {
-        if (num == 0) return TsPos(beat, 0, 1)
+        if (num == 0) return copy(num = 0, den = 1)
         var a = num
         var b = den
         while (b != 0) { val t = a % b; a = b; b = t }
-        return TsPos(beat, num / a, den / a)
+        return copy(num = num / a, den = den / a)
     }
 
     /** Announcement for event [i] after [previous] (null at the start of navigation). */
