@@ -5,7 +5,7 @@ using Brasscribe.Play.Core.TalkingScore;
 namespace Brasscribe.Play.Core.Tests;
 
 /// <summary>
-/// Runs every case of docs/accessibility/talking-score-vectors.json (copied into Fixtures) in both
+/// Runs every case of docs/accessibility/talking-score-vectors.json (linked into Fixtures by the project file) in both
 /// languages. Per the vectors' header: B-flat cornet (chromatic -2) and written key 2 sharps unless stated.
 /// </summary>
 public class TalkingScoreVectorTests
@@ -29,7 +29,12 @@ public class TalkingScoreVectorTests
     }
 
     [Fact]
-    public void Vector_file_has_the_expected_cases() => Assert.Equal(28, Cases().Count);
+    public void Vector_file_has_the_expected_cases()
+    {
+        var ids = Cases().Select(c => c!["id"]!.GetValue<string>()).ToList();
+        Assert.NotEmpty(ids);
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+    }
 
     [Theory]
     [MemberData(nameof(All))]

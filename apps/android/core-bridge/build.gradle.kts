@@ -42,6 +42,8 @@ android {
             it.jvmArgs("--enable-native-access=ALL-UNNAMED")
             it.systemProperty("brasscribe.models", File(repoRoot, "models/converted").absolutePath)
             it.systemProperty("brasscribe.data", File(repoRoot, "data").absolutePath)
+            it.systemProperty("brasscribe.vectors", File(repoRoot, "docs/accessibility/talking-score-vectors.json").absolutePath)
+            it.inputs.file(File(repoRoot, "docs/accessibility/talking-score-vectors.json")).withPropertyName("vectors")
             // The engine's solo profile on the same clip, for comparison (see README); the test skips without it.
             (findProperty("brasscribe.engineSolo") as String?)?.let { p -> it.systemProperty("brasscribe.engineSolo", p) }
         }
