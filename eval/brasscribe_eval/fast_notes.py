@@ -30,6 +30,11 @@ Clips go to data/fast-notes/fast-notes/<id>/. Tracking runs the adapters' own en
 
 from __future__ import annotations
 
+import os
+
+# ONNX Runtime reports to Microsoft unless this is set before it starts.
+os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
+
 import argparse
 import json
 import shutil

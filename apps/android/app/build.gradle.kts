@@ -188,8 +188,9 @@ val tabFont = tasks.register<Sync>("syncFretscribeTabFont") {
 }
 
 /**
- * Fails when ONNX Runtime's telemetry provider is in a variant's merged manifest. The AAR adds it, the app's
- * manifest removes it (tools:node="remove"); a new AAR, a renamed class or a lost line would bring it back.
+ * Fails when any ONNX Runtime component (provider, receiver, service, activity) is in a variant's merged manifest.
+ * The AAR adds its telemetry provider, the app's manifest removes it (tools:node="remove"); a new AAR, a renamed
+ * class or a lost line would bring it, or something like it, back.
  */
 abstract class VerifyNoOrtTelemetry : DefaultTask() {
     @get:InputFile
@@ -202,12 +203,12 @@ abstract class VerifyNoOrtTelemetry : DefaultTask() {
     @TaskAction
     fun verify() {
         val manifest = mergedManifest.get().asFile.readText()
-        val found = listOf("ai.onnxruntime.TelemetryInitializer", "onnxruntime_telemetry_initializer").filter { it in manifest }
+        val found = Regex("""android:(?:name|authorities)="([^"]*onnxruntime[^"]*)"""").findAll(manifest).map { it.groupValues[1] }.toList()
         check(found.isEmpty()) {
-            "ONNX Runtime's telemetry provider is in ${mergedManifest.get().asFile}: $found. " +
-                "Remove it in app/src/main/AndroidManifest.xml (tools:node=\"remove\")."
+            "ONNX Runtime components are in ${mergedManifest.get().asFile}: $found. " +
+                "Remove them in app/src/main/AndroidManifest.xml (tools:node=\"remove\")."
         }
-        report.get().asFile.writeText("no ONNX Runtime telemetry provider\n")
+        report.get().asFile.writeText("no ONNX Runtime component\n")
     }
 }
 
@@ -220,8 +221,9 @@ androidComponents {
             mergedManifest.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
             report.set(layout.buildDirectory.file("reports/ort-telemetry/${variant.name}.txt"))
         }
-        // Every APK, and every unit-test run (the fast checks), goes through the check.
-        val checked = setOf("assemble$variantName", "test${variantName}UnitTest")
+        // Every APK and bundle, every install, and every unit-test run (the fast checks) goes through the check.
+        val checked = setOf("assemble", "package", "bundle", "install").map { "$it$variantName" }.toSet() +
+            "test${variantName}UnitTest"
         tasks.matching { it.name in checked }.configureEach { dependsOn(verifyOrt) }
         val product = variant.productFlavors.single { it.first == "product" }.second
         fun generated(path: String) = layout.buildDirectory.dir("generated/$path").get().asFile.path
