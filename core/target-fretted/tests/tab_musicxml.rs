@@ -1018,6 +1018,40 @@ fn a_slide_or_a_bend_comes_from_the_note_before_it_on_its_string() {
 }
 
 #[test]
+fn the_silence_before_a_link_is_measured_from_where_the_note_was_played_to() {
+    let inst = preset("guitar-standard").unwrap();
+    let linked = |notes: &[(u8, u8, i64, i64, &[Technique])], mark: &'static str| {
+        let xml = write(&placed(&inst, notes), &layout(Layout::Tab));
+        !all(&parse(&xml), mark).is_empty()
+    };
+    let slide: &[Technique] = &[Technique::Slide];
+    // Held under the open string, ringing: still sounding when the slide starts.
+    assert!(linked(&[(1, 3, 0, 48, &[Technique::LetRing]), (6, 0, 24, 24, &[]), (1, 5, 48, 24, slide)], "slide"));
+    // Held under two later notes on other strings.
+    assert!(linked(&[(3, 3, 0, 48, &[]), (2, 3, 12, 36, &[]), (1, 3, 24, 24, &[]), (3, 5, 48, 24, slide)], "slide"));
+    // Held under a short note on another string.
+    assert!(linked(&[(1, 3, 0, 48, &[]), (6, 0, 12, 12, &[]), (1, 5, 48, 24, slide)], "slide"));
+    // A short note in a chord with a long one: its string is silent for 30 ticks.
+    assert!(!linked(&[(1, 3, 0, 6, &[]), (6, 0, 0, 48, &[]), (1, 5, 36, 24, &[Technique::HammerOn])], "hammer-on"));
+}
+
+#[test]
+fn a_note_without_a_place_in_the_chord_a_link_leaves_does_not_block_it() {
+    let inst = preset("guitar-standard").unwrap();
+    let pitch = |s: u8, f: u8| inst.pitch_at(target_fretted::Position { string: s, fret: f }).unwrap();
+    let notes = [note(pitch(1, 3), 0, 24), note(30, 0, 24), note(pitch(1, 5), 24, 24)];
+    let place = |p: i32, s: Option<u8>, f: Option<u8>| NotePlace { pitch: p, string: s, fret: f, alternatives: Vec::new(), out_of_range: s.is_none(), pinned: false };
+    let fingering = Fingering { notes: vec![place(pitch(1, 3), Some(1), Some(3)), place(30, None, None), place(pitch(1, 5), Some(1), Some(5))] };
+    let t = techniques(3, &[(2, Technique::Slide)]);
+    let xml = write(&TabScore::new("Test", &inst, &notes, &t, &fingering).unwrap(), &layout(Layout::Tab));
+    assert!(!all(&parse(&xml), "slide").is_empty());
+    // Between the two notes it does.
+    let notes = [note(pitch(1, 3), 0, 24), note(30, 12, 12), note(pitch(1, 5), 24, 24)];
+    let xml = write(&TabScore::new("Test", &inst, &notes, &t, &fingering).unwrap(), &layout(Layout::Tab));
+    assert!(all(&parse(&xml), "slide").is_empty());
+}
+
+#[test]
 fn slides_open_at_once_are_numbered_apart() {
     let inst = preset("guitar-standard").unwrap();
     // A slide on string 1 from the first note to the third stays open while the bass slides from

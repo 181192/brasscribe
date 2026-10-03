@@ -281,7 +281,7 @@ pub(crate) struct Written {
     pub(crate) source: usize,
     pub(crate) pitch: i32,
     pub(crate) confidence: f64,
-    /// Where the longest of its notes ends as written.
+    /// Where the longest of its notes ends as played ([`Grid::played`]).
     pub(crate) end: i64,
     pub(crate) place: Option<(u8, u8)>,
     pub(crate) vibrato: bool,
@@ -504,6 +504,9 @@ fn nearest(offset: i64, grid: i64) -> i64 {
 struct Grid {
     /// (start, end) per note of the score.
     spans: Vec<(i64, i64)>,
+    /// Where each note ends as played, snapped as starts are: past the end of its chord when it
+    /// is held under later notes, before it when its chord holds a longer note.
+    played: Vec<i64>,
     /// Starts of the beat cells written in triplet values.
     triplets: BTreeSet<i64>,
     /// Notes whose start or length was moved.
@@ -568,7 +571,8 @@ fn grid(score: &TabScore, bar: i64, compound: bool) -> Grid {
             (start, end)
         })
         .collect();
-    Grid { spans, triplets, adjusted }
+    let played = score.notes.iter().zip(&spans).map(|(n, &(start, _))| snap(n.start + n.dur).max(start)).collect();
+    Grid { spans, played, triplets, adjusted }
 }
 
 pub(crate) fn doubtful(n: &Written, opts: &TabOptions) -> bool {
@@ -576,7 +580,7 @@ pub(crate) fn doubtful(n: &Written, opts: &TabOptions) -> bool {
 }
 
 /// Group the notes into chords, merge notes that sound as one, and pair up the techniques.
-fn events(score: &TabScore, spans: &[(i64, i64)], bar: i64) -> Vec<Event> {
+fn events(score: &TabScore, spans: &[(i64, i64)], played: &[i64], bar: i64) -> Vec<Event> {
     let notes = &score.notes;
     let kept: Vec<usize> = {
         let mut k: Vec<usize> = (0..notes.len()).collect();
@@ -601,7 +605,7 @@ fn events(score: &TabScore, spans: &[(i64, i64)], bar: i64) -> Vec<Event> {
         if let Some(k) = ev.notes.iter().position(|w| w.pitch == n.pitch && w.place == place(i)) {
             let w = &mut ev.notes[k];
             w.confidence = w.confidence.max(n.confidence);
-            w.end = w.end.max(end);
+            w.end = w.end.max(played[i]);
             w.vibrato |= has(Technique::Vibrato);
             w.let_ring |= has(Technique::LetRing);
             w.dead |= has(Technique::DeadNote);
@@ -613,7 +617,7 @@ fn events(score: &TabScore, spans: &[(i64, i64)], bar: i64) -> Vec<Event> {
             source: i,
             pitch: n.pitch,
             confidence: n.confidence,
-            end,
+            end: played[i],
             place: place(i),
             vibrato: has(Technique::Vibrato),
             let_ring: has(Technique::LetRing),
@@ -654,7 +658,8 @@ fn events(score: &TabScore, spans: &[(i64, i64)], bar: i64) -> Vec<Event> {
     // The links numbered so far: the event and note each stops at, whether it is an arc, its number,
     // and the event it leaves.
     let mut numbered: Vec<(usize, usize, usize, bool, u8)> = Vec::new();
-    // The latest note on each string so far, and the latest event with a note without a place.
+    // The latest note on each string so far, and the latest event with a note without a place: one in
+    // the chord the link leaves is not between the two notes.
     let mut last: BTreeMap<u8, (usize, usize)> = BTreeMap::new();
     let mut lost: Option<usize> = None;
     for e in 0..events.len() {
@@ -663,7 +668,7 @@ fn events(score: &TabScore, spans: &[(i64, i64)], bar: i64) -> Vec<Event> {
             if events[e].notes[k].leads.is_empty() {
                 continue;
             }
-            let from = last.get(&string).copied().filter(|&(fe, fk)| lost.is_none_or(|l| fe > l) && near(events[fe].notes[fk].end, events[e].start, bar));
+            let from = last.get(&string).copied().filter(|&(fe, fk)| lost.is_none_or(|l| l <= fe) && near(events[fe].notes[fk].end, events[e].start, bar));
             events[e].notes[k].from = from;
             let Some(from) = from else { continue };
             for t in events[e].notes[k].leads.clone() {
@@ -735,8 +740,8 @@ impl<'a> Plan<'a> {
         let bar = score.beats * WHOLE / score.beat_unit;
         let compound = score.beat_unit == 8 && score.beats % 3 == 0;
         let beam_group = if compound { DOTTED_QUARTER } else { TICKS_PER_BEAT };
-        let Grid { spans, triplets, adjusted } = grid(score, bar, compound);
-        let events = events(score, &spans, bar);
+        let Grid { spans, played, triplets, adjusted } = grid(score, bar, compound);
+        let events = events(score, &spans, &played, bar);
 
         let first = events.first().map_or(0, |e| e.start);
         let last = events.last().map_or(0, |e| e.end);

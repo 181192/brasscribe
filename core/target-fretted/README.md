@@ -422,10 +422,11 @@ staves the notation staff gets only the slurs and the x noteheads.
 
 - The note a technique comes from is the latest note before it on the same string: string 1 fret 3,
   the open sixth string, then a slide to string 1 fret 5 slides from fret 3. It is linked only when
-  the string is silent for at most an eighth between the two, with no bar line in that silence, and
-  no note without a place (which might have been on the string) came between. Otherwise nothing is
-  linked, though the solver and `check` still mean the note before in time. The text exports use the
-  same note.
+  the string is silent for at most an eighth between the two, counted from where the earlier note
+  ends as played (also when it is held under later notes), with no bar line in that silence, and no
+  note without a place (which might have been on the string) came after its chord. Otherwise nothing
+  is linked, though the solver and `check` still mean the note before in time. The text exports use
+  the same note.
 - Slurs and slides open at the same time have numbers of their own, 1 to 8 on each staff (the tab
   staff of a pair uses 9 to 16).
 - A tied note carries the marks that end on it on its first piece and the marks that leave it on its
