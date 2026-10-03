@@ -37,6 +37,38 @@ class PairingWordsTest {
             strings(File(src, "fretscribe/res/values-nb/strings.xml"))["companion_explain"])
     }
 
+    /**
+     * About credits what the Fretscribe app carries, as THIRD_PARTY_NOTICES.md lists it: the notation and playback
+     * libraries for Android or for every app with the Rust core, the fonts of Fretscribe, and the Android
+     * dependencies with code of their own in the app (Oboe's and ONNX Runtime's native libraries).
+     */
+    @Test
+    fun aboutNamesEverythingTheAppCarries() {
+        val notices = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("THIRD_PARTY_NOTICES.md")
+        assumeTrue("the notices are not in this checkout", notices?.isFile == true)
+        fun section(title: String) = notices!!.readText().substringAfter("## $title\n").substringBefore("\n## ")
+        fun component(row: String): String {
+            val cell = row.removePrefix("|").substringBefore("|").trim()
+            val name = Regex("""^\[([^\]]+)]""").find(cell)?.groupValues?.get(1) ?: cell.substringBefore(" (").substringBefore(",")
+            return name.removeSuffix(" font").trim()
+        }
+        fun rows(title: String, carried: (String) -> Boolean) =
+            section(title).lines().filter { it.startsWith("| ") && !it.startsWith("| Component") && !it.startsWith("| Font") && carried(it) }.map(::component)
+        val libraries = rows("Notation and playback libraries") { row ->
+            val where = row.split("|").getOrNull(3).orEmpty()
+            where.contains("Android") || where.contains("Rust core")
+        }
+        val fonts = rows("Fonts") { it.contains("Fretscribe") }
+        val carried = libraries + fonts + listOf("Oboe", "ONNX Runtime")
+        assertTrue(carried.toString(), carried.containsAll(listOf("alphaTab", "Bravura", "Sonivox SoundFont", "alphaSkia", "AndroidX Media3", "UniFFI",
+            "Atkinson Hyperlegible Next", "Fretscribe Tab")))
+        for (dir in listOf("values", "values-nb")) {
+            val words = strings(File(src, "fretscribe/res/$dir/strings.xml"))
+            val about = words["about_text"].orEmpty() + " " + words["about_font"].orEmpty()
+            assertEquals(dir, emptyList<String>(), carried.filterNot { about.contains(it) })
+        }
+    }
+
     /** The R.string names used in [function] of [file], up to the next top-level function. */
     private fun used(file: String, function: String): Set<String> {
         val text = File(src, "main/kotlin/no/brasscribe/play/ui/$file").readText().substringAfter("fun $function(")

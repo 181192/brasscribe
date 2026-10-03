@@ -52,20 +52,22 @@
     <!-- Help (Settings > Help): what this app does, in its own words. -->
     <string name="help_1_title">Write down a tab</string>
     <string name="help_1_text">Open a recording, or record with the microphone. Say what it is, and Fretscribe on your computer writes down the notes as tab for your instrument.</string>
-    <string name="help_2_text">A “?” above a note means Fretscribe wasn\'t sure. A boxed “?” means very unsure. Listen to that bar of the recording to check it.</string>
+    <string name="help_2_text">A “?” above a note means Fretscribe wasn\'t sure of it. A boxed “!” marks a note your instrument can\'t play there. Listen to that bar of the recording to check it.</string>
     <string name="help_3_text">Slow the recording down, and repeat the hard bars.</string>
     <string name="help_4_title">Your songs</string>
     <string name="help_4_text">Every tab you make is kept under Your songs, on the phone and on your computer.</string>
     <string name="help_5_title">Tabs are written on your computer</string>
     <string name="help_5_text">Fretscribe on your computer writes down the notes. Open it there, and connect in Settings.</string>
+    <!-- The keys while a tab plays: Fretscribe has no music stand. -->
+    <string name="help_stand_title">Page turners and keys</string>
 
     <!-- Problems -->
     <string name="problem_file_body">Fretscribe couldn\'t read the sound in it.</string>
     <string name="problem_record_body">The phone didn\'t let Fretscribe record.</string>
 
     <!-- About -->
-    <string name="about_text">Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) to draw the tab and AndroidX Media3 (Apache-2.0) to play the recording. Fretscribe on your computer writes down the notes.</string>
-    <string name="about_font">Titles are set in Atkinson Hyperlegible Next, and fret numbers in Fretscribe Tab (SIL Open Font License 1.1).</string>
+    <string name="about_text">Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) with the Bravura font (SIL OFL 1.1) and alphaSkia (BSD-3-Clause) to draw the tab, AndroidX Media3 (Apache-2.0) to play the recording, and the Sonivox SoundFont (Apache-2.0) for alphaTab\'s own sounds. Its shared code also carries Oboe (Apache-2.0), ONNX Runtime (MIT) and UniFFI (MPL-2.0). Fretscribe on your computer writes down the notes.</string>
+    <string name="about_font">Titles are set in Atkinson Hyperlegible Next, and fret numbers in Fretscribe Tab (both SIL Open Font License 1.1).</string>
     <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>
 

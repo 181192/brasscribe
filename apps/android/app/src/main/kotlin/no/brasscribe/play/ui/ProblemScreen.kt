@@ -237,7 +237,7 @@ fun HelpScreen(vm: PlayViewModel) {
         }
         // The music stand: page turners, and how to keep a tablet one way up (it has no Lock rotation).
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
-            SubHeading(stringResource(R.string.stand_enter))
+            SubHeading(stringResource(R.string.help_stand_title))
             Text(stringResource(R.string.help_stand_pedal), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             if (androidx.compose.ui.platform.LocalConfiguration.current.smallestScreenWidthDp >= 600)
                 Text(stringResource(R.string.help_stand_tablet_lock), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
