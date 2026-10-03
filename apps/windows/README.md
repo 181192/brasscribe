@@ -90,8 +90,12 @@ It runs the core tests, builds the audio and controls libraries, and
 type-checks the app's C# through `tools/CodeBehindCheck`. Set `DOTNET_ROOT` if
 your SDK is not at `/opt/homebrew/opt/dotnet/libexec`.
 
-The full Windows build, the start-up smoke test and the Axe.Windows scan run in
-[.github/workflows/windows.yml](../../.github/workflows/windows.yml).
+The full Windows build, the start-up smoke test, the Axe.Windows scan and the screenshots run in
+[.github/workflows/windows.yml](../../.github/workflows/windows.yml), on a Windows runner. `ci.yml`
+calls it on every pull request that touches `apps/windows/`, `core/`, the design tokens or what the
+build links from `design/`, `sounds/`, `apps/fixtures/` or the score player's SoundFont (the list is
+the `windows_play` filter in `ci.yml`'s `changes` job), and on every push to main. It is part of
+`CI result`. The screenshots are an artefact (`windows-screenshots`), not compared with the merge base.
 
 ## Test tiers
 

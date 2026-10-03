@@ -3,12 +3,21 @@ name: windows
 # Brasscribe Play for Windows. Checks: core tests, the WinUI 3 app build, a smoke test, an
 # Axe.Windows accessibility scan and screenshots. With `release`: a self-contained x64 build
 # uploaded as dist-windows-x64.
-# Heavy platform builds run only for releases (release.yml) or when started by hand;
-# pull requests and pushes to main get the fast Linux checks in ci.yml instead.
+# The checks run on pull requests that touch what the Windows apps build from, and on pushes to main:
+# ci.yml calls this workflow (job `windows`) after its `changes` job, with skip_play or skip_bandroom
+# for an app the change does not reach. Releases (release.yml) call it with `release`; it can also be
+# started by hand.
 on:
   workflow_call:
     inputs:
       release:
+        type: boolean
+        default: false
+      # Set by ci.yml when a pull request does not reach that app. Unset (false), both apps are checked.
+      skip_play:
+        type: boolean
+        default: false
+      skip_bandroom:
         type: boolean
         default: false
   workflow_dispatch:
@@ -39,10 +48,13 @@ env:
 jobs:
   build:
     name: ${{ inputs.release && 'release build' || 'test, build and scan' }}
+    if: ${{ inputs.release || !inputs.skip_play }}
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -227,6 +239,8 @@ jobs:
         working-directory: apps/bandroom/windows
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -300,7 +314,7 @@ jobs:
   # and screenshots to compare with design/mockups/png/server-*.
   bandroom:
     name: bandroom (test, build and scan)
-    if: ${{ !inputs.release }}
+    if: ${{ !inputs.release && !inputs.skip_bandroom }}
     runs-on: windows-latest
     timeout-minutes: 75
     defaults:
@@ -309,6 +323,8 @@ jobs:
         working-directory: apps/bandroom/windows
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v6
         with:

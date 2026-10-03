@@ -104,6 +104,13 @@ build for testing again.
 - the core .NET tests
 - Bandroom for macOS: the BandroomKit tests and `make -C apps/bandroom/macos build`
 
+On a pull request, CI (`ci.yml`) runs the same on Linux for the areas the change touches, and the
+Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`, `apps/bandroom/windows/`,
+`core/`, the design tokens, `sounds/`, or the pixi workspace and engine sources Bandroom bundles: the core
+tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test, the Axe.Windows scans and the
+screenshots (an artefact, not compared). The `changes` job's filters say exactly which paths count. Apple
+and the Android release build run only for releases or by hand.
+
 Things that differ from running the suites by hand:
 
 - Conformance writes to `core/target/conformance` in the worktree (`--work`), not to `data/runs`,
