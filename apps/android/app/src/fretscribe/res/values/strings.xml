@@ -39,6 +39,15 @@
     <string name="settings_seat">Your instrument</string>
     <string name="settings_seat_caption">Fretscribe remembers this for your tabs.</string>
     <string name="companion_title">Fretscribe on your computer</string>
+    <!-- Fretscribe on your computer (the pairing screen). The program on the computer is called what the rest of
+         this app calls it; nothing here names Brasscribe or Bandroom. -->
+    <string name="companion_explain">Open Fretscribe on your computer and choose Pair a phone. Type the six digits it shows.</string>
+    <string name="companion_searching">Looking for Fretscribe on your network… You can also type the address below.</string>
+    <string name="companion_tech_details">Fretscribe on your computer shows its address in its details. Without it: “pixi run serve-lan”.</string>
+    <string name="companion_failed_plain">Couldn\'t connect. Check that Fretscribe on the computer says Running, and that both are on the same Wi-Fi.</string>
+    <string name="pair_link_invalid">That code isn\'t from Fretscribe on a computer.</string>
+    <string name="pair_link_address_by_name">Fretscribe looks for it on your network by name.</string>
+    <string name="pair_needs_update">Update Fretscribe to connect to this computer.</string>
     <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>
 
