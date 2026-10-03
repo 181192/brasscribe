@@ -369,10 +369,15 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
 # A bar of two tracked beats whose onsets divide the beat in three is a real two (6/8 counted in two): of
 # the onsets off the beat, COMPOUND_SHARE or more lie within COMPOUND_NEAR of a third of the beat, not of a
 # half or a quarter, and there are at least COMPOUND_ONSETS of them. The share is above every two-beat-bar
-# take of GuitarSet's players 00 to 02, swing takes included (their highest is 0.75).
+# take of GuitarSet's players 00 to 02 (their highest is 0.75). Swing and shuffles divide the beat in three
+# too, but play its second third only (long-short): of the onsets near a third, COMPOUND_BOTH or more lie on
+# each of the two. GuitarSet's jazz takes put at most 0.19 of them on the first third (with shares up to
+# 0.84 when tracked in four), a rendered 12/8 shuffle 0.02; three eighths to the beat put 0.5 there, and a
+# jig's long-short-then-three-eighths a third.
 COMPOUND_SHARE = 0.8
 COMPOUND_NEAR = 0.07
 COMPOUND_ONSETS = 12
+COMPOUND_BOTH = 0.25
 
 
 def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
@@ -380,9 +385,11 @@ def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
     from brasscribe_music.quantize import BeatMap
 
     at = BeatMap(beat_times).to_beats(np.unique(np.round(np.sort(onsets), 2))) % 1.0
-    thirds = int(np.sum((np.abs(at - 1 / 3) <= COMPOUND_NEAR) | (np.abs(at - 2 / 3) <= COMPOUND_NEAR)))
+    first, second = int(np.sum(np.abs(at - 1 / 3) <= COMPOUND_NEAR)), int(np.sum(np.abs(at - 2 / 3) <= COMPOUND_NEAR))
+    thirds = first + second
     twos = int(np.sum((np.abs(at - 0.5) <= COMPOUND_NEAR) | (np.abs(at - 0.25) <= COMPOUND_NEAR) | (np.abs(at - 0.75) <= COMPOUND_NEAR)))
-    return thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= COMPOUND_SHARE
+    return (thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= COMPOUND_SHARE
+            and min(first, second) >= COMPOUND_BOTH * thirds)
 
 
 def bar_beats(tracked: int, beat_times: np.ndarray | None = None, onsets: np.ndarray | None = None) -> int:

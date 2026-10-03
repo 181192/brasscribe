@@ -1269,7 +1269,7 @@ def test_a_bar_of_one_or_two_tracked_beats_is_written_as_four():
 
 
 def test_a_bar_of_two_beats_divided_in_three_stays_two():
-    """6/8 counted in two: three notes to the beat. Swing, with an onset near two thirds of some beats only, is not that."""
+    """6/8 counted in two: three notes to the beat. Swing and a shuffle, with onsets near two thirds of the beat only, are not that."""
     beat = 60 / 72
     beats = np.array([[i * beat, i % 2 + 1] for i in range(34)])
     six_eight = [{"pitch": 40 + k % 3 * 5, "onset": (i + k / 3) * beat, "offset": (i + k / 3 + 0.3) * beat} for i in range(32) for k in range(3)]
@@ -1281,6 +1281,14 @@ def test_a_bar_of_two_beats_divided_in_three_stays_two():
     for line in (eighths, swing):
         assert not bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in line]))
         assert bass_tab.transcribed_line(line, beats)["meter"]["beats"] == 4
+    # A shuffle in exact triplets, long-short on every beat: all its onsets off the beat are on a third, the second.
+    shuffle = [{"pitch": 40 + k * 5, "onset": (i + 2 * k / 3) * beat, "offset": (i + 2 * k / 3 + 0.3) * beat} for i in range(32) for k in range(2)]
+    assert not bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in shuffle]))
+    assert bass_tab.transcribed_line(shuffle, beats)["meter"]["beats"] == 4
+    # A jig: long-short, then three eighths. The first third is played on every other beat, and that is enough.
+    jig = [{"pitch": 50 + k, "onset": (2 * i + at) * beat, "offset": (2 * i + at + 0.3) * beat}
+           for i in range(16) for k, at in enumerate((0, 2 / 3, 1, 4 / 3, 5 / 3))]
+    assert bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in jig]))
     few = six_eight[:9]  # too few onsets off the beat to say
     assert not bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in few]))
     assert bass_tab.bar_beats(2) == 4 and bass_tab.bar_beats(3, beats[:, 0], np.array([n["onset"] for n in six_eight])) == 3

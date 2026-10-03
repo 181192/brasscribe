@@ -155,6 +155,30 @@ def test_in_the_open_position_style_an_overtone_on_top_does_not_move_a_chord_up_
     assert len(tab.fingered(e, tab.options({"style": "open-position"}))["notes"]) == 24
 
 
+def test_the_open_position_check_reads_each_place_with_its_own_note_when_a_note_is_left_out():
+    """Fingered without its overtone, the passage can lose a note as unplayable; the places that come back are then
+    paired with the notes that were kept, so the open string of the chord after it is still seen."""
+    def note(pitch: int, start: int, **more) -> dict:
+        return {"pitch": pitch, "start": start, "dur": 24, "confidence": 0.9, "onset_s": start / 48, "offset_s": start / 48 + 0.4, **more}
+
+    def solve(request: dict) -> dict:  # a stand-in for target-fretted, its answers chosen for the check
+        pitches = [n["pitch"] for n in request["notes"]]
+        top = 72 in pitches
+        frets = {50: (4, 0), 51: (4, 1), 59: (2, 7 if top else 0), 65: (1, 8 if top else 1), 72: (1, 8)}
+        return {"instrument": {"name": "Guitar", "tuning": {"name": "Standard", "strings": [{"open_pitch": p, "first_fret": 0} for p in OPEN_E[::-1]]},
+                               "frets": 22, "scale_length_mm": 648.0, "capo": 0},
+                "fingering": {"notes": [{"pitch": p, "string": frets[p][0], "fret": frets[p][1], "alternatives": [], "out_of_range": False,
+                                         "pinned": False} for p in pitches]},
+                "violations": [] if top or 51 not in pitches else [{"kind": "span", "note": pitches.index(51)}], "tuning_suggestions": []}
+
+    doc = {"notes": [note(50, 0), note(51, 0), note(59, 24), note(65, 24), note(72, 24, on_top=True)], "tempo_bpm": 120.0,
+           "octave_shift": 0, "octave_source": "auto", "reference_pitch": None, "key": {"name": "C", "fifths": 0, "mode": "major"},
+           "meter": {"beats": 4, "beat_unit": 4}, "ticks_per_beat": 24, "beat_times": [0.0, 0.5], "first_downbeat": 0}
+    t = tab.fingered(doc, tab.options({"style": "open-position"}), solve)
+    assert [n["pitch"] for n in t["notes"]] == [50, 59, 65]  # the overtone went: without it the chord has an open string
+    assert t["leftovers_dropped"] == 1 and t["unplayable_dropped"] == 1
+
+
 @pytest.mark.parametrize("params", [
     {"instrument": "banjo"}, {"instrument": "guitar"}, {"instrument": "guitar-6", "tuning": "bead"},
     {"instrument": "ukulele", "tuning": "standard"}, {"instrument": "mandolin", "tuning": "high-g"},
