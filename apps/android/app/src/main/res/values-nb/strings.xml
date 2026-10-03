@@ -94,6 +94,10 @@
     <string name="record_started">Innspillingen er i gang</string>
     <string name="record_stopped">Innspillingen er stoppet, %1$s</string>
     <string name="record_stop">Stopp innspillingen</string>
+    <string name="record_discard_title">Kaste dette opptaket?</string>
+    <string name="record_discard_text">Det slettes fra telefonen. Velg Stopp innspillingen for å beholde det.</string>
+    <string name="record_discard_confirm">Kast</string>
+    <string name="record_discard_keep">Fortsett å spille inn</string>
     <string name="record_level">Lydnivå</string>
     <plurals name="record_limit">
         <item quantity="one">Opptak stopper etter %d time.</item>
