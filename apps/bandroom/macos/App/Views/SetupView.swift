@@ -233,7 +233,10 @@ struct SetupView: View {
                     itemRow(Strings.componentItem(c), size: c.totalBytes, state: state(of: c))
                 }
             }
-            if case .failed(let why) = boot {
+            if case .failed = boot, let refusal = app.bootstrapper.pixiRefusal {
+                ProblemCard(title: Strings.problemTitle(.pixiTooOld(refusal)), why: Strings.problemWhy(.pixiTooOld(refusal)),
+                            symbol: "exclamationmark.triangle.fill", tint: Color.Brasscribe.warning)
+            } else if case .failed(let why) = boot {
                 ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill",
                             tint: Color.Brasscribe.warning)
             }
@@ -255,6 +258,10 @@ struct SetupView: View {
                 if (boot == .done || finishing) && (d.phase == .done || items.isEmpty) {
                     Button { step = 3 } label: { Text("Continue") }
                         .buttonStyle(BRButtonStyle(kind: .primary, height: 40)).keyboardShortcut(.defaultAction)
+                } else if case .failed = boot, let refusal = app.bootstrapper.pixiRefusal {
+                    Button { app.copyDiagnostics() } label: { Text("Copy details for the tech person") }.buttonStyle(.brPlain)
+                    Button { app.openLatestRelease() } label: { Text(Strings.problemFix(.pixiTooOld(refusal))) }
+                        .buttonStyle(BRButtonStyle(kind: .primary, height: 40))
                 } else if case .failed = boot {
                     Button { run() } label: { Text("Try again") }.buttonStyle(BRButtonStyle(kind: .primary, height: 40))
                 } else if case .failed = d.phase {

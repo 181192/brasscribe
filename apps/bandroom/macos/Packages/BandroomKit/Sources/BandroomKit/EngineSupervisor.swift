@@ -145,6 +145,11 @@ public final class EngineSupervisor {
         healthTask?.cancel()
         pid = nil
         try? FileManager.default.removeItem(at: configuration.paths.engineStatus)
+        // pixi refusing the workspace exits at once, and would again on every retry: give up now and say why.
+        if machine.phase == .starting, status != 0, let refusal = PixiRefusal.inLatestRun(log: configuration.paths.engineLog) {
+            log("engine: pixi refused the workspace: \(refusal.message)")
+            return send(.launchFailed(.pixiTooOld(refusal)))
+        }
         send(.exited(status: status))
     }
 

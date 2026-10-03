@@ -313,9 +313,17 @@ final class AppModel {
         var list: [Problem] = []
         if case .running = phase, monitor.isUnresponsive { list.append(.notResponding) }
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
-        if updateFailure != nil, !updater.isUpdating { list.append(.updateFailed) }
+        if let refusal = pixiRefusal { list.append(.pixiTooOld(refusal)) }
+        if updateFailure != nil, !updater.isUpdating, updater.pixiRefusal == nil { list.append(.updateFailed) }
         if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }
         return list
+    }
+
+    /// pixi refused the engine workspace during setup or an update (a refused start is the supervisor's failure).
+    var pixiRefusal: PixiRefusal? {
+        if case .failed = bootstrapper.phase, let r = bootstrapper.pixiRefusal { return r }
+        if updateFailure != nil, let r = updater.pixiRefusal { return r }
+        return nil
     }
 
     /// First run: the engine environment is the first 30 %, the model downloads the rest.
@@ -386,6 +394,11 @@ final class AppModel {
         NSWorkspace.shared.activateFileViewerSelecting([log])
     }
 
+    /// The latest release, where a Bandroom with a newer pixi is (the fix for `Problem.pixiTooOld`).
+    func openLatestRelease() {
+        NSWorkspace.shared.open(URL(string: "https://github.com/181192/brasscribe/releases/latest")!)
+    }
+
     func openPrivacySettings() {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")!)
     }
@@ -408,6 +421,9 @@ final class AppModel {
         }
         lines.append("Engine build: \(monitor.health?.build ?? "–"); this app's workspace: \(bundledStamp?.short ?? "–")")
         if let updateFailure { lines.append("Engine update failed: \(updateFailure)") }
+        if let r = pixiRefusal ?? { if case .pixiTooOld(let r) = failure { r } else { nil } }() {
+            lines.append("pixi \(supervisor.configuration.pixi?.path ?? "–") refused the engine workspace: \(r.message)")
+        }
         if let port = supervisor.port { lines.append("Port: \(port)") }
         lines.append("Addresses: \(addresses.joined(separator: ", "))")
         if let h = monitor.health { lines.append("Runs on: \(h.device)") }

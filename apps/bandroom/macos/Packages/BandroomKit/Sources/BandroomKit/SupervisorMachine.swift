@@ -7,6 +7,8 @@ public enum LaunchFailure: Equatable, Sendable {
     /// The engine environment isn't set up (first run unfinished, or pixi missing).
     case notInstalled(String)
     case spawn(String)
+    /// The pixi Bandroom runs the engine with is older than the engine workspace asks for; starting again can't help.
+    case pixiTooOld(PixiRefusal)
 }
 
 /// The engine's life as Bandroom sees it (design/server-app.md §3.3, §3.7).

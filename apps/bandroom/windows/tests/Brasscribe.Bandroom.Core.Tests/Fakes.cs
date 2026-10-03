@@ -30,11 +30,14 @@ internal sealed class FakeLauncher : IProcessLauncher
 {
     public List<(ProcessSpec Spec, FakeProcess Process)> Started { get; } = [];
     public Func<ProcessSpec, int>? ExitImmediately { get; set; }
+    /// <summary>What every process writes as it starts (stdout and stderr together).</summary>
+    public IReadOnlyList<string> Output { get; set; } = [];
 
     public IEngineProcess Start(ProcessSpec spec, Action<string> output)
     {
         var p = new FakeProcess(1000 + Started.Count);
         Started.Add((spec, p));
+        foreach (var line in Output) output(line);
         if (ExitImmediately?.Invoke(spec) is int code) p.Exit(code);
         return p;
     }

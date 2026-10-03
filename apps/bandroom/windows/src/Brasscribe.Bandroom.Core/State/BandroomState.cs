@@ -12,7 +12,7 @@ public enum TrayBadge { None, DownArrow, Dots, Pie, Triangle, Square, CircularAr
 /// <summary>The one primary button of the flyout.</summary>
 public enum PrimaryAction { None, PairPhone, StartEngine, FinishSetup, TryAgain, Fix }
 
-public enum ProblemKind { NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed }
+public enum ProblemKind { NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed, PixiTooOld }
 
 /// <summary>A Needs-attention problem (§6.2): a title, one sentence why, the fix, and details for the tech person.</summary>
 public sealed record Problem(ProblemKind Kind, string Title, string Why, string FixLabel, string Details);
@@ -138,6 +138,14 @@ public static class Problems
 {
     public static Problem NoFreePort(IStrings s) =>
         new(ProblemKind.NoFreePort, s["Port_Title"], s["Port_Why"], s["Action_Restart"], "Ports 8765–8775 in use.");
+
+    /// <summary>
+    /// The pixi this app bundles is too old for its engine workspace (setup, an update or a start was refused). The fix
+    /// is a newer Bandroom; the details are pixi's own words.
+    /// </summary>
+    public static Problem PixiTooOld(IStrings s, PixiRefusal refusal) =>
+        new(ProblemKind.PixiTooOld, s["Pixi_Title"], s["Pixi_Why"], s["Pixi_Fix"],
+            $"pixi {refusal.Found} refused the engine workspace (it requires pixi '{refusal.Required}'): {refusal.Message}");
 
     /// <summary>The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.</summary>
     public static Problem UpdateFailed(IStrings s, string details) =>

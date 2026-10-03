@@ -240,11 +240,16 @@ public sealed class Bootstrapper
                 {
                     var spec = InstallSpec(item);
                     _log.Write($"bandroom: setting up {item}: {spec.FileName} {string.Join(' ', spec.Arguments)}");
-                    using var p = _launcher.Start(spec, _log.Write);
+                    PixiRefusal? refusal = null;
+                    using var p = _launcher.Start(spec, line =>
+                    {
+                        _log.Write(line);
+                        refusal ??= PixiRefusal.Parse(line);
+                    });
                     using var reg = ct.Register(p.Kill);
                     int code = await p.WaitForExitAsync().ConfigureAwait(false);
                     ct.ThrowIfCancellationRequested();
-                    if (code != 0) throw new BootstrapException(item, code, _log.Tail(20));
+                    if (code != 0) throw new BootstrapException(item, code, _log.Tail(20)) { Refusal = refusal };
                     WriteMarker("env-" + item, hash);
                     if (item == "default" && swap is not null) { swap.Commit(); swap = null; }
                 }
@@ -271,4 +276,6 @@ public sealed class BootstrapException(string environment, int exitCode, IReadOn
     public string Environment { get; } = environment;
     public int ExitCode { get; } = exitCode;
     public IReadOnlyList<string> Tail { get; } = tail;
+    /// <summary>Set when pixi refused the workspace (too old for it): installing again can't help.</summary>
+    public PixiRefusal? Refusal { get; init; }
 }
