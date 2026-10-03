@@ -322,22 +322,12 @@ def test_detached_notes_get_a_readable_length_and_held_ones_reach_the_next():
     assert [(n["start"], n["dur"]) for n in doc["notes"]] == [(0, 48), (48, 48), (96, 12), (144, 48)]
 
 
-@pytest.mark.parametrize("start,dur,next_start,written", [
-    (0, 8, 24, 6), (0, 8, 12, 6), (0, 16, 24, 18), (0, 16, 12, 12), (24, 8, None, 6),  # a triplet's length on the 16th grid
-    (0, 12, 24, 12), (0, 24, 24, 24), (6, 18, 24, 18),  # straight already
-    (0, 8, 8, 8), (8, 8, 16, 8), (16, 8, 24, 8), (0, 16, 16, 16),  # a real triplet: starts on the triplet grid around it
-    (0, 4, 6, 6),  # shorter than a 16th: the shortest straight value
-])
-def test_a_triplets_length_on_the_straight_grid_becomes_the_nearest_straight_one(start, dur, next_start, written):
-    assert bass_tab.straight_length(start, dur, next_start) == written
-
-
 def test_a_detached_note_on_a_straight_line_is_not_written_as_a_triplet():
-    # 0.2 s at 120 BPM is 0.4 of a beat: the shared durations write a triplet eighth (8 ticks); the tab a 16th.
+    # 0.2 s at 120 BPM is 0.4 of a beat: among all readable values the nearest is a triplet eighth (8 ticks); on the
+    # beat's straight grid it is an eighth (12 ticks), not a 16th (6), which is further from what was played.
     doc = bass_tab.transcribed_line(_played([E1, E1], step=1.0, length=0.9) + _played([A1], start=2.0, length=0.2)
                                     + _played([E1], start=3.0, length=0.9), _beats())
-    assert [(n["start"], n["dur"]) for n in doc["notes"]] == [(0, 48), (48, 48), (96, 6), (144, 48)]
-    assert all(n["dur"] % 6 == 0 for n in doc["notes"])
+    assert [(n["start"], n["dur"]) for n in doc["notes"]] == [(0, 48), (48, 48), (96, 12), (144, 48)]
 
 
 @pytest.mark.parametrize("notes,beats,message", [

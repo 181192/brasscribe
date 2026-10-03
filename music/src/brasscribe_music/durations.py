@@ -18,7 +18,9 @@ Two steps:
    (eval `duration_bench`); scores there write the full inter-onset interval
    for most notes played longer than half of it and almost never for shorter
    ones. A note whose performed length is under half its written length gets
-   a staccato mark.
+   a staccato mark. With `keep_grid` a detached note only takes the values of
+   its beat's grid: straight ones on a beat quantized straight, triplet ones on
+   a beat quantized in threes (`beat_values`).
 """
 
 from __future__ import annotations
@@ -36,6 +38,13 @@ STACCATO_RATIO = 0.5
 # Readable written lengths in ticks (24 per beat): 16th, triplet 8th, 8th, triplet quarter, dotted 8th,
 # quarter, dotted quarter, half, dotted half, whole.
 READABLE = (6, 8, 12, 16, 18, 24, 36, 48, 72, 96)
+
+# The readable lengths of each kind of beat grid, for `keep_grid`: straight values (multiples of a 16th) on a
+# beat quantized in 1, 2, 4 or 8, triplet values (multiples of a triplet 8th) on a beat quantized in 3 or 6.
+STRAIGHT = tuple(c for c in READABLE if c % 6 == 0)
+TRIPLET = tuple(c for c in READABLE if c % 8 == 0)
+# Where in a beat (ticks) only a grid of 3 or 6 puts an onset.
+TRIPLET_SLOTS = (4, 8, 16, 20)
 
 FRAME = 0.016  # SwiftF0 frame period (s)
 
@@ -122,8 +131,16 @@ def _stub(start: int, end: int) -> bool:
         and end % TICKS_PER_BEAT < end - start
 
 
-def _readable(performed: float, room: int | None, start: int = 0) -> int:
-    cands = [c for c in READABLE if room is None or c <= room]
+def beat_values(notes: list[QNote]) -> dict[int, tuple[int, ...]]:
+    """The readable lengths of each beat (index from tick 0) that holds a start of `notes`: TRIPLET where a note starts
+    on a slot only a grid of 3 or 6 has, else STRAIGHT. That is the kind of grid `quantize` chose for the beat: a beat
+    it quantized in threes with every onset on a straight slot as well gets the straight values, which fit it too."""
+    triplet = {q.start // TICKS_PER_BEAT for q in notes if q.start % TICKS_PER_BEAT in TRIPLET_SLOTS}
+    return {q.start // TICKS_PER_BEAT: TRIPLET if q.start // TICKS_PER_BEAT in triplet else STRAIGHT for q in notes}
+
+
+def _readable(performed: float, room: int | None, start: int = 0, values: tuple[int, ...] = READABLE) -> int:
+    cands = [c for c in values if room is None or c <= room]
     if room is not None and room not in cands and room <= READABLE[-1]:
         cands.append(room)
     if not cands:
@@ -134,7 +151,7 @@ def _readable(performed: float, room: int | None, start: int = 0) -> int:
 
 def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_ratio: float = LEGATO_RATIO,
                       max_held_gap: float = MAX_HELD_GAP, staccato_ratio: float = STACCATO_RATIO,
-                      hold_within: int = 0, min_detached: int = 0) -> list[Written]:
+                      hold_within: int = 0, min_detached: int = 0, keep_grid: bool = False) -> list[Written]:
     """Written length and staccato flag per note of one voice (chords share an onset), in input order.
 
     Performed length comes from onset_s/offset_s through `bm` when given
@@ -144,7 +161,8 @@ def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_rati
     rests, and `min_detached` is the shortest value a detached note gets
     (an 8th with a staccato reads easier than a 16th and a rest). Both are
     part-writing choices: scores write either, and duration_bench measures
-    the defaults (0).
+    the defaults (0). `keep_grid` writes a detached note with the values of its beat's grid only (`beat_values`), so a
+    note on a straight beat is never given a triplet's length; the band parts leave it off.
     """
     if not notes:
         return []
@@ -156,6 +174,7 @@ def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_rati
         perf = list(np.maximum(off - on, 0.0) * TICKS_PER_BEAT)
     else:
         perf = [float(q.end - q.start) for q in notes]
+    values = beat_values(notes) if keep_grid else {}
     out = []
     for q, p in zip(notes, perf):
         n = nxt.get(q.start)
@@ -163,7 +182,7 @@ def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_rati
         if room is not None and (room <= hold_within or (p >= legato_ratio * room and room - p <= max_held_gap)):
             dur = room
         else:
-            dur = _readable(p, room, q.start)
+            dur = _readable(p, room, q.start, values.get(q.start // TICKS_PER_BEAT, READABLE))
             if dur < min_detached:
                 dur = min(min_detached, room) if room is not None else min_detached
         out.append(Written(int(dur), float(p), p < staccato_ratio * dur))

@@ -243,7 +243,7 @@ pub const PART_HOLD_WITHIN: i64 = TICKS_PER_BEAT / 2;
 /// One voice with written durations from its performed lengths (held vs detached, staccato).
 fn written_line(qnotes: Vec<QNote>, times: &[f64], pickup: i64, source: &str) -> Result<Vec<Note>, String> {
     let bm = BeatMap::new(times)?;
-    let o = WriteOptions { hold_within: PART_HOLD_WITHIN, min_detached: PART_HOLD_WITHIN };
+    let o = WriteOptions { hold_within: PART_HOLD_WITHIN, min_detached: PART_HOLD_WITHIN, keep_grid: false };
     Ok(apply_written_with(qnotes, Some(&bm), o)
         .into_iter()
         .map(|(q, w)| {
