@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
 import { compare } from "./compare.mjs";
 import { serveApi } from "./api";
+import { KNOWN, stale } from "./known";
 import { openView } from "./open";
 import { VARIANTS, type Variant } from "./views";
 
@@ -47,6 +48,25 @@ test("clipped: text out of view in a part that scrolls is not cut", async ({ pag
   expect(after.filter((f) => f.includes("scrolls"))).toEqual([]);
 });
 
+test("clipped: text a part that scrolls shows, cut by a box outside that part", async ({ page }) => {
+  const { after } = await beforeAfter(page, (p) => clipped(p), add(
+    '<div id="broken-outer" style="height:2.5em;overflow:hidden"><div style="height:8em;overflow-y:auto">' +
+    '<p style="margin:0">First line</p><p style="margin:0">Second line</p><p style="margin:0" id="shown-but-cut">Third line</p></div></div>'));
+  expect(after).toContainEqual('clipped: p#shown-but-cut "Third line" (cut by div#broken-outer)');
+});
+
+test("clipped: the run's manifest JSON, which scrolls, cut by a box around it", async ({ page }) => {
+  await openView(page, { route: "runs/old-hundredth-a/manifest" }, light);
+  const json = page.locator("#main pre.json").first();
+  await json.evaluate((pre) => {
+    pre.closest("details")!.open = true;
+    const box = pre.parentElement!;
+    box.id = "broken-manifest-box";
+    box.style.cssText = "max-height:4em;overflow:hidden";
+  });
+  expect((await clipped(page)).map((f) => f.what)).toContainEqual(expect.stringMatching(/pre\.json "\{ .*" \(cut by details#broken-manifest-box\)$/));
+});
+
 test("keyboard: something to act on that Tab never reaches", async ({ page }) => {
   const { before, after } = await beforeAfter(page, keyboard, add(
     '<div role="button" id="broken-div-button" onclick="void 0">Do it</div><button type="button" tabindex="-1" id="broken-button">Or this</button>'));
@@ -69,8 +89,10 @@ test("keyboard: Tab back up the page (an order reversed by the styles)", async (
 test("keyboard: focus on something that cannot be seen, or that is covered", async ({ page }) => {
   const { after } = await beforeAfter(page, keyboard, add(
     '<a href="#/runs" id="broken-hidden" style="display:inline-block;width:0;height:0;overflow:hidden"></a>' +
-    '<p style="position:relative"><button type="button" id="broken-covered">Under a cover</button><span id="broken-cover" style="position:absolute;inset:-4px;width:12rem;background:#eee">cover</span></p>'));
+    '<p style="position:relative"><button type="button" id="broken-covered">Under a cover</button><span id="broken-cover" style="position:absolute;inset:-4px;width:12rem;background:#eee">cover</span></p>' +
+    '<button type="button" id="broken-transparent" style="opacity:0">Invisible</button>'));
   expect(after).toContainEqual("hidden-focus: Tab stops on a#broken-hidden, which cannot be seen");
+  expect(after).toContainEqual("hidden-focus: Tab stops on button#broken-transparent, which cannot be seen");
   expect(after).toContainEqual("obscured: button#broken-covered has focus under span#broken-cover");
 });
 
@@ -128,4 +150,11 @@ test("screenshots: changed, new, gone and the same are told apart", async ({ pag
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("known findings: an entry that matches nothing is reported, so a fixed one is removed", () => {
+  const [k] = KNOWN;
+  expect(stale([], k.view, k.variant)).toContainEqual(k);
+  expect(stale([{ check: k.check, what: "anything else" }], k.view, k.variant)).toContainEqual(k);
+  expect(stale([{ check: k.check, what: k.what.source.replace(/^\^|\$$/g, "").replace(/\\/g, "") }], k.view, k.variant)).not.toContainEqual(k);
 });

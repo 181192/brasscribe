@@ -262,8 +262,13 @@ jobs:
         env:
           PR: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
+        # Earlier steps ran the pull request's code, which can add to the job's environment and PATH: this step
+        # starts bash and gh by their full paths, with only the variables gh needs.
+        shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
         run: |
-          meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")') || meant=false
+          names=$(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" GH_TOKEN="$GH_TOKEN" \
+            /usr/bin/gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name') || names=""
+          if printf '%s\n' "$names" | /usr/bin/grep -qx 'screenshots-changed'; then meant=true; else meant=false; fi
           echo "meant=$meant" >> "$GITHUB_OUTPUT"
 
       - name: Screenshot result

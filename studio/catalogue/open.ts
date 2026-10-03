@@ -61,7 +61,16 @@ export async function steady(page: Page): Promise<void> {
       const n = walker.currentNode;
       if (n.textContent && /\d+ ms\b/.test(n.textContent)) n.textContent = n.textContent.replace(/\d+ ms\b/g, "– ms");
     }
+    // A view that focuses its score scrolls the page to it, and how far depends on when the score was laid out;
+    // the toolbar that sticks to the top then lands in a different place. Every screenshot starts at the top.
+    window.scrollTo(0, 0);
   });
+  // The score's bar cursor slides into place (a transform transition) and, as `will-change: transform`, keeps
+  // the raster of wherever it was caught mid-slide: its edge then differs by a pixel from run to run. Let every
+  // transition end, then have the cursor drawn afresh at its final place.
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))).then(() => undefined));
+  await page.addStyleTag({ content: ".at-cursor-bar, .at-cursor-beat { will-change: auto !important; }" });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 /** A screenshot taken once two in a row are the same (a score may still move into place after it is drawn). */

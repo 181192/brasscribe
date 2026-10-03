@@ -37,6 +37,8 @@ export const VARIANTS: Variant[] = [
   // 200 % zoom of a 1440 × 1000 window is 720 × 500 CSS px.
   { name: "zoom200", colorScheme: "light", contrast: "no-preference", lang: "en", viewport: { width: 720, height: 500 }, reflow: true },
   { name: "reflow320", colorScheme: "light", contrast: "no-preference", lang: "en", viewport: { width: 320, height: 800 }, keyboard: true, reflow: true },
+  // Bokmål's longer words at the narrowest width.
+  { name: "nb-reflow320", colorScheme: "light", contrast: "no-preference", lang: "nb", viewport: { width: 320, height: 800 }, reflow: true },
 ];
 
 /** Engraved, and with `player` the player loaded too (its status line changes once it has its sounds). */
@@ -75,7 +77,7 @@ export const VIEWS: View[] = [
     },
   },
   {
-    name: "menu", route: "runs", only: ["zoom200", "reflow320"],
+    name: "menu", route: "runs", only: ["zoom200", "reflow320", "nb-reflow320"],
     prepare: async (p) => {
       await p.locator(".nav-toggle").click();
       await expect(p.locator("#lang-select")).toBeVisible();

@@ -13,8 +13,9 @@
 # compare writes build/reports/screenshots/: index.html (before, the difference and after, for each view that
 # changed), summary.md (the same as a list) and the images. It exits 0 when no view changed, 1 when one
 # changed, appeared or went away, 2 when the catalogue's own checks failed (accessibility, cut-off text, the
-# page fitting 320 px and 200 %, text spacing, the keyboard, and the checks' own tests), and 3 when the
-# screenshots could not be taken at the base (nothing was compared; summary.md says so).
+# page fitting 320 px and 200 %, text spacing, the keyboard, and the checks' own tests), and 3 when anything
+# on the base's side failed (its worktree, npm packages, build or screenshots) or the comparison could not
+# run (nothing was compared; summary.md says so). A label may only let 1 through.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -40,25 +41,31 @@ case "${1:-}" in
     log "$(find "$shots" -name '*.png' | wc -l | tr -d ' ') screenshots in studio/build/catalogue/screenshots"
     ;;
   compare)
-    base="${2:-$(git -C "$repo" merge-base HEAD origin/main)}"
     rm -rf "$report"; mkdir -p "$report"
-    tree="$(mktemp -d)/base"
-    trap 'git -C "$repo" worktree remove --force "$tree" >/dev/null 2>&1 || true' EXIT
-    git -C "$repo" worktree add --detach "$tree" "$base" >/dev/null
+    # Anything that goes wrong on the base's side, whatever its own exit code, is 3: never "views changed",
+    # which the label could let through.
+    no_base() {
+      log "the screenshots could not be taken at ${base:-the base}: nothing was compared"
+      printf '# Screenshots\n\nThe screenshots could not be taken at the base, %s, so nothing was compared.\n' "${base:-(none)}" >"$report/summary.md"
+      exit 3
+    }
+    base="${2:-}"
+    [ -n "$base" ] || base="$(git -C "$repo" merge-base HEAD origin/main)" || no_base
+    base="$(git -C "$repo" rev-parse --verify "$base^{commit}")" || no_base
+    scratch="$(mktemp -d)" || no_base
+    tree="$scratch/base"
+    trap 'git -C "$repo" worktree remove --force "$tree" >/dev/null 2>&1 || true; rm -rf "$scratch"' EXIT
+    git -C "$repo" worktree add --detach "$tree" "$base" >/dev/null || no_base
     if [ -f "$tree/studio/catalogue/catalogue.spec.ts" ]; then
       log "taking them at ${base:0:12}"
       if cmp -s "$studio/package-lock.json" "$tree/studio/package-lock.json" && [ -d "$studio/node_modules" ]; then
-        ln -s "$studio/node_modules" "$tree/studio/node_modules"
+        ln -s "$studio/node_modules" "$tree/studio/node_modules" || no_base
       else
         log "the base has other npm packages: installing them there"
-        (cd "$tree/studio" && npm ci --no-audit --no-fund >/dev/null && npx playwright install chromium >/dev/null)
+        (cd "$tree/studio" && npm ci --no-audit --no-fund >/dev/null && npx playwright install chromium >/dev/null) || no_base
       fi
       # Only the screenshots: the base's own findings are not this change's.
-      if ! CATALOGUE_CHECKS=0 catalogue "$tree/studio" "$report/before" catalogue.spec; then
-        log "the screenshots could not be taken at ${base:0:12}: nothing was compared"
-        printf '# Screenshots\n\nThe screenshots could not be taken at the base, %s, so nothing was compared.\n' "${base:0:12}" >"$report/summary.md"
-        exit 3
-      fi
+      CATALOGUE_CHECKS=0 catalogue "$tree/studio" "$report/before" catalogue.spec || no_base
     else
       log "${base:0:12} has no screen catalogue: every view is new"
     fi
@@ -66,14 +73,16 @@ case "${1:-}" in
     # A view that fails its checks is reported by the tests; the comparison is made all the same.
     checks=0
     catalogue "$studio" "$shots" || checks=2
-    changed=0
-    node "$studio/catalogue/compare.mjs" "$report/before" "$shots" "$report" || changed=$?
-    if [ "$changed" -gt 1 ]; then log "the screenshots could not be compared"; exit 3; fi
+    # The comparison's answer is the result file it writes last; without it (it could not run), nothing was compared.
+    rm -f "$report/result.json"
+    node "$studio/catalogue/compare.mjs" "$report/before" "$shots" "$report" || true
+    if [ ! -f "$report/result.json" ]; then log "the screenshots could not be compared"; exit 3; fi
     [ "$checks" -ne 0 ] && { log "the catalogue's checks failed (see the test output above)"; exit 2; }
-    exit "$changed"
+    grep -q '"any": *true' "$report/result.json" && exit 1
+    exit 0
     ;;
   *)
-    sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac

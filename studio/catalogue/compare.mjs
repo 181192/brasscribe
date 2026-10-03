@@ -11,6 +11,9 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFi
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** Differing pixels up to this many in one screenshot are noise (reported, not a change). */
+export const FLOOR_PIXELS = 40;
+
 const pngs = (dir) => (existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".png")).sort() : []);
 const esc = (s) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -60,7 +63,9 @@ export async function compare(beforeDir, afterDir, reportDir) {
   const had = pngs(beforeDir);
   const now = pngs(afterDir);
   const changed = [];
+  const minor = [];
   const shares = {};
+  const counts = {};
   const added = had.length ? now.filter((f) => !had.includes(f)) : [];
   const gone = now.length ? had.filter((f) => !now.includes(f)) : [];
   const both = now.filter((f) => had.includes(f));
@@ -73,8 +78,16 @@ export async function compare(beforeDir, afterDir, reportDir) {
       for (const f of differ) {
         const d = await diff(page, url(join(beforeDir, f)), url(join(afterDir, f)));
         if (!d.n) continue;
-        changed.push(f);
         shares[f] = d.share;
+        counts[f] = d.n;
+        // A handful of pixels on an anti-aliased edge (a glyph, a rounded corner, the score's bar shading) can
+        // come out differently from one run to the next on the same machine. Under the floor a difference is
+        // reported, but is not a change.
+        if (d.n <= FLOOR_PIXELS && !d.sizeChanged) {
+          minor.push(f);
+          continue;
+        }
+        changed.push(f);
         const stem = f.replace(/\.png$/, "");
         copyFileSync(join(beforeDir, f), join(images, `${stem}-before.png`));
         writeFileSync(join(images, `${stem}-diff.png`), Buffer.from(d.png, "base64"));
@@ -88,7 +101,8 @@ export async function compare(beforeDir, afterDir, reportDir) {
 
   const lines = [`Screenshots: ${now.length} screens, ${changed.length} changed, ${added.length} new, ${gone.length} gone.`];
   if (!had.length) lines.push("The commit compared with has no screen catalogue: there was nothing to compare with.");
-  lines.push(...changed.map((f) => `- changed: \`${f}\` (${(shares[f] * 100).toFixed(2)} % of its pixels)`));
+  lines.push(...changed.map((f) => `- changed: \`${f}\` (${counts[f]} pixels, ${(shares[f] * 100).toFixed(2)} %)`));
+  lines.push(...minor.map((f) => `- within the noise floor, not a change: \`${f}\` (${counts[f]} pixels)`));
   lines.push(...added.map((f) => `- new: \`${f}\``), ...gone.map((f) => `- gone: \`${f}\``));
   writeFileSync(join(reportDir, "summary.md"), `${lines.join("\n")}\n`);
   const img = (src) => `<img src="images/${esc(src)}" alt="">`;
@@ -105,7 +119,10 @@ export async function compare(beforeDir, afterDir, reportDir) {
     block("Gone", gone.map((f) => `<p>${esc(f)}</p>`).join("")),
   ].join("\n"));
   console.log(lines.join("\n"));
-  return { screens: now.length, changed, added, gone };
+  const result = { screens: now.length, changed, added, gone, minor };
+  // Written last: the script reads the answer from this file, so a comparison that could not finish gives none.
+  writeFileSync(join(reportDir, "result.json"), JSON.stringify({ any: changed.length + added.length + gone.length > 0, ...result }, null, 1));
+  return result;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

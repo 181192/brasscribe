@@ -23,6 +23,7 @@ export async function axe(page: Page): Promise<Finding[]> {
 export async function clipped(page: Page, check: "clipped" | "spacing" = "clipped"): Promise<Finding[]> {
   const cut = await page.evaluate(() => {
     const describe = (el: Element) => {
+      if (el === document.body) return "body";
       const parts: string[] = [];
       for (let e: Element | null = el; e && e !== document.body && parts.length < 3; e = e.parentElement) {
         parts.unshift(e.id ? `${e.localName}#${e.id}` : `${e.localName}${[...e.classList].slice(0, 2).map((c) => `.${c}`).join("")}`);
@@ -48,7 +49,9 @@ export async function clipped(page: Page, check: "clipped" | "spacing" = "clippe
       if (getComputedStyle(el).visibility !== "visible") continue;
       const range = document.createRange();
       range.selectNodeContents(node);
-      const rects = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      // The text's boxes; past a part that scrolls, only what that part shows (its border box) goes on up.
+      let rects = [...range.getClientRects()].filter((r) => r.width > 0 && r.height > 0)
+        .map((r) => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom }));
       if (!rects.length || srOnly(el)) continue;
       for (let a: Element | null = el; a && a !== document.documentElement; a = a.parentElement) {
         const s = getComputedStyle(a);
@@ -64,10 +67,15 @@ export async function clipped(page: Page, check: "clipped" | "spacing" = "clippe
         const outside = rects.some((r) =>
           (hidesX && (r.left < left - 1 || r.right > left + a!.clientWidth + 1)) || (hidesY && (r.top < top - 1 || r.bottom > top + a!.clientHeight + 1)));
         if (ellipsis || (outside && (hidesX || hidesY))) {
-          out.set(el, `${describe(el)} "${text.slice(0, 40)}"${a === el ? "" : ` (cut by ${describe(a)})`}`);
+          out.set(el, `${describe(el)} "${text.replace(/\s+/g, " ").slice(0, 40)}"${a === el ? "" : ` (cut by ${describe(a)})`}`);
           break;
         }
-        if (scrolls) break;
+        if (scrolls) {
+          // Out of this part's view is not cut (it can be scrolled to); what it shows can still be cut further up.
+          rects = rects.map((r) => ({ left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom) }))
+            .filter((r) => r.right - r.left > 0 && r.bottom - r.top > 0);
+          if (!rects.length) break;
+        }
       }
     }
     return [...out.values()];
@@ -172,7 +180,9 @@ export async function keyboard(page: Page): Promise<Finding[]> {
       }
       // A link that wraps onto a second line has a box per line; the box around both covers the text between.
       const r = el.getClientRects()[0] ?? el.getBoundingClientRect();
-      const visible = r.width > 0 && r.height > 0 && el.checkVisibility();
+      // Seen: with its opacity, or (a file input made transparent behind the button that is its label) by its label.
+      const seen = (e: Element) => e.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+      const visible = r.width > 0 && r.height > 0 && (seen(el) || Array.from((el as HTMLInputElement).labels ?? []).some(seen));
       // WCAG 2.4.11: focus is not hidden. What is on top at the focused element's centre must be the element
       // itself, something inside it, or its label (a file input hidden behind the button that is its label).
       const label = (e: Element) => `${e.localName}${e.id ? `#${e.id}` : ""}${[...e.classList].slice(0, 2).map((c) => `.${c}`).join("")}`;

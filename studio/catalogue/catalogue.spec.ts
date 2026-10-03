@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
-import { isKnown } from "./known";
+import { isKnown, stale } from "./known";
 import { openView, stableScreenshot, steady } from "./open";
 import { VARIANTS, VIEWS } from "./views";
 
@@ -32,6 +32,7 @@ for (const variant of VARIANTS) {
       const known = findings.filter((f) => isKnown(f, view.name, variant.name));
       if (known.length) console.log(`${view.name} · ${variant.name}: ${known.length} known: ${known.map((f) => `${f.check} ${f.what}`).join("; ")}`);
       expect(findings.filter((f) => !isKnown(f, view.name, variant.name)).map((f) => `${f.check}: ${f.what}`)).toEqual([]);
+      expect(stale(findings, view.name, variant.name).map((k) => `#${k.issue}: ${k.check} ${k.what}`), "known.ts entries that matched nothing (fixed? remove them)").toEqual([]);
     });
   }
 }
