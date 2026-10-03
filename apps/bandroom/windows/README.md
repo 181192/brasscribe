@@ -103,6 +103,10 @@ dotnet publish src/Brasscribe.Bandroom -c Release -p:Platform=x64 -r win-x64 `
 
 ## What CI checks (`windows.yml`, job `bandroom`)
 
+It runs on pull requests that touch `apps/bandroom/windows/`, the design tokens, `sounds/`, the pixi workspace
+or the engine sources it bundles (the `windows_bandroom` filter in `ci.yml`'s `changes` job), and on pushes to
+main; it is part of `CI result`.
+
 Core tests; the WinUI build with the bundled workspace; a start without pixi (window, notification-area icon,
 admin credential ACL); a start with pixi, where the first run installs the `default` environment from
 `pixi.lock`, the engine reaches Running, `engine.json` is written without the credential, health, devices and an
