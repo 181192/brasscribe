@@ -73,6 +73,10 @@ fun foundNoNotes(r: TranscriptionResult, then: Screen): Boolean =
  */
 fun noNotesOffersComputer(madeOnPhone: Boolean, computerThere: Boolean): Boolean = madeOnPhone && computerThere
 
+/** The way to record from the no-notes screen: again after a take with the microphone, else for the first time. */
+@StringRes
+fun noNotesRecordWords(kind: SourceKind?): Int = if (kind == SourceKind.MICROPHONE) R.string.problem_record_again else R.string.home_record_mic
+
 enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SCORE }
 
 /**

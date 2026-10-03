@@ -37,4 +37,11 @@ class NoNotesFoundTest {
         assertFalse(noNotesOffersComputer(madeOnPhone = false, computerThere = true))
         assertFalse(noNotesOffersComputer(madeOnPhone = false, computerThere = false))
     }
+
+    @Test
+    fun recordingAgainIsOnlyCalledThatAfterATakeWithTheMicrophone() {
+        org.junit.Assert.assertEquals(R.string.problem_record_again, noNotesRecordWords(SourceKind.MICROPHONE))
+        for (kind in listOf(SourceKind.FILE, SourceKind.VIDEO, SourceKind.DEVICE, null))
+            org.junit.Assert.assertEquals("$kind", R.string.home_record_mic, noNotesRecordWords(kind))
+    }
 }
