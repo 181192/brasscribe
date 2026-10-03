@@ -640,8 +640,8 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
     notes, places, answer, dropped, suggestions = playable(list(doc["notes"]), unisons_doubled)
     dragging = 0
     if DRAG_FRETS and opts["style"] == DRAG_STYLE and any(n.get("on_top") for n in notes):
-        rest = [n for n in notes if not n.get("on_top")]
-        rest_places = playable(rest, False)[1]
+        # playable() can leave notes of `rest` out: pair the places with the notes it kept, not with `rest`.
+        rest, rest_places = playable([n for n in notes if not n.get("on_top")], False)[:2]
         with_top, without = hands(notes, places), hands(rest, rest_places)
         open_strings: dict[int, int] = {}
         for n, place in zip(rest, rest_places):

@@ -40,7 +40,8 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     A bar of one, two or eight tracked beats is written as a bar of four (a bass too). On held-out single-line
     guitar takes that makes the time signature right for 0.97 of them (0.17 before) and the bar's length in
     seconds for 0.59 (0.21 before): where the tracker also runs at half tempo, a written bar holds two played
-    ones. A bar of two whose beats the notes divide in three stays two (6/8 counted in two); other music that
+    ones. A bar of two whose beats the notes divide in three, on both thirds of the beat, stays two (6/8 counted
+    in two; swing and shuffles, long-short on the beat, do not count); other music that
     really is in two (2/4, 2/2) is written two bars to the bar.
   - `chords: completed` (off by default) adds to a chord a note the same chord has in the strums around it; the
     note is marked `inferred` in `tab.json`, counted in `inferred_notes`, and gets the "?".
