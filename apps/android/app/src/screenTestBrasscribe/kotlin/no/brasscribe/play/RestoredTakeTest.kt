@@ -91,7 +91,8 @@ class RestoredTakeTest : ScreenTest() {
         ))
         lateinit var restored: PlayViewModel
         rule.runOnUiThread { restored = PlayViewModel(rule.activity.application, state) }
-        waitUntil(20_000) { restored.result.value != null }
+        // (The score screens come back once the score is read: a moment after its result.)
+        waitUntil(20_000) { restored.result.value != null && restored.screen.value.last() == Screen.SCORE }
         assertEquals(listOf(Screen.HOME, Screen.SCORE), restored.screen.value)
         assertEquals(Source(saved.title, SourceKind.SCORE, 0.0), restored.source.value)
     }

@@ -18,6 +18,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import no.brasscribe.play.MainActivity
+import org.junit.Assume
 import org.junit.rules.TestRule
 import org.junit.runners.model.Statement
 import org.robolectric.RuntimeEnvironment
@@ -58,6 +59,10 @@ object ScreenDevice {
     fun phone(): TestRule = TestRule { test, _ ->
         object : Statement() {
             override fun evaluate() {
+                // The screens are the app's with its native core (the host build of it here): without it they would be
+                // other screens (no What do you play?, no Your instrument, no arranger), so they are not tested then.
+                val core = File(System.getProperty("jna.library.path").orEmpty()).listFiles().orEmpty().any { it.name.startsWith("libbrasscribe_ffi.") }
+                Assume.assumeTrue("the host build of the core is missing: scripts/core-artifacts.sh ensure host (or cargo build --release -p brasscribe-ffi in core/)", core)
                 val ui = Class.forName("org.robolectric.shadows.SystemUi")
                 fun member(name: String) = ui.getDeclaredField(name).apply { isAccessible = true }.get(null)
                 val display = ui.getDeclaredMethod("systemUiForDefaultDisplay").apply { isAccessible = true }.invoke(null)

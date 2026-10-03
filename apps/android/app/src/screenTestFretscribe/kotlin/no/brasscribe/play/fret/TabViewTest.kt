@@ -91,7 +91,8 @@ class TabViewTest : TabScreenTest() {
 
     /** The whole screen at rest, to look at its pixels. */
     private fun still(): Bitmap {
-        settle()
+        // (At rest also where alphaTab has a hand in it: its page is drawn on a thread of its own.)
+        rest()
         return screen()
     }
 

@@ -578,11 +578,13 @@ class PracticeTest : ScreenTest() {
     }
 
     @Test
+    @DeviceOnly
     fun aCallThatTakesTheSoundForAWhilePausesTheSongAndItGoesOnAfter() {
+        assumeTrue("on a device only: Robolectric's audio manager does not tell the player its focus is lost", !ScreenDevice.JVM)
         practise()
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
-        rule.waitUntil(10_000) { now() > 0.5 }
+        waitUntil(10_000) { now() > 0.5 }
         // What a phone call does: it takes the sound for a while, from this app's own AudioManager.
         val audio = rule.activity.getSystemService(AudioManager::class.java)
         val call = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
@@ -596,7 +598,7 @@ class PracticeTest : ScreenTest() {
             assertEquals("Play", described("fs-practice-play"))
             val held = now()
             // Nothing moves while the call has the sound: no frames, and the recording stays where it is.
-            assertEquals("frames drawn in four seconds of the call", 0, framesWhileStill().let { if (it <= 2) 0 else it })
+            assertEquals("frames drawn in four seconds of the call", 0, ScreenDevice.framesWhileStill(rule).let { if (it <= 2) 0 else it })
             assertEquals(held, now(), 0.05)
             // When the call ends, the song goes on by itself.
             audio.abandonAudioFocusRequest(call)
@@ -604,7 +606,7 @@ class PracticeTest : ScreenTest() {
             waitUntilPlaying()
             rule.waitForIdle()
             assertEquals("Pause", described("fs-practice-play"))
-            rule.waitUntil(10_000) { now() > held + 0.3 }
+            waitUntil(10_000) { now() > held + 0.3 }
         } finally {
             // A later test never starts without the sound.
             if (!abandoned) audio.abandonAudioFocusRequest(call)

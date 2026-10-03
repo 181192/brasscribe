@@ -103,7 +103,7 @@ run_area() {
     # Slow ones (the screen catalogues, practice in real time), full adds them through the screenshots' comparison
     # with the merge base, which also runs every screen's own checks.
     fast:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast --console=plain -q) ;;
-    full:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug -Pbrasscribe.withoutCatalogues --console=plain \
+    full:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint lintFretscribeDebug assembleDebug -Pbrasscribe.withoutCatalogues --console=plain \
                      && scripts/screenshots.sh compare) ;;
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
