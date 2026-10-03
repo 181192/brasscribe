@@ -728,7 +728,7 @@ def _read_note(el, start, dur, divisions, time, part, tuplet_count):
     rest = el.find("rest")
     if rest is not None:
         if rest.get("measure") == "yes" or (ev["type"] is None and start == 0):
-            ev["kind"], ev["pos"], ev["bars"] = "bar-rest", {"beat": 1, "num": 0, "den": 1}, 1
+            ev["kind"], ev["pos"], ev["bars"] = "bar-rest", position(0, divisions, time), 1
         else:
             ev["kind"] = "rest"
         ev["type"] = ev["type"] or _type_from_duration(dur, divisions)
