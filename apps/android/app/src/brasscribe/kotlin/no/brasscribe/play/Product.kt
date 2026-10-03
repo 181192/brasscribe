@@ -39,11 +39,14 @@ object Product {
     /** The computer, as the transcribing screen names it. */
     fun computerName(vm: PlayViewModel): String = vm.container.engineLabel()
 
-    /** The transcribing screen shows the time left. */
+    /** The transcribing screen shows the time left (for a score made on the phone). */
     const val TIME_LEFT = true
 
-    /** The transcribing screen says the app may be left, so it does not hold the screen on. */
-    const val KEEP_OPEN_WHILE_WRITING = false
+    /**
+     * Nothing tells the player when a score is ready while the app is away, so the transcribing screen says to keep
+     * it open, and stays on. A band draft on the phone is the exception: its service keeps it going.
+     */
+    const val KEEP_OPEN_WHILE_WRITING = true
 
     /** The screen that follows a finished transcription. */
     @Suppress("UNUSED_PARAMETER")

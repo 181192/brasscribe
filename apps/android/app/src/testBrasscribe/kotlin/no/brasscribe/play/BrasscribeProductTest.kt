@@ -62,6 +62,26 @@ class BrasscribeProductTest {
     }
 
     @Test
+    fun theTranscribingScreenPromisesNothingTheAppDoesNotKeep() {
+        // Nothing tells the player when a score is ready while the app is away: the screen says to keep it open and
+        // stays on. Only a draft, whose service keeps it going, says the player can switch to another app.
+        assertTrue(Product.KEEP_OPEN_WHILE_WRITING)
+        val res = System.getProperty("brasscribe.sounds")?.let { java.io.File(it).parentFile }?.resolve("apps/android/app/src/main/res")
+        org.junit.Assume.assumeTrue("the app's sources are not in this checkout", res?.isDirectory == true)
+        val want = mapOf(
+            "values" to listOf("%1\$s. Keep Brasscribe open until the score is ready.",
+                "%1\$s. You can switch to another app: the draft goes on, and it is on the screen when you come back."),
+            "values-nb" to listOf("%1\$s. Hold Brasscribe åpen til partituret er klart.",
+                "%1\$s. Du kan bytte til en annen app: utkastet lages videre, og det er på skjermen når du kommer tilbake."),
+        )
+        for ((dir, words) in want) {
+            val strings = java.io.File(res, "$dir/strings.xml").readText()
+            fun text(name: String) = Regex("""<string name="$name">(.*?)</string>""").find(strings)?.groupValues?.get(1)
+            assertEquals(dir, words, listOf(text("transcribe_leave"), text("transcribe_leave_draft")))
+        }
+    }
+
+    @Test
     fun aTranscriptionIsFollowedByCheckTheNotes() {
         Profile.entries.forEach {
             assertEquals(it.id, Screen.REVIEW, Product.afterTranscription(TranscriptionResult(null, "<score-partwise/>", it, onDevice = false)))

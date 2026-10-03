@@ -169,7 +169,8 @@
     <string name="step_done">done</string>
     <string name="step_now">now</string>
     <string name="step_waiting">to do</string>
-    <string name="transcribe_leave">%1$s. You can leave this screen; Brasscribe will tell you when the score is ready.</string>
+    <string name="transcribe_leave">%1$s. Keep Brasscribe open until the score is ready.</string>
+    <string name="transcribe_leave_draft">%1$s. You can switch to another app: the draft goes on, and it is on the screen when you come back.</string>
     <string name="transcribe_cancel_title">Stop making this score?</string>
     <string name="transcribe_cancel_text">The recording is kept. You can start again from it.</string>
     <string name="transcribe_cancel_confirm">Stop</string>
