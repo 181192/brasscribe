@@ -445,66 +445,66 @@ public static class BrasscribeCore
     {
         private const string Lib = "brasscribe_ffi";
 
-        [DllImport(Lib)] public static extern void bc_string_free(IntPtr s);
-        [DllImport(Lib)] public static extern IntPtr bc_version();
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void bc_string_free(IntPtr s);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr bc_version();
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_composition_normalize([MarshalAs(UnmanagedType.LPUTF8Str)] string json, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_arrange_musicxml([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string arranger, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_arrange_with([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_arrange_layers_song(IntPtr[] midi, nuint[] midiLen,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson,
             out IntPtr outComposition, out IntPtr outMusicXml, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_spell_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_arrange_layers_band_contour(IntPtr[] midi, nuint[] midiLen, IntPtr[] wav, nuint[] wavLen,
             IntPtr[]? contour, nuint contourLen, [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_humanize_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_talking_score_new([MarshalAs(UnmanagedType.LPUTF8Str)] string musicXml,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? compositionJson, out TalkingScoreHandle handle, out IntPtr error);
 
-        [DllImport(Lib)] public static extern void bc_talking_score_free(IntPtr handle);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void bc_talking_score_free(IntPtr handle);
 
-        [DllImport(Lib)] public static extern int bc_talking_score_json(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern int bc_talking_score_json(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_talking_score_announce(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_talking_score_navigate(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_talking_score_export(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string format,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? settingsJson, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_seat_part([MarshalAs(UnmanagedType.LPUTF8Str)] string lineup,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string seat, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_part_sources([MarshalAs(UnmanagedType.LPUTF8Str)] string compositionJson, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_seats(out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_part_name_nb([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
@@ -519,7 +519,7 @@ public static class BrasscribeCore
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_fretted_playing_instructions_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
-        [DllImport(Lib)]
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int bc_talking_announce_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
     }
 }
