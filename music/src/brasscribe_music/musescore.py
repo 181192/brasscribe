@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -65,13 +66,19 @@ else:
         fcntl.flock(fd, fcntl.LOCK_UN)
 
 
+class Cancelled(RuntimeError):
+    """convert_many was told to stop (its `cancel` event was set)."""
+
+
 @contextmanager
-def _lock() -> Iterator[None]:
+def _lock(cancel: threading.Event | None = None) -> Iterator[None]:
     """An OS file lock (flock, msvcrt.locking): the kernel drops it when its holder dies, so a crashed
     conversion never leaves a stale lock that a waiter would have to judge and remove."""
     fd = os.open(LOCK_FILE, os.O_RDWR | os.O_CREAT, 0o600)
     try:
         while not _try_lock(fd):
+            if cancel is not None and cancel.is_set():
+                raise Cancelled("MuseScore conversion cancelled")
             time.sleep(0.2)
         try:
             yield
@@ -81,8 +88,33 @@ def _lock() -> Iterator[None]:
         os.close(fd)
 
 
-def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: float = 600.0) -> list[Path]:
-    """Run all conversions in one MuseScore launch. Returns the outputs that are missing afterwards."""
+def _run(cmd: list[str], timeout: float, cancel: threading.Event | None) -> None:
+    """MuseScore until it exits, `timeout` passes, or `cancel` is set (then it is killed)."""
+    if cancel is None:
+        try:
+            subprocess.run(cmd, capture_output=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            pass
+        return
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            proc.wait(timeout=0.2)
+            return
+        except subprocess.TimeoutExpired:
+            if cancel.is_set() or time.monotonic() > deadline:
+                proc.kill()
+                proc.wait()
+                if cancel.is_set():
+                    raise Cancelled("MuseScore conversion cancelled") from None
+                return
+
+
+def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: float = 600.0,
+                 cancel: threading.Event | None = None) -> list[Path]:
+    """Run all conversions in one MuseScore launch. Returns the outputs that are missing afterwards.
+    Setting `cancel` stops it: a running MuseScore is killed and Cancelled is raised."""
     exe = binary()
     entries: list[dict] = []
     expected: list[Path] = []
@@ -107,11 +139,8 @@ def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: 
             job_file = Path(tmp) / f"job{i}.json"
             job_file.write_text(json.dumps(batch))
             cmd = [exe] + (["-S", str(Path(style).resolve())] if style else []) + ["-j", str(job_file)]
-            with _lock():
-                try:
-                    subprocess.run(cmd, capture_output=True, timeout=timeout)
-                except subprocess.TimeoutExpired:
-                    pass
+            with _lock(cancel):
+                _run(cmd, timeout, cancel)
     return [p for p in expected if not p.exists()]
 
 

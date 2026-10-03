@@ -15,7 +15,7 @@ import stat
 import tempfile
 import threading
 import time
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -85,8 +85,9 @@ class JobManager:
         self.lock = threading.Lock()
         # A renamed run's PDF, MIDI and braille are made again here, one at a time, away from the request.
         self.render_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="brasscribe-render")
-        self.renders: dict[str, Future] = {}  # the last render queued per run (for tests)
-        self._rename_lock = threading.Lock()  # a rename's writes and a render's swap never interleave
+        self._stopping = threading.Event()  # set by shutdown: a running render's MuseScore is killed
+        # A rename's writes, a render's swap and a delete never interleave.
+        self._rename_lock = threading.Lock()
         # Finished runs from disk for list(), keyed by the manifest's (mtime_ns, size): a list parses only
         # manifests that changed since the last one, and never reads events.jsonl.
         self._summaries: dict[str, tuple[tuple[int, int], Job, list[str]]] = {}
@@ -206,13 +207,17 @@ class JobManager:
         return job
 
     def shutdown(self) -> None:
-        """Cancel every queued and running job (a running model is stopped) and wait for the worker to end."""
+        """Cancel every queued and running job (a running model is stopped) and wait for the worker to end.
+        Renders of renamed runs that have not started are dropped, and a running one is stopped (its
+        MuseScore killed): those runs keep the renders they had, with the old title."""
+        self._stopping.set()
         with self.lock:
             live = [j for j in self.jobs.values() if j.status not in TERMINAL]
         for job in live:
             job.cancel.set()
+        self.render_pool.shutdown(wait=False, cancel_futures=True)
         self.pool.shutdown(wait=True)
-        self.render_pool.shutdown(wait=True, cancel_futures=True)
+        self.render_pool.shutdown(wait=True)
 
     def delete(self, job_id: str) -> str:
         """Remove a finished run's directory and forget the job; the artifact cache is untouched.
@@ -229,15 +234,15 @@ class JobManager:
         d = self.run_dir(job_id).resolve()
         if d.parent != root:
             return "unknown"
-        if d.is_dir():
-            def writable_retry(func, path, _exc):  # Windows refuses to unlink read-only files
-                os.chmod(path, stat.S_IWRITE)
-                func(path)
+        def writable_retry(func, path, _exc):  # Windows refuses to unlink read-only files
+            os.chmod(path, stat.S_IWRITE)
+            func(path)
 
-            shutil.rmtree(d, onerror=writable_retry)
-        with self.lock:
-            self.jobs.pop(job_id, None)
-        self.renders.pop(job_id, None)  # a render still queued finds the run gone and makes nothing
+        with self._rename_lock:  # a render's swap never writes into a run being deleted
+            if d.is_dir():
+                shutil.rmtree(d, onerror=writable_retry)
+            with self.lock:
+                self.jobs.pop(job_id, None)
         return "deleted"
 
     def rename(self, job_id: str, title: str) -> str:
@@ -255,7 +260,7 @@ class JobManager:
         with self._rename_lock:
             self._retitle(job, title)
         if _rendered(self.run_dir(job_id) / "outputs"):
-            self.renders[job_id] = self.render_pool.submit(self.render_again, job_id, title)
+            self.render_pool.submit(self.render_again, job_id, title)
         return "renamed"
 
     def _retitle(self, job: Job, title: str) -> None:
@@ -304,20 +309,26 @@ class JobManager:
         """Make a renamed run's rendered files again from its retitled MusicXML: the score's PDF and MIDI and
         the parts' PDFs through MuseScore (when it is installed), the braille without it. Only files the run
         has are made, in a directory of their own, and they replace the old ones only if the run still has
-        this title (a later rename renders its own). Returns the files replaced."""
+        this title (a later rename renders its own). A render whose run has been renamed again (or deleted)
+        before it starts makes nothing: quick renames in a row launch MuseScore once. Returns the files replaced."""
         out = self.run_dir(job_id) / "outputs"
+        if not self._current(job_id, title):
+            return []
         try:
             with tempfile.TemporaryDirectory(prefix="brasscribe-render-") as tmp:
-                made = _render(out, Path(tmp))
+                made = _render(out, Path(tmp), self._stopping)
                 with self._rename_lock:
-                    job = self.get(job_id)
-                    if job is None or job.title != title or not out.is_dir():
+                    if self._stopping.is_set() or not self._current(job_id, title) or not out.is_dir():
                         return []
                     for name in made:
                         _replace(Path(tmp) / name, out / name)
                 return made
         except Exception:  # noqa: BLE001 - the run keeps its old renders; a rename never fails on this
             return []
+
+    def _current(self, job_id: str, title: str) -> bool:
+        job = self.get(job_id)
+        return job is not None and job.title == title
 
     def run_dir(self, job_id: str) -> Path:
         return self.settings.runs_dir / job_id
@@ -361,7 +372,7 @@ def _rendered(out: Path) -> bool:
             or (out / "brass-band.brf").exists() or any((out / "parts").glob("*.pdf")) or any((out / "parts").glob("*.brf")))
 
 
-def _render(out: Path, into: Path) -> list[str]:
+def _render(out: Path, into: Path, cancel: threading.Event) -> list[str]:
     """The rendered files `out` has, made again from its MusicXML into `into` (same names). PDF and MIDI as the
     export stages make them; none without MuseScore. Braille for the score and the parts that have it."""
     from brasscribe_music import musescore
@@ -374,17 +385,19 @@ def _render(out: Path, into: Path) -> list[str]:
         for src, names in RENDERED.items():
             names = [n for n in names if (out / n).exists()]
             if (out / src).exists() and names:
-                if musescore.convert_many([(out / src, [into / n for n in names])]):
+                if musescore.convert_many([(out / src, [into / n for n in names])], cancel=cancel):
                     raise RuntimeError(f"MuseScore did not render {src}")
                 made += names
         parts = [p for p in sorted((out / "parts").glob("*.musicxml")) if p.with_suffix(".pdf").exists()]
         if parts:
             if musescore.convert_many([(p, into / "parts" / p.with_suffix(".pdf").name) for p in parts],
-                                      style=PART_STYLE if PART_STYLE.exists() else None):
+                                      style=PART_STYLE if PART_STYLE.exists() else None, cancel=cancel):
                 raise RuntimeError("MuseScore did not render every part")
             made += [f"parts/{p.with_suffix('.pdf').name}" for p in parts]
     for src in [out / "brass-band.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
         brf = src.with_suffix(".brf")
+        if cancel.is_set():
+            break
         if src.exists() and brf.exists():
             try:
                 text = braille.translate(src).brf
@@ -402,7 +415,7 @@ def _list_outputs(d: Path) -> list[str]:
     for root, _dirs, files in os.walk(d):
         rel = os.path.relpath(root, d)
         prefix = "" if rel == "." else rel.replace(os.sep, "/") + "/"
-        out.extend(prefix + f for f in files)
+        out.extend(prefix + f for f in files if not f.endswith(".tmp"))  # a replacement being written
     return sorted(out)
 
 
@@ -426,12 +439,15 @@ def _retitle_musicxml(text: str, title: str) -> str:
 def _replace(src: Path, dst: Path) -> None:
     """Replace `dst` with a copy of `src` (from another file system), as _write does."""
     tmp = dst.with_name(dst.name + ".tmp")
-    shutil.copyfile(src, tmp)
     try:
-        os.replace(tmp, dst)
-    except PermissionError:
-        os.chmod(dst, dst.stat().st_mode | stat.S_IWUSR)
-        os.replace(tmp, dst)
+        shutil.copyfile(src, tmp)
+        try:
+            os.replace(tmp, dst)
+        except PermissionError:
+            os.chmod(dst, dst.stat().st_mode | stat.S_IWUSR)
+            os.replace(tmp, dst)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def _write(path: Path, text: str, encoding: str | None = None) -> None:
@@ -440,9 +456,12 @@ def _write(path: Path, text: str, encoding: str | None = None) -> None:
     cleared first. The flag belongs to the file, not the name, so the cache's copy loses it too (its content
     is unchanged, and the cache checks content by hash)."""
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(text, encoding=encoding)
     try:
-        os.replace(tmp, path)
-    except PermissionError:
-        os.chmod(path, path.stat().st_mode | stat.S_IWUSR)
-        os.replace(tmp, path)
+        tmp.write_text(text, encoding=encoding)
+        try:
+            os.replace(tmp, path)
+        except PermissionError:
+            os.chmod(path, path.stat().st_mode | stat.S_IWUSR)
+            os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)

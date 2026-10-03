@@ -95,6 +95,11 @@ def jobs(settings):
     manager.shutdown()
 
 
+def drain(jobs) -> None:
+    """Wait for the renders queued so far (the render queue has one worker)."""
+    jobs.render_pool.submit(lambda: None).result(timeout=10)
+
+
 @pytest.fixture
 def mscore(monkeypatch):
     """A MuseScore that writes the work title of what it renders, and records the style of each launch."""
@@ -104,7 +109,7 @@ def mscore(monkeypatch):
 
     styles: list = []
 
-    def convert_many(pairs, style=None):
+    def convert_many(pairs, style=None, cancel=None):
         styles.append(style)
         for src, outs in pairs:
             title = re.search(r"<work-title>(.*?)</work-title>", Path(src).read_text()).group(1)
@@ -118,17 +123,20 @@ def mscore(monkeypatch):
     return styles
 
 
-def test_rename_makes_the_pdfs_midi_and_braille_again_with_the_new_title(settings, jobs, mscore, monkeypatch):
+def fake_braille(monkeypatch):
     from brasscribe_engine import braille
 
     monkeypatch.setattr(braille, "translate", lambda src: type("R", (), {"brf": "BRF " + Path(src).read_text()[-60:]})())
+
+
+def test_rename_makes_the_pdfs_midi_and_braille_again_with_the_new_title(settings, jobs, mscore, monkeypatch):
+    fake_braille(monkeypatch)
     finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old", "brass-band.mid": "old",
                                      "brass-band.mp3": "old", "brass-band.brf": "old",
                                      "parts/01-solo-cornet.musicxml": SCORE, "parts/01-solo-cornet.pdf": "old",
                                      "parts/01-solo-cornet.brf": "old", "parts/02-flugel.musicxml": SCORE})
     assert jobs.rename("run-a", "New") == "renamed"
-    assert sorted(jobs.renders["run-a"].result(timeout=10)) == [
-        "brass-band.brf", "brass-band.mid", "brass-band.pdf", "parts/01-solo-cornet.brf", "parts/01-solo-cornet.pdf"]
+    drain(jobs)
     out = settings.runs_dir / "run-a" / "outputs"
     for name in ("brass-band.pdf", "brass-band.mid", "parts/01-solo-cornet.pdf"):
         assert (out / name).read_text() == "rendered New", name
@@ -137,14 +145,105 @@ def test_rename_makes_the_pdfs_midi_and_braille_again_with_the_new_title(setting
     assert not (out / "parts" / "02-flugel.pdf").exists()  # only what the run had
     assert mscore[0] is None and mscore[-1] is not None  # parts with the part style, as the export stage
     assert not list(out.rglob("*.tmp"))
+    assert sorted(jobs.render_again("run-a", "New")) == [
+        "brass-band.brf", "brass-band.mid", "brass-band.pdf", "parts/01-solo-cornet.brf", "parts/01-solo-cornet.pdf"]
 
 
-def test_a_render_for_a_title_the_run_no_longer_has_is_thrown_away(settings, jobs, mscore):
+def test_quick_renames_in_a_row_launch_musescore_once(settings, jobs, mscore):
+    import threading
+
     finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old"})
+    hold = threading.Event()
+    jobs.render_pool.submit(hold.wait, 10)  # the render queue is busy while the player types
+    for i in range(6):
+        assert jobs.rename("run-a", f"Title {i}") == "renamed"
+    hold.set()
+    drain(jobs)
+    assert len(mscore) == 1
+    assert (settings.runs_dir / "run-a" / "outputs" / "brass-band.pdf").read_text() == "rendered Title 5"
+
+
+def test_a_render_for_a_title_the_run_no_longer_has_is_thrown_away(settings, jobs, mscore, monkeypatch):
+    from brasscribe_music import musescore
+
+    finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old"})
+    convert = musescore.convert_many
+
+    def renamed_meanwhile(pairs, style=None, cancel=None):  # the next rename lands while MuseScore runs
+        convert(pairs, style, cancel)
+        monkeypatch.setattr(musescore, "convert_many", convert)
+        assert jobs.rename("run-a", "Newer") == "renamed"
+        return []
+
+    monkeypatch.setattr(musescore, "convert_many", renamed_meanwhile)
+    assert jobs.render_again("run-a", "Old") == []  # thrown away, not swapped in
+    drain(jobs)  # the later rename's own render
+    assert (settings.runs_dir / "run-a" / "outputs" / "brass-band.pdf").read_text() == "rendered Newer"
+
+
+def test_a_run_deleted_while_it_renders_stays_deleted(settings, jobs, mscore, monkeypatch):
+    from brasscribe_music import musescore
+
+    finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old"})
+    convert = musescore.convert_many
+
+    def deleted_meanwhile(pairs, style=None, cancel=None):
+        convert(pairs, style, cancel)
+        assert jobs.delete("run-a") == "deleted"
+        return []
+
+    monkeypatch.setattr(musescore, "convert_many", deleted_meanwhile)
     assert jobs.rename("run-a", "New") == "renamed"
-    jobs.renders["run-a"].result(timeout=10)
-    assert jobs.render_again("run-a", "Older") == []  # a rename's render that finishes after the next rename
-    assert (settings.runs_dir / "run-a" / "outputs" / "brass-band.pdf").read_text() == "rendered New"
+    drain(jobs)
+    assert not (settings.runs_dir / "run-a").exists()
+
+
+def test_a_swap_that_fails_leaves_no_partial_file_and_none_is_listed(settings, jobs, mscore, monkeypatch):
+    from brasscribe_engine import jobs as J
+
+    finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old", "brass-band.mid": "old"})
+    replace = J.os.replace
+
+    def disk_full(src, dst):
+        if str(dst).endswith(".mid"):
+            raise OSError(28, "No space left on device")
+        replace(src, dst)
+
+    monkeypatch.setattr(J.os, "replace", disk_full)
+    assert jobs.render_again("run-a", "Old") == []
+    out = settings.runs_dir / "run-a" / "outputs"
+    assert not list(out.rglob("*.tmp")) and (out / "brass-band.mid").read_text() == "old"
+    (out / "brass-band.pdf.tmp").write_text("half")  # a replacement being written
+    assert "brass-band.pdf.tmp" not in jobs.outputs(jobs.get("run-a"))
+
+
+def test_shutdown_stops_a_running_render_and_drops_the_queued_ones(settings, monkeypatch):
+    import threading
+    import time
+
+    from brasscribe_engine.jobs import JobManager
+    from brasscribe_music import musescore
+
+    started, launches = threading.Event(), []
+
+    def slow(pairs, style=None, cancel=None):  # a MuseScore that would take its whole timeout
+        launches.append(1)
+        started.set()
+        if cancel.wait(30):
+            raise musescore.Cancelled("killed")
+        return []
+
+    monkeypatch.setattr(musescore, "binary", lambda: "mscore")
+    monkeypatch.setattr(musescore, "convert_many", slow)
+    jobs = JobManager(settings)
+    for run in ("run-a", "run-b"):
+        finished_run(settings, run, {"brass-band.musicxml": SCORE, "brass-band.pdf": "old"})
+        jobs.rename(run, "New")
+    assert started.wait(10)
+    begun = time.monotonic()
+    jobs.shutdown()
+    assert time.monotonic() - begun < 5 and launches == [1]
+    assert (settings.runs_dir / "run-a" / "outputs" / "brass-band.pdf").read_text() == "old"
 
 
 def test_a_renamed_tab_is_rendered_again_with_its_page_title(settings, jobs, mscore):
@@ -153,23 +252,27 @@ def test_a_renamed_tab_is_rendered_again_with_its_page_title(settings, jobs, msc
     finished_run(settings, "run-t", {"tab.musicxml": SCORE, "tab.pdf": "old", "tab.mid": "old"})
     title = "A very long title " * 10
     assert jobs.rename("run-t", title) == "renamed"
-    assert sorted(jobs.renders["run-t"].result(timeout=10)) == ["tab.mid", "tab.pdf"]
+    drain(jobs)
     assert (settings.runs_dir / "run-t" / "outputs" / "tab.pdf").read_text() == f"rendered {bass_tab.page_title(title).strip()}"
+    assert sorted(jobs.render_again("run-t", title)) == ["tab.mid", "tab.pdf"]
 
 
 def test_without_musescore_a_rename_keeps_the_pdf_and_still_makes_the_braille(settings, jobs, monkeypatch):
-    from brasscribe_engine import braille
     from brasscribe_music import musescore
 
     monkeypatch.setattr(musescore, "binary", lambda: None)
-    monkeypatch.setattr(braille, "translate", lambda src: type("R", (), {"brf": "BRF " + Path(src).read_text()[-60:]})())
+    fake_braille(monkeypatch)
     finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old", "brass-band.brf": "old"})
     assert jobs.rename("run-a", "New") == "renamed"
-    assert jobs.renders["run-a"].result(timeout=10) == ["brass-band.brf"]
+    drain(jobs)
     out = settings.runs_dir / "run-a" / "outputs"
     assert (out / "brass-band.pdf").read_text() == "old" and "New" in (out / "brass-band.brf").read_text()
 
 
-def test_a_run_without_rendered_files_queues_no_render(settings, jobs):
+def test_a_run_without_rendered_files_queues_no_render(settings, jobs, monkeypatch):
+    queued = []
+    monkeypatch.setattr(jobs, "render_again", lambda *a: queued.append(a))
     finished_run(settings, "run-a", {"brass-band.musicxml": SCORE})
-    assert jobs.rename("run-a", "New") == "renamed" and "run-a" not in jobs.renders
+    assert jobs.rename("run-a", "New") == "renamed"
+    drain(jobs)
+    assert queued == []
