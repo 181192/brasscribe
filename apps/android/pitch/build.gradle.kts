@@ -26,6 +26,10 @@ dependencies {
 val repoRoot = rootProject.extra["repoRoot"] as File
 
 tasks.test {
+    // ONNX Runtime's desktop build starts a telemetry uploader unless it runs in CI. An upload that answers while
+    // the test JVM exits takes a lock that is already gone, and the JVM aborts (SIGABRT) after the tests passed.
+    // Without the uploader there is no such thread.
+    environment("ORT_DISABLE_TELEMETRY", "1")
     systemProperty("brasscribe.swiftf0", File(repoRoot, "models/converted/swift-f0/swift-f0-window.onnx").absolutePath)
     inputs.files(fileTree(File(repoRoot, "models/converted/swift-f0")) { include("swift-f0-window.onnx") }).withPropertyName("model")
     // Converted models (models/converted/<model>/...); tests needing one skip when it is absent.
