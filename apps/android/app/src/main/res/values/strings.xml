@@ -57,6 +57,9 @@
     <string name="delete_score_title">Delete “%1$s”?</string>
     <string name="delete_score_phone">The score is removed from this phone.</string>
     <string name="delete_score_computer">The score is removed from your computer.</string>
+    <string name="kept_row_subtitle">%1$s · Not written down yet</string>
+    <string name="kept_delete_text">The recording is removed from this phone.</string>
+    <string name="kept_storage">Recordings kept in Your scores use %1$s.</string>
     <string name="on_your_computer">On your computer</string>
     <string name="opening_score">Opening…</string>
     <string name="evidence_how_sure">How sure Brasscribe is</string>
@@ -173,9 +176,11 @@
     <string name="transcribe_leave_draft">%1$s. You can switch to another app: the draft goes on, and it is on the screen when you come back.</string>
     <string name="transcribe_cancel_title">Stop making this score?</string>
     <string name="transcribe_cancel_text">The recording is kept. You can start again from it.</string>
+    <string name="transcribe_cancel_text_kept">The recording stays in Your scores. You can start again from it.</string>
     <string name="transcribe_cancel_confirm">Stop</string>
     <string name="transcribe_cancel_keep">Keep going</string>
     <string name="transcribe_cancelled">Stopped. The recording is kept.</string>
+    <string name="transcribe_cancelled_kept">Stopped. The recording is in Your scores.</string>
     <string name="transcribe_failed">The score couldn\'t be made: %1$s</string>
     <string name="transcribe_done">Score ready</string>
     <string name="transcribe_where_device">On this phone</string>
@@ -193,6 +198,7 @@
     <string name="draft_refused_body">The phone has stopped Brasscribe from working on it. Your computer can make the score, or try again later.</string>
     <string name="draft_refused_body_away">The phone has stopped Brasscribe from working on it. Try again later.</string>
     <string name="draft_too_long_kept">Your recording is kept until you choose another.</string>
+    <string name="draft_too_long_kept_scores">Your recording is kept in Your scores.</string>
     <string name="draft_make_on_computer">Make it on your computer</string>
     <string name="problem_choose_another_recording">Choose another recording</string>
     <string name="notif_draft_channel">Band drafts</string>
@@ -409,6 +415,7 @@
     <string name="problem_score_title">The score couldn\'t be made</string>
     <string name="problem_score_body">Something went wrong while Brasscribe was working on it.</string>
     <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
+    <string name="problem_score_kept_scores">Your recording is kept in Your scores. You can try again now or later.</string>
     <string name="problem_too_large_title">This file is too big for the phone</string>
     <string name="problem_too_large_body">The phone ran out of memory while working on it.</string>
     <string name="problem_too_large_reason">Try a shorter recording, or split the video into parts.</string>

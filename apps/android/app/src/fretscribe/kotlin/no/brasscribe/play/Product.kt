@@ -33,6 +33,9 @@ object Product {
     /** Fretscribe carries no band sounds, so Settings has no choice between them. */
     const val BAND_SOUNDS = false
 
+    /** Your songs holds songs only: a recording is not kept there before it has a tab. */
+    const val KEEPS_RECORDINGS = false
+
     /**
      * Brasscribe's screens under Fretscribe's name, but for four:
      * - where Brasscribe asks "What do you play?" (after the first run, and from Settings), Fretscribe asks

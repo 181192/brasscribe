@@ -80,7 +80,7 @@ flowchart LR
 ```
 
 **Focus rules**
-- When transcription finishes, focus moves to the "Check N notes" heading and the change is announced.
+- When transcription finishes, focus moves to the "Check N notes" heading and the change is announced. A draft opens on the score instead (above): focus does not move, and "Score ready" is announced.
 - When a sheet closes, focus goes back to the button that opened it.
 - The keyboard reaches a screen's content before the primary docked under it: the top bar, then the content, then the docked actions (WCAG 2.4.3).
 
@@ -115,7 +115,7 @@ A brass band recording can be written down on the phone, tablet or Mac without t
 | Too long, body with nothing paired | Your computer can make the score from this recording. Open Brasscribe there and choose Pair a phone, then connect in Settings here. Or choose a shorter recording. | Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble til i Innstillinger her. Eller velg et kortere opptak. |
 | Too long, body with the computer paired but away | Open Brasscribe on your computer to make the score from this recording, or choose a shorter one. | Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere. |
 | Too long, the primary (only when the computer is there) | Make it on your computer | Lag det på datamaskinen |
-| Too long, the note (Android) | Your recording is kept until you choose another. | Opptaket ditt er tatt vare på til du velger et annet. |
+| Too long, the note (Android) | Your recording is kept in Your scores. (Until it is, or when keeping it failed: Your recording is kept until you choose another.) | Opptaket ditt er tatt vare på i Partiturene dine. (Til det er det, eller når det ikke lot seg gjøre: Opptaket ditt er tatt vare på til du velger et annet.) |
 | Too long, the secondary | Android: Choose another recording · Apple: Back | Android: Velg et annet opptak · Apple: Tilbake |
 
 **Too long for a draft.** The refusal comes before anything runs, and the recording stays where it was: Back goes to What is this? with the same recording. With the computer there, the primary sends that recording to it as a Brass band score. Without it there is no primary: the body says to open Brasscribe on the computer, and the primary appears when the computer does. **Try again** is not offered, since it would be refused again.
@@ -131,6 +131,25 @@ A brass band recording can be written down on the phone, tablet or Mac without t
 **Memory and time.**
 - The device refuses a recording longer than its free memory can hold, before anything is written down (the same rule as a solo take), with the too-long words above.
 - It runs in the foreground on iPhone and iPad (the models need the graphics chip, which the system stops in the background). On Android it runs in a foreground service with a notification, so it keeps going when the player leaves the app. Cancel works at every step.
+
+### A recording without a score yet
+
+A recording whose score was not made is kept in Your scores, so it outlives the app being closed: recorded at band practice, written down at home. Android does this; Apple does not yet.
+
+- **Only what is so.** The notes say "in Your scores" only once the recording is there; a score that could not be opened has no recording, and its note says nothing about one.
+- **When.** Whenever making the score did not finish: it failed, it was put off (too long for a draft, the phone refused the draft) or the player pressed Stop. A recording that gets its score leaves the list, and a recording opened from a score stays with that score (a draft keeps its own).
+- **The row** sits among the scores by when it was kept: the recording's name, its length and *Not written down yet*, with the microphone's icon. A tap opens What is this? with the recording, as it was. Its ⋯ has only **Delete**, which asks first and removes the recording from the phone.
+- **Storage.** Recordings are large: Settings says what the kept ones use, under the music stand's settings, while there are any. There is no limit; the player deletes them in Your scores.
+- **Backup.** Kept recordings stay out of the phone's backup: they are large, and may be someone else's music.
+
+| Where | English | Norsk |
+|---|---|---|
+| Your scores, the row's subtitle | 4:12 · Not written down yet | 4:12 · Ikke skrevet ned ennå |
+| Delete, the question | Delete "Band practice 3 Oct"? The recording is removed from this phone. | Slette «Band practice 3 Oct»? Opptaket fjernes fra denne telefonen. |
+| Settings, the storage line | Recordings kept in Your scores use 312 MB. | Opptakene i Partiturene dine bruker 312 MB. |
+| Transcribing, Stop's question | Stop making this score? The recording stays in Your scores. You can start again from it. | Slutte å lage dette partituret? Opptaket blir liggende i Partiturene dine. Du kan starte på nytt fra det. |
+| Transcribing, stopped | Stopped. The recording is in Your scores. | Stoppet. Opptaket ligger i Partiturene dine. |
+| The score couldn't be made, the note | Your recording is kept in Your scores. You can try again now or later. | Opptaket ditt er tatt vare på i Partiturene dine. Du kan prøve igjen nå eller senere. |
 
 ## 4. Navigation per platform
 

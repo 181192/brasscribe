@@ -226,7 +226,8 @@ fun HomeScreen(vm: PlayViewModel) {
             }
             InfoNote(stringResource(R.string.home_links_tip), boxed = false)
             SectionLabel(stringResource(R.string.home_your_scores))
-            if (scores.isEmpty()) {
+            val kept by vm.keptRecordings.collectAsState()
+            if (scores.isEmpty() && kept.isEmpty()) {
                 // Empty state: what will appear here, with the mark.
                 Row(Modifier.padding(vertical = BrasscribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
                     BrandMark(32.dp)
@@ -235,8 +236,15 @@ fun HomeScreen(vm: PlayViewModel) {
                 }
             } else {
                 RowGroup {
-                    scores.forEachIndexed { index, entry ->
+                    // A recording kept before it has a score sits among the scores, by when it was kept.
+                    val rows: List<Any> = (scores.map { it.updated to it } + kept.map { it.updated to it }).sortedByDescending { it.first }.map { it.second }
+                    rows.forEachIndexed { index, row ->
                         if (index > 0) RowDivider()
+                        if (row is no.brasscribe.play.KeptRecording) {
+                            KeptRecordingRow(vm, row, enabled = opening == null && !busy)
+                            return@forEachIndexed
+                        }
+                        val entry = row as no.brasscribe.play.ScoreEntry
                         ListRow(
                             no.brasscribe.play.ScoreTitles.display(entry.title, entry.updated),
                             { vm.openEntry(entry) },
