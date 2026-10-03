@@ -1074,7 +1074,7 @@ fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percu
     if let Some(rest) = find(el, "rest") {
         if rest.attribute("measure") == Some("yes") || (typ.is_none() && start == 0) {
             ev.insert("kind".into(), json!("bar-rest"));
-            ev.insert("pos".into(), json!({"beat": 1, "num": 0, "den": 1}));
+            ev.insert("pos".into(), position(0, divisions, time));
             ev.insert("bars".into(), json!(1));
         } else {
             ev.insert("kind".into(), json!("rest"));

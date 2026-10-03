@@ -267,7 +267,7 @@ public static class MusicXmlTalkingScoreBuilder
             if ((string?)rest.Attribute("measure") == "yes" || ev.Type is null && start == 0)
             {
                 ev.Kind = EventKind.BarRest;
-                ev.Pos = new TsPos(1);
+                ev.Pos = Position(0, divisions, time);
             }
             else ev.Kind = EventKind.Rest;
             ev.Type ??= TypeFromDuration(dur, divisions);

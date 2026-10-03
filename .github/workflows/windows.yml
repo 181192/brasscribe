@@ -62,12 +62,20 @@ jobs:
           workspaces: core
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
+      # With the C runtime linked in, so a PC without the Visual C++ runtime (vcruntime140.dll) can load it.
       - name: Build the Rust core (brasscribe_ffi.dll)
         working-directory: core
+        env:
+          RUSTFLAGS: -C target-feature=+crt-static
         run: |
           cargo build --release --locked -p brasscribe-ffi
           $dll = Resolve-Path target/release/brasscribe_ffi.dll
           "BRASSCRIBE_FFI_PATH=$dll" >> $env:GITHUB_ENV
+
+      - name: brasscribe_ffi.dll needs no C runtime DLL
+        shell: bash
+        working-directory: .
+        run: scripts/check-windows-imports.sh --static core/target/release/brasscribe_ffi.dll
 
       # BRASSCRIBE_FFI_PATH makes the native-core tests run (talking-score vectors through the core,
       # the default bridge). Tests that need data/ or models/ (golden score, SwiftF0 ONNX, SoundFonts) skip in CI.
@@ -177,8 +185,24 @@ jobs:
           dotnet publish src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH" -o $out
           if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
           if (-not (Test-Path "$out/SoundFonts/brasscribe-band.sf2")) { throw "the app has no band SoundFont" }
+          # ONNX Runtime's onnxruntime_providers_shared.dll imports vcruntime140.dll, so it ships app-locally
+          # (a redistributable file of Visual Studio), next to the exe where the loader looks first.
+          $vs = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $crt = Get-ChildItem "$vs/VC/Redist/MSVC/*/x64/Microsoft.VC14*.CRT/vcruntime140.dll" | Sort-Object FullName | Select-Object -Last 1
+          if (-not $crt) { throw "vcruntime140.dll was not found in the Visual Studio redistributables" }
+          Write-Host "app-local: $($crt.FullName)"
+          Copy-Item $crt.FullName $out
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
           Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-play-windows-x64.zip"
+
+      # Every Visual C++ runtime DLL that a binary in the download imports must be in the download.
+      - name: The download needs no Visual C++ runtime installed
+        if: ${{ inputs.release }}
+        shell: bash
+        working-directory: .
+        run: >
+          scripts/check-windows-imports.sh --shipped "$(cygpath -u "$RUNNER_TEMP")/publish/BrasscribePlay"
+          BrasscribePlay.exe brasscribe_ffi.dll onnxruntime.dll onnxruntime_providers_shared.dll
 
       - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}
@@ -227,6 +251,11 @@ jobs:
           RUSTFLAGS: -C target-feature=+crt-static
         run: cargo build --release --locked -p brasscribe-cli
 
+      - name: brasscribe-core.exe needs no C runtime DLL
+        shell: bash
+        working-directory: .
+        run: scripts/check-windows-imports.sh --static core/target/release/brasscribe-core.exe
+
       - name: Release build (self-contained, x64, pixi bundled)
         run: |
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
@@ -251,6 +280,14 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
           Compress-Archive -Path "$env:RUNNER_TEMP/publish/BrasscribeBandroom" -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-bandroom-windows-x64.zip"
+
+      # Every Visual C++ runtime DLL that a binary in the download imports must be in the download.
+      - name: The download needs no Visual C++ runtime installed
+        shell: bash
+        working-directory: .
+        run: >
+          scripts/check-windows-imports.sh --shipped "$(cygpath -u "$RUNNER_TEMP")/publish/BrasscribeBandroom"
+          BrasscribeBandroom.exe brasscribe-core.exe pixi.exe
 
       - uses: actions/upload-artifact@v7
         with:

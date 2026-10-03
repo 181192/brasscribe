@@ -299,6 +299,18 @@ object ScreenDevice {
         shadowOf(Looper.getMainLooper()).idle()
     }
 
+    /**
+     * A recording the app has put somewhere of its own (a kept recording, for one): its sound track is told to
+     * Android's stand-in media classes, as [recording] does for the file it writes. [wav] is a 16-bit mono WAV.
+     */
+    fun knowsTheSoundOf(context: Context, wav: File) {
+        val bytes = wav.readBytes()
+        val rate = java.nio.ByteBuffer.wrap(bytes, 24, 4).order(java.nio.ByteOrder.LITTLE_ENDIAN).int
+        val pcm = bytes.copyOfRange(44, bytes.size)
+        val format = MediaFormat.createAudioFormat("audio/raw", rate, 1).apply { setLong(MediaFormat.KEY_DURATION, pcm.size / 2 * 1_000_000L / rate) }
+        ShadowMediaExtractor.addTrack(DataSource.toDataSource(context, Uri.fromFile(wav), null), format, pcm)
+    }
+
     /** Lets the screen come to rest: a second of the app's time, with its frames. */
     fun settle(rule: AppRule) {
         repeat(20) { rule.waitForIdle(); pass(rule, 50) }

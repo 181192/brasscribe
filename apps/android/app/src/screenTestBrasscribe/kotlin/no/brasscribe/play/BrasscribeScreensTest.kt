@@ -20,11 +20,13 @@ class BrasscribeScreensTest : ScreenCatalogue() {
     @Before
     fun aStandThatHasBeenSeen() {
         container.standHintShown = true
+        rule.runOnUiThread { vm.keptRecordings.value.forEach(vm::deleteKept) }
     }
 
     @After
     fun asItWas() {
         rule.runOnUiThread {
+            vm.keptRecordings.value.forEach(vm::deleteKept)
             container.updateSeat(SeatChoice.NotSet)
             container.firstRunDone = true
         }
@@ -56,6 +58,15 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         // (The player loads its sounds on a thread of its own, and puts the page at its cursor when it has them.)
         runCatching { waitUntil(20_000) { vm.scoreController?.view?.api?.isReadyForPlayback == true } }
         rest()
+    }
+
+    /** A recording sent to a computer that is not there: its score is not made, and the recording is kept in Your scores. */
+    private fun aRecordingWithoutItsScore() {
+        val file = recording("Band practice.wav")
+        rule.runOnUiThread { container.fixtureSource = null; vm.importUri(android.net.Uri.fromFile(file)) }
+        waitUntil(20_000) { vm.screen.value.last() == Screen.PROFILE }
+        rule.runOnUiThread { vm.chooseProfile(Profile.BRASS_BAND); vm.where.value = Where.COMPANION; vm.startTranscription() }
+        waitUntil(20_000) { vm.screen.value.last() == Screen.PROBLEM && vm.keptRecordings.value.isNotEmpty() }
     }
 
     private fun more() {
@@ -96,6 +107,8 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("about") { go(Screen.SETTINGS, Screen.ABOUT) },
         Entry("help") { go(Screen.HELP) },
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },
+        Entry("problem-recording-kept") { aRecordingWithoutItsScore() },
+        Entry("home-with-a-kept-recording") { aRecordingWithoutItsScore(); rule.runOnUiThread { vm.home() }; rest() },
         Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
     )
 }

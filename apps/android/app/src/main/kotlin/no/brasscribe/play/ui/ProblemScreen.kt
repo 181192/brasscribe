@@ -69,6 +69,7 @@ fun ProblemScreen(vm: PlayViewModel) {
     // The phone would not let the draft run: later, or on the computer. Its recording is still there too.
     val draft = tooLong || p == Problem.DRAFT_REFUSED
     val connection by vm.connection.state.collectAsState()
+    val source by vm.source.collectAsState()
     val computerThere = vm.container.usingFixture || no.brasscribe.play.OnDeviceRouting.computerThere(connection)
 
     PlayScaffold(
@@ -95,7 +96,7 @@ fun ProblemScreen(vm: PlayViewModel) {
                     if (no.brasscribe.play.noNotesOffersComputer(vm.noNotesOnPhone, computerThere))
                         PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
                     else PrimaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
-                    SecondaryButton(stringResource(R.string.problem_record_again), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
+                    SecondaryButton(stringResource(no.brasscribe.play.noNotesRecordWords(source?.kind)), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
                 }
                 Problem.NOTHING_HEARD -> {
                     PrimaryButton(stringResource(R.string.problem_import_instead), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
@@ -129,7 +130,18 @@ fun ProblemScreen(vm: PlayViewModel) {
                 }
             }
         }
-        copy.note?.let { InfoNote(stringResource(it)) }
+        // The note says the recording is kept only when there is one, and that it is in Your scores only once it is
+        // (a score that could not be opened has no recording; a keep that failed left it where it was).
+        val source by vm.source.collectAsState()
+        val kept by vm.keptRecordings.collectAsState()
+        val recording = source?.file?.takeIf { source?.kind != no.brasscribe.play.SourceKind.SCORE }
+        val inYourScores = recording != null && kept.any { it.file == recording }
+        val note = when (copy.note) {
+            R.string.problem_score_kept -> if (inYourScores) R.string.problem_score_kept_scores else R.string.problem_score_kept.takeIf { recording != null }
+            R.string.draft_too_long_kept -> if (inYourScores) R.string.draft_too_long_kept_scores else R.string.draft_too_long_kept
+            else -> copy.note
+        }
+        note?.let { InfoNote(stringResource(it)) }
         vm.problemWhy?.let { InfoNote(stringResource(it), Modifier.semantics { testTag = "problem-why" }) }
         val detail = vm.problemDetail
         if (!detail.isNullOrBlank()) {
@@ -210,6 +222,11 @@ fun SettingsScreen(vm: PlayViewModel) {
             RowDivider()
             SwitchRow(stringResource(R.string.settings_stand_controls), null, keep, "setting-stand-controls") { keep = it; vm.container.standKeepControls = it }
         }
+        // Recordings are large: what the ones kept in Your scores take, and where they are deleted.
+        val keptBytes by vm.keptBytes.collectAsState()
+        if (keptBytes > 0) Text(stringResource(R.string.kept_storage, android.text.format.Formatter.formatShortFileSize(context, keptBytes)),
+            style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted,
+            modifier = Modifier.padding(horizontal = BrasscribeSpace.s4).semantics { testTag = "kept-storage" })
         RowGroup {
             ListRow(stringResource(R.string.help), { vm.navigate(no.brasscribe.play.Screen.HELP) }, icon = R.drawable.ic_bc_help)
             RowDivider()
@@ -237,7 +254,7 @@ fun HelpScreen(vm: PlayViewModel) {
         }
         // The music stand: page turners, and how to keep a tablet one way up (it has no Lock rotation).
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
-            SubHeading(stringResource(R.string.stand_enter))
+            SubHeading(stringResource(R.string.help_stand_title))
             Text(stringResource(R.string.help_stand_pedal), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             if (androidx.compose.ui.platform.LocalConfiguration.current.smallestScreenWidthDp >= 600)
                 Text(stringResource(R.string.help_stand_tablet_lock), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)

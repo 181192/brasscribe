@@ -123,6 +123,10 @@ object ScreenDevice {
     fun recording(context: Context, name: String, wav: ByteArray, sampleRate: Int): File =
         File(context.cacheDir, name).apply { writeBytes(wav) }
 
+    /** A recording the app has put somewhere of its own: the phone decodes it itself. */
+    @Suppress("UNUSED_PARAMETER")
+    fun knowsTheSoundOf(context: Context, wav: File) = Unit
+
     /** Waits until [condition] holds, for [ms] at most. */
     fun waitUntil(rule: AppRule, ms: Long, condition: () -> Boolean) = rule.waitUntil(ms) { condition() }
 

@@ -46,7 +46,7 @@ class RustCoreBridgeTest {
     @Test
     fun announcerPassesTheConformanceVectorsThroughTheCore() {
         val c = core()
-        val file = File("../model/src/test/resources/talking-score-vectors.json")
+        val file = File(System.getProperty("brasscribe.vectors"))
         val vectors = BrasscribeJson.decodeFromString(Vectors.serializer(), file.readText())
         val failures = mutableListOf<String>()
         for (v in vectors.cases) {

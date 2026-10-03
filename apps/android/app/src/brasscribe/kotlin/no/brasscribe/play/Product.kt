@@ -15,6 +15,9 @@ object Product {
     /** The band's sounds are in this app, so Settings offers the choice between them. */
     const val BAND_SOUNDS = true
 
+    /** A recording whose score was not made (it failed, was put off or was stopped) is kept in Your scores. */
+    const val KEEPS_RECORDINGS = true
+
     @Composable
     fun Root(vm: PlayViewModel) = PlayRoot(vm)
 
@@ -36,7 +39,10 @@ object Product {
     @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
     suspend fun audioOnComputer(vm: PlayViewModel, engine: no.brasscribe.play.engine.EngineApi): String? = null
 
-    /** A copy of the recording kept apart from the one opened: Brasscribe keeps none. */
+    /**
+     * A copy of the recording kept apart from the one opened: Brasscribe has none. A recording kept in Your scores is
+     * the one opened itself (`Source.file`), so it is sent as it is.
+     */
     @Suppress("UNUSED_PARAMETER")
     fun keptRecording(vm: PlayViewModel): no.brasscribe.play.engine.UploadSource? = null
 
