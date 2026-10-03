@@ -467,6 +467,7 @@
     <string name="stand_left">Notestativet er lukket.</string>
     <string name="settings_stand_controls">Vis alltid knappene på notestativet</string>
     <string name="settings_stand_follow">Bla om mens musikken spiller</string>
+    <string name="help_stand_title">Notestativ</string>
     <string name="help_stand_pedal">Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken.</string>
     <string name="help_stand_tablet_lock">Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning.</string>
     <string name="opened_score">Åpnet %1$s.</string>

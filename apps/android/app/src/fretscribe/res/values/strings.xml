@@ -39,6 +39,35 @@
     <string name="settings_seat">Your instrument</string>
     <string name="settings_seat_caption">Fretscribe remembers this for your tabs.</string>
     <string name="companion_title">Fretscribe on your computer</string>
+    <!-- Fretscribe on your computer (the pairing screen). The program on the computer is called what the rest of
+         this app calls it; nothing here names Brasscribe or Bandroom. -->
+    <string name="companion_explain">Open Fretscribe on your computer and choose Pair a phone. Type the six digits it shows.</string>
+    <string name="companion_searching">Looking for Fretscribe on your network… You can also type the address below.</string>
+    <string name="companion_tech_details">Fretscribe on your computer shows its address under Details. Without it: “pixi run serve-lan”.</string>
+    <string name="companion_failed_plain">Couldn\'t connect. Check that Fretscribe on the computer says Running, and that both are on the same Wi-Fi.</string>
+    <string name="pair_link_invalid">That code isn\'t from Fretscribe on a computer.</string>
+    <string name="pair_link_address_by_name">Fretscribe looks for it on your network by name.</string>
+    <string name="pair_needs_update">Update the Fretscribe app on this phone to connect to this computer.</string>
+
+    <!-- Help (Settings > Help): what this app does, in its own words. -->
+    <string name="help_1_title">Write down a tab</string>
+    <string name="help_1_text">Open a recording, or record with the microphone. Say what it is, and Fretscribe on your computer writes down the notes as tab for your instrument.</string>
+    <string name="help_2_text">A “?” above a note means Fretscribe wasn\'t sure of it. A boxed “!” marks a note your instrument can\'t play there. Listen to that bar of the recording to check it.</string>
+    <string name="help_3_text">Slow the recording down, and repeat the hard bars.</string>
+    <string name="help_4_title">Your songs</string>
+    <string name="help_4_text">Every tab you make is kept under Your songs, on the phone and on your computer.</string>
+    <string name="help_5_title">Tabs are written on your computer</string>
+    <string name="help_5_text">Fretscribe on your computer writes down the notes. Open it there, and connect in Settings.</string>
+    <!-- The keys while a tab plays: Fretscribe has no music stand. -->
+    <string name="help_stand_title">Page turners and keys</string>
+
+    <!-- Problems -->
+    <string name="problem_file_body">Fretscribe couldn\'t read the sound in it.</string>
+    <string name="problem_record_body">The phone didn\'t let Fretscribe record.</string>
+
+    <!-- About -->
+    <string name="about_text">Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) with the Bravura font (SIL OFL 1.1) and alphaSkia (BSD-3-Clause) to draw the tab, AndroidX Media3 (Apache-2.0) to play the recording, and the Sonivox SoundFont (Apache-2.0) for alphaTab\'s own sounds. Its shared code also carries Oboe (Apache-2.0), ONNX Runtime (MIT) and UniFFI (MPL-2.0). Fretscribe on your computer writes down the notes.</string>
+    <string name="about_font">Titles are set in Atkinson Hyperlegible Next, and fret numbers in Fretscribe Tab (both SIL Open Font License 1.1).</string>
     <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>
 
