@@ -42,6 +42,12 @@ function syncNav(): void {
   (document.getElementById("nav-menu") as HTMLDetailsElement).open = !narrow.matches;
 }
 narrow.addEventListener("change", syncNav);
+// On a narrow screen the open nav covers the page: when focus leaves it (Tab past its end), it closes, so focus is never hidden under it.
+document.getElementById("nav-menu")!.addEventListener("focusout", (e) => {
+  const menu = e.currentTarget as HTMLDetailsElement;
+  const to = e.relatedTarget as Node | null;
+  if (narrow.matches && menu.open && to && !menu.contains(to)) menu.open = false;
+});
 syncNav();
 wireMenus();
 
