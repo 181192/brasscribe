@@ -42,12 +42,18 @@ function syncNav(): void {
   (document.getElementById("nav-menu") as HTMLDetailsElement).open = !narrow.matches;
 }
 narrow.addEventListener("change", syncNav);
-// On a narrow screen the open nav covers the page: when focus leaves it (Tab past its end), it closes, so focus is never hidden under it.
-document.getElementById("nav-menu")!.addEventListener("focusout", (e) => {
-  const menu = e.currentTarget as HTMLDetailsElement;
-  const to = e.relatedTarget as Node | null;
-  if (narrow.matches && menu.open && to && !menu.contains(to)) menu.open = false;
+// On a narrow screen the open nav covers the page. Focus anywhere outside it closes it, so focus is never
+// hidden under it: Tab past its end, but also Shift+Tab or a shortcut from the page when focus never entered
+// it. Escape closes it and puts focus back on the Menu button (an open menu inside it, Quality, closes first).
+const navMenu = document.getElementById("nav-menu") as HTMLDetailsElement;
+document.addEventListener("focusin", (e) => {
+  if (narrow.matches && navMenu.open && !navMenu.contains(e.target as Node)) navMenu.open = false;
 });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || !narrow.matches || !navMenu.open || navMenu.querySelector("details.menu[open]")) return;
+  navMenu.open = false;
+  navMenu.querySelector<HTMLElement>(".nav-toggle")?.focus();
+}, true);
 syncNav();
 wireMenus();
 

@@ -32,7 +32,7 @@ npx playwright install chromium           # once
 npm run build                             # the browser tests and the catalogue run against the built bundle
 npm run test:catalogue                    # the screen catalogue and its checks' own tests, no engine
 scripts/screenshots.sh compare            # the catalogue at the merge base and here, and what changed
-npm run test:browser                      # the built bundle as static files, no engine: opens a score in the viewer, appearance
+npm run test:browser                      # the built bundle as static files, no engine: opens a score in the viewer, appearance, the narrow menu
 npm run e2e                               # starts `brasscribe studio --port 8799` via pixi and runs the e2e suite
 STUDIO_URL=http://127.0.0.1:8799 npm run e2e   # against an engine that is already running
 STUDIO_E2E_LIVE=1 npm run e2e             # also start a real pipeline run (runs models)
