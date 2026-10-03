@@ -83,7 +83,7 @@ enum Strings {
         case .missingDownload(let missing): notDownloaded(missing)
         case .noFreePort: String(localized: "Another program on this computer is in the way.")
         case .updateFailed: String(localized: "The previous version is still running, so phones can keep sending recordings.")
-        case .updateRefused: String(localized: "The previous version is still running, so phones can keep sending recordings. This copy of Bandroom came with a setup tool that is too old for the update; the latest Bandroom has one that works.")
+        case .updateRefused: String(localized: "The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.")
         case .notResponding: String(localized: "It is running but hasn't answered for a while. Restarting it usually helps.")
         case .pixiTooOld: String(localized: "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.")
         }

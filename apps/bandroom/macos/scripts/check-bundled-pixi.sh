@@ -19,8 +19,12 @@ spec=$(sed -nE "s/^requires-pixi[[:space:]]*=[[:space:]]*[\"']([^\"']*)[\"'].*/\
 
 meets() { awk -v spec="$spec" -v version="$1" -f "$here/pixi-spec.awk"; }
 
+# Releases only: the spec reader compares numeric parts, so a pre-release (0.81.0rc1) would pass as 0.81.0.
+release() { [[ "$1" =~ ^[0-9]+(\.[0-9]+)*$ ]]; }
+
 pinned=$(tr -d ' \r\n' < "$root/.pixi-version")
 pinned="${pinned#v}"
+release "$pinned" || { echo "check-bundled-pixi: .pixi-version holds '$pinned', not a release version" >&2; exit 1; }
 if ! meets "$pinned"; then
   echo "check-bundled-pixi: the pinned pixi $pinned (.pixi-version) doesn't meet requires-pixi '$spec' in $manifest" >&2
   exit 1
@@ -28,6 +32,7 @@ fi
 
 have=$("$pixi" --version | sed -nE 's/^pixi[[:space:]]+([0-9][0-9A-Za-z.+-]*).*/\1/p')
 [ -n "$have" ] || { echo "check-bundled-pixi: $pixi did not print a version" >&2; exit 1; }
+release "$have" || { echo "check-bundled-pixi: pixi $have is a pre-release; bundle a release" >&2; exit 1; }
 if ! meets "$have"; then
   echo "check-bundled-pixi: pixi $have doesn't meet requires-pixi '$spec' that the engine workspace asks for" >&2
   exit 1

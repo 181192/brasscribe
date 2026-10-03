@@ -8,7 +8,7 @@
 # >= > <= < == != ~= =, or a bare VERSION. `1.2.*` (bare, `==` or `=`) and `=1.2` match every 1.2
 # release, `!=1.2.*` none of them, a bare `1.2` only 1.2 itself, and `~=1.2.3` means >=1.2.3 and 1.2.*.
 # Versions compare by their numeric parts, missing parts counting as 0 (0.80 is 0.80.0); a pre-release
-# suffix is not part of the comparison.
+# suffix is not part of the comparison (check-bundled-pixi.sh refuses pre-releases before asking).
 
 function bad(why) {
   printf "pixi-spec: %s in '%s'\n", why, spec > "/dev/stderr"
@@ -90,6 +90,7 @@ BEGIN {
   nalt = split(spec, alts, "|")
   ok = 0
   for (a = 1; a <= nalt; a++) {
+    if (trim(alts[a]) == "") bad("an empty alternative")
     nall = split(alts[a], all, ",")
     this = 1
     for (k = 1; k <= nall; k++) if (!holds(all[k], v)) this = 0

@@ -77,6 +77,30 @@ expect 2 '>=0.80.*' 0.81.0
 expect 2 '~=1' 1.2.0
 expect 2 '>=abc' 0.81.0
 expect 2 '>=0.80' nonsense
+expect 2 '|' 0.81.0
+expect 2 '>=0.90|' 0.81.0
+expect 2 '|>=0.90' 0.81.0
+expect 2 '<0.70||>=0.80' 0.81.0
+
+# check-bundled-pixi.sh: a pre-release pixi is refused, whatever the spec says; a release that meets it passes.
+scratch=$(mktemp -d)
+trap 'rm -rf "$scratch"' EXIT
+printf '[workspace]\nrequires-pixi = ">=0.80"\n' > "$scratch/pixi.toml"
+fake() { printf '#!/bin/sh\necho "pixi %s"\n' "$1" > "$scratch/pixi-$1"; chmod +x "$scratch/pixi-$1"; echo "$scratch/pixi-$1"; }
+check() {
+  local want=$1 version=$2 got
+  "$here/check-bundled-pixi.sh" "$(fake "$version")" "$scratch/pixi.toml" > /dev/null 2>&1
+  got=$?
+  runs=$((runs + 1))
+  if [ "$got" != "$want" ]; then
+    echo "FAIL: check-bundled-pixi.sh with pixi $version gave $got, expected $want"
+    fails=$((fails + 1))
+  fi
+}
+check 0 0.81.0
+check 1 0.79.0
+check 1 0.81.0rc1
+check 1 0.82.0-beta.1
 
 echo "pixi-spec: $((runs - fails)) of $runs passed"
 [ "$fails" -eq 0 ]
