@@ -69,6 +69,7 @@ fun ProblemScreen(vm: PlayViewModel) {
     // The phone would not let the draft run: later, or on the computer. Its recording is still there too.
     val draft = tooLong || p == Problem.DRAFT_REFUSED
     val connection by vm.connection.state.collectAsState()
+    val source by vm.source.collectAsState()
     val computerThere = vm.container.usingFixture || no.brasscribe.play.OnDeviceRouting.computerThere(connection)
 
     PlayScaffold(
@@ -95,7 +96,7 @@ fun ProblemScreen(vm: PlayViewModel) {
                     if (no.brasscribe.play.noNotesOffersComputer(vm.noNotesOnPhone, computerThere))
                         PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
                     else PrimaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
-                    SecondaryButton(stringResource(R.string.problem_record_again), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
+                    SecondaryButton(stringResource(no.brasscribe.play.noNotesRecordWords(source?.kind)), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
                 }
                 Problem.NOTHING_HEARD -> {
                     PrimaryButton(stringResource(R.string.problem_import_instead), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)

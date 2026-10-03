@@ -35,7 +35,9 @@ import io.ktor.utils.io.jvm.javaio.copyTo
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import io.ktor.utils.io.readUTF8Line
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import no.brasscribe.play.model.BrasscribeJson
@@ -117,7 +119,9 @@ class KtorEngineApi(
         return try {
             send()
         } catch (e: java.io.IOException) {
-            if (e.javaClass.simpleName.contains("Timeout")) throw e
+            if (isTimeout(e)) throw e
+            // Cancelled meanwhile (the player left): nothing is sent again.
+            currentCoroutineContext().ensureActive()
             send()
         }
     }
@@ -263,6 +267,11 @@ class KtorEngineApi(
     }
 
     internal companion object {
+        /** No answer in time (connecting, reading, or the whole request): not a connection that broke. */
+        fun isTimeout(e: java.io.IOException): Boolean =
+            e is java.net.SocketTimeoutException || e is io.ktor.client.network.sockets.SocketTimeoutException ||
+                e is io.ktor.client.network.sockets.ConnectTimeoutException || e is io.ktor.client.plugins.HttpRequestTimeoutException
+
         val TERMINAL = setOf("succeeded", "failed", "cancelled")
         const val MAX_RECONNECTS = 5
         const val RECONNECT_MS = 1000L
