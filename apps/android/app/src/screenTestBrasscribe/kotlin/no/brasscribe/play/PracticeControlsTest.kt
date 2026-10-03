@@ -104,6 +104,13 @@ class PracticeControlsTest : ScreenTest() {
         rule.onNodeWithTag("stand-slower").performSemanticsAction(SemanticsActions.OnClick)
         composeTime(100)
         assertEquals("a click after a hold to the end steps", 145, speed())
+        // The button that was held to the end and turned off has let go of its hold too: its next click steps.
+        rule.onNodeWithTag("stand-faster").performSemanticsAction(SemanticsActions.OnClick)
+        composeTime(100)
+        assertEquals("the held button's next click steps", 150, speed())
+        rule.onNodeWithTag("stand-slower").performSemanticsAction(SemanticsActions.OnClick)
+        composeTime(100)
+        assertEquals(145, speed())
         // A hold the finger slides off ends with no click either: the next one steps once.
         rule.onNodeWithTag("stand-slower").performTouchInput { down(center) }
         composeTime(STEP_HOLD_MS + STEP_REPEAT_MS + STEP_REPEAT_MS / 2)
