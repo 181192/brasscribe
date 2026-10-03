@@ -224,3 +224,57 @@ def test_a_bar_of_32nds_with_review_marks_still_translates(tmp_path):
     r = braille.translate(src)
     assert all(len(line) <= braille.LINE_CELLS for page in r.brf.split("\f") for line in page.split("\r\n"))
     assert len(r.brf.replace("\r\n", "").replace(" ", "")) > 32
+
+
+def test_the_band_export_is_keyed_on_the_musescore_that_would_render_it(tmp_path, monkeypatch):
+    from brasscribe_music import musescore
+
+    def key(profile: str) -> dict:
+        return profiles.build(profile, Path("song.wav"), "T").stage("export").params
+
+    band = [name for name in profiles.PROFILES if not profiles.tab.is_tab(name)]
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    assert band and all(key(p)["musescore"] is None for p in band)
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    installed = key("brass-band")["musescore"]
+    assert installed and all(key(p)["musescore"] == installed for p in band)
+    exe.write_text("#!/bin/sh\n# an update\n")
+    assert key("brass-band")["musescore"] not in (None, installed)
+    for p in band:  # only the export
+        assert all("musescore" not in s.params for s in profiles.build(p, Path("song.wav"), "T").stages if s.name != "export")
+
+
+def test_a_band_run_made_without_musescore_is_rendered_once_it_is_installed(settings, audio, tmp_path, monkeypatch):
+    from brasscribe_engine import runner
+    from brasscribe_engine import stages as S
+    from brasscribe_music import musescore
+
+    from .conftest import fake_pipeline
+
+    def pipeline(title, params):
+        p = fake_pipeline(title, params)
+        p.stages.append(profiles._export("arrange", False))
+        p.outputs.update({"brass-band.pdf": ("export", "brass-band.pdf"), "brass-band.mid": ("export", "brass-band.mid")})
+        return p
+
+    monkeypatch.setitem(profiles.PROFILES, "test", profiles.Profile("test", "test", "", False, pipeline))
+    monkeypatch.setattr(S, "accessible_exports", lambda score, ctx: {"written": []})
+    monkeypatch.setattr(musescore, "binary", lambda: None)
+    without = runner.run(settings, audio, "test")
+    assert without["status"] == "succeeded" and "brass-band.pdf" not in without["outputs"]
+
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    monkeypatch.setattr(musescore, "convert_many",
+                        lambda jobs, style=None: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
+    installed = runner.run(settings, audio, "test")
+    statuses = {s["stage"]: s["status"] for s in installed["stages"]}
+    assert statuses.pop("export") == "ran" and set(statuses.values()) == {"cached"}
+    assert {"brass-band.pdf", "brass-band.mid"} <= set(installed["outputs"])
+    again = runner.run(settings, audio, "test")
+    assert again["stages"][-1]["status"] == "cached" and "brass-band.pdf" in again["outputs"]
