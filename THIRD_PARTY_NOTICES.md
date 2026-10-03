@@ -83,7 +83,9 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   LGPL-2.1/Apache-2.0), and the Google Play services code scanner (Android SDK licence; not bundled
   code, it calls the system scanner).
 - **Windows:** Windows App SDK (Microsoft software licence), ONNX Runtime with DirectML (MIT),
-  NAudio (MIT), CommunityToolkit.Mvvm (MIT).
+  NAudio (MIT), CommunityToolkit.Mvvm (MIT). Play for Windows also ships `vcruntime140.dll`, a
+  redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
+  needs.
 - **Studio:** alphaTab (above); build and test tools only in development.
 
 ## Not distributed
