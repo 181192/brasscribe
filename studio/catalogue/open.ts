@@ -72,6 +72,11 @@ export async function steady(page: Page): Promise<void> {
     // A view that focuses its score scrolls the page to it, and how far depends on when the score was laid out;
     // the toolbar that sticks to the top then lands in a different place. Every screenshot starts at the top.
     window.scrollTo(0, 0);
+    // So does every part that scrolls (an open dialog scrolled to its focused button by however far the fonts
+    // had got when it opened).
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
+      if (el.scrollTop || el.scrollLeft) el.scrollTo(0, 0);
+    }
   });
   // Let any transition still running end before the picture.
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))).then(() => undefined));
