@@ -3,7 +3,7 @@
 // spacing, and a screenshot of each when CATALOGUE_SHOTS names a folder. CATALOGUE_CHECKS=0 only takes the
 // screenshots (the merge base's side of scripts/screenshots.sh compare).
 import { expect, test } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
 import { isKnown, stale } from "./known";
@@ -22,6 +22,14 @@ for (const variant of VARIANTS) {
       if (shots) {
         await steady(page);
         await stableScreenshot(page, join(shots, `${view.name}--${variant.name}.png`));
+        // Temporary: the engraving and where it sits, next to the picture.
+        const dump = await page.evaluate(() => Array.from(document.querySelectorAll("bs-score")).map((s) => {
+          const surf = s.querySelector(".at-surface");
+          const view = s.querySelector(".score-view") as HTMLElement | null;
+          const r = (e: Element | null) => (e ? JSON.stringify(e.getBoundingClientRect()) : "");
+          return `<!-- view ${r(view)} surface ${r(surf)} scroll ${view?.scrollLeft},${view?.scrollTop} win ${scrollX},${scrollY} -->\n${surf?.innerHTML ?? ""}`;
+        }).join("\n<!-- next score -->\n"));
+        if (dump) writeFileSync(join(shots, `${view.name}--${variant.name}.score.html`), dump);
       }
       if (!checks) return;
       expect(opened.problems, "errors and requests without a fixture").toEqual([]);
