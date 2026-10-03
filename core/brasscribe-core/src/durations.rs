@@ -175,8 +175,23 @@ pub fn beat_values(notes: &[QNote]) -> HashMap<i64, &'static [i64]> {
     notes.iter().map(|q| (beat(q), if triplet.contains(&beat(q)) { &TRIPLET[..] } else { &STRAIGHT[..] })).collect()
 }
 
-fn readable(performed: f64, room: Option<i64>, start: i64, values: &[i64]) -> i64 {
+/// A note ending at `end` ends on a slot of the grid of the beat it ends in: one of a grid of 3 or 6
+/// in a beat of [`TRIPLET`] values, one of a straight grid (32nds included) in any other.
+fn ends_on_grid(end: i64, values: &HashMap<i64, &'static [i64]>) -> bool {
+    let at = crate::py::pymod(end, TICKS_PER_BEAT);
+    let triplet = values.get(&crate::py::floordiv(end, TICKS_PER_BEAT)).is_some_and(|v| *v == &TRIPLET[..]);
+    at == 0 || at % (if triplet { 4 } else { 3 }) == 0
+}
+
+fn readable(performed: f64, room: Option<i64>, start: i64, values: &[i64], grids: Option<&HashMap<i64, &'static [i64]>>) -> i64 {
     let mut cands: Vec<i64> = values.iter().copied().filter(|&c| room.map_or(true, |r| c <= r)).collect();
+    // Also end on the grid of the beat the note ends in, where a value can.
+    if let Some(g) = grids {
+        let on: Vec<i64> = cands.iter().copied().filter(|&c| ends_on_grid(start + c, g)).collect();
+        if !on.is_empty() {
+            cands = on;
+        }
+    }
     if let Some(r) = room {
         if !cands.contains(&r) && r <= READABLE[READABLE.len() - 1] {
             cands.push(r);
@@ -239,7 +254,7 @@ pub fn written_durations_with(notes: &[QNote], bm: Option<&BeatMap>, o: WriteOpt
             let dur = match room {
                 Some(r) if r <= o.hold_within || (p >= LEGATO_RATIO * r as f64 && r as f64 - p <= MAX_HELD_GAP) => r,
                 _ => {
-                    let d = readable(p, room, q.start, values.get(&crate::py::floordiv(q.start, TICKS_PER_BEAT)).copied().unwrap_or(&READABLE[..]));
+                    let d = readable(p, room, q.start, values.get(&crate::py::floordiv(q.start, TICKS_PER_BEAT)).copied().unwrap_or(&READABLE[..]), o.keep_grid.then_some(&values));
                     if d < o.min_detached {
                         room.map_or(o.min_detached, |r| o.min_detached.min(r))
                     } else {

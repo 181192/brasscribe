@@ -94,6 +94,7 @@ def test_beat_values_follow_the_grid_quantize_chose():
     rng = np.random.default_rng(70)
     beats = np.arange(0, 40, 0.5)
     bm = BeatMap(beats)
+    seen = {"triplet": 0, "shared": 0, "straight": 0}
     for case in range(200):
         dense = bool(case % 2)
         grid = rng.choice([2, 3, 4, 6])
@@ -108,7 +109,22 @@ def test_beat_values_follow_the_grid_quantize_chose():
         values = beat_values(notes)
         for n in notes:
             k = n.start // TICKS_PER_BEAT
+            # Triplet values only on a beat quantized in threes ...
             if values[k] is TRIPLET:
                 assert grids.get(k, 4) in (3, 6), (case, n)
-            if grids.get(k, 4) not in (3, 6):
+                seen["triplet"] += 1
+            # ... and on every such beat, unless all its starts are on slots a straight grid has too.
+            elif grids.get(k, 4) in (3, 6):
+                assert all(m.start % TICKS_PER_BEAT in (0, 12) for m in notes if m.start // TICKS_PER_BEAT == k), (case, n)
+                seen["shared"] += 1
+            else:
                 assert values[k] is STRAIGHT, (case, n)
+                seen["straight"] += 1
+    assert seen["triplet"] > 0 and seen["straight"] > 0, seen  # both kinds of beat occur
+
+
+def test_keep_grid_ends_a_detached_note_on_the_grid_of_the_beat_it_ends_in():
+    # Sextuplets on beat 0, the last one played a triplet 8th long, then nothing until beat 2. A triplet 8th would end
+    # 4 ticks into beat 1, which is straight; a triplet quarter ends on its 8th.
+    notes = [q(0, 0.0, 0.08), q(1 / 6, 1 / 12, 1 / 6), q(5 / 6, 5 / 12, 5 / 12 + 1 / 6), q(2, 1.0, 1.4)]
+    assert written_durations(notes, BM, keep_grid=True)[2].dur == 16

@@ -139,8 +139,18 @@ def beat_values(notes: list[QNote]) -> dict[int, tuple[int, ...]]:
     return {q.start // TICKS_PER_BEAT: TRIPLET if q.start // TICKS_PER_BEAT in triplet else STRAIGHT for q in notes}
 
 
-def _readable(performed: float, room: int | None, start: int = 0, values: tuple[int, ...] = READABLE) -> int:
+def _ends_on_grid(end: int, values: dict[int, tuple[int, ...]]) -> bool:
+    """A note ending at `end` ends on a slot of the grid of the beat it ends in: one of a grid of 3 or 6 in a beat of
+    TRIPLET values, one of a straight grid (32nds included) in any other."""
+    at = end % TICKS_PER_BEAT
+    return at == 0 or at % (4 if values.get(end // TICKS_PER_BEAT) is TRIPLET else 3) == 0
+
+
+def _readable(performed: float, room: int | None, start: int = 0, values: tuple[int, ...] = READABLE,
+              grids: dict[int, tuple[int, ...]] | None = None) -> int:
     cands = [c for c in values if room is None or c <= room]
+    if grids is not None:  # also end on the grid of the beat the note ends in, where a value can
+        cands = [c for c in cands if _ends_on_grid(start + c, grids)] or cands
     if room is not None and room not in cands and room <= READABLE[-1]:
         cands.append(room)
     if not cands:
@@ -162,7 +172,8 @@ def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_rati
     (an 8th with a staccato reads easier than a 16th and a rest). Both are
     part-writing choices: scores write either, and duration_bench measures
     the defaults (0). `keep_grid` writes a detached note with the values of its beat's grid only (`beat_values`), so a
-    note on a straight beat is never given a triplet's length; the band parts leave it off.
+    note on a straight beat is never given a triplet's length, and, where one of those values does, ending on a slot
+    of the grid of the beat it ends in; the band parts leave it off.
     """
     if not notes:
         return []
@@ -182,7 +193,7 @@ def written_durations(notes: list[QNote], bm: BeatMap | None = None, legato_rati
         if room is not None and (room <= hold_within or (p >= legato_ratio * room and room - p <= max_held_gap)):
             dur = room
         else:
-            dur = _readable(p, room, q.start, values.get(q.start // TICKS_PER_BEAT, READABLE))
+            dur = _readable(p, room, q.start, values.get(q.start // TICKS_PER_BEAT, READABLE), values if keep_grid else None)
             if dur < min_detached:
                 dur = min(min_detached, room) if room is not None else min_detached
         out.append(Written(int(dur), float(p), p < staccato_ratio * dur))
