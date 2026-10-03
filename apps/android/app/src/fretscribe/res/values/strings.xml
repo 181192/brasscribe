@@ -43,7 +43,7 @@
          this app calls it; nothing here names Brasscribe or Bandroom. -->
     <string name="companion_explain">Open Fretscribe on your computer and choose Pair a phone. Type the six digits it shows.</string>
     <string name="companion_searching">Looking for Fretscribe on your network… You can also type the address below.</string>
-    <string name="companion_tech_details">Fretscribe on your computer shows its address under Details. Without it: “pixi run serve-lan”.</string>
+    <string name="companion_tech_details">Fretscribe on your computer shows its address under Details.</string>
     <string name="companion_failed_plain">Couldn\'t connect. Check that Fretscribe on the computer says Running, and that both are on the same Wi-Fi.</string>
     <string name="pair_link_invalid">That code isn\'t from Fretscribe on a computer.</string>
     <string name="pair_link_address_by_name">Fretscribe looks for it on your network by name.</string>

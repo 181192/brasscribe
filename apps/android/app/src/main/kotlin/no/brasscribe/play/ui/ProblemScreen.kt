@@ -213,9 +213,9 @@ fun SettingsScreen(vm: PlayViewModel) {
             ListRow(stringResource(R.string.settings_text_motion), { open(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS) },
                 icon = R.drawable.ic_bc_text_size, subtitle = stringResource(R.string.settings_text_motion_desc))
         }
-        // The music stand (design/music-stand.md section 9).
-        SectionLabel(stringResource(R.string.stand_enter))
-        RowGroup {
+        // The music stand (design/music-stand.md section 9), in a product that has one.
+        if (no.brasscribe.play.Product.MUSIC_STAND) SectionLabel(stringResource(R.string.stand_enter))
+        if (no.brasscribe.play.Product.MUSIC_STAND) RowGroup {
             var follow by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.standFollow) }
             var keep by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(vm.container.standKeepControls) }
             SwitchRow(stringResource(R.string.settings_stand_follow), null, follow, "setting-stand-follow") { follow = it; vm.container.standFollow = it }

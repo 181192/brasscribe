@@ -33,6 +33,9 @@ object Product {
     /** Fretscribe carries no band sounds, so Settings has no choice between them. */
     const val BAND_SOUNDS = false
 
+    /** A tab has no music stand, so Settings has none of the stand's switches. */
+    const val MUSIC_STAND = false
+
     /** Your songs holds songs only: a recording is not kept there before it has a tab. */
     const val KEEPS_RECORDINGS = false
 

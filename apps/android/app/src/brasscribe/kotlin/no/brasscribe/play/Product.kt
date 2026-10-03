@@ -15,6 +15,9 @@ object Product {
     /** The band's sounds are in this app, so Settings offers the choice between them. */
     const val BAND_SOUNDS = true
 
+    /** A score opens on the music stand, so Settings has the stand's switches. */
+    const val MUSIC_STAND = true
+
     /** A recording whose score was not made (it failed, was put off or was stopped) is kept in Your scores. */
     const val KEEPS_RECORDINGS = true
 

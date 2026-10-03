@@ -36,7 +36,7 @@
     <!-- Fretscribe på datamaskinen (tilkoblingsskjermen) -->
     <string name="companion_explain">Åpne Fretscribe på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.</string>
     <string name="companion_searching">Ser etter Fretscribe på nettverket … Du kan også skrive inn adressen nedenfor.</string>
-    <string name="companion_tech_details">Fretscribe på datamaskinen viser adressen sin under Detaljer. Uten den: «pixi run serve-lan».</string>
+    <string name="companion_tech_details">Fretscribe på datamaskinen viser adressen sin under Detaljer.</string>
     <string name="companion_failed_plain">Kunne ikke koble til. Sjekk at Fretscribe på datamaskinen sier Kjører, og at begge er på samme wifi.</string>
     <string name="pair_link_invalid">Den koden er ikke fra Fretscribe på en datamaskin.</string>
     <string name="pair_link_address_by_name">Fretscribe leter etter den på nettverket ditt etter navn.</string>
