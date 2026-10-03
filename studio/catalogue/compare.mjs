@@ -39,7 +39,8 @@ async function diff(page, a, b) {
     const od = ctx.createImageData(w, h);
     let n = 0;
     for (let i = 0; i < pa.length; i += 4) {
-      const same = pa[i] === pb[i] && pa[i + 1] === pb[i + 1] && pa[i + 2] === pb[i + 2] && pa[i + 3] === pb[i + 3];
+      // A step of one or two in a channel is the rasteriser's rounding at an anti-aliased edge, not a change.
+      const same = Math.abs(pa[i] - pb[i]) <= 2 && Math.abs(pa[i + 1] - pb[i + 1]) <= 2 && Math.abs(pa[i + 2] - pb[i + 2]) <= 2 && Math.abs(pa[i + 3] - pb[i + 3]) <= 2;
       if (!same) n++;
       const grey = 255 - (255 - (pb[i] + pb[i + 1] + pb[i + 2]) / 3) * 0.25;
       od.data.set(same ? [grey, grey, grey, 255] : [220, 0, 0, 255], i);

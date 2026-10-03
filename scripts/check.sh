@@ -94,9 +94,12 @@ run_area() {
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
                          && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
                         && echo "$stamp" > "$PY_REF_STAMP" ;;
-    fast:studio) need_node_modules && (cd studio && npx vitest run) ;;
+    # The screen catalogue (studio/README.md, Test): fast runs its checks on every view, full adds the
+    # screenshots' comparison with the merge base.
+    fast:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
+                   && STUDIO_STATIC_PORT="$(free_port)" npm run test:catalogue) ;;
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
-                   && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser) ;;
+                   && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser && scripts/screenshots.sh compare) ;;
     fast:apple) make -C apps/apple package-test-fast ;;
     full:apple) (cd apps/apple/Packages/BrasscribeKit && swift test --no-parallel) \
                 && (cd apps/apple/Packages/NotationKit && swift test --no-parallel) \
