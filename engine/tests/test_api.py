@@ -128,6 +128,13 @@ def test_committed_openapi_matches_app():
     assert committed == openapi.render(), "engine/openapi.json is stale: run `pixi run openapi`"
 
 
+def test_the_android_client_vendors_the_committed_openapi():
+    """The Android engine client checks itself against its own copy (Studio's types have their own test)."""
+    vendored = ENGINE.parent / "apps" / "android" / "engine-client" / "openapi.json"
+    assert vendored.read_bytes() == (ENGINE / "openapi.json").read_bytes(), \
+        "apps/android/engine-client/openapi.json is stale: run `./gradlew :engine-client:syncOpenApi` in apps/android"
+
+
 def test_serve_banner_lists_lan_url_and_pairing_code(settings):
     from brasscribe_engine.cli import serve_banner
 

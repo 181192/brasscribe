@@ -564,7 +564,7 @@ export interface paths {
         };
         /**
          * Get Tab
-         * @description The tab of a bass-tab job: a string and fret for every note, and what the song check asks about.
+         * @description The tab of a tab job: a string and fret for every note, and what the song check asks about.
          */
         get: operations["getTab"];
         put?: never;
@@ -861,8 +861,9 @@ export interface paths {
         head?: never;
         /**
          * Update Run
-         * @description Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML and
-         *     the talking score. Rendered files (PDF, braille, MIDI, audio) keep the title they were made with.
+         * @description Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML, the
+         *     talking score, and a tab's text and playing instructions. Rendered files (PDF, braille, MIDI, audio) keep
+         *     the title they were made with.
          */
         patch: operations["updateRun"];
         trace?: never;
@@ -1037,6 +1038,8 @@ export interface components {
         Body_createJobFromUpload: {
             /** Capo */
             capo?: number | null;
+            /** Chords */
+            chords?: ("heard" | "completed") | null;
             /**
              * Difficulty
              * @default faithful
@@ -1046,7 +1049,7 @@ export interface components {
             /** File */
             file: string;
             /** Instrument */
-            instrument?: ("bass-4" | "bass-5" | "bass-6") | null;
+            instrument?: ("bass-4" | "bass-5" | "bass-6" | "guitar-6" | "guitar-7" | "guitar-8" | "ukulele" | "ukulele-baritone" | "mandolin") | null;
             /** Key */
             key?: string | null;
             /** Layout */
@@ -1445,9 +1448,14 @@ export interface components {
             audio_id?: string | null;
             /**
              * Capo
-             * @description bass-tab profile: the capo's fret; frets in the tab are counted from it; default: 0, no capo
+             * @description tab profile: the capo's fret; frets in the tab are counted from it, and the page names it; default: 0, no capo
              */
             capo?: number | null;
+            /**
+             * Chords
+             * @description tab profile, not a bass: heard writes the notes that were heard; completed also adds to a chord a note that the same chord has in the strums around it. An added note is marked inferred and gets the "?". On held-out recordings of comping one added note in five was played (63 of 303); on held-out rendered open chords seven in ten (32 of 45); default: heard
+             */
+            chords?: ("heard" | "completed") | null;
             /**
              * Difficulty
              * @description faithful keeps every transcribed note; standard and easier simplify rhythms and ranges
@@ -1457,9 +1465,9 @@ export interface components {
             difficulty: "faithful" | "standard" | "easier";
             /**
              * Instrument
-             * @description bass-tab profile: the instrument the tab is written for, by its number of strings; default: bass-4
+             * @description tab profile: the instrument the tab is written for. Default: guitar-6. The bass-tab profile takes the basses only; default: bass-4
              */
-            instrument?: ("bass-4" | "bass-5" | "bass-6") | null;
+            instrument?: ("bass-4" | "bass-5" | "bass-6" | "guitar-6" | "guitar-7" | "guitar-8" | "ukulele" | "ukulele-baritone" | "mandolin") | null;
             /**
              * Key
              * @description target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] (-2, -2:minor); the arrangement is transposed to it
@@ -1467,7 +1475,7 @@ export interface components {
             key?: string | null;
             /**
              * Layout
-             * @description bass-tab profile: what the page shows. tab: the tab staff alone, with stems for the rhythm; tab-and-notation: a notation staff above it; notation: the notation staff alone; default: tab
+             * @description tab profile: what the page shows. tab: the tab staff alone, with stems for the rhythm; tab-and-notation: a notation staff above it; notation: the notation staff alone; default: tab
              */
             layout?: ("tab" | "tab-and-notation" | "notation") | null;
             /**
@@ -1490,7 +1498,7 @@ export interface components {
             muscriptor: boolean;
             /**
              * Octave
-             * @description bass-tab profile: the octave the line is written in. auto: an octave lower when it was heard an octave above where a bass plays; 0, -12, +12: the player's choice, in semitones from what was heard; default: auto
+             * @description tab profile: the octave the notes are written in. auto: an octave lower when they were heard an octave above where the instrument plays (a guitar: also an octave higher when heard below it); 0, -12, +12: the player's choice, in semitones from what was heard; default: auto
              */
             octave?: ("auto" | "0" | "-12" | "+12") | null;
             /**
@@ -1510,7 +1518,7 @@ export interface components {
             reads?: ("treble" | "bass") | null;
             /**
              * Recording
-             * @description bass-tab profile: what was recorded. song: a band or a record, the bass is separated from it; instrument: the bass alone, no separation; default: song
+             * @description tab profile: what was recorded. song: a band or a record, the instrument is separated from it. A ukulele or mandolin is read from the separator's guitar stem, so this only works for them in a song without a guitar: with one, the tab holds both instruments; instrument: the instrument alone, no separation; default: song (instrument for a ukulele or a mandolin)
              */
             recording?: ("song" | "instrument") | null;
             /**
@@ -1528,7 +1536,7 @@ export interface components {
             source_id?: string | null;
             /**
              * Style
-             * @description bass-tab profile: where the line sits on the neck. as-played: the cheapest playable fingering; open-position: low frets and open strings; lead: a phrase stays in one position; default: as-played
+             * @description tab profile: where the line sits on the neck. as-played: the cheapest playable fingering; open-position: low frets and open strings; lead: a phrase stays in one position; default: as-played
              */
             style?: ("as-played" | "open-position" | "lead") | null;
             /** Title */
@@ -1540,7 +1548,7 @@ export interface components {
             transpose?: number | null;
             /**
              * Tuning
-             * @description bass-tab profile: the instrument's tuning. bass-4: standard, eb-standard, d-standard, drop-d, bead; bass-5: standard, drop-a; bass-6: standard; default: standard
+             * @description tab profile: the instrument's tuning, its first when left out. bass-4: standard, eb-standard, d-standard, drop-d, bead; bass-5: standard, drop-a; bass-6: standard; guitar-6: standard, eb-standard, d-standard, c-standard, drop-d, drop-c, drop-b, dadgad, open-g, open-d, open-e; guitar-7: standard, eb-standard; guitar-8: standard; ukulele: high-g, low-g; ukulele-baritone, mandolin: standard
              */
             tuning?: string | null;
         };
@@ -2117,7 +2125,7 @@ export interface components {
         };
         /**
          * Tab
-         * @description The bass-tab profile's result: every note with its string and fret, and what the song check shows
+         * @description The tab profile's result (and bass-tab's): every note with its string and fret, and what the song check shows
          *     before the tab (tuning, reference pitch, capo, octave, key and tempo).
          */
         Tab: {
@@ -2132,10 +2140,22 @@ export interface components {
              */
             beat_times: number[];
             /**
+             * Doubled Notes
+             * @description notes written on a second string as the unison of a strummed chord; each has doubled set
+             * @default 0
+             */
+            doubled_notes: number;
+            /**
              * First Downbeat
              * @description index into beat_times of tick 0; negative when the line starts before the first tracked downbeat (a pickup): tick 0 is then a bar line before beat_times[0]
              */
             first_downbeat: number;
+            /**
+             * Inferred Notes
+             * @description notes in the tab that were not heard (chords: completed); each has inferred set
+             * @default 0
+             */
+            inferred_notes: number;
             instrument: components["schemas"]["TabInstrument"];
             key: components["schemas"]["TabKey"];
             /**
@@ -2144,6 +2164,12 @@ export interface components {
              * @enum {string}
              */
             layout: "tab" | "tab-and-notation" | "notation";
+            /**
+             * Leftovers Dropped
+             * @description notes Basic Pitch heard that are not in the tab because they were not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and notes heard very faintly; among a guitar's or a ukulele's chords, overtones above the 12th fret of the top string, faint overtones that start apart from a strum, and, in the open-position style, an overtone on top of a chord that alone moves it up the neck. One pitch heard twice on one onset is one note and is not counted. Always 0 for a bass line, whose own count is in the job's log
+             * @default 0
+             */
+            leftovers_dropped: number;
             meter: components["schemas"]["TabMeter"];
             /**
              * Notes
@@ -2192,6 +2218,12 @@ export interface components {
              */
             tuning_suggestions: components["schemas"]["TuningFit"][];
             /**
+             * Unplayable Dropped
+             * @description notes heard that are not in the tab because the instrument cannot play them with the others: more notes on one onset than it has strings, a chord no hand spans, or, on a ukulele or a mandolin, a note below its lowest string that is the lower octave of a note in the same strum (a guitar's stays, out of range). Always 0 for a bass line
+             * @default 0
+             */
+            unplayable_dropped: number;
+            /**
              * Violations
              * @description empty when the tab is playable as written
              */
@@ -2208,6 +2240,11 @@ export interface components {
             frets: number;
             /** Name */
             name: string;
+            /**
+             * Notation
+             * @description the clef of the instrument's notation staff: treble (ukulele, mandolin), treble-8vb (guitar and baritone ukulele, written an octave above their sound), bass-8vb (bass)
+             */
+            notation?: ("treble" | "treble-8vb" | "bass-8vb") | null;
             /** Scale Length Mm */
             scale_length_mm: number;
             tuning: components["schemas"]["TabTuning"];
@@ -2254,12 +2291,24 @@ export interface components {
              */
             confidence: number;
             /**
+             * Doubled
+             * @description heard once and written twice: a unison that a strummed open chord of a ukulele or a mandolin plays on two strings (the G of a ukulele's G chord, 0232)
+             * @default false
+             */
+            doubled: boolean;
+            /**
              * Dur
              * @description written duration in ticks
              */
             dur: number;
             /** Fret */
             fret?: number | null;
+            /**
+             * Inferred
+             * @description not heard: added to its chord because the same chord around it has this note (chords: completed). Its confidence is below 0.4
+             * @default false
+             */
+            inferred: boolean;
             /**
              * Octave Moved
              * @description written an octave below where Basic Pitch heard it, where the second transcriber heard it. Its confidence is that of any note both heard: in the benchmark four in five of these are right, so it gets no "?"
@@ -3653,7 +3702,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description tab.json as written by the bass-tab profile */
+            /** @description tab.json as written by the tab profile (and bass-tab). The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts */
             200: {
                 headers: {
                     [name: string]: unknown;
