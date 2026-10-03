@@ -12,7 +12,7 @@
     <string name="first_run_1_title">Record or open a recording</string>
     <string name="first_run_1_text">Play it, or open a song you have. Fretscribe on your computer writes down the notes.</string>
     <string name="first_run_2_title">Check the notes marked ?</string>
-    <string name="first_run_2_text">Notes Fretscribe isn\'t sure about get a “?”. Listen and choose.</string>
+    <string name="first_run_2_text">Notes Fretscribe isn\'t sure about get a “?”. Listen to the bar and decide.</string>
     <string name="first_run_3_title">Practise with the tab</string>
     <string name="first_run_3_text">Slow it down and repeat the hard bars.</string>
     <string name="first_run_privacy">Your recordings stay on your phone and your own computer. Free, with nothing locked.</string>
@@ -248,6 +248,14 @@
     <string name="fs_tab_no_place_low">%1$s is lower than your lowest string. Is the tuning right?</string>
     <string name="fs_tab_no_place_high">%1$s is higher than your highest fret. Is the tuning right?</string>
     <string name="fs_tab_note_close">Close</string>
+    <!-- Under a mark's note: the bar repeats at 60 % with the practice player, and the next "?" on the page. -->
+    <string name="fs_tab_note_slowly">Play this bar slowly</string>
+    <string name="fs_tab_note_next">Next ?</string>
+    <!-- What Next ? is called, without the mark a screen reader may leave out, and its state at the last one. -->
+    <string name="fs_tab_note_next_name">Next uncertain note</string>
+    <string name="fs_tab_note_last">Last uncertain note</string>
+    <!-- Read after the note: "Then: Play this bar slowly, Next uncertain note." -->
+    <string name="fs_tab_note_actions">Then: %1$s.</string>
     <string-array name="fs_tab_ordinals">
         <item>1st</item>
         <item>2nd</item>
