@@ -45,9 +45,12 @@ object Product {
     /** The transcribing screen says the app may be left, so it does not hold the screen on. */
     const val KEEP_OPEN_WHILE_WRITING = false
 
-    /** The screen that follows a finished transcription. */
-    @Suppress("UNUSED_PARAMETER")
-    fun afterTranscription(result: TranscriptionResult): Screen = Screen.REVIEW
+    /**
+     * The screen that follows a finished transcription: Check the notes, or the score for a draft made on the phone.
+     * A draft has only Basic Pitch on the melody, so every melody note is marked "?", and its notice already says it
+     * is rough; Check the notes is still reachable from the score (design/system.md, the band draft).
+     */
+    fun afterTranscription(result: TranscriptionResult): Screen = if (result.draft) Screen.SCORE else Screen.REVIEW
 
     /** A row in Your scores that is not a band score: a tab says where it opens. Null for the usual line. */
     @Composable
