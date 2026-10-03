@@ -27,10 +27,11 @@ export async function openView(page: Page, view: Pick<View, "route" | "ready" | 
   await page.clock.setFixedTime(new Date("2026-01-04T12:00:00Z"));
   // The score's cursors (the bar and beat it is at) are left out of the pictures: a 100 px box that alphaTab scales
   // and slides into place, whose edge falls between pixels and comes out differently from run to run, and which
-  // alphaTab may place again at any moment. Everything else of the score is pictured as drawn.
+  // alphaTab may place again at any moment. Not drawn at all (hidden, its layer would still split the score's
+  // raster at its edge). Everything else of the score is pictured as drawn.
   await page.addInitScript(() => document.addEventListener("DOMContentLoaded", () => {
     const s = document.createElement("style");
-    s.textContent = ".at-cursors { visibility: hidden !important; }";
+    s.textContent = ".at-cursors { display: none !important; }";
     document.head.append(s);
   }));
   await page.addInitScript((lang) => localStorage.setItem("brasscribe.studio.lang", lang), variant.lang);
