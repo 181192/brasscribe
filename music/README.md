@@ -92,7 +92,9 @@ note of the melody that starts inside it carries a `fermata`.
   `quantize.FREE_GRIDS` (quarters, 8ths) inside regions.
 - `durations.py`: `contour_offsets` (note ends from a SwiftF0 contour;
   `SEPARATED_STEM` settings for separated stems) and `written_durations`
-  (`LEGATO_RATIO`, `MAX_HELD_GAP`, `READABLE`, `STACCATO_RATIO`).
+  (`LEGATO_RATIO`, `MAX_HELD_GAP`, `READABLE`, `STACCATO_RATIO`); with
+  `keep_grid` (the tabs) a detached note takes only its beat's kind of value,
+  straight or triplet (`beat_values`, `STRAIGHT`, `TRIPLET`).
 
 ## Arrangement options
 
