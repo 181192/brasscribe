@@ -139,8 +139,11 @@ test("screenshots: changed, new, gone and the same are told apart", async ({ pag
     await shot(join(after, "changed.png"), "After");
     await shot(join(before, "gone.png"), "Gone");
     await shot(join(after, "new.png"), "New");
+    // The smallest change that must not pass for noise: a full stop.
+    await shot(join(before, "stop.png"), "A sentence");
+    await shot(join(after, "stop.png"), "A sentence.");
     const r = await compare(before, after, report);
-    expect(r).toMatchObject({ screens: 3, changed: ["changed.png"], added: ["new.png"], gone: ["gone.png"] });
+    expect(r).toMatchObject({ screens: 4, changed: ["changed.png", "stop.png"], added: ["new.png"], gone: ["gone.png"] });
     const summary = readFileSync(join(report, "summary.md"), "utf8");
     expect(summary).toContain("changed: `changed.png`");
     expect(summary).not.toContain("same.png");

@@ -50,31 +50,49 @@ export async function openView(page: Page, view: Pick<View, "route" | "ready" | 
     await page.waitForTimeout(300);
     if (view.ready) await view.ready(page);
   }
-  // alphaTab lays a score out in its worker, with the fonts the worker has when it renders; a face that arrives
-  // there later (the text of a tempo or a bar number) moves a barline by a pixel, depending on timing. Each score
-  // is engraved again until two engravings in a row come out the same, so the layout is the same every run.
+  // alphaTab scrolls a score to its cursor, smoothly and when it likes (after a render, on focus), and the part of
+  // the score drawn while it scrolled is kept: the same engraving then comes out a pixel different from run to run
+  // (a barline's edge), and the score sits higher or lower. In the catalogue a score does not follow its cursor; it
+  // is engraved once more with every font in and the score at its top, and pictured as that engraving.
   await page.evaluate(async () => {
     await document.fonts.ready;
-    type Api = { render(): void; postRenderFinished: { on(h: () => void): void; off(h: () => void): void } };
-    const scores = Array.from(document.querySelectorAll<HTMLElement>("bs-score")).filter((s) => (s as unknown as { api?: Api }).api);
-    const engrave = (score: HTMLElement) => new Promise<string>((done) => {
-      const api = (score as unknown as { api: Api }).api;
-      const finished = () => {
+    type Api = {
+      settings: { player: { scrollMode: number } };
+      updateSettings(): void;
+      scrollToCursor(): void;
+      render(): void;
+      postRenderFinished: { on(h: () => void): void; off(h: () => void): void };
+    };
+    const apis = Array.from(document.querySelectorAll("bs-score")).map((s) => (s as unknown as { api?: Api }).api).filter((a): a is Api => !!a);
+    // First let a scroll alphaTab has started (it animates on a timer) run to its end: still for half a second.
+    const scrolled = () => Array.from(document.querySelectorAll<HTMLElement>("bs-score .score-view")).map((v) => `${v.scrollLeft},${v.scrollTop}`).join(" ");
+    for (let last = scrolled(), still = 0, n = 0; still < 5 && n < 60; n++) {
+      await new Promise((r) => setTimeout(r, 100));
+      const now = scrolled();
+      still = now === last ? still + 1 : 0;
+      last = now;
+    }
+    // Done when a render has finished and no other has finished for half a second (new settings render too).
+    await Promise.all(apis.map((api) => new Promise<void>((done) => {
+      let quiet: ReturnType<typeof setTimeout> | undefined;
+      const finish = () => {
         api.postRenderFinished.off(finished);
-        done(score.querySelector(".at-surface")?.innerHTML ?? "");
+        clearTimeout(quiet);
+        done();
+      };
+      const finished = () => {
+        clearTimeout(quiet);
+        quiet = setTimeout(finish, 500);
       };
       api.postRenderFinished.on(finished);
-      setTimeout(finished, 10_000);
+      setTimeout(finish, 15_000);
+      // Neither alphaTab nor Studio (which asks alphaTab to bring the cursor into view after a move) scrolls it.
+      api.settings.player.scrollMode = 0; // ScrollMode.Off
+      api.scrollToCursor = () => undefined;
+      api.updateSettings();
+      for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) if (el.scrollTop || el.scrollLeft) el.scrollTo(0, 0);
       api.render();
-    });
-    await Promise.all(scores.map(async (score) => {
-      let last = await engrave(score);
-      for (let i = 0; i < 4; i++) {
-        const now = await engrave(score);
-        if (now === last) return;
-        last = now;
-      }
-    }));
+    })));
   });
   if (view.prepare) await view.prepare(page);
   await page.waitForFunction(() => !document.querySelector("#main .loading"), undefined, { timeout: 30_000 });
