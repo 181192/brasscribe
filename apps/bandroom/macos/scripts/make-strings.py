@@ -116,6 +116,7 @@ NB = {
     "Free up space…": "Frigjør plass …",
     "Full-band scores need one more step": "Partitur for fullt band trenger ett steg til",
     "Get an access key on Hugging Face": "Hent en tilgangsnøkkel hos Hugging Face",
+    "Get the latest Bandroom": "Hent den nyeste Bandroom",
     "Getting full": "Begynner å bli fullt",
     "Getting the recording ready": "Gjør opptaket klart",
     "Got it": "OK",
@@ -249,6 +250,8 @@ NB = {
     "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.":
         "Skillerne har ingen oppgitt lisens, så Brasscribe deler dem ikke videre. Macen laster dem ned der de som laget dem, publiserer dem.",
     "The soloist separator isn't downloaded yet.": "Solistskilleren er ikke lastet ned ennå.",
+    "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.":
+        "Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker.",
     "This code works while this window is open, and only once.": "Koden virker så lenge dette vinduet er åpent, og bare én gang.",
     "This computer": "Denne datamaskinen",
     "This request has expired. Choose this computer on the phone again.": "Forespørselen er utløpt. Velg denne datamaskinen på telefonen igjen.",

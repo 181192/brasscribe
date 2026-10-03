@@ -21,6 +21,8 @@ public enum EngineProblem
     None,
     /// <summary>Every port from 8765 to 8775 is taken.</summary>
     NoFreePort,
+    /// <summary>pixi refused the workspace: it is older than the workspace asks for (<see cref="EngineSupervisor.Refusal"/>).</summary>
+    PixiTooOld,
 }
 
 public sealed record SupervisorOptions
@@ -92,6 +94,8 @@ public sealed class EngineSupervisor : IAsyncDisposable
     public int? ProcessId { get; private set; }
     public HealthInfo? Health { get; private set; }
     public int? LastExitCode { get; private set; }
+    /// <summary>Why pixi refused to start the engine, while <see cref="Problem"/> is <see cref="EngineProblem.PixiTooOld"/>.</summary>
+    public PixiRefusal? Refusal { get; private set; }
     public int RecentFailures { get { lock (_failures) return _failures.Count; } }
 
     /// <summary>Raised on every change of state, port or health, on a thread-pool thread.</summary>
@@ -151,6 +155,7 @@ public sealed class EngineSupervisor : IAsyncDisposable
         }
         State = EngineState.Stopped;
         Problem = EngineProblem.None;
+        Refusal = null;
         Port = null;
         ProcessId = null;
         Health = null;
@@ -168,6 +173,7 @@ public sealed class EngineSupervisor : IAsyncDisposable
             _log.Write($"bandroom: ports {_o.FirstPort}-{_o.LastPort} are all in use");
             State = EngineState.Stopped;
             Problem = EngineProblem.NoFreePort;
+            Refusal = null;
             Port = null;
             Raise();
             return;
@@ -177,31 +183,44 @@ public sealed class EngineSupervisor : IAsyncDisposable
         var spec = _spec(port.Value);
         _log.Write($"bandroom: starting the engine on port {port}: {spec.FileName} {string.Join(' ', spec.Arguments)}");
         IEngineProcess proc;
+        var output = new LaunchOutput();
         try
         {
-            proc = _launcher.Start(spec, _log.Write);
+            proc = _launcher.Start(spec, line =>
+            {
+                _log.Write(line);
+                output.Refusal ??= PixiRefusal.Parse(line);
+            });
         }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or IOException or InvalidOperationException)
         {
             _log.Write($"bandroom: could not start the engine: {e.Message}");
             State = EngineState.Starting;
             Problem = EngineProblem.None;
+            Refusal = null;
             Raise();
-            _ = Task.Run(() => OnExitedAsync(gen, port.Value, -1, wasStarting: true));
+            _ = Task.Run(() => OnExitedAsync(gen, port.Value, -1, wasStarting: true, refusal: null));
             return;
         }
         _process = proc;
         State = EngineState.Starting;
         Problem = EngineProblem.None;
+        Refusal = null;
         Port = port;
         ProcessId = proc.Id;
         Health = null;
         Raise();
         var ct = _cts.Token;
-        _ = Task.Run(() => MonitorAsync(proc, gen, port.Value, ct));
+        _ = Task.Run(() => MonitorAsync(proc, gen, port.Value, output, ct));
     }
 
-    private async Task MonitorAsync(IEngineProcess proc, int gen, int port, CancellationToken ct)
+    /// <summary>What one launch's output said that decides what happens after it exits.</summary>
+    private sealed class LaunchOutput
+    {
+        public volatile PixiRefusal? Refusal;
+    }
+
+    private async Task MonitorAsync(IEngineProcess proc, int gen, int port, LaunchOutput output, CancellationToken ct)
     {
         var exit = proc.WaitForExitAsync();
         var deadline = _time.GetUtcNow() + _o.StartTimeout;
@@ -250,10 +269,11 @@ public sealed class EngineSupervisor : IAsyncDisposable
         int code;
         try { code = await exit.ConfigureAwait(false); }
         catch (InvalidOperationException) { code = -1; }
-        await OnExitedAsync(gen, port, code, wasStarting: !reachedRunning).ConfigureAwait(false);
+        // The exit waits for the output to be read to the end, so a refusal is in by now.
+        await OnExitedAsync(gen, port, code, wasStarting: !reachedRunning, output.Refusal).ConfigureAwait(false);
     }
 
-    private async Task OnExitedAsync(int gen, int port, int code, bool wasStarting)
+    private async Task OnExitedAsync(int gen, int port, int code, bool wasStarting, PixiRefusal? refusal)
     {
         TimeSpan delay;
         await _gate.WaitAsync().ConfigureAwait(false);
@@ -273,6 +293,18 @@ public sealed class EngineSupervisor : IAsyncDisposable
             {
                 _log.Write($"bandroom: port {port} is taken, trying the next one");
                 LaunchLocked(port + 1);
+                return;
+            }
+
+            // pixi refusing the workspace would refuse every retry: stop now and say why.
+            if (wasStarting && code != 0 && refusal is not null)
+            {
+                _log.Write("bandroom: pixi refused the engine workspace, not restarting: " + refusal.Message);
+                State = EngineState.Stopped;
+                Problem = EngineProblem.PixiTooOld;
+                Refusal = refusal;
+                Port = null;
+                Raise();
                 return;
             }
 

@@ -981,6 +981,16 @@
         }
       }
     },
+    "Get the latest Bandroom": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hent den nyeste Bandroom"
+          }
+        }
+      }
+    },
     "Getting full": {
       "localizations": {
         "nb": {
@@ -2197,6 +2207,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Denne datamaskinen"
+          }
+        }
+      }
+    },
+    "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker."
           }
         }
       }

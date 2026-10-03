@@ -70,6 +70,8 @@ public sealed class BandroomController
     public string? UpdateFailure { get; set; }
     /// <summary>Why setup stopped (details for the tech person); Finish setting up tries again.</summary>
     public string? SetupFailure { get; set; }
+    /// <summary>Set when setup or an update stopped because pixi refused the workspace (too old for it).</summary>
+    public PixiRefusal? SetupRefusal { get; set; }
     /// <summary>The app's own workspace stamp, for the tech-person details.</summary>
     public string? WorkspaceStamp { get; set; }
     /// <summary>Where a check that went wrong is written (engine.log).</summary>
@@ -209,6 +211,8 @@ public sealed class BandroomController
     public BandroomSnapshot Build()
     {
         var problems = new List<Problem>();
+        var refusal = (_sup.Problem == EngineProblem.PixiTooOld ? _sup.Refusal : null) ?? SetupRefusal;
+        if (refusal is not null) problems.Add(Problems.PixiTooOld(_s, refusal));
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
         if (UpdateFailure is { } failure && !Updating) problems.Add(Problems.UpdateFailed(_s, failure));
         if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));

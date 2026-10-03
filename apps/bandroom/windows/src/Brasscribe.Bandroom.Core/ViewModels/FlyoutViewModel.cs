@@ -283,7 +283,11 @@ public sealed partial class FlyoutViewModel : ObservableObject
     {
         var sb = new StringBuilder();
         sb.AppendLine(Header).AppendLine(StatusWord);
-        if (_snapshot is { } s) sb.AppendLine(FormatTech(s.Tech));
+        if (_snapshot is { } s)
+        {
+            if (StateRules.Describe(s.Inputs, _s).Problem is { } p) sb.AppendLine(p.Title).AppendLine(p.Details);
+            sb.AppendLine(FormatTech(s.Tech));
+        }
         _actions.CopyText(sb.ToString());
         _announcer.Announce(_s["Tech_Copied"]);
     }

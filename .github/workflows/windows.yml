@@ -242,8 +242,16 @@ jobs:
           $pixi = (Get-Command pixi).Source
           New-Item -ItemType Directory -Force -Path "$out/pixi" | Out-Null
           Copy-Item $pixi "$out/pixi/pixi.exe"
+
+      # A pixi older than requires-pixi in pixi.toml refuses the engine workspace, and the engine never starts.
+      - name: The bundled pixi is one the engine workspace accepts
+        shell: bash
+        run: bash ../macos/scripts/check-bundled-pixi.sh "$(cygpath -u "$RUNNER_TEMP")/publish/BrasscribeBandroom/pixi/pixi.exe"
+
+      - name: Zip
+        run: |
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
-          Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-bandroom-windows-x64.zip"
+          Compress-Archive -Path "$env:RUNNER_TEMP/publish/BrasscribeBandroom" -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-bandroom-windows-x64.zip"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -332,6 +340,11 @@ jobs:
         with:
           pixi-version: v0.81.0
           run-install: false
+
+      # The release build bundles this pixi: it must be one the engine workspace accepts.
+      - name: pixi is one the engine workspace accepts
+        shell: bash
+        run: bash ../macos/scripts/check-bundled-pixi.sh "$(command -v pixi)"
 
       - name: Engine test (first-run install, supervised start, admin bearer, the tree ends with Bandroom)
         timeout-minutes: 30

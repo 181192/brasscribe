@@ -21,6 +21,8 @@ public final class Bootstrapper {
     public private(set) var phase: Phase = .idle
     /// The current run replaces an installed copy ("Updating Brasscribe…") rather than making the first one.
     public private(set) var isUpdate = false
+    /// Set when the last run failed because pixi refused the workspace (too old for it).
+    public private(set) var pixiRefusal: PixiRefusal?
 
     @ObservationIgnored private let launcher: ProcessLauncher
     /// The `pixi install` under way. It runs in its own process group, so quitting Bandroom doesn't stop it.
@@ -48,6 +50,7 @@ public final class Bootstrapper {
 
     public func run(configuration: EngineConfiguration, bundledWorkspace: URL?, base: [String: String] = ProcessInfo.processInfo.environment) async {
         isUpdate = false
+        pixiRefusal = nil
         do {
             if case .installed(let workspace, _) = configuration.source {
                 phase = .copying
@@ -68,6 +71,7 @@ public final class Bootstrapper {
     public func update(configuration: EngineConfiguration, bundledWorkspace: URL, lockChanged: Bool,
                        base: [String: String] = ProcessInfo.processInfo.environment) async -> Bool {
         isUpdate = true
+        pixiRefusal = nil
         let workspace = configuration.source.workspace
         phase = .copying
         do {
@@ -118,6 +122,7 @@ public final class Bootstrapper {
             }
         }
         installPid = nil
+        if status != 0 { pixiRefusal = PixiRefusal.inLatestRun(log: plan.log) }
         return (status, plan.log)
     }
 }

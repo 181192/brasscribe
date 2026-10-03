@@ -11,6 +11,14 @@ public enum Problem: Equatable, Sendable {
     case updateFailed
     /// The engine runs but hasn't answered for several checks in a row (hung). The fix restarts it.
     case notResponding
+    /// The pixi this app bundles is too old for its engine (setup, an update or a start was refused). The fix is a
+    /// newer Bandroom.
+    case pixiTooOld(PixiRefusal)
+
+    /// Shown even while setting up: setup can't get past it.
+    public var outranksSetup: Bool {
+        if case .pixiTooOld = self { true } else { false }
+    }
 }
 
 /// What the menu-bar icon, the tooltip and the status line show (§6.1).
@@ -28,6 +36,8 @@ public enum DisplayState: Equatable, Sendable {
     /// the first run isn't finished.
     public static func resolve(setupPercent: Int?, phase: SupervisorPhase, updating: Bool, problems: [Problem],
                                jobPercent: Int?) -> DisplayState {
+        if case .failed(.pixiTooOld(let refusal)) = phase { return .attention(.pixiTooOld(refusal)) }
+        if let first = problems.first(where: \.outranksSetup) { return .attention(first) }
         if let setupPercent { return .settingUp(percent: setupPercent) }
         switch phase {
         case .failed(.noFreePort): return .attention(.noFreePort)

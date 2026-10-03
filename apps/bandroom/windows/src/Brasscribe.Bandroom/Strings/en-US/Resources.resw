@@ -656,6 +656,15 @@
   <data name="Port_Why" xml:space="preserve">
     <value>Another program on this computer is in the way.</value>
   </data>
+  <data name="Pixi_Title" xml:space="preserve">
+    <value>Brasscribe can't start</value>
+  </data>
+  <data name="Pixi_Why" xml:space="preserve">
+    <value>This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.</value>
+  </data>
+  <data name="Pixi_Fix" xml:space="preserve">
+    <value>Get the latest Bandroom</value>
+  </data>
   <data name="Error_Title" xml:space="preserve">
     <value>Brasscribe stopped unexpectedly</value>
   </data>

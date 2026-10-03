@@ -40,6 +40,7 @@ enum Strings {
         case .spawn: problemTitle(.noFreePort)
         case .noFreePort: problemTitle(.noFreePort)
         case .notInstalled: problemTitle(.missingDownload([]))
+        case .pixiTooOld(let r): problemTitle(.pixiTooOld(r))
         }
     }
 
@@ -49,6 +50,7 @@ enum Strings {
         case .spawn: String(localized: "It couldn't be started. Recordings on your phones are safe.")
         case .noFreePort: problemWhy(.noFreePort)
         case .notInstalled: problemWhy(.missingDownload([]))
+        case .pixiTooOld(let r): problemWhy(.pixiTooOld(r))
         }
     }
 
@@ -59,6 +61,7 @@ enum Strings {
         case .noFreePort: String(localized: "Brasscribe can't start")
         case .updateFailed: String(localized: "Brasscribe couldn't finish updating")
         case .notResponding: String(localized: "Brasscribe isn't answering")
+        case .pixiTooOld: String(localized: "Brasscribe can't start")
         }
     }
 
@@ -70,6 +73,7 @@ enum Strings {
         case .noFreePort: String(localized: "Brasscribe can't start")
         case .updateFailed: String(localized: "Brasscribe couldn't finish updating")
         case .notResponding: String(localized: "Brasscribe isn't answering")
+        case .pixiTooOld: String(localized: "Brasscribe can't start")
         }
     }
 
@@ -80,6 +84,7 @@ enum Strings {
         case .noFreePort: String(localized: "Another program on this computer is in the way.")
         case .updateFailed: String(localized: "The previous version is still running, so phones can keep sending recordings.")
         case .notResponding: String(localized: "It is running but hasn't answered for a while. Restarting it usually helps.")
+        case .pixiTooOld: String(localized: "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.")
         }
     }
 
@@ -90,6 +95,7 @@ enum Strings {
         case .noFreePort: String(localized: "Restart")
         case .updateFailed: String(localized: "Try again")
         case .notResponding: String(localized: "Restart")
+        case .pixiTooOld: String(localized: "Get the latest Bandroom")
         }
     }
 

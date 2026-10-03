@@ -143,6 +143,10 @@ struct StatusPanel: View {
         case .attention(let p):
             Button { fix(p) } label: { Text(Strings.problemFix(p)) }
                 .buttonStyle(.brPrimary).focused($primaryFocused)
+            if p.outranksSetup {
+                Button { app.copyDiagnostics() } label: { Text("Copy details for the tech person") }
+                    .buttonStyle(.brPlain)
+            }
         case .starting, .updating:
             EmptyView()
         }
@@ -155,6 +159,7 @@ struct StatusPanel: View {
         case .noFreePort: app.tryAgain()
         case .updateFailed: app.retryUpdate()
         case .notResponding: app.restartNow()
+        case .pixiTooOld: app.openLatestRelease()
         }
     }
 

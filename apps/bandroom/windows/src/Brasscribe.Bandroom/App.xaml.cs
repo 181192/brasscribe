@@ -262,6 +262,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _log?.Write("bandroom: setup stopped: " + e);
         if (_controller is not { } controller) return;
         controller.SetupFailure = e.Message;
+        controller.SetupRefusal = (e as BootstrapException)?.Refusal;
         controller.Publish();
     }
 
@@ -275,6 +276,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         controller.Updating = true;
         controller.UpdateFailure = null;
         controller.SetupFailure = null;
+        controller.SetupRefusal = null;
         controller.SetupFraction = 0;
         controller.Publish();
         await supervisor.StopAsync();
@@ -298,6 +300,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         catch (Exception e)
         {
             _log?.Write("bandroom: update stopped: " + e);
+            controller.SetupRefusal = (e as BootstrapException)?.Refusal;
             // Still the old workspace: say so. A new one whose adapters stopped resumes like setup does.
             if (!await Task.Run(() => bootstrap.WorkspaceCurrent)) controller.UpdateFailure = e.Message;
         }
@@ -310,6 +313,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private async Task SetupAsync()
     {
         _controller!.SetupFailure = null;
+        _controller.SetupRefusal = null;
         var progress = new Progress<BootstrapProgress>(p =>
         {
             _controller!.SetupFraction = p.Fraction;
@@ -567,7 +571,11 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     {
         try
         {
-            if (_controller is { } controller) controller.SetupFailure = null;
+            if (_controller is { } controller)
+            {
+                controller.SetupFailure = null;
+                controller.SetupRefusal = null;
+            }
             if (await bootstrap.IsCompleteAsync(_cuda))
             {
                 // Setup is done but the start may have stopped short: start it (nothing happens if it runs).
@@ -596,6 +604,9 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _downloads.Start(missing);
     }
 
+    /// <summary>Where the newest Bandroom is (the fix when its pixi is too old).</summary>
+    private const string LatestRelease = "https://github.com/181192/brasscribe/releases/latest";
+
     public void Fix(ProblemKind problem)
     {
         // Setup stopped: Finish setting up runs it again, whatever a download says meanwhile.
@@ -604,6 +615,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             ProblemKind.LowDisk => "ms-settings:storagesense",
             ProblemKind.PublicNetwork => "ms-settings:network-status",
+            ProblemKind.PixiTooOld => LatestRelease,
             ProblemKind.MissingDownload => _downloads?.Error switch
             {
                 DownloadError.LicenceNotAccepted => ModelComponent.BandWriter.Page().AbsoluteUri,

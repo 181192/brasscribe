@@ -338,6 +338,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 | Missing download or licence | Full-band scores need one more step | Names what is missing: "The soloist separator isn't downloaded yet.", "The soloist separator and the band writer aren't downloaded yet." (the band writer, the soloist separator, the instrument separator) | **Finish setting up** (only the missing downloads) | – | the missing files, the models folder and the Hugging Face cache path, the last download error |
 | Access key refused | Hugging Face didn't accept the access key | The key may have been deleted or expired. | **Sign in again** | Paste a new key | "HTTP 401 from huggingface.co for MuScriptor/muscriptor-medium." |
 | No free port | Brasscribe can't start | Another program on this computer is in the way. | **Restart** | – | "Ports 8765–8775 in use (8765: pid 4121 node)." |
+| Bundled pixi too old (setup, an update or a start refused) | Brasscribe can't start | This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works. | **Get the latest Bandroom** (the latest release on GitHub) | Copy details for the tech person (Mac; on Windows, Copy diagnostics) | pixi's own words: "this project requires pixi '>=0.80', but you have pixi 0.79.0". Shown at once, without the three retries: starting again can't help. Outranks Setting up. |
 | Engine not answering (Mac) | Brasscribe isn't answering | It is running but hasn't answered for a while. Restarting it usually helps. | **Restart** | – | the state and the last exit; shown after three status checks in a row get no answer |
 
 - The warning thresholds for low disk: warn under **10 GB** free, and stop taking new jobs under **3 GB**. Phones get the error "Your computer is out of space."
@@ -662,6 +663,9 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | key.paste | Paste a new key | Lim inn en ny nøkkel |
 | port.title | Brasscribe can't start | Brasscribe kan ikke starte |
 | port.why | Another program on this computer is in the way. | Et annet program på denne datamaskinen står i veien. |
+| pixi.title | Brasscribe can't start | Brasscribe kan ikke starte |
+| pixi.why | This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works. | Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker. |
+| pixi.fix | Get the latest Bandroom | Hent den nyeste Bandroom |
 | hung.title | Brasscribe isn't answering | Brasscribe svarer ikke |
 | hung.why | It is running but hasn't answered for a while. Restarting it usually helps. | Den kjører, men har ikke svart på en stund. Som regel hjelper det å starte den på nytt. |
 | hung.fix | Restart | Start på nytt |
