@@ -151,6 +151,7 @@
         <item quantity="other">Only for recordings up to %d minutes.</item>
     </plurals>
     <string name="where_companion_missing">Connect Brasscribe on your computer first.</string>
+    <string name="problem_connect_computer">Connect your computer</string>
 
     <!-- Making the score -->
     <string name="stage_queued">Getting ready</string>

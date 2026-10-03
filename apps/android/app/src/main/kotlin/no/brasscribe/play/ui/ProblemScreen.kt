@@ -71,6 +71,12 @@ fun ProblemScreen(vm: PlayViewModel) {
     val connection by vm.connection.state.collectAsState()
     val source by vm.source.collectAsState()
     val computerThere = vm.container.usingFixture || no.brasscribe.play.OnDeviceRouting.computerThere(connection)
+    val primary = Modifier.semantics { testTag = "problem-primary" }
+    // Nothing is paired: trying again sends the recording to no computer, so connecting it is the way forward.
+    val connectFirst = !computerThere && !vm.container.settings.paired
+    val connect = @androidx.compose.runtime.Composable {
+        PrimaryButton(stringResource(R.string.problem_connect_computer), { vm.navigate(no.brasscribe.play.Screen.COMPANION) }, primary, icon = R.drawable.ic_bc_computer)
+    }
 
     PlayScaffold(
         title = null, onBack = { if (draft) vm.back() else vm.home() },
@@ -79,31 +85,36 @@ fun ProblemScreen(vm: PlayViewModel) {
             when (p) {
                 Problem.DRAFT_REFUSED -> {
                     if (computerThere) {
-                        PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
+                        PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, primary, icon = R.drawable.ic_bc_computer)
                         SecondaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
-                    } else PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
+                    } else PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, primary, icon = R.drawable.ic_bc_retry)
                 }
                 Problem.DRAFT_TOO_LONG -> {
-                    if (computerThere) PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
+                    if (computerThere) PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, primary, icon = R.drawable.ic_bc_computer)
+                    else if (connectFirst) connect()
                     SecondaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
                 }
-                Problem.SCORE_FAILED -> {
-                    PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
+                // The score needed the computer and none is paired: connect it first; Try again once it is.
+                Problem.SCORE_FAILED -> if (connectFirst && vm.problemWhy == R.string.where_companion_missing) {
+                    connect()
+                    SecondaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
+                } else {
+                    PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, primary, icon = R.drawable.ic_bc_retry)
                     SecondaryButton(stringResource(R.string.back_home), vm::home)
                 }
                 // Trying the same again finds the same: no Retry. The computer only when the phone wrote it down.
                 Problem.NO_NOTES -> {
                     if (no.brasscribe.play.noNotesOffersComputer(vm.noNotesOnPhone, computerThere))
-                        PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, icon = R.drawable.ic_bc_computer)
-                    else PrimaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
+                        PrimaryButton(stringResource(R.string.draft_make_on_computer), vm::makeOnComputer, primary, icon = R.drawable.ic_bc_computer)
+                    else PrimaryButton(stringResource(R.string.problem_choose_another_recording), { pickFile.launch(AUDIO_TYPES) }, primary, icon = R.drawable.ic_bc_import_file)
                     SecondaryButton(stringResource(no.brasscribe.play.noNotesRecordWords(source?.kind)), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
                 }
                 Problem.NOTHING_HEARD -> {
-                    PrimaryButton(stringResource(R.string.problem_import_instead), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
+                    PrimaryButton(stringResource(R.string.problem_import_instead), { pickFile.launch(AUDIO_TYPES) }, primary, icon = R.drawable.ic_bc_import_file)
                     SecondaryButton(stringResource(R.string.home_record_mic), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
                 }
                 else -> {
-                    PrimaryButton(stringResource(R.string.problem_choose_another), { pickFile.launch(AUDIO_TYPES) }, icon = R.drawable.ic_bc_import_file)
+                    PrimaryButton(stringResource(R.string.problem_choose_another), { pickFile.launch(AUDIO_TYPES) }, primary, icon = R.drawable.ic_bc_import_file)
                     SecondaryButton(stringResource(R.string.problem_record_instead), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
                 }
             }

@@ -149,6 +149,7 @@
         <item quantity="other">Bare for opptak på opptil %d minutter.</item>
     </plurals>
     <string name="where_companion_missing">Koble til Brasscribe på datamaskinen først.</string>
+    <string name="problem_connect_computer">Koble til datamaskinen</string>
 
     <!-- Lager partituret -->
     <string name="stage_queued">Gjør klar</string>
