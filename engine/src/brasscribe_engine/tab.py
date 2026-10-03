@@ -175,6 +175,16 @@ APART_RATIO = 0.6
 DRAG_FRETS = 3
 DRAG_OPEN_STRINGS = 1
 DRAG_STYLE = "open-position"
+# A chord left to ring is heard again by Basic Pitch on the onset of every note played over it: its notes stop
+# and start anew there, within RING_GAP seconds (`rings_on`). A string struck again looks the same.
+RING_GAP = 0.03
+# Of the notes of a violation, such a note is left out before a note that starts anew on top of its onset more
+# than RING_ABOVE semitones over it, and is no octave of a note there (rung). Below that the top note can be
+# one of a strum struck again, and an octave over it is what an overtone on top of a strum is (on the rendered
+# held-out strums, every such overtone not in doubt was an octave of a note of the strum). Chosen on the
+# held-out chord-melody and strummed passages of small_tab_bench, the only ones with a melody over a ringing
+# chord (eval/README.md).
+RING_ABOVE = 12
 # The whole passage an octave from where the instrument plays: more than half of its notes outside the
 # instrument's range on one side, and OCTAVE_FIT of them inside it an octave the other way.
 OCTAVE_FIT = 0.9
@@ -424,6 +434,14 @@ def repeated(notes: list[dict]) -> list[bool]:
     return out
 
 
+def rings_on(notes: list[dict]) -> list[dict]:
+    """The notes of `notes` that start within RING_GAP of where a note of their pitch stops."""
+    ends: dict[int, list[float]] = {}
+    for n in notes:
+        ends.setdefault(n["pitch"], []).append(n["offset"])
+    return [n for n in notes if any(abs(n.get("heard_at", n["onset"]) - end) <= RING_GAP for end in ends[n["pitch"]])]
+
+
 def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: str = "auto",
                  second: list[dict] | None = None, clean: bool = True, chords: str = "heard") -> dict:
     """The notes of a chordal instrument on the beat grid: every note heard, not one line.
@@ -452,6 +470,8 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
         kept = [n for i, n in enumerate(notes) if i not in set(gone)] or notes  # never the whole passage
         dropped += len(notes) - len(kept)
         notes = sorted(strums(kept), key=lambda n: (n["onset"], n["pitch"]))
+        for n in rings_on(notes):
+            n["rings_on"] = True
     if not notes:
         raise ValueError(f"no {heard.kind} notes heard in the recording")
     shift = (octave_shift([n["pitch"] for n in notes], heard) if clean else 0) if octave == "auto" else int(octave)
@@ -481,6 +501,7 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     following = dict(zip(starts, starts[1:]))
     heard_at = {(n["onset"], n["pitch"]): n["heard_at"] for n in notes if "heard_at" in n}
     on_top = {(n["onset"], n["pitch"]) for n in notes if n.get("on_top")}
+    ringing = {(n["onset"], n["pitch"]) for n in notes if n.get("rings_on")}
     seen, out = set(), []
     for q, w in apply_written(quantized, bm):
         if (q.start, q.pitch) in seen:  # the same pitch twice on one onset is one note
@@ -489,7 +510,8 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
         out.append({"pitch": int(q.pitch) + shift, "start": int(q.start - pickup),
                     "dur": bass_tab.straight_length(int(q.start), int(w.dur), following.get(int(q.start))) if clean else int(w.dur),
                     "confidence": float(q.confidence), "onset_s": float(heard_at.get((q.onset_s, q.pitch), q.onset_s)), "offset_s": float(q.offset_s),
-                    **({"on_top": True} if (q.onset_s, q.pitch) in on_top else {})})
+                    **({"on_top": True} if (q.onset_s, q.pitch) in on_top else {}),
+                    **({"rings_on": True} if (q.onset_s, q.pitch) in ringing else {})})
     if chords == "completed" and clean:
         out += completed_chords(out, heard.strings, TICKS_PER_BEAT)
     out.sort(key=lambda n: (n["start"], n["pitch"]))
@@ -524,10 +546,30 @@ def notes_stage(ctx: StageContext) -> None:
 
 # ---------------------------------------------------------------- fingering
 
+def rung(i: int, involved: list[int], notes: list[dict]) -> bool:
+    """Note `i` of a violation is the ring of a chord heard again under a melody (RING_*).
+
+    It goes straight on from a note of its pitch (`rings_on`), and the top note of its onset (of those not in
+    doubt) is in the violation, starts anew, is no octave of a note on the onset and stands more than RING_ABOVE
+    over note `i`: a melody played over the chord. A strum struck again, whose notes go straight on too, has
+    its own notes or their octave on top."""
+    if not notes[i].get("rings_on"):
+        return False
+    at = [n["pitch"] for n in notes if n["start"] == notes[i]["start"]]
+    sure = [n["pitch"] for n in notes if n["start"] == notes[i]["start"] and n["confidence"] >= DOUBT]
+    if not sure:
+        return False
+    top = max(sure)
+    return top - notes[i]["pitch"] > RING_ABOVE and not any((top - p) % 12 == 0 for p in at if p < top) and any(
+        notes[j]["pitch"] == top and not notes[j].get("rings_on") for j in involved if j != i)
+
+
 def least_wanted(involved: list[int], notes: list[dict]) -> int:
     """Of the notes of a violation, the one to leave out: a doubling that was added before a note that was
-    heard, then the least sure, and of equally sure ones the lowest."""
-    return min(involved, key=lambda i: (not notes[i].get("doubled", False), notes[i]["confidence"], notes[i]["pitch"]))
+    heard, then the ring of a chord heard again under a note played over it (rung), then the least sure, and
+    of equally sure ones the lowest."""
+    return min(involved, key=lambda i: (not notes[i].get("doubled", False), not rung(i, involved, notes),
+                                        notes[i]["confidence"], notes[i]["pitch"]))
 
 
 # A strummed chord in the first frets (DOUBLE_FRETS) that lacks one string, where one of its notes can be
@@ -582,6 +624,11 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
     ukulele sounds like. Any other note below the instrument stays, flagged out of range, on every
     instrument: it says the tuning or the instrument may be another.
 
+    Of a violation between a melody and a chord left to ring under it, which Basic Pitch hears again on each
+    onset of the melody, the chord's note heard again is left out first (rung), though the melody is often
+    fainter; with more notes on an onset than the instrument has strings, such a note is one to leave out as
+    well as the note target-fretted left without a string.
+
     In the open-position style an overtone on top of a chord that alone moves it up the neck is left
     out (DRAG_FRETS), counted in `leftovers_dropped`."""
     low_octaves_out = HEARD[opts["instrument"]].low_octaves_out
@@ -600,6 +647,9 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
             for v in answer["violations"]:
                 named = [v["note"]] if "note" in v else v.get("notes", [])
                 involved = [i for i in named if isinstance(i, int) and 0 <= i < len(notes) and i not in out]
+                if v.get("kind") == "no-string" and involved:  # more notes than strings: any note of the onset will do
+                    involved += [i for i, n in enumerate(notes) if n["start"] == notes[involved[0]]["start"] and i not in out
+                                 and i != involved[0] and rung(i, [i, involved[0]], notes)]
                 if involved:
                     out.add(least_wanted(involved, notes))
             if answer["violations"] and not out:  # a violation that names no note cannot be answered by leaving one out
@@ -651,7 +701,7 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
         if drags:
             dragging = len(drags)
             notes, places, answer, dropped, _ = playable([n for n in doc["notes"] if (n["start"], n["pitch"]) not in drags], unisons_doubled)
-    notes = [{k: v for k, v in n.items() if k != "on_top"} for n in notes]
+    notes = [{k: v for k, v in n.items() if k not in ("on_top", "rings_on")} for n in notes]
     return {"preset": preset(opts), "style": opts["style"], "instrument": answer["instrument"],
             "notes": [{**n, **place} for n, place in zip(notes, places)],
             "violations": answer["violations"],

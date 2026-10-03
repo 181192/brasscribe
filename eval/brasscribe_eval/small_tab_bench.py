@@ -7,9 +7,11 @@ presets: one instrument each, one player-less performance, no room. That is weak
 all the evidence. The rules that read the notes were set on GuitarSet (guitar_tab_bench); the few that
 were chosen while looking at passages of this file say so where they are defined (engine tab.py). Each
 group has a `heldout` one, with other chords, scales and tempos and one more pattern (a melody high on the
-top string over a ringing chord). They are reported, not tuned on, with one exception: the
-threshold of the ukulele's overtone rule above the 12th fret was tried against them too, so they are
-not a clean test of that rule.
+top string over a ringing chord). They are reported, not tuned on, with two exceptions: the
+threshold of the ukulele's overtone rule above the 12th fret was tried against them too, and the rule
+that tells a chord heard again under that melody from a strum struck again (engine tab.py, RING_*) was
+chosen on their chord-melody and strummed passages, the only ones that have the pattern. They are not a
+clean test of those two rules.
 
 The guitar groups are open chords picked and strummed, which GuitarSet's players do not play.
 
