@@ -185,6 +185,34 @@
       },
       "Body_createJobFromUpload": {
         "properties": {
+          "capo": {
+            "anyOf": [
+              {
+                "maximum": 12.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capo"
+          },
+          "chords": {
+            "anyOf": [
+              {
+                "enum": [
+                  "heard",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chords"
+          },
           "difficulty": {
             "default": "faithful",
             "enum": [
@@ -200,6 +228,28 @@
             "title": "File",
             "type": "string"
           },
+          "instrument": {
+            "anyOf": [
+              {
+                "enum": [
+                  "bass-4",
+                  "bass-5",
+                  "bass-6",
+                  "guitar-6",
+                  "guitar-7",
+                  "guitar-8",
+                  "ukulele",
+                  "ukulele-baritone",
+                  "mandolin"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrument"
+          },
           "key": {
             "anyOf": [
               {
@@ -210,6 +260,22 @@
               }
             ],
             "title": "Key"
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tab",
+                  "tab-and-notation",
+                  "notation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout"
           },
           "lead": {
             "default": "lineup",
@@ -236,6 +302,23 @@
             ],
             "title": "Lineup"
           },
+          "octave": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "0",
+                  "-12",
+                  "+12"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Octave"
+          },
           "profile": {
             "default": "orchestra-with-soloist",
             "title": "Profile",
@@ -255,6 +338,21 @@
               }
             ],
             "title": "Reads"
+          },
+          "recording": {
+            "anyOf": [
+              {
+                "enum": [
+                  "song",
+                  "instrument"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording"
           },
           "render_audio": {
             "default": true,
@@ -293,9 +391,26 @@
             ],
             "title": "Seat"
           },
+          "style": {
+            "anyOf": [
+              {
+                "enum": [
+                  "as-played",
+                  "open-position",
+                  "lead"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style"
+          },
           "title": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -316,6 +431,17 @@
               }
             ],
             "title": "Transpose"
+          },
+          "tuning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tuning"
           }
         },
         "required": [
@@ -937,6 +1063,18 @@
             "title": "Auth Required",
             "type": "boolean"
           },
+          "build": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "which build is running: the commit and workspace stamp of an installed engine, the commit of a checkout; null when unknown",
+            "title": "Build"
+          },
           "device": {
             "description": "accelerator torch adapters use on this host: cuda, mps or cpu",
             "title": "Device",
@@ -1118,7 +1256,7 @@
         "type": "object"
       },
       "JobCreate": {
-        "description": "Exactly one of audio_id (an upload), source_id (from listSources) or path (a file inside the data directory).",
+        "description": "Exactly one of audio_id (an upload), source_id (from listSources) or path (an audio file in the data directory).",
         "properties": {
           "allow_heavy": {
             "default": true,
@@ -1137,6 +1275,36 @@
             ],
             "title": "Audio Id"
           },
+          "capo": {
+            "anyOf": [
+              {
+                "maximum": 12.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile: the capo's fret; frets in the tab are counted from it, and the page names it; default: 0, no capo",
+            "title": "Capo"
+          },
+          "chords": {
+            "anyOf": [
+              {
+                "enum": [
+                  "heard",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile, not a bass: heard writes the notes that were heard; completed also adds to a chord a note that the same chord has in the strums around it. An added note is marked inferred and gets the \"?\". On held-out recordings of comping one added note in five was played (63 of 303); on held-out rendered open chords seven in ten (32 of 45); default: heard",
+            "title": "Chords"
+          },
           "difficulty": {
             "default": "faithful",
             "description": "faithful keeps every transcribed note; standard and easier simplify rhythms and ranges",
@@ -1147,6 +1315,29 @@
             ],
             "title": "Difficulty",
             "type": "string"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "enum": [
+                  "bass-4",
+                  "bass-5",
+                  "bass-6",
+                  "guitar-6",
+                  "guitar-7",
+                  "guitar-8",
+                  "ukulele",
+                  "ukulele-baritone",
+                  "mandolin"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile: the instrument the tab is written for. Default: guitar-6. The bass-tab profile takes the basses only; default: bass-4",
+            "title": "Instrument"
           },
           "key": {
             "anyOf": [
@@ -1159,6 +1350,23 @@
             ],
             "description": "target concert key: a tonic (Bb, F#, Eb, Am) or FIFTHS[:MODE] (-2, -2:minor); the arrangement is transposed to it",
             "title": "Key"
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tab",
+                  "tab-and-notation",
+                  "notation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile: what the page shows. tab: the tab staff alone, with stems for the rhythm; tab-and-notation: a notation staff above it; notation: the notation staff alone; default: tab",
+            "title": "Layout"
           },
           "lead": {
             "default": "lineup",
@@ -1189,9 +1397,27 @@
           },
           "muscriptor": {
             "default": true,
-            "description": "solo profile: confirm SwiftF0 with MuScriptor; false puts Basic Pitch in its place, as the apps do on device",
+            "description": "solo and brass-band profiles: use MuScriptor; false puts Basic Pitch in its place, as the apps do on device",
             "title": "Muscriptor",
             "type": "boolean"
+          },
+          "octave": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "0",
+                  "-12",
+                  "+12"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile: the octave the notes are written in. auto: an octave lower when they were heard an octave above where the instrument plays (a guitar: also an octave higher when heard below it); 0, -12, +12: the player's choice, in semitones from what was heard; default: auto",
+            "title": "Octave"
           },
           "path": {
             "anyOf": [
@@ -1202,7 +1428,7 @@
                 "type": "null"
               }
             ],
-            "description": "audio file path; must lie inside the engine's data directory",
+            "description": "audio file under uploads/, captures/ or eval/, relative to the engine's data directory ('/'-separated); not for paired devices",
             "title": "Path"
           },
           "profile": {
@@ -1225,6 +1451,22 @@
             ],
             "description": "the clef the seat's part is written in: bass is at concert pitch (offered for baritone, euphonium, trombones and basses); default: the brass-band part's own",
             "title": "Reads"
+          },
+          "recording": {
+            "anyOf": [
+              {
+                "enum": [
+                  "song",
+                  "instrument"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile: what was recorded. song: a band or a record, the instrument is separated from it. A ukulele or mandolin is read from the separator's guitar stem, so this only works for them in a song without a guitar: with one, the tab holds both instruments; instrument: the instrument alone, no separation; default: song (instrument for a ukulele or a mandolin)",
+            "title": "Recording"
           },
           "render_audio": {
             "default": true,
@@ -1276,9 +1518,27 @@
             ],
             "title": "Source Id"
           },
+          "style": {
+            "anyOf": [
+              {
+                "enum": [
+                  "as-played",
+                  "open-position",
+                  "lead"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile: where the line sits on the neck. as-played: the cheapest playable fingering; open-position: low frets and open strings; lead: a phrase stays in one position; default: as-played",
+            "title": "Style"
+          },
           "title": {
             "anyOf": [
               {
+                "maxLength": 200,
                 "type": "string"
               },
               {
@@ -1300,6 +1560,18 @@
             ],
             "description": "transpose the arrangement by this many semitones (instead of key)",
             "title": "Transpose"
+          },
+          "tuning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tab profile: the instrument's tuning, its first when left out. bass-4: standard, eb-standard, d-standard, drop-d, bead; bass-5: standard, drop-a; bass-6: standard; guitar-6: standard, eb-standard, d-standard, c-standard, drop-d, drop-c, drop-b, dadgad, open-g, open-d, open-e; guitar-7: standard, eb-standard; guitar-8: standard; ukulele: high-g, low-g; ukulele-baritone, mandolin: standard",
+            "title": "Tuning"
           }
         },
         "title": "JobCreate",
@@ -1662,6 +1934,12 @@
             "title": "Name",
             "type": "string"
           },
+          "name_in_use": {
+            "default": false,
+            "description": "a device already paired with this engine has the same name (ignoring case): the owner can't tell the two apart by name, so the apps can suggest another one",
+            "title": "Name In Use",
+            "type": "boolean"
+          },
           "platform": {
             "title": "Platform",
             "type": "string"
@@ -1802,6 +2080,8 @@
           "ttl_s": {
             "anyOf": [
               {
+                "maximum": 86400.0,
+                "minimum": 30.0,
                 "type": "number"
               },
               {
@@ -2015,6 +2295,32 @@
           "files"
         ],
         "title": "Reference",
+        "type": "object"
+      },
+      "ReferencePitch": {
+        "properties": {
+          "cents": {
+            "description": "offset of the recording from A = 440, -50 to 50; positive is sharp",
+            "title": "Cents",
+            "type": "number"
+          },
+          "concentration": {
+            "description": "how well the recording agrees on it, 0 to 1",
+            "title": "Concentration",
+            "type": "number"
+          },
+          "retuned": {
+            "description": "the notes were transcribed from the recording retuned to A = 440",
+            "title": "Retuned",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cents",
+          "concentration",
+          "retuned"
+        ],
+        "title": "ReferencePitch",
         "type": "object"
       },
       "RerunRequest": {
@@ -2290,6 +2596,30 @@
             ],
             "title": "Kind"
           },
+          "queue_wait_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time spent waiting for the machine-wide GPU mutex",
+            "title": "Queue Wait S"
+          },
+          "run_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time the stage itself took (seconds - queue_wait_s)",
+            "title": "Run S"
+          },
           "seconds": {
             "anyOf": [
               {
@@ -2346,6 +2676,30 @@
             "title": "Name",
             "type": "string"
           },
+          "queue_wait_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time spent waiting for the machine-wide GPU mutex",
+            "title": "Queue Wait S"
+          },
+          "run_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "of `seconds`, time the stage itself took (seconds - queue_wait_s)",
+            "title": "Run S"
+          },
           "seconds": {
             "anyOf": [
               {
@@ -2355,6 +2709,7 @@
                 "type": "null"
               }
             ],
+            "description": "wall clock, including any wait for the GPU mutex",
             "title": "Seconds"
           },
           "status": {
@@ -2572,6 +2927,512 @@
           "status"
         ],
         "title": "SuiteResult",
+        "type": "object"
+      },
+      "Tab": {
+        "description": "The tab profile's result (and bass-tab's): every note with its string and fret, and what the song check shows\nbefore the tab (tuning, reference pitch, capo, octave, key and tempo).",
+        "properties": {
+          "adjusted_notes": {
+            "description": "notes whose start or length no note value could spell, written at the nearest one that can; in tab.musicxml only, the notes here are unchanged",
+            "title": "Adjusted Notes",
+            "type": "integer"
+          },
+          "beat_times": {
+            "description": "seconds of beat 0, 1, 2 ...",
+            "items": {
+              "type": "number"
+            },
+            "title": "Beat Times",
+            "type": "array"
+          },
+          "doubled_notes": {
+            "default": 0,
+            "description": "notes written on a second string as the unison of a strummed chord; each has doubled set",
+            "title": "Doubled Notes",
+            "type": "integer"
+          },
+          "first_downbeat": {
+            "description": "index into beat_times of tick 0; negative when the line starts before the first tracked downbeat (a pickup): tick 0 is then a bar line before beat_times[0]",
+            "title": "First Downbeat",
+            "type": "integer"
+          },
+          "inferred_notes": {
+            "default": 0,
+            "description": "notes in the tab that were not heard (chords: completed); each has inferred set",
+            "title": "Inferred Notes",
+            "type": "integer"
+          },
+          "instrument": {
+            "$ref": "#/components/schemas/TabInstrument"
+          },
+          "key": {
+            "$ref": "#/components/schemas/TabKey"
+          },
+          "layout": {
+            "description": "what tab.musicxml (and the PDF made from it) shows",
+            "enum": [
+              "tab",
+              "tab-and-notation",
+              "notation"
+            ],
+            "title": "Layout",
+            "type": "string"
+          },
+          "leftovers_dropped": {
+            "default": 0,
+            "description": "notes Basic Pitch heard that are not in the tab because they were not played: notes shorter than 0.06 s; in a line, faint overtones of a sounding note and notes heard very faintly; among a guitar's or a ukulele's chords, overtones above the 12th fret of the top string, faint overtones that start apart from a strum, and, in the open-position style, an overtone on top of a chord that alone moves it up the neck. One pitch heard twice on one onset is one note and is not counted. Always 0 for a bass line, whose own count is in the job's log",
+            "title": "Leftovers Dropped",
+            "type": "integer"
+          },
+          "meter": {
+            "$ref": "#/components/schemas/TabMeter"
+          },
+          "notes": {
+            "description": "in time order; violations name notes by their index here",
+            "items": {
+              "$ref": "#/components/schemas/TabNote"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "octave_notes_moved": {
+            "default": 0,
+            "description": "single notes written an octave lower than Basic Pitch heard them (with octave auto): each stood above its neighbours, and the second transcriber heard it an octave lower",
+            "title": "Octave Notes Moved",
+            "type": "integer"
+          },
+          "octave_shift": {
+            "description": "semitones the whole line was moved after transcription. With octave auto: 0, or -12 (or -24) when it was heard an octave above where a bass plays, the same for every instrument, tuning and capo. With a chosen octave: that choice, 0, -12 or 12",
+            "title": "Octave Shift",
+            "type": "integer"
+          },
+          "octave_source": {
+            "description": "auto: the octave check decided octave_shift; chosen: the job's octave option did",
+            "enum": [
+              "auto",
+              "chosen"
+            ],
+            "title": "Octave Source",
+            "type": "string"
+          },
+          "preset": {
+            "description": "the instrument and tuning the tab was made for, e.g. bass-4-standard",
+            "title": "Preset",
+            "type": "string"
+          },
+          "reference_pitch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferencePitch"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null when the recording's tuning could not be measured"
+          },
+          "style": {
+            "enum": [
+              "as-played",
+              "open-position",
+              "lead"
+            ],
+            "title": "Style",
+            "type": "string"
+          },
+          "tempo_bpm": {
+            "title": "Tempo Bpm",
+            "type": "number"
+          },
+          "ticks_per_beat": {
+            "default": 24,
+            "title": "Ticks Per Beat",
+            "type": "integer"
+          },
+          "tuning_suggestions": {
+            "description": "the instrument's tunings ranked by fit to the notes, best first; when the first is not `preset`, the song sounds like that tuning",
+            "items": {
+              "$ref": "#/components/schemas/TuningFit"
+            },
+            "title": "Tuning Suggestions",
+            "type": "array"
+          },
+          "unplayable_dropped": {
+            "default": 0,
+            "description": "notes heard that are not in the tab because the instrument cannot play them with the others: more notes on one onset than it has strings, a chord no hand spans, or, on a ukulele or a mandolin, a note below its lowest string that is the lower octave of a note in the same strum (a guitar's stays, out of range). Always 0 for a bass line",
+            "title": "Unplayable Dropped",
+            "type": "integer"
+          },
+          "violations": {
+            "description": "empty when the tab is playable as written",
+            "items": {
+              "$ref": "#/components/schemas/TabViolation"
+            },
+            "title": "Violations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "preset",
+          "style",
+          "instrument",
+          "notes",
+          "violations",
+          "tuning_suggestions",
+          "layout",
+          "adjusted_notes",
+          "octave_shift",
+          "octave_source",
+          "reference_pitch",
+          "tempo_bpm",
+          "key",
+          "meter",
+          "beat_times",
+          "first_downbeat"
+        ],
+        "title": "Tab",
+        "type": "object"
+      },
+      "TabInstrument": {
+        "properties": {
+          "capo": {
+            "default": 0,
+            "title": "Capo",
+            "type": "integer"
+          },
+          "frets": {
+            "title": "Frets",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "treble",
+                  "treble-8vb",
+                  "bass-8vb"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the clef of the instrument's notation staff: treble (ukulele, mandolin), treble-8vb (guitar and baritone ukulele, written an octave above their sound), bass-8vb (bass)",
+            "title": "Notation"
+          },
+          "scale_length_mm": {
+            "title": "Scale Length Mm",
+            "type": "number"
+          },
+          "tuning": {
+            "$ref": "#/components/schemas/TabTuning"
+          }
+        },
+        "required": [
+          "name",
+          "tuning",
+          "frets",
+          "scale_length_mm"
+        ],
+        "title": "TabInstrument",
+        "type": "object"
+      },
+      "TabKey": {
+        "properties": {
+          "fifths": {
+            "title": "Fifths",
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "major",
+              "minor"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "name": {
+            "description": "tonic and mode, e.g. G or Em",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "fifths",
+          "mode"
+        ],
+        "title": "TabKey",
+        "type": "object"
+      },
+      "TabMeter": {
+        "properties": {
+          "beat_unit": {
+            "default": 4,
+            "title": "Beat Unit",
+            "type": "integer"
+          },
+          "beats": {
+            "title": "Beats",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "beats"
+        ],
+        "title": "TabMeter",
+        "type": "object"
+      },
+      "TabNote": {
+        "description": "One note of the tab: when it sounds, what was heard, and where it is played.",
+        "properties": {
+          "alternatives": {
+            "description": "the other places that sound this pitch, cheapest first",
+            "items": {
+              "$ref": "#/components/schemas/TabPosition"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "confidence": {
+            "default": 1.0,
+            "description": "0 to 1. Below 0.4 the note is one to check (the tab marks it \"?\"): the second transcriber did not hear it at this pitch, or, where there is no second opinion, it was heard faintly",
+            "title": "Confidence",
+            "type": "number"
+          },
+          "doubled": {
+            "default": false,
+            "description": "heard once and written twice: a unison that a strummed open chord of a ukulele or a mandolin plays on two strings (the G of a ukulele's G chord, 0232)",
+            "title": "Doubled",
+            "type": "boolean"
+          },
+          "dur": {
+            "description": "written duration in ticks",
+            "title": "Dur",
+            "type": "integer"
+          },
+          "fret": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fret"
+          },
+          "inferred": {
+            "default": false,
+            "description": "not heard: added to its chord because the same chord around it has this note (chords: completed). Its confidence is below 0.4",
+            "title": "Inferred",
+            "type": "boolean"
+          },
+          "octave_moved": {
+            "default": false,
+            "description": "written an octave below where Basic Pitch heard it, where the second transcriber heard it. Its confidence is that of any note both heard: in the benchmark four in five of these are right, so it gets no \"?\"",
+            "title": "Octave Moved",
+            "type": "boolean"
+          },
+          "offset_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offset S"
+          },
+          "onset_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onset S"
+          },
+          "out_of_range": {
+            "description": "no string of the instrument sounds this pitch; the usual cause is another tuning or instrument than the player's",
+            "title": "Out Of Range",
+            "type": "boolean"
+          },
+          "pinned": {
+            "default": false,
+            "title": "Pinned",
+            "type": "boolean"
+          },
+          "pitch": {
+            "description": "concert MIDI pitch, as written in the tab (after octave_shift)",
+            "title": "Pitch",
+            "type": "integer"
+          },
+          "start": {
+            "description": "ticks from the first downbeat",
+            "title": "Start",
+            "type": "integer"
+          },
+          "string": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null: the note has no place on the instrument",
+            "title": "String"
+          }
+        },
+        "required": [
+          "pitch",
+          "start",
+          "dur",
+          "string",
+          "alternatives",
+          "out_of_range"
+        ],
+        "title": "TabNote",
+        "type": "object"
+      },
+      "TabPosition": {
+        "properties": {
+          "fret": {
+            "description": "counted from the capo; 0 is the open string",
+            "title": "Fret",
+            "type": "integer"
+          },
+          "string": {
+            "description": "1 is the highest line of the tab",
+            "title": "String",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "string",
+          "fret"
+        ],
+        "title": "TabPosition",
+        "type": "object"
+      },
+      "TabString": {
+        "properties": {
+          "first_fret": {
+            "default": 0,
+            "description": "where a short string starts (a banjo's fifth string); 0: at the nut",
+            "title": "First Fret",
+            "type": "integer"
+          },
+          "open_pitch": {
+            "description": "MIDI pitch of the open string, without the capo",
+            "title": "Open Pitch",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "open_pitch"
+        ],
+        "title": "TabString",
+        "type": "object"
+      },
+      "TabTuning": {
+        "properties": {
+          "name": {
+            "description": "display name, e.g. Drop D",
+            "title": "Name",
+            "type": "string"
+          },
+          "strings": {
+            "description": "string 1 first",
+            "items": {
+              "$ref": "#/components/schemas/TabString"
+            },
+            "title": "Strings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "strings"
+        ],
+        "title": "TabTuning",
+        "type": "object"
+      },
+      "TabViolation": {
+        "additionalProperties": true,
+        "description": "A hard playability violation (core/target-fretted/README.md, Playability check); the other fields\ndepend on `kind` and name notes by their index in `notes`.",
+        "properties": {
+          "kind": {
+            "description": "shared-string, span-too-wide, fret-out-of-range, wrong-pitch, pin-not-honoured, no-string, technique-string, technique-reach, bend-on-open-string or ring-cut",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "TabViolation",
+        "type": "object"
+      },
+      "TuningFit": {
+        "description": "How well one tuning of the instrument fits the notes.",
+        "properties": {
+          "distance": {
+            "description": "semitones from the standard tuning, summed over the strings",
+            "title": "Distance",
+            "type": "integer"
+          },
+          "high_frets": {
+            "description": "notes that can only be played above the 12th fret",
+            "title": "High Frets",
+            "type": "integer"
+          },
+          "low_string_fits": {
+            "description": "the lowest note is exactly the lowest open string",
+            "title": "Low String Fits",
+            "type": "boolean"
+          },
+          "open_notes": {
+            "description": "notes an open string can play",
+            "title": "Open Notes",
+            "type": "integer"
+          },
+          "out_of_range": {
+            "description": "notes no string can sound",
+            "title": "Out Of Range",
+            "type": "integer"
+          },
+          "preset": {
+            "description": "<instrument>-<tuning>, e.g. bass-4-drop-d",
+            "title": "Preset",
+            "type": "string"
+          },
+          "tuning": {
+            "description": "display name, e.g. Drop D",
+            "title": "Tuning",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset",
+          "tuning",
+          "out_of_range",
+          "low_string_fits",
+          "open_notes",
+          "high_frets",
+          "distance"
+        ],
+        "title": "TuningFit",
         "type": "object"
       },
       "ValidationError": {
@@ -4038,9 +4899,33 @@
                       ],
                       "title": "Message"
                     },
+                    "queue_wait_s": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "of `seconds`, time spent waiting for the machine-wide GPU mutex",
+                      "title": "Queue Wait S"
+                    },
                     "run": {
                       "title": "Run",
                       "type": "string"
+                    },
+                    "run_s": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "of `seconds`, time the stage itself took (seconds - queue_wait_s)",
+                      "title": "Run S"
                     },
                     "seconds": {
                       "anyOf": [
@@ -4235,6 +5120,7 @@
     },
     "/v1/jobs/{job_id}/manifest": {
       "get": {
+        "description": "What ran: profile, parameters, input, stages. Paired devices get paths relative to the data folder,\nand no git or host details.",
         "operationId": "getJobManifest",
         "parameters": [
           {
@@ -4855,6 +5741,68 @@
         ]
       }
     },
+    "/v1/jobs/{job_id}/tab": {
+      "get": {
+        "description": "The tab of a tab job: a string and fret for every note, and what the song check asks about.",
+        "operationId": "getTab",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tab"
+                }
+              }
+            },
+            "description": "tab.json as written by the tab profile (and bass-tab). The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts"
+          },
+          "404": {
+            "description": "the job has no tab: another profile, or not finished"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Tab",
+        "tags": [
+          "results"
+        ]
+      }
+    },
     "/v1/jobs/{job_id}/talking-score": {
       "get": {
         "description": "Talking score of the whole score or one part, rendered from the job's talking-score.json.",
@@ -5124,7 +6072,7 @@
     },
     "/v1/pair/requests": {
       "post": {
-        "description": "Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;\npoll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).",
+        "description": "Ask to pair without a code. The computer shows 'Allow <device>?' with the same four-digit match code;\npoll GET /v1/pair/requests/{request_id} until it is approved or denied (requests expire after 2 minutes).\nA new request from the same address replaces the one it has waiting.",
         "operationId": "requestPairing",
         "requestBody": {
           "content": {
@@ -5663,7 +6611,7 @@
     },
     "/v1/registry/datasets": {
       "get": {
-        "description": "Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.",
+        "description": "Eval sets under <data>/eval: size, items, licence, cached model outputs and how to build a missing set.\nPaired devices get paths relative to the data folder.",
         "operationId": "listDatasets",
         "parameters": [
           {
@@ -5773,7 +6721,7 @@
         ]
       },
       "patch": {
-        "description": "Rename a finished score: the title in its manifest, Composition and MusicXML.",
+        "description": "Rename a finished score: the title in its manifest, Composition, the score's and parts' MusicXML, the\ntalking score, and a tab's text and playing instructions. Rendered files (PDF, braille, MIDI, audio) keep\nthe title they were made with.",
         "operationId": "updateRun",
         "parameters": [
           {
@@ -5848,7 +6796,7 @@
     },
     "/v1/sources": {
       "get": {
-        "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).",
+        "description": "Recordings that can start a job without an upload: captures and eval-set items (createJob source_id).\nPaired devices get paths relative to the data folder.",
         "operationId": "listSources",
         "parameters": [
           {

@@ -8,11 +8,13 @@ namespace Brasscribe.Play.Core.Engine;
 // Property names map to snake_case through EngineJsonContext.
 
 public sealed record Health(string Version, string Device, bool AuthRequired, string Status = "ok",
-    string? ServerId = null, string? ServerName = null);
+    string? ServerId = null, string? ServerName = null, string? Build = null);
 
 public sealed record AudioRef(string AudioId, string Sha256, string Filename, long Bytes);
 
-/// <summary>Exactly one of AudioId (an upload), SourceId (a listed source) or Path (a file in the engine's data directory).</summary>
+/// <summary>Exactly one of AudioId (an upload), SourceId (a listed source) or Path (a file in the engine's data directory).
+/// Instrument … Chords are the tab profile's options; the engine refuses them for the band profiles, so they stay null
+/// (and are not sent) for a band job.</summary>
 public sealed record JobCreate(
     string? AudioId,
     string Profile = "orchestra-with-soloist",
@@ -28,7 +30,15 @@ public sealed record JobCreate(
     bool Muscriptor = true,
     string? Seat = null,
     string? Reads = null,
-    string? Lead = null);
+    string? Lead = null,
+    string? Instrument = null,
+    string? Tuning = null,
+    int? Capo = null,
+    string? Style = null,
+    string? Octave = null,
+    string? Layout = null,
+    string? Recording = null,
+    string? Chords = null);
 
 /// <summary>
 /// Arrangement choices a job can carry: lineup full|minimal|quartet, difficulty faithful|standard|easier, a target key or a
@@ -41,7 +51,8 @@ public sealed record ArrangementOptions(string Lineup = "full", string Difficult
     public static readonly ArrangementOptions Default = new();
 }
 
-public sealed record StageState(string Name, string Status, string? Device = null, string? Kind = null, double? Seconds = null);
+public sealed record StageState(string Name, string Status, string? Device = null, string? Kind = null, double? Seconds = null,
+    double? QueueWaitS = null, double? RunS = null);
 
 public sealed record Job(
     string Id,
@@ -80,7 +91,7 @@ public sealed record FileRef(string Name, long Bytes, string MediaType, string U
 
 /// <summary>A stage of a run with its output files (stems, layers, MIDI, beats, Composition, MusicXML …).</summary>
 public sealed record StageArtifacts(string Stage, string Status, IReadOnlyList<FileRef> Files, string? Kind = null,
-    string? Key = null, string? Device = null, double? Seconds = null);
+    string? Key = null, string? Device = null, double? Seconds = null, double? QueueWaitS = null, double? RunS = null);
 
 public sealed record ProfileInfo(string Name, string Pipeline, string Description, bool Validated, IReadOnlyList<string> Stages);
 
@@ -135,6 +146,8 @@ public sealed record JobEvent(
     string? Kind = null,
     string? Device = null,
     double? Seconds = null,
+    double? QueueWaitS = null,
+    double? RunS = null,
     double? Fraction = null,
     string? Message = null,
     string? Error = null);

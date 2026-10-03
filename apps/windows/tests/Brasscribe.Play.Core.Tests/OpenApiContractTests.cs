@@ -7,7 +7,8 @@ namespace Brasscribe.Play.Core.Tests;
 
 /// <summary>
 /// Checks the hand-written DTOs against a snapshot of engine/openapi.json, so a change in the
-/// engine contract shows up as a failing test here. Refresh Fixtures/openapi.json when the engine changes.
+/// engine contract shows up as a failing test here. Refresh Fixtures/openapi.json when the engine changes
+/// (copy engine/openapi.json; an engine test fails while it differs).
 /// </summary>
 public class OpenApiContractTests
 {
