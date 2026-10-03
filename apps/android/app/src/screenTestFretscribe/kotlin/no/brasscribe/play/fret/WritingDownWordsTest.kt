@@ -24,14 +24,19 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class WritingDownWordsTest : ScreenTest() {
+    /** The fixture computer's pace before this test made it slow: put back, also for the tests after it on a device. */
+    private var pace = 0.0
+
     @After
     fun clean() {
         rule.runOnUiThread { vm.cancelTranscription(); vm.home() }
         container.fixtureSource = null
+        if (pace > 0) container.fixtureStageSeconds = pace
     }
 
     private fun writing() {
         computer("bass-line")
+        if (pace == 0.0) pace = container.fixtureStageSeconds
         container.fixtureStageSeconds = 60.0
         val file = recording()
         rule.runOnUiThread {

@@ -22,10 +22,14 @@ import org.junit.runner.RunWith
 class WritingDownBackTest : ScreenTest() {
     private val tab = Product.NAME == "Fretscribe"
 
+    /** The fixture computer's pace before this test made it slow: put back, also for the tests after it on a device. */
+    private var pace = 0.0
+
     @After
     fun clean() {
         rule.runOnUiThread { vm.cancelTranscription(); vm.home() }
         container.fixtureSource = null
+        if (pace > 0) container.fixtureStageSeconds = pace
     }
 
     private fun asks(): Boolean = rule.onAllNodesWithText(text(R.string.transcribe_cancel_title)).fetchSemanticsNodes().isNotEmpty()
@@ -40,6 +44,7 @@ class WritingDownBackTest : ScreenTest() {
     fun backAsksBeforeItStopsTheJob() {
         // A computer that takes its time: each step a minute.
         computer(if (tab) "bass-line" else "old-hundredth")
+        if (pace == 0.0) pace = container.fixtureStageSeconds
         container.fixtureStageSeconds = 60.0
         val file = recording("Back test.wav")
         rule.runOnUiThread {
