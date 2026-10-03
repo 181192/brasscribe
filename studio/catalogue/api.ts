@@ -16,6 +16,9 @@ const responses = JSON.parse(readFileSync(join(fixtures, "responses.json"), "utf
 /** Answers /v1 from the fixtures; returns the requests that had no fixture (or were not GETs). */
 export async function serveApi(page: Page): Promise<string[]> {
   const unanswered: string[] = [];
+  // The band SoundFont is not in git: a checkout may have it in the bundle's folder, CI has not. The
+  // catalogue always plays without it, so every machine shows the same.
+  await page.route("**/assets/band/**", (route) => route.fulfill({ status: 404, contentType: "text/plain", body: "not found" }));
   await page.route("**/v1/**", async (route) => {
     const req = route.request();
     const u = new URL(req.url());
