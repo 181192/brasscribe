@@ -28,6 +28,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.text.TextLayoutResult
@@ -381,11 +382,32 @@ class PracticeTest : ScreenTest() {
             rule.onNodeWithTag("fs-practice-faster").performTouchInput { up() }
             composeTime(500)
             assertEquals(PracticeSpeed.MAX, practice.speed)
+            // Held to the end, no click came when it was let go: the next press of a screen reader (or a switch, or a
+            // voice) still steps.
+            rule.onNodeWithTag("fs-practice-slower").performClick()
+            composeTime(100)
+            rule.onNodeWithTag("fs-practice-faster").performSemanticsAction(SemanticsActions.OnClick)
+            composeTime(100)
+            assertEquals("a click after a hold to the end steps", PracticeSpeed.MAX, practice.speed)
+            // A hold that is cancelled (the finger slides off) is followed by no click either.
+            rule.onNodeWithTag("fs-practice-slower").performTouchInput { down(center) }
+            composeTime(STEP_HOLD_MS + STEP_REPEAT_MS + STEP_REPEAT_MS / 2)
+            rule.onNodeWithTag("fs-practice-slower").performTouchInput { moveBy(androidx.compose.ui.geometry.Offset(0f, -2_000f)); up() }
+            composeTime(500)
+            val cancelled = practice.speed
+            assertTrue("the cancelled hold stepped ($cancelled %)", cancelled < PracticeSpeed.MAX)
+            rule.onNodeWithTag("fs-practice-slower").performSemanticsAction(SemanticsActions.OnClick)
+            composeTime(100)
+            assertEquals("a click after a cancelled hold steps", cancelled - PracticeSpeed.STEP, practice.speed)
         } finally {
             rule.mainClock.autoAdvance = true
         }
         rule.waitForIdle()
-        assertEquals("150%", words("fs-practice-speed"))
+        // With large text the word is left out, so the player takes no more rows than without it.
+        textSize(2.0f)
+        waitForTag("fs-practice-speed", 20_000)
+        assertEquals(0, rule.onAllNodesWithTag("fs-practice-speed-label").fetchSemanticsNodes().size)
+        textSize(1.0f)
     }
 
     @Test

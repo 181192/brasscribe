@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -163,8 +164,9 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 modifier = Modifier.testTag("fs-practice-place").semantics { if (!quiet) liveRegion = LiveRegionMode.Polite })
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val speed = stringResource(R.string.speed_chip, practice.speed)
-                // The word is for the eye: the value's own name already says "Speed 100 %".
-                Text(stringResource(R.string.fs_practice_speed), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
+                // The word is for the eye: the value's own name already says "Speed 100 %". With large text it is left out,
+                // as the top bar leaves out the back button's word: the player would take another row for it.
+                if (LocalDensity.current.fontScale < 1.3f) Text(stringResource(R.string.fs_practice_speed), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
                     modifier = Modifier.padding(end = BrasscribeSpace.s1).testTag("fs-practice-speed-label").semantics { hideFromAccessibility() })
                 StepButton("−", stringResource(R.string.fs_practice_slower), "fs-practice-slower", practice.speed > PracticeSpeed.MIN, repeats = true, onClick = practice::slower)
                 Text(stringResource(R.string.speed_value, practice.speed), style = MaterialTheme.typography.bodyLarge, color = c.text, textAlign = TextAlign.Center,
@@ -202,6 +204,8 @@ private fun StepButton(sign: String, name: String, tag: String, enabled: Boolean
         LaunchedEffect(source) {
             // A new press, a release or a cancel ends the steps of the press before it.
             source.interactions.collectLatest { i ->
+                // A press that was cancelled (the finger slid off, the page scrolled) is followed by no click to swallow.
+                if (i is PressInteraction.Cancel) held = false
                 if (i !is PressInteraction.Press) return@collectLatest
                 held = false
                 delay(STEP_HOLD_MS)
@@ -213,6 +217,9 @@ private fun StepButton(sign: String, name: String, tag: String, enabled: Boolean
             }
         }
     }
+    // Held to the end, the button is off when it is let go: no click comes, and the next one (a tap, or a screen
+    // reader's, switch's or voice's press) must step.
+    LaunchedEffect(enabled) { if (!enabled) held = false }
     IconButton({ if (held) held = false else onClick() }, Modifier.size(48.dp).testTag(tag).semantics { contentDescription = name },
         enabled = enabled, interactionSource = source) {
         Text(sign, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.clearAndSetSemantics { })

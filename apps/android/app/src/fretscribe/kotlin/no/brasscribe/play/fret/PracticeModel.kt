@@ -145,7 +145,8 @@ data class PracticePlace(val at: Double, val speed: Int, val repeat: RepeatBars?
 
 /**
  * Where each song was left in practice, kept on the phone beside the song's recording ([PracticeRecordings]), by the
- * id of the song's job: one small file to a song, which goes when the song leaves Your songs.
+ * id of the song's job: one small file to a song. A song deleted from Your songs keeps its file until a song that is
+ * still in Your songs is next opened on the tab, when the places of the songs no longer there are pruned.
  */
 class PracticePlaces(private val dir: File) {
     private fun named(job: String): File? = PracticeRecordings.fileName(job)?.let { File(dir, it) }
@@ -153,7 +154,7 @@ class PracticePlaces(private val dir: File) {
     /** Where [job]'s song was left; null when it was never practised, or what is kept can't be read. */
     fun read(job: String): PracticePlace? {
         val words = named(job)?.takeIf { it.isFile }?.let { runCatching { it.readText() }.getOrNull() }?.trim()?.split(' ') ?: return null
-        val at = words.getOrNull(0)?.toDoubleOrNull()?.takeIf { it >= 0 } ?: return null
+        val at = words.getOrNull(0)?.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: return null
         val speed = words.getOrNull(1)?.toIntOrNull() ?: return null
         val first = words.getOrNull(2)?.toIntOrNull()
         val last = words.getOrNull(3)?.toIntOrNull()
@@ -259,7 +260,11 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         recording = RecordingState.LOOKING
         viewModelScope.launch {
             val (found, kept) = withContext(Dispatchers.IO) {
-                if (job != null && songs != null && job in songs) { store.prune(songs); places.prune(songs) }
+                if (job != null && songs != null && job in songs) {
+                    store.prune(songs)
+                    // In order with the writes of the places: a prune never runs beside a write.
+                    withContext(writing) { places.prune(songs) }
+                }
                 val found = if (job == null) file else file?.let { store.keep(job, it) } ?: store.find(job)
                 found to job?.takeIf { ask }?.let(places::read)
             }
