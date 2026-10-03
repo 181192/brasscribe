@@ -251,6 +251,9 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
                 es = eval_songs[song.name]
                 cases.append(Case(f"{base}/layers", "layers", {"layers": work / "_layers" / es.parent.name / es.name,
                                                                "song": es, "beats": bf, "title": es.name}))
+    # A checked-in score in compound time (no arranged input is): only its talking score is compared.
+    for score in sorted((REPO / "core" / "conformance" / "fixtures").glob("*/brass-band.musicxml")):
+        cases.append(Case(f"talking/{score.parent.name}", "talking", {"dir": score.parent}))
     if only:
         cases = [c for c in cases if only in c.id]
     return cases
