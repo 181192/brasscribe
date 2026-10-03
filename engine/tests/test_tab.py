@@ -362,6 +362,25 @@ def test_in_a_line_overtones_and_faint_notes_go_and_in_a_chord_the_same_notes_st
     assert len(straight["notes"]) == 10 and {n["confidence"] for n in straight["notes"]} == {1.0}
 
 
+def test_on_a_ukulele_an_overtone_in_a_line_that_swiftf0_did_not_hear_is_left_out_not_doubted():
+    """A first-position melody: an octave over a note heard as strongly as a played note would be (over
+    OVERTONE_RATIO of it) but faintly (under LINE_DOUBT), and not by SwiftF0, was written with a "?" at the
+    15th fret and pulled the melody up the neck with it."""
+    line = [_note(p, 0.5 * i, 0.45, amplitude=0.6) for i, p in enumerate((60, 62, 64, 65, 67, 69, 67, 65))]
+    overtone = _note(72, 0.01, 0.3, amplitude=0.4)  # an octave over the first note
+    notes = sorted(line + [overtone], key=lambda n: n["onset"])
+    second = [{"pitch": n["pitch"], "onset": n["onset"], "offset": n["offset"]} for n in line]
+    assert tab.leftovers(notes, tab.chordal(notes)) == ([], [])  # Basic Pitch alone cannot tell
+    assert tab.leftovers(notes, tab.chordal(notes), unheard=second)[0] == [notes.index(overtone)]
+    heard = second + [{"pitch": 72, "onset": 0.0, "offset": 0.3}]  # SwiftF0 heard it: played
+    assert tab.leftovers(notes, tab.chordal(notes), unheard=heard)[0] == []
+    doc = tab.played_notes(notes, _beats(), "ukulele", second=second)
+    assert 72 not in {n["pitch"] for n in doc["notes"]} and doc["leftovers_dropped"] == 1
+    for instrument in ("guitar-6", "mandolin"):  # measured on a ukulele only: elsewhere the note stays, in doubt
+        doc = tab.played_notes(notes, _beats(), instrument, second=second)
+        assert [n["confidence"] < tab.DOUBT for n in doc["notes"] if n["pitch"] == 72] == [True], instrument
+
+
 def test_the_top_of_a_chord_is_judged_by_the_instruments_own_neck_not_a_guitars():
     """The top G of a mandolin's open G chord (0-0-2-3) is two octaves over its G string and above a guitar's 12th fret."""
     mandolin_g, uke_c = [55, 62, 71, 79], [60, 64, 67, 79]  # the ukulele's C with a G at the 10th fret of its top string

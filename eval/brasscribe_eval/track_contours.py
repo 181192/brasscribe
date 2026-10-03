@@ -14,6 +14,11 @@ Writes <out>/<song>/<part>.npz (t, pitch_hz, confidence, loudness_db).
 
 from __future__ import annotations
 
+import os
+
+# ONNX Runtime reports to Microsoft unless this is set before it starts.
+os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
+
 import csv
 import json
 import sys

@@ -97,6 +97,11 @@ class Heard:
     # a guitar, where they were measured. On a ukulele and a mandolin they changed notes without making the
     # held-out passages better.
     apart_overtones_out: bool = False
+    # In a line, an overtone of a note sounding under it is left out, not written with a "?", when SwiftF0 did
+    # not hear it and Basic Pitch heard it under LINE_DOUBT (leftovers). On a ukulele's rendered melodies such a
+    # note was wrong 40 times in 41, and it pulled the real note up the neck to be fingered with it; elsewhere
+    # it was not measured to help as much (a mandolin's and a guitar's held-out passages lost doubt precision).
+    unheard_overtones_out: bool = False
 
 
 GUITAR_CHORD_HIGH = 76  # E5: the 12th fret of a guitar's top string in standard tuning (six, seven and eight strings alike)
@@ -110,8 +115,8 @@ HEARD = {
     # The separator has no stem for a ukulele or a mandolin. Rendered ones under a bass and drums came out in its
     # guitar stem almost whole (recall 0.96) and nowhere else (small_tab_bench). In a song that also has a guitar
     # the two share the stem and the tab holds both, so a song is not their default (alone_by_default).
-    "ukulele": Heard("ukulele", "guitar", 55, 87, 4, 69 + 12, True, True, True, True),
-    "ukulele-baritone": Heard("ukulele", "guitar", 50, 83, 4, 64 + 12, True, True, True, True),
+    "ukulele": Heard("ukulele", "guitar", 55, 87, 4, 69 + 12, True, True, True, True, unheard_overtones_out=True),
+    "ukulele-baritone": Heard("ukulele", "guitar", 50, 83, 4, 64 + 12, True, True, True, True, unheard_overtones_out=True),
     "mandolin": Heard("mandolin", "guitar", 55, 96, 4, None, True, False, True, True),
 }
 DEFAULT_LAYOUT = "tab"
@@ -315,11 +320,13 @@ def chordal(notes: list[dict]) -> list[bool]:
 
 
 def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None = None,
-              with_its_note: bool = False, apart: bool = False) -> tuple[list[int], list[int]]:
+              with_its_note: bool = False, apart: bool = False,
+              unheard: list[dict] | None = None) -> tuple[list[int], list[int]]:
     """Indices of the notes of `notes` (sorted by onset) that were not played, and of those that may not have been.
 
-    Left out: in a line, the faint overtones of a note sounding under them and the notes heard too faintly
-    to be played ones; among chords, an overtone above `chord_high` (Heard.chord_high) when the instrument
+    Left out: in a line, the faint overtones of a note sounding under them, with `unheard` (the second
+    transcriber's notes) also an overtone it did not hear that Basic Pitch heard under LINE_DOUBT, and the notes
+    heard too faintly to be played ones; among chords, an overtone above `chord_high` (Heard.chord_high) when the instrument
     has one, with `with_its_note` only when it starts with the note under it and is fainter (HIGH_WITH), and a
     faint overtone that does not start with a strum when `apart` (APART_SIZE, APART_RATIO). In doubt: among chords, a faint
     overtone standing over the top of its strum (TOP_RATIO, TOP_GAP)."""
@@ -334,7 +341,8 @@ def leftovers(notes: list[dict], in_chords: list[bool], chord_high: int | None =
             return any(amplitude < ratio * low.get("amplitude", 1.0) for low in under)
 
         if not in_chords[i]:
-            if fainter(OVERTONE_RATIO) or amplitude < LINE_FAINT:
+            if fainter(OVERTONE_RATIO) or amplitude < LINE_FAINT or (
+                    under and unheard and amplitude < LINE_DOUBT and not bass_tab._heard(unheard, n, n["pitch"])):
                 out.append(i)
             continue
         together = [o["pitch"] for o in others if abs(o["onset"] - n["onset"]) <= STRUM_SECONDS]
@@ -466,7 +474,8 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     notes = sorted((dict(n) for n in raw if n["offset"] - n["onset"] >= MIN_SECONDS), key=lambda n: (n["onset"], n["pitch"]))
     dropped = len(raw) - len(notes)  # too short to be a note: counted with the other leftovers
     if clean and notes:
-        gone, unsure = leftovers(notes, chordal(notes), heard.chord_high, heard.high_with_its_note, heard.apart_overtones_out)
+        gone, unsure = leftovers(notes, chordal(notes), heard.chord_high, heard.high_with_its_note, heard.apart_overtones_out,
+                                 second if heard.unheard_overtones_out else None)
         for i in unsure:
             notes[i]["top_overtone"] = True
         for i in top_overtones(notes, chordal(notes)) if heard.apart_overtones_out else ():

@@ -49,9 +49,11 @@ COPY eval eval
 COPY engine engine
 COPY ml ml
 COPY qa qa
+# ORT_DISABLE_TELEMETRY keeps ONNX Runtime (in the adapters) from reporting to Microsoft.
 ENV BRASSCRIBE_ADAPTER_RUNNER=pixi \
     BRASSCRIBE_DATA=/data \
-    BRASSCRIBE_PYTHON=/brasscribe/.pixi/envs/default/bin/python
+    BRASSCRIBE_PYTHON=/brasscribe/.pixi/envs/default/bin/python \
+    ORT_DISABLE_TELEMETRY=1
 EXPOSE 8765
 # mDNS from a bridged container would advertise the container's own address.
 CMD ["pixi", "run", "brasscribe", "serve", "--lan", "--no-advertise"]

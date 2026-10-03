@@ -7,6 +7,11 @@ The melody is generated from a formula (see `melody` below and SyntheticMelody.k
 stored: both sides compute the same float32 samples.
 """
 
+import os
+
+# ONNX Runtime reports to Microsoft unless this is set before it starts.
+os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
+
 import json
 import math
 from pathlib import Path

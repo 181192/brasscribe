@@ -19,7 +19,7 @@ for abi in arm64-v8a x86_64; do
     --android --android_sdk_path "$ANDROID_HOME" --android_ndk_path "$ANDROID_HOME/ndk/28.2.13676358" \
     --android_abi "$abi" --android_api 29 \
     --build_java --build_shared_lib --include_ops_by_config "$here/ops.config" --disable_ml_ops \
-    --skip_tests --parallel --compile_no_warning_as_error --skip_submodule_sync \
+    --no_telemetry --skip_tests --parallel --compile_no_warning_as_error --skip_submodule_sync \
     --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF
 done
 # Each ABI build writes a release AAR with only its own jni/<abi>; merge the second ABI's native

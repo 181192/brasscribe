@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Companion engine on the local network. -->
+    <!-- Companion engine on the local network; MainActivity follows the network (ACCESS_NETWORK_STATE)
+         to reach it again. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Microphone recording, and capture of other apps' playback (AudioPlaybackCapture needs it too). -->
@@ -86,6 +87,16 @@
             android:name=".DraftService"
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- ONNX Runtime's AAR adds this provider so that the runtime can report to Microsoft: before the
+             app starts it reads the device's ANDROID_ID, maker and model and follows the network and the
+             battery. Nothing leaves the phone but what goes to the player's own computer, so it is taken
+             out. PlayApplication also turns the runtime's telemetry off, and verifyNoOrtTelemetry<Variant>
+             fails the build if the provider is back in the merged manifest. -->
+        <provider
+            android:name="ai.onnxruntime.TelemetryInitializer"
+            android:authorities="${applicationId}.onnxruntime_telemetry_initializer"
+            tools:node="remove" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
