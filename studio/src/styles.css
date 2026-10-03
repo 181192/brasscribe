@@ -301,7 +301,7 @@ button.chip[aria-pressed="true"] .count { color: var(--bc-text); }
 .new-run h2 { margin-top: 0; }
 fieldset.source { display: grid; gap: var(--bc-space-2); justify-items: start; padding-top: var(--bc-space-1); }
 /* Headings that are a disclosure's summary. */
-summary > h2.in-summary, summary > h3.in-summary { margin: 0; display: inline; }
+summary > h2.in-summary, summary > h3.in-summary { margin: 0; display: inline; overflow-wrap: break-word; }
 summary > .row { align-items: center; }
 summary > .row > h2.in-summary { display: block; margin: 0; }
 /* A disclosure card that is only its summary line stays compact. */
