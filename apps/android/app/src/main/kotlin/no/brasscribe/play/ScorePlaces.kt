@@ -42,9 +42,12 @@ class ScorePlaces(private val dir: File) {
         named(id)?.delete()
     }
 
-    /** Drops the places of every score but [ids]. */
-    fun prune(ids: Set<String>) {
-        dir.listFiles()?.filter { it.name !in ids }?.forEach { it.delete() }
+    /**
+     * Drops the places of the scores that are gone ([kept] says no), and what was left half-written. A score that can't
+     * be read just now keeps its place: only [kept] decides, never a list of the scores that could be read.
+     */
+    fun prune(kept: (String) -> Boolean) {
+        dir.listFiles()?.filter { it.name.endsWith(".part") || !kept(it.name) }?.forEach { it.delete() }
     }
 
     companion object {

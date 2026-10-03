@@ -89,6 +89,7 @@ The stand opens on **your part**: the seat's part from `docs/plan/my-instrument.
 - **Targets.** Everything is at least 48 pt / 48 dp / 48 epx, and Play is the round 56 pt ink primary: the only ink control (system.md §1). The page buttons have a tonal well, so they read differently from the bar buttons.
 - **Speed.** It is two steppers around the value (2.5.7): −5 % and +5 %, at 25–150 %. There is no slider in the stand.
 - **Repeat.** A toggle for the last range. When no range is set yet, it opens the existing **Repeat bars [12] to [13]** sheet, with bar-number fields.
+- **Where it was left.** On Android a score keeps its speed, its repeat and its bar, on the stand and off it, and opens there again, also after the app was closed (apps/android/README.md). "Play this bar" is not a repeat and is not kept as one.
 - **Text size.** At the largest sizes the rows wrap, and the card grows upwards. It never clips (system.md §1.7).
 - **The position is text, not a control.** It sits on the band in `text` (the place in `text-muted`) with no border or fill, so only **✕ Leave** looks like a button. It is a status element and is not focusable.
 - **Toggles** (Only my part, Lock rotation, Repeat) use the system.md §1.1 style everywhere, the landscape top band included: off is an outline; on is the tonal `secondary` fill, a 1.5 px ink edge and a ✓ before the label.

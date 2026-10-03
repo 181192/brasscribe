@@ -44,6 +44,9 @@ class SavedScoreLibrary(private val root: File) {
 
     fun get(id: String): SavedScore? = folder(id)?.let(::read)
 
+    /** Whether the score [id] is still kept, readable or not: what is kept beside it stays while it is. */
+    fun has(id: String): Boolean = folder(id) != null
+
     /** The score and its transcription, or null when it is gone or unreadable. */
     fun content(id: String): SavedScoreContent? = folder(id)?.let { folder ->
         runCatching {

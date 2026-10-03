@@ -72,4 +72,36 @@ class ScorePracticeKeptTest : ScreenTest() {
         waitUntil(10_000) { !kept.exists() }
         assertFalse(kept.exists())
     }
+
+    /** "Play this bar" plays one bar once: it is no repeat, so it is not kept as one, and the player's own repeat stays. */
+    @Test
+    fun playThisBarIsNotKeptAsARepeat() {
+        val file = File(rule.activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml"))) }
+        rule.runOnUiThread { vm.home(); vm.openScoreUri(android.net.Uri.fromFile(file)) }
+        waitUntil(30_000) { loaded() && vm.practiceScoreId != null }
+        val id = vm.practiceScoreId!!
+        rest()
+        rule.runOnUiThread { controller().goToBar(5); controller().playBar(5) }
+        rule.waitForIdle()
+        assertEquals("no repeat on screen", null, controller().state.value.loop)
+        rule.runOnUiThread { vm.home() }
+        val kept = File(rule.activity.noBackupFilesDir, "score-practice/$id")
+        waitUntil(10_000) { kept.isFile }
+        rule.runOnUiThread { vm.forgetPracticeInMemory() }
+        rule.runOnUiThread { vm.openSavedScore(vm.savedScores.value.first { it.id == id }) }
+        waitUntil(30_000) { loaded() }
+        rest()
+        assertEquals("reopened, it repeats nothing", null, controller().state.value.loop)
+        assertFalse("the player repeats nothing", controller().view.api.isLooping)
+
+        // With a repeat of the player's own, Play this bar leaves it as it was.
+        rule.runOnUiThread { controller().setLoop(9..10); controller().playBar(3) }
+        rule.waitForIdle()
+        assertEquals(9..10, controller().state.value.loop)
+        rule.runOnUiThread { if (controller().state.value.playing) controller().togglePlay() }
+        waitUntil(10_000) { !controller().state.value.playing && controller().view.api.isLooping }
+        assertEquals(controller().view.api.score!!.masterBars[8].start, controller().view.api.playbackRange!!.startTick, 0.0)
+        rule.runOnUiThread { vm.home() }
+        rule.runOnUiThread { vm.deleteEntry(vm.scores.value.first { it.saved?.id == id }) }
+    }
 }

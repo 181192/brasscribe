@@ -174,7 +174,10 @@ fun ScoreScreen(vm: PlayViewModel) {
     // Kept whenever it stands still: paused, a new speed or repeat, a bar moved; while it plays, where it stops.
     LaunchedEffect(placeRead, st.speed, st.loop, st.playing, if (st.playing) 0 else st.bar) {
         val id = placeId ?: return@LaunchedEffect
-        if (placeRead && !st.playing) vm.keepPracticePlace(id, no.brasscribe.play.ScorePlace(st.bar, st.speed, st.loop))
+        if (!placeRead || st.playing) return@LaunchedEffect
+        // Once it has settled: a held speed step or a run of bar steps is one write, not one for each step.
+        kotlinx.coroutines.delay(PLACE_SETTLE_MS)
+        vm.keepPracticePlace(id, no.brasscribe.play.ScorePlace(st.bar, st.speed, st.loop))
     }
     // Left while it plays: where it got to.
     DisposableEffect(controller) {
@@ -735,6 +738,9 @@ private fun segmentColors() = SegmentedButtonDefaults.colors(
     inactiveContainerColor = BrasscribeTheme.colors.secondary, inactiveContentColor = BrasscribeTheme.colors.textMuted,
     inactiveBorderColor = BrasscribeTheme.colors.border,
 )
+
+/** How long practice stands still before where it is is kept (leaving the score keeps it at once). */
+private const val PLACE_SETTLE_MS = 500L
 
 /** Index of the music stand in the row under the score (the ⋯ sheet has its own entry for it). */
 private const val STAND_ITEM = 2

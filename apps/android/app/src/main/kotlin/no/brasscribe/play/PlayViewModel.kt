@@ -431,8 +431,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 takesDir.listFiles()?.filter { it != keep && it != CaptureController.activeFile() }?.forEach { it.delete() }
                 getApplication<Application>().cacheDir.listFiles { f -> f.name.startsWith("score-") && f.name.endsWith(".mp3") }?.forEach { it.delete() }
                 keptStore.prune(inUse = keep)
-                // A score deleted while its place was being written leaves nothing behind.
-                scoreLibrary.list().also { list -> practicePlaces.prune(list.map { it.id }.toSet()) }
+                // A score deleted while its place was being written leaves nothing behind; one still on the phone keeps it.
+                practicePlaces.prune(scoreLibrary::has)
+                scoreLibrary.list()
             }
             savedScores.value = list
             refreshKept()

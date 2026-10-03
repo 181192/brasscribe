@@ -62,8 +62,13 @@ class ScorePlacesTest {
         places.forget(one)
         assertNull(places.read(one))
         places.save(one, ScorePlace(5, 75, null))
-        places.prune(setOf(two))
+        // Only a score that is gone loses its place; nothing is pruned for a score that is still there.
+        places.prune { it == one || it == two }
+        assertEquals(ScorePlace(5, 75, null), places.read(one))
+        File(dir, "places/$two.part").writeText("1 100")
+        places.prune { it == two }
         assertNull(places.read(one))
         assertEquals(ScorePlace(6, 75, null), places.read(two))
+        assertEquals(listOf(two), File(dir, "places").list()!!.toList())
     }
 }

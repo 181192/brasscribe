@@ -130,6 +130,7 @@ class ScoreController(
         view.api.playerStateChanged.on { e ->
             val playing = e.state == PlayerState.Playing
             _state.value = _state.value.copy(playing = playing)
+            if (!playing && barOnly) { barOnly = false; playRange(_state.value.loop, looping = true) }
             view.post { if (!released) followFocus(playing) }
             if (_state.value.realistic && humanizedReady) {
                 if (playing) humanized.start(::channelAudible) else humanized.stop()
@@ -503,8 +504,21 @@ class ScoreController(
         return i !in st.muted && (st.soloed.isEmpty() || i in st.soloed)
     }
 
-    /** Loops bars [from]..[to] (1-based, inclusive); null clears the loop. */
+    /** Loops bars [from]..[to] (1-based, inclusive); null clears the loop. It is the player's repeat, which is kept. */
     fun setLoop(range: IntRange?) {
+        score ?: return
+        barOnly = false
+        playRange(range, looping = true)
+        _state.value = _state.value.copy(loop = range)
+        tints.loop = range
+        tints.invalidate()
+    }
+
+    /** "Play this bar" is playing one bar: once it stops, the player's own repeat (or none) is back. */
+    private var barOnly = false
+
+    /** The player plays [range] (and repeats it when [looping]); null plays the whole score. */
+    private fun playRange(range: IntRange?, looping: Boolean) {
         val s = score ?: return
         if (range == null) {
             view.api.playbackRange = null
@@ -523,12 +537,9 @@ class ScoreController(
             val lastIndex = range.last.coerceIn(1, bars.length.toInt())
             val end = if (lastIndex < bars.length.toInt()) bars[lastIndex].start else bars[lastIndex - 1].start + bars[lastIndex - 1].calculateDuration()
             view.api.playbackRange = PlaybackRange().apply { startTick = first.start; endTick = end }
-            view.api.isLooping = true
+            view.api.isLooping = looping
             view.api.tickPosition = first.start
         }
-        _state.value = _state.value.copy(loop = range)
-        tints.loop = range
-        tints.invalidate()
     }
 
     fun goToBar(bar: Int) {
@@ -538,9 +549,10 @@ class ScoreController(
         _state.value = _state.value.copy(bar = b)
     }
 
+    /** Plays [bar] once. It is not a repeat: the player's repeat ([ScoreUiState.loop]) stays as it was, and comes back after. */
     fun playBar(bar: Int) {
-        setLoop(bar..bar)
-        view.api.isLooping = false
+        playRange(bar..bar, looping = false)
+        barOnly = true
         withSoundFont { view.api.play() }
     }
 
