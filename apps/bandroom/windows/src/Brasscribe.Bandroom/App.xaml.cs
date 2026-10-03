@@ -275,6 +275,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         if (_controller is not { } controller || _supervisor is not { } supervisor || _bootstrap is not { } bootstrap) return;
         controller.Updating = true;
         controller.UpdateFailure = null;
+        controller.UpdateRefusal = null;
         controller.SetupFailure = null;
         controller.SetupRefusal = null;
         controller.SetupFraction = 0;
@@ -300,9 +301,13 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         catch (Exception e)
         {
             _log?.Write("bandroom: update stopped: " + e);
-            controller.SetupRefusal = (e as BootstrapException)?.Refusal;
-            // Still the old workspace: say so. A new one whose adapters stopped resumes like setup does.
-            if (!await Task.Run(() => bootstrap.WorkspaceCurrent)) controller.UpdateFailure = e.Message;
+            // Still the old workspace: say so (and why, when pixi refused the new one); the previous engine starts below.
+            // A new one whose adapters stopped resumes like setup does.
+            if (!await Task.Run(() => bootstrap.WorkspaceCurrent))
+            {
+                controller.UpdateFailure = e.Message;
+                controller.UpdateRefusal = (e as BootstrapException)?.Refusal;
+            }
         }
         finally { controller.Updating = false; }
         if (await Task.Run(() => bootstrap.EngineReady)) await supervisor.StartAsync();
@@ -615,7 +620,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             ProblemKind.LowDisk => "ms-settings:storagesense",
             ProblemKind.PublicNetwork => "ms-settings:network-status",
-            ProblemKind.PixiTooOld => LatestRelease,
+            ProblemKind.PixiTooOld or ProblemKind.UpdateRefused => LatestRelease,
             ProblemKind.MissingDownload => _downloads?.Error switch
             {
                 DownloadError.LicenceNotAccepted => ModelComponent.BandWriter.Page().AbsoluteUri,

@@ -116,7 +116,7 @@ NB = {
     "Free up space…": "Frigjør plass …",
     "Full-band scores need one more step": "Partitur for fullt band trenger ett steg til",
     "Get an access key on Hugging Face": "Hent en tilgangsnøkkel hos Hugging Face",
-    "Get the latest Bandroom": "Hent den nyeste Bandroom",
+    "Get the latest Bandroom": "Last ned den nyeste Bandroom",
     "Getting full": "Begynner å bli fullt",
     "Getting the recording ready": "Gjør opptaket klart",
     "Got it": "OK",
@@ -244,6 +244,8 @@ NB = {
     "The instrument separator isn't downloaded yet.": "Instrumentskilleren er ikke lastet ned ennå.",
     "The key is saved in your Keychain.": "Nøkkelen er lagret i nøkkelringen.",
     "The key may have been deleted or have expired.": "Nøkkelen kan være slettet eller utløpt.",
+    "The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.":
+        "Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
     "The phone keeps the recording and can send it again.": "Telefonen beholder opptaket og kan sende det på nytt.",
     "The phone shows the number:": "Telefonen viser tallet:",
     "The phone shows the number: %@": "Telefonen viser tallet: %@",

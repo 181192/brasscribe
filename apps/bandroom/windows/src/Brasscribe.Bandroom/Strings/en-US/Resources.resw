@@ -44,6 +44,9 @@
   <data name="Update_Failed_Title" xml:space="preserve">
     <value>Brasscribe couldn't finish updating</value>
   </data>
+  <data name="Update_Refused_Why" xml:space="preserve">
+    <value>The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.</value>
+  </data>
   <data name="Update_Failed_Why" xml:space="preserve">
     <value>The previous version is still running, so phones can keep sending recordings.</value>
   </data>

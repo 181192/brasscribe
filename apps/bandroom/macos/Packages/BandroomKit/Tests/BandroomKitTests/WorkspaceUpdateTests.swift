@@ -305,6 +305,26 @@ import Testing
         userDataIsIntact(ws, root: root)
     }
 
+    @MainActor @Test func aRefusedUpdateKeepsTheOldCopyAndSaysWhy() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let v1 = try bundle(in: root, name: "v1", studio: "old studio")
+        let ws = try installed(from: v1, root: root)
+        let v2 = try bundle(in: root, name: "v2", studio: "fixed studio", lock: "version: 6\n# numpy 2.6\n")
+        let config = configuration(root, workspace: ws)
+        let setupLog = config.paths.logs.appending(path: "setup.log")
+        try fm.createDirectory(at: config.paths.logs, withIntermediateDirectories: true)
+        try Data(("\n--- 2026-10-01 pixi install\n" + refusalOutput).utf8).write(to: setupLog)
+        let launcher = FakeLauncher()
+        launcher.exitStatus = 1 << 8
+        let boot = Bootstrapper(launcher: launcher)
+        let ok = await boot.update(configuration: config, bundledWorkspace: v2, lockChanged: true)
+        #expect(!ok)
+        #expect(studio(ws) == "old studio")
+        #expect(boot.pixiRefusal?.found == "0.79.0")
+        #expect(Problem.afterFailedUpdate(refusal: boot.pixiRefusal) == .updateRefused(boot.pixiRefusal!))
+    }
+
     @MainActor @Test func setupInstallsEvenOverAnEnvironmentFromAnEarlierBuild() async throws {
         let root = tempDir()
         defer { try? fm.removeItem(at: root) }

@@ -32,12 +32,15 @@ COPY core/tools tools
 RUN cargo build --release --locked -p brasscribe-cli
 
 FROM ${BASE} AS base
-ARG PIXI_VERSION=v0.81.0
+# The pixi version CI pins (.pixi-version); --build-arg PIXI_VERSION=v0.x.y overrides it.
+ARG PIXI_VERSION=
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl git ffmpeg \
  && rm -rf /var/lib/apt/lists/*
-RUN curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=${PIXI_VERSION} PIXI_HOME=/usr/local PIXI_NO_PATH_UPDATE=1 bash \
+COPY .pixi-version /tmp/pixi-version
+RUN v="${PIXI_VERSION:-v$(tr -d ' \r\n' < /tmp/pixi-version | sed 's/^v//')}" \
+ && curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION="$v" PIXI_HOME=/usr/local PIXI_NO_PATH_UPDATE=1 bash \
  && pixi --version
 WORKDIR /brasscribe
 COPY pixi.toml pixi.lock ./

@@ -50,6 +50,15 @@ private let stamp = "\n--- 2026-10-01 19:31:32 +0000 pixi run --manifest-path en
                 == .attention(.pixiTooOld(r)))
         #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(.pixiTooOld(r)), updating: false, problems: [.lowDisk(freeGB: 2)],
                                      jobPercent: nil) == .attention(.pixiTooOld(r)))
+        // A refused update keeps the previous engine: "couldn't finish updating", not "can't start".
+        #expect(Problem.afterFailedUpdate(refusal: nil) == .updateFailed)
+        #expect(Problem.afterFailedUpdate(refusal: r) == .updateRefused(r))
+        #expect(Problem.updateRefused(r).pixiRefusal == r && !Problem.updateRefused(r).outranksSetup)
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .running, updating: false, problems: [.updateRefused(r)], jobPercent: nil)
+                == .attention(.updateRefused(r)))
+        // The previous engine refused too: nothing runs, and that is what's shown.
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(.pixiTooOld(r)), updating: false, problems: [.updateRefused(r)],
+                                     jobPercent: nil) == .attention(.pixiTooOld(r)))
         // Other problems still wait for setup.
         #expect(DisplayState.resolve(setupPercent: 9, phase: .idle, updating: false, problems: [.lowDisk(freeGB: 2)], jobPercent: nil)
                 == .settingUp(percent: 9))

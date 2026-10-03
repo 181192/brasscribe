@@ -44,6 +44,9 @@
   <data name="Update_Failed_Title" xml:space="preserve">
     <value>Brasscribe fikk ikke fullført oppdateringen</value>
   </data>
+  <data name="Update_Refused_Why" xml:space="preserve">
+    <value>Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.</value>
+  </data>
   <data name="Update_Failed_Why" xml:space="preserve">
     <value>Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før.</value>
   </data>
@@ -663,7 +666,7 @@
     <value>Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker.</value>
   </data>
   <data name="Pixi_Fix" xml:space="preserve">
-    <value>Hent den nyeste Bandroom</value>
+    <value>Last ned den nyeste Bandroom</value>
   </data>
   <data name="Error_Title" xml:space="preserve">
     <value>Brasscribe stoppet uventet</value>

@@ -9,15 +9,31 @@ public enum Problem: Equatable, Sendable {
     case noFreePort
     /// The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.
     case updateFailed
+    /// As `updateFailed`, because pixi refused the new workspace (too old for it). The previous engine still runs, so
+    /// Brasscribe can start; the fix is a newer Bandroom. With no engine running, a start refusal says `pixiTooOld`.
+    case updateRefused(PixiRefusal)
     /// The engine runs but hasn't answered for several checks in a row (hung). The fix restarts it.
     case notResponding
-    /// The pixi this app bundles is too old for its engine (setup, an update or a start was refused). The fix is a
-    /// newer Bandroom.
+    /// The pixi this app bundles is too old for its engine: first-run setup or a start was refused, so no engine
+    /// runs. The fix is a newer Bandroom.
     case pixiTooOld(PixiRefusal)
 
     /// Shown even while setting up: setup can't get past it.
     public var outranksSetup: Bool {
         if case .pixiTooOld = self { true } else { false }
+    }
+
+    /// pixi's refusal behind this problem, for the tech person.
+    public var pixiRefusal: PixiRefusal? {
+        switch self {
+        case .pixiTooOld(let r), .updateRefused(let r): r
+        default: nil
+        }
+    }
+
+    /// What a failed update shows while the previous engine stays: why it failed, when pixi said.
+    public static func afterFailedUpdate(refusal: PixiRefusal?) -> Problem {
+        refusal.map(Problem.updateRefused) ?? .updateFailed
     }
 }
 

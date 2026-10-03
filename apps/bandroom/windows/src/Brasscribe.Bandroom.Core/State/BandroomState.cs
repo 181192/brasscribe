@@ -12,7 +12,7 @@ public enum TrayBadge { None, DownArrow, Dots, Pie, Triangle, Square, CircularAr
 /// <summary>The one primary button of the flyout.</summary>
 public enum PrimaryAction { None, PairPhone, StartEngine, FinishSetup, TryAgain, Fix }
 
-public enum ProblemKind { NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed, PixiTooOld }
+public enum ProblemKind { NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed, UpdateRefused, PixiTooOld }
 
 /// <summary>A Needs-attention problem (§6.2): a title, one sentence why, the fix, and details for the tech person.</summary>
 public sealed record Problem(ProblemKind Kind, string Title, string Why, string FixLabel, string Details);
@@ -150,6 +150,14 @@ public static class Problems
     /// <summary>The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.</summary>
     public static Problem UpdateFailed(IStrings s, string details) =>
         new(ProblemKind.UpdateFailed, s["Update_Failed_Title"], s["Update_Failed_Why"], s["Primary_TryAgain"], details);
+
+    /// <summary>
+    /// The update failed because pixi refused the new workspace (too old for it). The previous engine still runs, so it
+    /// is not "can't start"; the fix is a newer Bandroom.
+    /// </summary>
+    public static Problem UpdateRefused(IStrings s, PixiRefusal refusal) =>
+        new(ProblemKind.UpdateRefused, s["Update_Failed_Title"], s["Update_Refused_Why"], s["Pixi_Fix"],
+            $"pixi {refusal.Found} refused the updated engine workspace (it requires pixi '{refusal.Required}'): {refusal.Message}");
 
     public static Problem LowDisk(IStrings s, long freeBytes, string dataDir) =>
         new(ProblemKind.LowDisk, s["Disk_Title"], s.Format("Disk_Why", Health.HealthWords.GigabytesText(freeBytes, s.Culture)), s["Disk_Fix"],

@@ -986,7 +986,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hent den nyeste Bandroom"
+            "value": "Last ned den nyeste Bandroom"
           }
         }
       }
@@ -2157,6 +2157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Telefonen viser tallet: %@"
+          }
+        }
+      }
+    },
+    "The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
           }
         }
       }

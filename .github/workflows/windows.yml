@@ -213,9 +213,8 @@ jobs:
         with:
           files: brasscribe-band-mobile.sf2
 
-      - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
+      - uses: ./.github/actions/pixi
         with:
-          pixi-version: v0.81.0
           run-install: false
 
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
@@ -336,15 +335,9 @@ jobs:
 
       # The engine for real: the first run installs the engine environment from pixi.lock (no torch, about
       # 0.5 GB), Bandroom starts it in its job object, and the owner endpoints answer with the admin bearer.
-      - uses: prefix-dev/setup-pixi@d3f436a425481402e6a95a1d1fc10331c708cd9e # v0.10.2
+      - uses: ./.github/actions/pixi
         with:
-          pixi-version: v0.81.0
           run-install: false
-
-      # The release build bundles this pixi: it must be one the engine workspace accepts.
-      - name: pixi is one the engine workspace accepts
-        shell: bash
-        run: bash ../macos/scripts/check-bundled-pixi.sh "$(command -v pixi)"
 
       - name: Engine test (first-run install, supervised start, admin bearer, the tree ends with Bandroom)
         timeout-minutes: 30
