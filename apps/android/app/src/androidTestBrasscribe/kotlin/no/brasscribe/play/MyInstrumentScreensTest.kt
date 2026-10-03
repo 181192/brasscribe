@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -135,6 +136,31 @@ class MyInstrumentScreensTest {
                 shot("review-arranged-$tag")
             }
         }
+    }
+
+    private fun focusedTag(): String? = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true))
+        .fetchSemanticsNodes().lastOrNull()?.config?.getOrNull(SemanticsProperties.TestTag)
+
+    @Test
+    fun theKeyboardReachesTheChoicesBeforeContinue() {
+        language("en-GB")
+        startFirstRun()
+        rule.onNodeWithTag("instrument-baritone").performClick()
+        rule.onNodeWithTag("seat-part-1st-baritone").performScrollTo().performClick()
+        rule.onNodeWithTag("seat-continue").assertIsEnabled()
+        // Tab: Not now in the top bar, then the choices on the screen, and only then Continue, docked under them.
+        val order = mutableListOf<String?>()
+        repeat(60) {
+            if (order.lastOrNull() != "seat-continue") {
+                instrumentation.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_TAB)
+                rule.waitForIdle()
+                order += focusedTag()
+            }
+        }
+        assertEquals("seat-continue", order.last())
+        assertEquals("seat-skip", order.first())
+        assertTrue("$order", order.any { it?.startsWith("instrument-") == true })
+        assertTrue("$order", order.any { it?.startsWith("seat-part-") == true })
     }
 
     @Test

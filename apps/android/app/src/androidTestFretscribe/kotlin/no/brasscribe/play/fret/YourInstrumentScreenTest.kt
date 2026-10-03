@@ -391,8 +391,8 @@ class YourInstrumentScreenTest {
         val focus = BrasscribeLightColors.focus
         val rows = listOf("instrument", "strings", "tuning", "hand", "reads").map { "fs-row-$it" }
         assertFalse("no ring before the keyboard is used", ringed(rows[0], focus))
-        // Tab reaches Not now, Continue and the five rows, the rows in reading order, and every row gets the
-        // ring while it has the focus. (The shared screen layout puts its docked button before the content.)
+        // Tab reaches Not now in the top bar, the five rows in reading order, and then Continue, docked under them
+        // (the content comes before the button that acts on it); every row gets the ring while it has the focus.
         val order = mutableListOf<String?>()
         repeat(7) {
             key(KeyEvent.KEYCODE_TAB)
@@ -403,13 +403,11 @@ class YourInstrumentScreenTest {
                 rows.filter { it != at }.forEach { assertFalse("$it: no ring without the focus", ringed(it, focus)) }
             }
         }
-        assertEquals(rows, order.filter { it in rows })
-        assertEquals(setOf("fs-not-now", "fs-keep") + rows, order.toSet())
-        assertEquals("fs-row-reads", order.last())
+        assertEquals(listOf("fs-not-now") + rows + "fs-keep", order)
         shot("your-instrument-focus-light")
 
         // Back up to Usual tuning. Enter opens its picker with the focus on the chosen tuning.
-        repeat(2) { instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)); instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)) }
+        repeat(3) { instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)); instrumentation.sendKeySync(KeyEvent(0, 0, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_TAB, 0, KeyEvent.META_SHIFT_ON)) }
         rule.waitForIdle()
         assertEquals("fs-row-tuning", focusedTag())
         key(KeyEvent.KEYCODE_ENTER)

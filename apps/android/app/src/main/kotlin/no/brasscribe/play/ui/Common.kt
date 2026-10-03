@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -51,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -342,6 +347,10 @@ fun PlayTopBar(title: String?, onBack: (() -> Unit)?, backLabel: String? = null,
 /**
  * Every flow screen: a top bar with the back button, a scrolling column at the 16 dp margin, and a
  * bottom slot for the one primary action, pinned above the navigation bar (system.md §2).
+ *
+ * The docked band is laid out after the content, in the body, not as the scaffold's bottom bar: the
+ * keyboard's Tab follows the layout, and the screen's content comes before the button that acts on it
+ * (WCAG 2.4.3). As the scaffold's bottom bar it came before the content.
  */
 @Composable
 fun PlayScaffold(
@@ -357,7 +366,20 @@ fun PlayScaffold(
     Scaffold(
         containerColor = BrasscribeTheme.colors.bg,
         topBar = { PlayTopBar(title, onBack, backLabel, actions) },
-        bottomBar = {
+    ) { padding ->
+        // Clear of the top bar and the system bars at the sides; the band pads for the navigation bar below.
+        val direction = LocalLayoutDirection.current
+        val around = PaddingValues(top = padding.calculateTopPadding(),
+            start = padding.calculateStartPadding(direction), end = padding.calculateEndPadding(direction))
+        Column(Modifier.fillMaxSize().padding(around).consumeWindowInsets(around)) {
+            val base = Modifier.weight(1f).fillMaxWidth().padding(horizontal = ScreenMargin)
+            Column(
+                modifier = if (scroll) base.verticalScroll(rememberScrollState()) else base,
+                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+            ) {
+                content()
+                Spacer(Modifier.size(BrasscribeSpace.s4))
+            }
             // Docked actions sit on an opaque band with a hairline above it, so the content ends
             // visibly at the band instead of looking cut off behind the button.
             Column(Modifier.fillMaxWidth().background(BrasscribeTheme.colors.bg)) {
@@ -371,15 +393,6 @@ fun PlayScaffold(
                     bottom?.invoke(this)
                 }
             }
-        },
-    ) { padding ->
-        val base = Modifier.fillMaxSize().padding(padding).padding(horizontal = ScreenMargin)
-        Column(
-            modifier = if (scroll) base.verticalScroll(rememberScrollState()) else base,
-            verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
-        ) {
-            content()
-            Spacer(Modifier.size(BrasscribeSpace.s4))
         }
     }
 }

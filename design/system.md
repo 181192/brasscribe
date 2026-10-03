@@ -81,6 +81,7 @@ flowchart LR
 **Focus rules**
 - When transcription finishes, focus moves to the "Check N notes" heading and the change is announced.
 - When a sheet closes, focus goes back to the button that opened it.
+- The keyboard reaches a screen's content before the primary docked under it: the top bar, then the content, then the docked actions (WCAG 2.4.3).
 
 ### A band draft on the device
 
