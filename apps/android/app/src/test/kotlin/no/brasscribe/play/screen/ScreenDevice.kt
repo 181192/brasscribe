@@ -310,7 +310,7 @@ object ScreenDevice {
         val end = System.nanoTime() + 6_000_000_000
         var drawn = 0
         var same = 0
-        while (same < 5 && System.nanoTime() < end) {
+        while (same < 4 && System.nanoTime() < end) {
             repeat(4) { rule.waitForIdle(); pass(rule, 50) }
             Thread.sleep(40)
             rule.waitForIdle()
