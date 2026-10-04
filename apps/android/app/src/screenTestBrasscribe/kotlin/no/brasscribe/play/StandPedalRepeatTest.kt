@@ -93,6 +93,16 @@ class StandPedalRepeatTest : ScreenTest() {
         score.performKeyInput { pressKey(Key.DirectionRight) }
         waitUntil(10_000) { !state().playing }
 
+        // A held pedal plays once, not on and off with every repeat of its key; held again, it pauses once.
+        ScreenDevice.hold(rule, android.view.KeyEvent.KEYCODE_PAGE_DOWN, repeats = 5)
+        waitUntil(10_000) { state().playing }
+        rule.mainClock.advanceTimeBy(500)
+        assertTrue("held: still playing", state().playing)
+        ScreenDevice.hold(rule, android.view.KeyEvent.KEYCODE_PAGE_DOWN, repeats = 4)
+        waitUntil(10_000) { !state().playing }
+        rule.mainClock.advanceTimeBy(500)
+        assertTrue("held: still paused", !state().playing)
+
         // Left goes back to the repeat's first bar, and says so.
         rule.runOnUiThread { vm.scoreController!!.goToBar(9) }
         waitUntil(3_000) { state().bar == 9 }

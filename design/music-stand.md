@@ -190,7 +190,7 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | Key | In the stand | Notes |
 |---|---|---|
 | → ↓ Page Down | Next page; **play / pause** while a repeat is set | The keys Bluetooth page turners (AirTurn, PageFlip and others) send in their arrow and page modes |
-| ← ↑ Page Up | Previous page; **back to the repeat's first bar** while a repeat is set | A loop needs no page turn, so a two-button pedal runs it hands-free. The layer says so under Repeat, and Help too (Android). |
+| ← ↑ Page Up | Previous page; **back to the repeat's first bar** while a repeat is set | A loop needs no page turn, so a two-button pedal runs it hands-free. The layer says so under Repeat, and Help too (Android). A held pedal turns page after page, but plays, pauses or goes back only once a press. Media Next / Previous (some turners send them) work as → and ← (Android). |
 | Space | Play / pause | As in the score. A pedal in **Space** mode therefore starts and stops the music. Help says to use the arrow or page mode. |
 | Home / End | First / last page | |
 | Option+↓ ↑ (Mac), Ctrl+↓ ↑ (Windows, Android) | Next / previous bar | The existing bar shortcuts |

@@ -151,6 +151,15 @@ class MusicStandTest {
         assertEquals(StandCommand.PREVIOUS_BAR, r.command(KeyEvent.KEYCODE_DPAD_UP, ctrl = true, repeating = true))
         assertEquals(StandCommand.PLAY_PAUSE, r.command(KeyEvent.KEYCODE_SPACE, repeating = true))
         assertNull(r.command(KeyEvent.KEYCODE_PAGE_DOWN, ctrl = true, repeating = true))
+        // Page turners that send the media keys.
+        assertEquals(StandCommand.NEXT_PAGE, r.command(KeyEvent.KEYCODE_MEDIA_NEXT))
+        assertEquals(StandCommand.PREVIOUS_PAGE, r.command(KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+        assertEquals(StandCommand.PLAY_PAUSE, r.command(KeyEvent.KEYCODE_MEDIA_NEXT, repeating = true))
+        assertEquals(StandCommand.REPEAT_START, r.command(KeyEvent.KEYCODE_MEDIA_PREVIOUS, repeating = true))
+        // A held key: pages go on turning, play and back to the start happen once.
+        assertTrue(r.actsOnRepeat(StandCommand.NEXT_PAGE))
+        assertFalse(r.actsOnRepeat(StandCommand.PLAY_PAUSE))
+        assertFalse(r.actsOnRepeat(StandCommand.REPEAT_START))
     }
 
     @Test

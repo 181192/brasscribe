@@ -684,7 +684,7 @@ fun standKey(e: androidx.compose.ui.input.key.KeyEvent, focusInLayer: Boolean, r
     // Space on a focused button presses that button; Tab still moves the focus.
     if (cmd == StandCommand.PLAY_PAUSE && focusInLayer && code == android.view.KeyEvent.KEYCODE_SPACE) return false
     if (cmd == StandCommand.SHOW_CONTROLS) { if (e.type == KeyEventType.KeyDown) run(cmd, shows); return false }
-    if (e.type == KeyEventType.KeyDown) run(cmd, shows)
+    if (e.type == KeyEventType.KeyDown && (n.repeatCount == 0 || MusicStandRules.actsOnRepeat(cmd))) run(cmd, shows)
     return true
 }
 

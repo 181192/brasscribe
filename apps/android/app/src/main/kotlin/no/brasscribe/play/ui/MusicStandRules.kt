@@ -34,6 +34,9 @@ object MusicStandRules {
             KeyEvent.KEYCODE_DPAD_UP -> if (ctrl) StandCommand.PREVIOUS_BAR else previous
             KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_PAGE_DOWN -> if (ctrl) null else next
             KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_PAGE_UP -> if (ctrl) null else previous
+            // Some page turners send the media keys: they are the page keys too.
+            KeyEvent.KEYCODE_MEDIA_NEXT -> next
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> previous
             KeyEvent.KEYCODE_MOVE_HOME -> StandCommand.FIRST_PAGE
             KeyEvent.KEYCODE_MOVE_END -> StandCommand.LAST_PAGE
             KeyEvent.KEYCODE_SPACE -> if (ctrl || shift) null else StandCommand.PLAY_PAUSE
@@ -44,6 +47,12 @@ object MusicStandRules {
             else -> null
         }
     }
+
+    /**
+     * A held key repeats: a page turns again, but play and pause, and back to the start, happen once a press (a held
+     * pedal must not start and stop the music over and over).
+     */
+    fun actsOnRepeat(cmd: StandCommand) = cmd != StandCommand.PLAY_PAUSE && cmd != StandCommand.REPEAT_START
 
     /**
      * Only Tab and Space show the control layer and keep it up (§4.2). A Bluetooth page turner is a
