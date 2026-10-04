@@ -597,7 +597,13 @@ def doubled_unisons(notes: list[dict], open_strings: list[int]) -> list[dict]:
     instrument has strings (and three or more), a note is added again when it can take two strings with
     every note within DOUBLE_FRETS of the nut (or the capo); of several such notes the one whose shape
     stays lowest, and none when two are as low. The added note has `doubled` set; target-fretted then
-    gives each its own string."""
+    gives each its own string.
+
+    A chord really played on three strings is completed to four the same way when a doubling fits: the
+    transcription cannot tell it from a four-string strum whose unison was heard once, and the common
+    four-string voicing is the one written. Two copies of one pitch on one onset are one note to
+    target-fretted unless the chord is in its open-shape table, so a doubling outside that table (B of Bm
+    2224, B-flat of 3211) gets no string of its own and is not written (fingered)."""
     by: dict[int, list[dict]] = {}
     for n in notes:
         by.setdefault(n["start"], []).append(n)
