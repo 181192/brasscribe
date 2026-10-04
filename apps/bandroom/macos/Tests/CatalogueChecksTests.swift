@@ -5,6 +5,7 @@ import Testing
 @testable import Brasscribe_Bandroom
 
 /// The catalogue's checks find what they should: each on a view made to fail it, and none on one made right.
+/// Their words are verbatim: the app's own strings would come out in bokmål in that run.
 @MainActor
 @Suite(.serialized) struct CatalogueChecksTests {
     private func findings(_ view: some View, width: CGFloat = 360) async -> [Finding] {
@@ -27,7 +28,7 @@ import Testing
 
     @Test func aSmallButtonIsFound() async {
         let found = await findings(VStack {
-            Button {} label: { Image(systemName: "ellipsis") }.buttonStyle(.plain).accessibilityLabel(Text("More"))
+            Button {} label: { Image(systemName: "ellipsis") }.buttonStyle(.plain).accessibilityLabel(Text(verbatim: "More"))
             Button("Big enough") {}.controlSize(.large)
         })
         #expect(found.contains { $0.kind == .smallTarget && $0.node.contains("More") }, "\(found)")
@@ -43,7 +44,7 @@ import Testing
 
     @Test func textCutOffIsFound() async {
         let found = await findings(VStack(alignment: .leading) {
-            Text("Without it, Brasscribe can't write down a full band. You can add it later.").font(.system(size: 17)).lineLimit(1)
+            Text(verbatim: "Without it, Brasscribe can't write down a full band. You can add it later.").font(.system(size: 17)).lineLimit(1)
             Button("Continue") {}.controlSize(.large)
         }, width: 300)
         #expect(found.contains { $0.kind == .clippedText && $0.node.contains("Without it") }, "\(found)")

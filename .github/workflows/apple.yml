@@ -1,8 +1,8 @@
 name: apple
 
 # Brasscribe Play for macOS, iOS and iPadOS, and Bandroom for Mac. Checks: Play's Swift package tests
-# plus its macOS and iPhone simulator app tests (job `play`); BandroomKit's tests and a build of the
-# Bandroom app (job `bandroom`). With `release`: Release builds of Play for Mac and of Bandroom for Mac
+# plus its macOS and iPhone simulator app tests (job `play`); BandroomKit's tests and Bandroom's
+# screen catalogue (job `bandroom`). With `release`: Release builds of Play for Mac and of Bandroom for Mac
 # (which installs and runs the engine), both re-signed ad hoc, uploaded as dist-macos (job `build`).
 # The checks run on pull requests that touch what the Apple apps build from, and on pushes to main:
 # ci.yml calls this workflow (job `apple`) after its `changes` job, with skip_play or skip_bandroom
@@ -182,6 +182,10 @@ jobs:
     needs: bandroom
     if: ${{ always() && github.event_name == 'pull_request' && needs.bandroom.result != 'skipped' }}
     runs-on: ubuntu-24.04
+    # Nothing is checked out here: the workflow's working directory (apps/apple) is not there.
+    defaults:
+      run:
+        working-directory: .
     permissions:
       contents: read
       pull-requests: read

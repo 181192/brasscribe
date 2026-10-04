@@ -74,7 +74,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, the screenshot comparison, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Brasscribe.Core.Tests && dotnet test` | nothing (seconds) |
-| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]` | the app build (tier 2 adds `make build`) |
+| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh compare`, which builds the app) |
 
 A test that takes seconds gets the slow marker of its framework:
 

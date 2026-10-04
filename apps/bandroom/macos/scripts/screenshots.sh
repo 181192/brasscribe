@@ -40,11 +40,12 @@ build() {
 catalogue() {
   local dir="$1" out="$2" status=0 lang
   rm -rf "$out"; mkdir -p "$out"
+  # Only what failed, and the totals: the rest of what the tests print is the app's own logging.
   for lang in en nb; do
     (cd "$dir" && TEST_RUNNER_CATALOGUE_OUT="$out" TEST_RUNNER_CATALOGUE_CHECKS="${CATALOGUE_CHECKS:-1}" \
       xcodebuild -project BrasscribeBandroom.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribeBandroom \
         -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribeBandroomTests \
-        test-without-building -quiet) || status=1
+        test-without-building 2>&1 | { grep -E "^(✘|↳|✔ Test run|Failing tests)|^\t|error:" || true; }) || status=1
   done
   return "$status"
 }
