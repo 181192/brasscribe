@@ -1,4 +1,5 @@
 import AppKit
+import ScreenCatalogue
 import SwiftUI
 import Testing
 @testable import Brasscribe_Bandroom
@@ -31,25 +32,22 @@ import Testing
         for variant in Variant.all {
             let r = await Rendering(view(for: screen, app: app), width: width(of: screen), variant: variant, app: app)
             await r.settle(until: { ready(screen, app) })
-            let nodes = AXSnapshot.read(r)
-            Hooks.requireTree(nodes, scene: screen.rawValue)
-            let name = Screenshot.name(screen.rawValue, variant)
-            let findings = Checks.run(nodes, bounds: r.hosting.bounds).filter { f in
-                !Self.known.contains { ($0.screen == nil || $0.screen == screen) && $0.kind == f.kind && f.node.contains($0.words) }
+            try Catalogue.record(r, name: Catalogue.name(screen.rawValue, variant)) { f in
+                Self.known.contains { ($0.screen == nil || $0.screen == screen) && $0.kind == f.kind && f.node.contains($0.words) }
             }
-            if Catalogue.checks {
-                #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
-            }
-            try Screenshot.write(r.bitmap(), name: name)
-            try Screenshot.writeTree(nodes, name: name)
             r.close()
         }
     }
 
     /// The undocumented hooks still do what the catalogue needs, and the run is in the language it says.
     @Test func hooksStillWork() async {
-        Hooks.requireLanguage()
-        await Hooks.requireContrastHook(app: await Catalogue.model(busy: false))
+        if let wrong = Guards.language(Catalogue.language, localized: String(localized: "Pair a phone"), english: "Pair a phone") {
+            Issue.record(Comment(rawValue: wrong))
+        }
+        let app = await Catalogue.model(busy: false)
+        let r = await Rendering(ContrastProbe(), width: 20, height: 20, variant: .contrast, app: app)
+        if let broken = Guards.contrast(Pictures.bitmap(of: r.hosting)) { Issue.record(Comment(rawValue: broken)) }
+        r.close()
     }
 
     private func model(for screen: Screen) async -> AppModel {

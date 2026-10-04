@@ -77,7 +77,8 @@ so it runs on a Mac in use and on CI's macOS runner.
   Pair a phone; the four setup steps; Settings) in light, dark, increased contrast (light and dark) and Bandroom's
   largest text size, and in bokmål (`xcodebuild -testLanguage nb`) in light and the largest text size. A screenshot
   of each, at 2 pixels a point, and its accessibility tree beside it (`<name>.ax.txt`).
-- **The checks**, on the accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own
+- **The checks** (the Mac apps' shared package `apps/apple/Packages/ScreenCatalogue`), on the
+  accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own
   buttons, menus and links are at least 24 × 24 pt, and the system's standard controls (switches, checkboxes, radio
   buttons, fields) keep their sizes under WCAG 2.5.8's spacing exception; no text of one line is cut off, and nothing
   lies outside the window; the controls come in reading order in the order VoiceOver and the keyboard go through
@@ -85,7 +86,7 @@ so it runs on a Mac in use and on CI's macOS runner.
   fail it. `BandroomScreensTests.known` lists findings not yet fixed, each with its issue.
 - **Two undocumented hooks**, in the tests only: `AXEnhancedUserInterface` on `NSApp` makes SwiftUI build its
   accessibility tree without an assistive app running, and the environment key `_colorSchemeContrast` sets increased
-  contrast. Each is checked on every run (`Hooks`): a tree without controls, a contrast probe drawn as standard
+  contrast. Each is checked on every run (`Guards`): a tree without controls, a contrast probe drawn as standard
   contrast, or English strings under `-testLanguage nb` fail the run, so an Xcode or macOS update that changes them
   is noticed instead of passing quietly.
 

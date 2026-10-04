@@ -47,6 +47,7 @@ build: project
 package-test:
 	cd Packages/BrasscribeKit && swift test
 	cd Packages/NotationKit && swift test
+	cd Packages/ScreenCatalogue && swift test
 	cd ../../capture && swift test
 
 test: project package-test
@@ -103,3 +104,4 @@ test-ios-unit:
 package-test-fast:
 	cd Packages/BrasscribeKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
 	cd Packages/NotationKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
+	cd Packages/ScreenCatalogue && swift test

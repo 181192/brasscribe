@@ -43,7 +43,7 @@ catalogue() {
   for lang in en nb; do
     (cd "$dir" && TEST_RUNNER_CATALOGUE_OUT="$out" TEST_RUNNER_CATALOGUE_CHECKS="${CATALOGUE_CHECKS:-1}" \
       xcodebuild -project BrasscribeBandroom.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribeBandroom \
-        -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribeBandroomTests/BandroomScreensTests \
+        -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribeBandroomTests \
         test-without-building -quiet) || status=1
   done
   return "$status"

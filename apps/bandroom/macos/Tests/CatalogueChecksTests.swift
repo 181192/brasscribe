@@ -1,4 +1,5 @@
 import AppKit
+import ScreenCatalogue
 import SwiftUI
 import Testing
 @testable import Brasscribe_Bandroom
@@ -10,9 +11,9 @@ import Testing
         let app = await Catalogue.model(busy: false)
         let r = await Rendering(view.padding(14), width: width, variant: .light, app: app)
         defer { r.close() }
-        let nodes = AXSnapshot.read(r)
-        Hooks.requireTree(nodes, scene: "checks")
-        return Checks.run(nodes, bounds: r.hosting.bounds)
+        let nodes = AXTree.read(r.hosting)
+        if let broken = Guards.tree(nodes, screen: "checks") { Issue.record(Comment(rawValue: broken)) }
+        return Checks.run(nodes, bounds: r.hosting.bounds, text: Catalogue.text)
     }
 
     @Test func aRightViewHasNoFindings() async {

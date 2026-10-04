@@ -140,10 +140,11 @@ jobs:
 
       - run: brew install xcodegen
 
-      - name: Unit tests (requires-pixi reader, BandroomKit)
+      - name: Unit tests (requires-pixi reader, BandroomKit, the catalogue's checks)
         run: |
           scripts/test-pixi-spec.sh
           scripts/test-kit.sh
+          (cd ../../apple/Packages/ScreenCatalogue && swift test)
 
       # Builds the app and its tests at the merge base and here. The step itself does not fail: its status
       # (0 same, 1 screens changed, 2 the checks failed, 3 the base could not be taken) goes to bandroom-screenshots.

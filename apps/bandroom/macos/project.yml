@@ -26,6 +26,9 @@ settings:
 packages:
   BandroomKit:
     path: Packages/BandroomKit
+  # The screen catalogue's checks, shared with Play for Mac (test code only).
+  ScreenCatalogue:
+    path: ../../apple/Packages/ScreenCatalogue
 
 targets:
   BrasscribeBandroom:
@@ -93,6 +96,8 @@ targets:
       - path: Tests
     dependencies:
       - target: BrasscribeBandroom
+      - package: ScreenCatalogue
+        product: ScreenCatalogue
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.bandroom.tests
