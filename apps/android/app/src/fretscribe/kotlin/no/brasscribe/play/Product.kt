@@ -48,8 +48,17 @@ object Product {
     /** A tab's PDF comes from the computer only. */
     const val PHONE_PDF = false
 
-    /** Your songs holds songs only: a recording is not kept there before it has a tab. */
-    const val KEEPS_RECORDINGS = false
+    /**
+     * A take whose tab was not made (it failed, or was stopped) is kept in Your songs, as Brasscribe keeps a recording
+     * in Your scores: for [KEPT_RECORDING_DAYS] days, then it is deleted if no tab was made from it.
+     */
+    const val KEEPS_RECORDINGS = true
+
+    /** How long a take without a tab is kept in Your songs. Settings and the words that say it is kept say so too. */
+    val KEPT_RECORDING_DAYS: Int? = 30
+
+    /** A take kept in Your songs is the same recording in another place: What is this?'s answers go with it. */
+    fun recordingMoved(from: Source, to: Source) = SongAnswers.moved(from, to)
 
     /** A tab is written on the computer only: without it, "Not connected" is a warning. */
     const val MAKES_SCORES_ON_THE_PHONE = false
