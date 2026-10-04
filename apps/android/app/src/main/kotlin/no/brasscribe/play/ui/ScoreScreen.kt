@@ -326,6 +326,9 @@ fun ScoreScreen(vm: PlayViewModel) {
     val density = androidx.compose.ui.platform.LocalDensity.current.density
     val columnDp = if (ms.width <= 0f) 0f else ms.width / density
     val standBars = if (columnDp <= 0f) shape.barsPerSystem else MusicStandRules.barsFitting(shape.barsPerSystem, columnDp, st.zoom / 100f)
+    // The title block upright on the score; on the stand and on its side the music has the room.
+    val landscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    LaunchedEffect(ms.open, landscape) { controller.setTitleShown(!ms.open && !landscape) }
     LaunchedEffect(ms.open, st.loaded, standBars) {
         if (ms.open && st.loaded) controller.setStandLayout(standBars)
     }

@@ -121,10 +121,6 @@ class ScoreController(
             player.scrollMode = if (reducedMotion) ScrollMode.OffScreen else ScrollMode.Continuous
             // The overlay draws the uncertainty marks from the note heads.
             core.includeNoteBounds = true
-            // The top bar and the music stand's band name the score: the engraving starts with the music, and its
-            // title block takes no room from it (on a phone on its side, a third of it). Shared and printed files are
-            // not engraved here, and keep their titles.
-            for (e in SCORE_INFO) notation.elements.set(e, false)
         }
         view.api.updateSettings()
         // The shared output stage (gain + soft limiter) in front of alphaTab's output, on every new player.
@@ -195,6 +191,18 @@ class ScoreController(
         view.settings.player.enableUserInteraction = !on
         view.api.updateSettings()
         view.descendantFocusability = if (on) android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS else android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+        if (_state.value.loaded) view.api.render()
+    }
+
+    /**
+     * The engraved title block (title, composer, arranger, words, rights) on or off. The score upright shows it; on the
+     * music stand and on a phone on its side the top band names the score, and the music needs the room (the block took a
+     * third of it there). Shared and printed files are not engraved here, and keep theirs.
+     */
+    fun setTitleShown(on: Boolean) {
+        if (SCORE_INFO.all { view.settings.notation.isNotationElementVisible(it) == on }) return
+        for (e in SCORE_INFO) view.settings.notation.elements.set(e, on)
+        view.api.updateSettings()
         if (_state.value.loaded) view.api.render()
     }
 
