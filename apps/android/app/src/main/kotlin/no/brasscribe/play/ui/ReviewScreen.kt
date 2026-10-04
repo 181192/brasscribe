@@ -270,7 +270,10 @@ fun ReviewScreen(vm: PlayViewModel) {
                         picked = null
                     }, Modifier.weight(1.4f))
                 } else skipButton(Modifier)
-            } else PrimaryButton(stringResource(R.string.review_continue), ::finish)
+            } else PrimaryButton(stringResource(
+                // A solo goes straight to its score; other takes are asked how the score should be.
+                if (result?.let { no.brasscribe.play.Product.afterReview(it) } == no.brasscribe.play.Screen.SCORE) R.string.output_apply else R.string.review_continue,
+            ), ::finish)
         },
     ) {
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize().semantics { testTag = "review-list" },

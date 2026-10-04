@@ -719,6 +719,11 @@ fun ScoreScreen(vm: PlayViewModel) {
                     for (item in hidden) item(true)
                 }
             }
+            // A solo opens on its score without How should the score be?: its band, difficulty and key are here, by name.
+            if (r.isSoloTake && r.composition != null && no.brasscribe.play.Product.arranges(r.profile)) {
+                PracticeChip(stringResource(R.string.change_output), false, { sheet = null; vm.navigate(Screen.OUTPUT) },
+                    Modifier.semantics { testTag = "more-change-output" }, icon = R.drawable.ic_bc_parts, role = Role.Button)
+            }
             // The View menu (the review's P2): Read aloud and the music stand, then the sound.
             SubHeading(stringResource(R.string.view_menu))
             // Wraps like the pitch row below: at large text the music stand takes a row of its own.

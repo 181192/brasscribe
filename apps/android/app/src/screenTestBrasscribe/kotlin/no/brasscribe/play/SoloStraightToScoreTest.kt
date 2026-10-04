@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
 
 /**
  * A solo ("One instrument") goes from Check the notes straight to the score, on the player's part: How should the score
- * be? is not asked. Band, difficulty and key stay one tap away, in the sheet of the score's "your part" chip. A band take still asks.
+ * be? is not asked. Band, difficulty and key are in the score's ⋯ sheet by that name, and still in the "your part" chip's sheet. A band take still asks.
  */
 @RunWith(AndroidJUnit4::class)
 class SoloStraightToScoreTest : ScreenTest() {
@@ -37,7 +37,7 @@ class SoloStraightToScoreTest : ScreenTest() {
     @After
     fun clean() = rule.runOnUiThread { vm.home() }
 
-    private fun take(profile: Profile) {
+    private fun take(profile: Profile, finishLater: Boolean = true) {
         rule.runOnUiThread {
             vm.home()
             vm.setSource(Source("Old Hundredth.wav", SourceKind.FILE, 67.0))
@@ -48,8 +48,57 @@ class SoloStraightToScoreTest : ScreenTest() {
         }
         waitUntil(60_000) { vm.screen.value.last() == Screen.REVIEW && vm.result.value != null }
         waitUntil(20_000) { rule.onAllNodes(isHeading() and hasText("Check ", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        if (finishLater) finishLater() else keepEveryNote()
+    }
+
+    private fun finishLater() {
         rule.onNodeWithText(text(R.string.review_finish_later_confirm), substring = true).performClick()
         rule.onNodeWithText(text(R.string.review_finish_later_confirm)).performClick()
+    }
+
+    /** Keep, go to next until no note is left; then the last button goes on. */
+    private fun keepEveryNote() {
+        var kept = 0
+        while (rule.onAllNodesWithText(text(R.string.review_keep_next)).fetchSemanticsNodes().isNotEmpty()) {
+            rule.onNodeWithText(text(R.string.review_keep_next)).performClick()
+            rule.waitForIdle()
+            check(++kept < 200) { "the notes to check never ran out" }
+        }
+        // For a solo it says where it goes: the score, not How should the score be?.
+        val last = if (vm.result.value?.profile == Profile.SOLO) R.string.output_apply else R.string.review_continue
+        rule.onNodeWithText(text(last)).performClick()
+    }
+
+    private fun assertOnTheScoreAtYourPart() {
+        waitUntil(20_000) { vm.screen.value.last() == Screen.SCORE }
+        assertFalse("How should the score be? is not asked", vm.screen.value.contains(Screen.OUTPUT))
+        waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }
+        val st = vm.scoreController!!.state.value
+        assertEquals(setOf(vm.yourPart(st.parts, vm.result.value).index), st.shown)
+    }
+
+    @Test
+    fun aSoloWithEveryNoteCheckedOpensOnTheScore() {
+        take(Profile.SOLO, finishLater = false)
+        assertOnTheScoreAtYourPart()
+    }
+
+    @Test
+    fun aSoloMadeOnThePhoneOpensOnTheScore() {
+        val composition = container.core.decodeComposition(String(checkNotNull(no.brasscribe.play.screen.ScreenDevice.fixture("old-hundredth/composition.json"))))
+        val xml = String(checkNotNull(no.brasscribe.play.screen.ScreenDevice.fixture("old-hundredth/brass-band.musicxml")))
+        rule.runOnUiThread {
+            vm.home()
+            vm.setSource(Source("My take.wav", SourceKind.FILE, 30.0))
+            vm.result.value = TranscriptionResult(composition, xml, Profile.SOLO, onDevice = true,
+                compositionJson = String(checkNotNull(no.brasscribe.play.screen.ScreenDevice.fixture("old-hundredth/composition.json"))))
+            vm.navigate(Screen.REVIEW)
+        }
+        waitUntil(20_000) { rule.onAllNodes(isHeading() and hasText("Check ", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        finishLater()
+        assertOnTheScoreAtYourPart()
+        // Nothing was arranged again: the score is the one the phone made.
+        assertEquals(xml, vm.result.value!!.musicXml)
     }
 
     @Test
@@ -66,6 +115,13 @@ class SoloStraightToScoreTest : ScreenTest() {
         checkAccessibility()
 
         // Band, difficulty and key are where they were: the part's sheet (the "your part" chip) has the way back to them.
+        // In ⋯, by its name.
+        rule.onNodeWithTag("top-more").performClick()
+        waitUntil(5_000) { rule.onAllNodesWithTag("more-change-output").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText(text(R.string.change_output)).performClick()
+        waitUntil(5_000) { vm.screen.value.last() == Screen.OUTPUT }
+        rule.runOnUiThread { vm.back() }
+        waitUntil(5_000) { vm.screen.value.last() == Screen.SCORE }
         rule.onAllNodesWithText(text(R.string.stand_part_yours, PartNames.display(st.parts[yours!!])), substring = true).onFirst().performClick()
         waitUntil(5_000) { rule.onAllNodesWithTag("change-output").fetchSemanticsNodes().isNotEmpty() }
         rule.waitForIdle()

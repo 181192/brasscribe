@@ -73,7 +73,8 @@ object Product {
 
     /**
      * The screen after Check the notes: a solo ("One instrument") goes straight to the score, on the player's part; band,
-     * difficulty and key stay in the score's ⋯ menu. Every other take asks How should the score be? first.
+     * difficulty and key are "Band, difficulty and key…" in the score's ⋯ sheet. Every other take asks How should the
+     * score be? first.
      */
     fun afterReview(result: TranscriptionResult): Screen = if (result.isSoloTake) Screen.SCORE else Screen.OUTPUT
 
