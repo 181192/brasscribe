@@ -128,4 +128,4 @@ The voice never says "we": write "Brasscribe will tell you when the score is rea
 | Review | "Done" / "Done checking" | **Finish later (9 left)**, with a confirm step and a way back from the score ("9 notes marked ? · Check them") |
 | Export | "Export" · All parts + PDF + MusicXML = 12 files, no Print | **Share or print** · Solo Cornet (you) + PDF = 1 file, **Print** as the primary |
 | Transcribing | "Engraving the score" · "62 percent" · "we'll tell you" | "Laying out the pages" · "62%" · "Brasscribe will tell you" |
-| What is this? | "The soloist becomes the solo part; the rest becomes brass band." | "You get the solo part, plus the accompaniment arranged for brass band." + "Not sure? Choose Brass band. You can change it later." |
+| What is this? | "The soloist becomes the solo part; the rest becomes brass band." | "You get the solo part, plus the accompaniment arranged for brass band." + "Not sure? Choose Brass band for a group, or One instrument for a recording of just you. You can change it later." |

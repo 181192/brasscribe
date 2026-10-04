@@ -111,10 +111,11 @@ export async function reflow(page: Page, check: "reflow" | "spacing" = "reflow")
  * The keyboard: Tab from the top of the page until focus comes round again. Every element a pointer can act
  * on must be reached (an inactive tab of a tab list, reached with the arrow keys, is not one of them), focus
  * must not stop on something that cannot be seen, and it must go through the page in reading order: the order
- * of the document, and never back up the page within one column.
+ * of the document, and never back up the page within one column. With `from`, the walk starts on that element
+ * instead (a menu opened from the keyboard is walked from its button): what comes before it is not expected.
  */
-export async function keyboard(page: Page): Promise<Finding[]> {
-  const targets = await page.evaluate(() => {
+export async function keyboard(page: Page, from?: string): Promise<Finding[]> {
+  const { targets, first } = await page.evaluate((from) => {
     const ACTION = "a[href], button, input:not([type=hidden]), select, textarea, summary, [tabindex], [contenteditable=''], [contenteditable=true], " +
       "[role=button], [role=link], [role=checkbox], [role=switch], [role=tab], [role=menuitem], [role=option], [role=radio], [role=slider], [role=spinbutton], [role=textbox], [role=combobox]";
     const COMPOSITE = "[role=tablist], [role=menu], [role=menubar], [role=listbox], [role=radiogroup], [role=grid], [role=tree], [role=toolbar]";
@@ -150,16 +151,23 @@ export async function keyboard(page: Page): Promise<Finding[]> {
       out.push({ k: k++, name: `${el.localName}${kind}${el.id ? `#${el.id}` : ""}${label ? ` "${label}"` : ""}`, top: r.top + scrollY, bottom: r.bottom + scrollY,
         left: r.left + scrollX, right: r.right + scrollX, expected: !notAction, floating: floating(el) });
     }
+    const begin = from ? document.querySelector<HTMLElement>(from) : null;
+    if (begin) {
+      const k0 = Number(begin.dataset.catK ?? -1);
+      for (const t of out) if (t.k < k0) t.expected = false;
+      begin.focus();
+      return { targets: out, first: k0 };
+    }
     // Tab starts from the top of the page.
     const start = document.createElement("span");
     start.tabIndex = -1;
     start.id = "catalogue-start";
     scope.prepend(start);
     start.focus();
-    return out;
-  });
+    return { targets: out, first: -1 };
+  }, from);
   const findings: Finding[] = [];
-  const seen: number[] = [];
+  const seen: number[] = first >= 0 ? [first] : [];
   const max = targets.length * 2 + 20;
   for (let i = 0; i < max; i++) {
     await page.keyboard.press("Tab");

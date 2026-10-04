@@ -62,7 +62,7 @@
     <string name="opening_score">Åpner …</string>
     <string name="evidence_how_sure">Hvor sikker Brasscribe er</string>
     <string name="evidence_percent">%1$d %%</string>
-    <string name="evidence_heard">Hva hver transkriberer hørte</string>
+    <string name="evidence_heard">Det Brasscribe hørte hver gang</string>
     <string name="evidence_same">Samme, %1$s</string>
     <string name="evidence_no_note">Ingen tone</string>
     <string name="review_could_also_be">%1$s: det kan også være %2$s.</string>
@@ -88,14 +88,14 @@
         <item quantity="other">%d sekunder</item>
     </plurals>
 
-    <!-- Innspilling -->
+    <!-- Opptak -->
     <string name="record_title_mic">Spiller inn</string>
     <string name="record_title_device">Spiller inn det som spilles</string>
-    <string name="record_started">Innspillingen er i gang</string>
-    <string name="record_stopped">Innspillingen er stoppet, %1$s</string>
-    <string name="record_stop">Stopp innspillingen</string>
+    <string name="record_started">Opptaket er i gang</string>
+    <string name="record_stopped">Opptaket er stoppet, %1$s</string>
+    <string name="record_stop">Stopp opptaket</string>
     <string name="record_discard_title">Kaste dette opptaket?</string>
-    <string name="record_discard_text">Det slettes fra telefonen. Velg Stopp innspillingen for å beholde det.</string>
+    <string name="record_discard_text">Det slettes fra telefonen. Velg Stopp opptaket for å beholde det.</string>
     <string name="record_discard_confirm">Kast</string>
     <string name="record_discard_keep">Fortsett å spille inn</string>
     <string name="record_level">Lydnivå</string>
@@ -114,10 +114,10 @@
     <string name="record_permission_needed">Brasscribe trenger mikrofonen for å spille inn. Du kan gi tilgang i Innstillinger.</string>
     <string name="device_notice_title">Før du spiller inn</string>
     <string name="device_notice">Brasscribe spiller inn det andre apper spiller av. Strømmeapper stopper som regel opptak; da hører Brasscribe ingenting og sier fra. Lenker kan ikke lastes ned.</string>
-    <string name="device_start">Start innspillingen</string>
+    <string name="device_start">Start opptaket</string>
     <string name="device_silent">Ingen lyd kommer gjennom. Appen stopper trolig opptak.</string>
-    <string name="device_consent_denied">Innspillingen ble ikke tillatt.</string>
-    <string name="notif_channel">Innspilling</string>
+    <string name="device_consent_denied">Opptaket ble ikke tillatt.</string>
+    <string name="notif_channel">Opptak</string>
     <string name="notif_recording_mic">Spiller inn med mikrofonen</string>
     <string name="notif_recording_device">Spiller inn det som spilles på telefonen</string>
 
@@ -132,7 +132,7 @@
     <string name="profile_orchestra_desc">Du får solostemmen, og akkompagnementet arrangert for brassband.</string>
     <string name="profile_pop">Pop eller rock</string>
     <string name="profile_pop_desc">Sang, gitarer, tangenter, bass og trommer.</string>
-    <string name="profile_not_sure">Usikker? Velg Brassband. Du kan endre det senere.</string>
+    <string name="profile_not_sure">Usikker? Velg Brassband for en gruppe, eller Ett instrument for et opptak av bare deg. Du kan endre det senere.</string>
     <string name="profile_choose_one">Velg ett for å fortsette.</string>
     <string name="where_title">Hvor partituret lages</string>
     <string name="where_device">På telefonen</string>
@@ -149,6 +149,7 @@
         <item quantity="other">Bare for opptak på opptil %d minutter.</item>
     </plurals>
     <string name="where_companion_missing">Koble til Brasscribe på datamaskinen først.</string>
+    <string name="problem_connect_computer">Koble til datamaskinen</string>
 
     <!-- Lager partituret -->
     <string name="stage_queued">Gjør klar</string>
@@ -195,7 +196,7 @@
     <string name="draft_too_long_title">For langt for et utkast på telefonen</string>
     <string name="draft_too_long_body">Datamaskinen kan lage partituret fra dette opptaket.</string>
     <string name="draft_too_long_body_away">Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere.</string>
-    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble til i Innstillinger her. Eller velg et kortere opptak.</string>
+    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble den til her med Koble til datamaskinen. Eller velg et kortere opptak.</string>
     <string name="draft_refused_title">Utkastet kan ikke lages akkurat nå</string>
     <string name="draft_refused_body">Telefonen har stoppet Brasscribe fra å jobbe med det. Datamaskinen kan lage partituret, eller prøv igjen senere.</string>
     <string name="draft_refused_body_away">Telefonen har stoppet Brasscribe fra å jobbe med det. Prøv igjen senere.</string>
@@ -245,7 +246,7 @@
     <string name="listen_unavailable">Det finnes ikke noe opptak å spille for denne takten.</string>
     <string name="bar_heading">Takt %1$d</string>
     <string name="bar_rest_heading">Takt %1$d til %2$d</string>
-    <string name="review_continue">Velg resultat</string>
+    <string name="review_continue">Neste: Hvordan skal partituret bli?</string>
     <string name="dur_whole">helnote</string>
     <string name="dur_half">halvnote</string>
     <string name="dur_quarter">firedelsnote</string>
@@ -408,11 +409,12 @@
     <string name="problem_silent_reason_blocked">Musikkappen stopper opptak. Strømmeapper gjør som regel det.</string>
     <string name="problem_silent_reason_nothing">Ingenting spilte mens du tok opp.</string>
     <string name="problem_silent_note">En fil du eier, eller et opptak med mikrofonen, virker alltid.</string>
-    <string name="problem_record_title">Innspillingen startet ikke</string>
+    <string name="problem_record_title">Opptaket startet ikke</string>
     <string name="problem_record_body">Telefonen lot ikke Brasscribe spille inn.</string>
     <string name="problem_record_reason">En annen app bruker kanskje mikrofonen. Lukk den og prøv igjen.</string>
     <string name="problem_score_title">Partituret kunne ikke lages</string>
     <string name="problem_score_body">Noe gikk galt mens Brasscribe arbeidet med det.</string>
+    <string name="problem_score_body_unpaired">Dette opptaket trenger datamaskinen din, og ingen er koblet til denne telefonen.</string>
     <string name="problem_score_kept">Opptaket ditt er tatt vare på. Du kan prøve igjen nå eller senere.</string>
     <string name="problem_score_kept_scores">Opptaket ditt er tatt vare på i Partiturene dine. Du kan prøve igjen nå eller senere.</string>
     <string name="problem_too_large_title">Denne filen er for stor for telefonen</string>
@@ -431,7 +433,7 @@
     <string name="companion_code">Sekssifret kode</string>
     <string name="companion_connect">Koble til</string>
     <string name="companion_connecting">Kobler til</string>
-    <string name="companion_tech_details">Brasscribe Bandroom viser adressen under Detaljer for den tekniske i bandet. Uten den: «pixi run serve-lan».</string>
+    <string name="companion_tech_details">Brasscribe Bandroom viser adressen under Detaljer for den tekniske i bandet.</string>
     <string name="companion_allow_heavy">La datamaskinen gjøre det tunge arbeidet</string>
     <string name="companion_allow_heavy_desc">Av: den bruker bare resultater den allerede har, og et nytt opptak stopper ved første tunge steg. Bruk det til å sjekke tilkoblingen.</string>
 
@@ -534,9 +536,9 @@
     <string name="help_3_title">Øv</string>
     <string name="help_3_text">Sett ned tempoet, gjenta de vanskelige taktene, og demp stemmen din for å spille med bandet.</string>
     <string name="help_4_title">Del eller skriv ut</string>
-    <string name="help_4_text">Skriv ut din egen stemme, alle stemmene til bandet, eller dirigentpartituret.</string>
-    <string name="help_5_title">Et helt band trenger datamaskinen</string>
-    <string name="help_5_text">Ett instrument kan skrives ned på telefonen. For fullt band åpner du Brasscribe på datamaskinen og kobler til i Innstillinger.</string>
+    <string name="help_4_text">Del partituret som en fil. Et partitur som Brasscribe på datamaskinen har laget, kan også skrives ut (din stemme, alle stemmene eller dirigentpartituret), så lenge ingen toner er endret på telefonen.</string>
+    <string name="help_5_title">Telefonen og datamaskinen</string>
+    <string name="help_5_text">På telefonen: ett instrument, eller et raskt utkast for brassband. For hele bandpartituret, en solist med band, eller pop og rock, åpner du Brasscribe på datamaskinen og kobler til i Innstillinger.</string>
     <string name="help_6_title">Lenker og strømmeapper</string>
     <string name="help_6_text">Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</string>
     <string name="octave_down">Oktav ned</string>

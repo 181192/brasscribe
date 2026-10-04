@@ -20,6 +20,11 @@ export default defineConfig({
     reducedMotion: "reduce",
     // A service worker would answer before page.route sees the request.
     serviceWorkers: "block",
+    // Scrollbars take no width, as on a Mac: on Linux a page scrollbar that comes and goes (as the page grows, or
+    // while a full-page screenshot is taken) changes the score's width, and alphaTab lays the score out again,
+    // rounding its first bar differently depending on when that happened. sRGB and no subpixel text, everywhere.
+    // Fonts are drawn without hinting, so a face renders the same whatever the machine's font settings are.
+    launchOptions: { args: ["--hide-scrollbars", "--force-color-profile=srgb", "--disable-lcd-text", "--font-render-hinting=none"] },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } }],
   webServer: {
