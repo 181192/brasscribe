@@ -57,6 +57,9 @@ object Product {
     /** How long a take without a tab is kept in Your songs. Settings and the words that say it is kept say so too. */
     val KEPT_RECORDING_DAYS: Int? = 30
 
+    /** A take kept in Your songs is the same recording in another place: What is this?'s answers go with it. */
+    fun recordingMoved(from: Source, to: Source) = SongAnswers.moved(from, to)
+
     /** A tab is written on the computer only: without it, "Not connected" is a warning. */
     const val MAKES_SCORES_ON_THE_PHONE = false
 
