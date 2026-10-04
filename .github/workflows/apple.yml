@@ -107,20 +107,27 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # What scripts/check.sh full bandroom-mac runs: the reader of requires-pixi, BandroomKit's unit tests,
-  # and a Debug build of the app (without the band sounds and the core's command line, which a Debug
-  # build leaves out with a warning).
+  # What scripts/check.sh full bandroom-mac runs: the reader of requires-pixi, BandroomKit's unit tests, and the
+  # screen catalogue (apps/bandroom/macos/README.md, Testing): every screen in light, dark, increased contrast,
+  # the largest text size and bokmål, with its checks, in a Debug build of the app hosting the tests, off screen.
+  # On a pull request the catalogue's screenshots are compared with the same taken at the merge base
+  # (apps/bandroom/macos/scripts/screenshots.sh); job bandroom-screenshots decides from the outcome, and the
+  # label screenshots-changed lets changed screens through.
   bandroom:
-    name: Bandroom for Mac (BandroomKit, app build)
+    name: Bandroom for Mac (BandroomKit, screen catalogue)
     if: ${{ !inputs.release && !inputs.skip_bandroom }}
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 40
+    outputs:
+      screenshots: ${{ steps.compare.outputs.status }}
     defaults:
       run:
         working-directory: apps/bandroom/macos
     steps:
       - uses: actions/checkout@v7
         with:
+          # The merge base is taken out next to this checkout for the screenshots.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
@@ -138,8 +145,76 @@ jobs:
           scripts/test-pixi-spec.sh
           scripts/test-kit.sh
 
-      - name: Build the app (Debug)
-        run: make build
+      # Builds the app and its tests at the merge base and here. The step itself does not fail: its status
+      # (0 same, 1 screens changed, 2 the checks failed, 3 the base could not be taken) goes to bandroom-screenshots.
+      - name: Screen catalogue, compared with the merge base
+        id: compare
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags origin "$BASE"
+          status=0
+          scripts/screenshots.sh compare "$(git merge-base HEAD "$BASE")" || status=$?
+          cat build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Screen catalogue
+        if: github.event_name != 'pull_request'
+        run: scripts/screenshots.sh record
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bandroom-mac-screenshots
+          path: |
+            apps/bandroom/macos/build/reports/screenshots
+            apps/bandroom/macos/build/catalogue/screenshots
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # The outcome of the comparison, on a runner of its own that runs none of the pull request's code: the label
+  # screenshots-changed is read as it is now (a re-run keeps the event's labels), with a few tries, and only when
+  # screens changed; when it cannot be read, the change is taken as not meant.
+  bandroom-screenshots:
+    name: Bandroom for Mac screenshots
+    needs: bandroom
+    if: ${{ always() && github.event_name == 'pull_request' && needs.bandroom.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Is the change meant (label screenshots-changed)
+        id: label
+        if: needs.bandroom.outputs.screenshots == '1'
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # An error from GitHub (a 503) is not the same as no label.
+          meant=false
+          for try in 1 2 3 4 5; do
+            if meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")'); then break; fi
+            meant=false; sleep $((try * 5))
+          done
+          echo "meant=$meant" >> "$GITHUB_OUTPUT"
+
+      - name: Screenshot result
+        env:
+          JOB: ${{ needs.bandroom.result }}
+          STATUS: ${{ needs.bandroom.outputs.screenshots }}
+          MEANT: ${{ steps.label.outputs.meant }}
+        run: |
+          # 1: screens changed (shown in the bandroom-mac-screenshots artefact). 2: a screen's own checks failed;
+          # 3: the base's screenshots could not be taken. No label lets 2 or 3 through.
+          [ "$JOB" = success ] || { echo "The Bandroom job did not finish ($JOB)."; exit 1; }
+          if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
+            echo "Screens changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [ "$STATUS" = 1 ] && echo "Screens changed: see the bandroom-mac-screenshots artefact; add the label screenshots-changed if that is meant." >> "$GITHUB_STEP_SUMMARY"
+          exit "${STATUS:-1}"
 
   build:
     name: release build

@@ -64,7 +64,7 @@ jobs:
             android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/brasscribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json', '.github/workflows/ci.yml']
             windows_play: ['apps/windows/**', 'core/**', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'apps/fixtures/**', 'sounds/**', 'engine/src/brasscribe_engine/static/assets/alphatab/**', 'docs/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
             apple_play: ['apps/apple/**', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tokens/**', 'design/dist/apple/**', 'design/brand/**', 'design/pink/**', 'sounds/**', '.github/workflows/apple.yml', '.github/workflows/ci.yml']
-            apple_bandroom: ['apps/bandroom/macos/**', 'design/tokens/**', 'design/dist/apple/**', 'design/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml', '.github/workflows/ci.yml']
+            apple_bandroom: ['apps/bandroom/macos/**', 'scripts/screenshot-compare.swift', 'design/tokens/**', 'design/dist/apple/**', 'design/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml', '.github/workflows/ci.yml']
             windows_bandroom: ['apps/bandroom/windows/**', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'eval/brasscribe_eval/**', 'eval/pyproject.toml', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
 
   linux:
@@ -539,6 +539,8 @@ jobs:
       && (needs.changes.outputs.apple_play == 'true' || needs.changes.outputs.apple_bandroom == 'true')
     permissions:
       contents: read
+      # The screenshot comparison reads the pull request's labels.
+      pull-requests: read
     uses: ./.github/workflows/apple.yml
     with:
       skip_play: ${{ needs.changes.outputs.apple_play != 'true' }}

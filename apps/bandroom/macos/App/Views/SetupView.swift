@@ -6,7 +6,7 @@ import SwiftUI
 struct SetupView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismissWindow) private var dismissWindow
-    @State private var step = 0
+    @State private var step: Int
     /// Went straight to the downloads ("Finish setting up" after the first run): only what is missing.
     @State private var finishing = false
     @State private var pasteOpen = false
@@ -24,6 +24,9 @@ struct SetupView: View {
     private var keySaved: Bool { app.savedKey.state == .found }
 
     private let steps: [LocalizedStringKey] = ["Check this computer", "Accept one licence", "Download", "Ready"]
+
+    /// `step` 0 to 3; the screen catalogue opens each one.
+    init(step: Int = 0) { _step = State(initialValue: step) }
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -170,6 +173,7 @@ struct SetupView: View {
                     Button { step = 2 } label: { Text("Skip for now") }.buttonStyle(.brPlain)
                     Text("Without it, Brasscribe can't write down a full band. You can add it later.")
                         .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 Button {
@@ -376,6 +380,8 @@ struct SetupView: View {
     }
 
     private func run() {
+        // The demo (screenshots, the screen catalogue) shows the step and installs and downloads nothing.
+        guard !app.demo else { return }
         if finishing {
             app.downloadMissing()
             return

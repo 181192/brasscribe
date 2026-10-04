@@ -45,6 +45,7 @@ changed_areas() {
       studio/*) add studio ;;
       apps/apple/*|capture/*) add apple ;;
       apps/bandroom/macos/*|.pixi-version) add bandroom-mac ;;
+      scripts/screenshot-compare.swift) add bandroom-mac ;;
       apps/android/*) add android ;;
       apps/windows/*) add windows ;;
     esac
@@ -115,7 +116,9 @@ run_area() {
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;
     fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) ;;
-    full:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && make build) ;;
+    # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen, compared with the merge base;
+    # its build is the app's build.
+    full:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh compare) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac
 }

@@ -103,7 +103,8 @@ build for testing again.
   screen catalogues at the merge base and on the branch, and what changed ([apps/android/README.md](../../apps/android/README.md#testing))
 - `apps/windows/tools/check-macos.sh`
 - the core .NET tests
-- Bandroom for macOS: the BandroomKit tests and `make -C apps/bandroom/macos build`
+- Bandroom for macOS: the BandroomKit tests, then `apps/bandroom/macos/scripts/screenshots.sh compare`: the screen
+  catalogue at the merge base and on the branch, off screen, and what changed ([apps/bandroom/macos/README.md](../../apps/bandroom/macos/README.md#testing))
 
 On a pull request, CI (`ci.yml`) runs the same on Linux for the areas the change touches, and the
 Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`, `apps/bandroom/windows/`,
@@ -112,8 +113,9 @@ tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test, the
 screenshots (an artefact, not compared); and the Apple apps on a macOS runner (`apple.yml`) when it touches
 `apps/apple/`, `capture/`, `core/`, the app fixtures, the design files the apps bundle or `sounds/` (Play: the
 Swift packages, the macOS app unit tests, and the iPhone simulator app's unit and UI tests), or
-`apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and the app build). The `changes`
-job's filters say exactly which paths count. The release builds run only for releases or by hand.
+`apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and its screen catalogue, compared
+with the merge base, with the label `screenshots-changed` as for Android). The `changes` job's filters say
+exactly which paths count. The release builds run only for releases or by hand.
 
 Things that differ from running the suites by hand:
 

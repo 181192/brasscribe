@@ -54,6 +54,10 @@ jobs:
   apple:
     needs: checks
     uses: ./.github/workflows/apple.yml
+    # apple.yml's screenshot job reads pull request labels (only on pull requests); a called workflow gets no more than this.
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       release: true
 

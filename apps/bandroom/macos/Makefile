@@ -2,6 +2,7 @@
 #   make project   generate BrasscribeBandroom.xcodeproj with XcodeGen
 #   make build     build the app (Debug) into build/DerivedData
 #   make test      BandroomKit unit tests
+#   make screens   the screen catalogue, off screen (scripts/screenshots.sh record; compare [base] for the comparison)
 #   make strings   rebuild App/Localizable.xcstrings from the last build (en + nb)
 #   make run       build, then run against a checkout: CHECKOUT=/path/to/brasscribe make run
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
@@ -10,7 +11,7 @@ XCB := xcodebuild -project BrasscribeBandroom.xcodeproj -derivedDataPath $(DERIV
 APP := $(DERIVED)/Build/Products/Debug/Brasscribe Bandroom.app
 CHECKOUT ?= $(abspath ../../..)
 
-.PHONY: project build test strings run
+.PHONY: project build test screens strings run
 
 project:
 	xcodegen generate
@@ -20,6 +21,9 @@ build: project
 
 test:
 	./scripts/test-kit.sh
+
+screens:
+	./scripts/screenshots.sh record
 
 strings: build
 	python3 scripts/make-strings.py $(DERIVED)/Build/Intermediates.noindex

@@ -571,6 +571,9 @@ struct MoreMenu: View {
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
+        // The borderless menu button takes the size of its symbol, not of the label's frame: 28 × 28 pt here (WCAG 2.5.8).
+        .frame(width: 28, height: 28)
+        .contentShape(Rectangle())
         .accessibilityLabel(Text("More"))
         .help(Text("More"))
     }
