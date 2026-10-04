@@ -105,7 +105,7 @@ fun ExportScreen(vm: PlayViewModel) {
             val parts = comp?.voices.orEmpty().filter { it.notes.isNotEmpty() }.map { partViewFor(comp!!, it.id, checked[it.id].orEmpty(), vm.container.core) }
             val phonePdf = ExportFormat.PDF in formats && !exporter.pdfFromComputer(r)
             // Said once: the progress line under the buttons is not said part by part.
-            if (phonePdf) vm.say(R.string.stage_export)
+            if (phonePdf && !exporter.phonePdfsReady(r, what, myPart ?: 0, partNames)) vm.say(R.string.stage_export)
             val files = withContext(Dispatchers.Default) {
                 exporter.buildAll(r, formats, what, myPart ?: 0, partNames, vm.container.engine(), scoreMidi?.let { m -> { m.bytes() } }, parts, currentLang(),
                     progress = { done, of -> if (phonePdf) laying = done to of })

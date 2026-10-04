@@ -157,7 +157,9 @@ class PhonePdfTest {
         val jobs = runBlocking { exporter.printJobs(files, "Old Hundredth") }
         assertEquals(1, jobs.size)
         assertEquals(names.size, PdfJoin.pageCount(jobs.single().second.readBytes()))
-        // Print after Share lays nothing out again.
+        // Print after Share lays nothing out again (and so says nothing about laying it out).
+        assertTrue(exporter.phonePdfsReady(r, ExportScope.EVERY_PART, 1, names))
+        assertFalse(exporter.phonePdfsReady(r, ExportScope.CONDUCTOR, 1, names))
         val again = runBlocking { exporter.buildAll(r, listOf(ExportFormat.PDF), ExportScope.EVERY_PART, 1, names, null, null, emptyList(), Lang.EN) }
         assertEquals(files.map { it.file }, again.map { it.file })
     }

@@ -73,11 +73,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         engine: EngineApi?, midi: (() -> ByteArray?)?, parts: List<PartView>, lang: Lang,
         progress: (done: Int, of: Int) -> Unit = { _, _ -> },
     ): List<ExportFile> {
-        val targets: List<Int?> = when (scope) {
-            ExportScope.CONDUCTOR -> listOf(null)
-            ExportScope.MY_PART -> listOf(myPart.takeIf { partNames.isNotEmpty() })
-            ExportScope.EVERY_PART -> partNames.indices.toList().ifEmpty { listOf(null) }
-        }
+        val targets = targets(scope, myPart, partNames)
         val out = ArrayList<ExportFile>()
         for (format in formats) {
             if (format == ExportFormat.PDF && !pdfFromComputer(r)) {
@@ -124,6 +120,17 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         return ExportFile(f, format)
     }
 
+    /** The parts [scope] makes files of (a part's index, or null for the full score). */
+    private fun targets(scope: ExportScope, myPart: Int, partNames: List<String>): List<Int?> = when (scope) {
+        ExportScope.CONDUCTOR -> listOf(null)
+        ExportScope.MY_PART -> listOf(myPart.takeIf { partNames.isNotEmpty() })
+        ExportScope.EVERY_PART -> partNames.indices.toList().ifEmpty { listOf(null) }
+    }
+
+    /** The phone's PDFs for [scope] are laid out already (by Share, say): Print uses them as they are. */
+    fun phonePdfsReady(r: TranscriptionResult, scope: ExportScope, myPart: Int, partNames: List<String>): Boolean =
+        laidOut?.let { it.first == (r.musicXml to targets(scope, myPart, partNames)) && it.second.all { f -> f.file.isFile } } == true
+
     /** What the phone laid out last, by the score and the parts: Print after Share (or again) does not lay it out again. */
     private var laidOut: Pair<Pair<String, List<Int?>>, List<ExportFile>>? = null
 
@@ -151,7 +158,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
                 val tracks = t?.let { listOf(it) } ?: (0 until score.tracks.length.toInt()).toList()
                 val part = pdf.engrave(score, tracks, name, if (t == null) PhonePdf.SCORE_SCALE else PhonePdf.PART_SCALE)
                 // Numbered in score order, as the computer's parts are: two parts of the same name never share a file.
-                val f = File(dir, if (t == null) "$base.pdf" else "%02d-%s - %s.pdf".format(t + 1, base, safe(partNames[t])))
+                val f = File(dir, if (t == null) "$base.pdf" else "%02d-%s - %s.pdf".format(java.util.Locale.ROOT, t + 1, base, safe(partNames[t])))
                 pdf.Document().use { doc -> doc.add(part); f.outputStream().use { doc.writeTo(it) } }
                 all?.add(part)
                 files += ExportFile(f, ExportFormat.PDF)
