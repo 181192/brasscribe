@@ -602,6 +602,11 @@
     <string name="listen_ended">End of bar %1$d</string>
     <string name="pair_scan">Scan the code on the computer</string>
     <string name="pair_scan_unavailable">This phone can\'t scan codes here. Type the code from the computer instead.</string>
+    <string name="pair_scan_title">Point the camera at the code on the computer</string>
+    <string name="pair_scan_on_phone">The code is read on this phone. Nothing is recorded or sent.</string>
+    <string name="pair_scan_camera">Camera view for the code</string>
+    <string name="pair_camera_refused">The camera isn\'t allowed, so the code can\'t be scanned. Type the code instead, or allow the camera in the phone\'s settings.</string>
+    <string name="pair_camera_settings">Open the phone\'s settings for this app</string>
     <string name="pair_link_invalid">That code isn\'t from Brasscribe on a computer.</string>
     <string name="pair_link_title">Connect to %1$s?</string>
     <string name="pair_link_address">Address on your network: %1$s</string>

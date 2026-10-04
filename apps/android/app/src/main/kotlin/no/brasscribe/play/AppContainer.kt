@@ -188,6 +188,9 @@ class AppContainer(private val context: Context) {
 
     val usingFixture: Boolean get() = fixtureSource != null
 
+    /** The camera under the pairing scanner: the phone's own; tests put one in that shows them a code. */
+    var qrCamera: no.brasscribe.play.ui.QrCamera = no.brasscribe.play.ui.PhoneQrCamera
+
     /** Tests only: how long each of the fixture computer's stages takes. */
     var fixtureStageSeconds: Double = 0.7
         set(v) { field = v; cachedEngine = null }

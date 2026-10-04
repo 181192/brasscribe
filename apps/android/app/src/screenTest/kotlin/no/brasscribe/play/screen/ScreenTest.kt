@@ -12,6 +12,8 @@ import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.lifecycle.ViewModelProvider
@@ -87,6 +89,7 @@ abstract class ScreenTest {
         ScreenDevice.reset(rule)
         rule.runOnUiThread {
             container.fixtureSource = null
+            container.qrCamera = no.brasscribe.play.ui.PhoneQrCamera
             container.updateAppearance(Appearance.SYSTEM)
             vm.scores.value.forEach(vm::deleteEntry)
             vm.home()
@@ -105,6 +108,18 @@ abstract class ScreenTest {
         }
         rule.waitForIdle()
         waitUntil(ms) { vm.scoreController?.engraving?.value == false }
+    }
+
+    /**
+     * The pairing scanner open, the camera allowed, on a camera that shows [code] (a QR code's text) or, when it is
+     * null, nothing that reads.
+     */
+    protected fun pairingScanner(code: String? = null) {
+        ScreenDevice.allowCamera(rule)
+        rule.runOnUiThread { container.qrCamera = ShownQrCode(code); vm.home(); vm.navigate(no.brasscribe.play.Screen.SETTINGS); vm.navigate(no.brasscribe.play.Screen.COMPANION) }
+        rule.waitForIdle()
+        rule.onNode(androidx.compose.ui.test.hasText(text(no.brasscribe.play.R.string.pair_scan))).performScrollTo().performClick()
+        rule.waitForIdle()
     }
 
     protected fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)

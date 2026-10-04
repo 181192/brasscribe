@@ -5,11 +5,19 @@
         <exclude domain="sharedpref" path="credentials.xml" />
         <exclude domain="sharedpref" path="engine.xml" />
         <exclude domain="sharedpref" path="device.xml" />
+        <!-- Left by the Google code scanner of earlier versions (GoogleLeftovers deletes them): never backed up. -->
+        <exclude domain="database" path="com.google.android.datatransport.events" />
+        <exclude domain="database" path="com.google.android.datatransport.events-journal" />
+        <exclude domain="sharedpref" path="com.google.mlkit.internal.xml" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="takes" />
         <exclude domain="sharedpref" path="credentials.xml" />
         <exclude domain="sharedpref" path="engine.xml" />
         <exclude domain="sharedpref" path="device.xml" />
+        <!-- Left by the Google code scanner of earlier versions (GoogleLeftovers deletes them): never backed up. -->
+        <exclude domain="database" path="com.google.android.datatransport.events" />
+        <exclude domain="database" path="com.google.android.datatransport.events-journal" />
+        <exclude domain="sharedpref" path="com.google.mlkit.internal.xml" />
     </device-transfer>
 </data-extraction-rules>
