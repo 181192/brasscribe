@@ -217,6 +217,10 @@ fun TabScreen(vm: PlayViewModel) {
     val song = r.jobId ?: r.musicXml.hashCode().toString()
     var zoom by rememberSaveable { mutableIntStateOf(TabPlaces.zoom) }
     var reading by rememberSaveable(song) { mutableIntStateOf(TabPlaces.bar(song)) }
+    // The player scrolled up to a header that scrolls with the page: a new engraving (a zoom, a turn) leaves it in view.
+    var headerShown by rememberSaveable(song) { mutableStateOf(false) }
+    // With a screen reader the page opens at its top, the header first, so it is read in order.
+    val assistive = no.brasscribe.play.ui.rememberAssistive(vm.container.assistiveOverride)
     var told by remember { mutableStateOf<Int?>(null) }
     // Leaving a note (Close, Next ?, another mark) gives the player back the speed and repeat that Play this bar slowly took.
     val practice: PracticeModel = viewModel()
@@ -281,7 +285,7 @@ fun TabScreen(vm: PlayViewModel) {
         },
         containerColor = c.bg,
         topBar = {
-            PlayTopBar(title, vm::back, stringResource(R.string.back)) {
+            PlayTopBar(title, vm::back, stringResource(R.string.back), titleIsHeading = true) {
                 val percent = stringResource(R.string.fs_tab_zoom, zoom)
                 fun set(to: Int) { zoom = to; TabPlaces.zoom = to }
                 IconButton({ set((zoom - BrasscribeScore.zoomStep).coerceAtLeast(BrasscribeScore.zoomMin)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-out"),
@@ -487,11 +491,16 @@ fun TabScreen(vm: PlayViewModel) {
             // The page is put where the bar being read is, after every engraving (a new size, a turn of the phone, coming
             // back) and when the header over the page changes height. From the start, the page opens on its first line: a
             // header that scrolls with the page (on its side, or with large text) is above it, a scroll up away, so the tab
-            // and the player have the screen.
+            // and the player have the screen. It stays in view once the player has scrolled up to it, and with a screen
+            // reader the page opens at its top.
             LaunchedEffect(tab, e, inset) {
                 if (e == null || (e === placedFor && inset == placedInset)) return@LaunchedEffect
                 placedFor = null
-                scroll.scrollTo(inset + if (reading == 0) 0 else (e.topOfBar(reading) ?: 0))
+                scroll.scrollTo(when {
+                    reading != 0 -> inset + (e.topOfBar(reading) ?: 0)
+                    assistive || headerShown -> 0
+                    else -> inset
+                })
                 placedInset = inset
                 placedFor = e
             }
@@ -501,6 +510,7 @@ fun TabScreen(vm: PlayViewModel) {
                 snapshotFlow { Triple(scroll.value, scroll.isScrollInProgress, placedFor) }.collect { (y, byHand, placed) ->
                     tab.scrollTo(y - inset)
                     if (byHand && e != null && placed === e) {
+                        headerShown = inset > 0 && y < inset
                         reading = if (y <= inset / 2) 0 else e.barAt(y - inset) ?: reading
                         TabPlaces.keep(song, reading)
                     }

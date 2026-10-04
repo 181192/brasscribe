@@ -4,7 +4,10 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.brasscribe.play.Appearance
@@ -30,6 +33,8 @@ class PracticeBothWaysTest : TabScreenTest() {
         turn(landscape)
         val tab = showTheTab()
         settle()
+        // The player is there once the recording is (it is looked for when the tab opens).
+        waitForTag("fs-practice-play", 10_000)
 
         // At open: a whole line of the tab is in the room the tab has on screen.
         val e = tab.engraving.value!!
@@ -60,6 +65,40 @@ class PracticeBothWaysTest : TabScreenTest() {
         }
         assertNoTextIsClipped()
         checkAccessibility()
+    }
+
+    /** On its side the header scrolls with the page: once the player has scrolled up to it, a zoom leaves it in view. */
+    @Test
+    fun onItsSideTheHeaderScrolledToStaysThroughAZoom() {
+        computer("bass-line-marks")
+        turn(landscape = true)
+        showTheTab()
+        settle()
+        // Scrolled up by hand, as a player does.
+        rule.onNodeWithTag("fs-tab-scroll").performTouchInput { swipeDown() }
+        settle()
+        rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()
+        rule.onNodeWithTag("fs-tab-zoom-in").performClick()
+        engraved()
+        settle()
+        rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()
+    }
+
+    /** With a screen reader the page opens at its top on its side too: the header is read first, in order. */
+    @Test
+    fun onItsSideWithAScreenReaderTheHeaderIsReadFirst() {
+        rule.runOnUiThread { container.assistiveOverride = true }
+        try {
+            computer("bass-line-marks")
+            turn(landscape = true)
+            showTheTab()
+            settle()
+            rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()
+            rule.onNodeWithTag("fs-tab-marked").assertIsDisplayed()
+            rule.onNode(androidx.compose.ui.test.isHeading() and androidx.compose.ui.test.hasText("Bass line")).assertExists()
+        } finally {
+            rule.runOnUiThread { container.assistiveOverride = null }
+        }
     }
 
     @Test fun uprightAtTheOrdinarySize() = check("upright", landscape = false, scale = 1f)
