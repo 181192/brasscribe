@@ -74,19 +74,21 @@
                         MenuItemsSource="{x:Bind ViewModel.LibraryItems}" ItemInvoked="OnLibraryItemInvoked"
                         x:Uid="LibraryNav">
             <!-- The pane and content grounds per theme: a plain StaticResource here is looked up once, so after Settings ›
-                 Appearance changed while the app runs they kept the first theme's ground (light behind dark text). -->
+                 Appearance changed while the app runs they kept the first theme's ground (light behind dark text). In
+                 Light and Dark the colour is a ThemeResource, so it is looked up again when the Pink palette comes or
+                 goes (ThemeController flips the theme once for that); an alias to BcSurfaceBrush kept the plain one. -->
             <NavigationView.Resources>
                 <ResourceDictionary>
                     <ResourceDictionary.ThemeDictionaries>
                         <ResourceDictionary x:Key="Light">
-                            <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
-                            <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="BcSurfaceBrush" />
-                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="BcBgBrush" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource BcBgColor}" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="Dark">
-                            <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
-                            <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="BcSurfaceBrush" />
-                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="BcBgBrush" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource BcBgColor}" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="HighContrast">
                             <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
