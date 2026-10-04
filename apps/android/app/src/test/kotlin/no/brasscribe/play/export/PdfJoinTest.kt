@@ -102,13 +102,13 @@ class PdfJoinTest {
     }
 
     /** One page drawing [mark], with [title] as a string in its page, its page object of generation [generation], and a trailer /Size of [size]. */
-    private fun odd(mark: String, title: String, generation: Int, size: Int): ByteArray {
+    private fun odd(mark: String, title: String, generation: Int, size: Int, extra: String = ""): ByteArray {
         val content = "BT /F1 12 Tf 72 720 Td ($mark) Tj ET\n"
         val objects = listOf(
             0 to "<< /Type /Catalog /Pages 2 0 R >>",
             0 to "<< /Type /Pages /Kids [4 $generation R] /Count 1 /MediaBox [0 0 595 842] >>",
             0 to "<< /Length ${content.length} >>\nstream\n${content}endstream",
-            generation to "<< /Type /Page /Parent 2 0 R /Contents 3 0 R /T ($title) >>",
+            generation to "<< /Type /Page /Parent 2 0 R /Contents 3 0 R /T ($title)$extra >>",
         )
         val out = StringBuilder("%PDF-1.4\n")
         val offsets = objects.mapIndexed { i, (g, body) -> out.length.also { out.append("${i + 1} $g obj\n$body\nendobj\n") } }
@@ -141,5 +141,14 @@ class PdfJoinTest {
         // No run of thousands of free numbers from a /Size too large.
         assertTrue("the numbers are what the files use (${entries.size})", entries.size < 30)
         assertEquals(2, PdfJoin.pageCount(joined))
+    }
+
+    @Test
+    fun commentsStayAndAReferenceToNoObjectIsNull() {
+        val a = odd("Solo Cornet", "Solo", generation = 0, size = 5, extra = " /Extra 99 0 R % 1 0 R in a comment\n")
+        // Second, so its numbers move.
+        val joined = text(PdfJoin.join(listOf(pdf("Flugelhorn", 1), a))!!)
+        assertTrue("the comment is as it was", joined.contains("% 1 0 R in a comment"))
+        assertTrue("a reference to no object is null", joined.contains("/Extra null"))
     }
 }

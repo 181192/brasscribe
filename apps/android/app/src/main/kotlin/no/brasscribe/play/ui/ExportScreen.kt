@@ -115,8 +115,14 @@ fun ExportScreen(vm: PlayViewModel) {
                 // Every part: one print job, the players' PDFs one after another.
                 make { files ->
                     scope.launch {
-                        val jobs = exporter.printJobs(files.filter { it.format == ExportFormat.PDF }, r.composition?.title.orEmpty())
-                        jobs.forEach { (name, file) -> exporter.print(context as Activity, name, file) }
+                        try {
+                            val jobs = exporter.printJobs(files.filter { it.format == ExportFormat.PDF }, r.composition?.title.orEmpty())
+                            jobs.forEach { (name, file) -> exporter.print(context as Activity, name, file) }
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            vm.say(R.string.export_failed, e.message ?: e.javaClass.simpleName)
+                        }
                     }
                 }
             }, icon = R.drawable.ic_bc_print, modifier = Modifier.semantics { testTag = "print" })

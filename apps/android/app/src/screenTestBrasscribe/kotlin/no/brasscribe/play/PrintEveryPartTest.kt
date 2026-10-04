@@ -38,8 +38,9 @@ class PrintEveryPartTest : ScreenTest() {
     }
 
     /** The jobs [files] make: each job's name and its file's pages. */
-    private fun jobs(files: List<ExportFile>): List<Pair<String, Int?>> {
+    private fun jobs(files: List<ExportFile>, full: Boolean = false): List<Pair<String, Int?>> {
         val exporter = Exporter(rule.activity, container.core)
+        if (full) exporter.writeJoined = { _, _ -> throw java.io.IOException("ENOSPC (No space left on device)") }
         val jobs = kotlinx.coroutines.runBlocking { exporter.printJobs(files, "Abide - With Me") }
         return jobs.map { (name, file) -> name to PdfJoin.pageCount(file.readBytes()) }
     }
@@ -63,5 +64,11 @@ class PrintEveryPartTest : ScreenTest() {
         val broken = File(rule.activity.cacheDir, "print-test/Old Hundredth - Euphonium.pdf").apply { writeText("not a PDF") }
         val files = listOf(good, ExportFile(broken, ExportFormat.PDF))
         assertEquals(listOf("Old Hundredth - Solo Cornet" to 1, "Old Hundredth - Euphonium" to null), jobs(files))
+    }
+
+    @Test
+    fun aPhoneTooFullForTheJoinedFilePrintsOneJobEach() {
+        val parts = listOf(pdf("Old Hundredth - Solo Cornet", "Solo Cornet", 2), pdf("Old Hundredth - Flugelhorn", "Flugelhorn", 1))
+        assertEquals(listOf("Old Hundredth - Solo Cornet" to 2, "Old Hundredth - Flugelhorn" to 1), jobs(parts, full = true))
     }
 }

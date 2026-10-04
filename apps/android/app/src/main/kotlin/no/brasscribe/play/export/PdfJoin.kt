@@ -24,7 +24,10 @@ object PdfJoin {
         val roots = ArrayList<Int>()
         var base = 0
         for (doc in docs) {
-            fun moved(text: String) = outsideStrings(text) { part -> REF.replace(part) { m -> "${m.groupValues[1].toInt() + base} ${m.groupValues[2]} R" } }
+            // A reference to a number the file does not use is null (as a reader takes it), never an object of the next file.
+            fun moved(text: String) = outsideStrings(text) { part ->
+                REF.replace(part) { m -> m.groupValues[1].toInt().let { n -> if (n >= doc.size) "null" else "${n + base} ${m.groupValues[2]} R" } }
+            }
             for ((number, obj) in doc.objects.toSortedMap()) {
                 // The file's catalog is replaced by the joined file's.
                 if (number == doc.catalog) continue
@@ -138,7 +141,8 @@ object PdfJoin {
     }
 
     /**
-     * [text] with [change] applied to what is outside its literal strings: "(1 0 R)" in a title is text, not a reference.
+     * [text] with [change] applied to what is outside its literal strings and comments: "(1 0 R)" in a title is text, not
+     * a reference, and so is "% 1 0 R".
      */
     private fun outsideStrings(text: String, change: (String) -> String): String {
         val out = StringBuilder()
@@ -158,6 +162,12 @@ object PdfJoin {
                     i++
                 }
                 i = minOf(i + 1, text.length)
+                out.append(text, start, i)
+                from = i
+            } else if (text[i] == '%') {
+                out.append(change(text.substring(from, i)))
+                val start = i
+                while (i < text.length && text[i] != '\n' && text[i] != '\r') i++
                 out.append(text, start, i)
                 from = i
             } else i++
