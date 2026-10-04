@@ -97,7 +97,8 @@ build for testing again.
 - conformance on every case
 - vitest, the Playwright browser tests, then `studio/scripts/screenshots.sh compare`: Studio's screen catalogue at the
   merge base and on the branch, with its checks, and what changed ([studio/README.md](../../studio/README.md#test))
-- the Swift packages (BrasscribeKit, NotationKit, `capture`) and the macOS app unit tests
+- the Swift packages (BrasscribeKit, NotationKit, ScreenCatalogue, `capture`) and the macOS app unit tests, then
+  `apps/apple/scripts/screenshots.sh compare`: the Mac screen catalogue at the merge base and on the branch
 - `./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug` (both apps' tests on the JVM, lint
   for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh compare`: the
   screen catalogues at the merge base and on the branch, and what changed ([apps/android/README.md](../../apps/android/README.md#testing))
@@ -112,7 +113,8 @@ Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`
 tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test, the Axe.Windows scans and the
 screenshots (an artefact, not compared); and the Apple apps on a macOS runner (`apple.yml`) when it touches
 `apps/apple/`, `capture/`, `core/`, the app fixtures, the design files the apps bundle or `sounds/` (Play: the
-Swift packages, the macOS app unit tests, and the iPhone simulator app's unit and UI tests), or
+Swift packages, the macOS app unit tests, the iPhone simulator app's unit and UI tests, and the Mac screen
+catalogue compared with the merge base), or
 `apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and its screen catalogue, compared
 with the merge base, with the label `screenshots-changed` as for Android). The `changes` job's filters say
 exactly which paths count. The release builds run only for releases or by hand.

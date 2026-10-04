@@ -35,6 +35,9 @@ packages:
     path: ../../capture
   BrasscribeCore:
     path: ../../core/swift/BrasscribeCore
+  # The screen catalogue's checks, shared with Bandroom for Mac (test code only, macOS).
+  ScreenCatalogue:
+    path: Packages/ScreenCatalogue
 
 targets:
   BrasscribePlay:
@@ -153,6 +156,9 @@ targets:
     sources: [AppTests]
     dependencies:
       - target: BrasscribePlay_${platform}
+      - package: ScreenCatalogue
+        product: ScreenCatalogue
+        destinationFilters: [macOS]
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
