@@ -2,6 +2,40 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.6.0 (2026-10-04)
+
+### New features
+
+- **Android:** Fretscribe's practice keeps each song's speed, repeat and place after the app is closed ([#196](https://github.com/181192/brasscribe/pull/196))
+- **Android:** Fretscribe's practice player labels the speed, and holding − or + keeps stepping ([#194](https://github.com/181192/brasscribe/pull/194))
+- **Android:** Fretscribe's "Check them" goes to the first ?, and a ?'s note offers Play this bar slowly and Next ? ([#195](https://github.com/181192/brasscribe/pull/195))
+- **Android:** Print with Every part is one print job, not a dialog for each player ([#217](https://github.com/181192/brasscribe/pull/217))
+- **Android:** Repeat opens on the bar you are at, and holding the music stand's speed keeps stepping ([#211](https://github.com/181192/brasscribe/pull/211))
+- **Android:** A score opens where you left it in practice, also after the app was closed ([#213](https://github.com/181192/brasscribe/pull/213))
+- **Android:** A tap on a "?" on the score opens Check the notes at that note, and Check them goes on where you left off ([#215](https://github.com/181192/brasscribe/pull/215))
+
+### Fixes
+
+- **Android:** Back on Record asks before it throws the take away ([#191](https://github.com/181192/brasscribe/pull/191))
+- **Android:** Back while a recording is written down asks before it stops the job ([#190](https://github.com/181192/brasscribe/pull/190))
+- **Android:** Fretscribe's pairing screen and Settings show only what a player can use ([#188](https://github.com/181192/brasscribe/pull/188))
+- **Android:** Fretscribe's Help says what the keys and pedals do on the tab ([#189](https://github.com/181192/brasscribe/pull/189))
+- **Android:** Brasscribe's Help, pairing and Check the notes say what is true, in plain words ([#203](https://github.com/181192/brasscribe/pull/203))
+- **Android:** With nothing paired, the problem screens offer to connect the computer ([#205](https://github.com/181192/brasscribe/pull/205))
+- **Android:** Back from Check the notes goes to the score, not to What is this? ([#207](https://github.com/181192/brasscribe/pull/207))
+- **Android:** The music stand and a phone on its side start with the music, not the engraved title ([#209](https://github.com/181192/brasscribe/pull/209))
+- **Studio:** On a narrow screen the score page fits, focus never hides under the open menu, and headings no longer break mid-word ([#193](https://github.com/181192/brasscribe/pull/193))
+- **Studio:** The narrow navigation menu closes on Escape and whenever focus moves outside it ([#199](https://github.com/181192/brasscribe/pull/199))
+
+<details><summary>Under the hood (3 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Android:** The screens are tested on the JVM, with screenshots and accessibility checks, in CI ([#133](https://github.com/181192/brasscribe/pull/133))
+- **Studio:** A screen catalogue of every view on the built bundle, checked in CI with screenshots against the merge base ([#180](https://github.com/181192/brasscribe/pull/180))
+- **Windows:** Run the Windows apps' checks on pull requests that reach them ([#176](https://github.com/181192/brasscribe/pull/176))
+
+</details>
+
 ## 0.5.0 (2026-10-03)
 
 ### New features
