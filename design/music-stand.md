@@ -87,7 +87,7 @@ The stand opens on **your part**: the seat's part from `docs/plan/my-instrument.
 | Tablet, desktop | Top band: **Old Hundredth · Solo Cornet (you) · bar 14 · pages 1–2 of 6** (plain text) … **✕ Leave** | A floating card at the bottom centre, one row: ‹ ⏮ **Play** ⏭ › · − Speed + · **Repeat** · **Only my part**. No rotation lock on tablets (§4.4). |
 
 - **Targets.** Everything is at least 48 pt / 48 dp / 48 epx, and Play is the round 56 pt ink primary: the only ink control (system.md §1). The page buttons have a tonal well, so they read differently from the bar buttons.
-- **Speed.** It is two steppers around the value (2.5.7): −5 % and +5 %, at 25–150 %. There is no slider in the stand.
+- **Speed.** It is two steppers around the value (2.5.7): −5 % and +5 %, at 25–150 %. Held down, a stepper keeps stepping (on Android every 0.1 s after 0.4 s) until it is let go or reaches the end; a tap is still one step. There is no slider in the stand.
 - **Repeat.** A toggle for the last range. When no range is set yet, it opens the existing **Repeat bars [12] to [13]** sheet, with bar-number fields.
 - **Text size.** At the largest sizes the rows wrap, and the card grows upwards. It never clips (system.md §1.7).
 - **The position is text, not a control.** It sits on the band in `text` (the place in `text-muted`) with no border or fill, so only **✕ Leave** looks like a button. It is a status element and is not focusable.

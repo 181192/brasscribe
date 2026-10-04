@@ -630,7 +630,7 @@ fun ScoreScreen(vm: PlayViewModel) {
             outputLabel = if (r.isSoloTake && vm.container.seats.isNotEmpty()) R.string.write_for_another else R.string.change_output) { sheet = null }
         Sheet.SPEED -> BottomSheet({ sheet = null }) { SpeedControl(st.speed) { controller.setSpeed(it) } }
         Sheet.LOOP -> BottomSheet({ sheet = null }) {
-            LoopControl(st.totalBars, st.loop, onSet = { a, b ->
+            LoopControl(st.totalBars, st.loop, st.bar, onSet = { a, b ->
                 controller.setLoop(a..b); ms.lastLoop = a..b; vm.say(R.string.loop_set_announce, a, b); sheet = null
             }, onClear = { controller.setLoop(null); vm.say(R.string.loop_cleared); sheet = null }, invalid = { vm.say(R.string.loop_invalid, st.totalBars) })
         }
@@ -820,9 +820,11 @@ private fun SpeedControl(speed: Int, onChange: (Int) -> Unit) {
 }
 
 @Composable
-private fun LoopControl(total: Int, loop: IntRange?, onSet: (Int, Int) -> Unit, onClear: () -> Unit, invalid: () -> Unit) {
-    var from by rememberSaveable { mutableStateOf(loop?.first?.toString() ?: "1") }
-    var to by rememberSaveable { mutableStateOf(loop?.last?.toString() ?: "4") }
+private fun LoopControl(total: Int, loop: IntRange?, bar: Int, onSet: (Int, Int) -> Unit, onClear: () -> Unit, invalid: () -> Unit) {
+    // The bars repeated, or four from where the player is.
+    val start = bar.coerceIn(1, maxOf(1, total))
+    var from by rememberSaveable { mutableStateOf((loop?.first ?: start).toString()) }
+    var to by rememberSaveable { mutableStateOf((loop?.last ?: minOf(start + 3, maxOf(1, total))).toString()) }
     SubHeading(stringResource(R.string.loop_title))
     Text(stringResource(R.string.loop_tip), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
     // Bar numbers, not dragging, set the range (WCAG 2.5.7).
