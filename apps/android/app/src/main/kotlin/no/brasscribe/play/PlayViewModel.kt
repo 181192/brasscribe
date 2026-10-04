@@ -612,7 +612,12 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             // Asking the provider for the name can block on its process: not on the main thread.
             val name = withContext(Dispatchers.IO) { displayName(uri, "recording") }
-            if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return@launch }
+            if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) {
+                // A product that opens no sheet music (Fretscribe, until imported tabs open in the tab view) says so.
+                if (Product.OPENS_SCORES) openScore(uri, name)
+                else { busy.value = false; say(R.string.sheet_music_refused) }
+                return@launch
+            }
             importProgress.value = 0f
             say(R.string.reading_file, name)
             try {

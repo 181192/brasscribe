@@ -24,6 +24,8 @@
     <string name="home_record_mic_desc">Play a riff or a whole song</string>
     <!-- Not shown for now (Product.OPENS_SCORES): an imported tab would open on the score screen, not in the tab view. -->
     <string name="home_open_score">Open a tab</string>
+    <!-- A MusicXML file chosen with Open a recording, shared to the app or opened with "Open with". -->
+    <string name="sheet_music_refused">Fretscribe can\'t open sheet music yet; it makes tabs from recordings.</string>
     <string name="home_open_score_desc">A MusicXML file from MuseScore or Guitar Pro</string>
     <string name="home_scores_empty">Nothing written down yet. Record a riff or open a recording.</string>
     <string name="home_your_scores">Your songs</string>

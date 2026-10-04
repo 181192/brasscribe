@@ -485,6 +485,8 @@
     <string name="help_stand_tablet_lock">To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).</string>
     <string name="opened_score">Opened %1$s.</string>
     <string name="home_open_score">Open a score</string>
+    <!-- A MusicXML file opened in an app that opens no sheet music (Product.OPENS_SCORES). -->
+    <string name="sheet_music_refused">This app can\'t open sheet music yet.</string>
     <string name="home_open_score_desc">MusicXML from MuseScore, Sibelius or Dorico</string>
     <string name="talking_score_unavailable">Read aloud isn\'t available in this version of the app.</string>
     <string name="output_lead">You can change this later. Nothing is lost.</string>
