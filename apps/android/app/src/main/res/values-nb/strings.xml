@@ -148,7 +148,7 @@
         <item quantity="one">Bare for opptak på opptil %d minutt.</item>
         <item quantity="other">Bare for opptak på opptil %d minutter.</item>
     </plurals>
-    <string name="where_companion_missing">Koble til Brasscribe på datamaskinen først.</string>
+    <string name="where_companion_missing">Koble til Brasscribe Bandroom på datamaskinen først.</string>
     <string name="problem_connect_computer">Koble til datamaskinen</string>
 
     <!-- Lager partituret -->
@@ -191,12 +191,12 @@
     <string name="draft_notice">Et raskt utkast laget på telefonen. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen.</string>
     <string name="draft_notice_short">Et raskt utkast laget på telefonen.</string>
     <string name="draft_make_full">Lag hele partituret</string>
-    <string name="draft_no_computer">Åpne Brasscribe på datamaskinen for å lage hele partituret fra det samme opptaket.</string>
+    <string name="draft_no_computer">Åpne Brasscribe Bandroom på datamaskinen for å lage hele partituret fra det samme opptaket.</string>
     <string name="draft_label">Utkast</string>
     <string name="draft_too_long_title">For langt for et utkast på telefonen</string>
     <string name="draft_too_long_body">Datamaskinen kan lage partituret fra dette opptaket.</string>
-    <string name="draft_too_long_body_away">Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere.</string>
-    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble den til her med Koble til datamaskinen. Eller velg et kortere opptak.</string>
+    <string name="draft_too_long_body_away">Åpne Brasscribe Bandroom på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere.</string>
+    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe Bandroom der og velg Koble til en telefon, og koble den til her med Koble til datamaskinen. Eller velg et kortere opptak.</string>
     <string name="draft_refused_title">Utkastet kan ikke lages akkurat nå</string>
     <string name="draft_refused_body">Telefonen har stoppet Brasscribe fra å jobbe med det. Datamaskinen kan lage partituret, eller prøv igjen senere.</string>
     <string name="draft_refused_body_away">Telefonen har stoppet Brasscribe fra å jobbe med det. Prøv igjen senere.</string>
@@ -271,13 +271,13 @@
     <string name="percussion_solo_refused">Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet, så får du slagverkstemmen når opptaket har trommer.</string>
     <string name="change_what_i_play">Endre hva jeg spiller</string>
     <string name="error_generic">Noe gikk galt. Prøv igjen.</string>
-    <string name="error_unreachable">Får ikke kontakt med Brasscribe på datamaskinen. Sjekk at den kjører og er på samme nettverk.</string>
+    <string name="error_unreachable">Får ikke kontakt med Brasscribe Bandroom på datamaskinen. Sjekk at den kjører og er på samme nettverk.</string>
     <string name="error_pair_again">Datamaskinen kjenner ikke igjen denne telefonen lenger. Koble dem sammen på nytt i Innstillinger.</string>
     <string name="error_timeout">Datamaskinen brukte for lang tid på å svare. Prøv igjen.</string>
-    <string name="error_engine_failed">Brasscribe på datamaskinen klarte ikke å gjøre ferdig partituret. Prøv igjen.</string>
+    <string name="error_engine_failed">Bandroom på datamaskinen klarte ikke å gjøre ferdig partituret. Prøv igjen.</string>
     <string name="error_reads_not_offered">Instrumentet ditt skrives ikke i den nøkkelen. Velg på nytt under Hva du spiller.</string>
-    <string name="error_invalid_options">Brasscribe på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering.</string>
-    <string name="error_core_missing">Brasscribe på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.</string>
+    <string name="error_invalid_options">Bandroom på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering.</string>
+    <string name="error_core_missing">Bandroom på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.</string>
     <string name="recording_sent_again">Datamaskinen hadde ikke lenger opptaket, så telefonen sender sin kopi.</string>
     <string name="error_recording_gone">Datamaskinen har ikke lenger dette opptaket, og telefonen har ingen kopi av det. Åpne opptaket på nytt fra Hjem.</string>
     <string name="problem_no_notes_title">Fant ingen toner</string>
@@ -292,7 +292,7 @@
     <string name="difficulty_standard">Litt enklere</string>
     <string name="difficulty_easier">Enklere</string>
     <string name="difficulty_tip">Enklere beholder melodien, men unngår høye toner og raske løp.</string>
-    <string name="difficulty_unsupported">Dette partituret er skrevet slik det ble spilt. Koble til Brasscribe på datamaskinen for de andre valgene.</string>
+    <string name="difficulty_unsupported">Dette partituret er skrevet slik det ble spilt. Koble til Brasscribe Bandroom på datamaskinen for de andre valgene.</string>
     <string name="key_label">Toneart</string>
     <string name="key_as_recorded">Som i opptaket</string>
     <plurals name="key_shift">
@@ -375,7 +375,7 @@
     <string name="export_formats">Formater</string>
     <string name="export_pdf">PDF</string>
     <string name="export_pdf_desc">Til utskrift og notestativet</string>
-    <string name="export_pdf_computer">Til utskrift og notestativet. Fra Brasscribe på datamaskinen.</string>
+    <string name="export_pdf_computer">Til utskrift og notestativet. Fra Bandroom på datamaskinen.</string>
     <string name="export_pdf_phone">Til utskrift og notestativet. Satt opp på denne telefonen.</string>
     <string name="export_pdf_phone_changed">Satt opp på denne telefonen, med endringene dine. Sidene kan se annerledes ut enn fra datamaskinen.</string>
     <string name="export_laying_out">Setter opp sidene: %1$d av %2$d</string>
@@ -389,8 +389,8 @@
     <string name="export_talking_desc">Tekst en skjermleser kan lese opp</string>
     <string name="export_braille">Punktskriftnoter</string>
     <string name="export_braille_desc">BRF-fil til leselist eller punktskriver</string>
-    <string name="export_braille_unavailable">Lages av Brasscribe på datamaskinen.</string>
-    <string name="export_needs_engine">Trenger Brasscribe på datamaskinen.</string>
+    <string name="export_braille_unavailable">Lages av Bandroom på datamaskinen.</string>
+    <string name="export_needs_engine">Trenger Bandroom på datamaskinen.</string>
     <string name="export_print">Skriv ut</string>
     <string name="export_share">Del …</string>
     <string name="export_save">Lagre i Filer</string>
@@ -429,16 +429,20 @@
     <string name="problem_choose_another">Velg en annen fil</string>
     <string name="problem_record_instead">Spill inn i stedet</string>
 
-    <!-- Brasscribe på datamaskinen -->
-    <string name="companion_title">Brasscribe på datamaskinen</string>
-    <string name="companion_explain">Åpne Brasscribe på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.</string>
+    <!-- Brasscribe Bandroom, programmet på datamaskinen (Bandroom for kort), og hvor du får det -->
+    <string name="bandroom_get_title">Last ned Brasscribe Bandroom</string>
+    <string name="bandroom_get_text">Den er gratis for Mac og Windows. Last den ned på datamaskinen fra denne adressen:</string>
+    <string name="bandroom_open">Åpne nedlastingssiden</string>
+    <string name="bandroom_no_browser">Telefonen har ingen nettleser som kan åpne den. Skriv inn adressen på datamaskinen.</string>
+    <string name="companion_title">Brasscribe Bandroom</string>
+    <string name="companion_explain">Åpne Brasscribe Bandroom på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.</string>
     <string name="companion_address">Adressen til datamaskinen</string>
-    <string name="companion_searching">Ser etter Brasscribe på nettverket … Du kan også skrive inn adressen nedenfor.</string>
+    <string name="companion_searching">Ser etter Bandroom på nettverket … Du kan også skrive inn adressen nedenfor.</string>
     <string name="companion_chosen">Valgt</string>
     <string name="companion_code">Sekssifret kode</string>
     <string name="companion_connect">Koble til</string>
     <string name="companion_connecting">Kobler til</string>
-    <string name="companion_tech_details">Brasscribe Bandroom viser adressen under Detaljer for den tekniske i bandet.</string>
+    <string name="companion_tech_details">Bandroom viser adressen under Detaljer for den tekniske i bandet.</string>
     <string name="companion_allow_heavy">La datamaskinen gjøre det tunge arbeidet</string>
     <string name="companion_allow_heavy_desc">Av: den bruker bare resultater den allerede har, og et nytt opptak stopper ved første tunge steg. Bruk det til å sjekke tilkoblingen.</string>
 
@@ -499,7 +503,7 @@
     <string name="export_scope_conductor">Dirigentpartitur</string>
     <string name="export_scope_score_quartet">Partitur (alle 4 stemmer)</string>
     <string name="export_whole_score_only">%1$s · hele partituret</string>
-    <string name="export_made_before_change">Laget før endringene dine. Brasscribe på datamaskinen lager den på nytt.</string>
+    <string name="export_made_before_change">Laget før endringene dine. Bandroom på datamaskinen lager den på nytt.</string>
     <string name="review_your_part_first">Sjekk stemmen din først</string>
     <string name="review_accompaniment">Akkompagnement (%1$d)</string>
     <plurals name="review_your_part_count">
@@ -543,9 +547,9 @@
     <string name="help_3_title">Øv</string>
     <string name="help_3_text">Sett ned tempoet, gjenta de vanskelige taktene, og demp stemmen din for å spille med bandet.</string>
     <string name="help_4_title">Del eller skriv ut</string>
-    <string name="help_4_text">Del partituret som en fil, eller skriv det ut: din stemme, alle stemmene eller dirigentpartituret. PDF-en kommer fra Brasscribe på datamaskinen når den laget partituret og ingen toner er endret siden; ellers setter telefonen opp sidene selv, og de kan se annerledes ut.</string>
+    <string name="help_4_text">Del partituret som en fil, eller skriv det ut: din stemme, alle stemmene eller dirigentpartituret. PDF-en kommer fra Bandroom på datamaskinen når den laget partituret og ingen toner er endret siden; ellers setter telefonen opp sidene selv, og de kan se annerledes ut.</string>
     <string name="help_5_title">Telefonen og datamaskinen</string>
-    <string name="help_5_text">På telefonen: ett instrument, eller et raskt utkast for brassband. For hele bandpartituret, en solist med band, eller pop og rock, åpner du Brasscribe på datamaskinen og kobler til i Innstillinger.</string>
+    <string name="help_5_text">På telefonen: ett instrument, eller et raskt utkast for brassband. For hele bandpartituret, en solist med band, eller pop og rock, åpner du Brasscribe Bandroom på datamaskinen og kobler til i Innstillinger.</string>
     <string name="help_6_title">Lenker og strømmeapper</string>
     <string name="help_6_text">Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</string>
     <string name="octave_down">Oktav ned</string>
@@ -607,7 +611,7 @@
     <string name="pair_scan_camera">Kamerabilde for koden</string>
     <string name="pair_camera_refused">Kameraet er ikke tillatt, så koden kan ikke skannes. Skriv inn koden i stedet, eller tillat kameraet i telefonens innstillinger.</string>
     <string name="pair_camera_settings">Åpne telefonens innstillinger for appen</string>
-    <string name="pair_link_invalid">Den koden er ikke fra Brasscribe på en datamaskin.</string>
+    <string name="pair_link_invalid">Den koden er ikke fra Brasscribe Bandroom.</string>
     <string name="pair_link_title">Koble til %1$s?</string>
     <string name="pair_link_address">Adresse på nettverket ditt: %1$s</string>
     <string name="pair_link_address_by_name">Brasscribe leter etter den på nettverket ditt etter navn.</string>
@@ -616,7 +620,7 @@
     <string name="pair_code_needed">Skriv inn koden datamaskinen viser, eller spør på datamaskinen i stedet.</string>
     <string name="pair_code_wrong">Koden virket ikke. Sjekk koden på datamaskinen og prøv igjen.</string>
     <string name="pair_code_locked">For mange feil koder. Vent litt, eller spør på datamaskinen i stedet.</string>
-    <string name="companion_failed_plain">Kunne ikke koble til. Sjekk at Brasscribe på datamaskinen sier Kjører, og at begge er på samme wifi.</string>
+    <string name="companion_failed_plain">Kunne ikke koble til. Sjekk at Bandroom på datamaskinen sier Kjører, og at begge er på samme wifi.</string>
     <string name="pair_ask">Spør på datamaskinen i stedet</string>
     <string name="pair_ask_again">Spør igjen</string>
     <string name="pair_ask_waiting">Velg Godkjenn på datamaskinen når den viser dette tallet:</string>
@@ -712,7 +716,7 @@
     <string name="written_for_treble">Skrevet for %1$s i %2$s, G-nøkkel</string>
     <string name="written_for_bass">Skrevet for %1$s, F-nøkkel, klingende</string>
     <string name="lineup_your_part">%1$s · stemmen din: %2$s</string>
-    <string name="engine_too_old_seat">Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</string>
+    <string name="engine_too_old_seat">Bandroom på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</string>
     <string name="lead_seat_refused">Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?</string>
     <string name="mapped_short_full">Fullt brassband har ingen %1$s — viser %2$s</string>
     <string name="mapped_short_takes_full">Fullt brassband har ingen stemme for %1$s — viser %2$s, skrevet for %1$s</string>

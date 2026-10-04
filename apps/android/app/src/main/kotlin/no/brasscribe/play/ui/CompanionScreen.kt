@@ -174,6 +174,8 @@ fun CompanionScreen(vm: PlayViewModel) {
                 else PlainButton(stringResource(R.string.pair_ask), { vm.askComputer(url) }, enabled = url.startsWith("http"))
             }
         }
+        // Where to get the program, for a phone that has none to pair with yet.
+        if (pending == null && match == null) GetBandroom({ vm.say(R.string.bandroom_no_browser) })
         PlainButton(stringResource(if (details) R.string.details_hide else R.string.details_show), { details = !details })
         if (details) {
             Text(stringResource(R.string.companion_tech_details), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
