@@ -40,6 +40,22 @@ import Testing
     }
 
     /// The undocumented hooks still do what the catalogue needs, and the run is in the language it says.
+    /// The ⋯ menu takes clicks on 28 × 28 pt: its frame in the tree, and any AppKit control under it (for an AppKit-backed
+    /// control the tree can report a SwiftUI wrapper's frame, while clicks outside the control itself go nowhere).
+    @Test func theMoreMenuTakesClicksOn28Points() async throws {
+        let app = await Catalogue.model(busy: false)
+        let r = await Rendering(StatusPanel().background(Color.Brasscribe.bg), width: 360, variant: .light, app: app)
+        defer { r.close() }
+        let more = try #require(AXTree.read(r.hosting).first { ["AXMenuButton", "AXPopUpButton"].contains($0.role) && $0.frame.minX > 280 })
+        #expect(more.frame.width >= 28 && more.frame.height >= 28, "\(more)")
+        func views(_ v: NSView) -> [NSView] { v.subviews + v.subviews.flatMap(views) }
+        for control in views(r.hosting) where control is NSControl {
+            let f = control.convert(control.bounds, to: r.hosting)
+            guard f.intersects(more.frame) else { continue }
+            #expect(f.width >= 24 && f.height >= 24, "the AppKit control under the ⋯ menu is \(f.size)")
+        }
+    }
+
     @Test func hooksStillWork() async {
         if let wrong = Guards.language(Catalogue.language, localized: String(localized: "Pair a phone"), english: "Pair a phone") {
             Issue.record(Comment(rawValue: wrong))

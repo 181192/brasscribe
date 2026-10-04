@@ -83,7 +83,9 @@ so it runs on a Mac in use and on CI's macOS runner.
   buttons, fields) keep their sizes under WCAG 2.5.8's spacing exception; no text of one line is cut off, and nothing
   lies outside the window; the controls come in reading order in the order VoiceOver and the keyboard go through
   them (`accessibilityChildrenInNavigationOrder`). `CatalogueChecksTests` shows each check failing on a view made to
-  fail it. `BandroomScreensTests.known` lists findings not yet fixed, each with its issue.
+  fail it. `BandroomScreensTests.known` lists findings not yet fixed, each with its issue. The target size is read from
+  the tree; for a control drawn by AppKit the tree can report a SwiftUI wrapper's frame while clicks reach only the
+  control, so the ⋯ menu also has a test of the control under it (`theMoreMenuTakesClicksOn28Points`).
 - **Two undocumented hooks**, in the tests only: `AXEnhancedUserInterface` on `NSApp` makes SwiftUI build its
   accessibility tree without an assistive app running, and the environment key `_colorSchemeContrast` sets increased
   contrast. Each is checked on every run (`Guards`): a tree without controls, a contrast probe drawn as standard
