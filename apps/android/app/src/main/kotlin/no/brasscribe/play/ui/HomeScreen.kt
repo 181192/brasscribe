@@ -218,11 +218,13 @@ fun HomeScreen(vm: PlayViewModel) {
                 RowDivider()
                 ListRow(stringResource(R.string.home_record_device), recorder.askDevice, icon = R.drawable.ic_bc_record_device,
                     subtitle = stringResource(R.string.home_record_device_desc), enabled = !busy)
-                RowDivider()
                 // Most pickers give MusicXML no type of its own, so the wildcard has to be there too.
-                ListRow(stringResource(R.string.home_open_score), {
-                    pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*"))
-                }, icon = R.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc), enabled = !busy)
+                if (no.brasscribe.play.Product.OPENS_SCORES) {
+                    RowDivider()
+                    ListRow(stringResource(R.string.home_open_score), {
+                        pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*"))
+                    }, icon = R.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc), enabled = !busy)
+                }
             }
             InfoNote(stringResource(R.string.home_links_tip), boxed = false)
             SectionLabel(stringResource(R.string.home_your_scores))

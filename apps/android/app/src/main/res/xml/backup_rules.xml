@@ -8,4 +8,8 @@
     <exclude domain="sharedpref" path="engine.xml" />
     <!-- Per phone: Settings › Display › Appearance (design/system.md §10) and Settings › Your instrument. -->
     <exclude domain="sharedpref" path="device.xml" />
+    <!-- Left by the Google code scanner of earlier versions (GoogleLeftovers deletes them): never backed up. -->
+    <exclude domain="database" path="com.google.android.datatransport.events" />
+    <exclude domain="database" path="com.google.android.datatransport.events-journal" />
+    <exclude domain="sharedpref" path="com.google.mlkit.internal.xml" />
 </full-backup-content>

@@ -32,7 +32,9 @@
                 </Grid.ColumnDefinitions>
                 <Button x:Name="AlternativeButton" Grid.Column="1" Style="{StaticResource SecondaryButtonStyle}"
                         Command="{x:Bind ViewModel.ChooseAnotherCommand}" Content="{x:Bind ViewModel.SecondaryLabel, Mode=OneWay}" />
-                <Button x:Name="RetryButton" Grid.Column="2" Style="{StaticResource PrimaryButtonStyle}" Command="{x:Bind ViewModel.TryAgainCommand}">
+                <!-- An icon and a text inside give the button no name of its own: screen readers read the label. -->
+                <Button x:Name="RetryButton" Grid.Column="2" Style="{StaticResource PrimaryButtonStyle}" Command="{x:Bind ViewModel.TryAgainCommand}"
+                        AutomationProperties.Name="{x:Bind ViewModel.PrimaryLabel, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="{StaticResource BcIconRetry}" FontSize="16" />
                         <TextBlock Text="{x:Bind ViewModel.PrimaryLabel, Mode=OneWay}" />

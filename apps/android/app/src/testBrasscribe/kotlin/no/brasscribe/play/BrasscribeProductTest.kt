@@ -40,6 +40,14 @@ class BrasscribeProductTest {
     }
 
     @Test
+    fun aSoloGoesFromCheckTheNotesStraightToTheScoreAndABandTakeAsksHowItShouldBe() {
+        assertEquals(Screen.SCORE, Product.afterReview(TranscriptionResult(null, "<score-partwise/>", Profile.SOLO, onDevice = true)))
+        assertEquals(Screen.SCORE, Product.afterReview(TranscriptionResult(null, "<score-partwise/>", Profile.SOLO, onDevice = false, jobId = "j")))
+        for (band in listOf(Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK))
+            assertEquals(band.id, Screen.OUTPUT, Product.afterReview(TranscriptionResult(null, "<score-partwise/>", band, onDevice = false, jobId = "j")))
+    }
+
+    @Test
     fun aTabInTheComputersListOpensInFretscribeAndIsListedApartFromTheBandScoreOfTheSameRecording() {
         fun job(id: String, profile: String, created: Double) = no.brasscribe.play.engine.Job(id, profile, no.brasscribe.play.engine.JobStatus.SUCCEEDED, created,
             emptyList(), audioId = "audio-1", title = id, outputs = listOf(if (Profile.writesTab(profile)) "tab.musicxml" else "brass-band.musicxml"))

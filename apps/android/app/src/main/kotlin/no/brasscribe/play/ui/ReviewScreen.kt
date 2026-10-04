@@ -81,7 +81,6 @@ import no.brasscribe.play.fullBandMade
 import no.brasscribe.play.madeFor
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
-import no.brasscribe.play.Screen
 import no.brasscribe.play.engine.NoteEvidence
 import no.brasscribe.play.noteAt
 import no.brasscribe.play.arrangementString
@@ -253,7 +252,7 @@ fun ReviewScreen(vm: PlayViewModel) {
             vm.status.value = no.brasscribe.play.Status(spoken[next.index])
         }
     }
-    fun finish() { vm.stopListening(); vm.navigate(Screen.OUTPUT) }
+    fun finish() { vm.stopListening(); vm.afterReview() }
 
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = composition.title.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.home), status = status, scroll = false,
@@ -271,7 +270,10 @@ fun ReviewScreen(vm: PlayViewModel) {
                         picked = null
                     }, Modifier.weight(1.4f))
                 } else skipButton(Modifier)
-            } else PrimaryButton(stringResource(R.string.review_continue), ::finish)
+            } else PrimaryButton(stringResource(
+                // A solo goes straight to its score; other takes are asked how the score should be.
+                if (result?.let { no.brasscribe.play.Product.afterReview(it) } == no.brasscribe.play.Screen.SCORE) R.string.output_apply else R.string.review_continue,
+            ), ::finish)
         },
     ) {
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize().semantics { testTag = "review-list" },
@@ -285,7 +287,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                     })
                     val own = mine.voice ?: melodyVoice.takeIf { !mine.arranged }
                     if (mine.arranged && mine.part != null) ArrangedNotice(mine.part, empty = mine.source == no.brasscribe.play.model.PartSource.EMPTY,
-                        checkOthers = { voices.firstOrNull { it.id != voiceId }?.let { voiceId = it.id } ?: vm.navigate(Screen.OUTPUT) },
+                        checkOthers = { voices.firstOrNull { it.id != voiceId }?.let { voiceId = it.id } ?: vm.afterReview() },
                         showMine = { vm.showScore() })
                     if (voiceId == own && mine.source != null) {
                         SourceLabel(mine.source)
