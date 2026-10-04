@@ -18,6 +18,9 @@ object Product {
     /** A score opens on the music stand, so Settings has the stand's switches. */
     const val MUSIC_STAND = true
 
+    /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
+    const val OPENS_SCORES = true
+
     /** A recording whose score was not made (it failed, was put off or was stopped) is kept in Your scores. */
     const val KEEPS_RECORDINGS = true
 
