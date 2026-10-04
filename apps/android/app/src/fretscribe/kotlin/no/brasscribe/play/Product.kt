@@ -36,6 +36,12 @@ object Product {
     /** A tab has no music stand, so Settings has none of the stand's switches. */
     const val MUSIC_STAND = false
 
+    /**
+     * Home has no Open a tab: a MusicXML file opened from Home would show on Brasscribe's score screen, not in the tab
+     * view. It comes back once an imported tab opens there.
+     */
+    const val OPENS_SCORES = false
+
     /** Your songs holds songs only: a recording is not kept there before it has a tab. */
     const val KEEPS_RECORDINGS = false
 
