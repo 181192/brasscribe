@@ -47,16 +47,19 @@ class ScoreLandscapeTest : ScreenTest() {
     private fun openScore() {
         val xml = checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml"))
         val file = File(rule.activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(xml) }
+        val before = vm.scoreController
         rule.runOnUiThread { vm.openScoreUri(android.net.Uri.fromFile(file)) }
-        waitUntil(20_000) { vm.scoreController?.state?.value?.loaded == true }
+        waitForEngravedScore(before)
     }
 
     private fun check(label: String, fontScale: String) {
         textSize(fontScale.toFloat())
         ScreenDevice.turn(rule, sideways = true)
         openScore()
-        waitUntil(20_000) { (vm.scoreController?.renders?.value ?: 0) > 0 && rule.onAllNodesWithTag("score-controls").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(20_000) { rule.onAllNodesWithTag("score-controls").fetchSemanticsNodes().isNotEmpty() }
         settle()
+        // Engraved and drawn after the layout settled (a new size engraves it again).
+        waitForEngravedScore()
 
         var available = 0
         rule.runOnUiThread {

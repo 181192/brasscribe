@@ -109,6 +109,9 @@ class ScoreController(
     private val _renders = MutableStateFlow(0)
     /** Counts finished renders: the music stand lays out its pages again after each one. */
     val renders: StateFlow<Int> = _renders
+    private val _engraving = MutableStateFlow(false)
+    /** alphaTab is engraving: from its render's start until that render is finished and drawn (tests wait on it). */
+    val engraving: StateFlow<Boolean> = _engraving
     private val innerScroll: android.widget.ScrollView? = view.findViewById(net.alphatab.R.id.innerScroll)
 
     init {
@@ -142,12 +145,13 @@ class ScoreController(
         // Channel volumes reset when the MIDI is regenerated (every render), so the balance follows it.
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
         // The engraving's size comes with the render; the surface is only measured to it on a later layout pass.
+        view.api.renderStarted.on { _engraving.value = true }
         view.api.renderFinished.on { e -> engravedWidth = e.totalWidth }
         view.api.postRenderFinished.on {
             applyVolumes(); overlays().forEach { it.refresh() }
             hideCredit()
             // After alphaTab's own handlers, so the stand reads this render's layout, not the last one.
-            view.post { _renders.value++ }
+            view.post { _renders.value++; _engraving.value = false }
             preloadSoundFont()
         }
 
@@ -192,6 +196,18 @@ class ScoreController(
         view.settings.player.enableUserInteraction = !on
         view.api.updateSettings()
         view.descendantFocusability = if (on) android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS else android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
+        if (_state.value.loaded) view.api.render()
+    }
+
+    /**
+     * The engraved title block (title, composer, arranger, words, rights) on or off. The score upright shows it; on the
+     * music stand and on a phone on its side the top band names the score, and the music needs the room (the block took a
+     * third of it there). Shared and printed files are not engraved here, and keep theirs.
+     */
+    fun setTitleShown(on: Boolean) {
+        if (SCORE_INFO.all { view.settings.notation.isNotationElementVisible(it) == on }) return
+        for (e in SCORE_INFO) view.settings.notation.elements.set(e, on)
+        view.api.updateSettings()
         if (_state.value.loaded) view.api.render()
     }
 
@@ -853,6 +869,13 @@ data class ScorePalette(
     val paper: Int, val ink: Int, val staff: Int, val cursor: Int, val uncertain: Int, val veryUncertain: Int,
     val loopTint: Int, val highContrast: Boolean, val adlibTint: Int = loopTint,
     val selectionTint: Int = adlibTint, val selectionEdge: Int = ink,
+)
+
+/** The engraved title block: title, subtitle, composer, words, music, copyright. */
+private val SCORE_INFO = listOf(
+    alphaTab.NotationElement.ScoreTitle, alphaTab.NotationElement.ScoreSubTitle, alphaTab.NotationElement.ScoreArtist,
+    alphaTab.NotationElement.ScoreAlbum, alphaTab.NotationElement.ScoreWords, alphaTab.NotationElement.ScoreMusic,
+    alphaTab.NotationElement.ScoreWordsAndMusic, alphaTab.NotationElement.ScoreCopyright,
 )
 
 internal const val BOXED_QUESTION = "\u2370"
