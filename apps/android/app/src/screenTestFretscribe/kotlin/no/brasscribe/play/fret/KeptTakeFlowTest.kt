@@ -3,7 +3,13 @@ package no.brasscribe.play.fret
 import android.net.Uri
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -36,6 +42,31 @@ class KeptTakeFlowTest : ScreenTest() {
     @After
     fun tearDown() {
         rule.runOnUiThread { vm.keptRecordings.value.forEach(vm::deleteKept); vm.home() }
+    }
+
+    @Test
+    fun stoppedTheTakeMovesIntoYourSongsWithWhatIsThisAnswerKept() {
+        computer("bass-line")
+        val pace = container.fixtureStageSeconds
+        container.fixtureStageSeconds = 60.0
+        try {
+            rule.runOnUiThread { vm.importUri(Uri.fromFile(recording())) }
+            waitForTag("fs-what-continue", 20_000); waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
+            fun song() = rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
+                hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-song")))
+            song().performClick()
+            rule.onNodeWithTag("fs-what-continue").performClick()
+            waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE && vm.transcribe.value.running }
+            // Stop, as the dialog does: the take moves into Your songs and is still the recording in hand.
+            rule.runOnUiThread { vm.cancelTranscription(); vm.back() }
+            waitUntil(10_000) { vm.keptRecordings.value.size == 1 && vm.source.value?.file == vm.keptRecordings.value.single().file }
+            waitForTag("fs-what-continue", 10_000)
+            // What is this? still has the answer given for it.
+            song().assertIsSelected()
+        } finally {
+            container.fixtureStageSeconds = pace
+            container.fixtureSource = null
+        }
     }
 
     @Test
