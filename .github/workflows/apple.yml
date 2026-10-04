@@ -1,14 +1,24 @@
 name: apple
 
-# Brasscribe Play for macOS, iOS and iPadOS. Checks: Swift package tests plus macOS and iPhone
-# simulator app tests. With `release`: Release builds of Play for Mac and of Bandroom for Mac (which
-# installs and runs the engine), both re-signed ad hoc, uploaded as dist-macos.
-# Heavy platform builds run only for releases (release.yml) or when started by hand;
-# pull requests and pushes to main get the fast Linux checks in ci.yml instead.
+# Brasscribe Play for macOS, iOS and iPadOS, and Bandroom for Mac. Checks: Play's Swift package tests
+# plus its macOS and iPhone simulator app tests (job `play`); BandroomKit's tests and a build of the
+# Bandroom app (job `bandroom`). With `release`: Release builds of Play for Mac and of Bandroom for Mac
+# (which installs and runs the engine), both re-signed ad hoc, uploaded as dist-macos (job `build`).
+# The checks run on pull requests that touch what the Apple apps build from, and on pushes to main:
+# ci.yml calls this workflow (job `apple`) after its `changes` job, with skip_play or skip_bandroom
+# for an app the change does not reach. Releases (release.yml) call it with `release`; it can also be
+# started by hand.
 on:
   workflow_call:
     inputs:
       release:
+        type: boolean
+        default: false
+      # Set by ci.yml when a pull request does not reach that app. Unset (false), both apps are checked.
+      skip_play:
+        type: boolean
+        default: false
+      skip_bandroom:
         type: boolean
         default: false
   workflow_dispatch:
@@ -34,8 +44,97 @@ env:
   XCODE_VERSION: "26.6"
 
 jobs:
+  play:
+    name: Play (packages, macOS app, iPhone simulator app)
+    if: ${{ !inputs.release && !inputs.skip_play }}
+    # Newest GA macOS image (macos-latest points here too).
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # DEVELOPER_DIR as well as xcode-select: the Makefile and the Rust iOS builds read it.
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          dev="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          test -d "$dev" || { echo "Xcode $XCODE_VERSION is not on this image" >&2; ls -d /Applications/Xcode_* >&2; exit 1; }
+          sudo xcode-select -s "$dev"
+          echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: core
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - run: brew install xcodegen
+
+      # Verovio is a pinned upstream commit: rebuild only when the build script changes.
+      - name: Cache Verovio.xcframework
+        id: verovio
+        uses: actions/cache@v6
+        with:
+          path: apps/apple/Frameworks
+          key: verovio-${{ runner.os }}-${{ runner.arch }}-xcode${{ env.XCODE_VERSION }}-all-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
+
+      - name: Build Verovio.xcframework
+        if: steps.verovio.outputs.cache-hit != 'true'
+        run: make verovio
+
+      # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built.
+      - name: Build BrasscribeFFI.xcframework
+        run: scripts/build-core.sh
+
+      # Fixture-dependent tests (BRASSCRIBE_FIXTURES / data/golden) skip themselves when absent.
+      # The iPhone is the newest "iPhone NN Pro" on the newest iOS runtime, by id (scripts/newest-iphone.sh).
+      - name: Test (packages, macOS app, iPhone simulator app)
+        run: |
+          dest=$(scripts/newest-iphone.sh)
+          make test IPHONE_DEST="$dest"
+
+  # What scripts/check.sh full bandroom-mac runs: the reader of requires-pixi, BandroomKit's unit tests,
+  # and a Debug build of the app (without the band sounds and the core's command line, which a Debug
+  # build leaves out with a warning).
+  bandroom:
+    name: Bandroom for Mac (BandroomKit, app build)
+    if: ${{ !inputs.release && !inputs.skip_bandroom }}
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/bandroom/macos
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          dev="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          test -d "$dev" || { echo "Xcode $XCODE_VERSION is not on this image" >&2; ls -d /Applications/Xcode_* >&2; exit 1; }
+          sudo xcode-select -s "$dev"
+          echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      - run: brew install xcodegen
+
+      - name: Unit tests (requires-pixi reader, BandroomKit)
+        run: |
+          scripts/test-pixi-spec.sh
+          scripts/test-kit.sh
+
+      - name: Build the app (Debug)
+        run: make build
+
   build:
-    name: ${{ inputs.release && 'release build' || 'test' }}
+    name: release build
+    if: ${{ inputs.release }}
     # Newest GA macOS image (macos-latest points here too).
     runs-on: macos-26
     timeout-minutes: 60
@@ -80,14 +179,6 @@ jobs:
       # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built.
       - name: Build BrasscribeFFI.xcframework
         run: scripts/build-core.sh
-
-      # Fixture-dependent tests (BRASSCRIBE_FIXTURES / data/golden) skip themselves when absent.
-      # The iPhone is the newest "iPhone NN Pro" on the newest iOS runtime, by id (scripts/newest-iphone.sh).
-      - name: Test (packages, macOS app, iPhone simulator app)
-        if: ${{ !inputs.release }}
-        run: |
-          dest=$(scripts/newest-iphone.sh)
-          make test IPHONE_DEST="$dest"
 
       # The band sounds are not in git: the pinned pack (sounds/band-sounds.json) is fetched from this
       # repository's release and bundled (macOS the 16-bit SoundFont, iOS the phone one). A release

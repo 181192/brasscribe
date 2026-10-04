@@ -109,8 +109,11 @@ On a pull request, CI (`ci.yml`) runs the same on Linux for the areas the change
 Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`, `apps/bandroom/windows/`,
 `core/`, the design tokens, `sounds/`, or the pixi workspace and engine sources Bandroom bundles: the core
 tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test, the Axe.Windows scans and the
-screenshots (an artefact, not compared). The `changes` job's filters say exactly which paths count. Apple
-and the Android release build run only for releases or by hand.
+screenshots (an artefact, not compared); and the Apple apps on a macOS runner (`apple.yml`) when it touches
+`apps/apple/`, `capture/`, `core/`, the app fixtures, the design files the apps bundle or `sounds/` (Play: the
+Swift packages, the macOS app unit tests, and the iPhone simulator app's unit and UI tests), or
+`apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and the app build). The `changes`
+job's filters say exactly which paths count. The release builds run only for releases or by hand.
 
 Things that differ from running the suites by hand:
 
