@@ -103,12 +103,20 @@ internal static class BandroomCatalogue
             {
                 var p = e.Properties;
                 var r = e.BoundingRectangle;
-                if (p.IsOffscreen.ValueOrDefault || r.IsEmpty || string.IsNullOrWhiteSpace(p.Name.ValueOrDefault)) continue;
+                if (p.IsOffscreen.ValueOrDefault || r.IsEmpty || string.IsNullOrWhiteSpace(p.Name.ValueOrDefault) || InDisabled(e)) continue;
                 found.Add(new ScreenText(p.Name.Value.Trim(), new Box(r.X - w.Left, r.Y - w.Top, r.Width, r.Height), KindOf(e)));
             }
             catch (Exception x) when (x is System.Runtime.InteropServices.COMException or FlaUI.Core.Exceptions.PropertyNotSupportedException) { }
         }
         return found;
+    }
+
+    /// <summary>Text of a control that is turned off (WCAG leaves inactive controls out of the contrast it asks for).</summary>
+    private static bool InDisabled(AutomationElement e)
+    {
+        for (var up = e.Parent; up is not null; up = up.Parent)
+            if (up.Properties.IsEnabled.TryGetValue(out bool enabled) && !enabled) return true;
+        return false;
     }
 
     /// <summary>Large text by its font size and weight from the Text pattern; body text when the pattern does not say.</summary>

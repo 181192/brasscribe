@@ -16,7 +16,8 @@ For each screen (the scenes of `PreviewScenes`, and Settings) a test composes th
 (`App.Compose`), with settings kept in memory, shows the screen, and then for each Appearance choice of the run sets
 it in the settings, as a person does in Settings › Appearance, waits until the screen keeps still and takes:
 
-- a screenshot (`RenderTargetBitmap` of the window, with an open dialog drawn on top where it is);
+- a screenshot of the window's client area as it is on screen (`PrintWindow`; `RenderTargetBitmap` drew an open
+  dialog half transparent, as at the start of its opening animation, and without the dimming behind it);
 - the contrast of every text and icon on it, measured on the screenshot: 4.5:1 for body text, 3:1 for large text and
   icons (`tools/ScreenCheck.Core/Contrast.cs`), and text cut off (`TextBlock.IsTextTrimmed`, so only text whose
   trimming is set: text clipped by its container without trimming is not seen);

@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
 using Brasscribe.Play.Core.Services;
 using Brasscribe.Play.Core.ViewModels;
@@ -8,7 +7,6 @@ using Brasscribe.ScreenCheck;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.VisualStudio.TestTools.UnitTesting.AppContainer;
 
@@ -17,7 +15,7 @@ namespace Brasscribe.Play.Catalogue;
 /// <summary>
 /// Every screen of the app with sample content (the scenes of <see cref="PreviewScenes"/>, Settings and Share or
 /// print), each in the Appearance choices this run asks for, switched while the screen is open, as a person does
-/// in Settings. For each: a screenshot (RenderTargetBitmap, with open dialogs drawn on top), the contrast of every
+/// in Settings. For each: a screenshot of the window as it is on screen, the contrast of every
 /// text and icon measured on it, text cut off, and, from a separate process (tools/ScreenCheck), the Axe.Windows
 /// rules and a walk with Tab. One process per language, contrast theme and text size: the runner script sets
 /// those before it starts (tools/Screenshots/catalogue.ps1).
@@ -140,26 +138,15 @@ public sealed class ScreenCatalogue
         return (last!, false);
     }
 
-    /// <summary>The window's content, with every open popup (a dialog, a flyout) drawn over it where it is.</summary>
-    private static async Task<Picture> CaptureAsync(FrameworkElement root)
+    /// <summary>
+    /// The window's client area as it is on screen, open dialogs and their dimming included (PrintWindow, from a
+    /// thread of its own so this one goes on answering). RenderTargetBitmap drew an open ContentDialog half
+    /// transparent, as at the start of its opening animation, and without the dimming behind it.
+    /// </summary>
+    private static Task<Picture> CaptureAsync(FrameworkElement root)
     {
-        var picture = await RenderAsync(root);
-        foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(root.XamlRoot))
-        {
-            if (popup.Child is not FrameworkElement child || child.ActualWidth < 1 || child.ActualHeight < 1) continue;
-            var at = child.TransformToVisual(null).TransformPoint(new Windows.Foundation.Point(0, 0));
-            double scale = root.XamlRoot.RasterizationScale;
-            picture.Compose(await RenderAsync(child), (int)Math.Round(at.X * scale), (int)Math.Round(at.Y * scale));
-        }
-        return picture;
-    }
-
-    private static async Task<Picture> RenderAsync(UIElement element)
-    {
-        var bitmap = new RenderTargetBitmap();
-        await bitmap.RenderAsync(element);
-        var pixels = (await bitmap.GetPixelsAsync()).ToArray();
-        return new Picture(bitmap.PixelWidth, bitmap.PixelHeight, pixels);
+        nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindowInstance!);
+        return Task.Run(() => Gdi.CaptureClient(hwnd));
     }
 
     private static void CloseDialogs(MainWindow window)

@@ -47,12 +47,18 @@ function Invoke-Run($exe, $shots, $run, $variants, $score, [bool] $checks, $scan
     $env:BRASSCRIBE_CATALOGUE_SCANNER = if ($checks -and $scanner) { $scanner } else { "" }
     $env:BRASSCRIBE_CATALOGUE_SCORE = $score
     $appArgs = @()
-    if ($run -eq "nb") { $appArgs += @("--lang", "nb") }
+    if ($run -eq "nb") { $appArgs += @("--lang", "nb-NO") }
     $appArgs += @("--results-directory", (Join-Path $shots "results"), "--report-trx", "--report-trx-filename", "catalogue-$run.trx")
     $started = Get-Date
     & $exe @appArgs | Out-Host
     $code = $LASTEXITCODE
     Log ("{0} took {1:n0} s (test platform exit {2})" -f $run, ((Get-Date) - $started).TotalSeconds, $code)
+    if ($code -ne 0) {
+        # Why the app ended, when it crashed: Windows' own record of it.
+        Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = $started } -ErrorAction SilentlyContinue |
+            Where-Object { $_.ProviderName -in "Application Error", ".NET Runtime", "Windows Error Reporting" } |
+            ForEach-Object { Write-Host "$($_.ProviderName): $($_.Message)" }
+    }
     # 0: every screen was taken. 2: a screen failed (the run's file says which). Anything else: the run itself failed
     # (8 is "no tests ran", never a pass).
     return ($code -eq 0 -or $code -eq 2) -and (Test-Path (Join-Path $shots "catalogue-$run.json"))
