@@ -31,17 +31,23 @@ class PhonePdfDeviceTest {
         val xml = checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml"))
         val pdf = PhonePdf(context)
         val score = pdf.parse(xml)
+        val start = android.os.SystemClock.elapsedRealtime()
         val parts = (0 until score.tracks.length.toInt()).map { pdf.engrave(score, listOf(it), "part $it", PhonePdf.PART_SCALE) }
         val one = File(context.cacheDir, "phone-pdf-part.pdf")
         pdf.Document(AndroidPdfPages()).use { d -> d.add(parts[1]); one.outputStream().use { d.writeTo(it) } }
         val all = File(context.cacheDir, "phone-pdf-all.pdf")
         val pages = pdf.Document(AndroidPdfPages()).use { d -> parts.forEach(d::add); all.outputStream().use { d.writeTo(it) }; d.pageCount }
+        android.util.Log.i("PhonePdfDeviceTest", "${parts.size} parts engraved and written in ${android.os.SystemClock.elapsedRealtime() - start} ms, ${all.length()} bytes, $pages pages")
 
         val bytes = one.readBytes()
         assertEquals("%PDF-", String(bytes, 0, 5, Charsets.ISO_8859_1))
         // Vector: an A4 page of music in a few tens of kilobytes (a picture of it at print resolution is megabytes).
         assertTrue("${bytes.size} bytes", bytes.size < 400_000)
-        assertTrue("the music font is embedded", String(bytes, Charsets.ISO_8859_1).contains("FontFile"))
+        // The music's glyphs are in the file, as an embedded font or as glyph drawings (Type 3), never left to the reader.
+        val text = String(bytes, Charsets.ISO_8859_1)
+        val fonts = Regex("""/(FontFile[23]?|Subtype\s*/\w+)""").findAll(text).map { it.value }.toSet()
+        android.util.Log.i("PhonePdfDeviceTest", "a part: ${bytes.size} bytes, fonts $fonts")
+        assertTrue("fonts in the file: $fonts (${bytes.size} bytes)", fonts.any { it.startsWith("/FontFile") } || fonts.any { it.contains("Type3") })
 
         PdfRenderer(ParcelFileDescriptor.open(one, ParcelFileDescriptor.MODE_READ_ONLY)).use { r ->
             assertEquals(1, r.pageCount)
