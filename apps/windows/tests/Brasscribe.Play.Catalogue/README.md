@@ -20,7 +20,10 @@ it in the settings, as a person does in Settings › Appearance, waits until the
   dialog half transparent, as at the start of its opening animation, and without the dimming behind it);
 - the contrast of every text and icon on it, measured on the screenshot: 4.5:1 for body text, 3:1 for large text and
   icons (`tools/ScreenCheck.Core/Contrast.cs`), and text cut off (`TextBlock.IsTextTrimmed`, so only text whose
-  trimming is set: text clipped by its container without trimming is not seen).
+  trimming is set: text clipped by its container without trimming is not seen);
+- an exception the app did not catch while the screen was open (its `crash.log`; the app then says "Something went
+  wrong").
+
 Then the Axe.Windows rules and a walk with Tab (the focus lands on something shown, it comes back round, and every
 button, box, link and slider on screen is reached; list, tab and menu items and radio buttons are left out, since the
 arrow keys reach them inside their group) run on each screen in Light, from another process (`tools/ScreenCheck
@@ -28,6 +31,10 @@ play`), on the app's own build with one start per screen (`--show SCENE`): the a
 access violation while Axe.Windows read it, which the app's own build does not.
 
 A screen that does not keep still for 1.5 s within 20 s (something on it moves) is kept in `unsteady\` and not compared.
+Dialogs (Settings, Share or print) are opened again in each choice, so they show it. The run in bokmål sets the
+language through `BRASSCRIBE_CATALOGUE_LANG` (the test platform runs the tests in a process of its own, with its own
+arguments), and checks that the app's strings are in bokmål; `tools/ScreenCheck play` checks the same of the app's own
+build started with `--lang nb-NO`.
 
 `tools/Screenshots/catalogue.ps1` runs the catalogue once per language, contrast theme and text size, which Windows
 settles when an app starts:
@@ -35,7 +42,7 @@ settles when an app starts:
 | Run | Appearance choices | Screenshot names |
 |---|---|---|
 | English | Light, Dark, Pink light, Pink dark | `home--light`, `home--pink-dark` |
-| Bokmål (`--lang nb`) | Light, Dark | `home--nb-light` |
+| Bokmål (`nb-NO`) | Light, Dark | `home--nb-light` |
 | A contrast theme on in Windows | Match system, Light, Dark, Pink dark: all must look the same (the contrast theme wins), and one screenshot is kept | `home--contrast` |
 | Text size 200 % (Settings › Accessibility › Text size) | Light | `home--text200-light` |
 
@@ -69,9 +76,10 @@ expressions over a finding); an entry that matches nothing any more is listed in
 
 `apps/bandroom/windows/tools/Screenshots/catalogue.ps1` does the same for Bandroom with one start of the app per view
 (`tools/ScreenCheck bandroom`: `--show VIEW [--state STATE] --theme --lang`, sample content, no engine): English in
-Light and Dark (Axe.Windows and Tab in Light), bokmål, a contrast theme and 200 % text, each in Light. Where its text
-is comes from UI Automation, so icons (which UI Automation does not list) are not measured, and cut-off text is not
-checked. The base is Bandroom built at the merge base, so its views are compared from the first pull request on.
+Light and Dark, bokmål, a contrast theme and 200 % text, each in Light; then Axe.Windows and Tab in Light, after every
+screenshot, since once a Tab has been pressed Windows draws keyboard focus rectangles in the windows started later.
+Where its text is comes from UI Automation, so icons (which UI Automation does not list) are not measured, and cut-off
+text is not checked. The base is Bandroom built at the merge base, so its views are compared from the first pull request on.
 Its accepted findings are in `apps/bandroom/windows/tools/Screenshots/known-findings.json`.
 
 ## Off Windows
