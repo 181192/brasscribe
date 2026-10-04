@@ -93,6 +93,11 @@ GROUPS.update({
 })
 PATTERNS = ("melody", "strummed", "picked")
 HELDOUT_PATTERNS = (*PATTERNS, "chord-melody")
+# A mandolin's tremolo: each note of a melody repeated in sixteenths. Under a bass and drums the separator puts it
+# in its `other` stem, not `guitar` (engine tab.py, Heard.empty_stem_fallback). Scored apart, under the group's
+# TREMOLO key, and skipped where it has not been rendered: the group's other numbers do not move when it is.
+TREMOLO = "tremolo"
+EXTRA_PATTERNS = {"mandolin": (TREMOLO,), "mandolin-heldout": (TREMOLO,)}
 # The held-out passages a rule was chosen on: the chord-melody and strummed ones were used to choose the rule
 # that tells a chord heard again under a melody from a strum struck again (engine tab.py, RING_*). They are
 # scored apart, under the group's DEV key, and the group's held-out numbers are from its other passages. Not
@@ -100,8 +105,8 @@ HELDOUT_PATTERNS = (*PATTERNS, "chord-melody")
 # tab.py, Heard.unheard_overtones_out) was chosen while looking at all the held-out passages, these others too.
 DEVELOPMENT = ("chord-melody", "strummed")
 DEV = "_dev"
-TEMPOS = {"melody": 104.0, "strummed": 92.0, "picked": 80.0}
-HELDOUT_TEMPOS = {"melody": 116.0, "strummed": 84.0, "picked": 72.0, "chord-melody": 88.0}
+TEMPOS = {"melody": 104.0, "strummed": 92.0, "picked": 80.0, TREMOLO: 96.0}
+HELDOUT_TEMPOS = {"melody": 116.0, "strummed": 84.0, "picked": 72.0, "chord-melody": 88.0, TREMOLO: 84.0}
 GUITAR_HELDOUT_TEMPOS = {"melody": 118.0, "strummed": 86.0, "picked": 70.0, "chord-melody": 88.0}
 SUITES = {"ukulele": ("ukulele-high-g", "ukulele-low-g", "ukulele-baritone",
                       "ukulele-high-g" + HELDOUT, "ukulele-low-g" + HELDOUT, "ukulele-baritone" + HELDOUT),
@@ -110,7 +115,7 @@ SUITES = {"ukulele": ("ukulele-high-g", "ukulele-low-g", "ukulele-baritone",
 
 
 def patterns(group: str) -> tuple[str, ...]:
-    return HELDOUT_PATTERNS if group.endswith(HELDOUT) else PATTERNS
+    return (HELDOUT_PATTERNS if group.endswith(HELDOUT) else PATTERNS) + EXTRA_PATTERNS.get(group, ())
 
 
 def tempo(group: str, pattern: str) -> float:
@@ -147,6 +152,11 @@ def passage(group: str, pattern: str, bpm: float) -> list[dict]:
             for k, p in enumerate(run):
                 add(p, at + k / 2, 0.45)
             add(scale[bar % len(scale)], at + 3, 0.9)
+        elif pattern == TREMOLO:  # a melody in half notes, each picked in thirty-seconds
+            for half in range(2):
+                p = scale[(bar + 3 * half) % len(scale)]
+                for k in range(16):
+                    add(p, at + 2 * half + k / 8, 0.11)
         elif pattern == "chord-melody":  # the chord struck once and left to ring; a melody at frets 12 to 15 of the top string
             for j, (p, s) in enumerate(chord[::-1]):
                 add(p, at + 0.012 * j * bpm / 60, 0.9 if s == 1 else 3.8, s)
@@ -297,7 +307,10 @@ def stem_scores(data: Path, groups: tuple[str, ...] | None = None) -> dict[str, 
 
     rows: dict[str, list[dict]] = {stem: [] for stem in STEMS}
     for entry in entries(data, groups):
-        ref = json.loads((entry / "reference.json").read_text())["notes"]
+        ref = json.loads((entry / "reference.json").read_text())
+        if ref["pattern"] in EXTRA_PATTERNS.get(ref["group"], ()):  # scored apart: the stems' numbers stay as they were
+            continue
+        ref = ref["notes"]
         for stem in STEMS:
             est = [n for n in bass_tab.load_transcription(entry / song_files(stem)["bp"]) if n["offset"] - n["onset"] >= 0.06]
             rows[stem].append(score(ref, est))
@@ -305,16 +318,20 @@ def stem_scores(data: Path, groups: tuple[str, ...] | None = None) -> dict[str, 
 
 
 def split(group: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
-    """The parts a group is scored in: (label suffix, patterns). A held-out group's DEVELOPMENT passages apart."""
+    """The parts a group is scored in: (label suffix, patterns). A held-out group's DEVELOPMENT passages apart, and
+    each of the group's EXTRA_PATTERNS apart."""
+    extra = EXTRA_PATTERNS.get(group, ())
+    own = tuple(p for p in patterns(group) if p not in extra)
+    apart = tuple((f"_{p}", (p,)) for p in extra)
     if not group.endswith(HELDOUT):
-        return (("", patterns(group)),)
-    return (("", tuple(p for p in patterns(group) if p not in DEVELOPMENT)), (DEV, DEVELOPMENT))
+        return (("", own), *apart)
+    return (("", tuple(p for p in own if p not in DEVELOPMENT)), (DEV, DEVELOPMENT), *apart)
 
 
 def evaluate(data: Path, groups: tuple[str, ...], mode: str, clean: bool = True, stem: str | None = None,
              only: tuple[str, ...] | None = None) -> tuple[dict[str, float], list[dict]]:
     """The passages of `groups` in one recording mode, through the tab profile's own stages. `stem`: the
-    separator's stem a `song` run reads (default: the one the profile uses for the instrument). `only`: the
+    separator's stem a `song` run reads (default: the one the profile reads, tab.stem_to_read). `only`: the
     patterns to score (default all)."""
     from brasscribe_engine import tab
 
@@ -326,7 +343,9 @@ def evaluate(data: Path, groups: tuple[str, ...], mode: str, clean: bool = True,
         if only is not None and ref["pattern"] not in only:
             continue
         params = {**ref["params"], "recording": mode}
-        files = FILES["instrument"] if mode == "instrument" else song_files(stem or tab.HEARD[ref["params"]["instrument"]].stem)
+        instrument = ref["params"]["instrument"]
+        files = FILES["instrument"] if mode == "instrument" else song_files(
+            stem or tab.stem_to_read(instrument, lambda s, e=entry: e / f"song-{s}.wav", entry / "mix.wav"))
         rows.append({"excerpt": entry.name, **score_tab(ref, tab_of(entry, clean, params, files))})
     return summarize(rows), rows
 

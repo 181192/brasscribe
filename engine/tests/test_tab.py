@@ -3,6 +3,7 @@ bass-tab profile's own pipeline, and a guitar's notes: chords and lines, read di
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -198,14 +199,66 @@ def test_a_ukulele_or_mandolin_is_read_from_the_guitar_stem_of_a_song_or_alone(i
     kind = tab.HEARD[instrument].kind
     assert tab.options({"instrument": instrument})["recording"] == "instrument"  # a guitar in the song would be in the same stem
     song = profiles.build("tab", Path("song.wav"), "T", {"instrument": instrument, "recording": "song"})
-    assert [s.name for s in song.stages] == ["beats", "stems", f"transcribe.{kind}.basic-pitch", f"transcribe.{kind}.swift-f0", "notes",
-                                             "arrange", "export"]
+    stem = ["stem"] if instrument == "mandolin" else []  # its guitar stem, or `other` when that is empty
+    assert [s.name for s in song.stages] == ["beats", "stems", *stem, f"transcribe.{kind}.basic-pitch", f"transcribe.{kind}.swift-f0",
+                                             "notes", "arrange", "export"]
+    read = ("stem", f"{kind}.wav") if stem else ("stems", "guitar.wav")
     for name in (f"transcribe.{kind}.basic-pitch", f"transcribe.{kind}.swift-f0"):
-        assert (song.stage(name).inputs["audio"].stage, song.stage(name).inputs["audio"].file) == ("stems", "guitar.wav")
+        assert (song.stage(name).inputs["audio"].stage, song.stage(name).inputs["audio"].file) == read
+    if stem:
+        inputs = song.stage("stem").inputs
+        assert {k: (i.stage, i.file) for k, i in inputs.items()} == {
+            "song": ("source", None), "guitar": ("stems", "guitar.wav"), "other": ("stems", "other.wav")}
     assert song.stage("notes").params == {"instrument": instrument}
     alone = profiles.build("tab", Path("uke.wav"), "T", {"instrument": instrument})
     assert [s.name for s in alone.stages][1] == f"transcribe.{kind}.basic-pitch" and "stems" not in [s.name for s in alone.stages]
     assert alone.stage("notes").params == {"instrument": instrument, "whole_recording": True}
+
+
+def _wav(path: Path, level_db: float, seconds: float = 2.0, rate: int = 22050) -> Path:
+    import soundfile as sf
+
+    rng = np.random.default_rng(int(abs(level_db)))
+    sf.write(str(path), rng.standard_normal(int(seconds * rate)) * 0.1 * 10 ** (level_db / 20), rate)
+    return path
+
+
+def test_a_mandolin_in_a_song_is_read_from_the_other_stem_only_when_its_guitar_stem_is_empty(tmp_path):
+    """A tremolo comes out of the separator in its `other` stem, and the guitar stem is all but silent. Anything
+    louder than EMPTY_STEM_DB under the song keeps the guitar stem, and only a mandolin falls back."""
+    song = _wav(tmp_path / "song.wav", 0.0)
+    for name, level in (("silent", -66.0), ("faint", -20.0), ("loud", -5.0)):
+        _wav(tmp_path / f"{name}.wav", level)
+        assert tab.level_db(tmp_path / f"{name}.wav", song) == pytest.approx(level, abs=0.5)
+    _wav(tmp_path / "other.wav", -3.0)
+
+    def stems(guitar: str):
+        return lambda s: tmp_path / (f"{guitar}.wav" if s == "guitar" else f"{s}.wav")
+
+    assert tab.stem_to_read("mandolin", stems("silent"), song) == "other"
+    assert tab.stem_to_read("mandolin", stems("faint"), song) == "guitar"
+    assert tab.stem_to_read("mandolin", stems("loud"), song) == "guitar"
+    for instrument in ("ukulele", "ukulele-baritone", "guitar-6"):
+        assert tab.stem_to_read(instrument, stems("silent"), song) == "guitar"
+    assert [i for i, h in tab.HEARD.items() if h.empty_stem_fallback] == ["mandolin"]
+
+
+def test_the_stem_stage_writes_the_stem_it_chose_under_the_instruments_name(tmp_path):
+    from types import SimpleNamespace
+
+    song = _wav(tmp_path / "song.wav", 0.0)
+    guitar, other = _wav(tmp_path / "guitar.wav", -70.0), _wav(tmp_path / "other.wav", -3.0)
+    out = tmp_path / "out"
+    for level, want in ((-70.0, other), (-6.0, guitar)):
+        _wav(guitar, level)
+        out.mkdir(exist_ok=True)
+        logged = []
+        ctx = SimpleNamespace(params={"instrument": "mandolin", "output": "mandolin.wav"}, out=out, log=logged.append,
+                              inputs={"song": song, "guitar": guitar, "other": other})
+        tab.stem_stage(ctx)
+        assert (out / "mandolin.wav").read_bytes() == want.read_bytes()
+        assert json.loads((out / "stem.json").read_text()) == {"stem": want.stem}
+        assert bool(logged) == (want == other)
 
 
 @pytest.mark.parametrize("profile", ["solo", "brass-band", "pop-rock", "orchestra-with-soloist"])

@@ -691,12 +691,15 @@ def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
                 raise SkipSuite(f"no cached {missing[0]} for {entry.name}")
             if missing:
                 B.prepare(entry)
-        out: dict[str, float] = {}
+        out: dict[str, float] = {SKIPPED: []}
         for group in groups:
             for part, only in B.split(group):  # a held-out group's development passages apart (B.DEVELOPMENT)
                 label = group.replace("-", "_") + part + "."
                 for m in B.MODES:
-                    metrics, _ = B.evaluate(data, (group,), m, only=only)
+                    metrics, rows = B.evaluate(data, (group,), m, only=only)
+                    if not rows:  # a pattern scored apart (B.EXTRA_PATTERNS) that has not been rendered
+                        out[SKIPPED].append(label.rstrip("."))
+                        break
                     out.update({f"{label}{m}.{k}": v for k, v in metrics.items()})
         # Where the separator puts the instrument: the stem the profile reads, against the others.
         for stem, scores in B.stem_scores(data, groups).items():

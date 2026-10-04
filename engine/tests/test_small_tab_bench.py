@@ -13,7 +13,7 @@ from brasscribe_eval import suites
 def test_the_passages_are_the_same_every_time_and_on_the_instruments_strings():
     for group, (params, _, strings, shapes, scale) in B.GROUPS.items():
         held_out = group.endswith(B.HELDOUT)
-        assert B.patterns(group) == ((*B.PATTERNS, "chord-melody") if held_out else B.PATTERNS)
+        assert B.patterns(group) == ((*B.PATTERNS, "chord-melody") if held_out else B.PATTERNS) + B.EXTRA_PATTERNS.get(group, ())
         for pattern in B.patterns(group):
             notes = B.passage(group, pattern, 96.0)
             assert notes == B.passage(group, pattern, 96.0)
@@ -22,7 +22,7 @@ def test_the_passages_are_the_same_every_time_and_on_the_instruments_strings():
             for n in notes:
                 if "string" in n:  # a chord's notes say their string: at or above its open pitch; the first frets where rules are chosen
                     assert 0 <= n["pitch"] - strings[n["string"] - 1] <= (15 if held_out else 4 if group.startswith("guitar") else 3), (group, pattern, n)
-            assert ("string" in notes[0]) == (pattern != "melody")
+            assert ("string" in notes[0]) == (pattern not in ("melody", B.TREMOLO))
     assert {g: p["instrument"] for g, (p, *_) in B.GROUPS.items() if not g.endswith(B.HELDOUT) and not g.startswith("guitar")} == {
         "ukulele-high-g": "ukulele", "ukulele-low-g": "ukulele", "ukulele-baritone": "ukulele-baritone", "mandolin": "mandolin"}
     assert all(B.GROUPS[g + B.HELDOUT][0] == B.GROUPS[g][0] and B.GROUPS[g + B.HELDOUT][3] != B.GROUPS[g][3]
@@ -96,6 +96,31 @@ def test_a_held_out_groups_development_passages_are_scored_apart():
     assert B.split("ukulele-high-g") == (("", B.PATTERNS),)
     parts = dict(B.split("mandolin" + B.HELDOUT))
     assert parts[B.DEV] == B.DEVELOPMENT and set(parts[""]) == set(B.HELDOUT_PATTERNS) - set(B.DEVELOPMENT)
+
+
+def test_a_mandolin_tremolo_is_scored_apart_and_skipped_where_it_was_not_rendered(tmp_path, monkeypatch):
+    """The tremolo passages have keys of their own: the group's numbers stay the same with or without them."""
+    assert B.split("mandolin") == (("", B.PATTERNS), ("_tremolo", (B.TREMOLO,)))
+    assert dict(B.split("mandolin" + B.HELDOUT))["_tremolo"] == (B.TREMOLO,)
+    assert all(B.TREMOLO not in B.patterns(g) for g in B.GROUPS if not g.startswith("mandolin"))
+    notes = B.passage("mandolin", B.TREMOLO, 96.0)
+    bar = [n for n in notes if 4 * 60 / 96 <= n["onset"] < 8 * 60 / 96]
+    assert len(bar) == 32 and len({n["pitch"] for n in bar}) == 2  # two notes a bar, each in thirty-seconds
+    seen = []
+    monkeypatch.setattr(B, "entries", lambda data, groups=None: [tmp_path / "x"])
+    monkeypatch.setattr(B, "evaluate", lambda data, groups, mode, only=None: seen.append(only) or (
+        ({"onset_f1": 1.0}, [{}]) if B.TREMOLO not in only else ({}, [])))
+    monkeypatch.setattr(B, "stem_scores", lambda data, groups: {})
+    monkeypatch.setattr("brasscribe_engine.bass_tab.core_cli", lambda: None)
+    for f in [*B.FILES["instrument"].values(), *(f for stem in B.STEMS for f in B.song_files(stem).values())]:
+        (tmp_path / "x").mkdir(exist_ok=True)
+        (tmp_path / "x" / f).write_text("")
+    r = suites.run_suite("mandolin-tab", data=tmp_path)
+    assert r["status"] == "ran" and r["skipped_parts"] == ["mandolin_tremolo", "mandolin_heldout_tremolo"]
+    assert not any("tremolo" in k for k in r["metrics"]) and r["metrics"]["mandolin.song.onset_f1"] == 1.0
+    report = suites.gate([r])  # the stub's numbers are not the baselines': only the tremolo keys are looked at
+    tremolo = [c for c in report["suites"][0]["checks"] if "tremolo" in c["metric"]]
+    assert tremolo and {c["status"] for c in tremolo} == {"skipped"}
 
 
 @pytest.mark.parametrize("suite,groups", [("ukulele-tab", ("ukulele_high_g.song", "ukulele_low_g.instrument", "ukulele_baritone.song",
