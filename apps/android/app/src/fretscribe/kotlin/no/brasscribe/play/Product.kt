@@ -136,6 +136,10 @@ object Product {
     fun afterTranscription(result: TranscriptionResult): Screen =
         if (result.profile.writesTab) Screen.OUTPUT else Screen.REVIEW
 
+    /** The screen after Check the notes: the output choices, for every take. */
+    @Suppress("UNUSED_PARAMETER")
+    fun afterReview(result: TranscriptionResult): Screen = Screen.OUTPUT
+
     /** A row in Your songs: a tab's instrument, tuning and notes to check; a band score says where it opens. Null for the usual line. */
     @Composable
     fun rowSubtitle(entry: ScoreEntry): String? = songRowSubtitle(entry)

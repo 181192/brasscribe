@@ -71,6 +71,12 @@ object Product {
      */
     fun afterTranscription(result: TranscriptionResult): Screen = if (result.draft) Screen.SCORE else Screen.REVIEW
 
+    /**
+     * The screen after Check the notes: a solo ("One instrument") goes straight to the score, on the player's part; band,
+     * difficulty and key stay in the score's ⋯ menu. Every other take asks How should the score be? first.
+     */
+    fun afterReview(result: TranscriptionResult): Screen = if (result.isSoloTake) Screen.SCORE else Screen.OUTPUT
+
     /** A row in Your scores that is not a band score: a tab says where it opens. Null for the usual line. */
     @Composable
     fun rowSubtitle(entry: ScoreEntry): String? =
