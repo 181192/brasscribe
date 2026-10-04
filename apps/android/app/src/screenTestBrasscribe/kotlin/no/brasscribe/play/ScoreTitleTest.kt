@@ -37,9 +37,12 @@ class ScoreTitleTest : ScreenTest() {
 
     private fun open(xml: String = hymn) {
         val file = File(rule.activity.cacheDir, "Title test.musicxml").apply { writeText(xml) }
+        val before = vm.scoreController
         rule.runOnUiThread { vm.home(); vm.openScoreUri(android.net.Uri.fromFile(file)) }
-        waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }
+        // The new score's controller, engraved and drawn: not the one of the score opened before it.
+        waitForEngravedScore(before)
         settle()
+        waitForEngravedScore()
     }
 
     /** The first engraved system: how far down it starts, against its own height. */
@@ -70,10 +73,12 @@ class ScoreTitleTest : ScreenTest() {
         rule.onNodeWithTag("stand-enter").performClick()
         waitUntil(20_000) { rule.onAllNodesWithTag("stand-score").fetchSemanticsNodes().isNotEmpty() }
         settle()
+        waitForEngravedScore()
         assertTrue("on the stand, no title block: ${firstSystem()}", !titled())
         ScreenDevice.back(rule)
         waitUntil(10_000) { rule.onAllNodesWithTag("stand-score").fetchSemanticsNodes().isEmpty() }
         settle()
+        waitForEngravedScore()
         assertTrue("off the stand, the title is back: ${firstSystem()}", titled())
     }
 

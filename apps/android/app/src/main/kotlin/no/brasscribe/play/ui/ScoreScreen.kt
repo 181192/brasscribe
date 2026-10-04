@@ -123,6 +123,9 @@ fun ScoreScreen(vm: PlayViewModel) {
         val ct = vm.container
         ScoreController(context, reducedMotion, ct.core, ct.bandSoundMap, compositionJson = { r.compositionJsonFor(ct.core) })
     }
+    // The title block as the first engraving should have it (upright, not on the stand): no second render right after.
+    val startsUpright = androidx.compose.ui.platform.LocalConfiguration.current.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    remember(controller) { controller.setTitleShown(startsUpright && vm.standFromLibrary.value == null); true }
     val st by controller.state.collectAsState()
     var textView by rememberSaveable { mutableStateOf(false) }
     var sheet by remember { mutableStateOf<Sheet?>(null) }

@@ -109,6 +109,9 @@ class ScoreController(
     private val _renders = MutableStateFlow(0)
     /** Counts finished renders: the music stand lays out its pages again after each one. */
     val renders: StateFlow<Int> = _renders
+    private val _engraving = MutableStateFlow(false)
+    /** alphaTab is engraving: from its render's start until that render is finished and drawn (tests wait on it). */
+    val engraving: StateFlow<Boolean> = _engraving
     private val innerScroll: android.widget.ScrollView? = view.findViewById(net.alphatab.R.id.innerScroll)
 
     init {
@@ -141,12 +144,13 @@ class ScoreController(
         // Channel volumes reset when the MIDI is regenerated (every render), so the balance follows it.
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
         // The engraving's size comes with the render; the surface is only measured to it on a later layout pass.
+        view.api.renderStarted.on { _engraving.value = true }
         view.api.renderFinished.on { e -> engravedWidth = e.totalWidth }
         view.api.postRenderFinished.on {
             applyVolumes(); overlays().forEach { it.refresh() }
             hideCredit()
             // After alphaTab's own handlers, so the stand reads this render's layout, not the last one.
-            view.post { _renders.value++ }
+            view.post { _renders.value++; _engraving.value = false }
             preloadSoundFont()
         }
 

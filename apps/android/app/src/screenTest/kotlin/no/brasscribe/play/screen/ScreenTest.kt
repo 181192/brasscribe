@@ -93,6 +93,20 @@ abstract class ScreenTest {
         }
     }
 
+    /**
+     * Waits until the score on screen is a new one (not [before], the controller of the score shown before), is loaded,
+     * and alphaTab has finished engraving it and drawn it: no render is under way. A fixed delay is not enough, as a
+     * setting that changes after the first render (the title block, the stand's layout) engraves it again.
+     */
+    protected fun waitForEngravedScore(before: no.brasscribe.play.score.ScoreController? = null, ms: Long = 30_000) {
+        waitUntil(ms) {
+            val c = vm.scoreController
+            c != null && c !== before && c.state.value.loaded && c.renders.value > 0 && !c.engraving.value
+        }
+        rule.waitForIdle()
+        waitUntil(ms) { vm.scoreController?.engraving?.value == false }
+    }
+
     protected fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
 
     protected fun language(tag: String) = ScreenDevice.language(rule, tag)
