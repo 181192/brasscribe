@@ -437,8 +437,13 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         if (next == Screen.REVIEW && below.lastOrNull() != Screen.SCORE) below + Screen.SCORE + Screen.REVIEW else below + next
     }
 
-    /** A score opened from Your scores: Check the notes goes over it, so Back from there shows the score. */
-    private fun opened(review: Boolean) = if (review) listOf(Screen.HOME, Screen.SCORE, Screen.REVIEW) else listOf(Screen.HOME, Screen.SCORE)
+    /** A score opened from Your scores: Check the notes goes over a band score, so Back from there shows the score (a product that checks no band score keeps its own). */
+    private fun opened(review: Boolean) = when {
+        !review -> listOf(Screen.HOME, Screen.SCORE)
+        result.value?.let { Product.arranges(it.profile) } == true -> listOf(Screen.HOME, Screen.SCORE, Screen.REVIEW)
+        else -> listOf(Screen.HOME, Screen.REVIEW)
+    }
+
     fun replaceTop(to: Screen) = backStack.update { it.dropLast(1) + to }
     fun back(): Boolean {
         if (backStack.value.size <= 1) return false
