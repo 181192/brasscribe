@@ -380,6 +380,12 @@
     <string name="export_formats">Formats</string>
     <string name="export_pdf">PDF</string>
     <string name="export_pdf_desc">For printing and the music stand</string>
+    <!-- Share or print, under PDF: which PDF it is. -->
+    <string name="export_pdf_computer">For printing and the music stand. From Brasscribe on your computer.</string>
+    <string name="export_pdf_phone">For printing and the music stand. Laid out on this phone.</string>
+    <string name="export_pdf_phone_changed">Laid out on this phone, with your changes. The pages may look different from your computer\'s.</string>
+    <!-- Share or print, while the phone lays out the PDFs: the part it is at, of how many. -->
+    <string name="export_laying_out">Laying out the pages: %1$d of %2$d</string>
     <string name="export_musicxml_score">MusicXML</string>
     <string name="export_musicxml_desc">Edit in MuseScore, Sibelius or Dorico</string>
     <string name="export_audio">Audio</string>
@@ -463,6 +469,10 @@
     <string name="stand_faster">Faster</string>
     <string name="stand_repeat">Repeat</string>
     <string name="stand_repeat_on">Repeat %1$d–%2$d</string>
+    <!-- Music stand, under Repeat while a repeat is set: what a page pedal does then. -->
+    <string name="stand_pedals_repeat">Pedals: right plays and pauses, left goes back to bar %1$d.</string>
+    <!-- Said when a pedal goes back to the start of the repeat. -->
+    <string name="stand_back_to_repeat">Back to bar %1$d.</string>
     <string name="stand_only_mine">Only my part</string>
     <string name="stand_lock">Lock rotation</string>
     <string name="stand_lock_on">Rotation locked</string>
@@ -481,7 +491,7 @@
     <string name="settings_stand_follow">Turn the pages while playing</string>
     <!-- Help: the heading over the page turners and keys. -->
     <string name="help_stand_title">Music stand</string>
-    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.</string>
+    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music. While a repeat is set, the pedals don\'t turn pages: right (Page Down) plays and pauses, and left (Page Up) goes back to the start of the repeat.</string>
     <string name="help_stand_tablet_lock">To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).</string>
     <string name="opened_score">Opened %1$s.</string>
     <string name="home_open_score">Open a score</string>
@@ -545,7 +555,7 @@
     <string name="help_3_title">Practise</string>
     <string name="help_3_text">Slow the music down with Speed, repeat the hard bars, and mute your part to play along with the band.</string>
     <string name="help_4_title">Share or print</string>
-    <string name="help_4_text">Share the score as a file. A score made by Brasscribe on your computer can also be printed (your part, every part or the conductor\'s score), as long as no note was changed on the phone.</string>
+    <string name="help_4_text">Share the score as a file, or print it: your part, every part or the conductor\'s score. The PDF comes from Brasscribe on your computer when it made the score and no note was changed since; otherwise the phone lays out the pages itself, and they may look different.</string>
     <string name="help_5_title">The phone and your computer</string>
     <string name="help_5_text">On the phone: one instrument, or a quick draft of a brass band. For the full band score, a soloist with a band, or pop and rock, open Brasscribe on your computer and connect in Settings.</string>
     <string name="help_6_title">Links and streaming apps</string>

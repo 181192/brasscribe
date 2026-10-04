@@ -1146,6 +1146,12 @@
   <data name="ReduceMotionSwitch.Header" xml:space="preserve">
     <value>Mindre bevegelse</value>
   </data>
+  <data name="ReduceMotionSwitch.OffContent" xml:space="preserve">
+    <value>Av</value>
+  </data>
+  <data name="ReduceMotionSwitch.OnContent" xml:space="preserve">
+    <value>På</value>
+  </data>
   <data name="ReduceMotionSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Markøren hopper ett slag om gangen, og partituret blar i stedet for å rulle</value>
   </data>
@@ -1938,6 +1944,12 @@
   <data name="SingleKeySwitch.Header" xml:space="preserve">
     <value>Hurtigtaster med én tast i partituret</value>
   </data>
+  <data name="SingleKeySwitch.OffContent" xml:space="preserve">
+    <value>Av</value>
+  </data>
+  <data name="SingleKeySwitch.OnContent" xml:space="preserve">
+    <value>På</value>
+  </data>
   <data name="SingleKeySwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Taster som U, R og P. Piltastene virker alltid.</value>
   </data>
@@ -1994,6 +2006,12 @@
   </data>
   <data name="StandKeepControlsSwitch.Header" xml:space="preserve">
     <value>Vis alltid knappene på notestativet</value>
+  </data>
+  <data name="StandKeepControlsSwitch.OffContent" xml:space="preserve">
+    <value>Av</value>
+  </data>
+  <data name="StandKeepControlsSwitch.OnContent" xml:space="preserve">
+    <value>På</value>
   </data>
   <data name="StandLayer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Knappene på notestativet</value>
@@ -2072,6 +2090,12 @@
   </data>
   <data name="StandTurnPagesSwitch.Header" xml:space="preserve">
     <value>Bla om mens musikken spiller</value>
+  </data>
+  <data name="StandTurnPagesSwitch.OffContent" xml:space="preserve">
+    <value>Av</value>
+  </data>
+  <data name="StandTurnPagesSwitch.OnContent" xml:space="preserve">
+    <value>På</value>
   </data>
   <data name="Stand_Detail" xml:space="preserve">
     <value>{0} · takt {1} · {2}</value>

@@ -42,6 +42,12 @@ object Product {
      */
     const val OPENS_SCORES = false
 
+    /** The page pedals turn pages on a band score's stand; a tab has its own keys. */
+    const val PEDALS_REPEAT = false
+
+    /** A tab's PDF comes from the computer only. */
+    const val PHONE_PDF = false
+
     /** Your songs holds songs only: a recording is not kept there before it has a tab. */
     const val KEEPS_RECORDINGS = false
 
