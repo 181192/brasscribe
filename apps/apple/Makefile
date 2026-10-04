@@ -49,8 +49,10 @@ package-test:
 	cd Packages/NotationKit && swift test
 	cd ../../capture && swift test
 
+# TEST_FLAGS adds xcodebuild arguments to the macOS app tests (CI: -retry-tests-on-failure, for #258).
+TEST_FLAGS ?=
 test: project package-test
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' test
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' $(TEST_FLAGS) test
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' test
 
 # The macOS UI tests move the real pointer and type real keys. Not part of `make test`: run them
