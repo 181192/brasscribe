@@ -642,6 +642,24 @@ def test_a_strummed_chords_unison_is_written_on_both_of_its_strings():
     assert _shapes("ukulele", {"Am": [60, 64, 69]}, tuning="low-g")[0] == {"Am": "x000"}
 
 
+@needs_core
+def test_a_chord_played_on_three_strings_is_completed_to_four_when_a_doubling_fits():
+    """A G strummed with the fourth string muted (x232) sounds as the G chord heard with its unison once: the two
+    cannot be told apart, and the common voicing is written (0232). A chord with two doublings as low (E or G of
+    C played 0x03) stays on three strings: nothing says which one."""
+    shapes, t = _shapes("ukulele", {"G on three": [62, 67, 71], "C on three": [64, 67, 72]})
+    assert shapes == {"G on three": "0232", "C on three": "0x03"}
+    assert t["doubled_notes"] == 2 and t["unplayable_dropped"] == 0
+
+
+@needs_core
+@pytest.mark.xfail(strict=True, reason="target-fretted gives both copies of a unison one string outside its open-shape table (#154)")
+def test_a_doubling_outside_the_open_shape_table_gets_a_string_of_its_own():
+    """Bm 4222 heard with its B once: the B fits on the open-shape reach (the fourth string's fourth fret), so it is
+    doubled. Today target-fretted takes the two Bs for one note and the doubling is not written (x222)."""
+    assert _shapes("ukulele", {"Bm": [62, 66, 71]})[0] == {"Bm": "4222"}
+
+
 def _over_a_ringing_chord(chord: list[int], melody: list[int], beat: float = 0.5) -> list[dict]:
     """A chord struck once and left to ring, and a melody over it from the second beat, as Basic Pitch hears it: every
     note of the chord stops and starts anew on each onset of the melody."""
