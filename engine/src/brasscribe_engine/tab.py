@@ -603,7 +603,7 @@ def doubled_unisons(notes: list[dict], open_strings: list[int]) -> list[dict]:
     transcription cannot tell it from a four-string strum whose unison was heard once, and the common
     four-string voicing is the one written. Two copies of one pitch on one onset are one note to
     target-fretted unless the chord is in its open-shape table, so a doubling outside that table (B of Bm
-    2224, B-flat of 3211) gets no string of its own and is not written (fingered)."""
+    4222, B-flat of 3211) gets no string of its own and is not written (fingered)."""
     by: dict[int, list[dict]] = {}
     for n in notes:
         by.setdefault(n["start"], []).append(n)

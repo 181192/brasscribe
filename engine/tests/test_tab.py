@@ -655,7 +655,7 @@ def test_a_chord_played_on_three_strings_is_completed_to_four_when_a_doubling_fi
 @needs_core
 @pytest.mark.xfail(strict=True, reason="target-fretted gives both copies of a unison one string outside its open-shape table (#154)")
 def test_a_doubling_outside_the_open_shape_table_gets_a_string_of_its_own():
-    """Bm 2224 heard with its B once: the B fits on the open-shape reach (the fourth string's fourth fret), so it is
+    """Bm 4222 heard with its B once: the B fits on the open-shape reach (the fourth string's fourth fret), so it is
     doubled. Today target-fretted takes the two Bs for one note and the doubling is not written (x222)."""
     assert _shapes("ukulele", {"Bm": [62, 66, 71]})[0] == {"Bm": "4222"}
 
