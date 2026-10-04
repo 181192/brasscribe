@@ -75,7 +75,7 @@ it is a warning and nothing is compared: this side's checks still decide.
 
 In CI a changed screen fails the job `screenshots` unless the pull request has the label `screenshots-changed` (read
 when that job runs, with retries; adding or removing the label starts CI again). The label never lets 2 or 3 through.
-`windows.yml` started by hand takes `screenshots_base` to compare with any commit. The images are in the
+`windows.yml` started by hand takes `screenshots_base` to compare with any commit, and then always takes the base (`-AlwaysBase`; with the same commit it measures the noise). The images are in the
 `windows-screenshots` and `bandroom-windows-screenshots` artefacts; no screenshot is kept in git.
 
 `known-findings.json` lists findings that are accepted for now, each with the issue that tracks it and why (`check`,

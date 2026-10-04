@@ -147,11 +147,13 @@ jobs:
         if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
         env:
           BASE: ${{ inputs.screenshots_base || github.event.pull_request.base.sha }}
+          # A hand-started comparison takes the base even when nothing the screens are made from changed.
+          ALWAYS: ${{ inputs.screenshots_base != '' && inputs.screenshots_base != null }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
           if ($env:BASE) {
             git fetch --no-tags origin $env:BASE
-            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base (git merge-base HEAD $env:BASE) -FfiDll $env:BRASSCRIBE_FFI_PATH
+            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base (git merge-base HEAD $env:BASE) -FfiDll $env:BRASSCRIBE_FFI_PATH -AlwaysBase:$($env:ALWAYS -eq 'true')
           } else {
             ./tools/Screenshots/catalogue.ps1 record -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:BRASSCRIBE_FFI_PATH
           }
@@ -453,11 +455,13 @@ jobs:
         if: ${{ !cancelled() && steps.exe.outputs.path != '' }}
         env:
           BASE: ${{ inputs.screenshots_base || github.event.pull_request.base.sha }}
+          # A hand-started comparison takes the base even when nothing the screens are made from changed.
+          ALWAYS: ${{ inputs.screenshots_base != '' && inputs.screenshots_base != null }}
         run: |
           $out = "$env:RUNNER_TEMP/bandroom-catalogue"
           if ($env:BASE) {
             git fetch --no-tags origin $env:BASE
-            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base (git merge-base HEAD $env:BASE)
+            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base (git merge-base HEAD $env:BASE) -AlwaysBase:$($env:ALWAYS -eq 'true')
           } else {
             ./tools/Screenshots/catalogue.ps1 record -Exe "${{ steps.exe.outputs.path }}" -Out $out
           }

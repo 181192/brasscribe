@@ -19,6 +19,8 @@ param(
     [Parameter(Mandatory, Position = 0)] [ValidateSet("record", "compare")] [string] $Mode,
     [Parameter(Mandatory)] [string] $Out,
     [string] $Base,
+    # Take the base even when nothing its screens are made from changed (a hand-started comparison, the noise check).
+    [switch] $AlwaysBase,
     [string] $FfiDll,
     # The app's own build: Axe.Windows and the walk with Tab run on it, one start per screen.
     [Parameter(Mandatory)] [string] $Exe,
@@ -120,7 +122,7 @@ if ($Mode -eq "compare") {
     if (-not $Base) { $why = "no such commit" }
     else {
         git -C $repo diff --quiet $Base HEAD -- @madeFrom
-        if ($LASTEXITCODE -eq 0) {
+        if ($LASTEXITCODE -eq 0 -and -not $AlwaysBase) {
             Log "nothing the screens are made from changed since $($Base.Substring(0, 12)): not taken there"
             "# Screenshots`n`nNothing the screens are made from changed since $($Base.Substring(0, 12)), so they were not compared.`n" | Set-Content $summary
         }

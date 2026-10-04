@@ -17,6 +17,8 @@ param(
     [Parameter(Mandatory)] [string] $Exe,
     [Parameter(Mandatory)] [string] $Out,
     [string] $Base,
+    # Take the base even when nothing its screens are made from changed (a hand-started comparison, the noise check).
+    [switch] $AlwaysBase,
     [string] $Configuration = "Release"
 )
 $ErrorActionPreference = "Stop"
@@ -77,7 +79,7 @@ if ($Mode -eq "compare") {
     if (-not $Base) { $why = "no such commit" }
     else {
         git -C $repo diff --quiet $Base HEAD -- @madeFrom
-        if ($LASTEXITCODE -eq 0) {
+        if ($LASTEXITCODE -eq 0 -and -not $AlwaysBase) {
             Log "nothing Bandroom's views are made from changed since $($Base.Substring(0, 12)): not taken there"
             "# Screenshots`n`nNothing Bandroom's views are made from changed since $($Base.Substring(0, 12)), so they were not compared.`n" | Set-Content $summary
         }
