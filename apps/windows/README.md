@@ -11,7 +11,11 @@ src/Brasscribe.Play.Core/            Composition model, talking score, the core 
 src/Brasscribe.Play.Audio.Windows/   WASAPI loopback capture
 src/Brasscribe.Play.Controls/        score and transport controls
 tests/Brasscribe.Play.Core.Tests/    xunit
+tests/Brasscribe.Play.Catalogue/     screen catalogue: the app as its own test host (MSTest), every screen and its checks
 tools/AxeScan/                       Axe.Windows accessibility scan
+tools/ScreenCheck/                   the catalogues' tool: Axe.Windows and Tab from outside, Bandroom's catalogue, compare
+tools/ScreenCheck.Core/              its checks on pictures and the report (any OS; tests in tools/ScreenCheck.Tests)
+tools/Screenshots/catalogue.ps1      runs the catalogue, compared with the merge base
 tools/CodeBehindCheck/               type-checks the app's C# without the XAML compiler
 tools/check-macos.sh                 everything that builds off Windows
 ```
@@ -95,7 +99,9 @@ The full Windows build, the start-up smoke test, the Axe.Windows scan and the sc
 calls it on every pull request that touches `apps/windows/`, `core/`, the design tokens or what the
 build links from `design/`, `sounds/`, `apps/fixtures/` or the score player's SoundFont (the list is
 the `windows_play` filter in `ci.yml`'s `changes` job), and on every push to main. It is part of
-`CI result`. The screenshots are an artefact (`windows-screenshots`), not compared with the merge base.
+`CI result`. The screen catalogue takes every screen in Light, Dark, Pink, bokmål, a contrast theme and 200 % text
+with its checks, and compares the screenshots with the merge base (artefact `windows-screenshots`):
+[tests/Brasscribe.Play.Catalogue/README.md](tests/Brasscribe.Play.Catalogue/README.md).
 
 ## Test tiers
 
