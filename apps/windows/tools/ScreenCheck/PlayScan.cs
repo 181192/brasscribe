@@ -52,7 +52,37 @@ internal static class PlayScan
                 result.Save(Path.Combine(outDir, "catalogue-scan.json"));
             }
         }
+        Language(exe, score, result);
+        result.Save(Path.Combine(outDir, "catalogue-scan.json"));
         Console.WriteLine($"Axe.Windows and Tab on {o.List("scenes", Scenes).Length} screens: {result.Findings.Count} findings, {result.Failed.Count} not scanned");
         return 0;
+    }
+
+    /// <summary>
+    /// The app's own build started in bokmål (--lang nb-NO, the value Settings › Language stores) names its Settings
+    /// button «Innstillinger»: the language choice reaches the app.
+    /// </summary>
+    private static void Language(string exe, string score, CatalogueRun result)
+    {
+        var psi = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
+        foreach (var a in new[] { "--show", "home", "--lang", "nb-NO", "--score", score }) psi.ArgumentList.Add(a);
+        using var app = Process.Start(psi) ?? throw new InvalidOperationException("Play did not start");
+        try
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(90);
+            while (app.MainWindowHandle == 0 && !app.HasExited && DateTime.UtcNow < deadline) { Thread.Sleep(500); app.Refresh(); }
+            if (app.MainWindowHandle == 0) { result.Failed.Add("language: Play showed no window with --lang nb-NO"); return; }
+            Win.Steady(app.MainWindowHandle);
+            using var automation = new FlaUI.UIA3.UIA3Automation();
+            var button = automation.FromHandle(app.MainWindowHandle).FindFirstDescendant(cf => cf.ByAutomationId("SettingsButton"));
+            string name = button?.Properties.Name.ValueOrDefault ?? "(no Settings button)";
+            if (name != "Innstillinger")
+                result.Findings.Add(new Finding("home--nb", "language", "Button \"SettingsButton\"",
+                    $"named \"{name}\" with --lang nb-NO, not «Innstillinger»: the app is not in bokmål"));
+        }
+        finally
+        {
+            if (!app.HasExited) app.Kill(entireProcessTree: true);
+        }
     }
 }

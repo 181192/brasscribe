@@ -63,6 +63,7 @@ internal static class Scan
         var bounds = window.BoundingRectangle;
 
         var seen = new HashSet<string>();
+        var visited = new List<AutomationElement>();
         string? first = null;
         bool round = false;
         for (int i = 0; i < MaxStops; i++)
@@ -80,6 +81,7 @@ internal static class Scan
             if (id == first) { round = true; break; }
             first ??= id;
             seen.Add(id);
+            visited.Add(focused);
             var r = focused.BoundingRectangle;
             order.Add($"{Describe(focused)} at {r.X},{r.Y} {r.Width}x{r.Height}");
             bool shown = !focused.Properties.IsOffscreen.ValueOrDefault && r.Width > 0 && r.Height > 0 && r.IntersectsWith(bounds);
@@ -87,8 +89,9 @@ internal static class Scan
         }
         if (!round) findings.Add(new Finding(shot, "keyboard", "the window", $"Tab does not come back round within {MaxStops} stops"));
 
-        // Every control on screen that takes the keyboard should be reached; inside an open dialog, only the dialog's.
-        var scope = window.FindFirstDescendant(cf => cf.ByClassName("ContentDialog")) ?? window;
+        // Every control on screen that takes the keyboard should be reached, within the part the walk went round: the
+        // window, or an open dialog that keeps the focus in itself (what the stops have in common).
+        var scope = CommonAncestor(visited) ?? window;
         foreach (var e in scope.FindAllDescendants())
         {
             if (!Reachable(e) || seen.Contains(Id(e))) continue;
@@ -119,6 +122,23 @@ internal static class Scan
         {
             return false; // gone while it was read
         }
+    }
+
+    /// <summary>The innermost element that holds every stop of the walk (by their chains of parents).</summary>
+    private static AutomationElement? CommonAncestor(List<AutomationElement> stops)
+    {
+        List<AutomationElement>? common = null;
+        foreach (var stop in stops)
+        {
+            var chain = new List<AutomationElement>();
+            try { for (var up = stop.Parent; up is not null; up = up.Parent) chain.Insert(0, up); }
+            catch (System.Runtime.InteropServices.COMException) { continue; }
+            if (common is null) { common = chain; continue; }
+            int n = 0;
+            while (n < common.Count && n < chain.Count && Id(common[n]) == Id(chain[n])) n++;
+            common = common[..n];
+        }
+        return common is { Count: > 0 } ? common[^1] : null;
     }
 
     private static string Id(AutomationElement e) => string.Join(".", e.Properties.RuntimeId.ValueOrDefault ?? []);

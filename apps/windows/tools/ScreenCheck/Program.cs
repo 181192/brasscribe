@@ -61,7 +61,6 @@ static int Compare(Options o)
     // Screens that did not keep still on either side are not compared.
     var skip = new[] { before, after }.Where(Directory.Exists)
         .SelectMany(d => Directory.GetFiles(d, "catalogue-*.json")).SelectMany(f => CatalogueRun.Load(f).Unsteady).ToHashSet();
-    if (Directory.Exists(report)) Directory.Delete(report, true);
     Directory.CreateDirectory(report);
     var result = ScreenshotReport.Write(before, after, report, Png.Load, Png.Save, skip);
     Console.WriteLine(result.Summary);

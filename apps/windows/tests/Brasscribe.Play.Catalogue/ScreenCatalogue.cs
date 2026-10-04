@@ -65,8 +65,9 @@ public sealed class ScreenCatalogue
                 var (picture, steady) = await SteadyAsync(root);
                 if (Options.Contrast && first is not null)
                 {
-                    // A contrast theme always wins: every choice must look the same as the first.
-                    if (!picture.SameAs(first) && ImageDiff.Of(first, picture).Changed > ImageDiff.FloorPixels)
+                    // A contrast theme always wins: every choice must look the same as the first (but in Settings,
+                    // whose Appearance box shows the choice).
+                    if (scene != "settings" && !picture.SameAs(first) && ImageDiff.Of(first, picture).Changed > ImageDiff.FloorPixels)
                         Run.Findings.Add(new Finding(ShotName(scene, Options.Variants[0]), "contrast-theme",
                             AppearanceSetting.Serialise(variant), "this Appearance choice changed the screen under a contrast theme"));
                 }
