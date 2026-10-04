@@ -564,6 +564,13 @@ private fun StandLayer(
                 role = if (st.loop != null || ms.lastLoop != null) Role.Switch else Role.Button,
             )
         }
+        // While a repeat is set, the page pedals play, pause and go back to its start: said where Repeat is.
+        val pedals = @Composable {
+            st.loop?.takeIf { no.brasscribe.play.Product.PEDALS_REPEAT }?.let { loop ->
+                Text(stringResource(R.string.stand_pedals_repeat, loop.first), style = MaterialTheme.typography.bodyMedium,
+                    color = c.textMuted, modifier = Modifier.semantics { testTag = "stand-pedals" })
+            }
+        }
         val gap = Arrangement.spacedBy(BrasscribeSpace.s3)
         if (!shape.landscape) Column(Modifier.padding(BrasscribeSpace.s3), verticalArrangement = gap) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { transport() }
@@ -571,6 +578,7 @@ private fun StandLayer(
                 SpeedStepper(st.speed, onSpeed) { ms.touches++ }
                 repeat()
             }
+            pedals()
             if (onlyMine || shape.lockAvailable) FlowRow(horizontalArrangement = gap, verticalArrangement = gap) {
                 if (onlyMine) OnlyMineToggle(ms.onlyMine, onOnlyMine)
                 if (shape.lockAvailable) LockToggle(ms.locked, onLock)
@@ -584,6 +592,7 @@ private fun StandLayer(
             Spacer(Modifier.size(BrasscribeSpace.s2))
             SpeedStepper(st.speed, onSpeed) { ms.touches++ }
             repeat()
+            pedals()
             if (shape.tablet && onlyMine) OnlyMineToggle(ms.onlyMine, onOnlyMine)
             onTurnMusic?.let { TurnMusicPill(it, Modifier) }
         }
@@ -664,12 +673,13 @@ private fun HoldStepper(icon: Int, label: String, tag: String, enabled: Boolean,
 
 /**
  * Handles a key on the stand (§7); true when it was the stand's. [run] also gets whether the key
- * shows the controls: Tab and Space do; page keys, which pedals send, turn the page with the layer as it is.
+ * shows the controls: Tab and Space do; page keys, which pedals send, turn the page with the layer as it is (or, while
+ * [repeating], play, pause and go back to the repeat's start).
  */
-fun standKey(e: androidx.compose.ui.input.key.KeyEvent, focusInLayer: Boolean, run: (StandCommand, Boolean) -> Unit): Boolean {
+fun standKey(e: androidx.compose.ui.input.key.KeyEvent, focusInLayer: Boolean, repeating: Boolean = false, run: (StandCommand, Boolean) -> Unit): Boolean {
     val n = e.nativeKeyEvent
     val code = e.key.nativeKeyCode
-    val cmd = MusicStandRules.command(code, n.isCtrlPressed, n.isAltPressed, n.isShiftPressed) ?: return false
+    val cmd = MusicStandRules.command(code, n.isCtrlPressed, n.isAltPressed, n.isShiftPressed, repeating) ?: return false
     val shows = MusicStandRules.showsControls(code)
     // Space on a focused button presses that button; Tab still moves the focus.
     if (cmd == StandCommand.PLAY_PAUSE && focusInLayer && code == android.view.KeyEvent.KEYCODE_SPACE) return false

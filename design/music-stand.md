@@ -97,7 +97,7 @@ The stand opens on **your part**: the seat's part from `docs/plan/my-instrument.
 
 ### 4.2 Showing and hiding
 
-- **Showing.** A tap on the music shows the layer, on pointer-up (2.5.2), and so does Tab or Space. The page keys (arrows, Page Up/Down, Home/End) turn the page and leave the layer as it is: a Bluetooth page turner is a keyboard that sends them, and a pedal press must not put controls over the music. A hardware keyboard being attached keeps nothing on screen by itself. The layer also shows on entry while the music is paused.
+- **Showing.** A tap on the music shows the layer, on pointer-up (2.5.2), and so does Tab or Space. The page keys (arrows, Page Up/Down, Home/End) turn the page (or, while a repeat is set, play, pause and go back to its start, §7) and leave the layer as it is: a Bluetooth page turner is a keyboard that sends them, and a pedal press must not put controls over the music. A hardware keyboard being attached keeps nothing on screen by itself. The layer also shows on entry while the music is paused.
 - **Hiding.**
   - A tap on the music hides the layer.
   - It also hides itself 4 s after the last touch, **only while the music plays**. While paused it stays.
@@ -189,8 +189,8 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 
 | Key | In the stand | Notes |
 |---|---|---|
-| → ↓ Page Down | Next page | The keys Bluetooth page turners (AirTurn, PageFlip and others) send in their arrow and page modes |
-| ← ↑ Page Up | Previous page | |
+| → ↓ Page Down | Next page; **play / pause** while a repeat is set | The keys Bluetooth page turners (AirTurn, PageFlip and others) send in their arrow and page modes |
+| ← ↑ Page Up | Previous page; **back to the repeat's first bar** while a repeat is set | A loop needs no page turn, so a two-button pedal runs it hands-free. The layer says so under Repeat, and Help too (Android). |
 | Space | Play / pause | As in the score. A pedal in **Space** mode therefore starts and stops the music. Help says to use the arrow or page mode. |
 | Home / End | First / last page | |
 | Option+↓ ↑ (Mac), Ctrl+↓ ↑ (Windows, Android) | Next / previous bar | The existing bar shortcuts |
@@ -243,6 +243,8 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | `stand_speed` | Speed 75% | Tempo 75 % |
 | `stand_slower` / `stand_faster` | Slower / Faster | Saktere / Raskere |
 | `stand_repeat` / on | Repeat / Repeat 13–14 | Gjenta / Gjenta 13–14 |
+| `stand_pedals_repeat` (under Repeat while a repeat is set) | Pedals: right plays and pauses, left goes back to bar 13. | Pedaler: høyre spiller av og pauser, venstre går tilbake til takt 13. |
+| `stand_back_to_repeat` (announcement) | Back to bar 13. | Tilbake til takt 13. |
 | `stand_only_mine` (toggle; hidden with no seat) | Only my part | Bare stemmen min |
 | `stand_lock` / on | Lock rotation / Rotation locked | Lås retningen / Retningen er låst |
 | `stand_turn` | Turn the music | Snu notene |
@@ -256,7 +258,7 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | `stand_left` | Music stand closed. | Notestativet er lukket. |
 | `settings_stand_controls` | Keep the stand controls visible | Vis alltid knappene på notestativet |
 | `settings_stand_follow` (on by default) | Turn the pages while playing | Bla om mens musikken spiller |
-| `help_stand_pedal` | Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music. | Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken. |
+| `help_stand_pedal` | Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music. While a repeat is set, the pedals don't turn pages: right (Page Down) plays and pauses, and left (Page Up) goes back to the start of the repeat. | Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken. Når noe gjentas, blar ikke pedalene: høyre (Page Down) spiller av og pauser, og venstre (Page Up) går tilbake til starten av det som gjentas. |
 | `help_stand_tablet_lock` | To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android). | Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning. |
 
 ## 10. WCAG 2.2 AA mapping

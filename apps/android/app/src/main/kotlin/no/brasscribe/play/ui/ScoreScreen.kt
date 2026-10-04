@@ -357,6 +357,11 @@ fun ScoreScreen(vm: PlayViewModel) {
             StandCommand.NEXT_BAR -> moveBar(1)
             StandCommand.PREVIOUS_BAR -> moveBar(-1)
             StandCommand.PLAY_PAUSE -> controller.togglePlay()
+            StandCommand.REPEAT_START -> st.loop?.let { loop ->
+                // The music goes on from there if it was playing; paused, the page with the bar comes.
+                controller.goToBar(loop.first)
+                quiet(res.getString(R.string.stand_back_to_repeat, loop.first))
+            }
             StandCommand.LEAVE -> leaveStand()
             StandCommand.SHOW_CONTROLS -> Unit
         }
@@ -501,7 +506,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         Column(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
             val n = e.nativeKeyEvent
             when {
-                ms.open -> standKey(e, ms.layerFocused, ::standCommand)
+                ms.open -> standKey(e, ms.layerFocused, repeating = no.brasscribe.play.Product.PEDALS_REPEAT && st.loop != null, run = ::standCommand)
                 // F opens the stand (a single-key shortcut on the score screen, 2.1.4).
                 e.type == KeyEventType.KeyDown && !textView &&
                     MusicStandRules.opensStand(e.key.nativeKeyCode, n.isCtrlPressed, n.isAltPressed, n.isShiftPressed) -> { enterStand(StandOrigin.BUTTON); true }

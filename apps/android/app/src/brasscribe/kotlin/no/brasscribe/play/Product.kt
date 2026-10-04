@@ -21,6 +21,9 @@ object Product {
     /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
     const val OPENS_SCORES = true
 
+    /** While a repeat is set on the music stand, the page pedals play, pause and go back to its start. */
+    const val PEDALS_REPEAT = true
+
     /** A recording whose score was not made (it failed, was put off or was stopped) is kept in Your scores. */
     const val KEEPS_RECORDINGS = true
 

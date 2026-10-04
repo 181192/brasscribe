@@ -463,6 +463,10 @@
     <string name="stand_faster">Faster</string>
     <string name="stand_repeat">Repeat</string>
     <string name="stand_repeat_on">Repeat %1$d–%2$d</string>
+    <!-- Music stand, under Repeat while a repeat is set: what a page pedal does then. -->
+    <string name="stand_pedals_repeat">Pedals: right plays and pauses, left goes back to bar %1$d.</string>
+    <!-- Said when a pedal goes back to the start of the repeat. -->
+    <string name="stand_back_to_repeat">Back to bar %1$d.</string>
     <string name="stand_only_mine">Only my part</string>
     <string name="stand_lock">Lock rotation</string>
     <string name="stand_lock_on">Rotation locked</string>
@@ -481,7 +485,7 @@
     <string name="settings_stand_follow">Turn the pages while playing</string>
     <!-- Help: the heading over the page turners and keys. -->
     <string name="help_stand_title">Music stand</string>
-    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.</string>
+    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music. While a repeat is set, the pedals don\'t turn pages: right (Page Down) plays and pauses, and left (Page Up) goes back to the start of the repeat.</string>
     <string name="help_stand_tablet_lock">To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).</string>
     <string name="opened_score">Opened %1$s.</string>
     <string name="home_open_score">Open a score</string>

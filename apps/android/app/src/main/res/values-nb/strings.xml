@@ -458,6 +458,8 @@
     <string name="stand_faster">Raskere</string>
     <string name="stand_repeat">Gjenta</string>
     <string name="stand_repeat_on">Gjenta %1$d–%2$d</string>
+    <string name="stand_pedals_repeat">Pedaler: høyre spiller av og pauser, venstre går tilbake til takt %1$d.</string>
+    <string name="stand_back_to_repeat">Tilbake til takt %1$d.</string>
     <string name="stand_only_mine">Bare stemmen min</string>
     <string name="stand_lock">Lås retningen</string>
     <string name="stand_lock_on">Retningen er låst</string>
@@ -475,7 +477,7 @@
     <string name="settings_stand_controls">Vis alltid knappene på notestativet</string>
     <string name="settings_stand_follow">Bla om mens musikken spiller</string>
     <string name="help_stand_title">Notestativ</string>
-    <string name="help_stand_pedal">Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken.</string>
+    <string name="help_stand_pedal">Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken. Når noe gjentas, blar ikke pedalene: høyre (Page Down) spiller av og pauser, og venstre (Page Up) går tilbake til starten av det som gjentas.</string>
     <string name="help_stand_tablet_lock">Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning.</string>
     <string name="opened_score">Åpnet %1$s.</string>
     <string name="home_open_score">Åpne et partitur</string>
