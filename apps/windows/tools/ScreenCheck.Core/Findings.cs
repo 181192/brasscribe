@@ -17,12 +17,12 @@ public sealed record Finding(string Shot, string Check, string What, string Deta
 }
 
 /// <summary>
-/// A finding that is known and accepted for now, with why. An entry that matches nothing any more is reported, so
-/// it is removed once what it describes is fixed.
+/// A finding that is known and accepted for now, with the issue that tracks it and why. An entry that matches nothing
+/// any more is reported, so it is removed once its issue is fixed. Nothing is listed without an issue.
 /// </summary>
 /// <param name="Shot">A regular expression the whole screenshot name must match.</param>
 /// <param name="What">A regular expression the whole element description must match.</param>
-public sealed record KnownFinding(string Check, string Shot, string What, string Why)
+public sealed record KnownFinding(string Check, string Shot, string What, int Issue, string Why)
 {
     public bool Matches(Finding f) =>
         f.Check == Check && Regex.IsMatch(f.Shot, $"^(?:{Shot})$") && Regex.IsMatch(f.What, $"^(?:{What})$");
@@ -53,8 +53,15 @@ public sealed class CatalogueRun
 
     public static CatalogueRun Load(string path) => JsonSerializer.Deserialize<CatalogueRun>(File.ReadAllText(path), Json) ?? new();
 
-    public static List<KnownFinding> LoadKnown(string path) =>
-        File.Exists(path) ? JsonSerializer.Deserialize<List<KnownFinding>>(File.ReadAllText(path), Json) ?? [] : [];
+    /// <summary>The known findings; an entry without its issue is an error (InvalidDataException).</summary>
+    public static List<KnownFinding> LoadKnown(string path)
+    {
+        var known = File.Exists(path) ? JsonSerializer.Deserialize<List<KnownFinding>>(File.ReadAllText(path), Json) ?? [] : [];
+        foreach (var k in known)
+            if (k.Issue <= 0 || string.IsNullOrWhiteSpace(k.Why))
+                throw new InvalidDataException($"{path}: the known finding {k.Check} {k.Shot} {k.What} needs its issue and why");
+        return known;
+    }
 }
 
 /// <summary>The catalogue's answer over all its runs: what is new, what is known, and which known entries are stale.</summary>
@@ -85,7 +92,7 @@ public sealed record Verdict(int Shots, IReadOnlyList<string> Failed, IReadOnlyL
         var lines = new List<string> { $"# {title}", "", $"{Shots} screenshots; {New.Count} new findings, {Known.Count} known, {Failed.Count} screens not taken." };
         if (Failed.Count > 0) lines.AddRange(["", "## Not taken", .. Failed.Select(f => $"- {f}")]);
         if (New.Count > 0) lines.AddRange(["", "## New findings", .. New.Select(f => $"- `{f.Shot}` {f.Check}: {f.What}: {f.Detail}")]);
-        if (Stale.Count > 0) lines.AddRange(["", "## Known findings that no longer occur (remove them from the list)", .. Stale.Select(k => $"- {k.Check} `{k.Shot}` `{k.What}`")]);
+        if (Stale.Count > 0) lines.AddRange(["", "## Known findings that no longer occur (remove them from the list)", .. Stale.Select(k => $"- {k.Check} `{k.Shot}` `{k.What}` (#{k.Issue})")]);
         if (Known.Count > 0) lines.AddRange(["", "## Known findings", .. Known.Select(f => $"- `{f.Shot}` {f.Check}: {f.What}: {f.Detail}")]);
         if (Unsteady.Count > 0) lines.AddRange(["", "## Not compared (the screen did not keep still)", .. Unsteady.Select(s => $"- `{s}`")]);
         return string.Join("\n", lines) + "\n";

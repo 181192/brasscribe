@@ -108,7 +108,7 @@ build for testing again.
 On a pull request, CI (`ci.yml`) runs the same on Linux for the areas the change touches, and the
 Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`, `apps/bandroom/windows/`,
 `core/`, the design tokens, `sounds/`, or the pixi workspace and engine sources Bandroom bundles: the core
-tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test, the Axe.Windows scans and both apps'
+tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test and both apps'
 screen catalogues, whose screenshots are compared with the merge base on that runner
 ([apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../apps/windows/tests/Brasscribe.Play.Catalogue/README.md)).
 The `changes` job's filters say exactly which paths count. Apple

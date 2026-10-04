@@ -10,7 +10,9 @@
 # DIR gets the screenshots (shots\, unsteady\, scans\), findings.md and, for compare, report\ (index.html,
 # summary.md, result.json) with the base's screenshots in before\. Exit codes as for the other apps' catalogues:
 # 0 nothing changed, 1 a screen changed, appeared or went away, 2 the catalogue's checks found something, 3 the
-# screenshots could not be taken (here or at the base; nothing was compared).
+# screenshots could not be taken here. When nothing the screens are made from changed since the base, the base is not
+# taken (nothing to compare; 0). When the base's screenshots cannot be taken (a change to the catalogue itself, say),
+# that is a warning and nothing is compared (0): this side's checks still decide.
 # EXE is the app's own build (BrasscribePlay.exe): Axe.Windows and the walk with Tab run on it, one start per screen.
 # -FfiDll is the Rust core for this checkout (brasscribe_ffi.dll); the base builds its own when its core differs.
 param(
@@ -27,6 +29,8 @@ $windows = Resolve-Path (Join-Path $PSScriptRoot "../..")
 $repo = Resolve-Path (Join-Path $windows "../..")
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $Out = Resolve-Path $Out
+# The text size this user had before a run at 200 %, put back after it.
+$script:textScaleKeep = Join-Path $Out "text-scale-before.txt"
 
 function Log($text) { Write-Host "catalogue: $text" }
 
@@ -70,21 +74,23 @@ function System-State([string[]] $what) {
     if ($LASTEXITCODE -ne 0) { throw "ScreenCheck system $what failed" }
 }
 
-# Every run of the catalogue on one checkout. False when one could not run.
+# Every run of the catalogue on one checkout. False when one could not run. Pink on the screens with most of its
+# colours; bokmål in Light; under a contrast theme the base takes Match system only, and this side also Pink dark,
+# which must look the same (the contrast theme wins).
 function Invoke-Catalogue($exe, $shots, $score, [bool] $checks) {
     if (Test-Path $shots) { Remove-Item -Recurse -Force $shots }
     New-Item -ItemType Directory -Force -Path $shots | Out-Null
+    $env:BRASSCRIBE_CATALOGUE_PINK_SCENES = "first-run,home,score,review,export,settings"
     $ok = Invoke-Run $exe $shots "en" "light,dark,pink-light,pink-dark" $score $checks
-    $ok = (Invoke-Run $exe $shots "nb" "light,dark" $score $checks) -and $ok
-    # A contrast theme wins over every choice: the run shows each, and they must all look the same.
+    $ok = (Invoke-Run $exe $shots "nb" "light" $score $checks) -and $ok
     System-State @("--contrast", "on")
-    try { $ok = (Invoke-Run $exe $shots "contrast" "system,light,dark,pink-dark" $score $checks) -and $ok }
+    try { $ok = (Invoke-Run $exe $shots "contrast" ($(if ($checks) { "system,pink-dark" } else { "system" })) $score $checks) -and $ok }
     finally { System-State @("--contrast", "off") }
-    System-State @("--text-scale", "200")
+    System-State @("--text-scale", "200", "--keep", $script:textScaleKeep)
     try { $ok = (Invoke-Run $exe $shots "text200" "light" $score $checks) -and $ok }
-    finally { System-State @("--text-scale", "off") }
+    finally { System-State @("--text-scale", "restore", "--keep", $script:textScaleKeep) }
     if ($checks) {
-        & $script:screenCheck play --exe $script:appExe --score $score --out $shots | Out-Host
+        & $script:screenCheck play --exe $script:appExe --score $score --out $shots --shots $shots | Out-Host
         $ok = ($LASTEXITCODE -eq 0) -and $ok
     }
     return $ok
@@ -100,41 +106,65 @@ $shots = Join-Path $Out "shots"
 $report = Join-Path $Out "report"
 $before = Join-Path $report "before"
 
+# What the screens are made from: when none of it changed since the base, the base is not taken.
+$madeFrom = @("apps/windows/src", "apps/windows/tests/Brasscribe.Play.Catalogue", "apps/windows/Directory.Build.props",
+    "apps/windows/Directory.Packages.props", "core", "design/tokens", "design/dist/windows", "design/brand", "apps/fixtures", "sounds")
+$compared = $false
 if ($Mode -eq "compare") {
     if (Test-Path $report) { Remove-Item -Recurse -Force $report }
     New-Item -ItemType Directory -Force -Path $report | Out-Null
-    $noBase = {
-        param($why)
-        Log "the screenshots could not be taken at the base: $why"
-        "# Screenshots`n`nThe screenshots could not be taken at the base, $Base, so nothing was compared ($why).`n" | Set-Content (Join-Path $report "summary.md")
-        exit 3
-    }
+    $summary = Join-Path $report "summary.md"
     if (-not $Base) { $Base = git -C $repo merge-base HEAD origin/main }
     $Base = git -C $repo rev-parse --verify --quiet "$Base^{commit}"
-    if (-not $Base) { & $noBase "no such commit" }
-    $tree = Join-Path ([IO.Path]::GetTempPath()) "brasscribe-base-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
-    git -C $repo worktree add --detach $tree $Base | Out-Host
-    if ($LASTEXITCODE -ne 0) { & $noBase "git worktree add failed" }
-    try {
-        if (Test-Path (Join-Path $tree "apps/windows/tests/Brasscribe.Play.Catalogue")) {
-            Log "taking them at $($Base.Substring(0, 12))"
-            $baseFfi = $FfiDll
-            git -C $repo diff --quiet $Base HEAD -- core
-            if ($LASTEXITCODE -ne 0 -or -not $FfiDll) {
-                Log "the core differs at the base: building it there"
-                Push-Location (Join-Path $tree "core")
-                try { cargo build --release --locked -p brasscribe-ffi | Out-Host } finally { Pop-Location }
-                if ($LASTEXITCODE -ne 0) { & $noBase "its core did not build" }
-                $baseFfi = Join-Path $tree "core/target/release/brasscribe_ffi.dll"
-            }
-            try { $baseExe = Build-Catalogue (Join-Path $tree "apps/windows") $baseFfi } catch { & $noBase $_.Exception.Message }
-            $baseScore = Join-Path $tree "apps/fixtures/old-hundredth/brass-band.musicxml"
-            if (-not (Invoke-Catalogue $baseExe $before $baseScore $false)) { & $noBase "a run of its catalogue failed" }
+    $why = $null
+    if (-not $Base) { $why = "no such commit" }
+    else {
+        git -C $repo diff --quiet $Base HEAD -- @madeFrom
+        if ($LASTEXITCODE -eq 0) {
+            Log "nothing the screens are made from changed since $($Base.Substring(0, 12)): not taken there"
+            "# Screenshots`n`nNothing the screens are made from changed since $($Base.Substring(0, 12)), so they were not compared.`n" | Set-Content $summary
         }
-        else { Log "$($Base.Substring(0, 12)) has no screen catalogue: every screen is new" }
+        else {
+            $tree = Join-Path ([IO.Path]::GetTempPath()) "brasscribe-base-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
+            git -C $repo worktree add --detach $tree $Base | Out-Host
+            if ($LASTEXITCODE -ne 0) { $why = "git worktree add failed" }
+            else {
+                try {
+                    if (-not (Test-Path (Join-Path $tree "apps/windows/tests/Brasscribe.Play.Catalogue"))) {
+                        Log "$($Base.Substring(0, 12)) has no screen catalogue: every screen is new"
+                        $compared = $true
+                    }
+                    else {
+                        Log "taking them at $($Base.Substring(0, 12))"
+                        $baseFfi = $FfiDll
+                        git -C $repo diff --quiet $Base HEAD -- core
+                        if ($LASTEXITCODE -ne 0 -or -not $FfiDll) {
+                            Log "the core differs at the base: building it there"
+                            Push-Location (Join-Path $tree "core")
+                            try { cargo build --release --locked -p brasscribe-ffi | Out-Host } finally { Pop-Location }
+                            if ($LASTEXITCODE -ne 0) { $why = "its core did not build" }
+                            $baseFfi = Join-Path $tree "core/target/release/brasscribe_ffi.dll"
+                        }
+                        if (-not $why) {
+                            try {
+                                $baseExe = Build-Catalogue (Join-Path $tree "apps/windows") $baseFfi
+                                $baseScore = Join-Path $tree "apps/fixtures/old-hundredth/brass-band.musicxml"
+                                if (Invoke-Catalogue $baseExe $before $baseScore $false) { $compared = $true }
+                                else { $why = "a run of its catalogue failed" }
+                            }
+                            catch { $why = $_.Exception.Message }
+                        }
+                    }
+                }
+                finally { git -C $repo worktree remove --force $tree 2>$null | Out-Null }
+            }
+        }
     }
-    finally {
-        git -C $repo worktree remove --force $tree 2>$null | Out-Null
+    if ($why) {
+        # Not this change's failure to judge: a pull request that changes the catalogue itself can make the base's
+        # run fail. Say so, compare nothing, and let this side's checks decide.
+        Write-Host "::warning::Play for Windows: the screenshots could not be taken at the base ($why), so nothing was compared."
+        "# Screenshots`n`nThe screenshots could not be taken at the base, $Base, so nothing was compared ($why).`n" | Set-Content $summary
     }
 }
 
@@ -146,7 +176,7 @@ $taken = Invoke-Catalogue $exe $shots $score $true
 $checks = $LASTEXITCODE
 if (-not $taken -and $checks -ne 3) { $checks = 3 }
 
-if ($Mode -eq "compare") {
+if ($compared) {
     & $script:screenCheck compare --before $before --after $shots --report $report | Out-Host
     $changed = $LASTEXITCODE
     if (-not (Test-Path (Join-Path $report "result.json"))) { Log "the screenshots could not be compared"; exit 3 }

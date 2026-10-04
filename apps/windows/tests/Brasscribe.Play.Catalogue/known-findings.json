@@ -3,6 +3,7 @@
     "check": "contrast",
     "shot": "first-run--pink-light",
     "what": "\"\\?\"",
-    "why": "The boxed ? on First run is the very-unsure mark shown as a picture of the mark, in the notation's orange, which Pink keeps (design/system.md §10, Pink): 4.24:1 on Pink's secondary tint, over the 3:1 a graphic needs but under the 4.5:1 of text. Whether Pink should darken it there is a design decision."
+    "issue": 273,
+    "why": "The boxed ? on First run is the very-unsure orange #B04A00 on Pink's secondary tint #F9DAE7, 4.24:1; a darker Pink very-unsure changes design/system.md §10 (score hues as in Light), so it waits for that decision."
   }
 ]

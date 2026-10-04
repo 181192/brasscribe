@@ -35,6 +35,17 @@ public class ScreenCheckTests
     }
 
     [Fact]
+    public void Png_refuses_a_file_without_its_header_or_too_large()
+    {
+        var good = Png.Encode(Picture.Blank(2, 2));
+        var noHeader = good[..8].Concat(good[33..]).ToArray(); // the signature, then IDAT: IHDR left out
+        Assert.Throws<InvalidDataException>(() => Png.Decode(noHeader));
+        var huge = (byte[])good.Clone();
+        huge[16] = 0x7F; // the width's top byte: about two thousand million
+        Assert.Throws<InvalidDataException>(() => Png.Decode(huge));
+    }
+
+    [Fact]
     public void Contrast_follows_wcag_for_known_pairs()
     {
         Assert.Equal(21, Contrast.Ratio(White, Black), 2);
@@ -171,14 +182,24 @@ public class ScreenCheckTests
         Assert.Equal(0, Verdict.Of([run], []).ExitCode);
         run.Findings.Add(new Finding("home--dark", "contrast", "\"Hello\"", "2.10:1"));
         Assert.Equal(2, Verdict.Of([run], []).ExitCode);
-        var known = new KnownFinding("contrast", "home--.*", "\"Hello\"", "tracked");
-        var v = Verdict.Of([run], [known, new KnownFinding("clipped", "home--light", ".*", "fixed since")]);
+        var known = new KnownFinding("contrast", "home--.*", "\"Hello\"", 1, "tracked");
+        var v = Verdict.Of([run], [known, new KnownFinding("clipped", "home--light", ".*", 2, "fixed since")]);
         Assert.Equal(0, v.ExitCode);
         Assert.Single(v.Known);
         Assert.Equal("clipped", Assert.Single(v.Stale).Check);
         run.Failed.Add("score: TimeoutException");
         Assert.Equal(3, Verdict.Of([run], [known]).ExitCode);
         Assert.Equal(3, Verdict.Of([], []).ExitCode); // nothing taken is never a pass
+    }
+
+    [Fact]
+    public void A_known_finding_without_its_issue_is_refused()
+    {
+        string path = Path.Combine(Directory.CreateTempSubdirectory().FullName, "known.json");
+        File.WriteAllText(path, """[{ "check": "contrast", "shot": "a", "what": "b", "why": "c" }]""");
+        Assert.Throws<InvalidDataException>(() => CatalogueRun.LoadKnown(path));
+        File.WriteAllText(path, """[{ "check": "contrast", "shot": "a", "what": "b", "issue": 273, "why": "c" }]""");
+        Assert.Equal(273, Assert.Single(CatalogueRun.LoadKnown(path)).Issue);
     }
 
     [Fact]

@@ -7,12 +7,15 @@ using Brasscribe.ScreenCheck;
 //   play     --exe EXE --score FILE --out DIR [--scenes a,b]   Axe.Windows and Tab on each of Play's screens, one start each
 //   bandroom --exe EXE --out DIR --run en|nb|contrast|text200 [--themes light,dark] [--scenes a,b:state] [--checks 0]
 //                                                       Bandroom's catalogue: one start per view, its screenshots and checks
-//   system   --contrast on|off | --text-scale PERCENT|off   a contrast theme or a text size for the next run (this user)
+//   system   --contrast on|off | --text-scale PERCENT --keep FILE | --text-scale restore --keep FILE
+//                                                       a contrast theme or a text size for the next run (this user); the
+//                                                       text size there was before is kept in FILE and put back
 //   verdict  --dir DIR --known FILE --title TEXT [--summary FILE]
 //                                                       the findings of a catalogue's runs: exit 0 none new, 2 new, 3 screens not taken
 //   compare  --before DIR --after DIR --report DIR      screenshots at the merge base against these: exit 0 same, 1 changed
 //
-// Exit 3 when a command could not do its work (nothing was checked); 2 for wrong usage.
+// Exit 3 when a command could not do its work (nothing was checked); 64 for wrong usage (never 1, 2 or 3, which say
+// what a catalogue found).
 var options = Options.Parse(args.Skip(1));
 try
 {
@@ -41,7 +44,7 @@ catch (Exception e)
 static int Usage()
 {
     Console.Error.WriteLine("usage: ScreenCheck scan|play|bandroom|system|verdict|compare [--name value]... (see Program.cs)");
-    return 2;
+    return 64;
 }
 
 static int Verdict(Options o)

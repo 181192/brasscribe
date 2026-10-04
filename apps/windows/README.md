@@ -12,7 +12,6 @@ src/Brasscribe.Play.Audio.Windows/   WASAPI loopback capture
 src/Brasscribe.Play.Controls/        score and transport controls
 tests/Brasscribe.Play.Core.Tests/    xunit
 tests/Brasscribe.Play.Catalogue/     screen catalogue: the app as its own test host (MSTest), every screen and its checks
-tools/AxeScan/                       Axe.Windows accessibility scan
 tools/ScreenCheck/                   the catalogues' tool: Axe.Windows and Tab from outside, Bandroom's catalogue, compare
 tools/ScreenCheck.Core/              its checks on pictures and the report (any OS; tests in tools/ScreenCheck.Tests)
 tools/Screenshots/catalogue.ps1      runs the catalogue, compared with the merge base
@@ -76,10 +75,10 @@ Set `BRASSCRIBE_FFI_PATH` to the built DLL to include the native-core tests
 (the talking-score vectors through the C ABI). Tests that need `data/` or
 `models/` skip when those are absent.
 
-Accessibility scan on a built exe:
+Axe.Windows and the walk with Tab on every screen of a built exe (one start per screen):
 
 ```powershell
-dotnet run --project tools/AxeScan -c Release -- <path-to-exe> <output-dir> tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
+dotnet run --project tools/ScreenCheck -c Release -- play --exe <path-to-exe> --score ../fixtures/old-hundredth/brass-band.musicxml --out <output-dir>
 ```
 
 ## On macOS or Linux
@@ -95,7 +94,7 @@ It runs the core tests, builds the audio and controls libraries, and
 type-checks the app's C# through `tools/CodeBehindCheck`. Set `DOTNET_ROOT` if
 your SDK is not at `/opt/homebrew/opt/dotnet/libexec`.
 
-The full Windows build, the start-up smoke test, the Axe.Windows scan and the screenshots run in
+The full Windows build, the start-up smoke test and the screen catalogue (screenshots, Axe.Windows, Tab) run in
 [.github/workflows/windows.yml](../../.github/workflows/windows.yml), on a Windows runner. `ci.yml`
 calls it on every pull request that touches `apps/windows/`, `core/`, the design tokens or what the
 build links from `design/`, `sounds/`, `apps/fixtures/` or the score player's SoundFont (the list is

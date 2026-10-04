@@ -35,7 +35,8 @@ public sealed class ScreenCatalogue
     {
         Directory.CreateDirectory(Options.Out);
         var store = new InMemorySettings();
-        store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(Options.Variants[0]));
+        var variants = Options.VariantsFor(scene);
+        store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(variants[0]));
         store.Set(AppearanceSetting.PinkUnlockedKey, true);
         store.Set(nameof(SettingsViewModel.ReduceMotion), true);
         string work = Path.Combine(Path.GetTempPath(), "brasscribe-catalogue", Guid.NewGuid().ToString("N"));
@@ -54,7 +55,7 @@ public sealed class ScreenCatalogue
             CheckLanguage();
 
             Picture? first = null;
-            foreach (var variant in Options.Variants)
+            foreach (var variant in variants)
             {
                 settings.Appearance = variant;
                 if (dialog)
@@ -69,7 +70,7 @@ public sealed class ScreenCatalogue
                     // A contrast theme always wins: every choice must look the same as the first (but in Settings,
                     // whose Appearance box shows the choice).
                     if (scene != "settings" && !picture.SameAs(first) && ImageDiff.Of(first, picture).Changed > ImageDiff.FloorPixels)
-                        Run.Findings.Add(new Finding(ShotName(scene, Options.Variants[0]), "contrast-theme",
+                        Run.Findings.Add(new Finding(ShotName(scene, variants[0]), "contrast-theme",
                             AppearanceSetting.Serialise(variant), "this Appearance choice changed the screen under a contrast theme"));
                 }
                 else
@@ -294,6 +295,16 @@ public sealed class ScreenCatalogue
         public static Appearance[] Variants { get; } =
             (Env("VARIANTS") ?? "light,dark").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(AppearanceSetting.Parse).ToArray();
+
+        /// <summary>Screens taken in Pink (BRASSCRIBE_CATALOGUE_PINK_SCENES); all when not set.</summary>
+        private static readonly string[]? PinkScenes = Env("PINK_SCENES")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        /// <summary>The choices a screen is taken in: Pink only on the screens for Pink (but under a contrast theme,
+        /// where every choice must look the same).</summary>
+        public static Appearance[] VariantsFor(string scene) =>
+            Contrast || PinkScenes is null || PinkScenes.Contains(scene)
+                ? Variants
+                : Variants.Where(v => !AppearanceSetting.IsPink(v)).DefaultIfEmpty(Appearance.Light).ToArray();
 
         /// <summary>The checks run (off at the merge base: only its screenshots are wanted).</summary>
         public static bool Checks { get; } = Env("CHECKS") != "0";

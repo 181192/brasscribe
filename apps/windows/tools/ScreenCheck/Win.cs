@@ -33,16 +33,21 @@ internal static partial class Win
         return list;
     }
 
-    /// <summary>The whole window as it is drawn, even where it is off screen or covered (PW_RENDERFULLCONTENT).</summary>
-    public static Picture Capture(nint hwnd)
+    [DllImport("user32.dll")] private static extern bool GetClientRect(nint hwnd, out Rect rect);
+
+    /// <summary>The whole window as it is drawn, even where it is off screen or covered (PW_RENDERFULLCONTENT); with
+    /// <paramref name="client"/>, its client area only (as Play's catalogue takes its screenshots).</summary>
+    public static Picture Capture(nint hwnd, bool client = false)
     {
-        GetWindowRect(hwnd, out var r);
+        Rect r;
+        if (client) GetClientRect(hwnd, out r);
+        else GetWindowRect(hwnd, out r);
         int w = r.Right - r.Left, h = r.Bottom - r.Top;
         using var bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bmp))
         {
             nint hdc = g.GetHdc();
-            try { PrintWindow(hwnd, hdc, 2); }
+            try { PrintWindow(hwnd, hdc, client ? 3u : 2u); }
             finally { g.ReleaseHdc(hdc); }
         }
         var data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -57,7 +62,7 @@ internal static partial class Win
     }
 
     /// <summary>The window once it keeps still: pictures 250 ms apart until six in a row are the same, or 20 s pass.</summary>
-    public static (Picture Picture, bool Steady) Steady(nint hwnd)
+    public static (Picture Picture, bool Steady) Steady(nint hwnd, bool client = false)
     {
         var start = System.Diagnostics.Stopwatch.StartNew();
         Picture? last = null;
@@ -65,7 +70,7 @@ internal static partial class Win
         while (start.Elapsed < TimeSpan.FromSeconds(20))
         {
             Thread.Sleep(250);
-            var now = Capture(hwnd);
+            var now = Capture(hwnd, client);
             same = last is not null && now.SameAs(last) ? same + 1 : 0;
             last = now;
             if (same >= 5) return (now, true);

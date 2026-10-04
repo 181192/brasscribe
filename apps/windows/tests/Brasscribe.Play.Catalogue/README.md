@@ -25,8 +25,9 @@ it in the settings, as a person does in Settings › Appearance, waits until the
   wrong").
 
 Then the Axe.Windows rules and a walk with Tab (the focus lands on something shown, it comes back round, and every
-button, box, link and slider on screen is reached; list, tab and menu items and radio buttons are left out, since the
-arrow keys reach them inside their group) run on each screen in Light, from another process (`tools/ScreenCheck
+button, box, link and slider in the window is reached, or only in an open modal dialog when every stop was inside it;
+Tab caught in one pane is reported, not taken as the scope; list, tab and menu items and radio buttons are left out,
+since the arrow keys reach them inside their group) run on each screen in Light, from another process (`tools/ScreenCheck
 play`), on the app's own build with one start per screen (`--show SCENE`): the app built as the test host ended with an
 access violation while Axe.Windows read it, which the app's own build does not.
 
@@ -41,13 +42,18 @@ settles when an app starts:
 
 | Run | Appearance choices | Screenshot names |
 |---|---|---|
-| English | Light, Dark, Pink light, Pink dark | `home--light`, `home--pink-dark` |
-| Bokmål (`nb-NO`) | Light, Dark | `home--nb-light` |
-| A contrast theme on in Windows | Match system, Light, Dark, Pink dark: all must look the same (the contrast theme wins), and one screenshot is kept | `home--contrast` |
+| English | Light and Dark; Pink light and Pink dark on First run, Home, the score, Check the notes, Share or print and Settings | `home--light`, `home--pink-dark` |
+| Bokmål (`nb-NO`) | Light | `home--nb-light` |
+| A contrast theme on in Windows | Match system, and here (not at the base) also Pink dark, which must look the same (the contrast theme wins); one screenshot is kept | `home--contrast` |
 | Text size 200 % (Settings › Accessibility › Text size) | Light | `home--text200-light` |
 
-The contrast theme and the text size are this user's Windows settings (`tools/ScreenCheck system`), turned off again
-after their run: run the script on a CI runner or a Windows VM, not on a PC you use.
+The contrast theme and the text size are this user's Windows settings (`tools/ScreenCheck system`): the contrast theme
+is turned off after its run and the text size put back to what it was. Run the script on a CI runner or a Windows VM,
+not on a PC you use.
+
+`tools/ScreenCheck play` also starts the app's own build with `--theme pink-light` and `--theme pink-dark` on Home and
+compares it with the catalogue's Home after Pink was chosen in Settings: a palette chosen while the app runs must reach
+every part of the window (finding `theme-at-start`).
 
 ## What it answers
 
@@ -61,16 +67,20 @@ the checks, then here with them. `out\` gets `shots\`, `findings.md` and `report
 difference and after for each changed screen, `summary.md`, `result.json`). A pixel counts as changed as in Studio's
 catalogue, and a screen with 4 or fewer changed pixels is within the noise floor. Exit codes, as for the other apps'
 catalogues: 0 nothing changed; 1 a screen changed, appeared or went away; 2 a check found something new; 3 the
-screenshots could not be taken, here or at the base (nothing was compared). A commit without a catalogue has nothing to
-compare with: every screen is new and nothing counts as changed.
+screenshots could not be taken here. A commit without a catalogue has nothing to compare with: every screen is new and
+nothing counts as changed. The base is not taken at all when nothing the screens are made from changed since it (the
+app's sources, the catalogue, the core, the design tokens and Windows theme, the brand, the fixtures and the sounds;
+the list is in the script), and when its screenshots cannot be taken (a change to the catalogue itself can do that)
+it is a warning and nothing is compared: this side's checks still decide.
 
 In CI a changed screen fails the job `screenshots` unless the pull request has the label `screenshots-changed` (read
 when that job runs, with retries; adding or removing the label starts CI again). The label never lets 2 or 3 through.
 `windows.yml` started by hand takes `screenshots_base` to compare with any commit. The images are in the
 `windows-screenshots` and `bandroom-windows-screenshots` artefacts; no screenshot is kept in git.
 
-`known-findings.json` lists findings that are accepted for now, each with why (`check`, `shot` and `what` are regular
-expressions over a finding); an entry that matches nothing any more is listed in `findings.md` to be removed.
+`known-findings.json` lists findings that are accepted for now, each with the issue that tracks it and why (`check`,
+`shot` and `what` are regular expressions over a finding); an entry without its issue is refused, and one that
+matches nothing any more is listed in `findings.md` to be removed.
 
 ## Bandroom for Windows
 

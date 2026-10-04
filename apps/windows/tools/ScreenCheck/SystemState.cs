@@ -31,7 +31,22 @@ internal static class SystemState
     public static int Run(Options o)
     {
         if (o.Get("contrast") is { } contrast) Contrast(contrast == "on");
-        if (o.Get("text-scale") is { } scale) TextScale(scale == "off" ? null : int.Parse(scale));
+        if (o.Get("text-scale") is { } scale)
+        {
+            string keep = o.Need("keep");
+            if (scale == "restore")
+            {
+                string before = File.Exists(keep) ? File.ReadAllText(keep).Trim() : "none";
+                TextScale(before == "none" ? null : int.Parse(before));
+                File.Delete(keep);
+            }
+            else
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Accessibility"))
+                    File.WriteAllText(keep, key?.GetValue("TextScaleFactor") is int now ? now.ToString() : "none");
+                TextScale(int.Parse(scale));
+            }
+        }
         Report();
         return 0;
     }

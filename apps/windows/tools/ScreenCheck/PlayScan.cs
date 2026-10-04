@@ -24,6 +24,11 @@ internal static class PlayScan
         string scans = Path.Combine(outDir, "scans");
         Directory.CreateDirectory(scans);
         var result = new CatalogueRun();
+        // First, before any other start of the app can add to its library: Pink chosen at start against Pink chosen in
+        // Settings while the app runs (the catalogue's screenshots).
+        if (o.Get("shots") is { } shots)
+            foreach (var pink in new[] { "pink-light", "pink-dark" })
+                ThemeAtStart(exe, score, Path.Combine(shots, $"home--{pink}.png"), pink, scans, result);
         foreach (var scene in o.List("scenes", Scenes))
         {
             string shot = $"{scene}--light";
@@ -59,6 +64,38 @@ internal static class PlayScan
         result.Save(Path.Combine(outDir, "catalogue-scan.json"));
         Console.WriteLine($"Axe.Windows and Tab on {o.List("scenes", Scenes).Length} screens: {result.Findings.Count} findings, {result.Failed.Count} not scanned");
         return 0;
+    }
+
+    /// <summary>
+    /// Home started with --theme PINK looks as Home does after PINK was chosen in Settings while the app ran (the
+    /// catalogue's <paramref name="switched"/> screenshot): a theme chosen at run time reaches every part of the window.
+    /// </summary>
+    private static void ThemeAtStart(string exe, string score, string switched, string theme, string scans, CatalogueRun result)
+    {
+        if (!File.Exists(switched)) { result.Failed.Add($"theme at start: no {Path.GetFileName(switched)} to compare with"); return; }
+        var psi = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
+        foreach (var a in new[] { "--show", "home", "--theme", theme, "--score", score }) psi.ArgumentList.Add(a);
+        using var app = Process.Start(psi) ?? throw new InvalidOperationException("Play did not start");
+        try
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(90);
+            while (app.MainWindowHandle == 0 && !app.HasExited && DateTime.UtcNow < deadline) { Thread.Sleep(500); app.Refresh(); }
+            if (app.MainWindowHandle == 0) { result.Failed.Add($"theme at start: Play showed no window with --theme {theme}"); return; }
+            var (atStart, _) = Win.Steady(app.MainWindowHandle, client: true);
+            string shot = $"home--{theme}";
+            Png.Save(Path.Combine(scans, $"{shot}-at-start.png"), atStart);
+            var (changed, diff) = ImageDiff.Of(Png.Load(switched), atStart);
+            if (changed > ImageDiff.FloorPixels)
+            {
+                Png.Save(Path.Combine(scans, $"{shot}-at-start-diff.png"), diff);
+                result.Findings.Add(new Finding(shot, "theme-at-start", "Home",
+                    $"{changed} pixels differ between {theme} chosen at start and chosen in Settings (scans/{shot}-at-start-diff.png)"));
+            }
+        }
+        finally
+        {
+            if (!app.HasExited) app.Kill(entireProcessTree: true);
+        }
     }
 
     /// <summary>

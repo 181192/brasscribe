@@ -12,6 +12,9 @@ public static class Png
 {
     private static readonly byte[] Signature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
+    /// <summary>The largest width or height read: a screenshot is far smaller; a file that says more is not one.</summary>
+    public const int MaxSide = 16384;
+
     public static void Save(string path, Picture picture) => File.WriteAllBytes(path, Encode(picture));
 
     public static Picture Load(string path) => Decode(File.ReadAllBytes(path));
@@ -72,15 +75,19 @@ public static class Png
         if (file.Length < 8 || !file.AsSpan(0, 8).SequenceEqual(Signature)) throw new InvalidDataException("not a PNG");
         int w = 0, h = 0, channels = 0;
         using var idat = new MemoryStream();
-        for (int at = 8; at + 8 <= file.Length;)
+        for (int at = 8; at + 12 <= file.Length;)
         {
             int length = BinaryPrimitives.ReadInt32BigEndian(file.AsSpan(at));
+            if (length < 0 || length > file.Length - at - 12) throw new InvalidDataException("a chunk runs past the end of the file");
             string type = System.Text.Encoding.ASCII.GetString(file, at + 4, 4);
             var body = file.AsSpan(at + 8, length);
+            if (at == 8 && type != "IHDR") throw new InvalidDataException("the PNG does not start with its header (IHDR)");
             if (type == "IHDR")
             {
+                if (length != 13) throw new InvalidDataException("a header (IHDR) of the wrong length");
                 w = BinaryPrimitives.ReadInt32BigEndian(body);
                 h = BinaryPrimitives.ReadInt32BigEndian(body[4..]);
+                if (w is < 1 or > MaxSide || h is < 1 or > MaxSide) throw new InvalidDataException($"a PNG of {w} x {h} is not a screenshot");
                 if (body[8] != 8 || body[12] != 0) throw new InvalidDataException("only 8-bit, non-interlaced PNGs are read");
                 channels = body[9] switch { 6 => 4, 2 => 3, _ => throw new InvalidDataException($"colour type {body[9]} is not read") };
             }
@@ -88,13 +95,14 @@ public static class Png
             else if (type == "IEND") break;
             at += 12 + length;
         }
+        if (channels == 0) throw new InvalidDataException("the PNG has no header (IHDR)");
         idat.Position = 0;
         using var z = new ZLibStream(idat, CompressionMode.Decompress);
-        int stride = w * channels;
-        var raw = new byte[(stride + 1) * h];
+        int stride = checked(w * channels);
+        var raw = new byte[checked((stride + 1) * h)];
         z.ReadExactly(raw);
 
-        var bgra = new byte[w * h * 4];
+        var bgra = new byte[checked(w * h * 4)];
         var prev = new byte[stride];
         var line = new byte[stride];
         for (int y = 0; y < h; y++)
