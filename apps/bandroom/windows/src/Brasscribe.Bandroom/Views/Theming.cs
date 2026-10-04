@@ -58,11 +58,19 @@ internal static class ThemeBrushes
 {
     private static readonly Windows.UI.ViewManagement.AccessibilitySettings Accessibility = new();
 
-    /// <summary>The brush for <paramref name="key"/> as the element shows it now.</summary>
+    /// <summary>
+    /// The brush for <paramref name="key"/> as the element shows it now. In Light and Dark it is built from the
+    /// theme's colour (BcWarningBrush from BcWarningColor): a theme dictionary's brush that no XAML has used yet
+    /// resolves its {StaticResource ...Color} in the app's theme instead of its own, so Dark handed back Light's
+    /// status colours. The colours are plain values in each theme. A contrast theme keeps its own brushes.
+    /// </summary>
     public static Brush For(FrameworkElement element, string key)
     {
         string dictionary = Accessibility.HighContrast ? "HighContrast"
             : element.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
+        if (dictionary != "HighContrast" && key.EndsWith("Brush", StringComparison.Ordinal)
+            && Find(Application.Current.Resources, dictionary, key[..^"Brush".Length] + "Color") is Windows.UI.Color color)
+            return new SolidColorBrush(color);
         return Find(Application.Current.Resources, dictionary, key) as Brush
             ?? (Application.Current.Resources.TryGetValue(key, out var v) && v is Brush b ? b : new SolidColorBrush(Colors.Gray));
     }
