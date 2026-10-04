@@ -697,7 +697,7 @@ def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
                 label = group.replace("-", "_") + part + "."
                 for m in B.MODES:
                     metrics, rows = B.evaluate(data, (group,), m, only=only)
-                    if not rows:  # a pattern scored apart (B.EXTRA_PATTERNS) that has not been rendered
+                    if not rows and set(only) <= set(B.EXTRA_PATTERNS.get(group, ())):  # scored apart, not rendered yet
                         out[SKIPPED].append(label.rstrip("."))
                         break
                     out.update({f"{label}{m}.{k}": v for k, v in metrics.items()})

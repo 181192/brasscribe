@@ -121,6 +121,14 @@ def test_a_mandolin_tremolo_is_scored_apart_and_skipped_where_it_was_not_rendere
     report = suites.gate([r])  # the stub's numbers are not the baselines': only the tremolo keys are looked at
     tremolo = [c for c in report["suites"][0]["checks"] if "tremolo" in c["metric"]]
     assert tremolo and {c["status"] for c in tremolo} == {"skipped"}
+    # A group of its own that has no passages is not skipped: its keys are missing, and the gate fails.
+    monkeypatch.setattr(B, "evaluate", lambda data, groups, mode, only=None: (
+        ({"onset_f1": float("nan")}, []) if B.TREMOLO in only or groups == ("mandolin" + B.HELDOUT,) else ({"onset_f1": 1.0}, [{}])))
+    r = suites.run_suite("mandolin-tab", data=tmp_path)
+    assert r["skipped_parts"] == ["mandolin_tremolo", "mandolin_heldout_tremolo"]
+    report = suites.gate([r])
+    assert report["passed"] is False
+    assert {c["status"] for c in report["suites"][0]["checks"] if c["metric"] == "mandolin_heldout.song.onset_f1"} == {"missing"}
 
 
 @pytest.mark.parametrize("suite,groups", [("ukulele-tab", ("ukulele_high_g.song", "ukulele_low_g.instrument", "ukulele_baritone.song",
