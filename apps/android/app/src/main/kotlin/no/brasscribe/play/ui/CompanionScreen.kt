@@ -8,7 +8,9 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -202,21 +204,42 @@ fun CompanionScreen(vm: PlayViewModel) {
 private fun Scanner(camera: QrCamera, allowed: Boolean, found: (String) -> Unit, unavailable: () -> Unit, cancel: () -> Unit) {
     val c = BrasscribeTheme.colors
     val described = stringResource(R.string.pair_scan_camera)
-    Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+    val window = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.let { it.width.toDp() to it.height.toDp() } }
+    // Square, and never more than 40 % of the window's height (30 % at large text), so Cancel stays near. On its side
+    // the words and Cancel stand beside the camera.
+    val wide = window.first > window.second
+    val share = if (largeText()) 0.3f else 0.4f
+    @Composable
+    fun Words() {
         SubHeading(stringResource(R.string.pair_scan_title))
         Text(stringResource(R.string.pair_scan_on_phone), color = c.textMuted)
-        // Square, and never more than 40 % of the window's height: on its side or at large text, Cancel stays near.
-        val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
-        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            val side = minOf(maxWidth, windowHeight * 0.4f)
-            Surface(
-                shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border),
-                modifier = Modifier.size(side).semantics { contentDescription = described }.testTag("pair-camera"),
-            ) {
-                if (allowed) camera.View(Modifier.size(side).clip(MaterialTheme.shapes.large), found, unavailable)
+    }
+    @Composable
+    fun Camera(side: androidx.compose.ui.unit.Dp) {
+        Surface(
+            shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border),
+            modifier = Modifier.size(side).semantics { contentDescription = described }.testTag("pair-camera"),
+        ) {
+            if (allowed) camera.View(Modifier.size(side).clip(MaterialTheme.shapes.large), found, unavailable)
+        }
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val side = minOf(if (wide) maxWidth * 0.45f else maxWidth, window.second * share)
+        if (wide) {
+            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                    Words()
+                    PlainButton(stringResource(R.string.cancel), cancel)
+                }
+                Camera(side)
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                Words()
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Camera(side) }
+                PlainButton(stringResource(R.string.cancel), cancel)
             }
         }
-        PlainButton(stringResource(R.string.cancel), cancel)
     }
 }
 
