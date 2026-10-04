@@ -31,15 +31,20 @@ log() { printf 'screenshots: %s\n' "$*" >&2; }
 
 # Builds the macOS app's tests in the Play checkout $1; then runs its catalogue into $2, in English and in bokmål.
 # CATALOGUE_CHECKS=0 takes only the screenshots.
-build() { make -C "$1" build-for-testing-mac >/dev/null; }
+build() {
+  local log; log="$(mktemp)"
+  make -C "$1" build-for-testing-mac >"$log" 2>&1 || { grep -E "error:" "$log" | sort -u | head -40 >&2; tail -20 "$log" >&2; rm -f "$log"; return 1; }
+  rm -f "$log"
+}
 catalogue() {
   local dir="$1" out="$2" status=0 lang
   rm -rf "$out"; mkdir -p "$out"
+  # Only what failed, and the totals: the rest of what the tests print is the app's own logging.
   for lang in en nb; do
     (cd "$dir" && TEST_RUNNER_CATALOGUE_OUT="$out" TEST_RUNNER_CATALOGUE_CHECKS="${CATALOGUE_CHECKS:-1}" \
       xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribePlay-macOS \
         -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribePlayTests_macOS/PlayScreensTests \
-        test-without-building -quiet) || status=1
+        test-without-building 2>&1 | { grep -E "^(✘|↳|✔ Test run|Failing tests)|^\t|error:" || true; }) || status=1
   done
   return "$status"
 }
