@@ -89,9 +89,19 @@ internal static class Scan
         }
         if (!round) findings.Add(new Finding(shot, "keyboard", "the window", $"Tab does not come back round within {MaxStops} stops"));
 
-        // Every control on screen that takes the keyboard should be reached, within the part the walk went round: the
-        // window, or an open dialog that keeps the focus in itself (what the stops have in common).
-        var scope = CommonAncestor(visited) ?? window;
+        // Every control on screen that takes the keyboard should be reached: in the whole window, or only in an open
+        // modal dialog that held every stop (Tab caught in one pane does not narrow it).
+        var scope = ModalScope(visited, out string within) ?? window;
+        order.Add($"reach checked {within}");
+        if (visited.Count > 0)
+            try
+            {
+                var above = new List<string>();
+                for (var up = visited[0].Parent; up is not null; up = up.Parent)
+                    above.Add($"{up.Properties.ControlType.ValueOrDefault}/{up.Properties.ClassName.ValueOrDefault}");
+                order.Add("above the first stop: " + string.Join(" < ", above));
+            }
+            catch (System.Runtime.InteropServices.COMException) { }
         foreach (var e in scope.FindAllDescendants())
         {
             if (!Reachable(e) || seen.Contains(Id(e))) continue;
@@ -125,20 +135,47 @@ internal static class Scan
     }
 
     /// <summary>The innermost element that holds every stop of the walk (by their chains of parents).</summary>
-    private static AutomationElement? CommonAncestor(List<AutomationElement> stops)
+    /// <summary>
+    /// The open modal dialog that holds every stop of the walk, or null (then the whole window is looked in): see
+    /// <see cref="KeyboardScope"/>. A ContentDialog is a dialog to UI Automation by its class name, or by a Window
+    /// pattern that says it is modal.
+    /// </summary>
+    private static AutomationElement? ModalScope(List<AutomationElement> stops, out string why)
     {
-        List<AutomationElement>? common = null;
+        var elements = new Dictionary<string, AutomationElement>();
+        var chains = new List<IReadOnlyList<ScopeNode>>();
         foreach (var stop in stops)
         {
-            var chain = new List<AutomationElement>();
-            try { for (var up = stop.Parent; up is not null; up = up.Parent) chain.Insert(0, up); }
+            var chain = new List<ScopeNode>();
+            try
+            {
+                for (var up = stop.Parent; up is not null; up = up.Parent)
+                {
+                    string id = Id(up);
+                    elements[id] = up;
+                    chain.Insert(0, new ScopeNode(id, IsModalDialog(up)));
+                }
+            }
             catch (System.Runtime.InteropServices.COMException) { continue; }
-            if (common is null) { common = chain; continue; }
-            int n = 0;
-            while (n < common.Count && n < chain.Count && Id(common[n]) == Id(chain[n])) n++;
-            common = common[..n];
+            chains.Add(chain);
         }
-        return common is { Count: > 0 } ? common[^1] : null;
+        var scope = KeyboardScope.Choose(chains);
+        why = scope is { } s ? $"inside the open dialog {Describe(elements[s.Id])}" : "the whole window";
+        return scope is { } found ? elements[found.Id] : null;
+    }
+
+    private static bool IsModalDialog(AutomationElement e)
+    {
+        try
+        {
+            if (e.Properties.ClassName.ValueOrDefault is "ContentDialog") return true;
+            return e.Patterns.Window.PatternOrDefault is { } w && w.IsModal.ValueOrDefault && e.Properties.ControlType.ValueOrDefault == ControlType.Window
+                && e.Parent?.Parent is not null; // not the top-level window itself
+        }
+        catch (Exception x) when (x is System.Runtime.InteropServices.COMException or FlaUI.Core.Exceptions.PropertyNotSupportedException)
+        {
+            return false;
+        }
     }
 
     private static string Id(AutomationElement e) => string.Join(".", e.Properties.RuntimeId.ValueOrDefault ?? []);
