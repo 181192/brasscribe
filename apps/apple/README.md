@@ -150,7 +150,8 @@ and links are at least 24 × 24 pt, and the system's standard controls follow WC
 single-line text is cut off; nothing is outside the window (except what a scroll area has out of view); and the
 controls come in reading order, in the order VoiceOver and the keyboard follow, within each column. The score and
 the stand put the controls drawn over the score first (above), which `ownOrder` records. `known` lists findings
-not yet fixed, each with its issue. `ResponsiveLayoutTests` keeps the layout at every window size.
+not yet fixed, each with its issue; `unsteady` the screens checked without a screenshot because they do not yet draw
+the same twice, each with its issue. `ResponsiveLayoutTests` keeps the layout at every window size.
 
 There is no large-text variant on the Mac: macOS has no Dynamic Type for an app's windows (a `dynamicTypeSize` of
 `accessibility3` draws the same pixels), and Play has no text size of its own. The two undocumented hooks

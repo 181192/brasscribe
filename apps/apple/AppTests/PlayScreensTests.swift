@@ -44,6 +44,9 @@ import TranscriptionKit
         ]
     }
 
+    /// Screens that are checked but get no screenshot: they do not draw the same twice yet, each with its issue.
+    static let unsteady: [String: String] = ["review": "#260"]
+
     /// Screens whose own order differs from reading order, and why.
     static let ownOrder: [String: String] = [
         "score": "the controls drawn over the score come before it, so VoiceOver and the UI tests reach them (README)",
@@ -64,8 +67,9 @@ import TranscriptionKit
     static let text = TextFit(fonts: ["InstrumentSerif-Regular", "InstrumentSerif-Italic"])
 
     /// Checks the screen on `host`, then writes its screenshot and tree.
-    private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true) throws {
+    private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true) async throws {
         let name = Self.language == "en" ? "\(screen)-\(v.name)" : "\(screen)-\(v.name)-\(Self.language)"
+        let picture = await steady(host)
         let nodes = AXTree.read(host.hosting)
         if let broken = Guards.tree(nodes, screen: name, controls: controls) { Issue.record(Comment(rawValue: broken)) }
         let findings = Checks.run(nodes, bounds: host.hosting.bounds, text: Self.text).filter { f in
@@ -75,7 +79,21 @@ import TranscriptionKit
         if Self.checks {
             #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
         }
-        try Pictures.write(host.bitmap(), tree: nodes, name: name, to: Self.output)
+        guard Self.unsteady[screen] == nil else { return }
+        try Pictures.write(picture, tree: nodes, name: name, to: Self.output)
+    }
+
+    /// The picture once it stops changing (a score scrolling to its note, a list settling), or the last of a few tries:
+    /// the same screen must give the same pixels every time.
+    private func steady(_ host: OffscreenHost) async -> NSBitmapImageRep {
+        var rep = host.bitmap()
+        for _ in 0..<10 {
+            await host.settle(0.3)
+            let next = host.bitmap()
+            if next.tiffRepresentation == rep.tiffRepresentation { return next }
+            rep = next
+        }
+        return rep
     }
 
     /// A screen in the window, the library beside it, as `RootView` lays it out.
@@ -86,7 +104,7 @@ import TranscriptionKit
                                      dark: v.dark, increasedContrast: v.increasedContrast)
             if let opened { await host.settle(0.8); opened() }
             if let wait { await host.settle(until: wait) } else { await host.settle(0.8) }
-            try record(host, screen, v)
+            try await record(host, screen, v)
             host.close()
         }
     }
@@ -100,7 +118,7 @@ import TranscriptionKit
         for v in Self.variants {
             let host = OffscreenHost(root, size: size, dark: v.dark, increasedContrast: v.increasedContrast)
             await host.settle(0.8)
-            try record(host, "sheet-\(screen)", v, controls: controls)
+            try await record(host, "sheet-\(screen)", v, controls: controls)
             host.close()
         }
     }
