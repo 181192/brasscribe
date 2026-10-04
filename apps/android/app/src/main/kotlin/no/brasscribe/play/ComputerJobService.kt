@@ -59,7 +59,10 @@ class ComputerJobService : Service() {
         val entered = runCatching {
             ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         }.onFailure { android.util.Log.w("BrasscribePlay", "job service not in the foreground", it) }
-        if (entered.isFailure) { stopSelf(); return START_NOT_STICKY }
+        starting = false
+        if (entered.isFailure) { stopWhenStarted = false; stopSelf(); return START_NOT_STICKY }
+        // Stopped (the job ended in front, or the player stopped it) while the service was starting: it stops now that it may.
+        if (stopWhenStarted) { stopWhenStarted = false; done(); return START_NOT_STICKY }
         if (following == jobId) return START_REDELIVER_INTENT
         following = jobId
         val container = (application as PlayApplication).container
@@ -92,16 +95,26 @@ class ComputerJobService : Service() {
         private const val EXTRA_TITLE = "title"
         private const val NOTIFICATION_ID = 3
 
+        /** Asked to start, and not yet in the foreground: it may not be stopped until it is (that would end the app). */
+        @Volatile private var starting = false
+        /** Stopped while it was starting: it stops itself once it is in the foreground. */
+        @Volatile private var stopWhenStarted = false
+
         /** Started when a job is made on the computer, while the app is in front; a start the system refuses changes nothing else. */
         fun start(context: Context, jobId: String, title: String) {
+            stopWhenStarted = false
             runCatching {
                 context.startForegroundService(Intent(context, ComputerJobService::class.java).putExtra(EXTRA_JOB, jobId).putExtra(EXTRA_TITLE, title))
-            }.onFailure { android.util.Log.w("BrasscribePlay", "job service not started", it) }
+            }.onSuccess { starting = true }.onFailure { android.util.Log.w("BrasscribePlay", "job service not started", it) }
         }
 
-        /** The player stopped the job: nothing more to follow or to say. */
+        /**
+         * Nothing more to follow or to say (the player stopped the job, or saw it end in front). One that is still starting
+         * stops itself once it is in the foreground, as `DraftService` does.
+         */
         fun stop(context: Context) {
-            runCatching { context.stopService(Intent(context, ComputerJobService::class.java)) }
+            if (starting) stopWhenStarted = true
+            else runCatching { context.stopService(Intent(context, ComputerJobService::class.java)) }
         }
     }
 }

@@ -1080,20 +1080,14 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
         transcribe.update { it.copy(steps = listOf(Step.UPLOAD) + kinds.ifEmpty { listOf(Step.BEATS, Step.STEMS, Step.LAYERS, Step.TRANSCRIBE, Step.ARRANGE, Step.EXPORT) }) }
         val tracker = ProgressTracker(created.stages.size.takeIf { it > 0 } ?: stages)
-        val streamed = runCatching {
-            engine.events(created.id).collect { e ->
-                val pr = tracker.onEvent(e)
-                transcribe.update {
-                    it.copy(step = if (pr.currentKind != null) Step.ofKind(pr.currentKind) else Step.QUEUED, fraction = pr.fraction,
-                        stepIndex = pr.stagesDone, stepTotal = pr.stagesTotal, etaSeconds = pr.etaSeconds, error = pr.error)
-                }
+        engine.events(created.id).collect { e ->
+            val pr = tracker.onEvent(e)
+            transcribe.update {
+                it.copy(step = if (pr.currentKind != null) Step.ofKind(pr.currentKind) else Step.QUEUED, fraction = pr.fraction,
+                    stepIndex = pr.stagesDone, stepTotal = pr.stagesTotal, etaSeconds = pr.etaSeconds, error = pr.error)
             }
         }
-        streamed.exceptionOrNull()?.let { if (it is kotlinx.coroutines.CancellationException) throw it }
-        // The events stop when the phone loses the computer for a while (the player left the app and the Wi-Fi slept):
-        // the job goes on there, so it is asked for until it ends. Only a computer that stays away is a failure.
-        val final = if (streamed.isSuccess) engine.job(created.id)
-        else JobFollow.untilEnded({ engine.job(created.id) }, pause = followPause, tries = FOLLOW_TRIES) ?: throw streamed.exceptionOrNull()!!
+        val final = engine.job(created.id)
         // Seen here, in front: nothing more for the notification to say.
         if (AppInFront.now) ComputerJobService.stop(getApplication())
         if (final.status != JobStatus.SUCCEEDED) throw EngineJobFailedException(final.error ?: final.status.name.lowercase())
@@ -1852,15 +1846,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         listening.stop(announce = false)
     }
 
-    /** How long the transcribing screen waits between asking the computer for a job whose events stopped (tests shorten it). */
-    @androidx.annotation.VisibleForTesting
-    internal var followPause = 3_000L
-
     companion object {
         const val TAG = "BrasscribePlay"
-
-        /** A job whose events stopped is asked for this many times in a row without an answer before it counts as failed. */
-        const val FOLLOW_TRIES = 40
 
         /** A MusicXML score larger than this is not a score. */
         const val MAX_SCORE_BYTES = 64L shl 20
