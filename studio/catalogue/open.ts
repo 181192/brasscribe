@@ -139,10 +139,19 @@ export async function stableScreenshot(page: Page, path: string): Promise<void> 
   });
   const where = () => page.evaluate(() => [scrollX, scrollY, ...Array.from(document.querySelectorAll<HTMLElement>("*"))
     .filter((el) => el.scrollTop || el.scrollLeft).map((el) => `${el.localName}.${el.className}:${el.scrollLeft},${el.scrollTop}`)].join(" "));
+  // Every font the page asked for is in, none still loading.
+  const fonts = () => page.waitForFunction(async () => {
+    await document.fonts.ready;
+    return Array.from(document.fonts).every((f) => f.status !== "loading");
+  }, undefined, { timeout: 10_000 });
   const take = async () => {
+    await fonts();
     await scrolls();
     const before = await where();
-    const png = await page.screenshot({ fullPage: true, animations: "disabled", caret: "hide" });
+    // The engraved score is masked (its scrolling box, which clips it): alphaTab lays out its first bar a pixel wider or narrower from one page load to
+    // the next on Linux (#218). Studio's own parts of a score view (the toolbar, the status, the checks) are compared; the
+    // score keeps its accessibility, cut-off and keyboard checks.
+    const png = await page.screenshot({ fullPage: true, animations: "disabled", caret: "hide", mask: [page.locator("bs-score .score-view")], maskColor: "#8a8a8a" });
     return { png, still: before === (await where()) && before === "0 0" };
   };
   let last = await take();

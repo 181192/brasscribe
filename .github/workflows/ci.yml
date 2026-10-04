@@ -266,8 +266,13 @@ jobs:
         # starts bash and gh by their full paths, with only the variables gh needs.
         shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
         run: |
-          names=$(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" GH_TOKEN="$GH_TOKEN" \
-            /usr/bin/gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name') || names=""
+          # A few tries: an error from GitHub (a 503) is not the same as no label.
+          names=""
+          for try in 1 2 3 4 5; do
+            if names=$(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" GH_TOKEN="$GH_TOKEN" \
+              /usr/bin/gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name'); then break; fi
+            names=""; sleep $((try * 5))
+          done
           if printf '%s\n' "$names" | /usr/bin/grep -qx 'screenshots-changed'; then meant=true; else meant=false; fi
           echo "meant=$meant" >> "$GITHUB_OUTPUT"
 
@@ -447,7 +452,12 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")') || meant=false
+          # A few tries: an error from GitHub (a 503) is not the same as no label.
+          meant=false
+          for try in 1 2 3 4 5; do
+            if meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")'); then break; fi
+            meant=false; sleep $((try * 5))
+          done
           echo "meant=$meant" >> "$GITHUB_OUTPUT"
 
       - name: Screenshot result
