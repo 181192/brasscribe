@@ -29,6 +29,8 @@ class GetBandroomTest : ScreenTest() {
         assertEquals("https://github.com/181192/brasscribe/releases/latest", BANDROOM_DOWNLOAD)
         rule.onNodeWithTag("bandroom-address", useUnmergedTree = true).performScrollTo().assertTextEquals(BANDROOM_DOWNLOAD)
         assertTrue(shown(), shown().contains(text(R.string.bandroom_get_title)))
+        // Releases have a Mac build for Apple silicon only, and one for Windows.
+        assertTrue(shown(), shown().contains("Mac (Apple silicon) and Windows"))
         rule.onNodeWithText(text(R.string.bandroom_open)).performScrollTo().performClick()
         rule.waitForIdle()
         val started = shadowOf(rule.activity).nextStartedActivity

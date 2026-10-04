@@ -43,7 +43,7 @@
     <!-- Bandroom on your computer (the pairing screen). The program is Brasscribe Bandroom, the same for both apps:
          Bandroom in running text (design/fretscribe/brand/brand.md), its full name where the player looks for it. -->
     <string name="bandroom_get_title">Get Bandroom</string>
-    <string name="bandroom_get_text">Bandroom is free for Mac and Windows, and is called Brasscribe Bandroom when you install it. On your computer, download it from this address:</string>
+    <string name="bandroom_get_text">Bandroom is free for Mac (Apple silicon) and Windows, and is called Brasscribe Bandroom when you install it. On your computer, download it from this address:</string>
     <string name="companion_explain">Open Bandroom on your computer (it is Brasscribe Bandroom in the list of programs) and choose Pair a phone. Type the six digits it shows.</string>
     <string name="companion_searching">Looking for Bandroom on your network… You can also type the address below.</string>
     <string name="companion_tech_details">Bandroom on your computer shows its address under Details.</string>

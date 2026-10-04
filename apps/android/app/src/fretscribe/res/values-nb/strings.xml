@@ -35,7 +35,7 @@
     <string name="companion_title">Bandroom på datamaskinen</string>
     <!-- Bandroom på datamaskinen (tilkoblingsskjermen) -->
     <string name="bandroom_get_title">Last ned Bandroom</string>
-    <string name="bandroom_get_text">Bandroom er gratis for Mac og Windows, og heter Brasscribe Bandroom når du installerer den. Last den ned på datamaskinen fra denne adressen:</string>
+    <string name="bandroom_get_text">Bandroom er gratis for Mac (Apple silicon) og Windows, og heter Brasscribe Bandroom når du installerer den. Last den ned på datamaskinen fra denne adressen:</string>
     <string name="companion_explain">Åpne Bandroom på datamaskinen (den heter Brasscribe Bandroom i listen over programmer) og velg Koble til en telefon. Skriv inn de seks sifrene som vises.</string>
     <string name="companion_searching">Ser etter Bandroom på nettverket … Du kan også skrive inn adressen nedenfor.</string>
     <string name="companion_tech_details">Bandroom på datamaskinen viser adressen sin under Detaljer.</string>

@@ -431,7 +431,7 @@
 
     <!-- Brasscribe Bandroom, programmet på datamaskinen (Bandroom for kort), og hvor du får det -->
     <string name="bandroom_get_title">Last ned Brasscribe Bandroom</string>
-    <string name="bandroom_get_text">Den er gratis for Mac og Windows. Last den ned på datamaskinen fra denne adressen:</string>
+    <string name="bandroom_get_text">Den er gratis for Mac (Apple silicon) og Windows. Last den ned på datamaskinen fra denne adressen:</string>
     <string name="bandroom_open">Åpne nedlastingssiden</string>
     <string name="bandroom_no_browser">Telefonen har ingen nettleser som kan åpne den. Skriv inn adressen på datamaskinen.</string>
     <string name="companion_title">Brasscribe Bandroom</string>

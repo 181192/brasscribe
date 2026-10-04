@@ -438,7 +438,7 @@
 
     <!-- Brasscribe Bandroom, the program on the computer (Bandroom for short), and where to get it -->
     <string name="bandroom_get_title">Get Brasscribe Bandroom</string>
-    <string name="bandroom_get_text">It is free for Mac and Windows. On your computer, download it from this address:</string>
+    <string name="bandroom_get_text">It is free for Mac (Apple silicon) and Windows. On your computer, download it from this address:</string>
     <string name="bandroom_open">Open the download page</string>
     <string name="bandroom_no_browser">This phone has no browser to open it. Type the address on your computer.</string>
     <string name="companion_title">Brasscribe Bandroom</string>
