@@ -15,10 +15,10 @@ Custom glyphs live in `design/brand/icons/custom/`.
 | speed | Speed | Tempo | `gauge.with.dots.needle.33percent` | `speed` | `SpeedHigh` U+EC4A |
 | count-in | Count-in | Inntelling | `1.circle` | `counter_1` | custom `count-in` (PathIcon) |
 | metronome | Metronome | Metronom | `metronome` | custom `metronome` | custom `metronome` (PathIcon) |
-| mute | Mute | Lyd av | `speaker.slash` | `volume_off` | `Mute` U+E74F |
+| mute | Mute | Demp | `speaker.slash` | `volume_off` | `Mute` U+E74F |
 | solo | Only this | Bare denne | `scope` | `center_focus_strong` | custom `only-this` (PathIcon) |
 | parts | Parts | Stemmer | `music.note.list` | `queue_music` | `List` U+EA37 |
-| play-along | Mute my part | Lyd av min stemme | `headphones` | `headphones` | `Headphone` U+E7F6 |
+| play-along | Mute my part | Demp stemmen min | `headphones` | `headphones` | `Headphone` U+E7F6 |
 | original | Original recording | Originalopptaket | `waveform` | `graphic_eq` | `Equalizer` U+E9E9 |
 | import-file | Open a recording | Åpne et opptak | `square.and.arrow.down` | `download` | `Import` U+E8B5 |
 | record-mic | Record with the microphone | Spill inn med mikrofonen | `mic` | `mic` | `Microphone` U+E720 |
