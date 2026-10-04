@@ -97,4 +97,11 @@ class BrasscribeProductTest {
             assertEquals(it.id, Screen.REVIEW, Product.afterTranscription(TranscriptionResult(null, "<score-partwise/>", it, onDevice = false)))
         }
     }
+
+    @Test
+    fun notConnectedIsInformationNotAWarning() {
+        // A score is made on the phone without the computer: nothing is wrong, so the row has an ⓘ, not a warning.
+        assertEquals(R.drawable.ic_bc_info, no.brasscribe.play.ui.connectionIcon(no.brasscribe.play.connection.ConnectionState.Offline(paired = false)))
+        assertEquals(R.drawable.ic_bc_info, no.brasscribe.play.ui.connectionIcon(no.brasscribe.play.connection.ConnectionState.Offline(paired = true)))
+    }
 }

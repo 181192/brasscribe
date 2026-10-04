@@ -38,8 +38,9 @@ fun connectionText(vm: PlayViewModel, state: ConnectionState): String = when (st
 fun connectionIcon(state: ConnectionState): Int = when (state) {
     is ConnectionState.Connected -> R.drawable.ic_bc_computer
     is ConnectionState.Reconnecting -> R.drawable.ic_bc_network
-    // A different shape from "looking for": the state never rests on the words alone.
-    is ConnectionState.Offline -> R.drawable.ic_bc_attention
+    // A different shape from "looking for": the state never rests on the words alone. Where the phone makes scores
+    // itself, nothing is wrong without the computer: an ⓘ, not a warning.
+    is ConnectionState.Offline -> if (no.brasscribe.play.Product.MAKES_SCORES_ON_THE_PHONE) R.drawable.ic_bc_info else R.drawable.ic_bc_attention
     is ConnectionState.NeedsPairing -> R.drawable.ic_bc_pair_phone
 }
 

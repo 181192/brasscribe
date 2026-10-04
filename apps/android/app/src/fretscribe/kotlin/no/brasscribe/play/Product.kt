@@ -39,6 +39,9 @@ object Product {
     /** Your songs holds songs only: a recording is not kept there before it has a tab. */
     const val KEEPS_RECORDINGS = false
 
+    /** A tab is written on the computer only: without it, "Not connected" is a warning. */
+    const val MAKES_SCORES_ON_THE_PHONE = false
+
     /**
      * Brasscribe's screens under Fretscribe's name, but for four:
      * - where Brasscribe asks "What do you play?" (after the first run, and from Settings), Fretscribe asks

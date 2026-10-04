@@ -149,6 +149,7 @@
         <item quantity="other">Bare for opptak på opptil %d minutter.</item>
     </plurals>
     <string name="where_companion_missing">Koble til Brasscribe på datamaskinen først.</string>
+    <string name="problem_connect_computer">Koble til datamaskinen</string>
 
     <!-- Lager partituret -->
     <string name="stage_queued">Gjør klar</string>
@@ -195,7 +196,7 @@
     <string name="draft_too_long_title">For langt for et utkast på telefonen</string>
     <string name="draft_too_long_body">Datamaskinen kan lage partituret fra dette opptaket.</string>
     <string name="draft_too_long_body_away">Åpne Brasscribe på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere.</string>
-    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble til i Innstillinger her. Eller velg et kortere opptak.</string>
+    <string name="draft_too_long_body_unpaired">Datamaskinen kan lage partituret fra dette opptaket. Åpne Brasscribe der og velg Koble til en telefon, og koble den til her med Koble til datamaskinen. Eller velg et kortere opptak.</string>
     <string name="draft_refused_title">Utkastet kan ikke lages akkurat nå</string>
     <string name="draft_refused_body">Telefonen har stoppet Brasscribe fra å jobbe med det. Datamaskinen kan lage partituret, eller prøv igjen senere.</string>
     <string name="draft_refused_body_away">Telefonen har stoppet Brasscribe fra å jobbe med det. Prøv igjen senere.</string>
@@ -413,6 +414,7 @@
     <string name="problem_record_reason">En annen app bruker kanskje mikrofonen. Lukk den og prøv igjen.</string>
     <string name="problem_score_title">Partituret kunne ikke lages</string>
     <string name="problem_score_body">Noe gikk galt mens Brasscribe arbeidet med det.</string>
+    <string name="problem_score_body_unpaired">Dette opptaket trenger datamaskinen din, og ingen er koblet til denne telefonen.</string>
     <string name="problem_score_kept">Opptaket ditt er tatt vare på. Du kan prøve igjen nå eller senere.</string>
     <string name="problem_score_kept_scores">Opptaket ditt er tatt vare på i Partiturene dine. Du kan prøve igjen nå eller senere.</string>
     <string name="problem_too_large_title">Denne filen er for stor for telefonen</string>
