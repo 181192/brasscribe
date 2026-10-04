@@ -20,11 +20,12 @@ it in the settings, as a person does in Settings › Appearance, waits until the
   dialog half transparent, as at the start of its opening animation, and without the dimming behind it);
 - the contrast of every text and icon on it, measured on the screenshot: 4.5:1 for body text, 3:1 for large text and
   icons (`tools/ScreenCheck.Core/Contrast.cs`), and text cut off (`TextBlock.IsTextTrimmed`, so only text whose
-  trimming is set: text clipped by its container without trimming is not seen);
-- in the first choice of the English run, from another process (`tools/ScreenCheck scan`, so UI Automation never
-  calls into its own process): the Axe.Windows rules, and a walk with Tab (the focus lands on something shown, it comes
-  back round, and every button, box, link and slider on screen is reached; list, tab and menu items and radio buttons
-  are left out, since the arrow keys reach them inside their group).
+  trimming is set: text clipped by its container without trimming is not seen).
+Then the Axe.Windows rules and a walk with Tab (the focus lands on something shown, it comes back round, and every
+button, box, link and slider on screen is reached; list, tab and menu items and radio buttons are left out, since the
+arrow keys reach them inside their group) run on each screen in Light, from another process (`tools/ScreenCheck
+play`), on the app's own build with one start per screen (`--show SCENE`): the app built as the test host ended with an
+access violation while Axe.Windows read it, which the app's own build does not.
 
 A screen that does not keep still for 1.5 s within 20 s (something on it moves) is kept in `unsteady\` and not compared.
 
@@ -44,8 +45,8 @@ after their run: run the script on a CI runner or a Windows VM, not on a PC you 
 ## What it answers
 
 ```powershell
-tools/Screenshots/catalogue.ps1 record  -Out out -FfiDll <brasscribe_ffi.dll>
-tools/Screenshots/catalogue.ps1 compare -Out out -FfiDll <brasscribe_ffi.dll> [-Base <commit>]
+tools/Screenshots/catalogue.ps1 record  -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll>
+tools/Screenshots/catalogue.ps1 compare -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll> [-Base <commit>]
 ```
 
 `compare` takes the screenshots at the base (the merge base with `origin/main` by default) on the same machine, without

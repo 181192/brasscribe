@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text.Json;
 using Brasscribe.Play.Core.Services;
 using Brasscribe.Play.Core.ViewModels;
 using Brasscribe.ScreenCheck;
@@ -16,8 +14,8 @@ namespace Brasscribe.Play.Catalogue;
 /// Every screen of the app with sample content (the scenes of <see cref="PreviewScenes"/>, Settings and Share or
 /// print), each in the Appearance choices this run asks for, switched while the screen is open, as a person does
 /// in Settings. For each: a screenshot of the window as it is on screen, the contrast of every
-/// text and icon measured on it, text cut off, and, from a separate process (tools/ScreenCheck), the Axe.Windows
-/// rules and a walk with Tab. One process per language, contrast theme and text size: the runner script sets
+/// text and icon measured on it, and text cut off. Axe.Windows and the walk with Tab run on the app's own build
+/// (tools/ScreenCheck play). One process per language, contrast theme and text size: the runner script sets
 /// those before it starts (tools/Screenshots/catalogue.ps1).
 /// </summary>
 [TestClass]
@@ -47,20 +45,23 @@ public sealed class ScreenCatalogue
         window.Activate();
         try
         {
+            bool dialog = scene is "export" or "settings";
             PreviewScenes.Show(main, scene == "settings" ? "home" : scene, Options.Score);
             var root = await LoadedAsync(window);
-            if (scene is "export" or "settings")
-            {
-                await SteadyAsync(root);
-                _ = scene == "export" ? window.ShowExportAsync() : window.OpenSettingsAsync();
-            }
             if (Options.Contrast && !settings.HighContrast)
                 throw new InvalidOperationException("the contrast theme is not on, so nothing in this run shows it");
+            CheckLanguage();
 
             Picture? first = null;
             foreach (var variant in Options.Variants)
             {
                 settings.Appearance = variant;
+                if (dialog)
+                {
+                    // Opened in each choice, so it shows that choice (a person changes it in the dialog itself).
+                    await SteadyAsync(root);
+                    _ = scene == "export" ? window.ShowExportAsync() : window.OpenSettingsAsync();
+                }
                 var (picture, steady) = await SteadyAsync(root);
                 if (Options.Contrast && first is not null)
                 {
@@ -68,16 +69,17 @@ public sealed class ScreenCatalogue
                     if (!picture.SameAs(first) && ImageDiff.Of(first, picture).Changed > ImageDiff.FloorPixels)
                         Run.Findings.Add(new Finding(ShotName(scene, Options.Variants[0]), "contrast-theme",
                             AppearanceSetting.Serialise(variant), "this Appearance choice changed the screen under a contrast theme"));
-                    continue;
                 }
-                first ??= picture;
-                string shot = ShotName(scene, variant);
-                Save(Path.Combine(steady ? Options.Out : Options.UnsteadyOut, shot + ".png"), picture);
-                Run.Shots.Add(shot);
-                if (!steady) Run.Unsteady.Add(shot);
-                if (Options.Checks) Run.Findings.AddRange(Contrast.Check(shot, picture, Texts(root, picture)));
-                if (Options.Checks && Options.Scanner is { } scanner && variant == Options.Variants[0])
-                    Run.Findings.AddRange(await ScanAsync(scanner, window, shot));
+                else
+                {
+                    first ??= picture;
+                    string shot = ShotName(scene, variant);
+                    Save(Path.Combine(steady ? Options.Out : Options.UnsteadyOut, shot + ".png"), picture);
+                    Run.Shots.Add(shot);
+                    if (!steady) Run.Unsteady.Add(shot);
+                    if (Options.Checks) Run.Findings.AddRange(Contrast.Check(shot, picture, Texts(root, picture)));
+                }
+                if (dialog) await CloseDialogsAsync(window);
             }
         }
         catch (Exception e)
@@ -87,7 +89,7 @@ public sealed class ScreenCatalogue
         }
         finally
         {
-            CloseDialogs(window);
+            await CloseDialogsAsync(window);
             window.Close();
             Save();
         }
@@ -149,11 +151,24 @@ public sealed class ScreenCatalogue
         return Task.Run(() => Gdi.CaptureClient(hwnd));
     }
 
-    private static void CloseDialogs(MainWindow window)
+    private static async Task CloseDialogsAsync(MainWindow window)
     {
         if (window.Content?.XamlRoot is not { } xamlRoot) return;
+        bool any = false;
         foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot))
-            if (popup.Child is ContentDialog dialog) dialog.Hide();
+            if (popup.Child is ContentDialog d) { d.Hide(); any = true; }
+        if (any) await Task.Delay(500); // its closing animation, before the next one opens
+    }
+
+    /// <summary>The run in bokmål shows the app in bokmål: the language from --lang reaches the app's strings.</summary>
+    private static void CheckLanguage()
+    {
+        if (Options.Run != "nb" || Run.Findings.Any(f => f.Check == "language")) return;
+        string said = App.Strings["Pink_Unlocked"];
+        if (said != "🎺 Rosa låst opp")
+            Run.Findings.Add(new Finding("all", "language", "App.Strings[\"Pink_Unlocked\"]",
+                $"\"{said}\" with --lang nb-NO (languages: {string.Join(", ", Microsoft.Windows.Globalization.ApplicationLanguages.Languages)}; " +
+                $"override: {Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride})"));
     }
 
     // ---- text on screen ----
@@ -206,33 +221,6 @@ public sealed class ScreenCatalogue
         return Box.FromDips(r.X, r.Y, r.Width, r.Height, scale).Within(picture.Width, picture.Height);
     }
 
-    // ---- Axe.Windows and the keyboard, from another process ----
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(nint hwnd);
-
-    /// <summary>
-    /// tools/ScreenCheck scans this window from its own process while this one waits without blocking its UI thread
-    /// (UI Automation calls into this process are answered on that thread).
-    /// </summary>
-    private static async Task<List<Finding>> ScanAsync(string scanner, MainWindow window, string shot)
-    {
-        nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-        window.Activate();
-        SetForegroundWindow(hwnd);
-        string result = Path.Combine(Options.Out, "scans", shot + ".json");
-        Directory.CreateDirectory(Path.GetDirectoryName(result)!);
-        var psi = new ProcessStartInfo(scanner) { UseShellExecute = false };
-        foreach (var a in new[] { "scan", "--pid", Environment.ProcessId.ToString(), "--hwnd", hwnd.ToString(), "--shot", shot, "--out", result })
-            psi.ArgumentList.Add(a);
-        using var process = Process.Start(psi) ?? throw new InvalidOperationException("tools/ScreenCheck did not start");
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
-        await process.WaitForExitAsync(timeout.Token);
-        if (process.ExitCode != 0 || !File.Exists(result))
-            throw new InvalidOperationException($"tools/ScreenCheck scan of {shot} failed (exit {process.ExitCode})");
-        return JsonSerializer.Deserialize<List<Finding>>(File.ReadAllText(result), new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? [];
-    }
-
     // ---- files ----
 
     private static void Save(string path, Picture picture)
@@ -267,9 +255,6 @@ public sealed class ScreenCatalogue
 
         /// <summary>The checks run (off at the merge base: only its screenshots are wanted).</summary>
         public static bool Checks { get; } = Env("CHECKS") != "0";
-
-        /// <summary>tools/ScreenCheck's exe, for Axe.Windows and the Tab walk; without it they are not run.</summary>
-        public static string? Scanner { get; } = Env("SCANNER");
 
         public static string? Score { get; } = Env("SCORE");
 

@@ -3,20 +3,23 @@
 # merge base. Windows only; meant for CI, since the contrast theme and the text size are this user's Windows settings
 # for the length of their run.
 #
-#   catalogue.ps1 record  -Out DIR                 take them, with the checks
-#   catalogue.ps1 compare -Out DIR [-Base COMMIT]  take them at COMMIT (default: the merge base with origin/main) without
+#   catalogue.ps1 record  -Exe EXE -Out DIR                 take them, with the checks
+#   catalogue.ps1 compare -Exe EXE -Out DIR [-Base COMMIT]  take them at COMMIT (default: the merge base with origin/main) without
 #                                                  the checks, then here with them, and compare
 #
 # DIR gets the screenshots (shots\, unsteady\, scans\), findings.md and, for compare, report\ (index.html,
 # summary.md, result.json) with the base's screenshots in before\. Exit codes as for the other apps' catalogues:
 # 0 nothing changed, 1 a screen changed, appeared or went away, 2 the catalogue's checks found something, 3 the
 # screenshots could not be taken (here or at the base; nothing was compared).
+# EXE is the app's own build (BrasscribePlay.exe): Axe.Windows and the walk with Tab run on it, one start per screen.
 # -FfiDll is the Rust core for this checkout (brasscribe_ffi.dll); the base builds its own when its core differs.
 param(
     [Parameter(Mandatory, Position = 0)] [ValidateSet("record", "compare")] [string] $Mode,
     [Parameter(Mandatory)] [string] $Out,
     [string] $Base,
     [string] $FfiDll,
+    # The app's own build: Axe.Windows and the walk with Tab run on it, one start per screen.
+    [Parameter(Mandatory)] [string] $Exe,
     [string] $Configuration = "Release"
 )
 $ErrorActionPreference = "Stop"
@@ -39,12 +42,11 @@ function Build-Catalogue($dir, $ffi) {
 }
 
 # One run of the catalogue exe: $run is en, nb, contrast or text200. Returns false when it could not run.
-function Invoke-Run($exe, $shots, $run, $variants, $score, [bool] $checks, $scanner) {
+function Invoke-Run($exe, $shots, $run, $variants, $score, [bool] $checks) {
     $env:BRASSCRIBE_CATALOGUE_OUT = $shots
     $env:BRASSCRIBE_CATALOGUE_RUN = $run
     $env:BRASSCRIBE_CATALOGUE_VARIANTS = $variants
     $env:BRASSCRIBE_CATALOGUE_CHECKS = if ($checks) { "1" } else { "0" }
-    $env:BRASSCRIBE_CATALOGUE_SCANNER = if ($checks -and $scanner) { $scanner } else { "" }
     $env:BRASSCRIBE_CATALOGUE_SCORE = $score
     $appArgs = @()
     if ($run -eq "nb") { $appArgs += @("--lang", "nb-NO") }
@@ -73,15 +75,19 @@ function System-State([string[]] $what) {
 function Invoke-Catalogue($exe, $shots, $score, [bool] $checks) {
     if (Test-Path $shots) { Remove-Item -Recurse -Force $shots }
     New-Item -ItemType Directory -Force -Path $shots | Out-Null
-    $ok = Invoke-Run $exe $shots "en" "light,dark,pink-light,pink-dark" $score $checks $script:screenCheck
-    $ok = (Invoke-Run $exe $shots "nb" "light,dark" $score $checks $null) -and $ok
+    $ok = Invoke-Run $exe $shots "en" "light,dark,pink-light,pink-dark" $score $checks
+    $ok = (Invoke-Run $exe $shots "nb" "light,dark" $score $checks) -and $ok
     # A contrast theme wins over every choice: the run shows each, and they must all look the same.
     System-State @("--contrast", "on")
-    try { $ok = (Invoke-Run $exe $shots "contrast" "system,light,dark,pink-dark" $score $checks $null) -and $ok }
+    try { $ok = (Invoke-Run $exe $shots "contrast" "system,light,dark,pink-dark" $score $checks) -and $ok }
     finally { System-State @("--contrast", "off") }
     System-State @("--text-scale", "200")
-    try { $ok = (Invoke-Run $exe $shots "text200" "light" $score $checks $null) -and $ok }
+    try { $ok = (Invoke-Run $exe $shots "text200" "light" $score $checks) -and $ok }
     finally { System-State @("--text-scale", "off") }
+    if ($checks) {
+        & $script:screenCheck play --exe $script:appExe --score $score --out $shots | Out-Host
+        $ok = ($LASTEXITCODE -eq 0) -and $ok
+    }
     return $ok
 }
 
@@ -90,6 +96,7 @@ dotnet build (Join-Path $windows "tools/ScreenCheck") -c $Configuration | Out-Ho
 if ($LASTEXITCODE -ne 0) { throw "ScreenCheck did not build" }
 $script:screenCheck = (Get-ChildItem -Recurse -Filter ScreenCheck.exe (Join-Path $windows "tools/ScreenCheck/bin/$Configuration") | Select-Object -First 1).FullName
 $score = Join-Path $repo "apps/fixtures/old-hundredth/brass-band.musicxml"
+$script:appExe = (Resolve-Path $Exe).Path
 $shots = Join-Path $Out "shots"
 $report = Join-Path $Out "report"
 $before = Join-Path $report "before"

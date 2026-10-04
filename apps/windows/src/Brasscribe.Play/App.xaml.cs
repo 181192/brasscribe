@@ -84,7 +84,11 @@ public partial class App : Application
     }
 
     /// <summary>Strings for code-behind; view models receive <see cref="IStrings"/> through their constructors.</summary>
-    public static IStrings Strings { get; } = new ResourceStrings();
+    /// <remarks>Made on first use, after the constructor has set the language: a loader made before that (a static
+    /// initialiser runs before the constructor) may keep Windows' language.</remarks>
+    public static IStrings Strings => _strings ??= new ResourceStrings();
+
+    private static IStrings? _strings;
 
     public static MainWindow? MainWindowInstance => (Current as App)?._window;
 
@@ -132,11 +136,12 @@ public partial class App : Application
         // --show NAME [--score FILE]: one screen with sample content, for screenshots (see PreviewScenes).
         if (Option("--show") is { } scene)
         {
-            if (PreviewScenes.Show(main, scene, Option("--score")) && scene == "export")
+            // "settings": Home with Settings open.
+            if (PreviewScenes.Show(main, scene == "settings" ? "home" : scene, Option("--score")) && scene is "export" or "settings")
                 window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
                 {
                     await Task.Delay(1500);
-                    await window.ShowExportAsync();
+                    await (scene == "export" ? window.ShowExportAsync() : window.OpenSettingsAsync());
                 });
             return;
         }

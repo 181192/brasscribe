@@ -22,9 +22,10 @@ tools/check-macos.sh                 everything that builds off Windows
 
 ## Not on Windows yet
 
-The music stand, the Appearance setting (dark, high contrast) and "What do you play?" are in the
-Mac and Android apps but not in this one yet: they wait for a test run on a Windows machine. For the
-same reason no release has a Windows download.
+The music stand and "What do you play?" are in the Mac and Android apps but not in this one yet: they
+wait for a test run on a Windows machine. For the same reason no release has a Windows download.
+Settings › Appearance (Match system, Light, Dark, and a Windows contrast theme winning over the choice) is
+checked on every pull request by the screen catalogue below.
 
 ## Prerequisites
 

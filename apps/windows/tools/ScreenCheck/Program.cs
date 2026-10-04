@@ -4,6 +4,7 @@ using Brasscribe.ScreenCheck;
 // ScreenCheck <command> [--name value]...
 //
 //   scan     --pid P --hwnd H --shot NAME --out FILE   Axe.Windows and a walk with Tab on a window; findings to FILE (JSON)
+//   play     --exe EXE --score FILE --out DIR [--scenes a,b]   Axe.Windows and Tab on each of Play's screens, one start each
 //   bandroom --exe EXE --out DIR --run en|nb|contrast|text200 [--themes light,dark] [--scenes a,b:state] [--checks 0]
 //                                                       Bandroom's catalogue: one start per view, its screenshots and checks
 //   system   --contrast on|off | --text-scale PERCENT|off   a contrast theme or a text size for the next run (this user)
@@ -18,6 +19,7 @@ try
     return args.FirstOrDefault() switch
     {
         "scan" => Scan.Run(int.Parse(options.Need("pid")), nint.Parse(options.Need("hwnd")), options.Need("shot"), options.Need("out")),
+        "play" => PlayScan.Run(options),
         "bandroom" => BandroomCatalogue.Run(options),
         "system" => SystemState.Run(options),
         "verdict" => Verdict(options),
@@ -38,7 +40,7 @@ catch (Exception e)
 
 static int Usage()
 {
-    Console.Error.WriteLine("usage: ScreenCheck scan|bandroom|system|verdict|compare [--name value]... (see Program.cs)");
+    Console.Error.WriteLine("usage: ScreenCheck scan|play|bandroom|system|verdict|compare [--name value]... (see Program.cs)");
     return 2;
 }
 
