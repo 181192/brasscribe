@@ -45,7 +45,7 @@ catalogue() {
     (cd "$dir" && TEST_RUNNER_CATALOGUE_OUT="$out" TEST_RUNNER_CATALOGUE_CHECKS="${CATALOGUE_CHECKS:-1}" \
       xcodebuild -project BrasscribeBandroom.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribeBandroom \
         -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribeBandroomTests \
-        test-without-building 2>&1 | { grep -E "^(✘|↳|✔ Test run|Failing tests)|^\t|error:" || true; }) || status=1
+        test-without-building 2>&1 | { grep -E "^(✘|↳|✔ Test run|Failing tests|Restarting)|^\t[A-Za-z].*\(\)$|: error:" || true; }) || status=1
   done
   return "$status"
 }

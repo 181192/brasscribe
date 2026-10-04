@@ -105,6 +105,10 @@ import TranscriptionKit
         }
     }
 
+    /// The score models of the run, kept until the process ends: releasing one can crash the test host in
+    /// AVAudioEngine.stop (#258).
+    static var models: [PracticeModel] = []
+
     @Test func everyScreen() async throws {
         AXTree.enableInProcess()
         LayoutFixtures.freshLibrary()
@@ -126,9 +130,11 @@ import TranscriptionKit
         let piece = try LayoutFixtures.piece()
         try await window("output", app: full) { OutputView(piece: piece) }
         let score = try await LayoutFixtures.model(piece)
+        Self.models.append(score)
         try await window("score", app: full, wait: { !score.pages.isEmpty && !score.engraving }) { PracticeView(model: score).pageBackground() }
         score.stopAll()
         let stand = try await LayoutFixtures.model(piece)
+        Self.models.append(stand)
         try await window("stand", app: full, opened: { if stand.stand == nil { stand.enterStand(from: .toolbar) } },
                          wait: { stand.stand != nil && !stand.pages.isEmpty && !stand.engraving }) { ScoreOrStand(model: stand) }
         stand.leaveStand()
@@ -138,6 +144,7 @@ import TranscriptionKit
 
         try await sheet("settings", app: full) { SettingsView() }
         let exportModel = try await LayoutFixtures.model(piece)
+        Self.models.append(exportModel)
         try await sheet("export", app: full) { ExportView(model: exportModel) }
         try await sheet("talking-score", app: full) { TalkingScoreView(model: exportModel) }
         exportModel.stopAll()
