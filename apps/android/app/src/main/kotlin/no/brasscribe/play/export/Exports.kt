@@ -150,7 +150,8 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
                 val name = t?.let { no.brasscribe.play.ui.PartNames.display(partNames[it]) }
                 val tracks = t?.let { listOf(it) } ?: (0 until score.tracks.length.toInt()).toList()
                 val part = pdf.engrave(score, tracks, name, if (t == null) PhonePdf.SCORE_SCALE else PhonePdf.PART_SCALE)
-                val f = File(dir, if (t == null) "$base.pdf" else "$base - ${safe(partNames[t])}.pdf")
+                // Numbered in score order, as the computer's parts are: two parts of the same name never share a file.
+                val f = File(dir, if (t == null) "$base.pdf" else "%02d-%s - %s.pdf".format(t + 1, base, safe(partNames[t])))
                 pdf.Document().use { doc -> doc.add(part); f.outputStream().use { doc.writeTo(it) } }
                 all?.add(part)
                 files += ExportFile(f, ExportFormat.PDF)

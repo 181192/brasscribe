@@ -79,6 +79,33 @@ class PhonePdfTest {
     }
 
     @Test
+    fun aVeryUncertainNoteKeepsItsBoxedMark() {
+        // The computer writes a very uncertain note's "?" in a rectangle; alphaTab alone would print it as a plain "?".
+        val boxed = xml.replaceFirst("<words>?</words>", "<words enclosure=\"rectangle\">?</words>")
+        val score = PhonePdf(context).parse(boxed.toByteArray())
+        val texts = (0 until score.tracks.length.toInt()).flatMap { t ->
+            score.tracks[t].staves.flatMap { st -> st.bars.flatMap { b -> b.voices.flatMap { v -> v.beats.mapNotNull { it.text?.trim() } } } }
+        }
+        assertEquals(1, texts.count { it == no.brasscribe.play.score.BOXED_QUESTION })
+        assertEquals(3, texts.count { it == "?" })
+    }
+
+    @Test
+    fun aSystemAPageTallIsDrawnUnderTheTitleNotOnAPageOfItsOwn() {
+        fun chunk(h: Float, bars: Int) = PhonePdf.Chunk(android.graphics.Picture(), 800f, h, if (bars < 0) -1 else 0, bars)
+        val title = chunk(100f, -1)
+        // At 0.62 a unit the system is 1,240 pt, taller than the page (770 pt between its margins).
+        val tall = chunk(2_000f, 3)
+        val pages = PhonePdf.paginate(PhonePdf.Engraved("Solo Cornet", listOf(title, tall, chunk(100f, 7)), PhonePdf.PART_SCALE))
+        assertEquals(listOf(title, tall), pages.first().map { it.first })
+        assertTrue(pages.first().sumOf { (c, s) -> (c.height * s).toDouble() } <= PhonePdf.CONTENT_H + 0.01)
+        // Under a tall title, a system that would be drawn below half the size it fits a page at goes to the next page.
+        val tallTitle = chunk(1_000f, -1)
+        val apart = PhonePdf.paginate(PhonePdf.Engraved(null, listOf(tallTitle, tall), PhonePdf.PART_SCALE))
+        assertEquals(2, apart.size)
+    }
+
+    @Test
     fun theConductorsScoreFitsItsPagesAndNoPartRunsPastAnEdge() {
         val pdf = PhonePdf(context)
         val score = pdf.parse(repeated(xml, 4).toByteArray())
@@ -124,6 +151,8 @@ class PhonePdfTest {
         }
         assertEquals(names.size, files.size)
         assertTrue(files.all { it.file.isFile && PdfJoin.pageCount(it.file.readBytes()) == 1 })
+        // Numbered in score order: two parts of one name would not share a file.
+        assertEquals(names.indices.map { "%02d-".format(it + 1) }, files.map { it.file.name.take(3) })
         assertEquals((0..names.size).map { it to names.size }, seen)
         val jobs = runBlocking { exporter.printJobs(files, "Old Hundredth") }
         assertEquals(1, jobs.size)

@@ -58,7 +58,8 @@ class PhonePdf(context: Context) {
     /** Reads [musicXml] once, for every part and the full score. */
     fun parse(musicXml: ByteArray): Score {
         register(musicFont)
-        return AlphaTabMusicXml.parse(musicXml, settings())
+        // A very uncertain note's boxed "?" (alphaTab would draw the rectangle's "?" as a plain one).
+        return AlphaTabMusicXml.parse(no.brasscribe.play.score.markVeryUncertain(musicXml), settings())
     }
 
     /** Engraves [tracks] of [score] (one for a part, every one for the conductor) as wide as an A4 page between its margins at [scale]. */
@@ -164,16 +165,23 @@ class PhonePdf(context: Context) {
 
         /**
          * The pages of [part]: whole chunks (the title, then systems) top to bottom, a new page when the next does not fit.
-         * A chunk wider or taller than the page is drawn smaller, to fit; each comes with the scale it is drawn at.
+         * A chunk wider or taller than the page is drawn smaller, to fit; each comes with the scale it is drawn at. A system
+         * that does not fit under the title alone is drawn smaller still, under it: the title never has a page of its own.
          */
         internal fun paginate(part: Engraved): List<List<Pair<Chunk, Float>>> {
             val pages = ArrayList<List<Pair<Chunk, Float>>>()
             var page = ArrayList<Pair<Chunk, Float>>()
             var used = 0f
             for (chunk in part.chunks) {
-                val fit = minOf(part.scale, CONTENT_W / chunk.width.coerceAtLeast(1f), CONTENT_H / chunk.height.coerceAtLeast(1f))
+                var fit = minOf(part.scale, CONTENT_W / chunk.width.coerceAtLeast(1f), CONTENT_H / chunk.height.coerceAtLeast(1f))
+                val onlyTitle = page.isNotEmpty() && page.all { (c, _) -> c.lastBar < 0 }
+                if (onlyTitle && chunk.lastBar >= 0 && used + chunk.height * fit > CONTENT_H) {
+                    // Not below half its size: a page of title is better than a system too small to read.
+                    val under = (CONTENT_H - used) / chunk.height.coerceAtLeast(1f)
+                    if (under >= fit / 2) fit = under
+                }
                 val h = chunk.height * fit
-                if (page.isNotEmpty() && used + h > CONTENT_H) { pages += page; page = ArrayList(); used = 0f }
+                if (page.isNotEmpty() && used + h > CONTENT_H + 0.01f) { pages += page; page = ArrayList(); used = 0f }
                 page += chunk to fit
                 used += h
             }

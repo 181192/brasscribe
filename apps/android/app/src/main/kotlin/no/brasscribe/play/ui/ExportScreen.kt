@@ -104,6 +104,8 @@ fun ExportScreen(vm: PlayViewModel) {
             val comp = r.composition
             val parts = comp?.voices.orEmpty().filter { it.notes.isNotEmpty() }.map { partViewFor(comp!!, it.id, checked[it.id].orEmpty(), vm.container.core) }
             val phonePdf = ExportFormat.PDF in formats && !exporter.pdfFromComputer(r)
+            // Said once: the progress line under the buttons is not said part by part.
+            if (phonePdf) vm.say(R.string.stage_export)
             val files = withContext(Dispatchers.Default) {
                 exporter.buildAll(r, formats, what, myPart ?: 0, partNames, vm.container.engine(), scoreMidi?.let { m -> { m.bytes() } }, parts, currentLang(),
                     progress = { done, of -> if (phonePdf) laying = done to of })
@@ -122,6 +124,7 @@ fun ExportScreen(vm: PlayViewModel) {
     }
 
     val print = ExportFormat.PDF in formats
+    val sideways = androidx.compose.ui.platform.LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
@@ -131,7 +134,7 @@ fun ExportScreen(vm: PlayViewModel) {
                 Text(stringResource(R.string.export_laying_out, minOf(done + 1, of), of), style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.semantics { testTag = "export-progress" })
             }
-            if (print) PrimaryButton(stringResource(R.string.export_print), {
+            val printButton = @Composable { m: Modifier -> PrimaryButton(stringResource(R.string.export_print), {
                 // Every part: one print job, the players' PDFs one after another.
                 make { files ->
                     scope.launch {
@@ -145,14 +148,22 @@ fun ExportScreen(vm: PlayViewModel) {
                         }
                     }
                 }
-            }, icon = R.drawable.ic_bc_print, modifier = Modifier.semantics { testTag = "print" }, enabled = !making)
-            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
-                val share = stringResource(R.string.export_share)
-                val save = stringResource(R.string.export_save)
-                val shareAction = { make { context.startActivity(exporter.shareIntent(it)) } }
-                if (print) SecondaryButton(share, { shareAction() }, Modifier.weight(1f).semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_export)
-                else PrimaryButton(share, { shareAction() }, Modifier.weight(1f).semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_export)
-                OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, Modifier.weight(1f), enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_folder)
+            }, icon = R.drawable.ic_bc_print, modifier = m.semantics { testTag = "print" }, enabled = !making) }
+            val share = stringResource(R.string.export_share)
+            val save = stringResource(R.string.export_save)
+            val shareAction = { make { context.startActivity(exporter.shareIntent(it)) } }
+            val shareAndSave = @Composable { m: Modifier ->
+                if (print) SecondaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_export)
+                else PrimaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_export)
+                OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, m, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_folder)
+            }
+            // On its side the phone has little height: the buttons in one row, so the list keeps the room.
+            if (sideways) Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                if (print) printButton(Modifier.weight(1f))
+                shareAndSave(Modifier.weight(1f))
+            } else {
+                if (print) printButton(Modifier)
+                Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) { shareAndSave(Modifier.weight(1f)) }
             }
             Text(
                 pluralStringResource(R.plurals.export_count, fileCount, fileCount),
