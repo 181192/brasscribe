@@ -52,6 +52,26 @@ public partial class LocalizationTests
     }
 
     [Fact]
+    public void Every_toggle_switch_says_on_and_off_in_the_apps_language()
+    {
+        // WinUI's own "On"/"Off" follow Windows' display language, so in bokmål they stayed English.
+        var en = Load("en-US");
+        var nb = Load("nb-NO");
+        var switches = Directory.EnumerateFiles(App, "*.xaml", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .SelectMany(f => XDocument.Load(f).Descendants().Where(e => e.Name.LocalName == "ToggleSwitch"))
+            .ToList();
+        Assert.NotEmpty(switches);
+        XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+        foreach (var s in switches)
+        {
+            string uid = (string?)s.Attribute(x + "Uid") ?? throw new Xunit.Sdk.XunitException($"a ToggleSwitch without x:Uid: {s}");
+            Assert.Equal(("On", "Off"), (en[$"{uid}.OnContent"], en[$"{uid}.OffContent"]));
+            Assert.Equal(("På", "Av"), (nb[$"{uid}.OnContent"], nb[$"{uid}.OffContent"]));
+        }
+    }
+
+    [Fact]
     public void Every_string_key_the_code_uses_exists()
     {
         var keys = Load("en-US").Keys.ToHashSet();

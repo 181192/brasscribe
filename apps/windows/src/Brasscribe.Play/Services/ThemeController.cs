@@ -67,9 +67,16 @@ public sealed class ThemeController
     public void Attach(Window window)
     {
         _windows.Add(window);
-        window.Closed += (_, _) => _windows.Remove(window);
-        if (window.Content is FrameworkElement root)
-            root.ActualThemeChanged += (_, _) => ApplyCaptionButtons(window);
+        // A theme change still on its way when the window closes reaches a window without an AppWindow: the handler
+        // goes with the window.
+        Windows.Foundation.TypedEventHandler<FrameworkElement, object> captions = (_, _) => ApplyCaptionButtons(window);
+        var root = window.Content as FrameworkElement;
+        window.Closed += (_, _) =>
+        {
+            _windows.Remove(window);
+            if (root is not null) root.ActualThemeChanged -= captions;
+        };
+        if (root is not null) root.ActualThemeChanged += captions;
         Apply(window);
     }
 
