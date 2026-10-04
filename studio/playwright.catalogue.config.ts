@@ -20,9 +20,10 @@ export default defineConfig({
     reducedMotion: "reduce",
     // A service worker would answer before page.route sees the request.
     serviceWorkers: "block",
-    // Drawn by the CPU in software, with sRGB and no subpixel text: no emulated GPU, whose result can depend on
-    // the processor the runner happens to have.
-    launchOptions: { args: ["--disable-gpu", "--disable-gpu-rasterization", "--force-color-profile=srgb", "--disable-lcd-text"] },
+    // Scrollbars take no width, as on a Mac: on Linux a page scrollbar that comes and goes (as the page grows, or
+    // while a full-page screenshot is taken) changes the score's width, and alphaTab lays the score out again,
+    // rounding its first bar differently depending on when that happened. sRGB and no subpixel text, everywhere.
+    launchOptions: { args: ["--hide-scrollbars", "--force-color-profile=srgb", "--disable-lcd-text"] },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } }],
   webServer: {

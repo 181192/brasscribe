@@ -43,30 +43,29 @@ async function diff(page, a, b) {
     let n = 0;
     const step = (i) => Math.max(Math.abs(pa[i] - pb[i]), Math.abs(pa[i + 1] - pb[i + 1]), Math.abs(pa[i + 2] - pb[i + 2]), Math.abs(pa[i + 3] - pb[i + 3]));
     const lum = (p, i) => 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
-    // An edge: the pixels around this one span a wide range of light, in either picture.
-    const edge = (i) => {
+    // The light of the 3 × 3 pixels around one, in one picture.
+    const around = (p, i) => {
       const x = (i / 4) % w;
       const y = Math.floor(i / 4 / w);
-      for (const p of [pa, pb]) {
-        let lo = 255, hi = 0;
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            const xx = x + dx, yy = y + dy;
-            if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-            const v = lum(p, (yy * w + xx) * 4);
-            lo = Math.min(lo, v);
-            hi = Math.max(hi, v);
-          }
+      let lo = 255, hi = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx, yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+          const v = lum(p, (yy * w + xx) * 4);
+          lo = Math.min(lo, v);
+          hi = Math.max(hi, v);
         }
-        if (hi - lo > 48) return true;
       }
-      return false;
+      return [lo - 2, hi + 2];
     };
+    const within = (v, [lo, hi]) => v >= lo && v <= hi;
     for (let i = 0; i < pa.length; i += 4) {
-      // A step of one or two in a channel is the rasteriser's rounding, not a change; nor is a step of up to 16 on
-      // an edge (anti-aliasing of an edge that sits a fraction of a pixel elsewhere). A flat area counts from 3.
+      // A step of one or two in a channel is the rasteriser's rounding, not a change. Nor is a step of up to 16
+      // where each picture's pixel is a shade found around the same place in the other: anti-aliasing of an edge
+      // that sits a fraction of a pixel elsewhere. A colour that is new to the place (text a shade darker) counts.
       const d = step(i);
-      const same = d <= 2 || (d <= 16 && edge(i));
+      const same = d <= 2 || (d <= 16 && within(lum(pb, i), around(pa, i)) && within(lum(pa, i), around(pb, i)));
       if (!same) n++;
       const grey = 255 - (255 - (pb[i] + pb[i + 1] + pb[i + 2]) / 3) * 0.25;
       od.data.set(same ? [grey, grey, grey, 255] : [220, 0, 0, 255], i);
