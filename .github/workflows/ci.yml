@@ -60,7 +60,7 @@ jobs:
             studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
             android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/brasscribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json', '.github/workflows/ci.yml']
             windows_play: ['apps/windows/**', 'core/**', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'apps/fixtures/**', 'sounds/**', 'engine/src/brasscribe_engine/static/assets/alphatab/**', 'docs/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
-            windows_bandroom: ['apps/bandroom/windows/**', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'eval/brasscribe_eval/**', 'eval/pyproject.toml', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
+            windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'eval/brasscribe_eval/**', 'eval/pyproject.toml', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -177,6 +177,9 @@ jobs:
 
       - name: Play for Windows core logic
         run: dotnet test apps/windows/tests/Brasscribe.Play.Core.Tests
+
+      - name: The Windows screen catalogues' picture checks
+        run: dotnet test apps/windows/tools/ScreenCheck.Tests
 
       - name: Bandroom for Windows core logic
         run: dotnet test apps/bandroom/windows/tests/Brasscribe.Bandroom.Core.Tests
@@ -517,6 +520,8 @@ jobs:
       && (needs.changes.outputs.windows_play == 'true' || needs.changes.outputs.windows_bandroom == 'true')
     permissions:
       contents: read
+      # The screenshot check reads the pull request's labels (windows.yml, job `screenshots`).
+      pull-requests: read
     uses: ./.github/workflows/windows.yml
     with:
       skip_play: ${{ needs.changes.outputs.windows_play != 'true' }}
