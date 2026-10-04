@@ -98,6 +98,15 @@ jobs:
           dest=$(scripts/newest-iphone.sh)
           make test IPHONE_DEST="$dest"
 
+      # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: apple-play-test-results
+          path: apps/apple/build/DerivedData/Logs/Test/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 7
+
   # What scripts/check.sh full bandroom-mac runs: the reader of requires-pixi, BandroomKit's unit tests,
   # and a Debug build of the app (without the band sounds and the core's command line, which a Debug
   # build leaves out with a warning).
