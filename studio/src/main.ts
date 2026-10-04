@@ -42,12 +42,18 @@ function syncNav(): void {
   (document.getElementById("nav-menu") as HTMLDetailsElement).open = !narrow.matches;
 }
 narrow.addEventListener("change", syncNav);
-// On a narrow screen the open nav covers the page: when focus leaves it (Tab past its end), it closes, so focus is never hidden under it.
-document.getElementById("nav-menu")!.addEventListener("focusout", (e) => {
-  const menu = e.currentTarget as HTMLDetailsElement;
-  const to = e.relatedTarget as Node | null;
-  if (narrow.matches && menu.open && to && !menu.contains(to)) menu.open = false;
+// On a narrow screen the open nav covers the page. Focus anywhere outside it closes it, so focus is never
+// hidden under it: Tab past its end, but also Shift+Tab or a shortcut from the page when focus never entered
+// it. Escape closes it and puts focus back on the Menu button (an open menu inside it, Quality, closes first).
+const navMenu = document.getElementById("nav-menu") as HTMLDetailsElement;
+document.addEventListener("focusin", (e) => {
+  if (narrow.matches && navMenu.open && !navMenu.contains(e.target as Node)) navMenu.open = false;
 });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || !narrow.matches || !navMenu.open || navMenu.querySelector("details.menu[open]")) return;
+  navMenu.open = false;
+  navMenu.querySelector<HTMLElement>(".nav-toggle")?.focus();
+}, true);
 syncNav();
 wireMenus();
 
@@ -137,6 +143,8 @@ function renderTheme(): void {
 }
 
 let dialog: HTMLDialogElement | null = null;
+/** What had focus when the shortcut sheet opened. */
+let opener: HTMLElement | null = null;
 
 function shortcutsDialog(): HTMLDialogElement {
   dialog?.remove();
@@ -171,6 +179,15 @@ function shortcutsDialog(): HTMLDialogElement {
       row("Tab / Shift+Tab / Esc", t("shortcuts.s.leave")))),
     h("p", { class: "hint" }, t("shortcuts.hint")),
     h("form", { method: "dialog" }, h("button", { type: "submit", class: "primary" }, t("shortcuts.closeBtn"))));
+  // The dialog gives focus back to what had it, unless that is hidden by now (a link of the narrow menu, which
+  // closed when focus moved into the dialog): then to the Menu button, or the page's content.
+  dlg.addEventListener("close", () => {
+    const back = opener;
+    opener = null;
+    if (!back || (back.isConnected && back.checkVisibility())) return;
+    const toggle = navMenu.querySelector<HTMLElement>(".nav-toggle");
+    (navMenu.contains(back) && toggle?.checkVisibility() ? toggle : document.getElementById("main"))?.focus();
+  });
   document.body.append(dlg);
   dialog = dlg;
   return dlg;
@@ -190,7 +207,10 @@ function globalKeys(): void {
     const mod = e.ctrlKey || e.metaKey;
     if (e.key === "F1" || (e.key === "?" && !typing(e) && !mod)) {
       e.preventDefault();
-      if (dialog && !dialog.open) dialog.showModal();
+      if (dialog && !dialog.open) {
+        opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+        dialog.showModal();
+      }
     } else if (mod && !e.shiftKey && (e.key === "o" || e.key === "O")) {
       e.preventDefault();
       if (!location.hash.startsWith("#/viewer")) location.hash = "#/viewer";

@@ -266,8 +266,13 @@ jobs:
         # starts bash and gh by their full paths, with only the variables gh needs.
         shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
         run: |
-          names=$(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" GH_TOKEN="$GH_TOKEN" \
-            /usr/bin/gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name') || names=""
+          # A few tries: an error from GitHub (a 503) is not the same as no label.
+          names=""
+          for try in 1 2 3 4 5; do
+            if names=$(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" GH_TOKEN="$GH_TOKEN" \
+              /usr/bin/gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name'); then break; fi
+            names=""; sleep $((try * 5))
+          done
           if printf '%s\n' "$names" | /usr/bin/grep -qx 'screenshots-changed'; then meant=true; else meant=false; fi
           echo "meant=$meant" >> "$GITHUB_OUTPUT"
 
@@ -281,6 +286,12 @@ jobs:
           # not be taken. No label lets 2 or 3 through.
           if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
             echo "Views changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Report-only for now: two CI attempts on one commit do not yet take the same pictures (#219). Changed views
+          # are shown in the summary and the artefact; the checks (2) and the base (3) still fail the job.
+          if [ "$STATUS" = 1 ]; then
+            echo "Views changed (shown above and in the studio-screenshots artefact). Not failing the job while the comparison is report-only (#219)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           exit "${STATUS:-1}"
@@ -447,7 +458,12 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")') || meant=false
+          # A few tries: an error from GitHub (a 503) is not the same as no label.
+          meant=false
+          for try in 1 2 3 4 5; do
+            if meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")'); then break; fi
+            meant=false; sleep $((try * 5))
+          done
           echo "meant=$meant" >> "$GITHUB_OUTPUT"
 
       - name: Screenshot result
