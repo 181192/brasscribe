@@ -11,10 +11,13 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -192,6 +195,122 @@ class ScoreRenderTest : ScreenTest() {
         assertTrue("no notation on screen (ink ${"%.4f".format(ink)})", ink >= MIN_INK)
     }
 
+    /**
+     * The score is still the score after the talking score took its place, and after a turn while it was there: it is
+     * drawn, it is engraved again when asked (a zoom), a tap on a bar moves the cursor there, and it plays. The talking
+     * score's own "play this bar" plays too. alphaTab tears its view down for good when it leaves the window, so it never does.
+     */
+    @Test
+    fun theScoreSurvivesTheTalkingScore() {
+        val detaches = openAndCountDetaches()
+        fun readAloud(on: Boolean) {
+            rule.onNodeWithTag("top-more").performClick()
+            rule.onNodeWithText(text(R.string.read_aloud)).performClick()
+            waitUntil(5_000) { rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isEmpty() == on }
+        }
+        readAloud(true)
+        assertPlays("on the talking score")
+        readAloud(false)
+        assertScoreWorks("after the talking score", detaches)
+        readAloud(true); turnAround(); readAloud(false)
+        assertScoreWorks("after a turn on the talking score", detaches)
+    }
+
+    /** As [theScoreSurvivesTheTalkingScore], for the music stand. */
+    @Test
+    fun theScoreSurvivesTheMusicStand() {
+        val detaches = openAndCountDetaches()
+        fun stand(on: Boolean) {
+            if (on) {
+                rule.onNodeWithTag("top-more").performClick()
+                rule.onNodeWithTag("performance").performClick()
+            } else ScreenDevice.back(rule)
+            waitUntil(5_000) { rule.onAllNodesWithTag("stand-score").fetchSemanticsNodes().isNotEmpty() == on }
+        }
+        stand(true); stand(false)
+        assertScoreWorks("after the music stand", detaches)
+        stand(true); turnAround(); stand(false)
+        assertScoreWorks("after a turn on the music stand", detaches)
+    }
+
+    /** Opens the hymn, checks the score works, and counts how often its view leaves the window from then on. */
+    private fun openAndCountDetaches(): IntArray {
+        val file = File(rule.activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml"))) }
+        rule.runOnUiThread { vm.openScoreUri(android.net.Uri.fromFile(file)) }
+        waitForEngravedScore()
+        assertScoreWorks("before", IntArray(1))
+        val detaches = IntArray(1)
+        rule.runOnUiThread {
+            vm.scoreController!!.view.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: android.view.View) {}
+                override fun onViewDetachedFromWindow(v: android.view.View) { detaches[0]++ }
+            })
+        }
+        return detaches
+    }
+
+    private fun turnAround() {
+        ScreenDevice.turn(rule, sideways = true); settle()
+        ScreenDevice.turn(rule, sideways = false); settle()
+    }
+
+    private fun assertPlays(label: String) {
+        val c = vm.scoreController!!
+        rule.runOnUiThread { c.togglePlay() }
+        try { waitUntil(15_000) { c.state.value.playing } }
+        catch (e: AssertionError) { throw AssertionError("$label: Play did not start the music", e) }
+        rule.runOnUiThread { c.togglePlay() }
+        waitUntil(15_000) { !c.state.value.playing }
+    }
+
+    /** The score on screen is drawn, engraves a new zoom, takes a tap on a bar, and plays; its view never left the window. */
+    private fun assertScoreWorks(label: String, detaches: IntArray) {
+        val c = vm.scoreController!!
+        rule.waitForIdle()
+        assertEquals("$label: times the score's view left the window", 0, detaches[0])
+        var attached = false
+        rule.runOnUiThread { attached = c.view.isAttachedToWindow && c.view.width > 0 }
+        assertTrue("$label: the score's view is on screen", attached)
+        var ink = 0.0
+        runCatching { waitUntil(5_000) { ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()); ink >= MIN_INK } }
+        assertTrue("$label: no notation on screen (ink ${"%.4f".format(ink)})", ink >= MIN_INK)
+
+        // Engraved again at another zoom, and back.
+        val renders = c.renders.value
+        val zoom = c.state.value.zoom
+        rule.runOnUiThread { c.setZoom(zoom + 10) }
+        runCatching { waitForEngravedScore() }.onFailure { throw AssertionError("$label: not engraved again at a new zoom", it) }
+        assertTrue("$label: no new render at a new zoom (renders $renders, then ${c.renders.value})", c.renders.value > renders)
+        rule.runOnUiThread { c.setZoom(zoom) }
+        runCatching { waitForEngravedScore() }.onFailure { throw AssertionError("$label: not engraved again at its zoom", it) }
+        ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap())
+        assertTrue("$label: no notation on screen after a new render (ink ${"%.4f".format(ink)})", ink >= MIN_INK)
+
+        // A tap on a bar's first note puts the cursor there (on bar 3, or bar 4 when it is already at bar 3).
+        var at: androidx.compose.ui.geometry.Offset? = null
+        var start = -1.0
+        var target = 0
+        rule.runOnUiThread {
+            val systems = c.view.api.boundsLookup?.staffSystems ?: return@runOnUiThread
+            val beat = (0 until systems.length.toInt()).flatMap { i -> val b = systems[i].bars; (0 until b.length.toInt()).map { b[it] } }
+                .filter { it.index.toInt() in 2..3 }.map { it.bars[0].beats[0] }
+                .firstOrNull { kotlin.math.abs(it.beat.absolutePlaybackStart - c.view.api.tickPosition) > TICK_SLACK } ?: return@runOnUiThread
+            target = beat.beat.voice.bar.index.toInt() + 1
+            start = beat.beat.absolutePlaybackStart
+            val f = c.view.resources.displayMetrics.density
+            val b = beat.visualBounds
+            val sp = IntArray(2).also { surface(c).getLocationInWindow(it) }
+            val vp = IntArray(2).also { c.view.getLocationInWindow(it) }
+            at = androidx.compose.ui.geometry.Offset((sp[0] - vp[0] + (b.x + b.w / 2) * f).toFloat(), (sp[1] - vp[1] + (b.y + b.h / 2) * f).toFloat())
+        }
+        val tap = checkNotNull(at) { "$label: bars 3 and 4 are not in the engraving" }
+        rule.onNodeWithTag("score-view").performTouchInput { click(tap) }
+        try { waitUntil(5_000) { kotlin.math.abs(c.view.api.tickPosition - start) <= TICK_SLACK } }
+        catch (e: AssertionError) { throw AssertionError("$label: a tap on bar $target left the cursor at tick ${c.view.api.tickPosition}, not $start", e) }
+
+        assertPlays(label)
+    }
+
     /** alphaTab's thread stops for a while before each render's work, the parts it paints afterwards included. */
     private fun slowEngraver(c: no.brasscribe.play.score.ScoreController) {
         // (alphaTab's thread is not public: it is reached through the renderer the view has.)
@@ -210,5 +329,7 @@ class ScoreRenderTest : ScreenTest() {
         const val OPENS = 20
         /** A page of notation inks a few percent of the view; the clipped surface left well under 0.2 %. */
         const val MIN_INK = 0.005
+        /** A tap puts the player at the beat's start or a tick after it (the synthesizer's own rounding). */
+        const val TICK_SLACK = 2.0
     }
 }
