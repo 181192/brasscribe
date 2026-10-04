@@ -15,8 +15,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The pairing QR code, read on the phone (QrCamera); typing the code works without it. -->
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
         android:name=".PlayApplication"
@@ -73,11 +77,6 @@
             </intent-filter>
         </activity>
 
-        <!-- The QR scanner module is fetched by Google Play services when the app is installed. -->
-        <meta-data
-            android:name="com.google.mlkit.vision.DEPENDENCIES"
-            android:value="barcode_ui" />
-
         <service
             android:name=".capture.CaptureService"
             android:exported="false"
@@ -91,7 +90,7 @@
         <!-- ONNX Runtime's AAR adds this provider so that the runtime can report to Microsoft: before the
              app starts it reads the device's ANDROID_ID, maker and model and follows the network and the
              battery. Nothing leaves the phone but what goes to the player's own computer, so it is taken
-             out. PlayApplication also turns the runtime's telemetry off, and verifyNoOrtTelemetry<Variant>
+             out. PlayApplication also turns the runtime's telemetry off, and verifyNoTelemetry<Variant>
              fails the build if the provider is back in the merged manifest. -->
         <provider
             android:name="ai.onnxruntime.TelemetryInitializer"

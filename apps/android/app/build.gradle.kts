@@ -221,11 +221,13 @@ val tabFont = tasks.register<Sync>("syncFretscribeTabFont") {
 }
 
 /**
- * Fails when any ONNX Runtime component (provider, receiver, service, activity) is in a variant's merged manifest.
- * The AAR adds its telemetry provider, the app's manifest removes it (tools:node="remove"); a new AAR, a renamed
- * class or a lost line would bring it, or something like it, back.
+ * Fails when a component that reports off the phone is in a variant's merged manifest: ONNX Runtime's (its AAR adds a
+ * telemetry provider, which the app's manifest removes with tools:node="remove"), and Google's ML Kit, Play services,
+ * Firebase and datatransport (Firelog) ones, which the Play services code scanner brought in and which logged ML Kit
+ * usage to Google. A new AAR, a renamed class, a lost line or a new dependency would bring them, or something like
+ * them, back.
  */
-abstract class VerifyNoOrtTelemetry : DefaultTask() {
+abstract class VerifyNoTelemetry : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val mergedManifest: RegularFileProperty
@@ -236,12 +238,17 @@ abstract class VerifyNoOrtTelemetry : DefaultTask() {
     @TaskAction
     fun verify() {
         val manifest = mergedManifest.get().asFile.readText()
-        val found = Regex("""android:(?:name|authorities)="([^"]*onnxruntime[^"]*)"""").findAll(manifest).map { it.groupValues[1] }.toList()
+        val found = Regex("""android:(?:name|authorities)="([^"]*)"""").findAll(manifest).map { it.groupValues[1] }
+            .filter { name -> "onnxruntime" in name || REPORTERS.any { name.startsWith(it) } }.toList()
         check(found.isEmpty()) {
-            "ONNX Runtime components are in ${mergedManifest.get().asFile}: $found. " +
-                "Remove them in app/src/main/AndroidManifest.xml (tools:node=\"remove\")."
+            "Components that report off the phone are in ${mergedManifest.get().asFile}: $found. " +
+                "Remove the dependency that brings them, or remove them in app/src/main/AndroidManifest.xml (tools:node=\"remove\")."
         }
-        report.get().asFile.writeText("no ONNX Runtime component\n")
+        report.get().asFile.writeText("no ONNX Runtime, ML Kit, Play services, Firebase or datatransport component\n")
+    }
+
+    companion object {
+        val REPORTERS = listOf("com.google.mlkit", "com.google.android.datatransport", "com.google.android.gms", "com.google.firebase")
     }
 }
 
@@ -250,14 +257,14 @@ androidComponents {
     beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
     onVariants { variant ->
         val variantName = variant.name.replaceFirstChar(Char::uppercase)
-        val verifyOrt = tasks.register<VerifyNoOrtTelemetry>("verifyNoOrtTelemetry$variantName") {
+        val verifyNoTelemetry = tasks.register<VerifyNoTelemetry>("verifyNoTelemetry$variantName") {
             mergedManifest.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
-            report.set(layout.buildDirectory.file("reports/ort-telemetry/${variant.name}.txt"))
+            report.set(layout.buildDirectory.file("reports/no-telemetry/${variant.name}.txt"))
         }
         // Every APK and bundle, every install, and every unit-test run (the fast checks) goes through the check.
         val checked = setOf("assemble", "package", "bundle", "install").map { "$it$variantName" }.toSet() +
             "test${variantName}UnitTest"
-        tasks.matching { it.name in checked }.configureEach { dependsOn(verifyOrt) }
+        tasks.matching { it.name in checked }.configureEach { dependsOn(verifyNoTelemetry) }
         val product = variant.productFlavors.single { it.first == "product" }.second
         fun generated(path: String) = layout.buildDirectory.dir("generated/$path").get().asFile.path
         variant.sources.kotlin?.addStaticSourceDirectory(File(designs.getValue(product).dist, "android/kotlin").path)
@@ -327,7 +334,10 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.ktor.client.okhttp)
-    implementation(libs.play.services.code.scanner)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
+    implementation(libs.zxing.core)
     implementation(libs.alphatab)
     implementation(libs.alphaskia.android)
     // alphaSkia's Java API, to register the tab's own face for the fret numbers. Every build already carries

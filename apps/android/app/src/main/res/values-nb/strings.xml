@@ -596,6 +596,11 @@
     <string name="listen_ended">Slutt på takt %1$d</string>
     <string name="pair_scan">Skann koden på datamaskinen</string>
     <string name="pair_scan_unavailable">Telefonen kan ikke skanne koder her. Skriv inn koden fra datamaskinen i stedet.</string>
+    <string name="pair_scan_title">Rett kameraet mot koden på datamaskinen</string>
+    <string name="pair_scan_on_phone">Koden leses på denne telefonen. Ingenting tas opp eller sendes.</string>
+    <string name="pair_scan_camera">Kamerabilde for koden</string>
+    <string name="pair_camera_refused">Kameraet er ikke tillatt, så koden kan ikke skannes. Skriv inn koden i stedet, eller tillat kameraet i telefonens innstillinger.</string>
+    <string name="pair_camera_settings">Åpne telefonens innstillinger for appen</string>
     <string name="pair_link_invalid">Den koden er ikke fra Brasscribe på en datamaskin.</string>
     <string name="pair_link_title">Koble til %1$s?</string>
     <string name="pair_link_address">Adresse på nettverket ditt: %1$s</string>

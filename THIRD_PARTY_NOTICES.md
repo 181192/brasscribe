@@ -80,8 +80,8 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   above). `cargo metadata` in `core/` lists them.
 - **Android:** AndroidX and Jetpack Compose (Apache-2.0), Kotlin coroutines and serialization
   (Apache-2.0), Ktor (Apache-2.0), Oboe (Apache-2.0), ONNX Runtime (MIT), JNA (Apache-2.0 option of
-  LGPL-2.1/Apache-2.0), and the Google Play services code scanner (Android SDK licence; not bundled
-  code, it calls the system scanner).
+  LGPL-2.1/Apache-2.0), CameraX (Apache-2.0) and [ZXing](https://github.com/zxing/zxing) core
+  (Apache-2.0), which read the pairing QR code on the phone.
 - **Windows:** Windows App SDK (Microsoft software licence), ONNX Runtime with DirectML (MIT),
   NAudio (MIT), CommunityToolkit.Mvvm (MIT). Play for Windows also ships `vcruntime140.dll`, a
   redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime

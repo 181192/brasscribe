@@ -1,5 +1,17 @@
 package no.brasscribe.play.ui
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,9 +46,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.PinkUnlock
@@ -74,19 +83,27 @@ fun CompanionScreen(vm: PlayViewModel) {
         onDispose { discovery.stop() }
     }
 
-    fun scan() {
-        // The system code scanner (Google Play services): no camera permission, and nothing bundled.
-        val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
-        runCatching {
-            GmsBarcodeScanning.getClient(context, options).startScan()
-                .addOnSuccessListener { b ->
-                    val text = b.rawValue.orEmpty()
-                    val parsed = PairLink.parse(text)
-                    if (parsed == null) vm.say(R.string.pair_link_invalid) else vm.pairWithLink(parsed)
-                }
-                .addOnFailureListener { vm.say(R.string.pair_scan_unavailable) }
-        }.onFailure { vm.say(R.string.pair_scan_unavailable) }
+    // The QR code is read on the phone, by the app's own camera view (QrCamera): nothing is sent anywhere.
+    // The camera is asked for on the scanner's own screen, which says what it is for.
+    var scanning by rememberSaveable { mutableStateOf(false) }
+    var cameraRefused by rememberSaveable { mutableStateOf(false) }
+    fun cameraAllowed() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    var cameraOk by remember { mutableStateOf(cameraAllowed()) }
+    val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        cameraOk = granted
+        if (!granted) { scanning = false; cameraRefused = true }
     }
+    fun scan() {
+        if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) vm.say(R.string.pair_scan_unavailable)
+        else { cameraOk = cameraAllowed(); cameraRefused = false; scanning = true }
+    }
+    BackHandler(enabled = scanning) { scanning = false }
+    fun scanned(text: String) {
+        scanning = false
+        val parsed = PairLink.parse(text)
+        if (parsed == null) vm.say(R.string.pair_link_invalid) else vm.pairWithLink(parsed)
+    }
+    LaunchedEffect(scanning) { if (scanning && !cameraOk) cameraPermission.launch(Manifest.permission.CAMERA) }
 
     val pending = link
     PlayScaffold(
@@ -94,6 +111,7 @@ fun CompanionScreen(vm: PlayViewModel) {
         bottom = {
             when {
                 pending != null -> PrimaryButton(stringResource(R.string.companion_connect), { vm.pairWithLink(pending) })
+                scanning -> {}
                 match == null -> PrimaryButton(stringResource(R.string.companion_connect), { vm.connect(url, code) }, enabled = url.startsWith("http"))
             }
         },
@@ -113,9 +131,19 @@ fun CompanionScreen(vm: PlayViewModel) {
                 PlainButton(stringResource(R.string.cancel), { vm.pendingLink.value = null })
             }
             match != null -> MatchCode(match!!) { vm.cancelAsk() }
+            scanning -> Scanner(vm.container.qrCamera, cameraOk, ::scanned,
+                unavailable = { scanning = false; vm.say(R.string.pair_scan_unavailable) }, cancel = { scanning = false })
             else -> {
                 Lead(stringResource(R.string.companion_explain))
                 SecondaryButton(stringResource(R.string.pair_scan), ::scan, icon = R.drawable.ic_bc_pair_phone)
+                if (cameraRefused) {
+                    Text(stringResource(R.string.pair_camera_refused), color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                    PlainButton(stringResource(R.string.pair_camera_settings), {
+                        runCatching {
+                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
+                        }
+                    })
+                }
                 if (found.isEmpty()) {
                     Text(stringResource(R.string.companion_searching), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 } else {
@@ -153,6 +181,27 @@ fun CompanionScreen(vm: PlayViewModel) {
             }
             if (settings.paired && connection !is ConnectionState.Offline) OutlineButton(stringResource(R.string.pair_forget), vm::unpair)
         }
+    }
+}
+
+/**
+ * The pairing scanner: what the camera sees, square, with what it is for and a way back. The camera
+ * starts once it is allowed; a code read goes to [found], and the screen goes back to the ways to pair.
+ */
+@Composable
+private fun Scanner(camera: QrCamera, allowed: Boolean, found: (String) -> Unit, unavailable: () -> Unit, cancel: () -> Unit) {
+    val c = BrasscribeTheme.colors
+    val described = stringResource(R.string.pair_scan_camera)
+    Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+        SubHeading(stringResource(R.string.pair_scan_title))
+        Text(stringResource(R.string.pair_scan_on_phone), color = c.textMuted)
+        Surface(
+            shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border),
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f).semantics { contentDescription = described }.testTag("pair-camera"),
+        ) {
+            if (allowed) camera.View(Modifier.fillMaxWidth().aspectRatio(1f).clip(MaterialTheme.shapes.large), found, unavailable)
+        }
+        PlainButton(stringResource(R.string.cancel), cancel)
     }
 }
 
