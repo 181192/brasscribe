@@ -48,6 +48,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -592,7 +593,9 @@ fun ScoreScreen(vm: PlayViewModel) {
                 if (textView && !performance) {
                     PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
                 } else {
-                    AndroidView(
+                    // A score opened over this one is a new controller with a view of its own. An AndroidView's factory runs
+                    // once, so without the key the screen would keep the last score's view, and the new one would never be laid out.
+                    key(controller) { AndroidView(
                         factory = { controller.view },
                         // On the stand the surface over it is the score for TalkBack (with page actions).
                         modifier = if (performance) Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
@@ -614,7 +617,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                                 }.takeIf { checksMarks && controller.marksIn(st.bar) },
                             )
                         },
-                    )
+                    ) }
                     if (!st.loaded) Text(stringResource(R.string.player_loading), Modifier.align(Alignment.Center))
                     st.error?.let { Text(stringResource(R.string.score_error, it), color = c.error, modifier = Modifier.align(Alignment.Center).padding(ScreenMargin)) }
                     if (performance) MusicStandOverlay(
