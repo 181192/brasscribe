@@ -168,6 +168,30 @@ class ScoreRenderTest : ScreenTest() {
         assertTrue("no notation on screen when the wait was over (ink ${"%.4f".format(ink)})", ink >= MIN_INK)
     }
 
+    /**
+     * A score opened while another is on screen (from a share, or Open with) is the one shown and engraved: the score
+     * view is the new score's, not the view of the one before it, which is no longer engraved.
+     */
+    @Test
+    fun aScoreOpenedOverAnotherIsShown() {
+        fun open(title: String) {
+            val xml = checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml")).decodeToString()
+                .replace(Regex("""<work-title>[^<]*</work-title>"""), "<work-title>$title</work-title>")
+            val file = File(rule.activity.cacheDir, "$title.musicxml").apply { writeText(xml) }
+            val before = vm.scoreController
+            rule.runOnUiThread { vm.openScoreUri(android.net.Uri.fromFile(file)) }
+            waitForEngravedScore(before)
+        }
+        open("First score")
+        open("Second score")
+        val c = vm.scoreController!!
+        var shown = false
+        rule.runOnUiThread { shown = c.view.isAttachedToWindow && c.view.width > 0 }
+        assertTrue("the second score's view is on screen", shown)
+        val ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap())
+        assertTrue("no notation on screen (ink ${"%.4f".format(ink)})", ink >= MIN_INK)
+    }
+
     /** alphaTab's thread stops for a while before each render's work, the parts it paints afterwards included. */
     private fun slowEngraver(c: no.brasscribe.play.score.ScoreController) {
         // (alphaTab's thread is not public: it is reached through the renderer the view has.)
