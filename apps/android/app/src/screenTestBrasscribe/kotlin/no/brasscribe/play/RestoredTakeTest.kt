@@ -56,7 +56,7 @@ class RestoredTakeTest : ScreenTest() {
         val take = vm.source.value!!.file!!
         assertTrue(take.isFile && take.parentFile?.name == "takes")
         val stack = vm.screen.value
-        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.REVIEW), stack)
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.SCORE, Screen.REVIEW), stack)
 
         // A new process: a new view model on what the old one had saved.
         val state = SavedStateHandle(mapOf(
@@ -72,9 +72,12 @@ class RestoredTakeTest : ScreenTest() {
         assertTrue("the recording is still on the phone", take.isFile)
         assertEquals(take, restored.source.value?.file)
         assertEquals(SourceKind.FILE, restored.source.value?.kind)
-        // Back to What is this?: Continue sends the recording, not an empty file.
+        // Back to the score, then to What is this?: Continue sends the recording, not an empty file.
+        rule.runOnUiThread { restored.back() }
+        assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.SCORE), restored.screen.value)
         rule.runOnUiThread { restored.back() }
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), restored.screen.value)
+        assertEquals(take, restored.source.value?.file)
         assertTrue(restored.source.value!!.file!!.length() > 44)
     }
 

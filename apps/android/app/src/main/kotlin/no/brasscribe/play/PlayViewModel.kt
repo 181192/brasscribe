@@ -417,6 +417,33 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     fun navigate(to: Screen) = backStack.update { it + to }
+
+    /**
+     * The score: back to the one already in the stack (from Check the notes, How should the score be?), so Check them
+     * and Show the score don't pile up scores one on another; else a new one.
+     */
+    fun showScore() = backStack.update { s ->
+        val at = s.lastIndexOf(Screen.SCORE)
+        if (at >= 0) s.take(at + 1) else s + Screen.SCORE
+    }
+
+    /**
+     * After a score is made, [next] takes the transcribing screen's place. Check the notes goes over the score: Back from
+     * it shows the score that is already saved, and never sends the recording again. What is this? stays under the
+     * score, so its answer can still be changed.
+     */
+    private fun afterTranscription(next: Screen) = backStack.update { s ->
+        val below = s.dropLast(1)
+        if (next == Screen.REVIEW && below.lastOrNull() != Screen.SCORE) below + Screen.SCORE + Screen.REVIEW else below + next
+    }
+
+    /** A score opened from Your scores: Check the notes goes over a band score, so Back from there shows the score (a product that checks no band score keeps its own). */
+    private fun opened(review: Boolean) = when {
+        !review -> listOf(Screen.HOME, Screen.SCORE)
+        result.value?.let { Product.arranges(it.profile) } == true -> listOf(Screen.HOME, Screen.SCORE, Screen.REVIEW)
+        else -> listOf(Screen.HOME, Screen.REVIEW)
+    }
+
     fun replaceTop(to: Screen) = backStack.update { it.dropLast(1) + to }
     fun back(): Boolean {
         if (backStack.value.size <= 1) return false
@@ -731,7 +758,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // An engine that ignored the seat wrote for Solo Cornet: say so once, not silently.
                 if (ignored) sayText(res.getString(R.string.transcribe_done) + " " + res.getString(R.string.engine_too_old_seat))
                 else say(R.string.transcribe_done)
-                replaceTop(Product.afterTranscription(r))
+                afterTranscription(Product.afterTranscription(r))
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: OutOfMemoryError) {
@@ -1188,7 +1215,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 reviewChanges.value = emptyMap()
                 result.value = r
                 saveCurrentScore(r, entry.title)
-                backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
+                backStack.value = opened(review)
             } catch (e: Exception) {
                 // A connection or engine failure is no unreadable file: its own words, not "try an MP3".
                 val why = ErrorWords.of(e).takeIf { it != R.string.error_generic }
@@ -1234,7 +1261,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 val (latest, content) = withContext(storage) { (scoreLibrary.get(saved.id) ?: saved) to scoreLibrary.content(saved.id) }
                 if (content == null) { showProblem(Problem.FILE_UNREADABLE, saved.title); return@launch }
                 showSaved(latest, content)
-                backStack.value = listOf(Screen.HOME, if (review) Screen.REVIEW else Screen.SCORE)
+                backStack.value = opened(review)
             } finally {
                 openingScore.value = null
             }

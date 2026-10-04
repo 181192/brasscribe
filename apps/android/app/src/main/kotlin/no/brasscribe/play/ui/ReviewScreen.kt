@@ -267,7 +267,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                     val own = mine.voice ?: melodyVoice.takeIf { !mine.arranged }
                     if (mine.arranged && mine.part != null) ArrangedNotice(mine.part, empty = mine.source == no.brasscribe.play.model.PartSource.EMPTY,
                         checkOthers = { voices.firstOrNull { it.id != voiceId }?.let { voiceId = it.id } ?: vm.navigate(Screen.OUTPUT) },
-                        showMine = { vm.navigate(Screen.SCORE) })
+                        showMine = { vm.showScore() })
                     if (voiceId == own && mine.source != null) {
                         SourceLabel(mine.source)
                         mine.writtenFor?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = c.textMuted) }
