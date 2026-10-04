@@ -69,6 +69,9 @@ public enum Checks {
     public nonisolated static func order(_ controls: [AXNode]) -> [Finding] {
         var found: [Finding] = []
         for (a, b) in zip(controls, controls.dropFirst()) {
+            // What is docked over a scroll area (a sheet's footer) comes after its content wherever the content has
+            // scrolled to: only the other way round is out of order.
+            if a.inScrollArea && !b.inScrollArea { continue }
             // Only within a column: from a sidebar to the content beside it is not going back up.
             let sameColumn = min(a.frame.maxX, b.frame.maxX) - max(a.frame.minX, b.frame.minX) > 0
             let above = sameColumn && b.frame.maxY <= a.frame.minY - 2

@@ -26,6 +26,11 @@ struct ChecksTests {
         #expect(Checks.order([button("Lower", 10, 100), button("Upper", 10, 20)]).count == 1)
         #expect(Checks.order([button("Right", 200, 20), button("Left", 10, 20)]).count == 1)
         #expect(Checks.order([button("Top", 10, 20), button("Left", 10, 100), button("Right", 200, 100)]).isEmpty)
+        // a footer docked over a scroll area, after content that has scrolled below it; but not before content
+        let content = AXNode(role: "AXCheckBox", label: "Show", frame: CGRect(x: 10, y: 300, width: 56, height: 26), inScrollArea: true)
+        let footer = button("Cancel", 10, 240)
+        #expect(Checks.order([content, footer]).isEmpty)
+        #expect(Checks.order([footer, AXNode(role: "AXButton", label: "Top", frame: CGRect(x: 10, y: 20, width: 80, height: 28), inScrollArea: true)]).count == 1)
         // from the bottom of a sidebar to the top of the content beside it
         #expect(Checks.order([button("Sidebar", 10, 400), button("Content", 300, 20)]).isEmpty)
     }
