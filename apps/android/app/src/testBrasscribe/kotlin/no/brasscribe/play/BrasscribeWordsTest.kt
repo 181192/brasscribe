@@ -61,12 +61,13 @@ class BrasscribeWordsTest {
         assertTrue(nb.getValue("help_5_text"), nb.getValue("help_5_text").contains("utkast"))
         assertTrue(!en.getValue("help_5_title").contains("needs your computer"))
         assertTrue(!nb.getValue("help_5_title").contains("trenger datamaskinen"))
-        // Print needs the computer's PDFs: the line says so.
+        // Paper always: the computer's PDF while no note was changed since it made the score, else the phone's own.
         assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("your computer"))
         assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("datamaskinen"))
-        // And only while no note was changed on the phone: the computer's PDFs show the score as it made it.
-        assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("no note was changed on the phone"))
-        assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("ingen toner er endret på telefonen"))
+        assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("no note was changed since"))
+        assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("ingen toner er endret siden"))
+        assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("the phone lays out the pages itself"))
+        assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("setter telefonen opp sidene selv"))
     }
 
     @Test

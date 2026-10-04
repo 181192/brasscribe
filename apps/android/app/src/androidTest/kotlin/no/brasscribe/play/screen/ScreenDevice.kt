@@ -37,6 +37,17 @@ object ScreenDevice {
         Thread.sleep(400)
     }
 
+    /** A phone with a camera that the app may use. (A device without one is not used for these tests.) */
+    fun allowCamera(rule: AppRule) {
+        instrumentation.uiAutomation.grantRuntimePermission(rule.activity.packageName, android.Manifest.permission.CAMERA)
+    }
+
+    /** The JVM's only: taking a permission back on a device stops the app, and its question is the system's dialog. */
+    fun cameraNotAllowedYet(rule: AppRule): Unit = throw UnsupportedOperationException("on the JVM only")
+
+    /** The JVM's only (see [cameraNotAllowedYet]). */
+    fun answerPermission(rule: AppRule, allow: Boolean): Boolean = throw UnsupportedOperationException("on the JVM only")
+
     /** A file of apps/fixtures ("bass-line/tab.json"), which the test APK carries as assets; null when it is not there. */
     fun fixture(path: String): ByteArray? = runCatching { instrumentation.context.assets.open(path).use { it.readBytes() } }.getOrNull()
 

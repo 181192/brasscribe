@@ -138,6 +138,31 @@ class MusicStandTest {
     }
 
     @Test
+    fun whileARepeatIsSetThePedalsPlayAndGoBackToItsStart() {
+        val r = MusicStandRules
+        for (k in listOf(KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_PAGE_DOWN))
+            assertEquals(StandCommand.PLAY_PAUSE, r.command(k, repeating = true))
+        for (k in listOf(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_PAGE_UP))
+            assertEquals(StandCommand.REPEAT_START, r.command(k, repeating = true))
+        // The other keys stay as they are: Home and End still turn to the first and last page, Ctrl+arrows move a bar.
+        assertEquals(StandCommand.FIRST_PAGE, r.command(KeyEvent.KEYCODE_MOVE_HOME, repeating = true))
+        assertEquals(StandCommand.LAST_PAGE, r.command(KeyEvent.KEYCODE_MOVE_END, repeating = true))
+        assertEquals(StandCommand.NEXT_BAR, r.command(KeyEvent.KEYCODE_DPAD_DOWN, ctrl = true, repeating = true))
+        assertEquals(StandCommand.PREVIOUS_BAR, r.command(KeyEvent.KEYCODE_DPAD_UP, ctrl = true, repeating = true))
+        assertEquals(StandCommand.PLAY_PAUSE, r.command(KeyEvent.KEYCODE_SPACE, repeating = true))
+        assertNull(r.command(KeyEvent.KEYCODE_PAGE_DOWN, ctrl = true, repeating = true))
+        // Page turners that send the media keys.
+        assertEquals(StandCommand.NEXT_PAGE, r.command(KeyEvent.KEYCODE_MEDIA_NEXT))
+        assertEquals(StandCommand.PREVIOUS_PAGE, r.command(KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+        assertEquals(StandCommand.PLAY_PAUSE, r.command(KeyEvent.KEYCODE_MEDIA_NEXT, repeating = true))
+        assertEquals(StandCommand.REPEAT_START, r.command(KeyEvent.KEYCODE_MEDIA_PREVIOUS, repeating = true))
+        // A held key: pages go on turning, play and back to the start happen once.
+        assertTrue(r.actsOnRepeat(StandCommand.NEXT_PAGE))
+        assertFalse(r.actsOnRepeat(StandCommand.PLAY_PAUSE))
+        assertFalse(r.actsOnRepeat(StandCommand.REPEAT_START))
+    }
+
+    @Test
     fun theLayerHidesByItselfOnlyWhilePlayingAndNeverWithAssistiveTech() {
         val r = MusicStandRules
         assertTrue(r.autoHides(playing = true, assistive = false, focusInLayer = false, keyboard = false, keepVisible = false))

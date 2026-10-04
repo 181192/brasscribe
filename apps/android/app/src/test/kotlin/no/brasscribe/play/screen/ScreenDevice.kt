@@ -82,6 +82,8 @@ object ScreenDevice {
                 val accessibility = RuntimeEnvironment.getApplication().getSystemService(android.view.accessibility.AccessibilityManager::class.java)
                 shadowOf(accessibility).setEnabled(true)
                 shadowOf(accessibility).setEnabledAccessibilityServiceList(listOf(android.accessibilityservice.AccessibilityServiceInfo()))
+                // The phone's PDFs: Robolectric has no PDF document, so the pages are drawn and the file stands in for it.
+                no.brasscribe.play.export.PhonePdf.newPages = { no.brasscribe.play.export.JvmPdfPages() }
                 test.evaluate()
             }
         }
@@ -448,6 +450,34 @@ object ScreenDevice {
     }
 
     /** Back to the phone as a test finds it. */
+    /** A phone with a camera that the app may use. */
+    fun allowCamera(rule: AppRule) {
+        val app = rule.activity.application
+        shadowOf(app.packageManager).setSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY, true)
+        shadowOf(app).grantPermissions(android.Manifest.permission.CAMERA)
+    }
+
+    /**
+     * A phone with a camera that the app has not been allowed yet. [answerPermission] answers the question
+     * the app then asks. (The JVM only: on a device the question is the system's own dialog.)
+     */
+    fun cameraNotAllowedYet(rule: AppRule) {
+        val app = rule.activity.application
+        shadowOf(app.packageManager).setSystemFeature(android.content.pm.PackageManager.FEATURE_CAMERA_ANY, true)
+        shadowOf(app).denyPermissions(android.Manifest.permission.CAMERA)
+    }
+
+    /** Answers the permission question the app asked last, as the player would; false when none was asked. */
+    fun answerPermission(rule: AppRule, allow: Boolean): Boolean {
+        val asked = shadowOf(rule.activity).lastRequestedPermission ?: return false
+        if (allow) shadowOf(rule.activity.application).grantPermissions(*asked.requestedPermissions)
+        val results = IntArray(asked.requestedPermissions.size) {
+            if (allow) android.content.pm.PackageManager.PERMISSION_GRANTED else android.content.pm.PackageManager.PERMISSION_DENIED
+        }
+        rule.runOnUiThread { rule.activity.onRequestPermissionsResult(asked.requestCode, asked.requestedPermissions, results) }
+        return true
+    }
+
     fun reset(rule: AppRule) {
         RuntimeEnvironment.setFontScale(1f)
         Locale.setDefault(Locale.UK)
