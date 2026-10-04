@@ -2,6 +2,25 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.6.1 (2026-10-04)
+
+### New features
+
+- **Android:** Fretscribe's Home no longer offers Open a tab ([#233](https://github.com/181192/brasscribe/pull/233))
+
+### Fixes
+
+- **Android:** Read the pairing QR code on the phone, without Google's scanner ([#236](https://github.com/181192/brasscribe/pull/236))
+
+<details><summary>Under the hood (3 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Engine:** Keep Beat This! small0 for solo scores made on the computer ([#231](https://github.com/181192/brasscribe/pull/231))
+- **Engine:** A ukulele chord heard on three strings is completed to four when a doubling fits ([#232](https://github.com/181192/brasscribe/pull/232))
+- **Eval:** The Slakh guitar song set is slakh-guitar again ([#241](https://github.com/181192/brasscribe/pull/241))
+
+</details>
+
 ## 0.6.0 (2026-10-04)
 
 ### New features
