@@ -308,6 +308,11 @@ def solo(title: str, params: dict) -> Pipeline:
     if params.get("seat") and not seat_by_id(params["seat"]).reads:
         raise ValueError(PERCUSSION_SOLO)
     mix = Input(SOURCE)
+    # small0 on the computer too, not the adapter's own final0, so a solo score made here is the one the device
+    # makes. `brasscribe bench solo-beat-model` measured the two on the 184 single parts of URMP and ChoraleBricks:
+    # final0 got the metre right more often (URMP 0.24 -> 0.29, ChoraleBricks 0.43 -> 0.60) and written positions
+    # were level, but no difference was significant (sign test p >= 0.12, ChoraleBricks' metre on 15 parts the
+    # closest). Measure again on a larger set before letting the computer use final0.
     st = [_beats("small0")]
     tools = [("swift-f0", "sw"), ("basic-pitch", "bp")] + ([("muscriptor", "mus")] if params.get("muscriptor", True) else [])
     arrange_inputs = {"beats": Input("beats", "mix.beats")}
