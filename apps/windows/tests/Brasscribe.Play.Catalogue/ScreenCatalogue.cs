@@ -151,7 +151,8 @@ public sealed class ScreenCatalogue
     /// <summary>
     /// The screen once it keeps still: pictures 250 ms apart until six in a row are the same (1.5 s) and every score
     /// on it has its visible pages engraved, or 20 s pass (then it is not steady: something on it moves, and its
-    /// screenshot is kept but not compared). An empty score can keep still for longer than 1.5 s before its pages come.
+    /// screenshot is kept but not compared). An empty score, or Check the notes' bar before it is drawn, can keep still for
+    /// longer than 1.5 s before its notation comes.
     /// </summary>
     private static async Task<(Picture Picture, bool Steady)> SteadyAsync(FrameworkElement root)
     {
@@ -164,22 +165,23 @@ public sealed class ScreenCatalogue
             var now = await CaptureAsync(root);
             same = last is not null && now.SameAs(last) ? same + 1 : 0;
             last = now;
-            if (same >= 5 && ScoresEngraved(root)) return (now, true);
+            if (same >= 5 && NotationDrawn(root)) return (now, true);
         }
         return (last!, false);
     }
 
-    /// <summary>Every score view on the screen has an image for each page it shows.</summary>
-    private static bool ScoresEngraved(DependencyObject node)
+    /// <summary>Every score view on the screen has an image for each page it shows, and no image shown is still empty.</summary>
+    private static bool NotationDrawn(DependencyObject node)
     {
         if (node is UIElement { Visibility: not Visibility.Visible }) return true;
+        if (node is Image { Source: null }) return false;
         if (node is Brasscribe.Play.Controls.ScoreView score)
         {
             var shown = score.PagesNear(score.Viewport, margin: 0).ToList();
             return shown.Count > 0 && shown.All(score.HasPageImage);
         }
         for (int i = 0, n = VisualTreeHelper.GetChildrenCount(node); i < n; i++)
-            if (!ScoresEngraved(VisualTreeHelper.GetChild(node, i))) return false;
+            if (!NotationDrawn(VisualTreeHelper.GetChild(node, i))) return false;
         return true;
     }
 
