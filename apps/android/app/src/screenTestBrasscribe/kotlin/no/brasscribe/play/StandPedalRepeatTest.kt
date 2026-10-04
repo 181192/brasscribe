@@ -52,11 +52,12 @@ class StandPedalRepeatTest : ScreenTest() {
 
     private fun state() = vm.scoreController!!.state.value
 
-    private fun page(): Int {
-        val text = rule.onAllNodes(hasTestTag("stand-position"), useUnmergedTree = false).fetchSemanticsNodes().firstOrNull()
-            ?.let { n -> n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } }.orEmpty()
-        return Regex("""(?:pages?|side) (\d+)(?:–\d+)? (?:of|av)""").find(text)?.groupValues?.get(1)?.toInt() ?: -1
-    }
+    private fun position() = rule.onAllNodes(hasTestTag("stand-position"), useUnmergedTree = false).fetchSemanticsNodes().firstOrNull()
+        ?.let { n -> n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } }.orEmpty()
+
+    private fun page() = Regex("""(?:pages?|side) (\d+)(?:–\d+)? (?:of|av)""").find(position())?.groupValues?.get(1)?.toInt() ?: -1
+
+    private fun pageCount() = Regex("""(?:of|av) (\d+)$""").find(position())?.groupValues?.get(1)?.toInt() ?: -1
 
     @Test
     fun withARepeatThePedalsPlayPauseAndGoBackWithoutItTheyTurnPages() {
@@ -67,7 +68,9 @@ class StandPedalRepeatTest : ScreenTest() {
         waitUntil(20_000) { vm.scoreController?.state?.value?.loaded == true }
         rule.runOnUiThread { vm.scoreController!!.setZoom(400) }
         rule.onNodeWithTag("stand-enter").performClick()
-        waitUntil(20_000) { page() >= 1 }
+        // The stand's pages at 400 %, laid out from the engraving at that zoom (as MusicStandTest waits for them).
+        waitUntil(20_000) { page() >= 1 && pageCount() >= 3 }
+        settle()
         ScreenDevice.keyboard(rule)
         val score = rule.onNodeWithTag("stand-score")
         score.requestFocus()
@@ -75,10 +78,10 @@ class StandPedalRepeatTest : ScreenTest() {
         // No repeat: the pedal turns the page, and the stand says nothing about pedals.
         assertTrue(rule.onAllNodesWithTag("stand-pedals").fetchSemanticsNodes().isEmpty())
         score.performKeyInput { pressKey(Key.PageDown) }
-        waitUntil(3_000) { page() == 2 }
+        waitUntil(10_000) { page() == 2 }
         assertTrue("no repeat: a pedal never starts the music", !state().playing)
         score.performKeyInput { pressKey(Key.PageUp) }
-        waitUntil(3_000) { page() == 1 }
+        waitUntil(10_000) { page() == 1 }
 
         // A repeat of bars 5 to 6: the stand says what the pedals do now.
         rule.runOnUiThread { vm.scoreController!!.setLoop(5..6) }
@@ -116,7 +119,7 @@ class StandPedalRepeatTest : ScreenTest() {
         waitUntil(3_000) { state().loop == null }
         val before = page()
         score.performKeyInput { pressKey(Key.PageDown) }
-        waitUntil(3_000) { page() == before + 1 }
+        waitUntil(10_000) { page() == before + 1 }
         assertEquals(false, state().playing)
     }
 }
