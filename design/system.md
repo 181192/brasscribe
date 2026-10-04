@@ -68,7 +68,9 @@ flowchart LR
   E --> H
   R[Check the notes<br/>one uncertain note at a time] -->|Keep / Skip, last note| O
   R -->|Finish later N left, confirm| O
+  R -->|a solo, One instrument| S
   O[How should the score be?<br/>Which band? · How hard? · Key · Show the score] --> S
+  S -->|your part ▾ · Band, difficulty and key…| O
   S[Score + player<br/>all parts] <--> P[Part view<br/>my part, large]
   S --> X[Share or print<br/>Solo Cornet you · Every part · Conductor's score · PDF default · Print]
   S -->|9 notes marked ? · Check them| R
@@ -81,6 +83,7 @@ flowchart LR
 
 **Focus rules**
 - When transcription finishes, focus moves to the "Check N notes" heading and the change is announced. A draft opens on the score instead (above): focus does not move, and "Score ready" is announced.
+- After Check the notes, a solo ("One instrument") opens straight on the score at the player's part (Android): How should the score be? is not asked, and stays one tap away in the sheet of the "your part" chip (Band, difficulty and key…, or Write for another instrument… once the player's instrument is known). A band take asks it first.
 - When a sheet closes, focus goes back to the button that opened it.
 - The keyboard reaches a screen's content before the primary docked under it: the top bar, then the content, then the docked actions (WCAG 2.4.3).
 
