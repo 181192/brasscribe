@@ -146,10 +146,38 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         return Intent.createChooser(send, null)
     }
 
-    /** Sends a PDF to the system print dialog. */
-    fun print(activity: android.app.Activity, pdf: ExportFile) {
+    /**
+     * The print jobs for [pdfs] of the score [title], each a name and a PDF: one file as it is; several (every player's
+     * part) joined page after page into one PDF ([PdfJoin]), so the band's parts are one print, not a dialog for each.
+     * Files that can't be joined are one job each, as before. The files are read, joined and written off the main thread.
+     */
+    suspend fun printJobs(pdfs: List<ExportFile>, title: String): List<Pair<String, File>> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val single = pdfs.singleOrNull()
+        if (single != null || pdfs.isEmpty()) return@withContext pdfs.map { it.file.nameWithoutExtension to it.file }
+        val name = title.ifBlank { "score" }
+        // Read, joined and written whole, or not at all: a phone that is full, or a file that can't be joined, prints
+        // one job per file, as before.
+        val all = runCatching {
+            val joined = PdfJoin.join(pdfs.map { it.file.readBytes() }) ?: return@runCatching null
+            File(dir, "${safe(name).ifBlank { "score" }}.parts.pdf").also { writeJoined(it, joined) }
+        }.onFailure { android.util.Log.w(no.brasscribe.play.PlayViewModel.TAG, "the joined parts could not be written", it) }.getOrNull()
+        if (all == null) {
+            android.util.Log.w(no.brasscribe.play.PlayViewModel.TAG, "the parts could not be joined: one print job each")
+            return@withContext pdfs.map { it.file.nameWithoutExtension to it.file }
+        }
+        listOf(name to all)
+    }
+
+    /** Writes the joined PDF; tests make it fail as a full phone would. */
+    @androidx.annotation.VisibleForTesting
+    internal var writeJoined: (File, ByteArray) -> Unit = { file, bytes ->
+        try { file.writeBytes(bytes) } catch (e: Exception) { file.delete(); throw e }
+    }
+
+    /** Sends the PDF [file] to the system print dialog as one job named [name] (on the main thread). */
+    fun print(activity: android.app.Activity, name: String, file: File) {
         val pm = activity.getSystemService(android.print.PrintManager::class.java) ?: return
-        pm.print(pdf.file.nameWithoutExtension, PdfPrintAdapter(pdf.file), null)
+        pm.print(name, PdfPrintAdapter(file), null)
     }
 
     /** Writes the files into a folder the user picked (Storage Access Framework tree). */

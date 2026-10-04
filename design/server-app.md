@@ -710,7 +710,7 @@ These still tell people to type a command, or use other words.
 | Where | Today | Change to |
 |---|---|---|
 | Apple `SettingsView.swift` | "On the computer, start Brasscribe with “brasscribe serve --lan”. It shows the pairing code…" | "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose **Pair a phone**." The command moves under the tech disclosure. |
-| Android `companion_tech_details` | "Start the server on the computer with “brasscribe serve --lan”…" | Tech disclosure: "Brasscribe Bandroom shows the address under Details for the band's tech person. Without it: `pixi run serve-lan`." |
+| Android `companion_tech_details` | "Start the server on the computer with “brasscribe serve --lan”…" | Tech disclosure: "Brasscribe Bandroom shows the address under Details for the band's tech person." No developer command on the phone. |
 | Windows `Resources.resw` (nb) | «Koble til en enhet» | «Koble til en telefon» (the same words as the computer) |
 | `mockups/error.html` (desktop tech details) | "run `brasscribe serve --host 0.0.0.0`" | "Open Brasscribe Bandroom on the computer. Without it: `pixi run serve-lan`." |
 | Play "Can't reach Brasscribe on your computer" steps | "Open Brasscribe on the computer." | "Check that Brasscribe on the computer says **Running**." |

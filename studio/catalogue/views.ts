@@ -10,6 +10,8 @@ export type View = {
   prepare?: (page: Page) => Promise<void>;
   /** Only in these variants. */
   only?: string[];
+  /** The keyboard walk starts on this element instead of the top of the page. */
+  walkFrom?: string;
 };
 
 export type Variant = {
@@ -77,12 +79,13 @@ export const VIEWS: View[] = [
     },
   },
   {
-    name: "menu", route: "runs", only: ["zoom200", "reflow320", "nb-reflow320"],
+    name: "menu", route: "runs", walkFrom: ".nav-toggle", only: ["zoom200", "reflow320", "nb-reflow320"],
     prepare: async (p) => {
       await p.locator(".nav-toggle").click();
       await expect(p.locator("#lang-select")).toBeVisible();
-      // Open, with focus nowhere: the keyboard walk starts from the top of the page with the menu open.
-      await p.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      // Opened as from the keyboard: focus stays on the Menu button, where the walk starts. (From the top of the
+      // page, the first Tab would go to the skip link, outside the menu, and close it.)
+      await p.locator(".nav-toggle").focus();
     },
   },
 ];

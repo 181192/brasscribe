@@ -64,7 +64,7 @@
     <string name="opening_score">Opening…</string>
     <string name="evidence_how_sure">How sure Brasscribe is</string>
     <string name="evidence_percent">%1$d%%</string>
-    <string name="evidence_heard">What each transcriber heard</string>
+    <string name="evidence_heard">What Brasscribe heard each time</string>
     <string name="evidence_same">Same, %1$s</string>
     <string name="evidence_no_note">No note</string>
     <string name="review_could_also_be">%1$s: it could also be %2$s.</string>
@@ -134,7 +134,7 @@
     <string name="profile_orchestra_desc">You get the solo part, plus the accompaniment arranged for brass band.</string>
     <string name="profile_pop">Pop or rock</string>
     <string name="profile_pop_desc">Singing, guitars, keys, bass and drums.</string>
-    <string name="profile_not_sure">Not sure? Choose Brass band. You can change it later.</string>
+    <string name="profile_not_sure">Not sure? Choose Brass band for a group, or One instrument for a recording of just you. You can change it later.</string>
     <string name="profile_choose_one">Choose one to continue.</string>
     <string name="where_title">Where the score is made</string>
     <string name="where_device">On this phone</string>
@@ -151,6 +151,7 @@
         <item quantity="other">Only for recordings up to %d minutes.</item>
     </plurals>
     <string name="where_companion_missing">Connect Brasscribe on your computer first.</string>
+    <string name="problem_connect_computer">Connect your computer</string>
 
     <!-- Making the score -->
     <string name="stage_queued">Getting ready</string>
@@ -197,7 +198,7 @@
     <string name="draft_too_long_title">Too long for a draft on this phone</string>
     <string name="draft_too_long_body">Your computer can make the score from this recording.</string>
     <string name="draft_too_long_body_away">Open Brasscribe on your computer to make the score from this recording, or choose a shorter one.</string>
-    <string name="draft_too_long_body_unpaired">Your computer can make the score from this recording. Open Brasscribe there and choose Pair a phone, then connect in Settings here. Or choose a shorter recording.</string>
+    <string name="draft_too_long_body_unpaired">Your computer can make the score from this recording. Open Brasscribe there and choose Pair a phone, then connect it here with Connect your computer. Or choose a shorter recording.</string>
     <string name="draft_refused_title">The draft can\'t be made right now</string>
     <string name="draft_refused_body">The phone has stopped Brasscribe from working on it. Your computer can make the score, or try again later.</string>
     <string name="draft_refused_body_away">The phone has stopped Brasscribe from working on it. Try again later.</string>
@@ -247,7 +248,7 @@
     <string name="listen_unavailable">There\'s no recording to play for this bar.</string>
     <string name="bar_heading">Bar %1$d</string>
     <string name="bar_rest_heading">Bars %1$d to %2$d</string>
-    <string name="review_continue">Choose output</string>
+    <string name="review_continue">Next: How should the score be?</string>
     <string name="dur_whole">semibreve</string>
     <string name="dur_half">minim</string>
     <string name="dur_quarter">crotchet</string>
@@ -418,6 +419,7 @@
     <string name="problem_record_reason">Another app may be using the microphone. Close it and try again.</string>
     <string name="problem_score_title">The score couldn\'t be made</string>
     <string name="problem_score_body">Something went wrong while Brasscribe was working on it.</string>
+    <string name="problem_score_body_unpaired">This recording needs your computer, and none is connected to this phone.</string>
     <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
     <string name="problem_score_kept_scores">Your recording is kept in Your scores. You can try again now or later.</string>
     <string name="problem_too_large_title">This file is too big for the phone</string>
@@ -436,7 +438,7 @@
     <string name="companion_code">Six-digit code</string>
     <string name="companion_connect">Connect</string>
     <string name="companion_connecting">Connecting</string>
-    <string name="companion_tech_details">Brasscribe Bandroom shows the address under Details for the band\'s tech person. Without it: “pixi run serve-lan”.</string>
+    <string name="companion_tech_details">Brasscribe Bandroom shows the address under Details for the band\'s tech person.</string>
     <string name="companion_allow_heavy">Let the computer do the heavy work</string>
     <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
 
@@ -540,9 +542,9 @@
     <string name="help_3_title">Practise</string>
     <string name="help_3_text">Slow the music down with Speed, repeat the hard bars, and mute your part to play along with the band.</string>
     <string name="help_4_title">Share or print</string>
-    <string name="help_4_text">Print your own part, every part for the band, or the conductor\'s score.</string>
-    <string name="help_5_title">A whole band needs your computer</string>
-    <string name="help_5_text">One instrument can be written down on the phone. For a full band, open Brasscribe on your computer and connect in Settings.</string>
+    <string name="help_4_text">Share the score as a file. A score made by Brasscribe on your computer can also be printed (your part, every part or the conductor\'s score), as long as no note was changed on the phone.</string>
+    <string name="help_5_title">The phone and your computer</string>
+    <string name="help_5_text">On the phone: one instrument, or a quick draft of a brass band. For the full band score, a soloist with a band, or pop and rock, open Brasscribe on your computer and connect in Settings.</string>
     <string name="help_6_title">Links and streaming apps</string>
     <string name="help_6_text">Links can\'t be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.</string>
     <string name="octave_down">Octave down</string>

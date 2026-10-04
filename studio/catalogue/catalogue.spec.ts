@@ -27,7 +27,7 @@ for (const variant of VARIANTS) {
       expect(opened.problems, "errors and requests without a fixture").toEqual([]);
       const findings: Finding[] = [...await axe(page), ...await clipped(page)];
       if (variant.reflow) findings.push(...await reflow(page));
-      if (variant.keyboard) findings.push(...await keyboard(page));
+      if (variant.keyboard) findings.push(...await keyboard(page, view.walkFrom));
       if (variant.spacing) findings.push(...await textSpacing(page));
       const known = findings.filter((f) => isKnown(f, view.name, variant.name));
       if (known.length) console.log(`${view.name} · ${variant.name}: ${known.length} known: ${known.map((f) => `${f.check} ${f.what}`).join("; ")}`);
