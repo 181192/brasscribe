@@ -74,7 +74,7 @@ Two choices, remembered per song. For a guitar or a bass nothing is pre-selected
 them when no guitar plays in it, and the choice they start on is the one that works.
 
 - **Just my instrument**: one instrument playing. "Made on this phone."
-- **A full song**: a band or a record. "Needs Fretscribe on your computer." Shows whether the computer
+- **A full song**: a band or a record. "Needs Bandroom on your computer." Shows whether the computer
   is found, with **Pair your computer** when it isn't. For a ukulele or a mandolin it says that this only
   works when no guitar is playing, and Just my instrument is the choice they start on.
 
