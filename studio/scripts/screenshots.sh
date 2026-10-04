@@ -44,14 +44,17 @@ case "${1:-}" in
     rm -rf "$report"; mkdir -p "$report"
     # Anything that goes wrong on the base's side, whatever its own exit code, is 3: never "views changed",
     # which the label could let through.
+    # The base as given (or the merge base), until it is known as a commit.
+    ref="${2:-the merge base with origin/main}"
     no_base() {
-      log "the screenshots could not be taken at ${base:0:12}: nothing was compared"
-      printf '# Screenshots\n\nThe screenshots could not be taken at the base, %s, so nothing was compared.\n' "${base:0:12}" >"$report/summary.md"
+      log "the screenshots could not be taken at $ref: nothing was compared"
+      printf '# Screenshots\n\nThe screenshots could not be taken at the base, %s, so nothing was compared.\n' "$ref" >"$report/summary.md"
       exit 3
     }
     base="${2:-}"
     [ -n "$base" ] || base="$(git -C "$repo" merge-base HEAD origin/main)" || no_base
-    base="$(git -C "$repo" rev-parse --verify "$base^{commit}")" || no_base
+    base="$(git -C "$repo" rev-parse --verify --quiet "$base^{commit}")" || no_base
+    ref="${base:0:12}"
     scratch="$(mktemp -d)" || no_base
     tree="$scratch/base"
     trap 'git -C "$repo" worktree remove --force "$tree" >/dev/null 2>&1 || true; rm -rf "$scratch"' EXIT
