@@ -23,7 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
@@ -128,8 +127,9 @@ fun ExportScreen(vm: PlayViewModel) {
         bottom = {
             laying?.let { (done, of) ->
                 androidx.compose.material3.LinearProgressIndicator({ if (of == 0) 0f else done.toFloat() / of }, Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+                // Not a live region: Every part would be said some 25 times. Its end is said (exported).
                 Text(stringResource(R.string.export_laying_out, minOf(done + 1, of), of), style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.semantics { testTag = "export-progress"; liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite })
+                    modifier = Modifier.semantics { testTag = "export-progress" })
             }
             if (print) PrimaryButton(stringResource(R.string.export_print), {
                 // Every part: one print job, the players' PDFs one after another.

@@ -176,6 +176,14 @@ class PhonePdfTest {
             "${retained / 1_048_576} MB kept after; allocated ${allocated / 1_048_576} MB; ${files.size} files, joined ${PdfJoin.pageCount(runBlocking { exporter.printJobs(files, "x") }.single().second.readBytes())} pages, " +
             "score ${PdfJoin.pageCount(score.single().file.readBytes())} pages")
         assertEquals(25, files.size)
+        // The conductor's 25 staves: a system is drawn smaller to fit the page. Still a staff a conductor can read.
+        val pdf = PhonePdf(context)
+        val full = pdf.parse(band.toByteArray()).let { s -> pdf.engrave(s, (0 until s.tracks.length.toInt()).toList(), null, PhonePdf.SCORE_SCALE) }
+        val system = full.chunks.first { it.lastBar >= 0 }
+        val drawnAt = PhonePdf.paginate(full).flatten().first { it.first === system }.second
+        val mm = staffMm(system, drawnAt)
+        println("conductor's score, 25 staves: drawn at ${"%.3f".format(drawnAt)} pt a unit (${"%.3f".format(PhonePdf.SCORE_SCALE)} wanted), staff ${"%.2f".format(mm)} mm")
+        assertTrue("staff $mm mm", mm >= 2.5)
         // Generous: CI machines differ. It is the measurement above that tells.
         assertTrue("every part took $partsMs ms", partsMs < 180_000)
     }
