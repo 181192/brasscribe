@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         AppInFront.started()
+        JobNotices.clearDone(this)
         vm.connection.start()
         val cm = getSystemService(ConnectivityManager::class.java) ?: return
         val cb = object : ConnectivityManager.NetworkCallback() {
@@ -108,7 +109,8 @@ class MainActivity : ComponentActivity() {
      */
     internal fun handleIntent(intent: Intent?) {
         if (intent?.action == JobNotices.ACTION_OPEN_JOB) {
-            intent.getStringExtra(JobNotices.EXTRA_JOB)?.let(vm::openFinishedJob)
+            // The activity is exported: only an id of the engine's shape is opened.
+            intent.getStringExtra(JobNotices.EXTRA_JOB)?.takeIf(JobNotices::isJobId)?.let(vm::openFinishedJob)
             return
         }
         if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == no.brasscribe.play.engine.PairLink.SCHEME) {

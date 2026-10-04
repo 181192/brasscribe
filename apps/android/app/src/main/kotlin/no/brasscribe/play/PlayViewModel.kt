@@ -1047,6 +1047,10 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, Product.computerName(this)))
+        // In the foreground from here, so the recording is sent and the job followed while the player is away; a
+        // notification says when it is done.
+        val title = ScoreTitles.withoutExtension(s.name)
+        ComputerJobService.start(getApplication(), null, title)
         // Streamed from the file: memory stays flat whatever its size (a video arrives here as its sound only).
         // The phone's copy: the recording opened, else the one the product kept for the song.
         val copy = withContext(Dispatchers.IO) { s.file?.takeIf { it.isFile }?.let { UploadSource.of(it) } ?: Product.keptRecording(this@PlayViewModel) }
@@ -1054,7 +1058,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val upload = copy ?: s.file?.let { UploadSource.of(it) } ?: UploadSource.of(s.name, ByteArray(0))
         // A product that writes a song down again names the recording the computer already holds: nothing is sent twice,
         // unless the computer no longer has it.
-        val (audioId, created) = jobFromRecording(
+        val (audioId, created) = try { jobFromRecording(
             held = { Product.audioOnComputer(this, engine) },
             canSend = copy != null,
             send = {
@@ -1073,10 +1077,13 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 Product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
                     title = ScoreTitles.withoutExtension(s.name), seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
             ).also { seatFellBack = it.second }.first
+        } } catch (e: Exception) {
+            // Not sent, or no job made: nothing to follow.
+            ComputerJobService.stop(getApplication())
+            throw e
         }
         engineJobId = created.id
-        // Followed while the player is away from the app, with a notification when it is done.
-        ComputerJobService.start(getApplication(), created.id, ScoreTitles.withoutExtension(s.name))
+        ComputerJobService.start(getApplication(), created.id, title)
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
         transcribe.update { it.copy(steps = listOf(Step.UPLOAD) + kinds.ifEmpty { listOf(Step.BEATS, Step.STEMS, Step.LAYERS, Step.TRANSCRIBE, Step.ARRANGE, Step.EXPORT) }) }
         val tracker = ProgressTracker(created.stages.size.takeIf { it > 0 } ?: stages)
@@ -1262,11 +1269,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             val saved = withContext(storage) { scoreLibrary.list() }.firstOrNull { it.jobId == jobId }
             if (saved != null) { home(); openSavedScore(saved); return@launch }
-            val engine = container.engine() ?: return@launch
-            val done = runCatching { engine.job(jobId) }.getOrNull() ?: return@launch
-            val entry = ScoreEntry.merge(emptyList(), listOf(done)).firstOrNull() ?: return@launch
+            val done = container.engine()?.let { engine -> runCatching { engine.job(jobId) }.getOrNull() }
+            val entry = done?.let { ScoreEntry.merge(emptyList(), listOf(it)).firstOrNull() }
             home()
-            openEntry(entry)
+            // Not on the phone, and the computer can't be reached (or no longer has it): said, not a silent Home.
+            if (entry == null) say(R.string.ready_not_here) else openEntry(entry)
         }
     }
 

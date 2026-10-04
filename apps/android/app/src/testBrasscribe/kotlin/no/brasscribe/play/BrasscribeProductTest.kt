@@ -99,9 +99,9 @@ class BrasscribeProductTest {
             assertEquals(dir, words, listOf(text("transcribe_leave"), text("transcribe_leave_draft")))
         }
         val computer = mapOf(
-            "values" to listOf("%1\$s. You can switch to another app: Brasscribe tells you when the score is ready.",
+            "values" to listOf("%1\$s. You can switch to another app: Brasscribe tells you when the score is ready, or soon after if the phone is asleep.",
                 "%1\$s. You can switch to another app: when the score is ready, it is in Your scores while your phone is connected to your computer."),
-            "values-nb" to listOf("%1\$s. Du kan bytte til en annen app: Brasscribe sier fra når partituret er klart.",
+            "values-nb" to listOf("%1\$s. Du kan bytte til en annen app: Brasscribe sier fra når partituret er klart, eller litt etter hvis telefonen sover.",
                 "%1\$s. Du kan bytte til en annen app: når partituret er klart, ligger det i Partiturene dine så lenge telefonen er koblet til datamaskinen."),
         )
         for ((dir, words) in computer) {
