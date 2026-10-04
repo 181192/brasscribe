@@ -136,3 +136,20 @@ def test_notes_that_were_not_heard_are_counted_and_scored_apart():
     t["notes"].append({**t["notes"][0], "pitch": 62, "inferred": True})  # not in the reference: a wrong one
     s = G.summarize([G.score_tab(REF, t)])
     assert s["inferred_share"] == pytest.approx(2 / 7) and s["inferred_right"] == 0.5
+
+
+def test_the_slakh_songs_are_read_from_slakh_guitar_or_from_a_data_folder_not_yet_moved(tmp_path):
+    """The set was `slakh-guitar-as-written` while the references were corrected: a data folder where that is still
+    a folder of its own is read from it, one where it is a link to `slakh-guitar` (or gone) from `slakh-guitar`."""
+    assert (G.SONG_SET, G.SONG_SET_BEFORE) == ("slakh-guitar", "slakh-guitar-as-written")
+    new, before = tmp_path / "eval" / G.SONG_SET, tmp_path / "eval" / G.SONG_SET_BEFORE
+    assert G.song_root(tmp_path) == new and G.song_entries(tmp_path) == []
+    for root in (new, before):
+        (root / "Track00001").mkdir(parents=True)
+        (root / "Track00001" / "reference.json").write_text("{}")
+    assert G.song_root(tmp_path) == before and G.song_entries(tmp_path) == [before / "Track00001"]
+    (before / "Track00001" / "reference.json").unlink()
+    (before / "Track00001").rmdir()
+    before.rmdir()
+    before.symlink_to(new, target_is_directory=True)
+    assert G.song_root(tmp_path) == new and G.song_entries(tmp_path) == [new / "Track00001"]
