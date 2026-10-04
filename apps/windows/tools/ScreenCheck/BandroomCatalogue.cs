@@ -21,6 +21,9 @@ internal static class BandroomCatalogue
         string outDir = Path.GetFullPath(o.Need("out"));
         string run = o.Get("run") ?? "en";
         bool checks = o.Get("checks") != "0";
+        // "scan": Axe.Windows and the walk with Tab, no screenshots. A run of its own, after every screenshot: once a
+        // Tab has been pressed, Windows draws keyboard focus rectangles in the windows started after it.
+        bool scan = run == "scan";
         string lang = run == "nb" ? "nb" : "en";
         string prefix = run is "en" or "contrast" ? "" : run + "-";
         Directory.CreateDirectory(outDir);
@@ -41,20 +44,21 @@ internal static class BandroomCatalogue
                         {
                             for (int i = 0; i < windows.Count; i++)
                             {
-                                string shot = $"{name}{(i == 0 ? "" : $"-{i}")}--{(run == "contrast" ? "contrast" : prefix + theme)}";
+                                string shot = $"{name}{(i == 0 ? "" : $"-{i}")}--{(run == "contrast" ? "contrast" : scan ? theme : prefix + theme)}";
                                 var (picture, steady) = Win.Steady(windows[i]);
-                                Png.Save(Path.Combine(steady ? outDir : Path.Combine(outDir, "unsteady"), shot + ".png"), picture);
-                                result.Shots.Add(shot);
-                                if (!steady) result.Unsteady.Add(shot);
-                                if (!checks) continue;
-                                result.Findings.AddRange(Contrast.Check(shot, picture, Texts(windows[i])));
-                                if (run == "en" && theme == themes[0])
+                                if (scan)
                                 {
                                     result.Findings.AddRange(Scan.Axe(process.Id, shot, Path.Combine(outDir, "scans", "axe")));
                                     result.Findings.AddRange(Scan.Keyboard(process.Id, windows[i], shot, out var order));
                                     Directory.CreateDirectory(Path.Combine(outDir, "scans"));
                                     File.WriteAllLines(Path.Combine(outDir, "scans", shot + ".tab.txt"), order);
+                                    continue;
                                 }
+                                Png.Save(Path.Combine(steady ? outDir : Path.Combine(outDir, "unsteady"), shot + ".png"), picture);
+                                result.Shots.Add(shot);
+                                if (!steady) result.Unsteady.Add(shot);
+                                if (!checks) continue;
+                                result.Findings.AddRange(Contrast.Check(shot, picture, Texts(windows[i])));
                             }
                         }
                         finally

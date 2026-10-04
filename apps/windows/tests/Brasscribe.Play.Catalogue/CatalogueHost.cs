@@ -17,6 +17,17 @@ public partial class App
     static partial void RunCatalogue(App app, ref bool handled)
     {
         handled = true;
+        // The run's language. Not --lang: the test platform runs the tests in a process of its own, started with the
+        // platform's arguments only. Set before any window or string is made, as the app's constructor does.
+        if (Environment.GetEnvironmentVariable("BRASSCRIBE_CATALOGUE_LANG") is { Length: > 0 } language)
+        {
+            Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
+            var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
+            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
+            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+            System.Globalization.CultureInfo.CurrentCulture = culture;
+            System.Globalization.CultureInfo.CurrentUICulture = culture;
+        }
         // The screens come and go one window at a time: the app must not end when one closes.
         app.DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
         Catalogue.ScreenCatalogue.App = app;
@@ -28,11 +39,7 @@ public partial class App
     {
         try
         {
-            // The app's own switches (--lang) are read in its constructor; the test platform gets the rest.
-            var args = Environment.GetCommandLineArgs().Skip(1).ToList();
-            int lang = args.IndexOf("--lang");
-            if (lang >= 0) args.RemoveRange(lang, Math.Min(2, args.Count - lang));
-            var builder = await TestApplication.CreateBuilderAsync([.. args]);
+            var builder = await TestApplication.CreateBuilderAsync(Environment.GetCommandLineArgs()[1..]);
             builder.AddMSTest(() => [typeof(App).Assembly]);
             Microsoft.Testing.Extensions.TrxReportExtensions.AddTrxReportProvider(builder);
             using var testApp = await builder.BuildAsync();

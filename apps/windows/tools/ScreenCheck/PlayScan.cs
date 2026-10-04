@@ -11,6 +11,9 @@ namespace Brasscribe.ScreenCheck;
 /// </summary>
 internal static class PlayScan
 {
+    /// <summary>The computer in Play's sample scenes (PreviewScenes.SampleServer).</summary>
+    private const string PreviewServer = "Studio PC";
+
     public const string Scenes = "first-run,home,home-offline,what-is-this,transcribing,review,review-listening,choose-output,score,part,export,error,settings";
 
     public static int Run(Options o)
@@ -79,6 +82,12 @@ internal static class PlayScan
             if (name != "Innstillinger")
                 result.Findings.Add(new Finding("home--nb", "language", "Button \"SettingsButton\"",
                     $"named \"{name}\" with --lang nb-NO, not «Innstillinger»: the app is not in bokmål"));
+            // A string from code (the connection line, through App.Strings), not from the XAML.
+            var connection = automation.FromHandle(app.MainWindowHandle).FindAllDescendants(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Text))
+                .Select(t => t.Properties.Name.ValueOrDefault ?? "").FirstOrDefault(t => t.Contains(PreviewServer, StringComparison.Ordinal)) ?? "(no connection line)";
+            if (!connection.StartsWith("Koblet til", StringComparison.Ordinal))
+                result.Findings.Add(new Finding("home--nb", "language", "the connection line",
+                    $"\"{connection}\" with --lang nb-NO: the strings from code are not in bokmål"));
         }
         finally
         {

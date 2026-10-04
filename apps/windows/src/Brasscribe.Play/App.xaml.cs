@@ -84,11 +84,7 @@ public partial class App : Application
     }
 
     /// <summary>Strings for code-behind; view models receive <see cref="IStrings"/> through their constructors.</summary>
-    /// <remarks>Made on first use, after the constructor has set the language: a loader made before that (a static
-    /// initialiser runs before the constructor) may keep Windows' language.</remarks>
-    public static IStrings Strings => _strings ??= new ResourceStrings();
-
-    private static IStrings? _strings;
+    public static IStrings Strings { get; } = new ResourceStrings();
 
     public static MainWindow? MainWindowInstance => (Current as App)?._window;
 

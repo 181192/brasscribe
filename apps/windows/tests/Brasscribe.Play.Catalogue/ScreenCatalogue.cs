@@ -91,6 +91,9 @@ public sealed class ScreenCatalogue
         finally
         {
             await CloseDialogsAsync(window);
+            // The Pink palette is merged into the app's resources while Pink is chosen: out again before the next
+            // screen's window, which has a theme controller of its own.
+            settings.Appearance = Appearance.System;
             window.Close();
             Save();
         }
@@ -161,14 +164,14 @@ public sealed class ScreenCatalogue
         if (any) await Task.Delay(500); // its closing animation, before the next one opens
     }
 
-    /// <summary>The run in bokmål shows the app in bokmål: the language from --lang reaches the app's strings.</summary>
+    /// <summary>The run in bokmål shows the app in bokmål: the language reaches the app's strings.</summary>
     private static void CheckLanguage()
     {
         if (Options.Run != "nb" || Run.Findings.Any(f => f.Check == "language")) return;
         string said = App.Strings["Pink_Unlocked"];
         if (said != "🎺 Rosa låst opp")
             Run.Findings.Add(new Finding("all", "language", "App.Strings[\"Pink_Unlocked\"]",
-                $"\"{said}\" with --lang nb-NO (languages: {string.Join(", ", Microsoft.Windows.Globalization.ApplicationLanguages.Languages)}; " +
+                $"\"{said}\" in the bokmål run (languages: {string.Join(", ", Microsoft.Windows.Globalization.ApplicationLanguages.Languages)}; " +
                 $"override: {Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride})"));
     }
 

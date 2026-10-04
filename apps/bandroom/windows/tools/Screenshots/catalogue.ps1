@@ -46,6 +46,8 @@ function Invoke-Catalogue($exe, $shots, [bool] $checks) {
     if ((Invoke-ScreenCheck @("system", "--text-scale", "200")) -ne 0) { throw "the text size could not be set" }
     try { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "text200", "--themes", "light", "--checks", $c)) -eq 0) -and $ok }
     finally { Invoke-ScreenCheck @("system", "--text-scale", "off") | Out-Null }
+    # Axe.Windows and Tab last: after a Tab, Windows draws focus rectangles in the windows of later starts.
+    if ($checks) { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "scan", "--themes", "light")) -eq 0) -and $ok }
     Log ("the runs took {0:n0} s" -f ((Get-Date) - $started).TotalSeconds)
     return $ok
 }

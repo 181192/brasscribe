@@ -48,9 +48,8 @@ function Invoke-Run($exe, $shots, $run, $variants, $score, [bool] $checks) {
     $env:BRASSCRIBE_CATALOGUE_VARIANTS = $variants
     $env:BRASSCRIBE_CATALOGUE_CHECKS = if ($checks) { "1" } else { "0" }
     $env:BRASSCRIBE_CATALOGUE_SCORE = $score
-    $appArgs = @()
-    if ($run -eq "nb") { $appArgs += @("--lang", "nb-NO") }
-    $appArgs += @("--results-directory", (Join-Path $shots "results"), "--report-trx", "--report-trx-filename", "catalogue-$run.trx")
+    $env:BRASSCRIBE_CATALOGUE_LANG = if ($run -eq "nb") { "nb-NO" } else { "" }
+    $appArgs = @("--results-directory", (Join-Path $shots "results"), "--report-trx", "--report-trx-filename", "catalogue-$run.trx")
     $started = Get-Date
     & $exe @appArgs | Out-Host
     $code = $LASTEXITCODE
