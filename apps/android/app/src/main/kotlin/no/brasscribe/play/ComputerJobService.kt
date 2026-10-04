@@ -177,7 +177,8 @@ object JobNotices {
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .build()
-        return runCatching { NotificationManagerCompat.from(context).notify(DONE_ID, notification) }.isSuccess
+        // allowed() was asked above; a permission taken back in between throws, and nothing is posted.
+        return runCatching { context.getSystemService(NotificationManager::class.java).notify(DONE_ID, notification) }.isSuccess
     }
 
     /** Opens the app as it is, or, with [jobId], on that job's score or tab. */
