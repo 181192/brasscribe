@@ -39,6 +39,7 @@ public sealed class ScreenCatalogue
         store.Set(AppearanceSetting.PinkUnlockedKey, true);
         store.Set(nameof(SettingsViewModel.ReduceMotion), true);
         string work = Path.Combine(Path.GetTempPath(), "brasscribe-catalogue", Guid.NewGuid().ToString("N"));
+        long crashes = CrashLogLength();
         var (main, settings) = App.Compose(store, work, forcedTheme: null);
         var window = App.MainWindowInstance!;
         window.HeartbeatEnabled = false;
@@ -95,8 +96,28 @@ public sealed class ScreenCatalogue
             // screen's window, which has a theme controller of its own.
             settings.Appearance = Appearance.System;
             window.Close();
+            await Task.Delay(300);
+            CheckCrashLog(scene, crashes);
             Save();
         }
+    }
+
+    /// <summary>The app's crash.log (App.WriteCrash): an exception nothing caught while this screen was open.</summary>
+    private static readonly string CrashLog = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play", "crash.log");
+
+    private static long CrashLogLength() => File.Exists(CrashLog) ? new FileInfo(CrashLog).Length : 0;
+
+    private static void CheckCrashLog(string scene, long before)
+    {
+        if (CrashLogLength() <= before) return;
+        using var stream = new FileStream(CrashLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        stream.Position = before;
+        string added = new StreamReader(stream).ReadToEnd();
+        Console.WriteLine($"crash.log while {scene} was open:\n{added}");
+        string first = added.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? "";
+        // The line is "<time> <exception>: <message>"; the time is left out so the finding is the same in every run.
+        Run.Findings.Add(new Finding($"{scene}--{Options.Prefix}any", "crash", first.Contains(' ') ? first[(first.IndexOf(' ') + 1)..] : first,
+            "an exception nothing caught (crash.log); the app said \"Something went wrong\""));
     }
 
     [ClassCleanup]
