@@ -208,11 +208,22 @@ class ScoreRenderTest : ScreenTest() {
             rule.onNodeWithText(text(R.string.read_aloud)).performClick()
             waitUntil(5_000) { rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isEmpty() == on }
         }
+        val c = vm.scoreController!!
         readAloud(true)
         assertPlays("on the talking score")
+        // A change made while the talking score is read (it has the pitch and the parts) is engraved under it, and shown after.
+        val renders = c.renders.value
+        rule.runOnUiThread { c.setConcertPitch(!c.state.value.concertPitch) }
         readAloud(false)
+        runCatching { waitForEngravedScore() }.onFailure { throw AssertionError("the pitch changed on the talking score is not engraved", it) }
+        assertTrue("no render for the pitch changed on the talking score (renders $renders, then ${c.renders.value})", c.renders.value > renders)
         assertScoreWorks("after the talking score", detaches)
-        readAloud(true); turnAround(); readAloud(false)
+        // Left on its side: the new width is engraved without anything else asking for a render.
+        readAloud(true)
+        ScreenDevice.turn(rule, sideways = true); settle()
+        readAloud(false)
+        runCatching { waitForEngravedScore() }.onFailure { throw AssertionError("the width of a phone turned on the talking score is not engraved", it) }
+        ScreenDevice.turn(rule, sideways = false); settle()
         assertScoreWorks("after a turn on the talking score", detaches)
     }
 
@@ -329,7 +340,7 @@ class ScoreRenderTest : ScreenTest() {
         const val OPENS = 20
         /** A page of notation inks a few percent of the view; the clipped surface left well under 0.2 %. */
         const val MIN_INK = 0.005
-        /** A tap puts the player at the beat's start or a tick after it (the synthesizer's own rounding). */
+        /** A tap puts the player at the beat's start or a tick after it. */
         const val TICK_SLACK = 2.0
     }
 }
