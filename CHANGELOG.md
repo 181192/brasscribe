@@ -2,6 +2,34 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.7.0 (2026-10-04)
+
+### New features
+
+- **Android:** Fretscribe's Home no longer offers Open a tab ([#233](https://github.com/181192/brasscribe/pull/233))
+- **Android:** A solo opens straight on your part after Check the notes ([#244](https://github.com/181192/brasscribe/pull/244))
+- **Android:** While a repeat is set on the music stand, the page pedals play, pause and go back to its start ([#240](https://github.com/181192/brasscribe/pull/240))
+- **Android:** Print and share a PDF without the computer: the phone lays out your part, every part and the score ([#251](https://github.com/181192/brasscribe/pull/251))
+
+### Fixes
+
+- **Android:** Read the pairing QR code on the phone, without Google's scanner ([#236](https://github.com/181192/brasscribe/pull/236))
+- **Android:** Show a score opened while another score is on screen ([#259](https://github.com/181192/brasscribe/pull/259))
+- **Bandroom for Windows:** Show the status icon in Dark's colours ([#230](https://github.com/181192/brasscribe/pull/230))
+- **Bandroom for Windows:** Tab reaches Remove on every paired phone ([#253](https://github.com/181192/brasscribe/pull/253))
+- **Windows:** Home and every screen turn dark at once when you choose Dark in Settings ([#252](https://github.com/181192/brasscribe/pull/252))
+- **Windows:** Screen readers say "Try again" on the error screen ([#257](https://github.com/181192/brasscribe/pull/257))
+
+<details><summary>Under the hood (4 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Design:** The glossary says «Demp» for mute in Norwegian, as the apps do ([#235](https://github.com/181192/brasscribe/pull/235))
+- **Engine:** Keep Beat This! small0 for solo scores made on the computer ([#231](https://github.com/181192/brasscribe/pull/231))
+- **Engine:** A ukulele chord heard on three strings is completed to four when a doubling fits ([#232](https://github.com/181192/brasscribe/pull/232))
+- **Eval:** The Slakh guitar song set is slakh-guitar again ([#241](https://github.com/181192/brasscribe/pull/241))
+
+</details>
+
 ## 0.6.0 (2026-10-04)
 
 ### New features
