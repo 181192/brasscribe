@@ -100,15 +100,16 @@ class PhonePdfTest {
     fun aScoreMadeOrChangedOnThePhoneHasThePhonesPdfAndAnUnchangedComputerScoreKeepsItsOwn() {
         val exporter = Exporter(context, KotlinCoreBridge)
         val phone = TranscriptionResult(null, xml, Profile.SOLO, onDevice = true)
-        assertTrue(exporter.available(phone, ExportFormat.PDF, midiFromScore = true))
+        // Brasscribe lays out its own; Fretscribe's PDFs are the computer's alone.
+        assertEquals(no.brasscribe.play.Product.PHONE_PDF, exporter.available(phone, ExportFormat.PDF, midiFromScore = true))
         assertFalse(exporter.pdfFromComputer(phone))
-        assertTrue(exporter.perPart(phone, ExportFormat.PDF))
+        assertEquals(no.brasscribe.play.Product.PHONE_PDF, exporter.perPart(phone, ExportFormat.PDF))
         val computer = TranscriptionResult(null, xml, Profile.BRASS_BAND, onDevice = false, jobId = "j",
             engineOutputs = setOf("brass-band.pdf", "parts/01-Soprano Cornet.pdf"))
         assertTrue(exporter.pdfFromComputer(computer))
         val changed = computer.copy(changedOnPhone = true)
         assertFalse(exporter.pdfFromComputer(changed))
-        assertTrue(exporter.available(changed, ExportFormat.PDF, midiFromScore = true))
+        assertEquals(no.brasscribe.play.Product.PHONE_PDF, exporter.available(changed, ExportFormat.PDF, midiFromScore = true))
         // Audio and braille are the computer's alone: after a change they are still not offered.
         assertFalse(exporter.available(changed, ExportFormat.AUDIO, midiFromScore = true))
     }

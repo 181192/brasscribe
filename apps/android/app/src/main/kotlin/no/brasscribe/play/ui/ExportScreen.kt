@@ -182,9 +182,8 @@ fun ExportScreen(vm: PlayViewModel) {
                     stringResource(label),
                     onClick = null,
                     subtitle = when {
-                        // Which PDF it is, the computer's or the phone's, and why.
-                        f == ExportFormat.PDF && ok && wholeOnly -> stringResource(R.string.export_whole_score_only, stringResource(desc))
-                        f == ExportFormat.PDF && ok -> stringResource(when {
+                        // Which PDF it is, the computer's or the phone's, and why (in an app that lays out its own).
+                        f == ExportFormat.PDF && ok && no.brasscribe.play.Product.PHONE_PDF && !wholeOnly -> stringResource(when {
                             exporter.pdfFromComputer(r) -> R.string.export_pdf_computer
                             r.changedOnPhone && r.jobId != null && "brass-band.pdf" in r.engineOutputs -> R.string.export_pdf_phone_changed
                             else -> R.string.export_pdf_phone
