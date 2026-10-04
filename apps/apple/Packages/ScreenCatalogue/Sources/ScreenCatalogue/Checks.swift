@@ -19,7 +19,9 @@ public enum Checks {
     public static func run(_ nodes: [AXNode], bounds: CGRect, text: TextFit) -> [Finding] {
         var found: [Finding] = []
         let shown = nodes.filter { $0.frame.width >= 1 && $0.frame.height >= 1 }
-        let controls = shown.filter(\.isActionable)
+        // A control a scroll area has under one docked over it (a sheet's footer) is out of view, not crowded.
+        let docked = shown.filter { $0.isActionable && !$0.inScrollArea }
+        let controls = shown.filter { n in n.isActionable && !(n.inScrollArea && docked.contains { $0.frame.intersects(n.frame) }) }
         for n in controls {
             if n.label.trimmingCharacters(in: .whitespaces).isEmpty && n.role != "AXTextField" && n.role != "AXSlider" {
                 found.append(Finding(kind: .unlabelled, node: n.description))
@@ -29,7 +31,8 @@ public enum Checks {
         for n in shown where n.role == "AXImage" && n.words.isEmpty {
             found.append(Finding(kind: .unlabelled, node: n.description))
         }
-        for n in shown where !bounds.insetBy(dx: -1, dy: -1).contains(n.frame) {
+        // What a scroll area has out of view is not out of the window.
+        for n in shown where !n.inScrollArea && !bounds.insetBy(dx: -1, dy: -1).contains(n.frame) {
             found.append(Finding(kind: .outsideWindow, node: n.description))
         }
         for n in shown where n.isText && text.isCut(n.words, in: n.frame) {
@@ -61,12 +64,14 @@ public enum Checks {
     }
 
     /// The controls in the order VoiceOver and the keyboard go through them (`AXTree` reads the navigation order),
-    /// against the order they are read: a control that comes after one below it, or after one to its right on the same
-    /// line, is out of order. This is not a Tab walk: SwiftUI moves focus only in a key window on a screen.
+    /// against the order they are read: a control that comes after one below it in the same column, or after one to its
+    /// right on the same line, is out of order. This is not a Tab walk: SwiftUI moves focus only in a key window on a screen.
     public nonisolated static func order(_ controls: [AXNode]) -> [Finding] {
         var found: [Finding] = []
         for (a, b) in zip(controls, controls.dropFirst()) {
-            let above = b.frame.maxY <= a.frame.minY - 2
+            // Only within a column: from a sidebar to the content beside it is not going back up.
+            let sameColumn = min(a.frame.maxX, b.frame.maxX) - max(a.frame.minX, b.frame.minX) > 0
+            let above = sameColumn && b.frame.maxY <= a.frame.minY - 2
             let overlap = min(a.frame.maxY, b.frame.maxY) - max(a.frame.minY, b.frame.minY)
             let sameLine = overlap > 0.5 * min(a.frame.height, b.frame.height)
             let leftOf = b.frame.maxX <= a.frame.minX + 2
@@ -88,6 +93,8 @@ public enum Checks {
 public struct TextFit {
     private struct Face { let font: NSFont; let lineHeight: CGFloat }
     private let faces: [Face]
+    /// The tallest frame judged as one line of text.
+    static let tallestLine: CGFloat = 32
 
     /// `fonts`: PostScript names of the app's own faces (registered in the process, as the app's bundle does).
     public init(fonts: [String] = [], sizes: ClosedRange<CGFloat> = 10...56) {
@@ -111,7 +118,9 @@ public struct TextFit {
             let attributed = NSAttributedString(string: words, attributes: [.font: face.font])
             if lines == 1 {
                 if attributed.size().width <= frame.width + 1.5 { return false }
-                cut = true
+                // A frame taller than a line of text at most 26 pt is as likely a line with room around it (a frame or
+                // padding on the text) as one big line, so it is not taken as evidence.
+                if frame.height <= Self.tallestLine { cut = true }
             } else {
                 // A text of several lines is as wide as its widest line, not as the width it was wrapped at. In a face
                 // where its words need as many lines as the frame has at that width, it fits; more, it was wrapped wider;

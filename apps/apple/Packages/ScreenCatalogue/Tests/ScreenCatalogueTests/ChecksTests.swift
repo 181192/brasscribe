@@ -26,6 +26,8 @@ struct ChecksTests {
         #expect(Checks.order([button("Lower", 10, 100), button("Upper", 10, 20)]).count == 1)
         #expect(Checks.order([button("Right", 200, 20), button("Left", 10, 20)]).count == 1)
         #expect(Checks.order([button("Top", 10, 20), button("Left", 10, 100), button("Right", 200, 100)]).isEmpty)
+        // from the bottom of a sidebar to the top of the content beside it
+        #expect(Checks.order([button("Sidebar", 10, 400), button("Content", 300, 20)]).isEmpty)
     }
 
     @Test func aLineCutWithAnEllipsisIsFoundAndOneThatFitsIsNot() {
@@ -36,6 +38,13 @@ struct ChecksTests {
         #expect(!fit.isCut(words, in: CGRect(x: 0, y: 0, width: 560, height: 21)))
         // three lines, as wide as the widest of them: not called cut
         #expect(!fit.isCut(words, in: CGRect(x: 0, y: 0, width: 230, height: 63)))
+        // one line with room around it (48 pt high): not taken for one line of 40 pt
+        #expect(!fit.isCut("A file you own, or a recording with the microphone, always works.", in: CGRect(x: 0, y: 0, width: 680, height: 48)))
+    }
+
+    @Test func whatAScrollAreaHasOutOfViewIsNotOutsideTheWindow() {
+        let below = AXNode(role: "AXButton", label: "Below", frame: CGRect(x: 10, y: 300, width: 80, height: 28), inScrollArea: true)
+        #expect(Checks.run([below], bounds: CGRect(x: 0, y: 0, width: 200, height: 200), text: TextFit()).isEmpty)
     }
 
     @Test func aControlWithoutANameAndTextOutsideTheWindowAreFound() {

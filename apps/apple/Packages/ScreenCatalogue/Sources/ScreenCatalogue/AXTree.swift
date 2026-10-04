@@ -7,13 +7,15 @@ public struct AXNode: CustomStringConvertible, Sendable {
     public let value: String
     public let frame: CGRect
     public let isLeaf: Bool
+    /// Inside a scroll area, which may have it out of view.
+    public let inScrollArea: Bool
 
-    public init(role: String, label: String, value: String = "", frame: CGRect, isLeaf: Bool = true) {
-        self.role = role; self.label = label; self.value = value; self.frame = frame; self.isLeaf = isLeaf
+    public init(role: String, label: String, value: String = "", frame: CGRect, isLeaf: Bool = true, inScrollArea: Bool = false) {
+        self.role = role; self.label = label; self.value = value; self.frame = frame; self.isLeaf = isLeaf; self.inScrollArea = inScrollArea
     }
 
-    /// What a screen reader says for it: its label, or for text its value.
-    public var words: String { label.isEmpty ? value : label }
+    /// Its words: for a text what it shows (a form's value is titled by its row's label), else its name.
+    public var words: String { (role == "AXStaticText" && !value.isEmpty) || label.isEmpty ? value : label }
     public var description: String { "\(role) “\(words)” \(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))×\(Int(frame.height))" }
 
     public static let actionable: Set<String> = ["AXButton", "AXMenuButton", "AXPopUpButton", "AXCheckBox", "AXRadioButton", "AXLink",
@@ -48,11 +50,11 @@ public enum AXTree {
             default: ""
             }
         }
-        func walk(_ element: Any, depth: Int) {
+        func walk(_ element: Any, depth: Int, scrolled: Bool) {
             guard depth < 60, let o = element as? NSObject else { return }
             let children = get(o, "accessibilityChildren") as? [Any] ?? []
+            let role = depth > 0 ? text(get(o, "accessibilityRole")) : ""
             if depth > 0 {
-                let role = text(get(o, "accessibilityRole"))
                 // The name: its label, its title, or the text that titles it (a switch or a field in a form has it beside it).
                 let titledBy = (get(o, "accessibilityTitleUIElement") as? NSObject).map {
                     [text(get($0, "accessibilityLabel")), text(get($0, "accessibilityValue"))].first { !$0.isEmpty } ?? ""
@@ -60,14 +62,15 @@ public enum AXTree {
                 let label = [text(get(o, "accessibilityLabel")), text(get(o, "accessibilityTitle")), titledBy].first { !$0.isEmpty } ?? ""
                 let value = text(get(o, "accessibilityValue"))
                 let screen = (o as? NSAccessibilityElementProtocol)?.accessibilityFrame() ?? .zero
-                nodes.append(AXNode(role: role, label: label, value: value, frame: local(screen, in: view), isLeaf: children.isEmpty))
+                nodes.append(AXNode(role: role, label: label, value: value, frame: local(screen, in: view), isLeaf: children.isEmpty,
+                                    inScrollArea: scrolled))
             }
             // In the order VoiceOver and the keyboard go through them (it follows accessibilitySortPriority), which the
             // plain list of children does not.
             let navigation = get(o, "accessibilityChildrenInNavigationOrder") as? [Any] ?? []
-            for c in navigation.isEmpty ? children : navigation { walk(c, depth: depth + 1) }
+            for c in navigation.isEmpty ? children : navigation { walk(c, depth: depth + 1, scrolled: scrolled || role == "AXScrollArea") }
         }
-        walk(view, depth: 0)
+        walk(view, depth: 0, scrolled: false)
         return nodes
     }
 

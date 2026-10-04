@@ -21,10 +21,12 @@ public struct ContrastProbe: View {
 /// every screen pass on an empty tree or draw the same picture for both contrasts. Each returns what went wrong, or nil.
 @MainActor
 public enum Guards {
-    /// The accessibility tree must have the screen's controls in it.
-    public static func tree(_ nodes: [AXNode], screen: String) -> String? {
+    /// The accessibility tree must have the screen's controls in it (or, for a screen without any, its words: without the
+    /// hook SwiftUI hands out one empty group).
+    public static func tree(_ nodes: [AXNode], screen: String, controls expected: Bool = true) -> String? {
         let controls = nodes.filter(\.isActionable).count
-        return controls >= 1 ? nil
+        let named = nodes.filter { !$0.words.isEmpty }.count
+        return controls >= 1 || (!expected && named >= 1) ? nil
             : "\(screen): the accessibility tree has \(nodes.count) elements and \(controls) controls. Setting AXEnhancedUserInterface on NSApp no longer makes SwiftUI build it in-process (AXTree.enableInProcess)."
     }
 
