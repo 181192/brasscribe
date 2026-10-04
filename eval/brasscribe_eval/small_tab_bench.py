@@ -93,7 +93,7 @@ GROUPS.update({
 })
 PATTERNS = ("melody", "strummed", "picked")
 HELDOUT_PATTERNS = (*PATTERNS, "chord-melody")
-# A mandolin's tremolo: each note of a melody repeated in sixteenths. Under a bass and drums the separator puts it
+# A mandolin's tremolo: each note of a melody repeated in thirty-seconds. Under a bass and drums the separator puts it
 # in its `other` stem, not `guitar` (engine tab.py, Heard.empty_stem_fallback). Scored apart, under the group's
 # TREMOLO key, and skipped where it has not been rendered: the group's other numbers do not move when it is.
 TREMOLO = "tremolo"

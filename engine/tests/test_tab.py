@@ -229,7 +229,7 @@ def test_a_mandolin_in_a_song_is_read_from_the_other_stem_only_when_its_guitar_s
     song = _wav(tmp_path / "song.wav", 0.0)
     for name, level in (("silent", -66.0), ("faint", -20.0), ("loud", -5.0)):
         _wav(tmp_path / f"{name}.wav", level)
-        assert tab.level_db(tmp_path / f"{name}.wav", song) == pytest.approx(level, abs=0.5)
+        assert tab.level_db(tmp_path / f"{name}.wav", song) == pytest.approx(level, abs=1.0)  # its loudest second
     _wav(tmp_path / "other.wav", -3.0)
 
     def stems(guitar: str):
@@ -241,6 +241,23 @@ def test_a_mandolin_in_a_song_is_read_from_the_other_stem_only_when_its_guitar_s
     for instrument in ("ukulele", "ukulele-baritone", "guitar-6"):
         assert tab.stem_to_read(instrument, stems("silent"), song) == "guitar"
     assert [i for i, h in tab.HEARD.items() if h.empty_stem_fallback] == ["mandolin"]
+
+
+def test_a_mandolin_that_plays_only_a_short_fill_in_a_long_song_keeps_its_guitar_stem(tmp_path):
+    """Sparse is not empty: two seconds of a quiet fill in a minute of song leave the stem's RMS over the whole
+    recording under EMPTY_STEM_DB, but its loudest second is the fill's level."""
+    import soundfile as sf
+
+    rate = 22050
+    song = _wav(tmp_path / "song.wav", 0.0, seconds=60.0, rate=rate)
+    fill = np.zeros(60 * rate)
+    fill[30 * rate:32 * rate] = np.random.default_rng(1).standard_normal(2 * rate) * 0.1 * 10 ** (-15 / 20)
+    sf.write(str(tmp_path / "guitar.wav"), fill, rate)
+    _wav(tmp_path / "other.wav", -3.0, seconds=60.0, rate=rate)
+    whole = 10 * np.log10(np.mean(fill ** 2) / np.mean(sf.read(str(song))[0] ** 2))
+    assert whole < tab.EMPTY_STEM_DB < tab.level_db(tmp_path / "guitar.wav", song)
+    assert tab.level_db(tmp_path / "guitar.wav", song) == pytest.approx(-15.0, abs=0.5)
+    assert tab.stem_to_read("mandolin", lambda s: tmp_path / f"{s}.wav", song) == "guitar"
 
 
 def test_the_stem_stage_writes_the_stem_it_chose_under_the_instruments_name(tmp_path):

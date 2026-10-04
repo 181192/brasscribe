@@ -127,27 +127,36 @@ HEARD = {
     "ukulele-baritone": Heard("ukulele", "guitar", 50, 83, 4, 64 + 12, True, True, True, True, unheard_overtones_out=True),
     "mandolin": Heard("mandolin", "guitar", 55, 96, 4, None, True, False, True, True, empty_stem_fallback="other"),
 }
-# A stem this far below the song (RMS over the whole recording, in dB) is empty: nothing of the instrument went
-# there. Chosen on the rendered passages the rules are chosen on (small_tab_bench, its held-out groups apart): a
-# stem that held an instrument was at most 9 dB below the song, one that held none at least 59 dB below it, and a
-# mandolin's tremolo left the guitar stem 66 dB below. On the held-out passages the stems with notes in them
-# were at most 18 dB below, the empty ones at least 58.
-EMPTY_STEM_DB = -35.0
+# A stem whose loudest second is this far below the song (level_db, in dB) is empty: nothing of the instrument went
+# there. Chosen on the rendered passages the rules are chosen on (small_tab_bench, its held-out groups apart), the
+# middle of the gap there: the loudest second of a stem that held an instrument was at most 7 dB below the song, of
+# one that held none at least 47 dB below it (Basic Pitch still hears up to 16 notes of bleed in such a stem), and a
+# mandolin's tremolo left the guitar stem's loudest second 52 dB below. On the held-out passages the stems with notes
+# in them were at most 14 dB below, the empty ones at least 44.
+EMPTY_STEM_DB = -27.0
+
+
+LOUDEST_SECONDS = 1.0  # the window a stem's level is read in (level_db)
 
 
 def level_db(stem: Path, song: Path) -> float:
-    """How far `stem` is below `song`: the ratio of their RMS over the whole recording, in dB."""
+    """How far `stem` is below `song`: the RMS of the stem's loudest LOUDEST_SECONDS against the song's RMS over the
+    whole recording, in dB. The loudest window, not the whole stem: an instrument that plays a few seconds of a long
+    song is sparse there, not absent."""
     import soundfile as sf
 
-    def rms(path: Path) -> float:
+    def windows(path: Path) -> tuple[float, float]:
+        """(the loudest window's mean square, the whole recording's mean square)."""
         with tempfile.TemporaryDirectory() as tmp, sf.SoundFile(str(tuning._decoded(path, tmp, mono=True))) as f:
-            total, count = 0.0, 0
-            for block in f.blocks(blocksize=1 << 16, dtype="float64", always_2d=True):
-                total += float(np.sum(block.mean(axis=1) ** 2))
+            loudest, total, count = 0.0, 0.0, 0
+            for block in f.blocks(blocksize=max(1, int(f.samplerate * LOUDEST_SECONDS)), dtype="float64", always_2d=True):
+                square = block.mean(axis=1) ** 2
+                loudest = max(loudest, float(np.mean(square)))
+                total += float(np.sum(square))
                 count += len(block)
-        return float(np.sqrt(total / count)) if count else 0.0
+        return loudest, (total / count if count else 0.0)
 
-    return float(20 * np.log10(max(rms(stem), 1e-12) / max(rms(song), 1e-12)))
+    return float(10 * np.log10(max(windows(stem)[0], 1e-24) / max(windows(song)[1], 1e-24)))
 
 
 def stem_to_read(instrument: str, stem_file: Callable[[str], Path], song: Path) -> str:
