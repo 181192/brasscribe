@@ -27,6 +27,10 @@
     <string name="home_open_score_desc">A MusicXML file from MuseScore or Guitar Pro</string>
     <string name="home_scores_empty">Nothing written down yet. Record a riff or open a recording.</string>
     <string name="home_your_scores">Your songs</string>
+    <!-- A take kept in Your songs before it has a tab (Product.KEPT_RECORDING_DAYS: 30). -->
+    <string name="kept_row_subtitle">%1$s · No tab yet</string>
+    <string name="kept_storage">Recordings kept in Your songs use %1$s. One with no tab after 30 days is deleted.</string>
+    <string name="problem_score_kept_scores">Your recording is kept in Your songs for 30 days. You can try again now or later.</string>
     <string name="delete_score_phone">The song is removed from this phone.</string>
     <string name="delete_score_computer">The song is removed from your computer.</string>
     <string name="record_permission_needed">Fretscribe needs the microphone to record. You can allow it in Settings.</string>
@@ -56,7 +60,7 @@
     <string name="help_2_text">A “?” above a note means Fretscribe wasn\'t sure of it. A boxed “!” marks a note your instrument can\'t play there. Listen to that bar of the recording to check it.</string>
     <string name="help_3_text">Slow the recording down, and repeat the hard bars.</string>
     <string name="help_4_title">Your songs</string>
-    <string name="help_4_text">Every tab you make is kept under Your songs, on the phone and on your computer.</string>
+    <string name="help_4_text">Every tab you make is kept under Your songs, on the phone and on your computer. A recording whose tab couldn\'t be made, or was stopped, stays there for 30 days.</string>
     <string name="help_5_title">Tabs are written on your computer</string>
     <string name="help_5_text">Fretscribe on your computer writes down the notes. Open it there, and connect in Settings.</string>
     <!-- The keys while a tab plays: Fretscribe has no music stand. -->
@@ -136,8 +140,9 @@
     <!-- "Fretscribe on Kari's Mac is writing down the notes" -->
     <string name="transcribe_where_companion">%1$s is writing down the notes</string>
     <string name="transcribe_cancel_title">Stop writing down the notes?</string>
-    <!-- Fretscribe keeps no recordings: after Stop the recording is the one in hand on What is this?, until another is made or opened. -->
-    <string name="transcribe_cancel_text">You go back to What is this? with the recording, and can start again from it. It isn\'t kept once you record or open another.</string>
+    <!-- After Stop the take is kept in Your songs (Product.KEEPS_RECORDINGS) for 30 days. "Stopped" alone is said when keeping it failed. -->
+    <string name="transcribe_cancel_text_kept">The recording stays in Your songs for 30 days. You can start again from it.</string>
+    <string name="transcribe_cancelled_kept">Stopped. The recording is in Your songs.</string>
     <string name="transcribe_cancelled">Stopped. You can start again from the recording.</string>
     <string name="transcribe_done">Tab ready</string>
     <string name="transcribe_failed">The tab couldn\'t be made: %1$s</string>

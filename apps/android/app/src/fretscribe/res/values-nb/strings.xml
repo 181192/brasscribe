@@ -22,6 +22,9 @@
     <string name="home_open_score_desc">En MusicXML-fil fra MuseScore eller Guitar Pro</string>
     <string name="home_scores_empty">Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak.</string>
     <string name="home_your_scores">Sangene dine</string>
+    <string name="kept_row_subtitle">%1$s · Ingen tab ennå</string>
+    <string name="kept_storage">Opptakene i Sangene dine bruker %1$s. Et opptak uten tab etter 30 dager slettes.</string>
+    <string name="problem_score_kept_scores">Opptaket ditt er tatt vare på i Sangene dine i 30 dager. Du kan prøve igjen nå eller senere.</string>
     <string name="delete_score_phone">Sangen fjernes fra denne telefonen.</string>
     <string name="delete_score_computer">Sangen fjernes fra datamaskinen din.</string>
     <string name="record_permission_needed">Fretscribe trenger mikrofonen for å spille inn. Du kan gi tilgang i Innstillinger.</string>
@@ -48,7 +51,7 @@
     <string name="help_2_text">Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Lytt til den takten i opptaket for å sjekke den.</string>
     <string name="help_3_text">Sett ned farten på opptaket, og gjenta de vanskelige taktene.</string>
     <string name="help_4_title">Sangene dine</string>
-    <string name="help_4_text">Hver tab du lager, ligger under Sangene dine, på telefonen og på datamaskinen.</string>
+    <string name="help_4_text">Hver tab du lager, ligger under Sangene dine, på telefonen og på datamaskinen. Et opptak som ikke ble til en tab, eller som du stoppet, ligger der i 30 dager.</string>
     <string name="help_5_title">Tab skrives på datamaskinen</string>
     <string name="help_5_text">Fretscribe på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger.</string>
     <string name="help_stand_title">Sidevendere og taster</string>
@@ -120,7 +123,8 @@
     <string name="transcribe_leave">%1$s. Du kan bytte til en annen app: når tabben er klar, ligger den i Sangene dine så lenge telefonen er koblet til datamaskinen.</string>
     <string name="transcribe_where_companion">%1$s skriver ned tonene</string>
     <string name="transcribe_cancel_title">Slutte å skrive ned tonene?</string>
-    <string name="transcribe_cancel_text">Du går tilbake til Hva er dette? med opptaket, og kan starte på nytt fra det. Det blir ikke tatt vare på når du spiller inn eller åpner et annet.</string>
+    <string name="transcribe_cancel_text_kept">Opptaket blir liggende i Sangene dine i 30 dager. Du kan starte på nytt fra det.</string>
+    <string name="transcribe_cancelled_kept">Stoppet. Opptaket ligger i Sangene dine.</string>
     <string name="transcribe_cancelled">Stoppet. Du kan starte på nytt fra opptaket.</string>
     <string name="transcribe_done">Tabben er klar</string>
     <string name="transcribe_failed">Tabben kunne ikke lages: %1$s</string>
