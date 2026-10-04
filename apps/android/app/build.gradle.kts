@@ -90,6 +90,9 @@ android {
             it.systemProperty("jna.library.path", File(repoRoot, "core/target/release").absolutePath)
             it.systemProperty("brasscribe.fixtures", File(repoRoot, "apps/fixtures").absolutePath)
             it.inputs.dir(File(repoRoot, "apps/fixtures")).withPropertyName("screenFixtures")
+            // MuteWordingTest reads the design's glossary and icon labels.
+            it.inputs.files(File(repoRoot, "design/brand/brand.md"), File(repoRoot, "design/system.md"), File(repoRoot, "design/README.md"),
+                File(repoRoot, "design/tokens/icons.json")).withPropertyName("designWording")
             it.inputs.files(fileTree(File(repoRoot, "core/target/release")) { include("libbrasscribe_ffi.*") }).withPropertyName("hostCore")
             // (Robolectric reaches into the JDK for Android's file descriptors; a newer JDK asks for the export.)
             it.jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
