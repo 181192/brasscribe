@@ -8,7 +8,12 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.clip
 import androidx.core.content.ContextCompat
@@ -98,6 +103,11 @@ fun CompanionScreen(vm: PlayViewModel) {
         else { cameraOk = cameraAllowed(); cameraRefused = false; scanning = true }
     }
     BackHandler(enabled = scanning) { scanning = false }
+    // Allowed in the phone's settings meanwhile: the note that it is not goes.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        cameraOk = cameraAllowed()
+        if (cameraOk) cameraRefused = false
+    }
     fun scanned(text: String) {
         scanning = false
         val parsed = PairLink.parse(text)
@@ -195,11 +205,16 @@ private fun Scanner(camera: QrCamera, allowed: Boolean, found: (String) -> Unit,
     Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
         SubHeading(stringResource(R.string.pair_scan_title))
         Text(stringResource(R.string.pair_scan_on_phone), color = c.textMuted)
-        Surface(
-            shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border),
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f).semantics { contentDescription = described }.testTag("pair-camera"),
-        ) {
-            if (allowed) camera.View(Modifier.fillMaxWidth().aspectRatio(1f).clip(MaterialTheme.shapes.large), found, unavailable)
+        // Square, and never more than 40 % of the window's height: on its side or at large text, Cancel stays near.
+        val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            val side = minOf(maxWidth, windowHeight * 0.4f)
+            Surface(
+                shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border),
+                modifier = Modifier.size(side).semantics { contentDescription = described }.testTag("pair-camera"),
+            ) {
+                if (allowed) camera.View(Modifier.size(side).clip(MaterialTheme.shapes.large), found, unavailable)
+            }
         }
         PlainButton(stringResource(R.string.cancel), cancel)
     }

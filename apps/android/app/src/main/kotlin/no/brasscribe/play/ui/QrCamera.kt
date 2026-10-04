@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import no.brasscribe.play.connection.QrDecoder
+import no.brasscribe.play.engine.PairLink
 
 /**
  * The camera under the pairing scanner: what it sees, and the text of the first QR code in view. The
@@ -25,8 +26,8 @@ import no.brasscribe.play.connection.QrDecoder
  */
 interface QrCamera {
     /**
-     * Shows the camera; calls [onCode] once, on the main thread, with the first QR code it reads, or
-     * [onUnavailable] when the camera can't be opened.
+     * Shows the camera; calls [onCode] once, on the main thread, with the first pairing link it reads (a QR
+     * code that is not one is passed over), or [onUnavailable] when the camera can't be opened or stops.
      */
     @Composable
     fun View(modifier: Modifier, onCode: (String) -> Unit, onUnavailable: () -> Unit)
@@ -49,7 +50,10 @@ object PhoneQrCamera : QrCamera {
             val worker = Executors.newSingleThreadExecutor()
             val decoder = QrDecoder()
             val done = AtomicBoolean(false)
+            var frame = ByteArray(0)
             var disposed = false
+            var camera: androidx.camera.core.Camera? = null
+            fun unavailable() { if (done.compareAndSet(false, true)) currentOnUnavailable() }
             val future = ProcessCameraProvider.getInstance(context)
             var provider: ProcessCameraProvider? = null
             val shown = Preview.Builder().build().also { it.surfaceProvider = preview.surfaceProvider }
@@ -59,27 +63,37 @@ object PhoneQrCamera : QrCamera {
             analysis.setAnalyzer(worker) { image ->
                 image.use {
                     if (done.get()) return@use
-                    val plane = it.planes[0]
-                    val buffer = plane.buffer
-                    val bytes = ByteArray(buffer.remaining()).also(buffer::get)
-                    val text = decoder.decode(bytes, it.width, it.height, plane.rowStride)
-                    if (text != null && done.compareAndSet(false, true)) main.execute { currentOnCode(text) }
+                    // CameraX does not catch what an analyzer throws: a frame that can't be read is skipped.
+                    runCatching {
+                        val plane = it.planes[0]
+                        val buffer = plane.buffer
+                        if (frame.size != buffer.remaining()) frame = ByteArray(buffer.remaining())
+                        buffer.get(frame)
+                        decoder.decode(frame, it.width, it.height, plane.rowStride) { text -> PairLink.parse(text) != null }
+                    }.getOrNull()?.let { text ->
+                        if (done.compareAndSet(false, true)) main.execute { currentOnCode(text) }
+                    }
                 }
             }
             future.addListener({
                 if (disposed) return@addListener
-                val p = runCatching { future.get() }.getOrNull() ?: return@addListener currentOnUnavailable()
+                val p = runCatching { future.get() }.getOrNull() ?: return@addListener unavailable()
                 provider = p
                 runCatching {
                     p.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, shown, analysis)
                 }.recoverCatching {
                     // A phone with only a front camera (or a tablet) still scans.
                     p.bindToLifecycle(owner, CameraSelector.DEFAULT_FRONT_CAMERA, shown, analysis)
-                }.onFailure { currentOnUnavailable() }
+                }.onSuccess { bound ->
+                    camera = bound
+                    // Opened, but taken by another app, turned off by policy or Do Not Disturb, or failed.
+                    bound.cameraInfo.cameraState.observe(owner) { state -> if (state.error != null) unavailable() }
+                }.onFailure { unavailable() }
             }, main)
             onDispose {
                 disposed = true
                 done.set(true)
+                camera?.cameraInfo?.cameraState?.removeObservers(owner)
                 provider?.unbind(shown, analysis)
                 analysis.clearAnalyzer()
                 worker.shutdown()

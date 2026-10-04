@@ -38,6 +38,28 @@ class QrDecoderTest {
         return bytes
     }
 
+    /** [into] with [text]'s QR code also drawn at ([left], [top]). */
+    private fun alsoDrawn(into: ByteArray, text: String, left: Int, top: Int, size: Int = 200, rowStride: Int = 704): ByteArray {
+        val code = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size, mapOf(EncodeHintType.MARGIN to 4))
+        for (y in 0 until size) for (x in 0 until size) into[(top + y) * rowStride + left + x] = if (code[x, y]) 25.toByte() else 230.toByte()
+        return into
+    }
+
+    private val isPairing: (String) -> Boolean = { PairLink.parse(it) != null }
+
+    @Test
+    fun withAnotherCodeInViewThePairingLinkIsTaken() {
+        // A poster's code next to the computer's, the poster's found first (left of it).
+        val both = alsoDrawn(frame(link, width = 640, height = 480, size = 260, left = 370, top = 110), "https://example.org/menu", left = 20, top = 140)
+        assertEquals(link, QrDecoder().decode(both, 640, 480, 704, isPairing))
+    }
+
+    @Test
+    fun aCodeThatIsNotAPairingLinkIsPassedOver() {
+        assertNull(QrDecoder().decode(frame("https://example.org/menu"), 640, 480, 704, isPairing))
+        assertEquals("https://example.org/menu", QrDecoder().decode(frame("https://example.org/menu"), 640, 480, 704))
+    }
+
     @Test
     fun readsThePairingLinkAsTheComputerShowsIt() {
         val text = QrDecoder().decode(frame(link), 640, 480, 704)

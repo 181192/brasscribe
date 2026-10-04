@@ -224,19 +224,29 @@ val tabFont = tasks.register<Sync>("syncFretscribeTabFont") {
  * Fails when a component that reports off the phone is in a variant's merged manifest: ONNX Runtime's (its AAR adds a
  * telemetry provider, which the app's manifest removes with tools:node="remove"), and Google's ML Kit, Play services,
  * Firebase and datatransport (Firelog) ones, which the Play services code scanner brought in and which logged ML Kit
- * usage to Google. A new AAR, a renamed class, a lost line or a new dependency would bring them, or something like
- * them, back.
+ * usage to Google. Those four are not to be in the app at all, so a library of theirs on the variant's runtime
+ * classpath fails it too, components or not. A new AAR, a renamed class, a lost line or a new dependency would bring
+ * them, or something like them, back.
  */
 abstract class VerifyNoTelemetry : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val mergedManifest: RegularFileProperty
 
+    /** The variant's runtime classpath, as group:module. */
+    @get:Input
+    abstract val modules: ListProperty<String>
+
     @get:OutputFile
     abstract val report: RegularFileProperty
 
     @TaskAction
     fun verify() {
+        val libraries = modules.get().filter { module -> REPORTERS.any { module.startsWith("$it:") || module.startsWith("$it.") } }
+        check(libraries.isEmpty()) {
+            "Libraries that report off the phone are on the runtime classpath: $libraries. Remove the dependency that brings them " +
+                "(./gradlew :app:dependencies shows which)."
+        }
         val manifest = mergedManifest.get().asFile.readText()
         val found = Regex("""android:(?:name|authorities)="([^"]*)"""").findAll(manifest).map { it.groupValues[1] }
             .filter { name -> "onnxruntime" in name || REPORTERS.any { name.startsWith(it) } }.toList()
@@ -260,6 +270,18 @@ androidComponents {
         val verifyNoTelemetry = tasks.register<VerifyNoTelemetry>("verifyNoTelemetry$variantName") {
             mergedManifest.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
             report.set(layout.buildDirectory.file("reports/no-telemetry/${variant.name}.txt"))
+            modules.set(variant.runtimeConfiguration.incoming.resolutionResult.rootComponent.map { root ->
+                val seen = mutableSetOf(root.id)
+                val queue = ArrayDeque(listOf(root))
+                val found = sortedSetOf<String>()
+                while (queue.isNotEmpty()) {
+                    val component = queue.removeFirst()
+                    (component.id as? org.gradle.api.artifacts.component.ModuleComponentIdentifier)?.let { found += "${it.group}:${it.module}" }
+                    component.dependencies.filterIsInstance<org.gradle.api.artifacts.result.ResolvedDependencyResult>()
+                        .map { it.selected }.filter { seen.add(it.id) }.forEach(queue::add)
+                }
+                found.toList()
+            })
         }
         // Every APK and bundle, every install, and every unit-test run (the fast checks) goes through the check.
         val checked = setOf("assemble", "package", "bundle", "install").map { "$it$variantName" }.toSet() +
