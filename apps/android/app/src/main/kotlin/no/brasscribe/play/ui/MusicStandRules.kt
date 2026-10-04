@@ -4,7 +4,7 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.KeyEvent
 
 /** What a key does on the music stand (design/music-stand.md §7). */
-enum class StandCommand { NEXT_PAGE, PREVIOUS_PAGE, FIRST_PAGE, LAST_PAGE, NEXT_BAR, PREVIOUS_BAR, PLAY_PAUSE, LEAVE, SHOW_CONTROLS }
+enum class StandCommand { NEXT_PAGE, PREVIOUS_PAGE, FIRST_PAGE, LAST_PAGE, NEXT_BAR, PREVIOUS_BAR, PLAY_PAUSE, REPEAT_START, LEAVE, SHOW_CONTROLS }
 
 /** The music stand's rules that do not need a screen: keys, auto-hide, layout and "your part". */
 object MusicStandRules {
@@ -21,14 +21,22 @@ object MusicStandRules {
      * Arrows and Page Up/Down turn pages (what Bluetooth page turners send), Space plays, Home/End go
      * to the first and last page, Ctrl+↓/↑ move a bar, F and Esc leave, and Tab shows the layer (and
      * still moves focus). Anything else is left alone.
+     *
+     * While a repeat is set ([repeating]), the page keys a pedal sends play and pause (→ ↓ Page Down) and go back to
+     * the start of the repeat (← ↑ Page Up): a loop needs no page turn, and the player's hands stay on the instrument.
      */
-    fun command(keyCode: Int, ctrl: Boolean = false, alt: Boolean = false, shift: Boolean = false): StandCommand? {
+    fun command(keyCode: Int, ctrl: Boolean = false, alt: Boolean = false, shift: Boolean = false, repeating: Boolean = false): StandCommand? {
         if (alt) return null
+        val next = if (repeating) StandCommand.PLAY_PAUSE else StandCommand.NEXT_PAGE
+        val previous = if (repeating) StandCommand.REPEAT_START else StandCommand.PREVIOUS_PAGE
         return when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_DOWN -> if (ctrl) StandCommand.NEXT_BAR else StandCommand.NEXT_PAGE
-            KeyEvent.KEYCODE_DPAD_UP -> if (ctrl) StandCommand.PREVIOUS_BAR else StandCommand.PREVIOUS_PAGE
-            KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_PAGE_DOWN -> if (ctrl) null else StandCommand.NEXT_PAGE
-            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_PAGE_UP -> if (ctrl) null else StandCommand.PREVIOUS_PAGE
+            KeyEvent.KEYCODE_DPAD_DOWN -> if (ctrl) StandCommand.NEXT_BAR else next
+            KeyEvent.KEYCODE_DPAD_UP -> if (ctrl) StandCommand.PREVIOUS_BAR else previous
+            KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_PAGE_DOWN -> if (ctrl) null else next
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_PAGE_UP -> if (ctrl) null else previous
+            // Some page turners send the media keys: they are the page keys too.
+            KeyEvent.KEYCODE_MEDIA_NEXT -> next
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> previous
             KeyEvent.KEYCODE_MOVE_HOME -> StandCommand.FIRST_PAGE
             KeyEvent.KEYCODE_MOVE_END -> StandCommand.LAST_PAGE
             KeyEvent.KEYCODE_SPACE -> if (ctrl || shift) null else StandCommand.PLAY_PAUSE
@@ -39,6 +47,12 @@ object MusicStandRules {
             else -> null
         }
     }
+
+    /**
+     * A held key repeats: a page turns again, but play and pause, and back to the start, happen once a press (a held
+     * pedal must not start and stop the music over and over).
+     */
+    fun actsOnRepeat(cmd: StandCommand) = cmd != StandCommand.PLAY_PAUSE && cmd != StandCommand.REPEAT_START
 
     /**
      * Only Tab and Space show the control layer and keep it up (§4.2). A Bluetooth page turner is a
