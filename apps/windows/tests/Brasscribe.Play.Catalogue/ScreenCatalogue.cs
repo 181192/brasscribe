@@ -94,7 +94,9 @@ public sealed class ScreenCatalogue
             await CloseDialogsAsync(window);
             // The Pink palette is merged into the app's resources while Pink is chosen: out again before the next
             // screen's window, which has a theme controller of its own.
+            // The window takes the theme change in (ActualThemeChanged) before it closes.
             settings.Appearance = Appearance.System;
+            await Task.Delay(500);
             window.Close();
             await Task.Delay(300);
             CheckCrashLog(scene, crashes);
