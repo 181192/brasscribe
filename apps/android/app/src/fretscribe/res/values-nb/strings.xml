@@ -27,7 +27,7 @@
     <string name="record_permission_needed">Fretscribe trenger mikrofonen for å spille inn. Du kan gi tilgang i Innstillinger.</string>
     <string name="device_notice">Fretscribe spiller inn det andre apper spiller av. Strømmeapper stopper som regel opptak; da hører Fretscribe ingenting og sier fra. Lenker kan ikke lastes ned.</string>
     <string name="conn_offline">Ikke tilkoblet. Fretscribe trenger datamaskinen din for å skrive en tab.</string>
-    <string name="server_name_format">Fretscribe på %1$s</string>
+    <string name="server_name_format">Bandroom på %1$s</string>
 
     <string name="settings_you">Hva du spiller</string>
     <string name="settings_seat">Instrumentet ditt</string>

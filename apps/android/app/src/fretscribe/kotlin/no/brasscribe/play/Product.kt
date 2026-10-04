@@ -128,7 +128,7 @@ object Product {
         return no.brasscribe.play.engine.UploadSource.of(file, "$name.${PracticeRecordings.extensionOf(file)}")
     }
 
-    /** The computer, as the transcribing screen names it: "Fretscribe on Kari's Mac", never its address. */
+    /** The computer, as the transcribing screen names it: "Bandroom on Kari's Mac", never its address. */
     fun computerName(vm: PlayViewModel): String =
         if (vm.container.usingFixture) vm.container.engineLabel() else vm.serverDisplayName(vm.container.settings.serverName)
 
