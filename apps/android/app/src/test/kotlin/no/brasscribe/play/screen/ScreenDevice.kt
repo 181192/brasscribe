@@ -82,6 +82,8 @@ object ScreenDevice {
                 val accessibility = RuntimeEnvironment.getApplication().getSystemService(android.view.accessibility.AccessibilityManager::class.java)
                 shadowOf(accessibility).setEnabled(true)
                 shadowOf(accessibility).setEnabledAccessibilityServiceList(listOf(android.accessibilityservice.AccessibilityServiceInfo()))
+                // The phone's PDFs: Robolectric has no PDF document, so the pages are drawn and the file stands in for it.
+                no.brasscribe.play.export.PhonePdf.newPages = { no.brasscribe.play.export.JvmPdfPages() }
                 test.evaluate()
             }
         }

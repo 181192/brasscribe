@@ -23,6 +23,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.foundation.selection.toggleable
@@ -93,17 +95,30 @@ fun ExportScreen(vm: PlayViewModel) {
         pendingSave = emptyList()
     }
 
+    // The phone lays out its PDFs part by part (Every part: some 25): how far it is, while it works.
+    var laying by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var making by remember { mutableStateOf(false) }
     fun make(then: (List<ExportFile>) -> Unit) = scope.launch {
+        if (making) return@launch
+        making = true
         try {
             val comp = r.composition
             val parts = comp?.voices.orEmpty().filter { it.notes.isNotEmpty() }.map { partViewFor(comp!!, it.id, checked[it.id].orEmpty(), vm.container.core) }
+            val phonePdf = ExportFormat.PDF in formats && !exporter.pdfFromComputer(r)
             val files = withContext(Dispatchers.Default) {
-                exporter.buildAll(r, formats, what, myPart ?: 0, partNames, vm.container.engine(), scoreMidi?.let { m -> { m.bytes() } }, parts, currentLang())
+                exporter.buildAll(r, formats, what, myPart ?: 0, partNames, vm.container.engine(), scoreMidi?.let { m -> { m.bytes() } }, parts, currentLang(),
+                    progress = { done, of -> if (phonePdf) laying = done to of })
             }
             vm.say(R.string.exported, files.joinToString { it.file.nameWithoutExtension })
             then(files)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
+            android.util.Log.w(no.brasscribe.play.PlayViewModel.TAG, "export failed", e)
             vm.say(R.string.export_failed, e.message ?: e.javaClass.simpleName)
+        } finally {
+            laying = null
+            making = false
         }
     }
 
@@ -111,6 +126,11 @@ fun ExportScreen(vm: PlayViewModel) {
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
+            laying?.let { (done, of) ->
+                androidx.compose.material3.LinearProgressIndicator({ if (of == 0) 0f else done.toFloat() / of }, Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+                Text(stringResource(R.string.export_laying_out, minOf(done + 1, of), of), style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.semantics { testTag = "export-progress"; liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite })
+            }
             if (print) PrimaryButton(stringResource(R.string.export_print), {
                 // Every part: one print job, the players' PDFs one after another.
                 make { files ->
@@ -125,14 +145,14 @@ fun ExportScreen(vm: PlayViewModel) {
                         }
                     }
                 }
-            }, icon = R.drawable.ic_bc_print, modifier = Modifier.semantics { testTag = "print" })
+            }, icon = R.drawable.ic_bc_print, modifier = Modifier.semantics { testTag = "print" }, enabled = !making)
             Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                 val share = stringResource(R.string.export_share)
                 val save = stringResource(R.string.export_save)
                 val shareAction = { make { context.startActivity(exporter.shareIntent(it)) } }
-                if (print) SecondaryButton(share, { shareAction() }, Modifier.weight(1f).semantics { testTag = "share" }, enabled = formats.isNotEmpty(), icon = R.drawable.ic_bc_export)
-                else PrimaryButton(share, { shareAction() }, Modifier.weight(1f).semantics { testTag = "share" }, enabled = formats.isNotEmpty(), icon = R.drawable.ic_bc_export)
-                OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, Modifier.weight(1f), enabled = formats.isNotEmpty(), icon = R.drawable.ic_bc_folder)
+                if (print) SecondaryButton(share, { shareAction() }, Modifier.weight(1f).semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_export)
+                else PrimaryButton(share, { shareAction() }, Modifier.weight(1f).semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_export)
+                OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, Modifier.weight(1f), enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_folder)
             }
             Text(
                 pluralStringResource(R.plurals.export_count, fileCount, fileCount),
@@ -162,6 +182,13 @@ fun ExportScreen(vm: PlayViewModel) {
                     stringResource(label),
                     onClick = null,
                     subtitle = when {
+                        // Which PDF it is, the computer's or the phone's, and why.
+                        f == ExportFormat.PDF && ok && wholeOnly -> stringResource(R.string.export_whole_score_only, stringResource(desc))
+                        f == ExportFormat.PDF && ok -> stringResource(when {
+                            exporter.pdfFromComputer(r) -> R.string.export_pdf_computer
+                            r.changedOnPhone && r.jobId != null && "brass-band.pdf" in r.engineOutputs -> R.string.export_pdf_phone_changed
+                            else -> R.string.export_pdf_phone
+                        })
                         !ok && r.changedOnPhone && f != ExportFormat.MIDI -> stringResource(R.string.export_made_before_change)
                         !ok -> stringResource(if (f == ExportFormat.BRAILLE) R.string.export_braille_unavailable else R.string.export_needs_engine)
                         wholeOnly -> stringResource(R.string.export_whole_score_only, stringResource(desc))

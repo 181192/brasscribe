@@ -11,6 +11,7 @@ import no.brasscribe.play.model.Lang
 import no.brasscribe.play.model.PartView
 import no.brasscribe.play.model.TsContext
 import no.brasscribe.play.model.TsSettings
+import kotlinx.coroutines.ensureActive
 import java.io.File
 
 enum class ExportFormat(val extension: String, val mime: String) {
@@ -35,17 +36,23 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
     fun available(r: TranscriptionResult, format: ExportFormat, midiFromScore: Boolean): Boolean = when (format) {
         ExportFormat.MUSICXML, ExportFormat.TALKING_SCORE -> true
         ExportFormat.MIDI -> midiFromScore || r.jobId != null
-        // The engine's files show the score as it made it; after a change on the phone they are stale.
-        ExportFormat.PDF -> r.jobId != null && "brass-band.pdf" in r.engineOutputs && !r.changedOnPhone
+        // The computer's PDF, or the phone's own when there is none to use.
+        ExportFormat.PDF -> pdfFromComputer(r) || no.brasscribe.play.Product.PHONE_PDF
         ExportFormat.AUDIO -> r.jobId != null && "brass-band.mp3" in r.engineOutputs && !r.changedOnPhone
         // Braille music comes from the engine (music21's translator; the core does not write BRF).
         ExportFormat.BRAILLE -> r.jobId != null && (r.engineOutputs.isEmpty() || r.engineOutputs.any { it.endsWith(".brf") }) && !r.changedOnPhone
     }
 
+    /**
+     * The PDF is the computer's: it made one, and no note was changed on the phone since (its files show the score as it
+     * made it). Otherwise the phone lays the PDF out itself ([PhonePdf]).
+     */
+    fun pdfFromComputer(r: TranscriptionResult): Boolean = r.jobId != null && "brass-band.pdf" in r.engineOutputs && !r.changedOnPhone
+
     /** Whether [format] can be made for single parts (audio and MIDI are always the whole score). */
     fun perPart(r: TranscriptionResult, format: ExportFormat): Boolean = when (format) {
         ExportFormat.MUSICXML, ExportFormat.TALKING_SCORE, ExportFormat.BRAILLE -> true
-        ExportFormat.PDF -> r.engineOutputs.any { it.startsWith("parts/") && it.endsWith(".pdf") }
+        ExportFormat.PDF -> if (pdfFromComputer(r)) r.engineOutputs.any { it.startsWith("parts/") && it.endsWith(".pdf") } else no.brasscribe.play.Product.PHONE_PDF
         ExportFormat.AUDIO, ExportFormat.MIDI -> false
     }
 
@@ -64,6 +71,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
     suspend fun buildAll(
         r: TranscriptionResult, formats: List<ExportFormat>, scope: ExportScope, myPart: Int, partNames: List<String>,
         engine: EngineApi?, midi: (() -> ByteArray?)?, parts: List<PartView>, lang: Lang,
+        progress: (done: Int, of: Int) -> Unit = { _, _ -> },
     ): List<ExportFile> {
         val targets: List<Int?> = when (scope) {
             ExportScope.CONDUCTOR -> listOf(null)
@@ -72,6 +80,10 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         }
         val out = ArrayList<ExportFile>()
         for (format in formats) {
+            if (format == ExportFormat.PDF && !pdfFromComputer(r)) {
+                out += phonePdfs(r, targets, partNames, progress)
+                continue
+            }
             if (format == ExportFormat.AUDIO || format == ExportFormat.MIDI || !perPart(r, format)) {
                 out += build(r, format, engine, midi, parts, lang)
                 continue
@@ -110,6 +122,50 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         val f = File(dir, "$base.${format.extension}")
         f.writeBytes(bytes)
         return ExportFile(f, format)
+    }
+
+    /** What the phone laid out last, by the score and the parts: Print after Share (or again) does not lay it out again. */
+    private var laidOut: Pair<Pair<String, List<Int?>>, List<ExportFile>>? = null
+
+    /** The joined PDF of every part the phone laid out, by its parts' files: printed as one job. */
+    private val joined = HashMap<List<File>, File>()
+
+    /**
+     * The phone's PDFs for [targets] (a part's index, or null for the full score), laid out from the score's MusicXML one
+     * part at a time ([PhonePdf]); with more than one part also all of them in one file, for one print job. [progress]
+     * counts the parts done.
+     */
+    private suspend fun phonePdfs(r: TranscriptionResult, targets: List<Int?>, partNames: List<String>, progress: (Int, Int) -> Unit): List<ExportFile> {
+        val key = r.musicXml to targets
+        laidOut?.takeIf { it.first == key && it.second.all { f -> f.file.isFile } }?.let { return it.second }
+        val base = safe(r.composition?.title.orEmpty()).ifBlank { "score" }
+        val pdf = PhonePdf(context)
+        val score = pdf.parse(r.musicXml.toByteArray())
+        val files = ArrayList<ExportFile>()
+        val all = if (targets.size > 1) pdf.Document() else null
+        try {
+            progress(0, targets.size)
+            for ((i, t) in targets.withIndex()) {
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                val name = t?.let { no.brasscribe.play.ui.PartNames.display(partNames[it]) }
+                val tracks = t?.let { listOf(it) } ?: (0 until score.tracks.length.toInt()).toList()
+                val part = pdf.engrave(score, tracks, name, if (t == null) PhonePdf.SCORE_SCALE else PhonePdf.PART_SCALE)
+                val f = File(dir, if (t == null) "$base.pdf" else "$base - ${safe(partNames[t])}.pdf")
+                pdf.Document().use { doc -> doc.add(part); f.outputStream().use { doc.writeTo(it) } }
+                all?.add(part)
+                files += ExportFile(f, ExportFormat.PDF)
+                progress(i + 1, targets.size)
+            }
+            if (all != null) {
+                val f = File(dir, "$base.parts.pdf")
+                f.outputStream().use { all.writeTo(it) }
+                synchronized(joined) { joined[files.map { it.file }] = f }
+            }
+        } finally {
+            all?.close()
+        }
+        laidOut = key to files
+        return files
     }
 
     /** Every part of the arranged score, from the core's talking score; null without the core. */
@@ -155,6 +211,8 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         val single = pdfs.singleOrNull()
         if (single != null || pdfs.isEmpty()) return@withContext pdfs.map { it.file.nameWithoutExtension to it.file }
         val name = title.ifBlank { "score" }
+        // The phone's own parts are already in one file.
+        synchronized(joined) { joined[pdfs.map { it.file }] }?.takeIf { it.isFile }?.let { return@withContext listOf(name to it) }
         // Read, joined and written whole, or not at all: a phone that is full, or a file that can't be joined, prints
         // one job per file, as before.
         val all = runCatching {
