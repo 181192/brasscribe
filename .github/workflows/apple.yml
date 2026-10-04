@@ -96,8 +96,7 @@ jobs:
       - name: Test (packages, macOS app, iPhone simulator app)
         run: |
           dest=$(scripts/newest-iphone.sh)
-          # A failed macOS app test is run once more: releasing a score's model can crash the test host (#258).
-          make test IPHONE_DEST="$dest" TEST_FLAGS="-retry-tests-on-failure -test-iterations 2"
+          make test IPHONE_DEST="$dest"
 
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
       - uses: actions/upload-artifact@v7
