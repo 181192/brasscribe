@@ -120,7 +120,7 @@ jobs:
     env:
       RELEASE_CERT_SHA256: 008dc03426b4036e04e334ee542a394e26d66b95423ac146257abdf70b960233
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: android-unsigned
           path: unsigned

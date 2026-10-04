@@ -2,6 +2,12 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.7.1 (2026-10-04)
+
+### Fixes
+
+- **Android:** The score still plays and redraws after Read aloud ([#275](https://github.com/181192/brasscribe/pull/275))
+
 ## 0.7.0 (2026-10-04)
 
 ### New features
