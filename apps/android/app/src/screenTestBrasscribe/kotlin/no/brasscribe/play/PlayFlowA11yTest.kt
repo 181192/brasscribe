@@ -237,8 +237,9 @@ class PlayFlowA11yTest : ScreenTest() {
         rule.onNode(hasText("Solo Cornet (you)") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)).assertIsSelected()
         val exports = rule.activity.cacheDir.resolve("exports")
         exports.deleteRecursively()
-        // PDF and braille are the engine's renders: checked when the fixture carries them.
-        val pdf = fixtureHas("brass-band.pdf") && fixtureHas("parts/02-Solo-Cornet.pdf")
+        // Braille is the engine's render: checked when the fixture carries it. The PDF is the engine's when the fixture
+        // has it, else the phone lays it out.
+        val pdf = Product.PHONE_PDF || (fixtureHas("brass-band.pdf") && fixtureHas("parts/02-Solo-Cornet.pdf"))
         val braille = fixtureHas("brass-band.brf")
         if (pdf) {
             // My part and PDF are the default (print your own part): that makes the Solo Cornet's PDF.

@@ -704,12 +704,6 @@ class ScoreController(
      * "?" (enclosure="rectangle"), which alphaTab does not draw. The boxed one becomes U+2370, the
      * boxed question mark, so it keeps its shape in the score.
      */
-    private fun markVeryUncertain(bytes: ByteArray): ByteArray {
-        val xml = bytes.toString(Charsets.UTF_8)
-        if (!xml.contains("enclosure=\"rectangle\"")) return bytes
-        return VERY_UNCERTAIN_WORDS.replace(xml, "<words>$BOXED_QUESTION</words>").toByteArray(Charsets.UTF_8)
-    }
-
     private fun colourUncertainty(s: Score) = colourMarks(s, marks, palette)
 
     /**
@@ -881,6 +875,16 @@ private val SCORE_INFO = listOf(
 internal const val BOXED_QUESTION = "\u2370"
 /** Blank text in place of a mark: alphaTab still reserves the text band above the note. */
 internal const val MARK_SPACE = "\u2003\u2003"
+/**
+ * The MusicXML with each very uncertain mark (a "?" in a rectangle, which alphaTab draws as a plain "?") written as
+ * [BOXED_QUESTION]: the score view and the phone's PDF tell the two kinds of mark apart by it.
+ */
+internal fun markVeryUncertain(bytes: ByteArray): ByteArray {
+    val xml = bytes.toString(Charsets.UTF_8)
+    if (!xml.contains("enclosure=\"rectangle\"")) return bytes
+    return VERY_UNCERTAIN_WORDS.replace(xml, "<words>$BOXED_QUESTION</words>").toByteArray(Charsets.UTF_8)
+}
+
 private val VERY_UNCERTAIN_WORDS = Regex("""<words\b[^>]*enclosure="rectangle"[^>]*>\?</words>""")
 
 /** A colour with [alpha] that, drawn over [paper], gives [tint]. */

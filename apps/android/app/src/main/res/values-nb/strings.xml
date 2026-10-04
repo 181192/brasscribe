@@ -375,6 +375,10 @@
     <string name="export_formats">Formater</string>
     <string name="export_pdf">PDF</string>
     <string name="export_pdf_desc">Til utskrift og notestativet</string>
+    <string name="export_pdf_computer">Til utskrift og notestativet. Fra Brasscribe på datamaskinen.</string>
+    <string name="export_pdf_phone">Til utskrift og notestativet. Satt opp på denne telefonen.</string>
+    <string name="export_pdf_phone_changed">Satt opp på denne telefonen, med endringene dine. Sidene kan se annerledes ut enn fra datamaskinen.</string>
+    <string name="export_laying_out">Setter opp sidene: %1$d av %2$d</string>
     <string name="export_musicxml_score">MusicXML</string>
     <string name="export_musicxml_desc">Rediger i MuseScore, Sibelius eller Dorico</string>
     <string name="export_audio">Lyd</string>
@@ -539,7 +543,7 @@
     <string name="help_3_title">Øv</string>
     <string name="help_3_text">Sett ned tempoet, gjenta de vanskelige taktene, og demp stemmen din for å spille med bandet.</string>
     <string name="help_4_title">Del eller skriv ut</string>
-    <string name="help_4_text">Del partituret som en fil. Et partitur som Brasscribe på datamaskinen har laget, kan også skrives ut (din stemme, alle stemmene eller dirigentpartituret), så lenge ingen toner er endret på telefonen.</string>
+    <string name="help_4_text">Del partituret som en fil, eller skriv det ut: din stemme, alle stemmene eller dirigentpartituret. PDF-en kommer fra Brasscribe på datamaskinen når den laget partituret og ingen toner er endret siden; ellers setter telefonen opp sidene selv, og de kan se annerledes ut.</string>
     <string name="help_5_title">Telefonen og datamaskinen</string>
     <string name="help_5_text">På telefonen: ett instrument, eller et raskt utkast for brassband. For hele bandpartituret, en solist med band, eller pop og rock, åpner du Brasscribe på datamaskinen og kobler til i Innstillinger.</string>
     <string name="help_6_title">Lenker og strømmeapper</string>

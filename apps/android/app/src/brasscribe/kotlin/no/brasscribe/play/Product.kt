@@ -24,6 +24,9 @@ object Product {
     /** While a repeat is set on the music stand, the page pedals play, pause and go back to its start. */
     const val PEDALS_REPEAT = true
 
+    /** Without a PDF from the computer (a score made or changed on the phone), the phone lays out the PDF itself. */
+    const val PHONE_PDF = true
+
     /** A recording whose score was not made (it failed, was put off or was stopped) is kept in Your scores. */
     const val KEEPS_RECORDINGS = true
 
