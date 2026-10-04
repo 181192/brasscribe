@@ -48,6 +48,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -357,6 +358,11 @@ fun ScoreScreen(vm: PlayViewModel) {
             StandCommand.NEXT_BAR -> moveBar(1)
             StandCommand.PREVIOUS_BAR -> moveBar(-1)
             StandCommand.PLAY_PAUSE -> controller.togglePlay()
+            StandCommand.REPEAT_START -> st.loop?.let { loop ->
+                // The music goes on from there if it was playing; paused, the page with the bar comes.
+                controller.goToBar(loop.first)
+                quiet(res.getString(R.string.stand_back_to_repeat, loop.first))
+            }
             StandCommand.LEAVE -> leaveStand()
             StandCommand.SHOW_CONTROLS -> Unit
         }
@@ -501,7 +507,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         Column(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
             val n = e.nativeKeyEvent
             when {
-                ms.open -> standKey(e, ms.layerFocused, ::standCommand)
+                ms.open -> standKey(e, ms.layerFocused, repeating = no.brasscribe.play.Product.PEDALS_REPEAT && st.loop != null, run = ::standCommand)
                 // F opens the stand (a single-key shortcut on the score screen, 2.1.4).
                 e.type == KeyEventType.KeyDown && !textView &&
                     MusicStandRules.opensStand(e.key.nativeKeyCode, n.isCtrlPressed, n.isAltPressed, n.isShiftPressed) -> { enterStand(StandOrigin.BUTTON); true }
@@ -584,13 +590,19 @@ fun ScoreScreen(vm: PlayViewModel) {
                 .then(if (performance) Modifier.background(c.bg).windowInsetsPadding(
                     androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(androidx.compose.foundation.layout.WindowInsetsSides.Horizontal)) else Modifier)
                 .onSizeChanged { ms.viewport = it.height.toFloat(); ms.width = it.width.toFloat() }) {
-                if (textView && !performance) {
-                    PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
-                } else {
-                    AndroidView(
-                        factory = { controller.view },
-                        // On the stand the surface over it is the score for TalkBack (with page actions).
-                        modifier = if (performance) Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
+                val talking = textView && !performance
+                // A score opened over this one is a new controller with a view of its own. An AndroidView's factory runs
+                // once, so without the key the screen would keep the last score's view, and the new one would never be laid out.
+                // The view stays in the window while the talking score is read, hidden under it at its own size: alphaTab
+                // tears its view down for good when it leaves the window (the player too, which plays the talking score's bars).
+                key(controller) { AndroidView(
+                    factory = { controller.view },
+                    update = { it.visibility = if (talking) android.view.View.INVISIBLE else android.view.View.VISIBLE },
+                    // On the stand the surface over it is the score for TalkBack (with page actions).
+                    modifier = when {
+                        talking -> Modifier.fillMaxSize().clearAndSetSemantics {}
+                        performance -> Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" }
+                        else -> Modifier.fillMaxSize().semantics {
                             testTag = "score-view"
                             contentDescription = summary
                             stateDescription = stateText
@@ -608,8 +620,12 @@ fun ScoreScreen(vm: PlayViewModel) {
                                     true
                                 }.takeIf { checksMarks && controller.marksIn(st.bar) },
                             )
-                        },
-                    )
+                        }
+                    },
+                ) }
+                if (talking) {
+                    PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
+                } else {
                     if (!st.loaded) Text(stringResource(R.string.player_loading), Modifier.align(Alignment.Center))
                     st.error?.let { Text(stringResource(R.string.score_error, it), color = c.error, modifier = Modifier.align(Alignment.Center).padding(ScreenMargin)) }
                     if (performance) MusicStandOverlay(
@@ -718,6 +734,11 @@ fun ScoreScreen(vm: PlayViewModel) {
                 Column(Modifier.semantics { testTag = "sheet-controls" }, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
                     for (item in hidden) item(true)
                 }
+            }
+            // A solo opens on its score without How should the score be?: its band, difficulty and key are here, by name.
+            if (r.isSoloTake && r.composition != null && no.brasscribe.play.Product.arranges(r.profile)) {
+                PracticeChip(stringResource(R.string.change_output), false, { sheet = null; vm.navigate(Screen.OUTPUT) },
+                    Modifier.semantics { testTag = "more-change-output" }, icon = R.drawable.ic_bc_parts, role = Role.Button)
             }
             // The View menu (the review's P2): Read aloud and the music stand, then the sound.
             SubHeading(stringResource(R.string.view_menu))

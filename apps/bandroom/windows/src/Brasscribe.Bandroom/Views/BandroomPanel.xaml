@@ -212,7 +212,8 @@
             <TextBlock Text="{x:Bind Vm.DevicesNotice, Mode=OneWay}" Style="{StaticResource BodyStyle}"
                        Visibility="{x:Bind Vm.HasDevicesNotice, Mode=OneWay}" />
             <Border Style="{StaticResource CardStyle}" Padding="0" Visibility="{x:Bind Vm.HasDevices, Mode=OneWay}">
-            <ItemsRepeater x:Name="DeviceList" ItemsSource="{x:Bind Vm.Devices}">
+            <!-- Tab reaches every phone's Remove (an ItemsRepeater is one tab stop by default, and nothing moves on from it). -->
+            <ItemsRepeater x:Name="DeviceList" ItemsSource="{x:Bind Vm.Devices}" TabFocusNavigation="Local">
                 <ItemsRepeater.Layout>
                     <StackLayout Spacing="0" />
                 </ItemsRepeater.Layout>

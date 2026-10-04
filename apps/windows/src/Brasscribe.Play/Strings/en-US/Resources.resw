@@ -1146,6 +1146,12 @@
   <data name="ReduceMotionSwitch.Header" xml:space="preserve">
     <value>Reduce motion</value>
   </data>
+  <data name="ReduceMotionSwitch.OffContent" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="ReduceMotionSwitch.OnContent" xml:space="preserve">
+    <value>On</value>
+  </data>
   <data name="ReduceMotionSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>The cursor jumps per beat and the score turns pages instead of scrolling</value>
   </data>
@@ -1938,6 +1944,12 @@
   <data name="SingleKeySwitch.Header" xml:space="preserve">
     <value>Single-key shortcuts in the score</value>
   </data>
+  <data name="SingleKeySwitch.OffContent" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="SingleKeySwitch.OnContent" xml:space="preserve">
+    <value>On</value>
+  </data>
   <data name="SingleKeySwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Keys such as U, R and P. Arrows always work.</value>
   </data>
@@ -1994,6 +2006,12 @@
   </data>
   <data name="StandKeepControlsSwitch.Header" xml:space="preserve">
     <value>Keep the stand controls visible</value>
+  </data>
+  <data name="StandKeepControlsSwitch.OffContent" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="StandKeepControlsSwitch.OnContent" xml:space="preserve">
+    <value>On</value>
   </data>
   <data name="StandLayer.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Music stand controls</value>
@@ -2072,6 +2090,12 @@
   </data>
   <data name="StandTurnPagesSwitch.Header" xml:space="preserve">
     <value>Turn the pages while playing</value>
+  </data>
+  <data name="StandTurnPagesSwitch.OffContent" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="StandTurnPagesSwitch.OnContent" xml:space="preserve">
+    <value>On</value>
   </data>
   <data name="Stand_Detail" xml:space="preserve">
     <value>{0} · bar {1} · {2}</value>

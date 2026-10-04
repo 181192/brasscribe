@@ -433,7 +433,7 @@ def components(icons: dict, mark: str) -> list[dict]:
             "summary": "The labelled Mute and Only this toggles beside every part in the part picker.",
             "provides": "The part name (bold with a leading bar when it is the active part), and two toggles with "
                         "their words and icons: Mute (`mute`) and Only this (`solo`). Add `on` when on.",
-            "note": "Never M/S, Solo or Demp.",
+            "note": "Never M/S or Solo; in Norwegian Demp and Bare denne, never Lyd av.",
             "html": f'''<div class="pv pv-narrow">
   <div class="group">
     <div class="row"><div class="grow"><div class="title">Solo Cornet</div><div class="sub">your part</div></div>

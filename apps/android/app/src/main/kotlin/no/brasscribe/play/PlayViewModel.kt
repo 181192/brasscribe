@@ -475,6 +475,15 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     fun replaceTop(to: Screen) = backStack.update { it.dropLast(1) + to }
+
+    /**
+     * Leaving Check the notes forwards: How should the score be?, or, where the product says so (a solo in Brasscribe),
+     * the score itself, with the choices it was made with (applied first only if they changed).
+     */
+    fun afterReview() {
+        val r = result.value
+        if (r != null && Product.afterReview(r) == Screen.SCORE) applyOutput { showScore() } else navigate(Screen.OUTPUT)
+    }
     fun back(): Boolean {
         if (backStack.value.size <= 1) return false
         if (backStack.value.last() == Screen.TRANSCRIBE) cancelTranscription()

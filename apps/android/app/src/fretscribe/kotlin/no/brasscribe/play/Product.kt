@@ -36,6 +36,18 @@ object Product {
     /** A tab has no music stand, so Settings has none of the stand's switches. */
     const val MUSIC_STAND = false
 
+    /**
+     * Home has no Open a tab: a MusicXML file opened from Home would show on Brasscribe's score screen, not in the tab
+     * view. It comes back once an imported tab opens there.
+     */
+    const val OPENS_SCORES = false
+
+    /** The page pedals turn pages on a band score's stand; a tab has its own keys. */
+    const val PEDALS_REPEAT = false
+
+    /** A tab's PDF comes from the computer only. */
+    const val PHONE_PDF = false
+
     /** Your songs holds songs only: a recording is not kept there before it has a tab. */
     const val KEEPS_RECORDINGS = false
 
@@ -135,6 +147,10 @@ object Product {
     /** The screen that follows a finished transcription: Check the song for a tab (drawn in the output choices' place). */
     fun afterTranscription(result: TranscriptionResult): Screen =
         if (result.profile.writesTab) Screen.OUTPUT else Screen.REVIEW
+
+    /** The screen after Check the notes: the output choices, for every take. */
+    @Suppress("UNUSED_PARAMETER")
+    fun afterReview(result: TranscriptionResult): Screen = Screen.OUTPUT
 
     /** A row in Your songs: a tab's instrument, tuning and notes to check; a band score says where it opens. Null for the usual line. */
     @Composable

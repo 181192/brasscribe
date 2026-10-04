@@ -202,6 +202,8 @@ class TabSongTest {
         // A bass tab an older app made is a tab like any other.
         assertEquals(Screen.OUTPUT, Product.afterTranscription(result(Profile.BASS_TAB)))
         assertEquals(Screen.REVIEW, Product.afterTranscription(result(Profile.SOLO)))
+        // After Check the notes, the output choices for every take, a solo too (Brasscribe opens a solo's score).
+        for (p in Profile.entries) assertEquals(p.id, Screen.OUTPUT, Product.afterReview(result(p)))
         assertTrue(Product.makes("tab"))
         assertTrue(Product.makes("bass-tab"))
         val band = listOf(Profile.SOLO, Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK)

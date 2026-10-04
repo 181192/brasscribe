@@ -107,6 +107,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("share-or-print") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }; go(Screen.EXPORT); rest() },
         Entry("settings") { go(Screen.SETTINGS) },
         Entry("computer") { go(Screen.SETTINGS, Screen.COMPANION) },
+        Entry("computer-scanner") { pairingScanner(); waitForTag("pair-camera", 5_000) },
         Entry("about") { go(Screen.SETTINGS, Screen.ABOUT) },
         Entry("help") { go(Screen.HELP) },
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },

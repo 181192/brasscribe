@@ -83,9 +83,9 @@ Brasscribe talks like a **good section leader**: calm, specific and on your side
 | Playback speed | Speed 75% | Tempo 75 % (space before %) | rate |
 | Before playing | Count-in (tip: "One bar of clicks before the music starts.") | Inntelling («Én takt med klikk før musikken starter.») | pre-roll |
 | Start playback (button) | Play | Spill av | Spill (also a noun, and sits beside "Spill inn") |
-| Silence one part | Mute | Lyd av | M, Demp (the physical mute in the bell) |
+| Silence one part | Mute | Demp | M, Lyd av («Lyd av min stemme» reads as "the sound of my part") |
 | Hear one part alone | Only this | Bare denne | S, Solo (collides with Solo Cornet, Solo Horn) |
-| Play along | Mute my part (headphones icon) | Lyd av min stemme | Play along (with a microphone icon: reads as "records you") |
+| Play along | Mute my part (headphones icon) | Demp stemmen min | Play along (with a microphone icon: reads as "records you") |
 | Which audio plays | Hear: Band / Recording | Hør: Band / Opptak | Score / Original |
 | Doubtful note | uncertain / very uncertain · "notes marked ?" | usikker / svært usikker · «toner merket ?» | low confidence, "the blue notes" |
 | Confirm a note | Keep | Behold | accept, approve, Merk som kontrollert |
@@ -124,7 +124,7 @@ The voice never says "we": write "Brasscribe will tell you when the score is rea
 | Apple, silent capture | "Nothing was heard. Either nothing was playing, recording permission was refused, or the app plays protected (DRM) audio, which the system does not let anyone record." | Title "Nothing was heard", then two short reasons as a list, then [Import a file instead] [Record with the microphone]. See `mockups/png/error-phone-light.png`. |
 | Android home | Three filled purple buttons (Import, Record, Record this phone) | One primary button (Import audio or video). The other ways in become list rows. See `mockups/png/home-phone-light.png`. |
 | Apple, output | "Lineup, difficulty and key are sent to your computer; older versions of Brasscribe may ignore them." | "Your computer arranges the score with these choices." If the computer is too old, say so once, with "Update Brasscribe on your computer". |
-| Score, mixer | "M" / "S" toggles | Labelled **Mute** / **Only this** · **Lyd av** / **Bare denne** |
+| Score, mixer | "M" / "S" toggles | Labelled **Mute** / **Only this** · **Demp** / **Bare denne** |
 | Review | "Done" / "Done checking" | **Finish later (9 left)**, with a confirm step and a way back from the score ("9 notes marked ? · Check them") |
 | Export | "Export" · All parts + PDF + MusicXML = 12 files, no Print | **Share or print** · Solo Cornet (you) + PDF = 1 file, **Print** as the primary |
 | Transcribing | "Engraving the score" · "62 percent" · "we'll tell you" | "Laying out the pages" · "62%" · "Brasscribe will tell you" |
