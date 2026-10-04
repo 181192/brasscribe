@@ -485,11 +485,13 @@ fun TabScreen(vm: PlayViewModel) {
             }
 
             // The page is put where the bar being read is, after every engraving (a new size, a turn of the phone, coming
-            // back) and when the header over the page changes height.
+            // back) and when the header over the page changes height. From the start, the page opens on its first line: a
+            // header that scrolls with the page (on its side, or with large text) is above it, a scroll up away, so the tab
+            // and the player have the screen.
             LaunchedEffect(tab, e, inset) {
                 if (e == null || (e === placedFor && inset == placedInset)) return@LaunchedEffect
                 placedFor = null
-                scroll.scrollTo(if (reading == 0) 0 else inset + (e.topOfBar(reading) ?: 0))
+                scroll.scrollTo(inset + if (reading == 0) 0 else (e.topOfBar(reading) ?: 0))
                 placedInset = inset
                 placedFor = e
             }
