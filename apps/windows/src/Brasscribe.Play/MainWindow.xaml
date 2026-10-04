@@ -73,12 +73,30 @@
                         IsPaneVisible="{x:Bind vm:Screens.ShowsLibrary(ViewModel.Screen), Mode=OneWay}"
                         MenuItemsSource="{x:Bind ViewModel.LibraryItems}" ItemInvoked="OnLibraryItemInvoked"
                         x:Uid="LibraryNav">
+            <!-- The pane and content grounds per theme: a plain StaticResource here is looked up once, so after Settings ›
+                 Appearance changed while the app runs they kept the first theme's ground (light behind dark text). -->
             <NavigationView.Resources>
-                <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
-                <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="BcSurfaceBrush" />
-                <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="BcBgBrush" />
-                <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
-                <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
+                <ResourceDictionary>
+                    <ResourceDictionary.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Light">
+                            <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="BcSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="BcBgBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Dark">
+                            <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="BcSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="BcBgBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="HighContrast">
+                            <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="BcSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="BcBgBrush" />
+                        </ResourceDictionary>
+                    </ResourceDictionary.ThemeDictionaries>
+                    <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+                    <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
+                </ResourceDictionary>
             </NavigationView.Resources>
             <NavigationView.PaneHeader>
                 <StackPanel Padding="12,16,12,4" Spacing="16">
