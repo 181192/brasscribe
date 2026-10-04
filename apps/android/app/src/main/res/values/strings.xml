@@ -178,6 +178,10 @@
     <string name="step_now">now</string>
     <string name="step_waiting">to do</string>
     <string name="transcribe_leave">%1$s. Keep Brasscribe open until the score is ready.</string>
+    <!-- A job on the computer: the app follows it while the player is away, and says when it is ready (with notifications
+         allowed), or the score is in Your scores. -->
+    <string name="transcribe_leave_computer">%1$s. You can switch to another app: Brasscribe tells you when the score is ready.</string>
+    <string name="transcribe_leave_computer_quiet">%1$s. You can switch to another app: when the score is ready, it is in Your scores while your phone is connected to your computer.</string>
     <string name="transcribe_leave_draft">%1$s. You can switch to another app: the draft goes on, and it is on the screen when you come back.</string>
     <string name="transcribe_cancel_title">Stop making this score?</string>
     <string name="transcribe_cancel_text">The recording is kept. You can start again from it.</string>
@@ -208,6 +212,12 @@
     <string name="problem_choose_another_recording">Choose another recording</string>
     <string name="notif_draft_channel">Band drafts</string>
     <string name="notif_draft">Making a band draft</string>
+    <!-- A job on the computer: followed while the player is away from the app, and a notification when it is done. -->
+    <string name="notif_job_channel">Scores on your computer</string>
+    <string name="notif_job_working">Your computer is making the score</string>
+    <string name="notif_ready_channel">Scores ready</string>
+    <string name="notif_ready">Your score is ready</string>
+    <string name="notif_failed">The score couldn\'t be made</string>
     <string name="transcribe_where_companion">On %1$s</string>
     <string name="transcribe_progress_label">Progress</string>
 

@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
     // The heartbeat runs while the app is in front (contract: presence); leaving it also stops a bar playing.
     override fun onStart() {
         super.onStart()
+        AppInFront.started()
         vm.connection.start()
         val cm = getSystemService(ConnectivityManager::class.java) ?: return
         val cb = object : ConnectivityManager.NetworkCallback() {
@@ -89,6 +90,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        AppInFront.stopped()
         vm.connection.stop()
         vm.stopListening(announce = false)
         networkCallback?.let { cb -> runCatching { getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(cb) } }
@@ -100,8 +102,15 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
-    /** Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file; brasscribe://pair pairs. */
-    private fun handleIntent(intent: Intent?) {
+    /**
+     * Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file; brasscribe://pair pairs; a tap on
+     * "ready" opens that job's score or tab.
+     */
+    internal fun handleIntent(intent: Intent?) {
+        if (intent?.action == JobNotices.ACTION_OPEN_JOB) {
+            intent.getStringExtra(JobNotices.EXTRA_JOB)?.let(vm::openFinishedJob)
+            return
+        }
         if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == no.brasscribe.play.engine.PairLink.SCHEME) {
             vm.openPairLink(intent.data.toString())
             return

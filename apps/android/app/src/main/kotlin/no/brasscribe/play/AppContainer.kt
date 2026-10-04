@@ -138,6 +138,11 @@ class AppContainer(private val context: Context) {
         get() = prefs.getBoolean("realistic_default", false)
         set(v) = prefs.edit().putBoolean("realistic_default", v).apply()
 
+    /** Notifications were asked for (at the first job on the computer): never again; Settings of the phone has the switch. */
+    var notificationsAsked: Boolean
+        get() = prefs.getBoolean("notifications_asked", false)
+        set(v) = prefs.edit().putBoolean("notifications_asked", v).apply()
+
     var firstRunDone: Boolean
         get() = prefs.getBoolean("first_run_done", false)
         set(v) = prefs.edit().putBoolean("first_run_done", v).apply()

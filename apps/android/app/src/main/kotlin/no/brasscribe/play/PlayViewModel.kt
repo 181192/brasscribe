@@ -1075,17 +1075,27 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             ).also { seatFellBack = it.second }.first
         }
         engineJobId = created.id
+        // Followed while the player is away from the app, with a notification when it is done.
+        ComputerJobService.start(getApplication(), created.id, ScoreTitles.withoutExtension(s.name))
         val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
         transcribe.update { it.copy(steps = listOf(Step.UPLOAD) + kinds.ifEmpty { listOf(Step.BEATS, Step.STEMS, Step.LAYERS, Step.TRANSCRIBE, Step.ARRANGE, Step.EXPORT) }) }
         val tracker = ProgressTracker(created.stages.size.takeIf { it > 0 } ?: stages)
-        engine.events(created.id).collect { e ->
-            val pr = tracker.onEvent(e)
-            transcribe.update {
-                it.copy(step = if (pr.currentKind != null) Step.ofKind(pr.currentKind) else Step.QUEUED, fraction = pr.fraction,
-                    stepIndex = pr.stagesDone, stepTotal = pr.stagesTotal, etaSeconds = pr.etaSeconds, error = pr.error)
+        val streamed = runCatching {
+            engine.events(created.id).collect { e ->
+                val pr = tracker.onEvent(e)
+                transcribe.update {
+                    it.copy(step = if (pr.currentKind != null) Step.ofKind(pr.currentKind) else Step.QUEUED, fraction = pr.fraction,
+                        stepIndex = pr.stagesDone, stepTotal = pr.stagesTotal, etaSeconds = pr.etaSeconds, error = pr.error)
+                }
             }
         }
-        val final = engine.job(created.id)
+        streamed.exceptionOrNull()?.let { if (it is kotlinx.coroutines.CancellationException) throw it }
+        // The events stop when the phone loses the computer for a while (the player left the app and the Wi-Fi slept):
+        // the job goes on there, so it is asked for until it ends. Only a computer that stays away is a failure.
+        val final = if (streamed.isSuccess) engine.job(created.id)
+        else JobFollow.untilEnded({ engine.job(created.id) }, pause = followPause, tries = FOLLOW_TRIES) ?: throw streamed.exceptionOrNull()!!
+        // Seen here, in front: nothing more for the notification to say.
+        if (AppInFront.now) ComputerJobService.stop(getApplication())
         if (final.status != JobStatus.SUCCEEDED) throw EngineJobFailedException(final.error ?: final.status.name.lowercase())
         val composition = engine.composition(created.id)
         val xml = engine.musicXml(created.id)
@@ -1096,6 +1106,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     fun cancelTranscription() {
         job?.cancel()
+        ComputerJobService.stop(getApplication())
         val id = engineJobId
         if (id != null) viewModelScope.launch { runCatching { container.engine()?.cancel(id) } }
         engineJobId = null
@@ -1243,6 +1254,25 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 scoreLibrary.list()
             }
             savedScores.value = list
+        }
+    }
+
+    /**
+     * A tap on "ready": the score or tab [jobId] made. Nothing when it is on screen already, or when the transcribing
+     * screen is still following it (it moves on by itself); else the one saved on the phone, or the computer's.
+     */
+    fun openFinishedJob(jobId: String) {
+        val top = backStack.value.last()
+        if (top == Screen.TRANSCRIBE && engineJobId == jobId) return
+        if (result.value?.jobId == jobId && top in setOf(Screen.SCORE, Screen.REVIEW, Screen.OUTPUT)) return
+        viewModelScope.launch {
+            val saved = withContext(storage) { scoreLibrary.list() }.firstOrNull { it.jobId == jobId }
+            if (saved != null) { home(); openSavedScore(saved); return@launch }
+            val engine = container.engine() ?: return@launch
+            val done = runCatching { engine.job(jobId) }.getOrNull() ?: return@launch
+            val entry = ScoreEntry.merge(emptyList(), listOf(done)).firstOrNull() ?: return@launch
+            home()
+            openEntry(entry)
         }
     }
 
@@ -1822,8 +1852,15 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         listening.stop(announce = false)
     }
 
+    /** How long the transcribing screen waits between asking the computer for a job whose events stopped (tests shorten it). */
+    @androidx.annotation.VisibleForTesting
+    internal var followPause = 3_000L
+
     companion object {
         const val TAG = "BrasscribePlay"
+
+        /** A job whose events stopped is asked for this many times in a row without an answer before it counts as failed. */
+        const val FOLLOW_TRIES = 40
 
         /** A MusicXML score larger than this is not a score. */
         const val MAX_SCORE_BYTES = 64L shl 20

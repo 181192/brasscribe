@@ -140,7 +140,8 @@ object Product {
 
     /**
      * The transcribing screen stays on while the notes are written down, so the player can watch it. The job runs on
-     * the computer, so the screen also says the player may switch apps: a finished tab is in Your songs.
+     * the computer and is followed while the player is away (`ComputerJobService`), so the screen also says the player
+     * may switch apps: the app says when the tab is ready, and a finished tab is in Your songs.
      */
     const val KEEP_OPEN_WHILE_WRITING = true
 

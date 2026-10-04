@@ -81,8 +81,9 @@ class BrasscribeProductTest {
 
     @Test
     fun theTranscribingScreenPromisesNothingTheAppDoesNotKeep() {
-        // Nothing tells the player when a score is ready while the app is away: the screen says to keep it open and
-        // stays on. Only a draft, whose service keeps it going, says the player can switch to another app.
+        // A solo made on the phone has nothing to keep it going while the app is away: the screen says to keep it open and
+        // stays on. A draft (its service) and a job on the computer (followed by a service, with a notification when it is
+        // done) say the player can switch to another app.
         assertTrue(Product.KEEP_OPEN_WHILE_WRITING)
         val res = System.getProperty("brasscribe.sounds")?.let { java.io.File(it).parentFile }?.resolve("apps/android/app/src/main/res")
         org.junit.Assume.assumeTrue("the app's sources are not in this checkout", res?.isDirectory == true)
@@ -96,6 +97,17 @@ class BrasscribeProductTest {
             val strings = java.io.File(res, "$dir/strings.xml").readText()
             fun text(name: String) = Regex("""<string name="$name">(.*?)</string>""").find(strings)?.groupValues?.get(1)
             assertEquals(dir, words, listOf(text("transcribe_leave"), text("transcribe_leave_draft")))
+        }
+        val computer = mapOf(
+            "values" to listOf("%1\$s. You can switch to another app: Brasscribe tells you when the score is ready.",
+                "%1\$s. You can switch to another app: when the score is ready, it is in Your scores while your phone is connected to your computer."),
+            "values-nb" to listOf("%1\$s. Du kan bytte til en annen app: Brasscribe sier fra når partituret er klart.",
+                "%1\$s. Du kan bytte til en annen app: når partituret er klart, ligger det i Partiturene dine så lenge telefonen er koblet til datamaskinen."),
+        )
+        for ((dir, words) in computer) {
+            val strings = java.io.File(res, "$dir/strings.xml").readText()
+            fun text(name: String) = Regex("""<string name="$name">(.*?)</string>""").find(strings)?.groupValues?.get(1)
+            assertEquals(dir, words, listOf(text("transcribe_leave_computer"), text("transcribe_leave_computer_quiet")))
         }
     }
 
