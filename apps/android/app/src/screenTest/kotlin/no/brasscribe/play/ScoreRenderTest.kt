@@ -146,6 +146,42 @@ class ScoreRenderTest : ScreenTest() {
         assertScoreShows("long-portrait-again")
     }
 
+    /**
+     * The screen tests' wait for an engraved score ends once alphaTab has engraved what was asked for and painted it, not
+     * before its thread has started on it, nor when the render is done and the parts in view are still blank: with
+     * alphaTab's thread slow (as on a busy CI runner), the new engraving is on screen as soon as the wait is over.
+     */
+    @Test
+    fun theWaitForAnEngravedScoreWaitsForThePaint() {
+        val file = File(rule.activity.cacheDir, "Old Hundredth.musicxml").apply { writeBytes(checkNotNull(ScreenDevice.fixture("old-hundredth/brass-band.musicxml"))) }
+        val before = vm.scoreController
+        rule.runOnUiThread { vm.openScoreUri(android.net.Uri.fromFile(file)) }
+        waitForEngravedScore(before)
+        val c = vm.scoreController!!
+        val renders = c.renders.value
+        slowEngraver(c)
+        // Engraved again, without the title block (the score upright has it).
+        rule.runOnUiThread { c.setTitleShown(false) }
+        waitForEngravedScore()
+        assertTrue("the wait was over before the new render (renders: $renders, then ${c.renders.value})", c.renders.value > renders)
+        val ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap())
+        assertTrue("no notation on screen when the wait was over (ink ${"%.4f".format(ink)})", ink >= MIN_INK)
+    }
+
+    /** alphaTab's thread stops for a while before each render's work, the parts it paints afterwards included. */
+    private fun slowEngraver(c: no.brasscribe.play.score.ScoreController) {
+        // (alphaTab's thread is not public: it is reached through the renderer the view has.)
+        val renderer: Any = c.view.api.renderer
+        val inner = renderer.javaClass.getMethod("getInstance").invoke(renderer)!!
+        val thread = inner.javaClass.getDeclaredField("_worker").apply { isAccessible = true }.get(inner)!!
+        val post = thread.javaClass.getMethod("postToWorker", Function0::class.java)
+        val pause: () -> Unit = { Thread.sleep(600) }
+        rule.runOnUiThread {
+            post.invoke(thread, pause)
+            c.view.api.renderStarted.on { _ -> post.invoke(thread, pause) }
+        }
+    }
+
     private companion object {
         const val OPENS = 20
         /** A page of notation inks a few percent of the view; the clipped surface left well under 0.2 %. */
