@@ -77,7 +77,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 
 **From the usability review** (`reviews/usability-review.md`; the specs in `system.md` and `brand/brand.md` are updated):
 - [ ] Take the new tokens: `focus` is now ink / paper / white (it was blue, like `uncertain`), `adlib-tint` is a neutral warm grey (it was pale blue), dark `secondary` is one step lighter and the dark `loop-tint` lighter in weight.
-- [ ] Mixer: labelled **Mute** / **Only this** toggles (nb **Lyd av** / **Bare denne**), never M/S, Solo or Demp. Icons from `icons.json` (`mute`, `solo`).
+- [ ] Mixer: labelled **Mute** / **Only this** toggles (nb **Demp** / **Bare denne**), never M/S, Solo or Lyd av. Icons from `icons.json` (`mute`, `solo`).
 - [ ] Every on/off toggle (Count-in, Metronome, Mute my part, Mute, Only this): **on = tonal fill + 1.5 px ink edge + ✓**. Ink fill is only for the one primary.
 - [ ] Phone player: practice chips in **two rows** (Speed · Repeat · Count-in / Metronome · Mute my part) or a **Practice ▾** sheet. Nothing clips or scrolls behind a fade.
 - [ ] Part view: the same player as the score view. Play is the only primary; **Mute my part** (headphones) is on by default; Speed and Repeat are there. Desktop gets a **Full score** back button.
@@ -103,7 +103,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] `NoteGlyph.kt`: draw the "?" mark instead of the rings. **(drift)**
 - [ ] Theme: switch from `PlayTheme` to `BrasscribeTheme` (not dynamic colour). The primary purple `#6B3FA0` is the score **cursor** colour and must not be used for buttons. **(drift)**
 - [ ] Home: one filled button (**Open a recording**) instead of three; add the streaming tip and a Help button beside Settings.
-- [ ] nb: use "Gjenta" / "Slutt å gjenta" consistently (not "Repetisjon"), "Spill av" (not "Spill"), "Lyd av" (not "Demp"), and "På datamaskinen din" (not "motoren").
+- [ ] nb: use "Gjenta" / "Slutt å gjenta" consistently (not "Repetisjon"), "Spill av" (not "Spill"), "Demp" and "Demp stemmen min" (not "Lyd av"), and "På datamaskinen din" (not "motoren").
 - [ ] Use the adaptive icon with the monochrome layer.
 
 ### Windows (`apps/windows`)
