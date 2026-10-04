@@ -171,7 +171,17 @@ fun ReviewScreen(vm: PlayViewModel) {
     // "Yours": the layer your part follows (the tune, the bass line, ...), or none when your part is arranged.
     val mine = yoursInReview(vm, r, composition)
     val melodyVoice = voices.firstOrNull { it.role == VoiceRole.MELODY }?.id
-    var voiceId by rememberSaveable { mutableStateOf(mine.voice ?: melodyVoice ?: firstVoice.id) }
+    // Opened from a "?" on the score: at that note. Else where Check the notes was left for this score, so Check them
+    // goes on from there rather than from the start.
+    val target = remember { vm.takeReviewTarget() }
+    val place = remember { vm.reviewPlace() }
+    val resume = place.takeIf { target == null }
+    val targetVoice = remember(target) { target?.part?.let { voiceOfPart(vm, r, composition, it) } ?: melodyVoice.takeIf { target != null } }
+    var voiceId by rememberSaveable {
+        mutableStateOf((targetVoice ?: resume?.voice)?.takeIf { v -> voices.any { it.id == v } } ?: mine.voice ?: melodyVoice ?: firstVoice.id)
+    }
+    // The place it opens at is taken once: back on this part later, the queue starts as usual.
+    val seeding = remember { booleanArrayOf(true, true) }
     val checked = checkedMap[voiceId].orEmpty()
     val lang = currentLang()
     val view = remember(r, voiceId, checked) { partViewFor(composition, voiceId, checked, vm.container.core) }
@@ -182,7 +192,10 @@ fun ReviewScreen(vm: PlayViewModel) {
     val grouped = composition.review?.filter { it.voice == voiceId }?.takeIf { it.isNotEmpty() }
     val allItems = remember(view, grouped) { reviewGroups(composition, voiceId, view) }
     // Triage: the very unsure first, then in bar order; skipped items go to the back of the queue.
-    var skipped by rememberSaveable(voiceId) { mutableStateOf(listOf<Int>()) }
+    // The notes put off stay put off, also when a "?" on the score opened it in the same part.
+    var skipped by rememberSaveable(voiceId) {
+        mutableStateOf(place?.takeIf { seeding[0] && it.voice == voiceId }?.skipped ?: listOf()).also { seeding[0] = false }
+    }
     val items = allItems.filter { g -> g.members.any { it.index !in checked } }
         .sortedWith(compareBy({ skipped.indexOf(it.head.index) }, { if (it.very) 0 else 1 }, { it.head.index }))
     val groupOf = items.associateBy { it.head.index }
@@ -194,8 +207,14 @@ fun ReviewScreen(vm: PlayViewModel) {
     val bars = view.bars
     val partName = if (lang == Lang.NB) view.partNameNb else view.partName
     // The note being checked: the head of the queue, or the one picked from "Still to check".
-    var picked by rememberSaveable(voiceId) { mutableStateOf<Int?>(null) }
+    var picked by rememberSaveable(voiceId) {
+        mutableStateOf(
+            if (!seeding[1]) null
+            else target?.let { itemAt(items, composition, it.bar, it.quarters)?.head?.index } ?: resume?.takeIf { it.voice == voiceId }?.index
+        ).also { seeding[1] = false }
+    }
     val current = todo.firstOrNull { it.index == picked } ?: todo.firstOrNull()
+    LaunchedEffect(voiceId, current?.index, skipped) { vm.keepReviewPlace(no.brasscribe.play.ReviewPlace(voiceId, current?.index, skipped)) }
     var confirmLater by remember { mutableStateOf(false) }
     // Keep, Skip or picking another note moves to another bar: what was playing stops.
     LaunchedEffect(current?.index) { vm.stopListening(announce = false) }
@@ -467,6 +486,25 @@ private fun PartChips(
 
 /** One thing to check: the group's first marked note ([head]), every note in it, and its bars. */
 data class ReviewGroup(val head: PartEvent, val members: List<PartEvent>, val very: Boolean, val bars: IntRange)
+
+/**
+ * The item of [items] with a note in [bar] nearest [quarters] quarter notes into it: the "?" tapped on the score. Null
+ * when nothing in that bar is still to check.
+ */
+fun itemAt(items: List<ReviewGroup>, composition: Composition, bar: Int, quarters: Double): ReviewGroup? {
+    val map = no.brasscribe.play.model.TickMap(composition)
+    fun distance(e: PartEvent): Double =
+        e.note?.let { kotlin.math.abs((it.start - map.barStart(bar)).toDouble() / composition.ticksPerBeat - quarters) } ?: Double.MAX_VALUE
+    return items.mapNotNull { g -> g.members.filter { it.bar == bar }.minOfOrNull(::distance)?.let { g to it } }.minByOrNull { it.second }?.first
+}
+
+/** The recording layer that [part] (as the score names it) follows, for Check the notes; null for an arranged part. */
+private fun voiceOfPart(vm: PlayViewModel, r: no.brasscribe.play.TranscriptionResult, composition: Composition, part: String): String? {
+    val names = no.brasscribe.play.model.MusicXmlParts.names(r.musicXml).map { it.replace('\u00A0', ' ').trim() }
+    val clean = part.replace('\u00A0', ' ').trim()
+    val lead = no.brasscribe.play.YourParts.leadPart(composition, names, vm.container.core::seatPart)
+    return no.brasscribe.play.YourParts.voiceOf(clean, lead, vm.partSources(r)[clean], composition)
+}
 
 /**
  * The review items of one voice: the engine's groups (`Composition.review`) when it made them, else

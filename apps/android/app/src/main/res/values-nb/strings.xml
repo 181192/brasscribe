@@ -362,6 +362,7 @@
     <string name="action_prev_part">Forrige stemme</string>
     <string name="action_read_bar">Les takten</string>
     <string name="action_play_bar">Spill av denne takten</string>
+    <string name="action_check_marks">Sjekk ?-tonene i denne takten</string>
     <string name="player_loading">Åpner partituret</string>
     <string name="player_playing">Spiller</string>
     <string name="player_paused">Satt på pause</string>

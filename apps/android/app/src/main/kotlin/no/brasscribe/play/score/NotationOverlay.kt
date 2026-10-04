@@ -32,6 +32,8 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
     var loop: IntRange? = null
     var ring: Beat? = null
     var palette: ScorePalette? = null
+    /** A tap on a mark: its beat. Null leaves every tap to alphaTab (the music stand). */
+    var onMark: ((Beat) -> Unit)? = null
 
     private val density = context.resources.displayMetrics.density
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -134,6 +136,74 @@ class NotationOverlay(context: Context, private val tab: AlphaTabView, private v
             caret.moveTo(cx, bottom); caret.lineTo(cx - 0.7f * ss, bottom + 0.9f * ss); caret.lineTo(cx + 0.7f * ss, bottom + 0.9f * ss); caret.close()
             canvas.drawPath(caret, fill)
         }
+    }
+
+    /** A mark as drawn: its beat, the centre of its "?" and the top of its staff, in this view's pixels. */
+    class MarkSpot(val beat: Beat, val centre: android.graphics.PointF, val staffTop: Float)
+
+    /** Every mark as drawn (each place its beat is drawn, at its first note head): the same layout as [onDraw]. */
+    fun markSpots(): List<MarkSpot> {
+        val lookup = tab.api.boundsLookup ?: return emptyList()
+        val ss = staffSpacePx
+        val markH = 1.6f * ss
+        val out = ArrayList<MarkSpot>()
+        for (beat in marks.keys) {
+            val all = lookup.findBeats(beat) ?: continue
+            for (i in 0 until all.length.toInt()) {
+                val bb = all[i]
+                val staffTop = (bb.barBounds.visualBounds.y * f).toFloat()
+                var top = minOf(staffTop, (bb.visualBounds.y * f).toFloat())
+                var cx = ((bb.onNotesX.takeIf { it > 0 } ?: (bb.visualBounds.x + bb.visualBounds.w / 2)) * f).toFloat()
+                val notes = bb.notes
+                if (notes != null && notes.length > 0) for (j in 0 until notes.length.toInt()) {
+                    val h = notes[j].noteHeadBounds
+                    top = minOf(top, (h.y * f).toFloat())
+                    if (j == 0) cx = ((h.x + h.w / 2) * f).toFloat()
+                }
+                out += MarkSpot(beat, android.graphics.PointF(cx, top - 0.4f * ss - markH / 2), minOf(staffTop, top))
+            }
+        }
+        return out
+    }
+
+    /** Where each mark is drawn: its beat, and the centre of its "?". */
+    fun markCentres(): List<Pair<Beat, android.graphics.PointF>> = markSpots().map { it.beat to it.centre }
+
+    /**
+     * The mark whose 48 dp target holds ([x], [y]), the nearest when targets overlap. The target stops at the top of the
+     * staff (and of the notes above it): a tap on the music itself is alphaTab's (the cursor, a bar to select).
+     */
+    private fun markAt(x: Float, y: Float): Beat? {
+        val half = 24 * density
+        return markSpots().filter { s -> kotlin.math.abs(s.centre.x - x) <= half && kotlin.math.abs(s.centre.y - y) <= half && y < s.staffTop }
+            .minByOrNull { s -> (s.centre.x - x) * (s.centre.x - x) + (s.centre.y - y) * (s.centre.y - y) }?.beat
+    }
+
+    private var pressed: Beat? = null
+
+    /**
+     * A tap on a mark opens it ([onMark]); any other touch, and a drag that starts on a mark (the score scrolls, and its
+     * scroll view takes the gesture), is left to alphaTab and the scroll view.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(e: android.view.MotionEvent): Boolean {
+        if (under || onMark == null) return false
+        when (e.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> { pressed = markAt(e.x, e.y); return pressed != null }
+            android.view.MotionEvent.ACTION_UP -> {
+                val beat = pressed
+                pressed = null
+                if (beat != null && markAt(e.x, e.y) === beat) { performClick(); onMark?.invoke(beat) }
+                return beat != null
+            }
+            android.view.MotionEvent.ACTION_CANCEL -> pressed = null
+        }
+        return pressed != null
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        return true
     }
 
     private var surface: View? = null
