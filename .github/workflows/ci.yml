@@ -297,12 +297,6 @@ jobs:
             echo "Views changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # Report-only for now: two CI attempts on one commit do not yet take the same pictures (#219). Changed views
-          # are shown in the summary and the artefact; the checks (2) and the base (3) still fail the job.
-          if [ "$STATUS" = 1 ]; then
-            echo "Views changed (shown above and in the studio-screenshots artefact). Not failing the job while the comparison is report-only (#219)." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
           exit "${STATUS:-1}"
 
       - name: Screen catalogue

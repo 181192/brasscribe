@@ -47,6 +47,7 @@ private val COPY = mapOf(
     Problem.DRAFT_TOO_LONG to ProblemCopy(R.string.draft_too_long_title, R.string.draft_too_long_body, emptyList(), R.string.draft_too_long_kept),
     Problem.DRAFT_REFUSED to ProblemCopy(R.string.draft_refused_title, R.string.draft_refused_body, emptyList(), R.string.draft_too_long_kept),
     Problem.NO_NOTES to ProblemCopy(R.string.problem_no_notes_title, R.string.problem_no_notes_body, emptyList(), null),
+    Problem.SHEET_MUSIC to ProblemCopy(R.string.problem_sheet_music_title, R.string.problem_sheet_music_body, emptyList(), null),
 )
 
 /**
@@ -111,6 +112,11 @@ fun ProblemScreen(vm: PlayViewModel) {
                 }
                 Problem.NOTHING_HEARD -> {
                     PrimaryButton(stringResource(R.string.problem_import_instead), { pickFile.launch(AUDIO_TYPES) }, primary, icon = R.drawable.ic_bc_import_file)
+                    SecondaryButton(stringResource(R.string.home_record_mic), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
+                }
+                // Nothing was wrong with the file: the ways forward are the two Home starts with.
+                Problem.SHEET_MUSIC -> {
+                    PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, primary, icon = R.drawable.ic_bc_import_file)
                     SecondaryButton(stringResource(R.string.home_record_mic), { vm.home(); recorder.startMicrophone() }, icon = R.drawable.ic_bc_record_mic)
                 }
                 else -> {

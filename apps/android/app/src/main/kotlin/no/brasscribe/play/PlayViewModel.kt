@@ -61,7 +61,7 @@ import java.util.zip.ZipInputStream
 enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES }
+enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES, SHEET_MUSIC }
 
 /** [r] is to be checked note by note, and holds no note to check: it opens on the problem screen instead. */
 fun foundNoNotes(r: TranscriptionResult, then: Screen): Boolean =
@@ -612,7 +612,18 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             // Asking the provider for the name can block on its process: not on the main thread.
             val name = withContext(Dispatchers.IO) { displayName(uri, "recording") }
-            if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return@launch }
+            if (Product.OPENS_SCORES) {
+                if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return@launch }
+            } else {
+                // A product that opens no sheet music (Fretscribe, until imported tabs open in the tab view) says so, on a
+                // screen of its own: a file that arrives from the share sheet or "Open with" can be here before Home is
+                // drawn. The file's name need not say what it is, so its type and its first bytes are asked too.
+                val sheetMusic = withContext(Dispatchers.IO) {
+                    val type = runCatching { ctx.contentResolver.getType(uri) }.getOrNull()
+                    SheetMusic.isSheetMusic(name, type) { ctx.contentResolver.openInputStream(uri) }
+                }
+                if (sheetMusic) { busy.value = false; showProblem(Problem.SHEET_MUSIC); return@launch }
+            }
             importProgress.value = 0f
             say(R.string.reading_file, name)
             try {

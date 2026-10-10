@@ -19,6 +19,8 @@
     <string name="home_tagline">Spill det, ta det opp, eller åpne en fil. Bandroom på datamaskinen skriver ned tonene.</string>
     <string name="home_record_mic_desc">Spill et riff eller en hel sang</string>
     <string name="home_open_score">Åpne en tab</string>
+    <string name="problem_sheet_music_title">Fretscribe kan ikke åpne noter ennå</string>
+    <string name="problem_sheet_music_body">Den lager tabber fra opptak. Åpne et opptak, eller spill inn det du spiller.</string>
     <string name="home_open_score_desc">En MusicXML-fil fra MuseScore eller Guitar Pro</string>
     <string name="home_scores_empty">Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak.</string>
     <string name="home_your_scores">Sangene dine</string>
