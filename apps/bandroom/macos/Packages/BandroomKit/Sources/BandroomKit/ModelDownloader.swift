@@ -415,21 +415,35 @@ public final class ModelDownloader {
 /// Passes on at most one value per `interval`; a value held back goes out when the interval ends, so the
 /// last one is never lost (a stalled download still shows where it stopped).
 final class Throttle<Value: Sendable>: @unchecked Sendable {
+    /// Runs `work` once, `delay` from now.
+    typealias Later = @Sendable (_ delay: Duration, _ work: @escaping @Sendable () -> Void) -> Void
+
     private let interval: Duration
     private let sink: @Sendable (Value) -> Void
     private let lock = NSLock()
-    private let clock = ContinuousClock()
+    private let now: @Sendable () -> ContinuousClock.Instant
+    private let later: Later
     private var last: ContinuousClock.Instant?
     private var latest: Value?
     private var pending = false
 
-    init(interval: Duration, sink: @escaping @Sendable (Value) -> Void) {
-        self.interval = interval; self.sink = sink
+    /// `now` and `later` are the time it goes by: the system's, unless a test brings its own.
+    init(interval: Duration, now: @escaping @Sendable () -> ContinuousClock.Instant = { ContinuousClock.now },
+         later: @escaping Later = Throttle.onTheGlobalQueue, sink: @escaping @Sendable (Value) -> Void) {
+        self.interval = interval; self.now = now; self.later = later; self.sink = sink
+    }
+
+    static var onTheGlobalQueue: Later {
+        { delay, work in
+            let (seconds, atto) = delay.components
+            let nanos = Int(seconds * 1_000_000_000 + atto / 1_000_000_000)
+            DispatchQueue.global().asyncAfter(deadline: .now() + .nanoseconds(nanos), execute: work)
+        }
     }
 
     func offer(_ value: Value) {
         lock.lock()
-        let now = clock.now
+        let now = now()
         guard let last, now - last < interval else {
             self.last = now
             latest = nil
@@ -442,14 +456,12 @@ final class Throttle<Value: Sendable>: @unchecked Sendable {
         pending = true
         let wait = interval - (now - last)
         lock.unlock()
-        let (seconds, atto) = wait.components
-        let nanos = Int(seconds * 1_000_000_000 + atto / 1_000_000_000)
-        DispatchQueue.global().asyncAfter(deadline: .now() + .nanoseconds(nanos)) { [self] in
+        later(wait) { [self] in
             lock.lock()
             let value = latest
             latest = nil
             pending = false
-            self.last = clock.now
+            self.last = self.now()
             lock.unlock()
             if let value { sink(value) }
         }

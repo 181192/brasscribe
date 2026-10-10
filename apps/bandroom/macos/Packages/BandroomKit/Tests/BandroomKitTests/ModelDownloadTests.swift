@@ -517,21 +517,96 @@ func sha256Hex(_ d: Data) -> String { SHA256.hash(data: d).map { String(format: 
 }
 
 @Suite struct ThrottleTests {
-    final class Box: @unchecked Sendable {
-        let lock = NSLock()
-        var values: [Int] = []
+    /// The time a throttle goes by, moved by the test: no real time passes, so a busy machine changes nothing.
+    final class Time: @unchecked Sendable {
+        private let lock = NSLock()
+        private var instant = ContinuousClock.now
+        private var waiting: [(due: ContinuousClock.Instant, work: @Sendable () -> Void)] = []
+
+        var now: ContinuousClock.Instant { lock.withLock { instant } }
+        /// How many pieces of work wait for their time.
+        var held: Int { lock.withLock { waiting.count } }
+
+        func later(_ delay: Duration, _ work: @escaping @Sendable () -> Void) {
+            lock.withLock { waiting.append((instant + delay, work)) }
+        }
+
+        /// Moves the time on, and runs what has come due by then.
+        func pass(_ duration: Duration) {
+            let due = lock.withLock {
+                instant += duration
+                let due = waiting.filter { $0.due <= instant }
+                waiting.removeAll { $0.due <= instant }
+                return due
+            }
+            for d in due { d.work() }
+        }
     }
 
-    @Test func holdsBackBurstsButDeliversTheLastValue() async throws {
-        let box = Box()
-        let t = Throttle<Int>(interval: .milliseconds(100)) { v in box.lock.withLock { box.values.append(v) } }
+    final class Box: @unchecked Sendable {
+        private let lock = NSLock()
+        private var seen: [Int] = []
+        var values: [Int] { lock.withLock { seen } }
+        func add(_ v: Int) { lock.withLock { seen.append(v) } }
+    }
+
+    private func throttle(_ time: Time, _ box: Box) -> Throttle<Int> {
+        Throttle<Int>(interval: .milliseconds(100), now: { time.now }, later: { time.later($0, $1) }) { box.add($0) }
+    }
+
+    @Test func holdsBackBurstsButDeliversTheLastValue() {
+        let time = Time(), box = Box()
+        let t = throttle(time, box)
         for i in 1...1000 { t.offer(i) }
-        // The last value comes after the interval, later still on a busy machine: wait for it, not for a fixed time.
-        let clock = ContinuousClock()
-        let deadline = clock.now + .seconds(10)
-        while box.lock.withLock({ box.values.count }) < 2, clock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }
-        // Nothing more follows it.
-        try await Task.sleep(for: .milliseconds(150))
-        #expect(box.lock.withLock { box.values } == [1, 1000])
+        // The first goes out at once; the rest wait as one, for the interval's end.
+        #expect(box.values == [1])
+        #expect(time.held == 1)
+        time.pass(.milliseconds(99))
+        #expect(box.values == [1])
+        time.pass(.milliseconds(1))
+        #expect(box.values == [1, 1000])
+        #expect(time.held == 0)
+    }
+
+    @Test func aValueAfterAQuietIntervalGoesOutAtOnce() {
+        let time = Time(), box = Box()
+        let t = throttle(time, box)
+        t.offer(1)
+        time.pass(.milliseconds(100))
+        t.offer(2)
+        #expect(box.values == [1, 2])
+        #expect(time.held == 0)
+    }
+
+    @Test func theIntervalStartsAgainWhenAHeldValueGoesOut() {
+        let time = Time(), box = Box()
+        let t = throttle(time, box)
+        t.offer(1)
+        time.pass(.milliseconds(40))
+        t.offer(2)
+        // Held for the 60 ms left of the first interval.
+        time.pass(.milliseconds(60))
+        #expect(box.values == [1, 2])
+        // Within an interval of the 2: held back again, and out when that interval ends.
+        time.pass(.milliseconds(50))
+        t.offer(3)
+        #expect(box.values == [1, 2])
+        time.pass(.milliseconds(50))
+        #expect(box.values == [1, 2, 3])
+    }
+
+    /// The time it goes by in the app: a held value does come out by the system's clock and queue. Waits for the value
+    /// itself, however long the machine takes.
+    @Test func withTheSystemsTimeAHeldValueComesOut() async {
+        let (stream, continuation) = AsyncStream<Int>.makeStream()
+        let t = Throttle<Int>(interval: .milliseconds(20)) { continuation.yield($0) }
+        t.offer(1)
+        t.offer(2)
+        var seen: [Int] = []
+        for await v in stream {
+            seen.append(v)
+            if seen.count == 2 { break }
+        }
+        #expect(seen == [1, 2])
     }
 }
