@@ -2,6 +2,19 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.8.1 (2026-10-10)
+
+### Fixes
+
+- **Android:** The release build sets sfizz up for one ABI at a time ([#325](https://github.com/181192/brasscribe/pull/325))
+
+<details><summary>Under the hood (1 change: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Deps:** The Basic Pitch conversion tool locks Werkzeug 3.1.9 ([#323](https://github.com/181192/brasscribe/pull/323))
+
+</details>
+
 ## 0.8.0 (2026-10-10)
 
 ### New features
