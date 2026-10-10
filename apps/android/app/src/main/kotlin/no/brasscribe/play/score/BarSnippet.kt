@@ -23,6 +23,9 @@ class BarSnippet(context: Context) {
     private var loadedXml: String? = null
 
     init {
+        // A picture of the bar, not a control: alphaTab's scroll views take no keyboard focus (Tab went into them from the
+        // top bar, past the part chips above).
+        view.descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
         view.settings.apply {
             display.layoutMode = LayoutMode.Horizontal
             display.scale = 0.9

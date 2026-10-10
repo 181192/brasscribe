@@ -2,7 +2,11 @@ package no.brasscribe.play
 
 import android.app.UiAutomation
 import android.graphics.Bitmap
+import android.view.KeyEvent
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -22,6 +26,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.model.ArrangeOptions
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -65,6 +70,53 @@ class ScorePortraitTest : ScreenTest() {
         }
         waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }
         settle()
+    }
+
+    /**
+     * With a keyboard, Tab goes from the top bar to the part picker and what else is above the score, then to the score
+     * (one stop, which says it has the focus), then to the player. On the score, Page Down and the arrows scroll the page.
+     */
+    @Test
+    fun tabReachesTheControlsAboveTheScoreBeforeTheScore() {
+        openSmallBand()
+        val c = vm.scoreController!!
+        val renders = c.renders.value
+        rule.runOnUiThread { c.setZoom(200) }
+        waitUntil(30_000) { c.renders.value > renders && !c.engraving.value }
+        settle()
+        fun focusedTag() = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)).fetchSemanticsNodes()
+            .lastOrNull()?.config?.getOrNull(SemanticsProperties.TestTag)
+        ScreenDevice.keyboard(rule)
+        val stops = mutableListOf<String?>()
+        repeat(20) {
+            if (stops.lastOrNull() != "play") {
+                key(KeyEvent.KEYCODE_TAB)
+                // (Every stop has its focus in its semantics: none is a view of alphaTab's own.)
+                stops += focusedTag() ?: "(${focusedWords().ifEmpty { "nothing the screen knows of" }})"
+            }
+        }
+        // (With the lineup's banner there the Music stand has no room above the score: it is in the top bar's sheet.)
+        val known = stops.filter { it in setOf("top-more", "part-picker", "mapped-close", "score-view", "play") }
+        assertEquals("Tab went $stops", listOf("top-more", "part-picker", "mapped-close", "score-view", "play"), known)
+        assertFalse("Tab went into something the screen does not know of: $stops", stops.any { it!!.startsWith("(nothing") })
+
+        // Back on the score: the page scrolls with the keys.
+        key(KeyEvent.KEYCODE_TAB, KeyEvent.META_SHIFT_ON)
+        assertEquals("score-view", focusedTag())
+        val page = c.view.findViewById<android.widget.ScrollView>(net.alphatab.R.id.innerScroll)
+        assertTrue("the page is no taller than its view at 200 %", page.canScrollVertically(1))
+        key(KeyEvent.KEYCODE_PAGE_DOWN)
+        val paged = page.scrollY
+        assertTrue("Page Down did not scroll the score", paged > 0)
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        assertTrue("the Up arrow did not scroll the score back ($paged, then ${page.scrollY})", page.scrollY < paged)
+        assertEquals("score-view", focusedTag())
+        key(KeyEvent.KEYCODE_MOVE_END)
+        assertFalse("End did not go to the end of the score", page.canScrollVertically(1))
+        key(KeyEvent.KEYCODE_MOVE_HOME)
+        assertEquals("Home did not go to the top of the score", 0, page.scrollY)
+        // The focus shows: a ring round the score.
+        shot("score-focused")
     }
 
     private fun check(label: String, fontScale: String) {

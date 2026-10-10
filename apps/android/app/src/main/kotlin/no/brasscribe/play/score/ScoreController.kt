@@ -132,6 +132,9 @@ class ScoreController(
     private val innerScroll: android.widget.ScrollView? = view.findViewById(net.alphatab.R.id.innerScroll)
 
     init {
+        // alphaTab's own scroll views take no keyboard focus. A focusable view inside the screen is where Tab goes first
+        // from the top bar, past the controls above the score; the screen gives the score a stop of its own, in its place.
+        view.descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
         view.settings.apply {
             display.layoutMode = LayoutMode.Page
             player.playerMode = PlayerMode.EnabledSynthesizer
@@ -229,7 +232,6 @@ class ScoreController(
         }
         view.settings.player.enableUserInteraction = !on
         view.api.updateSettings()
-        view.descendantFocusability = if (on) android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS else android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
         if (_state.value.loaded) askToRender { view.api.render() }
     }
 
@@ -281,6 +283,26 @@ class ScoreController(
 
     /** Height of the engraving in view pixels. */
     fun standContentHeight(): Float = view.findViewById<android.view.View>(net.alphatab.R.id.renderSurface)?.height?.toFloat() ?: 0f
+
+    /**
+     * Scrolls the page by [screens] of what shows of it (negative: up), for the keyboard. False when the page is
+     * already at that end.
+     */
+    fun scrollPage(screens: Float): Boolean {
+        val scroll = innerScroll ?: return false
+        if (!scroll.canScrollVertically(if (screens > 0) 1 else -1)) return false
+        scroll.scrollBy(0, (screens * scroll.height).toInt())
+        return true
+    }
+
+    /** Scrolls the page to its end, or to its top, for the keyboard. False when it is already there. */
+    fun scrollToEnd(end: Boolean): Boolean {
+        val scroll = innerScroll ?: return false
+        if (!scroll.canScrollVertically(if (end) 1 else -1)) return false
+        // (ScrollView keeps the place inside the page.)
+        scroll.scrollTo(0, if (end) scroll.getChildAt(0)?.height ?: 0 else 0)
+        return true
+    }
 
     /** Shows the stand's window from [y] view pixels down. */
     fun scrollStandTo(y: Int) { innerScroll?.scrollTo(0, y.coerceAtLeast(0)) }
