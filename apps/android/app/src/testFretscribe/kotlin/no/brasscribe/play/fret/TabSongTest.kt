@@ -369,7 +369,7 @@ class TabSongTest {
             assertFalse(dir, Regex("guess|gjett").containsMatchIn(text("fs_what_hint").orEmpty()))
             // Every word this path can show is Fretscribe's, in both languages.
             for (name in listOf("error_core_missing", "error_unreachable", "error_engine_failed", "error_invalid_options", "where_companion_missing",
-                "problem_score_title", "problem_score_body", "transcribe_leave_computer", "transcribe_leave_computer_quiet", "transcribe_where_companion", "transcribe_done", "transcribe_cancel_title",
+                "problem_score_title", "problem_score_body", "transcribe_leave", "transcribe_leave_computer", "transcribe_leave_computer_quiet", "transcribe_where_companion", "transcribe_done", "transcribe_cancel_title",
                 "stage_beats", "stage_stems", "stage_transcribe", "stage_quantize", "stage_arrange", "stage_export")) {
                 val t = text(name)
                 assertTrue("$dir $name", t != null && !t.contains("Brasscribe") && !Regex("score|partitur|band(?!room)", RegexOption.IGNORE_CASE).containsMatchIn(t))

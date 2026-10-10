@@ -4,34 +4,71 @@ import android.Manifest
 import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
+import androidx.lifecycle.Lifecycle
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import no.brasscribe.play.engine.JobStatus
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.screen.ScreenTest
 import org.junit.After
+import org.junit.Before
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
 
 /**
  * A job on the computer goes on while the player is away from the app, and a notification says when it is done: the
  * transcribing screen says the player may leave, notifications are asked for once at the first such job, the job is
  * handed to the service that follows it, "ready" is posted only while the app is away, and its tap opens the score or
- * the tab. (The service in the foreground is a device's; on the JVM its start, its notice and the tap are checked.)
+ * the tab. The service runs here as on a phone ([phoneRunsTheService]): it is started in the foreground once, is told
+ * of the job in the process, and is in the foreground only while a recording is sent or a job is followed.
  */
 @RunWith(AndroidJUnit4::class)
 class ReadyNotificationTest : ScreenTest() {
     private val app get() = rule.activity.application
     private var pace = 0.0
 
+    /** Every start of the service in the foreground, and the services so started. */
+    private var starts = 0
+    private val services = mutableListOf<ComputerJobService>()
+    private val service get() = services.last()
+
+    /**
+     * The service as a phone runs it: a start in the foreground creates it and brings it there, and one asked for while
+     * the app is away is refused (as from Android 12).
+     */
+    private fun phoneRunsTheService() {
+        ComputerJobService.startInForeground = {
+            starts++
+            if (!AppInFront.now) throw IllegalStateException("startForegroundService() not allowed: the app is in the background")
+            services += Robolectric.buildService(ComputerJobService::class.java).create().also { it.startCommand(0, starts) }.get()
+        }
+    }
+
+    private fun stopped(s: ComputerJobService = service) = shadowOf(s).isStoppedBySelf && shadowOf(s).isForegroundStopped
+    private fun held() = ComputerJobService.held.value
+    private fun leaveTheApp() = rule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+    private fun comeBack() = rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+    private fun ready() = shadowOf(app.getSystemService(NotificationManager::class.java)).allNotifications.filter { it.channelId == JobNotices.CHANNEL_DONE }
+
+    @Before
+    fun noServiceYet() = ComputerJobService.forget()
+
     @After
     fun clean() {
+        if (!AppInFront.now) comeBack()
         rule.runOnUiThread { vm.cancelTranscription(); vm.keptRecordings.value.forEach(vm::deleteKept); vm.scores.value.forEach(vm::deleteEntry); vm.home() }
+        rule.waitForIdle()
+        ComputerJobService.forget()
         if (pace > 0) container.fixtureStageSeconds = pace
         container.fixtureSource = null
     }
@@ -39,19 +76,26 @@ class ReadyNotificationTest : ScreenTest() {
     private val tab = Product.NAME == "Fretscribe"
     private val profile = if (tab) Profile.TAB else Profile.BRASS_BAND
 
-    private fun send(slow: Boolean) {
+    /** A recording opened and said what it is, with the computer chosen: Make the score is next. */
+    private fun opened(slow: Boolean) {
         computer(if (tab) "bass-line" else "old-hundredth")
         if (pace == 0.0) pace = container.fixtureStageSeconds
         if (slow) container.fixtureStageSeconds = 60.0
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(recording())) }
         waitUntil(20_000) { vm.screen.value.last() == Screen.PROFILE }
-        rule.runOnUiThread { vm.chooseProfile(profile); vm.where.value = Where.COMPANION; vm.startTranscription() }
+        rule.runOnUiThread { vm.chooseProfile(profile); vm.where.value = Where.COMPANION }
+    }
+
+    private fun send(slow: Boolean) {
+        opened(slow)
+        rule.runOnUiThread { vm.startTranscription() }
         waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE && vm.transcribe.value.running && vm.transcribe.value.step != Step.UPLOAD }
         rule.waitForIdle()
     }
 
     @Test
     fun theFirstJobOnTheComputerAsksOnceAndSaysThePlayerMayLeave() {
+        phoneRunsTheService()
         container.notificationsAsked = false
         shadowOf(app).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
         send(slow = true)
@@ -62,12 +106,16 @@ class ReadyNotificationTest : ScreenTest() {
         val leave = if (tab) "You can switch to another app: when the tab is ready, it is in Your songs" else "You can switch to another app: when the score is ready, it is in Your scores"
         assertTrue(quiet, quiet.contains(leave))
         assertFalse(quiet, quiet.contains("open until"))
-        // The service is in the foreground before the recording is sent (the screen already says the player may leave),
-        // and is handed the job once it is made.
-        val starts = generateSequence { shadowOf(app).nextStartedService }.filter { it.component?.className == ComputerJobService::class.java.name }.toList()
-        assertTrue("started before the upload, then with the job (${starts.map { it.getStringExtra("job") }})",
-            starts.size >= 2 && starts.first().getStringExtra("job") == null && starts.last().getStringExtra("job") != null)
+        // The service was started in the foreground once, and has the job that was made.
+        assertEquals(1, starts)
+        assertEquals(1, held().jobs.size)
+        assertFalse(held().sending)
+        assertNotNull(shadowOf(service).lastForegroundNotification)
+        assertFalse(stopped())
+        // Stop: nothing left to follow, and the service is out of the foreground.
         rule.runOnUiThread { vm.cancelTranscription(); vm.home() }
+        waitUntil { stopped() }
+        assertTrue(held().jobs.isEmpty())
 
         // Allowed: the screen says the app tells the player, and nothing is asked again.
         shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
@@ -76,6 +124,117 @@ class ReadyNotificationTest : ScreenTest() {
         val told = shown()
         assertTrue(told, told.contains(if (tab) "Fretscribe tells you when the tab is ready, or soon after if the phone is asleep." else "Brasscribe tells you when the score is ready, or soon after if the phone is asleep."))
         assertTrue("asked once", shadowOf(rule.activity).lastRequestedPermission === asked)
+    }
+
+    @Test
+    fun aJobMadeAfterThePlayerLeftIsFollowedWithNoSecondStartInTheForeground() {
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        phoneRunsTheService()
+        opened(slow = false)
+        // Make the score, and away at once: the recording is still being sent, and the job is made with the app away.
+        rule.runOnUiThread { vm.startTranscription() }
+        assertEquals(1, starts)
+        assertTrue(held().sending && held().jobs.isEmpty())
+        leaveTheApp()
+        val first = service
+        waitUntil(60_000) { ready().isNotEmpty() && stopped(first) }
+        // One start in the foreground for the whole job (a second one, from the background, is refused); "ready" once,
+        // for the job that was made; and the service out of the foreground with nothing held.
+        assertEquals(1, starts)
+        waitUntil(60_000) { vm.result.value?.jobId != null && !vm.transcribe.value.running }
+        val jobId = vm.result.value!!.jobId!!
+        val said = ready().single()
+        assertEquals(text(R.string.notif_ready), said.extras.getCharSequence(android.app.Notification.EXTRA_TITLE).toString())
+        assertEquals(jobId, shadowOf(said.contentIntent).savedIntent.getStringExtra(JobNotices.EXTRA_JOB))
+        assertEquals(ComputerJobService.Held(), held().copy(title = ""))
+
+        // The service by itself, as when the view model no longer follows (the app was closed, or the events were lost):
+        // started in front while a recording is sent, told of the job once the player is away, it says "ready" and stops.
+        comeBack()
+        assertTrue(ready().isEmpty())
+        ComputerJobService.start(app, "Riff")
+        assertEquals(2, starts)
+        leaveTheApp()
+        ComputerJobService.follow(app, jobId, "Riff")
+        assertEquals(2, starts)
+        waitUntil(20_000) { ready().isNotEmpty() && stopped() }
+        assertEquals("Riff", ready().single().extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString())
+
+        // No service runs and the app is away: no start is asked for, and nothing is held as if one ran.
+        ComputerJobService.follow(app, "another-job", "Riff")
+        assertEquals(2, starts)
+        assertEquals(ComputerJobService.Held(), held())
+    }
+
+    @Test
+    fun aSecondJobDoesNotTakeTheFirstJobsPlace() {
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        phoneRunsTheService()
+        // A job that is still running on the computer, followed by the service alone.
+        send(slow = true)
+        val running = held().jobs.keys.single()
+        val finished = runBlocking {
+            val engine = container.engine()!!
+            engine.cancel(engine.createJob(no.brasscribe.play.engine.JobCreate("no-audio", profile.id)).id)
+        }
+        leaveTheApp()
+        // Another is given to it and ends: said, and the first is still followed.
+        ComputerJobService.start(app, "Second")
+        ComputerJobService.follow(app, "gone-job", "Second")
+        assertEquals(setOf(running, "gone-job"), held().jobs.keys)
+        ComputerJobService.release("gone-job")
+        ComputerJobService.follow(app, finished.id, "Third")
+        waitUntil(20_000) { finished.id !in held().jobs }
+        assertEquals(setOf(running), held().jobs.keys)
+        assertFalse(stopped())
+        assertEquals(1, starts)
+        // The first job's end is the service's last: it stops.
+        ComputerJobService.release(running)
+        waitUntil { stopped() }
+    }
+
+    @Test
+    fun theServiceIsLetGoWhenNoJobComesOfSending() {
+        phoneRunsTheService()
+        // Sending fails before anything is sent: out of the foreground again.
+        val failed = runCatching { runBlocking { ComputerJobService.whileSending<Unit>(app, "Riff") { throw java.io.IOException("no file") } } }
+        assertTrue(failed.exceptionOrNull() is java.io.IOException)
+        assertEquals(1, starts)
+        waitUntil { stopped() }
+        assertEquals(ComputerJobService.Held(), held().copy(title = ""))
+
+        // Cancelled while it sends (the app was closed): the same.
+        val scope = CoroutineScope(Dispatchers.Main.immediate)
+        val sending = scope.launch { ComputerJobService.whileSending<Unit>(app, "Riff") { awaitCancellation() } }
+        assertEquals(2, starts)
+        rule.waitForIdle()
+        assertTrue(held().sending)
+        assertFalse(stopped())
+        sending.cancel()
+        waitUntil { stopped() }
+        assertFalse(held().sending)
+
+        // Cancelled once the job is made and handed over: the service keeps following it (the job goes on on the computer).
+        val following = scope.launch {
+            val id = ComputerJobService.whileSending(app, "Riff") { "a-job" }
+            ComputerJobService.follow(app, id, "Riff")
+            awaitCancellation()
+        }
+        assertEquals(3, starts)
+        following.cancel()
+        rule.waitForIdle()
+        assertEquals(setOf("a-job"), held().jobs.keys)
+        assertFalse(stopped())
+        ComputerJobService.release("a-job")
+        waitUntil { stopped() }
+
+        // The same from the screen: a recording that cannot be read is not sent, and nothing stays in the foreground.
+        opened(slow = false)
+        rule.runOnUiThread { vm.source.value!!.file!!.delete(); vm.startTranscription() }
+        assertEquals(4, starts)
+        waitUntil(20_000) { !vm.transcribe.value.running && stopped() }
+        assertEquals(4, starts)
+        assertTrue(held().jobs.isEmpty() && !held().sending)
     }
 
     @Test

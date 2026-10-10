@@ -17,10 +17,14 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import no.brasscribe.play.engine.Job
 import no.brasscribe.play.engine.JobStatus
@@ -33,100 +37,199 @@ import no.brasscribe.play.engine.JobStatus
  * follows the job's events and shows its steps. This service is what keeps it going once the player leaves: it is in
  * the foreground with a quiet notification (type `dataSync`: it sends the recording and fetches the job's state), so
  * the phone neither freezes the app nor ends it. It starts before the recording is sent, so the upload goes on too, and
- * once the job is made it asks the computer for it ([JobFollow]). When the job ends while no screen of the app is in
+ * once the job is made it is told so and asks the computer for it ([JobFollow]); it follows each job it is given until
+ * that job ends, and stops when none is left. When a job ends while no screen of the app is in
  * front, it posts "ready" (or "couldn't be made"); a tap opens the score or the tab. When the computer stays away too
  * long it stops and says the score will be in Your scores once the computer is back. A job that ends while the app is
  * in front, or that the player stopped, posts nothing.
  */
 class ComputerJobService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var following: String? = null
-    private var follow: kotlinx.coroutines.Job? = null
+    /** The jobs it asks the computer about, each on its own. */
+    private val follows = mutableMapOf<String, kotlinx.coroutines.Job>()
+    private var watching: kotlinx.coroutines.Job? = null
+    private var shownTitle: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val jobId = intent?.getStringExtra(EXTRA_JOB)
-        val title = intent?.getStringExtra(EXTRA_TITLE).orEmpty()
         JobNotices.channels(this)
-        val notification = NotificationCompat.Builder(this, JobNotices.CHANNEL_WORKING)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(getString(R.string.notif_job_working))
-            .setContentText(title.ifBlank { null })
-            .setOngoing(true)
-            .setContentIntent(JobNotices.openApp(this, null))
-            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setPublicVersion(JobNotices.publicVersion(this, JobNotices.CHANNEL_WORKING, getString(R.string.notif_job_working)))
-            .build()
+        val title = held.value.title
         // Always first: a service started with startForegroundService that never reaches the foreground ends the app.
         // A refusal (the type's time for the day is used up) leaves the job to the view model while the app is in front.
         val entered = runCatching {
-            ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, working(title), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         }.onFailure { android.util.Log.w("BrasscribePlay", "job service not in the foreground", it) }
         starting = false
-        if (entered.isFailure) { stopWhenStarted = false; stopSelf(); return START_NOT_STICKY }
-        // Stopped (the job ended in front, or the player stopped it) while the service was starting: it stops now that it may.
-        if (stopWhenStarted) { stopWhenStarted = false; done(); return START_NOT_STICKY }
-        // The recording is being sent: the service holds the app in the foreground until the job is made.
-        if (jobId == null) return START_NOT_STICKY
-        if (following == jobId) return START_REDELIVER_INTENT
-        following = jobId
-        val container = (application as PlayApplication).container
-        follow?.cancel()
-        follow = scope.launch {
-            val ended = JobFollow.untilEnded({ container.engine()?.job(jobId) })
-            if (following != jobId) return@launch
-            JobNotices.afterFollowing(this@ComputerJobService, jobId, ended, title, inFront = AppInFront.now)
-            done()
-        }
-        return START_REDELIVER_INTENT
+        if (entered.isFailure) { held.value = Held(); stopSelf(); return START_NOT_STICKY }
+        alive = true
+        shownTitle = title
+        // What it holds for is told in the process ([held]), never by another start, so a job made after the player left
+        // reaches it too. Nothing held any more (stopped while it was starting): it stops now that it may.
+        if (watching == null) watching = scope.launch { held.collect(::holdFor) }
+        return START_NOT_STICKY
     }
 
+    /** Follows the jobs of [now], stops following the others, and stops itself when there is nothing left to hold for. */
+    private fun holdFor(now: Held) {
+        if (!now.sending && now.jobs.isEmpty()) return done()
+        follows.keys.filter { it !in now.jobs }.forEach { follows.remove(it)?.cancel() }
+        val container = (application as PlayApplication).container
+        for ((jobId, title) in now.jobs) {
+            if (jobId in follows) continue
+            val follow = scope.launch(start = CoroutineStart.LAZY) {
+                val ended = JobFollow.untilEnded({ container.engine()?.job(jobId) })
+                // Still its to say: the view model has not seen the end first, and the player has not stopped the job.
+                if (jobId !in held.value.jobs) return@launch
+                saidFor = jobId
+                JobNotices.afterFollowing(this@ComputerJobService, jobId, ended, title, inFront = AppInFront.now)
+                follows.remove(jobId)
+                held.update { it.copy(jobs = it.jobs - jobId) }
+            }
+            follows[jobId] = follow
+            follow.start()
+        }
+        if (now.title != shownTitle) {
+            shownTitle = now.title
+            // (Not shown without the permission; the service is in the foreground all the same.)
+            runCatching { getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, working(now.title)) }
+        }
+    }
+
+    private fun working(title: String): Notification = NotificationCompat.Builder(this, JobNotices.CHANNEL_WORKING)
+        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setContentTitle(getString(R.string.notif_job_working))
+        .setContentText(title.ifBlank { null })
+        .setOngoing(true)
+        .setOnlyAlertOnce(true)
+        .setContentIntent(JobNotices.openApp(this, null))
+        .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+        .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+        .setPublicVersion(JobNotices.publicVersion(this, JobNotices.CHANNEL_WORKING, getString(R.string.notif_job_working)))
+        .build()
+
     private fun done() {
-        following = null
+        alive = false
+        // What is told from here on is not this service's: one started after it reads [held] itself.
+        watching = null
+        follows.clear()
+        scope.coroutineContext.cancelChildren()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
-    /** The system's time for the type ran out: the job goes on on the computer, and is listed there when it is done. */
-    override fun onTimeout(startId: Int, fgsType: Int) = done()
+    /** The system's time for the type ran out: the jobs go on on the computer, and are listed there when they are done. */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        held.value = Held()
+        done()
+    }
 
     override fun onDestroy() {
+        // Ended by the system while it held something (not by itself): nothing is held any more.
+        if (watching != null) { alive = false; held.value = Held() }
         scope.cancel()
         super.onDestroy()
     }
 
+    /** What the service is in the foreground for: a recording being sent, and the jobs it follows (id to title). */
+    internal data class Held(val sending: Boolean = false, val jobs: Map<String, String> = emptyMap(), val title: String = "")
+
+    /**
+     * The view model tells the service what to hold for through [held], in the process; only the first start is a start
+     * in the foreground. (A second one, for a job made after the player left the app, is refused from Android 12, and
+     * the service would stay in the foreground with nothing to follow.) The service is in the foreground exactly while
+     * a recording is being sent or a job is followed. All of it is called on the main thread.
+     */
     companion object {
-        private const val EXTRA_JOB = "job"
-        private const val EXTRA_TITLE = "title"
         private const val NOTIFICATION_ID = 3
 
-        /** Asked to start, and not yet in the foreground: it may not be stopped until it is (that would end the app). */
+        internal val held = MutableStateFlow(Held())
+        /** Asked to start, and not yet in the foreground: it stops itself there if nothing is held by then. */
         @Volatile private var starting = false
-        /** Stopped while it was starting: it stops itself once it is in the foreground. */
-        @Volatile private var stopWhenStarted = false
+        /** In the foreground, reading [held]. */
+        @Volatile private var alive = false
+        /** The job whose end the service last spoke for (or kept quiet about, in front): the view model does not repeat it. */
+        @Volatile private var saidFor: String? = null
 
-        /**
-         * Started, while the app is in front, before the recording is sent ([jobId] null) and again once the job is made.
-         * A start the system refuses changes nothing else.
-         */
-        fun start(context: Context, jobId: String?, title: String) {
-            stopWhenStarted = false
-            runCatching {
-                val intent = Intent(context, ComputerJobService::class.java).putExtra(EXTRA_TITLE, title)
-                if (jobId != null) intent.putExtra(EXTRA_JOB, jobId)
-                context.startForegroundService(intent)
-            }.onSuccess { starting = true }.onFailure { android.util.Log.w("BrasscribePlay", "job service not started", it) }
+        /** How the service is started in the foreground (a test puts its own here, to count the starts and run the service). */
+        internal var startInForeground: (Context) -> Unit = ::startService
+
+        private fun startService(context: Context) {
+            context.startForegroundService(Intent(context, ComputerJobService::class.java))
         }
 
         /**
-         * Nothing more to send, follow or say (the player stopped the job, the recording could not be sent, or the job
-         * ended in front). One that is still starting stops itself once it is in the foreground, as `DraftService` does.
+         * The recording of [title] is about to be sent: in the foreground from here, while the app is in front. A start
+         * the system refuses changes nothing else. [follow] or [release] comes after it.
          */
-        fun stop(context: Context) {
-            if (starting) stopWhenStarted = true
-            else runCatching { context.stopService(Intent(context, ComputerJobService::class.java)) }
+        fun start(context: Context, title: String) {
+            val runs = alive || starting
+            held.update { it.copy(sending = true, title = title) }
+            if (!runs) startIt(context, mayStart = true)
+        }
+
+        /**
+         * The job [jobId] is made: the service follows it and says how it ended. A service that runs is told so here,
+         * with no start in the foreground; when none runs (the phone refused it), one is tried only with the app in
+         * front; with none, the view model alone follows the job, as long as the phone lets the app run.
+         */
+        fun follow(context: Context, jobId: String, title: String) {
+            // (Read first: a service told of a job that has ended already says so and stops before this returns.)
+            val runs = alive || starting
+            held.update { it.copy(sending = false, jobs = it.jobs + (jobId to title), title = title) }
+            if (!runs) startIt(context, mayStart = AppInFront.now)
+        }
+
+        /** No service is, or is about to be, in the foreground: one is started if [mayStart], and else nothing is held. */
+        private fun startIt(context: Context, mayStart: Boolean) {
+            if (mayStart) {
+                starting = true
+                runCatching { startInForeground(context.applicationContext) }
+                    .onFailure { starting = false; android.util.Log.w("BrasscribePlay", "job service not started", it) }
+            }
+            // No service: nothing is held.
+            if (!alive && !starting) held.value = Held()
+        }
+
+        /**
+         * The view model has nothing more to send, and [jobId] (when the job was made) is not followed any more: the
+         * player stopped it, the recording could not be sent, or its end was seen. The service stops when that leaves
+         * it nothing to hold for; one that is still starting stops once it is in the foreground, as `DraftService` does.
+         */
+        fun release(jobId: String?) {
+            held.update { it.copy(sending = false, jobs = if (jobId == null) it.jobs else it.jobs - jobId) }
+        }
+
+        /**
+         * The view model saw [job] end, and the service is done with it. With the app in front the screen shows it.
+         * Away, it is said here at once, unless the service has said it already.
+         */
+        fun ended(context: Context, job: Job, title: String) {
+            release(job.id)
+            if (saidFor != job.id) JobNotices.afterFollowing(context, job.id, job, title, inFront = AppInFront.now)
+        }
+
+        /**
+         * Holds the service in the foreground while [send] sends the recording and makes the job. When no job comes of
+         * it (it failed, or was cancelled, as when the app is closed while it sends), the service is let go.
+         */
+        suspend fun <T> whileSending(context: Context, title: String, send: suspend () -> T): T {
+            try {
+                start(context, title)
+                return send()
+            } catch (e: Throwable) {
+                release(null)
+                throw e
+            }
+        }
+
+        /** Nothing held and no service, as in a new process (tests: the companion outlives a test's service). */
+        internal fun forget() {
+            held.value = Held()
+            starting = false
+            alive = false
+            saidFor = null
+            startInForeground = ::startService
         }
     }
 }
