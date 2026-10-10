@@ -165,6 +165,9 @@ class AppContainer(private val context: Context) {
     /** Tests stand in for TalkBack or Switch Access here (the stand keeps its controls); null asks the system. */
     var assistiveOverride: Boolean? by androidx.compose.runtime.mutableStateOf(null)
 
+    /** Tests stand in for TalkBack's touch exploration here (a page then opens at its top); null asks the system. */
+    var touchExplorationOverride: Boolean? by androidx.compose.runtime.mutableStateOf(null)
+
     init {
         // Sound pack folders exist from the first start, so instruments can be copied into them.
         runCatching { no.brasscribe.play.score.SoundPack(context) }
