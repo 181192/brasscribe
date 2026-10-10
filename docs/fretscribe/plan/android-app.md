@@ -26,7 +26,8 @@ Brasscribe's files stay in `src/main`; nothing moves. `MainActivity` calls `Prod
 keeps the same Kotlin type and field names, generated from its own tokens into its own dist. Missing
 roles are aliased (`brass*` from `brand*`, `staff` from `string`, `veryUncertain` from `uncertain`,
 `adlibTint` from `loop-tint`, pink from standard). The neutral rename waits for the quiet moment.
-`design/tokens/build.py` takes `--tokens`, `--out` and `--only`; its defaults are Brasscribe's. The design
+`design/tokens/build.py` writes every brand of `design/tokens/brands.json`, with neutral names beside
+these (`design/tokens/README.md`). The design
 is in `design/fretscribe/`, the research and the plan in `docs/fretscribe/`.
 
 **Tab rendering.** alphaTab from `tab.musicxml`; the `/tab` JSON is the data model for Check the song,

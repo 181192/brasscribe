@@ -75,6 +75,50 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
+            <Color x:Key="ScribeBgColor">#FFFBFAF7</Color>
+            <Color x:Key="ScribeSurfaceColor">#FFF3F1EC</Color>
+            <Color x:Key="ScribeSurfaceRaisedColor">#FFFFFFFF</Color>
+            <Color x:Key="ScribeTextColor">#FF1B1A17</Color>
+            <Color x:Key="ScribeTextMutedColor">#FF5E5A52</Color>
+            <Color x:Key="ScribeBorderColor">#FFE4E1DA</Color>
+            <Color x:Key="ScribeBorderStrongColor">#FF8A857B</Color>
+            <Color x:Key="ScribePrimaryColor">#FF1B1A17</Color>
+            <Color x:Key="ScribeOnPrimaryColor">#FFFBFAF7</Color>
+            <Color x:Key="ScribeSecondaryColor">#FFECE9E2</Color>
+            <Color x:Key="ScribeOnSecondaryColor">#FF1B1A17</Color>
+            <Color x:Key="ScribeBrandColor">#FFA57A2C</Color>
+            <Color x:Key="ScribeBrandTextColor">#FF7A5719</Color>
+            <Color x:Key="ScribeBrandTintColor">#FFF4EBDA</Color>
+            <Color x:Key="ScribeSuccessColor">#FF2E6B3F</Color>
+            <Color x:Key="ScribeWarningColor">#FF8A5A00</Color>
+            <Color x:Key="ScribeErrorColor">#FFB3261E</Color>
+            <Color x:Key="ScribeFocusColor">#FF1B1A17</Color>
+            <Color x:Key="ScribeScrimColor">#66000000</Color>
+            <Color x:Key="ScribeInkColor">#FF121110</Color>
+            <Color x:Key="ScribeLineColor">#FF57534B</Color>
+            <Color x:Key="ScribeUncertainColor">#FF0063A6</Color>
+            <SolidColorBrush x:Key="ScribeBgBrush" Color="{StaticResource ScribeBgColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceBrush" Color="{StaticResource ScribeSurfaceColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceRaisedBrush" Color="{StaticResource ScribeSurfaceRaisedColor}"/>
+            <SolidColorBrush x:Key="ScribeTextBrush" Color="{StaticResource ScribeTextColor}"/>
+            <SolidColorBrush x:Key="ScribeTextMutedBrush" Color="{StaticResource ScribeTextMutedColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderBrush" Color="{StaticResource ScribeBorderColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderStrongBrush" Color="{StaticResource ScribeBorderStrongColor}"/>
+            <SolidColorBrush x:Key="ScribePrimaryBrush" Color="{StaticResource ScribePrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
+            <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{StaticResource ScribeSuccessColor}"/>
+            <SolidColorBrush x:Key="ScribeWarningBrush" Color="{StaticResource ScribeWarningColor}"/>
+            <SolidColorBrush x:Key="ScribeErrorBrush" Color="{StaticResource ScribeErrorColor}"/>
+            <SolidColorBrush x:Key="ScribeFocusBrush" Color="{StaticResource ScribeFocusColor}"/>
+            <SolidColorBrush x:Key="ScribeScrimBrush" Color="{StaticResource ScribeScrimColor}"/>
+            <SolidColorBrush x:Key="ScribeInkBrush" Color="{StaticResource ScribeInkColor}"/>
+            <SolidColorBrush x:Key="ScribeLineBrush" Color="{StaticResource ScribeLineColor}"/>
+            <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{StaticResource ScribeUncertainColor}"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <Color x:Key="BcBgColor">#FF131210</Color>
@@ -145,6 +189,50 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
+            <Color x:Key="ScribeBgColor">#FF131210</Color>
+            <Color x:Key="ScribeSurfaceColor">#FF1C1B18</Color>
+            <Color x:Key="ScribeSurfaceRaisedColor">#FF252420</Color>
+            <Color x:Key="ScribeTextColor">#FFEDEBE6</Color>
+            <Color x:Key="ScribeTextMutedColor">#FFB4B0A7</Color>
+            <Color x:Key="ScribeBorderColor">#FF34322D</Color>
+            <Color x:Key="ScribeBorderStrongColor">#FF85817A</Color>
+            <Color x:Key="ScribePrimaryColor">#FFEDEBE6</Color>
+            <Color x:Key="ScribeOnPrimaryColor">#FF131210</Color>
+            <Color x:Key="ScribeSecondaryColor">#FF36342F</Color>
+            <Color x:Key="ScribeOnSecondaryColor">#FFEDEBE6</Color>
+            <Color x:Key="ScribeBrandColor">#FFD2A955</Color>
+            <Color x:Key="ScribeBrandTextColor">#FFD9B266</Color>
+            <Color x:Key="ScribeBrandTintColor">#FF2E2616</Color>
+            <Color x:Key="ScribeSuccessColor">#FF8BD39B</Color>
+            <Color x:Key="ScribeWarningColor">#FFE0B65C</Color>
+            <Color x:Key="ScribeErrorColor">#FFF2B8B5</Color>
+            <Color x:Key="ScribeFocusColor">#FFEDEBE6</Color>
+            <Color x:Key="ScribeScrimColor">#66000000</Color>
+            <Color x:Key="ScribeInkColor">#FFF2F0EB</Color>
+            <Color x:Key="ScribeLineColor">#FFA6A29A</Color>
+            <Color x:Key="ScribeUncertainColor">#FF56B4E9</Color>
+            <SolidColorBrush x:Key="ScribeBgBrush" Color="{StaticResource ScribeBgColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceBrush" Color="{StaticResource ScribeSurfaceColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceRaisedBrush" Color="{StaticResource ScribeSurfaceRaisedColor}"/>
+            <SolidColorBrush x:Key="ScribeTextBrush" Color="{StaticResource ScribeTextColor}"/>
+            <SolidColorBrush x:Key="ScribeTextMutedBrush" Color="{StaticResource ScribeTextMutedColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderBrush" Color="{StaticResource ScribeBorderColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderStrongBrush" Color="{StaticResource ScribeBorderStrongColor}"/>
+            <SolidColorBrush x:Key="ScribePrimaryBrush" Color="{StaticResource ScribePrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
+            <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{StaticResource ScribeSuccessColor}"/>
+            <SolidColorBrush x:Key="ScribeWarningBrush" Color="{StaticResource ScribeWarningColor}"/>
+            <SolidColorBrush x:Key="ScribeErrorBrush" Color="{StaticResource ScribeErrorColor}"/>
+            <SolidColorBrush x:Key="ScribeFocusBrush" Color="{StaticResource ScribeFocusColor}"/>
+            <SolidColorBrush x:Key="ScribeScrimBrush" Color="{StaticResource ScribeScrimColor}"/>
+            <SolidColorBrush x:Key="ScribeInkBrush" Color="{StaticResource ScribeInkColor}"/>
+            <SolidColorBrush x:Key="ScribeLineBrush" Color="{StaticResource ScribeLineColor}"/>
+            <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{StaticResource ScribeUncertainColor}"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <StaticResource x:Key="BcBgColor" ResourceKey="SystemColorWindowColor"/>
@@ -215,6 +303,50 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <StaticResource x:Key="ScribeBgColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeSurfaceColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeSurfaceRaisedColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeTextColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeTextMutedColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBorderColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBorderStrongColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribePrimaryColor" ResourceKey="SystemColorHighlightColor"/>
+            <StaticResource x:Key="ScribeOnPrimaryColor" ResourceKey="SystemColorHighlightTextColor"/>
+            <StaticResource x:Key="ScribeSecondaryColor" ResourceKey="SystemColorButtonFaceColor"/>
+            <StaticResource x:Key="ScribeOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
+            <StaticResource x:Key="ScribeBrandColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBrandTintColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeSuccessColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeWarningColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeErrorColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeFocusColor" ResourceKey="SystemColorHighlightColor"/>
+            <StaticResource x:Key="ScribeScrimColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeInkColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeLineColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeUncertainColor" ResourceKey="SystemColorHotlightColor"/>
+            <SolidColorBrush x:Key="ScribeBgBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceRaisedBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeTextMutedBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderStrongBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribePrimaryBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
+            <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}"/>
+            <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{ThemeResource SystemColorButtonFaceColor}"/>
+            <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeWarningBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeErrorBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeFocusBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
+            <SolidColorBrush x:Key="ScribeScrimBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeInkBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeLineBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -380,4 +512,157 @@
     <x:String x:Key="BcIconDisk">&#xEDA2;</x:String>
     <x:String x:Key="BcIconRunning">&#xE930;</x:String>
     <x:String x:Key="BcIconAttention">&#xE7BA;</x:String>
+
+    <!-- The neutral names (design/tokens/README.md): the same keys in every brand's theme. The brand's own
+         resources have the keys above only. -->
+    <x:Double x:Key="ScribeSpace0">0</x:Double>
+    <Thickness x:Key="ScribePadding0">0</Thickness>
+    <x:Double x:Key="ScribeSpace1">4</x:Double>
+    <Thickness x:Key="ScribePadding1">4</Thickness>
+    <x:Double x:Key="ScribeSpace2">8</x:Double>
+    <Thickness x:Key="ScribePadding2">8</Thickness>
+    <x:Double x:Key="ScribeSpace3">12</x:Double>
+    <Thickness x:Key="ScribePadding3">12</Thickness>
+    <x:Double x:Key="ScribeSpace4">16</x:Double>
+    <Thickness x:Key="ScribePadding4">16</Thickness>
+    <x:Double x:Key="ScribeSpace5">20</x:Double>
+    <Thickness x:Key="ScribePadding5">20</Thickness>
+    <x:Double x:Key="ScribeSpace6">24</x:Double>
+    <Thickness x:Key="ScribePadding6">24</Thickness>
+    <x:Double x:Key="ScribeSpace8">32</x:Double>
+    <Thickness x:Key="ScribePadding8">32</Thickness>
+    <x:Double x:Key="ScribeSpace10">40</x:Double>
+    <Thickness x:Key="ScribePadding10">40</Thickness>
+    <x:Double x:Key="ScribeSpace12">48</x:Double>
+    <Thickness x:Key="ScribePadding12">48</Thickness>
+    <x:Double x:Key="ScribeSpace16">64</x:Double>
+    <Thickness x:Key="ScribePadding16">64</Thickness>
+    <CornerRadius x:Key="ScribeRadiusXs">4</CornerRadius>
+    <CornerRadius x:Key="ScribeRadiusSm">8</CornerRadius>
+    <CornerRadius x:Key="ScribeRadiusMd">12</CornerRadius>
+    <CornerRadius x:Key="ScribeRadiusLg">16</CornerRadius>
+    <CornerRadius x:Key="ScribeRadiusXl">24</CornerRadius>
+    <CornerRadius x:Key="ScribeRadiusFull">9999</CornerRadius>
+    <x:Double x:Key="ScribeTouchMin">40</x:Double>
+    <x:Double x:Key="ScribeContentMaxWidth">720</x:Double>
+    <x:Double x:Key="ScribeSidebarWidth">280</x:Double>
+    <x:Double x:Key="ScribeDurationInstant">0</x:Double>
+    <x:Double x:Key="ScribeDurationFast">120</x:Double>
+    <x:Double x:Key="ScribeDurationBase">200</x:Double>
+    <x:Double x:Key="ScribeDurationSlow">320</x:Double>
+    <x:Double x:Key="ScribeDurationReduced">150</x:Double>
+    <FontFamily x:Key="ScribeDisplayFontFamily">ms-appx:///Assets/Fonts/InstrumentSerif-Regular.ttf#Instrument Serif</FontFamily>
+    <Style x:Key="ScribeDisplayTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleLargeTextBlockStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource ScribeDisplayFontFamily}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="40"/>
+        <Setter Property="LineHeight" Value="52"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeTitle1TextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="28"/>
+        <Setter Property="LineHeight" Value="36"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeTitle2TextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="LineHeight" Value="28"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeHeadlineTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyLargeTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="LineHeight" Value="24"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeBodyTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyLargeTextBlockStyle}">
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="LineHeight" Value="24"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeCalloutTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="LineHeight" Value="20"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeLabelTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="LineHeight" Value="20"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeCaptionTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="LineHeight" Value="16"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style x:Key="ScribeNumericTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyLargeTextBlockStyle}">
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="LineHeight" Value="24"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <x:String x:Key="ScribeIconPlay">&#xE768;</x:String>
+    <x:String x:Key="ScribeIconPause">&#xE769;</x:String>
+    <x:String x:Key="ScribeIconStop">&#xE71A;</x:String>
+    <x:String x:Key="ScribeIconPreviousBar">&#xE892;</x:String>
+    <x:String x:Key="ScribeIconNextBar">&#xE893;</x:String>
+    <x:String x:Key="ScribeIconLoop">&#xE8EE;</x:String>
+    <x:String x:Key="ScribeIconSpeed">&#xEC4A;</x:String>
+    <x:String x:Key="ScribeIconPathCountIn">M 10 18.333 q -1.729 0 -3.25 -0.656 T 4.104 15.896 q -1.125 -1.125 -1.781 -2.646 T 1.667 10 q 0 -1.729 0.656 -3.25 T 4.104 4.104 q 1.125 -1.125 2.646 -1.781 T 10 1.667 q 1.729 0 3.25 0.656 T 15.896 4.104 q 1.125 1.125 1.781 2.646 T 18.333 10 q 0 1.729 -0.656 3.25 T 15.896 15.896 q -1.125 1.125 -2.646 1.781 T 10 18.333 Z m 0 -1.667 q 2.792 0 4.729 -1.938 t 1.938 -4.729 q 0 -2.792 -1.938 -4.729 t -4.729 -1.938 q -2.792 0 -4.729 1.938 t -1.938 4.729 q 0 2.792 1.938 4.729 t 4.729 1.938 Z m 0 -6.667 Z m -0.417 -2.5 v 5.833 q 0 0.354 0.24 0.594 T 10.417 14.167 q 0.354 0 0.594 -0.24 T 11.25 13.333 v -6.667 q 0 -0.354 -0.24 -0.594 T 10.417 5.833 h -1.667 q -0.354 0 -0.594 0.24 T 7.917 6.667 q 0 0.354 0.24 0.594 T 8.75 7.5 h 0.833 Z</x:String>
+    <x:String x:Key="ScribeIconPathMetronome">M 6.875 1.667 H 13.125 L 16.667 17.5 Q 16.833 18.333 16.042 18.333 H 3.958 Q 3.167 18.333 3.333 17.5 Z M 8.208 3.333 L 5.417 16.667 H 14.583 L 11.792 3.333 Z M 9.275 16.473 L 12.608 3.973 Q 12.812 3.333 13.438 3.479 Q 14.167 3.688 14.058 4.36 L 10.725 16.86 Z</x:String>
+    <x:String x:Key="ScribeIconMute">&#xE74F;</x:String>
+    <x:String x:Key="ScribeIconPathSolo">M 4.167 17.5 q -0.688 0 -1.177 -0.49 T 2.5 15.833 v -2.5 q 0 -0.354 0.24 -0.594 T 3.333 12.5 q 0.354 0 0.594 0.24 T 4.167 13.333 v 2.5 h 2.5 q 0.354 0 0.594 0.24 T 7.5 16.667 q 0 0.354 -0.24 0.594 T 6.667 17.5 H 4.167 Z m 11.667 0 H 13.333 q -0.354 0 -0.594 -0.24 T 12.5 16.667 q 0 -0.354 0.24 -0.594 T 13.333 15.833 h 2.5 v -2.5 q 0 -0.354 0.24 -0.594 T 16.667 12.5 q 0.354 0 0.594 0.24 T 17.5 13.333 v 2.5 q 0 0.688 -0.49 1.177 T 15.833 17.5 Z M 2.5 6.667 v -2.5 q 0 -0.688 0.49 -1.177 T 4.167 2.5 h 2.5 q 0.354 0 0.594 0.24 T 7.5 3.333 q 0 0.354 -0.24 0.594 T 6.667 4.167 H 4.167 v 2.5 q 0 0.354 -0.24 0.594 T 3.333 7.5 q -0.354 0 -0.594 -0.24 T 2.5 6.667 Z m 13.333 0 v -2.5 H 13.333 q -0.354 0 -0.594 -0.24 T 12.5 3.333 q 0 -0.354 0.24 -0.594 T 13.333 2.5 h 2.5 q 0.688 0 1.177 0.49 T 17.5 4.167 v 2.5 q 0 0.354 -0.24 0.594 T 16.667 7.5 q -0.354 0 -0.594 -0.24 T 15.833 6.667 Z M 10 14.167 q -1.729 0 -2.948 -1.219 T 5.833 10 q 0 -1.729 1.219 -2.948 T 10 5.833 q 1.729 0 2.948 1.219 T 14.167 10 q 0 1.729 -1.219 2.948 T 10 14.167 Z m 0 -1.667 q 1.042 0 1.771 -0.729 t 0.729 -1.771 q 0 -1.042 -0.729 -1.771 t -1.771 -0.729 q -1.042 0 -1.771 0.729 t -0.729 1.771 q 0 1.042 0.729 1.771 t 1.771 0.729 Z m 0 -2.5 Z</x:String>
+    <x:String x:Key="ScribeIconParts">&#xEA37;</x:String>
+    <x:String x:Key="ScribeIconPlayAlong">&#xE7F6;</x:String>
+    <x:String x:Key="ScribeIconOriginal">&#xE9E9;</x:String>
+    <x:String x:Key="ScribeIconImportFile">&#xE8B5;</x:String>
+    <x:String x:Key="ScribeIconRecordMic">&#xE720;</x:String>
+    <x:String x:Key="ScribeIconRecordDevice">&#xE767;</x:String>
+    <x:String x:Key="ScribeIconRecord">&#xE7C8;</x:String>
+    <x:String x:Key="ScribeIconExport">&#xE72D;</x:String>
+    <x:String x:Key="ScribeIconListenBar">&#xF270;</x:String>
+    <x:String x:Key="ScribeIconMarkChecked">&#xE930;</x:String>
+    <x:String x:Key="ScribeIconPathNextUncertain">M 4.167 2.5 H 15.833 Q 17.5 2.5 17.5 4.167 V 15.833 Q 17.5 17.5 15.833 17.5 H 4.167 Q 2.5 17.5 2.5 15.833 V 4.167 Q 2.5 2.5 4.167 2.5 Z M 4.167 4.167 V 15.833 H 15.833 V 4.167 Z M 11.343 7.972 q 0 -0.555 -0.368 -0.891 T 10 6.745 q -0.375 0 -0.678 0.161 T 8.799 7.378 q -0.207 0.297 -0.562 0.342 T 7.623 7.533 q -0.181 -0.168 -0.2 -0.413 t 0.123 -0.465 q 0.413 -0.62 1.053 -0.962 T 10 5.35 q 1.253 0 2.034 0.71 T 12.816 7.92 q 0 0.581 -0.245 1.046 t -0.904 1.098 q -0.478 0.452 -0.646 0.704 T 10.801 11.343 q -0.052 0.31 -0.265 0.517 T 10.026 12.067 q -0.297 0 -0.51 -0.2 T 9.302 11.369 q 0 -0.504 0.22 -0.924 t 0.736 -0.885 q 0.659 -0.581 0.872 -0.898 T 11.343 7.972 Z M 10 15.167 q -0.426 0 -0.73 -0.304 T 8.967 14.133 q 0 -0.426 0.304 -0.73 T 10 13.1 q 0.426 0 0.73 0.304 T 11.033 14.133 q 0 0.426 -0.304 0.73 T 10 15.167 Z</x:String>
+    <x:String x:Key="ScribeIconTalkingScore">&#xEFA9;</x:String>
+    <x:String x:Key="ScribeIconZoomIn">&#xE8A3;</x:String>
+    <x:String x:Key="ScribeIconZoomOut">&#xE71F;</x:String>
+    <x:String x:Key="ScribeIconTranspose">&#xE8CB;</x:String>
+    <x:String x:Key="ScribeIconVideo">&#xE714;</x:String>
+    <x:String x:Key="ScribeIconPictureInPicture">&#xE93A;</x:String>
+    <x:String x:Key="ScribeIconComputer">&#xE977;</x:String>
+    <x:String x:Key="ScribeIconSettings">&#xE713;</x:String>
+    <x:String x:Key="ScribeIconHelp">&#xE897;</x:String>
+    <x:String x:Key="ScribeIconBack">&#xE72B;</x:String>
+    <x:String x:Key="ScribeIconOpen">&#xE76C;</x:String>
+    <x:String x:Key="ScribeIconPrint">&#xE749;</x:String>
+    <x:String x:Key="ScribeIconSkip">&#xEB9D;</x:String>
+    <x:String x:Key="ScribeIconChoose">&#xE70D;</x:String>
+    <x:String x:Key="ScribeIconClose">&#xE711;</x:String>
+    <x:String x:Key="ScribeIconMore">&#xE712;</x:String>
+    <x:String x:Key="ScribeIconRetry">&#xE72C;</x:String>
+    <x:String x:Key="ScribeIconDelete">&#xE74D;</x:String>
+    <x:String x:Key="ScribeIconError">&#xE7BA;</x:String>
+    <x:String x:Key="ScribeIconInfo">&#xE946;</x:String>
+    <x:String x:Key="ScribeIconDone">&#xE73E;</x:String>
+    <x:String x:Key="ScribeIconScore">&#xEC4F;</x:String>
+    <x:String x:Key="ScribeIconFile">&#xE8A5;</x:String>
+    <x:String x:Key="ScribeIconFolder">&#xE8B7;</x:String>
+    <x:String x:Key="ScribeIconTextSize">&#xE8E9;</x:String>
+    <x:String x:Key="ScribeIconPairPhone">&#xE8EA;</x:String>
+    <x:String x:Key="ScribeIconRestart">&#xE777;</x:String>
+    <x:String x:Key="ScribeIconShutDown">&#xE7E8;</x:String>
+    <x:String x:Key="ScribeIconOpenStudio">&#xE8A7;</x:String>
+    <x:String x:Key="ScribeIconDownload">&#xE896;</x:String>
+    <x:String x:Key="ScribeIconAccessKey">&#xE8D7;</x:String>
+    <x:String x:Key="ScribeIconNetwork">&#xE701;</x:String>
+    <x:String x:Key="ScribeIconWorkload">&#xE9F5;</x:String>
+    <x:String x:Key="ScribeIconDisk">&#xEDA2;</x:String>
+    <x:String x:Key="ScribeIconRunning">&#xE930;</x:String>
+    <x:String x:Key="ScribeIconAttention">&#xE7BA;</x:String>
 </ResourceDictionary>

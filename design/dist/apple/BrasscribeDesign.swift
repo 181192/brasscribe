@@ -317,3 +317,72 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
         }
     }
 }
+
+// The neutral names (design/tokens/README.md). Every brand's file declares them, so code that uses only
+// these compiles against any brand. Brasscribe's own roles and metrics are in the types above.
+
+public enum ScribeDesign {
+    public static var bundle: Bundle { BrasscribeDesign.bundle }
+    public typealias Space = BrasscribeDesign.Space
+    public typealias Radius = BrasscribeDesign.Radius
+    public typealias Size = BrasscribeDesign.Size
+    public typealias Motion = BrasscribeDesign.Motion
+}
+
+public extension Color {
+    /// The colour roles every brand has.
+    enum Scribe {
+        /// Window and page background; also the score paper.
+        public static var bg: Color { Brasscribe.bg }
+        /// Grouped areas: player bar, sidebars, list sections.
+        public static var surface: Color { Brasscribe.surface }
+        /// Cards, sheets, dialogs and menus that sit above the background.
+        public static var surfaceRaised: Color { Brasscribe.surfaceRaised }
+        /// Body text and icons.
+        public static var text: Color { Brasscribe.text }
+        /// Secondary text. Still at least 4.5:1 on every surface.
+        public static var textMuted: Color { Brasscribe.textMuted }
+        /// Decorative hairlines and dividers. Never the only boundary of a control.
+        public static var border: Color { Brasscribe.border }
+        /// Boundaries of controls (text fields, outlined buttons, chips). At least 3:1.
+        public static var borderStrong: Color { Brasscribe.borderStrong }
+        /// Fill of the one primary button per screen, selected chips and switches.
+        public static var primary: Color { Brasscribe.primary }
+        /// Text and icons on primary.
+        public static var onPrimary: Color { Brasscribe.onPrimary }
+        /// Fill of secondary (tonal) buttons and segmented controls.
+        public static var secondary: Color { Brasscribe.secondary }
+        /// Text and icons on secondary.
+        public static var onSecondary: Color { Brasscribe.onSecondary }
+        /// Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list.
+        public static var brand: Color { Brasscribe.brass }
+        /// Brand colour when it has to carry text, for example the product name under the wordmark.
+        public static var brandText: Color { Brasscribe.brassText }
+        /// Background of brand moments: the onboarding hero and the About screen.
+        public static var brandTint: Color { Brasscribe.brassTint }
+        /// Finished states: "Score ready", a passed Studio check. Always with text or an icon.
+        public static var success: Color { Brasscribe.success }
+        /// Notices that need attention but do not block. Always with text or an icon.
+        public static var warning: Color { Brasscribe.warning }
+        /// Error text and the error icon. Always with a sentence that says what to do.
+        public static var error: Color { Brasscribe.error }
+        /// Keyboard focus ring: 2 px with a 2 px gap. Ink in light and paper in dark, so it can never be mistaken for the uncertain blue on notation. High contrast: yellow.
+        public static var focus: Color { Brasscribe.focus }
+        /// Dimmed backdrop behind a sheet or dialog (40% alpha).
+        public static var scrim: Color { Brasscribe.scrim }
+        /// Noteheads, stems, clefs and confident notes.
+        public static var ink: Color { Brasscribe.ink }
+        /// Staff lines and bar lines.
+        public static var line: Color { Brasscribe.staff }
+        /// Notes with confidence 0.4-0.7. Always with a "?" above the note.
+        public static var uncertain: Color { Brasscribe.uncertain }
+    }
+}
+
+public extension Font {
+    /// The type ramp.
+    typealias Scribe = Brasscribe
+}
+
+/// One SF Symbol per action.
+public typealias ScribeIcon = BrasscribeIcon
