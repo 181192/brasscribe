@@ -114,5 +114,6 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("problem-recording-kept") { aRecordingWithoutItsScore() },
         Entry("home-with-a-kept-recording") { aRecordingWithoutItsScore(); rule.runOnUiThread { vm.home() }; rest() },
         Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
+        Entry("problem-score-not-opened") { rule.runOnUiThread { vm.showProblem(Problem.OPEN_FAILED, null, R.string.error_unreachable) } },
     )
 }

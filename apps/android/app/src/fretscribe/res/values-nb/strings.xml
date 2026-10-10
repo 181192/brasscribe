@@ -145,6 +145,8 @@
     <!-- Problemer -->
     <string name="problem_score_title">Tabben kunne ikke lages</string>
     <string name="problem_score_body">Noe gikk galt mens Bandroom på datamaskinen arbeidet med den.</string>
+    <string name="problem_open_title">Denne tabben kunne ikke åpnes</string>
+    <string name="problem_open_body">Fretscribe fikk ikke hentet den fra datamaskinen din.</string>
     <string name="details_show">Tekniske detaljer</string>
     <string name="error_unreachable">Får ikke kontakt med Bandroom på datamaskinen. Sjekk at den kjører og er på samme nettverk.</string>
     <string name="error_engine_failed">Bandroom på datamaskinen klarte ikke å gjøre ferdig tabben. Prøv igjen.</string>
