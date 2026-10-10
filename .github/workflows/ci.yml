@@ -358,13 +358,25 @@ jobs:
         working-directory: core
         run: cargo build --release -p brasscribe-ffi
 
-      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-
-      # Robolectric's Android (one jar per SDK) is fetched into the Maven cache, not Gradle's.
-      - uses: actions/cache@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
-          path: ~/.m2/repository/org/robolectric
-          key: robolectric-${{ hashFiles('apps/android/gradle/libs.versions.toml', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          # The action's cache is a separate component under Gradle's Terms of Use; the plain cache
+          # step below holds what Gradle downloads instead.
+          cache-disabled: true
+
+      # What Gradle downloads (its wrapper, the dependencies) and Robolectric's Android, one jar per SDK, which is
+      # fetched into the Maven cache. Saved from main only, at the end of the job; a pull request reads main's, and
+      # the nearest older one when its own build files differ. Main starts empty when they change, so the cache
+      # holds one set of versions.
+      - uses: actions/cache/restore@v6
+        id: gradle-cache
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-tests-', runner.os) || '' }}
 
       # The tests on their own: the screen tests wait by the clock on the wall for what the app does on its other
       # threads, and lint beside them on a two-core runner would take that time from them.
@@ -373,6 +385,20 @@ jobs:
 
       - name: Lint and the debug builds (both apps)
         run: ./gradlew lint lintFretscribeDebug assembleDebug --stacktrace
+
+      # Stopped first, so the daemon isn't writing to the directories while they are packed.
+      - name: Stop the Gradle daemon
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        run: ./gradlew --stop
+
+      - uses: actions/cache/save@v6
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
       - uses: actions/upload-artifact@v7
         if: failure()
@@ -427,13 +453,25 @@ jobs:
         working-directory: core
         run: cargo build --release -p brasscribe-ffi
 
-      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-
-      # Robolectric's Android (one jar per SDK) is fetched into the Maven cache, not Gradle's.
-      - uses: actions/cache@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
-          path: ~/.m2/repository/org/robolectric
-          key: robolectric-${{ hashFiles('apps/android/gradle/libs.versions.toml', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          # The action's cache is a separate component under Gradle's Terms of Use; the plain cache
+          # step below holds what Gradle downloads instead.
+          cache-disabled: true
+
+      # What Gradle downloads (its wrapper, the dependencies) and Robolectric's Android, one jar per SDK, which is
+      # fetched into the Maven cache. Saved from main only, at the end of the job; a pull request reads main's, and
+      # the nearest older one when its own build files differ. Main starts empty when they change, so the cache
+      # holds one set of versions.
+      - uses: actions/cache/restore@v6
+        id: gradle-cache
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: gradle-${{ runner.os }}-android-screens-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-screens-', runner.os) || '' }}
 
       # The pull request's own code runs here, without the token: the label is read in a step of its own.
       - name: Screen catalogues, compared with the merge base
@@ -484,6 +522,20 @@ jobs:
       - name: Screen catalogues
         if: github.event_name != 'pull_request'
         run: scripts/screenshots.sh record
+
+      # Stopped first, so the daemon isn't writing to the directories while they are packed.
+      - name: Stop the Gradle daemon
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        run: ./gradlew --stop
+
+      - uses: actions/cache/save@v6
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
       - uses: actions/upload-artifact@v7
         if: always()
