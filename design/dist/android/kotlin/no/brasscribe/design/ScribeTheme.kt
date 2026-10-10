@@ -50,7 +50,6 @@ val ScribeButtonShape: RoundedCornerShape get() = BrasscribeButtonShape
 typealias ScribeSpace = BrasscribeSpace
 typealias ScribeSize = BrasscribeSize
 typealias ScribeMotion = BrasscribeMotion
-typealias ScribeIcon = BrasscribeIcon
 
 /** Brasscribe on Material 3: light or dark by [dark], and the high-contrast colours when the system asks. */
 @Composable

@@ -6,7 +6,6 @@ import no.brasscribe.design.BrasscribeButtonShape
 import no.brasscribe.design.BrasscribeDarkColors
 import no.brasscribe.design.BrasscribeHighContrastColors
 import no.brasscribe.design.BrasscribeHighContrastLightColors
-import no.brasscribe.design.BrasscribeIcon
 import no.brasscribe.design.BrasscribeLightColors
 import no.brasscribe.design.BrasscribeMotion
 import no.brasscribe.design.BrasscribeNumericStyle
@@ -20,7 +19,6 @@ import no.brasscribe.design.ScribeColors
 import no.brasscribe.design.ScribeDarkColors
 import no.brasscribe.design.ScribeHighContrastColors
 import no.brasscribe.design.ScribeHighContrastLightColors
-import no.brasscribe.design.ScribeIcon
 import no.brasscribe.design.ScribeLightColors
 import no.brasscribe.design.ScribeMotion
 import no.brasscribe.design.ScribeNumericStyle
@@ -77,8 +75,6 @@ class NeutralDesignNamesTest {
         assertSame(BrasscribeButtonShape, ScribeButtonShape)
         assertSame(BrasscribeNumericStyle, ScribeNumericStyle)
         assertEquals(brasscribeTypography().bodyLarge, scribeTypography().bodyLarge)
-        assertSame(BrasscribeIcon.PLAY, ScribeIcon.PLAY)
-        assertEquals(BrasscribeIcon.entries.size, ScribeIcon.entries.size)
     }
 }
 

@@ -429,8 +429,7 @@ def apple_outputs() -> dict[str, str | bytes]:
         lines.append(f"        /// {desc(src)}")
         lines.append(f"        public static var {camel(name)}: Color {{ {PRODUCT}.{camel(src)} }}")
     lines += ["    }", "}", "",
-              "public extension Font {", "    /// The type ramp.", f"    typealias Scribe = {PRODUCT}", "}", "",
-              "/// One SF Symbol per action.", f"public typealias ScribeIcon = {PRODUCT}Icon", ""]
+              "public extension Font {", "    /// The type ramp.", f"    typealias Scribe = {PRODUCT}", "}", ""]
     out[f"apple/{PRODUCT}Design.swift"] = "\n".join(lines)
     out.update(font_files("apple", "apple/Fonts"))
     return out
@@ -736,8 +735,7 @@ def android_neutral(pkg: str) -> str:
           "val ScribeButtonShape: RoundedCornerShape get() = BrasscribeButtonShape", "",
           "typealias ScribeSpace = BrasscribeSpace",
           "typealias ScribeSize = BrasscribeSize",
-          "typealias ScribeMotion = BrasscribeMotion",
-          "typealias ScribeIcon = BrasscribeIcon", "",
+          "typealias ScribeMotion = BrasscribeMotion", "",
           f"/** {PRODUCT} on Material 3: light or dark by [dark], and the high-contrast colours when the system asks. */",
           "@Composable",
           "fun ScribeTheme(",
@@ -809,7 +807,9 @@ def windows_outputs() -> dict[str, str | bytes]:
     B.append(f'    <x:Double x:Key="{KEY}ContentMaxWidth">{fmt(dimension(TOKENS["size"]["content-max"]))}</x:Double>')
     B.append(f'    <x:Double x:Key="{KEY}SidebarWidth">{fmt(dimension(TOKENS["size"]["sidebar"]))}</x:Double>')
     view, sc = notation()
-    own = [f"{KEY}{pascal(view)}"]  # the start of each key that is the brand's own, with no neutral name
+    # The start of each key that is the brand's own, with no neutral name: its notation metrics, and the
+    # icons, whose actions (icons.json) are one product's so far.
+    own = [f"{KEY}{pascal(view)}", f"{KEY}Icon"]
     for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
         B.append(f'    <x:Double x:Key="{KEY}{pascal(view)}{pascal(k)}">{fmt(dimension(sc[k]))}</x:Double>')
     B += ["", "    <!-- Motion (ms); check UISettings.AnimationsEnabled and fall back to BcDurationReduced cross-fades -->".replace("Bc", KEY)]
@@ -1008,7 +1008,7 @@ def web_outputs() -> dict[str, str | bytes]:
           f"globalThis.{PRODUCT}Icons = {{"]
     for a in ICONS:
         js.append(f'  "{a}": "{icon_source(a, "material")[1]}",')
-    js += ["};", "// The neutral name: the same in every brand's file.", f"globalThis.ScribeIcons = globalThis.{PRODUCT}Icons;", ""]
+    js += ["};", ""]
     out["web/icons.js"] = "\n".join(js)
     for a in ICONS:
         _, d = icon_source(a, "material")

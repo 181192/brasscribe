@@ -48,7 +48,7 @@ to a brand.
 
 1. **Neutral names** are the same in every brand's generated files. They cover what any app needs:
    surfaces, text, edges, the two button fills, the brand colour, status, focus, ink, the ruled line and
-   doubt, with the type ramp, spacing, radii, sizes, motion and the action icons. They are generated
+   doubt, with the type ramp, spacing, radii, sizes and motion. They are generated
    under `Scribe…`: `ScribeTheme` and `ScribeColors` in Kotlin, `Color.Scribe`, `Font.Scribe` and
    `ScribeDesign` in Swift, `Scribe…Brush` in XAML, `--scribe-…` in CSS. Code that uses only these
    compiles against any brand.
@@ -86,18 +86,22 @@ to a brand.
 | Notation metrics (`notation` names the group) | `score` | `tab` |
 | Type roles | the Studio ramp (`studio-*`) | none |
 | Fonts | Instrument Serif | Atkinson Hyperlegible Next, Fretscribe Tab |
+| Action icons (`BrasscribeIcon`, `FsIconPlay`, …) | the set of `icons.json` | the same set, under its own names |
 
 Both brands have a cursor, a loop and a selection today. They stay with the brands: they are parts of a
-score view and a tab view, which are two products' own screens.
+score view and a tab view, which are two products' own screens. The action icons stay with the brands
+too: `icons.json` is one set, and its actions are one product's so far (the talking score, the music
+stand). The actions every app has (play, pause, settings) could get neutral names later, marked one by
+one in `icons.json`.
 
 ### The names on each platform
 
 | | Neutral | Brasscribe's own | Fretscribe's own |
 |---|---|---|---|
-| Kotlin | `ScribeTheme { }`, `ScribeTheme.colors.brand`, `ScribeColors`, `ScribeSpace`, `ScribeSize`, `ScribeMotion`, `ScribeShapes`, `ScribeButtonShape`, `scribeTypography()`, `ScribeNumericStyle`, `ScribeIcon` | `BrasscribeTheme`, `BrasscribeColors.veryUncertain`, `BrasscribeScore` | see [Android](#android) |
-| Swift | `Color.Scribe.brand`, `Font.Scribe.title1`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion`, `ScribeIcon` | `Color.Brasscribe.staff`, `BrasscribeDesign.Score`, `BrasscribePalette` | `Color.Fretscribe.uncertainTint`, `FretscribeDesign.Tab`, `Font.Fretscribe.tab(size:)` |
-| XAML | `ScribeBrandBrush`, `ScribeBrandColor`, `ScribeSpace4`, `ScribeTitle1TextBlockStyle`, `ScribeIconPlay` | `BcStaffBrush`, `BcScoreCursorWidth` | `FsStringBrush`, `FsTabCursorWidth`, `FsTabFontFamily` |
-| CSS | `--scribe-brand`, `--scribe-space-4`, `--scribe-type-title-1-size`, `globalThis.ScribeIcons` | `--bc-staff`, `--bc-score-cursor-width` | `--fs-string`, `--fs-tab-cursor-width`, `--fs-font-tab` |
+| Kotlin | `ScribeTheme { }`, `ScribeTheme.colors.brand`, `ScribeColors`, `ScribeSpace`, `ScribeSize`, `ScribeMotion`, `ScribeShapes`, `ScribeButtonShape`, `scribeTypography()`, `ScribeNumericStyle` | `BrasscribeTheme`, `BrasscribeColors.veryUncertain`, `BrasscribeScore` | see [Android](#android) |
+| Swift | `Color.Scribe.brand`, `Font.Scribe.title1`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion` | `Color.Brasscribe.staff`, `BrasscribeDesign.Score`, `BrasscribePalette`, `BrasscribeIcon` | `Color.Fretscribe.uncertainTint`, `FretscribeDesign.Tab`, `Font.Fretscribe.tab(size:)` |
+| XAML | `ScribeBrandBrush`, `ScribeBrandColor`, `ScribeSpace4`, `ScribeTitle1TextBlockStyle` | `BcStaffBrush`, `BcScoreCursorWidth`, `BcIconPlay` | `FsStringBrush`, `FsTabCursorWidth`, `FsTabFontFamily` |
+| CSS | `--scribe-brand`, `--scribe-space-4`, `--scribe-type-title-1-size` | `--bc-staff`, `--bc-score-cursor-width`, `globalThis.BrasscribeIcons` | `--fs-string`, `--fs-tab-cursor-width`, `--fs-font-tab` |
 
 ### Today's names stay, and how a client moves
 

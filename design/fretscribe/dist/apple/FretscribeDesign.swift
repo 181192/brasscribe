@@ -363,6 +363,3 @@ public extension Font {
     /// The type ramp.
     typealias Scribe = Fretscribe
 }
-
-/// One SF Symbol per action.
-public typealias ScribeIcon = FretscribeIcon

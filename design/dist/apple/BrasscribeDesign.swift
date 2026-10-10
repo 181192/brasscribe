@@ -383,6 +383,3 @@ public extension Font {
     /// The type ramp.
     typealias Scribe = Brasscribe
 }
-
-/// One SF Symbol per action.
-public typealias ScribeIcon = BrasscribeIcon

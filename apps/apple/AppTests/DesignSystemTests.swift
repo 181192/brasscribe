@@ -47,7 +47,6 @@ import Testing
         #expect(ScribeDesign.Motion.base == BrasscribeDesign.Motion.base)
         #expect(ScribeDesign.bundle == BrasscribeDesign.bundle)
         #expect(Font.Scribe.title1 == Font.Brasscribe.title1)
-        #expect(ScribeIcon.play.systemName == BrasscribeIcon.play.systemName)
     }
 
     @Test func markAndLicenceAreBundled() {

@@ -220,7 +220,7 @@ def neutral_names(b) -> dict[str, list[str]]:
         "apple": re.findall(r"(?:enum|typealias|static var) (\w+)", swift),
         "android": declarations((b.DIST / KOTLIN / "ScribeTheme.kt").read_text()),
         "windows": re.findall(r'x:Key="(Scribe\w+)"', xaml),
-        "web": re.findall(r"^  (--scribe-[\w-]+):", css, re.M) + re.findall(r"globalThis\.(Scribe\w+)", (b.DIST / "web" / "icons.js").read_text()),
+        "web": re.findall(r"^  (--scribe-[\w-]+):", css, re.M),
     }
 
 
@@ -229,7 +229,7 @@ def test_every_brand_declares_the_same_neutral_names():
     found = {name: neutral_names(b) for name, b in brands().items()}
     ours = found["brasscribe"]
     for platform, names in ours.items():
-        assert len(names) > 20, platform
+        assert len(names) > 15, platform
         for name, theirs in found.items():
             assert sorted(theirs[platform]) == sorted(names), (name, platform)  # a brand orders its roles its own way
 
@@ -244,12 +244,33 @@ def test_neutral_names_cover_the_neutral_roles_and_nothing_of_one_brand():
             assert f"--scribe-{role}" in found["web"], (name, role)
         for platform, names in found.items():
             for n in names:
-                if "Icon" in n:  # the actions of icons.json, one set for every brand so far
-                    continue
                 words = [w.lower() for w in re.findall(r"[A-Za-z][a-z]*", n.replace("Scribe", "").replace("scribe", ""))]
                 assert not set(words) & set(BRAND_WORDS), (name, platform, n)
     for role in build.NEUTRAL["roles"]:
         assert not set(role.split("-")) & set(BRAND_WORDS), role
+
+
+def test_the_action_icons_have_no_neutral_name():
+    # The actions of icons.json are one product's so far (the talking score, the music stand), so the icons
+    # stay under each brand's own name.
+    for name, b in brands().items():
+        for path in (b.DIST / "apple" / f"{b.PRODUCT}Design.swift", b.DIST / KOTLIN / "ScribeTheme.kt",
+                     b.DIST / "windows" / f"{b.PRODUCT}Theme.xaml", b.DIST / "web" / "icons.js"):
+            assert "ScribeIcon" not in path.read_text(), (name, path.name)
+
+
+def test_no_xaml_dictionary_has_a_key_twice():
+    # WinUI refuses a dictionary with a key twice, and nothing compiles a brand's theme before an app uses it.
+    import xml.etree.ElementTree as ET
+    x = "{http://schemas.microsoft.com/winfx/2006/xaml}Key"
+    rd = "{http://schemas.microsoft.com/winfx/2006/xaml/presentation}ResourceDictionary"
+    for name, b in brands().items():
+        files = sorted((b.DIST / "windows").glob("*.xaml"))
+        assert files, name
+        for file in files:
+            for dictionary in ET.parse(file).getroot().iter(rd):
+                keys = [e.get(x) for e in dictionary if e.get(x)]
+                assert len(keys) == len(set(keys)), (file.name, dictionary.get(x), [k for k in keys if keys.count(k) > 1][:3])
 
 
 def test_neutral_colours_have_the_brands_values_in_every_theme():
@@ -362,7 +383,7 @@ def test_fretscribe_theme_has_the_names_the_shared_screens_use():
     for name in ("BrasscribeTheme.kt", "BrasscribeIcon.kt", "ScribeTheme.kt"):
         ours = (build.DIST / KOTLIN / name).read_text()
         theirs = (FRETSCRIBE / "dist" / KOTLIN / name).read_text()
-        assert len(declarations(ours)) > 20, name
+        assert len(declarations(ours)) > 15, name
         assert declarations(theirs) == declarations(ours), name
     assert sorted(p.name for p in (FRETSCRIBE / "dist" / "android" / "res" / "drawable").iterdir()) == \
         sorted(p.name for p in (build.DIST / "android" / "res" / "drawable").iterdir() if not p.name.startswith("ic_launcher"))
