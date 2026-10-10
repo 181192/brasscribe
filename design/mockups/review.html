@@ -8,22 +8,22 @@
 <script src="scores.js"></script>
 <script src="mockup.js"></script>
 <style>
-  .legend { display: flex; gap: var(--bc-space-4); flex-wrap: wrap; font-size: 0.9375rem; color: var(--bc-text-muted); }
+  .legend { display: flex; gap: var(--scribe-space-4); flex-wrap: wrap; font-size: 0.9375rem; color: var(--scribe-text-muted); }
   .legend span { display: inline-flex; gap: 6px; align-items: center; }
-  .item { padding: var(--bc-space-4); }
-  .item .staff { margin: 0 calc(-1 * var(--bc-space-2)); }
+  .item { padding: var(--scribe-space-4); }
+  .item .staff { margin: 0 calc(-1 * var(--scribe-space-2)); }
   .note-desc { font-size: 1.0625rem; }
-  .actions { display: flex; gap: var(--bc-space-2); margin-top: var(--bc-space-4); }
-  .actions .btn { flex: 1; white-space: nowrap; padding: 0 var(--bc-space-3); }
-  .rv-row { display: flex; align-items: center; gap: var(--bc-space-3); min-height: 56px; padding: var(--bc-space-2) var(--bc-space-4); }
-  .group .rv-row + .rv-row { box-shadow: inset 0 1px 0 var(--bc-border); }
+  .actions { display: flex; gap: var(--scribe-space-2); margin-top: var(--scribe-space-4); }
+  .actions .btn { flex: 1; white-space: nowrap; padding: 0 var(--scribe-space-3); }
+  .rv-row { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 56px; padding: var(--scribe-space-2) var(--scribe-space-4); }
+  .group .rv-row + .rv-row { box-shadow: inset 0 1px 0 var(--scribe-border); }
   .rv-row.on { background: var(--bc-selection-tint); }
   .rv-row .bn { width: 64px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .rv-list { display:flex; flex-direction: column; gap: 2px; }
-  .side-rv { display: flex; align-items: center; gap: var(--bc-space-3); min-height: 44px; padding: 0 var(--bc-space-3); border-radius: var(--bc-radius-sm); font-size: 0.9375rem; }
-  .side-rv.on { background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border); font-weight: 600; }
+  .side-rv { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 44px; padding: 0 var(--scribe-space-3); border-radius: var(--scribe-radius-sm); font-size: 0.9375rem; }
+  .side-rv.on { background: var(--scribe-surface-raised); box-shadow: inset 0 0 0 1px var(--scribe-border); font-weight: 600; }
   .side-rv .grow { flex: 1; }
-  .side-rv.done { color: var(--bc-text-muted); }
+  .side-rv.done { color: var(--scribe-text-muted); }
 </style>
 </head>
 <body>
@@ -31,11 +31,11 @@
 <div class="phone">
   <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
   <div class="navbar"><span class="back"><i data-i="back"></i>Old Hundredth</span><span></span><span class="btn plain compact">Finish later (9 left)</span></div>
-  <div class="content" style="padding-top: var(--bc-space-2)">
+  <div class="content" style="padding-top: var(--scribe-space-2)">
     <h1 class="display" style="font-size: 2.25rem">Check 9 notes</h1>
-    <div class="legend" style="margin-top: var(--bc-space-2)"><span><b class="q u">?</b>Brasscribe wasn't sure</span><span><b class="q vu">?</b>Very unsure</span></div>
+    <div class="legend" style="margin-top: var(--scribe-space-2)"><span><b class="q u">?</b>Brasscribe wasn't sure</span><span><b class="q vu">?</b>Very unsure</span></div>
 
-    <div class="card item" style="margin-top: var(--bc-space-4)">
+    <div class="card item" style="margin-top: var(--scribe-space-4)">
       <div style="display:flex; justify-content: space-between; align-items: baseline"><span class="headline">Bar 14 · Solo Cornet</span><span class="caption num">1 of 9</span></div>
       <div class="staff" data-score="reviewBarPhone" style="height: 150px"></div>
       <p class="note-desc">Written G, minim. <span class="muted">Very uncertain: it could also be an A.</span></p>
@@ -45,14 +45,14 @@
       </div>
     </div>
 
-    <h2 class="eyebrow" style="margin-top: var(--bc-space-6)">Still to check</h2>
+    <h2 class="eyebrow" style="margin-top: var(--scribe-space-6)">Still to check</h2>
     <div class="group">
       <div class="rv-row"><span class="bn">Bar 15</span><span class="grow callout" style="flex:1">Solo Cornet · C♯, crotchet</span><b class="q u">?</b></div>
       <div class="rv-row"><span class="bn">Bar 14</span><span class="grow callout" style="flex:1">Euphonium · D, minim</span><b class="q u">?</b></div>
-      <div class="rv-row"><span class="grow callout" style="flex:1; font-weight:600; color: var(--bc-text)">+ 7 more</span><i data-i="open" class="sm chev"></i></div>
+      <div class="rv-row"><span class="grow callout" style="flex:1; font-weight:600; color: var(--scribe-text)">+ 7 more</span><i data-i="open" class="sm chev"></i></div>
     </div>
   </div>
-  <div class="bottom" style="display:flex; gap: var(--bc-space-2)"><button class="btn secondary" style="flex: 0 0 auto">Skip</button><button class="btn primary" style="flex:1"><i data-i="mark-checked"></i>Keep, go to next</button></div>
+  <div class="bottom" style="display:flex; gap: var(--scribe-space-2)"><button class="btn secondary" style="flex: 0 0 auto">Skip</button><button class="btn primary" style="flex:1"><i data-i="mark-checked"></i>Keep, go to next</button></div>
   <div class="homebar"></div>
 </div>
 
@@ -61,7 +61,7 @@
   <div class="shell">
     <nav class="sidebar" aria-label="Notes to check" style="gap: 2px">
       <div class="side-head" style="padding-top: 0">12 notes to check</div>
-      <div class="legend" style="padding: 0 var(--bc-space-3) var(--bc-space-3); font-size: 0.8125rem"><span><b class="q u">?</b>Uncertain</span><span><b class="q vu">?</b>Very uncertain</span></div>
+      <div class="legend" style="padding: 0 var(--scribe-space-3) var(--scribe-space-3); font-size: 0.8125rem"><span><b class="q u">?</b>Uncertain</span><span><b class="q vu">?</b>Very uncertain</span></div>
       <div class="side-head">Solo Cornet</div>
       <div class="side-rv done"><i data-i="mark-checked" class="sm"></i><span class="grow">Bar 10 · F♯</span></div>
       <div class="side-rv done"><i data-i="mark-checked" class="sm"></i><span class="grow">Bar 13 · C♯</span></div>
@@ -76,24 +76,24 @@
       <div class="side-rv"><span class="grow" style="padding-left: 30px; font-weight: 600">+ 4 more</span><i data-i="open" class="sm chev"></i></div>
     </nav>
     <main class="main">
-      <div class="pane" style="max-width: 880px; padding-top: var(--bc-space-8)">
+      <div class="pane" style="max-width: 880px; padding-top: var(--scribe-space-8)">
         <p class="eyebrow">3 of 12 · Solo Cornet · 9 left</p>
         <h1 class="display" style="font-size: 2.75rem">Bar 14</h1>
-        <div class="card" style="margin-top: var(--bc-space-5); padding: var(--bc-space-4) var(--bc-space-5) var(--bc-space-2)">
+        <div class="card" style="margin-top: var(--scribe-space-5); padding: var(--scribe-space-4) var(--scribe-space-5) var(--scribe-space-2)">
           <div data-score="reviewBar" style="height: 190px"></div>
         </div>
-        <div style="display:flex; align-items:flex-start; gap: var(--bc-space-8); margin-top: var(--bc-space-6)">
+        <div style="display:flex; align-items:flex-start; gap: var(--scribe-space-8); margin-top: var(--scribe-space-6)">
           <div style="flex:1">
             <p class="title-2" style="font-weight:600">Written G, minim</p>
             <p class="callout" style="margin-top: 4px; font-size: 1.0625rem">Very uncertain: it could also be an A. Listen to the original and the score side by side.</p>
           </div>
-          <div style="display:flex; gap: var(--bc-space-2)">
+          <div style="display:flex; gap: var(--scribe-space-2)">
             <button class="btn secondary"><i data-i="listen-bar" class="sm"></i>Listen to this bar</button>
             <button class="btn outline">Change note…</button>
           </div>
         </div>
-        <hr class="hairline" style="margin: var(--bc-space-8) 0 var(--bc-space-5)">
-        <div style="display:flex; align-items:center; gap: var(--bc-space-3)">
+        <hr class="hairline" style="margin: var(--scribe-space-8) 0 var(--scribe-space-5)">
+        <div style="display:flex; align-items:center; gap: var(--scribe-space-3)">
           <span class="caption" style="flex:1">Space listens · K keeps · arrows move</span>
           <button class="btn plain">Finish later (9 left)</button>
           <button class="btn secondary">Skip</button>

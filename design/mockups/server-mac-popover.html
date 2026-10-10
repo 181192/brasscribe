@@ -11,8 +11,8 @@
   .col { position: absolute; top: 44px; }
   .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; padding: 12px; }
   .strip div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.8125rem; text-align: center; }
-  .strip .big { color: var(--bc-text); }
-  .strip .small { color: var(--bc-text); display: inline-grid; place-items: center; width: 28px; height: 22px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--bc-border); background: var(--bc-surface-raised); }
+  .strip .big { color: var(--scribe-text); }
+  .strip .small { color: var(--scribe-text); display: inline-grid; place-items: center; width: 28px; height: 22px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--scribe-border); background: var(--scribe-surface-raised); }
 </style>
 </head>
 <body>
@@ -29,7 +29,7 @@
   <div class="col" style="left: 40px; width: 330px">
     <p class="cap">Stop while busy</p>
     <div class="alert" style="margin: 0 auto">
-      <span data-mark="40" style="color: var(--bc-brass); margin: 0 auto"></span>
+      <span data-mark="40" style="color: var(--scribe-brand); margin: 0 auto"></span>
       <div class="t">Stop while “Old Hundredth” is being made?</div>
       <p>Kari's iPhone keeps the recording and can send it again.</p>
       <div style="display:flex; flex-direction:column; gap: 8px; margin-top: 6px">
@@ -37,7 +37,7 @@
         <button class="btn secondary desk">Keep going</button>
       </div>
     </div>
-    <p class="cap" style="margin-top: var(--bc-space-8)">Menu bar icon: a shape per state</p>
+    <p class="cap" style="margin-top: var(--scribe-space-8)">Menu bar icon: a shape per state</p>
     <div class="pcard">
       <div class="strip">
         <div><span class="big" data-state-mark="running" data-size="40"></span><span class="small" data-state-mark="running" data-size="18"></span>Running</div>
@@ -71,7 +71,7 @@
         <div class="prow"><i data-i="pair-phone"></i><div class="grow"><div class="val">Phones and tablets</div><div class="sub">1 connected now · 3 paired</div></div><i data-i="open" class="chev"></i></div>
       </div>
       <div class="pcard pad" style="display:flex; gap: 10px; align-items:flex-start">
-        <i data-i="download" style="width:20px;height:20px;color:var(--bc-text-muted)"></i>
+        <i data-i="download" style="width:20px;height:20px;color:var(--scribe-text-muted)"></i>
         <div class="grow"><div>Version 1.3 is ready. It installs when nothing is being made.</div>
         <button class="btn outline desk" style="margin-top: 8px">Update now</button></div>
       </div>

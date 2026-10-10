@@ -952,18 +952,45 @@ def css_color(mode: str, r: str) -> str:
     return h if a == 1 else f"rgb({int(h[1:3], 16)} {int(h[3:5], 16)} {int(h[5:7], 16)} / {fmt(a)})"
 
 
+def web_names(name: str) -> list[str]:
+    """The CSS variables of one token, by the name the style sheet is written with below (`text`,
+    `brass-text`, `space-4`, `score-cursor-width`): --scribe-… for what every brand has, one for each
+    neutral role that reads a colour, and the brand's prefix for what is its own. Never both."""
+    view, _ = notation()
+    if name in roles():
+        neutral = [n for n, src in neutral_roles().items() if src == name]
+        return [f"--{NEUTRAL_PREFIX}-{n}" for n in neutral] or [f"--{CSS}-{name}"]
+    families = [k for k in TOKENS["font"]["family"] if not k.startswith("$") and k not in ("text", "display", "mono")]
+    # A type role with no native text style on the other platforms (Studio's) is the brand's own.
+    own_type = [k for k, v in group("typography").items() if "no.brasscribe.platform" not in v.get("$extensions", {})]
+    own = (name.startswith(f"{view}-") or name in (f"font-{k}" for k in families)
+           or any(name.startswith(f"type-{k}-") for k in own_type))
+    return [f"--{CSS if own else NEUTRAL_PREFIX}-{name}"]
+
+
+def web_named(lines: list[str]) -> str:
+    """A style sheet written with --bc-<token>, under the names of web_names: a declaration of a colour
+    that two neutral roles read is written once for each."""
+    out = []
+    for line in lines:
+        declared = re.match(r"(\s*)--bc-([\w-]+)(:.*)", line)
+        names = web_names(declared.group(2)) if declared else [""]
+        rest = declared.group(3) if declared else line
+        rest = re.sub(r"--bc-([a-z0-9]+(?:-[a-z0-9]+)*)", lambda m: web_names(m.group(1))[0], rest)  # var() and comments
+        out += [f"{declared.group(1)}{n}{rest}" if declared else rest for n in names]
+    return "\n".join(out)
+
+
 def web_outputs() -> dict[str, str | bytes]:
-    """The style sheets are written with Brasscribe's prefix (--bc-); `own` gives another brand its own."""
+    """The style sheet is written with --bc-<token> and then named by web_names: neutral or the brand's own."""
     rs = roles()
     view, sc = notation()
-
-    def own(lines: list[str]) -> str:
-        return "\n".join(lines).replace("--bc-", f"--{CSS}-")
 
     def block(mode: str, indent: str) -> list[str]:
         return [f"{indent}--bc-{r}: {css_color(mode, r)};" for r in rs]
 
-    C = [f"/* {HEADER} */", "/* Import fonts.css too if the page uses the display face. */", "",
+    C = [f"/* {HEADER} */", "/* Import fonts.css too if the page uses the display face. */",
+         f"/* --{NEUTRAL_PREFIX}-… is what every brand has (design/tokens/README.md); --{CSS}-… is {PRODUCT}'s own. */", "",
          ":root {", "  color-scheme: light;"]
     C += block("light", "  ")
     fam = TOKENS["font"]["family"]
@@ -1050,22 +1077,6 @@ def web_outputs() -> dict[str, str | bytes]:
           "    --bc-duration-fast: 0ms;", "    --bc-duration-base: var(--bc-duration-reduced);", "    --bc-duration-slow: var(--bc-duration-reduced);",
           "  }", "}", ""]
 
-    # The neutral names: one for every variable of the first block that is not the brand's own. var() is
-    # resolved where it is used, so each follows the brand's value in every mode and palette.
-    # A type role with no native text style on the other platforms (Studio's) is the brand's own.
-    own_type = [k for k, v in group("typography").items() if "no.brasscribe.platform" not in v.get("$extensions", {})]
-    C += ["/* The neutral names (design/tokens/README.md): the same in every brand's file, so styles that use only",
-          "   these work with any brand. Each follows the value above in every mode. */", ":root {"]
-    C += [f"  --scribe-{name}: var(--bc-{src});" for name, src in neutral_roles().items()]
-    for line in C[C.index(":root {") + 1:C.index("}")]:
-        name = line.strip().removeprefix("--bc-").split(":")[0]
-        if not line.startswith("  --bc-") or name in rs or name.startswith(f"{view}-") or name in (f"font-{k}" for k in extra_fonts):
-            continue
-        if any(name.startswith(f"type-{k}-") for k in own_type):
-            continue
-        C.append(f"  --scribe-{name}: var(--bc-{name});")
-    C += ["}", ""]
-
     F = [f"/* {HEADER} */"]
     for _, font, faces in fonts("web"):
         F.append(f"/* {font['family']}, {font['licence-name']} (fonts/{Path(font['licence']).name}). {font['note']} */")
@@ -1074,18 +1085,7 @@ def web_outputs() -> dict[str, str | bytes]:
                   f"  font-weight: {face['weight']};", f"  font-style: {face['style']};", "  font-display: swap;", "}"]
     F.append("")
 
-    compat = {"bg": "bg", "surface": "surface", "text": "text", "text-muted": "text-muted", "ink": "ink", "staff": "staff",
-              "uncertain": "uncertain", "very-uncertain": "very-uncertain", "adlib-tint": "adlib-tint", "loop-tint": "loop-tint",
-              "loop-edge": "loop-edge", "cursor": "cursor", "focus": "focus", "error": "error", "ok": "success",
-              "border": "border-strong", "m1": "model-1", "m2": "model-2", "m3": "model-3", "m4": "model-4"}
-    S = [f"/* {HEADER} */", f"/* Maps the variable names in studio/src/styles.css onto the {PRODUCT} tokens.",
-         f"   Load after {PRODUCT.lower()}.css and instead of Studio's own colour blocks. */", ":root {"]
-    S += [f"  --{k}: var(--bc-{v});" for k, v in compat.items()]
-    S += ["  --space: var(--bc-space-4);", "  font-family: var(--bc-font-text);", "}", ""]
-
-    out: dict[str, str | bytes] = {f"web/{PRODUCT.lower()}.css": own(C), "web/fonts.css": "\n".join(F)}
-    if EXT.get("web", {}).get("studio-compat"):
-        out["web/studio-compat.css"] = own(S)
+    out: dict[str, str | bytes] = {f"web/{PRODUCT.lower()}.css": web_named(C), "web/fonts.css": "\n".join(F)}
     out.update(font_files("web", "web/fonts"))
     js = [f"// {HEADER}", "// Path data on the Material Symbols 960 grid (viewBox \"0 -960 960 960\"), keyed by action.",
           f"globalThis.{PRODUCT}Icons = {{"]

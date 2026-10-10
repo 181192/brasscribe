@@ -70,9 +70,9 @@ def test_light_high_contrast_is_seven_to_one():
 def test_web_high_contrast_follows_the_resolved_theme():
     css = (build.DIST / "web" / "brasscribe.css").read_text()
     more = "@media (prefers-contrast: more) and (forced-colors: none)"
-    assert f'{more} {{\n  :root:not([data-theme="dark"]) {{\n    color-scheme: light;\n    --bc-bg: #FFFFFF;' in css
-    assert f'{more} and (prefers-color-scheme: dark) {{\n  :root:not([data-theme="light"]) {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css
-    assert f'{more} {{\n  :root[data-theme="dark"] {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css
+    assert f'{more} {{\n  :root:not([data-theme="dark"]) {{\n    color-scheme: light;\n    --scribe-bg: #FFFFFF;' in css
+    assert f'{more} and (prefers-color-scheme: dark) {{\n  :root:not([data-theme="light"]) {{\n    color-scheme: dark;\n    --scribe-bg: #000000;' in css
+    assert f'{more} {{\n  :root[data-theme="dark"] {{\n    color-scheme: dark;\n    --scribe-bg: #000000;' in css
 
 
 def test_pink_keeps_the_notation_and_its_meaning():
@@ -116,7 +116,7 @@ def test_pink_status_and_primary_stay_apart():
 
 def test_every_platform_gets_the_pink_palette():
     css = (build.DIST / "web" / "brasscribe.css").read_text()
-    assert ':root[data-palette="pink"] {\n    color-scheme: light;\n    --bc-bg: #FFF6F9;' in css
+    assert ':root[data-palette="pink"] {\n    color-scheme: light;\n    --scribe-bg: #FFF6F9;' in css
     assert "(not (prefers-contrast: more))" in css
     kt = (build.DIST / "android" / "kotlin" / "no" / "brasscribe" / "design" / "BrasscribeTheme.kt").read_text()
     assert "val BrasscribePinkColors" in kt and "pink && dark -> BrasscribePinkDarkColors" in kt
@@ -220,7 +220,7 @@ def neutral_names(b) -> dict[str, list[str]]:
         "apple": re.findall(r"(?:enum|typealias|static var) (\w+)", swift),
         "android": declarations((b.DIST / KOTLIN / "ScribeTheme.kt").read_text()),
         "windows": re.findall(r'x:Key="(Scribe\w+)"', xaml),
-        "web": re.findall(r"^  (--scribe-[\w-]+):", css, re.M),
+        "web": sorted(set(re.findall(r"^\s+(--scribe-[\w-]+):", css, re.M))),
     }
 
 
@@ -288,10 +288,17 @@ def test_neutral_colours_have_the_brands_values_in_every_theme():
                 assert keys[f"{neutral}Color"] == keys[f"{own}Color"], (name, theme, role)
                 assert keys[f"{neutral}Brush"] == keys[f"{own}Brush"].replace(own, neutral), (name, theme, role)
         css = (b.DIST / "web" / f"{b.PRODUCT.lower()}.css").read_text()
+        # The web: a neutral role is declared once, under its neutral name, with the brand's value in every
+        # mode; the brand's prefix is left for what is the brand's own.
+        root = css.split(":root {", 1)[1].split("}", 1)[0]
         for role, src in b.neutral_roles().items():
-            assert f"  --scribe-{role}: var(--{b.CSS}-{src});" in css, (name, role)
-        declared = set(re.findall(rf"^\s+(--{b.CSS}-[\w-]+):", css, re.M))
-        assert set(re.findall(rf"var\((--{b.CSS}-[\w-]+)\)", css.split("/* The neutral names")[1])) <= declared, name
+            assert f"  --scribe-{role}: {b.css_color('light', src)};" in root, (name, role)
+            assert f"--{b.CSS}-{src}:" not in css, (name, src)
+        own = set(re.findall(rf"--{b.CSS}-([a-z0-9-]+):", css))
+        assert own and not {o for o in own if o in build.NEUTRAL["roles"] or o.startswith(("space-", "radius-", "duration-", "font-text"))}, name
+        assert set(re.findall(r"var\((--[\w-]+)\)", css)) <= set(re.findall(r"^\s+(--[\w-]+):", css, re.M)), name
+        blocks = [set(re.findall(r"(--[\w-]+):", blk)) for blk in css.split("{")[1:] if "--scribe-bg:" in blk]
+        assert len(blocks) >= 8 and all({f"--scribe-{r}" for r in build.NEUTRAL["roles"]} <= blk for blk in blocks), name
 
 
 def test_pink_follows_into_the_neutral_names_on_windows():
@@ -445,7 +452,7 @@ def test_fretscribe_has_its_own_names_and_none_of_brasscribes():
     assert "public static var uncertainTint: Color" in swift and "public static var string: Color" in swift
     assert "public enum Tab {" in swift and "enum Fretscribe {" in swift
     assert 'x:Key="FsUncertainTintBrush"' in xaml and 'x:Key="FsStringBrush"' in xaml and 'x:Key="FsTabCursorWidth"' in xaml
-    assert "--fs-uncertain-tint: #FCF0DB;" in css and "--fs-string:" in css and "--fs-tab-cursor-width:" in css
+    assert "--fs-uncertain-tint: #FCF0DB;" in css and "--scribe-line: #737983;" in css and "--fs-tab-cursor-width:" in css
     assert "globalThis.FretscribeIcons = {" in js
     assert not (fs.DIST / "windows" / "FretscribePinkTheme.xaml").exists()
     assert not (fs.DIST / "web" / "studio-compat.css").exists()

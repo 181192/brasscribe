@@ -9,20 +9,20 @@
 <script src="mockup.js"></script>
 <style>
   /* Instrument tiles: one radio group, nothing pre-selected on first run; chosen = 2 px ink ring + check. */
-  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bc-space-2); margin: 0; padding: 0; border: 0; }
-  .tile { display: flex; align-items: center; gap: var(--bc-space-2); min-height: 44px; padding: 4px var(--bc-space-3);
-          border-radius: var(--bc-radius-md); background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border-strong);
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--scribe-space-2); margin: 0; padding: 0; border: 0; }
+  .tile { display: flex; align-items: center; gap: var(--scribe-space-2); min-height: 44px; padding: 4px var(--scribe-space-3);
+          border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); box-shadow: inset 0 0 0 1px var(--scribe-border-strong);
           font-weight: 600; font-size: 0.9375rem; line-height: 1.2; }
-  .tile small { display: block; font-weight: 500; color: var(--bc-text-muted); font-size: 0.8125rem; }
-  .tile.on { box-shadow: inset 0 0 0 2px var(--bc-primary); }
+  .tile small { display: block; font-weight: 500; color: var(--scribe-text-muted); font-size: 0.8125rem; }
+  .tile.on { box-shadow: inset 0 0 0 2px var(--scribe-primary); }
   .tile.on::after { content: "✓"; margin-left: auto; font-weight: 700; }
-  .q-label { font-weight: 600; font-size: 0.9375rem; margin: var(--bc-space-3) 0 var(--bc-space-2); }
+  .q-label { font-weight: 600; font-size: 0.9375rem; margin: var(--scribe-space-3) 0 var(--scribe-space-2); }
   .seg.wide { display: flex; }
   .seg.wide span { flex: 1; min-height: 44px; }
   /* Radio segments follow the toggle rule: chosen = tonal fill, 1.5 px ink edge and a check. */
-  .seg.wide span.on { background: var(--bc-secondary); color: var(--bc-text); box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+  .seg.wide span.on { background: var(--scribe-secondary); color: var(--scribe-text); box-shadow: inset 0 0 0 1.5px var(--scribe-text); }
   .seg.wide span.on::before { content: "✓"; font-weight: 700; margin-right: 6px; }
-  .seg.wide { background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+  .seg.wide { background: transparent; box-shadow: inset 0 0 0 1px var(--scribe-border-strong); }
   .desk-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
 </style>
 </head>
@@ -33,7 +33,7 @@
   <div class="navbar"><span></span><span></span><span class="btn plain compact" data-nb="Ikke nå">Not now</span></div>
   <div class="content" style="padding-top: 0">
     <h1 class="display" style="font-size: 2rem" data-nb="Hva spiller du?">What do you play?</h1>
-    <p class="callout" style="margin-top: var(--bc-space-2); font-size: 0.9375rem" data-nb="Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger.">Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.</p>
+    <p class="callout" style="margin-top: var(--scribe-space-2); font-size: 0.9375rem" data-nb="Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger.">Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.</p>
 
     <p class="q-label" data-nb="Instrument">Instrument</p>
     <fieldset class="tiles" role="radiogroup" aria-label="Instrument">
@@ -56,7 +56,7 @@
     <p class="q-label" data-nb="Du leser">You read</p>
     <span class="seg wide" role="radiogroup" aria-label="You read"><span class="on" data-nb="G-nøkkel i B">Treble clef in B♭</span><span data-nb="F-nøkkel, klingende">Bass clef, as it sounds</span></span>
   </div>
-  <div class="bottom" style="display:flex; flex-direction: column; gap: 2px; padding-top: var(--bc-space-2)">
+  <div class="bottom" style="display:flex; flex-direction: column; gap: 2px; padding-top: var(--scribe-space-2)">
     <button class="btn primary block" aria-disabled="true" aria-describedby="why" style="opacity: 0.45" data-nb="Fortsett">Continue</button>
     <p id="why" class="caption" style="text-align:center" data-nb="Velg hvilken stemme du spiller.">Choose which part you play.</p>
     <button class="btn plain block" style="min-height: 44px" data-nb="Jeg dirigerer eller lytter">I conduct or listen</button>

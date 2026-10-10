@@ -1,0 +1,26 @@
+/* Studio's own short names for the design tokens it draws with: its components read them from the
+   document (token("m1") in ui/dom.ts) and in inline styles. Loaded after brasscribe.css. */
+:root {
+  --bg: var(--scribe-bg);
+  --surface: var(--scribe-surface);
+  --text: var(--scribe-text);
+  --text-muted: var(--scribe-text-muted);
+  --ink: var(--scribe-ink);
+  --staff: var(--scribe-line);
+  --uncertain: var(--scribe-uncertain);
+  --very-uncertain: var(--bc-very-uncertain);
+  --adlib-tint: var(--bc-adlib-tint);
+  --loop-tint: var(--bc-loop-tint);
+  --loop-edge: var(--bc-loop-edge);
+  --cursor: var(--bc-cursor);
+  --focus: var(--scribe-focus);
+  --error: var(--scribe-error);
+  --ok: var(--scribe-success);
+  --border: var(--scribe-border-strong);
+  --m1: var(--bc-model-1);
+  --m2: var(--bc-model-2);
+  --m3: var(--bc-model-3);
+  --m4: var(--bc-model-4);
+  --space: var(--scribe-space-4);
+  font-family: var(--scribe-font-text);
+}

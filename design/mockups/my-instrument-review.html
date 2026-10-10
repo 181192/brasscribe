@@ -25,14 +25,14 @@
 </script>
 <script src="mockup.js"></script>
 <style>
-  .src { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 10px; border-radius: 999px; font-size: 0.875rem; font-weight: 600; color: var(--bc-text); background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong); white-space: nowrap; }
-  .src .i { width: 18px; height: 18px; color: var(--bc-text-muted); }
-  .legend { display: flex; gap: var(--bc-space-4); flex-wrap: wrap; font-size: 0.9375rem; color: var(--bc-text-muted); }
+  .src { border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 10px; border-radius: 999px; font-size: 0.875rem; font-weight: 600; color: var(--scribe-text); background: transparent; box-shadow: inset 0 0 0 1px var(--scribe-border-strong); white-space: nowrap; }
+  .src .i { width: 18px; height: 18px; color: var(--scribe-text-muted); }
+  .legend { display: flex; gap: var(--scribe-space-4); flex-wrap: wrap; font-size: 0.9375rem; color: var(--scribe-text-muted); }
   .legend span { display: inline-flex; gap: 6px; align-items: center; }
-  .item { padding: var(--bc-space-4); }
-  .actions { display: flex; gap: var(--bc-space-2); margin-top: var(--bc-space-4); }
-  .actions .btn { flex: 1; white-space: nowrap; padding: 0 var(--bc-space-3); }
-  .side-rv { display: flex; align-items: center; gap: var(--bc-space-3); min-height: 44px; padding: 0 var(--bc-space-3); border-radius: var(--bc-radius-sm); font-size: 0.9375rem; }
+  .item { padding: var(--scribe-space-4); }
+  .actions { display: flex; gap: var(--scribe-space-2); margin-top: var(--scribe-space-4); }
+  .actions .btn { flex: 1; white-space: nowrap; padding: 0 var(--scribe-space-3); }
+  .side-rv { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 44px; padding: 0 var(--scribe-space-3); border-radius: var(--scribe-radius-sm); font-size: 0.9375rem; }
   .side-rv .grow { flex: 1; }
 </style>
 </head>
@@ -41,15 +41,15 @@
 <div class="phone">
   <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
   <div class="navbar"><span class="back"><i data-i="back"></i>Practice take</span><span></span><span class="btn plain compact">Finish later (4 left)</span></div>
-  <div class="content" style="padding-top: var(--bc-space-2)">
+  <div class="content" style="padding-top: var(--scribe-space-2)">
     <h1 class="display" style="font-size: 2.25rem">Check 4 notes</h1>
-    <div style="display:flex; align-items:center; gap: var(--bc-space-2); flex-wrap: wrap; margin-top: var(--bc-space-2)">
+    <div style="display:flex; align-items:center; gap: var(--scribe-space-2); flex-wrap: wrap; margin-top: var(--scribe-space-2)">
       <button class="src" aria-label="From your recording. What does this mean?"><i data-i="record-mic"></i>From your recording</button>
       <span class="callout">Written for Euphonium in B♭, treble clef</span>
     </div>
-    <div class="legend" style="margin-top: var(--bc-space-3)"><span><b class="q u">?</b>Brasscribe wasn't sure</span><span><b class="q vu">?</b>Very unsure</span></div>
+    <div class="legend" style="margin-top: var(--scribe-space-3)"><span><b class="q u">?</b>Brasscribe wasn't sure</span><span><b class="q vu">?</b>Very unsure</span></div>
 
-    <div class="card item" style="margin-top: var(--bc-space-4)">
+    <div class="card item" style="margin-top: var(--scribe-space-4)">
       <div style="display:flex; justify-content: space-between; align-items: baseline"><span class="headline">Bar 6 · Euphonium (you)</span><span class="caption num">1 of 4</span></div>
       <div class="staff" data-score="miReview" style="height: 150px"></div>
       <p style="font-size: 1.0625rem">Written E, minim. <span class="muted">Very uncertain: it could also be an F♯.</span></p>
@@ -58,9 +58,9 @@
         <button class="btn outline compact touch48">Change note…</button>
       </div>
     </div>
-    <p class="caption" style="margin-top: var(--bc-space-4); display:flex; gap:6px; align-items:flex-start"><i data-i="info" class="sm"></i><span>Someone else played? Change it under “Write for another instrument…” in the score.</span></p>
+    <p class="caption" style="margin-top: var(--scribe-space-4); display:flex; gap:6px; align-items:flex-start"><i data-i="info" class="sm"></i><span>Someone else played? Change it under “Write for another instrument…” in the score.</span></p>
   </div>
-  <div class="bottom" style="display:flex; gap: var(--bc-space-2)"><button class="btn secondary" style="flex: 0 0 auto">Skip</button><button class="btn primary" style="flex:1"><i data-i="mark-checked"></i>Keep, go to next</button></div>
+  <div class="bottom" style="display:flex; gap: var(--scribe-space-2)"><button class="btn secondary" style="flex: 0 0 auto">Skip</button><button class="btn primary" style="flex:1"><i data-i="mark-checked"></i>Keep, go to next</button></div>
   <div class="homebar"></div>
 </div>
 
@@ -78,12 +78,12 @@
       <div class="side-rv"><span class="grow" style="padding-left: 30px; font-weight: 600">+ 5 more</span><i data-i="open" class="sm chev"></i></div>
     </nav>
     <main class="main">
-      <div class="pane" style="max-width: 760px; padding-top: var(--bc-space-8)">
+      <div class="pane" style="max-width: 760px; padding-top: var(--scribe-space-8)">
         <span class="seg" aria-label="Which notes"><span class="on">Your part (0)</span><span>Other parts (9)</span><span>All parts (9)</span></span>
-        <h1 class="display" style="font-size: 2.75rem; margin-top: var(--bc-space-6)">Your part is arranged</h1>
-        <div style="margin-top: var(--bc-space-3)"><button class="src" aria-label="Arranged from the band's harmony. What does this mean?"><i data-i="parts"></i>Euphonium · Arranged from the band's harmony</button></div>
-        <p class="callout" style="margin-top: var(--bc-space-4); font-size: 1.0625rem; max-width: 600px">Nobody played the Euphonium part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check. The notes marked ? in the tune and the bass line are the ones it follows.</p>
-        <div style="display:flex; gap: var(--bc-space-2); margin-top: var(--bc-space-6)">
+        <h1 class="display" style="font-size: 2.75rem; margin-top: var(--scribe-space-6)">Your part is arranged</h1>
+        <div style="margin-top: var(--scribe-space-3)"><button class="src" aria-label="Arranged from the band's harmony. What does this mean?"><i data-i="parts"></i>Euphonium · Arranged from the band's harmony</button></div>
+        <p class="callout" style="margin-top: var(--scribe-space-4); font-size: 1.0625rem; max-width: 600px">Nobody played the Euphonium part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check. The notes marked ? in the tune and the bass line are the ones it follows.</p>
+        <div style="display:flex; gap: var(--scribe-space-2); margin-top: var(--scribe-space-6)">
           <button class="btn primary">Check the other parts</button>
           <button class="btn secondary">Show my part</button>
         </div>
@@ -108,7 +108,7 @@
     svg.insertBefore(r, svg.firstChild);
     const c = document.createElementNS(ns, "path"), cx = b.x + b.width / 2;
     c.setAttribute("d", `M${cx - 7} ${bot + 12}L${cx} ${bot + 4}L${cx + 7} ${bot + 12}Z`);
-    c.style.fill = "var(--bc-text)";
+    c.style.fill = "var(--scribe-text)";
     svg.appendChild(c);
   })();
 </script>
