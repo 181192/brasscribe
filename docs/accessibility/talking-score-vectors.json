@@ -332,6 +332,96 @@
                 "articulations": ["trill-sharp"], "confidence": 0.9, "sources": ["swiftf0"]},
       "expected": {"en": "beat 3: C-sharp 5, quarter note, trill with sharp",
                    "nb": "slag 3: Ciss 5, fjerdedelsnote, trille med kryss"}
+    },
+    {
+      "id": "pickup-note",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": null},
+      "bar": {"number": 0},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 1, "den": 2}, "type": "eighth", "dots": 0,
+                "written": {"step": "A", "alter": 0, "octave": 4}, "concert": {"step": "G", "alter": 0, "octave": 4},
+                "confidence": 0.93, "sources": ["swiftf0"]},
+      "expected": {"en": "pickup, beat 4 and: A 4, eighth note",
+                   "nb": "opptakt, slag 4-og: A 4, åttendedelsnote"}
+    },
+    {
+      "id": "pickup-same-bar-brief",
+      "settings": {"verbosity": "brief", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 0},
+      "bar": {"number": 0},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 3, "den": 4}, "type": "16th", "dots": 0,
+                "written": {"step": "B", "alter": 0, "octave": 4}, "concert": {"step": "A", "alter": 0, "octave": 4},
+                "confidence": 0.93, "sources": ["swiftf0"]},
+      "expected": {"en": "4 a: B 4 sixteenth", "nb": "4, 4. av 4: H 4 sekstendedel"}
+    },
+    {
+      "id": "pickup-full-verbosity-has-no-total",
+      "settings": {"verbosity": "full", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": null},
+      "bar": {"number": 0},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 0, "den": 1}, "type": "quarter", "dots": 0,
+                "written": {"step": "A", "alter": 0, "octave": 4}, "concert": {"step": "G", "alter": 0, "octave": 4},
+                "confidence": 0.55, "sources": ["swiftf0"]},
+      "expected": {"en": "pickup, beat 4: written A 4, sounds G 4, quarter note, uncertain, confidence 55 percent, source SwiftF0",
+                   "nb": "opptakt, slag 4: skrevet A 4, klinger G 4, fjerdedelsnote, usikker, sikkerhet 55 prosent, kilde SwiftF0"}
+    },
+    {
+      "id": "pickup-compound-time",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": null},
+      "bar": {"number": 0},
+      "event": {"kind": "note", "pos": {"beat": 2, "num": 2, "den": 3, "compound": true}, "type": "eighth", "dots": 0,
+                "written": {"step": "A", "alter": 0, "octave": 4}, "concert": {"step": "G", "alter": 0, "octave": 4},
+                "confidence": 0.93, "sources": ["swiftf0"]},
+      "expected": {"en": "pickup, beat 2, eighth 3: A 4, eighth note",
+                   "nb": "opptakt, slag 2, 3. åttendedel: A 4, åttendedelsnote"}
+    },
+    {
+      "id": "pickup-rest",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "2nd Horn", "bar": null},
+      "bar": {"number": 0},
+      "event": {"kind": "bar-rest", "bars": 1},
+      "expected": {"en": "pickup: rest", "nb": "opptakt: pause"}
+    },
+    {
+      "id": "pickup-rest-and-bar-1",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "2nd Horn", "bar": null},
+      "bar": {"number": 0},
+      "event": {"kind": "bar-rest", "bars": 2},
+      "expected": {"en": "pickup and bar 1: rest", "nb": "opptakt og takt 1: pause"}
+    },
+    {
+      "id": "pickup-and-multi-bar-rest",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "2nd Horn", "bar": null},
+      "bar": {"number": 0},
+      "event": {"kind": "bar-rest", "bars": 4},
+      "expected": {"en": "pickup and bars 1 to 3: rest, 3 bars", "nb": "opptakt og takt 1 til 3: pause, 3 takter"}
+    },
+    {
+      "id": "held-from-pickup",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": 0},
+      "bar": {"number": 1},
+      "event": {"kind": "held", "pos": {"beat": 1, "num": 0, "den": 1},
+                "written": {"step": "A", "alter": 0, "octave": 4}, "concert": {"step": "G", "alter": 0, "octave": 4},
+                "held_from": {"bar": 0, "beat": 4, "num": 1, "den": 2}},
+      "expected": {"en": "bar 1, beat 1: A 4 held, from pickup beat 4 and",
+                   "nb": "takt 1, slag 1: A 4 holdes, fra opptakt slag 4-og"}
+    },
+    {
+      "id": "adlib-region-from-pickup",
+      "settings": {"verbosity": "standard", "pitch_mode": "written"},
+      "context": {"part": "Solo Cornet", "bar": null},
+      "bar": {"number": 0, "free_region": {"start_bar": 0, "end_bar": 4, "start_s": 0.0, "end_s": 31.5, "entering": true}},
+      "event": {"kind": "note", "pos": {"beat": 4, "num": 1, "den": 2}, "time_s": 0.03, "performed_s": 0.12,
+                "type": "eighth", "dots": 0,
+                "written": {"step": "D", "alter": 0, "octave": 4}, "concert": {"step": "C", "alter": 0, "octave": 4},
+                "confidence": 0.91, "sources": ["swiftf0", "muscriptor"]},
+      "expected": {"en": "Ad lib, free time, pickup to bar 4, about 32 seconds. pickup, at 0 seconds: D 4, eighth note",
+                   "nb": "Ad lib, fritt tempo, opptakt til takt 4, omtrent 32 sekunder. opptakt, ved 0 sekunder: D 4, åttendedelsnote"}
     }
   ]
 }

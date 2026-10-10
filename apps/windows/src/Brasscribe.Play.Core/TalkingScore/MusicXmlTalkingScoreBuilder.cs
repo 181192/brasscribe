@@ -68,6 +68,14 @@ public static class MusicXmlTalkingScoreBuilder
             {
                 int number = int.TryParse((string?)m.Attribute("number"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
                     ? n : part.Bars.Count + 1;
+                // A pickup: the first measure when it is numbered 0, or left out of the numbering and shorter than a
+                // full bar. Its notes are placed on the beats they fall on in the bar they lead into.
+                bool first = part.Bars.Count == 0;
+                long lead = first ? LeadIn(m, divisions, time) : 0; // divisions the pickup lacks of a full bar
+                if (first && (number == Announcer.PickupBar || ((string?)m.Attribute("implicit") == "yes" && lead > 0)))
+                    number = Announcer.PickupBar;
+                else
+                    lead = 0;
                 double? tempo = null;
                 string? rehearsal = null;
                 string? pendingDynamic = null;
@@ -132,7 +140,7 @@ public static class MusicXmlTalkingScoreBuilder
                                 continue;
                             }
 
-                            var ev = ReadNote(el, start, dur, divisions, time, part, ref tupletCount);
+                            var ev = ReadNote(el, start, dur, divisions, time, part, ref tupletCount, lead);
                             if (ev is null) continue;
                             ev.MusicXmlNoteIndex = noteIndex;
                             ev.PrintedMark = el.Attribute("color") is not null || el.Element("notehead")?.Attribute("color") is not null;
@@ -222,7 +230,8 @@ public static class MusicXmlTalkingScoreBuilder
                 if (b < p.Bars.Count) p.Bars[b].TempoBpm ??= tempo;
         }
 
-        ts.TotalBars = ts.Parts.Count == 0 ? 0 : ts.Parts.Max(p => p.Bars.Count);
+        // The pickup is not one of the bars counted.
+        ts.TotalBars = ts.Parts.Count == 0 ? 0 : ts.Parts.Max(p => p.Bars.Count(b => b.Number != Announcer.PickupBar));
         if (composition is not null && ts.Parts.Count > 0)
             ts.FreeRegions = MapFreeRegions(composition, measureStartQuarters, ts.Parts[0]);
         return ts;
@@ -251,13 +260,43 @@ public static class MusicXmlTalkingScoreBuilder
         note.Elements("tie").Any(t => (string?)t.Attribute("type") == type)
         || note.Element("notations")?.Elements("tied").Any(t => (string?)t.Attribute("type") == type) == true;
 
-    private static TsEvent? ReadNote(XElement el, long start, long dur, int divisions, TsTime time, TsPart part, ref int tupletCount)
+    /// <summary>What a pickup measure lacks of a full bar, in divisions: 0 when it is a full bar or empty.</summary>
+    private static long LeadIn(XElement m, int divisions, TsTime time)
+    {
+        long offset = 0, length = 0;
+        foreach (var el in m.Elements())
+        {
+            switch (el.Name.LocalName)
+            {
+                case "attributes":
+                    divisions = Int(el.Element("divisions")) ?? divisions;
+                    if (el.Element("time") is { } t)
+                        time = new TsTime(Int(t.Element("beats")) ?? 4, Int(t.Element("beat-type")) ?? 4);
+                    break;
+                case "backup":
+                    offset -= Long(el.Element("duration")) ?? 0;
+                    break;
+                case "forward":
+                case "note" when el.Element("chord") is null && el.Element("grace") is null:
+                    offset += Long(el.Element("duration")) ?? 0;
+                    length = Math.Max(length, offset);
+                    break;
+            }
+        }
+        if (time.BeatType <= 0) return 0;
+        long full = (long)divisions * 4 * time.Beats / time.BeatType;
+        return length > 0 && length < full ? full - length : 0;
+    }
+
+    /// <summary>One note or rest. <c>lead</c>: the divisions a pickup lacks of a full bar; the position counts from where that bar would start.</summary>
+    private static TsEvent? ReadNote(XElement el, long start, long dur, int divisions, TsTime time, TsPart part, ref int tupletCount,
+        long lead = 0)
     {
         var ev = new TsEvent
         {
             Tick = (int)(start * TicksPerQuarter / divisions),
             DurTicks = (int)(dur * TicksPerQuarter / divisions),
-            Pos = Position(start, divisions, time),
+            Pos = Position(start + lead, divisions, time),
             Type = (string?)el.Element("type"),
             Dots = el.Elements("dot").Count(),
         };

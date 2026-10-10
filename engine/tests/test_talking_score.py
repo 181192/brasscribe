@@ -28,7 +28,8 @@ def _vector_call(c: dict, lang: str) -> str:
         fr = b["free_region"]
         region = {k: fr[k] for k in ("start_bar", "end_bar", "start_s", "end_s")}
     key = b.get("key_fifths")
-    bar = T.Bar(b.get("number") or ctx.bar or 1, 2 if key is None else key, key_changed=False,
+    number = b.get("number")
+    bar = T.Bar((ctx.bar or 1) if number is None else number, 2 if key is None else key, key_changed=False,
                 tempo_marked=b.get("tempo_bpm"), free_region=region,
                 entering_region=bool((b.get("free_region") or {}).get("entering")), a_tempo=b.get("a_tempo", False),
                 total_bars=128)
@@ -162,3 +163,77 @@ def test_whole_bar_rest_in_compound_time_says_so():
     doc = T.build(SMALL.replace("<beats>4</beats><beat-type>4</beat-type>", "<beats>12</beats><beat-type>8</beat-type>"), None)
     rest = doc["parts"][0]["bars"][2]["events"][0]
     assert rest["kind"] == "bar-rest" and rest["pos"] == {"beat": 1, "num": 0, "den": 1, "compound": True}
+
+
+PICKUP = """<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <work><work-title>Pickup</work-title></work>
+  <part-list>
+    <score-part id="P1"><part-name>Solo Cornet</part-name></score-part>
+    <score-part id="P2"><part-name>2nd Horn</part-name></score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="0" implicit="yes">
+      <attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type>
+        <tie type="start"/><notations><tied type="start"/></notations></note>
+    </measure>
+    <measure number="1">
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type>
+        <tie type="stop"/><notations><tied type="stop"/></notations></note>
+    </measure>
+    <measure number="2">
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note>
+    </measure>
+  </part>
+  <part id="P2">
+    <measure number="0" implicit="yes">
+      <attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <note><rest measure="yes"/><duration>3</duration><voice>1</voice></note>
+    </measure>
+    <measure number="1">
+      <note><rest measure="yes"/><duration>8</duration><voice>1</voice></note>
+    </measure>
+    <measure number="2">
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+
+def test_a_pickup_is_named_and_its_notes_sit_on_the_beats_of_the_bar_they_lead_into():
+    doc = T.build(PICKUP, None)
+    assert doc["total_bars"] == 2  # the pickup is not one of the bars counted
+    pickup = doc["parts"][0]["bars"][0]
+    assert pickup["number"] == 0
+    assert [(e["tick"], e["pos"]) for e in pickup["events"]] == [
+        (0, {"beat": 3, "num": 1, "den": 2}), (T.TICKS_PER_QUARTER // 2, {"beat": 4, "num": 0, "den": 1})]
+    assert T.part_lines(doc, 0, T.Settings()) == [
+        ("Pickup", ["pickup, beat 3 and: G 4, eighth note", "beat 4: A 4, quarter note, tied to whole note in bar 1"]),
+        ("Bar 1", ["bar 1, beat 1: A 4 held, from pickup beat 4"]),
+        ("Bar 2", ["bar 2, beat 1: C 5, whole note"])]
+    assert T.part_lines(doc, 0, T.Settings(lang="nb"))[:2] == [
+        ("Opptakt", ["opptakt, slag 3-og: G 4, åttendedelsnote", "slag 4: A 4, fjerdedelsnote, bundet til helnote i takt 1"]),
+        ("Takt 1", ["takt 1, slag 1: A 4 holdes, fra opptakt slag 4"])]
+    full = T.part_lines(doc, 0, T.Settings(verbosity="full"))
+    assert full[0][1][0].startswith("pickup, beat 3 and: ") and full[1][1][0].startswith("bar 1 of 2, beat 1: ")
+    assert T.part_lines(doc, 1, T.Settings())[0] == ("Pickup and bar 1", ["pickup and bar 1: rest"])
+    assert T.part_lines(doc, 1, T.Settings(lang="nb"))[0] == ("Opptakt og takt 1", ["opptakt og takt 1: pause"])
+
+
+def test_a_first_measure_left_out_of_the_numbering_is_the_pickup_and_a_full_first_bar_is_not():
+    unnumbered = T.build(PICKUP.replace('number="0" implicit="yes"', 'number="X1" implicit="yes"'), None)
+    assert unnumbered["parts"][0]["bars"][0]["number"] == 0
+    assert unnumbered["parts"][0]["bars"][0]["events"][0]["pos"] == {"beat": 3, "num": 1, "den": 2}
+    # A full first bar is a bar, also when it is marked as left out of the numbering, and a short one that is
+    # numbered and not marked stays as it is.
+    for first in ('<measure number="1">', '<measure number="1" implicit="yes">'):
+        plain = T.build(SMALL.replace('<measure number="1">', first), None)
+        assert plain["parts"][0]["bars"][0]["number"] == 1 and plain["total_bars"] == 4
+        assert plain["parts"][0]["bars"][0]["events"][0]["pos"] == {"beat": 1, "num": 0, "den": 1}
+        assert T.part_lines(plain, 0, T.Settings(verbosity="full"))[1][1][0].startswith("bar 2 of 4, ")
+    short = T.build(PICKUP.replace('number="0" implicit="yes"', 'number="1"'), None)
+    assert short["parts"][0]["bars"][0]["number"] == 1
+    assert short["parts"][0]["bars"][0]["events"][0]["pos"] == {"beat": 1, "num": 0, "den": 1}

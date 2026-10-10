@@ -255,6 +255,9 @@
     <string name="listen_unavailable">Det finnes ikke noe opptak å spille for denne takten.</string>
     <string name="bar_heading">Takt %1$d</string>
     <string name="bar_rest_heading">Takt %1$d til %2$d</string>
+    <string name="pickup_heading">Opptakt</string>
+    <string name="pickup_rest_one_heading">Opptakt og takt 1</string>
+    <string name="pickup_rest_heading">Opptakt og takt 1–%1$d</string>
     <string name="review_continue">Neste: Hvordan skal partituret bli?</string>
     <string name="dur_whole">helnote</string>
     <string name="dur_half">halvnote</string>

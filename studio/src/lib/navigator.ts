@@ -95,9 +95,11 @@ export class Navigator {
     let bi = this.cursor.bar;
     const bar = part.bars[bi];
     const beatTicks = 960 * (4 / (bar.time?.beat_type ?? 4)) * (bar.time && bar.time.beat_type === 8 && bar.time.beats % 3 === 0 && bar.time.beats > 3 ? 3 : 1);
-    const rel = this.cursor.tick - bar.startTick;
-    let target = dir > 0 ? bar.startTick + (Math.floor(rel / beatTicks) + 1) * beatTicks : bar.startTick + (Math.ceil(rel / beatTicks) - 1) * beatTicks;
-    if (target >= bar.endTick) {
+    // A pickup's beats count from where its full bar would start, `lead` ticks before its first note.
+    const origin = bar.startTick - (bar.lead ?? 0);
+    const rel = this.cursor.tick - origin;
+    let target = dir > 0 ? origin + (Math.floor(rel / beatTicks) + 1) * beatTicks : origin + (Math.ceil(rel / beatTicks) - 1) * beatTicks;
+    if (target >= bar.endTick - (bar.lead ?? 0)) {
       if (bi + 1 >= part.bars.length) return null;
       bi++;
       target = part.bars[bi].startTick;
@@ -105,7 +107,8 @@ export class Navigator {
       if (bi === 0) return null;
       bi--;
       const pb = part.bars[bi];
-      target = pb.startTick + Math.floor((pb.endTick - pb.startTick - 1) / beatTicks) * beatTicks;
+      const last = pb.startTick - (pb.lead ?? 0) + Math.floor((pb.endTick - pb.startTick - 1) / beatTicks) * beatTicks;
+      target = Math.max(last, pb.startTick); // a pickup that starts inside its last beat: its first note
     }
     const b = part.bars[bi];
     const at = b.events.findIndex((e) => e.tick === target && !(e.tie?.stop));
@@ -218,7 +221,7 @@ function findTieStart(part: NavPart, target: number): NavEvent | undefined {
 }
 
 function beatOf(bar: NavBar, tick: number, beatTicks: number) {
-  const rel = tick - bar.startTick;
+  const rel = tick - bar.startTick + (bar.lead ?? 0);
   return { beat: Math.floor(rel / beatTicks) + 1, num: 0, den: 1 };
 }
 
