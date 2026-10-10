@@ -13,12 +13,27 @@ on:
       release:
         type: boolean
         default: false
+      # Fretscribe's own version, for a release of its own. Empty: the version it shares with Brasscribe.
+      fretscribe_version_name:
+        type: string
+        default: ""
+      fretscribe_version_code:
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       release:
         description: Build the full release APK for download instead of running checks
         type: boolean
         default: false
+      fretscribe_version_name:
+        description: Fretscribe's versionName, if not Brasscribe's (release builds)
+        type: string
+        default: ""
+      fretscribe_version_code:
+        description: Fretscribe's versionCode, if not Brasscribe's (release builds)
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -107,26 +122,34 @@ jobs:
 
       - name: Release APKs (unsigned)
         if: ${{ inputs.release }}
+        env:
+          FRETSCRIBE_VERSION_NAME: ${{ inputs.fretscribe_version_name }}
+          FRETSCRIBE_VERSION_CODE: ${{ inputs.fretscribe_version_code }}
         run: |
-          ./gradlew assembleRelease --no-build-cache --stacktrace
+          ./gradlew assembleRelease --no-build-cache --stacktrace \
+            "-Pfretscribe.versionName=$FRETSCRIBE_VERSION_NAME" "-Pfretscribe.versionCode=$FRETSCRIBE_VERSION_CODE"
           mkdir -p "$RUNNER_TEMP/unsigned"
           for a in arm64-v8a universal; do
             apk="app/build/outputs/apk/brasscribe/release/app-brasscribe-$a-release-unsigned.apk"
             unzip -l "$apk" | grep -q "assets/sounds/brasscribe-band-mobile.sf2" || { echo "$apk has no band SoundFont" >&2; exit 1; }
             cp "$apk" "$RUNNER_TEMP/unsigned/app-$a-release-unsigned.apk"
           done
-          # Fretscribe is the same release under its own package: the same version, the Rust core, no
-          # band SoundFont, no on-device models and an audio library without sfizz (with sfizz it is megabytes).
+          # Fretscribe is the same release under its own package: the version it was given (Brasscribe's
+          # when it was given none), the Rust core, no band SoundFont, no on-device models and an audio
+          # library without sfizz (with sfizz it is megabytes).
           aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | tail -1)
           badge() { "$aapt2" dump badging "$1"; }
-          version() { badge "$1" | sed -nE "s/^package: name='[^']*' (versionCode='[^']*' versionName='[^']*').*/\\1/p"; }
+          version() { badge "$2" | sed -nE "s/^package: name='[^']*' .*version$1='([^']*)'.*/\\1/p"; }
           for a in arm64-v8a universal; do
             apk="app/build/outputs/apk/fretscribe/release/app-fretscribe-$a-release-unsigned.apk"
             fail() { echo "$apk: $1" >&2; exit 1; }
             badge "$apk" | grep -q "^package: name='no.fretscribe.play' " || fail "is not no.fretscribe.play"
             if badge "$apk" | grep -qE "^(application-debuggable|testOnly)"; then fail "is debuggable or test-only"; fi
-            [ -n "$(version "$apk")" ] && [ "$(version "$apk")" = "$(version "$RUNNER_TEMP/unsigned/app-$a-release-unsigned.apk")" ] \
-              || fail "does not have Brasscribe's version"
+            for v in Name Code; do
+              given=FRETSCRIBE_VERSION_$(tr '[:lower:]' '[:upper:]' <<<"$v")
+              want=${!given:-$(version "$v" "$RUNNER_TEMP/unsigned/app-$a-release-unsigned.apk")}
+              [ -n "$want" ] && [ "$(version "$v" "$apk")" = "$want" ] || fail "has version$v '$(version "$v" "$apk")', not '$want'"
+            done
             files=$(unzip -l "$apk")
             if grep -qiE "brasscribe-band|assets/sounds/.*\.sf2|\.onnx$" <<<"$files"; then fail "carries band sounds or models"; fi
             grep -q "lib/arm64-v8a/libbrasscribe_ffi.so" <<<"$files" || fail "has no Rust core"
