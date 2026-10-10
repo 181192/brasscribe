@@ -74,6 +74,9 @@ class PinkThemeTest : ScreenTest() {
         waitUntil(5_000) { rule.onAllNodesWithTag("about-version").fetchSemanticsNodes().isNotEmpty() }
         val version = rule.onNodeWithTag("about-version").performScrollTo()
         assertEquals(Role.Button, version.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Role))
+        // It is the app's own version (only the screen catalogue shows a fixed one in its place).
+        assertEquals(rule.activity.getString(R.string.about_version, BuildConfig.VERSION_NAME),
+            version.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text })
         repeat(4) { version.performClick() }
         assertTrue(!container.pinkUnlocked)
         version.performClick()
