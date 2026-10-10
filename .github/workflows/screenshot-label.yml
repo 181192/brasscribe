@@ -41,7 +41,7 @@ jobs:
           finished() { gh run watch "$run" -R "$GITHUB_REPOSITORY" --interval 30 > /dev/null || true; }
           # A run still going reads the label itself when it gets there; what it had already decided is run again.
           finished
-          verdicts='Play for Mac screenshots$|Bandroom for Mac screenshots$|screenshots changed against|^Android screen catalogue and screenshots|^Studio \('
+          verdicts='Play for Mac screenshots$|Bandroom for Mac screenshots$|screenshots changed against|^Android screen catalogue and screenshots|^Studio [(]'
           jobs ".jobs[] | select(.name | test(\"$verdicts\")) | select(.conclusion == \"$want\") | .name" > names.txt
           if [ ! -s names.txt ]; then echo "No job of run $run that reads the label ended in $want: nothing to run again." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
           while IFS= read -r name; do

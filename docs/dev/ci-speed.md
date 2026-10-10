@@ -66,6 +66,15 @@ release builds (only on tags), CodeQL (already per language).
 | Studio | 5.2 | npm, unit tests, build, browser tests 0.9; base 1.4; head 2.8 |
 | Rust core and .NET | 6.6 | `cargo test --release` 3.6; the FFI library 0.55; bindings check 1.2; four `dotnet test` projects 0.9 |
 
+### After the first changes (2026-10-10, one run each)
+
+| Job | Before | After | What changed |
+|---|---|---|---|
+| Apple / Play, on a pull request | 22.6 | 9.5 | the iPhone simulator app and its tests are built (1.0) and not run; the rest is the core 2.4 (its cache was not there), the packages and the macOS app's tests 5.5 |
+| The iPhone simulator tests, at night | in the job above | 15.3 | a job of their own: core 2.6, build and tests 12.1 |
+| Play for Mac catalogue, the core's build | 2.2 to 2.9 | 1.4 | the Mac's slice alone, still without a cache; with the Play job's cache from `main` only the workspace's own crates are compiled |
+| A pull request that changes only workflows | every platform (about 97 job-minutes) | 0.5 | `what changed` and actionlint |
+
 ## The floor per platform
 
 For a pull request that touches only that platform, on the hosted runners, with warm caches, a core that is
