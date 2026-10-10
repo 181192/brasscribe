@@ -107,9 +107,9 @@ public extension Color {
         public static var secondary: Color { named("secondary") }
         /// Label on secondary.
         public static var onSecondary: Color { named("onSecondary") }
-        /// Blue ink. The mark's brand moments, links, the progress bar, onboarding. Never a button fill, never inside the tab except as the playback cursor.
+        /// Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent.
         public static var brand: Color { named("brand") }
-        /// Links and brand text.
+        /// The accent: links and the progress bar. Also brand text.
         public static var brandText: Color { named("brandText") }
         /// Onboarding and empty-state wash.
         public static var brandTint: Color { named("brandTint") }
@@ -141,7 +141,7 @@ public extension Color {
         public static var selectionTint: Color { named("selectionTint") }
         /// Box around selected notes.
         public static var selectionEdge: Color { named("selectionEdge") }
-        /// 
+        /// Dimmed backdrop behind a sheet or dialog (40% alpha).
         public static var scrim: Color { named("scrim") }
     }
 }
@@ -334,9 +334,11 @@ public extension Color {
         public static var secondary: Color { Fretscribe.secondary }
         /// Label on secondary.
         public static var onSecondary: Color { Fretscribe.onSecondary }
-        /// Blue ink. The mark's brand moments, links, the progress bar, onboarding. Never a button fill, never inside the tab except as the playback cursor.
+        /// The accent: links and the progress bar. Also brand text.
+        public static var accent: Color { Fretscribe.brandText }
+        /// Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent.
         public static var brand: Color { Fretscribe.brand }
-        /// Links and brand text.
+        /// The accent: links and the progress bar. Also brand text.
         public static var brandText: Color { Fretscribe.brandText }
         /// Onboarding and empty-state wash.
         public static var brandTint: Color { Fretscribe.brandTint }
@@ -348,7 +350,7 @@ public extension Color {
         public static var error: Color { Fretscribe.error }
         /// Focus ring: ink / paper, never a tab signal hue.
         public static var focus: Color { Fretscribe.focus }
-        /// 
+        /// Dimmed backdrop behind a sheet or dialog (40% alpha).
         public static var scrim: Color { Fretscribe.scrim }
         /// Fret numbers, rhythm stems, notation.
         public static var ink: Color { Fretscribe.ink }
@@ -360,6 +362,25 @@ public extension Color {
 }
 
 public extension Font {
-    /// The type ramp.
-    typealias Scribe = Fretscribe
+    /// The type ramp every brand has.
+    enum Scribe {
+        /// Brand headline: home greeting, onboarding, the What is this? question. Atkinson Hyperlegible Next 600.
+        public static var display: Font { Fretscribe.display }
+        /// Screen title when the display face is not used.
+        public static var title1: Font { Fretscribe.title1 }
+        /// Section headings, sheet titles.
+        public static var title2: Font { Fretscribe.title2 }
+        /// List row titles, card titles.
+        public static var headline: Font { Fretscribe.headline }
+        /// Running text and list rows. Windows uses BodyLarge (18 epx) for Play; Studio uses 16 px.
+        public static var body: Font { Fretscribe.body }
+        /// Row subtitles and helper text.
+        public static var callout: Font { Fretscribe.callout }
+        /// Button labels. Apple: .body.weight(.semibold).
+        public static var label: Font { Fretscribe.label }
+        /// Metadata, timestamps. Never for instructions.
+        public static var caption: Font { Fretscribe.caption }
+        /// Bar/beat, speed and tempo readouts with tabular figures (monospacedDigit / tnum).
+        public static var numeric: Font { Fretscribe.numeric }
+    }
 }

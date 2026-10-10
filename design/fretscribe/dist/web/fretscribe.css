@@ -377,7 +377,7 @@
     --fs-secondary: ButtonFace;
     --fs-on-secondary: ButtonText;
     --fs-brand: CanvasText;
-    --fs-brand-text: CanvasText;
+    --fs-brand-text: LinkText;
     --fs-brand-tint: Canvas;
     --fs-success: CanvasText;
     --fs-warning: CanvasText;
@@ -423,6 +423,7 @@
   --scribe-on-primary: var(--fs-on-primary);
   --scribe-secondary: var(--fs-secondary);
   --scribe-on-secondary: var(--fs-on-secondary);
+  --scribe-accent: var(--fs-brand-text);
   --scribe-brand: var(--fs-brand);
   --scribe-brand-text: var(--fs-brand-text);
   --scribe-brand-tint: var(--fs-brand-tint);
@@ -430,10 +431,10 @@
   --scribe-warning: var(--fs-warning);
   --scribe-error: var(--fs-error);
   --scribe-focus: var(--fs-focus);
+  --scribe-scrim: var(--fs-scrim);
   --scribe-ink: var(--fs-ink);
   --scribe-line: var(--fs-string);
   --scribe-uncertain: var(--fs-uncertain);
-  --scribe-scrim: var(--fs-scrim);
   --scribe-font-text: var(--fs-font-text);
   --scribe-font-display: var(--fs-font-display);
   --scribe-font-mono: var(--fs-font-mono);

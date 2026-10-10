@@ -47,7 +47,7 @@ Products share logic, not looks. So the names shared code may use are few, and e
 to a brand.
 
 1. **Neutral names** are the same in every brand's generated files. They cover what any app needs:
-   surfaces, text, edges, the two button fills, the brand colour, status, focus, ink, the ruled line and
+   surfaces, text, edges, the two button fills, the accent, the brand colour, status, focus, ink, the ruled line and
    doubt, with the type ramp, spacing, radii, sizes and motion. They are generated
    under `Scribe…`: `ScribeTheme` and `ScribeColors` in Kotlin, `Color.Scribe`, `Font.Scribe` and
    `ScribeDesign` in Swift, `Scribe…Brush` in XAML, `--scribe-…` in CSS. Code that uses only these
@@ -60,7 +60,14 @@ to a brand.
 4. **A brand maps, it does not rename.** Where a brand's token has another name than the neutral role,
    its tokens say so under `$extensions.<brand>.neutral.roles`. A neutral role a brand neither has nor
    maps stops the generator.
-5. **A new neutral role** has to make sense for every brand, and every brand has to define it. A new
+5. **`brand` is identity, `accent` is for what you act on or follow.** In every brand, `brand`,
+   `brand-text` and `brand-tint` are the mark, the wordmark and brand moments (onboarding, empty states,
+   About). They are never the colour of a link, a control or a state. `accent` is the one colour beside
+   the buttons that says "this does something" or "this is where it is": links and the progress bar. It
+   is readable as text (4.5:1) on `bg`, `surface` and `surface-raised` in every mode, and each brand
+   lists those pairs. A brand may give both the same hue; they are still two roles, so a brand whose
+   identity colour cannot carry a link is not forced to use it for one.
+6. **A new neutral role** has to make sense for every brand, and every brand has to define it. A new
    role of one brand is added to that brand's tokens alone, with its system colour for Windows contrast
    themes and forced colours under `system-colours`.
 
@@ -72,6 +79,7 @@ to a brand.
 | `text`, `text-muted` | the same | the same |
 | `border`, `border-strong` | the same | the same |
 | `primary`, `on-primary`, `secondary`, `on-secondary` | the same | the same |
+| `accent` | `brass-text` | `brand-text` (the blue ink) |
 | `brand`, `brand-text`, `brand-tint` | `brass`, `brass-text`, `brass-tint` | the same |
 | `success`, `warning`, `error` | the same | the same |
 | `focus`, `scrim` | the same | the same |
@@ -128,6 +136,18 @@ and `ScribeTheme.kt` adds the neutral names on top. `ScribeColors` is another na
 `BrasscribeColors` until the screens are split by product; then each brand's theme is generated under
 its own names like on the other platforms, and Fretscribe's own roles (`uncertain-tint`) get a place on
 Android.
+
+Brasscribe's links are plain text colour with an underline today, and its progress bar is brass
+(`design/system.md`). Its `accent` is the brass that carries text. Fretscribe's `accent` is what it
+called `brand` for links and the progress bar; the value is the same blue ink.
+
+## What stops the generator
+
+A brand that lacks something is told what, when the generator starts: a brand in `brands.json` without
+a name, token file or folder, or sharing one with another brand; a prefix that is `scribe` or another
+brand's; a mode without colours; a role missing from a mode; a neutral role with no token; a role of the
+brand's own without a system colour; no `notation` group; no `fonts.display`, or a font file that is not
+there.
 
 ## Adding a brand
 

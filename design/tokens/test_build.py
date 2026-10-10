@@ -301,26 +301,132 @@ def test_pink_follows_into_the_neutral_names_on_windows():
     assert xaml.count('x:Key="ScribeBgBrush"') == 3
 
 
-def test_a_neutral_role_the_brand_neither_has_nor_maps_is_an_error(tmp_path):
-    import pytest
-    raw = json.loads((FRETSCRIBE / "tokens" / "tokens.json").read_text())
-    del raw["$extensions"]["no.fretscribe"]["neutral"]["roles"]["line"]
+def test_neutral_types_have_the_same_members_in_every_brand():
+    # A neutral type that only pointed at a brand's would show that brand's own members too (a tab font, a
+    # score metric). So the members are compared, not only the names of the types.
+    import re
+
+    def members(text: str, opening: str) -> list[str]:
+        body = text.split(opening, 1)[1]
+        indent = re.match(r"\n?( *)", body.split("\n", 1)[1]).group(1)
+        end = re.search("^" + indent[:-4] + r"\}", body, re.M).start()
+        return sorted(re.findall(r"(?:static let|static var|static func|const val|val|case) (\w+)", body[:end]))
+
+    found = {}
+    for name, b in brands().items():
+        swift = (b.DIST / "apple" / f"{b.PRODUCT}Design.swift").read_text()
+        neutral = swift.split("// The neutral names")[1]
+        assert "typealias Scribe =" not in neutral, name
+        kotlin = (b.DIST / KOTLIN / "BrasscribeTheme.kt").read_text()
+        found[name] = {
+            "Color.Scribe": members(neutral, "    enum Scribe {\n        /// " + b.desc("bg")),
+            "Font.Scribe": members(neutral, "    /// The type ramp every brand has.\n    enum Scribe {"),
+            **{f"ScribeDesign.{t}": members(swift, "    public enum " + t + " {") for t in ("Space", "Radius", "Size", "Motion")},
+            **{f"Scribe{t}": members(kotlin, "object Brasscribe" + t + " {") for t in ("Space", "Size", "Motion")},
+        }
+        assert found[name]["Color.Scribe"] == sorted(build.camel(r) for r in build.NEUTRAL["roles"]), name
+        assert "tab" not in found[name]["Font.Scribe"] and "title1" in found[name]["Font.Scribe"], name
+    for name, theirs in found.items():
+        assert theirs == found["brasscribe"], name
+    fs = (fretscribe().DIST / "apple" / "FretscribeDesign.swift").read_text()
+    assert "public static func tab(size: CGFloat)" in fs.split("// The neutral names")[0]
+
+
+def test_accent_is_for_what_you_act_on_and_brand_is_identity():
+    # The accent carries links and progress, so it is readable as text on every plain ground, in every mode
+    # of every brand, and each brand lists those pairs. The brand colour is not checked as text.
+    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    import contrast
+    for name, b in brands().items():
+        accent = b.neutral_roles()["accent"]
+        assert accent != b.neutral_roles()["brand"], name
+        for ground in ("bg", "surface", "surface-raised"):
+            assert [p for p in b.EXT["contrast"]["pairs"] if p[:2] == [accent, ground] and p[2] >= 4.5], (name, ground)
+            for mode in b.MODES:
+                assert contrast.contrast(b.hexval(mode, accent), b.hexval(mode, ground)) >= 4.5, (name, mode, ground)
+
+
+# A brand that lacks something is told what, in words, when the generator is set up.
+
+def broken(tmp_path, change, source=None) -> Path:
+    """A copy of a brand's tokens (Fretscribe's) with one thing changed; its font paths still lead to the fonts."""
+    source = source or FRETSCRIBE / "tokens" / "tokens.json"
+    raw = json.loads(source.read_text())
+    ext = next(v for v in raw["$extensions"].values() if isinstance(v, dict) and "modes" in v)
+    for font in [v for k, v in ext["fonts"].items() if not k.startswith("$")]:
+        font["licence"] = str((source.parent / font["licence"]).resolve())
+        for face in font["faces"]:
+            face["file"] = str((source.parent / face["file"]).resolve())
+    for key in ("file", "licence"):
+        if "display-font" in ext.get("android", {}):
+            ext["android"]["display-font"][key] = str((source.parent / ext["android"]["display-font"][key]).resolve())
+    change(raw, ext)
     tokens = tmp_path / "tokens.json"
     tokens.write_text(json.dumps(raw))
-    fs = product_build(tokens, tmp_path / "dist", "windows")
-    with pytest.raises(SystemExit, match="neutral role 'line'"):
-        fs.outputs()
+    return tokens
+
+
+def refused(tmp_path, change, message, source=None):
+    import pytest
+    with pytest.raises(SystemExit, match=message):
+        product_build(broken(tmp_path, change, source), tmp_path / "dist")
+
+
+def test_an_unchanged_copy_of_a_brand_is_accepted(tmp_path):
+    fs = product_build(broken(tmp_path, lambda raw, ext: None), tmp_path / "dist")
+    assert len(fs.outputs()) > 100
+
+
+def test_a_neutral_role_the_brand_neither_has_nor_maps_is_an_error(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext["neutral"]["roles"].pop("line"), "no token for the neutral role 'line'")
 
 
 def test_a_brands_own_role_needs_its_system_colour(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext["system-colours"].pop("uncertain-tint"), r"no system colour \(windows\) for 'uncertain-tint'")
+
+
+def test_the_neutral_prefix_is_no_brands(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="scribe"), "'scribe' is the prefix of the neutral names")
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="Fs"), "must be lower-case letters and digits")
+    refused(tmp_path, lambda raw, ext: raw["$extensions"].update({"no.scribe": raw["$extensions"].pop("no.fretscribe")}) or ext.pop("prefix"),
+            "'scribe' is the prefix of the neutral names")
+
+
+def test_two_brands_cannot_have_one_prefix(tmp_path):
     import pytest
-    raw = json.loads((FRETSCRIBE / "tokens" / "tokens.json").read_text())
-    del raw["$extensions"]["no.fretscribe"]["system-colours"]["uncertain-tint"]
-    tokens = tmp_path / "tokens.json"
-    tokens.write_text(json.dumps(raw))
-    fs = product_build(tokens, tmp_path / "dist", "windows")
-    with pytest.raises(SystemExit, match="no system colour for 'uncertain-tint'"):
-        fs.outputs()
+    fs = fretscribe()
+    fs.EXT["prefix"] = "bc"
+    fs.CSS = "bc"
+    with pytest.raises(SystemExit, match="the prefix 'bc' is brasscribe's too"):
+        fs.check_tokens()
+
+
+def test_brands_json_is_checked():
+    import pytest
+    ok = {"name": "a", "tokens": "design/a/tokens.json", "out": "design/a/dist"}
+    build.check_brands([ok, {"name": "b", "tokens": "design/b/tokens.json", "out": "design/b/dist"}])
+    for key in ("name", "tokens", "out"):
+        with pytest.raises(SystemExit, match=f"has no '{key}'"):
+            build.check_brands([{k: v for k, v in ok.items() if k != key}])
+    with pytest.raises(SystemExit, match="a and A have the same name"):
+        build.check_brands([ok, {**ok, "name": "A", "tokens": "x.json", "out": "x"}])
+    with pytest.raises(SystemExit, match="a and b have the same output folder"):
+        build.check_brands([ok, {**ok, "name": "b", "tokens": "x.json"}])
+    with pytest.raises(SystemExit, match="a and b have the same token file"):
+        build.check_brands([ok, {**ok, "name": "b", "out": "x"}])
+
+
+def test_a_brand_with_something_missing_is_told_what(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext.pop("notation"), r"no \$extensions.\*.notation")
+    refused(tmp_path, lambda raw, ext: ext.update(notation="stave"), "names the group 'stave', which the file does not have")
+    refused(tmp_path, lambda raw, ext: ext["fonts"].pop("display"), r"no \$extensions.\*.fonts.display")
+    refused(tmp_path, lambda raw, ext: ext.pop("fonts"), r"no \$extensions.\*.fonts.display")
+    refused(tmp_path, lambda raw, ext: ext["fonts"]["tab"].pop("licence"), r"fonts.tab has no 'licence'")
+    refused(tmp_path, lambda raw, ext: ext["fonts"]["tab"]["faces"][0].update(file="nowhere.ttf"), "names nowhere.ttf, which is not there")
+    refused(tmp_path, lambda raw, ext: raw["color"]["dark"].pop("focus"), r"color.dark lacks focus")
+    refused(tmp_path, lambda raw, ext: raw["color"]["dark"].update(glow=raw["color"]["dark"]["focus"]), r"color.dark has glow that color.light lacks")
+    refused(tmp_path, lambda raw, ext: ext["modes"].remove("high-contrast-light"), "the mode 'high-contrast-light' is not listed")
+    refused(tmp_path, lambda raw, ext: ext["modes"].append("sepia"), "the mode 'sepia' is listed .* and has no colours")
 
 
 # ---------------------------------------------------------------- Fretscribe
@@ -441,19 +547,15 @@ def test_another_product_writes_only_into_its_own_folder(tmp_path):
 
 def test_a_brand_cannot_use_another_brands_folder():
     import pytest
-    with pytest.raises(SystemExit, match="its own --out"):
+    # The folder's owner is named, and so is the token file that needs another.
+    with pytest.raises(SystemExit, match=r"design/dist is the output folder of brasscribe .*give design/fretscribe/tokens/tokens.json its own --out"):
         product_build(FRETSCRIBE / "tokens" / "tokens.json", build.DEFAULT_DIST)
-    with pytest.raises(SystemExit, match="its own --out"):
+    with pytest.raises(SystemExit, match=r"design/fretscribe/dist is the output folder of fretscribe .*give design/tokens/tokens.json its own --out"):
         product_build(build.DEFAULT_TOKENS, FRETSCRIBE / "dist")
 
 
 def test_a_role_the_product_neither_has_nor_maps_is_an_error(tmp_path):
     import pytest
-    raw = json.loads((FRETSCRIBE / "tokens" / "tokens.json").read_text())
-    del raw["$extensions"]["no.fretscribe"]["android"]["aliases"]["roles"]["staff"]
-    (tmp_path / "tokens").mkdir()
-    tokens = tmp_path / "tokens" / "tokens.json"
-    tokens.write_text(json.dumps(raw))
-    fs = product_build(tokens, tmp_path / "dist", "android")
+    fs = product_build(broken(tmp_path, lambda raw, ext: ext["android"]["aliases"]["roles"].pop("staff")), tmp_path / "dist", "android")
     with pytest.raises(SystemExit, match="no role for 'staff'"):
         fs.outputs()

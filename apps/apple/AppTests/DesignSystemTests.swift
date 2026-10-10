@@ -37,6 +37,7 @@ import Testing
     @Test func neutralNamesReadTheProductsDesign() {
         #expect(Color.Scribe.brand == Color.Brasscribe.brass)
         #expect(Color.Scribe.brandText == Color.Brasscribe.brassText)
+        #expect(Color.Scribe.accent == Color.Brasscribe.brassText)
         #expect(Color.Scribe.brandTint == Color.Brasscribe.brassTint)
         #expect(Color.Scribe.line == Color.Brasscribe.staff)
         #expect(Color.Scribe.ink == Color.Brasscribe.ink)

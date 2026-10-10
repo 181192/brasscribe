@@ -21,6 +21,9 @@ import androidx.compose.ui.text.font.FontFamily
 /** The colour roles every brand has (and, until the themes are split, the brand's own beside them). */
 typealias ScribeColors = BrasscribeColors
 
+/** Brand colour when it has to carry text, for example the product name under the wordmark. */
+val ScribeColors.accent: Color get() = brassText
+
 /** Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list. */
 val ScribeColors.brand: Color get() = brass
 

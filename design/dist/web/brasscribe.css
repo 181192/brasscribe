@@ -552,7 +552,7 @@
     --bc-secondary: ButtonFace;
     --bc-on-secondary: ButtonText;
     --bc-brass: CanvasText;
-    --bc-brass-text: CanvasText;
+    --bc-brass-text: LinkText;
     --bc-brass-tint: Canvas;
     --bc-success: CanvasText;
     --bc-warning: CanvasText;
@@ -603,6 +603,7 @@
   --scribe-on-primary: var(--bc-on-primary);
   --scribe-secondary: var(--bc-secondary);
   --scribe-on-secondary: var(--bc-on-secondary);
+  --scribe-accent: var(--bc-brass-text);
   --scribe-brand: var(--bc-brass);
   --scribe-brand-text: var(--bc-brass-text);
   --scribe-brand-tint: var(--bc-brass-tint);

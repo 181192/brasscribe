@@ -167,8 +167,15 @@ def load_dtcg(path: Path) -> dict:
     ext = token_extension(raw)
     themes = {}
     for mode in ext["modes"]:
+        if mode not in raw.get("color", {}):
+            raise SystemExit(f"{path}: the mode '{mode}' is listed under $extensions.*.modes and has no colours")
         themes[mode] = {role: tok["$value"]["hex"] for role, tok in raw["color"][mode].items()
                         if isinstance(tok, dict) and tok.get("$type") == "color"}
+    for mode, theme in themes.items():
+        for pair in [*ext["contrast"]["pairs"], *ext["contrast"]["distinguish"]]:
+            for role in pair[:2]:
+                if role not in theme:
+                    raise SystemExit(f"{path}: a contrast pair names '{role}', which color.{mode} does not have")
     return {"themes": themes, "pairs": ext["contrast"]["pairs"],
             "distinguish": ext["contrast"]["distinguish"],
             "legacy": ext.get("a11yCompat", {}).get("legacy", {})}
@@ -176,7 +183,14 @@ def load_dtcg(path: Path) -> dict:
 
 def brands() -> list[dict]:
     """Every brand of the design system: name, token file and contrast report, from the repository root."""
-    return json.loads(BRANDS.read_text())["brands"]
+    found = json.loads(BRANDS.read_text())["brands"]
+    for i, brand in enumerate(found):
+        for key in ("name", "tokens", "contrast-report"):
+            if not isinstance(brand.get(key), str) or not brand[key]:
+                raise SystemExit(f"design/tokens/brands.json: brand {brand.get('name') or i + 1} has no '{key}'")
+        if not (ROOT / brand["tokens"]).is_file():
+            raise SystemExit(f"design/tokens/brands.json: {brand['name']}'s token file {brand['tokens']} is not there")
+    return found
 
 
 def check_brands(write: bool = False) -> int:

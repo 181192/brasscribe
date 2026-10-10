@@ -86,6 +86,7 @@
             <Color x:Key="ScribeOnPrimaryColor">#FFFFFFFF</Color>
             <Color x:Key="ScribeSecondaryColor">#FFF9DAE7</Color>
             <Color x:Key="ScribeOnSecondaryColor">#FF2B1420</Color>
+            <Color x:Key="ScribeAccentColor">#FF7A5719</Color>
             <Color x:Key="ScribeBrandColor">#FFA57A2C</Color>
             <Color x:Key="ScribeBrandTextColor">#FF7A5719</Color>
             <Color x:Key="ScribeBrandTintColor">#FFFBE4ED</Color>
@@ -108,6 +109,7 @@
             <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
             <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
             <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeAccentBrush" Color="{StaticResource ScribeAccentColor}"/>
             <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
@@ -200,6 +202,7 @@
             <Color x:Key="ScribeOnPrimaryColor">#FF2B0F1E</Color>
             <Color x:Key="ScribeSecondaryColor">#FF44293A</Color>
             <Color x:Key="ScribeOnSecondaryColor">#FFF8E9F0</Color>
+            <Color x:Key="ScribeAccentColor">#FFD9B266</Color>
             <Color x:Key="ScribeBrandColor">#FFD2A955</Color>
             <Color x:Key="ScribeBrandTextColor">#FFD9B266</Color>
             <Color x:Key="ScribeBrandTintColor">#FF33202B</Color>
@@ -222,6 +225,7 @@
             <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
             <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
             <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeAccentBrush" Color="{StaticResource ScribeAccentColor}"/>
             <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
@@ -247,7 +251,7 @@
             <StaticResource x:Key="BcSecondaryColor" ResourceKey="SystemColorButtonFaceColor"/>
             <StaticResource x:Key="BcOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
             <StaticResource x:Key="BcBrassColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcBrassTextColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="BcBrassTextColor" ResourceKey="SystemColorHotlightColor"/>
             <StaticResource x:Key="BcBrassTintColor" ResourceKey="SystemColorWindowColor"/>
             <StaticResource x:Key="BcSuccessColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="BcWarningColor" ResourceKey="SystemColorWindowTextColor"/>
@@ -281,7 +285,7 @@
             <SolidColorBrush x:Key="BcSecondaryBrush" Color="{ThemeResource SystemColorButtonFaceColor}"/>
             <SolidColorBrush x:Key="BcOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
             <SolidColorBrush x:Key="BcBrassBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcBrassTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="BcBrassTextBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
             <SolidColorBrush x:Key="BcBrassTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
             <SolidColorBrush x:Key="BcSuccessBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="BcWarningBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
@@ -314,8 +318,9 @@
             <StaticResource x:Key="ScribeOnPrimaryColor" ResourceKey="SystemColorHighlightTextColor"/>
             <StaticResource x:Key="ScribeSecondaryColor" ResourceKey="SystemColorButtonFaceColor"/>
             <StaticResource x:Key="ScribeOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
+            <StaticResource x:Key="ScribeAccentColor" ResourceKey="SystemColorHotlightColor"/>
             <StaticResource x:Key="ScribeBrandColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorHotlightColor"/>
             <StaticResource x:Key="ScribeBrandTintColor" ResourceKey="SystemColorWindowColor"/>
             <StaticResource x:Key="ScribeSuccessColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="ScribeWarningColor" ResourceKey="SystemColorWindowTextColor"/>
@@ -336,8 +341,9 @@
             <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}"/>
             <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{ThemeResource SystemColorButtonFaceColor}"/>
             <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
+            <SolidColorBrush x:Key="ScribeAccentBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
             <SolidColorBrush x:Key="ScribeBrandBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
             <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="ScribeWarningBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>

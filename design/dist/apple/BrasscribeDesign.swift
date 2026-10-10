@@ -354,6 +354,8 @@ public extension Color {
         public static var secondary: Color { Brasscribe.secondary }
         /// Text and icons on secondary.
         public static var onSecondary: Color { Brasscribe.onSecondary }
+        /// Brand colour when it has to carry text, for example the product name under the wordmark.
+        public static var accent: Color { Brasscribe.brassText }
         /// Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list.
         public static var brand: Color { Brasscribe.brass }
         /// Brand colour when it has to carry text, for example the product name under the wordmark.
@@ -380,6 +382,25 @@ public extension Color {
 }
 
 public extension Font {
-    /// The type ramp.
-    typealias Scribe = Brasscribe
+    /// The type ramp every brand has.
+    enum Scribe {
+        /// Brand headline: home greeting, onboarding, the What is this? question. Serif.
+        public static var display: Font { Brasscribe.display }
+        /// Screen title when the display face is not used.
+        public static var title1: Font { Brasscribe.title1 }
+        /// Section headings, sheet titles.
+        public static var title2: Font { Brasscribe.title2 }
+        /// List row titles, card titles.
+        public static var headline: Font { Brasscribe.headline }
+        /// Running text and list rows. Windows uses BodyLarge (18 epx) for Play; Studio uses 16 px.
+        public static var body: Font { Brasscribe.body }
+        /// Row subtitles and helper text.
+        public static var callout: Font { Brasscribe.callout }
+        /// Button labels. Apple: .body.weight(.semibold).
+        public static var label: Font { Brasscribe.label }
+        /// Metadata, timestamps. Never for instructions.
+        public static var caption: Font { Brasscribe.caption }
+        /// Bar/beat, speed and tempo readouts with tabular figures (monospacedDigit / tnum).
+        public static var numeric: Font { Brasscribe.numeric }
+    }
 }
