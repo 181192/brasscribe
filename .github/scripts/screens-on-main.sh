@@ -80,7 +80,7 @@ records "$run" > "$work/now.txt"
 if [ ! -s "$work/now.txt" ]; then say "The run has no screen records: nothing to compare."; exit 0; fi
 
 # Earlier runs of the same kind, newest first; their records are listed once, when first asked for.
-gh api "repos/$repo/actions/workflows/ci.yml/runs?branch=$branch&event=$event&status=completed&per_page=30" \
+gh api "repos/$repo/actions/workflows/ci.yml/runs?branch=$branch&event=$event&per_page=30" \
   --jq ".workflow_runs[] | select(.created_at < \"$created\") | \"\(.id) \(.head_sha)\"" > "$work/earlier.txt"
 
 while read -r name id; do
@@ -128,7 +128,7 @@ while read -r name id; do
   {
     printf '### %s, since %s\n\n' "$(title "$catalogue")" "${before:0:12}"
     cat "$report/summary.md"
-    printf '\nBefore, the difference and after: `%s/index.html` in ARTIFACT_URL\n\n' "$catalogue"
+    printf '\nBefore, the difference and after: %s/index.html in ARTIFACT_URL\n\n' "$catalogue"
   } >> "$work/issue-$(platform "$catalogue").md"
 done < "$work/now.txt"
 
