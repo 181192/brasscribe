@@ -20,16 +20,6 @@ class FretscribeHomeTest : ScreenTest() {
     }
 
     @Test
-    fun sheetMusicThatArrivesAnotherWayIsRefused() {
-        val xml = checkNotNull(no.brasscribe.play.screen.ScreenDevice.fixture("bass-line/tab.musicxml"))
-        val file = java.io.File(rule.activity.cacheDir, "A tab.musicxml").apply { writeBytes(xml) }
-        rule.runOnUiThread { vm.home(); vm.importUri(android.net.Uri.fromFile(file)) }
-        waitUntil(5_000) { vm.status.value?.text == "Fretscribe can't open sheet music yet; it makes tabs from recordings." }
-        assertTrue(vm.screen.value.toString(), vm.screen.value == listOf(Screen.HOME))
-        assertFalse(vm.busy.value)
-    }
-
-    @Test
     fun homeHasNoOpenATab() {
         val en = home()
         assertTrue(en, en.contains("Record with the microphone"))

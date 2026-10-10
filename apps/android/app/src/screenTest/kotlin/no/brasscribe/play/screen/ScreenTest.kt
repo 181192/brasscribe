@@ -38,10 +38,19 @@ import java.nio.ByteOrder
  * device (with the instrumented tests): the real activity and view model, a fixture computer, and the
  * accessibility checks on every action. What the two runs do differently is in [ScreenDevice].
  */
-abstract class ScreenTest {
+abstract class ScreenTest(launch: android.content.Intent? = null) {
+    /** Whether the app was started by a file handed to it ([launch]): then the screen it starts on is the test's subject. */
+    private val launched = launch != null
+
     // (The rule whose effects run on a StandardTestDispatcher: an effect's coroutine that comes back from Dispatchers.IO
     // is resumed on the main thread, as on a phone, and not on the worker it came back on, where Compose would recompose.)
-    val rule: AppRule = createAndroidComposeRule<MainActivity>()
+    // With [launch] the activity is started by that intent, as from the share sheet or "Open with", and not from the launcher.
+    val rule: AppRule = if (launch == null) createAndroidComposeRule<MainActivity>()
+        else androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule(androidx.test.ext.junit.rules.ActivityScenarioRule<MainActivity>(launch)) { started ->
+            lateinit var activity: MainActivity
+            started.scenario.onActivity { activity = it }
+            activity
+        }
 
     /** The phone first, then the app on it. */
     @get:Rule
@@ -70,7 +79,7 @@ abstract class ScreenTest {
         rule.runOnUiThread {
             container.firstRunDone = true
             vm.scores.value.forEach(vm::deleteEntry)
-            vm.home()
+            if (!launched) vm.home()
         }
         rule.waitForIdle()
     }

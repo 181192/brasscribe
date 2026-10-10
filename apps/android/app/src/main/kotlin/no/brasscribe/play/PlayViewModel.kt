@@ -61,7 +61,7 @@ import java.util.zip.ZipInputStream
 enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES }
+enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES, SHEET_MUSIC }
 
 /** [r] is to be checked note by note, and holds no note to check: it opens on the problem screen instead. */
 fun foundNoNotes(r: TranscriptionResult, then: Screen): Boolean =
@@ -612,11 +612,17 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             // Asking the provider for the name can block on its process: not on the main thread.
             val name = withContext(Dispatchers.IO) { displayName(uri, "recording") }
-            if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) {
-                // A product that opens no sheet music (Fretscribe, until imported tabs open in the tab view) says so.
-                if (Product.OPENS_SCORES) openScore(uri, name)
-                else { busy.value = false; say(R.string.sheet_music_refused) }
-                return@launch
+            if (Product.OPENS_SCORES) {
+                if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return@launch }
+            } else {
+                // A product that opens no sheet music (Fretscribe, until imported tabs open in the tab view) says so, on a
+                // screen of its own: a file that arrives from the share sheet or "Open with" can be here before Home is
+                // drawn. The file's name need not say what it is, so its type and its first bytes are asked too.
+                val sheetMusic = withContext(Dispatchers.IO) {
+                    val type = runCatching { ctx.contentResolver.getType(uri) }.getOrNull()
+                    SheetMusic.isSheetMusic(name, type) { ctx.contentResolver.openInputStream(uri) }
+                }
+                if (sheetMusic) { busy.value = false; showProblem(Problem.SHEET_MUSIC); return@launch }
             }
             importProgress.value = 0f
             say(R.string.reading_file, name)
@@ -694,29 +700,6 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 busy.value = false
             }
         }
-    }
-
-    /**
-     * The root score of a compressed MusicXML container, or the first .xml that is not the container.
-     * Read from the stream entry by entry; only the container and .xml entries are kept, each capped.
-     */
-    private fun unzipScore(input: java.io.InputStream): String {
-        val entries = HashMap<String, ByteArray>()
-        var kept = 0L
-        ZipInputStream(input.buffered()).use { zip ->
-            while (true) {
-                val e = zip.nextEntry ?: break
-                if (e.isDirectory || !(e.name.endsWith(".xml", true) || e.name.endsWith(".musicxml", true))) continue
-                val bytes = readLimited(zip, MAX_SCORE_BYTES - kept)
-                kept += bytes.size
-                entries[e.name] = bytes
-            }
-        }
-        val root = entries["META-INF/container.xml"]?.decodeToString()
-            ?.let { Regex("""full-path\s*=\s*"([^"]+)"""").find(it)?.groupValues?.get(1) }
-        val chosen = root?.let { entries[it] }
-            ?: entries.entries.firstOrNull { it.key.endsWith(".xml", true) && !it.key.startsWith("META-INF") }?.value
-        return requireNotNull(chosen) { "no score in the container" }.decodeToString()
     }
 
     /** A finished take, already on disk; its samples are null when it was too long to keep in memory. */
@@ -1869,6 +1852,29 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 require(out.size() <= limit) { "file larger than ${limit shr 20} MB" }
             }
             return out.toByteArray()
+        }
+
+        /**
+         * The root score of a compressed MusicXML container, or the first .xml that is not the container.
+         * Read from the stream entry by entry; only the container and .xml entries are kept, each capped.
+         */
+        fun unzipScore(input: java.io.InputStream): String {
+            val entries = HashMap<String, ByteArray>()
+            var kept = 0L
+            ZipInputStream(input.buffered()).use { zip ->
+                while (true) {
+                    val e = zip.nextEntry ?: break
+                    if (e.isDirectory || !(e.name.endsWith(".xml", true) || e.name.endsWith(".musicxml", true))) continue
+                    val bytes = readLimited(zip, MAX_SCORE_BYTES - kept)
+                    kept += bytes.size
+                    entries[e.name] = bytes
+                }
+            }
+            val root = entries["META-INF/container.xml"]?.decodeToString()
+                ?.let { Regex("""full-path\s*=\s*"([^"]+)"""").find(it)?.groupValues?.get(1) }
+            val chosen = root?.let { entries[it] }
+                ?: entries.entries.firstOrNull { it.key.endsWith(".xml", true) && !it.key.startsWith("META-INF") }?.value
+            return requireNotNull(chosen) { "no score in the container" }.decodeToString()
         }
         private const val KEY_STACK = "stack"
         private const val KEY_SOURCE = "source"
