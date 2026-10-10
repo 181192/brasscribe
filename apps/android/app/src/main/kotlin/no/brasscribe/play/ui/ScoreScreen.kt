@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,8 +74,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.nativeKeyCode
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -85,6 +89,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import no.brasscribe.play.score.StandPages
 import no.brasscribe.design.BrasscribeNumericStyle
+import no.brasscribe.design.BrasscribeScore
 import no.brasscribe.design.BrasscribeSpace
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.PlayViewModel
@@ -602,7 +607,7 @@ fun ScoreScreen(vm: PlayViewModel) {
                     modifier = when {
                         talking -> Modifier.fillMaxSize().clearAndSetSemantics {}
                         performance -> Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" }
-                        else -> Modifier.fillMaxSize().semantics {
+                        else -> Modifier.fillMaxSize().scoreStop(controller).semantics {
                             testTag = "score-view"
                             contentDescription = summary
                             stateDescription = stateText
@@ -767,6 +772,32 @@ fun ScoreScreen(vm: PlayViewModel) {
 }
 
 /** The way onto the music stand (section 5.1): outline, with the icon and a visible label. */
+/**
+ * The engraved score as one stop for the keyboard, in its place between the controls above it and the player:
+ * alphaTab's own views take no focus (ScoreController). With the focus on it the arrows scroll the page by a few
+ * lines, Page Up and Page Down by most of a screen, and Home and End to its top and its end; at an end of the page
+ * the arrows move the focus on.
+ */
+@Composable
+private fun Modifier.scoreStop(controller: ScoreController): Modifier {
+    var focused by remember { mutableStateOf(false) }
+    val ring = BrasscribeTheme.colors.focus
+    return onFocusChanged { focused = it.isFocused }
+        .then(if (focused) Modifier.border(BrasscribeScore.focusWidth, ring) else Modifier)
+        .onKeyEvent { e ->
+            if (e.type != KeyEventType.KeyDown) false else when (e.key) {
+                Key.DirectionDown -> controller.scrollPage(0.2f)
+                Key.DirectionUp -> controller.scrollPage(-0.2f)
+                Key.PageDown -> controller.scrollPage(0.85f)
+                Key.PageUp -> controller.scrollPage(-0.85f)
+                Key.MoveEnd -> controller.scrollToEnd(true)
+                Key.MoveHome -> controller.scrollToEnd(false)
+                else -> false
+            }
+        }
+        .focusable()
+}
+
 @Composable
 private fun MusicStandButton(focus: FocusRequester, onClick: () -> Unit) {
     PracticeChip(stringResource(R.string.stand_enter), false, onClick,
