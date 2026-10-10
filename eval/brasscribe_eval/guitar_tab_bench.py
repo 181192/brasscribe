@@ -99,10 +99,14 @@ def prepare(entry: Path, audio: Path, only: str | None = None) -> None:
 # GuitarSet is a guitar alone. For `recording: song` the guitar is first separated from a band, and the
 # only songs here with a note reference are Slakh's: the separator's guitar stem is scored against the
 # notes of all the track's Guitar-class stems together (it holds all of them). No strings are known.
-# The references with every guitar as its MIDI has it are in a folder of their own: `slakh-guitar` holds the
-# earlier ones (seven stems an octave low), which the baselines before this correction were measured against.
-SONG_SET = "slakh-guitar-as-written"
-SONG_SET_BEFORE = "slakh-guitar"
+SONG_SET = "slakh-guitar"
+# The folder's name while the references were being corrected (seven stems had been an octave low), when
+# `slakh-guitar` still held the earlier ones. build-songs takes the models' outputs over from it, and a data folder
+# where it is still a folder of its own (not moved to SONG_SET) is read from it. Moving a data folder to the new
+# name: move the earlier `slakh-guitar` aside, run build-songs (it writes the same references to SONG_SET and copies
+# the models' outputs over), then move SONG_SET_BEFORE aside; a link of that name to SONG_SET keeps older checkouts
+# that share the folder reading the same tracks.
+SONG_SET_BEFORE = "slakh-guitar-as-written"
 SONG_SOURCE = "slakh/babyslakh_16k"
 SONG_FILES = {"beats": "song.beats", "bp": "song-bp.mid", "sw": "song-sw.mid"}
 
@@ -184,8 +188,14 @@ def prepare_song(entry: Path, mix: Path) -> None:
             pretty_midi.PrettyMIDI().write(str(entry / SONG_FILES["sw"]))
 
 
+def song_root(data: Path) -> Path:
+    """The folder of the Slakh song set: SONG_SET, or SONG_SET_BEFORE in a data folder not yet moved to the new name."""
+    before = Path(data) / "eval" / SONG_SET_BEFORE
+    return before if before.is_dir() and not before.is_symlink() else Path(data) / "eval" / SONG_SET
+
+
 def song_entries(data: Path) -> list[Path]:
-    root = Path(data) / "eval" / SONG_SET
+    root = song_root(data)
     return sorted(p for p in root.iterdir() if (p / "reference.json").exists()) if root.is_dir() else []
 
 

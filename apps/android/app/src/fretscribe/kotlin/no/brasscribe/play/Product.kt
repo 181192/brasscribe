@@ -36,8 +36,29 @@ object Product {
     /** A tab has no music stand, so Settings has none of the stand's switches. */
     const val MUSIC_STAND = false
 
-    /** Your songs holds songs only: a recording is not kept there before it has a tab. */
-    const val KEEPS_RECORDINGS = false
+    /**
+     * Home has no Open a tab: a MusicXML file opened from Home would show on Brasscribe's score screen, not in the tab
+     * view. It comes back once an imported tab opens there.
+     */
+    const val OPENS_SCORES = false
+
+    /** The page pedals turn pages on a band score's stand; a tab has its own keys. */
+    const val PEDALS_REPEAT = false
+
+    /** A tab's PDF comes from the computer only. */
+    const val PHONE_PDF = false
+
+    /**
+     * A take whose tab was not made (it failed, or was stopped) is kept in Your songs, as Brasscribe keeps a recording
+     * in Your scores: for [KEPT_RECORDING_DAYS] days, then it is deleted if no tab was made from it.
+     */
+    const val KEEPS_RECORDINGS = true
+
+    /** How long a take without a tab is kept in Your songs. Settings and the words that say it is kept say so too. */
+    val KEPT_RECORDING_DAYS: Int? = 30
+
+    /** A take kept in Your songs is the same recording in another place: What is this?'s answers go with it. */
+    fun recordingMoved(from: Source, to: Source) = SongAnswers.moved(from, to)
 
     /** A tab is written on the computer only: without it, "Not connected" is a warning. */
     const val MAKES_SCORES_ON_THE_PHONE = false
@@ -135,6 +156,10 @@ object Product {
     /** The screen that follows a finished transcription: Check the song for a tab (drawn in the output choices' place). */
     fun afterTranscription(result: TranscriptionResult): Screen =
         if (result.profile.writesTab) Screen.OUTPUT else Screen.REVIEW
+
+    /** The screen after Check the notes: the output choices, for every take. */
+    @Suppress("UNUSED_PARAMETER")
+    fun afterReview(result: TranscriptionResult): Screen = Screen.OUTPUT
 
     /** A row in Your songs: a tab's instrument, tuning and notes to check; a band score says where it opens. Null for the usual line. */
     @Composable

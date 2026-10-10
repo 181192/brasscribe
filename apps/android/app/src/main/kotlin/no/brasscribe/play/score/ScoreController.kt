@@ -110,8 +110,25 @@ class ScoreController(
     /** Counts finished renders: the music stand lays out its pages again after each one. */
     val renders: StateFlow<Int> = _renders
     private val _engraving = MutableStateFlow(false)
-    /** alphaTab is engraving: from its render's start until that render is finished and drawn (tests wait on it). */
+    /**
+     * alphaTab has a render on its way or under way (tests wait on it): from the moment one is asked for (here, or by
+     * alphaTab itself after the view's width changed) until it is laid out, or it failed. alphaTab engraves on a thread
+     * of its own, so a render asked for has not started yet. Laid out is not painted: alphaTab paints each part of the
+     * engraving later, on that thread, once the view shows it.
+     */
     val engraving: StateFlow<Boolean> = _engraving
+    /** Renders asked for that have not started yet. */
+    private var renderAsked = 0
+    /** Renders started: a render's end only counts when no other has started since. */
+    private var renderStarts = 0
+    private var rendering = false
+    private fun engravingChanged() { _engraving.value = renderAsked > 0 || rendering }
+    private val _parts = HashSet<String>()
+    /**
+     * The parts alphaTab laid the current engraving out in, by id (tests read which of them it has painted). The view
+     * can also hold parts of an engraving before it, which alphaTab no longer paints: those are not among them.
+     */
+    internal val parts: Set<String> get() = _parts
     private val innerScroll: android.widget.ScrollView? = view.findViewById(net.alphatab.R.id.innerScroll)
 
     init {
@@ -145,13 +162,26 @@ class ScoreController(
         // Channel volumes reset when the MIDI is regenerated (every render), so the balance follows it.
         // (api.midiLoaded cannot be used: in alphaTab 1.8.4 on Android its getter recurses forever.)
         // The engraving's size comes with the render; the surface is only measured to it on a later layout pass.
-        view.api.renderStarted.on { _engraving.value = true }
+        view.api.renderStarted.on {
+            _parts.clear()
+            renderStarts++
+            if (renderAsked > 0) renderAsked--
+            rendering = true
+            engravingChanged()
+        }
+        // A new width is engraved again: alphaTab says so here, then asks its thread for the render.
+        view.api.resize.on { e -> if (e.newWidth > 0) { renderAsked++; engravingChanged() } }
+        view.api.renderer.partialLayoutFinished.on { e -> _parts += e.id }
         view.api.renderFinished.on { e -> engravedWidth = e.totalWidth }
         view.api.postRenderFinished.on {
             applyVolumes(); overlays().forEach { it.refresh() }
             hideCredit()
             // After alphaTab's own handlers, so the stand reads this render's layout, not the last one.
-            view.post { _renders.value++; _engraving.value = false }
+            val starts = renderStarts
+            view.post {
+                _renders.value++
+                if (renderStarts == starts) { rendering = false; engravingChanged() }
+            }
             preloadSoundFont()
         }
 
@@ -162,7 +192,11 @@ class ScoreController(
             val n = (beat.playbackStart / beatTicks).toInt() + 1
             _state.value = _state.value.copy(bar = beat.voice.bar.index.toInt() + 1, beat = n.coerceIn(1, beats), beatsInBar = beats)
         }
-        view.api.error.on { e -> _state.value = _state.value.copy(error = e.message ?: e.javaClass.simpleName) }
+        view.api.error.on { e ->
+            _state.value = _state.value.copy(error = e.message ?: e.javaClass.simpleName)
+            // A render that failed never finishes. (Any error ends the wait: alphaTab's errors do not say where they came from.)
+            renderAsked = 0; rendering = false; engravingChanged()
+        }
         view.api.midiEventsPlayed.on { e ->
             if (no.brasscribe.play.BuildConfig.DEBUG) for (ev in e.events) if (ev is NoteOnEvent) notesPerChannel.merge(ev.channel.toInt(), 1, Int::plus)
             // Without humanization (no core) the realistic tier follows alphaTab's own note events.
@@ -196,7 +230,7 @@ class ScoreController(
         view.settings.player.enableUserInteraction = !on
         view.api.updateSettings()
         view.descendantFocusability = if (on) android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS else android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS
-        if (_state.value.loaded) view.api.render()
+        if (_state.value.loaded) askToRender { view.api.render() }
     }
 
     /**
@@ -208,7 +242,7 @@ class ScoreController(
         if (SCORE_INFO.all { view.settings.notation.isNotationElementVisible(it) == on }) return
         for (e in SCORE_INFO) view.settings.notation.elements.set(e, on)
         view.api.updateSettings()
-        if (_state.value.loaded) view.api.render()
+        if (_state.value.loaded) askToRender { view.api.render() }
     }
 
     /** The engraved systems in view pixels (alphaTab's layout units times the display density). */
@@ -431,7 +465,13 @@ class ScoreController(
 
     private fun render() {
         val s = score ?: return
-        view.api.renderScore(s, DoubleList(*_state.value.shown.sorted().map { it.toDouble() }.toDoubleArray()))
+        askToRender { view.api.renderScore(s, DoubleList(*_state.value.shown.sorted().map { it.toDouble() }.toDoubleArray())) }
+    }
+
+    /** Asks alphaTab for a render. It skips one while the view has no width yet, and engraves when it gets one (see resize). */
+    private inline fun askToRender(ask: () -> Unit) {
+        if (view.api.container.width > 0) { renderAsked++; engravingChanged() }
+        ask()
     }
 
     /** The instrument key the shown part is written for ("B♭", "E♭"), or null for concert-pitch parts. */
@@ -704,12 +744,6 @@ class ScoreController(
      * "?" (enclosure="rectangle"), which alphaTab does not draw. The boxed one becomes U+2370, the
      * boxed question mark, so it keeps its shape in the score.
      */
-    private fun markVeryUncertain(bytes: ByteArray): ByteArray {
-        val xml = bytes.toString(Charsets.UTF_8)
-        if (!xml.contains("enclosure=\"rectangle\"")) return bytes
-        return VERY_UNCERTAIN_WORDS.replace(xml, "<words>$BOXED_QUESTION</words>").toByteArray(Charsets.UTF_8)
-    }
-
     private fun colourUncertainty(s: Score) = colourMarks(s, marks, palette)
 
     /**
@@ -881,6 +915,16 @@ private val SCORE_INFO = listOf(
 internal const val BOXED_QUESTION = "\u2370"
 /** Blank text in place of a mark: alphaTab still reserves the text band above the note. */
 internal const val MARK_SPACE = "\u2003\u2003"
+/**
+ * The MusicXML with each very uncertain mark (a "?" in a rectangle, which alphaTab draws as a plain "?") written as
+ * [BOXED_QUESTION]: the score view and the phone's PDF tell the two kinds of mark apart by it.
+ */
+internal fun markVeryUncertain(bytes: ByteArray): ByteArray {
+    val xml = bytes.toString(Charsets.UTF_8)
+    if (!xml.contains("enclosure=\"rectangle\"")) return bytes
+    return VERY_UNCERTAIN_WORDS.replace(xml, "<words>$BOXED_QUESTION</words>").toByteArray(Charsets.UTF_8)
+}
+
 private val VERY_UNCERTAIN_WORDS = Regex("""<words\b[^>]*enclosure="rectangle"[^>]*>\?</words>""")
 
 /** A colour with [alpha] that, drawn over [paper], gives [tint]. */

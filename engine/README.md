@@ -7,6 +7,11 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   with a content-addressed cache (`dag.py`, `cache.py`); `runner.py` writes each run to
   `<data>/runs/<run-id>/`: `composition.json`, MusicXML, PDF, MIDI and MP3 under `outputs/`, each
   stage's files, and a manifest of what ran.
+- **Beats.** Beat This! gives the beats. The solo profile and the band draft run its small0 checkpoint, the one
+  the Play apps run on the device, so a score made on the computer is the one the device makes; the other
+  profiles run the adapter's own final0. `brasscribe bench solo-beat-model` measured final0 on solo takes and
+  found no significant gain, which is why the solo profile keeps small0 (the numbers are by `solo()` in
+  `profiles.py`).
 - **Models** run as subprocesses behind a `<input> <output>` contract, each in its own environment under
   [`ml/adapters/`](../ml/adapters) (`adapters.py`). The engine never imports model code. Heavy models
   take a machine-wide GPU lock (`gpulock.py`).
@@ -35,7 +40,10 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     chords an overtone above the 12th fret of the top string is left out on a guitar and on a ukulele (its own top
     string, and only a note that starts with the note it is an overtone of and is fainter: a melody played up there
     stays), not on a mandolin, where that made no measurable difference. A unison that a strummed open chord of a
-    ukulele plays on two strings (the G of 0232) is heard once and written on both, marked `doubled`. A faint
+    ukulele plays on two strings (the G of 0232) is heard once and written on both, marked `doubled`. A chord
+    really played on three strings is completed to four the same way when a doubling fits: the transcription cannot
+    tell the two apart, and the common voicing is written. A doubling outside the crate's open-shape table (the B of
+    Bm 4222) gets no string of its own there yet and is not written. A faint
     overtone that starts apart from a strum is left out too. With `style: open-position` an overtone on top of an
     open chord (one with an open string) that alone moves the chord three or more frets up the neck is left out.
     Both rules are a guitar's.

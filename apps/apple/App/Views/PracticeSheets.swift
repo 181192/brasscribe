@@ -429,7 +429,9 @@ struct ExportView: View {
                     let score = model.score, tm = model.composition?.tempoMap
                     let muted = model.score.parts.filter { model.isMuted($0.id) }.map(\.id)
                     try await Task.detached {
-                        let e = try PlaybackEngine(score: score, tempoMap: tm, soundBank: .locate(), offlineFormat: PlaybackEngine.offlineFormat())
+                        let e = try PlaybackEngine.audioUnitLock.withLock {
+                            try PlaybackEngine(score: score, tempoMap: tm, soundBank: .locate(), offlineFormat: PlaybackEngine.offlineFormat())
+                        }
                         for id in muted { e.setMuted(id, true) }
                         try e.exportScore(to: u)
                     }.value

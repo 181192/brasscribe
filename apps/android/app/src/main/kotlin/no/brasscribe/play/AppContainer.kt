@@ -171,7 +171,8 @@ class AppContainer(private val context: Context) {
     val scoreLibrary = SavedScoreLibrary(java.io.File(context.filesDir, "scores"))
 
     /** The recordings kept in Your scores before they have a score; out of the backup (`noBackupFilesDir`). */
-    val keptRecordings = KeptRecordingStore(java.io.File(context.noBackupFilesDir, "kept-recordings"))
+    val keptRecordings = KeptRecordingStore(java.io.File(context.noBackupFilesDir, "kept-recordings"),
+        keepFor = Product.KEPT_RECORDING_DAYS?.let { java.util.concurrent.TimeUnit.DAYS.toMillis(it.toLong()) })
 
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
     val core: CoreBridge = (RustCoreBridge.load() ?: KotlinCoreBridge).also { c -> no.brasscribe.play.ui.PartNames.nb = c::partNameNb }
@@ -187,6 +188,9 @@ class AppContainer(private val context: Context) {
         set(v) { field = v; cachedEngine = null }
 
     val usingFixture: Boolean get() = fixtureSource != null
+
+    /** The camera under the pairing scanner: the phone's own; tests put one in that shows them a code. */
+    var qrCamera: no.brasscribe.play.ui.QrCamera = no.brasscribe.play.ui.PhoneQrCamera
 
     /** Tests only: how long each of the fixture computer's stages takes. */
     var fixtureStageSeconds: Double = 0.7

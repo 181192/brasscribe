@@ -18,8 +18,24 @@ object Product {
     /** A score opens on the music stand, so Settings has the stand's switches. */
     const val MUSIC_STAND = true
 
+    /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
+    const val OPENS_SCORES = true
+
+    /** While a repeat is set on the music stand, the page pedals play, pause and go back to its start. */
+    const val PEDALS_REPEAT = true
+
+    /** Without a PDF from the computer (a score made or changed on the phone), the phone lays out the PDF itself. */
+    const val PHONE_PDF = true
+
     /** A recording whose score was not made (it failed, was put off or was stopped) is kept in Your scores. */
     const val KEEPS_RECORDINGS = true
+
+    /** A recording kept in Your scores stays until the player deletes it. */
+    val KEPT_RECORDING_DAYS: Int? = null
+
+    /** A recording kept in Your scores moved there: nothing here is tied to where it was. */
+    @Suppress("UNUSED_PARAMETER")
+    fun recordingMoved(from: Source, to: Source) = Unit
 
     /** A score can be made on the phone: without the computer, "Not connected" is information, not a warning. */
     const val MAKES_SCORES_ON_THE_PHONE = true
@@ -70,6 +86,13 @@ object Product {
      * is rough; Check the notes is still reachable from the score (design/system.md, the band draft).
      */
     fun afterTranscription(result: TranscriptionResult): Screen = if (result.draft) Screen.SCORE else Screen.REVIEW
+
+    /**
+     * The screen after Check the notes: a solo ("One instrument") goes straight to the score, on the player's part; band,
+     * difficulty and key are "Band, difficulty and key…" in the score's ⋯ sheet. Every other take asks How should the
+     * score be? first.
+     */
+    fun afterReview(result: TranscriptionResult): Screen = if (result.isSoloTake) Screen.SCORE else Screen.OUTPUT
 
     /** A row in Your scores that is not a band score: a tab says where it opens. Null for the usual line. */
     @Composable

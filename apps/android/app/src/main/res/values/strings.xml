@@ -150,7 +150,7 @@
         <item quantity="one">Only for recordings up to %d minute.</item>
         <item quantity="other">Only for recordings up to %d minutes.</item>
     </plurals>
-    <string name="where_companion_missing">Connect Brasscribe on your computer first.</string>
+    <string name="where_companion_missing">Connect Brasscribe Bandroom on your computer first.</string>
     <string name="problem_connect_computer">Connect your computer</string>
 
     <!-- Making the score -->
@@ -193,12 +193,12 @@
     <string name="draft_notice">A quick draft made on this phone. Your computer makes a better score, and results on the phone can differ slightly from the computer\'s.</string>
     <string name="draft_notice_short">A quick draft made on this phone.</string>
     <string name="draft_make_full">Make the full score</string>
-    <string name="draft_no_computer">Open Brasscribe on your computer to make the full score from the same recording.</string>
+    <string name="draft_no_computer">Open Brasscribe Bandroom on your computer to make the full score from the same recording.</string>
     <string name="draft_label">Draft</string>
     <string name="draft_too_long_title">Too long for a draft on this phone</string>
     <string name="draft_too_long_body">Your computer can make the score from this recording.</string>
-    <string name="draft_too_long_body_away">Open Brasscribe on your computer to make the score from this recording, or choose a shorter one.</string>
-    <string name="draft_too_long_body_unpaired">Your computer can make the score from this recording. Open Brasscribe there and choose Pair a phone, then connect it here with Connect your computer. Or choose a shorter recording.</string>
+    <string name="draft_too_long_body_away">Open Brasscribe Bandroom on your computer to make the score from this recording, or choose a shorter one.</string>
+    <string name="draft_too_long_body_unpaired">Your computer can make the score from this recording. Open Brasscribe Bandroom there and choose Pair a phone, then connect it here with Connect your computer. Or choose a shorter recording.</string>
     <string name="draft_refused_title">The draft can\'t be made right now</string>
     <string name="draft_refused_body">The phone has stopped Brasscribe from working on it. Your computer can make the score, or try again later.</string>
     <string name="draft_refused_body_away">The phone has stopped Brasscribe from working on it. Try again later.</string>
@@ -273,13 +273,13 @@
     <string name="percussion_solo_refused">Brasscribe can\'t write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.</string>
     <string name="change_what_i_play">Change what I play</string>
     <string name="error_generic">Something went wrong. Try again.</string>
-    <string name="error_unreachable">Can\'t reach Brasscribe on your computer. Check that it is running and on the same network.</string>
+    <string name="error_unreachable">Can\'t reach Brasscribe Bandroom on your computer. Check that it is running and on the same network.</string>
     <string name="error_pair_again">Your computer no longer knows this phone. Connect them again in Settings.</string>
     <string name="error_timeout">Your computer took too long to answer. Try again.</string>
-    <string name="error_engine_failed">Brasscribe on your computer couldn\'t finish the score. Try again.</string>
+    <string name="error_engine_failed">Bandroom on your computer couldn\'t finish the score. Try again.</string>
     <string name="error_reads_not_offered">Your instrument isn\'t written in that clef. Choose again under What you play.</string>
-    <string name="error_invalid_options">Brasscribe on your computer didn\'t accept these choices. It may need an update.</string>
-    <string name="error_core_missing">Brasscribe on your computer needs an update to write tabs. Update it there, then try again.</string>
+    <string name="error_invalid_options">Bandroom on your computer didn\'t accept these choices. It may need an update.</string>
+    <string name="error_core_missing">Bandroom on your computer needs an update to write tabs. Update it there, then try again.</string>
     <!-- Writing a song down again from the recording the computer holds, when it no longer has it. -->
     <string name="recording_sent_again">Your computer no longer had the recording, so the phone is sending its copy.</string>
     <string name="error_recording_gone">Your computer no longer has this recording, and the phone has no copy of it. Open the recording again from Home.</string>
@@ -297,7 +297,7 @@
     <string name="difficulty_standard">A bit easier</string>
     <string name="difficulty_easier">Easier</string>
     <string name="difficulty_tip">Easier keeps the tune but avoids high notes and fast runs.</string>
-    <string name="difficulty_unsupported">This score is written as played. Connect Brasscribe on your computer for the other choices.</string>
+    <string name="difficulty_unsupported">This score is written as played. Connect Brasscribe Bandroom on your computer for the other choices.</string>
     <string name="key_label">Key</string>
     <string name="key_as_recorded">As recorded</string>
     <plurals name="key_shift">
@@ -380,6 +380,12 @@
     <string name="export_formats">Formats</string>
     <string name="export_pdf">PDF</string>
     <string name="export_pdf_desc">For printing and the music stand</string>
+    <!-- Share or print, under PDF: which PDF it is. -->
+    <string name="export_pdf_computer">For printing and the music stand. From Bandroom on your computer.</string>
+    <string name="export_pdf_phone">For printing and the music stand. Laid out on this phone.</string>
+    <string name="export_pdf_phone_changed">Laid out on this phone, with your changes. The pages may look different from your computer\'s.</string>
+    <!-- Share or print, while the phone lays out the PDFs: the part it is at, of how many. -->
+    <string name="export_laying_out">Laying out the pages: %1$d of %2$d</string>
     <string name="export_musicxml_score">MusicXML</string>
     <string name="export_musicxml_desc">Edit in MuseScore, Sibelius or Dorico</string>
     <string name="export_audio">Audio</string>
@@ -390,8 +396,8 @@
     <string name="export_talking_desc">Text a screen reader can read aloud</string>
     <string name="export_braille">Braille music</string>
     <string name="export_braille_desc">BRF file for a braille display or embosser</string>
-    <string name="export_braille_unavailable">Made by Brasscribe on your computer.</string>
-    <string name="export_needs_engine">Needs Brasscribe on your computer.</string>
+    <string name="export_braille_unavailable">Made by Bandroom on your computer.</string>
+    <string name="export_needs_engine">Needs Bandroom on your computer.</string>
     <string name="export_print">Print</string>
     <string name="export_share">Share…</string>
     <string name="export_save">Save to Files</string>
@@ -430,16 +436,20 @@
     <string name="problem_choose_another">Choose another file</string>
     <string name="problem_record_instead">Record instead</string>
 
-    <!-- Brasscribe on your computer -->
-    <string name="companion_title">Brasscribe on your computer</string>
-    <string name="companion_explain">Open Brasscribe on your computer and choose Pair a phone. Type the six digits it shows.</string>
+    <!-- Brasscribe Bandroom, the program on the computer (Bandroom for short), and where to get it -->
+    <string name="bandroom_get_title">Get Brasscribe Bandroom</string>
+    <string name="bandroom_get_text">It is free for Mac (Apple silicon) and Windows. On your computer, download it from this address:</string>
+    <string name="bandroom_open">Open the download page</string>
+    <string name="bandroom_no_browser">This phone has no browser to open it. Type the address on your computer.</string>
+    <string name="companion_title">Brasscribe Bandroom</string>
+    <string name="companion_explain">Open Brasscribe Bandroom on your computer and choose Pair a phone. Type the six digits it shows.</string>
     <string name="companion_address">Computer address</string>
-    <string name="companion_searching">Looking for Brasscribe on your network… You can also type the address below.</string>
+    <string name="companion_searching">Looking for Bandroom on your network… You can also type the address below.</string>
     <string name="companion_chosen">Chosen</string>
     <string name="companion_code">Six-digit code</string>
     <string name="companion_connect">Connect</string>
     <string name="companion_connecting">Connecting</string>
-    <string name="companion_tech_details">Brasscribe Bandroom shows the address under Details for the band\'s tech person.</string>
+    <string name="companion_tech_details">Bandroom shows the address under Details for the band\'s tech person.</string>
     <string name="companion_allow_heavy">Let the computer do the heavy work</string>
     <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
 
@@ -463,6 +473,10 @@
     <string name="stand_faster">Faster</string>
     <string name="stand_repeat">Repeat</string>
     <string name="stand_repeat_on">Repeat %1$d–%2$d</string>
+    <!-- Music stand, under Repeat while a repeat is set: what a page pedal does then. -->
+    <string name="stand_pedals_repeat">Pedals: right plays and pauses, left goes back to bar %1$d.</string>
+    <!-- Said when a pedal goes back to the start of the repeat. -->
+    <string name="stand_back_to_repeat">Back to bar %1$d.</string>
     <string name="stand_only_mine">Only my part</string>
     <string name="stand_lock">Lock rotation</string>
     <string name="stand_lock_on">Rotation locked</string>
@@ -481,7 +495,7 @@
     <string name="settings_stand_follow">Turn the pages while playing</string>
     <!-- Help: the heading over the page turners and keys. -->
     <string name="help_stand_title">Music stand</string>
-    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.</string>
+    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music. While a repeat is set, the pedals don\'t turn pages: right (Page Down) plays and pauses, and left (Page Up) goes back to the start of the repeat.</string>
     <string name="help_stand_tablet_lock">To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).</string>
     <string name="opened_score">Opened %1$s.</string>
     <string name="home_open_score">Open a score</string>
@@ -499,7 +513,7 @@
     <string name="export_scope_conductor">Conductor\'s score</string>
     <string name="export_scope_score_quartet">Score (all 4 parts)</string>
     <string name="export_whole_score_only">%1$s · the whole score</string>
-    <string name="export_made_before_change">Made before your changes. Brasscribe on your computer makes it again.</string>
+    <string name="export_made_before_change">Made before your changes. Bandroom on your computer makes it again.</string>
     <string name="review_your_part_first">Check your part first</string>
     <string name="review_accompaniment">Accompaniment (%1$d)</string>
     <plurals name="review_your_part_count">
@@ -543,9 +557,9 @@
     <string name="help_3_title">Practise</string>
     <string name="help_3_text">Slow the music down with Speed, repeat the hard bars, and mute your part to play along with the band.</string>
     <string name="help_4_title">Share or print</string>
-    <string name="help_4_text">Share the score as a file. A score made by Brasscribe on your computer can also be printed (your part, every part or the conductor\'s score), as long as no note was changed on the phone.</string>
+    <string name="help_4_text">Share the score as a file, or print it: your part, every part or the conductor\'s score. The PDF comes from Bandroom on your computer when it made the score and no note was changed since; otherwise the phone lays out the pages itself, and they may look different.</string>
     <string name="help_5_title">The phone and your computer</string>
-    <string name="help_5_text">On the phone: one instrument, or a quick draft of a brass band. For the full band score, a soloist with a band, or pop and rock, open Brasscribe on your computer and connect in Settings.</string>
+    <string name="help_5_text">On the phone: one instrument, or a quick draft of a brass band. For the full band score, a soloist with a band, or pop and rock, open Brasscribe Bandroom on your computer and connect in Settings.</string>
     <string name="help_6_title">Links and streaming apps</string>
     <string name="help_6_text">Links can\'t be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.</string>
     <string name="octave_down">Octave down</string>
@@ -602,7 +616,12 @@
     <string name="listen_ended">End of bar %1$d</string>
     <string name="pair_scan">Scan the code on the computer</string>
     <string name="pair_scan_unavailable">This phone can\'t scan codes here. Type the code from the computer instead.</string>
-    <string name="pair_link_invalid">That code isn\'t from Brasscribe on a computer.</string>
+    <string name="pair_scan_title">Point the camera at the code on the computer</string>
+    <string name="pair_scan_on_phone">The code is read on this phone. Nothing is recorded or sent.</string>
+    <string name="pair_scan_camera">Camera view for the code</string>
+    <string name="pair_camera_refused">The camera isn\'t allowed, so the code can\'t be scanned. Type the code instead, or allow the camera in the phone\'s settings.</string>
+    <string name="pair_camera_settings">Open the phone\'s settings for this app</string>
+    <string name="pair_link_invalid">That code isn\'t from Brasscribe Bandroom.</string>
     <string name="pair_link_title">Connect to %1$s?</string>
     <string name="pair_link_address">Address on your network: %1$s</string>
     <string name="pair_link_address_by_name">Brasscribe looks for it on your network by name.</string>
@@ -611,7 +630,7 @@
     <string name="pair_code_needed">Type the code the computer shows, or ask on the computer instead.</string>
     <string name="pair_code_wrong">That code didn\'t work. Check the code on the computer and try again.</string>
     <string name="pair_code_locked">Too many wrong codes. Wait a moment, or ask on the computer instead.</string>
-    <string name="companion_failed_plain">Couldn\'t connect. Check that Brasscribe on the computer says Running, and that both are on the same Wi-Fi.</string>
+    <string name="companion_failed_plain">Couldn\'t connect. Check that Bandroom on the computer says Running, and that both are on the same Wi-Fi.</string>
     <string name="pair_ask">Ask on the computer instead</string>
     <string name="pair_ask_again">Ask again</string>
     <string name="pair_ask_waiting">On the computer, choose Allow when it shows this number:</string>
@@ -707,7 +726,7 @@
     <string name="written_for_treble">Written for %1$s in %2$s, treble clef</string>
     <string name="written_for_bass">Written for %1$s, bass clef, as it sounds</string>
     <string name="lineup_your_part">%1$s · your part: %2$s</string>
-    <string name="engine_too_old_seat">Brasscribe on your computer is too old to write for your instrument. Update it to use this.</string>
+    <string name="engine_too_old_seat">Bandroom on your computer is too old to write for your instrument. Update it to use this.</string>
     <string name="lead_seat_refused">The tune can\'t go on your part in this band. Under Who plays the tune?, choose the band\'s usual part.</string>
     <string name="mapped_short_full">The full brass band has no %1$s — showing %2$s</string>
     <string name="mapped_short_takes_full">The full brass band has no %1$s part — %2$s, written for %1$s</string>

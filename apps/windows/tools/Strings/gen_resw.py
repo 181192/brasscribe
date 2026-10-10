@@ -24,6 +24,11 @@ def tip(uid, en, nb): add(f"{uid}.{TIP}", en, nb)
 def prop(uid, p, en, nb): add(f"{uid}.{p}", en, nb)
 
 
+def switch(uid):
+    """A ToggleSwitch's On and Off: WinUI's own words follow Windows' language, not the app's."""
+    prop(uid, "OnContent", "On", "På"); prop(uid, "OffContent", "Off", "Av")
+
+
 def icon_button(uid, en, nb, hen, hnb):
     name(uid, en, nb); tip(uid, en, nb); help_(uid, hen, hnb)
 
@@ -245,8 +250,10 @@ add("Appearance_PinkDark", "Pink dark", "Rosa mørkt")
 add("Pink_Unlocked", "🎺 Pink unlocked", "🎺 Rosa låst opp")
 add("Settings_AppVersion", "Version {0}", "Versjon {0}")
 prop("AppearanceContrastNote", "Text", "Your contrast theme is on, so Windows chooses the colours.", "Kontrasttemaet ditt er på, så Windows velger fargene.")
+switch("SingleKeySwitch")
 prop("SingleKeySwitch", "Header", "Single-key shortcuts in the score", "Hurtigtaster med én tast i partituret")
 help_("SingleKeySwitch", "Keys such as U, R and P. Arrows always work.", "Taster som U, R og P. Piltastene virker alltid.")
+switch("ReduceMotionSwitch")
 prop("ReduceMotionSwitch", "Header", "Reduce motion", "Mindre bevegelse")
 help_("ReduceMotionSwitch", "The cursor jumps per beat and the score turns pages instead of scrolling", "Markøren hopper ett slag om gangen, og partituret blar i stedet for å rulle")
 prop("VerbosityBox", "Header", "How much “Read aloud” says", "Hvor mye «Les opp» sier")
@@ -689,7 +696,9 @@ add("Stand_RepeatTo", "to", "til")
 add("Stand_RepeatSet", "Repeat", "Gjenta")
 add("Stand_RepeatSetHelp", "Plays these bars over and over (L)", "Spiller disse taktene om og om igjen (L)")
 prop("SettingsStandHeading", "Text", "Music stand", "Notestativ")
+switch("StandKeepControlsSwitch")
 prop("StandKeepControlsSwitch", "Header", "Keep the stand controls visible", "Vis alltid knappene på notestativet")
+switch("StandTurnPagesSwitch")
 prop("StandTurnPagesSwitch", "Header", "Turn the pages while playing", "Bla om mens musikken spiller")
 prop("StandPedalNote", "Text",
      "Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.",

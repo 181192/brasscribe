@@ -189,4 +189,22 @@ class KeptRecordingStoreTest {
             assertTrue("$at: still somewhere", take.isFile || s.list().isNotEmpty())
         }
     }
+
+    @Test
+    fun withATimeLimitARecordingKeptLongerIsDeletedUnlessItIsInHand() {
+        val day = 24L * 60 * 60 * 1000
+        val s = KeptRecordingStore(File(tmp.root, "no_backup/kept-recordings"), keepFor = 30 * day)
+        val now = 100 * day
+        val old = s.keep(take("a.wav"), "Old", SourceKind.MICROPHONE, 1.0, now = now - 31 * day)
+        val young = s.keep(take("b.wav"), "Young", SourceKind.MICROPHONE, 1.0, now = now - 29 * day)
+        val inHand = s.keep(take("c.wav"), "In hand", SourceKind.MICROPHONE, 1.0, now = now - 40 * day)
+        s.prune(inUse = inHand.file, now = now)
+        assertEquals(listOf("Young", "In hand"), s.list().map { it.title })
+        assertFalse(old.file.exists())
+        assertTrue(young.file.isFile && inHand.file.isFile)
+        // Without a time limit (Brasscribe) nothing is deleted for its age.
+        val forever = store()
+        forever.prune(inUse = null, now = now + 1000 * day)
+        assertEquals(listOf("Young", "In hand"), forever.list().map { it.title })
+    }
 }

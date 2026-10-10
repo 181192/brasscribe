@@ -18,6 +18,7 @@ class PlayApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        GoogleLeftovers.clear(this)
         container = AppContainer(this)
     }
 

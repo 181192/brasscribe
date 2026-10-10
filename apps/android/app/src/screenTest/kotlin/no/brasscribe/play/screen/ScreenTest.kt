@@ -12,6 +12,8 @@ import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.lifecycle.ViewModelProvider
@@ -87,6 +89,7 @@ abstract class ScreenTest {
         ScreenDevice.reset(rule)
         rule.runOnUiThread {
             container.fixtureSource = null
+            container.qrCamera = no.brasscribe.play.ui.PhoneQrCamera
             container.updateAppearance(Appearance.SYSTEM)
             vm.scores.value.forEach(vm::deleteEntry)
             vm.home()
@@ -95,16 +98,45 @@ abstract class ScreenTest {
 
     /**
      * Waits until the score on screen is a new one (not [before], the controller of the score shown before), is loaded,
-     * and alphaTab has finished engraving it and drawn it: no render is under way. A fixed delay is not enough, as a
-     * setting that changes after the first render (the title block, the stand's layout) engraves it again.
+     * and alphaTab has finished engraving it and painted what is in view: no render is on its way or under way, and no
+     * part of the engraving in view waits for its picture. A fixed delay is not enough, as a setting that changes after
+     * the first render (the title block, the stand's layout) engraves it again, and alphaTab does all of it on a thread
+     * of its own: a new width is engraved again 25 ms later (by the clock on the wall), and the parts in view are
+     * painted only after the render has finished, once the view has laid them out.
      */
     protected fun waitForEngravedScore(before: no.brasscribe.play.score.ScoreController? = null, ms: Long = 30_000) {
-        waitUntil(ms) {
+        try {
+            waitUntil(ms) {
+                val c = vm.scoreController
+                c != null && c !== before && c.state.value.loaded && c.renders.value > 0 && !c.engraving.value &&
+                    // (A width alphaTab has not engraved yet is engraved again once its pause after a change of size is over.)
+                    c.view.api.container.width == c.view.api.renderer.width && onUi { AlphaTabSurface.painted(c.view, c.parts) }
+            }
+        } catch (e: AssertionError) {
             val c = vm.scoreController
-            c != null && c !== before && c.state.value.loaded && c.renders.value > 0 && !c.engraving.value
+            val state = if (c == null) "no score" else "new ${c !== before}, loaded ${c.state.value.loaded}, renders ${c.renders.value}, " +
+                "engraving ${c.engraving.value}, width ${c.view.api.container.width} engraved at ${c.view.api.renderer.width}, " +
+                "parts ${onUi { AlphaTabSurface.describe(c.view, c.parts) }}"
+            throw AssertionError("no engraved score within $ms ms ($state)", e)
         }
+    }
+
+    private fun <T> onUi(read: () -> T): T {
+        var out: Result<T>? = null
+        rule.runOnUiThread { out = runCatching(read) }
+        return out!!.getOrThrow()
+    }
+
+    /**
+     * The pairing scanner open, the camera allowed, on a camera that shows [code] (a QR code's text) or, when it is
+     * null, nothing that reads.
+     */
+    protected fun pairingScanner(code: String? = null) {
+        ScreenDevice.allowCamera(rule)
+        rule.runOnUiThread { container.qrCamera = ShownQrCode(code); vm.home(); vm.navigate(no.brasscribe.play.Screen.SETTINGS); vm.navigate(no.brasscribe.play.Screen.COMPANION) }
         rule.waitForIdle()
-        waitUntil(ms) { vm.scoreController?.engraving?.value == false }
+        rule.onNode(androidx.compose.ui.test.hasText(text(no.brasscribe.play.R.string.pair_scan))).performScrollTo().performClick()
+        rule.waitForIdle()
     }
 
     protected fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
