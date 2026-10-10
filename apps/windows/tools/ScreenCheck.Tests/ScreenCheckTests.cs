@@ -190,6 +190,8 @@ public class ScreenCheckTests
         run.Failed.Add("score: TimeoutException");
         Assert.Equal(3, Verdict.Of([run], [known]).ExitCode);
         Assert.Equal(3, Verdict.Of([], []).ExitCode); // nothing taken is never a pass
+        // A screen that did not keep still was not compared: not a pass either.
+        Assert.Equal(3, Verdict.Of([new CatalogueRun { Shots = ["home--light"], Unsteady = ["home--light"] }], []).ExitCode);
     }
 
     [Fact]
@@ -210,5 +212,146 @@ public class ScreenCheckTests
         var back = CatalogueRun.Load(path);
         Assert.Equal(["a--light"], back.Shots);
         Assert.Equal("Tab never reaches it", Assert.Single(back.Findings).Detail);
+    }
+
+    // ---- when a screenshot is taken (SteadyShot) ----
+
+    private static readonly Box Line = new(0, 0, 40, 16);
+
+    private static Look Screen(string shape = "40x16 HomePage no dialog Light", string text = "Hello") =>
+        new(shape, [new ScreenText(text, Line, TextKind.Normal)]);
+
+    /// <summary>Feeds the same take until the screenshot is taken or <paramref name="most"/> takes were made.</summary>
+    private static int Feed(SteadyShot shot, Picture picture, Look look, int most = 20)
+    {
+        int n = 0;
+        while (!shot.Done && n < most) { shot.Take(picture, look, look); n++; }
+        return n;
+    }
+
+    [Fact]
+    public void A_screen_that_is_drawn_and_keeps_still_is_taken_after_six_takes_the_same()
+    {
+        var shot = new SteadyShot();
+        var picture = Text(White, Black);
+        Assert.Equal(SteadyShot.Needed, Feed(shot, picture, Screen()));
+        Assert.True(shot.Done);
+        Assert.Same(picture, shot.Picture);
+        Assert.Equal("Hello", Assert.Single(shot.Texts).Text);
+        Assert.Contains("taken after", shot.Summary("home--light", TimeSpan.FromSeconds(2)));
+    }
+
+    [Fact]
+    public void A_window_that_has_not_drawn_its_first_frame_is_never_taken_however_still_it_keeps()
+    {
+        // The window as it was captured before its content was presented: one flat colour, the same in every take.
+        var shot = new SteadyShot();
+        Feed(shot, Picture.Blank(40, 16, White), Screen());
+        Assert.False(shot.Done);
+        Assert.Contains("its text is not drawn", shot.Waiting);
+        Assert.Contains("screen not taken: its text is not drawn", shot.NotTaken().Message);
+        Assert.Contains("NOT taken", shot.Summary("first-run--text200-light", SteadyShot.Bound));
+        // Once it is drawn, the six takes are counted from there.
+        Assert.Equal(SteadyShot.Needed, Feed(shot, Text(White, Black), Screen()));
+        Assert.True(shot.Done);
+    }
+
+    [Fact]
+    public void A_screen_with_no_text_read_off_it_does_not_count_as_shown()
+    {
+        Assert.False(Presented.Shows(Text(White, Black), []));
+        var texts = new[] { new ScreenText("a", Line, TextKind.Normal), new ScreenText("b", new Box(0, 10, 40, 6), TextKind.Normal) };
+        Assert.True(Presented.Shows(Text(White, Black), texts)); // one of two has ink: half
+        Assert.False(Presented.Shows(Picture.Blank(40, 16, White), texts));
+    }
+
+    [Fact]
+    public void A_dialog_is_not_taken_while_the_picture_is_still_the_screen_without_it()
+    {
+        // Share or print asked for, the score still on screen: what the catalogue once kept as export--light.
+        var score = Text(White, Black);
+        var shot = new SteadyShot(without: score);
+        Feed(shot, Text(White, Black), Screen("40x16 ScoreScreen ExportDialog Light"));
+        Assert.False(shot.Done);
+        Assert.Contains("its dialog is not in the picture", shot.Waiting);
+        var withDialog = Text(0xFF808080, Black);
+        Assert.Equal(SteadyShot.Needed, Feed(shot, withDialog, Screen("40x16 ScoreScreen ExportDialog Light")));
+        Assert.Same(withDialog, shot.Picture);
+    }
+
+    [Fact]
+    public void A_take_does_not_count_when_the_screen_read_differently_before_and_after_it()
+    {
+        // The notation arrived (and moved the text) between the picture and the reading of where the text is: the
+        // boxes would be measured on a picture they do not belong to.
+        var shot = new SteadyShot();
+        var picture = Text(White, Black);
+        for (int i = 0; i < 20; i++)
+            shot.Take(picture, Screen(), new Look("40x16 HomePage no dialog Light", [new ScreenText("Hello", new Box(0, 2, 40, 14), TextKind.Normal)]));
+        Assert.False(shot.Done);
+        Assert.Contains("changed while its picture was taken", shot.Waiting);
+    }
+
+    [Fact]
+    public void Takes_before_the_screen_was_the_one_asked_for_do_not_count()
+    {
+        var shot = new SteadyShot();
+        var picture = Text(White, Black);
+        for (int i = 0; i < SteadyShot.Needed - 1; i++) shot.Take(picture, Screen(), Screen());
+        shot.NotReady("ExportDialog has not opened");
+        Assert.Equal("ExportDialog has not opened", shot.Waiting);
+        Assert.Equal(SteadyShot.Needed, Feed(shot, picture, Screen())); // counted again from the start
+        Assert.Contains("ExportDialog has not opened (×1)", shot.Summary("export--light", TimeSpan.FromSeconds(3)));
+    }
+
+    [Fact]
+    public void A_screen_that_moves_is_never_taken_and_one_that_settles_is_taken_as_it_settled()
+    {
+        var shot = new SteadyShot();
+        var a = Text(White, Black);
+        var b = Text(White, 0xFF404040);
+        for (int i = 0; i < 20; i++) shot.Take(i % 2 == 0 ? a : b, Screen(), Screen());
+        Assert.False(shot.Done);
+        Assert.Equal("it does not keep still", shot.Waiting);
+        Assert.Equal(SteadyShot.Needed, Feed(shot, Text(White, 0xFF202020), Screen()));
+        // The same pixels with the text somewhere else is another screen: counted from there.
+        var moved = new SteadyShot();
+        for (int i = 0; i < SteadyShot.Needed - 1; i++) moved.Take(a, Screen(), Screen());
+        var other = Screen(text: "Hallo");
+        moved.Take(a, other, other);
+        Assert.False(moved.Done);
+    }
+
+    [Fact]
+    public void Text_read_only_around_the_last_take_is_enough_but_that_take_must_have_it()
+    {
+        // From outside the process the text comes through UI Automation, which is slow: read when asked for.
+        var shot = new SteadyShot();
+        var picture = Text(White, Black);
+        var bare = new Look("0,0 40x16", null);
+        int withText = 0;
+        for (int i = 0; i < 20 && !shot.Done; i++)
+        {
+            bool texts = shot.WantsTexts;
+            if (texts) withText++;
+            var look = texts ? Screen("0,0 40x16") : bare;
+            shot.Take(picture, look, look);
+        }
+        Assert.True(shot.Done);
+        Assert.Equal(SteadyShot.Needed, shot.Takes);
+        Assert.Equal(1, withText);
+        // Never read: never taken.
+        var never = new SteadyShot();
+        for (int i = 0; i < 20; i++) never.Take(picture, bare, bare);
+        Assert.False(never.Done);
+        // Read at the end and not drawn (the window was blank all along): not taken.
+        var blank = new SteadyShot();
+        var white = Picture.Blank(40, 16, White);
+        for (int i = 0; i < 20; i++)
+        {
+            var look = blank.WantsTexts ? Screen("0,0 40x16") : bare;
+            blank.Take(white, look, look);
+        }
+        Assert.False(blank.Done);
     }
 }

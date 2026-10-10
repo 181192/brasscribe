@@ -1,18 +1,19 @@
 # Brasscribe Play for Windows' screen catalogue (tests/Brasscribe.Play.Catalogue): every screen in Light, Dark, Pink
 # light, Pink dark, bokmål, a Windows contrast theme and 200 % text, with its checks, and what changed against the
-# merge base. Windows only; meant for CI, since the contrast theme and the text size are this user's Windows settings
-# for the length of their run.
+# base. Windows only; meant for CI, since the contrast theme, the text size and animation effects (off for every run)
+# are this user's Windows settings for the length of their run.
 #
 #   catalogue.ps1 record  -Exe EXE -Out DIR                 take them, with the checks
 #   catalogue.ps1 compare -Exe EXE -Out DIR [-Base COMMIT]  take them at COMMIT (default: the merge base with origin/main) without
 #                                                  the checks, then here with them, and compare
 #
-# DIR gets the screenshots (shots\, unsteady\, scans\), findings.md and, for compare, report\ (index.html,
+# DIR gets the screenshots (shots\, with not-taken\ and scans\ in it), findings.md and, for compare, report\ (index.html,
 # summary.md, result.json) with the base's screenshots in before\. Exit codes as for the other apps' catalogues:
 # 0 nothing changed, 1 a screen changed, appeared or went away, 2 the catalogue's checks found something, 3 the
 # screenshots could not be taken here. When nothing the screens are made from changed since the base, the base is not
 # taken (nothing to compare; 0). When the base's screenshots cannot be taken (a change to the catalogue itself, say),
-# that is a warning and nothing is compared (0): this side's checks still decide.
+# that is a warning and nothing is compared (0): this side's checks still decide. A -Base that is not a commit here
+# is 3: a comparison that was asked for is never passed over.
 # EXE is the app's own build (BrasscribePlay.exe): Axe.Windows and the walk with Tab run on it, one start per screen.
 # -FfiDll is the Rust core for this checkout (brasscribe_ffi.dll); the base builds its own when its core differs.
 param(
@@ -31,8 +32,9 @@ $windows = Resolve-Path (Join-Path $PSScriptRoot "../..")
 $repo = Resolve-Path (Join-Path $windows "../..")
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $Out = Resolve-Path $Out
-# The text size this user had before a run at 200 %, put back after it.
+# The text size this user had before a run at 200 %, put back after it; and whether animation effects were on.
 $script:textScaleKeep = Join-Path $Out "text-scale-before.txt"
+$script:animationsKeep = Join-Path $Out "animations-before.txt"
 
 function Log($text) { Write-Host "catalogue: $text" }
 
@@ -60,6 +62,9 @@ function Invoke-Run($exe, $shots, $run, $variants, $score, [bool] $checks) {
     & $exe @appArgs | Out-Host
     $code = $LASTEXITCODE
     Log ("{0} took {1:n0} s (test platform exit {2})" -f $run, ((Get-Date) - $started).TotalSeconds, $code)
+    # How long each screen took to be the screen asked for, and what it waited for.
+    $takes = Join-Path $shots "takes-$run.log"
+    if (Test-Path $takes) { Get-Content $takes | Out-Host }
     if ($code -ne 0) {
         # Why the app ended, when it crashed: Windows' own record of it.
         Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = $started } -ErrorAction SilentlyContinue |
@@ -83,18 +88,24 @@ function Invoke-Catalogue($exe, $shots, $score, [bool] $checks) {
     if (Test-Path $shots) { Remove-Item -Recurse -Force $shots }
     New-Item -ItemType Directory -Force -Path $shots | Out-Null
     $env:BRASSCRIBE_CATALOGUE_PINK_SCENES = "first-run,home,score,review,export,settings"
-    $ok = Invoke-Run $exe $shots "en" "light,dark,pink-light,pink-dark" $score $checks
-    $ok = (Invoke-Run $exe $shots "nb" "light" $score $checks) -and $ok
-    System-State @("--contrast", "on")
-    try { $ok = (Invoke-Run $exe $shots "contrast" ($(if ($checks) { "system,pink-dark" } else { "system" })) $score $checks) -and $ok }
-    finally { System-State @("--contrast", "off") }
-    System-State @("--text-scale", "200", "--keep", $script:textScaleKeep)
-    try { $ok = (Invoke-Run $exe $shots "text200" "light" $score $checks) -and $ok }
-    finally { System-State @("--text-scale", "restore", "--keep", $script:textScaleKeep) }
-    if ($checks) {
-        & $script:screenCheck play --exe $script:appExe --score $score --out $shots --shots $shots | Out-Host
-        $ok = ($LASTEXITCODE -eq 0) -and $ok
+    # No animation effects while the screens are taken (Settings > Accessibility > Visual effects): a dialog, a page or
+    # a theme change is on screen at once instead of fading or sliding in. The app reads it when it starts.
+    System-State @("--animations", "off", "--keep", $script:animationsKeep)
+    try {
+        $ok = Invoke-Run $exe $shots "en" "light,dark,pink-light,pink-dark" $score $checks
+        $ok = (Invoke-Run $exe $shots "nb" "light" $score $checks) -and $ok
+        System-State @("--contrast", "on")
+        try { $ok = (Invoke-Run $exe $shots "contrast" ($(if ($checks) { "system,pink-dark" } else { "system" })) $score $checks) -and $ok }
+        finally { System-State @("--contrast", "off") }
+        System-State @("--text-scale", "200", "--keep", $script:textScaleKeep)
+        try { $ok = (Invoke-Run $exe $shots "text200" "light" $score $checks) -and $ok }
+        finally { System-State @("--text-scale", "restore", "--keep", $script:textScaleKeep) }
+        if ($checks) {
+            & $script:screenCheck play --exe $script:appExe --score $score --out $shots --shots $shots | Out-Host
+            $ok = ($LASTEXITCODE -eq 0) -and $ok
+        }
     }
+    finally { System-State @("--animations", "restore", "--keep", $script:animationsKeep) }
     return $ok
 }
 
@@ -116,10 +127,16 @@ if ($Mode -eq "compare") {
     if (Test-Path $report) { Remove-Item -Recurse -Force $report }
     New-Item -ItemType Directory -Force -Path $report | Out-Null
     $summary = Join-Path $report "summary.md"
+    $given = $Base
     if (-not $Base) { $Base = git -C $repo merge-base HEAD origin/main }
     $Base = git -C $repo rev-parse --verify --quiet "$Base^{commit}"
     $why = $null
-    if (-not $Base) { $why = "no such commit" }
+    if (-not $Base -and $given) {
+        # A base that was asked for by name: not finding it is not a comparison passed.
+        Write-Host "::error::Play for Windows: the base to compare with, '$given', is not a commit in this checkout, so nothing was compared."
+        exit 3
+    }
+    if (-not $Base) { $why = "no merge base with origin/main" }
     else {
         git -C $repo diff --quiet $Base HEAD -- @madeFrom
         if ($LASTEXITCODE -eq 0 -and -not $AlwaysBase) {

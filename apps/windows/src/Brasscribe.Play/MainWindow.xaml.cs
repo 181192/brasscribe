@@ -115,7 +115,10 @@ public sealed partial class MainWindow : Window
         if (e.PropertyName == nameof(MainViewModel.Screen)) Show(ViewModel.Screen);
     }
 
-    private static Type PageFor(Screen screen) => screen switch
+    /// <summary>The page in the frame now (the screen catalogue checks it is the one for the step asked for).</summary>
+    internal object? ShownPage => ContentFrame.Content;
+
+    internal static Type PageFor(Screen screen) => screen switch
     {
         Screen.FirstRun => typeof(FirstRunPage),
         Screen.WhatDoYouPlay => typeof(WhatDoYouPlayPage),

@@ -34,6 +34,25 @@ internal static partial class Win
     }
 
     [DllImport("user32.dll")] private static extern bool GetClientRect(nint hwnd, out Rect rect);
+    [DllImport("user32.dll")] private static extern bool IsWindow(nint hwnd);
+    [DllImport("user32.dll")] private static extern bool IsIconic(nint hwnd);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Point { public int X, Y; }
+
+    [DllImport("user32.dll")] private static extern bool ClientToScreen(nint hwnd, ref Point point);
+
+    /// <summary>The window is there, shown and not minimised.</summary>
+    public static bool IsShown(nint hwnd) => IsWindow(hwnd) && IsWindowVisible(hwnd) && !IsIconic(hwnd);
+
+    /// <summary>Where a picture of the window is on the screen: the whole window, or its client area. Empty when the window is gone.</summary>
+    public static Rect Area(nint hwnd, bool client)
+    {
+        if (!client) return GetWindowRect(hwnd, out var whole) ? whole : default;
+        var origin = new Point();
+        if (!GetClientRect(hwnd, out var r) || !ClientToScreen(hwnd, ref origin)) return default;
+        return new Rect { Left = origin.X, Top = origin.Y, Right = origin.X + r.Right - r.Left, Bottom = origin.Y + r.Bottom - r.Top };
+    }
 
     /// <summary>The whole window as it is drawn, even where it is off screen or covered (PW_RENDERFULLCONTENT); with
     /// <paramref name="client"/>, its client area only (as Play's catalogue takes its screenshots).</summary>
@@ -59,22 +78,5 @@ internal static partial class Win
             return new Picture(w, h, bytes);
         }
         finally { bmp.UnlockBits(data); }
-    }
-
-    /// <summary>The window once it keeps still: pictures 250 ms apart until six in a row are the same, or 20 s pass.</summary>
-    public static (Picture Picture, bool Steady) Steady(nint hwnd, bool client = false)
-    {
-        var start = System.Diagnostics.Stopwatch.StartNew();
-        Picture? last = null;
-        int same = 0;
-        while (start.Elapsed < TimeSpan.FromSeconds(20))
-        {
-            Thread.Sleep(250);
-            var now = Capture(hwnd, client);
-            same = last is not null && now.SameAs(last) ? same + 1 : 0;
-            last = now;
-            if (same >= 5) return (now, true);
-        }
-        return (last!, false);
     }
 }

@@ -42,8 +42,8 @@ internal static class PlayScan
                 while (app.MainWindowHandle == 0 && !app.HasExited && DateTime.UtcNow < deadline) { Thread.Sleep(500); app.Refresh(); }
                 if (app.HasExited) throw new InvalidOperationException($"Play exited with code {app.ExitCode} before showing a window");
                 if (app.MainWindowHandle == 0) throw new TimeoutException("no window after 90 s");
-                Thread.Sleep(scene is "export" or "settings" ? 2500 : 0); // the dialog opens 1.5 s after the screen
-                Win.Steady(app.MainWindowHandle);
+                if (scene is "export" or "settings") WaitForDialog(app.MainWindowHandle); // it opens 1.5 s after the screen
+                WindowShot.Take(app, app.MainWindowHandle, shot + " (Axe.Windows and Tab)");
                 result.Findings.AddRange(Scan.Axe(app.Id, shot, Path.Combine(scans, "axe")));
                 result.Findings.AddRange(Scan.Keyboard(app.Id, app.MainWindowHandle, shot, out var order));
                 File.WriteAllLines(Path.Combine(scans, shot + ".tab.txt"), order);
@@ -81,8 +81,8 @@ internal static class PlayScan
             var deadline = DateTime.UtcNow.AddSeconds(90);
             while (app.MainWindowHandle == 0 && !app.HasExited && DateTime.UtcNow < deadline) { Thread.Sleep(500); app.Refresh(); }
             if (app.MainWindowHandle == 0) { result.Failed.Add($"theme at start: Play showed no window with --theme {theme}"); return; }
-            var (atStart, _) = Win.Steady(app.MainWindowHandle, client: true);
             string shot = $"home--{theme}";
+            var atStart = WindowShot.Take(app, app.MainWindowHandle, shot + " (chosen at start)", client: true).Picture!;
             Png.Save(Path.Combine(scans, $"{shot}-at-start.png"), atStart);
             var (changed, diff) = ImageDiff.Of(Png.Load(switched), atStart);
             if (changed > ImageDiff.FloorPixels)
@@ -92,10 +92,35 @@ internal static class PlayScan
                     $"{changed} pixels differ between {theme} chosen at start and chosen in Settings (scans/{shot}-at-start-diff.png)"));
             }
         }
+        catch (ScreenNotTakenException e)
+        {
+            result.Failed.Add($"theme at start ({theme}): {e.Message}");
+        }
         finally
         {
             if (!app.HasExited) app.Kill(entireProcessTree: true);
         }
+    }
+
+    /// <summary>
+    /// A dialog is open in the window: UI Automation shows a ContentDialog as a window (class Popup) inside it.
+    /// </summary>
+    private static void WaitForDialog(nint hwnd)
+    {
+        using var automation = new FlaUI.UIA3.UIA3Automation();
+        var clock = Stopwatch.StartNew();
+        while (clock.Elapsed < SteadyShot.Bound)
+        {
+            try
+            {
+                if (automation.FromHandle(hwnd).FindFirstDescendant(cf =>
+                        cf.ByControlType(FlaUI.Core.Definitions.ControlType.Window).And(cf.ByClassName("Popup"))) is not null)
+                    return;
+            }
+            catch (System.Runtime.InteropServices.COMException) { }
+            Thread.Sleep(250);
+        }
+        throw new ScreenNotTakenException($"screen not taken: its dialog did not open in {SteadyShot.Bound.TotalSeconds:0} s");
     }
 
     /// <summary>
@@ -112,7 +137,7 @@ internal static class PlayScan
             var deadline = DateTime.UtcNow.AddSeconds(90);
             while (app.MainWindowHandle == 0 && !app.HasExited && DateTime.UtcNow < deadline) { Thread.Sleep(500); app.Refresh(); }
             if (app.MainWindowHandle == 0) { result.Failed.Add("language: Play showed no window with --lang nb-NO"); return; }
-            Win.Steady(app.MainWindowHandle);
+            WindowShot.Take(app, app.MainWindowHandle, "home--nb (the language at start)");
             using var automation = new FlaUI.UIA3.UIA3Automation();
             var button = automation.FromHandle(app.MainWindowHandle).FindFirstDescendant(cf => cf.ByAutomationId("SettingsButton"));
             string name = button?.Properties.Name.ValueOrDefault ?? "(no Settings button)";
@@ -125,6 +150,10 @@ internal static class PlayScan
             if (!connection.StartsWith("Koblet til", StringComparison.Ordinal))
                 result.Findings.Add(new Finding("home--nb", "language", "the connection line",
                     $"\"{connection}\" with --lang nb-NO: the strings from code are not in bokmål"));
+        }
+        catch (ScreenNotTakenException e)
+        {
+            result.Failed.Add($"language: {e.Message}");
         }
         finally
         {

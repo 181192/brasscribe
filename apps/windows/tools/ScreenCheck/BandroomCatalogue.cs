@@ -1,15 +1,14 @@
 using System.Diagnostics;
-using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Definitions;
-using FlaUI.UIA3;
 
 namespace Brasscribe.ScreenCheck;
 
 /// <summary>
 /// Bandroom for Windows' screen catalogue: every view with sample content (--show VIEW [--state STATE], no engine),
-/// one start each, with --theme and --lang. For each window: a screenshot once it keeps still, the contrast of its
-/// text (UI Automation says where the text is), and in the first theme of the English run the Axe.Windows rules and
-/// the walk with Tab. A contrast theme and the text size are set for the whole run beforehand (ScreenCheck system).
+/// one start each, with --theme and --lang. For each window: a screenshot once it is that window with its content
+/// drawn and keeps still (<see cref="WindowShot"/>; otherwise the view is not taken), the contrast of its text (UI
+/// Automation says where the text is), and in the first theme of the English run the Axe.Windows rules and the walk
+/// with Tab. A contrast theme, the text size and animation effects off are set for the whole run beforehand
+/// (ScreenCheck system).
 /// </summary>
 internal static class BandroomCatalogue
 {
@@ -27,6 +26,8 @@ internal static class BandroomCatalogue
         string lang = run == "nb" ? "nb" : "en";
         string prefix = run is "en" or "contrast" ? "" : run + "-";
         Directory.CreateDirectory(outDir);
+        if (SystemState.AnimationsOn)
+            throw new InvalidOperationException("Windows' animation effects are on: a view could be taken while it fades or slides in (ScreenCheck system --animations off)");
         var result = new CatalogueRun();
         var themes = o.List("themes", "light,dark");
         foreach (var theme in themes)
@@ -45,7 +46,8 @@ internal static class BandroomCatalogue
                             for (int i = 0; i < windows.Count; i++)
                             {
                                 string shot = $"{name}{(i == 0 ? "" : $"-{i}")}--{(run == "contrast" ? "contrast" : scan ? theme : prefix + theme)}";
-                                var (picture, steady) = Win.Steady(windows[i]);
+                                var taken = WindowShot.Take(process, windows[i], shot, notTaken: scan ? null : Path.Combine(outDir, "not-taken"));
+                                var picture = taken.Picture!;
                                 if (scan)
                                 {
                                     result.Findings.AddRange(Scan.Axe(process.Id, shot, Path.Combine(outDir, "scans", "axe")));
@@ -54,11 +56,10 @@ internal static class BandroomCatalogue
                                     File.WriteAllLines(Path.Combine(outDir, "scans", shot + ".tab.txt"), order);
                                     continue;
                                 }
-                                Png.Save(Path.Combine(steady ? outDir : Path.Combine(outDir, "unsteady"), shot + ".png"), picture);
+                                Png.Save(Path.Combine(outDir, shot + ".png"), picture);
                                 result.Shots.Add(shot);
-                                if (!steady) result.Unsteady.Add(shot);
                                 if (!checks) continue;
-                                result.Findings.AddRange(Contrast.Check(shot, picture, Texts(windows[i])));
+                                result.Findings.AddRange(Contrast.Check(shot, picture, taken.Texts));
                             }
                         }
                         finally
@@ -92,51 +93,5 @@ internal static class BandroomCatalogue
         if (windows.Count == 0) throw new TimeoutException("no window after 90 s");
         Thread.Sleep(1000);
         windows = Win.Visible(process.Id); // a view may open a second window after the first
-    }
-
-    /// <summary>The window's text, where UI Automation puts it, in the window picture's pixels.</summary>
-    private static List<ScreenText> Texts(nint hwnd)
-    {
-        using var automation = new UIA3Automation();
-        var window = automation.FromHandle(hwnd);
-        Win.GetWindowRect(hwnd, out var w);
-        var found = new List<ScreenText>();
-        foreach (var e in window.FindAllDescendants(cf => cf.ByControlType(ControlType.Text)))
-        {
-            try
-            {
-                var p = e.Properties;
-                var r = e.BoundingRectangle;
-                if (p.IsOffscreen.ValueOrDefault || r.IsEmpty || string.IsNullOrWhiteSpace(p.Name.ValueOrDefault) || InDisabled(e)) continue;
-                found.Add(new ScreenText(p.Name.Value.Trim(), new Box(r.X - w.Left, r.Y - w.Top, r.Width, r.Height), KindOf(e)));
-            }
-            catch (Exception x) when (x is System.Runtime.InteropServices.COMException or FlaUI.Core.Exceptions.PropertyNotSupportedException) { }
-        }
-        return found;
-    }
-
-    /// <summary>Text of a control that is turned off (WCAG leaves inactive controls out of the contrast it asks for).</summary>
-    private static bool InDisabled(AutomationElement e)
-    {
-        for (var up = e.Parent; up is not null; up = up.Parent)
-            if (up.Properties.IsEnabled.TryGetValue(out bool enabled) && !enabled) return true;
-        return false;
-    }
-
-    /// <summary>Large text by its font size and weight from the Text pattern; body text when the pattern does not say.</summary>
-    private static TextKind KindOf(AutomationElement e)
-    {
-        try
-        {
-            if (e.Patterns.Text.PatternOrDefault?.DocumentRange is { } range
-                && range.GetAttributeValue(e.Automation.TextAttributeLibrary.FontSize) is double points)
-            {
-                double px = points * 96 / 72;
-                int weight = range.GetAttributeValue(e.Automation.TextAttributeLibrary.FontWeight) is int w ? w : 400;
-                return ScreenText.KindOf(px, weight, null);
-            }
-        }
-        catch (Exception x) when (x is System.Runtime.InteropServices.COMException or InvalidCastException) { }
-        return TextKind.Normal;
     }
 }
