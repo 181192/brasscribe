@@ -137,9 +137,20 @@
     <string name="stage_quantize">Placing the notes in bars</string>
     <string name="stage_arrange">Choosing strings and frets</string>
     <string name="stage_export">Laying out the tab</string>
-    <!-- The job runs on the computer: the player may switch apps. A finished tab is saved on the phone while the app
-         runs, and listed from the computer in Your songs while the phone is connected to it. -->
-    <string name="transcribe_leave">%1$s. You can switch to another app: when the tab is ready, it is in Your songs while your phone is connected to your computer.</string>
+    <!-- The job runs on the computer, and the app follows it while the player is away: it says when the tab is ready
+         (with notifications allowed). A finished tab is saved on the phone, and listed from the computer in Your songs
+         while the phone is connected to it. transcribe_leave is for notes written down on the phone, which nothing
+         follows in the background (Fretscribe has none today; the words are its own all the same). -->
+    <string name="transcribe_leave">%1$s. Keep Fretscribe open until the tab is ready.</string>
+    <string name="transcribe_leave_computer">%1$s. You can switch to another app: Fretscribe tells you when the tab is ready, or soon after if the phone is asleep.</string>
+    <string name="transcribe_leave_computer_quiet">%1$s. You can switch to another app: when the tab is ready, it is in Your songs while your phone is connected to your computer.</string>
+    <string name="notif_job_channel">Tabs on your computer</string>
+    <string name="notif_job_working">Bandroom on your computer is writing down the notes</string>
+    <string name="notif_ready_channel">Tabs ready</string>
+    <string name="notif_ready">Your tab is ready</string>
+    <string name="notif_failed">The tab couldn\'t be made</string>
+    <string name="notif_away">The tab will be in Your songs when your computer is back</string>
+    <string name="ready_not_here">This tab is on your computer. Connect to it to open the tab.</string>
     <!-- "Fretscribe on Kari's Mac is writing down the notes" -->
     <string name="transcribe_where_companion">%1$s is writing down the notes</string>
     <string name="transcribe_cancel_title">Stop writing down the notes?</string>

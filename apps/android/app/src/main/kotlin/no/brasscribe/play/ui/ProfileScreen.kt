@@ -236,6 +236,19 @@ fun TranscribeScreen(vm: PlayViewModel) {
             onDispose { view.keepScreenOn = false }
         }
     }
+    // A job on the computer goes on when the player leaves the app, and the app says when it is done: notifications are
+    // asked for here, at the first such job (never at the first run), once.
+    val onComputer = s.running && !onPhone && !s.draft
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var notifies by remember { mutableStateOf(no.brasscribe.play.JobNotices.allowed(context)) }
+    val askToNotify = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { notifies = no.brasscribe.play.JobNotices.allowed(context) }
+    LaunchedEffect(onComputer) {
+        if (!onComputer || notifies || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU || vm.container.notificationsAsked) return@LaunchedEffect
+        vm.container.notificationsAsked = true
+        askToNotify.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+    }
     // Announce each new step once, politely, rather than every percent.
     LaunchedEffect(s.step) { if (s.running) vm.status.value = no.brasscribe.play.Status(stepText) }
     // Back (the gesture or the top bar's button) asks first, as Cancel does: a stray swipe never ends a job of minutes.
@@ -246,7 +259,13 @@ fun TranscribeScreen(vm: PlayViewModel) {
         // The step title is the live region here; the status line would only repeat it.
         title = source?.name?.substringBeforeLast('.'), onBack = ::leave, backLabel = stringResource(R.string.home), status = null,
         bottom = {
-            InfoNote(stringResource(if (s.draft) R.string.transcribe_leave_draft else R.string.transcribe_leave, s.where),
+            val leave = when {
+                s.draft -> R.string.transcribe_leave_draft
+                onPhone -> R.string.transcribe_leave
+                notifies -> R.string.transcribe_leave_computer
+                else -> R.string.transcribe_leave_computer_quiet
+            }
+            InfoNote(stringResource(leave, s.where),
                 icon = if (onPhone) R.drawable.ic_bc_info else R.drawable.ic_bc_computer)
             OutlineButton(stringResource(R.string.cancel), { confirmCancel = true }, enabled = s.running)
         },
