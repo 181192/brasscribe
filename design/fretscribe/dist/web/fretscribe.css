@@ -377,7 +377,7 @@
     --fs-secondary: ButtonFace;
     --fs-on-secondary: ButtonText;
     --fs-brand: CanvasText;
-    --fs-brand-text: LinkText;
+    --fs-brand-text: CanvasText;
     --fs-brand-tint: Canvas;
     --fs-success: CanvasText;
     --fs-warning: CanvasText;

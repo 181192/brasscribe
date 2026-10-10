@@ -285,6 +285,9 @@ def test_neutral_colours_have_the_brands_values_in_every_theme():
         for theme, keys in themes.items():
             for role, src in b.neutral_roles().items():
                 own, neutral = f"{b.KEY}{b.pascal(src)}", f"Scribe{b.pascal(role)}"
+                if theme == "HighContrast":  # the system colour of the neutral role, whatever the brand's key takes
+                    assert keys[f"{neutral}Color"] == build.NEUTRAL["roles"][role]["windows"], (name, role)
+                    continue
                 assert keys[f"{neutral}Color"] == keys[f"{own}Color"], (name, theme, role)
                 assert keys[f"{neutral}Brush"] == keys[f"{own}Brush"].replace(own, neutral), (name, theme, role)
         css = (b.DIST / "web" / f"{b.PRODUCT.lower()}.css").read_text()
@@ -292,6 +295,25 @@ def test_neutral_colours_have_the_brands_values_in_every_theme():
             assert f"  --scribe-{role}: var(--{b.CSS}-{src});" in css, (name, role)
         declared = set(re.findall(rf"^\s+(--{b.CSS}-[\w-]+):", css, re.M))
         assert set(re.findall(rf"var\((--{b.CSS}-[\w-]+)\)", css.split("/* The neutral names")[1])) <= declared, name
+
+
+def test_system_colours_go_by_the_name_a_role_is_read_under():
+    # A token that two neutral roles read (the accent and brand text) has each role's system colour under
+    # the neutral names, and under the brand's own name the one the brand's tokens say.
+    for name, b in brands().items():
+        token = b.neutral_roles()["accent"]
+        assert token == b.neutral_roles()["brand-text"], name
+        xaml = (b.DIST / "windows" / f"{b.PRODUCT}Theme.xaml").read_text()
+        assert '<StaticResource x:Key="ScribeAccentColor" ResourceKey="SystemColorHotlightColor"/>' in xaml, name
+        assert '<StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>' in xaml, name
+        assert f'<StaticResource x:Key="{b.KEY}{b.pascal(token)}Color" ResourceKey="SystemColorWindowTextColor"/>' in xaml, name
+        forced = (b.DIST / "web" / f"{b.PRODUCT.lower()}.css").read_text().split("@media (forced-colors: active)")[1]
+        assert f"--{b.CSS}-{token}: CanvasText;" in forced, name
+
+
+def test_a_token_read_by_roles_with_different_system_colours_has_to_say_its_own(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext["system-colours"].pop("brand-text"),
+            r"no system colour \(windows\) for 'brand-text'.*the neutral roles that read it have different ones")
 
 
 def test_pink_follows_into_the_neutral_names_on_windows():

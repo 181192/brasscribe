@@ -242,15 +242,19 @@ def neutral_roles() -> dict[str, str]:
 
 
 def system_colour(role: str, platform: str) -> str:
-    """The system colour a role takes in a Windows contrast theme ("windows") or under forced-colors ("web"):
-    the neutral role's, or for a brand's own role the one its tokens name under system-colours."""
-    for name, src in neutral_roles().items():
-        if src == role:
-            return NEUTRAL["roles"][name][platform]
-    own = EXT.get("system-colours", {}).get(role)
-    if not own or platform not in own:
-        fail(f"no system colour ({platform}) for '{role}'; add it under $extensions.*.system-colours")
-    return own[platform]
+    """The system colour one of the brand's tokens takes in a Windows contrast theme ("windows") or under
+    forced-colors ("web"), under the brand's own name: the one of the neutral role that reads it, or what
+    the brand's tokens say under system-colours. They have to say it for a role of the brand's own, and for
+    a token that two neutral roles with different system colours read (a link colour that is also brand
+    text). Under a neutral name a role always takes the neutral role's system colour."""
+    neutral = {NEUTRAL["roles"][name][platform] for name, src in neutral_roles().items() if src == role}
+    own = EXT.get("system-colours", {}).get(role, {})
+    if platform in own:
+        return own[platform]
+    if len(neutral) == 1:
+        return neutral.pop()
+    fail(f"no system colour ({platform}) for '{role}'; add it under $extensions.*.system-colours"
+         + (" (the neutral roles that read it have different ones)" if neutral else ""))
 
 
 def notation() -> tuple[str, dict]:
@@ -854,11 +858,12 @@ def windows_theme_dictionaries(light: str, dark: str) -> list[str]:
                 X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{StaticResource {k}Color}}"/>')
         X.append("        </ResourceDictionary>")
     X.append('        <ResourceDictionary x:Key="HighContrast">')
-    for part in (names, neutral):
-        for k, r in part:
-            X.append(f'            <StaticResource x:Key="{k}Color" ResourceKey="{system_colour(r, "windows")}"/>')
-        for k, r in part:
-            X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{ThemeResource {system_colour(r, "windows")}}}"/>')
+    system = [(k, system_colour(r, "windows")) for k, r in names]
+    for part in (system, [("Scribe" + pascal(name), NEUTRAL["roles"][name]["windows"]) for name in neutral_roles()]):
+        for k, colour in part:
+            X.append(f'            <StaticResource x:Key="{k}Color" ResourceKey="{colour}"/>')
+        for k, colour in part:
+            X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{ThemeResource {colour}}}"/>')
     X += ["        </ResourceDictionary>", "    </ResourceDictionary.ThemeDictionaries>"]
     return X
 

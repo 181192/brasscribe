@@ -552,7 +552,7 @@
     --bc-secondary: ButtonFace;
     --bc-on-secondary: ButtonText;
     --bc-brass: CanvasText;
-    --bc-brass-text: LinkText;
+    --bc-brass-text: CanvasText;
     --bc-brass-tint: Canvas;
     --bc-success: CanvasText;
     --bc-warning: CanvasText;
