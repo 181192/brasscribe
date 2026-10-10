@@ -189,6 +189,12 @@ class AppContainer(private val context: Context) {
 
     val usingFixture: Boolean get() = fixtureSource != null
 
+    /**
+     * The version About shows: the app's own. The screen catalogue puts a fixed one in, so its pictures of About
+     * stay the same from one release to the next.
+     */
+    var shownVersion: String = BuildConfig.VERSION_NAME
+
     /** The camera under the pairing scanner: the phone's own; tests put one in that shows them a code. */
     var qrCamera: no.brasscribe.play.ui.QrCamera = no.brasscribe.play.ui.PhoneQrCamera
 

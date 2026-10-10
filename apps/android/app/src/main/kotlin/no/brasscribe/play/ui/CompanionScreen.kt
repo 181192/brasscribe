@@ -284,7 +284,7 @@ fun AboutScreen(vm: PlayViewModel) {
 private fun VersionRow(vm: PlayViewModel) {
     val unlock = remember { PinkUnlock(vm.container.pinkUnlocked) }
     Text(
-        stringResource(R.string.about_version, no.brasscribe.play.BuildConfig.VERSION_NAME),
+        stringResource(R.string.about_version, vm.container.shownVersion),
         style = MaterialTheme.typography.bodyMedium,
         color = BrasscribeTheme.colors.textMuted,
         modifier = Modifier

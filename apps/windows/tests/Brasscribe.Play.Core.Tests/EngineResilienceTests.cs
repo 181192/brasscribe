@@ -160,11 +160,14 @@ public class EngineResilienceTests
         Assert.Contains("after=0", h.Requests.Last().RequestUri!.Query);
     }
 
-    // Five keepalives 150 ms apart outlast a 600 ms idle limit only if each one resets it (slack for a busy CI machine).
+    // Thirty keepalives 100 ms apart (3 s) outlast a 2 s idle limit only if each one resets it. The stream's wait and
+    // the idle limit are two timers on the machine's clock, so the test holds only while no single wait runs past the
+    // limit: a wait of 100 ms may take twenty times as long on a busy CI machine before it does. (At 150 ms against
+    // 600 ms, four times, a Windows runner now and then did.)
     [Fact]
     public async Task Keepalives_keep_a_quiet_stream_open()
     {
-        var events = ServerSentEventParser.ReadAsync(new KeepaliveStream(5, TimeSpan.FromMilliseconds(150)), idleTimeout: TimeSpan.FromMilliseconds(600));
+        var events = ServerSentEventParser.ReadAsync(new KeepaliveStream(30, TimeSpan.FromMilliseconds(100)), idleTimeout: TimeSpan.FromSeconds(2));
         var all = new List<ServerSentEvent>();
         await foreach (var e in events) all.Add(e);
         Assert.Single(all);
