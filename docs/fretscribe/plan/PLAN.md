@@ -112,7 +112,7 @@ unchanged.
    ([`design/tokens/README.md`](../../../design/tokens/README.md)). Brasscribe's token roles keep their
    names (`brass*`); its tokens map them to the neutral `brand*`. Left: the clients move their shared
    code to the neutral names; Fretscribe's Android theme, still written under Brasscribe's names through
-   the alias map in its tokens, gets its own; the folders move to `design/system` and
+   the alias map in its tokens, gets its own; the folders move to `design/tooling` and
    `design/brands/<name>`; the mockup renderer serves both products.
 
 ## First Fretscribe: bass tab
