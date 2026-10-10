@@ -73,7 +73,7 @@ release builds (only on tags), CodeQL (already per language).
 | Apple / Play, on a pull request | 22.6 | 9.5 | the iPhone simulator app and its tests are built (1.0) and not run; the rest is the core 2.4 (its cache was not there), the packages and the macOS app's tests 5.5 |
 | The iPhone simulator tests, at night | in the job above | 15.3 | a job of their own: core 2.6, build and tests 12.1 |
 | Play for Mac catalogue, the core's build | 2.2 to 2.9 | 1.4 | the Mac's slice alone, still without a cache; with the Play job's cache from `main` only the workspace's own crates are compiled |
-| A pull request that changes only workflows | every platform (about 97 job-minutes) | 0.5 | `what changed` and actionlint |
+| An edit to `ci.yml`, for the platforms nothing else in the pull request reaches | every platform (about 97 job-minutes) | 0.5 | `what changed` and actionlint; that pull request also changed `apple.yml`, so the Apple jobs ran and the others did not |
 
 ## The floor per platform
 
