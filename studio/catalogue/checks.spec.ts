@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
 import { compare } from "./compare.mjs";
 import { serveApi } from "./api";
-import { KNOWN, stale } from "./known";
+import { stale, type Known } from "./known";
 import { openView } from "./open";
 import { VARIANTS, type Variant } from "./views";
 
@@ -168,8 +168,10 @@ test("screenshots: changed, new, gone and the same are told apart", async ({ pag
 });
 
 test("known findings: an entry that matches nothing is reported, so a fixed one is removed", () => {
-  const [k] = KNOWN;
-  expect(stale([], k.view, k.variant)).toContainEqual(k);
-  expect(stale([{ check: k.check, what: "anything else" }], k.view, k.variant)).toContainEqual(k);
-  expect(stale([{ check: k.check, what: k.what.source.replace(/^\^|\$$/g, "").replace(/\\/g, "") }], k.view, k.variant)).not.toContainEqual(k);
+  const k: Known = { check: "obscured", view: "bench", variant: "reflow320", what: /^button\.tip-btn has focus under div\.table-wrap$/, issue: 178 };
+  expect(stale([], k.view, k.variant, [k])).toEqual([k]);
+  expect(stale([{ check: k.check, what: "anything else" }], k.view, k.variant, [k])).toEqual([k]);
+  expect(stale([{ check: k.check, what: "button.tip-btn has focus under div.table-wrap" }], k.view, k.variant, [k])).toEqual([]);
+  // An entry is for one view and variant: in another it is neither matched nor missed.
+  expect(stale([], "runs", k.variant, [k])).toEqual([]);
 });

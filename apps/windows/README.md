@@ -98,7 +98,10 @@ The full Windows build, the start-up smoke test and the screen catalogue (screen
 [.github/workflows/windows.yml](../../.github/workflows/windows.yml), on a Windows runner. `ci.yml`
 calls it on every pull request that touches `apps/windows/`, `core/`, the design tokens or what the
 build links from `design/`, `sounds/`, `apps/fixtures/` or the score player's SoundFont (the list is
-the `windows_play` filter in `ci.yml`'s `changes` job), and on every push to main. It is part of
+the `windows_play` filter in `ci.yml`'s `changes` job: of `core/` the crates behind `brasscribe_ffi.dll` and
+its C header, of `apps/fixtures/` the two scores the tests open), and on every push to main that starts
+`ci.yml`, which a push of only Markdown, the site or screenshots does not. A release tag does not run these
+checks: `release.yml` calls `windows.yml` for the release builds. It is part of
 `CI result`. The screen catalogue takes every screen in Light, Dark, Pink, bokmål, a contrast theme and 200 % text
 with its checks, and compares the screenshots with the merge base (artefact `windows-screenshots`):
 [tests/Brasscribe.Play.Catalogue/README.md](tests/Brasscribe.Play.Catalogue/README.md).
