@@ -58,6 +58,8 @@ final class MusicStandUITests: XCTestCase {
             let asked = Date()
             if condition() { return true }
             if asked >= end { return false }
+            // A short breath between questions, so that asking does not itself keep the app busy.
+            Thread.sleep(forTimeInterval: 0.2)
         }
     }
 
