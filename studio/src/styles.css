@@ -428,6 +428,16 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 /* ---------------------------------------------------------------- dialog, misc */
 dialog { border: 0; border-radius: var(--bc-radius-md); background: var(--bc-surface-raised); color: var(--bc-text); max-width: min(48rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; padding: var(--bc-space-4) var(--bc-space-6); box-shadow: var(--bc-elevation-3), inset 0 0 0 1px var(--bc-border); }
 dialog::backdrop { background: var(--bc-scrim); }
+/* The shortcut sheet: a key may break after its "+" and a long word where it must, and below 22rem a row is its keys
+   over what they do, so the sheet never scrolls sideways (WCAG 1.4.10). It opens with focus on its heading. */
+#shortcuts h2[tabindex="-1"]:focus { outline: none; }
+#shortcuts td { overflow-wrap: break-word; }
+#shortcuts kbd { -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+@media (max-width: 22rem) {
+  #shortcuts { padding-inline: var(--bc-space-4); }
+  #shortcuts tr { display: block; padding: var(--bc-space-2) 0; box-shadow: inset 0 -1px 0 var(--bc-border); }
+  #shortcuts td { display: block; padding: 0; box-shadow: none; }
+}
 kbd { font-family: var(--bc-font-mono); border-radius: var(--bc-radius-xs); padding: 0 0.3125rem; font-size: var(--meta); font-weight: 600; background: var(--bc-surface); box-shadow: inset 0 0 0 1px var(--bc-border-strong), inset 0 -2px 0 var(--bc-border-strong); }
 .diff-added { color: var(--bc-success); }
 .diff-removed { color: var(--bc-error); }
