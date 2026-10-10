@@ -590,15 +590,19 @@ fun ScoreScreen(vm: PlayViewModel) {
                 .then(if (performance) Modifier.background(c.bg).windowInsetsPadding(
                     androidx.compose.foundation.layout.WindowInsets.safeDrawing.only(androidx.compose.foundation.layout.WindowInsetsSides.Horizontal)) else Modifier)
                 .onSizeChanged { ms.viewport = it.height.toFloat(); ms.width = it.width.toFloat() }) {
-                if (textView && !performance) {
-                    PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
-                } else {
-                    // A score opened over this one is a new controller with a view of its own. An AndroidView's factory runs
-                    // once, so without the key the screen would keep the last score's view, and the new one would never be laid out.
-                    key(controller) { AndroidView(
-                        factory = { controller.view },
-                        // On the stand the surface over it is the score for TalkBack (with page actions).
-                        modifier = if (performance) Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" } else Modifier.fillMaxSize().semantics {
+                val talking = textView && !performance
+                // A score opened over this one is a new controller with a view of its own. An AndroidView's factory runs
+                // once, so without the key the screen would keep the last score's view, and the new one would never be laid out.
+                // The view stays in the window while the talking score is read, hidden under it at its own size: alphaTab
+                // tears its view down for good when it leaves the window (the player too, which plays the talking score's bars).
+                key(controller) { AndroidView(
+                    factory = { controller.view },
+                    update = { it.visibility = if (talking) android.view.View.INVISIBLE else android.view.View.VISIBLE },
+                    // On the stand the surface over it is the score for TalkBack (with page actions).
+                    modifier = when {
+                        talking -> Modifier.fillMaxSize().clearAndSetSemantics {}
+                        performance -> Modifier.fillMaxSize().clearAndSetSemantics { testTag = "score-view" }
+                        else -> Modifier.fillMaxSize().semantics {
                             testTag = "score-view"
                             contentDescription = summary
                             stateDescription = stateText
@@ -616,8 +620,12 @@ fun ScoreScreen(vm: PlayViewModel) {
                                     true
                                 }.takeIf { checksMarks && controller.marksIn(st.bar) },
                             )
-                        },
-                    ) }
+                        }
+                    },
+                ) }
+                if (talking) {
+                    PartTalkingScore(vm, r, st.shown.minOrNull() ?: 0, st.concertPitch) { bar -> controller.playBar(bar) }
+                } else {
                     if (!st.loaded) Text(stringResource(R.string.player_loading), Modifier.align(Alignment.Center))
                     st.error?.let { Text(stringResource(R.string.score_error, it), color = c.error, modifier = Modifier.align(Alignment.Center).padding(ScreenMargin)) }
                     if (performance) MusicStandOverlay(
