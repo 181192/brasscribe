@@ -58,7 +58,7 @@ Each app copies (or links) from `design/dist/`. The generator never edits `apps/
 | Apple | `dist/apple/BrasscribeDesign.xcassets`, `BrasscribeDesign.swift`, `Fonts/InstrumentSerif-Regular.ttf` (add it to `UIAppFonts` / `ATSApplicationFontsPath`), and `dist/icons/apple/AppIcon.appiconset` into the app's asset catalog | `Color.Brasscribe.primary`, `Font.Brasscribe.display`, `BrasscribeDesign.Space.s4`, `BrasscribeDesign.Motion.animation(reduceMotion:)`, `BrasscribeIcon.loop.systemName`. The colour sets carry dark and high-contrast appearances. |
 | Android | `dist/android/kotlin/no/brasscribe/design/*.kt`, `dist/android/res/drawable/ic_bc_*.xml`, `res/font/instrument_serif.ttf`, and `dist/icons/android/res/**` (the launcher icons) | `BrasscribeTheme(display = FontFamily(Font(R.font.instrument_serif))) { … }`, `BrasscribeTheme.colors.uncertain`, `BrasscribeButtonShape`, `painterResource(R.drawable.ic_bc_play)` |
 | Windows | `dist/windows/BrasscribeTheme.xaml` → `Themes/`, `Assets/Fonts/…`, and `dist/icons/windows/Assets/*` | Merge the dictionary into `App.xaml`. Use `{ThemeResource BcTextBrush}`, `{StaticResource BcTitle1TextBlockStyle}`, `FontIcon Glyph="{StaticResource BcIconPlay}"`. Contrast themes use the user's system colours. |
-| Studio | `dist/web/brasscribe.css` (+ `fonts.css`, `studio-compat.css`, `icons.js`, `icons/*.svg`) and `dist/icons/web/*` | `var(--bc-text)`. Handles `data-theme`, dark mode, `prefers-contrast`, `forced-colors` and `prefers-reduced-motion`. |
+| Studio | `dist/web/brasscribe.css` (+ `fonts.css`, `icons.js`, `icons/*.svg`) and `dist/icons/web/*` | `var(--scribe-text)` for what every brand has, `var(--bc-cursor)` for Brasscribe's own. Handles `data-theme`, dark mode, `prefers-contrast`, `forced-colors` and `prefers-reduced-motion`. |
 
 ## Implementation checklist
 
@@ -115,7 +115,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] Mixer toggles are 40 epx tall on touch.
 
 ### Studio (`studio/`)
-- [ ] Load `brasscribe.css` and then `studio-compat.css`, and delete the colour blocks in `styles.css`.
+- [ ] Load `brasscribe.css` and then Studio's own `tokens.css`, and delete the colour blocks in `styles.css`.
 - [ ] Put the lockup in the header, the favicon set in place, and the page title in the display face.
 - [ ] Map the piano-roll colours onto `model-1` to `model-4`, and keep the patterns.
 - [ ] Validator issues (range, crossing) use the warning icon, not the "?" glyphs, which mean uncertain notes in Play.

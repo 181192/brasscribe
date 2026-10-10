@@ -32,7 +32,7 @@ into the brand's folder. The files carry the brand's name and its short prefix (
 |---|---|---|
 | Apple | `BrasscribeDesign.swift`, `BrasscribeDesign.xcassets`, `Fonts/` | `FretscribeDesign.swift`, `FretscribeDesign.xcassets`, `Fonts/` |
 | Windows | `BrasscribeTheme.xaml` (`Bc…` keys), `BrasscribePinkTheme.xaml`, `Assets/Fonts/` | `FretscribeTheme.xaml` (`Fs…` keys), `Assets/Fonts/` |
-| Web | `brasscribe.css` (`--bc-…`), `fonts.css`, `studio-compat.css`, `icons.js`, `icons/`, `fonts/` | `fretscribe.css` (`--fs-…`), `fonts.css`, `icons.js`, `icons/`, `fonts/` |
+| Web | `brasscribe.css` (`--scribe-…`, and `--bc-…` for its own), `fonts.css`, `icons.js`, `icons/`, `fonts/` | `fretscribe.css` (`--scribe-…`, and `--fs-…` for its own), `fonts.css`, `icons.js`, `icons/`, `fonts/` |
 | Android | `BrasscribeTheme.kt`, `BrasscribeIcon.kt`, `ScribeTheme.kt`, `res/` | the same file names (see [Android](#android)) |
 
 The app icons in `dist/icons/` are not from this generator: each brand's `brand/build.py` renders them.
@@ -109,23 +109,21 @@ one in `icons.json`.
 | Kotlin | `ScribeTheme { }`, `ScribeTheme.colors.brand`, `ScribeColors`, `ScribeSpace`, `ScribeSize`, `ScribeMotion`, `ScribeShapes`, `ScribeButtonShape`, `scribeTypography()`, `ScribeNumericStyle` | `BrasscribeTheme`, `BrasscribeColors.veryUncertain`, `BrasscribeScore` | see [Android](#android) |
 | Swift | `Color.Scribe.brand`, `Font.Scribe.title1`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion` | `Color.Brasscribe.staff`, `BrasscribeDesign.Score`, `BrasscribePalette`, `BrasscribeIcon` | `Color.Fretscribe.uncertainTint`, `FretscribeDesign.Tab`, `Font.Fretscribe.tab(size:)` |
 | XAML | `ScribeBrandBrush`, `ScribeBrandColor`, `ScribeSpace4`, `ScribeTitle1TextBlockStyle` | `BcStaffBrush`, `BcScoreCursorWidth`, `BcIconPlay` | `FsStringBrush`, `FsTabCursorWidth`, `FsTabFontFamily` |
-| CSS | `--scribe-brand`, `--scribe-space-4`, `--scribe-type-title-1-size` | `--bc-staff`, `--bc-score-cursor-width`, `globalThis.BrasscribeIcons` | `--fs-string`, `--fs-tab-cursor-width`, `--fs-font-tab` |
+| CSS | `--scribe-brand`, `--scribe-line`, `--scribe-space-4`, `--scribe-type-title-1-size` | `--bc-very-uncertain`, `--bc-cursor`, `--bc-score-cursor-width`, `--bc-type-studio-body-size`, `globalThis.BrasscribeIcons` | `--fs-uncertain-tint`, `--fs-tab-cursor-width`, `--fs-font-tab` |
 
-### Today's names stay, and how a client moves
+### One name for each thing
 
-Nothing that exists was renamed. A brand's own names hold every role, the neutral ones too
-(`Color.Brasscribe.bg` and `Color.Scribe.bg` are the same colour), so the apps work as they are. The
-neutral names are added beside them:
+A neutral role or scale has its neutral name and no other. A brand's prefix is only on what is the
+brand's own, so code cannot read a neutral role under a brand's name.
 
-- Swift and Kotlin: the neutral names read the brand's own, so they follow the theme, the palette and
-  the contrast setting.
-- CSS: each `--scribe-…` is `var()` of the brand's variable, so it follows every mode.
-- XAML: the neutral keys are in the same theme dictionaries with the same values, and in the Pink
-  dictionary too, so they follow a palette that is merged later.
-
-A client moves in its own time: shared code changes to the neutral names, product code keeps the
-brand's. When no shared code reads a brand's name for a neutral role, the generator can drop those from
-the brand's own type, which then holds only what is the brand's.
+- **The web: done.** `brasscribe.css` and `fretscribe.css` declare `--scribe-…` for what every brand
+  has and `--bc-…` / `--fs-…` for the brand's own, in every mode. Where two neutral roles read one
+  token (`accent` and `brand-text`), each has its own variable, and under forced colours each takes its
+  own system colour.
+- **Apple, Windows and Android: not yet.** There a brand's own names still hold every role
+  (`Color.Brasscribe.bg` beside `Color.Scribe.bg`, `BcBgBrush` beside `ScribeBgBrush`), and the neutral
+  names read them or carry the same values. Each client moves to the neutral names in one step, and the
+  generator stops writing that platform's brand-named copies in the same step.
 
 ### Android
 

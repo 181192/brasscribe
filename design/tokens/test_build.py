@@ -477,7 +477,6 @@ def test_fretscribe_has_its_own_names_and_none_of_brasscribes():
     assert "--fs-uncertain-tint: #FCF0DB;" in css and "--scribe-line: #737983;" in css and "--fs-tab-cursor-width:" in css
     assert "globalThis.FretscribeIcons = {" in js
     assert not (fs.DIST / "windows" / "FretscribePinkTheme.xaml").exists()
-    assert not (fs.DIST / "web" / "studio-compat.css").exists()
     sets = fs.DIST / "apple" / "FretscribeDesign.xcassets"
     assert sorted(p.name for p in sets.iterdir()) == ["Contents.json", "Fretscribe"]
     assert sorted(p.name for p in (sets / "Fretscribe").iterdir() if p.suffix == ".colorset") == \

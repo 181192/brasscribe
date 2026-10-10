@@ -20,8 +20,9 @@ file that is not listed (a test, a trial) is built with --tokens FILE --out DIR.
 
 Names. Every brand gets the same neutral names (Scribe*, --scribe-*; design/tokens/neutral.json lists the
 roles), so shared code compiles against any brand, and its own names for everything (its product name and
-its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. design/tokens/README.md has the rule and
-the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
+its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. On the web a neutral role has its neutral
+name only; on the other platforms the brand's names still hold it too. design/tokens/README.md has the rule
+and the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
 written under Brasscribe's names, through the map in $extensions.<brand>.android (see android_source).
 
 Inputs:  the brand's tokens.json (DTCG), design/tokens/neutral.json, design/tokens/icons.json,
@@ -30,7 +31,7 @@ Outputs, for Brasscribe (another brand's have its own name and prefix, in its ow
          design/dist/apple/      BrasscribeDesign.xcassets, BrasscribeDesign.swift, Fonts/
          design/dist/android/    kotlin/no/brasscribe/design/*.kt, res/drawable/ic_bc_*.xml, res/font/
          design/dist/windows/    BrasscribeTheme.xaml, BrasscribePinkTheme.xaml, Assets/Fonts/
-         design/dist/web/        brasscribe.css, fonts.css, studio-compat.css, icons/*.svg, fonts/
+         design/dist/web/        brasscribe.css, fonts.css, icons.js, icons/*.svg, fonts/
          design/dist/icon-map.md
          docs/accessibility/design-tokens.json (the accessibility palette, kept in its existing shape)
 

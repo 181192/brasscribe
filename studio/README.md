@@ -101,7 +101,7 @@ Screenshots go to `docs/screenshots/`.
   - `bs-beats`
 - `src/views/`: runs, one run (stage graph and inspector), compare, benchmarks, conversion parity, core conformance, datasets and models, and the score viewer.
 
-Styling is the Brasscribe design system (`design/system.md` §7, the workbench variant). `src/styles.css` imports `design/dist/web/brasscribe.css`, `fonts.css` and `studio-compat.css`, which esbuild bundles into `assets/studio-style.css`. Icons come from `design/dist/web/icons.js`, and the lockup from `design/brand/logo`. The favicons come from `design/dist/icons/web`. After a token change, run `uv run design/tokens/build.py`, then `npm run build`.
+Styling is the Brasscribe design system (`design/system.md` §7, the workbench variant). `src/styles.css` imports `design/dist/web/brasscribe.css` and `fonts.css` and Studio's own `src/tokens.css` (the short names its canvases read), which esbuild bundles into `assets/studio-style.css`. Icons come from `design/dist/web/icons.js`, and the lockup from `design/brand/logo`. The favicons come from `design/dist/icons/web`. After a token change, run `uv run design/tokens/build.py`, then `npm run build`.
 
 Light, dark, our high-contrast palette (`prefers-contrast: more`), forced colours and reduced motion all come from the tokens. The notation takes its ink and staff colours from them too.
 
