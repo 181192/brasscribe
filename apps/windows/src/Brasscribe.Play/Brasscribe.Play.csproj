@@ -84,4 +84,23 @@
   <ItemGroup Condition="'$(BrasscribeFfiDll)' != '' And Exists('$(BrasscribeFfiDll)')">
     <Content Include="$(BrasscribeFfiDll)" Link="brasscribe_ffi.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- The screen catalogue: with -p:BrasscribeCatalogue=true this same app is built as its own test host (MSTest on
+       the Microsoft Testing Platform, started from App.OnLaunched), with the tests in tests/Brasscribe.Play.Catalogue.
+       Never part of the app's own build. A console exe, so the test platform's output reaches the console. -->
+  <PropertyGroup Condition="'$(BrasscribeCatalogue)' == 'true'">
+    <OutputType>Exe</OutputType>
+    <DefineConstants>$(DefineConstants);BRASSCRIBE_CATALOGUE</DefineConstants>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>
+    <GenerateSelfRegisteredExtensions>false</GenerateSelfRegisteredExtensions>
+    <CatalogueDir>..\..\tests\Brasscribe.Play.Catalogue\</CatalogueDir>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(BrasscribeCatalogue)' == 'true'">
+    <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="MSTest.TestAdapter" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <Compile Include="$(CatalogueDir)**\*.cs" Link="Catalogue\%(RecursiveDir)%(Filename)%(Extension)" />
+    <ProjectReference Include="..\..\tools\ScreenCheck.Core\ScreenCheck.Core.csproj" />
+  </ItemGroup>
 </Project>
