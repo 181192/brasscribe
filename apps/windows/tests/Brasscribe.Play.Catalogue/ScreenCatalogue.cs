@@ -34,9 +34,6 @@ public sealed class ScreenCatalogue
     public async Task Screen(string scene)
     {
         Directory.CreateDirectory(Options.Out);
-        // Settings shows the app's version, which every release changes: a fixed one in its place (no release's), so
-        // a release leaves the pictures of Settings as they were.
-        Brasscribe.Play.Dialogs.SettingsDialog.ShownVersion = "0.0.0";
         var store = new InMemorySettings();
         var variants = Options.VariantsFor(scene);
         store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(variants[0]));
