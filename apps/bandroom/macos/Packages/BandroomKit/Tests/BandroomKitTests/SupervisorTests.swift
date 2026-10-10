@@ -164,7 +164,6 @@ import Testing
         #expect(plan.environment["PATH"]?.hasPrefix("/usr/bin") == true)
         #expect(plan.environment["BRASSCRIBE_TOKEN"] == nil)
         #expect(plan.environment["BRASSCRIBE_BAND_SOUNDS_DIR"] == nil)
-        #expect(plan.environment["ORT_DISABLE_TELEMETRY"] == "1")
         let file = try #require(EngineStatusFile.read(statusFile))
         #expect(file.port == 8765)
         #expect(file.serverId == engine.healthValue.serverId)

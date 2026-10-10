@@ -9,11 +9,6 @@ stem's notes.
 
 from __future__ import annotations
 
-import os
-
-# ONNX Runtime reports to Microsoft unless this is set before it starts.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
 import hashlib
 import subprocess
 from pathlib import Path

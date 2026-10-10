@@ -3,9 +3,6 @@
 -keep class alphaTab.** { *; }
 -dontwarn alphaTab.**
 
-# ONNX Runtime calls back into its Java classes from JNI.
--keep class ai.onnxruntime.** { *; }
-
 # kotlinx.serialization: keep generated serializers of the app's and libraries' @Serializable classes.
 -keepclassmembers class no.brasscribe.** {
     *** Companion;

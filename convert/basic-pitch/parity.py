@@ -11,11 +11,6 @@ different runtime; windowing, output unwrapping and note creation are the packag
 
 from __future__ import annotations
 
-import os
-
-# ONNX Runtime reports to Microsoft unless this is set before it starts.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
 import contextlib
 import io
 import json

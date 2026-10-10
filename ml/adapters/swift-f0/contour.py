@@ -3,11 +3,6 @@
 Same output as eval/brasscribe_eval/swiftf0_contour.py; brasscribe_music.durations
 reads it to find where sustained notes really end.
 """
-import os
-
-# ONNX Runtime reports to Microsoft unless this is set before it starts.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
 import sys
 
 import numpy as np

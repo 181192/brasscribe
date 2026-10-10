@@ -685,10 +685,10 @@
     <value>{0} · {1}</value>
   </data>
   <data name="Kind_WhereComputer" xml:space="preserve">
-    <value>Made by Brasscribe on your computer. Nothing goes online.</value>
+    <value>Made by Brasscribe on your computer. The recording is not sent online.</value>
   </data>
   <data name="Kind_WhereThisPc" xml:space="preserve">
-    <value>Made on this PC. Nothing goes online.</value>
+    <value>Made on this PC. The recording is not sent online.</value>
   </data>
   <data name="LanguageBox.Header" xml:space="preserve">
     <value>App language</value>

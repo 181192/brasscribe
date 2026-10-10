@@ -685,10 +685,10 @@
     <value>{0} · {1}</value>
   </data>
   <data name="Kind_WhereComputer" xml:space="preserve">
-    <value>Lages av Brasscribe på datamaskinen din. Ingenting sendes til nettet.</value>
+    <value>Lages av Brasscribe på datamaskinen din. Opptaket sendes ikke til nettet.</value>
   </data>
   <data name="Kind_WhereThisPc" xml:space="preserve">
-    <value>Lages på denne PC-en. Ingenting sendes til nettet.</value>
+    <value>Lages på denne PC-en. Opptaket sendes ikke til nettet.</value>
   </data>
   <data name="LanguageBox.Header" xml:space="preserve">
     <value>Appspråk</value>

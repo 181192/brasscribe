@@ -8,11 +8,6 @@ as ground truth and the converted output as the estimate.
 
 from __future__ import annotations
 
-import os
-
-# ONNX Runtime reports to Microsoft unless this is set before it starts.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
 import hashlib
 import json
 import os

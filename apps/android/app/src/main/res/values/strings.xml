@@ -138,13 +138,13 @@
     <string name="profile_choose_one">Choose one to continue.</string>
     <string name="where_title">Where the score is made</string>
     <string name="where_device">On this phone</string>
-    <string name="where_device_desc">One instrument only. Nothing leaves the phone.</string>
+    <string name="where_device_desc">One instrument only. The recording stays on the phone.</string>
     <string name="where_device_solo_only">Only for one instrument or a brass band.</string>
     <string name="where_device_draft">On this phone: a quick draft</string>
     <string name="where_device_draft_desc">Your computer makes a better score.</string>
-    <string name="where_device_draft_card">A quick draft. Nothing leaves the phone.</string>
+    <string name="where_device_draft_card">A quick draft. The recording stays on the phone.</string>
     <string name="where_companion">On your computer</string>
-    <string name="where_companion_desc">%1$s · nothing goes online</string>
+    <string name="where_companion_desc">%1$s · the recording is not sent online</string>
     <string name="where_device_unavailable">This version can\'t make scores on the phone.</string>
     <plurals name="where_device_too_long">
         <item quantity="one">Only for recordings up to %d minute.</item>

@@ -136,13 +136,13 @@
     <string name="profile_choose_one">Velg ett for å fortsette.</string>
     <string name="where_title">Hvor partituret lages</string>
     <string name="where_device">På telefonen</string>
-    <string name="where_device_desc">Bare ett instrument. Ingenting forlater telefonen.</string>
+    <string name="where_device_desc">Bare ett instrument. Opptaket blir på telefonen.</string>
     <string name="where_device_solo_only">Bare for ett instrument eller et brassband.</string>
     <string name="where_device_draft">På telefonen: et raskt utkast</string>
     <string name="where_device_draft_desc">Datamaskinen lager et bedre partitur.</string>
-    <string name="where_device_draft_card">Et raskt utkast. Ingenting forlater telefonen.</string>
+    <string name="where_device_draft_card">Et raskt utkast. Opptaket blir på telefonen.</string>
     <string name="where_companion">På datamaskinen din</string>
-    <string name="where_companion_desc">%1$s · ingenting sendes til nettet</string>
+    <string name="where_companion_desc">%1$s · opptaket sendes ikke til nettet</string>
     <string name="where_device_unavailable">Denne versjonen kan ikke lage partitur på telefonen.</string>
     <plurals name="where_device_too_long">
         <item quantity="one">Bare for opptak på opptil %d minutt.</item>

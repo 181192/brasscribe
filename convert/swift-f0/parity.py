@@ -11,11 +11,6 @@ package's own code.
 
 from __future__ import annotations
 
-import os
-
-# ONNX Runtime reports to Microsoft unless this is set before it starts.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
 import json
 import math
 import sys
