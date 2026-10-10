@@ -10,6 +10,10 @@ plugins {
 val repoRoot = rootProject.extra["repoRoot"] as File
 // The band SoundFonts (data/sounds/band, outside git); BRASSCRIBE_BAND_SOUNDS_DIR points at another pack to try it.
 val bandSoundsDir = System.getenv("BRASSCRIBE_BAND_SOUNDS_DIR")?.let(::File) ?: File(repoRoot, "data/sounds/band")
+// Fretscribe's own version, for a release of its own: -Pfretscribe.versionName=1.2.3 -Pfretscribe.versionCode=7.
+// Without them it has the version in defaultConfig, as it is released with Brasscribe today.
+val fretscribeVersionName = providers.gradleProperty("fretscribe.versionName").orNull?.takeIf(String::isNotBlank)
+val fretscribeVersionCode = providers.gradleProperty("fretscribe.versionCode").orNull?.takeIf(String::isNotBlank)?.toInt()
 
 android {
     namespace = "no.brasscribe.play"
@@ -36,14 +40,15 @@ android {
     }
 
     // One code base, two apps. Brasscribe is the default and overrides nothing; Fretscribe installs beside
-    // it under its own applicationId and version. The namespace (R, packages) is shared.
+    // it under its own applicationId. Its version is the one above unless the build is given its own
+    // (fretscribe.versionName, fretscribe.versionCode). The namespace (R, packages) is shared.
     flavorDimensions += "product"
     productFlavors {
         create("brasscribe") { isDefault = true }
         create("fretscribe") {
             applicationId = "no.fretscribe.play"
-            versionCode = 1
-            versionName = "0.0.1"
+            fretscribeVersionName?.let { versionName = it }
+            fretscribeVersionCode?.let { versionCode = it }
         }
     }
 
@@ -266,8 +271,6 @@ abstract class VerifyNoTelemetry : DefaultTask() {
 }
 
 androidComponents {
-    // Fretscribe has no release build yet.
-    beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
     onVariants { variant ->
         val variantName = variant.name.replaceFirstChar(Char::uppercase)
         val verifyNoTelemetry = tasks.register<VerifyNoTelemetry>("verifyNoTelemetry$variantName") {
