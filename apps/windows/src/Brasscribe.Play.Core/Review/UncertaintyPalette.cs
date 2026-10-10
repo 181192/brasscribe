@@ -70,6 +70,15 @@ public sealed record UncertaintyPalette(
         Rgb.Parse("#000000"), Rgb.Parse("#000000"), Rgb.Parse("#FFFF00"), Rgb.Parse("#FFFFFF"),
         Rgb.Parse("#000000"), Rgb.Parse("#FFFFFF"));
 
+    /// <summary>
+    /// Pink light (design/system.md §10): the notation is Light's, but for very uncertain, the same orange a shade
+    /// darker (BrasscribePinkTheme.xaml), so a note and the preview's "?" match the boxed "?" the XAML draws.
+    /// </summary>
+    public static readonly UncertaintyPalette PinkLight = Light with { VeryUncertain = Rgb.Parse("#A04300") };
+
+    /// <summary>The score colours of <paramref name="theme"/>, in the Pink palette when <paramref name="pink"/> (Pink dark's are Dark's).</summary>
+    public static UncertaintyPalette For(ThemeKind theme, bool pink) => pink && theme == ThemeKind.Light ? PinkLight : For(theme);
+
     public static UncertaintyPalette For(ThemeKind theme) => theme switch
     {
         ThemeKind.Dark => Dark,

@@ -297,7 +297,7 @@ Two more Appearance options, **Pink light** / «Rosa lyst» and **Pink dark** / 
 
 #### Palette
 
-The roles that differ from Light and Dark. Everything else, including every score hue, `success`, `warning` and brass, is the same as in Light (Pink) or Dark (Pink dark).
+The roles that differ from Light and Dark. Everything else, including every other score hue, `success`, `warning` and brass, is the same as in Light (Pink) or Dark (Pink dark). Very uncertain is the one score hue that moves, and only in Pink: the same orange a shade darker, so its "?" stays readable as text on Pink's tonal fills.
 
 | Role | Pink | Pink dark | Use |
 |---|---|---|---|
@@ -315,6 +315,7 @@ The roles that differ from Light and Dark. Everything else, including every scor
 | `brass-tint` | `#FBE4ED` | `#33202B` | About and onboarding ground |
 | `focus` | `#2B1420` | `#F8E9F0` | focus ring |
 | `error` | `#B3261E` | `#FF8A7A` | error text and icon (coral on dark) |
+| `very-uncertain` | `#A04300` | `#F0A04B` | very uncertain notes and their boxed "?" (Light's orange a shade darker; Dark's unchanged) |
 | `adlib-tint` | `#F6E8EE` | `#261A21` | ad lib band |
 | `selection-tint` | `#F3E0E8` | `#35242E` | selected bars |
 | `cursor-tint` | `#E1D1E7` | `#3E2E42` | bar under the cursor (cursor at 20 %) |
@@ -344,22 +345,24 @@ The roles that differ from Light and Dark. Everything else, including every scor
 | ink / cursor-tint | 3.0:1 (1.4.11) | 13.00:1 | 11.01:1 |
 | staff / bg | 3.0:1 (1.4.11) | 7.22:1 | 7.29:1 |
 | uncertain / bg | 3.0:1 (1.4.11) | 5.94:1 | 8.03:1 |
-| very-uncertain / bg | 3.0:1 (1.4.11) | 5.18:1 | 8.68:1 |
+| very-uncertain / bg | 3.0:1 (1.4.11) | 6.01:1 | 8.68:1 |
+| very-uncertain / secondary | 4.5:1 (1.4.3) | 4.92:1 | 6.06:1 |
+| very-uncertain / brass-tint | 4.5:1 (1.4.3) | 5.28:1 | 7.12:1 |
 | cursor / bg | 3.0:1 (1.4.11) | 6.96:1 | 9.06:1 |
 | loop-edge / loop-tint | 3.0:1 (1.4.11) | 5.37:1 | 8.08:1 |
 
 | Must stay apart | Pink | Pink dark |
 |---|---|---|
 | ink / uncertain | 34 | 29 |
-| ink / very-uncertain | 39 | 28 |
-| uncertain / very-uncertain | 47 | 47 |
+| ink / very-uncertain | 36 | 28 |
+| uncertain / very-uncertain | 46 | 47 |
 | focus / uncertain | 36 | 35 |
 | error / primary | 22 | 21 |
 | success / error | 56 | 54 |
 | warning / error | 26 | 30 |
 | success / warning | 33 | 29 |
 
-Every one of the 72 checked pairs passes in both modes; the full list is in [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md). The last table is the CIEDE2000 difference under normal vision (20 or more reads as distinct; shape and words carry the meaning as well).
+Every one of the 74 checked pairs passes in both modes; the full list is in [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md). The last table is the CIEDE2000 difference under normal vision (20 or more reads as distinct; shape and words carry the meaning as well).
 
 #### Screenshots
 
