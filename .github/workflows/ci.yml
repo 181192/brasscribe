@@ -32,7 +32,12 @@ concurrency:
 
 jobs:
   # On pull requests, which parts to check: the paths each job's tests read (the Python tests also read
-  # design tokens and the sound pack). Pushes to main, releases and hand-started runs check everything.
+  # design tokens and the sound pack). Pushes to main, releases and hand-started runs check everything,
+  # but for the Windows apps on a release tag: release.yml builds them itself (job `windows` below).
+  # The Windows filters name what each app's build and tests read, not whole folders: a Windows runner
+  # is the slowest here. windows_play takes the core's crates behind brasscribe_ffi.dll and its C header
+  # (not the Android, Swift, Kotlin, .NET or conformance sides, nor the command line) and the two fixtures
+  # its tests open. windows_bandroom takes the engine workspace its bundle copies, the two READMEs with it.
   changes:
     name: what changed
     runs-on: ubuntu-24.04
@@ -59,8 +64,8 @@ jobs:
             core: ['core/**', 'docs/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
             studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
             android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/brasscribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json', '.github/workflows/ci.yml']
-            windows_play: ['apps/windows/**', 'core/**', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'apps/fixtures/**', 'sounds/**', 'engine/src/brasscribe_engine/static/assets/alphatab/**', 'docs/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
-            windows_bandroom: ['apps/bandroom/windows/**', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'eval/brasscribe_eval/**', 'eval/pyproject.toml', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
+            windows_play: ['apps/windows/**', 'core/Cargo.toml', 'core/Cargo.lock', 'core/.cargo/**', 'core/brasscribe-core/**', 'core/brasscribe-ffi/**', 'core/target-fretted/**', 'core/bindings/c/**', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'apps/fixtures/old-hundredth/**', 'apps/fixtures/ties-and-trills.musicxml', 'sounds/**', 'engine/src/brasscribe_engine/static/assets/alphatab/**', 'docs/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
+            windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'music/README.md', 'eval/brasscribe_eval/**', 'eval/pyproject.toml', 'eval/README.md', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -178,6 +183,9 @@ jobs:
       - name: Play for Windows core logic
         run: dotnet test apps/windows/tests/Brasscribe.Play.Core.Tests
 
+      - name: The Windows screen catalogues' picture checks
+        run: dotnet test apps/windows/tools/ScreenCheck.Tests
+
       - name: Bandroom for Windows core logic
         run: dotnet test apps/bandroom/windows/tests/Brasscribe.Bandroom.Core.Tests
 
@@ -245,12 +253,13 @@ jobs:
         id: compare
         if: github.event_name == 'pull_request'
         working-directory: studio
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          git fetch --no-tags origin "$BASE"
+          # The checkout is the pull request merged into main: its first parent is the main it was merged into. The
+          # event's base can be an older main, and then main's own changes would show as this pull request's.
+          base="$(git rev-parse --verify 'HEAD^1^{commit}')"
+          echo "Comparing with $(git log -1 --format='%H %s' "$base")"
           status=0
-          scripts/screenshots.sh compare "$(git merge-base HEAD "$BASE")" || status=$?
+          scripts/screenshots.sh compare "$base" || status=$?
           cat build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
           echo "status=$status" >> "$GITHUB_OUTPUT"
 
@@ -330,7 +339,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: apps/android
@@ -358,13 +367,25 @@ jobs:
         working-directory: core
         run: cargo build --release -p brasscribe-ffi
 
-      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-
-      # Robolectric's Android (one jar per SDK) is fetched into the Maven cache, not Gradle's.
-      - uses: actions/cache@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
-          path: ~/.m2/repository/org/robolectric
-          key: robolectric-${{ hashFiles('apps/android/gradle/libs.versions.toml', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          # The action's cache is a separate component under Gradle's Terms of Use; the plain cache
+          # step below holds what Gradle downloads instead.
+          cache-disabled: true
+
+      # What Gradle downloads (its wrapper, the dependencies) and Robolectric's Android, one jar per SDK, which is
+      # fetched into the Maven cache. Saved from main only, at the end of the job; a pull request reads main's, and
+      # the nearest older one when its own build files differ. Main starts empty when they change, so the cache
+      # holds one set of versions.
+      - uses: actions/cache/restore@v6
+        id: gradle-cache
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-tests-', runner.os) || '' }}
 
       # The tests on their own: the screen tests wait by the clock on the wall for what the app does on its other
       # threads, and lint beside them on a two-core runner would take that time from them.
@@ -373,6 +394,20 @@ jobs:
 
       - name: Lint and the debug builds (both apps)
         run: ./gradlew lint lintFretscribeDebug assembleDebug --stacktrace
+
+      # Stopped first, so the daemon isn't writing to the directories while they are packed.
+      - name: Stop the Gradle daemon
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        run: ./gradlew --stop
+
+      - uses: actions/cache/save@v6
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
       - uses: actions/upload-artifact@v7
         if: failure()
@@ -427,24 +462,37 @@ jobs:
         working-directory: core
         run: cargo build --release -p brasscribe-ffi
 
-      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-
-      # Robolectric's Android (one jar per SDK) is fetched into the Maven cache, not Gradle's.
-      - uses: actions/cache@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
-          path: ~/.m2/repository/org/robolectric
-          key: robolectric-${{ hashFiles('apps/android/gradle/libs.versions.toml', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          # The action's cache is a separate component under Gradle's Terms of Use; the plain cache
+          # step below holds what Gradle downloads instead.
+          cache-disabled: true
+
+      # What Gradle downloads (its wrapper, the dependencies) and Robolectric's Android, one jar per SDK, which is
+      # fetched into the Maven cache. Saved from main only, at the end of the job; a pull request reads main's, and
+      # the nearest older one when its own build files differ. Main starts empty when they change, so the cache
+      # holds one set of versions.
+      - uses: actions/cache/restore@v6
+        id: gradle-cache
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: gradle-${{ runner.os }}-android-screens-${{ matrix.app }}-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-screens-{1}-', runner.os, matrix.app) || '' }}
 
       # The pull request's own code runs here, without the token: the label is read in a step of its own.
       - name: Screen catalogues, compared with the merge base
         id: compare
         if: github.event_name == 'pull_request'
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          git fetch --no-tags origin "$BASE"
+          # The checkout is the pull request merged into main: its first parent is the main it was merged into. The
+          # event's base can be an older main, and then main's own changes would show as this pull request's.
+          base="$(git rev-parse --verify 'HEAD^1^{commit}')"
+          echo "Comparing with $(git log -1 --format='%H %s' "$base")"
           status=0
-          scripts/screenshots.sh compare "$(git merge-base HEAD "$BASE")" || status=$?
+          scripts/screenshots.sh compare "$base" || status=$?
           cat app/build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
           echo "status=$status" >> "$GITHUB_OUTPUT"
 
@@ -485,6 +533,20 @@ jobs:
         if: github.event_name != 'pull_request'
         run: scripts/screenshots.sh record
 
+      # Stopped first, so the daemon isn't writing to the directories while they are packed.
+      - name: Stop the Gradle daemon
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        run: ./gradlew --stop
+
+      - uses: actions/cache/save@v6
+        if: github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -506,7 +568,7 @@ jobs:
           if-no-files-found: ignore
 
   # Play and Bandroom for Windows (windows.yml): core tests, the WinUI builds, start-up smoke tests, the Bandroom
-  # engine test, Axe.Windows scans and screenshots, on a Windows runner. On a pull request only for the app the
+  # engine test and the screen catalogues (Axe.Windows, Tab, screenshots), on a Windows runner. On a pull request only for the app the
   # change reaches; on pushes to main both, which also fills the caches pull requests read. Not on a release
   # tag: release.yml calls windows.yml itself, for the release builds.
   windows:
@@ -517,6 +579,8 @@ jobs:
       && (needs.changes.outputs.windows_play == 'true' || needs.changes.outputs.windows_bandroom == 'true')
     permissions:
       contents: read
+      # The screenshot check reads the pull request's labels (windows.yml, job `screenshots`).
+      pull-requests: read
     uses: ./.github/workflows/windows.yml
     with:
       skip_play: ${{ needs.changes.outputs.windows_play != 'true' }}

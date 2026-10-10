@@ -9,7 +9,7 @@ mockups are `design/mockups/png/server-win-flyout-*`, `server-pair-*`.
 | `src/Brasscribe.Bandroom.Core` | No WinUI, builds and tests anywhere: engine supervisor, first-run bootstrap, admin credential, `/v1/*` client, status polling, health words, state rules and tray badges, flyout / devices / pairing view models, the QR |
 | `src/Brasscribe.Bandroom` | WinUI 3 app: notification-area icon, flyout, "Brasscribe on this PC" window, Pair a phone, Allow window, Windows services (job object, DXGI, run at sign-in, host readings) |
 | `tests/Brasscribe.Bandroom.Core.Tests` | xUnit tests of Core, on the app's own string tables |
-| `tools/AxeScan`, `tools/Screenshots` | CI: Axe.Windows scan and screenshots of every view (`--show`) |
+| `tools/Screenshots` | CI: the screen catalogue of every view (`--show`), with Axe.Windows and Tab |
 | `tools/Strings/gen_resw.py` | Writes both `Resources.resw` from the copy deck |
 
 ## Build and run
@@ -104,14 +104,20 @@ dotnet publish src/Brasscribe.Bandroom -c Release -p:Platform=x64 -r win-x64 `
 ## What CI checks (`windows.yml`, job `bandroom`)
 
 It runs on pull requests that touch `apps/bandroom/windows/`, the design tokens, `sounds/`, the pixi workspace
-or the engine sources it bundles (the `windows_bandroom` filter in `ci.yml`'s `changes` job), and on pushes to
-main; it is part of `CI result`.
+or the engine sources it bundles (the `windows_bandroom` filter in `ci.yml`'s `changes` job; `music/README.md`
+and `eval/README.md` are in it, since the bundle copies them), and on the pushes to main that start `ci.yml`. A
+push of only Markdown does not start it, so a change to one of those two READMEs is checked on its pull request
+and not again on main. It is part of `CI result`. The engine test's packages are kept from main's runs
+(pixi's package cache, for the same `pixi.lock`), so a pull request installs the engine from them.
 
 Core tests; the WinUI build with the bundled workspace; a start without pixi (window, notification-area icon,
 admin credential ACL); a start with pixi, where the first run installs the `default` environment from
 `pixi.lock`, the engine reaches Running, `engine.json` is written without the credential, health, devices and an
-open-until-closed pairing window answer with the bearer, and the engine's process tree ends with Bandroom; an
-Axe.Windows scan of six views; screenshots (artifact `bandroom-windows-screenshots`).
+open-until-closed pairing window answer with the bearer, and the engine's process tree ends with Bandroom; the
+screen catalogue (`tools/Screenshots/catalogue.ps1`: every view in Light, Dark,
+bokmål, a contrast theme and 200 % text, with the contrast of its text, Axe.Windows and a walk with Tab, compared
+with Bandroom built at the merge base; artefact `bandroom-windows-screenshots`). How it works and what its answers
+mean: [apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../windows/tests/Brasscribe.Play.Catalogue/README.md#bandroom-for-windows).
 
 ## Not done yet
 

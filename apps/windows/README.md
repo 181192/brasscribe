@@ -11,16 +11,20 @@ src/Brasscribe.Play.Core/            Composition model, talking score, the core 
 src/Brasscribe.Play.Audio.Windows/   WASAPI loopback capture
 src/Brasscribe.Play.Controls/        score and transport controls
 tests/Brasscribe.Play.Core.Tests/    xunit
-tools/AxeScan/                       Axe.Windows accessibility scan
+tests/Brasscribe.Play.Catalogue/     screen catalogue: the app as its own test host (MSTest), every screen and its checks
+tools/ScreenCheck/                   the catalogues' tool: Axe.Windows and Tab from outside, Bandroom's catalogue, compare
+tools/ScreenCheck.Core/              its checks on pictures and the report (any OS; tests in tools/ScreenCheck.Tests)
+tools/Screenshots/catalogue.ps1      runs the catalogue, compared with the merge base
 tools/CodeBehindCheck/               type-checks the app's C# without the XAML compiler
 tools/check-macos.sh                 everything that builds off Windows
 ```
 
 ## Not on Windows yet
 
-The music stand, the Appearance setting (dark, high contrast) and "What do you play?" are in the
-Mac and Android apps but not in this one yet: they wait for a test run on a Windows machine. For the
-same reason no release has a Windows download.
+The music stand and "What do you play?" are in the Mac and Android apps but not in this one yet: they
+wait for a test run on a Windows machine. For the same reason no release has a Windows download.
+Settings › Appearance (Match system, Light, Dark, and a Windows contrast theme winning over the choice) is
+checked on every pull request by the screen catalogue below.
 
 ## Prerequisites
 
@@ -71,10 +75,10 @@ Set `BRASSCRIBE_FFI_PATH` to the built DLL to include the native-core tests
 (the talking-score vectors through the C ABI). Tests that need `data/` or
 `models/` skip when those are absent.
 
-Accessibility scan on a built exe:
+Axe.Windows and the walk with Tab on every screen of a built exe (one start per screen):
 
 ```powershell
-dotnet run --project tools/AxeScan -c Release -- <path-to-exe> <output-dir> tests/Brasscribe.Play.Core.Tests/Fixtures/two-parts.musicxml
+dotnet run --project tools/ScreenCheck -c Release -- play --exe <path-to-exe> --score ../fixtures/old-hundredth/brass-band.musicxml --out <output-dir>
 ```
 
 ## On macOS or Linux
@@ -90,12 +94,17 @@ It runs the core tests, builds the audio and controls libraries, and
 type-checks the app's C# through `tools/CodeBehindCheck`. Set `DOTNET_ROOT` if
 your SDK is not at `/opt/homebrew/opt/dotnet/libexec`.
 
-The full Windows build, the start-up smoke test, the Axe.Windows scan and the screenshots run in
+The full Windows build, the start-up smoke test and the screen catalogue (screenshots, Axe.Windows, Tab) run in
 [.github/workflows/windows.yml](../../.github/workflows/windows.yml), on a Windows runner. `ci.yml`
 calls it on every pull request that touches `apps/windows/`, `core/`, the design tokens or what the
 build links from `design/`, `sounds/`, `apps/fixtures/` or the score player's SoundFont (the list is
-the `windows_play` filter in `ci.yml`'s `changes` job), and on every push to main. It is part of
-`CI result`. The screenshots are an artefact (`windows-screenshots`), not compared with the merge base.
+the `windows_play` filter in `ci.yml`'s `changes` job: of `core/` the crates behind `brasscribe_ffi.dll` and
+its C header, of `apps/fixtures/` the two scores the tests open), and on every push to main that starts
+`ci.yml`, which a push of only Markdown, the site or screenshots does not. A release tag does not run these
+checks: `release.yml` calls `windows.yml` for the release builds. It is part of
+`CI result`. The screen catalogue takes every screen in Light, Dark, Pink, bokmål, a contrast theme and 200 % text
+with its checks, and compares the screenshots with the merge base (artefact `windows-screenshots`):
+[tests/Brasscribe.Play.Catalogue/README.md](tests/Brasscribe.Play.Catalogue/README.md).
 
 ## Test tiers
 
