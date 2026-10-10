@@ -198,6 +198,40 @@ class TabViewTest : TabScreenTest() {
         assertTheMarksAreDrawn(showTheTab(), BrasscribeLightColors, numeralsToo = true)
     }
 
+    /**
+     * A phone on its side with the navigation bar at the side (three buttons): the note under the tab keeps clear of the
+     * bar once, not twice. It is as wide as the screen beside the bar, where its words have the least room.
+     */
+    @Test
+    fun withTheNavigationBarAtTheSideTheNoteUnderTheTabKeepsItsWidth() {
+        computer("bass-line-marks")
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        showTheTab()
+        ScreenDevice.turn(rule, sideways = true)
+        settle()
+        rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick()
+        waitForTag("fs-tab-note", 5_000)
+        val density = rule.activity.resources.displayMetrics.density
+        val bar = (48 * density).toInt()
+        var width = 0
+        rule.runOnUiThread {
+            val decor = rule.activity.window.decorView
+            width = decor.width
+            val now = androidx.core.view.ViewCompat.getRootWindowInsets(decor)!!
+            val side = androidx.core.view.WindowInsetsCompat.Builder(now)
+                .setInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars(), androidx.core.graphics.Insets.of(0, 0, bar, 0))
+                .build()
+            decor.dispatchApplyWindowInsets(side.toWindowInsets())
+        }
+        settle()
+        val close = rule.onNodeWithTag("fs-tab-note-close").fetchSemanticsNode().boundsInWindow
+        val note = rule.onNodeWithTag("fs-tab-note").fetchSemanticsNode().boundsInWindow
+        assertTrue("Close is not clear of the bar at the side: it ends at ${close.right} of $width, the bar is $bar wide", close.right <= width - bar + 0.5f)
+        assertTrue("the note keeps clear of the bar twice: Close ends at ${close.right} of $width, the bar is $bar wide",
+            close.right >= width - bar - 8 * density)
+        assertTrue("the note starts ${note.left} px in", note.left <= 24 * density)
+    }
+
     @Test
     fun theTabIsShownWithItsMarksOnTheRightNotes() {
         computer("bass-line-marks")

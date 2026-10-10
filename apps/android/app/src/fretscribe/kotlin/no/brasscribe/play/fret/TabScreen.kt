@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -403,7 +404,7 @@ fun TabScreen(vm: PlayViewModel) {
         val direction = LocalLayoutDirection.current
         val around = PaddingValues(top = padding.calculateTopPadding(), start = padding.calculateStartPadding(direction),
             end = padding.calculateEndPadding(direction), bottom = if (noteShown) 0.dp else padding.calculateBottomPadding())
-        Column(Modifier.fillMaxSize().padding(around)) {
+        Column(Modifier.fillMaxSize().padding(around).consumeWindowInsets(around)) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().onKeyEvent { it.type == KeyEventType.KeyDown && (page(it.key) || bar(it.key)) }
             .focusRequester(keys).onFocusChanged { screenFocused = it.isFocused }.focusable()) {
             if (s == null) {
