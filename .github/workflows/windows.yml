@@ -3,7 +3,8 @@ name: windows
 # Brasscribe Play for Windows. Checks: core tests, the WinUI 3 app build, a smoke test, an
 # Axe.Windows accessibility scan and screenshots. With `release`: a self-contained x64 build
 # uploaded as dist-windows-x64.
-# The checks run on pull requests that touch what the Windows apps build from, and on pushes to main:
+# The checks run on pull requests that touch what the Windows apps build from, and on the pushes to main
+# that start ci.yml (it ignores a push of only Markdown, the site or screenshots):
 # ci.yml calls this workflow (job `windows`) after its `changes` job, with skip_play or skip_bandroom
 # for an app the change does not reach. Releases (release.yml) call it with `release`; it can also be
 # started by hand.
@@ -34,8 +35,11 @@ on:
 permissions:
   contents: read
 
+# One group for each way in: called from ci.yml or release.yml, github.workflow is the caller's name, and
+# started by hand it is this workflow's. So a run started by hand on main neither waits for ci's run there
+# nor, as a third in the same group, takes the place of one that is waiting.
 concurrency:
-  group: windows-${{ github.ref }}-${{ inputs.release }}
+  group: windows-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -405,6 +409,20 @@ jobs:
         with:
           run-install: false
 
+      # The packages pixi downloads for that install (Bandroom keeps them in its own folder, PIXI_CACHE_DIR), kept
+      # from main's runs for the same pixi.lock: the install is still done, from files already here, so the test
+      # does not need conda-forge and PyPI to answer a Windows runner every time. Without them it downloads.
+      - name: Where Bandroom keeps pixi's packages
+        id: pixi-packages
+        run: |
+          "dir=$(Join-Path $env:LOCALAPPDATA 'Brasscribe/cache/pixi')" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/cache/restore@v6
+        id: pixi-packages-cache
+        with:
+          path: ${{ steps.pixi-packages.outputs.dir }}
+          key: bandroom-pixi-packages-${{ runner.os }}-${{ hashFiles('pixi.lock', '.pixi-version') }}
+
       - name: Engine test (first-run install, supervised start, admin bearer, the tree ends with Bandroom)
         timeout-minutes: 30
         run: |
@@ -446,6 +464,20 @@ jobs:
           Start-Sleep -Seconds 5
           $left = @($engineProcs | Where-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
           if ($left.Count -gt 0) { $left | Format-Table ProcessId, Name; throw "the engine outlived Bandroom" }
+
+      # Its size in the log says whether the packages are where the cache looks. Kept from main only, as the Rust
+      # cache is: a pull request reads main's.
+      - name: The size of pixi's packages
+        if: ${{ !cancelled() }}
+        run: |
+          $dir = "${{ steps.pixi-packages.outputs.dir }}"
+          if (Test-Path $dir) { "{0:N0} MB in $dir" -f ((Get-ChildItem $dir -Recurse -File -Force | Measure-Object Length -Sum).Sum / 1MB) } else { "nothing at $dir" }
+
+      - uses: actions/cache/save@v6
+        if: ${{ github.ref == 'refs/heads/main' && steps.pixi-packages-cache.outputs.cache-hit != 'true' }}
+        with:
+          path: ${{ steps.pixi-packages.outputs.dir }}
+          key: ${{ steps.pixi-packages-cache.outputs.cache-primary-key }}
 
       # The screen catalogue (tools/Screenshots/catalogue.ps1): every view in Light, Dark, bokmål, a contrast theme and
       # 200 % text, with its checks, compared on a pull request with Bandroom built at the merge base. As for Play, 1 is
