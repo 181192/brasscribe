@@ -36,15 +36,12 @@ android {
     }
 
     // One code base, two apps. Brasscribe is the default and overrides nothing; Fretscribe installs beside
-    // it under its own applicationId and version. The namespace (R, packages) is shared.
+    // it under its own applicationId. Both are released together, so they share the version above. The
+    // namespace (R, packages) is shared.
     flavorDimensions += "product"
     productFlavors {
         create("brasscribe") { isDefault = true }
-        create("fretscribe") {
-            applicationId = "no.fretscribe.play"
-            versionCode = 1
-            versionName = "0.0.1"
-        }
+        create("fretscribe") { applicationId = "no.fretscribe.play" }
     }
 
     buildTypes {
@@ -266,8 +263,6 @@ abstract class VerifyNoTelemetry : DefaultTask() {
 }
 
 androidComponents {
-    // Fretscribe has no release build yet.
-    beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
     onVariants { variant ->
         val variantName = variant.name.replaceFirstChar(Char::uppercase)
         val verifyNoTelemetry = tasks.register<VerifyNoTelemetry>("verifyNoTelemetry$variantName") {

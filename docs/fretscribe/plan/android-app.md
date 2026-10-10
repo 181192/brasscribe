@@ -7,7 +7,8 @@ from the repository root. alphaTab facts come from the 1.8.4 jar's class list; w
 
 **Flavour.** One dimension, `product`, in `apps/android/app/build.gradle.kts`:
 - `brasscribe` is the default and overrides nothing: its applicationId, versionCode and signing stay.
-- `fretscribe` sets `applicationId = "no.fretscribe.play"` and its own version.
+- `fretscribe` sets `applicationId = "no.fretscribe.play"`. It takes the version in `defaultConfig`, as both apps
+  are released together, and its release APK is signed with a key of its own (`.github/workflows/android.yml`).
 - `namespace` stays `no.brasscribe.play`, so `R`, packages and imports are untouched. Library modules get
   no flavours.
 

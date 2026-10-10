@@ -8,12 +8,12 @@ Kotlin and Jetpack Compose. Android 10+ (min SDK 29, for AudioPlaybackCapture), 
 export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools   # SDK: platform 37, build-tools 36, NDK 28.2, CMake 3.31.6
 ./gradlew assembleDebug testDebugUnitTest testFretscribeDebugUnitTest lint   # the screens too, on the JVM (Testing)
 apps/android/scripts/device-tests.sh smoke   # emulator or device
-./gradlew assembleRelease                    # one APK per ABI plus a universal one
+./gradlew assembleRelease                    # both apps: one APK per ABI plus a universal one, unsigned
 ```
 
 `testDebugUnitTest` also runs the tests of the plain Kotlin modules. The JVM tests of the app need the host build of the core (`cargo build --release -p brasscribe-ffi` in `core/`, or `scripts/core-artifacts.sh ensure host`).
 
-The `app` module builds two apps from the same code, as the product flavours `brasscribe` (the default) and `fretscribe` (`no.fretscribe.play`, debug only for now), so its variant tasks carry the product's name: `assembleFretscribeDebug`, `lintFretscribeDebug`, `testFretscribeDebugUnitTest`. `testDebugUnitTest`, `installDebug`, `connectedDebugAndroidTest` and `lint` mean the Brasscribe app; `assembleDebug` builds both. The APKs are in `app/build/outputs/apk/<product>/<build type>/`. What differs between the two is in `app/src/brasscribe` and `app/src/fretscribe` (`Product.kt`, the app's name and its own words, the window colours, and Fretscribe's screens under `fret/`) and in the design each is built with (below); everything else is in `app/src/main`. The band SoundFont and the on-device models are Brasscribe's, so the Fretscribe APK does not carry them.
+The `app` module builds two apps from the same code, as the product flavours `brasscribe` (the default) and `fretscribe` (`no.fretscribe.play`), so its variant tasks carry the product's name: `assembleFretscribeDebug`, `assembleFretscribeRelease`, `lintFretscribeDebug`, `testFretscribeDebugUnitTest`. `testDebugUnitTest`, `installDebug`, `connectedDebugAndroidTest` and `lint` mean the Brasscribe app; `assembleDebug` builds both. The APKs are in `app/build/outputs/apk/<product>/<build type>/`. What differs between the two is in `app/src/brasscribe` and `app/src/fretscribe` (`Product.kt`, the app's name and its own words, the window colours, and Fretscribe's screens under `fret/`) and in the design each is built with (below); everything else is in `app/src/main`. The band SoundFont and the on-device models are Brasscribe's, so the Fretscribe APK does not carry them. Both apps have one version (`defaultConfig`), as they are released together ([Releases](#releases-and-updates-on-a-phone)).
 
 Some inputs come from outside git and are used only when present:
 
@@ -25,6 +25,28 @@ Some inputs come from outside git and are used only when present:
 | `data/golden/mikkel-arranged-band/` | the golden output | JVM tests only (never packaged). Tests that need it skip themselves when it is missing |
 | `third_party/sfizz` | `scripts/fetch-sfizz.sh` (sfizz 1.2.3) | The realistic playback tier. Without it the native library builds a stub and the tier is shown as unavailable. You can also pass `-Pbrasscribe.sfizzDir=<checkout>`. Brasscribe only: the `audio` module has the app's two products, and Fretscribe's library is always the stub, so a Fretscribe app never carries sfizz |
 | `data/sounds/band/brasscribe-band-mobile.sf2` | `pixi run fetch-sounds` at the repository root (the pack pinned in `sounds/band-sounds.json`; needs `gh auth login`) | Bundled in every build as `assets/sounds/` (68 MB with `sounds-2026.09.30`): the band plays its own instruments with no download. Without it the app says the band sounds are missing. Release builds in CI fetch it first and stop if they cannot |
+
+## Releases and updates on a phone
+
+Every GitHub release of this repository carries both apps, each as an APK for arm64 phones and a universal one (`.github/workflows/android.yml`, on a `v*` tag; [docs/dev/release.md](../../docs/dev/release.md)):
+
+| App | Package | Files | Signed with |
+|---|---|---|---|
+| Brasscribe Play | `no.brasscribe.play` | `brasscribe-play-android-arm64-v8a.apk`, `brasscribe-play-android-universal.apk` | Brasscribe's own key (alias `brasscribe`) |
+| Fretscribe | `no.fretscribe.play` | `fretscribe-android-arm64-v8a.apk`, `fretscribe-android-universal.apk` | a key of its own, shared with other prototype apps (alias `prototypes`) |
+
+A key never changes, or the phone refuses the update; the signing job checks each APK's certificate against its app's, and fails if a file carries the other app's. Both apps have the release's version (`versionName` is the tag without its `v`, and `versionCode` goes up by one with every release: `scripts/release.sh`). A Fretscribe release build has the Rust core, an audio library without sfizz, and neither the band SoundFont nor the on-device models; the build job checks that too.
+
+**Obtainium** installs and updates an app from these releases. With two apps in one repository, each is added as its own app from the same address (`https://github.com/181192/brasscribe`), told apart by a filter on the APK's file name. Under **Filter APKs by regular expression**:
+
+| App | Filter |
+|---|---|
+| Brasscribe Play | `^brasscribe-play-android-arm64-v8a\.apk$` |
+| Fretscribe | `^fretscribe-android-arm64-v8a\.apk$` |
+
+The shorter `brasscribe-play-android-arm64` and `fretscribe-android-arm64` do the same: neither file name contains the other's. An entry for Brasscribe from before Fretscribe was in the releases needs its filter if it has none (or one as wide as `arm64`), as a release now has two arm64 APKs. Obtainium takes the version from the release's tag.
+
+A phone that has a debug build of the app must have it uninstalled first: it is signed with another key, and its songs go with it.
 
 ## Modules
 
