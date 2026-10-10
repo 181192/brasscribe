@@ -3,7 +3,7 @@ import BandroomKit
 import SwiftUI
 import UserNotifications
 
-@main
+/// The app; `AppEntry` starts it.
 struct BandroomApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @AppStorage("textSize") private var textSize: TextSize = .standard

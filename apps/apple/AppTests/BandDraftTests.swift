@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import OnDeviceKit
 import ScoreKit
@@ -147,7 +148,13 @@ import TranscriptionKit
 }
 
 @Test func aRecordingLongerThanTheFreeMemoryIsRefusedBeforeListening() async throws {
-    let clip = try #require(draftMixes().first).appending(path: "mix.wav")
+    // A minute of silence: only its length counts, so no recording from data/ is needed.
+    let clip = FileManager.default.temporaryDirectory.appending(path: "bc-draft-too-long-\(UUID().uuidString).wav")
+    defer { try? FileManager.default.removeItem(at: clip) }
+    let format = try #require(AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1))
+    let buffer = try #require(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 44_100 * 60))
+    buffer.frameLength = buffer.frameCapacity
+    try AVAudioFile(forWriting: clip, settings: format.settings).write(from: buffer)
     let svc = OnDeviceBandDraftService(store: ModelStore(cache: FileManager.default.temporaryDirectory.appending(path: "bc-models-none")),
                                        available: { OnDeviceBudget.fixedBytes + 1_000_000 })
     await #expect(throws: DraftTooLong.self) {

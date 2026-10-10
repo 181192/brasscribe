@@ -617,7 +617,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     /// <summary>The score colours of the current theme (a stand-in in contrast themes, where XAML uses system colours).</summary>
     private UncertaintyPalette Palette() =>
         ScoreView.IsHighContrast() ? UncertaintyPalette.HighContrast
-        : UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light);
+        : UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light, Main?.Settings.UsesPink == true);
 
     private IReadOnlyList<Box> _loopBoxes = [];
 

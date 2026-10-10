@@ -92,6 +92,27 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         Assert.Contains(items, i => i.Kind == OverlayKind.CursorLine);
     }
 
+    // Pink recolours the chrome; of the notation only Pink light's very uncertain differs (design/system.md §10).
+    [SkippableFact]
+    public void Pink_lights_very_uncertain_matches_the_generated_Pink_theme()
+    {
+        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribePinkTheme.xaml");
+        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribePinkTheme.xaml"));
+        string xaml = File.ReadAllText(theme);
+        foreach (var (key, kind) in new[] { ("Light", ThemeKind.Light), ("Dark", ThemeKind.Dark) })
+        {
+            var dict = Regex.Match(xaml, $"<ResourceDictionary x:Key=\"{key}\">(.*?)</ResourceDictionary>", RegexOptions.Singleline).Groups[1].Value;
+            string Color(string name) => "#" + Regex.Match(dict, $"<Color x:Key=\"Bc{name}Color\">#FF([0-9A-F]{{6}})</Color>").Groups[1].Value;
+            var pink = UncertaintyPalette.For(kind, pink: true);
+            Assert.Equal(Color("VeryUncertain"), pink.VeryUncertain.ToString());
+            Assert.Equal(Color("Uncertain"), pink.Uncertain.ToString());
+            Assert.Equal(Color("Ink"), pink.Ink.ToString());
+            Assert.Equal(pink with { VeryUncertain = UncertaintyPalette.For(kind).VeryUncertain }, UncertaintyPalette.For(kind));
+        }
+        Assert.NotEqual(UncertaintyPalette.Light.VeryUncertain, UncertaintyPalette.PinkLight.VeryUncertain);
+        Assert.Same(UncertaintyPalette.Light, UncertaintyPalette.For(ThemeKind.Light, pink: false));
+    }
+
     [SkippableFact]
     public void Score_colours_match_the_generated_theme()
     {

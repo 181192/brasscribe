@@ -526,7 +526,12 @@ func sha256Hex(_ d: Data) -> String { SHA256.hash(data: d).map { String(format: 
         let box = Box()
         let t = Throttle<Int>(interval: .milliseconds(100)) { v in box.lock.withLock { box.values.append(v) } }
         for i in 1...1000 { t.offer(i) }
-        try await Task.sleep(for: .milliseconds(300))
+        // The last value comes after the interval, later still on a busy machine: wait for it, not for a fixed time.
+        let clock = ContinuousClock()
+        let deadline = clock.now + .seconds(10)
+        while box.lock.withLock({ box.values.count }) < 2, clock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }
+        // Nothing more follows it.
+        try await Task.sleep(for: .milliseconds(150))
         #expect(box.lock.withLock { box.values } == [1, 1000])
     }
 }

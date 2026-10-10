@@ -1,7 +1,7 @@
 #!/bin/bash
 # Fetches sfizz (BSD-2-Clause) into apps/android/third_party/sfizz (git-ignored). The audio module
-# links it when the directory exists, which turns on the realistic playback tier; without it the
-# module builds a stub. Tag 1.2.3 is the version the Android build was tested with.
+# links it into Brasscribe's library when the directory exists, which turns on the realistic playback
+# tier; without it, and always for Fretscribe, the module builds a stub. Tag 1.2.3 is the version the Android build was tested with.
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 dest="$here/third_party/sfizz"

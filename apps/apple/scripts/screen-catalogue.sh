@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# The screenshots of every screen of Bandroom for Mac in every variant (the screen catalogue, Tests/), and what
-# changed in them.
+# The screenshots of every screen of Play for Mac in every variant (the screen catalogue,
+# AppTests/PlayScreensTests.swift), and what changed in them. Run through scripts/screenshots.sh:
 #
 #   scripts/screenshots.sh record            take them, with the catalogue's checks: build/catalogue/screenshots/
 #   scripts/screenshots.sh compare [base]    take them at <base> (default: the merge base with origin/main), then
 #                                            here with the checks, and report what differs
 #
-# The catalogue runs in a Debug build of the app hosting its unit tests, off screen: no window is shown, no menu-bar
-# item is made, and the app runs on canned engine answers with data of its own, so it can be run on a Mac in use. It
-# runs twice: in English and in bokmål (xcodebuild -testLanguage nb).
+# The catalogue runs in the macOS app's unit-test bundle, hosted by the app as UnitTestHost: no window is shown,
+# so it can be run on a Mac in use. It runs twice: in English and in bokmål (xcodebuild -testLanguage nb).
 #
 # The screenshots are not kept in git: a few hundred PNGs that change with every design change would grow the
 # repository for good. A change is compared instead with the commit it started from, in the same run on the same
@@ -23,19 +22,19 @@ set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
 app="$(cd "$here/.." && pwd)"
-repo="$(cd "$app/../../.." && pwd)"
+repo="$(cd "$app/../.." && pwd)"
 report="$app/build/reports/screenshots"
 shots="$app/build/catalogue/screenshots"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 
 log() { printf 'screenshots: %s\n' "$*" >&2; }
 
-# Builds the Bandroom checkout $1 for testing; then runs its catalogue into $2, in English and in bokmål.
+# Builds the macOS app's tests in the Play checkout $1; then runs its catalogue into $2, in English and in bokmål.
 # CATALOGUE_CHECKS=0 takes only the screenshots.
 build() {
-  (cd "$1" && xcodegen generate --quiet \
-    && xcodebuild -project BrasscribeBandroom.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribeBandroom \
-         -destination 'platform=macOS' build-for-testing -quiet)
+  local log; log="$(mktemp)"
+  make -C "$1" build-for-testing-mac >"$log" 2>&1 || { grep -E "error:" "$log" | sort -u | head -40 >&2; tail -20 "$log" >&2; rm -f "$log"; return 1; }
+  rm -f "$log"
 }
 catalogue() {
   local dir="$1" out="$2" status=0 lang
@@ -43,8 +42,8 @@ catalogue() {
   # Only what failed, and the totals: the rest of what the tests print is the app's own logging.
   for lang in en nb; do
     (cd "$dir" && TEST_RUNNER_CATALOGUE_OUT="$out" TEST_RUNNER_CATALOGUE_CHECKS="${CATALOGUE_CHECKS:-1}" \
-      xcodebuild -project BrasscribeBandroom.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribeBandroom \
-        -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribeBandroomTests \
+      xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribePlay-macOS \
+        -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribePlayTests_macOS/PlayScreensTests \
         test-without-building 2>&1 | { grep -E "^(✘|↳|✔ Test run|Failing tests|Restarting)|^\t[A-Za-z].*\(\)$|: error:" || true; }) || status=1
   done
   return "$status"
@@ -54,7 +53,7 @@ case "${1:-}" in
   record)
     build "$app"
     catalogue "$app" "$shots"
-    log "$(find "$shots" -name '*.png' | wc -l | tr -d ' ') screenshots in apps/bandroom/macos/build/catalogue/screenshots"
+    log "$(find "$shots" -name '*.png' | wc -l | tr -d ' ') screenshots in apps/apple/build/catalogue/screenshots"
     ;;
   compare)
     rm -rf "$report"; mkdir -p "$report"
@@ -74,14 +73,27 @@ case "${1:-}" in
     tree="$scratch/base"
     trap 'git -C "$repo" worktree remove --force "$tree" >/dev/null 2>&1 || true; rm -rf "$scratch"' EXIT
     git -C "$repo" worktree add --detach "$tree" "$base" >/dev/null || no_base
-    if [ -d "$tree/apps/bandroom/macos/Tests" ]; then
+    if [ -f "$tree/apps/apple/AppTests/PlayScreensTests.swift" ]; then
       log "taking them at ${base:0:12}"
-      # What is not in git, as this checkout has it: the data folder (band sounds) and the download cache of the build.
+      # What is not in git, as this checkout has it: the data folder, Verovio (when its build script is the same) and the
+      # core's xcframework (when the core is the same; otherwise it is built there).
       [ -e "$repo/data" ] && ln -s "$repo/data" "$tree/data"
-      if [ -d "$app/build/cache" ]; then mkdir -p "$tree/apps/bandroom/macos/build" && ln -s "$app/build/cache" "$tree/apps/bandroom/macos/build/cache"; fi
-      build "$tree/apps/bandroom/macos" || no_base
+      if git -C "$repo" diff --quiet "$base" HEAD -- apps/apple/scripts/build-verovio.sh && [ -d "$app/Frameworks" ]; then
+        ln -s "$(cd "$app/Frameworks" && pwd -P)" "$tree/apps/apple/Frameworks"
+      else
+        log "Verovio's build differs at ${base:0:12}: building it there"
+        make -C "$tree/apps/apple" verovio >/dev/null || no_base
+      fi
+      xcf="core/swift/BrasscribeCore/BrasscribeFFI.xcframework"
+      if git -C "$repo" diff --quiet "$base" HEAD -- core && [ -d "$repo/$xcf" ]; then
+        rm -rf "${tree:?}/$xcf" && cp -R "$repo/$xcf" "$tree/$xcf"
+      else
+        log "the core differs at ${base:0:12}: building its xcframework there"
+        (cd "$tree/apps/apple" && scripts/build-core.sh >/dev/null) || no_base
+      fi
+      build "$tree/apps/apple" || no_base
       # Only the screenshots: the base's own findings are not this change's.
-      CATALOGUE_CHECKS=0 catalogue "$tree/apps/bandroom/macos" "$report/before" || no_base
+      CATALOGUE_CHECKS=0 catalogue "$tree/apps/apple" "$report/before" || no_base
     else
       log "${base:0:12} has no screen catalogue: every screen is new"
     fi
@@ -102,7 +114,7 @@ case "${1:-}" in
     exit 0
     ;;
   *)
-    sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac

@@ -80,7 +80,28 @@ def test_pink_keeps_the_notation_and_its_meaning():
     # score hues keep their meaning.
     for pink, base in (("pink", "light"), ("pink-dark", "dark")):
         for role in ("ink", "staff", "uncertain", "very-uncertain", "loop-edge", "cursor", "success", "warning", "brass"):
+            if (pink, role) == ("pink", "very-uncertain"):
+                continue
             assert build.hexval(pink, role) == build.hexval(base, role), (pink, role)
+
+
+def test_pink_very_unsure_is_the_same_orange_a_shade_darker():
+    # Pink's tonal fills are darker than Light's, so the very-unsure "?" on one needs a darker orange to
+    # stay readable as text (4.5:1). It keeps its hue: next to Light's it is the same colour, only darker.
+    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    import colorsys
+    import contrast
+
+    def hls(mode):
+        h = build.hexval(mode, "very-uncertain")
+        return colorsys.rgb_to_hls(*(int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)))
+
+    (hue, light, _), (pink_hue, pink_light, _) = hls("light"), hls("pink")
+    assert abs(hue - pink_hue) * 360 < 2 and pink_light < light
+    assert contrast.delta_e(build.hexval("light", "very-uncertain"), build.hexval("pink", "very-uncertain"), None) < 5
+    for ground in ("secondary", "brass-tint", "surface", "bg"):
+        r = contrast.contrast(build.hexval("pink", "very-uncertain"), build.hexval("pink", ground))
+        assert r >= 4.5, (ground, round(r, 2))
 
 
 def test_pink_status_and_primary_stay_apart():

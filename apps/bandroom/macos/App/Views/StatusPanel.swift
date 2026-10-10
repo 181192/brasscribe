@@ -567,8 +567,11 @@ struct MoreMenu: View {
             Button("Quit Brasscribe Bandroom") { NSApp.terminate(nil) }
         } label: {
             Image(systemName: "ellipsis").font(.system(size: 15, weight: .bold)).frame(width: 28, height: 28)
+                .contentShape(Rectangle())
         }
-        .menuStyle(.borderlessButton)
+        // A button-style menu takes its label's 28 × 28 pt (WCAG 2.5.8); a borderless one shrank to its symbol (about 25 × 14).
+        .menuStyle(.button)
+        .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
         .accessibilityLabel(Text("More"))

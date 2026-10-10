@@ -87,7 +87,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
     {
         if (Main.Score.Player.Player is not AlphaTabScorePlayer player || player.Score is null || Main.Score.Document is not { } doc) return;
         var palette = ScoreView.IsHighContrast() ? UncertaintyPalette.HighContrast
-            : UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light);
+            : UncertaintyPalette.For(ActualTheme == ElementTheme.Dark ? ThemeKind.Dark : ThemeKind.Light, Main.Settings.UsesPink);
         bool contrast = ScoreView.IsHighContrast();
         try
         {

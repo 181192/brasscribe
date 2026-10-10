@@ -7,6 +7,7 @@
 #   make test        package tests, macOS app unit tests (no UI), app unit + UI tests on an iOS simulator
 #   make package-test-fast  package tests without the slow audio-rendering suites
 #   make build-for-testing-mac, then make test-mac-unit (repeatable): macOS app unit tests without rebuilding
+#   scripts/screenshots.sh compare  the Mac screen catalogue, off screen, compared with the merge base (README, Testing)
 #   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only in the
 #                    macOS VM (scripts/mac-vm.sh test-ui, docs/dev/macos-vm.md) or in CI
 #   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked
@@ -23,6 +24,8 @@ DERIVED := build/DerivedData
 # Swift suites the fast tier skips (swift test --skip takes a regular expression; see docs/dev/verify.md).
 APPLE_SLOW ?= ArrangementLevelTests|DynamicsLevelTests|RecordingLevelTests
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
+# The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record|compare, not with the unit tests.
+SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
 .PHONY: verovio soundfont bandsound project build test test-mac-ui package-test size install-mac \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
@@ -47,10 +50,11 @@ build: project
 package-test:
 	cd Packages/BrasscribeKit && swift test
 	cd Packages/NotationKit && swift test
+	cd Packages/ScreenCatalogue && swift test
 	cd ../../capture && swift test
 
 test: project package-test
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' test
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' $(SKIP_CATALOGUE) test
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' test
 
 # The macOS UI tests move the real pointer and type real keys. Not part of `make test`: run them
@@ -88,7 +92,7 @@ build-for-testing-mac: project
 test-mac-unit:
 	@ls $(DERIVED)/Build/Products/BrasscribePlay-macOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-mac
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' \
-	  -only-testing:BrasscribePlayTests_macOS test-without-building
+	  -only-testing:BrasscribePlayTests_macOS $(SKIP_CATALOGUE) test-without-building
 
 build-for-testing-ios: project
 	$(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' build-for-testing
@@ -103,3 +107,4 @@ test-ios-unit:
 package-test-fast:
 	cd Packages/BrasscribeKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
 	cd Packages/NotationKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
+	cd Packages/ScreenCatalogue && swift test

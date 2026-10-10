@@ -8,10 +8,17 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
     private let lock = NSLock()
     private var pairingOpen = false
 
+    /// A phone asking to pair (BANDROOM_DEMO_REQUEST), as it was when the demo started.
+    let request = ProcessInfo.processInfo.environment["BANDROOM_DEMO_REQUEST"] != nil
+
     init(busy: Bool) { self.busy = busy }
 
+    /// The computer the demo runs on: the same load, memory and free space every time.
+    static let host = HostSnapshot(cpuPercent: 35, memoryFreePercent: 40, diskFreeBytes: 182_000_000_000, physicalMemoryBytes: 32 << 30)
+
     private static let serverId = "3f9c2a7e5b1d4c8a9e0f1a2b3c4d5e6f"
-    private static let name = "Brasscribe on Kari's MacBook"
+    static let computerName = "Kari's MacBook"
+    private static let name = "Brasscribe on \(computerName)"
 
     private static func iso(_ ago: TimeInterval) -> String {
         ISO8601DateFormatter().string(from: Date().addingTimeInterval(-ago))
@@ -52,7 +59,7 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
         return state(open: false)
     }
     func pairingRequests() async throws -> [PairRequestInfo] {
-        ProcessInfo.processInfo.environment["BANDROOM_DEMO_REQUEST"] == nil ? []
+        !request ? []
             : [PairRequestInfo(requestId: "r1", name: "Kari's iPhone", platform: "ios", matchCode: "4719", createdAt: Self.iso(10))]
     }
     func decide(requestId: String, approve: Bool) async throws -> PairRequestInfo {

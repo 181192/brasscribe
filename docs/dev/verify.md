@@ -74,7 +74,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, the screenshot comparison, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Brasscribe.Core.Tests && dotnet test` | nothing (seconds) |
-| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]` | the app build (tier 2 adds `make build`) |
+| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh compare`, which builds the app) |
 
 A test that takes seconds gets the slow marker of its framework:
 
@@ -97,22 +97,29 @@ build for testing again.
 - conformance on every case
 - vitest, the Playwright browser tests, then `studio/scripts/screenshots.sh compare`: Studio's screen catalogue at the
   merge base and on the branch, with its checks, and what changed ([studio/README.md](../../studio/README.md#test))
-- the Swift packages (BrasscribeKit, NotationKit, `capture`) and the macOS app unit tests
+- the Swift packages (BrasscribeKit, NotationKit, ScreenCatalogue, `capture`) and the macOS app unit tests, then
+  `apps/apple/scripts/screenshots.sh compare`: the Mac screen catalogue at the merge base and on the branch
 - `./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug` (both apps' tests on the JVM, lint
   for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh compare`: the
   screen catalogues at the merge base and on the branch, and what changed ([apps/android/README.md](../../apps/android/README.md#testing))
 - `apps/windows/tools/check-macos.sh`
 - the core .NET tests
-- Bandroom for macOS: the BandroomKit tests and `make -C apps/bandroom/macos build`
+- Bandroom for macOS: the BandroomKit tests, then `apps/bandroom/macos/scripts/screenshots.sh compare`: the screen
+  catalogue at the merge base and on the branch, off screen, and what changed ([apps/bandroom/macos/README.md](../../apps/bandroom/macos/README.md#testing))
 
 On a pull request, CI (`ci.yml`) runs the same on Linux for the areas the change touches, and the
 Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`, `apps/bandroom/windows/`,
 `core/`, the design tokens, `sounds/`, or the pixi workspace and engine sources Bandroom bundles: the core
 tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test and both apps'
 screen catalogues, whose screenshots are compared with the merge base on that runner
-([apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../apps/windows/tests/Brasscribe.Play.Catalogue/README.md)).
-The `changes` job's filters say exactly which paths count. Apple
-and the Android release build run only for releases or by hand.
+([apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../apps/windows/tests/Brasscribe.Play.Catalogue/README.md));
+and the Apple apps on a macOS runner (`apple.yml`) when it touches
+`apps/apple/`, `capture/`, `core/`, the app fixtures, the design files the apps bundle or `sounds/` (Play: the
+Swift packages, the macOS app unit tests, the iPhone simulator app's unit and UI tests, and the Mac screen
+catalogue compared with the merge base), or
+`apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and its screen catalogue, compared
+with the merge base, with the label `screenshots-changed` as for Android). The `changes` job's filters say
+exactly which paths count. The release builds run only for releases or by hand.
 
 Things that differ from running the suites by hand:
 
