@@ -941,16 +941,24 @@ def stable_round(v: float, decimals: int = BASELINE_DECIMALS) -> float:
     return float(read.quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_EVEN))
 
 
+def _decimals(stored: float) -> int:
+    """The decimals a stored baseline is written with (0.6: 1, 53.25: 2, 3: 0), at most BASELINE_DECIMALS."""
+    exponent = Decimal(repr(stored)).normalize().as_tuple().exponent
+    return min(max(-exponent, 0), BASELINE_DECIMALS) if isinstance(exponent, int) else BASELINE_DECIMALS
+
+
 def rebaseline(results: list[dict], baselines: dict) -> tuple[dict, list[dict]]:
     """Baselines with the metrics of the suites that ran set to what they measured now, and what changed
     ({"suite", "metric", "old", "new"}). Only keys the baselines already hold are touched, never those of a
     skipped part or without a finite measurement.
 
-    A stored value stays as it is while it is still the measurement rounded, to either side: one that sits on
-    a rounding half (stored 0.812 or 0.813, measured 0.8125) is not flipped by measuring again, so only the keys
-    that really moved change."""
+    A stored value stays as it is while it is still the measurement rounded to the decimals it is stored with
+    (0.6 for 0.5948, 53.2 for 53.217), to either side of a half: one that sits on a rounding half (stored 0.812
+    or 0.813, measured 0.8125) is not flipped by measuring again. It must also still pass the gate: a value
+    outside its metric's tolerance has moved, however coarsely it was stored. So only the keys that really
+    moved change."""
     out = json.loads(json.dumps(baselines))
-    half = 0.5 * 10 ** -BASELINE_DECIMALS + _HALF_SLACK
+    default_tol = out.get("tolerance", 0.01)
     changes = []
     for r in results:
         if r["status"] != "ran" or r["suite"] not in out["suites"]:
@@ -962,7 +970,9 @@ def rebaseline(results: list[dict], baselines: dict) -> tuple[dict, list[dict]]:
             if v is None or not np.isfinite(v) or metric.split(".")[0] in skipped or metric in skipped:
                 continue
             old = spec["value"] if isinstance(spec, dict) else spec
-            if abs(float(v) - old) <= half:
+            tol = spec.get("tolerance", default_tol) if isinstance(spec, dict) else default_tol
+            moved = abs(float(v) - old)
+            if moved <= 0.5 * 10 ** -_decimals(old) + _HALF_SLACK and moved <= tol + 1e-9:
                 continue
             new = stable_round(v)
             if isinstance(spec, dict):

@@ -95,16 +95,40 @@ def test_regenerating_baselines_leaves_a_value_on_a_rounding_half_as_it_is_store
 
 
 def test_regenerating_baselines_changes_only_the_metrics_that_moved():
-    stored = {"same": 0.6, "moved": 0.6, "error": {"value": 0.108, "higher_is_better": False, "tolerance": 0.02},
+    stored = {"same": 0.612, "moved": 0.612, "error": {"value": 0.108, "higher_is_better": False, "tolerance": 0.02},
               "nan": 0.5, "absent": 0.5, "part.f1": 0.5, "coarse": 53.2}
-    measured = {"same": 0.6004, "moved": 0.6006, "error": 0.2, "nan": math.nan, "part.f1": 0.9, "coarse": 53.2,
+    measured = {"same": 0.6124, "moved": 0.6126, "error": 0.2, "nan": math.nan, "part.f1": 0.9, "coarse": 53.2,
                 "not_gated": 0.1}
     metrics, changes = _rebaseline(stored, measured, skipped_parts=["part"])
-    assert metrics == {"same": 0.6, "moved": 0.601, "error": {"value": 0.2, "higher_is_better": False, "tolerance": 0.02},
+    assert metrics == {"same": 0.612, "moved": 0.613, "error": {"value": 0.2, "higher_is_better": False, "tolerance": 0.02},
                        "nan": 0.5, "absent": 0.5, "part.f1": 0.5, "coarse": 53.2}
-    assert changes == [{"suite": "s", "metric": "moved", "old": 0.6, "new": 0.601},
+    assert changes == [{"suite": "s", "metric": "moved", "old": 0.612, "new": 0.613},
                        {"suite": "s", "metric": "error", "old": 0.108, "new": 0.2}]
     assert list(metrics) == list(stored)  # the file keeps its order
+
+
+def test_regenerating_baselines_keeps_a_value_stored_with_fewer_decimals_while_it_still_rounds_to_it():
+    # Many baselines are stored with one or two decimals: 0.6 is what 0.5948 rounds to, and it passes the gate.
+    stored = {"one": 0.6, "two": 0.47, "ms": 53.2, "whole": 3, "all": 1.0}
+    metrics, changes = _rebaseline(stored, {"one": 0.5948, "two": 0.4741, "ms": 53.2049, "whole": 3.004, "all": 0.9951})
+    assert (metrics, changes) == (stored, [])
+    # Past what the stored decimals round to, or past the gate's tolerance, it has moved.
+    metrics, changes = _rebaseline({"one": 0.6, "two": 0.47, "all": 1.0, "loose": {"value": 53.2, "tolerance": 1.0}},
+                                   {"one": 0.5388, "two": 0.4762, "all": 0.96, "loose": 53.26})
+    assert metrics == {"one": 0.539, "two": 0.476, "all": 0.96, "loose": {"value": 53.26, "tolerance": 1.0}}
+    assert [c["metric"] for c in changes] == ["one", "two", "all", "loose"]
+
+
+def test_regenerating_baselines_changes_a_metric_that_fails_its_gate_even_within_rounding():
+    # With no tolerance the gate fails on 0.5948 against 0.6, so the baseline is what is wrong: it is rewritten.
+    exact = {"m": {"value": 0.6, "tolerance": 0}}
+    report = suites.gate([{"suite": "s", "status": "ran", "metrics": {"m": 0.5948}}],
+                         {"tolerance": 0.01, "suites": {"s": {"metrics": exact}}})
+    assert not report["passed"]
+    metrics, changes = _rebaseline(exact, {"m": 0.5948})
+    assert metrics == {"m": {"value": 0.595, "tolerance": 0}}
+    assert changes == [{"suite": "s", "metric": "m", "old": 0.6, "new": 0.595}]
+    assert _rebaseline(exact, {"m": 0.6}) == (exact, [])
 
     untouched = {"tolerance": 0.01, "suites": {"s": {"metrics": {"m": 0.5}}, "other": {"metrics": {"m": 0.5}}}}
     for status in ("skipped", "error"):

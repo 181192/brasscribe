@@ -68,6 +68,7 @@ with the doc.
 
 `brasscribe bench <suites> --update-baselines` writes what the suites measured to `eval/baselines.json`.
 It changes only the metrics that moved: a stored value stays while it is still the measurement rounded
-to three decimals, so a value on a rounding half (0.8125, stored as 0.812 or 0.813) is not flipped by
-measuring it again. A changed value is rounded half to even. Metrics of skipped suites and parts, and
-keys the file does not hold, are left alone.
+to the decimals it is stored with (0.6 for 0.5948) and still passes the gate, so a value on a rounding
+half (0.8125, stored as 0.812 or 0.813) is not flipped by measuring it again. A changed value is
+written with three decimals, rounded half to even. Metrics of skipped suites and parts, and keys the
+file does not hold, are left alone.
