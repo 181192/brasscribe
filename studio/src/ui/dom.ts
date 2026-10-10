@@ -300,9 +300,27 @@ export function pill(status: string): HTMLElement {
   return h("span", { class: `pill pill-${status}` }, mark, label);
 }
 
-/** A table with a caption; rows are arrays of cells. */
+/**
+ * Brings what took focus from the keyboard fully into the view of the table wrapper around it, with room for
+ * its focus ring. The browser leaves a control that is partly out of the wrapper's view where it is, so after
+ * the table has scrolled sideways to a button at its far end, Tab could land on one cut off at the near end
+ * (WCAG 2.4.11). Not for a pointer: the control must not move under it between press and release.
+ */
+function keepFocusInView(e: Event): void {
+  const wrap = e.currentTarget as HTMLElement;
+  const el = e.target as HTMLElement;
+  if (el === wrap || !el.matches(":focus-visible")) return;
+  const ring = 4;
+  const a = el.getBoundingClientRect();
+  const left = wrap.getBoundingClientRect().left + wrap.clientLeft;
+  const right = left + wrap.clientWidth;
+  if (a.left - ring < left) wrap.scrollLeft -= left - (a.left - ring);
+  else if (a.right + ring > right) wrap.scrollLeft += Math.min(a.right + ring - right, a.left - ring - left);
+}
+
+/** A table with a caption; rows are arrays of cells. Wider than the page, it scrolls sideways in its wrapper. */
 export function table(caption: string, head: string[], rows: Child[][], opts: { hideCaption?: boolean; className?: string } = {}): HTMLElement {
-  return h("div", { class: `table-wrap ${opts.className ?? ""}`, tabindex: 0, role: "region", "aria-label": caption },
+  return h("div", { class: `table-wrap ${opts.className ?? ""}`, tabindex: 0, role: "region", "aria-label": caption, onfocusin: keepFocusInView },
     h("table", {},
       h("caption", { class: opts.hideCaption ? "visually-hidden" : "" }, caption),
       h("thead", {}, h("tr", {}, head.map((c) => h("th", { scope: "col" }, c)))),
