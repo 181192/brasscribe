@@ -40,8 +40,11 @@ public sealed class CatalogueRun
     /// </summary>
     public List<string> Unsteady { get; set; } = [];
 
-    /// <summary>Screens that could not be shown or captured, with why.</summary>
+    /// <summary>Screens that could not be shown or captured, with why: "&lt;screenshot name&gt;: &lt;why&gt;".</summary>
     public List<string> Failed { get; set; } = [];
+
+    /// <summary>The screenshot names in <see cref="Failed"/>.</summary>
+    public IEnumerable<string> NotTaken() => Failed.Where(f => f.Contains(": ")).Select(f => f[..f.IndexOf(": ", StringComparison.Ordinal)]);
 
     public List<Finding> Findings { get; set; } = [];
 

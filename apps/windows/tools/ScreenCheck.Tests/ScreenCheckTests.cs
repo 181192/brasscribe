@@ -214,6 +214,23 @@ public class ScreenCheckTests
         Assert.Equal("Tab never reaches it", Assert.Single(back.Findings).Detail);
     }
 
+    [Fact]
+    public void A_screen_not_taken_at_the_base_is_not_compared_and_not_a_new_screen()
+    {
+        string root = Directory.CreateTempSubdirectory().FullName;
+        string before = Path.Combine(root, "before"), after = Path.Combine(root, "after"), report = Path.Combine(root, "report");
+        Directory.CreateDirectory(before);
+        Directory.CreateDirectory(after);
+        Png.Save(Path.Combine(before, "home--light.png"), Text(White, Black));
+        Png.Save(Path.Combine(after, "home--light.png"), Text(White, Black));
+        Png.Save(Path.Combine(after, "export--light.png"), Text(White, Black));
+        var run = new CatalogueRun { Shots = ["home--light"], Failed = ["export--light: screen not taken: ExportDialog has not opened (after 0 takes in 30 s)"] };
+        Assert.Equal(["export--light"], run.NotTaken());
+        var result = ScreenshotReport.Write(before, after, report, Png.Load, Png.Save, run.NotTaken().ToHashSet());
+        Assert.False(result.Any);
+        Assert.Contains("not compared, the screen was not taken on one side: `export--light`", result.Summary);
+    }
+
     // ---- when a screenshot is taken (SteadyShot) ----
 
     private static readonly Box Line = new(0, 0, 40, 16);

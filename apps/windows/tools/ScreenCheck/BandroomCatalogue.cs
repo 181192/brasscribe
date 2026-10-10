@@ -37,6 +37,9 @@ internal static class BandroomCatalogue
                 string name = string.Join("-", parts);
                 var args = new List<string> { "--show", parts[0], "--theme", theme, "--lang", lang };
                 if (parts.Length > 1) args.AddRange(["--state", parts[1]]);
+                // The screenshot's name: the view, its window when it has more than one, and the run's appearance.
+                string Shot(int window) => $"{name}{(window == 0 ? "" : $"-{window}")}--{(run == "contrast" ? "contrast" : scan ? theme : prefix + theme)}";
+                string shot = Shot(0);
                 try
                 {
                     Show(exe, args, out var process, out var windows);
@@ -45,7 +48,7 @@ internal static class BandroomCatalogue
                         {
                             for (int i = 0; i < windows.Count; i++)
                             {
-                                string shot = $"{name}{(i == 0 ? "" : $"-{i}")}--{(run == "contrast" ? "contrast" : scan ? theme : prefix + theme)}";
+                                shot = Shot(i);
                                 var taken = WindowShot.Take(process, windows[i], shot, notTaken: scan ? null : Path.Combine(outDir, "not-taken"));
                                 var picture = taken.Picture!;
                                 if (scan)
@@ -69,8 +72,8 @@ internal static class BandroomCatalogue
                 }
                 catch (Exception e) when (e is not UsageException)
                 {
-                    result.Failed.Add($"{name} ({theme}): {e.Message}");
-                    Console.Error.WriteLine($"{name} ({theme}): {e}");
+                    result.Failed.Add($"{shot}: {e.Message}");
+                    Console.Error.WriteLine($"{shot}: {e}");
                 }
                 finally
                 {
