@@ -140,6 +140,7 @@ struct SettingsView: View {
                         .buttonStyle(.primary)
                         .keyboardShortcut(.defaultAction)
                         .accessibilityIdentifier("settingsDone")
+                        .afterTheContentItIsDockedUnder()
                         .layoutProbe("settingsDone")
                 }
                 .padding(.horizontal, Space.s5)

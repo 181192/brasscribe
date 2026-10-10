@@ -142,6 +142,7 @@ struct WhatDoYouPlayView: View {
                 .disabled(seat == nil)
                 .accessibilityHint(hint.map { Text($0) } ?? Text(""))
                 .accessibilityIdentifier("seatContinue")
+                .afterTheContentItIsDockedUnder()
             if let hint {
                 Text(hint).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
                     .multilineTextAlignment(.center)
@@ -151,6 +152,7 @@ struct WhatDoYouPlayView: View {
             Button { finish(.conductor) } label: { Text("I conduct or listen") }
                 .buttonStyle(.plainText)
                 .accessibilityIdentifier("seatConductor")
+                .afterTheContentItIsDockedUnder()
         }
         .padding(.horizontal, Space.s5)
         .padding(.vertical, Space.s3)
