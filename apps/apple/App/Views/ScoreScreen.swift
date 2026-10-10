@@ -780,13 +780,11 @@ struct PlayerBar: View {
             Image(systemName: BrasscribeIcon.loop.systemName).accessibilityHidden(true)
             Text("Repeat bars")
             Stepper(value: $model.loopFrom, in: 0...last) { Text("\(model.loopFrom + 1)").monospacedDigit().frame(minWidth: 28) }
-                .macControlSize(.extraLarge)
                 .accessibilityLabel(Text("Repeat from bar"))
                 .accessibilityValue(Text("\(model.loopFrom + 1)"))
                 .onChange(of: model.loopFrom) { if model.looping { model.setLoop(true) } }
             Text("to")
             Stepper(value: $model.loopTo, in: 0...last) { Text("\(model.loopTo + 1)").monospacedDigit().frame(minWidth: 28) }
-                .macControlSize(.extraLarge)
                 .accessibilityLabel(Text("Repeat to bar"))
                 .accessibilityValue(Text("\(model.loopTo + 1)"))
                 .onChange(of: model.loopTo) { if model.looping { model.setLoop(true) } }
