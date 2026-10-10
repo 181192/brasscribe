@@ -138,6 +138,11 @@ class AppContainer(private val context: Context) {
         get() = prefs.getBoolean("realistic_default", false)
         set(v) = prefs.edit().putBoolean("realistic_default", v).apply()
 
+    /** Notifications were asked for (at the first job on the computer): never again; Settings of the phone has the switch. */
+    var notificationsAsked: Boolean
+        get() = prefs.getBoolean("notifications_asked", false)
+        set(v) = prefs.edit().putBoolean("notifications_asked", v).apply()
+
     var firstRunDone: Boolean
         get() = prefs.getBoolean("first_run_done", false)
         set(v) = prefs.edit().putBoolean("first_run_done", v).apply()
@@ -159,6 +164,9 @@ class AppContainer(private val context: Context) {
 
     /** Tests stand in for TalkBack or Switch Access here (the stand keeps its controls); null asks the system. */
     var assistiveOverride: Boolean? by androidx.compose.runtime.mutableStateOf(null)
+
+    /** Tests stand in for TalkBack's touch exploration here (a page then opens at its top); null asks the system. */
+    var touchExplorationOverride: Boolean? by androidx.compose.runtime.mutableStateOf(null)
 
     init {
         // Sound pack folders exist from the first start, so instruments can be copied into them.

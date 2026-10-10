@@ -148,9 +148,11 @@ let opener: HTMLElement | null = null;
 
 function shortcutsDialog(): HTMLDialogElement {
   dialog?.remove();
-  const row = (keys: string, what: string) => h("tr", {}, h("td", {}, keys.split(" / ").map((k, i) => [i ? " / " : "", h("kbd", {}, k)])), h("td", {}, what));
+  // A key combination may break after each "+", so the widest still fits a narrow sheet.
+  const key = (k: string) => h("kbd", {}, k.split("+").map((part, i) => (i ? ["+", h("wbr"), part] : part)));
+  const row = (keys: string, what: string) => h("tr", {}, h("td", {}, keys.split(" / ").map((k, i) => [i ? " / " : "", key(k)])), h("td", {}, what));
   const dlg = h("dialog", { id: "shortcuts", "aria-labelledby": "shortcuts-h" },
-    h("h2", { id: "shortcuts-h" }, t("shortcuts.title")),
+    h("h2", { id: "shortcuts-h", tabindex: -1 }, t("shortcuts.title")),
     h("h3", {}, t("shortcuts.anywhere")),
     h("table", {}, h("tbody", {},
       row("Ctrl/⌘+O", t("shortcuts.open")),
@@ -210,6 +212,10 @@ function globalKeys(): void {
       if (dialog && !dialog.open) {
         opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
         dialog.showModal();
+        // The sheet opens at its heading: the browser's own choice, the Close button at the end, would open it
+        // scrolled to its foot.
+        dialog.querySelector<HTMLElement>("h2")?.focus();
+        dialog.scrollTo(0, 0);
       }
     } else if (mod && !e.shiftKey && (e.key === "o" || e.key === "O")) {
       e.preventDefault();

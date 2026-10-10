@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import os
 import platform
-import signal
 import sys
 import shutil
 import subprocess
@@ -33,6 +32,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
+
+from brasscribe_music.process_tree import kill_tree
 
 from .config import child_env
 from .gpulock import default_path, file_lock
@@ -110,59 +111,6 @@ class AdapterError(RuntimeError):
 
 class AdapterCancelled(AdapterError):
     """The job was cancelled while the adapter ran or waited for the GPU mutex."""
-
-
-def _descendants(pid: int) -> list[int]:
-    """Every process below `pid` (POSIX, from ps); empty when ps is not there."""
-    try:
-        out = subprocess.run(["ps", "-A", "-o", "pid=,ppid="], capture_output=True, text=True, timeout=10).stdout
-    except (OSError, subprocess.TimeoutExpired):
-        return []
-    children: dict[int, list[int]] = {}
-    for line in out.splitlines():
-        fields = line.split()
-        if len(fields) == 2 and fields[0].isdigit() and fields[1].isdigit():
-            children.setdefault(int(fields[1]), []).append(int(fields[0]))
-    found, todo = [], [pid]
-    while todo:
-        for child in children.get(todo.pop(), []):
-            found.append(child)
-            todo.append(child)
-    return found
-
-
-def kill_tree(proc: subprocess.Popen) -> None:
-    """Kill an adapter and every process it started, then reap it. The adapter stays in the engine's
-    process group, so Bandroom stopping the engine's group still stops a model that is running."""
-    if os.name == "nt":
-        try:
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True, timeout=30)
-        except (OSError, subprocess.TimeoutExpired):
-            pass
-        proc.kill()
-    else:
-        # Stop the whole tree first, so nothing in it starts another process while it is being killed: walk it
-        # again until a walk finds nothing new (a process started just before its parent stopped).
-        stopped: set[int] = set()
-        for _ in range(10):
-            new = [p for p in [proc.pid, *_descendants(proc.pid)] if p not in stopped]
-            if not new:
-                break
-            for p in new:
-                try:
-                    os.kill(p, signal.SIGSTOP)
-                except OSError:
-                    pass
-            stopped.update(new)
-        for p in stopped:
-            try:
-                os.kill(p, signal.SIGKILL)
-            except OSError:
-                pass
-    try:
-        proc.communicate(timeout=10)
-    except subprocess.TimeoutExpired:
-        pass
 
 
 class HeavyRunRefused(AdapterError):
