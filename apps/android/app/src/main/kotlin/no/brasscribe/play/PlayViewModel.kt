@@ -702,6 +702,29 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         }
     }
 
+    /**
+     * The root score of a compressed MusicXML container, or the first .xml that is not the container.
+     * Read from the stream entry by entry; only the container and .xml entries are kept, each capped.
+     */
+    private fun unzipScore(input: java.io.InputStream): String {
+        val entries = HashMap<String, ByteArray>()
+        var kept = 0L
+        ZipInputStream(input.buffered()).use { zip ->
+            while (true) {
+                val e = zip.nextEntry ?: break
+                if (e.isDirectory || !(e.name.endsWith(".xml", true) || e.name.endsWith(".musicxml", true))) continue
+                val bytes = readLimited(zip, MAX_SCORE_BYTES - kept)
+                kept += bytes.size
+                entries[e.name] = bytes
+            }
+        }
+        val root = entries["META-INF/container.xml"]?.decodeToString()
+            ?.let { Regex("""full-path\s*=\s*"([^"]+)"""").find(it)?.groupValues?.get(1) }
+        val chosen = root?.let { entries[it] }
+            ?: entries.entries.firstOrNull { it.key.endsWith(".xml", true) && !it.key.startsWith("META-INF") }?.value
+        return requireNotNull(chosen) { "no score in the container" }.decodeToString()
+    }
+
     /** A finished take, already on disk; its samples are null when it was too long to keep in memory. */
     fun recorded(take: CapturedTake, kind: SourceKind) {
         // A recording is named by when it was made, never by its file's timestamp (review 3).
@@ -1883,29 +1906,6 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 require(out.size() <= limit) { "file larger than ${limit shr 20} MB" }
             }
             return out.toByteArray()
-        }
-
-        /**
-         * The root score of a compressed MusicXML container, or the first .xml that is not the container.
-         * Read from the stream entry by entry; only the container and .xml entries are kept, each capped.
-         */
-        fun unzipScore(input: java.io.InputStream): String {
-            val entries = HashMap<String, ByteArray>()
-            var kept = 0L
-            ZipInputStream(input.buffered()).use { zip ->
-                while (true) {
-                    val e = zip.nextEntry ?: break
-                    if (e.isDirectory || !(e.name.endsWith(".xml", true) || e.name.endsWith(".musicxml", true))) continue
-                    val bytes = readLimited(zip, MAX_SCORE_BYTES - kept)
-                    kept += bytes.size
-                    entries[e.name] = bytes
-                }
-            }
-            val root = entries["META-INF/container.xml"]?.decodeToString()
-                ?.let { Regex("""full-path\s*=\s*"([^"]+)"""").find(it)?.groupValues?.get(1) }
-            val chosen = root?.let { entries[it] }
-                ?: entries.entries.firstOrNull { it.key.endsWith(".xml", true) && !it.key.startsWith("META-INF") }?.value
-            return requireNotNull(chosen) { "no score in the container" }.decodeToString()
         }
         private const val KEY_STACK = "stack"
         private const val KEY_SOURCE = "source"

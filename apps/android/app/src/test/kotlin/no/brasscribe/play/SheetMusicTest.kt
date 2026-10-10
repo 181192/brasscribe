@@ -70,6 +70,59 @@ class SheetMusicTest {
         assertFalse(sheetMusic("Empty", null, zip()))
     }
 
+    /** What [open] hands out, counting the bytes that are read from it. */
+    private class Counted(private val bytes: ByteArray) {
+        var read = 0L
+        val open: () -> InputStream? = {
+            object : java.io.FilterInputStream(bytes.inputStream()) {
+                override fun read(): Int = super.read().also { if (it >= 0) read++ }
+                override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { if (it > 0) read += it }
+            }
+        }
+    }
+
+    /** Any zip may be handed over: only its start is looked at, however much it would unpack to. */
+    @Test
+    fun aZipWithOneHugeFileIsLeftAfterItsStart() {
+        // 512 MB of nothing, which is half a megabyte as a zip.
+        val huge = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out).use { z ->
+                z.putNextEntry(ZipEntry("film.bin"))
+                val block = ByteArray(1 shl 20)
+                repeat(512) { z.write(block) }
+                z.closeEntry()
+                z.putNextEntry(ZipEntry("score.xml")); z.write(score); z.closeEntry()
+            }
+        }.toByteArray()
+        val file = Counted(huge)
+        assertFalse(SheetMusic.isSheetMusic("Film", null, file.open))
+        // 4 MB of it unpacked is a few kB of the zip; all of it would be every byte.
+        assertTrue("read ${file.read} of ${huge.size} bytes", file.read < 64 * 1024 && file.read < huge.size / 4)
+    }
+
+    @Test
+    fun aZipWithVeryManyFilesIsLeftAfterItsFirst() {
+        val many = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out).use { z -> repeat(20_000) { i -> z.putNextEntry(ZipEntry("part-$i.xml")); z.closeEntry() } }
+        }.toByteArray()
+        val file = Counted(many)
+        assertFalse(SheetMusic.isSheetMusic("Parts", null, file.open))
+        assertTrue("read ${file.read} of ${many.size} bytes", file.read < 64 * 1024 && file.read < many.size / 4)
+    }
+
+    /** A real compressed MusicXML file: its type, the container, then the score among other files, and a long one. */
+    @Test
+    fun compressedMusicXmlWithNoNameToGoBy() {
+        val long = score.decodeToString().replace("<part-list/>", "<part-list/>" + "<part><measure/></part>".repeat(100_000)).toByteArray()
+        val real = zip("mimetype" to "application/vnd.recordare.musicxml".toByteArray(), "META-INF/container.xml" to container,
+            "cover.png" to ByteArray(200_000) { it.toByte() }, "score.xml" to long)
+        assertTrue(sheetMusic("A tab", null, real))
+        assertTrue(sheetMusic("document:77", "application/octet-stream", real))
+        // With no container, the first .xml outside META-INF is the score.
+        assertTrue(sheetMusic("A tab", null, zip("score.xml" to long)))
+        assertFalse(sheetMusic("A tab", null, zip("META-INF/other.xml" to score, "notes.xml" to otherXml)))
+    }
+
     @Test
     fun recordingsAreNot() {
         assertFalse(sheetMusic("Riff.wav", null, wav))
