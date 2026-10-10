@@ -80,12 +80,13 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 1. **Name and applicationId.** `no.fretscribe.play` is permanent once published. Trademark and store
    checks are open; the domains are unregistered.
 2. **Release key.** Brasscribe's, or a separate upload key under Play App Signing (recommended)?
-3. **Pairing link.** Both apps claiming `brasscribe://pair` gives a chooser when both are installed:
-   shared scheme, or a second `fretscribe://` link in Bandroom's QR code? Does Bandroom keep its name?
+3. **Pairing link.** Decided: both apps keep the shared `brasscribe://pair` link for now (a phone with both
+   apps asks which one opens it), and the program on the computer is Brasscribe Bandroom, Bandroom for short,
+   in both apps.
 4. **First-run copy.** The flows promise "Made on this phone. Nothing goes online", but the first
    version needs a computer for every tab. Reword, or wait for an on-device bass path.
    For now the app says what is true: "Your recordings stay on your phone and your own computer", and
-   that Fretscribe on the computer writes down the notes.
+   that Bandroom on the computer writes down the notes.
 5. **Every instrument the computer writes tab for.** Your instrument offers the guitar (6, 7, 8 strings), the
    bass (4, 5, 6), the ukulele (soprano, concert or tenor with a high or a low G, and baritone) and the mandolin.
    A ukulele or a mandolin in a full song only works when no guitar plays in it, and What is this? says so.

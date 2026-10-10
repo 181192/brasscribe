@@ -174,6 +174,8 @@ fun CompanionScreen(vm: PlayViewModel) {
                 else PlainButton(stringResource(R.string.pair_ask), { vm.askComputer(url) }, enabled = url.startsWith("http"))
             }
         }
+        // Where to get the program: while nothing is paired, or the paired computer can't be found (Help always has it).
+        if (pending == null && match == null && showsGetBandroom(settings.paired, connection)) GetBandroom({ vm.say(R.string.bandroom_no_browser) })
         PlainButton(stringResource(if (details) R.string.details_hide else R.string.details_show), { details = !details })
         if (details) {
             Text(stringResource(R.string.companion_tech_details), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
@@ -299,3 +301,5 @@ private fun VersionRow(vm: PlayViewModel) {
     )
 }
 
+/** The pairing screen offers Get Bandroom while nothing is paired, or while the paired computer can't be found. */
+internal fun showsGetBandroom(paired: Boolean, connection: ConnectionState): Boolean = !paired || connection is ConnectionState.Offline

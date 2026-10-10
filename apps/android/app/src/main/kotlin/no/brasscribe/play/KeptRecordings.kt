@@ -23,8 +23,11 @@ data class KeptRecording(
  * No step loses a recording, whatever fails and wherever the process ends. The details are written before the
  * recording is moved in; a move that fails leaves the recording where it was, and a folder that never got its
  * recording is cleared. A recording found without details is listed again, never deleted ([prune]).
+ *
+ * With [keepFor] (milliseconds), a recording kept longer than that is deleted by [prune], unless it is the one in hand:
+ * Fretscribe keeps a take 30 days for a tab to be made from it. Without it, a recording stays until it is deleted.
  */
-class KeptRecordingStore(private val root: File, private val files: Files = Files()) {
+class KeptRecordingStore(private val root: File, private val files: Files = Files(), private val keepFor: Long? = null) {
     /** The file operations a keep is made of, one at a time (the tests make one of them fail, or end there). */
     open class Files {
         open fun write(file: File, details: Properties) = file.outputStream().use { details.store(it, null) }
@@ -79,9 +82,10 @@ class KeptRecordingStore(private val root: File, private val files: Files = File
 
     /**
      * Clears what is no longer kept, except the folder of [inUse] (the recording in hand): a recording whose score
-     * was made, and a folder that never got its recording. A recording without details is listed again instead.
+     * was made, a folder that never got its recording, and with [keepFor], one kept longer than that before [now].
+     * A recording without details is listed again instead.
      */
-    fun prune(inUse: File?) {
+    fun prune(inUse: File?, now: Long = System.currentTimeMillis()) {
         val busy = inUse?.let(::folderOf)
         for (folder in root.listFiles().orEmpty()) {
             if (!folder.isDirectory || folder == busy) continue
@@ -91,6 +95,7 @@ class KeptRecordingStore(private val root: File, private val files: Files = File
             when {
                 recording == null -> files.delete(folder)
                 details?.getProperty(FORGOTTEN) == "true" -> files.delete(folder)
+                keepFor != null && (details?.getProperty("updated")?.toLongOrNull() ?: recording.lastModified()) < now - keepFor -> files.delete(folder)
                 details == null || details.getProperty("file") != recording.name -> runCatching {
                     writeDetails(folder, details(recording.name, details?.getProperty("title").orEmpty(), SourceKind.FILE,
                         details?.getProperty("seconds")?.toDoubleOrNull() ?: 0.0, recording.lastModified()))

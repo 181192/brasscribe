@@ -9,9 +9,12 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.brasscribe.play.engine.FrettedInstrument
 import no.brasscribe.play.fret.ComputerProfiles
+import no.brasscribe.play.fret.PracticeModel
+import no.brasscribe.play.fret.RecordingState
 import no.brasscribe.play.fret.TabPlaces
 import no.brasscribe.play.fret.TabScreenProbe
 import no.brasscribe.play.fret.YourInstrument
@@ -70,6 +73,8 @@ class FretscribeScreensTest : ScreenCatalogue() {
         rule.onNodeWithTag("fs-show-tab").performClick()
         waitForTag("fs-tab", 30_000)
         waitUntil(30_000) { TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true }
+        // And the player under the tab, which comes once the recording has been looked for on the phone (on another thread).
+        waitUntil(30_000) { ViewModelProvider(rule.activity)[PracticeModel::class.java].recording != RecordingState.LOOKING }
         rest()
     }
 

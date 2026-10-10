@@ -1126,7 +1126,13 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             }
             if (kept != null) {
                 // Still the recording in hand: it is the kept file from now on (the cache's copy is gone).
-                if (source.value?.file == file && kept.file != file) source.value = source.value?.copy(file = kept.file)
+                val before = source.value
+                if (before?.file == file && kept.file != file) {
+                    val moved = before.copy(file = kept.file)
+                    // The same recording, where it is kept now: what the product asked about it goes with it.
+                    Product.recordingMoved(before, moved)
+                    source.value = moved
+                }
                 refreshKept()
             }
             done(kept != null)
