@@ -45,10 +45,14 @@ class PartView(
         core.spell(sortedNotes.map { it.start.toDouble() / tpb }, sortedNotes.map { it.pitch }, composition.keys.firstOrNull()?.fifths)
     }
 
+    /** The piece opens with a pickup: some voice has a note before the first downbeat. */
+    private val hasPickup: Boolean = composition.voices.any { v -> v.notes.any { it.start < 0 } }
+
     private fun buildEvents(): List<PartEvent> {
         val notes = sortedNotes
         val out = mutableListOf<PartEvent>()
-        var lastBar = 0
+        // With a pickup in the piece, a part that rests through it rests from the pickup (bar 0) on.
+        var lastBar = if (hasPickup) PICKUP_BAR - 1 else 0
         for ((i, n) in notes.withIndex()) {
             val bar = tickMap.barOf(n.start)
             if (bar - lastBar > 1) {

@@ -72,9 +72,19 @@ public static class TalkingScoreExport
                     lastBar = nav.BarIndex;
                     current = [];
                     var ev = nav.Event;
-                    string heading = ev is { Kind: EventKind.BarRest, Bars: > 1 }
-                        ? (settings.Nb ? $"Takt {part.Bars[lastBar].Number}–{part.Bars[lastBar].Number + ev.Bars - 1}" : $"Bars {part.Bars[lastBar].Number}–{part.Bars[lastBar].Number + ev.Bars - 1}")
-                        : (settings.Nb ? $"Takt {part.Bars[lastBar].Number}" : $"Bar {part.Bars[lastBar].Number}");
+                    int number = part.Bars[lastBar].Number;
+                    int run = ev is { Kind: EventKind.BarRest, Bars: > 1 } ? ev.Bars : 1;
+                    string heading = number == Announcer.PickupBar
+                        // The pickup is named, and is not one of the bars counted.
+                        ? run switch
+                        {
+                            1 => settings.Nb ? "Opptakt" : "Pickup",
+                            2 => settings.Nb ? "Opptakt og takt 1" : "Pickup and bar 1",
+                            _ => settings.Nb ? $"Opptakt og takt 1–{run - 1}" : $"Pickup and bars 1–{run - 1}",
+                        }
+                        : run > 1
+                            ? (settings.Nb ? $"Takt {number}–{number + run - 1}" : $"Bars {number}–{number + run - 1}")
+                            : (settings.Nb ? $"Takt {number}" : $"Bar {number}");
                     bars.Add((heading, current));
                 }
                 current!.Add(text);

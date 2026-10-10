@@ -144,4 +144,60 @@ describe("talking score from MusicXML", () => {
     nb.goBar(0);
     expect(nb.nextNote()!.text).toBe("slag 1, 2. åttendedel: E 5, åttendedelsnote");
   });
+
+  it("names a pickup and puts its notes on the beats of the bar they lead into", () => {
+    const pickup = `<?xml version="1.0"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="0" implicit="yes">
+      <attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      ${n("G", 4, 1, "eighth")}
+      ${n("A", 4, 2, "quarter", '<tie type="start"/>')}
+    </measure>
+    <measure number="1">${n("A", 4, 8, "whole", '<tie type="stop"/>')}</measure>
+    <measure number="2">${n("C", 5, 8, "whole")}</measure>
+  </part>
+</score-partwise>`;
+    const tsp = buildTalkingScore(pickup);
+    expect(tsp.total_bars).toBe(2); // the pickup is not one of the bars counted
+    expect(tsp.parts[0].bars.map((b) => b.number)).toEqual([0, 1, 2]);
+    expect(tsp.parts[0].bars[0].events.map((e) => e.pos)).toEqual([{ beat: 3, num: 1, den: 2 }, { beat: 4, num: 0, den: 1 }]);
+    const nav = new Navigator(tsp);
+    expect(nav.goBar(0).text).toBe("pickup, beat 3 and: G 4, eighth note");
+    expect(nav.whereAmI()).toBe("pickup, beat 3 and: written G 4, sounds G 4, eighth note");
+    expect(nav.nextNote()!.text).toBe("beat 4: A 4, quarter note, tied to whole note in bar 1");
+    expect(nav.nextNote()!.text).toBe("bar 2, beat 1: C 5, whole note");
+    expect(nav.whereAmI()).toBe("bar 2 of 2, beat 1: written C 5, sounds C 5, whole note");
+
+    // By beat: the pickup's beats are those of the bar it leads into.
+    nav.goBar(0);
+    expect(nav.nextBeat()!.text).toBe("beat 4: A 4, quarter note, tied to whole note in bar 1");
+    expect(nav.nextBeat()!.text).toBe("bar 1, beat 1: A 4 held, from pickup beat 4");
+    expect(nav.nextBeat(-1)!.text).toBe("pickup, beat 4: A 4, quarter note, tied to whole note in bar 1");
+    expect(nav.nextBeat(-1)).toBeNull();
+
+    const nb = new Navigator(tsp, undefined, "nb");
+    expect(nb.goBar(0).text).toBe("opptakt, slag 3-og: G 4, åttendedelsnote");
+
+    // A first measure left out of the numbering is the pickup too.
+    const unnumbered = buildTalkingScore(pickup.replace('number="0" implicit="yes"', 'number="X1" implicit="yes"'));
+    expect(unnumbered.parts[0].bars[0].number).toBe(0);
+    // A short first bar that is numbered and not marked stays as it is.
+    const short = buildTalkingScore(pickup.replace('number="0" implicit="yes"', 'number="1"'));
+    expect(short.parts[0].bars[0].number).toBe(1);
+    expect(short.parts[0].bars[0].events[0].pos).toEqual({ beat: 1, num: 0, den: 1 });
+  });
+
+  it("reads a measure number as the core does: a whole number, or the measure's place", () => {
+    // A full first bar is a bar, also when it is marked as left out of the numbering.
+    const implicit = buildTalkingScore(XML.replace('<measure number="1">', '<measure number="1" implicit="yes">'));
+    expect(implicit.parts[0].bars.map((b) => b.number)).toEqual([1, 2, 3, 4, 5]);
+    expect(implicit.total_bars).toBe(5);
+    expect(implicit.parts[0].bars[0].events[0].pos).toEqual({ beat: 1, num: 0, den: 1 });
+    // "12a" is not bar 12, and neither is an empty number 0: both take the measure's place.
+    const odd = buildTalkingScore(XML.replace('<measure number="2">', '<measure number="12a">').replace('<measure number="3">', '<measure number="">'));
+    expect(odd.parts[0].bars.map((b) => b.number)).toEqual([1, 2, 3, 4, 5]);
+    expect(buildTalkingScore(XML.replace('<measure number="5">', '<measure number=" 12 ">')).parts[0].bars[4].number).toBe(12);
+  });
 });

@@ -82,7 +82,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -380,8 +379,10 @@ private fun LeaveButton(onLeave: () -> Unit) {
         modifier = Modifier.heightIn(min = 48.dp).semantics { testTag = "performance-exit" },
     ) {
         Row(
-            Modifier.clearAndSetSemantics { contentDescription = name; role = Role.Button; onClick { onLeave(); true } }
-                .clickable(onClick = onLeave).heightIn(min = 48.dp).padding(horizontal = BrasscribeSpace.s4),
+            // The name replaces the icon's and the word's own semantics, and is set inside the clickable: set outside it,
+            // it would clear the clickable's too, and with them whether the button has the keyboard's focus.
+            Modifier.clickable(role = Role.Button, onClick = onLeave).clearAndSetSemantics { contentDescription = name }
+                .heightIn(min = 48.dp).padding(horizontal = BrasscribeSpace.s4),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
         ) {
             BcIcon(R.drawable.ic_bc_close, null, Modifier.size(20.dp))
@@ -530,8 +531,9 @@ private fun TurnMusicPill(onClick: () -> Unit, modifier: Modifier) {
         border = BorderStroke(1.dp, c.borderStrong), shadowElevation = if (c.isHighContrast) 0.dp else 1.dp,
     ) {
         Row(
-            Modifier.clearAndSetSemantics { contentDescription = name; role = Role.Button; onClick { onClick(); true } }
-                .clickable(onClick = onClick).heightIn(min = 48.dp).padding(horizontal = BrasscribeSpace.s5),
+            // (As Leave: the name inside the clickable, so its focus is in its semantics.)
+            Modifier.clickable(role = Role.Button, onClick = onClick).clearAndSetSemantics { contentDescription = name }
+                .heightIn(min = 48.dp).padding(horizontal = BrasscribeSpace.s5),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
         ) {
             BcIcon(R.drawable.ic_stand_rotate, null, Modifier.size(20.dp))

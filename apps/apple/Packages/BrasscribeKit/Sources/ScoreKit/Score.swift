@@ -88,6 +88,8 @@ public struct Measure: Sendable, Equatable {
     public var beats: Int
     public var beatType: Int
     public var fifths: Int
+    /// Left out of the bar numbering (MusicXML `implicit="yes"`), as a pickup is.
+    public var implicit: Bool = false
 
     public var beatTicks: Int { Score.ticksPerQuarter * 4 / beatType }
 }

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A first bar that is left out of the numbering (implicit="yes") but is a full bar: it is a bar, not a pickup,
+     and the second part rests through it and the next.
+     Written for this test; no published music. divisions 2: eighth 1, quarter 2, whole 8. -->
+<score-partwise version="4.0">
+  <work><work-title>Full first bar</work-title></work>
+  <part-list>
+    <score-part id="P1"><part-name>Solo Cornet</part-name>
+      <score-instrument id="P1-I1"><instrument-name>Cornet in B♭</instrument-name></score-instrument></score-part>
+    <score-part id="P2"><part-name>Euphonium</part-name>
+      <score-instrument id="P2-I1"><instrument-name>Euphonium</instrument-name></score-instrument></score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1" implicit="yes">
+      <attributes><divisions>2</divisions><key><fifths>2</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef><transpose><diatonic>-1</diatonic><chromatic>-2</chromatic></transpose></attributes>
+      <direction><sound tempo="96"/></direction>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>half</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type>
+        <tie type="start"/><notations><tied type="start"/></notations></note>
+    </measure>
+    <measure number="2">
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type>
+        <tie type="stop"/><notations><tied type="stop"/></notations></note>
+    </measure>
+    <measure number="3">
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note>
+    </measure>
+  </part>
+  <part id="P2">
+    <measure number="1" implicit="yes">
+      <attributes><divisions>2</divisions><key><fifths>2</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef><transpose><diatonic>-8</diatonic><chromatic>-14</chromatic></transpose></attributes>
+      <note><rest measure="yes"/><duration>8</duration><voice>1</voice></note>
+    </measure>
+    <measure number="2">
+      <note><rest measure="yes"/><duration>8</duration><voice>1</voice></note>
+    </measure>
+    <measure number="3">
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note>
+    </measure>
+  </part>
+</score-partwise>

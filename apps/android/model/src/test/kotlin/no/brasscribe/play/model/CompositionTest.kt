@@ -111,6 +111,36 @@ class CompositionTest {
     }
 
     @Test
+    fun aPartRestingThroughThePickupRestsFromThePickupOn() {
+        val c = tiny()
+        val solo = c.voices[0]
+        // The solo starts half a beat before bar 1; the other part comes in where the solo's last note is.
+        val lead = solo.copy(notes = listOf(solo.notes[0].copy(start = -12, dur = 12)) + solo.notes)
+        val late = solo.copy(notes = listOf(solo.notes.last()))
+        val withPickup = c.copy(voices = listOf(lead, late))
+        val entry = PartView(withPickup, late, Instrument.CORNET, "2nd Cornet").tickMap.barOf(solo.notes.last().start)
+
+        val first = PartView(withPickup, lead, Instrument.CORNET, "Solo Cornet")
+        assertEquals(PICKUP_BAR, first.events[0].bar)
+        assertTrue(first.announce(0, null, TsSettings(), Lang.EN, KotlinCoreBridge).contains("pickup, no sharps or flats, beat 4 and: "))
+
+        val resting = PartView(withPickup, late, Instrument.CORNET, "2nd Cornet")
+        val rest = resting.events[0]
+        assertEquals("bar-rest", rest.stop.event.kind)
+        assertEquals(PICKUP_BAR, rest.bar)
+        assertEquals(entry, rest.stop.event.bars) // the pickup and every bar before the entry
+        val said = resting.announce(0, null, TsSettings(), Lang.EN, KotlinCoreBridge)
+        assertTrue(said, said.endsWith("pickup and bars 1 to ${entry - 1}: rest, ${entry - 1} bars"))
+        assertTrue(resting.announce(0, null, TsSettings(), Lang.NB, KotlinCoreBridge).endsWith("opptakt og takt 1 til ${entry - 1}: pause, ${entry - 1} takter"))
+        assertEquals(entry, resting.events[1].bar)
+
+        // Without a pickup in the piece the rest starts at bar 1, as before.
+        val plain = PartView(c.copy(voices = listOf(solo, late)), late, Instrument.CORNET, "2nd Cornet")
+        assertEquals(1, plain.events[0].bar)
+        assertEquals(entry - 1, plain.events[0].stop.event.bars)
+    }
+
+    @Test
     fun freeTimeRegionIsAnnouncedOnEntryAndExit() {
         val c = tiny().copy(freeRegions = listOf(FreeRegion(0, 96, 1.0, 3.0, 60.0)))
         val view = PartView(c, c.voices[0], Instrument.CORNET, "Solo Cornet")
