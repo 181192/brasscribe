@@ -39,7 +39,6 @@ import TranscriptionKit
             ("score", .smallTarget, "“\(String(localized: "Speed"))”", "#255"),
             ("score", .smallTarget, "“\(String(localized: "Repeat from bar"))”", "#255"),
             ("score", .smallTarget, "“\(String(localized: "Repeat to bar"))”", "#255"),
-            ("sheet-settings", .smallTarget, "“\(String(localized: "Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")"))”", "#256"),
         ]
     }
 
