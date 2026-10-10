@@ -56,6 +56,17 @@ test("closing the shortcut sheet opened from the menu puts focus on the Menu but
   await expect(page.locator(".nav-toggle")).toBeFocused();
 });
 
+test("the shortcut sheet opens at its heading, not scrolled to its Close button", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 500 });
+  await page.keyboard.press("F1");
+  const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+  await expect(sheet.getByRole("heading", { name: "Keyboard shortcuts" })).toBeFocused();
+  expect(await sheet.evaluate((d) => [d.scrollTop, d.scrollWidth - d.clientWidth])).toEqual([0, 0]);
+  // Tab goes on to the one thing to act on.
+  await page.keyboard.press("Tab");
+  await expect(sheet.getByRole("button", { name: "Close" })).toBeFocused();
+});
+
 test("closing the shortcut sheet gives focus back to what had it when that is still there", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.locator("#lang-select").focus();

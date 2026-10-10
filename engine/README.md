@@ -22,7 +22,9 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   `guitar-8`), a ukulele (`ukulele` with tuning `high-g` or `low-g`, `ukulele-baritone`) or a mandolin; its tunings
   are the presets of the Rust crate [`target-fretted`](../core/target-fretted/README.md). The instrument's stem is
   separated from the song (the separator has no stem for a ukulele or a mandolin: they are read from its guitar
-  stem, which only works in a song where no guitar plays, so their default is `recording: instrument`), or the recording itself is read when it is the instrument alone
+  stem, which only works in a song where no guitar plays, so their default is `recording: instrument`; a mandolin's
+  tremolo goes to the separator's `other` stem instead, so a mandolin is read from `other` when its guitar stem is
+  empty, `EMPTY_STEM_DB` under the song), or the recording itself is read when it is the instrument alone
   (`recording: instrument`); then Basic Pitch, the shared beat grid and
   durations, and a string and fret for every note from the crate, which the engine calls through the core's command
   line (`brasscribe-core fret`).

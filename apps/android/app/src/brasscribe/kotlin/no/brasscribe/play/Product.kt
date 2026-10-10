@@ -75,8 +75,9 @@ object Product {
     const val TIME_LEFT = true
 
     /**
-     * Nothing tells the player when a score is ready while the app is away, so the transcribing screen says to keep
-     * it open, and stays on. A band draft on the phone is the exception: its service keeps it going.
+     * The transcribing screen stays on while a score is made. A solo made on the phone has nothing to keep it going
+     * while the app is away, so the screen says to keep the app open. A band draft goes on in its service, and a job on
+     * the computer is followed by `ComputerJobService`, which says when it is ready: then the player may leave.
      */
     const val KEEP_OPEN_WHILE_WRITING = true
 
