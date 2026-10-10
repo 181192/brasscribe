@@ -136,7 +136,7 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
 
 | Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
 | --- | --- | --- |
-| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh compare` (the Mac screen catalogue) | `make test-ios-unit` (headless simulator); `make test-mac-ui` only in the macOS VM |
+| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh compare` (the Mac screen catalogue) | `make test-ios-unit` (headless simulator), `make test-iphone` (its unit and UI tests; CI runs them every night, not on pull requests); `make test-mac-ui` only in the macOS VM |
 
 See [docs/dev/verify.md](../../docs/dev/verify.md).
 

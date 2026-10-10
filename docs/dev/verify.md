@@ -115,11 +115,28 @@ screen catalogues, whose screenshots are compared with the merge base on that ru
 ([apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../apps/windows/tests/Brasscribe.Play.Catalogue/README.md));
 and the Apple apps on a macOS runner (`apple.yml`) when it touches
 `apps/apple/`, `capture/`, `core/`, the app fixtures, the design files the apps bundle or `sounds/` (Play: the
-Swift packages, the macOS app unit tests, the iPhone simulator app's unit and UI tests, and the Mac screen
+Swift packages, the macOS app unit tests, a build of the iPhone simulator app and its tests, and the Mac screen
 catalogue compared with the merge base), or
 `apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and its screen catalogue, compared
 with the merge base, with the label `screenshots-changed` as for Android). The `changes` job's filters say
 exactly which paths count. The release builds run only for releases or by hand.
+
+What CI does not run on a pull request, and when it runs instead ([ci-speed.md](ci-speed.md) has the timings
+behind these choices):
+
+- **The iPhone simulator app's unit and UI tests** run every night on `main` (`nightly.yml`), and by hand on a
+  branch: `gh workflow run apple.yml -f iphone_tests=true --ref <branch>`. A pull request builds the app and
+  those tests for the simulator without running them. While a night fails, one issue is open ("Nightly: the
+  iPhone simulator tests fail"); the first night that passes closes it.
+- **A pull request that only sets the version** (what `scripts/release.sh` writes, and `CHANGELOG.md`) starts no
+  platform job. The release run on the tag runs every check before anything is built.
+- **A change to `ci.yml` alone** is checked by actionlint (job `workflows`), not by running every platform.
+  To run every job on a branch: `gh workflow run ci.yml --ref <branch>`.
+- **A label added or removed** starts no run: `screenshot-label.yml` runs again only the jobs that read the label
+  `screenshots-changed`.
+
+A run on `main` is never cancelled: a push that arrives while one is running waits, and of several waiting only
+the newest is kept, so merges close together are checked as one batch.
 
 Things that differ from running the suites by hand:
 

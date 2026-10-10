@@ -1,0 +1,64 @@
+name: nightly
+
+# What is too slow to wait for on a pull request, once a night on main: the iPhone simulator app's unit and UI
+# tests (apple.yml, job `play-iphone`). While they fail, one issue is open ("Nightly: the iPhone simulator
+# tests fail"): the first failing night opens it, later ones add a comment, and the first night that passes
+# closes it. It can also be started by hand, on any branch: `gh workflow run nightly.yml --ref <branch>`
+# (only a run on main touches the issue).
+on:
+  schedule:
+    # 02:17 UTC: not on the hour, when scheduled runs start late.
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  iphone:
+    name: iPhone
+    uses: ./.github/workflows/apple.yml
+    # apple.yml's screenshot jobs (not run here) read pull request labels; a called workflow gets no more than this.
+    permissions:
+      contents: read
+      pull-requests: read
+    with:
+      iphone_tests: true
+
+  # Runs none of the tests' code: only this repository's script, with the token that may write issues.
+  report:
+    name: issue for a failing night
+    needs: iphone
+    if: ${{ always() && github.ref == 'refs/heads/main' && (needs.iphone.result == 'success' || needs.iphone.result == 'failure') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Open, add to or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ needs.iphone.result }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Nightly: the iPhone simulator tests fail"
+          if [ "$RESULT" = success ]; then
+            printf 'The iPhone simulator tests passed on %s: %s\n' "${GITHUB_SHA:0:12}" "$RUN" > body.md
+            .github/scripts/tracking-issue.sh passing "$title" body.md
+          else
+            {
+              printf 'The iPhone simulator app'"'"'s unit or UI tests failed on main at %s: %s\n\n' "${GITHUB_SHA:0:12}" "$RUN"
+              printf 'The result bundle is the artefact `apple-play-iphone-test-results` of that run. '
+              printf 'Pull requests build these tests and do not run them, so this is where a failure first shows. '
+              printf 'To run them on a branch: `gh workflow run apple.yml -f iphone_tests=true --ref <branch>`.\n'
+            } > body.md
+            .github/scripts/tracking-issue.sh failing "$title" body.md
+          fi

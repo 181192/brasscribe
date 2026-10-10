@@ -5,6 +5,7 @@
 #   make project     generate BrasscribePlay.xcodeproj with XcodeGen
 #   make build       build macOS, iOS Simulator and iPad Simulator
 #   make test        package tests, macOS app unit tests (no UI), app unit + UI tests on an iOS simulator
+#                    (its parts: make package-test, make test-mac-app, make test-iphone)
 #   make package-test-fast  package tests without the slow audio-rendering suites
 #   make build-for-testing-mac, then make test-mac-unit (repeatable): macOS app unit tests without rebuilding
 #   scripts/screenshots.sh compare  the Mac screen catalogue, off screen, compared with the merge base (README, Testing)
@@ -27,7 +28,7 @@ XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record|compare, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
-.PHONY: verovio soundfont bandsound project build test test-mac-ui package-test size install-mac \
+.PHONY: verovio soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
 
 verovio:
@@ -53,9 +54,15 @@ package-test:
 	cd Packages/ScreenCatalogue && swift test
 	cd ../../capture && swift test
 
-test: project package-test
+# CI runs the parts apart: package-test and test-mac-app on a pull request, which also builds the iPhone
+# simulator app and its tests (build-for-testing-ios); test-iphone every night (.github/workflows/nightly.yml).
+test: package-test test-mac-app test-iphone
+
+test-mac-app: project
 	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' $(SKIP_CATALOGUE) test
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' test
+
+test-iphone: project
+	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' $(TEST_ARGS) test
 
 # The macOS UI tests move the real pointer and type real keys. Not part of `make test`: run them
 # only in the macOS VM (scripts/mac-vm.sh test-ui) or in CI. TEST_ARGS adds xcodebuild arguments
