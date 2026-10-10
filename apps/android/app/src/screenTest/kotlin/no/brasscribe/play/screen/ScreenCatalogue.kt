@@ -10,6 +10,7 @@ import no.brasscribe.play.Appearance
 import no.brasscribe.play.test.Slow
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.experimental.categories.Category
 
@@ -43,6 +44,20 @@ abstract class ScreenCatalogue : ScreenTest() {
     private val notForTheKeyboard = setOf("Close sheet")
 
     protected abstract val screens: List<Entry>
+
+    private companion object {
+        /** No release's version, so it cannot be taken for one. */
+        const val FIXED_VERSION = "0.0.0"
+    }
+
+    /**
+     * About shows the app's version, which every release changes. The catalogue shows a fixed one in its place,
+     * so a release leaves the pictures of About as they were. ([leaveClean] puts the app's own back.)
+     */
+    @Before
+    fun showAFixedVersion() {
+        container.shownVersion = FIXED_VERSION
+    }
 
     /**
      * Back to Home, with nothing of the screen before still under way: a screen that shows the notes being written
