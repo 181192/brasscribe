@@ -93,6 +93,14 @@ def cmd_bench(args) -> int:
         history.save(s, report, args.suite, args.mode)
     if args.json:
         Path(args.json).write_text(json.dumps(report, indent=1))
+    if args.update_baselines:
+        baselines, changes = suites.rebaseline(results, suites.load_baselines())
+        for c in changes:
+            print(f"baseline {c['suite']} {c['metric']}: {c['old']} -> {c['new']}")
+        if changes:
+            suites.write_baselines(baselines)
+        print(f"{len(changes)} baseline{'' if len(changes) == 1 else 's'} changed in {suites.BASELINES.name}")
+        return 0 if all(r["status"] != "error" for r in results) else 1
     return 0 if report["passed"] else 1
 
 
@@ -279,6 +287,9 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--allow-improved", action="store_true", help="do not fail on improvements beyond the tolerance")
     b.add_argument("--require-data", action="store_true", help="fail when a suite is skipped for missing data")
     b.add_argument("--no-history", action="store_true", help="do not store the result under <data>/bench/history")
+    b.add_argument("--update-baselines", action="store_true",
+                   help="write what the suites measured to eval/baselines.json: only the values that moved, "
+                        "a value on a rounding half stays as stored")
     b.set_defaults(fn=cmd_bench)
 
     for name, browser in (("serve", False), ("studio", True)):

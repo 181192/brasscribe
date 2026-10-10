@@ -19,6 +19,7 @@ import subprocess
 import tempfile
 import time
 from dataclasses import dataclass, field
+from decimal import ROUND_HALF_EVEN, Decimal
 from pathlib import Path
 from typing import Callable
 
@@ -921,6 +922,59 @@ def gate(results: list[dict], baselines: dict | None = None, allow_improved: boo
         suites_out.append({**r, "status": status, "checks": checks,
                            "metrics": {k: round(float(v), 4) for k, v in r["metrics"].items()}})
     return {"passed": passed, "suites": suites_out}
+
+
+# A baseline is stored to this many decimals.
+BASELINE_DECIMALS = 3
+# Two runs of one measurement can differ in the last bits of a float (the order of a sum, a library's build).
+# A measurement is read to this many decimals before it is rounded.
+_NOISE_DECIMALS = 9
+# How far past a rounding half a measurement may sit and still keep the stored value: half a unit of the four
+# decimals the report shows, since a baseline copied from a report is a rounding of that rounding.
+_HALF_SLACK = 0.5e-4
+
+
+def stable_round(v: float, decimals: int = BASELINE_DECIMALS) -> float:
+    """A measurement rounded for storing: half to even, in decimal, so a value on a rounding half (0.8125)
+    lands the same way whichever side of the half floating-point error left it."""
+    read = Decimal(repr(round(float(v), _NOISE_DECIMALS)))
+    return float(read.quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_EVEN))
+
+
+def rebaseline(results: list[dict], baselines: dict) -> tuple[dict, list[dict]]:
+    """Baselines with the metrics of the suites that ran set to what they measured now, and what changed
+    ({"suite", "metric", "old", "new"}). Only keys the baselines already hold are touched, never those of a
+    skipped part or without a finite measurement.
+
+    A stored value stays as it is while it is still the measurement rounded, to either side: one that sits on
+    a rounding half (stored 0.812 or 0.813, measured 0.8125) is not flipped by measuring again, so only the keys
+    that really moved change."""
+    out = json.loads(json.dumps(baselines))
+    half = 0.5 * 10 ** -BASELINE_DECIMALS + _HALF_SLACK
+    changes = []
+    for r in results:
+        if r["status"] != "ran" or r["suite"] not in out["suites"]:
+            continue
+        metrics = out["suites"][r["suite"]].get("metrics", {})
+        skipped = r.get("skipped_parts", [])
+        for metric, spec in metrics.items():
+            v = r["metrics"].get(metric)
+            if v is None or not np.isfinite(v) or metric.split(".")[0] in skipped or metric in skipped:
+                continue
+            old = spec["value"] if isinstance(spec, dict) else spec
+            if abs(float(v) - old) <= half:
+                continue
+            new = stable_round(v)
+            if isinstance(spec, dict):
+                spec["value"] = new
+            else:
+                metrics[metric] = new
+            changes.append({"suite": r["suite"], "metric": metric, "old": old, "new": new})
+    return out, changes
+
+
+def write_baselines(baselines: dict, path: Path = BASELINES) -> None:
+    path.write_text(json.dumps(baselines, indent=2, ensure_ascii=False) + "\n")
 
 
 def format_report(report: dict) -> str:
