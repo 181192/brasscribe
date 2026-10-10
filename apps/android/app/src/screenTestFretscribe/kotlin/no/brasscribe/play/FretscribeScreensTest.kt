@@ -125,5 +125,6 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },
         Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
         Entry("problem-sheet-music") { rule.runOnUiThread { vm.showProblem(Problem.SHEET_MUSIC) } },
+        Entry("problem-tab-not-opened") { rule.runOnUiThread { vm.showProblem(Problem.OPEN_FAILED, null, R.string.error_unreachable) } },
     )
 }

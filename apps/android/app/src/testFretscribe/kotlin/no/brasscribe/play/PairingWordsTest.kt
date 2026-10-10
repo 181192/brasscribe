@@ -90,7 +90,7 @@ class PairingWordsTest {
         val about = used("CompanionScreen.kt", "AboutScreen")
         assertTrue(help.containsAll(setOf("help_1_text", "help_2_text", "help_5_text")))
         // The problems of every app, not the drafts made on the phone: Fretscribe makes none there.
-        val reachable = listOf("FILE_UNREADABLE", "NO_SOUND_TRACK", "NOTHING_HEARD", "RECORDING_FAILED", "SCORE_FAILED", "TOO_LARGE")
+        val reachable = listOf("FILE_UNREADABLE", "NO_SOUND_TRACK", "NOTHING_HEARD", "RECORDING_FAILED", "SCORE_FAILED", "TOO_LARGE", "OPEN_FAILED")
         val problems = screen!!.readLines().filter { line -> reachable.any { line.trimStart().startsWith("Problem.$it to") } }
             .flatMap { Regex("""R\.string\.([a-z0-9_]+)""").findAll(it).map { m -> m.groupValues[1] } }.toSet() + "details_show"
         assertTrue(problems.containsAll(setOf("problem_file_body", "problem_record_body")))

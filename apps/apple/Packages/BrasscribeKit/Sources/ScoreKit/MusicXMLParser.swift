@@ -100,7 +100,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
         var trill = false, trillAccidental: String?, staccato = false
         var instrument: String?
     }
-    struct RawMeasure { var number = "", start = 0, maxPos = 0, beats = 4, beatType = 4, fifths = 0 }
+    struct RawMeasure { var number = "", start = 0, maxPos = 0, beats = 4, beatType = 4, fifths = 0, implicit = false }
 
     var error: MusicXMLError?
     var title = "", movementTitle = ""
@@ -162,7 +162,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
             mark = Dynamics.defaultMark; openWedges = [:]
         case "measure":
             measureIndex += 1
-            measure = RawMeasure(number: a["number"] ?? "\(measureIndex + 1)", start: partTick)
+            measure = RawMeasure(number: a["number"] ?? "\(measureIndex + 1)", start: partTick, implicit: a["implicit"] == "yes")
             pos = 0; lastNoteStart = 0
         case "note":
             note = RawNote()
@@ -400,7 +400,7 @@ private final class Delegate: NSObject, XMLParserDelegate {
             let next = i + 1 < raw.count ? raw[i + 1].start : nil
             let len = next.map { $0 - m.start } ?? (m.beats * Score.ticksPerQuarter * 4 / max(1, m.beatType))
             measures.append(Measure(number: m.number, startTick: m.start, lengthTicks: len,
-                                    beats: m.beats, beatType: m.beatType, fifths: m.fifths))
+                                    beats: m.beats, beatType: m.beatType, fifths: m.fifths, implicit: m.implicit))
         }
         if let last = measures.last, let lastEnd = partNotes.values.flatMap({ $0 }).map(\.endTick).max(),
            lastEnd > last.startTick + last.lengthTicks {

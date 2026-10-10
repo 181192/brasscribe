@@ -9,7 +9,7 @@ import { Navigator, type Stop } from "../lib/navigator";
 import { SharedSynth, type ApiLike } from "../lib/sharedsynth";
 import { soundFontBytes } from "../lib/soundfontstore";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, percussionKits, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
-import type { PitchMode, Verbosity } from "../lib/talking";
+import { PICKUP_BAR, type PitchMode, type Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
 import { announce, clear, h, menu, nextId, onPanelHidden, prefersReducedMotion } from "../ui/dom";
 import { icon } from "../ui/icons";
@@ -862,7 +862,7 @@ export class ScoreElement extends HTMLElement {
         const here = mark === `${bi}:${ei}`;
         return h("li", { tabindex: -1, "aria-current": here ? "true" : null, class: here ? "current" : null }, s);
       });
-      return h("section", {}, h("h4", {}, `${t("score.bar")} ${b.number}`), h("ul", {}, li));
+      return h("section", {}, h("h4", {}, b.number === PICKUP_BAR ? t("score.pickup") : `${t("score.bar")} ${b.number}`), h("ul", {}, li));
     });
     clear(this.talkText, h("h3", {}, t("score.textPart", { name })), items);
     this.talkText.querySelector<HTMLElement>("[aria-current=true]")?.scrollIntoView({ block: "nearest" });
