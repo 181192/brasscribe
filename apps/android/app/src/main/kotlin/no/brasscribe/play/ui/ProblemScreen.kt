@@ -80,9 +80,11 @@ fun ProblemScreen(vm: PlayViewModel) {
         PrimaryButton(stringResource(R.string.problem_connect_computer), { vm.navigate(no.brasscribe.play.Screen.COMPANION) }, primary, icon = R.drawable.ic_bc_computer)
     }
 
+    // Trying to open the score again says so when there is no computer to ask.
+    val status by vm.status.collectAsState()
     PlayScaffold(
         title = null, onBack = { if (draft) vm.back() else vm.home() },
-        backLabel = stringResource(if (draft) R.string.back else R.string.home), status = null,
+        backLabel = stringResource(if (draft) R.string.back else R.string.home), status = status.takeIf { p == Problem.OPEN_FAILED },
         bottom = {
             when (p) {
                 Problem.DRAFT_REFUSED -> {
