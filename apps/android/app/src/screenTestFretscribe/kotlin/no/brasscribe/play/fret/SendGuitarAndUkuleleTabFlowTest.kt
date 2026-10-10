@@ -447,13 +447,13 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
     fun aGuitarAUkuleleAndAMandolinAreRefusedBeforeAnythingIsSentToAComputerThatIsTooOld() {
         val words = mapOf(
             "en-GB" to mapOf(
-                FrettedInstrument.GUITAR_6 to "Fretscribe on your computer is too old to write guitar tabs. Update it there.",
-                FrettedInstrument.UKULELE to "Fretscribe on your computer is too old to write ukulele tabs. Update it there.",
-                FrettedInstrument.MANDOLIN to "Fretscribe on your computer is too old to write mandolin tabs. Update it there."),
+                FrettedInstrument.GUITAR_6 to "Bandroom on your computer is too old to write guitar tabs. Update it there.",
+                FrettedInstrument.UKULELE to "Bandroom on your computer is too old to write ukulele tabs. Update it there.",
+                FrettedInstrument.MANDOLIN to "Bandroom on your computer is too old to write mandolin tabs. Update it there."),
             "nb-NO" to mapOf(
-                FrettedInstrument.GUITAR_6 to "Fretscribe på datamaskinen er for gammel til å skrive gitartab. Oppdater den der.",
-                FrettedInstrument.UKULELE to "Fretscribe på datamaskinen er for gammel til å skrive ukuleletab. Oppdater den der.",
-                FrettedInstrument.MANDOLIN to "Fretscribe på datamaskinen er for gammel til å skrive mandolintab. Oppdater den der."),
+                FrettedInstrument.GUITAR_6 to "Bandroom på datamaskinen er for gammel til å skrive gitartab. Oppdater den der.",
+                FrettedInstrument.UKULELE to "Bandroom på datamaskinen er for gammel til å skrive ukuleletab. Oppdater den der.",
+                FrettedInstrument.MANDOLIN to "Bandroom på datamaskinen er for gammel til å skrive mandolintab. Oppdater den der."),
         )
         for ((lang, said) in words) {
             language(lang)
@@ -528,7 +528,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
         assertEquals(listOf(Screen.HOME, Screen.PROFILE), vm.screen.value)
         // The computer answers: it is too old. The line changes where a screen reader is told of it, and the button says why.
         answer.countDown()
-        val why = "Fretscribe on your computer is too old to write guitar tabs. Update it there."
+        val why = "Bandroom on your computer is too old to write guitar tabs. Update it there."
         waitUntil(10_000) { rule.onAllNodesWithText(why).fetchSemanticsNodes().isNotEmpty() }
         val line = rule.onNodeWithTag("fs-what-missing").assert(hasText(why)).fetchSemanticsNode()
         assertEquals(androidx.compose.ui.semantics.LiveRegionMode.Polite, line.config.getOrNull(SemanticsProperties.LiveRegion))
