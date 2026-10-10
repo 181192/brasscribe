@@ -22,7 +22,10 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onSizeChanged
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -86,6 +89,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -278,6 +282,73 @@ fun TabScreen(vm: PlayViewModel) {
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
     var canZoomIn by remember { mutableStateOf(true) }
+    // The note about a mark, under the tab and the player. It is laid out after them in the body, not as the scaffold's
+    // bottom bar: the keyboard's Tab follows the layout, and a scaffold's bars come before its content (WCAG 2.4.3).
+    val noteShown = told?.let { s?.marks?.columns?.getOrNull(it) } != null
+    val noteUnderTheTab: @Composable () -> Unit = {
+    val at = told
+    val column = at?.let { s?.marks?.columns?.getOrNull(it) }
+    if (at != null && column != null) Column(Modifier.fillMaxWidth().background(c.bg).navigationBarsPadding()) {
+        HorizontalDivider(thickness = 1.dp, color = c.border)
+        // Until a note can be fixed here: listen to its bar slowly, and go on to the next "?". Next ? stays at the last
+        // one, off and saying so, so the keyboard's focus is not lost (as the player's Next bar does).
+        val next = doubts.firstOrNull { it > at }
+        val showNext = next != null || doubts.size > 1
+        val slowly = stringResource(R.string.fs_tab_note_slowly)
+        val nextName = stringResource(R.string.fs_tab_note_next_name)
+        val lastState = stringResource(R.string.fs_tab_note_last)
+        // The note is read first, then what can be done about it, which is several keys away.
+        val then = listOfNotNull(slowly.takeIf { canPlay }, nextName.takeIf { next != null }).takeIf { it.isNotEmpty() }
+            ?.let { stringResource(R.string.fs_tab_note_actions, it.joinToString(", ")) }
+        val words = TabWords.describe(resources, column, currentLang() == no.brasscribe.play.model.Lang.NB)
+        val note: @Composable (Modifier) -> Unit = { m ->
+            // In one row the words are a size smaller: the tab keeps the room for a whole column of it.
+            Text(words, style = if (noteInOneRow) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge, color = c.text,
+                modifier = m.testTag("fs-tab-note").semantics { liveRegion = LiveRegionMode.Polite; if (then != null) contentDescription = "$words $then" })
+        }
+        val nextButton: @Composable () -> Unit = {
+            TextButton({ next?.let(::showMark) }, Modifier.heightIn(min = 48.dp).testTag("fs-tab-note-next").semantics {
+                contentDescription = nextName
+                if (next == null) { disabled(); stateDescription = lastState }
+            }, shape = BrasscribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = if (next == null) c.text.copy(alpha = 0.38f) else c.text)) {
+                Text(stringResource(R.string.fs_tab_note_next), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
+            }
+        }
+        val close: @Composable () -> Unit = {
+            IconButton({ told = null }, Modifier.size(48.dp).testTag("fs-tab-note-close")) { BcIcon(R.drawable.ic_bc_close, stringResource(R.string.fs_tab_note_close)) }
+        }
+        if (noteInOneRow) {
+            // Low on height (a phone on its side): one row, Play this bar slowly as an icon that keeps its name.
+            Row(
+                Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+            ) {
+                note(Modifier.weight(1f))
+                if (canPlay) IconButton({ practice.playBarSlowly(column.bar) }, Modifier.size(48.dp).testTag("fs-tab-note-slowly")) {
+                    BcIcon(R.drawable.ic_bc_play, slowly)
+                }
+                if (showNext) nextButton()
+                close()
+            }
+        } else {
+            Row(
+                Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1, top = BrasscribeSpace.s2),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+            ) {
+                note(Modifier.weight(1f))
+                close()
+            }
+            FlowRow(
+                Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s2),
+                horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+            ) {
+                if (canPlay) OutlineButton(slowly, { practice.playBarSlowly(column.bar) },
+                    Modifier.testTag("fs-tab-note-slowly"), icon = R.drawable.ic_bc_play, fill = false)
+                if (showNext) nextButton()
+            }
+        }
+    }
+    }
     Scaffold(
         // Space plays and pauses from anywhere on the screen, unless a button in focus takes it as its own press.
         modifier = Modifier.onKeyEvent {
@@ -296,70 +367,6 @@ fun TabScreen(vm: PlayViewModel) {
                 IconButton({ set((zoom + BrasscribeScore.zoomStep).coerceAtMost(BrasscribeScore.zoomMax)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-in"),
                     enabled = zoom < BrasscribeScore.zoomMax && canZoomIn) {
                     BcIcon(R.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in) + ". " + percent)
-                }
-            }
-        },
-        bottomBar = {
-            val at = told
-            val column = at?.let { s?.marks?.columns?.getOrNull(it) }
-            if (at != null && column != null) Column(Modifier.fillMaxWidth().background(c.bg).navigationBarsPadding()) {
-                HorizontalDivider(thickness = 1.dp, color = c.border)
-                // Until a note can be fixed here: listen to its bar slowly, and go on to the next "?". Next ? stays at the last
-                // one, off and saying so, so the keyboard's focus is not lost (as the player's Next bar does).
-                val next = doubts.firstOrNull { it > at }
-                val showNext = next != null || doubts.size > 1
-                val slowly = stringResource(R.string.fs_tab_note_slowly)
-                val nextName = stringResource(R.string.fs_tab_note_next_name)
-                val lastState = stringResource(R.string.fs_tab_note_last)
-                // The note is read first, then what can be done about it, which is several keys away.
-                val then = listOfNotNull(slowly.takeIf { canPlay }, nextName.takeIf { next != null }).takeIf { it.isNotEmpty() }
-                    ?.let { stringResource(R.string.fs_tab_note_actions, it.joinToString(", ")) }
-                val words = TabWords.describe(resources, column, currentLang() == no.brasscribe.play.model.Lang.NB)
-                val note: @Composable (Modifier) -> Unit = { m ->
-                    // In one row the words are a size smaller: the tab keeps the room for a whole column of it.
-                    Text(words, style = if (noteInOneRow) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge, color = c.text,
-                        modifier = m.testTag("fs-tab-note").semantics { liveRegion = LiveRegionMode.Polite; if (then != null) contentDescription = "$words $then" })
-                }
-                val nextButton: @Composable () -> Unit = {
-                    TextButton({ next?.let(::showMark) }, Modifier.heightIn(min = 48.dp).testTag("fs-tab-note-next").semantics {
-                        contentDescription = nextName
-                        if (next == null) { disabled(); stateDescription = lastState }
-                    }, shape = BrasscribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = if (next == null) c.text.copy(alpha = 0.38f) else c.text)) {
-                        Text(stringResource(R.string.fs_tab_note_next), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
-                    }
-                }
-                val close: @Composable () -> Unit = {
-                    IconButton({ told = null }, Modifier.size(48.dp).testTag("fs-tab-note-close")) { BcIcon(R.drawable.ic_bc_close, stringResource(R.string.fs_tab_note_close)) }
-                }
-                if (noteInOneRow) {
-                    // Low on height (a phone on its side): one row, Play this bar slowly as an icon that keeps its name.
-                    Row(
-                        Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
-                    ) {
-                        note(Modifier.weight(1f))
-                        if (canPlay) IconButton({ practice.playBarSlowly(column.bar) }, Modifier.size(48.dp).testTag("fs-tab-note-slowly")) {
-                            BcIcon(R.drawable.ic_bc_play, slowly)
-                        }
-                        if (showNext) nextButton()
-                        close()
-                    }
-                } else {
-                    Row(
-                        Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1, top = BrasscribeSpace.s2),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
-                    ) {
-                        note(Modifier.weight(1f))
-                        close()
-                    }
-                    FlowRow(
-                        Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s2),
-                        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
-                    ) {
-                        if (canPlay) OutlineButton(slowly, { practice.playBarSlowly(column.bar) },
-                            Modifier.testTag("fs-tab-note-slowly"), icon = R.drawable.ic_bc_play, fill = false)
-                        if (showNext) nextButton()
-                    }
                 }
             }
         },
@@ -392,7 +399,12 @@ fun TabScreen(vm: PlayViewModel) {
             }
             return true
         }
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding).onKeyEvent { it.type == KeyEventType.KeyDown && (page(it.key) || bar(it.key)) }
+        // The note takes the room at the bottom when it is there, and keeps clear of the navigation bar itself.
+        val direction = LocalLayoutDirection.current
+        val around = PaddingValues(top = padding.calculateTopPadding(), start = padding.calculateStartPadding(direction),
+            end = padding.calculateEndPadding(direction), bottom = if (noteShown) 0.dp else padding.calculateBottomPadding())
+        Column(Modifier.fillMaxSize().padding(around)) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().onKeyEvent { it.type == KeyEventType.KeyDown && (page(it.key) || bar(it.key)) }
             .focusRequester(keys).onFocusChanged { screenFocused = it.isFocused }.focusable()) {
             if (s == null) {
                 Column(Modifier.padding(horizontal = BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
@@ -640,6 +652,8 @@ fun TabScreen(vm: PlayViewModel) {
                         onFetch = { vm.container.engine()?.let(practice::fetch) })
                 }
             }
+        }
+        noteUnderTheTab()
         }
     }
 }
