@@ -14,7 +14,7 @@ It replaces the "split the core" and "open decisions" sections of `docs/fretscri
 | Versions | Each app has its own version, tag and release. A change that does not reach an app does not build or release it. |
 | Names on the wire (pairing link, network service) | Neutral, in the "scribe" family, shared by all apps. The old names are dropped in the same change. |
 | Compatibility | None before 1.0.0. Every part targets the latest of every other part. No code that exists only to keep an older app, engine, file or name working. After 1.0.0 a breaking change needs a new major version. |
-| Devices | The newest release of each operating system and the one before it. Nothing older. Code that exists only for an older system is removed. |
+| Devices | The newest release of each operating system and the one before it; on Windows, Windows 11. Nothing older. Code that exists only for an older system is removed. |
 | How much the clients share | Logic is shared. Looks are not assumed to be. Each product owns its screens and can differ in layout, navigation and experience, not only in colour. |
 | What Fretscribe is to become | Everything in `docs/fretscribe/plan/android-app.md`'s roadmap and `design/fretscribe/flows.md`, on each of its clients. This is the scope to reach, not a version number: Fretscribe is released early and often on the way there. |
 | Clients of an app | Android, Mac, Windows, and an unsigned test build for iPhone and iPad (there is no Apple Developer account). Studio and Bandroom are not clients of one app: they serve all of them. |
@@ -64,7 +64,10 @@ docs/
   shared/                 was docs/{dev,research,accessibility} and this plan
   brasscribe/             was the Brasscribe plans in docs/plan
   fretscribe/             stays
+  songs/                  stays
 ```
+
+`docs/` moves in one pull request once step 3 is in, since step 3 changes many of the paths the documents name.
 
 ## Versions and releases
 
@@ -95,13 +98,13 @@ A pull request that renames a library, a package or a file the release builds na
 | # | Step | Needs |
 |---|---|---|
 | 1 | **Fretscribe for Android gets a release build**, signed with the prototypes key, without what only Brasscribe uses. | — |
-| 2 | **Core split.** Brass code leaves the core for the crate `target-brass`. The compiler, not a test, keeps targets apart. No renames. Every conformance vector, golden and benchmark stays byte for byte the same. | — |
+| 2 | **Core split.** Brass code leaves the core for the crate `target-brass`. Where a module is part neutral and part brass (writing MusicXML, the talking score, the pipeline), the neutral part stays in the core behind a small interface that a target fills in: what an instrument is, and what a target does with the notes. The compiler, not a test, keeps targets apart. No renames. Every conformance vector, golden and benchmark stays byte for byte the same. | — |
 | 3 | **Core rename, in one pull request.** The crates and their folders, the library and the bindings the clients load, the command line tool and the core's environment variables take "scribe" names. No old name is kept. The name the core writes into its files changes too, so the goldens and fixtures that carry it are made again in the same pull request, and nothing else in them may differ. | 2 |
-| 4 | **Design system for any brand on every platform.** Fretscribe's tokens are generated for Apple, Windows and the web. | — |
+| 4 | **Design system for any brand on every platform.** Fretscribe's tokens are generated for Apple, Windows and the web. Then `design/` moves to the layout above, in a pull request of its own. | — |
 | 5 | **An unsigned iPhone and iPad build** in the release. | — |
 | 6 | **Device floors raised** on every platform, with the old systems' code removed. | 1, 5 |
-| 7 | **The engine and the wire, in one release of everything.** A target is a first-class thing in the engine: profiles belong to a target, and output file names come from the target instead of being written as `brass-band.*` in shared code. The Python packages and the command take "scribe" names. The pairing link and the network service take theirs. The interface version number is added. Every client changes in the same pull requests. After this release an older app has to be updated and paired again. | 3 |
-| 8 | **Android restructure.** Services, features and products become modules. Fretscribe's code leaves the `no.brasscribe.play` package. Each product has its own complete words. The `Product` object with call sites all over shared code becomes what each product's module wires together. CI runs one product when only that product changed. | 1, 3, 6 |
+| 7 | **The engine and the wire, in one release of everything.** A target is a first-class thing in the engine: profiles belong to a target, and output file names come from the target instead of being written as `brass-band.*` in shared code. The Python packages (`brasscribe_engine`, `brasscribe_music`, `brasscribe_eval`) and the engine's command (`brasscribe`) take "scribe" names. Benchmarks gate per target. The pairing link and the network service take theirs. The interface version number is added. Every client changes in the same pull requests. After this release an older app has to be updated and paired again. | 3 |
+| 8 | **Android restructure.** Services, features and products become modules. Fretscribe's code leaves the `no.brasscribe.play` package. Each product has its own complete words. The `Product` object with call sites all over shared code becomes what each product's module wires together. CI runs one product when only that product changed. | 1, 3, 6, 7 |
 | 9 | **Windows.** The same three levels, then Fretscribe for Windows. Windows already draws with alphaTab. | 4, 7 |
 | 10 | **Apple.** The same three levels, then a decision on how tab is drawn (Apple has no tab renderer today), then Fretscribe for Mac, iPhone and iPad. | 4, 5, 7 |
 | 11 | **Versions per app.** Tags, changelogs, release workflows and release notes per product. The same pull requests change everything the tag reaches: the `release` environment's tag rule (the owner's to change), the release workflow's tag pattern and its look-up of the previous tag, `scripts/release.sh`, how the phone's updater reads a version from a tag, and every download link on the site and in the READMEs, which today point at "the latest release" and would then point at whichever app released last. | 8, 9, 10 |
