@@ -83,7 +83,7 @@ done
 
 # The new version must be higher than the current one.
 gradle=apps/android/app/build.gradle.kts
-# Brasscribe's version is the one in defaultConfig; a product flavour with its own version keeps it.
+# The version in defaultConfig is Brasscribe's, and Fretscribe's while it is released with it.
 default_config='/^ *defaultConfig \{/,/^ *\}/'
 current=$(sed -nE "$default_config"' s/^ *versionName = "([^"]+)".*/\1/p' "$gradle")
 [[ $current =~ $semver ]] || die "can't read the current version from $gradle (got '$current')"
