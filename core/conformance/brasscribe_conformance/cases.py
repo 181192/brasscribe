@@ -147,21 +147,33 @@ def missing_inputs(song: Path) -> tuple[str, ...]:
     return tuple(n for n in ARRANGE_INPUTS if not (song / n).exists())
 
 
-def skipped_lines(skipped: dict[str, list[tuple[str, tuple[str, ...]]]]) -> list[str]:
-    """One line per eval set with songs left out: how many, and the files they lack."""
-    lines = []
-    for name, songs in sorted(skipped.items()):
-        lacking = sorted({n for _, miss in songs for n in miss}, key=ARRANGE_INPUTS.index)
-        lines.append(f"SKIP {name}: {len(songs)} song{'' if len(songs) == 1 else 's'} without {', '.join(lacking)}: "
-                     f"not arranged, so not compared")
-    return lines
+def is_arranged(songs: list[Path]) -> bool:
+    """An eval set is one that is arranged when any of its songs has any of ARRANGE_INPUTS. In such a set a
+    song that lacks one is a broken input, not a song to leave out."""
+    return any(len(missing_inputs(s)) < len(ARRANGE_INPUTS) for s in songs)
 
 
-def all_cases(work: Path, only: str | None = None,
-              skipped: dict[str, list[tuple[str, tuple[str, ...]]]] | None = None) -> list[Case]:
-    """Every case, or those whose id contains `only`. An eval song without the files it is arranged from gives
-    no arranging cases: it is added to `skipped` (eval set -> [(song, missing files)]) instead, under the same
-    `only` filter."""
+def missing_files(case: Case) -> list[str]:
+    """The input files a case reads that are not there."""
+    a = case.args
+    paths = [a.get(k) for k in ("beats", "melody", "support", "bass", "reference")] + list(a.get("harmony", []))
+    names = [p.name for p in paths if isinstance(p, Path) and not p.exists()]
+    if "song" in a:
+        names += missing_inputs(a["song"])
+    return list(dict.fromkeys(names))
+
+
+def skipped_lines(skipped: dict[str, list[str]]) -> list[str]:
+    """One line per eval set left out: how many songs, and what none of them has."""
+    return [f"SKIP {name}: {len(songs)} song{'' if len(songs) == 1 else 's'}, none with {', '.join(ARRANGE_INPUTS)}: "
+            f"not arranged, so not compared" for name, songs in sorted(skipped.items())]
+
+
+def all_cases(work: Path, only: str | None = None, skipped: dict[str, list[str]] | None = None) -> list[Case]:
+    """Every case, or those whose id contains `only`. An eval set in which no song has any of the files a song is
+    arranged from (a tab set) gives no arranging cases: its songs are added to `skipped` (eval set -> songs)
+    instead, under the same `only` filter. In every other set a song that lacks a file keeps its cases, and
+    they fail (`missing_files`)."""
     mikkel = {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
               **({"contour": c} if (c := mikkel_contour()) else {})}
     # Checked-in scores (compound time: no arranged input is), first since they need no data/: only their
@@ -174,14 +186,15 @@ def all_cases(work: Path, only: str | None = None,
         cases.append(Case(f"mikkel/{stage}", "layers", {**mikkel, "options": options}, golden=variant_golden(stage)))
     eval_sets = sorted(p for p in (DATA / "eval").iterdir() if p.is_dir()) if (DATA / "eval").is_dir() else []
     for eval_set in eval_sets:
-        for song in sorted(p for p in eval_set.iterdir() if (p / "reference.json").exists()):
+        songs = sorted(p for p in eval_set.iterdir() if (p / "reference.json").exists())
+        arranged = is_arranged(songs)
+        for song in songs:
             base = f"{eval_set.name}/{song.name}"
             beats = song / "beat-this.beats"
             mus, bp = song / "muscriptor-medium.mid", song / "basic-pitch.mid"
-            missing = missing_inputs(song)
-            if missing and skipped is not None and (only is None or only in base):
-                skipped.setdefault(eval_set.name, []).append((song.name, missing))
-            if not missing:
+            if not arranged and skipped is not None and (only is None or only in base or only.startswith(base + "/")):
+                skipped.setdefault(eval_set.name, []).append(song.name)
+            if arranged:
                 cases.append(Case(f"{base}/song", "song", {"beats": beats, "melody": mus, "support": bp, "bass": mus,
                                                            "harmony": [mus, bp], "title": song.name}))
                 cases.append(Case(f"{base}/lead", "lead", {"beats": beats, "melody": mus, "support": bp, "bass": mus,
@@ -196,7 +209,7 @@ def all_cases(work: Path, only: str | None = None,
                 cases.append(Case(f"{base}/bench", "bench", {"reference": song / "reference.json", "title": song.name}))
                 if eval_set.name in QUARTET_SETS:
                     cases.append(Case(f"{base}/bench-quartet", "bench", {**cases[-1].args, "options": QUARTET}))
-                if beats.exists():
+                if arranged:
                     cases.append(Case(f"{base}/quant", "quant", {"reference": song / "reference.json", "beats": beats}))
     # Solo takes written for a seat (the frozen ChoraleBricks stems of eval/fixtures/choralebricks-solo): one stem
     # per low or middle brass instrument, with no seat, with its seat and, where the seat offers it, in bass clef.
@@ -269,7 +282,7 @@ def all_cases(work: Path, only: str | None = None,
     # small0 on the part's own recording): meter_of alone, and the layered song with that part's beats.
     solo = DATA / "runs" / "music-core" / "solo-beats"
     eval_songs = {s.name: s for es in eval_sets for s in es.iterdir()
-                  if (s / "reference.json").exists() and not missing_inputs(s)}
+                  if (s / "reference.json").exists() and len(missing_inputs(s)) < len(ARRANGE_INPUTS)}
     for song in sorted(solo.glob("*/*")) if solo.exists() else []:
         if not (song / "reference.json").exists():
             continue

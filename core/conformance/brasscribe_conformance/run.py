@@ -10,9 +10,11 @@ canonicalisation (see canon.py), including the split parts. Each run starts
 from an empty <case>/rust, and the reference from an empty <case>/py. The
 Mikkel case is also compared file by file against the golden output in
 data/golden/mikkel-arranged-band; a case whose golden output is missing fails.
-A run that selects no cases fails too. An eval song without the files it is
-arranged from (cases.ARRANGE_INPUTS; the tab sets have none) is skipped and
-named in a SKIP line, never compared and never a failure. With --musescore every Rust score
+A run that selects no cases fails too. An eval set in which no song has any of
+the files a song is arranged from (cases.ARRANGE_INPUTS: the tab sets) is
+skipped and named in a SKIP line, never compared and never a failure; --report
+lists its songs. In any other set a case whose input file is missing fails,
+and the run goes on. With --musescore every Rust score
 and lead sheet is round-tripped through MuseScore in one batched launch.
 """
 
@@ -30,7 +32,7 @@ from pathlib import Path
 
 from . import extras
 from .canon import json_equal, musicxml_equal
-from .cases import REPO, Case, all_cases, skipped_lines, synth_layers
+from .cases import ARRANGE_INPUTS, REPO, Case, all_cases, missing_files, skipped_lines, synth_layers
 
 CORE = REPO / "core"
 OUTPUTS = {"layers": ["composition.json", "brass-band.musicxml"], "song": ["composition.json", "brass-band.musicxml"],
@@ -171,7 +173,7 @@ def main() -> None:
     ap.add_argument("--report", type=Path)
     ap.add_argument("--no-extras", action="store_true", help="skip the talking-score and humanize checks")
     args = ap.parse_args()
-    skipped: dict[str, list[tuple[str, tuple[str, ...]]]] = {}
+    skipped: dict[str, list[str]] = {}
     cases = all_cases(args.work, args.only, skipped)
     skips = skipped_lines(skipped)
     for line in skips:
@@ -195,6 +197,13 @@ def main() -> None:
             t_py = t_rs = time.time() - t0
             results.append(_entry(args, case, d, rows, t_py, t_rs))
             _print(case, rows, t_py, t_rs)
+            continue
+        missing = missing_files(case)
+        if missing:
+            # A broken input fails its case; it does not stop the cases after it.
+            rows = [("inputs", False, f"missing: {', '.join(missing)}")]
+            results.append(_entry(args, case, d, rows, 0.0, 0.0))
+            _print(case, rows, 0.0, 0.0)
             continue
         if case.kind == "layers" and "song" in case.args:
             synth_layers(case.args["song"], case.args["layers"])
@@ -247,7 +256,7 @@ def main() -> None:
         n_ok = sum(r["ok"] for r in results)
         print(f"\ncases identical: {n_ok}/{len(results)}; files identical: {sum(c['ok'] for c in files)}/{len(files)}")
         if skips:
-            print(f"eval songs skipped for missing inputs: {sum(len(v) for v in skipped.values())} "
+            print(f"eval songs skipped, in sets that are not arranged: {sum(len(v) for v in skipped.values())} "
                   f"({', '.join(sorted(skipped))})")
         gold = [c for r in results for c in r["checks"] if c["file"].startswith("golden:")]
         if gold:
@@ -258,7 +267,9 @@ def main() -> None:
                   f"sounding pitches match {sum(m['pitches_match'] for m in ms)}/{len(ms)}")
         report = write_report(args.work, results)
         if args.report:
-            args.report.write_text(json.dumps(results, indent=1))
+            left_out = [{"case": f"{name}/{song}", "skipped": True, "detail": f"none of {', '.join(ARRANGE_INPUTS)} in {name}"}
+                        for name, songs in sorted(skipped.items()) for song in songs]
+            args.report.write_text(json.dumps(results + left_out, indent=1))
         print(f"report: {report}")
         sys.exit(0 if n_ok == len(results) else 1)
 
