@@ -95,8 +95,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("how-should-the-score-be") { checkTheNotes(); go(Screen.OUTPUT) },
         Entry("score", notReached = setOf(Control("Solo Cornet (you)", Role.Button), Control("Music stand", Role.Button)) /* issue 174 */) { theScore() },
         Entry("score-more") { theScore(); more(); rest() },
-        Entry("music-stand", ownOrder = "the stand's controls are three groups side by side, and the keyboard takes the transport first",
-            notReached = setOf(Control("Leave the music stand", Role.Button)) /* reached, but its focus is not in its semantics: issue 175 */) {
+        Entry("music-stand", ownOrder = "the stand's controls are three groups side by side, and the keyboard takes the transport first") {
             theScore()
             // (From the sheet of what the row has no room for: it always has the stand.)
             more()
