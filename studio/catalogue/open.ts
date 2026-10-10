@@ -144,14 +144,24 @@ export async function stableScreenshot(page: Page, path: string): Promise<void> 
     await document.fonts.ready;
     return Array.from(document.fonts).every((f) => f.status !== "loading");
   }, undefined, { timeout: 10_000 });
+  // A picture of the whole page reaches beyond the window, and on Linux the browser makes the window 1 × 1 px for
+  // a moment while it takes one. alphaTab watches the width of the score: at times it caught the window on its way
+  // back (the page at its full width, still with the narrow window's margins) and laid the score out again, for
+  // that width and then for the real one. A score laid out again after a resize does not get the widths its first
+  // engraving gave it (a first bar 247.57 px wide where it was 248; the same happens when a reader resizes the
+  // window), so the same score came out a fraction of a pixel different from one page load to the next (#218).
+  // While the pictures are taken, a score keeps the engraving it has.
+  await page.evaluate(() => {
+    for (const s of Array.from(document.querySelectorAll("bs-score"))) {
+      const api = (s as unknown as { api?: { triggerResize(): void } }).api;
+      if (api) api.triggerResize = () => undefined;
+    }
+  });
   const take = async () => {
     await fonts();
     await scrolls();
     const before = await where();
-    // The engraved score is masked (its scrolling box, which clips it): alphaTab lays out its first bar a pixel wider or narrower from one page load to
-    // the next on Linux (#218). Studio's own parts of a score view (the toolbar, the status, the checks) are compared; the
-    // score keeps its accessibility, cut-off and keyboard checks.
-    const png = await page.screenshot({ fullPage: true, animations: "disabled", caret: "hide", mask: [page.locator("bs-score .score-view")], maskColor: "#8a8a8a" });
+    const png = await page.screenshot({ fullPage: true, animations: "disabled", caret: "hide" });
     return { png, still: before === (await where()) && before === "0 0" };
   };
   let last = await take();
