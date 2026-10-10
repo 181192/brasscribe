@@ -122,7 +122,10 @@ class SoloStraightToScoreTest : ScreenTest() {
         waitUntil(5_000) { vm.screen.value.last() == Screen.OUTPUT }
         rule.runOnUiThread { vm.back() }
         waitUntil(5_000) { vm.screen.value.last() == Screen.SCORE }
-        rule.onAllNodesWithText(text(R.string.stand_part_yours, PartNames.display(st.parts[yours!!])), substring = true).onFirst().performClick()
+        // The score is read again on the way back: the chip says whose part it is only once that is done.
+        val yourPart = text(R.string.stand_part_yours, PartNames.display(st.parts[yours!!]))
+        waitUntil(30_000) { rule.onAllNodesWithText(yourPart, substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onAllNodesWithText(yourPart, substring = true).onFirst().performClick()
         waitUntil(5_000) { rule.onAllNodesWithTag("change-output").fetchSemanticsNodes().isNotEmpty() }
         rule.waitForIdle()
         rule.onNodeWithTag("change-output").performScrollTo().performClick()
