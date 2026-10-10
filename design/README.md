@@ -29,7 +29,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 uv run design/tokens/build.py            # regenerate design/dist and docs/accessibility/design-tokens.json
 uv run design/tokens/build.py --check    # CI: exit 1 if anything is stale
 uv run --with pytest pytest design/tokens
-uv run qa/tools/contrast.py --tokens design/tokens/tokens.json   # 72 pairs x 6 modes, exit 1 on failure
+uv run qa/tools/contrast.py --tokens design/tokens/tokens.json   # 74 pairs x 6 modes, exit 1 on failure
 uv run design/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
 node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
 ```
@@ -42,7 +42,7 @@ uv run qa/tools/contrast.py --tokens design/fretscribe/tokens/tokens.json
 uv run design/fretscribe/brand/build.py  # Fretscribe's Android launcher icon (needs rsvg-convert)
 ```
 
-**Contrast:** all 432 pairs pass (72 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
+**Contrast:** all 444 pairs pass (74 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
 
 **Accessibility compatibility:**
 - `docs/accessibility/design-tokens.json` is generated from these tokens in its existing shape. The score hues are unchanged; the neutrals are warmer.

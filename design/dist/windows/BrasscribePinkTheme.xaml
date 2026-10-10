@@ -29,7 +29,7 @@
             <Color x:Key="BcInkColor">#FF121110</Color>
             <Color x:Key="BcStaffColor">#FF57534B</Color>
             <Color x:Key="BcUncertainColor">#FF0063A6</Color>
-            <Color x:Key="BcVeryUncertainColor">#FFB04A00</Color>
+            <Color x:Key="BcVeryUncertainColor">#FFA04300</Color>
             <Color x:Key="BcAdlibTintColor">#FFF6E8EE</Color>
             <Color x:Key="BcLoopTintColor">#FFFFF3D6</Color>
             <Color x:Key="BcLoopEdgeColor">#FF8A5A00</Color>
