@@ -88,12 +88,14 @@ larger gain is the queue: it goes away when macOS use falls by more than half.
 ## Two tiers
 
 **What a pull request waits for:** the compile and unit tests of the products the change reaches, and each
-product's screen catalogue with its checks.
+product's screen catalogue with its checks, run once on the pull request's own build.
 
 **What it does not wait for:**
 
 - after merge, on `main`: every job, for every product. Runs there are not cancelled; merges that land while
   one is running are checked together by the next;
+- after that run: its screenshots compared with those of the `main` before it (`screens.yml`), and an issue
+  for each platform whose screens changed;
 - every night, and by hand before a release: the iPhone simulator app's unit and UI tests (`nightly.yml`);
 - the release run on a tag: every check again, then the release builds.
 
@@ -104,6 +106,7 @@ What each move costs:
 | iPhone simulator tests at night | a fault that only shows on iOS (a sheet, a flow, the accessibility audit there) reaches `main` and is found within a day; the nightly issue has to be looked at. The app and its tests are still compiled for iOS on every pull request |
 | `main` not cancelled | a merge waits for the run before it, so its result comes later; of several waiting, only the newest runs |
 | a release pull request starts no platform job | none found: the lines it may change are checked one by one, and the tag's run checks everything before anything is built |
+| screenshots compared after the merge | a change in how a screen looks that breaks no rule (a colour, a spacing, an icon, the engraved notation) is seen after the merge, in a batch of one to a few pull requests, and someone has to look at the issue |
 | `ci.yml` in no filter | an edit that breaks one platform's job shows on the next pull request that reaches that platform, or in a hand-started run |
 
 ## The list, by minutes saved for the work
@@ -114,15 +117,25 @@ Effort: S under a day, M a few days.
 |---|---|---|---|---|
 | 1 | The iPhone simulator unit and UI tests leave pull requests for a nightly run; the simulator build stays | 11 of the Apple Play job's 22.6 | S | done |
 | 2 | Runs on `main` are queued, not cancelled | most of the 132 macOS minutes a day spent on cancelled jobs; the caches from `main` get saved | S | done |
-| 3 | A label event runs again only the jobs that read the label | a whole run each time the label was set (349 job-minutes that day) | S | done |
+| 3 | A label event starts no run (and with row 7 there is no label) | a whole run each time the label was set (349 job-minutes that day) | S | done |
 | 4 | Version-only pull requests and edits to `ci.yml` start no platform job | about 105 job-minutes for each release, about 97 for each workflow edit | S | done |
 | 5 | The Mac catalogue job builds the core for the Mac only, and reads the Play job's Rust cache | 1.5 to 2 of its 2.2 to 2.9 | S | done |
 | 6 | The Android catalogue jobs read the unit test job's Rust cache | two caches fewer; no time | S | done |
-| 7 | No comparison of screenshots with `main` on pull requests | Play for Windows 5.3, Play for Mac 4.6, Bandroom for Mac 4.6, Android and Studio about 1.0 each | S | open |
+| 7 | No comparison of screenshots with `main` on pull requests: each catalogue runs once, with its checks; the pictures are compared on `main` after the merge, from the artefacts of two runs, and nothing waits for that ([verify.md](verify.md#screenshots)) | Play for Windows 5.3, Play for Mac 4.6, Bandroom for Mac 4.6, Android and Studio about 1.0 each (the pull request median less the median on `main`, where no base was taken); no second run to read a label, which about 1 pull request in 6 needed | S | done |
 | 8 | Android as one job graph: one Gradle cache; lint and the debug builds after merge; unit tests in two shards; only the app whose sources changed | 3.0 (lint) and about 2 (shards) of 10.8; 2.7 GB of cache; one catalogue instead of two on single-app changes | M | open |
 | 9 | One macOS job for Play: build for testing once, run the unit tests and the catalogue from it | one of two macOS slots for each Apple pull request, about 3 runner-minutes | M | open |
 | 10 | The Rust core built once for a pull request and handed to the jobs that need it; its tests in the `fast` profile | 0.7 ×3 on Android, about 4 on Apple, 1.1 on Windows, about 3 in the core job | M | open |
 | 11 | The Windows catalogue's four runs on two runners, and one Axe pass instead of two | wall time of the catalogue about halved; more Windows minutes in all | M | open |
+
+What row 7 gave up, and what would buy it back (none of it saves minutes):
+
+| # | Change | Needs | Effort |
+|---|---|---|---|
+| 12 | Mac: a rule that the engraved score is no wider than the column that shows it, and that no control's frame is covered by a panel beside it | the frames and viewports the catalogue's tree already has (`AXNode.viewport`, `isOutOfView`); issue 318 fixed first, or the rule fails on the score as it is | S to M |
+| 13 | Mac, Android, Studio: the screens with engraved notation opened twice in one run, and the two pictures the same | a second host for those screens in each catalogue; about a minute | S to M |
+| 14 | Windows: a table test that every theme brush, looked up from code, has its token's colour in every theme | the catalogue's test host on Windows (theme dictionaries need the running app) | S to M |
+| 15 | The structure of each screen as committed text, so a change shows in the pull request's diff: Compose semantics with bounds on Android, Playwright's ARIA snapshot in Studio, the accessibility tree without frames on the Mac, UI Automation on Windows last | a file for each screen and variant; the same text on a developer's machine and on the runner, which rules out frames on the Mac and geometry in Studio | M for each platform |
+| 16 | The engraved notation as geometry text (bar positions and widths, note heads, the page size for each system) from Verovio's output, checked in the package tests; alphaTab after a look at what it exposes | no screen at all; ids left out, since they are new on every engraving | M |
 
 Looked at and left out: paid or larger runners (make the cuts first; larger hosted runners need an
 organisation), a self-hosted Mac (a public repository's pull requests would run code on it), a hosted

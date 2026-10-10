@@ -516,8 +516,8 @@ jobs:
           if-no-files-found: ignore
 
   # Play and Bandroom for Windows (windows.yml): core tests, the WinUI builds, start-up smoke tests, the Bandroom
-  # engine test and the screen catalogues (their checks, Axe.Windows, Tab), on a Windows runner. On a pull request only for the app the
-  # change reaches; on pushes to main both, which also fills the caches pull requests read. Not on a release
+  # engine test and the screen catalogues (their checks, Axe.Windows, Tab), on a Windows runner. On a pull request
+  # only for the app the change reaches; on pushes to main both, which also fills the caches pull requests read. Not on a release
   # tag: release.yml calls windows.yml itself, for the release builds.
   windows:
     name: Windows
