@@ -1307,7 +1307,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         standFromLibrary.value = opening.standFor
         entry.saved?.let { openSavedScore(it, review); return }
         val jobId = entry.jobId ?: return
-        val engine = container.engine() ?: return
+        // No computer is connected to this phone (it was unpaired since the list was fetched, or since the open failed): said, not a silent Home.
+        val engine = container.engine() ?: run { say(R.string.ready_not_here); return }
         openingScore.value = entry.id
         viewModelScope.launch {
             try {
@@ -1342,6 +1343,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     /** Try again on the problem screen of a score that could not be opened. */
     fun retryOpen() {
         val again = failedOpen ?: return home()
+        // No computer is connected any more: there is nothing to ask. Said on the problem's own screen, which stays.
+        if (container.engine() == null) { say(R.string.ready_not_here); return }
         failedOpen = null
         backStack.update { it.dropLast(1) }
         again()
