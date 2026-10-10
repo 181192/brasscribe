@@ -45,7 +45,7 @@ import TranscriptionKit
     }
 
     /// Screens that are checked but get no screenshot: they do not draw the same twice yet, each with its issue.
-    static let unsteady: [String: String] = ["review": "#260"]
+    static let unsteady: [String: String] = [:]
 
     /// Screens whose own order differs from reading order, and why.
     static let ownOrder: [String: String] = [

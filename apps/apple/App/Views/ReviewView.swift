@@ -725,7 +725,7 @@ struct BarSnippet: View {
                         let ink = Color.Brasscribe.ink.resolve(in: env).cgColor
                         let target = targetNoteID(page)
                         let f = target.flatMap { doc.frames[$0] }
-                        let lines = page.staffLines.values.first ?? f ?? .zero
+                        let lines = page.firstStaff.flatMap { page.staffLines[$0] } ?? f ?? .zero
                         let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
                         // selected: a tint column behind the note and a caret under the staff (a box would read as the boxed "?")
                         var column = CGRect.zero
@@ -777,7 +777,7 @@ struct BarSnippet: View {
         guard let part = score.part(id: partID) else { return nil }
         let inBar = part.notes.filter { $0.measureIndex == bar && !$0.isRest }
         guard let i = inBar.firstIndex(where: { $0.startTick == noteTick }) else { return nil }
-        let ids = page.notesByStaff.values.first ?? []
+        let ids = page.firstStaff.flatMap { page.notesByStaff[$0] } ?? []
         return ids.indices.contains(i) ? ids[i] : nil
     }
 }
