@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
-namespace Brasscribe.Core;
+namespace Scribe.Core;
 
 /// <summary>Error reported by the native core.</summary>
 public sealed class BrasscribeException : Exception
@@ -30,7 +30,7 @@ public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]
 /// <param name="Difficulty">"faithful", "standard" or "easier".</param>
 /// <param name="Key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).</param>
 /// <param name="Transpose">Semitones to transpose the whole arrangement by (instead of Key).</param>
-/// <param name="Seat">The player's seat (an id of <see cref="BrasscribeCore.Seats"/>): a solo take is written for it, one
+/// <param name="Seat">The player's seat (an id of <see cref="ScribeCore.Seats"/>): a solo take is written for it, one
 /// part in the octave played; a band take's notes do not change. Null: no seat.</param>
 /// <param name="Reads">"treble" or "bass" (the seat's part at concert pitch in bass clef); null: the band part's own clef.</param>
 /// <param name="Lead">"lineup" (null) or "seat": the tune on the seat's part (band lineups only).</param>
@@ -96,7 +96,7 @@ internal sealed class TalkingScoreHandle : SafeHandle
 
     protected override bool ReleaseHandle()
     {
-        BrasscribeCore.NativeTalkingFree(handle);
+        ScribeCore.NativeTalkingFree(handle);
         return true;
     }
 }
@@ -110,16 +110,16 @@ public sealed class TalkingScore : IDisposable
     /// <summary>From partwise MusicXML plus the Composition JSON when known.</summary>
     public TalkingScore(string musicXml, string? compositionJson = null)
     {
-        int code = BrasscribeCore.NativeTalkingNew(musicXml, compositionJson, out _handle, out var err);
+        int code = ScribeCore.NativeTalkingNew(musicXml, compositionJson, out _handle, out var err);
         if (code != 0)
         {
             _handle.Dispose();
-            throw BrasscribeCore.Error(code, err);
+            throw ScribeCore.Error(code, err);
         }
     }
 
     /// <summary>The document as JSON.</summary>
-    public string Json => BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingJson(h, out o, out e));
+    public string Json => ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingJson(h, out o, out e));
 
     /// <summary>The announcement at a cursor and the context it leaves behind.</summary>
     public (string Text, TalkingContext Context) Announce(TalkingCursor cursor, TalkingContext? context = null, TalkingSettings? settings = null, bool byBar = false)
@@ -127,11 +127,11 @@ public sealed class TalkingScore : IDisposable
         var request = JsonSerializer.Serialize(new
         {
             cursor = new { part = cursor.Part, bar = cursor.Bar, @event = cursor.Event },
-            context = BrasscribeCore.ContextJson(context ?? new TalkingContext()),
-            settings = BrasscribeCore.SettingsJson(settings ?? new TalkingSettings()),
+            context = ScribeCore.ContextJson(context ?? new TalkingContext()),
+            settings = ScribeCore.SettingsJson(settings ?? new TalkingSettings()),
             by_bar = byBar,
         });
-        var json = BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingAnnounce(h, request, out o, out e));
+        var json = ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingAnnounce(h, request, out o, out e));
         using var doc = JsonDocument.Parse(json);
         var c = doc.RootElement.GetProperty("context");
         return (doc.RootElement.GetProperty("text").GetString()!,
@@ -142,7 +142,7 @@ public sealed class TalkingScore : IDisposable
     public TalkingCursor? Navigate(TalkingCursor cursor, string unit = "note", bool forward = true)
     {
         var request = JsonSerializer.Serialize(new { cursor = new { part = cursor.Part, bar = cursor.Bar, @event = cursor.Event }, unit, forward });
-        var json = BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingNavigate(h, request, out o, out e));
+        var json = ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingNavigate(h, request, out o, out e));
         using var doc = JsonDocument.Parse(json);
         var r = doc.RootElement;
         if (r.ValueKind == JsonValueKind.Null) return null;
@@ -152,8 +152,8 @@ public sealed class TalkingScore : IDisposable
     /// <summary>Export: format "text" or "html".</summary>
     public string Export(string format = "text", TalkingSettings? settings = null)
     {
-        var s = JsonSerializer.Serialize(BrasscribeCore.SettingsJson(settings ?? new TalkingSettings()));
-        return BrasscribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => BrasscribeCore.NativeTalkingExport(h, format, s, out o, out e));
+        var s = JsonSerializer.Serialize(ScribeCore.SettingsJson(settings ?? new TalkingSettings()));
+        return ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingExport(h, format, s, out o, out e));
     }
 
     internal TalkingScoreHandle Handle => _handle.IsClosed ? throw new ObjectDisposedException(nameof(TalkingScore)) : _handle;
@@ -161,20 +161,20 @@ public sealed class TalkingScore : IDisposable
     public void Dispose() => _handle.Dispose();
 }
 
-/// <summary>Managed API over the brasscribe_ffi C ABI.</summary>
-public static class BrasscribeCore
+/// <summary>Managed API over the scribe_ffi C ABI.</summary>
+public static class ScribeCore
 {
     /// <summary>Version of the native core.</summary>
-    public static string Version => TakeString(Native.bc_version()) ?? "";
+    public static string Version => TakeString(Native.sc_version()) ?? "";
 
     /// <summary>Parse a Composition JSON and return its canonical composition.json text.</summary>
     public static string NormalizeComposition(string compositionJson) =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_composition_normalize(compositionJson, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_composition_normalize(compositionJson, out o, out e));
 
     /// <summary>Arrange a Composition for brass band; returns MusicXML at written pitch.</summary>
     /// <param name="arranger">"auto", "layers" (solo with band) or "minimal".</param>
     public static string ArrangeMusicXml(string compositionJson, string arranger = "auto") =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_musicxml(compositionJson, arranger, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_arrange_musicxml(compositionJson, arranger, out o, out e));
 
     /// <summary>Re-arrange a Composition for a lineup and difficulty (optionally transposed); returns MusicXML at written pitch.</summary>
     /// <param name="lineup">"band" (18 parts), "minimal" (8 parts) or "quartet". A composition without layers (a whole-band
@@ -192,7 +192,7 @@ public static class BrasscribeCore
         string? key = null, int? transpose = null, string? seat = null, string? reads = null, string? lead = null, bool? trills = null)
     {
         var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose, seat, reads, lead, trills });
-        return Call((out IntPtr o, out IntPtr e) => Native.bc_arrange_with(compositionJson, options, out o, out e));
+        return Call((out IntPtr o, out IntPtr e) => Native.sc_arrange_with(compositionJson, options, out o, out e));
     }
 
     /// <summary>Solo-with-band arrangement from layer transcriptions and a beat table ("time position" per line).</summary>
@@ -214,7 +214,7 @@ public static class BrasscribeCore
         {
             var ptrs = handles.Select(h => h.AddrOfPinnedObject()).ToArray();
             var lens = files.Select(f => (nuint)f.Length).ToArray();
-            int code = Native.bc_arrange_layers_song(ptrs, lens, beatsText, title, options, out var comp, out var xml, out var err);
+            int code = Native.sc_arrange_layers_song(ptrs, lens, beatsText, title, options, out var comp, out var xml, out var err);
             if (code != 0)
             {
                 throw new BrasscribeException(code, TakeString(err) ?? $"brasscribe core error {code}");
@@ -274,7 +274,7 @@ public static class BrasscribeCore
             IntPtr[]? cptrs = c is null ? null : [Pin(c.Times), Pin(c.PitchHz), Pin(c.LoudnessDb), Pin(c.Confidence)];
             var clen = (nuint)(c?.Times.Length ?? 0);
             var json = Call((out IntPtr r, out IntPtr e) =>
-                Native.bc_arrange_layers_band_contour(ptrs, lens, wptrs, wlens, cptrs, clen, beatsText, title, optionsJson, out r, out e));
+                Native.sc_arrange_layers_band_contour(ptrs, lens, wptrs, wlens, cptrs, clen, beatsText, title, optionsJson, out r, out e));
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var parts = root.GetProperty("parts").EnumerateArray()
@@ -303,7 +303,7 @@ public static class BrasscribeCore
             timing = performedTiming ? "performed" : "score",
             composition = comp,
         });
-        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_humanize_json(request, out o, out e));
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_humanize_json(request, out o, out e));
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
         var played = root.GetProperty("notes").EnumerateArray().Select(x => new PlayedNote(x.GetProperty("start").GetDouble(),
@@ -314,31 +314,31 @@ public static class BrasscribeCore
 
     /// <summary>Announce one event given as JSON (the conformance-vector form: part, bar, event, context, settings).</summary>
     public static string TalkingAnnounceJson(string request) =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_talking_announce_json(request, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_talking_announce_json(request, out o, out e));
 
     /// <summary>A string and a fret for every note on a fretted instrument. The request and the answer are
     /// target-fretted's own JSON: instrument (a preset or a full instrument), notes and options (style, tempo, hand,
     /// pins) in; the instrument used, the fingering with each note's alternatives, the violations and the tuning
     /// suggestions out. A request it cannot read or that names what does not exist is invalid input (code 1).</summary>
     public static string FrettedFingeringJson(string request) =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_fretted_fingering_json(request, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_fingering_json(request, out o, out e));
 
     /// <summary>Tablature as MusicXML for target-fretted's tab request (the fingering request plus title, tempo, meter,
     /// key, the <c>tab</c> options and optionally a fingering to write as it is): <c>{"musicxml": ..., "adjusted_notes": n}</c>.</summary>
     public static string FrettedTabJson(string request) =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_fretted_tab_json(request, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_tab_json(request, out o, out e));
 
     /// <summary>Tablature as plain text for a monospace font, for the tab request of <see cref="FrettedTabJson"/>;
     /// its <c>text.width</c> is the longest line in characters (24 to 400, 72 when left out). The answer is the text
     /// itself, not JSON.</summary>
     public static string FrettedTabTextJson(string request) =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_fretted_tab_text_json(request, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_tab_text_json(request, out o, out e));
 
     /// <summary>Playing instructions: the tab in words, bar by bar and beat by beat, for a screen reader or a braille
     /// display, for the tab request of <see cref="FrettedTabJson"/>; its <c>text.lang</c> is <c>en</c> (when left
     /// out) or <c>nb</c>. The answer is the text itself, not JSON.</summary>
     public static string FrettedPlayingInstructionsJson(string request) =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_fretted_playing_instructions_json(request, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_playing_instructions_json(request, out o, out e));
 
     internal static object SettingsJson(TalkingSettings s) => new
     {
@@ -360,18 +360,18 @@ public static class BrasscribeCore
         return TakeString(output) ?? "";
     }
 
-    internal static int NativeTalkingNew(string xml, string? comp, out TalkingScoreHandle handle, out IntPtr err) => Native.bc_talking_score_new(xml, comp, out handle, out err);
-    internal static void NativeTalkingFree(IntPtr h) => Native.bc_talking_score_free(h);
-    internal static int NativeTalkingJson(TalkingScoreHandle h, out IntPtr o, out IntPtr e) => Native.bc_talking_score_json(h, out o, out e);
-    internal static int NativeTalkingAnnounce(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.bc_talking_score_announce(h, req, out o, out e);
-    internal static int NativeTalkingNavigate(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.bc_talking_score_navigate(h, req, out o, out e);
-    internal static int NativeTalkingExport(TalkingScoreHandle h, string format, string settings, out IntPtr o, out IntPtr e) => Native.bc_talking_score_export(h, format, settings, out o, out e);
+    internal static int NativeTalkingNew(string xml, string? comp, out TalkingScoreHandle handle, out IntPtr err) => Native.sc_talking_score_new(xml, comp, out handle, out err);
+    internal static void NativeTalkingFree(IntPtr h) => Native.sc_talking_score_free(h);
+    internal static int NativeTalkingJson(TalkingScoreHandle h, out IntPtr o, out IntPtr e) => Native.sc_talking_score_json(h, out o, out e);
+    internal static int NativeTalkingAnnounce(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.sc_talking_score_announce(h, req, out o, out e);
+    internal static int NativeTalkingNavigate(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.sc_talking_score_navigate(h, req, out o, out e);
+    internal static int NativeTalkingExport(TalkingScoreHandle h, string format, string settings, out IntPtr o, out IntPtr e) => Native.sc_talking_score_export(h, format, settings, out o, out e);
 
     /// <summary>Spell MIDI pitches from their context (ps13); onsets in beats.</summary>
     /// <summary>Which part of a lineup ("band", "minimal", "quartet") is the player's, for their seat.</summary>
     public static SeatPart SeatPart(string lineup, string seat)
     {
-        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_seat_part(lineup, seat, out o, out e));
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_seat_part(lineup, seat, out o, out e));
         using var doc = JsonDocument.Parse(json);
         var r = doc.RootElement;
         var part = r.GetProperty("part");
@@ -383,7 +383,7 @@ public static class BrasscribeCore
     /// <summary>Where each part of a Composition's arrangement comes from, in score order.</summary>
     public static IReadOnlyList<PartSource> PartSources(string compositionJson)
     {
-        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_part_sources(compositionJson, out o, out e));
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_part_sources(compositionJson, out o, out e));
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.EnumerateArray()
             .Select(x => new PartSource(x.GetProperty("part").GetString()!, x.GetProperty("source").GetString()!)).ToList();
@@ -391,12 +391,12 @@ public static class BrasscribeCore
 
     /// <summary>A part's name in Norwegian (the core's one table); names it doesn't know come back unchanged.</summary>
     public static string PartNameNb(string name) =>
-        Call((out IntPtr o, out IntPtr e) => Native.bc_part_name_nb(name, out o, out e));
+        Call((out IntPtr o, out IntPtr e) => Native.sc_part_name_nb(name, out o, out e));
 
     /// <summary>The 18 seats of the contest band, in score order.</summary>
     public static IReadOnlyList<SeatInfo> Seats()
     {
-        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_seats(out o, out e));
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_seats(out o, out e));
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.EnumerateArray()
             .Select(x => new SeatInfo(x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!,
@@ -408,7 +408,7 @@ public static class BrasscribeCore
     public static IReadOnlyList<SpelledPitch> SpellPitches(IReadOnlyList<double> onsetsBeats, IReadOnlyList<int> pitches)
     {
         var request = JsonSerializer.Serialize(new { onsets = onsetsBeats, pitches });
-        var json = Call((out IntPtr o, out IntPtr e) => Native.bc_spell_json(request, out o, out e));
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_spell_json(request, out o, out e));
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.EnumerateArray()
             .Select(x => new SpelledPitch(x.GetProperty("step").GetString()!, x.GetProperty("alter").GetInt32(), x.GetProperty("octave").GetInt32()))
@@ -437,89 +437,89 @@ public static class BrasscribeCore
         }
         finally
         {
-            Native.bc_string_free(p);
+            Native.sc_string_free(p);
         }
     }
 
     private static class Native
     {
-        private const string Lib = "brasscribe_ffi";
+        private const string Lib = "scribe_ffi";
 
-        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void bc_string_free(IntPtr s);
-        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr bc_version();
-
-        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_composition_normalize([MarshalAs(UnmanagedType.LPUTF8Str)] string json, out IntPtr output, out IntPtr error);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void sc_string_free(IntPtr s);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr sc_version();
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_arrange_musicxml([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
+        public static extern int sc_composition_normalize([MarshalAs(UnmanagedType.LPUTF8Str)] string json, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_arrange_musicxml([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string arranger, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_arrange_with([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
+        public static extern int sc_arrange_with([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_arrange_layers_song(IntPtr[] midi, nuint[] midiLen,
+        public static extern int sc_arrange_layers_song(IntPtr[] midi, nuint[] midiLen,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson,
             out IntPtr outComposition, out IntPtr outMusicXml, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_spell_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_spell_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_arrange_layers_band_contour(IntPtr[] midi, nuint[] midiLen, IntPtr[] wav, nuint[] wavLen,
+        public static extern int sc_arrange_layers_band_contour(IntPtr[] midi, nuint[] midiLen, IntPtr[] wav, nuint[] wavLen,
             IntPtr[]? contour, nuint contourLen, [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_humanize_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_humanize_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_talking_score_new([MarshalAs(UnmanagedType.LPUTF8Str)] string musicXml,
+        public static extern int sc_talking_score_new([MarshalAs(UnmanagedType.LPUTF8Str)] string musicXml,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? compositionJson, out TalkingScoreHandle handle, out IntPtr error);
 
-        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void bc_talking_score_free(IntPtr handle);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void sc_talking_score_free(IntPtr handle);
 
-        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern int bc_talking_score_json(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
-
-        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_talking_score_announce(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern int sc_talking_score_json(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_talking_score_navigate(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_talking_score_announce(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_talking_score_export(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string format,
+        public static extern int sc_talking_score_navigate(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_talking_score_export(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string format,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? settingsJson, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_seat_part([MarshalAs(UnmanagedType.LPUTF8Str)] string lineup,
+        public static extern int sc_seat_part([MarshalAs(UnmanagedType.LPUTF8Str)] string lineup,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string seat, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_part_sources([MarshalAs(UnmanagedType.LPUTF8Str)] string compositionJson, out IntPtr output, out IntPtr error);
+        public static extern int sc_part_sources([MarshalAs(UnmanagedType.LPUTF8Str)] string compositionJson, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_seats(out IntPtr output, out IntPtr error);
+        public static extern int sc_seats(out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_part_name_nb([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out IntPtr output, out IntPtr error);
+        public static extern int sc_part_name_nb([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_fretted_fingering_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_fretted_fingering_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_fretted_tab_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_fretted_tab_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_fretted_tab_text_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_fretted_tab_text_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_fretted_playing_instructions_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_fretted_playing_instructions_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int bc_talking_announce_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+        public static extern int sc_talking_announce_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
     }
 }

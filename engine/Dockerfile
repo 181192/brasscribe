@@ -14,7 +14,7 @@
 #       BRASSCRIBE_DATA=/tmp/ci pixi run brasscribe bench ci --require-data'      # CI benchmark gate
 #
 # Model weights and datasets are not in the image; mount a data directory at /data (and models at /brasscribe/models).
-# The Rust core's command line (brasscribe-core, for the bass-tab profile) is built from core/ in its own stage.
+# The Rust core's command line (scribe-core, for the bass-tab profile) is built from core/ in its own stage.
 ARG BASE=ubuntu:24.04
 ARG RUST_VERSION=1.91
 
@@ -24,13 +24,12 @@ WORKDIR /core
 COPY core/Cargo.toml core/Cargo.lock ./
 COPY core/.cargo .cargo
 # Every member of the workspace: cargo refuses a workspace with one missing.
-COPY core/brasscribe-core brasscribe-core
-COPY core/brasscribe-ffi brasscribe-ffi
-COPY core/brasscribe-cli brasscribe-cli
-COPY core/target-brass target-brass
-COPY core/target-fretted target-fretted
+COPY core/scribe-core scribe-core
+COPY core/ffi ffi
+COPY core/cli cli
+COPY core/targets targets
 COPY core/tools tools
-RUN cargo build --release --locked -p brasscribe-cli
+RUN cargo build --release --locked -p scribe-cli
 
 FROM ${BASE} AS base
 # The pixi version CI pins (.pixi-version); --build-arg PIXI_VERSION=v0.x.y overrides it.
@@ -65,8 +64,8 @@ ARG ENVS="default swift-f0 basic-pitch muscriptor beat-this mega53 separator"
 RUN for e in ${ENVS}; do pixi install --frozen -e "$e" || exit 1; done \
  && pixi clean cache --yes
 # After the environments, so a change to the core does not install them again.
-COPY --from=core /core/target/release/brasscribe-core /usr/local/bin/brasscribe-core
-ENV BRASSCRIBE_CORE_CLI=/usr/local/bin/brasscribe-core
+COPY --from=core /core/target/release/scribe-core /usr/local/bin/scribe-core
+ENV SCRIBE_CORE_CLI=/usr/local/bin/scribe-core
 
 # Engine plus CUDA 12 builds of the torch adapters (needs the NVIDIA container runtime to use the GPU).
 FROM base AS cuda
@@ -74,6 +73,6 @@ ARG ENVS="default swift-f0 basic-pitch muscriptor-cuda beat-this-cuda mega53-cud
 # No GPU is visible while building; declare the driver's CUDA version so the CUDA environments install.
 RUN for e in ${ENVS}; do CONDA_OVERRIDE_CUDA=12.8 pixi install --frozen -e "$e" || exit 1; done \
  && pixi clean cache --yes
-COPY --from=core /core/target/release/brasscribe-core /usr/local/bin/brasscribe-core
+COPY --from=core /core/target/release/scribe-core /usr/local/bin/scribe-core
 ENV BRASSCRIBE_CUDA=1 \
-    BRASSCRIBE_CORE_CLI=/usr/local/bin/brasscribe-core
+    SCRIBE_CORE_CLI=/usr/local/bin/scribe-core

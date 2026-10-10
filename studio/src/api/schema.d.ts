@@ -32,7 +32,7 @@ export interface paths {
          * List Conformance
          * @description Rust-core conformance summary: every report.json in BRASSCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
          *
-         *     An empty list means no report yet (run `brasscribe_conformance.run`, or runConformance).
+         *     An empty list means no report yet (run `scribe_conformance.run`, or runConformance).
          */
         get: operations["listConformanceReports"];
         put?: never;
@@ -2388,7 +2388,7 @@ export interface components {
         };
         /**
          * TabViolation
-         * @description A hard playability violation (core/target-fretted/README.md, Playability check); the other fields
+         * @description A hard playability violation (core/targets/fretted/README.md, Playability check); the other fields
          *     depend on `kind` and name notes by their index in `notes`.
          */
         TabViolation: {

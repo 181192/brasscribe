@@ -1,6 +1,6 @@
 //! Chord shapes, tuning suggestion and playing techniques.
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use target_fretted::json::{solve_json, Response};
 use target_fretted::{assign, assign_with_techniques, check, check_with_techniques, preset, suggest_tunings, Fingering, Instrument, Options, Position, Style, Technique, Violation};
 

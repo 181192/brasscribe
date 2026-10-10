@@ -1857,7 +1857,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
     if !spec.encoding_date.is_empty() {
         encoding.push(X::text("encoding-date", spec.encoding_date.clone()));
     }
-    encoding.push(X::text("software", format!("brasscribe-core {}", env!("CARGO_PKG_VERSION"))));
+    encoding.push(X::text("software", format!("scribe-core {}", env!("CARGO_PKG_VERSION"))));
     for el in ["beam", "stem", "accidental"] {
         encoding.push(X::new("supports").attr("element", el).attr("type", "yes"));
     }

@@ -20,14 +20,14 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
 - **Tablature.** The `tab` profile (`tab.py`) writes what one fretted instrument plays as tab instead of a band
   score. `instrument` says which: a bass (`bass-4`, `bass-5`, `bass-6`), a guitar (`guitar-6`, `guitar-7`,
   `guitar-8`), a ukulele (`ukulele` with tuning `high-g` or `low-g`, `ukulele-baritone`) or a mandolin; its tunings
-  are the presets of the Rust crate [`target-fretted`](../core/target-fretted/README.md). The instrument's stem is
+  are the presets of the Rust crate [`target-fretted`](../core/targets/fretted/README.md). The instrument's stem is
   separated from the song (the separator has no stem for a ukulele or a mandolin: they are read from its guitar
   stem, which only works in a song where no guitar plays, so their default is `recording: instrument`; a mandolin's
   tremolo goes to the separator's `other` stem instead, so a mandolin is read from `other` when its guitar stem is
   empty, `EMPTY_STEM_DB` under the song), or the recording itself is read when it is the instrument alone
   (`recording: instrument`); then Basic Pitch, the shared beat grid and
   durations, and a string and fret for every note from the crate, which the engine calls through the core's command
-  line (`brasscribe-core fret`).
+  line (`scribe-core fret`).
   - A bass is one line (`bass_tab.py`): SwiftF0 listens to the same audio as a second opinion; a note it did not
     hear at that pitch gets a confidence below 0.4 and a "?" in the tab, a single note it heard an octave lower is
     written there, and overtones heard as notes are left out. A whole line above where a bass plays is written an
@@ -69,12 +69,12 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     includes the chord's own notes in higher octaves; those are still left out.
   - The result is `tab.json` (`GET /v1/jobs/{id}/tab`, `Tab` in `schemas.py`): the fingered notes, the tunings
     ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
-    `tab.musicxml`, written by the same crate (`brasscribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore
+    `tab.musicxml`, written by the same crate (`scribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore
     when it is installed; `/musicxml`, `/pdf` and `/midi` of the job serve them.
   - The same tab is also written as text, by the same crate from the same request: `tab.txt` for a monospace
     font (a page, a message), and `tab-instructions.en.txt` and `tab-instructions.nb.txt`, the tab in words bar
     by bar and beat by beat, for a screen reader or a braille display
-    ([what they hold](../core/target-fretted/README.md#tablature-as-text)). They are outputs of the job like the
+    ([what they hold](../core/targets/fretted/README.md#tablature-as-text)). They are outputs of the job like the
     others: listed in its `outputs`, and served as `text/plain; charset=utf-8` by
     `GET /v1/jobs/{id}/artifacts/{name}`. Renaming a job retitles them.
   - Options: `instrument`, `tuning`, `capo` (frets are counted from it, and the page names it), `style`, `octave`
@@ -118,9 +118,9 @@ the adapter downloads them from where their makers publish them (licences in
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)).
 
 A job option the engine refuses answers 422 with `{"code": …, "detail": …}`; the codes are in
-`profiles.py`, and the apps word them themselves. A `tab` (or `bass-tab`) job on an engine without `brasscribe-core` is
+`profiles.py`, and the apps word them themselves. A `tab` (or `bass-tab`) job on an engine without `scribe-core` is
 refused the same way (`core_missing`), before any model runs. Bandroom for Mac and for Windows bundle
-`brasscribe-core` and point the engine they install at it with `BRASSCRIBE_CORE_CLI`.
+`scribe-core` and point the engine they install at it with `SCRIBE_CORE_CLI`.
 
 ## Configuration
 
@@ -137,7 +137,7 @@ refused the same way (`core_missing`), before any model runs. Bandroom for Mac a
 | `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu-<uid>.lock` | Lock for heavy models, shared by this user's runs |
 | `BRASSCRIBE_ADAPTER_TIMEOUT_S` | 3 h heavy, 1 h other models | How long one model run may take before it is stopped |
 | `BRASSCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
-| `BRASSCRIBE_CORE_CLI` | `<repo>/core/target/release/brasscribe-core`, then the `PATH` | The Rust core's command line, for the `tab` profile. A checkout gets it from `scripts/worktree-setup.sh` (or `cargo build --release -p brasscribe-cli` in `core/`); the Docker image builds it and sets the variable |
+| `SCRIBE_CORE_CLI` | `<repo>/core/target/release/scribe-core`, then the `PATH` | The Rust core's command line, for the `tab` profile. A checkout gets it from `scripts/worktree-setup.sh` (or `cargo build --release -p scribe-cli` in `core/`); the Docker image builds it and sets the variable |
 
 `src/brasscribe_engine/config.py` lists the rest (companion state, device expiry, display name, owner
 credential, report folders).

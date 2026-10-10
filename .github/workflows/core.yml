@@ -1,7 +1,7 @@
 name: core
 
 # Rust workspace (core/): tests on every OS the apps ship on, plus a check that the committed
-# UniFFI/C bindings match the code. With `release`, builds the brasscribe-core CLI instead.
+# UniFFI/C bindings match the code. With `release`, builds the scribe-core CLI instead.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
 # every push gets the fast Linux checks in ci.yml instead.
 on:
@@ -77,19 +77,19 @@ jobs:
         if: ${{ inputs.release }}
         run: |
           if [ "$RUNNER_OS" = Windows ]; then export RUSTFLAGS="-C target-feature=+crt-static"; fi
-          cargo build --release --locked -p brasscribe-cli
-          name="brasscribe-core-${{ matrix.artifact }}"; name="${name/dist-core-cli-/}"
+          cargo build --release --locked -p scribe-cli
+          name="scribe-core-${{ matrix.artifact }}"; name="${name/dist-core-cli-/}"
           mkdir -p "$RUNNER_TEMP/out"
           if [ "$RUNNER_OS" = Windows ]; then
-            (cd target/release && 7z a -bd "$RUNNER_TEMP/out/$name.zip" brasscribe-core.exe >/dev/null)
+            (cd target/release && 7z a -bd "$RUNNER_TEMP/out/$name.zip" scribe-core.exe >/dev/null)
           else
-            tar -czf "$RUNNER_TEMP/out/$name.tar.gz" -C target/release brasscribe-core
+            tar -czf "$RUNNER_TEMP/out/$name.tar.gz" -C target/release scribe-core
           fi
 
       - name: The Windows CLI needs no C runtime DLL
         if: ${{ inputs.release && runner.os == 'Windows' }}
         working-directory: .
-        run: scripts/check-windows-imports.sh --static core/target/release/brasscribe-core.exe
+        run: scripts/check-windows-imports.sh --static core/target/release/scribe-core.exe
 
       - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}

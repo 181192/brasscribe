@@ -10,7 +10,7 @@
 
 use std::collections::HashMap;
 
-use brasscribe_core::model::{check_span, Note, TICKS_PER_BEAT};
+use scribe_core::model::{check_span, Note, TICKS_PER_BEAT};
 use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};

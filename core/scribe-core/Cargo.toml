@@ -1,5 +1,5 @@
 [package]
-name = "brasscribe-core"
+name = "scribe-core"
 description = "Symbolic core of brasscribe: Composition model, quantizer, spelling, harmony, arrangers, voting and MusicXML writer"
 version.workspace = true
 edition.workspace = true

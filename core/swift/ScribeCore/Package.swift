@@ -4,22 +4,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "BrasscribeCore",
+    name: "ScribeCore",
     platforms: [.macOS(.v13), .iOS(.v16)],
     products: [
-        .library(name: "BrasscribeCore", targets: ["BrasscribeCore"]),
+        .library(name: "ScribeCore", targets: ["ScribeCore"]),
     ],
     targets: [
-        .binaryTarget(name: "BrasscribeFFI", path: "BrasscribeFFI.xcframework"),
+        .binaryTarget(name: "ScribeFFI", path: "ScribeFFI.xcframework"),
         .target(
-            name: "BrasscribeCore",
-            dependencies: ["BrasscribeFFI"],
-            path: "Sources/BrasscribeCore"
+            name: "ScribeCore",
+            dependencies: ["ScribeFFI"],
+            path: "Sources/ScribeCore"
         ),
         .testTarget(
-            name: "BrasscribeCoreTests",
-            dependencies: ["BrasscribeCore"],
-            path: "Tests/BrasscribeCoreTests"
+            name: "ScribeCoreTests",
+            dependencies: ["ScribeCore"],
+            path: "Tests/ScribeCoreTests"
         ),
     ]
 )

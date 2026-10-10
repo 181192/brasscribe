@@ -1,7 +1,7 @@
 //! The source footer on printed parts, in en and nb, on Mikkel's layers. Skips when
 //! data/mikkel/repro is not in the checkout.
 
-use brasscribe_ffi::{arrange_layers_band, part_sources, LayerMidi, LayerStems, LayersSongOptions};
+use scribe_ffi::{arrange_layers_band, part_sources, LayerMidi, LayerStems, LayersSongOptions};
 
 mod common;
 

@@ -3,7 +3,7 @@
 //! Most whole-song wrongness in tab is a wrong tuning (drop D, E♭ standard), so "Check the song"
 //! offers the best fit, and the player confirms it.
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use serde::{Deserialize, Serialize};
 
 use crate::instrument::{family_presets, preset};

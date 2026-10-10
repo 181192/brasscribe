@@ -39,7 +39,7 @@ changed_areas() {
       core/dotnet/*) add core-dotnet ;;
       core/conformance/*) add conformance ;;
       # The C ABI and the generated bindings: the .NET wrapper calls them too.
-      core/brasscribe-ffi/*|core/bindings/*) add core; add core-dotnet
+      core/ffi/*|core/bindings/*) add core; add core-dotnet
                          { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
@@ -56,7 +56,7 @@ changed_areas() {
 
 # A hash of the Python reference sources (committed, uncommitted and untracked): the fast
 # conformance tier reuses the Python outputs of an earlier run only while this is unchanged.
-PY_REF_PATHS=(music/src eval/brasscribe_eval core/conformance/brasscribe_conformance)
+PY_REF_PATHS=(music/src eval/brasscribe_eval core/conformance/scribe_conformance)
 py_ref_stamp() {
   { git ls-files -s -- "${PY_REF_PATHS[@]}"; git diff HEAD -- "${PY_REF_PATHS[@]}"
     git ls-files -o --exclude-standard -z -- "${PY_REF_PATHS[@]}" | xargs -0 shasum 2>/dev/null; } | shasum | cut -d' ' -f1
@@ -88,13 +88,13 @@ run_area() {
                       if [ -d core/target/conformance/mikkel ] && [ "$(cat "$PY_REF_STAMP" 2>/dev/null)" = "$stamp" ]; then
                         conf=(--skip-python --no-extras); else conf=(); fi
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
-                         && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
+                         && uv run python -m scribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
                          --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" \
-                      && (cd core/conformance && uv run python -m brasscribe_conformance.run --only talking/ \
+                      && (cd core/conformance && uv run python -m scribe_conformance.run --only talking/ \
                          --work "$ROOT/core/target/conformance-talking") ;;
     full:conformance) stamp=$(py_ref_stamp)
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
-                         && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
+                         && uv run python -m scribe_conformance.run --work "$ROOT/core/target/conformance") \
                         && echo "$stamp" > "$PY_REF_STAMP" ;;
     # The screen catalogue (studio/README.md, Test): fast runs its checks on every view, full adds the
     # screenshots' comparison with the merge base.
@@ -116,7 +116,7 @@ run_area() {
                      && scripts/screenshots.sh compare) ;;
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
-    *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;
+    *:core-dotnet) (cd core/dotnet/Scribe.Core.Tests && dotnet test) ;;
     fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/Packages/ScreenCatalogue && swift test) ;;
     # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen, compared with the merge base;
     # its build is the app's build.

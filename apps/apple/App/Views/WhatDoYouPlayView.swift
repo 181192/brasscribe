@@ -1,4 +1,4 @@
-import BrasscribeCore
+import ScribeCore
 import SwiftUI
 
 /// "What do you play?": the instrument, then which part, then for low brass the clef. Nothing is

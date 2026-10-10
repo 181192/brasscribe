@@ -6,7 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-brasscribe-core = { path = "../brasscribe-core" }
+scribe-core = { path = "../../scribe-core" }
 serde.workspace = true
 serde_json.workspace = true
 

@@ -1,11 +1,11 @@
 //! Unit-level conformance of the brass-band target: Rust functions against outputs of the Python
 //! reference (the fixtures are the shared core's, regenerated with
-//! `uv run python -m brasscribe_conformance.fixtures` in core/conformance).
+//! `uv run python -m scribe_conformance.fixtures` in core/conformance).
 
 use serde_json::Value;
 
 fn load(name: &str) -> Vec<Value> {
-    let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../brasscribe-core/tests/fixtures").join(format!("{name}.json"));
+    let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scribe-core/tests/fixtures").join(format!("{name}.json"));
     serde_json::from_str::<Value>(&std::fs::read_to_string(p).unwrap()).unwrap().as_array().unwrap().clone()
 }
 
@@ -53,7 +53,7 @@ fn seats_match_reference() {
 #[test]
 fn part_sources_match_reference() {
     use target_brass::arranger::part_sources;
-    use brasscribe_core::model::Composition;
+    use scribe_core::model::Composition;
     for (i, c) in load("part_sources").iter().enumerate() {
         let comp: Composition = serde_json::from_value(c["composition"].clone()).unwrap();
         let want: Vec<(String, String)> =
@@ -67,7 +67,7 @@ fn part_sources_match_reference() {
 fn difficulty_trills_match_reference() {
     use target_brass::difficulty::apply_difficulty_opts;
     use target_brass::instruments::minimal_band;
-    use brasscribe_core::model::Note;
+    use scribe_core::model::Note;
     let notes = |v: &Value| -> Vec<Note> { serde_json::from_value(v.clone()).unwrap() };
     for (i, c) in load("trills").iter().enumerate() {
         let Some(runs) = c["difficulty"].as_array() else { continue };

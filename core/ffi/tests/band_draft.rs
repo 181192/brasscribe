@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 
-use brasscribe_ffi::{arrange_song, arrange_song_with, CoreError, SongArrangeOptions};
+use scribe_ffi::{arrange_song, arrange_song_with, CoreError, SongArrangeOptions};
 
 fn chorales() -> Vec<PathBuf> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../eval/fixtures/choralebricks-brass4");
@@ -14,7 +14,7 @@ fn chorales() -> Vec<PathBuf> {
 }
 
 /// Basic Pitch fills the melody, bass and harmony slots, with no melody support.
-fn draft(dir: &PathBuf, options: SongArrangeOptions) -> Result<brasscribe_ffi::SongOutput, CoreError> {
+fn draft(dir: &PathBuf, options: SongArrangeOptions) -> Result<scribe_ffi::SongOutput, CoreError> {
     let bp = std::fs::read(dir.join("basic-pitch.mid")).unwrap();
     let beats = std::fs::read_to_string(dir.join("beat-this.beats")).unwrap();
     arrange_song_with(bp.clone(), None, bp.clone(), vec![bp], beats, "Draft".into(), options)

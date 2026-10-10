@@ -37,7 +37,7 @@ fn a_part_name_means_one_bank_in_every_lineup() {
 #[test]
 fn kits_match_the_band_soundfont_mapping() {
     use target_brass::instruments::{kit_program, KITS};
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/mapping.json");
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../sounds/mapping.json");
     let m: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).expect("sounds/mapping.json")).unwrap();
     let mut programs: Vec<i64> = KITS.iter().map(|k| k.1).collect();
     programs.sort();

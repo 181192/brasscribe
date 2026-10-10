@@ -1,7 +1,7 @@
 //! Talking-score conformance vectors (docs/accessibility/talking-score-vectors.json),
 //! every case in both languages.
 
-use brasscribe_core::talking_score::{announce, Bar, Context, Part, Settings};
+use scribe_core::talking_score::{announce, Bar, Context, Part, Settings};
 use serde_json::{json, Value};
 
 /// A case read the way every app's vector test reads it: B-flat cornet,
@@ -63,7 +63,7 @@ fn every_vector_in_both_languages() {
 
 #[test]
 fn navigation_walks_a_built_score() {
-    use brasscribe_core::talking_score::{announce_at, build, navigate, part_lines, Cursor, Unit};
+    use scribe_core::talking_score::{announce_at, build, navigate, part_lines, Cursor, Unit};
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise version="4.0"><work><work-title>T</work-title></work>
 <part-list><score-part id="P1"><part-name>Solo Cornet</part-name><score-instrument id="I1"><instrument-name>Cornet in B♭</instrument-name></score-instrument></score-part></part-list>
@@ -93,7 +93,7 @@ fn navigation_walks_a_built_score() {
 
 #[test]
 fn compound_time_names_eighths_not_triplets() {
-    use brasscribe_core::talking_score::{build, part_lines};
+    use scribe_core::talking_score::{build, part_lines};
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise version="4.0"><work><work-title>T</work-title></work>
 <part-list><score-part id="P1"><part-name>Solo Cornet</part-name><score-instrument id="I1"><instrument-name>Cornet in B♭</instrument-name></score-instrument></score-part></part-list>
@@ -136,7 +136,7 @@ fn compound_time_names_eighths_not_triplets() {
 
 #[test]
 fn a_pickup_is_named_and_its_notes_sit_on_the_beats_of_the_bar_they_lead_into() {
-    use brasscribe_core::talking_score::{build, part_lines, TICKS_PER_QUARTER};
+    use scribe_core::talking_score::{build, part_lines, TICKS_PER_QUARTER};
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <score-partwise version="4.0"><work><work-title>Pickup</work-title></work>
 <part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part><score-part id="P2"><part-name>2nd Horn</part-name></score-part></part-list>

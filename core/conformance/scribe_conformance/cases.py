@@ -1,6 +1,6 @@
 """The conformance matrix: every case is one entry point run on one input set.
 
-Kinds (each mirrors a Python entry point and a `brasscribe-core` subcommand):
+Kinds (each mirrors a Python entry point and a `scribe-core` subcommand):
   layers  arrange_layers_song: layer MIDI + beats -> composition.json + brass-band.musicxml
   song    arrange_song: melody/support/bass/harmony MIDI + beats -> composition.json + brass-band.musicxml
   lead    lead_sheet: melody/support/bass MIDI + beats -> lead.musicxml (concert-pitch parts, pickup)

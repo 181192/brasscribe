@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use brasscribe_core::humanize as h;
+use scribe_core::humanize as h;
 
 use crate::{invalid, CoreError};
 

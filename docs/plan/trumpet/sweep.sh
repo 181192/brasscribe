@@ -7,17 +7,17 @@
 set -euo pipefail
 W=$(git rev-parse --show-toplevel)
 T=$(mktemp -d)
-F=$W/core/target-brass/src/instruments.rs
+F=$W/core/targets/brass/src/instruments.rs
 cp "$F" "$T/instruments.rs.orig"
 trap 'cp "$T/instruments.rs.orig" "$F"' EXIT
-C=$(cd "$W/core/conformance" && python3 -c "from brasscribe_conformance.cases import mikkel_contour; print(mikkel_contour())")
+C=$(cd "$W/core/conformance" && python3 -c "from scribe_conformance.cases import mikkel_contour; print(mikkel_contour())")
 for v in "$@"; do
   read -r rl rh ll lh <<<"${v//,/ }"
   cp "$T/instruments.rs.orig" "$F"
   sed -i '' "s/reading: Some((55, 79)), reading_limit: Some((52, 82))/reading: Some(($rl, $rh)), reading_limit: Some(($ll, $lh))/" "$F"
-  (cd "$W/core" && cargo build -q --profile fast -p brasscribe-cli)
+  (cd "$W/core" && cargo build -q --profile fast -p scribe-cli)
   o=$T/rs-$rl-$rh-$ll-$lh
-  "$W/core/target/fast/brasscribe-core" arrange-layers --layers "$W/data/mikkel/repro/layers" --beats "$W/data/mikkel/repro/mix.beats" \
+  "$W/core/target/fast/scribe-core" arrange-layers --layers "$W/data/mikkel/repro/layers" --beats "$W/data/mikkel/repro/mix.beats" \
     --out "$o" --title "Mikkel — solo cornet & brass band (draft)" --solo-contour "$C"
   echo "reading ($rl,$rh) limit ($ll,$lh):"
   python3 "$W/docs/plan/trumpet/lead_octaves.py" "$o/brass-band.musicxml" "$o/composition.json"

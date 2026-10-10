@@ -5,9 +5,9 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use brasscribe_ffi::c_api::{bc_fretted_fingering_json, bc_fretted_playing_instructions_json, bc_fretted_tab_json, bc_fretted_tab_text_json, bc_string_free, BC_INVALID, BC_NULL, BC_OK};
-use brasscribe_ffi::fretted::{fretted_fingering_json, fretted_playing_instructions_json, fretted_tab_json, fretted_tab_text_json};
-use brasscribe_ffi::CoreError;
+use scribe_ffi::c_api::{sc_fretted_fingering_json, sc_fretted_playing_instructions_json, sc_fretted_tab_json, sc_fretted_tab_text_json, sc_string_free, SC_INVALID, SC_NULL, SC_OK};
+use scribe_ffi::fretted::{fretted_fingering_json, fretted_playing_instructions_json, fretted_tab_json, fretted_tab_text_json};
+use scribe_ffi::CoreError;
 use serde_json::{json, Value};
 
 /// A line on a 4-string bass down to D1, which standard tuning cannot play.
@@ -44,11 +44,11 @@ fn c_call(f: unsafe extern "C" fn(*const c_char, *mut *mut c_char, *mut *mut c_c
     let req = CString::new(request).unwrap();
     let (mut out, mut err): (*mut c_char, *mut c_char) = (std::ptr::null_mut(), std::ptr::null_mut());
     let code = unsafe { f(req.as_ptr(), &mut out, &mut err) };
-    let p = if code == BC_OK { out } else { err };
+    let p = if code == SC_OK { out } else { err };
     let text = if p.is_null() { String::new() } else { unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned() };
     unsafe {
-        bc_string_free(out);
-        bc_string_free(err);
+        sc_string_free(out);
+        sc_string_free(err);
     }
     (code, text)
 }
@@ -58,7 +58,7 @@ fn fingering_answers_with_the_crates_own_json() {
     let request = request().to_string();
     let answer = fretted_fingering_json(request.clone()).unwrap();
     assert_eq!(answer, target_fretted::json::solve_json(&request).unwrap(), "the crate's answer, unchanged");
-    assert_eq!(c_call(bc_fretted_fingering_json, &request), (BC_OK, answer.clone()), "the C ABI gives the same text");
+    assert_eq!(c_call(sc_fretted_fingering_json, &request), (SC_OK, answer.clone()), "the C ABI gives the same text");
 
     let v: Value = serde_json::from_str(&answer).unwrap();
     let notes = v["fingering"]["notes"].as_array().unwrap();
@@ -90,7 +90,7 @@ fn a_pin_the_string_cannot_sound_is_reported_not_refused() {
     let mut r = request();
     // A1 is below the open first string (G2): the pin cannot be honoured.
     r["options"]["pins"] = json!([{"note": 1, "string": 1}]);
-    for answer in [fretted_fingering_json(r.to_string()).unwrap(), c_call(bc_fretted_fingering_json, &r.to_string()).1] {
+    for answer in [fretted_fingering_json(r.to_string()).unwrap(), c_call(sc_fretted_fingering_json, &r.to_string()).1] {
         let v: Value = serde_json::from_str(&answer).unwrap();
         assert_eq!(v["violations"], json!([{"kind": "pin-not-honoured", "note": 1, "string": 1}]));
         let place = &v["fingering"]["notes"][1];
@@ -104,7 +104,7 @@ fn a_pin_on_a_string_or_note_that_does_not_exist_is_invalid_input() {
         let mut r = request();
         r["options"]["pins"] = json!([pin]);
         assert_eq!(reason(fretted_fingering_json(r.to_string())), says);
-        assert_eq!(c_call(bc_fretted_fingering_json, &r.to_string()), (BC_INVALID, format!("invalid input: {says}")));
+        assert_eq!(c_call(sc_fretted_fingering_json, &r.to_string()), (SC_INVALID, format!("invalid input: {says}")));
         // The tab request solves first, so it refuses the same pin.
         assert_eq!(reason(fretted_tab_json(r.to_string())), says);
     }
@@ -120,7 +120,7 @@ fn tab_answers_with_musicxml_and_the_count_of_moved_notes() {
     let request = r.to_string();
     let answer = fretted_tab_json(request.clone()).unwrap();
     assert_eq!(answer, target_fretted::json::tab_json(&request).unwrap(), "the crate's answer, unchanged");
-    assert_eq!(c_call(bc_fretted_tab_json, &request), (BC_OK, answer.clone()), "the C ABI gives the same text");
+    assert_eq!(c_call(sc_fretted_tab_json, &request), (SC_OK, answer.clone()), "the C ABI gives the same text");
 
     let v: Value = serde_json::from_str(&answer).unwrap();
     assert_eq!(v["adjusted_notes"], json!(1));
@@ -147,7 +147,7 @@ fn the_text_exports_answer_with_the_crates_own_text() {
     let request = r.to_string();
     let text = fretted_tab_text_json(request.clone()).unwrap();
     assert_eq!(text, target_fretted::json::tab_text_json(&request).unwrap(), "the crate's text, unchanged");
-    assert_eq!(c_call(bc_fretted_tab_text_json, &request), (BC_OK, text.clone()), "the C ABI gives the same text");
+    assert_eq!(c_call(sc_fretted_tab_text_json, &request), (SC_OK, text.clone()), "the C ABI gives the same text");
     // D1 has no string, the open A is doubtful, and the hammer-on leads to the second fret.
     assert!(text.starts_with("Line\nBass\nTuning: Standard (E A D G), bottom line to top\nCapo: none\nTempo: 96 quarter notes per minute\nTime: 4/4\n"), "{text}");
     assert!(text.contains("\n   !   ?\nG|----------------||\nD|---------0h2----||\nA|-----0----------||\nE|----------------||\n"), "{text}");
@@ -155,11 +155,11 @@ fn the_text_exports_answer_with_the_crates_own_text() {
 
     let en = fretted_playing_instructions_json(request.clone()).unwrap();
     assert_eq!(en, target_fretted::json::playing_instructions_json(&request).unwrap());
-    assert_eq!(c_call(bc_fretted_playing_instructions_json, &request), (BC_OK, en.clone()));
+    assert_eq!(c_call(sc_fretted_playing_instructions_json, &request), (SC_OK, en.clone()));
     assert!(en.contains("\nBar 1\n  Beat 1. D 1, no string to play it on. Quarter note.\n  Beat 2. String 3, open, to check. Quarter note.\n"), "{en}");
     r["text"] = json!({"lang": "nb", "width": 40});
     let nb = fretted_playing_instructions_json(r.to_string()).unwrap();
-    assert_eq!(c_call(bc_fretted_playing_instructions_json, &r.to_string()), (BC_OK, nb.clone()), "Norwegian letters cross the C ABI as UTF-8");
+    assert_eq!(c_call(sc_fretted_playing_instructions_json, &r.to_string()), (SC_OK, nb.clone()), "Norwegian letters cross the C ABI as UTF-8");
     assert!(nb.contains("\nTakt 1\n  Slag 1. D 1, ingen streng å spille den på. Fjerdedelsnote.\n  Slag 2. Streng 3, løs, bør sjekkes. Fjerdedelsnote.\n"), "{nb}");
     assert_eq!(en.lines().count(), nb.lines().count(), "the same lines in both languages");
     // The other writers take a request with `text` and do not read it.
@@ -171,8 +171,8 @@ fn the_text_exports_answer_with_the_crates_own_text() {
         r["text"] = text;
         let said = [reason(fretted_tab_text_json(r.to_string()).and_then(|_| fretted_playing_instructions_json(r.to_string())))];
         assert!(said[0].contains(says), "{r}: {}", said[0]);
-        let codes = (c_call(bc_fretted_tab_text_json, &r.to_string()).0, c_call(bc_fretted_playing_instructions_json, &r.to_string()).0);
-        assert!(codes.0 == BC_INVALID || codes.1 == BC_INVALID, "{r}");
+        let codes = (c_call(sc_fretted_tab_text_json, &r.to_string()).0, c_call(sc_fretted_playing_instructions_json, &r.to_string()).0);
+        assert!(codes.0 == SC_INVALID || codes.1 == SC_INVALID, "{r}");
     }
 }
 
@@ -218,17 +218,17 @@ fn what_is_not_a_request_is_invalid_input() {
     ];
     for request in &bad {
         for (uniffi, c) in [
-            (fretted_fingering_json as fn(String) -> Result<String, CoreError>, bc_fretted_fingering_json as unsafe extern "C" fn(_, _, _) -> i32),
-            (fretted_tab_json, bc_fretted_tab_json),
-            (fretted_tab_text_json, bc_fretted_tab_text_json),
-            (fretted_playing_instructions_json, bc_fretted_playing_instructions_json),
+            (fretted_fingering_json as fn(String) -> Result<String, CoreError>, sc_fretted_fingering_json as unsafe extern "C" fn(_, _, _) -> i32),
+            (fretted_tab_json, sc_fretted_tab_json),
+            (fretted_tab_text_json, sc_fretted_tab_text_json),
+            (fretted_playing_instructions_json, sc_fretted_playing_instructions_json),
         ] {
             let said = reason(uniffi(request.clone()));
             assert!(!said.is_empty(), "{request}");
-            assert_eq!(c_call(c, request), (BC_INVALID, format!("invalid input: {said}")), "{request}");
+            assert_eq!(c_call(c, request), (SC_INVALID, format!("invalid input: {said}")), "{request}");
             // A caller that passes no place for the answer or the message still gets the code.
             let req = CString::new(request.as_str()).unwrap();
-            assert_eq!(unsafe { c(req.as_ptr(), std::ptr::null_mut(), std::ptr::null_mut()) }, BC_INVALID, "{request}");
+            assert_eq!(unsafe { c(req.as_ptr(), std::ptr::null_mut(), std::ptr::null_mut()) }, SC_INVALID, "{request}");
         }
     }
     // What only the page can get wrong.
@@ -238,23 +238,23 @@ fn what_is_not_a_request_is_invalid_input() {
             r[k] = v.clone();
         }
         assert!(!reason(fretted_tab_json(r.to_string())).is_empty());
-        assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_INVALID, "{r}");
+        assert_eq!(c_call(sc_fretted_tab_json, &r.to_string()).0, SC_INVALID, "{r}");
         assert_eq!(reason(fretted_tab_text_json(r.to_string())), reason(fretted_tab_json(r.to_string())), "{r}");
-        assert_eq!(c_call(bc_fretted_playing_instructions_json, &r.to_string()).0, BC_INVALID, "{r}");
+        assert_eq!(c_call(sc_fretted_playing_instructions_json, &r.to_string()).0, SC_INVALID, "{r}");
     }
     // A full instrument that makes sense is taken as it is, and has no tuning suggestions.
     let mut r = request();
     r["instrument"] = custom(&|_| {}, 4);
     let v: Value = serde_json::from_str(&fretted_fingering_json(r.to_string()).unwrap()).unwrap();
     assert_eq!((&v["instrument"]["name"], &v["tuning_suggestions"]), (&json!("Custom"), &json!([])));
-    assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_OK);
+    assert_eq!(c_call(sc_fretted_tab_json, &r.to_string()).0, SC_OK);
     // A fingering that puts a note where it does not sound is refused, with the place and the pitch.
     let solved: Value = serde_json::from_str(&fretted_fingering_json(request().to_string()).unwrap()).unwrap();
     let mut r = request();
     r["fingering"] = solved["fingering"].clone();
     r["fingering"]["notes"][1]["string"] = json!(1);
     assert_eq!(reason(fretted_tab_json(r.to_string())), "note 1: string 1 fret 0 sounds pitch 43, not the note's 33");
-    assert_eq!(c_call(bc_fretted_tab_json, &r.to_string()).0, BC_INVALID);
+    assert_eq!(c_call(sc_fretted_tab_json, &r.to_string()).0, SC_INVALID);
     r["fingering"]["notes"][1]["fret"] = json!(99);
     assert_eq!(reason(fretted_tab_json(r.to_string())), "note 1: the instrument has no string 1 fret 99");
     r["fingering"]["notes"][1] = json!({"pitch": 33, "string": 3, "fret": 0, "alternatives": [], "out_of_range": false, "pinned": false, "finger": 1});
@@ -269,10 +269,10 @@ fn what_is_not_a_request_is_invalid_input() {
 #[test]
 fn a_null_request_is_a_null_argument() {
     let (mut out, mut err): (*mut c_char, *mut c_char) = (std::ptr::null_mut(), std::ptr::null_mut());
-    assert_eq!(unsafe { bc_fretted_fingering_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
-    assert_eq!(unsafe { bc_fretted_tab_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
-    assert_eq!(unsafe { bc_fretted_tab_text_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
-    assert_eq!(unsafe { bc_fretted_playing_instructions_json(std::ptr::null(), &mut out, &mut err) }, BC_NULL);
+    assert_eq!(unsafe { sc_fretted_fingering_json(std::ptr::null(), &mut out, &mut err) }, SC_NULL);
+    assert_eq!(unsafe { sc_fretted_tab_json(std::ptr::null(), &mut out, &mut err) }, SC_NULL);
+    assert_eq!(unsafe { sc_fretted_tab_text_json(std::ptr::null(), &mut out, &mut err) }, SC_NULL);
+    assert_eq!(unsafe { sc_fretted_playing_instructions_json(std::ptr::null(), &mut out, &mut err) }, SC_NULL);
     assert!(out.is_null() && err.is_null());
 }
 
@@ -285,8 +285,8 @@ fn large_and_odd_passages_come_back_without_a_panic() {
         let r = json!({"instrument": {"preset": "bass-5-standard", "capo": 3}, "notes": notes}).to_string();
         let v: Value = serde_json::from_str(&fretted_fingering_json(r.clone()).unwrap()).unwrap();
         assert_eq!(v["fingering"]["notes"].as_array().unwrap().len(), notes.len());
-        assert_eq!(c_call(bc_fretted_tab_json, &r).0, BC_OK);
-        assert_eq!(c_call(bc_fretted_tab_text_json, &r).0, BC_OK);
-        assert_eq!(c_call(bc_fretted_playing_instructions_json, &r).0, BC_OK);
+        assert_eq!(c_call(sc_fretted_tab_json, &r).0, SC_OK);
+        assert_eq!(c_call(sc_fretted_tab_text_json, &r).0, SC_OK);
+        assert_eq!(c_call(sc_fretted_playing_instructions_json, &r).0, SC_OK);
     }
 }

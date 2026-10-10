@@ -44,9 +44,9 @@ env_lines() {
   # This checkout, not the main one: tests also look up tracked files (sounds/, design/) through
   # it, and data/ and models/ are linked in.
   echo "export BRASSCRIBE_REPO='$ROOT'"
-  echo "export BRASSCRIBE_FFI_PATH='$ROOT/core/target/release/libbrasscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
+  echo "export SCRIBE_FFI_PATH='$ROOT/core/target/release/libscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
   # The core's command line, for the engine's bass-tab profile and the tests that need it.
-  [ -x "$ROOT/core/target/release/brasscribe-core" ] && echo "export BRASSCRIBE_CORE_CLI='$ROOT/core/target/release/brasscribe-core'"
+  [ -x "$ROOT/core/target/release/scribe-core" ] && echo "export SCRIBE_CORE_CLI='$ROOT/core/target/release/scribe-core'"
   # The data is here, so a Rust golden test that cannot find it fails instead of skipping.
   [ -e "$MAIN/data/mikkel/repro/mix.beats" ] && echo "export BRASSCRIBE_REQUIRE_DATA=1"
   echo "export ANDROID_HOME='$ANDROID_HOME'"

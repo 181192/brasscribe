@@ -1,6 +1,6 @@
 import Foundation
 
-/// The seam to the shared Rust core (`core/swift/BrasscribeCore`, UniFFI). The app talks
+/// The seam to the shared Rust core (`core/swift/ScribeCore`, UniFFI). The app talks
 /// only to this protocol; `SwiftCoreBridge` implements it in Swift until the core package
 /// is available, at which point a `RustCoreBridge` replaces it without touching callers.
 public protocol CoreBridge: Sendable {

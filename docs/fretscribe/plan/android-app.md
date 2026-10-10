@@ -43,7 +43,7 @@ over with each of them.
 
 | Gap | Where |
 |---|---|
-| `target-fretted` through FFI (JSON in, JSON out), so re-fingering is instant and offline | `core/brasscribe-ffi`, regenerated bindings |
+| `target-fretted` through FFI (JSON in, JSON out), so re-fingering is instant and offline | `core/ffi`, regenerated bindings |
 | Pins as job input | engine |
 | "Around fret N" / "on these strings" | core, then device |
 | Change one note's pitch | device: edit the notes, re-solve |

@@ -1,7 +1,7 @@
 //! Seats: the seat -> part table as the plan writes it, walked for every seat and lineup.
 
 use target_brass::instruments::{brass_band, check_reads, lineup_by_name, part_banks, seat_part, SEATS};
-use brasscribe_core::talking_score::nb_part_name;
+use scribe_core::talking_score::nb_part_name;
 
 /// (seat, full band, small band, quartet); None = no part.
 const TABLE: [(&str, Option<&str>, Option<&str>, Option<&str>); 18] = [

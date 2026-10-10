@@ -1,5 +1,5 @@
-module brasscribe_ffiFFI {
-    header "brasscribe_ffiFFI.h"
+module scribe_ffiFFI {
+    header "scribe_ffiFFI.h"
     export *
     use "Darwin"
     use "_Builtin_stdbool"

@@ -224,7 +224,7 @@ class BassTabTest {
     @Test
     fun aComputerThatCannotWriteTabIsAnErrorTheAppCanName() = runTest {
         // The engine's 422 bodies: the code first, then its English message.
-        val refused = """{"code":"core_missing","detail":"this engine cannot write tab: brasscribe-core is not installed with it (build it with `cargo build --release -p brasscribe-cli` in core/)"}"""
+        val refused = """{"code":"core_missing","detail":"this engine cannot write tab: scribe-core is not installed with it (build it with `cargo build --release -p scribe-cli` in core/)"}"""
         fun api(body: String, status: HttpStatusCode = HttpStatusCode.UnprocessableEntity) = KtorEngineApi("http://host", MockEngine { respond(body, status, json) })
         suspend fun refusal(api: KtorEngineApi) = runCatching { api.createJob(JobCreate.bassTab("a1")) }.exceptionOrNull() as EngineException
 

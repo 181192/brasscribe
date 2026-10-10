@@ -1,8 +1,8 @@
 """Unit-level fixtures from the Python reference on seeded synthetic inputs.
 
-    uv run python -m brasscribe_conformance.fixtures
+    uv run python -m scribe_conformance.fixtures
 
-Writes core/brasscribe-core/tests/fixtures/*.json; `cargo test` compares the
+Writes core/scribe-core/tests/fixtures/*.json; `cargo test` compares the
 Rust functions with them (exact equality). No recorded data is involved.
 """
 
@@ -20,7 +20,7 @@ from brasscribe_music.spelling import key_of, spell
 
 from .cases import REPO
 
-OUT = REPO / "core" / "brasscribe-core" / "tests" / "fixtures"
+OUT = REPO / "core" / "scribe-core" / "tests" / "fixtures"
 warnings.filterwarnings("ignore")
 
 

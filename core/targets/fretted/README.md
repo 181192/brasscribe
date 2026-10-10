@@ -4,7 +4,7 @@ Tablature fingering for fretted instruments. It chooses a string and a fret for 
 passage, so the passage can be written as tab for guitar, bass, ukulele or mandolin, and writes the
 result as tablature in MusicXML, as a plain-text tab, and as playing instructions in words.
 
-The input is the shared symbolic model's notes from `brasscribe-core` (`Note`: concert MIDI
+The input is the shared symbolic model's notes from `scribe-core` (`Note`: concert MIDI
 `pitch`, and `start` and `dur` in ticks at `TICKS_PER_BEAT`). The output gives each note a string
 and a fret, plus the other places it could be played. Pitches are never changed. When no string can
 sound a note, the note is flagged `out_of_range` and keeps its pitch.
@@ -718,10 +718,10 @@ with plain text, not JSON: the text tab and the playing instructions. They read 
 and do not read it. `tab.doubt_below` decides the `?` and the "to check" as it does in the MusicXML;
 `tab.layout`, `tab.capo` and `tab.clef` have no meaning in text.
 
-The same requests and answers reach the apps through the bindings in `brasscribe-ffi`
+The same requests and answers reach the apps through the bindings in `scribe-ffi`
 (`fretted_fingering_json` for `solve_json`, `fretted_tab_json` for `tab_json`,
 `fretted_tab_text_json` and `fretted_playing_instructions_json` for the two texts; see
-[the core's README](../README.md#bindings)) and the command line (`brasscribe-core fret`, and `tab`
+[the core's README](../README.md#bindings)) and the command line (`scribe-core fret`, and `tab`
 with `--format json`, `text` or `instructions`, where `--lang` and `--width` stand in for the
 request's `text`). Every refusal is invalid input there.
 

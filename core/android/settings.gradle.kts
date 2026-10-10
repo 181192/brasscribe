@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "brasscribe-core-android"
-include(":brasscribe-core")
+rootProject.name = "scribe-core-android"
+include(":scribe-core")

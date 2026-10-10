@@ -1,6 +1,6 @@
 [package]
 name = "uniffi-bindgen"
-description = "UniFFI binding generator for brasscribe-ffi (Swift, Kotlin)"
+description = "UniFFI binding generator for scribe-ffi (Swift, Kotlin)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

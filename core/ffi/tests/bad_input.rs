@@ -5,12 +5,12 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use brasscribe_ffi::c_api::{
-    bc_arrange_layers_band, bc_arrange_musicxml, bc_arrange_with, bc_humanize_json, bc_spell_json, bc_string_free, bc_talking_score_free,
-    bc_talking_score_navigate, bc_talking_score_new, BcTalkingScore, BC_INVALID, BC_OK,
+use scribe_ffi::c_api::{
+    sc_arrange_layers_band, sc_arrange_musicxml, sc_arrange_with, sc_humanize_json, sc_spell_json, sc_string_free, sc_talking_score_free,
+    sc_talking_score_navigate, sc_talking_score_new, BcTalkingScore, SC_INVALID, SC_OK,
 };
-use brasscribe_ffi::talking::{talking_settings_default, TalkingScore};
-use brasscribe_ffi::{
+use scribe_ffi::talking::{talking_settings_default, TalkingScore};
+use scribe_ffi::{
     arrange_layers_band, arrange_musicxml, arrange_musicxml_with, arrange_song, choose_metrical_level, quantize_notes, spell_pitches, ArrangeOptions,
     CoreError, LayerMidi, LayerStems, LayersSongOptions, PerformedNote, SoloContour,
 };
@@ -103,11 +103,11 @@ fn cs(s: &str) -> CString {
 fn c_call(f: impl FnOnce(*mut *mut c_char, *mut *mut c_char) -> i32) -> (i32, String) {
     let (mut out, mut err): (*mut c_char, *mut c_char) = (std::ptr::null_mut(), std::ptr::null_mut());
     let code = f(&mut out, &mut err);
-    let p = if code == BC_OK { out } else { err };
+    let p = if code == SC_OK { out } else { err };
     let text = if p.is_null() { String::new() } else { unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned() };
     unsafe {
-        bc_string_free(out);
-        bc_string_free(err);
+        sc_string_free(out);
+        sc_string_free(err);
     }
     (code, text)
 }
@@ -119,10 +119,10 @@ fn c_band(l: &LayerMidi, wav: [Option<&[u8]>; 4], beats: &str, options: &str) ->
     let wptr: Vec<*const u8> = wav.iter().map(|w| w.map_or(std::ptr::null(), |w| w.as_ptr())).collect();
     let wlen: Vec<usize> = wav.iter().map(|w| w.map_or(0, |w| w.len())).collect();
     let (b, t, o) = (cs(beats), cs("T"), cs(options));
-    c_call(|out, err| unsafe { bc_arrange_layers_band(ptr.as_ptr(), len.as_ptr(), wptr.as_ptr(), wlen.as_ptr(), b.as_ptr(), t.as_ptr(), o.as_ptr(), out, err) })
+    c_call(|out, err| unsafe { sc_arrange_layers_band(ptr.as_ptr(), len.as_ptr(), wptr.as_ptr(), wlen.as_ptr(), b.as_ptr(), t.as_ptr(), o.as_ptr(), out, err) })
 }
 
-fn band(l: LayerMidi, stems: LayerStems, beats: &str, o: LayersSongOptions) -> Result<brasscribe_ffi::BandOutput, CoreError> {
+fn band(l: LayerMidi, stems: LayerStems, beats: &str, o: LayersSongOptions) -> Result<scribe_ffi::BandOutput, CoreError> {
     arrange_layers_band(l, stems, beats.into(), "T".into(), o)
 }
 
@@ -178,7 +178,7 @@ fn a_meter_of_a_hundred_thousand_beats_is_refused_on_a_small_stack() {
         assert!(reason(arrange_musicxml(comp(|v| v["meters"][0]["beats"] = beats.into()), "auto".into())).contains("a bar has 1 to 32 beats"));
     }
     let (json, auto) = (cs(&comp(|v| v["meters"][0]["beats"] = (-3).into())), cs("auto"));
-    assert_eq!(c_call(|out, err| unsafe { bc_arrange_musicxml(json.as_ptr(), auto.as_ptr(), out, err) }).0, BC_INVALID);
+    assert_eq!(c_call(|out, err| unsafe { sc_arrange_musicxml(json.as_ptr(), auto.as_ptr(), out, err) }).0, SC_INVALID);
 }
 
 #[test]
@@ -209,7 +209,7 @@ fn a_beat_table_that_does_not_increase_is_refused() {
     let early = smf(&[(72, 0, 400), (74, 480 * 4, 400)]);
     assert!(reason(arrange_song(early.clone(), None, smf(&[(48, 0, 400)]), vec![], equal.clone(), "T".into())).contains("increase"));
     assert!(reason(band(layers(early.clone()), LayerStems::default(), &equal, opts())).contains("increase"));
-    assert_eq!(c_band(&layers(early), [None; 4], &equal, "").0, BC_INVALID);
+    assert_eq!(c_band(&layers(early), [None; 4], &equal, "").0, SC_INVALID);
     for bad in ["nan 1\n0.5 2\n1.0 3\n", "0 1\ninf 2\n", "0 1\n0.5 nan\n"] {
         assert!(reason(arrange_song(tune(), None, smf(&[]), vec![], bad.into(), "T".into())).contains("not a number"), "{bad:?}");
     }
@@ -245,7 +245,7 @@ fn bad_band_options_are_invalid_input() {
         let r = reason(band(layers(tune()), LayerStems::default(), &beats(), o));
         assert!(r.contains(what), "{what}: {r}");
         let (code, err) = c_band(&layers(tune()), [None; 4], &beats(), json);
-        assert_eq!(code, BC_INVALID, "{json}: {err}");
+        assert_eq!(code, SC_INVALID, "{json}: {err}");
         assert!(err.contains(what), "{json}: {err}");
     }
     for bpm in [f64::INFINITY, f64::NAN, 0.0, -60.0] {
@@ -258,13 +258,13 @@ fn bad_band_options_are_invalid_input() {
 fn transpositions_beyond_four_octaves_are_invalid() {
     for t in [4294967296i64, 2147483648, -2147483649, 49, -1000] {
         let (json, o) = (cs(&comp(|_| {})), cs(&format!(r#"{{"transpose": {t}}}"#)));
-        let (code, err) = c_call(|out, err| unsafe { bc_arrange_with(json.as_ptr(), o.as_ptr(), out, err) });
-        assert_eq!(code, BC_INVALID, "{t}: {err}");
+        let (code, err) = c_call(|out, err| unsafe { sc_arrange_with(json.as_ptr(), o.as_ptr(), out, err) });
+        assert_eq!(code, SC_INVALID, "{t}: {err}");
         let (code, _) = c_band(&layers(tune()), [None; 4], &beats(), &format!(r#"{{"transpose": {t}}}"#));
-        assert_eq!(code, BC_INVALID, "{t}");
+        assert_eq!(code, SC_INVALID, "{t}");
     }
     let (json, o) = (cs(&comp(|_| {})), cs(r#"{"transpose": 2.5}"#));
-    assert_eq!(c_call(|out, err| unsafe { bc_arrange_with(json.as_ptr(), o.as_ptr(), out, err) }).0, BC_INVALID);
+    assert_eq!(c_call(|out, err| unsafe { sc_arrange_with(json.as_ptr(), o.as_ptr(), out, err) }).0, SC_INVALID);
     let with = |t: i32| ArrangeOptions { transpose: Some(t), ..Default::default() };
     assert!(arrange_musicxml_with(comp(|_| {}), with(48)).is_ok());
     assert!(reason(arrange_musicxml_with(comp(|_| {}), with(1000))).contains("transposition"));
@@ -296,9 +296,9 @@ fn contour_arrays_of_different_lengths_are_invalid() {
     }
     let json = |pitch: &str| format!(r#"{{"solo_contour": {{"times": [0, 0.016, 0.032], "pitch_hz": {pitch}, "loudness_db": [-20, -20, -20]}}}}"#);
     // A null is a frame without pitch, not a frame fewer.
-    assert_eq!(c_band(&layers(tune()), [None; 4], &beats(), &json("[440, null, 440]")).0, BC_OK);
+    assert_eq!(c_band(&layers(tune()), [None; 4], &beats(), &json("[440, null, 440]")).0, SC_OK);
     let (code, err) = c_band(&layers(tune()), [None; 4], &beats(), &json("[440, 440]"));
-    assert_eq!(code, BC_INVALID);
+    assert_eq!(code, SC_INVALID);
     assert!(err.contains("contour"), "{err}");
 }
 
@@ -309,10 +309,10 @@ fn stems_that_are_cut_off_or_not_numbers() {
     cut.truncate(12 + 8 + 10); // inside the fmt chunk
     let stems = |w: &[u8]| LayerStems { solo: Some(w.to_vec()), bass: Some(w.to_vec()), ..Default::default() };
     assert!(reason(band(layers(tune()), stems(&cut), &beats(), opts())).contains("fmt"));
-    assert_eq!(c_band(&layers(tune()), [Some(&cut), None, None, None], &beats(), "").0, BC_INVALID);
+    assert_eq!(c_band(&layers(tune()), [Some(&cut), None, None, None], &beats(), "").0, SC_INVALID);
     let nan = wav_f32(&[f32::NAN; 8000]);
     assert!(band(layers(tune()), stems(&nan), &beats(), opts()).is_ok());
-    assert_eq!(c_band(&layers(tune()), [Some(&nan), Some(&nan), Some(&nan), Some(&nan)], &beats(), "").0, BC_OK);
+    assert_eq!(c_band(&layers(tune()), [Some(&nan), Some(&nan), Some(&nan), Some(&nan)], &beats(), "").0, SC_OK);
 }
 
 #[test]
@@ -335,7 +335,7 @@ fn spelling_needs_one_onset_per_pitch() {
     assert!(reason(spell_pitches(vec![f64::NAN, 1.0], vec![66, 69])).contains("numbers"));
     for req in [r#"{"onsets": [0, null], "pitches": [66, 69]}"#, r#"{"onsets": [0, 1], "pitches": [66, 4294967296]}"#, r#"{"onsets": [0], "pitches": [66, 69]}"#] {
         let r = cs(req);
-        assert_eq!(c_call(|out, err| unsafe { bc_spell_json(r.as_ptr(), out, err) }).0, BC_INVALID, "{req}");
+        assert_eq!(c_call(|out, err| unsafe { sc_spell_json(r.as_ptr(), out, err) }).0, SC_INVALID, "{req}");
     }
 }
 
@@ -352,7 +352,7 @@ fn humanizing_with_beat_times_at_the_ends_of_the_float_range() {
         r#"{{"notes": [{{"tick": 0, "dur_tick": 96, "start_s": 0.0, "end_s": 2.0, "pitch": 64, "velocity": 80}}], "part": "Solo Cornet", "composition": {c}}}"#
     );
     let r = cs(&req);
-    assert_eq!(c_call(|out, err| unsafe { bc_humanize_json(r.as_ptr(), out, err) }).0, BC_OK);
+    assert_eq!(c_call(|out, err| unsafe { sc_humanize_json(r.as_ptr(), out, err) }).0, SC_OK);
 }
 
 // ---- talking score ----
@@ -376,8 +376,8 @@ fn talking_score_of_odd_musicxml() {
     let (xml, none) = (cs(&musicxml("<divisions>0</divisions>", "")), std::ptr::null());
     let mut ts: *mut BcTalkingScore = std::ptr::null_mut();
     let mut err: *mut c_char = std::ptr::null_mut();
-    assert_eq!(unsafe { bc_talking_score_new(xml.as_ptr(), none, &mut ts, &mut err) }, BC_INVALID);
-    unsafe { bc_string_free(err) };
+    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), none, &mut ts, &mut err) }, SC_INVALID);
+    unsafe { sc_string_free(err) };
     // A key signature of i64::MIN fifths flattens all seven steps, as in the reference: its B is a B flat,
     // so a written B is announced as B natural.
     let flats = TalkingScore::new(musicxml("<divisions>1</divisions><key><fifths>-9223372036854775808</fifths></key>", ""), None).unwrap();
@@ -395,10 +395,10 @@ fn talking_score_parts_and_cursors_out_of_range() {
     let xml = cs(&musicxml("<divisions>1</divisions>", ""));
     let mut h: *mut BcTalkingScore = std::ptr::null_mut();
     let mut err: *mut c_char = std::ptr::null_mut();
-    assert_eq!(unsafe { bc_talking_score_new(xml.as_ptr(), std::ptr::null(), &mut h, &mut err) }, BC_OK);
+    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), std::ptr::null(), &mut h, &mut err) }, SC_OK);
     for unit in ["part", "bar"] {
         let req = cs(&format!(r#"{{"cursor": {{"part": 18446744073709551615, "bar": 18446744073709551615, "event": 0}}, "unit": "{unit}", "forward": true}}"#));
-        assert_eq!(c_call(|out, err| unsafe { bc_talking_score_navigate(h, req.as_ptr(), out, err) }), (BC_OK, "null".into()), "{unit}");
+        assert_eq!(c_call(|out, err| unsafe { sc_talking_score_navigate(h, req.as_ptr(), out, err) }), (SC_OK, "null".into()), "{unit}");
     }
-    unsafe { bc_talking_score_free(h) };
+    unsafe { sc_talking_score_free(h) };
 }

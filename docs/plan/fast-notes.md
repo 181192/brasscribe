@@ -322,7 +322,7 @@ numbers after F1.
 - Collisions that remain after that are shifted to the next free slot at the finest grid, instead of dropped
   by `_monophonize`. The note is marked uncertain.
 
-The unit fixtures (`core/brasscribe-core/tests/fixtures/quantize.json`) are regenerated on purpose.
+The unit fixtures (`core/scribe-core/tests/fixtures/quantize.json`) are regenerated on purpose.
 
 **F4. Uncertainty, not deletion.**
 - Split notes that only SwiftF0 found get their confidence from the existing calibrated model: length, contour
@@ -595,7 +595,7 @@ apart.
   - In the arrangement, written-out alternations are collapsed before the 16th merges. So a faithful composition
     re-arranged at standard or easier gets trills too (the FFI re-arrange path).
 - **Faithful: written out, unless asked for.** The option is `--trills` (the transcription CLI and
-  `brasscribe-core arrange-layers`), or `trills` in the FFI `ArrangeOptions` and `LayersSongOptions` and in the C API
+  `scribe-core arrange-layers`), or `trills` in the FFI `ArrangeOptions` and `LayersSongOptions` and in the C API
   options. It is recorded as `arrangement.trills`.
 
 **MusicXML.**

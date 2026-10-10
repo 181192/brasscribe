@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Brasscribe.Core/Brasscribe.Core.csproj" />
+    <ProjectReference Include="../Scribe.Core/Scribe.Core.csproj" />
   </ItemGroup>
 
 </Project>

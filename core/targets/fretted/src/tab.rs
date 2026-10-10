@@ -11,10 +11,10 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use brasscribe_core::model::{check_span, Composition, Note, MAX_BAR_BEATS, TICKS_PER_BEAT};
-use brasscribe_core::notation::xml::El;
-use brasscribe_core::rhythm_spelling::{is_single, pieces};
-use brasscribe_core::spelling::{spell, Spelled};
+use scribe_core::model::{check_span, Composition, Note, MAX_BAR_BEATS, TICKS_PER_BEAT};
+use scribe_core::notation::xml::El;
+use scribe_core::rhythm_spelling::{is_single, pieces};
+use scribe_core::spelling::{spell, Spelled};
 use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, NotationClef};

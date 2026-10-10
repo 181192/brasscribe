@@ -9,12 +9,12 @@ identical Compositions, MusicXML, humanized notes and talking scores.
 The shared core knows no instruments. What turns its notes into one kind of output is a target crate:
 `target-brass` arranges for a brass band, `target-fretted` places notes on strings. A target depends on
 the core, the core depends on no target, and targets do not depend on each other; the compiler holds
-that line, and `brasscribe-core/tests/crate_graph.rs` checks the manifests (dev-dependencies included).
+that line, and `scribe-core/tests/crate_graph.rs` checks the manifests (dev-dependencies included).
 A target hands the core's MusicXML writer what it needs as data (`notation::score::InstrumentSpec`: a
 part's names, transposition and playback program).
 
 ```
-brasscribe-core/   the shared core: pure logic, no instruments (deps: serde, serde_json, roxmltree)
+scribe-core/       the shared core: pure logic, no instruments (deps: serde, serde_json, roxmltree)
   model            Composition + composition.json (field order and number format of the reference)
   quantize         beat map, metrical level, grids (free-time grids, dense grids for fast runs), fill_gaps
   onsets           pitch-change onsets from the SwiftF0 contour (trills, runs, octave flips, bends)
@@ -33,7 +33,7 @@ brasscribe-core/   the shared core: pure logic, no instruments (deps: serde, ser
   midi             SMF reading with pretty_midi's note semantics
   py, pyjson       CPython/NumPy rounding, sums and JSON output, bit for bit
   notation/        measures, accidentals, ties, tuplets, beams, stems, transposition, MusicXML
-target-brass/      the brass-band target (deps: the core, serde, serde_json)
+targets/brass/     the brass-band target, crate `target-brass` (deps: the core, serde, serde_json)
   instruments      brass-band instruments (Trumpet in B♭ included), lineups (band, minimal, quartet) with their roles,
                    ranges, transpositions; the players' seats with the clef each reads and the part it takes
   arranger         minimal band or quartet (`arrange_opts`) and solo with band (`arrange_layers_opts`: lineup, soprano
@@ -41,13 +41,13 @@ target-brass/      the brass-band target (deps: the core, serde, serde_json)
   difficulty       faithful / standard / easier rewrites of the arranged parts
   musicxml         the band score handed to the core's writer: parts in lineup order, sounds, MIDI banks, the kit
   pipeline         the reference entry points (arrange_layers_song, arrange_song, lead_sheet, reference -> band)
-brasscribe-ffi/    UniFFI exports + `bc_*` C ABI (the core, target-brass, and target-fretted as JSON)
-brasscribe-cli/    `brasscribe-core` binary: the same entry points as the Python scripts, file based
-target-fretted/    tab fingering: a string and fret for every note on guitar, bass, ukulele, mandolin
+ffi/               crate `scribe-ffi`: UniFFI exports + `sc_*` C ABI (the core, target-brass, and target-fretted as JSON)
+cli/               crate `scribe-cli`, the `scribe-core` binary: the same entry points as the Python scripts, file based
+targets/fretted/   crate `target-fretted`, tab fingering: a string and fret for every note on guitar, bass, ukulele, mandolin
 bindings/          generated Swift, Kotlin and C header (scripts/bindings.sh)
-swift/BrasscribeCore  SwiftPM package (binaryTarget XCFramework + generated Swift)
+swift/ScribeCore   SwiftPM package (binaryTarget XCFramework + generated Swift)
 android/           Android library (AAR) with jniLibs per ABI, JVM smoke test
-dotnet/            Brasscribe.Core (P/Invoke) + xunit tests
+dotnet/            Scribe.Core (P/Invoke) + xunit tests
 conformance/       Python/uv runner: reference vs Rust on the golden and eval inputs
 scripts/           bindings.sh, build-all.sh
 ```
@@ -58,37 +58,37 @@ Needs Rust stable, and `uv` for the conformance runner.
 
 ```sh
 export PATH=/opt/homebrew/opt/rustup/bin:$PATH
-cargo build --release                      # brasscribe-core CLI at target/release/brasscribe-core
+cargo build --release                      # scribe-core CLI at target/release/scribe-core
 cargo test --release                       # unit tests + fixtures from the Python reference
-cd conformance && uv run python -m brasscribe_conformance.run [--musescore] [--only mikkel]
-uv run python -m brasscribe_conformance.fixtures   # regenerate the unit fixtures
+cd conformance && uv run python -m scribe_conformance.run [--musescore] [--only mikkel]
+uv run python -m scribe_conformance.fixtures   # regenerate the unit fixtures
 scripts/bindings.sh                        # Swift/Kotlin/C bindings
 scripts/build-all.sh                       # macOS, iOS, iOS simulator, Android, Windows, XCFramework
-cd swift/BrasscribeCore && swift test      # (DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer)
-cd dotnet/Brasscribe.Core.Tests && dotnet test
+cd swift/ScribeCore && swift test      # (DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer)
+cd dotnet/Scribe.Core.Tests && dotnet test
 android/smoke/run.sh                       # Kotlin bindings on the JVM against the macOS library
-cd android && gradle :brasscribe-core:assembleRelease   # AAR
+cd android && gradle :scribe-core:assembleRelease   # AAR
 ```
 
 CLI (mirrors `eval/brasscribe_eval/*.py`):
 
 ```sh
-brasscribe-core arrange-layers --layers data/mikkel/repro/layers --beats data/mikkel/repro/mix.beats \
+scribe-core arrange-layers --layers data/mikkel/repro/layers --beats data/mikkel/repro/mix.beats \
     --solo-contour <solo-sw.contour.npz> --out out/ --title "Mikkel"
-brasscribe-core arrange-song --beats b.beats --melody m.mid --melody-support bp.mid --bass m.mid --harmony m.mid bp.mid --out out/
-brasscribe-core lead-sheet --beats b.beats --melody m.mid --melody-support bp.mid --bass m.mid --out lead.musicxml
-brasscribe-core arrange-reference --reference reference.json --out out/
-brasscribe-core musicxml --composition composition.json --out band.musicxml
-brasscribe-core humanize --notes notes.json --part "Solo Cornet" --player 0 [--composition c.json] [--timing performed] --out h.json
-brasscribe-core talking-score --musicxml band.musicxml --composition c.json --text t.txt --html t.html --json t.json [--lang nb]
-brasscribe-core quantize --reference reference.json --beats b.beats --out q.json
-brasscribe-core meter --beats b.beats --notes notes.json --out meter.json
-brasscribe-core normalize --composition composition.json --out composition.json
-brasscribe-core fret --request request.json --out fingering.json
-brasscribe-core tab --request tab-request.json --out tab.json
-brasscribe-core tab --request tab-request.json --out tab.txt --format text [--width 72]
-brasscribe-core tab --request tab-request.json --out instructions.txt --format instructions [--lang nb]
-brasscribe-core version
+scribe-core arrange-song --beats b.beats --melody m.mid --melody-support bp.mid --bass m.mid --harmony m.mid bp.mid --out out/
+scribe-core lead-sheet --beats b.beats --melody m.mid --melody-support bp.mid --bass m.mid --out lead.musicxml
+scribe-core arrange-reference --reference reference.json --out out/
+scribe-core musicxml --composition composition.json --out band.musicxml
+scribe-core humanize --notes notes.json --part "Solo Cornet" --player 0 [--composition c.json] [--timing performed] --out h.json
+scribe-core talking-score --musicxml band.musicxml --composition c.json --text t.txt --html t.html --json t.json [--lang nb]
+scribe-core quantize --reference reference.json --beats b.beats --out q.json
+scribe-core meter --beats b.beats --notes notes.json --out meter.json
+scribe-core normalize --composition composition.json --out composition.json
+scribe-core fret --request request.json --out fingering.json
+scribe-core tab --request tab-request.json --out tab.json
+scribe-core tab --request tab-request.json --out tab.txt --format text [--width 72]
+scribe-core tab --request tab-request.json --out instructions.txt --format instructions [--lang nb]
+scribe-core version
 ```
 
 `arrange-layers` also takes `--lineup band|full|minimal|quartet`, `--difficulty
@@ -101,7 +101,7 @@ when present. `arrange-song` and `arrange-reference` take `--lineup
 minimal|quartet` (default minimal); `arrange-song` also takes `--seat`, `--reads` and `--lead`. The quartet is 1st Cornet, 2nd Cornet,
 Tenor Horn and Euphonium, one player each.
 
-`fret` is how the engine reaches [`target-fretted`](target-fretted/README.md): it reads that crate's JSON request
+`fret` is how the engine reaches [`target-fretted`](targets/fretted/README.md): it reads that crate's JSON request
 (instrument, notes, options) and writes its JSON response (fingering, violations, tuning suggestions), both unchanged.
 `tab` does the same for tablature: the crate's tab request in (the notes, a fingering or none, title, tempo, meter,
 key, and `tab` with the layout, the capo encoding and the doubt threshold), and `{"musicxml": …, "adjusted_notes": …}`
@@ -150,7 +150,7 @@ tuplet completion and brackets, beam partials, stems per beam group,
 transposed accidentals, MIDI channel assignment) are ported in `notation/`.
 
 Each band case also checks the app path: the reference `composition.json` read
-back by Rust gives the same bytes, and arranging it (`brasscribe-core
+back by Rust gives the same bytes, and arranging it (`scribe-core
 musicxml`) gives the reference MusicXML.
 
 Open points:
@@ -169,7 +169,7 @@ Open points:
 Swift (UniFFI):
 
 ```swift
-import BrasscribeCore
+import ScribeCore
 let xml = try arrangeMusicxml(compositionJson: json, arranger: "auto")
 // Re-arrange for a lineup and difficulty (transpose: the total from the recording)
 let quartet = try arrangeMusicxmlWith(compositionJson: json,
@@ -182,7 +182,7 @@ let out = try arrangeLayersSong(layers: LayerMidi(soloSwiftf0: sw, soloMuscripto
 Kotlin (UniFFI, JNA):
 
 ```kotlin
-import uniffi.brasscribe_ffi.*
+import uniffi.scribe_ffi.*
 val xml = arrangeMusicxml(json, "auto")
 val spelled = spellPitches(listOf(0.0, 1.0), listOf(66, 69))
 ```
@@ -200,31 +200,31 @@ let line = try ts.announce(cursor: cursor, context: TalkingContext(), settings: 
 cursor = ts.navigate(cursor: cursor, unit: .note, forward: true) ?? cursor
 ```
 
-C# (P/Invoke over `bc_*`):
+C# (P/Invoke over `sc_*`):
 
 ```csharp
-using Brasscribe.Core;
-string xml = BrasscribeCore.ArrangeMusicXml(compositionJson);
-string quartet = BrasscribeCore.ArrangeMusicXmlWith(compositionJson, lineup: "quartet", difficulty: "easier");
-var band = BrasscribeCore.ArrangeLayersBand(layers, new LayerStems(solo, bass, drums, orchestra), beatsText, "Mikkel",
+using Scribe.Core;
+string xml = ScribeCore.ArrangeMusicXml(compositionJson);
+string quartet = ScribeCore.ArrangeMusicXmlWith(compositionJson, lineup: "quartet", difficulty: "easier");
+var band = ScribeCore.ArrangeLayersBand(layers, new LayerStems(solo, bass, drums, orchestra), beatsText, "Mikkel",
                                             new LayersSongOptions(Difficulty: "easier"));
-var played = BrasscribeCore.Humanize(notes, "Solo Cornet", 0, compositionJson: band.CompositionJson);
+var played = ScribeCore.Humanize(notes, "Solo Cornet", 0, compositionJson: band.CompositionJson);
 using var ts = new TalkingScore(band.MusicXml, band.CompositionJson);
 var (text, context) = ts.Announce(new TalkingCursor(1, 0, 0), settings: new TalkingSettings(Lang: "nb"));
 ```
 
-Tab fingering for fretted instruments ([`target-fretted`](target-fretted/README.md)) goes through
+Tab fingering for fretted instruments ([`target-fretted`](targets/fretted/README.md)) goes through
 the bindings as that crate's JSON, the same request and answer as the command line's `fret` and
 `tab`: `fretted_fingering_json` (instrument or preset, notes with their techniques, style and pins
 in; the fingering with each note's alternatives, the violations and the tuning suggestions out) and
 `fretted_tab_json` (the tab request in; `{"musicxml": …, "adjusted_notes": …}` out). They are
-`frettedFingeringJson` and `frettedTabJson` in Swift and Kotlin, `BrasscribeCore.FrettedFingeringJson`
-and `FrettedTabJson` in C#, and `bc_fretted_fingering_json` and `bc_fretted_tab_json` in C.
+`frettedFingeringJson` and `frettedTabJson` in Swift and Kotlin, `ScribeCore.FrettedFingeringJson`
+and `FrettedTabJson` in C#, and `sc_fretted_fingering_json` and `sc_fretted_tab_json` in C.
 `fretted_tab_text_json` and `fretted_playing_instructions_json` take the same tab request and answer
 with plain text: the tab for a monospace font (`"text": {"width": 72}`), and the tab in words for a
 screen reader or a braille display (`"text": {"lang": "en"}` or `"nb"`). Their names follow the same
-pattern in each language (`frettedTabTextJson`, `BrasscribeCore.FrettedPlayingInstructionsJson`,
-`bc_fretted_tab_text_json`).
+pattern in each language (`frettedTabTextJson`, `ScribeCore.FrettedPlayingInstructionsJson`,
+`sc_fretted_tab_text_json`).
 
 ```kotlin
 val answer = frettedFingeringJson("""{"instrument": {"preset": "bass-4-standard"},
@@ -233,15 +233,15 @@ val answer = frettedFingeringJson("""{"instrument": {"preset": "bass-4-standard"
 //   "out_of_range": false, "pinned": true}]}, "violations": [], "tuning_suggestions": [{"preset": "bass-4-standard", …}, …]}
 ```
 
-C: `bindings/c/brasscribe.h`. Strings are NUL-terminated UTF-8; every call
+C: `bindings/c/scribe.h`. Strings are NUL-terminated UTF-8; every call
 returns 0 or an error code (1 invalid input, 2 failure, 3 null argument,
 4 internal error) and writes the result to `*out` or a message to `*err`;
-free returned strings with `bc_string_free`.
+free returned strings with `sc_string_free`.
 
 ### Invalid input
 
 The bindings check what they are given before any work starts, and answer
-with invalid input (`CoreError::Invalid`, `BC_INVALID`) rather than a failure,
+with invalid input (`CoreError::Invalid`, `SC_INVALID`) rather than a failure,
 a panic or a hang:
 
 - a Composition (`Composition::validate`): meters of 1 to `MAX_BAR_BEATS`

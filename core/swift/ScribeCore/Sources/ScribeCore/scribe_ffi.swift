@@ -7,8 +7,8 @@ import Foundation
 // Depending on the consumer's build setup, the low-level FFI code
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
-#if canImport(brasscribe_ffiFFI)
-import brasscribe_ffiFFI
+#if canImport(scribe_ffiFFI)
+import scribe_ffiFFI
 #endif
 
 fileprivate extension RustBuffer {
@@ -25,13 +25,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_brasscribe_ffi_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_scribe_ffi_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_brasscribe_ffi_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_scribe_ffi_rustbuffer_free(self, $0) }
     }
 }
 
@@ -327,7 +327,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureBrasscribeFfiInitialized()
+    uniffiEnsureScribeFfiInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -681,13 +681,13 @@ open class Performance: PerformanceProtocol, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_brasscribe_ffi_fn_clone_performance(self.handle, $0) }
+        return try! rustCall { uniffi_scribe_ffi_fn_clone_performance(self.handle, $0) }
     }
 public convenience init(compositionJson: String)throws  {
     let handle =
         try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_constructor_performance_new(
+    uniffi_scribe_ffi_fn_constructor_performance_new(
         FfiConverterString.lower(compositionJson),uniffiCallStatus
     )
 }
@@ -700,7 +700,7 @@ public convenience init(compositionJson: String)throws  {
             return
         }
 
-        try! rustCall { uniffi_brasscribe_ffi_fn_free_performance(handle, $0) }
+        try! rustCall { uniffi_scribe_ffi_fn_free_performance(handle, $0) }
     }
 
     
@@ -849,7 +849,7 @@ open class TalkingScore: TalkingScoreProtocol, @unchecked Sendable {
     @_documentation(visibility: private)
 #endif
     public func uniffiCloneHandle() -> UInt64 {
-        return try! rustCall { uniffi_brasscribe_ffi_fn_clone_talkingscore(self.handle, $0) }
+        return try! rustCall { uniffi_scribe_ffi_fn_clone_talkingscore(self.handle, $0) }
     }
     /**
      * From partwise MusicXML text plus the Composition JSON when known
@@ -859,7 +859,7 @@ public convenience init(musicxml: String, compositionJson: String?)throws  {
     let handle =
         try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_constructor_talkingscore_new(
+    uniffi_scribe_ffi_fn_constructor_talkingscore_new(
         FfiConverterString.lower(musicxml),
         FfiConverterOptionString.lower(compositionJson),uniffiCallStatus
     )
@@ -873,7 +873,7 @@ public convenience init(musicxml: String, compositionJson: String?)throws  {
             return
         }
 
-        try! rustCall { uniffi_brasscribe_ffi_fn_free_talkingscore(handle, $0) }
+        try! rustCall { uniffi_scribe_ffi_fn_free_talkingscore(handle, $0) }
     }
 
     
@@ -887,7 +887,7 @@ public convenience init(musicxml: String, compositionJson: String?)throws  {
 open func announce(cursor: TalkingCursor, context: TalkingContext, settings: TalkingSettings, byBar: Bool)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_announce(
+    uniffi_scribe_ffi_fn_method_talkingscore_announce(
             self.uniffiCloneHandle(),
         FfiConverterTypeTalkingCursor_lower(cursor),
         FfiConverterTypeTalkingContext_lower(context),
@@ -900,7 +900,7 @@ open func announce(cursor: TalkingCursor, context: TalkingContext, settings: Tal
 open func barCount(part: UInt32) -> UInt32  {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_bar_count(
+    uniffi_scribe_ffi_fn_method_talkingscore_bar_count(
             self.uniffiCloneHandle(),
         FfiConverterUInt32.lower(part),uniffiCallStatus
     )
@@ -913,7 +913,7 @@ open func barCount(part: UInt32) -> UInt32  {
 open func contextAt(cursor: TalkingCursor, settings: TalkingSettings) -> TalkingContext  {
     return try!  FfiConverterTypeTalkingContext_lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_context_at(
+    uniffi_scribe_ffi_fn_method_talkingscore_context_at(
             self.uniffiCloneHandle(),
         FfiConverterTypeTalkingCursor_lower(cursor),
         FfiConverterTypeTalkingSettings_lower(settings),uniffiCallStatus
@@ -924,7 +924,7 @@ open func contextAt(cursor: TalkingCursor, settings: TalkingSettings) -> Talking
 open func eventCount(part: UInt32, bar: UInt32) -> UInt32  {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_event_count(
+    uniffi_scribe_ffi_fn_method_talkingscore_event_count(
             self.uniffiCloneHandle(),
         FfiConverterUInt32.lower(part),
         FfiConverterUInt32.lower(bar),uniffiCallStatus
@@ -938,7 +938,7 @@ open func eventCount(part: UInt32, bar: UInt32) -> UInt32  {
 open func navigate(cursor: TalkingCursor, unit: TalkingUnit, forward: Bool) -> TalkingCursor?  {
     return try!  FfiConverterOptionTypeTalkingCursor.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_navigate(
+    uniffi_scribe_ffi_fn_method_talkingscore_navigate(
             self.uniffiCloneHandle(),
         FfiConverterTypeTalkingCursor_lower(cursor),
         FfiConverterTypeTalkingUnit_lower(unit),
@@ -953,7 +953,7 @@ open func navigate(cursor: TalkingCursor, unit: TalkingUnit, forward: Bool) -> T
 open func partLines(part: UInt32, settings: TalkingSettings) -> [TalkingBarLines]  {
     return try!  FfiConverterSequenceTypeTalkingBarLines.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_part_lines(
+    uniffi_scribe_ffi_fn_method_talkingscore_part_lines(
             self.uniffiCloneHandle(),
         FfiConverterUInt32.lower(part),
         FfiConverterTypeTalkingSettings_lower(settings),uniffiCallStatus
@@ -964,7 +964,7 @@ open func partLines(part: UInt32, settings: TalkingSettings) -> [TalkingBarLines
 open func partNames() -> [String]  {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_part_names(
+    uniffi_scribe_ffi_fn_method_talkingscore_part_names(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -973,7 +973,7 @@ open func partNames() -> [String]  {
 open func title() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_title(
+    uniffi_scribe_ffi_fn_method_talkingscore_title(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -985,7 +985,7 @@ open func title() -> String  {
 open func toHtml(settings: TalkingSettings, parts: [UInt32]?) -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_to_html(
+    uniffi_scribe_ffi_fn_method_talkingscore_to_html(
             self.uniffiCloneHandle(),
         FfiConverterTypeTalkingSettings_lower(settings),
         FfiConverterOptionSequenceUInt32.lower(parts),uniffiCallStatus
@@ -999,7 +999,7 @@ open func toHtml(settings: TalkingSettings, parts: [UInt32]?) -> String  {
 open func toJson() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_to_json(
+    uniffi_scribe_ffi_fn_method_talkingscore_to_json(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -1011,7 +1011,7 @@ open func toJson() -> String  {
 open func toText(settings: TalkingSettings, parts: [UInt32]?) -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_to_text(
+    uniffi_scribe_ffi_fn_method_talkingscore_to_text(
             self.uniffiCloneHandle(),
         FfiConverterTypeTalkingSettings_lower(settings),
         FfiConverterOptionSequenceUInt32.lower(parts),uniffiCallStatus
@@ -1022,7 +1022,7 @@ open func toText(settings: TalkingSettings, parts: [UInt32]?) -> String  {
 open func totalBars() -> UInt32  {
     return try!  FfiConverterUInt32.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_method_talkingscore_total_bars(
+    uniffi_scribe_ffi_fn_method_talkingscore_total_bars(
             self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
@@ -3933,7 +3933,7 @@ fileprivate struct FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuff
 public func arrangeLayersBand(layers: LayerMidi, stems: LayerStems, beatsText: String, title: String, options: LayersSongOptions)throws  -> BandOutput  {
     return try  FfiConverterTypeBandOutput_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_arrange_layers_band(
+    uniffi_scribe_ffi_fn_func_arrange_layers_band(
         FfiConverterTypeLayerMidi_lower(layers),
         FfiConverterTypeLayerStems_lower(stems),
         FfiConverterString.lower(beatsText),
@@ -3949,7 +3949,7 @@ public func arrangeLayersBand(layers: LayerMidi, stems: LayerStems, beatsText: S
 public func arrangeLayersSong(layers: LayerMidi, beatsText: String, title: String, soloContour: SoloContour?, freeTime: Bool, freeTempo: Double?)throws  -> SongOutput  {
     return try  FfiConverterTypeSongOutput_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_arrange_layers_song(
+    uniffi_scribe_ffi_fn_func_arrange_layers_song(
         FfiConverterTypeLayerMidi_lower(layers),
         FfiConverterString.lower(beatsText),
         FfiConverterString.lower(title),
@@ -3968,7 +3968,7 @@ public func arrangeLayersSong(layers: LayerMidi, beatsText: String, title: Strin
 public func arrangeMusicxml(compositionJson: String, arranger: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_arrange_musicxml(
+    uniffi_scribe_ffi_fn_func_arrange_musicxml(
         FfiConverterString.lower(compositionJson),
         FfiConverterString.lower(arranger),uniffiCallStatus
     )
@@ -3984,7 +3984,7 @@ public func arrangeMusicxml(compositionJson: String, arranger: String)throws  ->
 public func arrangeMusicxmlWith(compositionJson: String, options: ArrangeOptions)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(
+    uniffi_scribe_ffi_fn_func_arrange_musicxml_with(
         FfiConverterString.lower(compositionJson),
         FfiConverterTypeArrangeOptions_lower(options),uniffiCallStatus
     )
@@ -3996,7 +3996,7 @@ public func arrangeMusicxmlWith(compositionJson: String, options: ArrangeOptions
 public func arrangeSong(melody: Data, melodySupport: Data?, bass: Data, harmony: [Data], beatsText: String, title: String)throws  -> SongOutput  {
     return try  FfiConverterTypeSongOutput_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_arrange_song(
+    uniffi_scribe_ffi_fn_func_arrange_song(
         FfiConverterData.lower(melody),
         FfiConverterOptionData.lower(melodySupport),
         FfiConverterData.lower(bass),
@@ -4014,7 +4014,7 @@ public func arrangeSong(melody: Data, melodySupport: Data?, bass: Data, harmony:
 public func arrangeSongWith(melody: Data, melodySupport: Data?, bass: Data, harmony: [Data], beatsText: String, title: String, options: SongArrangeOptions)throws  -> SongOutput  {
     return try  FfiConverterTypeSongOutput_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_arrange_song_with(
+    uniffi_scribe_ffi_fn_func_arrange_song_with(
         FfiConverterData.lower(melody),
         FfiConverterOptionData.lower(melodySupport),
         FfiConverterData.lower(bass),
@@ -4032,7 +4032,7 @@ public func arrangeSongWith(melody: Data, melodySupport: Data?, bass: Data, harm
 public func chooseMetricalLevel(beatTimes: [Double], onsets: [Double])throws  -> [Double]  {
     return try  FfiConverterSequenceDouble.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_choose_metrical_level(
+    uniffi_scribe_ffi_fn_func_choose_metrical_level(
         FfiConverterSequenceDouble.lower(beatTimes),
         FfiConverterSequenceDouble.lower(onsets),uniffiCallStatus
     )
@@ -4044,7 +4044,7 @@ public func chooseMetricalLevel(beatTimes: [Double], onsets: [Double])throws  ->
 public func coreVersion() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_core_version(uniffiCallStatus
+    uniffi_scribe_ffi_fn_func_core_version(uniffiCallStatus
     )
 })
 }
@@ -4054,7 +4054,7 @@ public func coreVersion() -> String  {
 public func estimateKey(durationsBeats: [Double], pitches: [Int32]) -> KeyEstimate  {
     return try!  FfiConverterTypeKeyEstimate_lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_estimate_key(
+    uniffi_scribe_ffi_fn_func_estimate_key(
         FfiConverterSequenceDouble.lower(durationsBeats),
         FfiConverterSequenceInt32.lower(pitches),uniffiCallStatus
     )
@@ -4066,7 +4066,7 @@ public func estimateKey(durationsBeats: [Double], pitches: [Int32]) -> KeyEstima
 public func instruments() -> [InstrumentInfo]  {
     return try!  FfiConverterSequenceTypeInstrumentInfo.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_instruments(uniffiCallStatus
+    uniffi_scribe_ffi_fn_func_instruments(uniffiCallStatus
     )
 })
 }
@@ -4076,7 +4076,7 @@ public func instruments() -> [InstrumentInfo]  {
 public func layersSongDefaults() -> LayersSongOptions  {
     return try!  FfiConverterTypeLayersSongOptions_lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_layers_song_defaults(uniffiCallStatus
+    uniffi_scribe_ffi_fn_func_layers_song_defaults(uniffiCallStatus
     )
 })
 }
@@ -4086,7 +4086,7 @@ public func layersSongDefaults() -> LayersSongOptions  {
 public func normalizeComposition(json: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_normalize_composition(
+    uniffi_scribe_ffi_fn_func_normalize_composition(
         FfiConverterString.lower(json),uniffiCallStatus
     )
 })
@@ -4098,7 +4098,7 @@ public func normalizeComposition(json: String)throws  -> String  {
 public func partNameNb(name: String) -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_part_name_nb(
+    uniffi_scribe_ffi_fn_func_part_name_nb(
         FfiConverterString.lower(name),uniffiCallStatus
     )
 })
@@ -4109,7 +4109,7 @@ public func partNameNb(name: String) -> String  {
 public func partSources(compositionJson: String)throws  -> [PartSource]  {
     return try  FfiConverterSequenceTypePartSource.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_part_sources(
+    uniffi_scribe_ffi_fn_func_part_sources(
         FfiConverterString.lower(compositionJson),uniffiCallStatus
     )
 })
@@ -4121,7 +4121,7 @@ public func partSources(compositionJson: String)throws  -> [PartSource]  {
 public func quantizeNotes(notes: [PerformedNote], beatTimes: [Double], monophonic: Bool, autoLevel: Bool, fillGapTicks: Int64)throws  -> [GridNote]  {
     return try  FfiConverterSequenceTypeGridNote.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_quantize_notes(
+    uniffi_scribe_ffi_fn_func_quantize_notes(
         FfiConverterSequenceTypePerformedNote.lower(notes),
         FfiConverterSequenceDouble.lower(beatTimes),
         FfiConverterBool.lower(monophonic),
@@ -4137,7 +4137,7 @@ public func quantizeNotes(notes: [PerformedNote], beatTimes: [Double], monophoni
 public func seatPart(lineup: String, seat: String)throws  -> SeatPart  {
     return try  FfiConverterTypeSeatPart_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_seat_part(
+    uniffi_scribe_ffi_fn_func_seat_part(
         FfiConverterString.lower(lineup),
         FfiConverterString.lower(seat),uniffiCallStatus
     )
@@ -4149,7 +4149,7 @@ public func seatPart(lineup: String, seat: String)throws  -> SeatPart  {
 public func seats() -> [SeatInfo]  {
     return try!  FfiConverterSequenceTypeSeatInfo.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_seats(uniffiCallStatus
+    uniffi_scribe_ffi_fn_func_seats(uniffiCallStatus
     )
 })
 }
@@ -4160,7 +4160,7 @@ public func seats() -> [SeatInfo]  {
 public func spellPitches(onsetsBeats: [Double], pitches: [Int32])throws  -> [SpelledPitch]  {
     return try  FfiConverterSequenceTypeSpelledPitch.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_spell_pitches(
+    uniffi_scribe_ffi_fn_func_spell_pitches(
         FfiConverterSequenceDouble.lower(onsetsBeats),
         FfiConverterSequenceInt32.lower(pitches),uniffiCallStatus
     )
@@ -4184,7 +4184,7 @@ public func spellPitches(onsetsBeats: [Double], pitches: [Int32])throws  -> [Spe
 public func frettedFingeringJson(request: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(
+    uniffi_scribe_ffi_fn_func_fretted_fingering_json(
         FfiConverterString.lower(request),uniffiCallStatus
     )
 })
@@ -4197,7 +4197,7 @@ public func frettedFingeringJson(request: String)throws  -> String  {
 public func frettedPlayingInstructionsJson(request: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_fretted_playing_instructions_json(
+    uniffi_scribe_ffi_fn_func_fretted_playing_instructions_json(
         FfiConverterString.lower(request),uniffiCallStatus
     )
 })
@@ -4211,7 +4211,7 @@ public func frettedPlayingInstructionsJson(request: String)throws  -> String  {
 public func frettedTabJson(request: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_fretted_tab_json(
+    uniffi_scribe_ffi_fn_func_fretted_tab_json(
         FfiConverterString.lower(request),uniffiCallStatus
     )
 })
@@ -4225,7 +4225,7 @@ public func frettedTabJson(request: String)throws  -> String  {
 public func frettedTabTextJson(request: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_fretted_tab_text_json(
+    uniffi_scribe_ffi_fn_func_fretted_tab_text_json(
         FfiConverterString.lower(request),uniffiCallStatus
     )
 })
@@ -4237,7 +4237,7 @@ public func frettedTabTextJson(request: String)throws  -> String  {
 public func humanizePart(notes: [ScoreNote], part: String, player: Int64, seed: String, performance: Performance?, performedTiming: Bool)throws  -> HumanizedPart  {
     return try  FfiConverterTypeHumanizedPart_lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_humanize_part(
+    uniffi_scribe_ffi_fn_func_humanize_part(
         FfiConverterSequenceTypeScoreNote.lower(notes),
         FfiConverterString.lower(part),
         FfiConverterInt64.lower(player),
@@ -4253,7 +4253,7 @@ public func humanizePart(notes: [ScoreNote], part: String, player: Int64, seed: 
 public func humanizeUniform(key: String) -> Double  {
     return try!  FfiConverterDouble.lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_humanize_uniform(
+    uniffi_scribe_ffi_fn_func_humanize_uniform(
         FfiConverterString.lower(key),uniffiCallStatus
     )
 })
@@ -4267,7 +4267,7 @@ public func humanizeUniform(key: String) -> Double  {
 public func talkingAnnounceJson(request: String)throws  -> String  {
     return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_talking_announce_json(
+    uniffi_scribe_ffi_fn_func_talking_announce_json(
         FfiConverterString.lower(request),uniffiCallStatus
     )
 })
@@ -4278,7 +4278,7 @@ public func talkingAnnounceJson(request: String)throws  -> String  {
 public func talkingSettingsDefault() -> TalkingSettings  {
     return try!  FfiConverterTypeTalkingSettings_lift(try! rustCall() {
         uniffiCallStatus in
-    uniffi_brasscribe_ffi_fn_func_talking_settings_default(uniffiCallStatus
+    uniffi_scribe_ffi_fn_func_talking_settings_default(uniffiCallStatus
     )
 })
 }
@@ -4294,128 +4294,128 @@ private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
     let bindings_contract_version = 30
     // Get the scaffolding contract version by calling the into the dylib
-    let scaffolding_contract_version = ffi_brasscribe_ffi_uniffi_contract_version()
+    let scaffolding_contract_version = ffi_scribe_ffi_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_layers_band() != 61376) {
+    if (uniffi_scribe_ffi_checksum_func_arrange_layers_band() != 37815) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_layers_song() != 48207) {
+    if (uniffi_scribe_ffi_checksum_func_arrange_layers_song() != 7686) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() != 31318) {
+    if (uniffi_scribe_ffi_checksum_func_arrange_musicxml() != 58134) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() != 34366) {
+    if (uniffi_scribe_ffi_checksum_func_arrange_musicxml_with() != 18878) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_song() != 47821) {
+    if (uniffi_scribe_ffi_checksum_func_arrange_song() != 56307) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_arrange_song_with() != 27927) {
+    if (uniffi_scribe_ffi_checksum_func_arrange_song_with() != 44960) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() != 53243) {
+    if (uniffi_scribe_ffi_checksum_func_choose_metrical_level() != 62641) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_core_version() != 61046) {
+    if (uniffi_scribe_ffi_checksum_func_core_version() != 55006) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_estimate_key() != 38258) {
+    if (uniffi_scribe_ffi_checksum_func_estimate_key() != 6509) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_instruments() != 47666) {
+    if (uniffi_scribe_ffi_checksum_func_instruments() != 50056) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_layers_song_defaults() != 21711) {
+    if (uniffi_scribe_ffi_checksum_func_layers_song_defaults() != 55207) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_normalize_composition() != 7581) {
+    if (uniffi_scribe_ffi_checksum_func_normalize_composition() != 14961) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_part_name_nb() != 11213) {
+    if (uniffi_scribe_ffi_checksum_func_part_name_nb() != 25710) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_part_sources() != 8498) {
+    if (uniffi_scribe_ffi_checksum_func_part_sources() != 58290) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_quantize_notes() != 61455) {
+    if (uniffi_scribe_ffi_checksum_func_quantize_notes() != 37162) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_seat_part() != 14392) {
+    if (uniffi_scribe_ffi_checksum_func_seat_part() != 5303) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_seats() != 38330) {
+    if (uniffi_scribe_ffi_checksum_func_seats() != 35541) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_spell_pitches() != 55508) {
+    if (uniffi_scribe_ffi_checksum_func_spell_pitches() != 64453) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json() != 8683) {
+    if (uniffi_scribe_ffi_checksum_func_fretted_fingering_json() != 52406) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_fretted_playing_instructions_json() != 40396) {
+    if (uniffi_scribe_ffi_checksum_func_fretted_playing_instructions_json() != 38708) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_fretted_tab_json() != 63499) {
+    if (uniffi_scribe_ffi_checksum_func_fretted_tab_json() != 10660) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_fretted_tab_text_json() != 23317) {
+    if (uniffi_scribe_ffi_checksum_func_fretted_tab_text_json() != 13820) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_humanize_part() != 14286) {
+    if (uniffi_scribe_ffi_checksum_func_humanize_part() != 64494) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_humanize_uniform() != 7064) {
+    if (uniffi_scribe_ffi_checksum_func_humanize_uniform() != 44085) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_talking_announce_json() != 20530) {
+    if (uniffi_scribe_ffi_checksum_func_talking_announce_json() != 1810) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_func_talking_settings_default() != 26489) {
+    if (uniffi_scribe_ffi_checksum_func_talking_settings_default() != 11924) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_announce() != 13383) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_announce() != 37054) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_bar_count() != 6184) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_bar_count() != 24624) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_context_at() != 52304) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_context_at() != 22940) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_event_count() != 10745) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_event_count() != 59424) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_navigate() != 14235) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_navigate() != 21268) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_part_lines() != 37878) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_part_lines() != 63370) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_part_names() != 19770) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_part_names() != 13203) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_title() != 46621) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_title() != 453) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_to_html() != 6389) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_to_html() != 27859) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_to_json() != 42481) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_to_json() != 51208) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_to_text() != 55243) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_to_text() != 30647) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_method_talkingscore_total_bars() != 39156) {
+    if (uniffi_scribe_ffi_checksum_method_talkingscore_total_bars() != 55963) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_constructor_performance_new() != 63810) {
+    if (uniffi_scribe_ffi_checksum_constructor_performance_new() != 3702) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_brasscribe_ffi_checksum_constructor_talkingscore_new() != 57677) {
+    if (uniffi_scribe_ffi_checksum_constructor_talkingscore_new() != 23438) {
         return InitializationResult.apiChecksumMismatch
     }
 
@@ -4424,7 +4424,7 @@ private let initializationResult: InitializationResult = {
 
 // Make the ensure init function public so that other modules which have external type references to
 // our types can call it.
-public func uniffiEnsureBrasscribeFfiInitialized() {
+public func uniffiEnsureScribeFfiInitialized() {
     switch initializationResult {
     case .ok:
         break

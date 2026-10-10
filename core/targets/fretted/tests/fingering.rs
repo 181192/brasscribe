@@ -1,6 +1,6 @@
 //! Behaviour of the fingering solver on whole passages.
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use target_fretted::json::{solve_json, InstrumentChoice, Request, Response};
 use target_fretted::{assign, check, preset, Fingering, Instrument, Options, Pin, Position, Style, Violation, PRESET_IDS};
 

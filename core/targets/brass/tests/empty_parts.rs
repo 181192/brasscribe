@@ -2,7 +2,7 @@
 //! Percussion part of a recording without drums, the Soprano Cornet with no climax to double.
 
 use target_brass::arranger::{part_footers, part_sources, ARRANGED, EMPTY, RECORDING};
-use brasscribe_core::model::Composition;
+use scribe_core::model::Composition;
 use target_brass::pipeline::arrange_composition;
 
 /// A layered take: solo, bass, strings and brass, drums optional; the solo ff over strings f in the

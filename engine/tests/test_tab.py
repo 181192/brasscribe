@@ -47,9 +47,9 @@ def _strummed(chords: list[list[int]], step: float = 1.0, spread: float = 0.008,
 # ---------------------------------------------------------------- instruments and options
 
 def test_the_instrument_table_is_every_preset_of_target_fretted():
-    source = REPO / "core" / "target-fretted" / "src" / "instrument.rs"
+    source = REPO / "core" / "targets" / "fretted" / "src" / "instrument.rs"
     if not source.exists():
-        pytest.skip("core/target-fretted is not in this checkout")
+        pytest.skip("core/targets/fretted is not in this checkout")
     text = source.read_text()
     ids = re.findall(r'"([^"]+)"', re.search(r"PRESET_IDS: &\[&str\] = &\[(.*?)\];", text, re.S).group(1))
     families = re.findall(r'"([^"]+)"', re.search(r"const FAMILIES: &\[&str\] = &\[(.*?)\];", text).group(1))
@@ -373,7 +373,7 @@ def test_tuning_capo_and_style_are_parameters_of_the_fingering_only_and_the_inst
 
 
 def test_the_profile_builds_and_lists_without_the_core(monkeypatch):
-    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, "/nowhere/brasscribe-core")
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, "/nowhere/scribe-core")
     assert profiles.PROFILES["tab"].build("-", {}).stage("arrange").params["title"] == "-"
     with pytest.raises(profiles.OptionError) as refused:
         profiles.job_options("tab", {"instrument": "guitar-6"})
@@ -1066,7 +1066,7 @@ def test_the_cli_takes_every_instrument_and_checks_the_core_first(monkeypatch, t
     monkeypatch.setattr(runner, "run", lambda s, audio, profile, **kw: seen.update(kw, profile=profile) or
                         {"run_id": "r", "status": "succeeded", "seconds": 0.0, "devices": [], "stages": []})
     monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path))
-    core = tmp_path / "brasscribe-core"
+    core = tmp_path / "scribe-core"
     core.write_text("#!/bin/sh\n")
     core.chmod(0o755)
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))
@@ -1075,4 +1075,4 @@ def test_the_cli_takes_every_instrument_and_checks_the_core_first(monkeypatch, t
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(tmp_path / "missing"))
     monkeypatch.setattr(runner, "run", lambda *a, **kw: pytest.fail("the run was started"))
     assert cli.main(["run", "song.wav", "--profile", "tab"]) == 3
-    assert "cargo build --release -p brasscribe-cli" in capsys.readouterr().err
+    assert "cargo build --release -p scribe-cli" in capsys.readouterr().err

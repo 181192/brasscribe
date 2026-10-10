@@ -89,37 +89,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
 
 [[package]]
-name = "brasscribe-cli"
-version = "0.1.0"
-dependencies = [
- "brasscribe-core",
- "serde_json",
- "target-brass",
- "target-fretted",
- "zip",
-]
-
-[[package]]
-name = "brasscribe-core"
-version = "0.1.0"
-dependencies = [
- "roxmltree",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "brasscribe-ffi"
-version = "0.1.0"
-dependencies = [
- "brasscribe-core",
- "serde_json",
- "target-brass",
- "target-fretted",
- "uniffi",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -427,6 +396,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "scribe-cli"
+version = "0.1.0"
+dependencies = [
+ "scribe-core",
+ "serde_json",
+ "target-brass",
+ "target-fretted",
+ "zip",
+]
+
+[[package]]
+name = "scribe-core"
+version = "0.1.0"
+dependencies = [
+ "roxmltree",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "scribe-ffi"
+version = "0.1.0"
+dependencies = [
+ "scribe-core",
+ "serde_json",
+ "target-brass",
+ "target-fretted",
+ "uniffi",
+]
+
+[[package]]
 name = "scroll"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -565,7 +565,7 @@ dependencies = [
 name = "target-brass"
 version = "0.1.0"
 dependencies = [
- "brasscribe-core",
+ "scribe-core",
  "serde",
  "serde_json",
 ]
@@ -574,8 +574,8 @@ dependencies = [
 name = "target-fretted"
 version = "0.1.0"
 dependencies = [
- "brasscribe-core",
  "roxmltree",
+ "scribe-core",
  "serde",
  "serde_json",
 ]

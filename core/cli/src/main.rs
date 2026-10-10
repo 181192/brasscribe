@@ -1,23 +1,23 @@
-//! `brasscribe-core`: file-based entry points of the Rust core, mirroring the
+//! `scribe-core`: file-based entry points of the Rust core, mirroring the
 //! Python reference scripts so the two can be run on identical inputs.
 //!
 //! ```text
-//! brasscribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
+//! scribe-core arrange-layers --layers DIR --beats FILE --out DIR [--title T] [--solo-contour NPZ] [--no-free-time] [--free-tempo BPM]
 //!                               [--no-gate] [--no-beat-cleanup] [--single-key] [--lineup band|full|minimal|quartet]
 //!                               [--difficulty faithful|standard|easier] [--trills] [--key KEY | --transpose N]
 //!                               [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--lang en|nb] [--kit band|pop]
-//! brasscribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
+//! scribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
 //!                               [--lineup minimal|quartet] [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--kit band|pop]
-//! brasscribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
-//! brasscribe-core arrange-reference --reference JSON --out DIR [--title T] [--lineup minimal|quartet]
-//! brasscribe-core quantize --reference JSON --beats FILE --out FILE
-//! brasscribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
-//! brasscribe-core meter --beats FILE --notes JSON --out FILE     (beats per bar and bar phase; notes [{onset, offset}])
-//! brasscribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
-//! brasscribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
+//! scribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
+//! scribe-core arrange-reference --reference JSON --out DIR [--title T] [--lineup minimal|quartet]
+//! scribe-core quantize --reference JSON --beats FILE --out FILE
+//! scribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
+//! scribe-core meter --beats FILE --notes JSON --out FILE     (beats per bar and bar phase; notes [{onset, offset}])
+//! scribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
+//! scribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
-//! brasscribe-core fret --request JSON --out FILE     (a string and fret for every note: target-fretted's JSON request and response)
-//! brasscribe-core tab --request JSON --out FILE [--format json|text|instructions] [--lang en|nb] [--width N]
+//! scribe-core fret --request JSON --out FILE     (a string and fret for every note: target-fretted's JSON request and response)
+//! scribe-core tab --request JSON --out FILE [--format json|text|instructions] [--lang en|nb] [--width N]
 //!                               (tablature: target-fretted's tab request in; out {"musicxml", "adjusted_notes"} (json, the default),
 //!                                the tab as plain text at most N characters wide, or playing instructions in words)
 //! ```
@@ -28,10 +28,10 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use brasscribe_core::durations::Contour;
-use brasscribe_core::energy::Audio;
-use brasscribe_core::midi::MidiFile;
-use brasscribe_core::model::Composition;
+use scribe_core::durations::Contour;
+use scribe_core::energy::Audio;
+use scribe_core::midi::MidiFile;
+use scribe_core::model::Composition;
 use target_brass::musicxml::{band_score, write_score};
 use target_brass::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
 use serde_json::{json, Value};
@@ -257,7 +257,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 .iter()
                 .map(|x| json!({"pitch": x.pitch, "start": x.start, "end": x.end, "onset_s": x.onset_s, "offset_s": x.offset_s, "confidence": x.confidence}))
                 .collect();
-            write(Path::new(&a.one("out")?), &brasscribe_core::pyjson::dumps(&Value::Array(rows)))
+            write(Path::new(&a.one("out")?), &scribe_core::pyjson::dumps(&Value::Array(rows)))
         }
         "musicxml" => {
             let comp = Composition::from_json_str(&String::from_utf8_lossy(&read(Path::new(&a.one("composition")?))?)).map_err(|e| e.to_string())?;
@@ -275,13 +275,13 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             let on: Vec<f64> = notes.iter().map(|n| n["onset"].as_f64().unwrap_or(0.0)).collect();
             let du: Vec<f64> = notes.iter().map(|n| n["offset"].as_f64().unwrap_or(0.0) - n["onset"].as_f64().unwrap_or(0.0)).collect();
             let down: Vec<bool> = b.positions.iter().map(|&p| p == 1).collect();
-            let m = brasscribe_core::beats::meter_of(&b.times, &down, &on, &du, Some(&b.positions));
+            let m = scribe_core::beats::meter_of(&b.times, &down, &on, &du, Some(&b.positions));
             let v = json!({"beats_per_bar": m.beats_per_bar, "first_downbeat": m.first_downbeat, "from_labels": m.from_labels,
                            "compound": m.compound, "strength": m.strength, "times": m.times});
-            write(Path::new(&a.one("out")?), &brasscribe_core::pyjson::dumps_compact(&v))
+            write(Path::new(&a.one("out")?), &scribe_core::pyjson::dumps_compact(&v))
         }
         "humanize" => {
-            use brasscribe_core::humanize::{humanize, Performance, ScoreNote, Timing};
+            use scribe_core::humanize::{humanize, Performance, ScoreNote, Timing};
             let notes: Vec<ScoreNote> = serde_json::from_slice(&read(Path::new(&a.one("notes")?))?).map_err(|e| e.to_string())?;
             let perf = match a.opt("composition") {
                 Some(c) => Some(Performance::from_json_str(&String::from_utf8_lossy(&read(Path::new(&c))?))?),
@@ -298,7 +298,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             write(Path::new(&a.one("out")?), &h.to_json_string())
         }
         "talking-score" => {
-            use brasscribe_core::talking_score as ts;
+            use scribe_core::talking_score as ts;
             let xml = String::from_utf8_lossy(&read(Path::new(&a.one("musicxml")?))?).into_owned();
             let comp: Option<Value> = match a.opt("composition") {
                 Some(c) => Some(serde_json::from_slice(&read(Path::new(&c))?).map_err(|e| e.to_string())?),
@@ -314,10 +314,10 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 announce_confident: a.has("announce-confident"),
             };
             if let Some(p) = a.opt("json") {
-                write(Path::new(&p), &brasscribe_core::pyjson::dumps(&doc))?;
+                write(Path::new(&p), &scribe_core::pyjson::dumps(&doc))?;
             }
             if let Some(p) = a.opt("json-utf8") {
-                write(Path::new(&p), &brasscribe_core::pyjson::dumps_utf8(&doc))?;
+                write(Path::new(&p), &scribe_core::pyjson::dumps_utf8(&doc))?;
             }
             if let Some(p) = a.opt("text") {
                 write(Path::new(&p), &ts::to_text(&doc, &settings, None))?;
@@ -357,7 +357,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
             write(Path::new(&a.one("out")?), &answer)
         }
         "version" => {
-            println!("brasscribe-core {}", brasscribe_core::VERSION);
+            println!("scribe-core {}", scribe_core::VERSION);
             Ok(())
         }
         _ => Err(format!("unknown command {cmd}")),
@@ -367,13 +367,13 @@ fn run(cmd: &str, a: &Args) -> R<()> {
 fn main() -> ExitCode {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let Some(cmd) = argv.first() else {
-        eprintln!("usage: brasscribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|meter|humanize|talking-score|fret|tab|version> ...");
+        eprintln!("usage: scribe-core <arrange-layers|arrange-song|lead-sheet|arrange-reference|quantize|musicxml|meter|humanize|talking-score|fret|tab|version> ...");
         return ExitCode::from(2);
     };
     match run(cmd, &Args::parse(&argv[1..])) {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("brasscribe-core: {e}");
+            eprintln!("scribe-core: {e}");
             ExitCode::FAILURE
         }
     }

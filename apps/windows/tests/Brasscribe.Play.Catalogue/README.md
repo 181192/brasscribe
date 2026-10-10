@@ -85,8 +85,8 @@ every part of the window (finding `theme-at-start`).
 ## What it answers
 
 ```powershell
-tools/Screenshots/catalogue.ps1 record  -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll>
-tools/Screenshots/catalogue.ps1 compare -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll> [-Base <commit>]
+tools/Screenshots/catalogue.ps1 record  -Exe <BrasscribePlay.exe> -Out out -FfiDll <scribe_ffi.dll>
+tools/Screenshots/catalogue.ps1 compare -Exe <BrasscribePlay.exe> -Out out -FfiDll <scribe_ffi.dll> [-Base <commit>]
 ```
 
 `compare` takes the screenshots at the base (the merge base with `origin/main` by default) on the same machine, without

@@ -1,6 +1,6 @@
 //! Playability check: the hard rules a fingering must never break, independent of the solver.
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use serde::{Deserialize, Serialize};
 
 use crate::instrument::{Instrument, Position};

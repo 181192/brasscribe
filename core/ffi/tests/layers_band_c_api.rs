@@ -1,4 +1,4 @@
-//! bc_arrange_layers_band (the C ABI Windows Play calls with four WAV stems) against the UniFFI
+//! sc_arrange_layers_band (the C ABI Windows Play calls with four WAV stems) against the UniFFI
 //! arrange_layers_band, on Mikkel's layers, with and without the solo contour as arrays. The Mikkel
 //! cases skip when data/mikkel/repro is not in the checkout (BRASSCRIBE_REPO points at one that has it).
 
@@ -6,8 +6,8 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::path::{Path, PathBuf};
 
-use brasscribe_ffi::c_api::{bc_arrange_layers_band, bc_arrange_layers_band_contour, bc_string_free, BC_INVALID, BC_NULL};
-use brasscribe_ffi::{arrange_layers_band, LayerMidi, LayerStems, LayersSongOptions, SoloContour};
+use scribe_ffi::c_api::{sc_arrange_layers_band, sc_arrange_layers_band_contour, sc_string_free, SC_INVALID, SC_NULL};
+use scribe_ffi::{arrange_layers_band, LayerMidi, LayerStems, LayersSongOptions, SoloContour};
 
 const MIDI: [&str; 6] = ["solo-sw.mid", "solo-mus.mid", "solo-bp.mid", "bass-mus.mid", "orchestra-mus.mid", "drums-mus.mid"];
 const WAV: [&str; 4] = ["solo.wav", "bass.wav", "drums.wav", "orchestra.wav"];
@@ -33,7 +33,7 @@ fn c_abi(i: &Inputs) -> serde_json::Value {
     c_abi_with(i, None, None)
 }
 
-/// bc_arrange_layers_band, or bc_arrange_layers_band_contour when `contour` is given
+/// sc_arrange_layers_band, or sc_arrange_layers_band_contour when `contour` is given
 /// (times, pitch, loudness, confidence), with `options` as the options JSON.
 fn c_abi_with(i: &Inputs, contour: Option<&[Vec<f64>; 4]>, options: Option<&str>) -> serde_json::Value {
     let midi: Vec<*const u8> = i.midi.iter().map(|m| m.as_ptr()).collect();
@@ -47,22 +47,22 @@ fn c_abi_with(i: &Inputs, contour: Option<&[Vec<f64>; 4]>, options: Option<&str>
     let (mut out, mut err): (*mut c_char, *mut c_char) = (std::ptr::null_mut(), std::ptr::null_mut());
     let code = unsafe {
         match contour {
-            None => bc_arrange_layers_band(midi.as_ptr(), midi_len.as_ptr(), wav.as_ptr(), wav_len.as_ptr(), beats.as_ptr(), title.as_ptr(),
+            None => sc_arrange_layers_band(midi.as_ptr(), midi_len.as_ptr(), wav.as_ptr(), wav_len.as_ptr(), beats.as_ptr(), title.as_ptr(),
                                            options_ptr, &mut out, &mut err),
             Some(c) => {
                 let arrays: Vec<*const f64> = c.iter().map(|a| a.as_ptr()).collect();
-                bc_arrange_layers_band_contour(midi.as_ptr(), midi_len.as_ptr(), wav.as_ptr(), wav_len.as_ptr(), arrays.as_ptr(), c[0].len(),
+                sc_arrange_layers_band_contour(midi.as_ptr(), midi_len.as_ptr(), wav.as_ptr(), wav_len.as_ptr(), arrays.as_ptr(), c[0].len(),
                                                beats.as_ptr(), title.as_ptr(), options_ptr, &mut out, &mut err)
             }
         }
     };
-    assert_eq!(code, 0, "bc_arrange_layers_band failed: {}", if err.is_null() { String::new() } else { unsafe { CStr::from_ptr(err) }.to_string_lossy().into_owned() });
+    assert_eq!(code, 0, "sc_arrange_layers_band failed: {}", if err.is_null() { String::new() } else { unsafe { CStr::from_ptr(err) }.to_string_lossy().into_owned() });
     let text = unsafe { CStr::from_ptr(out) }.to_str().unwrap().to_owned();
-    unsafe { bc_string_free(out) };
+    unsafe { sc_string_free(out) };
     serde_json::from_str(&text).unwrap()
 }
 
-fn uniffi(i: &Inputs, options: LayersSongOptions) -> brasscribe_ffi::BandOutput {
+fn uniffi(i: &Inputs, options: LayersSongOptions) -> scribe_ffi::BandOutput {
     let m = |k: usize| i.midi[k].clone();
     let w = |k: usize| Some(i.wav[k].clone());
     arrange_layers_band(
@@ -75,7 +75,7 @@ fn uniffi(i: &Inputs, options: LayersSongOptions) -> brasscribe_ffi::BandOutput 
     .unwrap()
 }
 
-fn assert_same(c: &serde_json::Value, u: &brasscribe_ffi::BandOutput) {
+fn assert_same(c: &serde_json::Value, u: &scribe_ffi::BandOutput) {
     assert_eq!(c["composition"].as_str().unwrap(), u.composition_json);
     assert_eq!(c["musicxml"].as_str().unwrap(), u.musicxml);
     assert_eq!(c["separation_check"].as_str(), u.separation_check_json.as_deref());
@@ -138,30 +138,30 @@ fn c_abi_rejects_null_and_empty_inputs() {
     let beats = CString::new("0.5 1\n1.0 2\n").unwrap();
     let (mut out, mut err): (*mut c_char, *mut c_char) = (std::ptr::null_mut(), std::ptr::null_mut());
     unsafe {
-        let code = bc_arrange_layers_band(std::ptr::null(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), beats.as_ptr(), std::ptr::null(),
+        let code = sc_arrange_layers_band(std::ptr::null(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), beats.as_ptr(), std::ptr::null(),
                                           std::ptr::null(), &mut out, &mut err);
-        assert_eq!(code, BC_NULL);
+        assert_eq!(code, SC_NULL);
         let mut midi = empty;
         midi[3] = std::ptr::null();
-        let code = bc_arrange_layers_band(midi.as_ptr(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), beats.as_ptr(), std::ptr::null(),
+        let code = sc_arrange_layers_band(midi.as_ptr(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), beats.as_ptr(), std::ptr::null(),
                                           std::ptr::null(), &mut out, &mut err);
-        assert_eq!(code, BC_NULL);
+        assert_eq!(code, SC_NULL);
         // Contour arrays with a null time array but a length.
         let arrays: [*const f64; 4] = [std::ptr::null(); 4];
-        let code = bc_arrange_layers_band_contour(empty.as_ptr(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), arrays.as_ptr(), 3,
+        let code = sc_arrange_layers_band_contour(empty.as_ptr(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), arrays.as_ptr(), 3,
                                                   beats.as_ptr(), std::ptr::null(), std::ptr::null(), &mut out, &mut err);
-        assert_eq!(code, BC_NULL);
+        assert_eq!(code, SC_NULL);
         // Zero-length buffers are empty inputs, not null ones: an error from the MIDI parser, not a crash.
-        let code = bc_arrange_layers_band_contour(empty.as_ptr(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), arrays.as_ptr(), 0,
+        let code = sc_arrange_layers_band_contour(empty.as_ptr(), lens.as_ptr(), std::ptr::null(), std::ptr::null(), arrays.as_ptr(), 0,
                                                   beats.as_ptr(), std::ptr::null(), std::ptr::null(), &mut out, &mut err);
-        assert_eq!(code, BC_INVALID);
+        assert_eq!(code, SC_INVALID);
         assert!(!err.is_null());
-        bc_string_free(err);
+        sc_string_free(err);
     }
 }
 
 /// Only the C ABI call, for measuring its peak memory:
-/// `/usr/bin/time -l cargo test -p brasscribe-ffi --release --test layers_band_c_api -- --ignored c_abi_alone`
+/// `/usr/bin/time -l cargo test -p scribe-ffi --release --test layers_band_c_api -- --ignored c_abi_alone`
 #[test]
 #[ignore]
 fn c_abi_alone() {
@@ -208,7 +208,7 @@ mod heap {
 }
 
 /// Heap peak of the C ABI call, the caller's inputs included (RSS also counts pages the allocator
-/// keeps after a free). Run it alone, other tests share the counter: `cargo test -p brasscribe-ffi --release --test layers_band_c_api -- --ignored c_abi_heap_peak --nocapture`
+/// keeps after a free). Run it alone, other tests share the counter: `cargo test -p scribe-ffi --release --test layers_band_c_api -- --ignored c_abi_heap_peak --nocapture`
 #[test]
 #[ignore]
 fn c_abi_heap_peak() {

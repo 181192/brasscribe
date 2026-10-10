@@ -43,14 +43,14 @@ _TS = _HU = None
 def talking():
     global _TS
     if _TS is None:
-        _TS = _load("bc_talking_score", REPO / "engine" / "src" / "brasscribe_engine" / "talking_score.py")
+        _TS = _load("sc_talking_score", REPO / "engine" / "src" / "brasscribe_engine" / "talking_score.py")
     return _TS
 
 
 def humanizer():
     global _HU
     if _HU is None:
-        _HU = _load("bc_humanize", REPO / "sounds" / "humanize.py")
+        _HU = _load("sc_humanize", REPO / "sounds" / "humanize.py")
     return _HU
 
 

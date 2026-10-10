@@ -5,7 +5,7 @@
 //! limit), `comfortable` the amateur range (soft preference). `chromatic` is
 //! sounding minus written, so written = sounding - chromatic.
 
-use brasscribe_core::notation::score::InstrumentSpec;
+use scribe_core::notation::score::InstrumentSpec;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Role {

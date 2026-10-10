@@ -26,10 +26,10 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
 - **Engine.** It starts `brasscribe serve --lan` on the first free port of 8765–8775, restarts it if it
   stops, and shows its state in the menu bar. The band sounds Studio plays are bundled
   (`scripts/stage-band-sounds.sh`).
-- **Bass tabs.** The engine's `bass-tab` profile runs the Rust core's command line, `brasscribe-core`.
+- **Bass tabs.** The engine's `bass-tab` profile runs the Rust core's command line, `scribe-core`.
   The build copies it from `core/target/release` into `Contents/Resources/bin`
   (`scripts/stage-core-cli.sh`), and Bandroom passes it to the engine it installed as
-  `BRASSCRIBE_CORE_CLI`. An engine run from a checkout uses the checkout's own build instead.
+  `SCRIBE_CORE_CLI`. An engine run from a checkout uses the checkout's own build instead.
 - **Pairing.** Pair a phone shows a QR code and a code to type; the phones list removes paired devices.
 
 Data lives in `~/Library/Application Support/Brasscribe` (`BRASSCRIBE_DATA` overrides it), logs in
@@ -39,8 +39,8 @@ Data lives in `~/Library/Application Support/Brasscribe` (`BRASSCRIBE_DATA` over
 
 Needs Xcode 16+ and `xcodegen` (`brew install xcodegen`). The band SoundFont comes from
 `pixi run fetch-sounds`; without it a Debug build leaves the band sounds out and a Release build stops.
-The same goes for `brasscribe-core`: `scripts/worktree-setup.sh` at the repository root installs it
-(or `cargo build --release --locked -p brasscribe-cli` in `core/`).
+The same goes for `scribe-core`: `scripts/worktree-setup.sh` at the repository root installs it
+(or `cargo build --release --locked -p scribe-cli` in `core/`).
 
 ```sh
 make project      # generate BrasscribeBandroom.xcodeproj

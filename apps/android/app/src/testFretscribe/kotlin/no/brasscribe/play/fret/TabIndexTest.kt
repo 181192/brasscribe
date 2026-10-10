@@ -13,7 +13,7 @@ import java.io.File
 /**
  * Which drawn note is which note of the tab's data: the index read from tab.musicxml ([TabIndex]) and the
  * marks made from it ([TabMarks]), on the recorded fixtures (apps/fixtures/bass-line and bass-line-marks)
- * and on small documents written here as the core writes them (core/target-fretted/README.md).
+ * and on small documents written here as the core writes them (core/targets/fretted/README.md).
  */
 class TabIndexTest {
     private val root: File? = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }

@@ -84,7 +84,7 @@ case "${1:-}" in
         log "Verovio's build differs at ${base:0:12}: building it there"
         make -C "$tree/apps/apple" verovio >/dev/null || no_base
       fi
-      xcf="core/swift/BrasscribeCore/BrasscribeFFI.xcframework"
+      xcf="core/swift/ScribeCore/ScribeFFI.xcframework"
       if git -C "$repo" diff --quiet "$base" HEAD -- core && [ -d "$repo/$xcf" ]; then
         rm -rf "${tree:?}/$xcf" && cp -R "$repo/$xcf" "$tree/$xcf"
       else

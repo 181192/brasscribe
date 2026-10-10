@@ -15,7 +15,7 @@
 # that is a warning and nothing is compared (0): this side's checks still decide. A -Base that is not a commit here
 # is 3: a comparison that was asked for is never passed over.
 # EXE is the app's own build (BrasscribePlay.exe): Axe.Windows and the walk with Tab run on it, one start per screen.
-# -FfiDll is the Rust core for this checkout (brasscribe_ffi.dll); the base builds its own when its core differs.
+# -FfiDll is the Rust core for this checkout (scribe_ffi.dll); the base builds its own when its core differs.
 param(
     [Parameter(Mandatory, Position = 0)] [ValidateSet("record", "compare")] [string] $Mode,
     [Parameter(Mandatory)] [string] $Out,
@@ -41,7 +41,7 @@ function Log($text) { Write-Host "catalogue: $text" }
 # The catalogue build of the app in the checkout whose apps\windows is $dir: its exe.
 function Build-Catalogue($dir, $ffi) {
     $props = @("-c", $Configuration, "-p:Platform=x64", "-p:RuntimeIdentifier=win-x64", "-p:BrasscribeCatalogue=true")
-    if ($ffi) { $props += "-p:BrasscribeFfiDll=$ffi" }
+    if ($ffi) { $props += "-p:ScribeFfiDll=$ffi" }
     dotnet build (Join-Path $dir "src/Brasscribe.Play") @props | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "the catalogue build failed in $dir" }
     $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe (Join-Path $dir "src/Brasscribe.Play/bin/catalogue") | Select-Object -First 1
@@ -160,9 +160,9 @@ if ($Mode -eq "compare") {
                         if ($LASTEXITCODE -ne 0 -or -not $FfiDll) {
                             Log "the core differs at the base: building it there"
                             Push-Location (Join-Path $tree "core")
-                            try { cargo build --release --locked -p brasscribe-ffi | Out-Host } finally { Pop-Location }
+                            try { cargo build --release --locked -p scribe-ffi | Out-Host } finally { Pop-Location }
                             if ($LASTEXITCODE -ne 0) { $why = "its core did not build" }
-                            $baseFfi = Join-Path $tree "core/target/release/brasscribe_ffi.dll"
+                            $baseFfi = Join-Path $tree "core/target/release/scribe_ffi.dll"
                         }
                         if (-not $why) {
                             try {

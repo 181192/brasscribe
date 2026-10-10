@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Brasscribe.Core;
+using Scribe.Core;
 using Xunit;
 
-public class BrasscribeCoreTests
+public class ScribeCoreTests
 {
     private const string Composition = """
         {"title": "Test", "voices": [
@@ -13,12 +13,12 @@ public class BrasscribeCoreTests
         """;
 
     [Fact]
-    public void ReportsVersion() => Assert.False(string.IsNullOrEmpty(BrasscribeCore.Version));
+    public void ReportsVersion() => Assert.False(string.IsNullOrEmpty(ScribeCore.Version));
 
     [Fact]
     public void ArrangesToTransposedMusicXml()
     {
-        var xml = BrasscribeCore.ArrangeMusicXml(Composition);
+        var xml = ScribeCore.ArrangeMusicXml(Composition);
         Assert.Contains("<part-name>Solo Cornet</part-name>", xml);
         Assert.Contains("<step>D</step>", xml); // concert C5 on a B-flat cornet is written D5
     }
@@ -26,20 +26,20 @@ public class BrasscribeCoreTests
     [Fact]
     public void ArrangesForTheQuartet()
     {
-        var xml = BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet");
+        var xml = ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet");
         foreach (var part in new[] { "1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium" })
         {
             Assert.Contains($"<part-name>{part}</part-name>", xml);
         }
         Assert.DoesNotContain("<part-name>Solo Cornet</part-name>", xml);
-        var e = Assert.Throws<BrasscribeException>(() => BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "nonet"));
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "nonet"));
         Assert.Equal(1, e.Code);
     }
 
     [Fact]
     public void SeatsAndTheirParts()
     {
-        var seats = BrasscribeCore.Seats();
+        var seats = ScribeCore.Seats();
         Assert.Equal(19, seats.Count);
         var euph = seats.Single(s => s.Id == "euphonium");
         Assert.Equal("Euphonium", euph.Name);
@@ -50,34 +50,34 @@ public class BrasscribeCoreTests
         Assert.Equal(new[] { "soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn",
             "1st-horn", "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium", "trumpet" }, seats.Where(s => s.Tune).Select(s => s.Id));
         // Three spot checks of the seat -> part table.
-        Assert.Equal(new SeatPart("Euphonium", false, true), BrasscribeCore.SeatPart("minimal", "1st-baritone"));
-        Assert.Equal(new SeatPart("Euphonium", false, false), BrasscribeCore.SeatPart("quartet", "eb-bass"));
-        Assert.Equal(new SeatPart(null, false, false), BrasscribeCore.SeatPart("quartet", "percussion"));
+        Assert.Equal(new SeatPart("Euphonium", false, true), ScribeCore.SeatPart("minimal", "1st-baritone"));
+        Assert.Equal(new SeatPart("Euphonium", false, false), ScribeCore.SeatPart("quartet", "eb-bass"));
+        Assert.Equal(new SeatPart(null, false, false), ScribeCore.SeatPart("quartet", "percussion"));
         // A trumpet player takes the lead part, written for trumpet.
-        Assert.Equal(new SeatPart("Trumpet", false, true, "Solo Cornet"), BrasscribeCore.SeatPart("band", "trumpet"));
-        Assert.Equal("Trompet", BrasscribeCore.PartNameNb("Trumpet"));
-        Assert.Throws<BrasscribeException>(() => BrasscribeCore.SeatPart("band", "tuba"));
-        Assert.Equal("Solo althorn", BrasscribeCore.PartNameNb("Solo Horn"));
-        Assert.Equal("1. kornett", BrasscribeCore.PartNameNb("1st Cornet"));
-        Assert.Equal("Strings", BrasscribeCore.PartNameNb("Strings"));
+        Assert.Equal(new SeatPart("Trumpet", false, true, "Solo Cornet"), ScribeCore.SeatPart("band", "trumpet"));
+        Assert.Equal("Trompet", ScribeCore.PartNameNb("Trumpet"));
+        Assert.Throws<BrasscribeException>(() => ScribeCore.SeatPart("band", "tuba"));
+        Assert.Equal("Solo althorn", ScribeCore.PartNameNb("Solo Horn"));
+        Assert.Equal("1. kornett", ScribeCore.PartNameNb("1st Cornet"));
+        Assert.Equal("Strings", ScribeCore.PartNameNb("Strings"));
     }
 
     [Fact]
     public void PartSourcesAndBassClefReading()
     {
-        var sources = BrasscribeCore.PartSources(Composition);
+        var sources = ScribeCore.PartSources(Composition);
         Assert.Equal(new PartSource("Solo Cornet", "recording"), sources[0]);
         Assert.Contains(new PartSource("Flugelhorn", "arranged"), sources);
-        var xml = BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "minimal", seat: "euphonium", reads: "bass");
+        var xml = ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "minimal", seat: "euphonium", reads: "bass");
         Assert.Contains("<part-name>Euphonium</part-name>", xml);
-        Assert.Throws<BrasscribeException>(() => BrasscribeCore.ArrangeMusicXmlWith(Composition, seat: "solo-cornet", reads: "bass"));
-        Assert.Throws<BrasscribeException>(() => BrasscribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet", seat: "euphonium", lead: "seat"));
+        Assert.Throws<BrasscribeException>(() => ScribeCore.ArrangeMusicXmlWith(Composition, seat: "solo-cornet", reads: "bass"));
+        Assert.Throws<BrasscribeException>(() => ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet", seat: "euphonium", lead: "seat"));
     }
 
     [Fact]
     public void NormalizesComposition()
     {
-        var json = BrasscribeCore.NormalizeComposition(Composition);
+        var json = ScribeCore.NormalizeComposition(Composition);
         Assert.StartsWith("{\n \"title\": \"Test\"", json);
         Assert.Contains("\"performed_dur\": null", json);
     }
@@ -85,7 +85,7 @@ public class BrasscribeCoreTests
     [Fact]
     public void InvalidJsonThrows()
     {
-        var e = Assert.Throws<BrasscribeException>(() => BrasscribeCore.NormalizeComposition("{"));
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.NormalizeComposition("{"));
         Assert.Equal(1, e.Code);
     }
 
@@ -97,15 +97,15 @@ public class BrasscribeCoreTests
         string dir = repro;
         byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
         var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
-        var (comp, xml) = BrasscribeCore.ArrangeLayersSong(layers, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel");
+        var (comp, xml) = ScribeCore.ArrangeLayersSong(layers, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel");
         Assert.Contains("\"free_regions\": [", comp);
         Assert.Equal(18, xml.Split("<score-part ").Length - 1);
         Assert.Contains("<words>ad lib.</words>", xml);
 
         // The arranged parts carry the source footer, in the language asked for.
-        var band = BrasscribeCore.ArrangeLayersBand(layers, null, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel",
+        var band = ScribeCore.ArrangeLayersBand(layers, null, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel",
             new LayersSongOptions(Lang: "nb"));
-        var sources = BrasscribeCore.PartSources(band.CompositionJson);
+        var sources = ScribeCore.PartSources(band.CompositionJson);
         Assert.Equal(sources.Count, band.Parts.Count);
         for (int i = 0; i < sources.Count; i++)
             Assert.Equal(sources[i].Source == "arranged", band.Parts[i].MusicXml.Contains("Arrangert av Brasscribe ut fra harmoniene i bandet."));
@@ -139,17 +139,17 @@ public class BrasscribeCoreTests
         var hz = Enumerable.Range(0, n).Select(k => Voiced(k) ? 466.16 : k % 250 == 210 ? double.NaN : 0).ToArray();
         var db = Enumerable.Range(0, n).Select(k => Voiced(k) ? -18.0 : k % 250 == 220 ? double.NaN : -70).ToArray();
         var conf = Enumerable.Range(0, n).Select(k => Voiced(k) ? 0.9 : 0.1).ToArray();
-        var withNaN = BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(new SoloContour(t, hz, db, conf)));
+        var withNaN = ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(new SoloContour(t, hz, db, conf)));
         var clean = new SoloContour(t, hz.Select(x => double.IsFinite(x) ? x : 0).ToArray(), db.Select(x => double.IsFinite(x) ? x : -140).ToArray(), conf);
-        var sanitized = BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(clean));
-        var none = BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel");
+        var sanitized = ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(clean));
+        var none = ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel");
 
         Assert.Equal(sanitized.MusicXml, withNaN.MusicXml);
         Assert.Equal(sanitized.CompositionJson, withNaN.CompositionJson);
         Assert.NotEqual(none.MusicXml, withNaN.MusicXml);
         Assert.NotNull(withNaN.SeparationCheckJson);
         Assert.Equal(18, withNaN.MusicXml.Split("<score-part ").Length - 1);
-        Assert.Throws<ArgumentException>(() => BrasscribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel",
+        Assert.Throws<ArgumentException>(() => ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel",
             new LayersSongOptions(new SoloContour(t, hz[..10], db, conf))));
     }
 
@@ -157,7 +157,7 @@ public class BrasscribeCoreTests
     public void HumanizesWithTheComposition()
     {
         var notes = new[] { new ScoreNote(24, 24, 0.5, 1.0, 74, 80), new ScoreNote(0, 24, 0.0, 0.5, 72, 80) };
-        var h = BrasscribeCore.Humanize(notes, "Solo Cornet", 0, compositionJson: Composition);
+        var h = ScribeCore.Humanize(notes, "Solo Cornet", 0, compositionJson: Composition);
         Assert.Equal([72, 74], h.Notes.Select(n => n.Pitch));
         Assert.Contains("\"voice\": \"melody\"", h.StatsJson);
     }
@@ -175,7 +175,7 @@ public class BrasscribeCoreTests
             foreach (var lang in new[] { "en", "nb" })
             {
                 var request = VectorRequest(c, lang);
-                Assert.Equal(c.GetProperty("expected").GetProperty(lang).GetString(), BrasscribeCore.TalkingAnnounceJson(request));
+                Assert.Equal(c.GetProperty("expected").GetProperty(lang).GetString(), ScribeCore.TalkingAnnounceJson(request));
                 n++;
             }
         }
@@ -230,7 +230,7 @@ public class BrasscribeCoreTests
     [Fact]
     public void TalkingScoreNavigatesAnArrangedScore()
     {
-        var xml = BrasscribeCore.ArrangeMusicXml(Composition);
+        var xml = ScribeCore.ArrangeMusicXml(Composition);
         using var ts = new TalkingScore(xml, Composition);
         Assert.Contains("\"total_bars\"", ts.Json);
         var start = new TalkingCursor(0, 0, 0);
@@ -244,7 +244,7 @@ public class BrasscribeCoreTests
     [Fact]
     public void TalkingScoreDisposesOnceAndRefusesUseAfterwards()
     {
-        var ts = new TalkingScore(BrasscribeCore.ArrangeMusicXml(Composition), Composition);
+        var ts = new TalkingScore(ScribeCore.ArrangeMusicXml(Composition), Composition);
         ts.Dispose();
         ts.Dispose();
         Assert.Throws<ObjectDisposedException>(() => ts.Json);
@@ -255,7 +255,7 @@ public class BrasscribeCoreTests
     [Fact]
     public async Task TalkingScoreDisposedWhileInUseFreesAfterTheCall()
     {
-        var xml = BrasscribeCore.ArrangeMusicXml(Composition);
+        var xml = ScribeCore.ArrangeMusicXml(Composition);
         for (var round = 0; round < 20; round++)
         {
             var ts = new TalkingScore(xml, Composition);
@@ -296,17 +296,17 @@ public class BrasscribeCoreTests
     [Fact]
     public void ArrangesWithTrillsOnRequest()
     {
-        Assert.DoesNotContain("<trill-mark", BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal"));
-        Assert.Contains("<trill-mark", BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", trills: true));
+        Assert.DoesNotContain("<trill-mark", ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal"));
+        Assert.Contains("<trill-mark", ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", trills: true));
         Assert.DoesNotContain("<trill-mark",
-            BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard", trills: false));
-        Assert.Contains("<trill-mark", BrasscribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard"));
+            ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard", trills: false));
+        Assert.Contains("<trill-mark", ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard"));
     }
 
     [Fact]
     public void SpellsPitches()
     {
-        var s = BrasscribeCore.SpellPitches([0, 1, 2], [66, 69, 74]);
+        var s = ScribeCore.SpellPitches([0, 1, 2], [66, 69, 74]);
         Assert.Equal(["F", "A", "D"], s.Select(p => p.Step));
         Assert.Equal(1, s[0].Alter);
     }
@@ -322,7 +322,7 @@ public class BrasscribeCoreTests
     [Fact]
     public void FingersABassLineAndWritesItsTab()
     {
-        using var answer = JsonDocument.Parse(BrasscribeCore.FrettedFingeringJson(BassLine));
+        using var answer = JsonDocument.Parse(ScribeCore.FrettedFingeringJson(BassLine));
         var notes = answer.RootElement.GetProperty("fingering").GetProperty("notes");
         Assert.Equal(4, notes.GetArrayLength());
         Assert.True(notes[0].GetProperty("out_of_range").GetBoolean());
@@ -335,7 +335,7 @@ public class BrasscribeCoreTests
         Assert.Equal(0, answer.RootElement.GetProperty("violations").GetArrayLength());
         Assert.Equal("bass-4-drop-d", answer.RootElement.GetProperty("tuning_suggestions")[0].GetProperty("preset").GetString());
 
-        using var tab = JsonDocument.Parse(BrasscribeCore.FrettedTabJson(BassLine));
+        using var tab = JsonDocument.Parse(ScribeCore.FrettedTabJson(BassLine));
         Assert.Equal(0, tab.RootElement.GetProperty("adjusted_notes").GetInt32());
         var xml = tab.RootElement.GetProperty("musicxml").GetString()!;
         Assert.Contains("<sign>TAB</sign>", xml);
@@ -345,20 +345,20 @@ public class BrasscribeCoreTests
     [Fact]
     public void WritesABassLineAsTextTabAndAsPlayingInstructions()
     {
-        var text = BrasscribeCore.FrettedTabTextJson(BassLine);
+        var text = ScribeCore.FrettedTabTextJson(BassLine);
         Assert.StartsWith("Bass\nTuning: Standard (E A D G), bottom line to top\n", text);
         // D1 has no string; the hammer-on is an h before the fret it leads to.
         Assert.Contains("\n   !\nG|----------------||\nD|----------------||\nA|---------5h7----||\nE|-----5----------||\n", text);
         Assert.Contains("bar 1: D1", text);
 
-        var en = BrasscribeCore.FrettedPlayingInstructionsJson(BassLine);
+        var en = ScribeCore.FrettedPlayingInstructionsJson(BassLine);
         Assert.Contains("\nBar 1\n  Beat 1. D 1, no string to play it on. Quarter note.\n  Beat 2. String 4, fret 5. Quarter note.\n", en);
-        var nb = BrasscribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"nb\"}, \"options\":"));
+        var nb = ScribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"nb\"}, \"options\":"));
         Assert.Contains("\nTakt 1\n  Slag 1. D 1, ingen streng å spille den på. Fjerdedelsnote.\n  Slag 2. Streng 4, bånd 5. Fjerdedelsnote.\n", nb);
         Assert.Equal(en.Split('\n').Length, nb.Split('\n').Length);
 
-        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedTabTextJson("{")).Code);
-        var e = Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"de\"}, \"options\":")));
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedTabTextJson("{")).Code);
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"de\"}, \"options\":")));
         Assert.Equal(1, e.Code);
         Assert.Contains("en or nb", e.Message);
     }
@@ -366,13 +366,13 @@ public class BrasscribeCoreTests
     [Fact]
     public void AFrettedRequestItCannotReadIsInvalidInput()
     {
-        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedFingeringJson("{")).Code);
-        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedTabJson("{")).Code);
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedFingeringJson("{")).Code);
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedTabJson("{")).Code);
         // A pin on a string the instrument does not have is refused; one the string cannot sound is reported.
-        var e = Assert.Throws<BrasscribeException>(() => BrasscribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 9")));
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 9")));
         Assert.Equal(1, e.Code);
         Assert.Contains("a pin names string 9 of 4", e.Message);
-        using var answer = JsonDocument.Parse(BrasscribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 1")));
+        using var answer = JsonDocument.Parse(ScribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 1")));
         Assert.Equal("pin-not-honoured", answer.RootElement.GetProperty("violations")[0].GetProperty("kind").GetString());
     }
 }

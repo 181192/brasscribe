@@ -61,7 +61,7 @@ class TabProfileTest {
         listOf("banjo-open-g", "guitar", "ukulele", "bass-4", "guitar-6-standard", "mandolin-standard", "").forEach { assertNull(it, FrettedInstrument.ofPreset(it)) }
 
         val source = File(System.getProperty("brasscribe.presets") ?: "missing")
-        assumeTrue("core/target-fretted is not in this checkout", source.isFile)
+        assumeTrue("core/targets/fretted is not in this checkout", source.isFile)
         val list = source.readText().substringAfter("pub const PRESET_IDS: &[&str] = &[").substringBefore("];")
         val crate = Regex("\"([^\"]+)\"").findAll(list).map { it.groupValues[1] }.toList()
         assertTrue("no presets found in ${source.name}", crate.isNotEmpty())

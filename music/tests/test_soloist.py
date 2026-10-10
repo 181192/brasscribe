@@ -1,6 +1,6 @@
 """The band's own soloist: faithful placement as played inside the solo range, and its range check.
 
-Twin of core/brasscribe-core/tests/soloist.rs, plus arrangement-level checks on the Mikkel composition.
+Twin of core/scribe-core/tests/soloist.rs, plus arrangement-level checks on the Mikkel composition.
 """
 
 import os

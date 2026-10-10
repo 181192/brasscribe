@@ -59,7 +59,7 @@ case "${1:-}" in
         mkdir -p "$tree/core/target" && ln -s "$repo/core/target/release" "$tree/core/target/release"
       else
         log "the core differs at ${base:0:12}: building its host library there"
-        (cd "$tree/core" && cargo build --release -p brasscribe-ffi)
+        (cd "$tree/core" && cargo build --release -p scribe-ffi)
       fi
       rm -rf "$tree/apps/android/app/build/outputs/roborazzi"
       if ! catalogues "$tree/apps/android" record; then

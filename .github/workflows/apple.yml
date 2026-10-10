@@ -89,7 +89,7 @@ jobs:
         run: make verovio
 
       # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built.
-      - name: Build BrasscribeFFI.xcframework
+      - name: Build ScribeFFI.xcframework
         run: scripts/build-core.sh
 
       # Fixture-dependent tests (BRASSCRIBE_FIXTURES / data/golden) skip themselves when absent.
@@ -157,7 +157,7 @@ jobs:
         if: steps.verovio.outputs.cache-hit != 'true'
         run: make verovio
 
-      - name: Build BrasscribeFFI.xcframework
+      - name: Build ScribeFFI.xcframework
         run: scripts/build-core.sh
 
       # Builds the app's tests at the merge base and here. The step itself does not fail: its status (0 same, 1 screens
@@ -394,7 +394,7 @@ jobs:
         run: make verovio
 
       # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built.
-      - name: Build BrasscribeFFI.xcframework
+      - name: Build ScribeFFI.xcframework
         run: scripts/build-core.sh
 
       # The band sounds are not in git: the pinned pack (sounds/band-sounds.json) is fetched from this
@@ -445,7 +445,7 @@ jobs:
         if: ${{ inputs.release }}
         working-directory: apps/bandroom/macos
         run: |
-          (cd ../../../core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p brasscribe-cli)
+          (cd ../../../core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p scribe-cli)
           xcodegen generate
           xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
             -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData build
@@ -457,10 +457,10 @@ jobs:
           mkdir -p "$B/Contents/Resources/bin"
           cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
           scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"
-          "$B/Contents/Resources/bin/brasscribe-core" version || { echo "Bandroom has no core command line" >&2; exit 1; }
+          "$B/Contents/Resources/bin/scribe-core" version || { echo "Bandroom has no core command line" >&2; exit 1; }
           codesign -d --entitlements - --xml "$B" > "$RUNNER_TEMP/band.entitlements"
           codesign --force --sign - "$B/Contents/Resources/bin/pixi"
-          codesign --force --sign - "$B/Contents/Resources/bin/brasscribe-core"
+          codesign --force --sign - "$B/Contents/Resources/bin/scribe-core"
           codesign --force --sign - --entitlements "$RUNNER_TEMP/band.entitlements" "$B"
           codesign --verify --deep --strict "$B"
           (cd "$stage" && ditto -c -k --keepParent "Brasscribe Bandroom.app" "$RUNNER_TEMP/out/brasscribe-bandroom-macos-arm64.zip")

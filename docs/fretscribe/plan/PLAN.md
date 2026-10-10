@@ -52,7 +52,7 @@ Shared tooling:
 
 Bass tab, from a recording to a file:
 
-- `core/target-fretted`: tunings as data for guitar, bass, ukulele and mandolin; string and fret
+- `core/targets/fretted`: tunings as data for guitar, bass, ukulele and mandolin; string and fret
   assignment with a hand span in millimetres; styles, pins, alternatives and a playability check; tuning
   suggestion, playing techniques, chord shapes and staying in position. Bass lines stay low on the neck,
   and isolated high notes are set aside instead of dragging the hand up.
@@ -99,7 +99,7 @@ rebase what is open, then freeze those areas for the duration. Each step is one 
 unchanged.
 
 1. Done: the brass-specific modules (`instruments`, `arranger`, `difficulty`, the band score and the
-   arranging entry points) are the crate `core/target-brass`, and `brasscribe-core/tests/crate_graph.rs`
+   arranging entry points) are the crate `core/targets/brass`, and `scribe-core/tests/crate_graph.rs`
    is the dependency check. The MusicXML writer stays in the core and takes a part's instrument as
    `InstrumentSpec`. Still in the core: the Norwegian part and instrument names in `talking_score`.
 2. Split `musicxml` into a generic writer with a per-part hook (staff details, `<technical>` elements)

@@ -1,6 +1,6 @@
 //! Tablature as MusicXML: staff set-up, notes, rhythm, techniques and doubt marks.
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use roxmltree::{Document, Node, ParsingOptions};
 use target_fretted::json::{solve_json, tab_json, tab_musicxml_json, NOTE_KEYS};
 use target_fretted::{assign, assign_with_techniques, preset, write_tab_musicxml, CapoEncoding, Fingering, Instrument, Layout, NotationClef, NotePlace, Options, TabDocument, TabOptions, TabScore, Technique, MAX_NOTES, PRESET_IDS};
@@ -1399,10 +1399,10 @@ fn a_score_that_cannot_be_written_is_an_error() {
     let opts = TabOptions { doubt_below: f64::NAN, ..TabOptions::default() };
     assert!(write_tab_musicxml(&score, &opts).unwrap_err().contains("threshold"));
     // The longest passage the model allows is still a bounded number of measures.
-    let far = [note(60, brasscribe_core::model::MAX_TICKS - 24, 24)];
+    let far = [note(60, scribe_core::model::MAX_TICKS - 24, 24)];
     let fingering = assign(&inst, &far, &Options::default()).unwrap();
     let xml = write(&TabScore::new("x", &inst, &far, &[], &fingering).unwrap(), &layout(Layout::Tab));
-    assert_eq!(xml.matches("<measure ").count() as i64, brasscribe_core::model::MAX_TICKS / BAR);
+    assert_eq!(xml.matches("<measure ").count() as i64, scribe_core::model::MAX_TICKS / BAR);
 }
 
 #[test]

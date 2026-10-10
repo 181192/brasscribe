@@ -3,7 +3,7 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use brasscribe_ffi::{arrange_musicxml_with, part_name_nb, part_sources, seat_part, seats, ArrangeOptions, SeatPart};
+use scribe_ffi::{arrange_musicxml_with, part_name_nb, part_sources, seat_part, seats, ArrangeOptions, SeatPart};
 
 /// A solo take: only the solo layer has notes (a baritone line, some of it below E3).
 const SOLO: &str = r#"{"title": "S", "voices": [
@@ -21,7 +21,7 @@ fn c_call(f: impl FnOnce(*mut *mut c_char, *mut *mut c_char) -> i32) -> Result<S
     let code = f(&mut out, &mut err);
     let take = |p: *mut c_char| {
         let s = unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned();
-        unsafe { brasscribe_ffi::c_api::bc_string_free(p) };
+        unsafe { scribe_ffi::c_api::sc_string_free(p) };
         s
     };
     if code == 0 {
@@ -41,7 +41,7 @@ fn seats_carry_the_core_names() {
     let horn = s.iter().find(|x| x.id == "solo-horn").unwrap();
     assert_eq!((horn.name.as_str(), horn.nb_name.as_str(), horn.clef.as_str()), ("Solo Horn", "Solo althorn", "treble"));
     assert_eq!(s.iter().find(|x| x.id == "bass-trombone").unwrap().reads, vec!["bass"]);
-    let json = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_seats(o, e) }).unwrap();
+    let json = c_call(|o, e| unsafe { scribe_ffi::c_api::sc_seats(o, e) }).unwrap();
     assert!(json.contains(r#""nb_name":"Sopran-kornett""#));
     // tune: the core's roles, over UniFFI and the C ABI alike
     let core = target_brass::instruments::SEATS.iter().map(|x| (x.id.to_string(), x.tune())).collect::<Vec<_>>();
@@ -64,10 +64,10 @@ fn seat_part_spot_checks() {
     assert_eq!(seat_part("quartet".into(), "trumpet".into()).unwrap().part.as_deref(), Some("1st Cornet"));
     assert!(seat_part("band".into(), "tuba".into()).is_err());
     let (l, s) = (CString::new("quartet").unwrap(), CString::new("percussion").unwrap());
-    let json = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_seat_part(l.as_ptr(), s.as_ptr(), o, e) }).unwrap();
+    let json = c_call(|o, e| unsafe { scribe_ffi::c_api::sc_seat_part(l.as_ptr(), s.as_ptr(), o, e) }).unwrap();
     assert_eq!(json, r#"{"part":null,"exact":false,"same_key":false,"takes":null}"#);
     let (l, s) = (CString::new("band").unwrap(), CString::new("trumpet").unwrap());
-    let json = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_seat_part(l.as_ptr(), s.as_ptr(), o, e) }).unwrap();
+    let json = c_call(|o, e| unsafe { scribe_ffi::c_api::sc_seat_part(l.as_ptr(), s.as_ptr(), o, e) }).unwrap();
     assert_eq!(json, r#"{"part":"Trumpet","exact":false,"same_key":true,"takes":"Solo Cornet"}"#);
 }
 
@@ -81,7 +81,7 @@ fn a_solo_take_for_a_seat_is_one_part() {
     assert_eq!(parts(&xml), ["1st Baritone"]);
     assert!(xml.contains("<sign>F</sign>") && !xml.contains("<transpose>"));
     let json = CString::new(SOLO).unwrap();
-    let rows = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_part_sources(json.as_ptr(), o, e) }).unwrap();
+    let rows = c_call(|o, e| unsafe { scribe_ffi::c_api::sc_part_sources(json.as_ptr(), o, e) }).unwrap();
     assert_eq!(rows, r#"[{"part":"1st Baritone","source":"your-recording"}]"#);
 }
 
@@ -108,5 +108,5 @@ fn part_names_in_norwegian() {
         assert_eq!(part_name_nb(s.name.clone()), s.nb_name);
     }
     let n = CString::new("E♭ Bass").unwrap();
-    assert_eq!(c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_part_name_nb(n.as_ptr(), o, e) }).unwrap(), "Ess-bass");
+    assert_eq!(c_call(|o, e| unsafe { scribe_ffi::c_api::sc_part_name_nb(n.as_ptr(), o, e) }).unwrap(), "Ess-bass");
 }

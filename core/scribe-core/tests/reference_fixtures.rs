@@ -1,12 +1,12 @@
 //! Unit-level conformance: Rust functions against outputs of the Python
 //! reference on seeded synthetic inputs (regenerate with
-//! `uv run python -m brasscribe_conformance.fixtures` in core/conformance).
+//! `uv run python -m scribe_conformance.fixtures` in core/conformance).
 
-use brasscribe_core::midi::RawNote;
-use brasscribe_core::notation::duration::{quarter_conversion, Rat};
-use brasscribe_core::py::np_argsort;
-use brasscribe_core::quantize::{choose_level, fill_gaps, quantize, quantize_with};
-use brasscribe_core::spelling::{key_of, spell};
+use scribe_core::midi::RawNote;
+use scribe_core::notation::duration::{quarter_conversion, Rat};
+use scribe_core::py::np_argsort;
+use scribe_core::quantize::{choose_level, fill_gaps, quantize, quantize_with};
+use scribe_core::spelling::{key_of, spell};
 use serde_json::Value;
 
 fn load(name: &str) -> Vec<Value> {
@@ -24,8 +24,8 @@ fn i64s(v: &Value) -> Vec<i64> {
 
 #[test]
 fn confidence_and_review_groups_match_reference() {
-    use brasscribe_core::confidence::{features, p_correct, review_groups, support, Model};
-    use brasscribe_core::durations::Contour;
+    use scribe_core::confidence::{features, p_correct, review_groups, support, Model};
+    use scribe_core::durations::Contour;
     let model = Model::load();
     for (i, c) in load("confidence").iter().enumerate() {
         let k = &c["contour"];
@@ -59,7 +59,7 @@ fn confidence_and_review_groups_match_reference() {
 
 #[test]
 fn solo_meter_matches_reference() {
-    use brasscribe_core::beats::{labels_on, solo_meter, track_bar_phase, PHASE_JUMP_COST};
+    use scribe_core::beats::{labels_on, solo_meter, track_bar_phase, PHASE_JUMP_COST};
     for (i, c) in load("meter").iter().enumerate() {
         let (t, grid, on, du) = (f64s(&c["t"]), f64s(&c["grid"]), f64s(&c["onsets"]), f64s(&c["durations"]));
         let pos = i64s(&c["pos"]);
@@ -113,7 +113,7 @@ fn quantize_matches_reference() {
         let on: Vec<f64> = notes.iter().map(|n| n.onset).collect();
         assert_eq!(choose_level(&beats, &on), f64s(&c["level"]), "level case {i}");
         let q = quantize(&notes, &beats, c["monophonic"].as_bool().unwrap(), c["auto_level"].as_bool().unwrap());
-        let rows = |q: &[brasscribe_core::quantize::QNote]| -> Vec<Vec<i64>> { q.iter().map(|x| vec![x.pitch as i64, x.start, x.end]).collect() };
+        let rows = |q: &[scribe_core::quantize::QNote]| -> Vec<Vec<i64>> { q.iter().map(|x| vec![x.pitch as i64, x.start, x.end]).collect() };
         let want: Vec<Vec<i64>> = c["quantized"].as_array().unwrap().iter().map(i64s).collect();
         assert_eq!(rows(&q), want, "quantize case {i}");
         let filled = fill_gaps(q, 12, 0.0);
@@ -152,8 +152,8 @@ fn dense_quantize_matches_reference() {
 
 #[test]
 fn contour_onsets_match_reference() {
-    use brasscribe_core::durations::Contour;
-    use brasscribe_core::onsets::contour_notes;
+    use scribe_core::durations::Contour;
+    use scribe_core::onsets::contour_notes;
     let notes_of = |v: &Value| -> Vec<RawNote> {
         v.as_array()
             .unwrap()
@@ -194,7 +194,7 @@ fn argsort_order_matches_numpy() {
 
 #[test]
 fn free_time_plans_match_reference() {
-    use brasscribe_core::freetime::{local_tempo, plan_free_time, unstable_runs};
+    use scribe_core::freetime::{local_tempo, plan_free_time, unstable_runs};
     for (i, c) in load("freetime").iter().enumerate() {
         let t = f64s(&c["t"]);
         let on = f64s(&c["onsets"]);
@@ -231,8 +231,8 @@ fn free_time_plans_match_reference() {
 
 #[test]
 fn contour_offsets_and_written_durations_match_reference() {
-    use brasscribe_core::durations::{contour_offsets, written_durations, written_durations_with, Contour, ContourSettings, WriteOptions, SEPARATED_STEM};
-    use brasscribe_core::quantize::{BeatMap, QNote};
+    use scribe_core::durations::{contour_offsets, written_durations, written_durations_with, Contour, ContourSettings, WriteOptions, SEPARATED_STEM};
+    use scribe_core::quantize::{BeatMap, QNote};
     for (i, c) in load("durations").iter().enumerate() {
         let contour = Contour::from_hz(f64s(&c["t"]), &f64s(&c["hz"]), f64s(&c["db"]));
         let want_midi: Vec<Option<f64>> = c["midi"].as_array().unwrap().iter().map(|x| x.as_f64()).collect();
@@ -290,8 +290,8 @@ fn quarter_conversion_matches_reference() {
 
 #[test]
 fn trills_match_reference() {
-    use brasscribe_core::model::Note;
-    use brasscribe_core::trills::{collapse_trills, with_trills};
+    use scribe_core::model::Note;
+    use scribe_core::trills::{collapse_trills, with_trills};
     let raw = |v: &Value| -> Vec<RawNote> {
         v.as_array()
             .unwrap()

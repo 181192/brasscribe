@@ -1,9 +1,9 @@
 """Conformance runner: Python reference vs Rust core on the same inputs.
 
-    uv run python -m brasscribe_conformance.run [--only SUBSTR] [--work DIR] [--skip-python] [--musescore]
+    uv run python -m scribe_conformance.run [--only SUBSTR] [--work DIR] [--skip-python] [--musescore]
 
 For every case the Python reference writes to <work>/<case>/py and the Rust
-CLI (`brasscribe-core`) to <work>/<case>/rust. Every file the reference wrote
+CLI (`scribe-core`) to <work>/<case>/rust. Every file the reference wrote
 is compared: JSON byte for byte (the report names the first value that differs
 when parsed: types, bit-equal floats, key order), MusicXML after
 canonicalisation (see canon.py), including the split parts. Each run starts
@@ -42,8 +42,8 @@ IGNORED = {".pdf", ".mp3", ".mid", ".wav", ".brf"}
 
 
 def rust_bin() -> Path:
-    subprocess.run(["cargo", "build", "--release", "-q", "-p", "brasscribe-cli"], cwd=CORE, check=True)
-    return CORE / "target" / "release" / "brasscribe-core"
+    subprocess.run(["cargo", "build", "--release", "-q", "-p", "scribe-cli"], cwd=CORE, check=True)
+    return CORE / "target" / "release" / "scribe-core"
 
 
 def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
@@ -277,7 +277,7 @@ def main() -> None:
 def write_report(work: Path, results: list[dict]) -> Path:
     """Summary for Studio: <work>/report.json, one row per (set, item, stage)."""
     sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip()
-    version = subprocess.run([str(CORE / "target" / "release" / "brasscribe-core"), "version"], capture_output=True,
+    version = subprocess.run([str(CORE / "target" / "release" / "scribe-core"), "version"], capture_output=True,
                              text=True).stdout.strip()
     rows = []
     for r in results:

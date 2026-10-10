@@ -2,7 +2,7 @@
 
 use target_brass::arranger::{in_register, place_soloist};
 use target_brass::instruments::{brass_band, lead_lineup, minimal_band, quartet, seat_lineup, RangeCheck, CORNET};
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 
 fn line(pitches: &[i32]) -> Vec<Note> {
     pitches.iter().enumerate().map(|(i, &p)| Note::new(p, 12 * i as i64, 12, 1.0, vec![])).collect()

@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from brasscribe_conformance import cases
+from scribe_conformance import cases
 
 
 def song(root: Path, eval_set: str, name: str, files: tuple[str, ...], quarter: bool = False) -> None:
@@ -79,7 +79,7 @@ class BrokenInput(unittest.TestCase):
         import io
         import sys
 
-        from brasscribe_conformance import run
+        from scribe_conformance import run
 
         with tempfile.TemporaryDirectory() as tmp:
             data, work, report = Path(tmp) / "data", Path(tmp) / "work", Path(tmp) / "report.json"

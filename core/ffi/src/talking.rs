@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use brasscribe_core::talking_score as ts;
+use scribe_core::talking_score as ts;
 use serde_json::{json, Value};
 
 use crate::{invalid, CoreError};
@@ -120,7 +120,7 @@ impl TalkingScore {
 
     /// The document as JSON (spec §6 shape).
     pub fn to_json(&self) -> String {
-        brasscribe_core::pyjson::dumps(&self.doc)
+        scribe_core::pyjson::dumps(&self.doc)
     }
 
     pub fn title(&self) -> String {

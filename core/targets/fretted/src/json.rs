@@ -9,7 +9,7 @@
 //! `instrument` is a preset id (with an optional capo) or a full [`Instrument`]. `options` may be
 //! left out. The response holds the instrument used, the fingering and any hard violations.
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use serde::{Deserialize, Serialize};
 
 use crate::check::{check_with_techniques, Violation};

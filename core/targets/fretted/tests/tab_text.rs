@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use roxmltree::{Document, Node, ParsingOptions};
 use target_fretted::json::{playing_instructions_json, tab_text_json};
 use target_fretted::{

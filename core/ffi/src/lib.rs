@@ -1,24 +1,24 @@
-//! Bindings of brasscribe-core for the native apps.
+//! Bindings of scribe-core for the native apps.
 //!
 //! * UniFFI (Swift, Kotlin): the `#[uniffi::export]` functions below; generate
 //!   the foreign code with `core/scripts/bindings.sh`.
-//! * C ABI (C#, anything with a C FFI): the `bc_*` functions in [`c_api`];
-//!   header in `core/bindings/c/brasscribe.h` (cbindgen).
+//! * C ABI (C#, anything with a C FFI): the `sc_*` functions in [`c_api`];
+//!   header in `core/bindings/c/scribe.h` (cbindgen).
 //!
 //! Inputs and outputs are plain data: MIDI file bytes, beat tables as text,
 //! Composition JSON and MusicXML strings. Nothing here touches the file system.
 //!
-//! [`fretted`] is the one part that is not brasscribe-core: tab fingering for fretted
+//! [`fretted`] is the one part that is not scribe-core: tab fingering for fretted
 //! instruments (`target-fretted`), as JSON.
 
 use target_brass::arranger::{arrange, arrange_layers};
-use brasscribe_core::durations::Contour;
-use brasscribe_core::energy::Audio;
-use brasscribe_core::midi::{MidiFile, RawNote};
-use brasscribe_core::model::Composition;
+use scribe_core::durations::Contour;
+use scribe_core::energy::Audio;
+use scribe_core::midi::{MidiFile, RawNote};
+use scribe_core::model::Composition;
 use target_brass::musicxml::{band_score, write_score};
 use target_brass::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
-use brasscribe_core::quantize::{choose_level, fill_gaps, quantize};
+use scribe_core::quantize::{choose_level, fill_gaps, quantize};
 
 pub mod c_api;
 pub mod fretted;
@@ -57,7 +57,7 @@ fn failed(e: impl ToString) -> CoreError {
 /// Version of the core library.
 #[uniffi::export]
 pub fn core_version() -> String {
-    brasscribe_core::VERSION.to_string()
+    scribe_core::VERSION.to_string()
 }
 
 /// Parse and re-serialise a Composition (the canonical composition.json text).
@@ -132,7 +132,7 @@ pub fn arrange_musicxml_with(composition_json: String, options: ArrangeOptions) 
 
 pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> Result<String, CoreError> {
     use target_brass::instruments::{check_reads, lead_lineup, lineup_by_name, lineup_key, seat_by_id, LEADS};
-    use brasscribe_core::model::check_transpose;
+    use scribe_core::model::check_transpose;
 
     let mut comp = Composition::from_json_str(composition_json).map_err(invalid)?;
     let key = lineup_key(&o.lineup).map_err(invalid)?;
@@ -166,7 +166,7 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
         (Some(t), _) => *t - before,
         (None, Some(k)) => {
             let first = comp.keys.first().ok_or_else(|| invalid("composition has no key"))?;
-            brasscribe_core::keys::semitones_to(first, k).map_err(invalid)?
+            scribe_core::keys::semitones_to(first, k).map_err(invalid)?
         }
         _ => 0,
     };
@@ -622,7 +622,7 @@ pub fn spell_pitches(onsets_beats: Vec<f64>, pitches: Vec<i32>) -> Result<Vec<Sp
     if onsets_beats.iter().any(|t| !t.is_finite()) {
         return Err(invalid("onsets must be numbers"));
     }
-    Ok(brasscribe_core::spelling::spell(&onsets_beats, &pitches)
+    Ok(scribe_core::spelling::spell(&onsets_beats, &pitches)
         .into_iter()
         .map(|s| SpelledPitch { step: s.step.to_string(), alter: s.alter, octave: s.octave })
         .collect())
@@ -638,7 +638,7 @@ pub struct KeyEstimate {
 /// Krumhansl-Kessler key estimate from note durations (beats) and pitches.
 #[uniffi::export]
 pub fn estimate_key(durations_beats: Vec<f64>, pitches: Vec<i32>) -> KeyEstimate {
-    let (name, fifths) = brasscribe_core::spelling::key_of(&durations_beats, &pitches);
+    let (name, fifths) = scribe_core::spelling::key_of(&durations_beats, &pitches);
     KeyEstimate { name: name.to_string(), fifths }
 }
 
@@ -722,7 +722,7 @@ pub fn part_sources(composition_json: String) -> Result<Vec<PartSource>, CoreErr
 /// table, covering the band, small band and quartet parts. Names it doesn't know come back unchanged.
 #[uniffi::export]
 pub fn part_name_nb(name: String) -> String {
-    brasscribe_core::talking_score::nb_part_name(&name).to_string()
+    scribe_core::talking_score::nb_part_name(&name).to_string()
 }
 
 /// One seat of the contest band, for the "What do you play?" picker.
@@ -755,7 +755,7 @@ pub fn seats() -> Vec<SeatInfo> {
             SeatInfo {
                 id: s.id.into(),
                 name: s.part.into(),
-                nb_name: brasscribe_core::talking_score::nb_part_name(s.part).into(),
+                nb_name: scribe_core::talking_score::nb_part_name(s.part).into(),
                 instrument: inst.id.into(),
                 clef: inst.clef.as_str().into(),
                 reads: s.reads.iter().map(|r| r.to_string()).collect(),

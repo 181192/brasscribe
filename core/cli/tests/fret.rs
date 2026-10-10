@@ -1,4 +1,4 @@
-//! `brasscribe-core fret` and `tab`: target-fretted's JSON request in, its JSON response out, both unchanged.
+//! `scribe-core fret` and `tab`: target-fretted's JSON request in, its JSON response out, both unchanged.
 
 use std::fs;
 use std::path::PathBuf;
@@ -7,7 +7,7 @@ use std::process::Command;
 use serde_json::{json, Value};
 
 fn dir(name: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("brasscribe-cli-fret-{}-{name}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("scribe-cli-fret-{}-{name}", std::process::id()));
     fs::create_dir_all(&d).unwrap();
     d
 }
@@ -20,7 +20,7 @@ fn call(command: &str, name: &str, request: &str) -> (bool, String, String) {
     let d = dir(&format!("{command}-{name}"));
     let (req, out) = (d.join("request.json"), d.join("out").join("answer.json"));
     fs::write(&req, request).unwrap();
-    let run = Command::new(env!("CARGO_BIN_EXE_brasscribe-core")).arg(command).arg("--request").arg(&req).arg("--out").arg(&out).output().unwrap();
+    let run = Command::new(env!("CARGO_BIN_EXE_scribe-core")).arg(command).arg("--request").arg(&req).arg("--out").arg(&out).output().unwrap();
     let written = fs::read_to_string(&out).unwrap_or_default();
     fs::remove_dir_all(&d).ok();
     (run.status.success(), written, String::from_utf8_lossy(&run.stderr).into_owned())
@@ -69,7 +69,7 @@ fn a_bad_request_fails_with_the_crates_message_and_writes_nothing() {
 
 #[test]
 fn a_missing_argument_is_named() {
-    let run = Command::new(env!("CARGO_BIN_EXE_brasscribe-core")).arg("fret").output().unwrap();
+    let run = Command::new(env!("CARGO_BIN_EXE_scribe-core")).arg("fret").output().unwrap();
     assert!(!run.status.success());
     assert!(String::from_utf8_lossy(&run.stderr).contains("missing --request"));
 }
@@ -128,7 +128,7 @@ fn a_bad_tab_request_fails_with_the_crates_message_and_writes_nothing() {
     let (ok, written, stderr) = call("tab", "layout", &request.to_string());
     assert!(!ok && written.is_empty());
     assert!(stderr.contains("not a tablature request"), "{stderr}");
-    let run = Command::new(env!("CARGO_BIN_EXE_brasscribe-core")).arg("tab").arg("--request").arg("r.json").output().unwrap();
+    let run = Command::new(env!("CARGO_BIN_EXE_scribe-core")).arg("tab").arg("--request").arg("r.json").output().unwrap();
     assert!(!run.status.success());
 
     // A fingering that puts a note where it does not sound is refused, not written.
@@ -144,7 +144,7 @@ fn tab_as(name: &str, request: &str, args: &[&str]) -> (bool, String, String) {
     let d = dir(&format!("tab-as-{name}"));
     let (req, out) = (d.join("request.json"), d.join("out").join("answer.txt"));
     fs::write(&req, request).unwrap();
-    let run = Command::new(env!("CARGO_BIN_EXE_brasscribe-core")).arg("tab").arg("--request").arg(&req).arg("--out").arg(&out).args(args).output().unwrap();
+    let run = Command::new(env!("CARGO_BIN_EXE_scribe-core")).arg("tab").arg("--request").arg(&req).arg("--out").arg(&out).args(args).output().unwrap();
     let written = fs::read_to_string(&out).unwrap_or_default();
     fs::remove_dir_all(&d).ok();
     (run.status.success(), written, String::from_utf8_lossy(&run.stderr).into_owned())

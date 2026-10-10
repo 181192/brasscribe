@@ -1,6 +1,6 @@
 //! Playing techniques that constrain where a note can go.
 
-use brasscribe_core::model::Note;
+use scribe_core::model::Note;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

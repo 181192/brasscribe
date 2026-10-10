@@ -33,7 +33,7 @@ This plan adds a brass quartet as a third lineup, next to the full brass band an
 | Tenor Horn | `eb-tenor-horn` | reading 48–70 | M6 above | treble | 1 (the Solo Horn preset) | Althorn |
 | Euphonium | `euphonium` | reading 40–67, limit 34–72 | M9 above | treble | 3 | Eufonium |
 
-The ranges and transpositions come from `music/src/brasscribe_music/instruments.py:89-108` and `core/brasscribe-core/src/instruments.rs`. Nothing new goes into instrument knowledge. There is one player per part and no percussion.
+The ranges and transpositions come from `music/src/brasscribe_music/instruments.py:89-108` and `core/scribe-core/src/instruments.rs`. Nothing new goes into instrument knowledge. There is one player per part and no percussion.
 
 **Part names.** Use the names quartet parts are printed with. "2nd Cornet" and "Euphonium" already exist in the band tables. That leaves two new names, **"1st Cornet"** and **"Tenor Horn"**, to add to every table that matches on part name (§2.8). The alternative is to reuse the band seat names ("Solo Cornet", "Solo Horn"). That needs no table changes, but prints "Solo Cornet" on a quartet part. Open question 1.
 
@@ -93,7 +93,7 @@ On a solo take, bass and orchestra are empty, and three parts would be written a
 | File | Change |
 |---|---|
 | `music/src/brasscribe_music/instruments.py:129-175` | `Lineup` gets `lead: str`, `bass: str`, `second_bass: str \| None`, `satb: bool = False`. Set `BRASS_BAND` and `MINIMAL_BAND` to their current values ("Solo Cornet", "E♭ Bass", "B♭ Bass"). Add `QUARTET = Lineup("Brass quartet", [...], lead="1st Cornet", bass="Euphonium", second_bass=None, satb=True)` with the banks from §1.1. Add `LINEUPS = {"band": BRASS_BAND, "minimal": MINIMAL_BAND, "quartet": QUARTET}` and `lineup_by_name()`, accepting "full" as an alias for "band". |
-| `core/brasscribe-core/src/instruments.rs:212-275` | The same: fields on `Lineup`, `quartet()`, `lineup_by_name(&str) -> Result<Lineup, String>` |
+| `core/scribe-core/src/instruments.rs:212-275` | The same: fields on `Lineup`, `quartet()`, `lineup_by_name(&str) -> Result<Lineup, String>` |
 
 ### 2.2 Python arrangers and difficulty
 
@@ -114,31 +114,31 @@ On a solo take, bass and orchestra are empty, and three parts would be written a
 
 | File:line | Change |
 |---|---|
-| `core/brasscribe-core/src/arranger.rs:199` `layer_of_part`, `:278-308` `arrange_with`, `:484-583` `arrange_layers_opts` | as in Python, one to one, including `voice_satb` with the same scoring order |
-| `core/brasscribe-core/src/difficulty.rs:24,168` | `SOLO_PART` → `lineup.lead`, satb inner parts not folded |
-| `core/brasscribe-core/src/notation/score.rs:1777` `band_midi` | banks from the arrangement's lineup, not `brass_band()` |
-| `core/brasscribe-core/src/musicxml.rs:16-66` | pass the lineup through to `band_midi` |
-| `core/brasscribe-core/src/pipeline.rs:174,239-243,494,508-511` | `lineup_by_name`, accepting "quartet". `arrange_composition` reads the lineup for non-layered compositions too. |
+| `core/scribe-core/src/arranger.rs:199` `layer_of_part`, `:278-308` `arrange_with`, `:484-583` `arrange_layers_opts` | as in Python, one to one, including `voice_satb` with the same scoring order |
+| `core/scribe-core/src/difficulty.rs:24,168` | `SOLO_PART` → `lineup.lead`, satb inner parts not folded |
+| `core/scribe-core/src/notation/score.rs:1777` `band_midi` | banks from the arrangement's lineup, not `brass_band()` |
+| `core/scribe-core/src/musicxml.rs:16-66` | pass the lineup through to `band_midi` |
+| `core/scribe-core/src/pipeline.rs:174,239-243,494,508-511` | `lineup_by_name`, accepting "quartet". `arrange_composition` reads the lineup for non-layered compositions too. |
 | `pipeline.rs:535` `arrange_song` | gets a lineup argument (`SongOptions { lineup }`, default minimal) and records it in `comp.arrangement` |
-| `core/brasscribe-cli/src/main.rs:6,189` | `--lineup band\|full\|minimal\|quartet` for `layers`, and new for `song` |
-| `core/conformance/brasscribe_conformance/cases.py:24-30` | `MIKKEL_VARIANTS` += `("layers-quartet", ["--lineup", "quartet"])`, `("layers-quartet-easier", ["--lineup", "quartet", "--difficulty", "easier"])`. For each chorale: `song` and `bench` cases with `options: ["--lineup", "quartet"]`. |
-| `core/conformance/brasscribe_conformance/reference.py:69-79` | the `song` and `bench` kinds ignore `options` today. Pass them on (to `arrange_song` and to `evaluate(comp, lineup)`). |
-| `core/brasscribe-core/tests/reference_fixtures.rs` + `tests/fixtures/` | a `voice_satb.json` unit fixture, produced by `brasscribe_conformance.fixtures` from the Python reference |
+| `core/cli/src/main.rs:6,189` | `--lineup band\|full\|minimal\|quartet` for `layers`, and new for `song` |
+| `core/conformance/scribe_conformance/cases.py:24-30` | `MIKKEL_VARIANTS` += `("layers-quartet", ["--lineup", "quartet"])`, `("layers-quartet-easier", ["--lineup", "quartet", "--difficulty", "easier"])`. For each chorale: `song` and `bench` cases with `options: ["--lineup", "quartet"]`. |
+| `core/conformance/scribe_conformance/reference.py:69-79` | the `song` and `bench` kinds ignore `options` today. Pass them on (to `arrange_song` and to `evaluate(comp, lineup)`). |
+| `core/scribe-core/tests/reference_fixtures.rs` + `tests/fixtures/` | a `voice_satb.json` unit fixture, produced by `scribe_conformance.fixtures` from the Python reference |
 | goldens `data/golden/mikkel-arranged-band*` | **must not change**. No quartet golden goes into `data/golden`. The conformance run checks the quartet cases against the Python reference instead. |
 
 ### 2.4 FFI and bindings
 
-Lineup is a **string** end to end (`LayersSongOptions.lineup`, `brasscribe-ffi/src/lib.rs:156`; C ABI `c_api.rs:191`). There is no enum to extend, so the layered path needs only doc changes:
-- `brasscribe-ffi/src/lib.rs:156` and `c_api.rs:96`: docs say `"band" | "minimal" | "quartet"`
-- `core/dotnet/Brasscribe.Core/BrasscribeCore.cs:29`: doc
+Lineup is a **string** end to end (`LayersSongOptions.lineup`, `scribe-ffi/src/lib.rs:156`; C ABI `c_api.rs:191`). There is no enum to extend, so the layered path needs only doc changes:
+- `scribe-ffi/src/lib.rs:156` and `c_api.rs:96`: docs say `"band" | "minimal" | "quartet"`
+- `core/dotnet/Scribe.Core/ScribeCore.cs:29`: doc
 
 Keep it a string. An enum would break every Swift, Kotlin and .NET caller for no gain.
 
 The gap is `arrange_musicxml(composition_json, arranger)` (`lib.rs:68-90`, C `c_api.rs:80`). It takes an *arranger* ("auto", "layers", "minimal"), not a lineup. The apps call it to re-arrange after an edit or on the "Choose output" screen, and pass `"minimal"` for the small band, which selects the non-layered arranger. That is a mismatch today, and it can't express a quartet. Add, without changing the old function:
 - UniFFI `arrange_musicxml_with(composition_json: String, options: ArrangeOptions) -> String`, where `ArrangeOptions { lineup, difficulty, key: Option<String>, transpose: Option<i32> }` is a `uniffi::Record` with defaults
-- C `bc_arrange_with(json, options_json, out, err)`, with the same JSON keys as `bc_arrange_layers_song`
+- C `sc_arrange_with(json, options_json, out, err)`, with the same JSON keys as `sc_arrange_layers_song`
 
-Regenerate with `core/scripts/bindings.sh`. That rewrites `core/bindings/{swift,kotlin,c}`, `core/swift/BrasscribeCore/.../brasscribe_ffi.swift` and `core/android/brasscribe-core/.../brasscribe_ffi.kt`. Add the P/Invoke to `core/dotnet/Brasscribe.Core/BrasscribeCore.cs`.
+Regenerate with `core/scripts/bindings.sh`. That rewrites `core/bindings/{swift,kotlin,c}`, `core/swift/ScribeCore/.../scribe_ffi.swift` and `core/android/scribe-core/.../scribe_ffi.kt`. Add the P/Invoke to `core/dotnet/Scribe.Core/ScribeCore.cs`.
 
 ### 2.5 Engine
 
@@ -201,7 +201,7 @@ Studio has no lineup picker, so there is nothing else to change.
 | File:line | Change |
 |---|---|
 | `src/Brasscribe.Play.Core/ViewModels/OutputOptionsViewModel.cs:10` | `enum Lineup { FullBand, MinimalBand, Quartet }` |
-| `OutputOptionsViewModel.cs:135,169`, `ViewModels/MainViewModel.cs:57` | `switch` expressions. Re-arrange through `bc_arrange_with`. |
+| `OutputOptionsViewModel.cs:135,169`, `ViewModels/MainViewModel.cs:57` | `switch` expressions. Re-arrange through `sc_arrange_with`. |
 | `ViewModels/MainViewModel.cs:465`, `MainWindow.xaml.cs:115` | the label comes from the part count (`<= 6` → SmallBand, so a quartet would read "Small band"). Use the recorded lineup, and add `Library_Quartet`. |
 | `src/Brasscribe.Play/Views/ChooseOutputPage.xaml:27-40` | third `RadioButton` `QuartetChoice` |
 | `Views/ChooseOutputPage.xaml.cs:24,31` | index ↔ enum via a switch, not `== 1 ?` |
@@ -220,7 +220,7 @@ Every table must resolve "1st Cornet" and "Tenor Horn". If one doesn't, the resu
 
 | Table | Missing entry means |
 |---|---|
-| `core/brasscribe-core/src/talking_score.rs:811-831` `nb_part_name` | English name in the nb talking score |
+| `core/scribe-core/src/talking_score.rs:811-831` `nb_part_name` | English name in the nb talking score |
 | `engine/.../talking_score.py:443-447`, `studio/src/lib/talkingxml.ts:37`, Apple `PartNames.swift`, Android `PartNames.kt`, Windows `MusicXmlTalkingScoreBuilder.cs:439` | the same, per surface |
 | `studio/src/lib/validate.ts:13-42` | the range check skips the part |
 | `sounds/mapping.json` (parts) | **`sounds/render.py:387` skips the part: the MP3 export has no 1st Cornet or Tenor Horn** |
@@ -265,7 +265,7 @@ All three take the scope labels from the recorded lineup, not from fixed strings
 
 ## 3. Acceptance criteria
 
-1. **No regressions.** The Mikkel golden (`mikkel-golden` suite) stays byte-identical. So does every existing conformance case (`brasscribe_conformance.run`) and every `band`/`minimal` output. The refactor in step 1 is checked on its own before any quartet code exists.
+1. **No regressions.** The Mikkel golden (`mikkel-golden` suite) stays byte-identical. So does every existing conformance case (`scribe_conformance.run`) and every `band`/`minimal` output. The refactor in step 1 is checked on its own before any quartet code exists.
 2. **Python = Rust.** All new quartet conformance cases (Mikkel quartet and quartet-easier, and song and bench for all 10 chorales) produce identical `composition.json` and MusicXML in Python and Rust.
 3. **Hard constraints** on every quartet output (chorales and Mikkel, all three difficulties):
    - 0 impossible notes and 0 uncomfortable notes
@@ -344,7 +344,7 @@ Each step ends green before the next one starts. Commands:
 pixi run test                                                          # Python: engine + music
 export PATH=$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH
 (cd core && cargo test --release)                                      # Rust unit + reference fixtures
-(cd core/conformance && uv run python -m brasscribe_conformance.run)   # Python vs Rust, goldens
+(cd core/conformance && uv run python -m scribe_conformance.run)   # Python vs Rust, goldens
 pixi run bench-cpu                                                     # or: brasscribe bench ci --require-data
 ```
 
@@ -375,11 +375,11 @@ pixi run bench-cpu                                                     # or: bra
 
    *Done when:* `cargo test --release` passes and the conformance run is 100 % identical, old and new cases alike.
 5. **FFI.**
-   - UniFFI `arrange_musicxml_with(composition_json, ArrangeOptions)` and C `bc_arrange_with`.
+   - UniFFI `arrange_musicxml_with(composition_json, ArrangeOptions)` and C `sc_arrange_with`.
    - Doc updates for lineup.
-   - Run `core/scripts/bindings.sh`, then the .NET P/Invoke and a test in `core/dotnet/Brasscribe.Core.Tests`.
+   - Run `core/scripts/bindings.sh`, then the .NET P/Invoke and a test in `core/dotnet/Scribe.Core.Tests`.
 
-   *Done when:* `cargo test` and `dotnet test core/dotnet/Brasscribe.Core.Tests` pass.
+   *Done when:* `cargo test` and `dotnet test core/dotnet/Scribe.Core.Tests` pass.
 6. **Engine, Studio and sounds.**
    - Engine: `schemas.py`, `profiles.py` (solo rejects quartet), `cli.py`, and the `talking_score.py` names. Run `pixi run openapi` and update `engine/tests`.
    - Studio: `npm run gen:api`, `validate.ts`, `talkingxml.ts` and `i18n.ts`, then `npm test`.

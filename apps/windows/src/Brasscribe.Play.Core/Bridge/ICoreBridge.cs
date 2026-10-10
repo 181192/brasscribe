@@ -8,7 +8,7 @@ namespace Brasscribe.Play.Core.Bridge;
 
 /// <summary>
 /// The shared symbolic core as the app sees it. The native implementation calls the Rust core
-/// (brasscribe_ffi); the managed one decodes Composition JSON directly and uses the C# talking-score
+/// (scribe_ffi); the managed one decodes Composition JSON directly and uses the C# talking-score
 /// code. The app only talks to this interface, so the switch is one line in the composition root.
 /// </summary>
 public interface ICoreBridge
@@ -56,7 +56,7 @@ public interface ICoreBridge
     string PartNameNb(string name);
 }
 
-/// <summary>One seat of the contest band (the core's <c>bc_seats</c>).</summary>
+/// <summary>One seat of the contest band (the core's <c>sc_seats</c>).</summary>
 /// <param name="Id">The seat option value ("2nd-cornet").</param>
 /// <param name="Name">The part's name ("2nd Cornet").</param>
 /// <param name="NbName">The part's Norwegian name ("2. kornett").</param>
@@ -70,7 +70,7 @@ public sealed record SeatInfo(string Id, string Name, string NbName, string Inst
     public bool IsPercussion => Reads.Count == 0;
 }
 
-/// <summary>The player's part in a lineup for their seat (the core's <c>bc_seat_part</c>).</summary>
+/// <summary>The player's part in a lineup for their seat (the core's <c>sc_seat_part</c>).</summary>
 /// <param name="Part">The lineup's part; null when the lineup has none (percussion in the small band).</param>
 /// <param name="Exact">The seat's own part.</param>
 /// <param name="SameKey">The part is in the seat's key, so it reads without transposing.</param>
@@ -122,6 +122,6 @@ public sealed class ManagedCoreBridge : ICoreBridge
 
 public static class CoreBridge
 {
-    /// <summary>The native core when brasscribe_ffi loads, otherwise the managed fallback.</summary>
+    /// <summary>The native core when scribe_ffi loads, otherwise the managed fallback.</summary>
     public static ICoreBridge Create() => NativeCoreBridge.TryCreate() ?? (ICoreBridge)new ManagedCoreBridge();
 }

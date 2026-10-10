@@ -3,7 +3,7 @@
 
 @file:Suppress("NAME_SHADOWING")
 
-package uniffi.brasscribe_ffi
+package uniffi.scribe_ffi
 
 // Common helper code.
 //
@@ -59,7 +59,7 @@ open class RustBuffer : Structure() {
     companion object {
         internal fun alloc(size: ULong = 0UL) = uniffiRustCall() { status ->
             // Note: need to convert the size to a `Long` value to make this work with JVM.
-            UniffiLib.ffi_brasscribe_ffi_rustbuffer_alloc(size.toLong(), status)
+            UniffiLib.ffi_scribe_ffi_rustbuffer_alloc(size.toLong(), status)
         }.also {
             if(it.data == null) {
                throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
@@ -75,7 +75,7 @@ open class RustBuffer : Structure() {
         }
 
         internal fun free(buf: RustBuffer.ByValue) = uniffiRustCall() { status ->
-            UniffiLib.ffi_brasscribe_ffi_rustbuffer_free(buf, status)
+            UniffiLib.ffi_scribe_ffi_rustbuffer_free(buf, status)
         }
     }
 
@@ -392,7 +392,7 @@ private fun findLibraryName(componentName: String): String {
     if (libOverride != null) {
         return libOverride
     }
-    return "brasscribe_ffi"
+    return "scribe_ffi"
 }
 
 // Define FFI callback types
@@ -669,93 +669,93 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 // We now use JNA's "direct mapping" - unclear if same considerations apply exactly.
 internal object IntegrityCheckingUniffiLib {
     init {
-        Native.register(IntegrityCheckingUniffiLib::class.java, findLibraryName(componentName = "brasscribe_ffi"))
+        Native.register(IntegrityCheckingUniffiLib::class.java, findLibraryName(componentName = "scribe_ffi"))
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
 
     internal fun ensureInitialized() = Unit
-    external fun uniffi_brasscribe_ffi_checksum_func_arrange_layers_band(
+    external fun uniffi_scribe_ffi_checksum_func_arrange_layers_band(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_arrange_layers_song(
+    external fun uniffi_scribe_ffi_checksum_func_arrange_layers_song(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_arrange_musicxml(
+    external fun uniffi_scribe_ffi_checksum_func_arrange_musicxml(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with(
+    external fun uniffi_scribe_ffi_checksum_func_arrange_musicxml_with(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_arrange_song(
+    external fun uniffi_scribe_ffi_checksum_func_arrange_song(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_arrange_song_with(
+    external fun uniffi_scribe_ffi_checksum_func_arrange_song_with(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_choose_metrical_level(
+    external fun uniffi_scribe_ffi_checksum_func_choose_metrical_level(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_core_version(
+    external fun uniffi_scribe_ffi_checksum_func_core_version(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_estimate_key(
+    external fun uniffi_scribe_ffi_checksum_func_estimate_key(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_instruments(
+    external fun uniffi_scribe_ffi_checksum_func_instruments(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_layers_song_defaults(
+    external fun uniffi_scribe_ffi_checksum_func_layers_song_defaults(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_normalize_composition(
+    external fun uniffi_scribe_ffi_checksum_func_normalize_composition(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_part_name_nb(
+    external fun uniffi_scribe_ffi_checksum_func_part_name_nb(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_part_sources(
+    external fun uniffi_scribe_ffi_checksum_func_part_sources(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_quantize_notes(
+    external fun uniffi_scribe_ffi_checksum_func_quantize_notes(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_seat_part(
+    external fun uniffi_scribe_ffi_checksum_func_seat_part(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_seats(
+    external fun uniffi_scribe_ffi_checksum_func_seats(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_spell_pitches(
+    external fun uniffi_scribe_ffi_checksum_func_spell_pitches(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json(
+    external fun uniffi_scribe_ffi_checksum_func_fretted_fingering_json(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_fretted_playing_instructions_json(
+    external fun uniffi_scribe_ffi_checksum_func_fretted_playing_instructions_json(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_fretted_tab_json(
+    external fun uniffi_scribe_ffi_checksum_func_fretted_tab_json(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_fretted_tab_text_json(
+    external fun uniffi_scribe_ffi_checksum_func_fretted_tab_text_json(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_humanize_part(
+    external fun uniffi_scribe_ffi_checksum_func_humanize_part(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_humanize_uniform(
+    external fun uniffi_scribe_ffi_checksum_func_humanize_uniform(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_talking_announce_json(
+    external fun uniffi_scribe_ffi_checksum_func_talking_announce_json(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_func_talking_settings_default(
+    external fun uniffi_scribe_ffi_checksum_func_talking_settings_default(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_announce(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_announce(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_bar_count(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_bar_count(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_context_at(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_context_at(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_event_count(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_event_count(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_navigate(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_navigate(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_part_lines(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_part_lines(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_part_names(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_part_names(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_title(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_title(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_to_html(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_to_html(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_to_json(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_to_json(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_to_text(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_to_text(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_method_talkingscore_total_bars(
+    external fun uniffi_scribe_ffi_checksum_method_talkingscore_total_bars(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_constructor_performance_new(
+    external fun uniffi_scribe_ffi_checksum_constructor_performance_new(
     ): Int
-    external fun uniffi_brasscribe_ffi_checksum_constructor_talkingscore_new(
+    external fun uniffi_scribe_ffi_checksum_constructor_talkingscore_new(
     ): Int
-    external fun ffi_brasscribe_ffi_uniffi_contract_version(
+    external fun ffi_scribe_ffi_uniffi_contract_version(
     ): Int
 
         
@@ -770,202 +770,202 @@ internal object UniffiLib {
     
 
     init {
-        Native.register(UniffiLib::class.java, findLibraryName(componentName = "brasscribe_ffi"))
+        Native.register(UniffiLib::class.java, findLibraryName(componentName = "scribe_ffi"))
         
     }
 
     internal fun ensureInitialized() = Unit
-    external fun uniffi_brasscribe_ffi_fn_clone_performance(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_clone_performance(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_brasscribe_ffi_fn_free_performance(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_free_performance(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun uniffi_brasscribe_ffi_fn_constructor_performance_new(`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_constructor_performance_new(`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_brasscribe_ffi_fn_clone_talkingscore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_clone_talkingscore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_brasscribe_ffi_fn_free_talkingscore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_free_talkingscore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun uniffi_brasscribe_ffi_fn_constructor_talkingscore_new(`musicxml`: RustBuffer.ByValue,`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_constructor_talkingscore_new(`musicxml`: RustBuffer.ByValue,`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_announce(`ptr`: Long,`cursor`: RustBuffer.ByValue,`context`: RustBuffer.ByValue,`settings`: RustBuffer.ByValue,`byBar`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_announce(`ptr`: Long,`cursor`: RustBuffer.ByValue,`context`: RustBuffer.ByValue,`settings`: RustBuffer.ByValue,`byBar`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_bar_count(`ptr`: Long,`part`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_bar_count(`ptr`: Long,`part`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_context_at(`ptr`: Long,`cursor`: RustBuffer.ByValue,`settings`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_context_at(`ptr`: Long,`cursor`: RustBuffer.ByValue,`settings`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_event_count(`ptr`: Long,`part`: Int,`bar`: Int,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_event_count(`ptr`: Long,`part`: Int,`bar`: Int,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_navigate(`ptr`: Long,`cursor`: RustBuffer.ByValue,`unit`: RustBuffer.ByValue,`forward`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_navigate(`ptr`: Long,`cursor`: RustBuffer.ByValue,`unit`: RustBuffer.ByValue,`forward`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_part_lines(`ptr`: Long,`part`: Int,`settings`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_part_lines(`ptr`: Long,`part`: Int,`settings`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_part_names(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_part_names(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_title(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_title(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_to_html(`ptr`: Long,`settings`: RustBuffer.ByValue,`parts`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_to_html(`ptr`: Long,`settings`: RustBuffer.ByValue,`parts`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_to_json(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_to_json(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_to_text(`ptr`: Long,`settings`: RustBuffer.ByValue,`parts`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_to_text(`ptr`: Long,`settings`: RustBuffer.ByValue,`parts`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_method_talkingscore_total_bars(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_method_talkingscore_total_bars(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
-    external fun uniffi_brasscribe_ffi_fn_func_arrange_layers_band(`layers`: RustBuffer.ByValue,`stems`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_arrange_layers_band(`layers`: RustBuffer.ByValue,`stems`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_arrange_layers_song(`layers`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`soloContour`: RustBuffer.ByValue,`freeTime`: Byte,`freeTempo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_arrange_layers_song(`layers`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`soloContour`: RustBuffer.ByValue,`freeTime`: Byte,`freeTempo`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_arrange_musicxml(`compositionJson`: RustBuffer.ByValue,`arranger`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_arrange_musicxml(`compositionJson`: RustBuffer.ByValue,`arranger`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(`compositionJson`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_arrange_musicxml_with(`compositionJson`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_arrange_song(`melody`: RustBuffer.ByValue,`melodySupport`: RustBuffer.ByValue,`bass`: RustBuffer.ByValue,`harmony`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_arrange_song(`melody`: RustBuffer.ByValue,`melodySupport`: RustBuffer.ByValue,`bass`: RustBuffer.ByValue,`harmony`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_arrange_song_with(`melody`: RustBuffer.ByValue,`melodySupport`: RustBuffer.ByValue,`bass`: RustBuffer.ByValue,`harmony`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_arrange_song_with(`melody`: RustBuffer.ByValue,`melodySupport`: RustBuffer.ByValue,`bass`: RustBuffer.ByValue,`harmony`: RustBuffer.ByValue,`beatsText`: RustBuffer.ByValue,`title`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_choose_metrical_level(`beatTimes`: RustBuffer.ByValue,`onsets`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_choose_metrical_level(`beatTimes`: RustBuffer.ByValue,`onsets`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_estimate_key(`durationsBeats`: RustBuffer.ByValue,`pitches`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_estimate_key(`durationsBeats`: RustBuffer.ByValue,`pitches`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_instruments(uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_instruments(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_layers_song_defaults(uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_layers_song_defaults(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_normalize_composition(`json`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_normalize_composition(`json`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_part_name_nb(`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_part_name_nb(`name`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_part_sources(`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_part_sources(`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_quantize_notes(`notes`: RustBuffer.ByValue,`beatTimes`: RustBuffer.ByValue,`monophonic`: Byte,`autoLevel`: Byte,`fillGapTicks`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_quantize_notes(`notes`: RustBuffer.ByValue,`beatTimes`: RustBuffer.ByValue,`monophonic`: Byte,`autoLevel`: Byte,`fillGapTicks`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_seat_part(`lineup`: RustBuffer.ByValue,`seat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_seat_part(`lineup`: RustBuffer.ByValue,`seat`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_seats(uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_seats(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_spell_pitches(`onsetsBeats`: RustBuffer.ByValue,`pitches`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_spell_pitches(`onsetsBeats`: RustBuffer.ByValue,`pitches`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_fretted_fingering_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_fretted_playing_instructions_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_fretted_playing_instructions_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_fretted_tab_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_fretted_tab_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_fretted_tab_text_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_fretted_tab_text_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_humanize_part(`notes`: RustBuffer.ByValue,`part`: RustBuffer.ByValue,`player`: Long,`seed`: RustBuffer.ByValue,`performance`: RustBuffer.ByValue,`performedTiming`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_humanize_part(`notes`: RustBuffer.ByValue,`part`: RustBuffer.ByValue,`player`: Long,`seed`: RustBuffer.ByValue,`performance`: RustBuffer.ByValue,`performedTiming`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_humanize_uniform(`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_humanize_uniform(`key`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Double
-    external fun uniffi_brasscribe_ffi_fn_func_talking_announce_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_talking_announce_json(`request`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun uniffi_brasscribe_ffi_fn_func_talking_settings_default(uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_func_talking_settings_default(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun ffi_brasscribe_ffi_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun ffi_brasscribe_ffi_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun ffi_brasscribe_ffi_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun ffi_brasscribe_ffi_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun ffi_brasscribe_ffi_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_u8(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_u8(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_u8(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_u8(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
-    external fun ffi_brasscribe_ffi_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_i8(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_i8(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_i8(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_i8(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
-    external fun ffi_brasscribe_ffi_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_u16(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_u16(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_u16(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_u16(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
-    external fun ffi_brasscribe_ffi_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_i16(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_i16(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_i16(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_i16(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Short
-    external fun ffi_brasscribe_ffi_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_u32(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_u32(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_u32(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_u32(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
-    external fun ffi_brasscribe_ffi_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_i32(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_i32(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_i32(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_i32(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Int
-    external fun ffi_brasscribe_ffi_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_u64(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_u64(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_u64(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_u64(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun ffi_brasscribe_ffi_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_i64(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_i64(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_i64(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_i64(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
-    external fun ffi_brasscribe_ffi_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_f32(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_f32(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_f32(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_f32(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Float
-    external fun ffi_brasscribe_ffi_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_f64(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_f64(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_f64(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_f64(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Double
-    external fun ffi_brasscribe_ffi_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_rust_buffer(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_rust_buffer(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_rust_buffer(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_rust_buffer(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
-    external fun ffi_brasscribe_ffi_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+    external fun ffi_scribe_ffi_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_cancel_void(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_cancel_void(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_free_void(`handle`: Long,
+    external fun ffi_scribe_ffi_rust_future_free_void(`handle`: Long,
     ): Unit
-    external fun ffi_brasscribe_ffi_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun ffi_scribe_ffi_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
 
         
@@ -975,131 +975,131 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
     // Get the bindings contract version from our ComponentInterface
     val bindings_contract_version = 30
     // Get the scaffolding contract version by calling the into the dylib
-    val scaffolding_contract_version = lib.ffi_brasscribe_ffi_uniffi_contract_version()
+    val scaffolding_contract_version = lib.ffi_scribe_ffi_uniffi_contract_version()
     if (bindings_contract_version != scaffolding_contract_version) {
         throw RuntimeException("UniFFI contract version mismatch: try cleaning and rebuilding your project")
     }
 }
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_layers_band() and 0xFFFF) != 61376) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_arrange_layers_band() and 0xFFFF) != 37815) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_layers_song() and 0xFFFF) != 48207) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_arrange_layers_song() and 0xFFFF) != 7686) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml() and 0xFFFF) != 31318) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_arrange_musicxml() and 0xFFFF) != 58134) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_musicxml_with() and 0xFFFF) != 34366) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_arrange_musicxml_with() and 0xFFFF) != 18878) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_song() and 0xFFFF) != 47821) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_arrange_song() and 0xFFFF) != 56307) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_arrange_song_with() and 0xFFFF) != 27927) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_arrange_song_with() and 0xFFFF) != 44960) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_choose_metrical_level() and 0xFFFF) != 53243) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_choose_metrical_level() and 0xFFFF) != 62641) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_core_version() and 0xFFFF) != 61046) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_core_version() and 0xFFFF) != 55006) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_estimate_key() and 0xFFFF) != 38258) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_estimate_key() and 0xFFFF) != 6509) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_instruments() and 0xFFFF) != 47666) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_instruments() and 0xFFFF) != 50056) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_layers_song_defaults() and 0xFFFF) != 21711) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_layers_song_defaults() and 0xFFFF) != 55207) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_normalize_composition() and 0xFFFF) != 7581) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_normalize_composition() and 0xFFFF) != 14961) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_part_name_nb() and 0xFFFF) != 11213) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_part_name_nb() and 0xFFFF) != 25710) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_part_sources() and 0xFFFF) != 8498) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_part_sources() and 0xFFFF) != 58290) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_quantize_notes() and 0xFFFF) != 61455) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_quantize_notes() and 0xFFFF) != 37162) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_seat_part() and 0xFFFF) != 14392) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_seat_part() and 0xFFFF) != 5303) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_seats() and 0xFFFF) != 38330) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_seats() and 0xFFFF) != 35541) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 55508) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_spell_pitches() and 0xFFFF) != 64453) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_fingering_json() and 0xFFFF) != 8683) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_fretted_fingering_json() and 0xFFFF) != 52406) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_playing_instructions_json() and 0xFFFF) != 40396) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_fretted_playing_instructions_json() and 0xFFFF) != 38708) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_tab_json() and 0xFFFF) != 63499) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_fretted_tab_json() and 0xFFFF) != 10660) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_fretted_tab_text_json() and 0xFFFF) != 23317) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_fretted_tab_text_json() and 0xFFFF) != 13820) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_humanize_part() and 0xFFFF) != 14286) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_humanize_part() and 0xFFFF) != 64494) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_humanize_uniform() and 0xFFFF) != 7064) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_humanize_uniform() and 0xFFFF) != 44085) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_talking_announce_json() and 0xFFFF) != 20530) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_talking_announce_json() and 0xFFFF) != 1810) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_func_talking_settings_default() and 0xFFFF) != 26489) {
+    if ((lib.uniffi_scribe_ffi_checksum_func_talking_settings_default() and 0xFFFF) != 11924) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_announce() and 0xFFFF) != 13383) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_announce() and 0xFFFF) != 37054) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_bar_count() and 0xFFFF) != 6184) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_bar_count() and 0xFFFF) != 24624) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_context_at() and 0xFFFF) != 52304) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_context_at() and 0xFFFF) != 22940) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_event_count() and 0xFFFF) != 10745) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_event_count() and 0xFFFF) != 59424) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_navigate() and 0xFFFF) != 14235) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_navigate() and 0xFFFF) != 21268) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_part_lines() and 0xFFFF) != 37878) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_part_lines() and 0xFFFF) != 63370) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_part_names() and 0xFFFF) != 19770) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_part_names() and 0xFFFF) != 13203) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_title() and 0xFFFF) != 46621) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_title() and 0xFFFF) != 453) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_to_html() and 0xFFFF) != 6389) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_to_html() and 0xFFFF) != 27859) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_to_json() and 0xFFFF) != 42481) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_to_json() and 0xFFFF) != 51208) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_to_text() and 0xFFFF) != 55243) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_to_text() and 0xFFFF) != 30647) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_method_talkingscore_total_bars() and 0xFFFF) != 39156) {
+    if ((lib.uniffi_scribe_ffi_checksum_method_talkingscore_total_bars() and 0xFFFF) != 55963) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_constructor_performance_new() and 0xFFFF) != 63810) {
+    if ((lib.uniffi_scribe_ffi_checksum_constructor_performance_new() and 0xFFFF) != 3702) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_brasscribe_ffi_checksum_constructor_talkingscore_new() and 0xFFFF) != 57677) {
+    if ((lib.uniffi_scribe_ffi_checksum_constructor_talkingscore_new() and 0xFFFF) != 23438) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1609,7 +1609,7 @@ open class Performance: Disposable, AutoCloseable, PerformanceInterface
     constructor(`compositionJson`: kotlin.String) :
         this(UniffiWithHandle, 
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_constructor_performance_new(
+    UniffiLib.uniffi_scribe_ffi_fn_constructor_performance_new(
     
         
         FfiConverterString.lower(`compositionJson`),_status)
@@ -1675,7 +1675,7 @@ open class Performance: Disposable, AutoCloseable, PerformanceInterface
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_brasscribe_ffi_fn_free_performance(handle, status)
+                UniffiLib.uniffi_scribe_ffi_fn_free_performance(handle, status)
             }
         }
     }
@@ -1688,7 +1688,7 @@ open class Performance: Disposable, AutoCloseable, PerformanceInterface
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_brasscribe_ffi_fn_clone_performance(handle, status)
+            UniffiLib.uniffi_scribe_ffi_fn_clone_performance(handle, status)
         }
     }
 
@@ -1915,7 +1915,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
     constructor(`musicxml`: kotlin.String, `compositionJson`: kotlin.String?) :
         this(UniffiWithHandle, 
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_constructor_talkingscore_new(
+    UniffiLib.uniffi_scribe_ffi_fn_constructor_talkingscore_new(
     
         
         FfiConverterString.lower(`musicxml`),
@@ -1982,7 +1982,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
                 return;
             }
             uniffiRustCall { status ->
-                UniffiLib.uniffi_brasscribe_ffi_fn_free_talkingscore(handle, status)
+                UniffiLib.uniffi_scribe_ffi_fn_free_talkingscore(handle, status)
             }
         }
     }
@@ -1995,7 +1995,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
         return uniffiRustCall() { status ->
-            UniffiLib.uniffi_brasscribe_ffi_fn_clone_talkingscore(handle, status)
+            UniffiLib.uniffi_scribe_ffi_fn_clone_talkingscore(handle, status)
         }
     }
 
@@ -2009,7 +2009,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterString.lift(
     callWithHandle {
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_announce(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_announce(
         it,
         
         FfiConverterTypeTalkingCursor.lower(`cursor`),
@@ -2026,7 +2026,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterUInt.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_bar_count(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_bar_count(
         it,
         
         FfiConverterUInt.lower(`part`),_status)
@@ -2043,7 +2043,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterTypeTalkingContext.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_context_at(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_context_at(
         it,
         
         FfiConverterTypeTalkingCursor.lower(`cursor`),
@@ -2058,7 +2058,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterUInt.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_event_count(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_event_count(
         it,
         
         FfiConverterUInt.lower(`part`),
@@ -2076,7 +2076,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterOptionalTypeTalkingCursor.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_navigate(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_navigate(
         it,
         
         FfiConverterTypeTalkingCursor.lower(`cursor`),
@@ -2095,7 +2095,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterSequenceTypeTalkingBarLines.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_part_lines(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_part_lines(
         it,
         
         FfiConverterUInt.lower(`part`),
@@ -2110,7 +2110,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterSequenceString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_part_names(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_part_names(
         it,
         _status)
 }
@@ -2123,7 +2123,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_title(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_title(
         it,
         _status)
 }
@@ -2139,7 +2139,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_to_html(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_to_html(
         it,
         
         FfiConverterTypeTalkingSettings.lower(`settings`),
@@ -2157,7 +2157,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_to_json(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_to_json(
         it,
         _status)
 }
@@ -2173,7 +2173,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterString.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_to_text(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_to_text(
         it,
         
         FfiConverterTypeTalkingSettings.lower(`settings`),
@@ -2188,7 +2188,7 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
             return FfiConverterUInt.lift(
     callWithHandle {
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_method_talkingscore_total_bars(
+    UniffiLib.uniffi_scribe_ffi_fn_method_talkingscore_total_bars(
         it,
         _status)
 }
@@ -4682,7 +4682,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `arrangeLayersBand`(`layers`: LayerMidi, `stems`: LayerStems, `beatsText`: kotlin.String, `title`: kotlin.String, `options`: LayersSongOptions): BandOutput {
             return FfiConverterTypeBandOutput.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_layers_band(
+    UniffiLib.uniffi_scribe_ffi_fn_func_arrange_layers_band(
     
         
         FfiConverterTypeLayerMidi.lower(`layers`),
@@ -4702,7 +4702,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `arrangeLayersSong`(`layers`: LayerMidi, `beatsText`: kotlin.String, `title`: kotlin.String, `soloContour`: SoloContour?, `freeTime`: kotlin.Boolean, `freeTempo`: kotlin.Double?): SongOutput {
             return FfiConverterTypeSongOutput.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_layers_song(
+    UniffiLib.uniffi_scribe_ffi_fn_func_arrange_layers_song(
     
         
         FfiConverterTypeLayerMidi.lower(`layers`),
@@ -4725,7 +4725,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `arrangeMusicxml`(`compositionJson`: kotlin.String, `arranger`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_musicxml(
+    UniffiLib.uniffi_scribe_ffi_fn_func_arrange_musicxml(
     
         
         FfiConverterString.lower(`compositionJson`),
@@ -4745,7 +4745,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `arrangeMusicxmlWith`(`compositionJson`: kotlin.String, `options`: ArrangeOptions): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_musicxml_with(
+    UniffiLib.uniffi_scribe_ffi_fn_func_arrange_musicxml_with(
     
         
         FfiConverterString.lower(`compositionJson`),
@@ -4761,7 +4761,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `arrangeSong`(`melody`: kotlin.ByteArray, `melodySupport`: kotlin.ByteArray?, `bass`: kotlin.ByteArray, `harmony`: List<kotlin.ByteArray>, `beatsText`: kotlin.String, `title`: kotlin.String): SongOutput {
             return FfiConverterTypeSongOutput.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_song(
+    UniffiLib.uniffi_scribe_ffi_fn_func_arrange_song(
     
         
         FfiConverterByteArray.lower(`melody`),
@@ -4783,7 +4783,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `arrangeSongWith`(`melody`: kotlin.ByteArray, `melodySupport`: kotlin.ByteArray?, `bass`: kotlin.ByteArray, `harmony`: List<kotlin.ByteArray>, `beatsText`: kotlin.String, `title`: kotlin.String, `options`: SongArrangeOptions): SongOutput {
             return FfiConverterTypeSongOutput.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_arrange_song_with(
+    UniffiLib.uniffi_scribe_ffi_fn_func_arrange_song_with(
     
         
         FfiConverterByteArray.lower(`melody`),
@@ -4805,7 +4805,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `chooseMetricalLevel`(`beatTimes`: List<kotlin.Double>, `onsets`: List<kotlin.Double>): List<kotlin.Double> {
             return FfiConverterSequenceDouble.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_choose_metrical_level(
+    UniffiLib.uniffi_scribe_ffi_fn_func_choose_metrical_level(
     
         
         FfiConverterSequenceDouble.lower(`beatTimes`),
@@ -4820,7 +4820,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `coreVersion`(): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_core_version(
+    UniffiLib.uniffi_scribe_ffi_fn_func_core_version(
     
         _status)
 }
@@ -4833,7 +4833,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `estimateKey`(`durationsBeats`: List<kotlin.Double>, `pitches`: List<kotlin.Int>): KeyEstimate {
             return FfiConverterTypeKeyEstimate.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_estimate_key(
+    UniffiLib.uniffi_scribe_ffi_fn_func_estimate_key(
     
         
         FfiConverterSequenceDouble.lower(`durationsBeats`),
@@ -4848,7 +4848,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `instruments`(): List<InstrumentInfo> {
             return FfiConverterSequenceTypeInstrumentInfo.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_instruments(
+    UniffiLib.uniffi_scribe_ffi_fn_func_instruments(
     
         _status)
 }
@@ -4861,7 +4861,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `layersSongDefaults`(): LayersSongOptions {
             return FfiConverterTypeLayersSongOptions.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_layers_song_defaults(
+    UniffiLib.uniffi_scribe_ffi_fn_func_layers_song_defaults(
     
         _status)
 }
@@ -4875,7 +4875,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `normalizeComposition`(`json`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_normalize_composition(
+    UniffiLib.uniffi_scribe_ffi_fn_func_normalize_composition(
     
         
         FfiConverterString.lower(`json`),_status)
@@ -4890,7 +4890,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `partNameNb`(`name`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_part_name_nb(
+    UniffiLib.uniffi_scribe_ffi_fn_func_part_name_nb(
     
         
         FfiConverterString.lower(`name`),_status)
@@ -4905,7 +4905,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `partSources`(`compositionJson`: kotlin.String): List<PartSource> {
             return FfiConverterSequenceTypePartSource.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_part_sources(
+    UniffiLib.uniffi_scribe_ffi_fn_func_part_sources(
     
         
         FfiConverterString.lower(`compositionJson`),_status)
@@ -4921,7 +4921,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `quantizeNotes`(`notes`: List<PerformedNote>, `beatTimes`: List<kotlin.Double>, `monophonic`: kotlin.Boolean, `autoLevel`: kotlin.Boolean, `fillGapTicks`: kotlin.Long): List<GridNote> {
             return FfiConverterSequenceTypeGridNote.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_quantize_notes(
+    UniffiLib.uniffi_scribe_ffi_fn_func_quantize_notes(
     
         
         FfiConverterSequenceTypePerformedNote.lower(`notes`),
@@ -4941,7 +4941,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `seatPart`(`lineup`: kotlin.String, `seat`: kotlin.String): SeatPart {
             return FfiConverterTypeSeatPart.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_seat_part(
+    UniffiLib.uniffi_scribe_ffi_fn_func_seat_part(
     
         
         FfiConverterString.lower(`lineup`),
@@ -4956,7 +4956,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `seats`(): List<SeatInfo> {
             return FfiConverterSequenceTypeSeatInfo.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_seats(
+    UniffiLib.uniffi_scribe_ffi_fn_func_seats(
     
         _status)
 }
@@ -4971,7 +4971,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `spellPitches`(`onsetsBeats`: List<kotlin.Double>, `pitches`: List<kotlin.Int>): List<SpelledPitch> {
             return FfiConverterSequenceTypeSpelledPitch.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_spell_pitches(
+    UniffiLib.uniffi_scribe_ffi_fn_func_spell_pitches(
     
         
         FfiConverterSequenceDouble.lower(`onsetsBeats`),
@@ -4999,7 +4999,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `frettedFingeringJson`(`request`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_fingering_json(
+    UniffiLib.uniffi_scribe_ffi_fn_func_fretted_fingering_json(
     
         
         FfiConverterString.lower(`request`),_status)
@@ -5016,7 +5016,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `frettedPlayingInstructionsJson`(`request`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_playing_instructions_json(
+    UniffiLib.uniffi_scribe_ffi_fn_func_fretted_playing_instructions_json(
     
         
         FfiConverterString.lower(`request`),_status)
@@ -5034,7 +5034,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `frettedTabJson`(`request`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_tab_json(
+    UniffiLib.uniffi_scribe_ffi_fn_func_fretted_tab_json(
     
         
         FfiConverterString.lower(`request`),_status)
@@ -5052,7 +5052,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `frettedTabTextJson`(`request`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_fretted_tab_text_json(
+    UniffiLib.uniffi_scribe_ffi_fn_func_fretted_tab_text_json(
     
         
         FfiConverterString.lower(`request`),_status)
@@ -5068,7 +5068,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `humanizePart`(`notes`: List<ScoreNote>, `part`: kotlin.String, `player`: kotlin.Long, `seed`: kotlin.String, `performance`: Performance?, `performedTiming`: kotlin.Boolean): HumanizedPart {
             return FfiConverterTypeHumanizedPart.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_humanize_part(
+    UniffiLib.uniffi_scribe_ffi_fn_func_humanize_part(
     
         
         FfiConverterSequenceTypeScoreNote.lower(`notes`),
@@ -5087,7 +5087,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `humanizeUniform`(`key`: kotlin.String): kotlin.Double {
             return FfiConverterDouble.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_humanize_uniform(
+    UniffiLib.uniffi_scribe_ffi_fn_func_humanize_uniform(
     
         
         FfiConverterString.lower(`key`),_status)
@@ -5105,7 +5105,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
     @Throws(CoreException::class) fun `talkingAnnounceJson`(`request`: kotlin.String): kotlin.String {
             return FfiConverterString.lift(
     uniffiRustCallWithError(CoreException) { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_talking_announce_json(
+    UniffiLib.uniffi_scribe_ffi_fn_func_talking_announce_json(
     
         
         FfiConverterString.lower(`request`),_status)
@@ -5119,7 +5119,7 @@ public object FfiConverterSequenceTypeTalkingBarLines: FfiConverterRustBuffer<Li
          */ fun `talkingSettingsDefault`(): TalkingSettings {
             return FfiConverterTypeTalkingSettings.lift(
     uniffiRustCall() { _status ->
-    UniffiLib.uniffi_brasscribe_ffi_fn_func_talking_settings_default(
+    UniffiLib.uniffi_scribe_ffi_fn_func_talking_settings_default(
     
         _status)
 }

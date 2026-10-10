@@ -30,7 +30,7 @@ public sealed record BandroomPaths(string DataDir)
 /// <summary>
 /// What the engine process needs: the pinned pixi, the data folder, the computer's name, the admin credential,
 /// the band sounds the app bundles (<c>band\</c> next to the exe; null when this build has none) and the Rust
-/// core's command line (<c>core\brasscribe-core.exe</c> next to the exe; null when this build has none).
+/// core's command line (<c>core\scribe-core.exe</c> next to the exe; null when this build has none).
 /// </summary>
 public sealed record EngineLaunchConfig(
     BandroomPaths Paths,
@@ -57,7 +57,7 @@ public sealed record EngineLaunchConfig(
     /// <summary>The bundled core command line under <paramref name="appDir"/> (the bass-tab profile runs it), if it is there.</summary>
     public static string? FindCoreCli(string appDir)
     {
-        string exe = Path.Combine(appDir, "core", "brasscribe-core.exe");
+        string exe = Path.Combine(appDir, "core", "scribe-core.exe");
         return File.Exists(exe) ? exe : null;
     }
 
@@ -91,15 +91,15 @@ public sealed record EngineLaunchConfig(
         // Studio (served by the engine) plays the band SoundFont from here.
         if (BandSoundsDir is { Length: > 0 }) env["BRASSCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
         // The installed workspace has no core to build: the bass-tab profile runs the bundled command line, and
-        // only that one. Without it, a BRASSCRIBE_CORE_CLI set for this user is not passed on, so the engine says
+        // only that one. Without it, a SCRIBE_CORE_CLI set for this user is not passed on, so the engine says
         // plainly that the core is missing instead of running some other build.
-        if (CoreCli is { Length: > 0 }) env["BRASSCRIBE_CORE_CLI"] = CoreCli;
+        if (CoreCli is { Length: > 0 }) env["SCRIBE_CORE_CLI"] = CoreCli;
         return new ProcessSpec(
             PixiExe,
             ["run", "--manifest-path", Paths.Manifest, "--frozen", "-e", "default",
              "brasscribe", "serve", "--lan", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)],
             Paths.Workspace,
             env)
-        { Unset = CoreCli is { Length: > 0 } ? [] : ["BRASSCRIBE_CORE_CLI"] };
+        { Unset = CoreCli is { Length: > 0 } ? [] : ["SCRIBE_CORE_CLI"] };
     }
 }

@@ -1,7 +1,7 @@
 import XCTest
-@testable import BrasscribeCore
+@testable import ScribeCore
 
-final class BrasscribeCoreTests: XCTestCase {
+final class ScribeCoreTests: XCTestCase {
     /// Two quarter notes and a bass note: enough to exercise arranging and MusicXML.
     let composition = """
     {"title": "Test", "voices": [

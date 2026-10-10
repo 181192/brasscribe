@@ -198,7 +198,7 @@ mod tests {
     fn shipped_calibration_matches_the_reference_file() {
         let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../music/src/brasscribe_music/calibration.json");
         if let Ok(s) = std::fs::read_to_string(p) {
-            assert_eq!(s, CALIBRATION_JSON, "core/brasscribe-core/src/calibration.json is out of date");
+            assert_eq!(s, CALIBRATION_JSON, "core/scribe-core/src/calibration.json is out of date");
         }
         let m = Model::load();
         assert_eq!((m.mark_risk, m.very_risk), (0.241, 0.6));

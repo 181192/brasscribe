@@ -10,7 +10,7 @@ use std::process::Command;
 
 use serde_json::Value;
 
-const CORE: &str = "brasscribe-core";
+const CORE: &str = "scribe-core";
 
 fn is_target(name: &str) -> bool {
     name.starts_with("target-")

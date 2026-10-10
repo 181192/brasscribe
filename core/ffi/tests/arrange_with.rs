@@ -1,9 +1,9 @@
-//! arrange_musicxml_with / bc_arrange_with: re-arranging a composition for a lineup.
+//! arrange_musicxml_with / sc_arrange_with: re-arranging a composition for a lineup.
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-use brasscribe_ffi::{arrange_musicxml_with, ArrangeOptions};
+use scribe_ffi::{arrange_musicxml_with, ArrangeOptions};
 
 /// A whole-band take (no layers): C major melody, bass and harmony.
 const SONG: &str = r#"{"title": "T", "voices": [
@@ -81,13 +81,13 @@ fn c_abi_takes_the_same_options() {
     let options = CString::new(r#"{"lineup": "quartet", "difficulty": "easier"}"#).unwrap();
     let mut out: *mut c_char = std::ptr::null_mut();
     let mut err: *mut c_char = std::ptr::null_mut();
-    let code = unsafe { brasscribe_ffi::c_api::bc_arrange_with(json.as_ptr(), options.as_ptr(), &mut out, &mut err) };
+    let code = unsafe { scribe_ffi::c_api::sc_arrange_with(json.as_ptr(), options.as_ptr(), &mut out, &mut err) };
     assert_eq!(code, 0);
     let xml = unsafe { CStr::from_ptr(out) }.to_str().unwrap().to_string();
-    unsafe { brasscribe_ffi::c_api::bc_string_free(out) };
+    unsafe { scribe_ffi::c_api::sc_string_free(out) };
     assert_eq!(parts(&xml)[0], "1st Cornet");
     let bad = CString::new(r#"{"lineup": "nonet"}"#).unwrap();
-    let code = unsafe { brasscribe_ffi::c_api::bc_arrange_with(json.as_ptr(), bad.as_ptr(), &mut out, &mut err) };
+    let code = unsafe { scribe_ffi::c_api::sc_arrange_with(json.as_ptr(), bad.as_ptr(), &mut out, &mut err) };
     assert_ne!(code, 0);
-    unsafe { brasscribe_ffi::c_api::bc_string_free(err) };
+    unsafe { scribe_ffi::c_api::sc_string_free(err) };
 }
