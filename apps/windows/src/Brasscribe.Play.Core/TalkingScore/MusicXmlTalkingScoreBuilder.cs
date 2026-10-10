@@ -288,7 +288,7 @@ public static class MusicXmlTalkingScoreBuilder
         return length > 0 && length < full ? full - length : 0;
     }
 
-    /// <param name="lead">The divisions a pickup lacks of a full bar; the position counts from where that bar would start.</param>
+    /// <summary>One note or rest. <c>lead</c>: the divisions a pickup lacks of a full bar; the position counts from where that bar would start.</summary>
     private static TsEvent? ReadNote(XElement el, long start, long dur, int divisions, TsTime time, TsPart part, ref int tupletCount,
         long lead = 0)
     {
