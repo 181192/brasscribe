@@ -56,3 +56,15 @@ def test_dtcg_extension_namespace_is_not_fixed(tmp_path):
     data = c.load_dtcg(path)
     assert data["themes"] == {"light": {"ink": "#000000", "bg": "#FFFFFF"}}
     assert data["pairs"] == [["ink", "bg", 4.5, "1.4.3"]]
+
+
+def test_every_brand_passes_in_every_mode_and_its_report_is_current(capsys):
+    # design/tokens/brands.json lists the brands; each has at least the four neutral modes.
+    assert {b["name"] for b in c.brands()} >= {"brasscribe", "fretscribe"}
+    for brand in c.brands():
+        data = c.load_dtcg(c.ROOT / brand["tokens"])
+        assert set(data["themes"]) >= {"light", "dark", "high-contrast", "high-contrast-light"}, brand["name"]
+        for mode, theme in data["themes"].items():
+            for fg, bg, minimum, _ in data["pairs"]:
+                assert c.contrast(theme[fg], theme[bg]) + 1e-9 >= minimum, (brand["name"], mode, fg, bg)
+    assert c.main(["--brands"]) == 0, capsys.readouterr().out

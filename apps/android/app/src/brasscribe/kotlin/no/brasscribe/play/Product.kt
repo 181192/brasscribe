@@ -40,6 +40,12 @@ object Product {
     /** A score can be made on the phone: without the computer, "Not connected" is information, not a warning. */
     const val MAKES_SCORES_ON_THE_PHONE = true
 
+    /** A solo and a band draft are written down on the phone, with the models this app carries. */
+    fun onPhone(context: android.content.Context, core: no.brasscribe.play.model.CoreBridge): OnPhone = OnPhoneModels(context, core)
+
+    /** Before the app starts: ONNX Runtime's telemetry is turned off. */
+    fun beforeStart() = OnPhoneModels.telemetryOff()
+
     @Composable
     fun Root(vm: PlayViewModel) = PlayRoot(vm)
 

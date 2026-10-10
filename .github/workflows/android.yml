@@ -135,8 +135,8 @@ jobs:
             cp "$apk" "$RUNNER_TEMP/unsigned/app-$a-release-unsigned.apk"
           done
           # Fretscribe is the same release under its own package: the version it was given (Brasscribe's
-          # when it was given none), the Rust core, no band SoundFont, no on-device models and an audio
-          # library without sfizz (with sfizz it is megabytes).
+          # when it was given none), the Rust core, no band SoundFont, no on-device models, no ONNX Runtime
+          # to run them and an audio library without sfizz (with sfizz it is megabytes).
           aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | tail -1)
           badge() { "$aapt2" dump badging "$1"; }
           version() { badge "$2" | sed -nE "s/^package: name='[^']*' .*version$1='([^']*)'.*/\\1/p"; }
@@ -151,7 +151,7 @@ jobs:
               [ -n "$want" ] && [ "$(version "$v" "$apk")" = "$want" ] || fail "has version$v '$(version "$v" "$apk")', not '$want'"
             done
             files=$(unzip -l "$apk")
-            if grep -qiE "brasscribe-band|assets/sounds/.*\.sf2|\.onnx$" <<<"$files"; then fail "carries band sounds or models"; fi
+            if grep -qiE "brasscribe-band|assets/sounds/.*\.sf2|\.onnx$|libonnxruntime" <<<"$files"; then fail "carries band sounds, models or ONNX Runtime"; fi
             grep -q "lib/arm64-v8a/libbrasscribe_ffi.so" <<<"$files" || fail "has no Rust core"
             audio=$(awk '$4 == "lib/arm64-v8a/libbrasscribe_audio.so" { print $1 }' <<<"$files")
             [ -n "$audio" ] && [ "$audio" -lt 1000000 ] || fail "its audio library is not the one without sfizz ($audio bytes)"

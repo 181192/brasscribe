@@ -345,7 +345,6 @@ mapOf(
 dependencies {
     implementation(project(":model"))
     implementation(project(":engine-client"))
-    implementation(project(":pitch"))
     implementation(project(":audio"))
     implementation(project(":core-bridge"))
 
@@ -373,10 +372,13 @@ dependencies {
     "fretscribeImplementation"(libs.alphaskia)
     // The recording as the sound of the tab: slowed down or sped up with its pitch kept. Fretscribe only.
     "fretscribeImplementation"(libs.media3.exoplayer)
+    // Listening on the phone is Brasscribe's (src/brasscribe, OnPhoneModels): the models' code and ONNX Runtime
+    // to run them. Fretscribe's tabs are written on the computer, so its app has neither.
+    "brasscribeImplementation"(project(":pitch"))
     // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
     // 13.4 MB instead of 33.0 MB per arm64 APK. Otherwise the full Maven build.
     val reducedOrt = rootProject.file("third_party/onnxruntime/onnxruntime-android-reduced.aar")
-    if (reducedOrt.isFile) implementation(files(reducedOrt)) else implementation(libs.onnxruntime.android)
+    if (reducedOrt.isFile) "brasscribeImplementation"(files(reducedOrt)) else "brasscribeImplementation"(libs.onnxruntime.android)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)

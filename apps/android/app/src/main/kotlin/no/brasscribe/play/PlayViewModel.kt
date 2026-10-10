@@ -861,24 +861,22 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val running = coroutineContext.job
             // The core takes the WAV as bytes and the take keeps them for re-arranging, so only a take that fits.
             val wav = s.file?.takeIf { it.extension.equals("wav", true) && it.length() <= MAX_CORE_WAV_BYTES }?.readBytes()
-            container.openSoloPipeline().use { pipeline ->
-                val (take, stats) = pipeline.pipeline.listen(audio.samples, audio.sampleRate, title, wav) { stage ->
+            container.onPhone.openSolo().use { solo ->
+                val (take, heard) = solo.listen(audio.samples, audio.sampleRate, title, wav) { stage ->
                     running.ensureActive()
-                    val step = steps[stage.ordinal.coerceAtMost(steps.size - 1)]
-                    transcribe.update { it.copy(step = step, stepIndex = stage.ordinal, fraction = stage.ordinal / steps.size.toDouble(),
-                        etaSeconds = ((1 - stage.ordinal / steps.size.toDouble()) * estimateDeviceSeconds(audio)).toInt()) }
+                    val step = steps[stage.coerceAtMost(steps.size - 1)]
+                    transcribe.update { it.copy(step = step, stepIndex = stage, fraction = stage / steps.size.toDouble(),
+                        etaSeconds = ((1 - stage / steps.size.toDouble()) * estimateDeviceSeconds(audio)).toInt()) }
                 }
                 running.ensureActive()
                 transcribe.update { it.copy(step = Step.ARRANGE, stepIndex = 4, fraction = 0.9) }
                 val a0 = System.nanoTime()
                 // A solo take has no harmony for a quartet: the full band then, as the Output screen shows it.
                 val opts = output.value.let { if (it.lineup == Lineup.QUARTET) it.copy(lineup = Lineup.FULL) else it }
-                val arranged = runCatching { pipeline.pipeline.arrange(take, opts.toCore()) }
+                val arranged = runCatching { solo.arrange(take, opts.toCore()) }
                     .onFailure { android.util.Log.w(TAG, "core arrangement failed", it) }.getOrNull()
                 val arrangeMs = (System.nanoTime() - a0) / 1_000_000
-                android.util.Log.i(TAG, "on-device solo: %.1f s audio, SwiftF0 %d notes, Basic Pitch %d, beats %d (%s), downbeats %d, stages %s ms, arrange %d ms, core %s"
-                    .format(stats.audioSeconds, stats.swiftF0Notes, stats.basicPitchNotes, stats.beats, stats.beatSource, stats.downbeats,
-                        stats.ms.entries.joinToString { "${it.key.name.lowercase()} ${it.value}" }, arrangeMs, container.core.name))
+                android.util.Log.i(TAG, "on-device solo: $heard, arrange $arrangeMs ms, core ${container.core.name}")
                 soloTake = take
                 val models = listOf(
                     NoteEvidenceBuilder.ModelNotes("swift-f0", "SwiftF0", take.swiftF0),
@@ -911,7 +909,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val audio = s.audio!!
         val app = getApplication<Application>()
         val memory = android.app.ActivityManager.MemoryInfo().also { app.getSystemService(android.app.ActivityManager::class.java).getMemoryInfo(it) }
-        if (!no.brasscribe.play.pitch.BandDraftPipeline.fits(audio.seconds, memory.availMem))
+        if (!container.onPhone.bandDraftFits(audio.seconds, memory.availMem))
             throw DraftTooLongException("%.0f s, %d MB free".format(audio.seconds, memory.availMem shr 20))
         val steps = listOf(Step.TRANSCRIBE, Step.BEATS, Step.ARRANGE)
         val eta = estimateDeviceSeconds(audio)
@@ -925,19 +923,17 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             return withContext(Dispatchers.Default) {
                 // The models run as plain blocking calls: Cancel is checked between their stages.
                 val running = coroutineContext.job
-                container.openBandDraftPipeline().use { open ->
-                    val (take, stats) = open.pipeline.listen(audio.samples, audio.sampleRate, title) { stage ->
+                container.onPhone.openBandDraft().use { draft ->
+                    val (take, heard) = draft.listen(audio.samples, audio.sampleRate, title) { stage ->
                         running.ensureActive()
-                        transcribe.update { it.copy(step = steps[stage.ordinal], stepIndex = stage.ordinal, fraction = stage.ordinal / steps.size.toDouble(),
-                            etaSeconds = ((1 - stage.ordinal / steps.size.toDouble()) * eta).toInt()) }
+                        transcribe.update { it.copy(step = steps[stage], stepIndex = stage, fraction = stage / steps.size.toDouble(),
+                            etaSeconds = ((1 - stage / steps.size.toDouble()) * eta).toInt()) }
                     }
                     running.ensureActive()
                     transcribe.update { it.copy(step = Step.ARRANGE, stepIndex = 2, fraction = 0.9) }
                     val a0 = System.nanoTime()
-                    val arranged = requireNotNull(open.pipeline.arrange(take, output.value.toCore())) { "the core is not available" }
-                    android.util.Log.i(TAG, "on-device band draft: %.1f s audio, Basic Pitch %d notes, beats %d, downbeats %d, stages %s ms, arrange %d ms"
-                        .format(stats.audioSeconds, stats.basicPitchNotes, stats.beats, stats.downbeats,
-                            stats.ms.entries.joinToString { "${it.key.name.lowercase()} ${it.value}" }, (System.nanoTime() - a0) / 1_000_000))
+                    val arranged = requireNotNull(draft.arrange(take, output.value.toCore())) { "the core is not available" }
+                    android.util.Log.i(TAG, "on-device band draft: $heard, arrange ${(System.nanoTime() - a0) / 1_000_000} ms")
                     TranscriptionResult(arranged.composition, arranged.musicXml, Profile.BRASS_BAND, onDevice = true,
                         compositionJson = arranged.compositionJson, draft = true,
                         evidence = NoteEvidenceBuilder.build(arranged.composition,

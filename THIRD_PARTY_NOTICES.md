@@ -41,8 +41,8 @@ for Mac, iPhone and iPad when the band SoundFont is missing. It is not committed
 | Font | Licence | Where |
 |---|---|---|
 | [Instrument Serif](https://github.com/Instrument/instrument-serif), Copyright 2022 The Instrument Serif Project Authors | SIL OFL 1.1 | Display face of every Brasscribe app and the site; `OFL.txt` ships beside the font (`design/brand/fonts/`, `design/dist/*/`). |
-| [Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next), Copyright 2020-2024 The Atkinson Hyperlegible Next Project Authors | SIL OFL 1.1 | Display face of Fretscribe; `OFL-AtkinsonHyperlegibleNext.txt` ships beside the font (`design/fretscribe/brand/fonts/`, and as `OFL.txt` in `design/fretscribe/dist/android/res/font/`). |
-| Fretscribe Tab, a modified version of [Atkinson Hyperlegible Mono](https://github.com/googlefonts/atkinson-hyperlegible-next-mono), Copyright 2020-2024 The Atkinson Hyperlegible Mono Project Authors | SIL OFL 1.1 | Fret numbers in Fretscribe's design (`design/fretscribe/brand/fonts/`, with `OFL-FretscribeTab.txt` and the script that builds it); the weight is fixed at 600 and a plain zero (the dotted zero without its dot) is the default, under a new name as the licence requires. Bundled in the Fretscribe Android app, with the licence text in its assets. |
+| [Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next), Copyright 2020-2024 The Atkinson Hyperlegible Next Project Authors | SIL OFL 1.1 | Display face of Fretscribe; `OFL-AtkinsonHyperlegibleNext.txt` ships beside the font (`design/fretscribe/brand/fonts/`, `design/fretscribe/dist/{apple,windows,web}/`, and as `OFL.txt` in `design/fretscribe/dist/android/res/font/`). |
+| Fretscribe Tab, a modified version of [Atkinson Hyperlegible Mono](https://github.com/googlefonts/atkinson-hyperlegible-next-mono), Copyright 2020-2024 The Atkinson Hyperlegible Mono Project Authors | SIL OFL 1.1 | Fret numbers in Fretscribe's design (`design/fretscribe/brand/fonts/`, with `OFL-FretscribeTab.txt` and the script that builds it; copied with the licence text to `design/fretscribe/dist/{apple,windows,web}/`); the weight is fixed at 600 and a plain zero (the dotted zero without its dot) is the default, under a new name as the licence requires. Bundled in the Fretscribe Android app, with the licence text in its assets. |
 
 ## Machine-learning models
 
@@ -82,14 +82,15 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
 - **Rust core:** crates under MIT, Apache-2.0, BSD-style or Unicode-3.0 licences, plus UniFFI (MPL-2.0,
   above). `cargo metadata` in `core/` lists them.
 - **Android** (Play and Fretscribe): AndroidX and Jetpack Compose (Apache-2.0), Kotlin coroutines and
-  serialization (Apache-2.0), Ktor (Apache-2.0) with OkHttp (Apache-2.0), Oboe (Apache-2.0), ONNX Runtime
-  (MIT), JNA (Apache-2.0 option of LGPL-2.1/Apache-2.0), CameraX (Apache-2.0) and
+  serialization (Apache-2.0), Ktor (Apache-2.0) with OkHttp (Apache-2.0), Oboe (Apache-2.0), JNA
+  (Apache-2.0 option of LGPL-2.1/Apache-2.0), CameraX (Apache-2.0) and
   [ZXing](https://github.com/zxing/zxing) core (Apache-2.0), which read the pairing QR code on the phone.
+  Play for Android also has ONNX Runtime (MIT), for the models it listens with.
 - **Fretscribe for Android** is built from the same code as Play for Android. Its release APK ships
   alphaTab with Bravura and the Sonivox SoundFont, alphaSkia and AndroidX Media3 (the table above), the
-  Rust core with UniFFI, the Android libraries in the line above (ONNX Runtime as the library alone), and
-  its two fonts, Atkinson Hyperlegible Next and Fretscribe Tab, with their licence texts. It does not
-  ship sfizz or what comes linked in with it, a band SoundFont, a model, or Instrument Serif.
+  Rust core with UniFFI, the Android libraries in the line above, and its two fonts, Atkinson
+  Hyperlegible Next and Fretscribe Tab, with their licence texts. It does not ship sfizz or what comes
+  linked in with it, a band SoundFont, a model or ONNX Runtime to run one, or Instrument Serif.
 - **Windows:** Windows App SDK (Microsoft software licence), ONNX Runtime with DirectML (MIT),
   NAudio (MIT), CommunityToolkit.Mvvm (MIT). Play for Windows also ships `vcruntime140.dll`, a
   redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime

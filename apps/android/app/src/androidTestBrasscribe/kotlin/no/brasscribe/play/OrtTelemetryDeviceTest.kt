@@ -32,7 +32,7 @@ class OrtTelemetryDeviceTest {
         val tone = FloatArray(sampleRate * 2) { i ->
             (0.25 * (1..6).sumOf { h -> sin(2 * PI * 440.0 * h * i / sampleRate) / h }).toFloat()
         }
-        val track = (context.applicationContext as PlayApplication).container.openPitchModel().use { it.detect(tone) }
+        val track = ((context.applicationContext as PlayApplication).container.onPhone as OnPhoneModels).openPitchModel().use { it.detect(tone) }
         val voiced = (0 until track.size).filter { track.confidence[it] > 0.5 }.map { track.pitchHz[it] }
         assertTrue("SwiftF0 hears the 440 Hz tone: ${voiced.size} voiced frames", voiced.size > track.size / 2)
         assertEquals(440.0, voiced.sorted()[voiced.size / 2], 5.0)
@@ -44,6 +44,6 @@ class OrtTelemetryDeviceTest {
             .getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(PackageManager.GET_PROVIDERS.toLong()))
             .providers.orEmpty().map { it.name }
         assertTrue("installed providers: $providers", providers.none { it.startsWith("ai.onnxruntime") })
-        assertEquals("1", Os.getenv(PlayApplication.ORT_DISABLE_TELEMETRY))
+        assertEquals("1", Os.getenv(OnPhoneModels.ORT_DISABLE_TELEMETRY))
     }
 }
