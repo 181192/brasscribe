@@ -41,6 +41,10 @@ core, and `--core host,apple` limits it to those components. It does four things
 - Prints the environment, and writes it to `.brasscribe-env`: `BRASSCRIBE_REPO`, `SCRIBE_FFI_PATH`,
   `SCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
   `PATH` with rustup and the Android tools.
+  The tests of the native core skip themselves without `SCRIBE_FFI_PATH`, so `scripts/check.sh` refuses to run the
+  `windows`, `core-dotnet` and `android` areas when it or `SCRIBE_CORE_CLI` is not set or names a file that is gone
+  (a `.brasscribe-env` from before a change of names, for one): run the setup again. Windows Play's tests fail for the
+  same reason when the checkout has a built core that `SCRIBE_FFI_PATH` does not point at.
 
 ### The core artifact cache
 

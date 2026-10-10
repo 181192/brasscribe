@@ -185,7 +185,10 @@ jobs:
       - name: .NET wrapper of the core (C ABI)
         run: dotnet test core/dotnet/Scribe.Core.Tests
 
+      # With the host library built above: without SCRIBE_FFI_PATH the tests of the native core would skip.
       - name: Play for Windows core logic
+        env:
+          SCRIBE_FFI_PATH: ${{ github.workspace }}/core/target/release/libscribe_ffi.so
         run: dotnet test apps/windows/tests/Brasscribe.Play.Core.Tests
 
       - name: The Windows screen catalogues' picture checks

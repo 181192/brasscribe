@@ -67,12 +67,29 @@ free_port() { python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",
 
 need_node_modules() { [ -d studio/node_modules ] || (cd studio && npm ci --no-audit --no-fund); }
 
+# The tests of the native core skip themselves when they are not pointed at it, so an environment that
+# is stale (no SCRIBE_FFI_PATH or SCRIBE_CORE_CLI, as .brasscribe-env from before a change of names) or
+# that names a file that is gone would pass with those tests left out. Refuse it instead.
+native_core_env() {
+  local var path
+  for var in SCRIBE_FFI_PATH SCRIBE_CORE_CLI; do
+    path="${!var:-}"
+    if [ -z "$path" ]; then
+      echo "check: $var is not set, so the tests of the native core would skip: run scripts/worktree-setup.sh (it writes .brasscribe-env)" >&2
+      return 1
+    elif [ ! -f "$path" ]; then
+      echo "check: $var names $path, which is not there: run scripts/worktree-setup.sh" >&2
+      return 1
+    fi
+  done
+}
+
 run_area() {
   local area="$1"
   # The apps test against the prebuilt core: refresh it first (about a second when nothing changed).
   case "$area" in
-    windows|core-dotnet) scripts/core-artifacts.sh ensure host || return 1 ;;
-    android) scripts/core-artifacts.sh ensure host android || return 1 ;;
+    windows|core-dotnet) scripts/core-artifacts.sh ensure host && native_core_env || return 1 ;;
+    android) scripts/core-artifacts.sh ensure host android && native_core_env || return 1 ;;
     apple) scripts/core-artifacts.sh ensure apple || return 1 ;;
   esac
   case "$tier:$area" in
