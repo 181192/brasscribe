@@ -69,6 +69,9 @@ abstract class ScreenTest {
         if (ScreenDevice.JVM) container.fixtureStageSeconds = 0.2
         rule.runOnUiThread {
             container.firstRunDone = true
+            // The system's question about notifications (at the first job on the computer) would cover the screen on a
+            // device: taken as asked. ReadyNotificationTest asks it.
+            container.notificationsAsked = true
             vm.scores.value.forEach(vm::deleteEntry)
             vm.home()
         }

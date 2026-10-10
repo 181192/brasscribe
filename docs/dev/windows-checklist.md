@@ -21,7 +21,7 @@ note the step number and what you saw, and stop at the first crash.
    - `Dialogs/ExportDialog.xaml`, `Themes/Styles.xaml`
    - `design/dist/windows/BrasscribePinkTheme.xaml`: the Pink palette, linked as a Page
 2. `dotnet test tests/Brasscribe.Play.Core.Tests` passes with the native core, and so do the CI job's
-   smoke test and Axe.Windows scan (`dotnet run --project tools/AxeScan`).
+   smoke test and screen catalogue (`tools/Screenshots/catalogue.ps1`, with Axe.Windows through `tools/ScreenCheck play`).
 3. Start the app with a fresh profile: delete `%LOCALAPPDATA%\Brasscribe\Play\settings.json` first.
 
 ## 1. My instrument, trumpet and percussion

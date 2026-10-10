@@ -34,6 +34,17 @@
     <ProjectReference Include="$(AppDir)/../Brasscribe.Play.Audio.Windows/Brasscribe.Play.Audio.Windows.csproj" />
     <ProjectReference Include="$(AppDir)/../Brasscribe.Play.Controls/Brasscribe.Play.Controls.csproj" />
   </ItemGroup>
+  <!-- With -p:BrasscribeCatalogue=true: the app as the screen catalogue's test host (tests/Brasscribe.Play.Catalogue). -->
+  <PropertyGroup Condition="'$(BrasscribeCatalogue)' == 'true'">
+    <DefineConstants>$(DefineConstants);BRASSCRIBE_CATALOGUE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(BrasscribeCatalogue)' == 'true'">
+    <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="MSTest.TestAdapter" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <Compile Include="$(AppDir)/../../tests/Brasscribe.Play.Catalogue/**/*.cs" />
+    <ProjectReference Include="$(AppDir)/../../tools/ScreenCheck.Core/ScreenCheck.Core.csproj" />
+  </ItemGroup>
   <Target Name="GenerateXamlStubs" BeforeTargets="CoreCompile;BeforeBuild">
     <Exec Command="python3 &quot;$(MSBuildThisFileDirectory)gen_stubs.py&quot; &quot;$(AppDir)&quot; &quot;$(IntermediateOutputPath)stubs&quot;" />
     <ItemGroup>

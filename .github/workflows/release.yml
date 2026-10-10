@@ -64,6 +64,10 @@ jobs:
   windows:
     needs: checks
     uses: ./.github/workflows/windows.yml
+    # windows.yml's screenshot job (skipped in a release) reads pull request labels; a called workflow gets no more than this.
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       release: true
 
