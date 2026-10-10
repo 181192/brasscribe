@@ -396,8 +396,8 @@ extension View {
         if PageActions.followContent { self } else { safeAreaInset(edge: .bottom) { actions() } }
     }
 
-    /// For a control docked under a page with `safeAreaInset(edge: .bottom)`: on the Mac, VoiceOver and the
-    /// keyboard reach what is docked in an inset before the content above it, so it is sent after it.
+    /// For a control docked under a page with `safeAreaInset(edge: .bottom)`: on the Mac, VoiceOver reaches what is
+    /// docked in an inset before the content above it (the accessibility navigation order), so it is sent after it.
     func afterTheContentItIsDockedUnder() -> some View {
         #if os(macOS)
         accessibilitySortPriority(-1)
