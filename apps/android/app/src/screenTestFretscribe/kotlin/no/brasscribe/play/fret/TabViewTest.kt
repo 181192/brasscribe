@@ -928,7 +928,8 @@ class TabViewTest : TabScreenTest() {
         turn(landscape = true)
         showTheTab()
         engraved()
-        rule.onNodeWithTag("fs-tab-marked").performClick()
+        // The page opens on its first line; the "?" line is above it, a scroll up away.
+        rule.onNodeWithTag("fs-tab-marked").performScrollTo().performClick()
         waitForTag("fs-tab-note", 5_000)
         var shown = 0
         while (true) {
@@ -958,7 +959,12 @@ class TabViewTest : TabScreenTest() {
         assertEquals("views made for the page", 1, TabScreenProbe.made)
         assertEquals(TabView.BASE_SCALE, tab.scale, 0.01)
         assertNoTextIsClipped()
-        // The header is the top of the page here, not pinned above it.
+        // The header is the top of the page here, not pinned above it: the page opens on its first line, under the header.
+        val opened = scrolled().first
+        assertTrue("the page opens past the header ($opened px)", opened > 0)
+        val top = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow.top
+        assertTrue("the header is above the view", element("fs-tab-tuning").bottom <= top + 1)
+        scrollBy(-opened)
         rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()
         shotOf("tab-landscape-200-text-top")
         val e = tab.engraving.value!!
