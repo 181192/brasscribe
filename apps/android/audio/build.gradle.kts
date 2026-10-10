@@ -70,6 +70,15 @@ mapOf(
     "connectedDebugAndroidTest" to "connectedBrasscribeDebugAndroidTest",
 ).forEach { (name, variantTask) -> tasks.register(name) { dependsOn(variantTask) } }
 
+// sfizz's CMake writes into its own source directory when it is configured (Config.h, and a Doxyfile that
+// fetch-sfizz.sh takes out), through a temporary file beside the output. Two configure runs from the one
+// checkout at the same time take that file from each other and one fails with "No such file or directory".
+// So the configure tasks of this module run one after the other; the builds after them still run together.
+afterEvaluate {
+    tasks.matching { it.name.startsWith("configureCMake") }.sortedBy { it.name }
+        .zipWithNext { earlier, later -> later.mustRunAfter(earlier) }
+}
+
 dependencies {
     implementation(libs.oboe)
     implementation(libs.androidx.core.ktx)
