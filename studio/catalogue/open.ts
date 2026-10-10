@@ -151,12 +151,16 @@ export async function stableScreenshot(page: Page, path: string): Promise<void> 
   // engraving gave it (a first bar 247.57 px wide where it was 248; the same happens when a reader resizes the
   // window), so the same score came out a fraction of a pixel different from one page load to the next (#218).
   // While the pictures are taken, a score keeps the engraving it has.
-  await page.evaluate(() => {
+  const width = page.viewportSize()?.width;
+  const keepEngraving = (keep: boolean) => page.evaluate((keep) => {
     for (const s of Array.from(document.querySelectorAll("bs-score"))) {
-      const api = (s as unknown as { api?: { triggerResize(): void } }).api;
-      if (api) api.triggerResize = () => undefined;
+      const api = (s as unknown as { api?: { triggerResize?: () => void } }).api;
+      if (api && keep) api.triggerResize = () => undefined;
+      // Back to alphaTab's own (on its prototype), for the checks that follow.
+      else if (api) delete api.triggerResize;
     }
-  });
+  }, keep);
+  await keepEngraving(true);
   const take = async () => {
     await fonts();
     await scrolls();
@@ -172,4 +176,8 @@ export async function stableScreenshot(page: Page, path: string): Promise<void> 
     last = now;
   }
   writeFileSync(path, last.png);
+  // The window is its own size again, and what alphaTab had waiting for the resize has run, before it watches again.
+  await page.waitForFunction((w) => innerWidth === w, width, { timeout: 10_000 });
+  await page.waitForTimeout(100);
+  await keepEngraving(false);
 }
