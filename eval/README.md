@@ -65,3 +65,10 @@ Refreshing the fixtures after a deliberate model or dataset change: copy the new
 `eval/fixtures/`, run `python -m brasscribe_eval.ci_data --pin` (it rebuilds every reference from
 the local ChoraleBricks copy and checks it against `data/eval`), and update the baselines together
 with the doc.
+
+`brasscribe bench <suites> --update-baselines` writes what the suites measured to `eval/baselines.json`.
+It changes only the metrics that moved: a stored value stays while it is still the measurement rounded
+to the decimals it is stored with (0.6 for 0.5948) and still passes the gate, so a value on a rounding
+half (0.8125, stored as 0.812 or 0.813) is not flipped by measuring it again. A changed value is
+written with three decimals, rounded half to even. Metrics of skipped suites and parts, and keys the
+file does not hold, are left alone.
