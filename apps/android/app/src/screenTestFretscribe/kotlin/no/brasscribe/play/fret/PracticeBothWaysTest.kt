@@ -36,18 +36,7 @@ class PracticeBothWaysTest : TabScreenTest() {
         // The player is there once the recording is (it is looked for when the tab opens).
         waitForTag("fs-practice-play", 10_000)
 
-        // At open: a whole line of the tab is in the room the tab has on screen.
-        val e = tab.engraving.value!!
-        var page = 0
-        rule.runOnUiThread { page = tab.pageScrolled }
-        val room = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow
-        val drawn = rule.onNodeWithTag("fs-tab").fetchSemanticsNode().boundsInWindow
-        val whole = e.lines.count { line ->
-            val top = drawn.top + line.top - page
-            val bottom = drawn.top + line.bottom - page
-            top >= room.top - 2 && bottom <= room.bottom + 2
-        }
-        assertTrue("$label: a whole line of the tab is in view when it opens ($whole; the tab's room ${room.top}–${room.bottom}, the page at ${drawn.top} scrolled $page)", whole >= 1)
+        aWholeLineIsInView(label, tab)
         shot("practice-$label")
 
         // Every control: shown whole, at least 48 dp.
@@ -84,10 +73,44 @@ class PracticeBothWaysTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()
     }
 
-    /** With a screen reader the page opens at its top on its side too: the header is read first, in order. */
+    /** At open: a whole line of the tab is in the room the tab has on screen. */
+    private fun aWholeLineIsInView(label: String, tab: TabView) {
+        val e = tab.engraving.value!!
+        var page = 0
+        rule.runOnUiThread { page = tab.pageScrolled }
+        val room = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow
+        val drawn = rule.onNodeWithTag("fs-tab").fetchSemanticsNode().boundsInWindow
+        val whole = e.lines.count { line ->
+            val top = drawn.top + line.top - page
+            val bottom = drawn.top + line.bottom - page
+            top >= room.top - 2 && bottom <= room.bottom + 2
+        }
+        assertTrue("$label: a whole line of the tab is in view when it opens ($whole; the tab's room ${room.top}–${room.bottom}, the page at ${drawn.top} scrolled $page)", whole >= 1)
+    }
+
+    /**
+     * With Switch Access, or a service that only speaks, the phone is used by sight: on its side the page opens on its
+     * first line as without them, a whole line of the tab in view.
+     */
+    @Test
+    fun onItsSideWithSwitchAccessAWholeLineIsInView() {
+        rule.runOnUiThread { container.assistiveOverride = true; container.touchExplorationOverride = false }
+        try {
+            computer("bass-line-marks")
+            turn(landscape = true)
+            val tab = showTheTab()
+            settle()
+            waitForTag("fs-practice-play", 10_000)
+            aWholeLineIsInView("on-its-side-switch-access", tab)
+        } finally {
+            rule.runOnUiThread { container.assistiveOverride = null; container.touchExplorationOverride = null }
+        }
+    }
+
+    /** With a screen reader explored by touch (TalkBack) the page opens at its top on its side too: the header is read first, in order. */
     @Test
     fun onItsSideWithAScreenReaderTheHeaderIsReadFirst() {
-        rule.runOnUiThread { container.assistiveOverride = true }
+        rule.runOnUiThread { container.assistiveOverride = true; container.touchExplorationOverride = true }
         try {
             computer("bass-line-marks")
             turn(landscape = true)
@@ -97,7 +120,7 @@ class PracticeBothWaysTest : TabScreenTest() {
             rule.onNodeWithTag("fs-tab-marked").assertIsDisplayed()
             rule.onNode(androidx.compose.ui.test.isHeading() and androidx.compose.ui.test.hasText("Bass line")).assertExists()
         } finally {
-            rule.runOnUiThread { container.assistiveOverride = null }
+            rule.runOnUiThread { container.assistiveOverride = null; container.touchExplorationOverride = null }
         }
     }
 

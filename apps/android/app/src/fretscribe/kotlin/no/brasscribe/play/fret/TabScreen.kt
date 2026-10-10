@@ -219,8 +219,9 @@ fun TabScreen(vm: PlayViewModel) {
     var reading by rememberSaveable(song) { mutableIntStateOf(TabPlaces.bar(song)) }
     // The player scrolled up to a header that scrolls with the page: a new engraving (a zoom, a turn) leaves it in view.
     var headerShown by rememberSaveable(song) { mutableStateOf(false) }
-    // With a screen reader the page opens at its top, the header first, so it is read in order.
-    val assistive = no.brasscribe.play.ui.rememberAssistive(vm.container.assistiveOverride)
+    // With a screen reader that is explored by touch (TalkBack) the page opens at its top, the header first, so it is
+    // read in order. Switch Access and a service that only speaks are used by sight: the page opens on its first line.
+    val readFromTheTop = no.brasscribe.play.ui.rememberTouchExploration(vm.container.touchExplorationOverride)
     var told by remember { mutableStateOf<Int?>(null) }
     // Leaving a note (Close, Next ?, another mark) gives the player back the speed and repeat that Play this bar slowly took.
     val practice: PracticeModel = viewModel()
@@ -492,13 +493,13 @@ fun TabScreen(vm: PlayViewModel) {
             // back) and when the header over the page changes height. From the start, the page opens on its first line: a
             // header that scrolls with the page (on its side, or with large text) is above it, a scroll up away, so the tab
             // and the player have the screen. It stays in view once the player has scrolled up to it, and with a screen
-            // reader the page opens at its top.
+            // reader explored by touch the page opens at its top.
             LaunchedEffect(tab, e, inset) {
                 if (e == null || (e === placedFor && inset == placedInset)) return@LaunchedEffect
                 placedFor = null
                 scroll.scrollTo(when {
                     reading != 0 -> inset + (e.topOfBar(reading) ?: 0)
-                    assistive || headerShown -> 0
+                    readFromTheTop || headerShown -> 0
                     else -> inset
                 })
                 placedInset = inset
@@ -510,7 +511,8 @@ fun TabScreen(vm: PlayViewModel) {
                 snapshotFlow { Triple(scroll.value, scroll.isScrollInProgress, placedFor) }.collect { (y, byHand, placed) ->
                     tab.scrollTo(y - inset)
                     if (byHand && e != null && placed === e) {
-                        headerShown = inset > 0 && y < inset
+                        // Half the header or more, as for the bar being read: a pixel of it is not the player scrolling up to it.
+                        headerShown = inset > 0 && y <= inset / 2
                         reading = if (y <= inset / 2) 0 else e.barAt(y - inset) ?: reading
                         TabPlaces.keep(song, reading)
                     }
