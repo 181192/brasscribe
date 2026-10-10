@@ -23,9 +23,11 @@ other; nobody should mistake one for the other.
 
 - **Fretscribe**, one word, capital F, in all running text. The wordmark is set lower case; that is a
   logo, not a spelling.
-- The apps are **Fretscribe** (the player app) and, where the products appear together, the shared
-  **Bandroom** that runs the engine on a computer. Inside the app, say "Fretscribe": "Fretscribe isn't
-  sure about these notes".
+- The apps are **Fretscribe** (the player app) and the shared **Bandroom** that runs the engine on a
+  computer. Inside the app, say "Fretscribe" for the app ("Fretscribe isn't sure about these notes") and
+  "Bandroom" for the program on the computer ("Bandroom on your computer writes down the notes"). Where the
+  player looks for the program (pairing, Help), give its full name once, as the list of programs shows it:
+  **Brasscribe Bandroom**. One Bandroom serves both apps, and both use its pairing link (`brasscribe://pair`).
 - The name is not translated or inflected in Norwegian ("tabben fra Fretscribe", not "Fretscribes tab").
 
 ## Mark
@@ -134,4 +136,4 @@ alone; no jargon; English and Norwegian both first-class; never "we").
 | Stop touches on the tab | Lock the tab | Lås tabben | Lock screen |
 | Hand | Which hand is on the neck? · Left hand on the neck (most players) · Right hand on the neck (left-handed instrument) | Hvilken hånd er på halsen? · Venstre hånd på halsen (de fleste) · Høyre hånd på halsen (venstrehendt instrument) | lefty mode, "frets" as a verb |
 | Output | Share or print | Del eller skriv ut | Export (desktop menu bar only) |
-| Your computer | Fretscribe on your computer (installer and app lists: Bandroom) | Fretscribe på datamaskinen | engine, server |
+| Your computer | Bandroom on your computer (full name where the player looks for it: Brasscribe Bandroom) | Bandroom på datamaskinen | Fretscribe on your computer, engine, server |

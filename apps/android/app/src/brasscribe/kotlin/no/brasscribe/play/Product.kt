@@ -30,6 +30,13 @@ object Product {
     /** A recording whose score was not made (it failed, was put off or was stopped) is kept in Your scores. */
     const val KEEPS_RECORDINGS = true
 
+    /** A recording kept in Your scores stays until the player deletes it. */
+    val KEPT_RECORDING_DAYS: Int? = null
+
+    /** A recording kept in Your scores moved there: nothing here is tied to where it was. */
+    @Suppress("UNUSED_PARAMETER")
+    fun recordingMoved(from: Source, to: Source) = Unit
+
     /** A score can be made on the phone: without the computer, "Not connected" is information, not a warning. */
     const val MAKES_SCORES_ON_THE_PHONE = true
 

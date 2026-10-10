@@ -7,8 +7,10 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isHeading
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.ViewModelProvider
 import no.brasscribe.play.R
 import no.brasscribe.play.engine.FixtureSource
 import no.brasscribe.play.screen.ScreenDevice
@@ -76,17 +78,31 @@ abstract class TabScreenTest : ScreenTest() {
         return engraved()
     }
 
+    /** The player under the tab and the song's place in it (the activity's own, so it outlives a turn of the phone). */
+    protected val practice: PracticeModel get() = ViewModelProvider(rule.activity)[PracticeModel::class.java]
+
+    /** The height of the tab's room on the screen, between the header (when it is pinned) and the player. */
+    private fun room(): Int? = rule.onAllNodesWithTag("fs-tab-scroll").fetchSemanticsNodes().firstOrNull()?.size?.height
+
+    /**
+     * The tab is engraved and the screen around it is whole. Until the view of the size the screen wants is there (a new
+     * size is a new view, a moment later), engraved and laid out; and until the player under the tab is there. The player
+     * comes once the recording has been looked for on the phone, on another thread, and that can be after the engraving:
+     * from then on the tab has its room less the player's height, and the keys page by that room.
+     */
     protected fun engraved(): TabView {
         waitForTag("fs-tab", 30_000)
-        // Until the view of the size the screen wants is there (a new size is a new view, a moment later), engraved and laid out.
-        fun now() = TabScreenProbe.view?.let { Triple(it, it.engravings, it.engraving.value) }
-        var seen: Triple<TabView, Int, TabEngraving?>?
+        data class Seen(val view: TabView, val engravings: Int, val engraving: TabEngraving?, val room: Int?)
+        fun now() = TabScreenProbe.view?.let { Seen(it, it.engravings, it.engraving.value, room()) }
+        var seen: Seen?
         do {
-            waitUntil(30_000) { TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true }
+            waitUntil(30_000) {
+                TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true && practice.recording != RecordingState.LOOKING
+            }
             seen = now()
             settle()
         } while (now() != seen)
-        return seen!!.first
+        return seen!!.view
     }
 
     protected fun turn(landscape: Boolean) = ScreenDevice.turn(rule, landscape)

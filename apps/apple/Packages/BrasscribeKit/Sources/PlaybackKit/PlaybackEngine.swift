@@ -21,6 +21,11 @@ public final class PlaybackEngine {
     public enum Source: Equatable { case score, original }
     public enum State: Equatable { case stopped, countingIn(beat: Int), playing }
 
+    /// Held while an engine is made (its samplers load their sound banks) and while one is torn down: the AUSampler
+    /// aborts when one thread loads a sound bank while another uninitialises a sampler, as when a score closes on
+    /// the main thread while the next one opens off it. Recursive: an engine whose init throws is torn down inside it.
+    public static let audioUnitLock = NSRecursiveLock()
+
     public let score: Score
     public let tempoMap: TempoMap?
     public let engine = AVAudioEngine()
@@ -353,8 +358,10 @@ public final class PlaybackEngine {
     deinit {
         for o in observers { NotificationCenter.default.removeObserver(o) }
         countInTimer?.cancel()
-        sequencer?.stop()
-        engine.stop()
+        Self.audioUnitLock.withLock {
+            sequencer?.stop()
+            engine.stop()
+        }
     }
 
     private func loadSequence() throws {

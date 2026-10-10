@@ -266,6 +266,8 @@ fun HelpScreen(vm: PlayViewModel) {
                 SubHeading(stringResource(t))
                 Text(stringResource(body), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             }
+            // After the computer's part: where to get the program.
+            if (t == R.string.help_5_title) GetBandroom({ vm.say(R.string.bandroom_no_browser) })
         }
         // The music stand: page turners, and how to keep a tablet one way up (it has no Lock rotation).
         Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {

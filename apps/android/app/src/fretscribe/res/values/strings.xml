@@ -10,7 +10,7 @@
     <string name="first_run_hero_start">"Tab from "</string>
     <string name="first_run_hero_end">any recording.</string>
     <string name="first_run_1_title">Record or open a recording</string>
-    <string name="first_run_1_text">Play it, or open a song you have. Fretscribe on your computer writes down the notes.</string>
+    <string name="first_run_1_text">Play it, or open a song you have. Bandroom on your computer writes down the notes.</string>
     <string name="first_run_2_title">Check the notes marked ?</string>
     <string name="first_run_2_text">Notes Fretscribe isn\'t sure about get a “?”. Listen to the bar and decide.</string>
     <string name="first_run_3_title">Practise with the tab</string>
@@ -20,13 +20,17 @@
     <!-- Home -->
     <string name="home_hero_start">"Turn a recording into "</string>
     <string name="home_hero_end">tab.</string>
-    <string name="home_tagline">Play it, record it, or open a file. Fretscribe on your computer writes down the notes.</string>
+    <string name="home_tagline">Play it, record it, or open a file. Bandroom on your computer writes down the notes.</string>
     <string name="home_record_mic_desc">Play a riff or a whole song</string>
     <!-- Not shown for now (Product.OPENS_SCORES): an imported tab would open on the score screen, not in the tab view. -->
     <string name="home_open_score">Open a tab</string>
     <string name="home_open_score_desc">A MusicXML file from MuseScore or Guitar Pro</string>
     <string name="home_scores_empty">Nothing written down yet. Record a riff or open a recording.</string>
     <string name="home_your_scores">Your songs</string>
+    <!-- A take kept in Your songs before it has a tab (Product.KEPT_RECORDING_DAYS: 30). -->
+    <string name="kept_row_subtitle">%1$s · No tab yet</string>
+    <string name="kept_storage">Recordings kept in Your songs use %1$s. One with no tab after 30 days is deleted.</string>
+    <string name="problem_score_kept_scores">Your recording is kept in Your songs for 30 days. You can try again now or later.</string>
     <string name="delete_score_phone">The song is removed from this phone.</string>
     <string name="delete_score_computer">The song is removed from your computer.</string>
     <string name="record_permission_needed">Fretscribe needs the microphone to record. You can allow it in Settings.</string>
@@ -39,26 +43,28 @@
     <string name="settings_you">What you play</string>
     <string name="settings_seat">Your instrument</string>
     <string name="settings_seat_caption">Fretscribe remembers this for your tabs.</string>
-    <string name="companion_title">Fretscribe on your computer</string>
-    <!-- Fretscribe on your computer (the pairing screen). The program on the computer is called what the rest of
-         this app calls it; nothing here names Brasscribe or Bandroom. -->
-    <string name="companion_explain">Open Fretscribe on your computer and choose Pair a phone. Type the six digits it shows.</string>
-    <string name="companion_searching">Looking for Fretscribe on your network… You can also type the address below.</string>
-    <string name="companion_tech_details">Fretscribe on your computer shows its address under Details.</string>
-    <string name="companion_failed_plain">Couldn\'t connect. Check that Fretscribe on the computer says Running, and that both are on the same Wi-Fi.</string>
-    <string name="pair_link_invalid">That code isn\'t from Fretscribe on a computer.</string>
+    <string name="companion_title">Bandroom on your computer</string>
+    <!-- Bandroom on your computer (the pairing screen). The program is Brasscribe Bandroom, the same for both apps:
+         Bandroom in running text (design/fretscribe/brand/brand.md), its full name where the player looks for it. -->
+    <string name="bandroom_get_title">Get Bandroom</string>
+    <string name="bandroom_get_text">Bandroom is free for Mac (Apple silicon) and Windows, and is called Brasscribe Bandroom when you install it. On your computer, download it from this address:</string>
+    <string name="companion_explain">Open Bandroom on your computer (it is Brasscribe Bandroom in the list of programs) and choose Pair a phone. Type the six digits it shows.</string>
+    <string name="companion_searching">Looking for Bandroom on your network… You can also type the address below.</string>
+    <string name="companion_tech_details">Bandroom on your computer shows its address under Details.</string>
+    <string name="companion_failed_plain">Couldn\'t connect. Check that Bandroom on the computer says Running, and that both are on the same Wi-Fi.</string>
+    <string name="pair_link_invalid">That code isn\'t from Bandroom on a computer.</string>
     <string name="pair_link_address_by_name">Fretscribe looks for it on your network by name.</string>
     <string name="pair_needs_update">Update the Fretscribe app on this phone to connect to this computer.</string>
 
     <!-- Help (Settings > Help): what this app does, in its own words. -->
     <string name="help_1_title">Write down a tab</string>
-    <string name="help_1_text">Open a recording, or record with the microphone. Say what it is, and Fretscribe on your computer writes down the notes as tab for your instrument.</string>
+    <string name="help_1_text">Open a recording, or record with the microphone. Say what it is, and Bandroom on your computer writes down the notes as tab for your instrument.</string>
     <string name="help_2_text">A “?” above a note means Fretscribe wasn\'t sure of it. A boxed “!” marks a note your instrument can\'t play there. Listen to that bar of the recording to check it.</string>
     <string name="help_3_text">Slow the recording down, and repeat the hard bars.</string>
     <string name="help_4_title">Your songs</string>
-    <string name="help_4_text">Every tab you make is kept under Your songs, on the phone and on your computer.</string>
+    <string name="help_4_text">Every tab you make is kept under Your songs, on the phone and on your computer. A recording whose tab couldn\'t be made, or was stopped, stays there for 30 days.</string>
     <string name="help_5_title">Tabs are written on your computer</string>
-    <string name="help_5_text">Fretscribe on your computer writes down the notes. Open it there, and connect in Settings.</string>
+    <string name="help_5_text">Bandroom on your computer writes down the notes. Open it there, and connect in Settings.</string>
     <!-- The keys while a tab plays: Fretscribe has no music stand. -->
     <string name="help_stand_title">Page turners and keys</string>
     <!-- What the keys do on the tab (TabScreen): Space anywhere, the arrows while the tab has the focus, the page keys scroll. -->
@@ -69,7 +75,7 @@
     <string name="problem_record_body">The phone didn\'t let Fretscribe record.</string>
 
     <!-- About -->
-    <string name="about_text">Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) with the Bravura font (SIL OFL 1.1) and alphaSkia (BSD-3-Clause) to draw the tab, AndroidX Media3 (Apache-2.0) to play the recording, and the Sonivox SoundFont (Apache-2.0) for alphaTab\'s own sounds. Its shared code also carries Oboe (Apache-2.0), ONNX Runtime (MIT) and UniFFI (MPL-2.0). Fretscribe on your computer writes down the notes.</string>
+    <string name="about_text">Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) with the Bravura font (SIL OFL 1.1) and alphaSkia (BSD-3-Clause) to draw the tab, AndroidX Media3 (Apache-2.0) to play the recording, and the Sonivox SoundFont (Apache-2.0) for alphaTab\'s own sounds. Its shared code also carries Oboe (Apache-2.0), ONNX Runtime (MIT) and UniFFI (MPL-2.0). Bandroom on your computer writes down the notes.</string>
     <string name="about_font">Titles are set in Atkinson Hyperlegible Next, and fret numbers in Fretscribe Tab (both SIL Open Font License 1.1).</string>
     <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>
@@ -118,10 +124,10 @@
     <string name="fs_what_instrument_desc">One instrument playing, with nothing else.</string>
     <string name="fs_what_song">A full song</string>
     <string name="fs_what_song_desc">A band or a record. Fretscribe picks out the bass.</string>
-    <string name="fs_where_desc">Fretscribe on your computer writes down the notes. Nothing goes online.</string>
-    <string name="fs_where_needed">Fretscribe on your computer writes down the notes.</string>
+    <string name="fs_where_desc">Bandroom on your computer writes down the notes. Nothing goes online.</string>
+    <string name="fs_where_needed">Bandroom on your computer writes down the notes.</string>
     <string name="fs_what_connect_first">Connect your computer to continue.</string>
-    <string name="where_companion_missing">Connect Fretscribe on your computer first.</string>
+    <string name="where_companion_missing">Connect Bandroom on your computer first.</string>
 
     <!-- Writing down the notes (flows.md §6): the computer's steps for a tab, in plain words. -->
     <string name="stage_beats">Listening for the beat</string>
@@ -145,20 +151,21 @@
     <!-- "Fretscribe on Kari's Mac is writing down the notes" -->
     <string name="transcribe_where_companion">%1$s is writing down the notes</string>
     <string name="transcribe_cancel_title">Stop writing down the notes?</string>
-    <!-- Fretscribe keeps no recordings: after Stop the recording is the one in hand on What is this?, until another is made or opened. -->
-    <string name="transcribe_cancel_text">You go back to What is this? with the recording, and can start again from it. It isn\'t kept once you record or open another.</string>
+    <!-- After Stop the take is kept in Your songs (Product.KEEPS_RECORDINGS) for 30 days. "Stopped" alone is said when keeping it failed. -->
+    <string name="transcribe_cancel_text_kept">The recording stays in Your songs for 30 days. You can start again from it.</string>
+    <string name="transcribe_cancelled_kept">Stopped. The recording is in Your songs.</string>
     <string name="transcribe_cancelled">Stopped. You can start again from the recording.</string>
     <string name="transcribe_done">Tab ready</string>
     <string name="transcribe_failed">The tab couldn\'t be made: %1$s</string>
 
     <!-- Problems, with what to do next. -->
     <string name="problem_score_title">The tab couldn\'t be made</string>
-    <string name="problem_score_body">Something went wrong while Fretscribe on your computer was working on it.</string>
+    <string name="problem_score_body">Something went wrong while Bandroom on your computer was working on it.</string>
     <string name="details_show">Technical details</string>
-    <string name="error_unreachable">Can\'t reach Fretscribe on your computer. Check that it is running and on the same network.</string>
-    <string name="error_engine_failed">Fretscribe on your computer couldn\'t finish the tab. Try again.</string>
-    <string name="error_invalid_options">Fretscribe on your computer didn\'t accept these choices. It may need an update.</string>
-    <string name="error_core_missing">Fretscribe on your computer needs an update to write tabs. Update it there, then try again.</string>
+    <string name="error_unreachable">Can\'t reach Bandroom on your computer. Check that it is running and on the same network.</string>
+    <string name="error_engine_failed">Bandroom on your computer couldn\'t finish the tab. Try again.</string>
+    <string name="error_invalid_options">Bandroom on your computer didn\'t accept these choices. It may need an update.</string>
+    <string name="error_core_missing">Bandroom on your computer needs an update to write tabs. Update it there, then try again.</string>
 
     <!-- Check the song (flows.md §7) -->
     <string name="fs_check_title">Check the song</string>

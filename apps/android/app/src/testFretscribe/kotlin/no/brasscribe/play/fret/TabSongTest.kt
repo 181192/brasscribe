@@ -352,12 +352,12 @@ class TabSongTest {
     }
 
     @Test
-    fun fretscribesWordsForARefusalNameFretscribeInBothLanguages() {
+    fun fretscribesWordsForARefusalNameBandroomInBothLanguages() {
         val res = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src/fretscribe/res")
         assumeTrue("the app's sources are not in this checkout", res?.isDirectory == true)
         val want = mapOf(
-            "values" to "Fretscribe on your computer needs an update to write tabs. Update it there, then try again.",
-            "values-nb" to "Fretscribe på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.",
+            "values" to "Bandroom on your computer needs an update to write tabs. Update it there, then try again.",
+            "values-nb" to "Bandroom på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.",
         )
         for ((dir, words) in want) {
             val strings = File(res, "$dir/strings.xml").readText()
@@ -372,7 +372,7 @@ class TabSongTest {
                 "problem_score_title", "problem_score_body", "transcribe_leave_computer", "transcribe_leave_computer_quiet", "transcribe_where_companion", "transcribe_done", "transcribe_cancel_title",
                 "stage_beats", "stage_stems", "stage_transcribe", "stage_quantize", "stage_arrange", "stage_export")) {
                 val t = text(name)
-                assertTrue("$dir $name", t != null && !t.contains("Brasscribe") && !Regex("score|partitur|band", RegexOption.IGNORE_CASE).containsMatchIn(t))
+                assertTrue("$dir $name", t != null && !t.contains("Brasscribe") && !Regex("score|partitur|band(?!room)", RegexOption.IGNORE_CASE).containsMatchIn(t))
             }
         }
     }

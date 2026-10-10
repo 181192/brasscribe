@@ -251,12 +251,11 @@ final class PracticeModel {
         }
     }
 
-    /// One engine is made at a time: the AUSampler aborts when two threads load sound banks at once
-    /// (Review and its Change note preview, or several scores opening together).
-    nonisolated private static let engineLock = NSLock()
-
     nonisolated private static func makeEngine(piece: Piece, score: Score, composition: Composition?) throws -> PlaybackEngine {
-        try engineLock.withLock {
+        // One engine is made at a time, and none while another is torn down: the AUSampler aborts when two threads load
+        // sound banks at once (Review and its Change note preview, or several scores opening together), or when a score
+        // closes while another opens (`PlaybackEngine.audioUnitLock`).
+        try PlaybackEngine.audioUnitLock.withLock {
             try PlaybackEngine(score: score, tempoMap: composition?.tempoMap, originalURL: piece.originalURL, soundBank: .locate())
         }
     }
