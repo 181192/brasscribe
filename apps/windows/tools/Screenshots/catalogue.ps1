@@ -110,7 +110,7 @@ $before = Join-Path $report "before"
 
 # What the screens are made from: when none of it changed since the base, the base is not taken.
 $madeFrom = @("apps/windows/src", "apps/windows/tests/Brasscribe.Play.Catalogue", "apps/windows/Directory.Build.props",
-    "apps/windows/Directory.Packages.props", "core", "design/tokens", "design/dist/windows", "design/brand", "apps/fixtures", "sounds")
+    "apps/windows/Directory.Packages.props", "core", "design/tokens", "design/dist/windows", "design/dist/icons/windows", "design/brand", "apps/fixtures", "sounds")
 $compared = $false
 if ($Mode -eq "compare") {
     if (Test-Path $report) { Remove-Item -Recurse -Force $report }
