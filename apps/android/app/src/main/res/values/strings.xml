@@ -262,6 +262,9 @@
     <string name="listen_unavailable">There\'s no recording to play for this bar.</string>
     <string name="bar_heading">Bar %1$d</string>
     <string name="bar_rest_heading">Bars %1$d to %2$d</string>
+    <string name="pickup_heading">Pickup</string>
+    <string name="pickup_rest_one_heading">Pickup and bar 1</string>
+    <string name="pickup_rest_heading">Pickup and bars 1–%1$d</string>
     <string name="review_continue">Next: How should the score be?</string>
     <string name="dur_whole">semibreve</string>
     <string name="dur_half">minim</string>
@@ -443,6 +446,8 @@
     <string name="problem_score_body_unpaired">This recording needs your computer, and none is connected to this phone.</string>
     <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
     <string name="problem_score_kept_scores">Your recording is kept in Your scores. You can try again now or later.</string>
+    <string name="problem_open_title">This score couldn\'t be opened</string>
+    <string name="problem_open_body">Brasscribe couldn\'t get it from your computer.</string>
     <string name="problem_too_large_title">This file is too big for the phone</string>
     <string name="problem_too_large_body">The phone ran out of memory while working on it.</string>
     <string name="problem_too_large_reason">Try a shorter recording, or split the video into parts.</string>

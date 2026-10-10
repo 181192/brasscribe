@@ -35,14 +35,11 @@ import TranscriptionKit
     /// Findings that are known and not yet fixed, each with its issue: the screen, the kind, and words the finding names.
     /// The words in the run's language, as the app looks them up.
     static var known: [(screen: String?, kind: Finding.Kind, words: String, issue: String)] {
-        [
-            ("sheet-settings", .outOfOrder, "comes after AXButton “\(String(localized: "Done"))”", "#254"),
-            ("sheet-settings", .smallTarget, "“\(String(localized: "Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")"))”", "#256"),
-        ]
+        []
     }
 
     /// Screens that are checked but get no screenshot: they do not draw the same twice yet, each with its issue.
-    static let unsteady: [String: String] = ["review": "#260"]
+    static let unsteady: [String: String] = [:]
 
     /// Screens whose own order differs from reading order, and why.
     static let ownOrder: [String: String] = [
@@ -152,6 +149,7 @@ import TranscriptionKit
         try await window("problem-silence", app: full) { ProblemView(problem: .silence) }
 
         try await sheet("settings", app: full) { SettingsView() }
+        try await sheet("what-you-play", app: full) { NavigationStack { WhatDoYouPlayView(mode: .settings, initial: full.seat) { _ in } } }
         let exportModel = try await LayoutFixtures.model(piece)
         try await sheet("export", app: full) { ExportView(model: exportModel) }
         try await sheet("talking-score", app: full) { TalkingScoreView(model: exportModel) }

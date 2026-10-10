@@ -10,6 +10,9 @@ namespace Brasscribe.Play.Core.TalkingScore;
 /// </summary>
 public static class Announcer
 {
+    /// <summary>The number of a pickup (anacrusis): spoken as "pickup", never as a bar number (spec §4.10).</summary>
+    public const int PickupBar = 0;
+
     public static string Announce(AnnouncePart part, AnnounceBar bar, TsEvent ev, AnnounceContext ctx,
         TalkingScoreSettings s, bool byBar = false)
     {
@@ -40,16 +43,27 @@ public static class Announcer
 
         if (ev.Kind == EventKind.BarRest)
         {
-            sb.Append(ev.Bars > 1
-                ? L.BarsRange(bar.Number, bar.Number + ev.Bars - 1) + ": " + L.RestBars(ev.Bars)
-                : L.Bar(bar.Number) + ": " + L.RestWholeBar);
+            if (bar.Number == PickupBar)
+            {
+                // The pickup is named, and is not one of the bars counted.
+                int after = ev.Bars - 1;
+                sb.Append(L.Pickup);
+                if (after > 0) sb.Append(' ').Append(L.And).Append(' ').Append(after == 1 ? L.Bar(1) : L.BarsRange(1, after));
+                sb.Append(": ").Append(after > 1 ? L.RestBars(after) : L.RestWord);
+            }
+            else
+            {
+                sb.Append(ev.Bars > 1
+                    ? L.BarsRange(bar.Number, bar.Number + ev.Bars - 1) + ": " + L.RestBars(ev.Bars)
+                    : L.Bar(bar.Number) + ": " + L.RestWholeBar);
+            }
             return sb.ToString();
         }
 
         if (s.Verbosity != Verbosity.Brief && showBar)
         {
             sb.Append(L.Bar(bar.Number));
-            if (s.Verbosity == Verbosity.Full && bar.TotalBars > 0) sb.Append(L.Of).Append(bar.TotalBars);
+            if (s.Verbosity == Verbosity.Full && bar.TotalBars > 0 && bar.Number != PickupBar) sb.Append(L.Of).Append(bar.TotalBars);
             foreach (var c in changes) sb.Append(", ").Append(c);
             sb.Append(", ");
         }
@@ -239,6 +253,8 @@ internal abstract class Lexicon
     public abstract string ConcertPitch { get; }
     public abstract string WrittenPitch { get; }
     public abstract string And { get; }
+    public abstract string Pickup { get; }
+    public abstract string RestWord { get; }
 
     public abstract string Bar(int n);
     public abstract string BarsRange(int a, int b);
@@ -333,8 +349,10 @@ internal sealed class EnLexicon : Lexicon
     public override string ConcertPitch => "Concert pitch";
     public override string WrittenPitch => "Written pitch";
     public override string And => "and";
+    public override string Pickup => "pickup";
+    public override string RestWord => "rest";
 
-    public override string Bar(int n) => $"bar {n}";
+    public override string Bar(int n) => n == Announcer.PickupBar ? Pickup : $"bar {n}";
     public override string BarsRange(int a, int b) => $"bars {a} to {b}";
     public override string RestBars(int n) => $"rest, {n} bars";
 
@@ -431,7 +449,11 @@ internal sealed class EnLexicon : Lexicon
         return $"at {m} {(m == 1 ? "minute" : "minutes")} {r} {(r == 1 ? "second" : "seconds")}";
     }
 
-    public override string AdLibEntry(int a, int b, int s) => $"Ad lib, free time, bars {a} to {b}, about {s} seconds";
+    public override string AdLibEntry(int a, int b, int s)
+    {
+        string bars = a != Announcer.PickupBar ? $"bars {a} to {b}" : b == Announcer.PickupBar ? Pickup : $"pickup to bar {b}";
+        return $"Ad lib, free time, {bars}, about {s} seconds";
+    }
     public override string ATempo(int bpm) => $"A tempo, {bpm} beats per minute";
 
     public override string Key(int fifths) => fifths switch
@@ -467,8 +489,10 @@ internal sealed class NbLexicon : Lexicon
     public override string ConcertPitch => "Klingende tone";
     public override string WrittenPitch => "Skrevet tone";
     public override string And => "og";
+    public override string Pickup => "opptakt";
+    public override string RestWord => "pause";
 
-    public override string Bar(int n) => $"takt {n}";
+    public override string Bar(int n) => n == Announcer.PickupBar ? Pickup : $"takt {n}";
     public override string BarsRange(int a, int b) => $"takt {a} til {b}";
     public override string RestBars(int n) => $"pause, {n} takter";
 
@@ -598,7 +622,11 @@ internal sealed class NbLexicon : Lexicon
         return $"ved {m} {(m == 1 ? "minutt" : "minutter")} {r} {(r == 1 ? "sekund" : "sekunder")}";
     }
 
-    public override string AdLibEntry(int a, int b, int s) => $"Ad lib, fritt tempo, takt {a} til {b}, omtrent {s} sekunder";
+    public override string AdLibEntry(int a, int b, int s)
+    {
+        string bars = a != Announcer.PickupBar ? $"takt {a} til {b}" : b == Announcer.PickupBar ? Pickup : $"opptakt til takt {b}";
+        return $"Ad lib, fritt tempo, {bars}, omtrent {s} sekunder";
+    }
     public override string ATempo(int bpm) => $"A tempo, {bpm} slag per minutt";
 
     public override string Key(int fifths) => fifths switch

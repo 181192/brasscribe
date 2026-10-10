@@ -35,6 +35,13 @@ final class OffscreenHost {
         window.contentView = hosting
     }
 
+    /// From here on only the test sizes the window. With a sizing option set, the hosting view sizes its window itself
+    /// on macOS 27 when a split view's sidebar comes back (a window of 1024 becomes 1305 wide), so a screen would be
+    /// drawn at another size than the one asked for; and with the library's split view that resize does not come to
+    /// rest (1305, 1304, 1305, …, each from inside the layout of the one before) until the main thread's stack is used
+    /// up. Call it once the window's minimum has been read: it is not handed to the window after this.
+    func holdWindowSize() { hosting.sizingOptions = [] }
+
     func resize(_ size: CGSize) async {
         window.setContentSize(size)
         hosting.frame = CGRect(origin: .zero, size: size)

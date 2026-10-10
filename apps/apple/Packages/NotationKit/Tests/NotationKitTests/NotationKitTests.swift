@@ -100,6 +100,20 @@ private func oldHundredth() -> String? {
     return nil
 }
 
+/// Check the notes marks its note in the first bar of the strip, in every engraving: Verovio gives its staves new
+/// ids each time, so a dictionary keyed by them hands back either bar's staff first.
+@Test(.enabled(if: oldHundredth() != nil)) func reviewSnippetNamesTheFirstBarsStaffEveryTime() throws {
+    let xml = try #require(oldHundredth())
+    for _ in 0..<12 {
+        let page = try #require(ScoreRenderer.snippet(musicXML: xml, partID: "P2", bars: 2...3, width: 640))
+        #expect(page.staffLines.count == 2)
+        let first = try #require(page.firstStaff)
+        let lines = try #require(page.staffLines[first])
+        #expect(page.staffLines.values.allSatisfy { lines.minX <= $0.minX }, "the leftmost staff is the first bar's")
+        #expect(page.notesByStaff[first]?.count == 4, "bar 2 of the Solo Cornet has four notes, bar 3 one")
+    }
+}
+
 /// The music stand engraves a fixed number of bars on every system, as one long page that it
 /// pages through itself.
 @Test(.enabled(if: oldHundredth() != nil)) func standLayoutHasFixedBarsPerSystem() throws {

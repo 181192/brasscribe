@@ -140,6 +140,7 @@ struct SettingsView: View {
                         .buttonStyle(.primary)
                         .keyboardShortcut(.defaultAction)
                         .accessibilityIdentifier("settingsDone")
+                        .afterTheContentItIsDockedUnder()
                         .layoutProbe("settingsDone")
                 }
                 .padding(.horizontal, Space.s5)
@@ -185,6 +186,9 @@ struct VersionButton: View {
     var body: some View {
         Button(action: activate) {
             Text(verbatim: version).foregroundStyle(Color.Brasscribe.textMuted)
+                // it looks like text, and takes a tap or click on 44 × 44 pt
+                .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Version \(version)"))

@@ -48,6 +48,7 @@ private val COPY = mapOf(
     Problem.DRAFT_REFUSED to ProblemCopy(R.string.draft_refused_title, R.string.draft_refused_body, emptyList(), R.string.draft_too_long_kept),
     Problem.NO_NOTES to ProblemCopy(R.string.problem_no_notes_title, R.string.problem_no_notes_body, emptyList(), null),
     Problem.SHEET_MUSIC to ProblemCopy(R.string.problem_sheet_music_title, R.string.problem_sheet_music_body, emptyList(), null),
+    Problem.OPEN_FAILED to ProblemCopy(R.string.problem_open_title, R.string.problem_open_body, emptyList(), null),
 )
 
 /**
@@ -79,9 +80,11 @@ fun ProblemScreen(vm: PlayViewModel) {
         PrimaryButton(stringResource(R.string.problem_connect_computer), { vm.navigate(no.brasscribe.play.Screen.COMPANION) }, primary, icon = R.drawable.ic_bc_computer)
     }
 
+    // Trying to open the score again says so when there is no computer to ask.
+    val status by vm.status.collectAsState()
     PlayScaffold(
         title = null, onBack = { if (draft) vm.back() else vm.home() },
-        backLabel = stringResource(if (draft) R.string.back else R.string.home), status = null,
+        backLabel = stringResource(if (draft) R.string.back else R.string.home), status = status.takeIf { p == Problem.OPEN_FAILED },
         bottom = {
             when (p) {
                 Problem.DRAFT_REFUSED -> {
@@ -101,6 +104,11 @@ fun ProblemScreen(vm: PlayViewModel) {
                     SecondaryButton(stringResource(R.string.retry), vm::retryTranscription, icon = R.drawable.ic_bc_retry)
                 } else {
                     PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, primary, icon = R.drawable.ic_bc_retry)
+                    SecondaryButton(stringResource(R.string.back_home), vm::home)
+                }
+                // A score on the computer that could not be fetched: Try again opens it again.
+                Problem.OPEN_FAILED -> {
+                    PrimaryButton(stringResource(R.string.retry), vm::retryOpen, primary, icon = R.drawable.ic_bc_retry)
                     SecondaryButton(stringResource(R.string.back_home), vm::home)
                 }
                 // Trying the same again finds the same: no Retry. The computer only when the phone wrote it down.

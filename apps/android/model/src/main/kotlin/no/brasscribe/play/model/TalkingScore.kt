@@ -118,6 +118,9 @@ data class TsStop(
     val totalBars: Int? = null,
 )
 
+/** The number of a pickup (anacrusis): spoken as "pickup", never as a bar number (talking-score spec §4.10). */
+const val PICKUP_BAR = 0
+
 object Announcer {
     fun announce(stop: TsStop, context: TsContext, settings: TsSettings, lang: Lang): String {
         val w = Words(lang)
@@ -145,8 +148,12 @@ object Announcer {
         } else null
 
         if (e.kind == "bar-rest") {
-            val number = bar?.number ?: context.bar ?: 0
-            return prefix.toString() + if (e.bars > 1) w.barsRest(number, number + e.bars - 1, e.bars) else "${w.bar(number)}: ${w.wholeBarRest()}"
+            val number = bar?.number ?: context.bar ?: 1
+            return prefix.toString() + when {
+                number == PICKUP_BAR -> w.pickupRest(e.bars)
+                e.bars > 1 -> w.barsRest(number, number + e.bars - 1, e.bars)
+                else -> "${w.bar(number)}: ${w.wholeBarRest()}"
+            }
         }
 
         val inFreeTime = bar?.freeRegion != null && e.timeS != null
@@ -298,8 +305,23 @@ internal class Words(val lang: Lang) {
         return dotWord(dots)?.let { "$it $base" } ?: base
     }
 
-    fun bar(n: Int) = if (en) "bar $n" else "takt $n"
-    fun barOf(n: Int, total: Int) = if (en) "bar $n of $total" else "takt $n av $total"
+    fun pickup() = if (en) "pickup" else "opptakt"
+    fun bar(n: Int) = if (n == PICKUP_BAR) pickup() else if (en) "bar $n" else "takt $n"
+
+    /** The pickup is not one of the bars counted, so it has no "of total". */
+    fun barOf(n: Int, total: Int) = if (n == PICKUP_BAR) pickup() else if (en) "bar $n of $total" else "takt $n av $total"
+
+    /** A rest over [bars] bars from the pickup on: the pickup is named, and is not one of the bars counted. */
+    fun pickupRest(bars: Int): String {
+        val after = bars - 1
+        val and = if (en) "and" else "og"
+        val rest = if (en) "rest" else "pause"
+        return when {
+            after <= 0 -> "${pickup()}: $rest"
+            after == 1 -> "${pickup()} $and ${bar(1)}: $rest"
+            else -> "${pickup()} $and " + barsRest(1, after, after)
+        }
+    }
     fun wholeBarRest() = if (en) "rest, whole bar" else "pause hele takten"
     fun barsRest(a: Int, b: Int, n: Int) = if (en) "bars $a to $b: rest, $n bars" else "takt $a til $b: pause, $n takter"
 
@@ -347,8 +369,14 @@ internal class Words(val lang: Lang) {
         return if (en) "at $m minute${if (m == 1) "" else "s"} $s seconds" else "ved $m minutt${if (m == 1) "" else "er"} $s sekunder"
     }
 
-    fun adLibEntry(a: Int, b: Int, s: Int) =
-        if (en) "Ad lib, free time, bars $a to $b, about $s seconds." else "Ad lib, fritt tempo, takt $a til $b, omtrent $s sekunder."
+    fun adLibEntry(a: Int, b: Int, s: Int): String {
+        val bars = when {
+            a != PICKUP_BAR -> if (en) "bars $a to $b" else "takt $a til $b"
+            b == PICKUP_BAR -> pickup()
+            else -> if (en) "pickup to bar $b" else "opptakt til takt $b"
+        }
+        return if (en) "Ad lib, free time, $bars, about $s seconds." else "Ad lib, fritt tempo, $bars, omtrent $s sekunder."
+    }
 
     fun aTempo(bpm: Int) = if (en) "A tempo, $bpm beats per minute." else "A tempo, $bpm slag per minutt."
 
@@ -361,8 +389,7 @@ internal class Words(val lang: Lang) {
 
     fun held(pitch: String, bar: Int?, pos: String?): String {
         if (pos == null) return if (en) "$pitch held" else "$pitch holdes"
-        val where = if (en) listOfNotNull(bar?.let { "bar $it" }, "beat $pos").joinToString(" ")
-        else listOfNotNull(bar?.let { "takt $it" }, "slag $pos").joinToString(" ")
+        val where = listOfNotNull(bar?.let { this.bar(it) }, if (en) "beat $pos" else "slag $pos").joinToString(" ")
         return if (en) "$pitch held, from $where" else "$pitch holdes, fra $where"
     }
 

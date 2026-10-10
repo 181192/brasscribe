@@ -75,8 +75,7 @@ class ScoreLandscapeTest : ScreenTest() {
         shot(label)
         assertTrue("$label: the score has ${"%.0f".format(share * 100)} % of $available px", share >= 0.55f)
 
-        val bmp = rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()
-        val ink = inkShare(bmp)
+        val ink = inkShare(engravedScore())
         assertTrue("$label: no notation on screen (ink ${"%.4f".format(ink)})", ink >= 0.005)
 
         // Every control under the score shows whole, at 48 dp or more (Play is 56 dp): nothing cut off at the edge.
@@ -104,6 +103,22 @@ class ScoreLandscapeTest : ScreenTest() {
             val stand = rule.onNodeWithTag("performance").getBoundsInRoot()
             assertTrue("$label: the stand entry ends above the navigation bar", stand.bottom.value * density <= navTop + 1)
         }
+    }
+
+    /**
+     * The score view's picture, of a score that was engraved and painted when the picture was taken. Taking it lets the
+     * main thread run, as the checks before it did, and a render that starts then clears the view: when one started or
+     * ended meanwhile, the picture is taken again after it.
+     */
+    private fun engravedScore(): Bitmap {
+        repeat(5) {
+            waitForEngravedScore()
+            val c = vm.scoreController
+            val renders = c?.renders?.value
+            val picture = rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()
+            if (c != null && c === vm.scoreController && c.renders.value == renders && !c.engraving.value) return picture
+        }
+        throw AssertionError("the score was engraved again each time its picture was taken")
     }
 
     private fun inkShare(bmp: Bitmap): Double {

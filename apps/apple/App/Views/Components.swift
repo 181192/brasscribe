@@ -406,6 +406,16 @@ extension View {
         #endif
     }
 
+    /// For a control docked under a page with `safeAreaInset(edge: .bottom)`: on the Mac, VoiceOver reaches what is
+    /// docked in an inset before the content above it (the accessibility navigation order), so it is sent after it.
+    func afterTheContentItIsDockedUnder() -> some View {
+        #if os(macOS)
+        accessibilitySortPriority(-1)
+        #else
+        self
+        #endif
+    }
+
     func card(padding: CGFloat = Space.s4) -> some View { modifier(CardModifier(padding: padding)) }
 
     /// The page background and the reading column (at most 720 pt, centred).

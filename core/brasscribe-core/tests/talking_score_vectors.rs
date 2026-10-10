@@ -133,3 +133,68 @@ fn compound_time_names_eighths_not_triplets() {
     assert_eq!(ev["kind"], "bar-rest");
     assert_eq!(ev["pos"], json!({"beat": 1, "num": 0, "den": 1, "compound": true}));
 }
+
+#[test]
+fn a_pickup_is_named_and_its_notes_sit_on_the_beats_of_the_bar_they_lead_into() {
+    use brasscribe_core::talking_score::{build, part_lines, TICKS_PER_QUARTER};
+    let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><work><work-title>Pickup</work-title></work>
+<part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part><score-part id="P2"><part-name>2nd Horn</part-name></score-part></part-list>
+<part id="P1">
+<measure number="0" implicit="yes"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+<note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type></note>
+<note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type><tie type="start"/></note></measure>
+<measure number="1"><note><pitch><step>A</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type><tie type="stop"/></note></measure>
+<measure number="2"><note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+</part>
+<part id="P2">
+<measure number="0" implicit="yes"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+<note><rest measure="yes"/><duration>3</duration><voice>1</voice></note></measure>
+<measure number="1"><note><rest measure="yes"/><duration>8</duration><voice>1</voice></note></measure>
+<measure number="2"><note><pitch><step>C</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+</part></score-partwise>"#;
+    let doc = build(xml, None).unwrap();
+    assert_eq!(doc["total_bars"], 2, "the pickup is not one of the bars counted");
+    let pickup = &doc["parts"][0]["bars"][0];
+    assert_eq!(pickup["number"], 0);
+    assert_eq!(pickup["events"][0]["tick"], 0);
+    assert_eq!(pickup["events"][0]["pos"], json!({"beat": 3, "num": 1, "den": 2}));
+    assert_eq!(pickup["events"][1]["tick"], TICKS_PER_QUARTER / 2);
+    assert_eq!(pickup["events"][1]["pos"], json!({"beat": 4, "num": 0, "den": 1}));
+    let en = part_lines(&doc, 0, &Settings::default());
+    assert_eq!(en[0].0, "Pickup");
+    assert_eq!(en[0].1, ["pickup, beat 3 and: G 4, eighth note", "beat 4: A 4, quarter note, tied to whole note in bar 1"]);
+    assert_eq!(en[1], ("Bar 1".to_string(), vec!["bar 1, beat 1: A 4 held, from pickup beat 4".to_string()]));
+    let nb_settings = Settings { lang: "nb".into(), ..Default::default() };
+    let nb = part_lines(&doc, 0, &nb_settings);
+    assert_eq!(nb[0].0, "Opptakt");
+    assert_eq!(nb[0].1[0], "opptakt, slag 3-og: G 4, åttendedelsnote");
+    assert_eq!(nb[1].1, ["takt 1, slag 1: A 4 holdes, fra opptakt slag 4"]);
+    let full = part_lines(&doc, 0, &Settings { verbosity: "full".into(), ..Default::default() });
+    assert!(full[0].1[0].starts_with("pickup, beat 3 and: "), "{}", full[0].1[0]);
+    assert!(full[1].1[0].starts_with("bar 1 of 2, beat 1: "), "{}", full[1].1[0]);
+    assert_eq!(part_lines(&doc, 1, &Settings::default())[0], ("Pickup and bar 1".to_string(), vec!["pickup and bar 1: rest".to_string()]));
+    assert_eq!(part_lines(&doc, 1, &nb_settings)[0], ("Opptakt og takt 1".to_string(), vec!["opptakt og takt 1: pause".to_string()]));
+
+    // A first measure left out of the numbering is the pickup too.
+    let unnumbered = build(&xml.replace(r#"number="0" implicit="yes""#, r#"number="X1" implicit="yes""#), None).unwrap();
+    assert_eq!(unnumbered["parts"][0]["bars"][0]["number"], 0);
+    assert_eq!(unnumbered["parts"][0]["bars"][0]["events"][0]["pos"], json!({"beat": 3, "num": 1, "den": 2}));
+
+    // A full first bar is a bar, also when it is marked as left out of the numbering.
+    let full_bar = r#"<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part></part-list>
+<part id="P1">
+<measure number="1" implicit="yes"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+<note><pitch><step>G</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+<measure number="2"><note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+</part></score-partwise>"#;
+    let doc = build(full_bar, None).unwrap();
+    assert_eq!(doc["parts"][0]["bars"][0]["number"], 1);
+    assert_eq!(doc["total_bars"], 2);
+    assert_eq!(doc["parts"][0]["bars"][0]["events"][0]["pos"], json!({"beat": 1, "num": 0, "den": 1}));
+    // A short first bar that is numbered and not marked stays as it is.
+    let short = build(&xml.replace(r#"number="0" implicit="yes""#, r#"number="1""#), None).unwrap();
+    assert_eq!(short["parts"][0]["bars"][0]["number"], 1);
+    assert_eq!(short["parts"][0]["bars"][0]["events"][0]["pos"], json!({"beat": 1, "num": 0, "den": 1}));
+}

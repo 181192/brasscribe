@@ -108,7 +108,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("check-the-song") { checkTheSong() },
         Entry("tab") { theTab() },
         // (The note under the tab is the screen's bottom bar, which Tab reaches before the tab: issue 162.)
-        Entry("tab-note", ownOrder = "the note under the tab is its scaffold's bottom bar, reached before the tab (issue 162)") { theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000); rest() },
+        Entry("tab-note") { theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000); rest() },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
         Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },
         Entry("practice-recording-gone") {
@@ -125,5 +125,6 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },
         Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
         Entry("problem-sheet-music") { rule.runOnUiThread { vm.showProblem(Problem.SHEET_MUSIC) } },
+        Entry("problem-tab-not-opened") { rule.runOnUiThread { vm.showProblem(Problem.OPEN_FAILED, null, R.string.error_unreachable) } },
     )
 }

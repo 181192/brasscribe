@@ -44,6 +44,10 @@ public final class ScoreRenderer: @unchecked Sendable {
         public let staffLines: [String: CGRect]
         /// Systems top to bottom: the system's frame (everything drawn in it) and its measure ids.
         public var systems: [System] = []
+
+        /// The top staff of the page's first measure. The ids are new with every engraving, so the dictionaries
+        /// keyed by them have no order of their own to pick a staff by.
+        public var firstStaff: String? { measureIDs.first.flatMap { staves[$0]?.first } }
     }
 
     public struct System: Sendable, Equatable {
@@ -246,13 +250,15 @@ public final class ScoreRenderer: @unchecked Sendable {
         tk.select(["measureRange": "\(bars.lowerBound)-\(bars.upperBound)"])
         tk.redoLayout()
         guard let doc = try? SVGDocument(svg: tk.renderToSVG(page: 1)) else { return nil }
+        var staves: [String: [String]] = [:]
         var notes: [String: [String]] = [:]
         var lines: [String: CGRect] = [:]
         for op in doc.ops {
-            var staff: String?
+            var measure: String?, staff: String?
             for o in op.owners {
                 let id = doc.ids[Int(o)]
                 switch doc.classes[id] {
+                case "measure": measure = id
                 case "staff":
                     staff = id
                     if let path = op.path, o == op.owners.last { lines[id] = (lines[id] ?? .null).union(path.boundingBoxOfPath) }
@@ -260,8 +266,9 @@ public final class ScoreRenderer: @unchecked Sendable {
                 default: break
                 }
             }
+            if let measure, let staff, !(staves[measure] ?? []).contains(staff) { staves[measure, default: []].append(staff) }
         }
-        return Page(number: 1, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: [:], notesByStaff: notes, staffLines: lines)
+        return Page(number: 1, svg: doc, measureIDs: doc.ids(ofClass: "measure"), staves: staves, notesByStaff: notes, staffLines: lines)
     }
 
     /// Page holding a measure id.

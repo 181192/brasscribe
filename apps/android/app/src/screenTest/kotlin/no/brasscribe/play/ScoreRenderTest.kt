@@ -210,7 +210,10 @@ class ScoreRenderTest : ScreenTest() {
         }
         val c = vm.scoreController!!
         readAloud(true)
+        assertTargetsAre48Dp("on the talking score")
+        checkAccessibility()
         assertPlays("on the talking score")
+        assertTargetsAre48Dp("on the talking score, playing")
         // A change made while the talking score is read (it has the pitch and the parts) is engraved under it, and shown after.
         val renders = c.renders.value
         rule.runOnUiThread { c.setConcertPitch(!c.state.value.concertPitch) }
@@ -225,6 +228,22 @@ class ScoreRenderTest : ScreenTest() {
         runCatching { waitForEngravedScore() }.onFailure { throw AssertionError("the width of a phone turned on the talking score is not engraved", it) }
         ScreenDevice.turn(rule, sideways = false); settle()
         assertScoreWorks("after a turn on the talking score", detaches)
+    }
+
+    /**
+     * Everything a finger can act on is at least 48 dp tall and wide: as it is laid out, and for the part picker and
+     * Music stand above the score also as much of it as shows (nothing over the score's place may cut into them). A
+     * line of the talking score that its list has scrolled half out of view is the one thing that may show less.
+     */
+    private fun assertTargetsAre48Dp(where: String) {
+        val min = 48 * rule.activity.resources.displayMetrics.density - 0.5f
+        val small = rule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsActions.OnClick))
+            .fetchSemanticsNodes().filter { it.size.height < min || it.size.width < min }
+        assertTrue("$where: targets under 48 dp: ${small.map { "${it.config} ${it.size}" }}", small.isEmpty())
+        for (tag in listOf("part-picker", "stand-enter")) {
+            val shows = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInWindow
+            assertTrue("$where: $tag shows ${shows.width} x ${shows.height} px of its 48 dp", shows.height >= min && shows.width >= min)
+        }
     }
 
     /** As [theScoreSurvivesTheTalkingScore], for the music stand. */

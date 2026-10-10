@@ -167,6 +167,8 @@
     <!-- Problems, with what to do next. -->
     <string name="problem_score_title">The tab couldn\'t be made</string>
     <string name="problem_score_body">Something went wrong while Bandroom on your computer was working on it.</string>
+    <string name="problem_open_title">This tab couldn\'t be opened</string>
+    <string name="problem_open_body">Fretscribe couldn\'t get it from your computer.</string>
     <string name="details_show">Technical details</string>
     <string name="error_unreachable">Can\'t reach Bandroom on your computer. Check that it is running and on the same network.</string>
     <string name="error_engine_failed">Bandroom on your computer couldn\'t finish the tab. Try again.</string>

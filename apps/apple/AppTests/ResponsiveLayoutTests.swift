@@ -63,6 +63,7 @@ import TranscriptionKit
         if let opened { await host.settle(0.8); opened() }
         if let wait { await host.settle(until: wait) } else { await host.settle(0.8) }
         measured.min = host.windowMinimum
+        host.holdWindowSize()
         let minimum = WindowSize(label: "min", width: ceil(measured.min.width), height: ceil(measured.min.height) + OffscreenHost.toolbarHeight)
         var renders: [Render] = []
         for s in [minimum] + sizes {

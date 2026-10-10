@@ -8,6 +8,7 @@ import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.engine.EngineApi
 import no.brasscribe.play.model.CoreBridge
 import no.brasscribe.play.model.Lang
+import no.brasscribe.play.model.PICKUP_BAR
 import no.brasscribe.play.model.PartView
 import no.brasscribe.play.model.TsContext
 import no.brasscribe.play.model.TsSettings
@@ -188,7 +189,11 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         for (p in parts) {
             append("<h2>").append(esc(if (lang == Lang.NB) p.partNameNb else p.partName)).append("</h2>\n")
             for (bar in p.bars) {
-                append("<h3>").append(if (lang == Lang.NB) "Takt " else "Bar ").append(bar.number).append("</h3>\n<ul>\n")
+                val heading = when {
+                    bar.number == PICKUP_BAR -> if (lang == Lang.NB) "Opptakt" else "Pickup"
+                    else -> (if (lang == Lang.NB) "Takt " else "Bar ") + bar.number
+                }
+                append("<h3>").append(heading).append("</h3>\n<ul>\n")
                 for (e in bar.events) {
                     // Inside a bar heading the bar is known, so every line is spoken in that bar's context.
                     val text = core.announce(e.stop, TsContext(p.partName, e.bar), TsSettings(), lang)
