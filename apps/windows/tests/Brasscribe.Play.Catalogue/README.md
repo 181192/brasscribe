@@ -78,6 +78,8 @@ when that job runs, with retries; adding or removing the label starts CI again).
 `windows.yml` started by hand takes `screenshots_base` to compare with any commit, and then always takes the base (`-AlwaysBase`; with the same commit it measures the noise). The images are in the
 `windows-screenshots` and `bandroom-windows-screenshots` artefacts; no screenshot is kept in git.
 
+Settings shows a fixed version (0.0.0) in the catalogue, not the app's own, so a release does not change its pictures.
+
 `known-findings.json` lists findings that are accepted for now, each with the issue that tracks it and why (`check`,
 `shot` and `what` are regular expressions over a finding); an entry without its issue is refused, and one that
 matches nothing any more is listed in `findings.md` to be removed.

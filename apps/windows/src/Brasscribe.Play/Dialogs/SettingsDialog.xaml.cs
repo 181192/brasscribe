@@ -78,9 +78,16 @@ public sealed partial class SettingsDialog : ContentDialog
         if (LanguageBox.SelectedItem is ComboBoxItem { Tag: string tag }) ViewModel.Language = tag;
     }
 
+    /// <summary>
+    /// A version to show in place of the app's own. The screen catalogue sets a fixed one, so a release leaves its
+    /// pictures of Settings as they were; the app never sets it.
+    /// </summary>
+    public static string? ShownVersion { get; set; }
+
     /// <summary>The app's version: the package's when installed, else the assembly's.</summary>
     private static string AppVersionText()
     {
+        if (ShownVersion is { } shown) return shown;
         try
         {
             var v = Windows.ApplicationModel.Package.Current.Id.Version;
