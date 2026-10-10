@@ -97,8 +97,8 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   needs.
 - **ONNX Runtime's telemetry.** Microsoft's builds of ONNX Runtime report to Microsoft by default
   (its `Privacy.md`): on Android, macOS and Linux through their own uploader, on Windows through ETW.
-  On Android, macOS and Linux Brasscribe turns it off: Play for Android removes the AAR's telemetry
-  provider and sets `ORT_DISABLE_TELEMETRY=1`, and the engine, Bandroom and the pixi environments set
+  On Android, macOS and Linux Brasscribe turns it off: Play and Fretscribe for Android remove the AAR's telemetry
+  provider and set `ORT_DISABLE_TELEMETRY=1`, and the engine, Bandroom and the pixi environments set
   `ORT_DISABLE_TELEMETRY=1` for every adapter. On Windows it is not fully off. Windows builds do not
   read that variable. Play for Windows and the swift-f0 adapter switch the runtime's telemetry events
   off before their first session, but the runtime emits a start-up event to Windows diagnostics before
