@@ -12,7 +12,8 @@ It replaces the "split the core" section of `docs/fretscribe/plan/PLAN.md` and t
 |---|---|
 | Name of the shared, instrument-free core | `scribe-core`. The family is "scribe". |
 | Versions | Each app has its own version, tag and release. A change that does not reach an app does not build or release it. |
-| Names on the wire (pairing link, network service) | Neutral, in the "scribe" family, shared by all apps. The old Brasscribe names are still accepted for a transition (see step 8). |
+| Names on the wire (pairing link, network service) | Neutral, in the "scribe" family, shared by all apps. The old names are dropped in the same change. |
+| Compatibility | None before 1.0.0. Every part targets the latest of every other part. No code that exists only to keep an older app, engine, file or name working. After 1.0.0 a breaking change needs a new major version. |
 | How much the clients share | Logic is shared. Looks are not assumed to be. Each product owns its screens and can differ in layout, navigation and experience, not only in colour. |
 | Fretscribe's first version | Everything in `docs/fretscribe/plan/android-app.md`'s roadmap and `design/fretscribe/flows.md`, as complete as possible, on every client. |
 | Clients | Android, Mac and Windows downloads for each app, and an unsigned test build for iPhone and iPad (there is no Apple Developer account). |
@@ -63,7 +64,7 @@ docs/
 - Tags: `brasscribe-vX.Y.Z`, `fretscribe-vX.Y.Z`, `bandroom-vX.Y.Z`, `scribe-core-vX.Y.Z`. Each has its own changelog.
 - A release builds only that app's clients. Its notes list the changes that reach it: its own product code, plus the shared layers it is built from.
 - CI on a pull request runs the checks of the layers the change touches and of the products built from them. A change in one product's screens runs that product only.
-- Bandroom and the engine are released on their own. Apps state the oldest engine they work with, and say so in plain words when the computer's is older.
+- Bandroom and the engine are released on their own. Before 1.0.0 an app works with the latest engine only; when the two do not match, the app says in plain words which one to update, and nothing more.
 - Android: each app keeps its package name and its signing key for ever (`no.brasscribe.play` with Brasscribe's key, `no.fretscribe.play` with the prototypes key). Both are registered in the Android Developer Console.
 - iPhone and iPad: an unsigned `.ipa` per app. A tester signs it with their own Apple ID; a free signature lasts seven days.
 
@@ -72,13 +73,13 @@ docs/
 Each step lands as small reviewed pull requests. `main` stays releasable. A step that moves code must leave every conformance vector, golden and benchmark byte for byte the same.
 
 1. **Fretscribe for Android gets a release build**, signed with the prototypes key.
-2. **Core split.** Brass code leaves the core for `target-brass`. The compiler, not a test, keeps targets apart. Then the crates take their new names (`scribe-core`, `targets/…`), with the libraries and bindings the clients load.
+2. **Core split.** Brass code leaves the core for `target-brass`. The compiler, not a test, keeps targets apart. Then everything takes its new name in one go: the crates (`scribe-core`, `targets/…`), the library and bindings the clients load, the command line tool and the environment variables. No old name is kept as an alias.
 3. **Design system for any brand on every platform**, with neutral role names. Fretscribe's tokens are generated for Apple, Windows and the web.
 4. **An unsigned iPhone and iPad build** in each release.
 5. **Android restructure.** Services, features and products become modules. Fretscribe's code leaves the `no.brasscribe.play` package. Product words stop overriding each other: each product has its own complete strings. The `Product` object with call sites all over shared code becomes what each product's own module wires together.
 6. **Engine and Python.** A target is a first-class thing: profiles belong to a target, and output file names come from the target instead of being written as `brass-band.*` in shared code. Benchmarks gate per target.
 7. **Versions per app.** Tags, changelogs, release workflows and CI path filters per product, as above.
-8. **Neutral names on the wire.** The engine answers to both the old and the new pairing link and network service. Clients try the new and fall back to the old. The old names go only when no released app needs them.
+8. **Neutral names on the wire.** The pairing link and the network service take their new names in the engine and in every client in the same release. An app from before the change has to be updated, and paired again.
 9. **Windows.** The same three levels, then Fretscribe for Windows. Windows already draws with alphaTab.
 10. **Apple.** The same three levels, then a decision on how tab is drawn (Apple has no tab renderer today; `design/fretscribe/system.md` says alphaTab on every platform), then Fretscribe for Mac, iPhone and iPad.
 11. **Studio** gets a tab view. Studio stays one program.
