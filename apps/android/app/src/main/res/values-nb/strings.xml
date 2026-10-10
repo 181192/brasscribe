@@ -498,6 +498,8 @@
     <string name="help_stand_tablet_lock">Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning.</string>
     <string name="opened_score">Åpnet %1$s.</string>
     <string name="home_open_score">Åpne et partitur</string>
+    <string name="problem_sheet_music_title">Appen kan ikke åpne noter ennå</string>
+    <string name="problem_sheet_music_body">Den arbeider ut fra opptak. Åpne et opptak, eller spill inn det du spiller.</string>
     <string name="home_open_score_desc">MusicXML fra MuseScore, Sibelius eller Dorico</string>
     <string name="talking_score_unavailable">Les opp er ikke med i denne versjonen av appen.</string>
     <string name="output_lead">Du kan endre dette senere. Ingenting går tapt.</string>
