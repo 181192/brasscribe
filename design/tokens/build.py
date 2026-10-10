@@ -2,28 +2,32 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""Generate platform code from the Brasscribe design tokens.
+"""Generate platform code from a brand's design tokens.
 
-    uv run design/tokens/build.py          # write every output
-    uv run design/tokens/build.py --check  # exit 1 if any output is missing or out of date (CI)
+    uv run design/tokens/build.py                    # write every brand's outputs
+    uv run design/tokens/build.py --check            # exit 1 if any output is missing or out of date (CI)
+    uv run design/tokens/build.py --brand fretscribe # one brand, by its name in brands.json
 
-Another product's Android theme, from its own tokens into its own folder:
+The brands are listed in design/tokens/brands.json: a token file and the folder its outputs go to. A token
+file that is not listed (a test, a trial) is built with --tokens FILE --out DIR.
 
-    uv run design/tokens/build.py --tokens design/fretscribe/tokens/tokens.json \\
-        --out design/fretscribe/dist --only android [--check]
+    --brand NAME    one brand of brands.json
+    --tokens FILE   a token file that is not in brands.json; needs --out
+    --out DIR       where its outputs go. Files in DIR's generated folders that this run does not write are
+                    deleted, so a brand never shares another's folder.
+    --only PLATFORM write that platform only (apple, android, windows, web); the icon map and the
+                    accessibility palette are left alone
 
-    --tokens FILE   the token file (default design/tokens/tokens.json)
-    --out DIR       where the outputs go (default design/dist). Files in DIR's generated folders that this
-                    run does not write are deleted, so another product never shares design/dist.
-    --only android  write that platform only; the icon map and the accessibility palette are left alone
+Names. Every brand gets the same neutral names (Scribe*, --scribe-*; design/tokens/neutral.json lists the
+roles), so shared code compiles against any brand, and its own names for everything (its product name and
+its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. design/tokens/README.md has the rule and
+the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
+written under Brasscribe's names, through the map in $extensions.<brand>.android (see android_source).
 
-The Android output of every product has the same Kotlin names (BrasscribeTheme, BrasscribeColors and
-their fields), because the apps share their screens. The names come from the default tokens; a product
-whose tokens name a role differently maps it under $extensions.<product>.android (see android_source).
-
-Inputs:  design/tokens/tokens.json (DTCG), design/tokens/icons.json, design/brand/icons/**,
-         design/brand/fonts/*
-Outputs: design/dist/apple/      BrasscribeDesign.xcassets, BrasscribeDesign.swift, Fonts/
+Inputs:  the brand's tokens.json (DTCG), design/tokens/neutral.json, design/tokens/icons.json,
+         design/brand/icons/**, and the fonts the token file names
+Outputs, for Brasscribe (another brand's have its own name and prefix, in its own folder):
+         design/dist/apple/      BrasscribeDesign.xcassets, BrasscribeDesign.swift, Fonts/
          design/dist/android/    kotlin/no/brasscribe/design/*.kt, res/drawable/ic_bc_*.xml, res/font/
          design/dist/windows/    BrasscribeTheme.xaml, BrasscribePinkTheme.xaml, Assets/Fonts/
          design/dist/web/        brasscribe.css, fonts.css, studio-compat.css, icons/*.svg, fonts/
@@ -48,6 +52,10 @@ DEFAULT_TOKENS = HERE / "tokens.json"
 DEFAULT_DIST = ROOT / "design" / "dist"
 # The default tokens name the roles and groups of the generated Android API, whichever product is built.
 API = json.loads(DEFAULT_TOKENS.read_text())
+# The roles every brand has, under the names shared code uses.
+NEUTRAL = json.loads((HERE / "neutral.json").read_text())
+# Every brand: its token file and the folder its outputs go to.
+BRANDS = json.loads((HERE / "brands.json").read_text())["brands"]
 ICONS = json.loads((HERE / "icons.json").read_text())["actions"]
 PLATFORMS = ("apple", "android", "windows", "web")
 
@@ -68,20 +76,22 @@ def product_extension(tokens: dict) -> tuple[str, dict]:
 
 def configure(tokens: Path = DEFAULT_TOKENS, out: Path = DEFAULT_DIST, only: str | None = None) -> None:
     """Choose the token file, the output folder and the platform; the defaults are Brasscribe's."""
-    global TOKENS_FILE, TOKENS, EXT, MODES, DIST, HEADER, ONLY, ANDROID, PRODUCT
+    global TOKENS_FILE, TOKENS, EXT, MODES, DIST, HEADER, ONLY, ANDROID, PRODUCT, CSS, KEY, PINK
     TOKENS_FILE, DIST = tokens.resolve(), out.resolve()
     TOKENS = json.loads(TOKENS_FILE.read_text())
     namespace, EXT = product_extension(TOKENS)
     MODES = EXT["modes"]
     ANDROID = EXT.get("android", {})
     PRODUCT = namespace.rsplit(".", 1)[-1].capitalize()
+    # The brand's short prefix: --bc-text in CSS, BcTextBrush in XAML.
+    CSS = EXT.get("prefix", PRODUCT.lower())
+    KEY = CSS.capitalize()
+    PINK = "pink" in MODES and "pink-dark" in MODES
     ONLY = only
     HEADER = f"Generated by design/tokens/build.py from {rel(TOKENS_FILE)}. Do not edit."
-    if TOKENS_FILE != DEFAULT_TOKENS.resolve():
-        if only != "android":
-            raise SystemExit("only the Android output is generated from another product's tokens: pass --only android")
-        if DIST == DEFAULT_DIST.resolve():
-            raise SystemExit("design/dist is Brasscribe's: give another product its own --out")
+    for brand in BRANDS:
+        if DIST == (ROOT / brand["out"]).resolve() and TOKENS_FILE != (ROOT / brand["tokens"]).resolve():
+            raise SystemExit(f"{brand['out']} is {brand['name'].capitalize()}'s: give another product its own --out")
 
 
 configure()
@@ -136,6 +146,57 @@ def group(path: str) -> dict:
     for p in path.split("."):
         node = node[p]
     return {k: v for k, v in node.items() if not k.startswith("$")}
+
+
+def neutral_roles() -> dict[str, str]:
+    """Each neutral role with the brand's token for it: its own name for the role, or the same name."""
+    own = EXT.get("neutral", {}).get("roles", {})
+    found = {}
+    for name in NEUTRAL["roles"]:
+        src = own.get(name, name)
+        if src not in TOKENS["color"]["light"]:
+            raise SystemExit(f"{rel(TOKENS_FILE)}: no token for the neutral role '{name}'; "
+                             f"add it or map it under $extensions.*.neutral.roles")
+        found[name] = src
+    return found
+
+
+def system_colour(role: str, platform: str) -> str:
+    """The system colour a role takes in a Windows contrast theme ("windows") or under forced-colors ("web"):
+    the neutral role's, or for a brand's own role the one its tokens name under system-colours."""
+    for name, src in neutral_roles().items():
+        if src == role:
+            return NEUTRAL["roles"][name][platform]
+    own = EXT.get("system-colours", {}).get(role)
+    if not own:
+        raise SystemExit(f"{rel(TOKENS_FILE)}: no system colour for '{role}'; add it under $extensions.*.system-colours")
+    return own[platform]
+
+
+def notation() -> tuple[str, dict]:
+    """The brand's group of notation metrics and its name: Brasscribe's `score`, Fretscribe's `tab`."""
+    name = EXT.get("notation", "score")
+    return name, group(name)
+
+
+def fonts(platform: str) -> list[tuple[str, dict, list[dict]]]:
+    """The bundled faces: the font.family key, the font and its faces for a platform (apple, windows, web)."""
+    found = []
+    for key, font in EXT.get("fonts", {}).items():
+        if not key.startswith("$"):
+            found.append((key, font, [f for f in font["faces"] if platform in f.get("only", [platform])]))
+    return found
+
+
+def font_files(platform: str, folder: str) -> dict[str, bytes]:
+    """The font files of a platform and their licence texts, under the names they have in the brand's folder."""
+    out = {}
+    base = TOKENS_FILE.parent
+    for _, font, faces in fonts(platform):
+        for face in faces:
+            out[f"{folder}/{Path(face['file']).name}"] = (base / face["file"]).read_bytes()
+        out[f"{folder}/{Path(font['licence']).name}"] = (base / font["licence"]).read_bytes()
+    return out
 
 
 def rgb_components(h: str) -> tuple[str, str, str]:
@@ -216,10 +277,10 @@ def a11y_json() -> str:
 
 def apple_outputs() -> dict[str, str | bytes]:
     out: dict[str, str | bytes] = {}
-    base = "apple/BrasscribeDesign.xcassets"
+    base = f"apple/{PRODUCT}Design.xcassets"
     info = {"info": {"author": "xcode", "version": 1}}
     out[f"{base}/Contents.json"] = json.dumps(info, indent=2) + "\n"
-    out[f"{base}/Brasscribe/Contents.json"] = json.dumps(
+    out[f"{base}/{PRODUCT}/Contents.json"] = json.dumps(
         {"info": {"author": "xcode", "version": 1}, "properties": {"provides-namespace": True}}, indent=2) + "\n"
 
     def entry(mode: str, role: str, appearances: list[dict]) -> dict:
@@ -234,20 +295,25 @@ def apple_outputs() -> dict[str, str | bytes]:
     high = {"appearance": "contrast", "value": "high"}
     # The hidden Pink palette has its own namespace with the same high-contrast appearances, so Increase
     # Contrast still wins over it.
-    out[f"{base}/BrasscribePink/Contents.json"] = out[f"{base}/Brasscribe/Contents.json"]
+    palettes = [(PRODUCT, "light", "dark")]
+    if PINK:
+        out[f"{base}/{PRODUCT}Pink/Contents.json"] = out[f"{base}/{PRODUCT}/Contents.json"]
+        palettes.append((f"{PRODUCT}Pink", "pink", "pink-dark"))
     for role in roles():
-        for ns, light, dk in (("Brasscribe", "light", "dark"), ("BrasscribePink", "pink", "pink-dark")):
+        for ns, light, dk in palettes:
             colors = [entry(light, role, []), entry(dk, role, [dark]),
                       entry("high-contrast", role, [high]), entry("high-contrast", role, [dark, high])]
             out[f"{base}/{ns}/{camel(role)}.colorset/Contents.json"] = json.dumps(
                 {"colors": colors, "info": {"author": "xcode", "version": 1}}, indent=2) + "\n"
 
-    lines = [f"// {HEADER}", "//", "// Add BrasscribeDesign.xcassets and Fonts/InstrumentSerif-Regular.ttf to the same target",
-             "// as this file, and list the font under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).", "",
+    faces = {key: (font, found) for key, font, found in fonts("apple")}
+    files = [f"Fonts/{Path(face['file']).name}" for _, found in faces.values() for face in found]
+    lines = [f"// {HEADER}", "//", f"// Add {PRODUCT}Design.xcassets and {' and '.join(files)} to the same target",
+             f"// as this file, and list the font{'s' if len(files) > 1 else ''} under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).", "",
              "import SwiftUI", "",
-             "public enum BrasscribeDesign {",
+             f"public enum {PRODUCT}Design {{",
              "    private final class BundleToken {}",
-             "    /// The bundle that holds BrasscribeDesign.xcassets: the package resources or the target this file is in.",
+             f"    /// The bundle that holds {PRODUCT}Design.xcassets: the package resources or the target this file is in.",
              "    public static let bundle: Bundle = {",
              "        #if SWIFT_PACKAGE",
              "        return Bundle.module",
@@ -271,12 +337,13 @@ def apple_outputs() -> dict[str, str | bytes]:
               f"        public static let contentMaxWidth: CGFloat = {fmt(dimension(TOKENS['size']['content-max']))}",
               f"        public static let sidebarWidth: CGFloat = {fmt(dimension(TOKENS['size']['sidebar']))}",
               "    }", ""]
-    sc = TOKENS["score"]
-    lines += ["    /// Score-view metrics. Colours are in Color.Brasscribe.", "    public enum Score {"]
+    view, sc = notation()
+    lines += [f"    /// {pascal(view)}-view metrics. Colours are in Color.{PRODUCT}.", f"    public enum {pascal(view)} {{"]
     for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
         lines.append(f"        public static let {camel(k)}: CGFloat = {fmt(dimension(sc[k]))}")
     for k in ("zoom-min", "zoom-max", "zoom-step", "single-part-reflow-zoom", "mark-size-staff-spaces", "staff-height-min-phone-mm"):
-        lines.append(f"        public static let {camel(k)}: Double = {fmt(sc[k]['$value'])}")
+        if k in sc:
+            lines.append(f"        public static let {camel(k)}: Double = {fmt(sc[k]['$value'])}")
     lines += ["    }", ""]
     md = TOKENS["motion"]["duration"]
     ez = TOKENS["motion"]["easing"]
@@ -294,19 +361,23 @@ def apple_outputs() -> dict[str, str | bytes]:
         "    }",
         "}", ""]
 
-    lines += ["/// Which palette `Color.Brasscribe` reads: the standard one, or the hidden Pink one (design/system.md §10).",
-              "/// It is observable, so a view that reads a colour in `body` redraws when the palette changes. Light or",
-              "/// dark still follows the colour scheme, and Increase Contrast still gives the high-contrast colours.",
-              "@Observable",
-              "public final class BrasscribePalette: @unchecked Sendable {",
-              "    public static let shared = BrasscribePalette()",
-              "    public var isPink = false",
-              "    public init() {}",
-              "}", "",
-              "public extension Color {", "    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.",
-              "    enum Brasscribe {",
+    if PINK:
+        lines += [f"/// Which palette `Color.{PRODUCT}` reads: the standard one, or the hidden Pink one (design/system.md §10).",
+                  "/// It is observable, so a view that reads a colour in `body` redraws when the palette changes. Light or",
+                  "/// dark still follows the colour scheme, and Increase Contrast still gives the high-contrast colours.",
+                  "@Observable",
+                  f"public final class {PRODUCT}Palette: @unchecked Sendable {{",
+                  f"    public static let shared = {PRODUCT}Palette()",
+                  "    public var isPink = false",
+                  "    public init() {}",
+                  "}", ""]
+        namespace = f'({PRODUCT}Palette.shared.isPink ? "{PRODUCT}Pink/" : "{PRODUCT}/")'
+    else:
+        namespace = f'"{PRODUCT}/"'
+    lines += ["public extension Color {", "    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.",
+              f"    enum {PRODUCT} {{",
               "        private static func named(_ role: String) -> Color {",
-              '            Color((BrasscribePalette.shared.isPink ? "BrasscribePink/" : "Brasscribe/") + role, bundle: BrasscribeDesign.bundle)',
+              f"            Color({namespace} + role, bundle: {PRODUCT}Design.bundle)",
               "        }", ""]
     for role in roles():
         lines.append(f"        /// {desc(role)}")
@@ -316,7 +387,7 @@ def apple_outputs() -> dict[str, str | bytes]:
     typo = group("typography")
     weight = {400: "regular", 500: "medium", 600: "semibold", 700: "bold"}
     lines += ["public extension Font {", "    /// The type ramp, built on Dynamic Type text styles so it scales with the user's text size.",
-              "    enum Brasscribe {"]
+              f"    enum {PRODUCT} {{"]
     for k, v in typo.items():
         plat = v.get("$extensions", {}).get("no.brasscribe.platform")
         if not plat:
@@ -325,26 +396,42 @@ def apple_outputs() -> dict[str, str | bytes]:
         w = weight[v["$value"]["fontWeight"]]
         if "display" in v["$value"]["fontFamily"]:
             size = fmt(v["$value"]["fontSize"]["value"])
-            expr = f'.custom("InstrumentSerif-Regular", size: {size}, relativeTo: .{style})'
+            expr = (f'.custom("{faces["display"][1][0]["postscript"]}", size: {size}, relativeTo: .{style})'
+                    + ("" if w == "regular" else f".weight(.{w})"))
         else:
             expr = f".{style}" + ("" if w == "regular" else f".weight(.{w})")
             if k == "numeric":
                 expr += ".monospacedDigit()"
         lines.append(f"        /// {v.get('$description', '')}")
         lines.append(f"        public static let {camel(k)}: Font = {expr}")
+    for key, (font, found) in faces.items():
+        if key != "display" and found:
+            lines += ["", f"        /// {font['family']}. {font['note']}",
+                      f"        public static func {camel(key)}(size: CGFloat) -> Font {{ .custom(\"{found[0]['postscript']}\", size: size) }}"]
     lines += ["    }", "}", ""]
 
     lines += ["/// One SF Symbol per action. The label is the visible text and the accessible name.",
-              "public enum BrasscribeIcon: CaseIterable, Sendable {"]
+              f"public enum {PRODUCT}Icon: CaseIterable, Sendable {{"]
     for a in ICONS:
         lines.append(f"    case {camel(a)}")
     lines += ["", "    public var systemName: String {", "        switch self {"]
     for a, v in ICONS.items():
         lines.append(f'        case .{camel(a)}: "{v["apple"]}"')
     lines += ["        }", "    }", "}", ""]
-    out["apple/BrasscribeDesign.swift"] = "\n".join(lines)
-    out["apple/Fonts/InstrumentSerif-Regular.ttf"] = (BRAND / "fonts" / "InstrumentSerif-Regular.ttf").read_bytes()
-    out["apple/Fonts/OFL.txt"] = (BRAND / "fonts" / "OFL.txt").read_bytes()
+
+    lines += ["// The neutral names (design/tokens/README.md). Every brand's file declares them, so code that uses only",
+              f"// these compiles against any brand. {PRODUCT}'s own roles and metrics are in the types above.", "",
+              "public enum ScribeDesign {",
+              f"    public static var bundle: Bundle {{ {PRODUCT}Design.bundle }}"]
+    lines += [f"    public typealias {name} = {PRODUCT}Design.{name}" for name in ("Space", "Radius", "Size", "Motion")]
+    lines += ["}", "", "public extension Color {", "    /// The colour roles every brand has.", "    enum Scribe {"]
+    for name, src in neutral_roles().items():
+        lines.append(f"        /// {desc(src)}")
+        lines.append(f"        public static var {camel(name)}: Color {{ {PRODUCT}.{camel(src)} }}")
+    lines += ["    }", "}", "",
+              "public extension Font {", "    /// The type ramp.", f"    typealias Scribe = {PRODUCT}", "}", ""]
+    out[f"apple/{PRODUCT}Design.swift"] = "\n".join(lines)
+    out.update(font_files("apple", "apple/Fonts"))
     return out
 
 
@@ -592,6 +679,7 @@ def android_outputs() -> dict[str, str | bytes]:
         I.append(f'    {upper_snake(a)}("ic_bc_{a.replace("-", "_")}", "{src}"),')
     I += ["}", ""]
     out["android/kotlin/no/brasscribe/design/BrasscribeIcon.kt"] = "\n".join(I)
+    out["android/kotlin/no/brasscribe/design/ScribeTheme.kt"] = android_neutral(pkg)
 
     for a in ICONS:
         _, d = icon_source(a, "material")
@@ -609,45 +697,83 @@ def android_outputs() -> dict[str, str | bytes]:
     return out
 
 
+def android_neutral(pkg: str) -> str:
+    """The neutral names of the Android theme: other names for the declarations of BrasscribeTheme.kt, which
+    every brand's theme has today. A neutral role that BrasscribeColors names differently gets a property."""
+    api = {name: (API["$extensions"]["no.brasscribe"]["neutral"]["roles"].get(name, name)) for name in NEUTRAL["roles"]}
+    S = [f"// {HEADER}", f"package {pkg}", "",
+         "import androidx.compose.foundation.isSystemInDarkTheme",
+         "import androidx.compose.foundation.shape.RoundedCornerShape",
+         "import androidx.compose.material3.Shapes",
+         "import androidx.compose.material3.Typography",
+         "import androidx.compose.runtime.Composable",
+         "import androidx.compose.runtime.ProvidableCompositionLocal",
+         "import androidx.compose.runtime.ReadOnlyComposable",
+         "import androidx.compose.ui.graphics.Color",
+         "import androidx.compose.ui.text.TextStyle",
+         "import androidx.compose.ui.text.font.FontFamily", "",
+         "/*",
+         " * The neutral names (design/tokens/README.md). Every brand's theme declares them, so screens that use only",
+         f" * these compile against any brand. They are other names for the declarations in BrasscribeTheme.kt, which",
+         f" * holds {PRODUCT}'s values; a brand's own roles are read from there.",
+         " */", "",
+         "/** The colour roles every brand has (and, until the themes are split, the brand's own beside them). */",
+         "typealias ScribeColors = BrasscribeColors", ""]
+    for name, src in api.items():
+        if src != name:
+            own = android_source("roles", src, TOKENS["color"]["light"])
+            S += [f"/** {desc(own)} */", f"val ScribeColors.{camel(name)}: Color get() = {camel(src)}", ""]
+    for mode, name in (("light", "Light"), ("dark", "Dark"), ("high-contrast", "HighContrast"), ("high-contrast-light", "HighContrastLight")):
+        assert mode in NEUTRAL["modes"]
+        S.append(f"val Scribe{name}Colors: ScribeColors get() = Brasscribe{name}Colors")
+    S += ["",
+          "val LocalScribeColors: ProvidableCompositionLocal<ScribeColors> get() = LocalBrasscribeColors", "",
+          "/** The type ramp as Material 3 roles. */",
+          "fun scribeTypography(display: FontFamily = FontFamily.Serif): Typography = brasscribeTypography(display)", "",
+          "val ScribeNumericStyle: TextStyle get() = BrasscribeNumericStyle",
+          "val ScribeShapes: Shapes get() = BrasscribeShapes",
+          "val ScribeButtonShape: RoundedCornerShape get() = BrasscribeButtonShape", "",
+          "typealias ScribeSpace = BrasscribeSpace",
+          "typealias ScribeSize = BrasscribeSize",
+          "typealias ScribeMotion = BrasscribeMotion", "",
+          f"/** {PRODUCT} on Material 3: light or dark by [dark], and the high-contrast colours when the system asks. */",
+          "@Composable",
+          "fun ScribeTheme(",
+          "    dark: Boolean = isSystemInDarkTheme(),",
+          "    highContrast: Boolean = systemHighContrast(),",
+          "    display: FontFamily = FontFamily.Serif,",
+          "    content: @Composable () -> Unit,",
+          ") = BrasscribeTheme(dark = dark, highContrast = highContrast, display = display, content = content)", "",
+          "object ScribeTheme {",
+          "    val colors: ScribeColors",
+          "        @Composable @ReadOnlyComposable get() = LocalBrasscribeColors.current",
+          "}", ""]
+    return "\n".join(S)
+
+
 # ---------------------------------------------------------------- Windows
-
-HC_SYSTEM = {  # role -> WinUI system colour in contrast themes (visual-design-tokens.md §3)
-    "bg": "SystemColorWindowColor", "surface": "SystemColorWindowColor", "surface-raised": "SystemColorWindowColor",
-    "text": "SystemColorWindowTextColor", "text-muted": "SystemColorWindowTextColor",
-    "border": "SystemColorWindowTextColor", "border-strong": "SystemColorWindowTextColor",
-    "primary": "SystemColorHighlightColor", "on-primary": "SystemColorHighlightTextColor",
-    "secondary": "SystemColorButtonFaceColor", "on-secondary": "SystemColorButtonTextColor",
-    "brass": "SystemColorWindowTextColor", "brass-text": "SystemColorWindowTextColor", "brass-tint": "SystemColorWindowColor",
-    "success": "SystemColorWindowTextColor", "warning": "SystemColorWindowTextColor", "error": "SystemColorWindowTextColor",
-    "focus": "SystemColorHighlightColor", "scrim": "SystemColorWindowColor",
-    "ink": "SystemColorWindowTextColor", "staff": "SystemColorWindowTextColor",
-    "uncertain": "SystemColorHotlightColor", "very-uncertain": "SystemColorHotlightColor",
-    "adlib-tint": "SystemColorWindowColor", "loop-tint": "SystemColorWindowColor", "loop-edge": "SystemColorHighlightColor",
-    "cursor": "SystemColorHighlightColor", "cursor-tint": "SystemColorWindowColor",
-    "selection-tint": "SystemColorWindowColor", "selection-edge": "SystemColorHighlightColor",
-    "model-1": "SystemColorWindowTextColor", "model-2": "SystemColorWindowTextColor",
-    "model-3": "SystemColorWindowTextColor", "model-4": "SystemColorWindowTextColor",
-}
-
 
 def windows_theme_dictionaries(light: str, dark: str) -> list[str]:
     """The Light, Dark and HighContrast theme dictionaries of every colour role, for two modes of tokens.json."""
-    rs = roles()
+    # Every role under the brand's prefix, then the neutral roles under theirs. The neutral keys carry the
+    # values themselves: a key that pointed at the brand's would not follow a palette merged later (Pink).
+    names = [(KEY + pascal(r), r) for r in roles()]
+    neutral = [("Scribe" + pascal(name), src) for name, src in neutral_roles().items()]
     X = ["    <ResourceDictionary.ThemeDictionaries>"]
     for mode, key in ((light, "Light"), (dark, "Dark")):
         X.append(f'        <ResourceDictionary x:Key="{key}">')
-        for r in rs:
-            a = alpha(mode, r)
-            h = hexval(mode, r)[1:]
-            X.append(f'            <Color x:Key="Bc{pascal(r)}Color">#{round(a * 255):02X}{h}</Color>')
-        for r in rs:
-            X.append(f'            <SolidColorBrush x:Key="Bc{pascal(r)}Brush" Color="{{StaticResource Bc{pascal(r)}Color}}"/>')
+        for part in (names, neutral):
+            for k, r in part:
+                X.append(f'            <Color x:Key="{k}Color">#{round(alpha(mode, r) * 255):02X}{hexval(mode, r)[1:]}</Color>')
+            for k, r in part:
+                X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{StaticResource {k}Color}}"/>')
         X.append("        </ResourceDictionary>")
     X.append('        <ResourceDictionary x:Key="HighContrast">')
-    for r in rs:
-        X.append(f'            <StaticResource x:Key="Bc{pascal(r)}Color" ResourceKey="{HC_SYSTEM[r]}"/>')
-    for r in rs:
-        X.append(f'            <SolidColorBrush x:Key="Bc{pascal(r)}Brush" Color="{{ThemeResource {HC_SYSTEM[r]}}}"/>')
+    for part in (names, neutral):
+        for k, r in part:
+            X.append(f'            <StaticResource x:Key="{k}Color" ResourceKey="{system_colour(r, "windows")}"/>')
+        for k, r in part:
+            X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{ThemeResource {system_colour(r, "windows")}}}"/>')
     X += ["        </ResourceDictionary>", "    </ResourceDictionary.ThemeDictionaries>"]
     return X
 
@@ -658,9 +784,9 @@ XAML_OPEN = ['<ResourceDictionary',
 
 
 def windows_pink() -> str:
-    """The hidden Pink palette (design/system.md §10): the colour roles only, merged after BrasscribeTheme.xaml."""
+    """The hidden Pink palette (design/system.md §10): the colour roles only, merged after the brand's theme."""
     X = ['<?xml version="1.0" encoding="utf-8"?>', f"<!-- {HEADER} -->",
-         "<!-- The hidden Pink palette (design/system.md §10). Merged after BrasscribeTheme.xaml while Pink is chosen, so its",
+         f"<!-- The hidden Pink palette (design/system.md §10). Merged after {PRODUCT}Theme.xaml while Pink is chosen, so its",
          "     colour roles win; Light and Dark follow the system. Contrast themes still map every role to the system's colours. -->"]
     X += XAML_OPEN + windows_theme_dictionaries("pink", "pink-dark") + ["</ResourceDictionary>", ""]
     return "\n".join(X)
@@ -668,66 +794,72 @@ def windows_pink() -> str:
 
 def windows_outputs() -> dict[str, str | bytes]:
     X = ['<?xml version="1.0" encoding="utf-8"?>', f"<!-- {HEADER} -->",
-         "<!-- Merge into App.xaml: <ResourceDictionary Source=\"ms-appx:///Themes/BrasscribeTheme.xaml\"/>.",
-         "     Use {ThemeResource BcTextBrush} etc. Contrast themes map every role to the user's system colours. -->"]
+         f"<!-- Merge into App.xaml: <ResourceDictionary Source=\"ms-appx:///Themes/{PRODUCT}Theme.xaml\"/>.",
+         f"     Use {{ThemeResource {KEY}TextBrush}} etc. Contrast themes map every role to the user's system colours. -->"]
     X += XAML_OPEN + windows_theme_dictionaries("light", "dark") + [""]
-    X.append("    <!-- Spacing (epx), radii, sizes -->")
+    B = ["    <!-- Spacing (epx), radii, sizes -->"]
     for k, v in group("space").items():
-        X.append(f'    <x:Double x:Key="BcSpace{k}">{fmt(dimension(v))}</x:Double>')
-        X.append(f'    <Thickness x:Key="BcPadding{k}">{fmt(dimension(v))}</Thickness>')
+        B.append(f'    <x:Double x:Key="{KEY}Space{k}">{fmt(dimension(v))}</x:Double>')
+        B.append(f'    <Thickness x:Key="{KEY}Padding{k}">{fmt(dimension(v))}</Thickness>')
     for k, v in group("radius").items():
-        X.append(f'    <CornerRadius x:Key="BcRadius{pascal(k)}">{fmt(dimension(v))}</CornerRadius>')
-    X.append(f'    <x:Double x:Key="BcTouchMin">{fmt(dimension(TOKENS["size"]["touch-min-windows"]))}</x:Double>')
-    X.append(f'    <x:Double x:Key="BcContentMaxWidth">{fmt(dimension(TOKENS["size"]["content-max"]))}</x:Double>')
-    X.append(f'    <x:Double x:Key="BcSidebarWidth">{fmt(dimension(TOKENS["size"]["sidebar"]))}</x:Double>')
+        B.append(f'    <CornerRadius x:Key="{KEY}Radius{pascal(k)}">{fmt(dimension(v))}</CornerRadius>')
+    B.append(f'    <x:Double x:Key="{KEY}TouchMin">{fmt(dimension(TOKENS["size"]["touch-min-windows"]))}</x:Double>')
+    B.append(f'    <x:Double x:Key="{KEY}ContentMaxWidth">{fmt(dimension(TOKENS["size"]["content-max"]))}</x:Double>')
+    B.append(f'    <x:Double x:Key="{KEY}SidebarWidth">{fmt(dimension(TOKENS["size"]["sidebar"]))}</x:Double>')
+    view, sc = notation()
+    # The start of each key that is the brand's own, with no neutral name: its notation metrics, and the
+    # icons, whose actions (icons.json) are one product's so far.
+    own = [f"{KEY}{pascal(view)}", f"{KEY}Icon"]
     for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
-        X.append(f'    <x:Double x:Key="BcScore{pascal(k)}">{fmt(dimension(TOKENS["score"][k]))}</x:Double>')
-    X += ["", "    <!-- Motion (ms); check UISettings.AnimationsEnabled and fall back to BcDurationReduced cross-fades -->"]
+        B.append(f'    <x:Double x:Key="{KEY}{pascal(view)}{pascal(k)}">{fmt(dimension(sc[k]))}</x:Double>')
+    B += ["", "    <!-- Motion (ms); check UISettings.AnimationsEnabled and fall back to BcDurationReduced cross-fades -->".replace("Bc", KEY)]
     for k, v in TOKENS["motion"]["duration"].items():
-        X.append(f'    <x:Double x:Key="BcDuration{pascal(k)}">{v["$value"]["value"]}</x:Double>')
-    X += ["", "    <!-- Type ramp: each style is based on the WinUI ramp style it maps to -->",
-          '    <FontFamily x:Key="BcDisplayFontFamily">ms-appx:///Assets/Fonts/InstrumentSerif-Regular.ttf#Instrument Serif</FontFamily>']
+        B.append(f'    <x:Double x:Key="{KEY}Duration{pascal(k)}">{v["$value"]["value"]}</x:Double>')
+    B += ["", "    <!-- Type ramp: each style is based on the WinUI ramp style it maps to -->"]
+    for key, font, faces in fonts("windows"):
+        if faces:
+            B.append(f'    <FontFamily x:Key="{KEY}{pascal(key)}FontFamily">ms-appx:///Assets/Fonts/{Path(faces[0]["file"]).name}#{font["family"]}</FontFamily>')
+            if key != "display":
+                own.append(f"{KEY}{pascal(key)}FontFamily")
     weight = {400: "Normal", 500: "Medium", 600: "SemiBold", 700: "Bold"}
     for k, v in group("typography").items():
         plat = v.get("$extensions", {}).get("no.brasscribe.platform")
         if not plat:
             continue
         w = plat["windows"]
-        X.append(f'    <Style x:Key="Bc{pascal(k)}TextBlockStyle" TargetType="TextBlock" BasedOn="{{StaticResource {w["style"]}TextBlockStyle}}">')
+        B.append(f'    <Style x:Key="{KEY}{pascal(k)}TextBlockStyle" TargetType="TextBlock" BasedOn="{{StaticResource {w["style"]}TextBlockStyle}}">')
         if "display" in v["$value"]["fontFamily"]:
-            X.append('        <Setter Property="FontFamily" Value="{StaticResource BcDisplayFontFamily}"/>')
-        X.append(f'        <Setter Property="FontWeight" Value="{weight[v["$value"]["fontWeight"]]}"/>')
-        X.append(f'        <Setter Property="FontSize" Value="{fmt(w["sizeEpx"])}"/>')
-        X.append(f'        <Setter Property="LineHeight" Value="{fmt(w["lineHeightEpx"])}"/>')
-        X.append('        <Setter Property="TextWrapping" Value="Wrap"/>')
-        X.append("    </Style>")
-    X += ["", "    <!-- Icons: Segoe Fluent Icons glyphs for FontIcon.Glyph; custom glyphs as 20 epx path data for PathIcon -->"]
+            B.append(f'        <Setter Property="FontFamily" Value="{{StaticResource {KEY}DisplayFontFamily}}"/>')
+        B.append(f'        <Setter Property="FontWeight" Value="{weight[v["$value"]["fontWeight"]]}"/>')
+        B.append(f'        <Setter Property="FontSize" Value="{fmt(w["sizeEpx"])}"/>')
+        B.append(f'        <Setter Property="LineHeight" Value="{fmt(w["lineHeightEpx"])}"/>')
+        B.append('        <Setter Property="TextWrapping" Value="Wrap"/>')
+        B.append("    </Style>")
+    B += ["", "    <!-- Icons: Segoe Fluent Icons glyphs for FontIcon.Glyph; custom glyphs as 20 epx path data for PathIcon -->"]
     for a in ICONS:
         kind, v = icon_source(a, "windows")
         if kind == "system":
-            X.append(f'    <x:String x:Key="BcIcon{pascal(a)}">&#x{v["glyph"]};</x:String>')
+            B.append(f'    <x:String x:Key="{KEY}Icon{pascal(a)}">&#x{v["glyph"]};</x:String>')
         else:
-            X.append(f'    <x:String x:Key="BcIconPath{pascal(a)}">{transform_path(v, 20 / 960, 0, 20)}</x:String>')
+            B.append(f'    <x:String x:Key="{KEY}IconPath{pascal(a)}">{transform_path(v, 20 / 960, 0, 20)}</x:String>')
+    X += B
+    # The same resources under the neutral names, values and all (see windows_theme_dictionaries).
+    X += ["", "    <!-- The neutral names (design/tokens/README.md): the same keys in every brand's theme. The brand's own",
+          "         resources have the keys above only. -->"]
+    named = re.compile(rf'(x:Key="|\{{StaticResource ){KEY}(?=[A-Z0-9])')
+    for line in B:
+        if "<!--" in line or not line or any(f'x:Key="{start}' in line for start in own):
+            continue
+        X.append(named.sub(r"\1Scribe", line))
     X += ["</ResourceDictionary>", ""]
-    return {"windows/BrasscribeTheme.xaml": "\n".join(X),
-            "windows/BrasscribePinkTheme.xaml": windows_pink(),
-            "windows/Assets/Fonts/InstrumentSerif-Regular.ttf": (BRAND / "fonts" / "InstrumentSerif-Regular.ttf").read_bytes(),
-            "windows/Assets/Fonts/OFL.txt": (BRAND / "fonts" / "OFL.txt").read_bytes()}
+    out: dict[str, str | bytes] = {f"windows/{PRODUCT}Theme.xaml": "\n".join(X)}
+    if PINK:
+        out[f"windows/{PRODUCT}PinkTheme.xaml"] = windows_pink()
+    out.update(font_files("windows", "windows/Assets/Fonts"))
+    return out
 
 
 # ---------------------------------------------------------------- Web (Studio)
-
-FORCED = {  # role -> CSS system colour under forced-colors
-    "bg": "Canvas", "surface": "Canvas", "surface-raised": "Canvas", "text": "CanvasText", "text-muted": "CanvasText",
-    "border": "CanvasText", "border-strong": "CanvasText", "primary": "Highlight", "on-primary": "HighlightText",
-    "secondary": "ButtonFace", "on-secondary": "ButtonText", "brass": "CanvasText", "brass-text": "CanvasText",
-    "brass-tint": "Canvas", "success": "CanvasText", "warning": "CanvasText", "error": "CanvasText", "focus": "Highlight",
-    "scrim": "Canvas", "ink": "CanvasText", "staff": "CanvasText", "uncertain": "LinkText", "very-uncertain": "LinkText",
-    "adlib-tint": "Canvas", "loop-tint": "Canvas", "loop-edge": "Highlight", "cursor": "Highlight", "cursor-tint": "Canvas",
-    "selection-tint": "Canvas", "selection-edge": "Highlight",
-    "model-1": "CanvasText", "model-2": "CanvasText", "model-3": "CanvasText", "model-4": "CanvasText",
-}
-
 
 def css_color(mode: str, r: str) -> str:
     a = alpha(mode, r)
@@ -736,7 +868,12 @@ def css_color(mode: str, r: str) -> str:
 
 
 def web_outputs() -> dict[str, str | bytes]:
+    """The style sheets are written with Brasscribe's prefix (--bc-); `own` gives another brand its own."""
     rs = roles()
+    view, sc = notation()
+
+    def own(lines: list[str]) -> str:
+        return "\n".join(lines).replace("--bc-", f"--{CSS}-")
 
     def block(mode: str, indent: str) -> list[str]:
         return [f"{indent}--bc-{r}: {css_color(mode, r)};" for r in rs]
@@ -749,6 +886,8 @@ def web_outputs() -> dict[str, str | bytes]:
     C += [f"  --bc-font-text: {quote(['system-ui', '-apple-system', 'Segoe UI Variable Text', 'Segoe UI', 'Roboto', 'sans-serif'])};",
           f"  --bc-font-display: {quote(fam['display']['$value'])};",
           f"  --bc-font-mono: {quote(['ui-monospace', 'SF Mono', 'Cascadia Mono', 'Roboto Mono', 'Menlo', 'monospace'])};"]
+    extra_fonts = [k for k in fam if not k.startswith("$") and k not in ("text", "display", "mono")]
+    C += [f"  --bc-font-{k}: {quote(fam[k]['$value'])};" for k in extra_fonts]
     for k, v in group("typography").items():
         val = v["$value"]
         C.append(f"  --bc-type-{k}-size: {fmt(val['fontSize']['value'] / 16)}rem;")
@@ -773,7 +912,7 @@ def web_outputs() -> dict[str, str | bytes]:
     for k, v in TOKENS["motion"]["easing"].items():
         C.append(f"  --bc-ease-{k}: cubic-bezier({', '.join(fmt(x) for x in v['$value'])});")
     for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
-        C.append(f"  --bc-score-{k}: {fmt(dimension(TOKENS['score'][k]))}px;")
+        C.append(f"  --bc-{view}-{k}: {fmt(dimension(sc[k]))}px;")
     C.append(f"  --bc-touch-min: {fmt(dimension(TOKENS['size']['touch-min-web']) / 16)}rem;")
     C.append(f"  --bc-control-min: {fmt(dimension(TOKENS['size']['control-min-web']) / 16)}rem;")
     C.append(f"  --bc-target-gap: {fmt(dimension(TOKENS['size']['target-gap-web']) / 16)}rem;")
@@ -785,20 +924,21 @@ def web_outputs() -> dict[str, str | bytes]:
     C += ["    --bc-elevation-1: none;", "    --bc-elevation-2: 0 4px 16px rgb(0 0 0 / 0.5);", "    --bc-elevation-3: 0 12px 32px rgb(0 0 0 / 0.6);",
           "  }", "}", ':root[data-theme="dark"] {', "  color-scheme: dark;"]
     C += block("dark", "  ")
-    C += ["  --bc-elevation-1: none;", "  --bc-elevation-2: 0 4px 16px rgb(0 0 0 / 0.5);", "  --bc-elevation-3: 0 12px 32px rgb(0 0 0 / 0.6);", "}", "",
-          "/* Pink, the hidden palette (design/system.md §10): data-palette=\"pink\" on the root. Light or dark",
-          "   follows data-theme when the page pins one, else the system. More contrast and forced colours win. */",
-          "@media (forced-colors: none) and (not (prefers-contrast: more)) {",
-          '  :root[data-palette="pink"] {', "    color-scheme: light;"]
-    C += block("pink", "    ")
-    C += ["  }", '  :root[data-palette="pink"][data-theme="dark"] {', "    color-scheme: dark;"]
-    C += block("pink-dark", "    ")
-    C += ["  }", "}",
-          "@media (forced-colors: none) and (not (prefers-contrast: more)) and (prefers-color-scheme: dark) {",
-          '  :root[data-palette="pink"]:not([data-theme="light"]) {', "    color-scheme: dark;"]
-    C += block("pink-dark", "    ")
-    C += ["  }", "}", "",
-          "/* High contrast: our palettes when the user asks for more contrast; tints become outlines.",
+    C += ["  --bc-elevation-1: none;", "  --bc-elevation-2: 0 4px 16px rgb(0 0 0 / 0.5);", "  --bc-elevation-3: 0 12px 32px rgb(0 0 0 / 0.6);", "}", ""]
+    if PINK:
+        C += ["/* Pink, the hidden palette (design/system.md §10): data-palette=\"pink\" on the root. Light or dark",
+              "   follows data-theme when the page pins one, else the system. More contrast and forced colours win. */",
+              "@media (forced-colors: none) and (not (prefers-contrast: more)) {",
+              '  :root[data-palette="pink"] {', "    color-scheme: light;"]
+        C += block("pink", "    ")
+        C += ["  }", '  :root[data-palette="pink"][data-theme="dark"] {', "    color-scheme: dark;"]
+        C += block("pink-dark", "    ")
+        C += ["  }", "}",
+              "@media (forced-colors: none) and (not (prefers-contrast: more)) and (prefers-color-scheme: dark) {",
+              '  :root[data-palette="pink"]:not([data-theme="light"]) {', "    color-scheme: dark;"]
+        C += block("pink-dark", "    ")
+        C += ["  }", "}", ""]
+    C += ["/* High contrast: our palettes when the user asks for more contrast; tints become outlines.",
           "   Light or dark follows the resolved theme: data-theme when the page pins one, else the system.",
           "   Under forced colours the system colours below win instead. */"]
     more = "@media (prefers-contrast: more) and (forced-colors: none)"
@@ -818,33 +958,54 @@ def web_outputs() -> dict[str, str | bytes]:
     C += ["",
           "/* Forced colours (Windows contrast themes): system colours only; shape carries the meaning. */",
           "@media (forced-colors: active) {", "  :root {"]
-    C += [f"    --bc-{r}: {FORCED[r]};" for r in rs]
+    C += [f"    --bc-{r}: {system_colour(r, 'web')};" for r in rs]
     C += ["    --bc-elevation-1: none;", "    --bc-elevation-2: none;", "    --bc-elevation-3: none;", "  }", "}", "",
           "/* Reduced motion: no movement; state changes cross-fade at most --bc-duration-reduced. */",
           "@media (prefers-reduced-motion: reduce) {", "  :root {",
           "    --bc-duration-fast: 0ms;", "    --bc-duration-base: var(--bc-duration-reduced);", "    --bc-duration-slow: var(--bc-duration-reduced);",
           "  }", "}", ""]
 
-    F = [f"/* {HEADER} */", "/* Instrument Serif, SIL Open Font License 1.1 (fonts/OFL.txt). Display sizes (28px and up) only. */",
-         "@font-face {", '  font-family: "Instrument Serif";', '  src: url("fonts/InstrumentSerif-Regular.ttf") format("truetype");',
-         "  font-weight: 400;", "  font-style: normal;", "  font-display: swap;", "}",
-         "@font-face {", '  font-family: "Instrument Serif";', '  src: url("fonts/InstrumentSerif-Italic.ttf") format("truetype");',
-         "  font-weight: 400;", "  font-style: italic;", "  font-display: swap;", "}", ""]
+    # The neutral names: one for every variable of the first block that is not the brand's own. var() is
+    # resolved where it is used, so each follows the brand's value in every mode and palette.
+    neutral = {src: name for name, src in neutral_roles().items()}
+    # A type role with no native text style on the other platforms (Studio's) is the brand's own.
+    own_type = [k for k, v in group("typography").items() if "no.brasscribe.platform" not in v.get("$extensions", {})]
+    C += ["/* The neutral names (design/tokens/README.md): the same in every brand's file, so styles that use only",
+          "   these work with any brand. Each follows the value above in every mode. */", ":root {"]
+    for line in C[C.index(":root {") + 1:C.index("}")]:
+        name = line.strip().removeprefix("--bc-").split(":")[0]
+        if not line.startswith("  --bc-") or name.startswith(f"{view}-") or name in (f"font-{k}" for k in extra_fonts):
+            continue
+        if name in rs and name not in neutral:
+            continue
+        if any(name.startswith(f"type-{k}-") for k in own_type):
+            continue
+        C.append(f"  --scribe-{neutral.get(name, name)}: var(--bc-{name});")
+    C += ["}", ""]
+
+    F = [f"/* {HEADER} */"]
+    for _, font, faces in fonts("web"):
+        F.append(f"/* {font['family']}, {font['licence-name']} (fonts/{Path(font['licence']).name}). {font['note']} */")
+        for face in faces:
+            F += ["@font-face {", f'  font-family: "{font["family"]}";', f'  src: url("fonts/{Path(face["file"]).name}") format("truetype");',
+                  f"  font-weight: {face['weight']};", f"  font-style: {face['style']};", "  font-display: swap;", "}"]
+    F.append("")
 
     compat = {"bg": "bg", "surface": "surface", "text": "text", "text-muted": "text-muted", "ink": "ink", "staff": "staff",
               "uncertain": "uncertain", "very-uncertain": "very-uncertain", "adlib-tint": "adlib-tint", "loop-tint": "loop-tint",
               "loop-edge": "loop-edge", "cursor": "cursor", "focus": "focus", "error": "error", "ok": "success",
               "border": "border-strong", "m1": "model-1", "m2": "model-2", "m3": "model-3", "m4": "model-4"}
-    S = [f"/* {HEADER} */", "/* Maps the variable names in studio/src/styles.css onto the Brasscribe tokens.",
-         "   Load after brasscribe.css and instead of Studio's own colour blocks. */", ":root {"]
+    S = [f"/* {HEADER} */", f"/* Maps the variable names in studio/src/styles.css onto the {PRODUCT} tokens.",
+         f"   Load after {PRODUCT.lower()}.css and instead of Studio's own colour blocks. */", ":root {"]
     S += [f"  --{k}: var(--bc-{v});" for k, v in compat.items()]
     S += ["  --space: var(--bc-space-4);", "  font-family: var(--bc-font-text);", "}", ""]
 
-    out: dict[str, str | bytes] = {"web/brasscribe.css": "\n".join(C), "web/fonts.css": "\n".join(F), "web/studio-compat.css": "\n".join(S)}
-    for f in ("InstrumentSerif-Regular.ttf", "InstrumentSerif-Italic.ttf", "OFL.txt"):
-        out[f"web/fonts/{f}"] = (BRAND / "fonts" / f).read_bytes()
+    out: dict[str, str | bytes] = {f"web/{PRODUCT.lower()}.css": own(C), "web/fonts.css": "\n".join(F)}
+    if EXT.get("web", {}).get("studio-compat"):
+        out["web/studio-compat.css"] = own(S)
+    out.update(font_files("web", "web/fonts"))
     js = [f"// {HEADER}", "// Path data on the Material Symbols 960 grid (viewBox \"0 -960 960 960\"), keyed by action.",
-          "globalThis.BrasscribeIcons = {"]
+          f"globalThis.{PRODUCT}Icons = {{"]
     for a in ICONS:
         js.append(f'  "{a}": "{icon_source(a, "material")[1]}",')
     js += ["};", ""]
@@ -885,7 +1046,8 @@ def outputs() -> dict[Path, str | bytes]:
                 out[DIST / path] = content
     if ONLY is None:
         out[DIST / "icon-map.md"] = icon_map()
-        out[ROOT / "docs" / "accessibility" / "design-tokens.json"] = a11y_json()
+        if "a11yCompat" in EXT:  # the palette Play and Studio are checked against; one brand has it
+            out[ROOT / EXT["a11yCompat"]["file"]] = a11y_json()
     return out
 
 
@@ -893,13 +1055,15 @@ def as_bytes(c: str | bytes) -> bytes:
     return c.encode() if isinstance(c, str) else c
 
 
-GENERATED_DIRS = ("apple/BrasscribeDesign.xcassets", "android/kotlin", "android/res/drawable", "web/icons")
+def generated_dirs() -> tuple[str, ...]:
+    """The folders that hold generated files only, so a file this run does not write there is a leftover."""
+    return (f"apple/{PRODUCT}Design.xcassets", "android/kotlin", "android/res/drawable", "web/icons")
 
 
 def leftovers(want: dict[Path, str | bytes]) -> list[Path]:
     """Files in the generated folders (of the platforms this run writes) that it no longer writes."""
     found = []
-    for d in GENERATED_DIRS:
+    for d in generated_dirs():
         base = DIST / d
         if ONLY in (None, d.split("/")[0]) and base.exists():
             found += [f for f in base.rglob("*") if f.is_file() and f not in want and not f.name.startswith("ic_launcher")]
@@ -913,9 +1077,15 @@ def stale() -> list[str]:
     return sorted(bad)
 
 
+def brand_of(tokens: Path) -> dict | None:
+    """The entry of brands.json a token file belongs to."""
+    return next((b for b in BRANDS if (ROOT / b["tokens"]).resolve() == tokens.resolve()), None)
+
+
 def command() -> str:
     """The command that writes this run's outputs, as it is typed from the repository root."""
-    args = "" if TOKENS_FILE == DEFAULT_TOKENS.resolve() else f" --tokens {rel(TOKENS_FILE)} --out {rel(DIST)}"
+    brand = brand_of(TOKENS_FILE)
+    args = f" --brand {brand['name']}" if brand and DIST == (ROOT / brand["out"]).resolve() else f" --tokens {rel(TOKENS_FILE)} --out {rel(DIST)}"
     return f"uv run design/tokens/build.py{args}" + (f" --only {ONLY}" if ONLY else "")
 
 
@@ -926,27 +1096,40 @@ def write() -> None:
     for p, c in want.items():
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(as_bytes(c))
-    print(f"wrote {len(want)} files")
+    print(f"wrote {len(want)} files to {rel(DIST)}")
 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Generate platform code from design tokens.")
     parser.add_argument("--check", action="store_true", help="exit 1 if any output is missing or out of date")
-    parser.add_argument("--tokens", type=Path, default=DEFAULT_TOKENS, help="the token file (default design/tokens/tokens.json)")
-    parser.add_argument("--out", type=Path, default=DEFAULT_DIST, help="the output folder (default design/dist)")
+    parser.add_argument("--brand", choices=[b["name"] for b in BRANDS], help="one brand of brands.json (default: every brand)")
+    parser.add_argument("--tokens", type=Path, help="a token file that is not in brands.json; needs --out")
+    parser.add_argument("--out", type=Path, help="the output folder of --tokens")
     parser.add_argument("--only", choices=PLATFORMS, help="write this platform only")
     args = parser.parse_args(argv)
-    configure(args.tokens, args.out, args.only)
-    if args.check:
+    if args.tokens or args.out:
+        if args.brand or not args.tokens:
+            parser.error("--tokens and --out go together, without --brand")
+        brand = brand_of(args.tokens)
+        if not args.out and not brand:
+            parser.error("--tokens needs --out")
+        runs = [(args.tokens, args.out or ROOT / brand["out"])]
+    else:
+        runs = [(ROOT / b["tokens"], ROOT / b["out"]) for b in BRANDS if args.brand in (None, b["name"])]
+    failed = False
+    for tokens, out in runs:
+        configure(tokens, out, args.only)
+        if not args.check:
+            write()
+            continue
         bad = stale()
         if bad:
+            failed = True
             print(f"Design outputs are out of date. Run `{command()}`:")
             print("\n".join("  " + b for b in bad))
-            return 1
-        print("design outputs are in sync")
-        return 0
-    write()
-    return 0
+        else:
+            print(f"design outputs are in sync: {rel(DIST)}")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

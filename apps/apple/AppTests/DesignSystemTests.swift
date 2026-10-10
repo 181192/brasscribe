@@ -32,6 +32,23 @@ import Testing
         #endif
     }
 
+    /// The neutral names (design/tokens/README.md) are the same in every product's generated design;
+    /// here they read Brasscribe's.
+    @Test func neutralNamesReadTheProductsDesign() {
+        #expect(Color.Scribe.brand == Color.Brasscribe.brass)
+        #expect(Color.Scribe.brandText == Color.Brasscribe.brassText)
+        #expect(Color.Scribe.brandTint == Color.Brasscribe.brassTint)
+        #expect(Color.Scribe.line == Color.Brasscribe.staff)
+        #expect(Color.Scribe.ink == Color.Brasscribe.ink)
+        #expect(Color.Scribe.uncertain == Color.Brasscribe.uncertain)
+        #expect(ScribeDesign.Space.s4 == BrasscribeDesign.Space.s4)
+        #expect(ScribeDesign.Radius.md == BrasscribeDesign.Radius.md)
+        #expect(ScribeDesign.Size.touchMin == BrasscribeDesign.Size.touchMin)
+        #expect(ScribeDesign.Motion.base == BrasscribeDesign.Motion.base)
+        #expect(ScribeDesign.bundle == BrasscribeDesign.bundle)
+        #expect(Font.Scribe.title1 == Font.Brasscribe.title1)
+    }
+
     @Test func markAndLicenceAreBundled() {
         #expect(Bundle.main.url(forResource: "mark", withExtension: "svg") != nil)
         #expect(Bundle.main.url(forResource: "OFL", withExtension: "txt") != nil)

@@ -133,18 +133,16 @@ jobs:
       - name: QA tool tests
         run: pixi run pytest -q qa/tools/tests
 
-      # design/dist and design/fretscribe/dist are committed: they must be what the tokens generate,
-      # and every checked colour pair must pass.
-      - name: Design tokens (generated files up to date, Brasscribe and Fretscribe)
+      # Every brand's generated design (design/tokens/brands.json lists them: design/dist and
+      # design/fretscribe/dist) is committed: it must be what the tokens generate, on every platform, and
+      # every checked colour pair must pass in every mode.
+      - name: Design tokens (generated files up to date, every brand and platform)
         run: |
           pixi run pytest -q design/tokens
           python3 design/tokens/build.py --check
-          python3 design/tokens/build.py --tokens design/fretscribe/tokens/tokens.json --out design/fretscribe/dist --only android --check
 
-      - name: Contrast of the design tokens (Brasscribe and Fretscribe)
-        run: |
-          python3 qa/tools/contrast.py --tokens design/tokens/tokens.json > /dev/null
-          python3 qa/tools/contrast.py --tokens design/fretscribe/tokens/tokens.json > /dev/null
+      - name: Contrast of the design tokens (every brand, every mode, reports up to date)
+        run: python3 qa/tools/contrast.py --brands
 
       - name: Band sound coverage (every lineup part has its own real-sample preset)
         run: python3 sounds/partsound.py --check

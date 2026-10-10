@@ -26,19 +26,20 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 - **Icons:** [`tokens/icons.json`](tokens/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
 
 ```sh
-uv run design/tokens/build.py            # regenerate design/dist and docs/accessibility/design-tokens.json
+uv run design/tokens/build.py            # regenerate every brand's dist and docs/accessibility/design-tokens.json
 uv run design/tokens/build.py --check    # CI: exit 1 if anything is stale
 uv run --with pytest pytest design/tokens
-uv run qa/tools/contrast.py --tokens design/tokens/tokens.json   # 74 pairs x 6 modes, exit 1 on failure
+uv run qa/tools/contrast.py --brands     # every brand in every mode (Brasscribe: 74 pairs x 6 modes), exit 1 on failure
 uv run design/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
 node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
 ```
 
-**Fretscribe** has its own design in [`fretscribe/`](fretscribe/): brand, tokens, the rules it changes ([`fretscribe/system.md`](fretscribe/system.md)), flows and mockups. The same generator writes its Android theme into `fretscribe/dist/android` with the Kotlin names above, so the two Android apps share their screens; [`fretscribe/tokens/README.md`](fretscribe/tokens/README.md) has the map from those names to Fretscribe's tokens. `--out` is never `design/dist`: the generator deletes what it did not write there.
+**One generator, every brand.** [`tokens/README.md`](tokens/README.md) says how the generator serves any number of brands on every platform, and has the naming rule: a small set of neutral names (`Scribe…`, `--scribe-…`) that are the same in every brand's files, and each brand's own names for everything else.
+
+**Fretscribe** has its own design in [`fretscribe/`](fretscribe/): brand, tokens, the rules it changes ([`fretscribe/system.md`](fretscribe/system.md)), flows and mockups. The same generator writes its Apple, Android, Windows and web files into `fretscribe/dist`. Its Android theme still has the Kotlin names above, so the two Android apps share their screens; [`fretscribe/tokens/README.md`](fretscribe/tokens/README.md) has the map from those names to Fretscribe's tokens. No Apple or Windows app uses Fretscribe's files yet.
 
 ```sh
-uv run design/tokens/build.py --tokens design/fretscribe/tokens/tokens.json --out design/fretscribe/dist --only android [--check]
-uv run qa/tools/contrast.py --tokens design/fretscribe/tokens/tokens.json
+uv run design/tokens/build.py --brand fretscribe [--check]
 uv run design/fretscribe/brand/build.py  # Fretscribe's Android launcher icon (needs rsvg-convert)
 ```
 
