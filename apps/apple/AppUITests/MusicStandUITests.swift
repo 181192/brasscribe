@@ -45,15 +45,31 @@ final class MusicStandUITests: XCTestCase {
         return e.label.isEmpty ? (e.value as? String ?? "") : e.label
     }
 
+    /// Asks until `condition` holds, and gives up when it still does not `timeout` after the first answer was asked for.
+    ///
+    /// An answer is never cut short. Each one reads the whole screen from the app, and while the music plays (the
+    /// cursor moves, the page follows) that takes seconds on a slow simulator. An expectation's time runs on while an
+    /// answer is on its way and is up before the answer that would have met it has arrived: a wait of 10 s got two
+    /// answers, the second asked for 3 s into it and not there 7 s later. Here the time is looked at between answers
+    /// only, so the last answer asked for within the time counts.
+    private func eventually(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(timeout)
+        while true {
+            let asked = Date()
+            if condition() { return true }
+            if asked >= end { return false }
+            // A short breath between questions, so that asking does not itself keep the app busy.
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+    }
+
     /// Waits until the position line satisfies `test`.
-    private func waitForPosition(timeout: TimeInterval, _ test: @escaping (String) -> Bool) -> Bool {
-        XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in test(self.position) }, object: nil)],
-                       timeout: timeout) == .completed
+    private func waitForPosition(timeout: TimeInterval, _ test: (String) -> Bool) -> Bool {
+        eventually(timeout: timeout) { test(position) }
     }
 
     private func waitFor(_ e: XCUIElement, exists: Bool, timeout: TimeInterval) -> Bool {
-        XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == %@", NSNumber(value: exists)), object: e)],
-                       timeout: timeout) == .completed
+        eventually(timeout: timeout) { e.exists == exists }
     }
 
     func testEnterAndLeaveTheStand() throws {
@@ -86,10 +102,11 @@ final class MusicStandUITests: XCTestCase {
         launch(["-stand-ignore-keyboard"])
         enterStand()
         app.buttons["standPlay"].safeTap(app)
+        // Once hidden the layer stays hidden until a touch, also when the music has ended: a late answer still says so.
         XCTAssertTrue(waitFor(element("standLayer"), exists: false, timeout: 10), "the layer hides while playing")
         XCTAssertTrue(app.buttons["standLeave"].exists, "Leave always stays")
         element("standScore").safeTap(app)
-        XCTAssertTrue(element("standLayer").waitForExistence(timeout: 5), "a tap shows the controls")
+        XCTAssertTrue(waitFor(element("standLayer"), exists: true, timeout: 5), "a tap shows the controls")
     }
 
     /// With a screen reader or switch running the controls never hide, not by the timer and not by a tap.
