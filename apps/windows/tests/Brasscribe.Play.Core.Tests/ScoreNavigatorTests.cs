@@ -222,5 +222,24 @@ public class ScoreNavigatorTests
         // A first measure left out of the numbering is the pickup too.
         var unnumbered = MusicXmlTalkingScoreBuilder.Build(Pickup.Replace("number=\"0\" implicit=\"yes\"", "number=\"X1\" implicit=\"yes\""), nameNb: FixtureNb);
         Assert.Equal(0, unnumbered.Parts[0].Bars[0].Number);
+
+        // A short first bar that is numbered and not marked stays as it is.
+        var shortBar = MusicXmlTalkingScoreBuilder.Build(Pickup.Replace("number=\"0\" implicit=\"yes\"", "number=\"1\""), nameNb: FixtureNb);
+        Assert.Equal(1, shortBar.Parts[0].Bars[0].Number);
+        Assert.Equal(new TsPos(1), shortBar.Parts[0].Bars[0].Events[0].Pos);
+    }
+
+    [Fact]
+    public void A_full_first_bar_left_out_of_the_numbering_is_a_bar_not_a_pickup()
+    {
+        var xml = File.ReadAllText(TestPaths.Fixture("two-parts.musicxml"));
+        int at = xml.IndexOf("<measure number=\"1\"", StringComparison.Ordinal);
+        Assert.True(at >= 0);
+        var plain = MusicXmlTalkingScoreBuilder.Build(xml, nameNb: FixtureNb);
+        var marked = MusicXmlTalkingScoreBuilder.Build(xml.Replace("<measure number=\"1\"", "<measure implicit=\"yes\" number=\"1\""), nameNb: FixtureNb);
+        Assert.Equal(plain.TotalBars, marked.TotalBars);
+        Assert.Equal(plain.Parts[0].Bars.Select(b => b.Number), marked.Parts[0].Bars.Select(b => b.Number));
+        Assert.Equal(1, marked.Parts[0].Bars[0].Number);
+        Assert.Equal(plain.Parts[0].Bars[0].Events.Select(e => e.Pos), marked.Parts[0].Bars[0].Events.Select(e => e.Pos));
     }
 }

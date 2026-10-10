@@ -1282,12 +1282,13 @@ pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, Strin
         let mut chains: Vec<Chain> = Vec::new();
         for (idx, m) in children(part_el, "measure").enumerate() {
             let mut number = m.attribute("number").and_then(|n| n.trim().parse::<i64>().ok()).unwrap_or(idx as i64 + 1);
-            // A pickup: the first measure, numbered 0 or left out of the numbering. Its notes are placed on the
-            // beats they fall on in the bar they lead into.
-            let mut lead = 0i64;
-            if idx == 0 && (number == PICKUP_BAR || m.attribute("implicit") == Some("yes")) {
+            // A pickup: the first measure when it is numbered 0, or left out of the numbering and shorter than a
+            // full bar. Its notes are placed on the beats they fall on in the bar they lead into.
+            let mut lead = if idx == 0 { lead_in(m, divisions, &time) } else { 0 };
+            if idx == 0 && (number == PICKUP_BAR || (m.attribute("implicit") == Some("yes") && lead > 0)) {
                 number = PICKUP_BAR;
-                lead = lead_in(m, divisions, &time);
+            } else {
+                lead = 0;
             }
             let (mut tempo, mut rehearsal, mut pending_dyn): (Option<f64>, Option<String>, Option<String>) = (None, None, None);
             let (mut offset, mut length) = (0i64, 0i64);

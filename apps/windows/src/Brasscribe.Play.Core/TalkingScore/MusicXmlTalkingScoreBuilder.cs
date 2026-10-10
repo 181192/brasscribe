@@ -68,14 +68,14 @@ public static class MusicXmlTalkingScoreBuilder
             {
                 int number = int.TryParse((string?)m.Attribute("number"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
                     ? n : part.Bars.Count + 1;
-                // A pickup: the first measure, numbered 0 or left out of the numbering. Its notes are placed on the
-                // beats they fall on in the bar they lead into.
-                long lead = 0; // divisions the pickup lacks of a full bar
-                if (part.Bars.Count == 0 && (number == Announcer.PickupBar || (string?)m.Attribute("implicit") == "yes"))
-                {
+                // A pickup: the first measure when it is numbered 0, or left out of the numbering and shorter than a
+                // full bar. Its notes are placed on the beats they fall on in the bar they lead into.
+                bool first = part.Bars.Count == 0;
+                long lead = first ? LeadIn(m, divisions, time) : 0; // divisions the pickup lacks of a full bar
+                if (first && (number == Announcer.PickupBar || ((string?)m.Attribute("implicit") == "yes" && lead > 0)))
                     number = Announcer.PickupBar;
-                    lead = LeadIn(m, divisions, time);
-                }
+                else
+                    lead = 0;
                 double? tempo = null;
                 string? rehearsal = null;
                 string? pendingDynamic = null;

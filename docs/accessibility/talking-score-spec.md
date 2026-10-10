@@ -317,7 +317,7 @@ The same commands on every platform. The apps map them to native gestures.
 - `tie`: `{"start": bool, "stop": bool, "next": {"bar", "type", "dots"}, "chain_beats": number|null}`.
 - `tuplet`: `{"actual": 3, "normal": 2, "index": 2}`.
 - `pos` is exact (rational), never a float. In compound time it also has `"compound": true` (§4.1); `held_from` copies it.
-- A pickup (§4.10) is a bar with `"number": 0`: the first measure of the MusicXML when it is numbered 0 or left out of the numbering (`implicit="yes"`). Its `pos` counts from where the full bar would start, so the last eighth of a 4/4 bar is `{"beat": 4, "num": 1, "den": 2}`; its `tick` still counts from its own first note. `total_bars` does not count it.
+- A pickup (§4.10) is a bar with `"number": 0`: the first measure of the MusicXML when it is numbered 0, or when it is left out of the numbering (`implicit="yes"`) and shorter than a full bar. A full first bar is a bar whatever it is marked with, and a measure number that is not a whole number counts as the measure's place in the part. Its `pos` counts from where the full bar would start, so the last eighth of a 4/4 bar is `{"beat": 4, "num": 1, "den": 2}`; its `tick` still counts from its own first note. `total_bars` does not count it.
 - The text export ("talking-score text", one of Play's export formats) renders this structure as:
   - one heading per part
   - a sub-heading per bar

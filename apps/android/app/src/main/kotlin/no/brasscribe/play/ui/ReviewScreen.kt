@@ -415,7 +415,8 @@ fun ReviewScreen(vm: PlayViewModel) {
                     Text(
                         when {
                             // The pickup is named, never numbered (talking-score spec §4.10).
-                            bar.number == PICKUP_BAR && rest != null && rest.stop.event.bars > 1 ->
+                            bar.number == PICKUP_BAR && rest != null && rest.stop.event.bars == 2 -> stringResource(R.string.pickup_rest_one_heading)
+                            bar.number == PICKUP_BAR && rest != null && rest.stop.event.bars > 2 ->
                                 stringResource(R.string.pickup_rest_heading, rest.stop.event.bars - 1)
                             bar.number == PICKUP_BAR -> stringResource(R.string.pickup_heading)
                             rest != null && rest.stop.event.bars > 1 -> stringResource(R.string.bar_rest_heading, bar.number, bar.number + rest.stop.event.bars - 1)

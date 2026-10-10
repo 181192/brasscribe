@@ -621,11 +621,13 @@ def build(musicxml: str | Path, composition: dict | None = None) -> dict:
                 number = int(m.get("number"))
             except (TypeError, ValueError):
                 number = idx + 1
-            # A pickup: the first measure, numbered 0 or left out of the numbering. Its notes are placed on the
-            # beats they fall on in the bar they lead into.
-            lead = 0
-            if idx == 0 and (number == PICKUP_BAR or m.get("implicit") == "yes"):
-                number, lead = PICKUP_BAR, _lead_in(m, divisions, time)
+            # A pickup: the first measure when it is numbered 0, or left out of the numbering and shorter than a
+            # full bar. Its notes are placed on the beats they fall on in the bar they lead into.
+            lead = _lead_in(m, divisions, time) if idx == 0 else 0
+            if idx == 0 and (number == PICKUP_BAR or (m.get("implicit") == "yes" and lead > 0)):
+                number = PICKUP_BAR
+            else:
+                lead = 0
             tempo = rehearsal = pending_dyn = None
             offset = length = 0
             last = None

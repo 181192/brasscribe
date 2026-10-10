@@ -263,7 +263,8 @@
     <string name="bar_heading">Bar %1$d</string>
     <string name="bar_rest_heading">Bars %1$d to %2$d</string>
     <string name="pickup_heading">Pickup</string>
-    <string name="pickup_rest_heading">Pickup to bar %1$d</string>
+    <string name="pickup_rest_one_heading">Pickup and bar 1</string>
+    <string name="pickup_rest_heading">Pickup and bars 1–%1$d</string>
     <string name="review_continue">Next: How should the score be?</string>
     <string name="dur_whole">semibreve</string>
     <string name="dur_half">minim</string>

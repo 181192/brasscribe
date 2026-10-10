@@ -120,15 +120,14 @@ export function buildTalkingScore(xml: string): TalkingScore {
     let tupletIndex = 0;
     const measures = Array.from(p.children).filter((c) => c.nodeName === "measure");
     measures.forEach((m, index) => {
-      const printed = parseInt(m.getAttribute("number") ?? "", 10);
-      let number = Number.isNaN(printed) ? index + 1 : printed;
-      // A pickup: the first measure, numbered 0 or left out of the numbering. Its notes are placed on the
-      // beats they fall on in the bar they lead into.
-      let lead = 0; // divisions the pickup lacks of a full bar
-      if (index === 0 && (number === PICKUP_BAR || m.getAttribute("implicit") === "yes")) {
-        number = PICKUP_BAR;
-        lead = leadIn(m, divisions, beats, beatType);
-      }
+      // A whole number, as the core reads it: "12a" is not bar 12, and 0 is a number.
+      const printed = m.getAttribute("number") ?? "";
+      let number = /^\s*[+-]?\d+\s*$/.test(printed) ? Number(printed) : index + 1;
+      // A pickup: the first measure when it is numbered 0, or left out of the numbering and shorter than a
+      // full bar. Its notes are placed on the beats they fall on in the bar they lead into.
+      let lead = index === 0 ? leadIn(m, divisions, beats, beatType) : 0; // divisions the pickup lacks of a full bar
+      if (index === 0 && (number === PICKUP_BAR || (m.getAttribute("implicit") === "yes" && lead > 0))) number = PICKUP_BAR;
+      else lead = 0;
       const bar: NavBar = { index, number, events: [], startTick: barStart, endTick: barStart };
       let pos = 0;
       let lastOnset = 0;

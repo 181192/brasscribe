@@ -180,4 +180,21 @@ fn a_pickup_is_named_and_its_notes_sit_on_the_beats_of_the_bar_they_lead_into() 
     let unnumbered = build(&xml.replace(r#"number="0" implicit="yes""#, r#"number="X1" implicit="yes""#), None).unwrap();
     assert_eq!(unnumbered["parts"][0]["bars"][0]["number"], 0);
     assert_eq!(unnumbered["parts"][0]["bars"][0]["events"][0]["pos"], json!({"beat": 3, "num": 1, "den": 2}));
+
+    // A full first bar is a bar, also when it is marked as left out of the numbering.
+    let full_bar = r#"<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part></part-list>
+<part id="P1">
+<measure number="1" implicit="yes"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+<note><pitch><step>G</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+<measure number="2"><note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+</part></score-partwise>"#;
+    let doc = build(full_bar, None).unwrap();
+    assert_eq!(doc["parts"][0]["bars"][0]["number"], 1);
+    assert_eq!(doc["total_bars"], 2);
+    assert_eq!(doc["parts"][0]["bars"][0]["events"][0]["pos"], json!({"beat": 1, "num": 0, "den": 1}));
+    // A short first bar that is numbered and not marked stays as it is.
+    let short = build(&xml.replace(r#"number="0" implicit="yes""#, r#"number="1""#), None).unwrap();
+    assert_eq!(short["parts"][0]["bars"][0]["number"], 1);
+    assert_eq!(short["parts"][0]["bars"][0]["events"][0]["pos"], json!({"beat": 1, "num": 0, "den": 1}));
 }

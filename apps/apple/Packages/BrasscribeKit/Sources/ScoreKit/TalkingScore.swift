@@ -178,10 +178,13 @@ public struct TalkingScore: Sendable {
 
     // MARK: descriptions
 
-    /// A pickup (anacrusis): the first measure, numbered 0. It is named, never numbered, and is not one of the
-    /// bars counted (docs/accessibility/talking-score-spec.md §4.10).
+    /// A pickup (anacrusis): the first measure when it is numbered 0, or left out of the numbering and shorter
+    /// than a full bar. It is named, never numbered, and is not one of the bars counted
+    /// (docs/accessibility/talking-score-spec.md §4.10).
     public func isPickup(_ index: Int) -> Bool {
-        index == 0 && score.measures.first?.number == "0"
+        guard index == 0, let m = score.measures.first else { return false }
+        if Int(m.number.trimmingCharacters(in: .whitespaces)) == 0 { return true }
+        return m.implicit && m.lengthTicks < m.beats * m.beatTicks
     }
 
     /// What a pickup lacks of a full bar, in ticks: its notes are placed on the beats they fall on in the bar

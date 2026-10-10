@@ -227,6 +227,13 @@ def test_a_first_measure_left_out_of_the_numbering_is_the_pickup_and_a_full_firs
     unnumbered = T.build(PICKUP.replace('number="0" implicit="yes"', 'number="X1" implicit="yes"'), None)
     assert unnumbered["parts"][0]["bars"][0]["number"] == 0
     assert unnumbered["parts"][0]["bars"][0]["events"][0]["pos"] == {"beat": 3, "num": 1, "den": 2}
-    plain = T.build(SMALL, None)
-    assert plain["parts"][0]["bars"][0]["number"] == 1 and plain["total_bars"] == 4
-    assert plain["parts"][0]["bars"][0]["events"][0]["pos"] == {"beat": 1, "num": 0, "den": 1}
+    # A full first bar is a bar, also when it is marked as left out of the numbering, and a short one that is
+    # numbered and not marked stays as it is.
+    for first in ('<measure number="1">', '<measure number="1" implicit="yes">'):
+        plain = T.build(SMALL.replace('<measure number="1">', first), None)
+        assert plain["parts"][0]["bars"][0]["number"] == 1 and plain["total_bars"] == 4
+        assert plain["parts"][0]["bars"][0]["events"][0]["pos"] == {"beat": 1, "num": 0, "den": 1}
+        assert T.part_lines(plain, 0, T.Settings(verbosity="full"))[1][1][0].startswith("bar 2 of 4, ")
+    short = T.build(PICKUP.replace('number="0" implicit="yes"', 'number="1"'), None)
+    assert short["parts"][0]["bars"][0]["number"] == 1
+    assert short["parts"][0]["bars"][0]["events"][0]["pos"] == {"beat": 1, "num": 0, "den": 1}

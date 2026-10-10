@@ -294,6 +294,30 @@ struct Reference: Decodable {
     let nb = TalkingScore(score: s, language: .norwegian)
     #expect(nb.describe(part: s.parts[0], measureIndex: 0).hasPrefix("Opptakt, Cornet. slag 3 og: G 4"))
     #expect(nb.describe(part: s.parts[1], measureIndex: 0) == "Opptakt, Horn. pause.")
+
+    // A first measure left out of the numbering and shorter than a bar is the pickup too, whatever its number.
+    let unnumbered = try MusicXMLParser.parse(Data(xml.replacingOccurrences(of: "number=\"0\" implicit=\"yes\"", with: "number=\"X1\" implicit=\"yes\"").utf8))
+    #expect(unnumbered.measures[0].implicit && !unnumbered.measures[1].implicit)
+    let un = TalkingScore(score: unnumbered, language: .english)
+    #expect(un.describe(part: unnumbered.parts[0], measureIndex: 0) == "Pickup, Cornet. beat 3 and: G 4, eighth note. beat 4: A 4, quarter note.")
+    // A short first bar that is numbered and not marked stays as it is.
+    let short = try MusicXMLParser.parse(Data(xml.replacingOccurrences(of: "number=\"0\" implicit=\"yes\"", with: "number=\"1\"").utf8))
+    #expect(TalkingScore(score: short, language: .english).describe(part: short.parts[0], measureIndex: 0).hasPrefix("Bar 1, Cornet. beat 1: G 4"))
+}
+
+@Test func aFullFirstBarLeftOutOfTheNumberingIsABarNotAPickup() throws {
+    let xml = """
+    <?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Cornet</part-name></score-part></part-list>
+    <part id="P1"><measure number="1" implicit="yes"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <note><pitch><step>G</step><octave>4</octave></pitch><duration>8</duration><type>whole</type></note></measure>
+    <measure number="2"><note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><type>whole</type></note></measure></part>
+    </score-partwise>
+    """
+    let s = try MusicXMLParser.parse(Data(xml.utf8))
+    let en = TalkingScore(score: s, language: .english)
+    #expect(!en.isPickup(0))
+    #expect(en.describe(part: s.parts[0], measureIndex: 0).hasPrefix("Bar 1, Cornet. beat 1: G 4"))
+    #expect(en.text().contains(" 2 bars.\n"))
 }
 
 @Test func tiesMergeChordsShareOnsetAndDirectionsParse() throws {

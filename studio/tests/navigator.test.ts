@@ -183,5 +183,21 @@ describe("talking score from MusicXML", () => {
     // A first measure left out of the numbering is the pickup too.
     const unnumbered = buildTalkingScore(pickup.replace('number="0" implicit="yes"', 'number="X1" implicit="yes"'));
     expect(unnumbered.parts[0].bars[0].number).toBe(0);
+    // A short first bar that is numbered and not marked stays as it is.
+    const short = buildTalkingScore(pickup.replace('number="0" implicit="yes"', 'number="1"'));
+    expect(short.parts[0].bars[0].number).toBe(1);
+    expect(short.parts[0].bars[0].events[0].pos).toEqual({ beat: 1, num: 0, den: 1 });
+  });
+
+  it("reads a measure number as the core does: a whole number, or the measure's place", () => {
+    // A full first bar is a bar, also when it is marked as left out of the numbering.
+    const implicit = buildTalkingScore(XML.replace('<measure number="1">', '<measure number="1" implicit="yes">'));
+    expect(implicit.parts[0].bars.map((b) => b.number)).toEqual([1, 2, 3, 4, 5]);
+    expect(implicit.total_bars).toBe(5);
+    expect(implicit.parts[0].bars[0].events[0].pos).toEqual({ beat: 1, num: 0, den: 1 });
+    // "12a" is not bar 12, and neither is an empty number 0: both take the measure's place.
+    const odd = buildTalkingScore(XML.replace('<measure number="2">', '<measure number="12a">').replace('<measure number="3">', '<measure number="">'));
+    expect(odd.parts[0].bars.map((b) => b.number)).toEqual([1, 2, 3, 4, 5]);
+    expect(buildTalkingScore(XML.replace('<measure number="5">', '<measure number=" 12 ">')).parts[0].bars[4].number).toBe(12);
   });
 });
