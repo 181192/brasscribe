@@ -765,6 +765,7 @@ struct PlayerBar: View {
             Text("Speed").font(Font.Brasscribe.label)
             Slider(value: $model.speedPercent, in: 25...150, step: 5) { Text("Speed") }
                 .labelsHidden()
+                .macControlSize(.large)
                 .frame(width: 140)
                 .accessibilityValue(Text(percentText(model.speedPercent)))
                 .accessibilityIdentifier("speed")

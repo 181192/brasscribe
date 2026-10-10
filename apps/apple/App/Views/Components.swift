@@ -396,6 +396,16 @@ extension View {
         if PageActions.followContent { self } else { safeAreaInset(edge: .bottom) { actions() } }
     }
 
+    /// A larger system control on the Mac, where a slider is 16 pt high at the regular size; iPhone and iPad draw
+    /// theirs large enough to touch.
+    func macControlSize(_ size: ControlSize) -> some View {
+        #if os(macOS)
+        controlSize(size)
+        #else
+        self
+        #endif
+    }
+
     /// For a control docked under a page with `safeAreaInset(edge: .bottom)`: on the Mac, VoiceOver reaches what is
     /// docked in an inset before the content above it (the accessibility navigation order), so it is sent after it.
     func afterTheContentItIsDockedUnder() -> some View {

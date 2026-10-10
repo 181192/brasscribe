@@ -35,11 +35,7 @@ import TranscriptionKit
     /// Findings that are known and not yet fixed, each with its issue: the screen, the kind, and words the finding names.
     /// The words in the run's language, as the app looks them up.
     static var known: [(screen: String?, kind: Finding.Kind, words: String, issue: String)] {
-        [
-            ("score", .smallTarget, "“\(String(localized: "Speed"))”", "#255"),
-            ("score", .smallTarget, "“\(String(localized: "Repeat from bar"))”", "#255"),
-            ("score", .smallTarget, "“\(String(localized: "Repeat to bar"))”", "#255"),
-        ]
+        []
     }
 
     /// Screens that are checked but get no screenshot: they do not draw the same twice yet, each with its issue.
