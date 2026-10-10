@@ -7,7 +7,7 @@
 set -euo pipefail
 W=$(git rev-parse --show-toplevel)
 T=$(mktemp -d)
-F=$W/core/brasscribe-core/src/instruments.rs
+F=$W/core/target-brass/src/instruments.rs
 cp "$F" "$T/instruments.rs.orig"
 trap 'cp "$T/instruments.rs.orig" "$F"' EXIT
 C=$(cd "$W/core/conformance" && python3 -c "from brasscribe_conformance.cases import mikkel_contour; print(mikkel_contour())")

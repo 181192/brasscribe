@@ -1,8 +1,11 @@
 """Keeps instrument knowledge out of the shared modules of the Python reference.
 
-Mirrors core/brasscribe-core/tests/shared_boundary.rs: only the modules below know about brass-band
-instruments, lineups, arranging or the score written from them. The rest serves any instrument family,
-and this test fails when one of them starts importing an instrument-aware module.
+In the Rust port the same line is a crate boundary: the modules below are the crate `target-brass`
+(core/target-brass/src), the rest is the shared core (core/brasscribe-core), and
+core/brasscribe-core/tests/crate_graph.rs keeps the core from depending on a target. This package is not
+split yet, so here a test holds the line: only the modules below know about brass-band instruments,
+lineups, arranging or the score written from them. The rest serves any instrument family, and this test
+fails when one of them starts importing an instrument-aware module.
 """
 
 import ast
@@ -10,6 +13,10 @@ from pathlib import Path
 
 import brasscribe_music
 
+# target-brass's modules, by the same names. `musicxml` is brass only in part: its band score
+# (band_score, band_sounds) is target-brass's `musicxml`, its writer is the shared core's
+# `notation::score`, which this package has not separated. target-brass's `pipeline` is the entry
+# points in eval/brasscribe_eval, outside this package.
 INSTRUMENT_AWARE = {"instruments", "arranger", "difficulty", "musicxml"}
 
 

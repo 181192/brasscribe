@@ -94,6 +94,7 @@ version = "0.1.0"
 dependencies = [
  "brasscribe-core",
  "serde_json",
+ "target-brass",
  "target-fretted",
  "zip",
 ]
@@ -113,6 +114,7 @@ version = "0.1.0"
 dependencies = [
  "brasscribe-core",
  "serde_json",
+ "target-brass",
  "target-fretted",
  "uniffi",
 ]
@@ -557,6 +559,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "target-brass"
+version = "0.1.0"
+dependencies = [
+ "brasscribe-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

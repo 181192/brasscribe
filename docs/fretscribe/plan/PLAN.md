@@ -98,11 +98,12 @@ Needs a window with no open branches touching `core/`, `music/` or `engine/` pip
 rebase what is open, then freeze those areas for the duration. Each step is one PR with goldens
 unchanged.
 
-1. Move brass-specific modules (`instruments`, `arranger`, `difficulty`, brass part metadata) out of the
-   shared core into `target-brass`; add the dependency check.
+1. Done: the brass-specific modules (`instruments`, `arranger`, `difficulty`, the band score and the
+   arranging entry points) are the crate `core/target-brass`, and `brasscribe-core/tests/crate_graph.rs`
+   is the dependency check. The MusicXML writer stays in the core and takes a part's instrument as
+   `InstrumentSpec`. Still in the core: the Norwegian part and instrument names in `talking_score`.
 2. Split `musicxml` into a generic writer with a per-part hook (staff details, `<technical>` elements)
-   plus brass part metadata; introduce `InstrumentSpec` (range, transposition, staff type, playback
-   program).
+   plus brass part metadata; `InstrumentSpec` grows what the hook needs (range, staff type).
 3. Split `pipeline` into shared transcription, which produces the composition, and a `Target` that
    arranges it. The engine profile chooses the target.
 4. Split the benchmark gates into shared transcription gates and per-target suites.

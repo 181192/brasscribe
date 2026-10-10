@@ -6,8 +6,15 @@ reference (`music/`, the `eval/` entry points, `sounds/humanize.py`,
 `engine/.../talking_score.py`); `conformance/` checks that this port produces
 identical Compositions, MusicXML, humanized notes and talking scores.
 
+The shared core knows no instruments. What turns its notes into one kind of output is a target crate:
+`target-brass` arranges for a brass band, `target-fretted` places notes on strings. A target depends on
+the core, the core depends on no target, and targets do not depend on each other; the compiler holds
+that line, and `brasscribe-core/tests/crate_graph.rs` checks the manifests (dev-dependencies included).
+A target hands the core's MusicXML writer what it needs as data (`notation::score::InstrumentSpec`: a
+part's names, transposition and playback program).
+
 ```
-brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
+brasscribe-core/   the shared core: pure logic, no instruments (deps: serde, serde_json, roxmltree)
   model            Composition + composition.json (field order and number format of the reference)
   quantize         beat map, metrical level, grids (free-time grids, dense grids for fast runs), fill_gaps
   onsets           pitch-change onsets from the SwiftF0 contour (trills, runs, octave flips, bends)
@@ -16,11 +23,6 @@ brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   durations        contour offsets, written durations, staccato
   spelling         ps13 pitch spelling, Krumhansl-Kessler key
   harmony          harmonic-rhythm reduction
-  instruments      brass-band instruments (Trumpet in B♭ included), lineups (band, minimal, quartet) with their roles,
-                   ranges, transpositions; the players' seats with the clef each reads and the part it takes
-  arranger         minimal band or quartet (`arrange_opts`) and solo with band (`arrange_layers_opts`: lineup, soprano
-                   doubling, figuration); `voice_satb` voices the quartet's alto and tenor
-  difficulty       faithful / standard / easier rewrites of the arranged parts
   keys             key plan (key changes, modes), transposition to a concert key
   beats, energy, separation, dynamics, structure
                    beat cleanup, solo meter and bar phase, energy gate, separation check, dynamics, rehearsal marks
@@ -30,9 +32,16 @@ brasscribe-core/   pure logic (deps: serde, serde_json, roxmltree)
   consensus, lines note voting across transcriptions, monophonic lines
   midi             SMF reading with pretty_midi's note semantics
   py, pyjson       CPython/NumPy rounding, sums and JSON output, bit for bit
-  pipeline         the reference entry points (arrange_layers_song, arrange_song, lead_sheet, reference -> band)
   notation/        measures, accidentals, ties, tuplets, beams, stems, transposition, MusicXML
-brasscribe-ffi/    UniFFI exports + `bc_*` C ABI (the core, and target-fretted as JSON)
+target-brass/      the brass-band target (deps: the core, serde, serde_json)
+  instruments      brass-band instruments (Trumpet in B♭ included), lineups (band, minimal, quartet) with their roles,
+                   ranges, transpositions; the players' seats with the clef each reads and the part it takes
+  arranger         minimal band or quartet (`arrange_opts`) and solo with band (`arrange_layers_opts`: lineup, soprano
+                   doubling, figuration); `voice_satb` voices the quartet's alto and tenor
+  difficulty       faithful / standard / easier rewrites of the arranged parts
+  musicxml         the band score handed to the core's writer: parts in lineup order, sounds, MIDI banks, the kit
+  pipeline         the reference entry points (arrange_layers_song, arrange_song, lead_sheet, reference -> band)
+brasscribe-ffi/    UniFFI exports + `bc_*` C ABI (the core, target-brass, and target-fretted as JSON)
 brasscribe-cli/    `brasscribe-core` binary: the same entry points as the Python scripts, file based
 target-fretted/    tab fingering: a string and fret for every note on guitar, bass, ukulele, mandolin
 bindings/          generated Swift, Kotlin and C header (scripts/bindings.sh)

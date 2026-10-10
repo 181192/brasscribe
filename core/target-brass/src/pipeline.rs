@@ -874,6 +874,7 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
         encoding_date: String::new(),
         tempo_note: None,
         kit_program: 0,
+        banks: Vec::new(),
     };
     Ok(write_score(&spec))
 }

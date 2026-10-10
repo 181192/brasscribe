@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 brasscribe-core = { path = "../brasscribe-core" }
+target-brass = { path = "../target-brass" }
 target-fretted = { path = "../target-fretted" }
 serde_json.workspace = true
 zip = { version = "8", default-features = false, features = ["deflate"] }
