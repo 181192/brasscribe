@@ -290,6 +290,7 @@ struct FirstRunView: View {
             .padding(Space.s5)
             .frame(maxWidth: BrasscribeDesign.Size.contentMaxWidth)
             .accessibilityIdentifier("getStarted")
+            .afterTheContentItIsDockedUnder()
         }
     }
 
