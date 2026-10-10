@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasContentDescription
@@ -134,13 +135,18 @@ class MusicStandTest : ScreenTest() {
         for (tag in listOf("stand-prev-page", "stand-next-page", "stand-slower", "stand-faster", "stand-repeat", "stand-only-mine", "stand-lock", "performance-exit")) {
             rule.onNodeWithTag(tag).assertHeightIsAtLeast(48.dp)
         }
-        rule.onNodeWithContentDescription("Leave the music stand").assertExists()
+        val leave = rule.onNodeWithContentDescription("Leave the music stand")
+        leave.assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button))
         checkAccessibility()
         rule.mainClock.advanceTimeBy(6_000)
         assertTrue("paused: the layer stays", layerShown())
         // The stand's speed steppers: 5 % a step.
         rule.onNodeWithTag("stand-slower").performClick()
         waitUntil(2_000) { controllerState().speed == 95 }
+        // Leave says when it has the keyboard's focus.
+        ScreenDevice.keyboard(rule)
+        leave.requestFocus()
+        leave.assertIsFocused()
     }
 
     @Test
