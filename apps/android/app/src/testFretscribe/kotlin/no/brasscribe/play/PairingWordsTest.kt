@@ -6,7 +6,10 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
 
-/** Fretscribe on your computer, the pairing screen: every word on it is Fretscribe's, in both languages. */
+/**
+ * Bandroom on your computer, the pairing screen: every word on it is Fretscribe's, in both languages. The program on the
+ * computer is Bandroom, and is named in full (Brasscribe Bandroom) only where the player looks for it.
+ */
 class PairingWordsTest {
     private val src = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src")
 
@@ -15,7 +18,7 @@ class PairingWordsTest {
             .associate { it.groupValues[1] to it.groupValues[2].replace("\\'", "'") }
 
     @Test
-    fun thePairingScreenNamesFretscribeAndNeverBrasscribeOrBandroom() {
+    fun thePairingScreenNamesBandroomAndNeverBrasscribeAlone() {
         val screen = src?.resolve("main/kotlin/no/brasscribe/play/ui/CompanionScreen.kt")
         assumeTrue("the app's sources are not in this checkout", screen?.isFile == true)
         // What the pairing screen itself shows (About lives in the same file, and is not part of it), and what the
@@ -23,17 +26,17 @@ class PairingWordsTest {
         val shown = Regex("""R\.string\.([a-z0-9_]+)""").findAll(screen!!.readText().substringBefore("fun AboutScreen"))
             .map { it.groupValues[1] }.toSet()
         val said = setOf("companion_failed_plain", "pair_needs_update", "pair_link_invalid", "server_name_format")
-        val names = shown + said
+        val names = shown + said + setOf("bandroom_get_title", "bandroom_get_text", "bandroom_open", "bandroom_no_browser")
         assertTrue("the screen's words are found", names.containsAll(setOf("companion_explain", "companion_searching", "companion_tech_details", "pair_link_address_by_name")))
         for (dir in listOf("values", "values-nb")) {
             val words = strings(File(src, "main/res/$dir/strings.xml")) + strings(File(src, "fretscribe/res/$dir/strings.xml"))
-            val wrong = names.mapNotNull { name -> words[name]?.takeIf { Regex("Brasscribe|Bandroom").containsMatchIn(it) }?.let { "$name: $it" } }
+            val wrong = names.mapNotNull { name -> words[name]?.takeIf { Regex("Brasscribe(?! Bandroom)").containsMatchIn(it) }?.let { "$name: $it" } }
             assertEquals(dir, emptyList<String>(), wrong)
         }
         assertEquals("Update the Fretscribe app on this phone to connect to this computer.", strings(File(src, "fretscribe/res/values/strings.xml"))["pair_needs_update"])
-        assertEquals("Open Fretscribe on your computer and choose Pair a phone. Type the six digits it shows.",
+        assertEquals("Open Bandroom on your computer (it is Brasscribe Bandroom in the list of programs) and choose Pair a phone. Type the six digits it shows.",
             strings(File(src, "fretscribe/res/values/strings.xml"))["companion_explain"])
-        assertEquals("Åpne Fretscribe på datamaskinen og velg Koble til en telefon. Skriv inn de seks sifrene som vises.",
+        assertEquals("Åpne Bandroom på datamaskinen (den heter Brasscribe Bandroom i listen over programmer) og velg Koble til en telefon. Skriv inn de seks sifrene som vises.",
             strings(File(src, "fretscribe/res/values-nb/strings.xml"))["companion_explain"])
     }
 
@@ -80,7 +83,7 @@ class PairingWordsTest {
     fun helpAboutAndTheProblemsAFretscribePlayerCanMeetAreFretscribesWords() {
         val screen = src?.resolve("main/kotlin/no/brasscribe/play/ui/ProblemScreen.kt")
         assumeTrue("the app's sources are not in this checkout", screen?.isFile == true)
-        val help = used("ProblemScreen.kt", "HelpScreen")
+        val help = used("ProblemScreen.kt", "HelpScreen") + setOf("bandroom_get_title", "bandroom_get_text", "bandroom_open")
         val about = used("CompanionScreen.kt", "AboutScreen")
         assertTrue(help.containsAll(setOf("help_1_text", "help_2_text", "help_5_text")))
         // The problems of every app, not the drafts made on the phone: Fretscribe makes none there.
@@ -91,7 +94,7 @@ class PairingWordsTest {
         for (dir in listOf("values", "values-nb")) {
             val words = strings(File(src, "main/res/$dir/strings.xml")) + strings(File(src, "fretscribe/res/$dir/strings.xml"))
             val wrong = (help + about + problems).mapNotNull { name ->
-                words[name]?.takeIf { Regex("Brasscribe|Bandroom|brass ?band|brassband|band|partitur|score", RegexOption.IGNORE_CASE).containsMatchIn(it) }?.let { "$name: $it" }
+                words[name]?.takeIf { Regex("Brasscribe(?! Bandroom)|brass ?band|brassband|band(?!room)|partitur|score", RegexOption.IGNORE_CASE).containsMatchIn(it) }?.let { "$name: $it" }
             }
             assertEquals(dir, emptyList<String>(), wrong)
         }

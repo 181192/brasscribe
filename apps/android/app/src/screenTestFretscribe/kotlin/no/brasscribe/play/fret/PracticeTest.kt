@@ -464,6 +464,15 @@ class PracticeTest : ScreenTest() {
 
         // It plays those bars again and again: the recording never leaves them, and turns back at their end.
         repeat(10) { rule.onNodeWithTag("fs-practice-faster").performClick() }
+        // Every place the player turns back from, as the player itself has it at the turn (the test's own look at the
+        // place, a few times a second, can miss a moment past the bars).
+        val turnedFrom = java.util.Collections.synchronizedList(ArrayList<Double>())
+        val turnsTold = object : androidx.media3.common.Player.Listener {
+            override fun onPositionDiscontinuity(old: androidx.media3.common.Player.PositionInfo, new: androidx.media3.common.Player.PositionInfo, reason: Int) {
+                if (reason == androidx.media3.common.Player.DISCONTINUITY_REASON_SEEK) turnedFrom += old.positionMs / 1000.0
+            }
+        }
+        rule.runOnUiThread { (practice.recordingPlayer as MediaRecordingPlayer).media.addListener(turnsTold) }
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
         var turns = 0
@@ -477,6 +486,11 @@ class PracticeTest : ScreenTest() {
             ScreenDevice.elapse(rule, 30)
         }
         assertTrue("it turned back at the end of the bars ($turns times in 7 s)", turns >= 2)
+        rule.runOnUiThread { (practice.recordingPlayer as MediaRecordingPlayer).media.removeListener(turnsTold) }
+        synchronized(turnedFrom) {
+            for (at in turnedFrom) assertTrue("the player turns back from the end of its bars ($at s of ${span.start}–${span.endInclusive}; all: $turnedFrom)",
+                at >= span.start - 0.05 && at <= span.endInclusive + 0.25)
+        }
         // Steps stay inside the bars too.
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying(false)

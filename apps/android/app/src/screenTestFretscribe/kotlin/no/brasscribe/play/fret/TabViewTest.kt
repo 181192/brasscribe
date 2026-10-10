@@ -70,6 +70,11 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import no.brasscribe.play.test.DeviceOnly
 
@@ -1009,6 +1014,41 @@ class TabViewTest : TabScreenTest() {
         key(KeyEvent.KEYCODE_MOVE_HOME)
         settle()
         assertEquals(0f, scrolled().first)
+    }
+
+    /**
+     * The tests' wait for the tab waits for the player under it too. The player comes once the recording has been looked
+     * for on the phone, on Dispatchers.IO, and that can be after the tab is engraved, as on a busy runner: here every
+     * thread of Dispatchers.IO is kept busy from the moment the tab's notes are read until the keys have been pressed (or
+     * for 8 s). Had the keys paged by the room the tab had before the player came, Page Up would not undo Page Down.
+     */
+    @Test
+    fun theWaitForTheTabWaitsForThePlayerUnderIt() {
+        computer("bass-line-marks")
+        val given = checkNotNull(container.fixtureSource)
+        val keysPressed = CountDownLatch(1)
+        val held = java.util.concurrent.atomic.AtomicBoolean()
+        container.fixtureSource = FixtureSource { name ->
+            // (More tasks than Dispatchers.IO runs at once: 64 threads, unless a system property sets more.)
+            if (name == "tab.json" && showing && held.compareAndSet(false, true)) {
+                repeat(128) { CoroutineScope(Dispatchers.IO).launch { keysPressed.await(8, TimeUnit.SECONDS) } }
+            }
+            given.read(name)
+        }
+        try {
+            showTheTab()
+            key(KeyEvent.KEYCODE_PAGE_DOWN)
+            settle()
+            val one = scrolled().first
+            keysPressed.countDown()
+            waitUntil(10_000) { practice.recording != RecordingState.LOOKING }
+            settle()
+            key(KeyEvent.KEYCODE_PAGE_UP)
+            settle()
+            assertEquals("Page Up after Page Down (by $one)", 0f, scrolled().first)
+        } finally {
+            keysPressed.countDown()
+        }
     }
 
 }

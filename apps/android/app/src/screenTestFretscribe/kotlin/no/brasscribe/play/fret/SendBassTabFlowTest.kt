@@ -102,11 +102,11 @@ class SendBassTabFlowTest : ScreenTest() {
     fun aRecordingBecomesATabInEnglishAndBokmal() {
         val words = mapOf(
             "en-GB" to listOf("What is this?", "Just my instrument", "A full song", "On your computer",
-                "Fretscribe on your computer writes down the notes. Nothing goes online.", "Choose one to continue.", "Continue",
+                "Bandroom on your computer writes down the notes. Nothing goes online.", "Choose one to continue.", "Continue",
                 "Stop writing down the notes?", "Stop", "Check the song", "Tuning: Standard", "Key and tempo: E minor, 100 beats a minute, two-four time",
                 "Show the tab", "You can change this later.", "4-string bass · Standard", "is writing down the notes. You can switch to another app: when the tab is ready, it is in Your songs while your phone is connected to your computer."),
             "nb-NO" to listOf("Hva er dette?", "Bare instrumentet mitt", "En hel sang", "På datamaskinen din",
-                "Fretscribe på datamaskinen skriver ned tonene. Ingenting sendes til nettet.", "Velg ett for å fortsette.", "Fortsett",
+                "Bandroom på datamaskinen skriver ned tonene. Ingenting sendes til nettet.", "Velg ett for å fortsette.", "Fortsett",
                 "Slutte å skrive ned tonene?", "Stopp", "Sjekk sangen", "Stemming: Standard", "Toneart og tempo: e-moll, 100 slag i minuttet, to firedels takt",
                 "Vis tabben", "Du kan endre dette senere.", "4-strengs bass · Standard", "skriver ned tonene. Du kan bytte til en annen app: når tabben er klar, ligger den i Sangene dine så lenge telefonen er koblet til datamaskinen."),
         )
@@ -278,7 +278,7 @@ class SendBassTabFlowTest : ScreenTest() {
         language("en-GB")
         rule.runOnUiThread { container.fixtureSource = null; container.updateAppearance(Appearance.LIGHT) }
         openARecording()
-        rule.onNodeWithText("Fretscribe on your computer writes down the notes.").assertIsDisplayed()
+        rule.onNodeWithText("Bandroom on your computer writes down the notes.").assertIsDisplayed()
         rule.onNodeWithText("Not connected. Fretscribe needs your computer to write a tab.").assertIsDisplayed()
         card("song").performClick()
         // A choice alone is not enough: the computer comes first.

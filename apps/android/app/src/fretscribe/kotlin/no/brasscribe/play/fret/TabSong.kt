@@ -40,6 +40,12 @@ object SongAnswers {
     fun set(source: Source?, value: SongAnswer) {
         asked = source to value
     }
+
+    /** [from] is kept where [to] is now (the same recording): its answers are [to]'s. */
+    fun moved(from: Source, to: Source) {
+        val (recording, answer) = asked
+        if (recording === from) asked = to to answer
+    }
 }
 
 /**
