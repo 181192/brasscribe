@@ -136,6 +136,33 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
 
 | Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
 | --- | --- | --- |
-| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit` | `make test-ios-unit` (headless simulator); `make test-mac-ui` only in the macOS VM |
+| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh compare` (the Mac screen catalogue) | `make test-ios-unit` (headless simulator); `make test-mac-ui` only in the macOS VM |
 
 See [docs/dev/verify.md](../../docs/dev/verify.md).
+
+## Screen catalogue (Mac)
+
+`AppTests/PlayScreensTests.swift` draws every Mac screen and sheet off screen in the macOS app's unit-test bundle
+(`UnitTestHost`: no window on the screen), at 1280 × 800, in light, dark and increased contrast (light and dark), and
+in bokmål (`xcodebuild -testLanguage nb`). It checks each with the Mac apps' shared checks
+(`Packages/ScreenCatalogue`, also used by Bandroom for Mac): every control has a name; Play's own buttons, menus
+and links are at least 24 × 24 pt, and the system's standard controls follow WCAG 2.5.8's spacing exception; no
+single-line text is cut off; nothing is outside the window (except what a scroll area has out of view); and the
+controls come in reading order, in the order VoiceOver and the keyboard follow, within each column. The score and
+the stand put the controls drawn over the score first (above), which `ownOrder` records. `known` lists findings
+not yet fixed, each with its issue; `unsteady` the screens checked without a screenshot because they do not yet draw
+the same twice, each with its issue. `ResponsiveLayoutTests` keeps the layout at every window size.
+
+There is no large-text variant on the Mac: macOS has no Dynamic Type for an app's windows (a `dynamicTypeSize` of
+`accessibility3` draws the same pixels), and Play has no text size of its own. The two undocumented hooks
+(`AXEnhancedUserInterface`, `_colorSchemeContrast`) are checked on every run (`hooksStillWork`). What the catalogue
+does not do: a real Tab walk (SwiftUI moves focus only in a key window on a screen), multi-line text cut at its last
+line, the colour contrast of each text, and iOS and iPadOS.
+
+`scripts/screenshots.sh compare` takes its screenshots at the merge base with `origin/main` and on the branch, on
+the same machine, and writes `build/reports/screenshots/`. It exits 1 when a screen changed, appeared or went
+away, 2 when the catalogue's checks failed, and 3 when the base could not be taken. CI (`apple.yml`, job
+`play-screens`) runs it on every pull request that reaches Play. A changed screen fails `Play for Mac screenshots`
+unless the pull request has the label `screenshots-changed`; the images are in the `play-mac-screenshots`
+artefact. `scripts/screenshots.sh record` only takes them. The catalogue is left out of `make test` and
+`make test-mac-unit`. No images are committed.

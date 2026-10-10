@@ -2,6 +2,7 @@
 import AppKit
 import Foundation
 import ScoreKit
+import ScreenCatalogue
 import SwiftUI
 import Testing
 import TranscriptionKit
@@ -19,12 +20,14 @@ final class OffscreenHost {
     let window: NSWindow
     let hosting: NSHostingView<AnyView>
 
-    init(_ view: some View, size: CGSize) {
+    /// Light by default; the screen catalogue also draws it dark and with increased contrast.
+    init(_ view: some View, size: CGSize, dark: Bool = false, increasedContrast: Bool = false) {
         window = NSWindow(contentRect: CGRect(origin: CGPoint(x: -30_000, y: -30_000), size: size),
                           styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
-        window.appearance = NSAppearance(named: .aqua)
-        hosting = NSHostingView(rootView: AnyView(view.environment(\.colorScheme, .light)))
+        window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        let schemed = view.environment(\.colorScheme, dark ? .dark : .light)
+        hosting = NSHostingView(rootView: increasedContrast ? AnyView(schemed.catalogueContrast(increased: true)) : AnyView(schemed))
         // SwiftUI hands the window its content minimum (`contentMinSize`), as in the app; the test still
         // sets the size itself
         hosting.sizingOptions = .minSize
@@ -81,10 +84,11 @@ final class OffscreenHost {
         // the blurred strip behind a floating sidebar shows the page
         NSColor(Color.Brasscribe.bg).setFill()
         for a in all where named(a, ["BlurryAlleywayView"]) { flip(a.convert(a.bounds, to: hosting)).fill() }
+        let dark = window.appearance?.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         for g in glass {
-            NSColor(calibratedWhite: 0.955, alpha: 1).setFill()
+            NSColor(calibratedWhite: dark ? 0.17 : 0.955, alpha: 1).setFill()
             NSBezierPath(roundedRect: flip(g.convert(g.bounds, to: hosting)), xRadius: 14, yRadius: 14).fill()
-            NSColor(calibratedWhite: 0.85, alpha: 1).setStroke()
+            NSColor(calibratedWhite: dark ? 0.3 : 0.85, alpha: 1).setStroke()
             NSBezierPath(roundedRect: flip(g.convert(g.bounds, to: hosting)).insetBy(dx: 0.5, dy: 0.5), xRadius: 14, yRadius: 14).stroke()
             for v in g.subviews where shown(v) {
                 let n = NSStringFromClass(type(of: v))

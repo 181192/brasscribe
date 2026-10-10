@@ -26,6 +26,9 @@ settings:
 packages:
   BandroomKit:
     path: Packages/BandroomKit
+  # The screen catalogue's checks, shared with Play for Mac (test code only).
+  ScreenCatalogue:
+    path: ../../apple/Packages/ScreenCatalogue
 
 targets:
   BrasscribeBandroom:
@@ -84,6 +87,26 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         ARCHS: arm64
 
+  # The screen catalogue (README, Testing): unit tests hosted in a Debug build of the app, which then starts as
+  # `UnitTestHost` (App/AppEntry.swift): no menu-bar item, no window, canned engine answers, data of its own.
+  BrasscribeBandroomTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: BrasscribeBandroom
+      - package: ScreenCatalogue
+        product: ScreenCatalogue
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.bandroom.tests
+        GENERATE_INFOPLIST_FILE: YES
+        # The app's product name has a space, which XcodeGen's default test host leaves out.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Brasscribe Bandroom.app/Contents/MacOS/Brasscribe Bandroom"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        ARCHS: arm64
+
 schemes:
   BrasscribeBandroom:
     build:
@@ -91,3 +114,7 @@ schemes:
         BrasscribeBandroom: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - BrasscribeBandroomTests

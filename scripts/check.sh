@@ -43,8 +43,10 @@ changed_areas() {
                          { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
+      apps/apple/Packages/ScreenCatalogue/*) add apple; add bandroom-mac ;;
       apps/apple/*|capture/*) add apple ;;
       apps/bandroom/macos/*|.pixi-version) add bandroom-mac ;;
+      scripts/screenshot-compare.swift) add bandroom-mac ;;
       apps/android/*) add android ;;
       apps/windows/*) add windows ;;
     esac
@@ -103,8 +105,9 @@ run_area() {
     fast:apple) make -C apps/apple package-test-fast ;;
     full:apple) (cd apps/apple/Packages/BrasscribeKit && swift test --no-parallel) \
                 && (cd apps/apple/Packages/NotationKit && swift test --no-parallel) \
+                && (cd apps/apple/Packages/ScreenCatalogue && swift test) \
                 && (cd capture && swift test --no-parallel) \
-                && make -C apps/apple build-for-testing-mac test-mac-unit ;;
+                && make -C apps/apple build-for-testing-mac test-mac-unit && apps/apple/scripts/screenshots.sh compare ;;
     # Both apps' unit tests and their screens on the JVM (apps/android/README.md, Testing); fast leaves out the
     # Slow ones (the screen catalogues, practice in real time), full adds them through the screenshots' comparison
     # with the merge base, which also runs every screen's own checks.
@@ -114,8 +117,11 @@ run_area() {
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;
-    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) ;;
-    full:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && make build) ;;
+    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/Packages/ScreenCatalogue && swift test) ;;
+    # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen, compared with the merge base;
+    # its build is the app's build.
+    full:bandroom-mac) (cd apps/apple/Packages/ScreenCatalogue && swift test) \
+                       && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh compare) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac
 }

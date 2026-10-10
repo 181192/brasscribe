@@ -34,7 +34,7 @@ final class AppModel {
     private(set) var host: HostSnapshot?
     private(set) var models: ModelCheck.Result = .init(missing: [])
     var setupComplete: Bool {
-        didSet { UserDefaults.standard.set(setupComplete, forKey: "setupComplete") }
+        didSet { defaults.set(setupComplete, forKey: "setupComplete") }
     }
     /// "Restart when “Old Hundredth” is done".
     var restartWhenDone = false
@@ -46,13 +46,13 @@ final class AppModel {
     private(set) var iconHidden = false
     /// "The Brasscribe mark may be hidden…" is shown until it's dismissed, once.
     var hiddenIconNoticeDismissed: Bool {
-        didSet { UserDefaults.standard.set(hiddenIconNoticeDismissed, forKey: "hiddenIconNoticeDismissed") }
+        didSet { defaults.set(hiddenIconNoticeDismissed, forKey: "hiddenIconNoticeDismissed") }
     }
     var showHiddenIconNotice: Bool { iconHidden && !hiddenIconNoticeDismissed }
     /// Settings › Show in the Dock: a way back in when the menu-bar mark can't be seen.
     var showInDock: Bool {
         didSet {
-            UserDefaults.standard.set(showInDock, forKey: "showInDock")
+            defaults.set(showInDock, forKey: "showInDock")
             applyDockPolicy()
         }
     }
@@ -78,10 +78,16 @@ final class AppModel {
     @ObservationIgnored private let environment = ProcessInfo.processInfo.environment
     /// BANDROOM_DEMO=busy|idle (Debug builds): canned engine data for screenshots, no engine started.
     @ObservationIgnored let demo: Bool
+    /// The settings: the app's own (`.standard`); the screen catalogue's tests give it a store of their own.
+    @ObservationIgnored let defaults: UserDefaults
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
         let env = ProcessInfo.processInfo.environment
+        self.defaults = defaults
         let paths = BandroomPaths.standard(environment: env)
+        #if DEBUG
+        TestHost.requireIsolated(environment: env, data: paths.data, logs: paths.logs, defaults: defaults)
+        #endif
         try? paths.ensure()
         self.paths = paths
         self.logger = FileLogger(url: paths.bandroomLog)
@@ -92,19 +98,24 @@ final class AppModel {
             logger.write("admin token: \(error); using a new one for this session only")
             token = AdminToken.generate()
         }
-        let source = EngineConfiguration.resolveSource(environment: env, defaults: .standard, paths: paths, bundle: .main)
+        let source = EngineConfiguration.resolveSource(environment: env, defaults: defaults, paths: paths, bundle: .main)
         let bandSounds = EngineConfiguration.findBandSounds(resources: Bundle.main.resourceURL)
         logger.write(bandSounds.map { "band sounds: \($0.path)" }
                      ?? "band sounds missing from the app (Resources/band/brasscribe-band.sf2); Studio plays General MIDI sounds")
         let coreCLI = EngineConfiguration.findCoreCLI(resources: Bundle.main.resourceURL)
         logger.write(coreCLI.map { "core command line: \($0.path)" }
                      ?? "core command line missing from the app (Resources/bin/brasscribe-core); the installed engine cannot make bass tabs")
+        #if DEBUG
+        // The demo is always on the same Mac, so its screenshots show neither this one's name nor a different one each time.
+        let systemName = env["BANDROOM_DEMO"] != nil ? DemoEngine.computerName : ComputerName.current()
+        #else
         let systemName = ComputerName.current()
-        let customName = UserDefaults.standard.string(forKey: ComputerName.customNameKey) ?? ""
+        #endif
+        let customName = defaults.string(forKey: ComputerName.customNameKey) ?? ""
         systemComputerName = systemName
         customComputerName = customName
-        hiddenIconNoticeDismissed = UserDefaults.standard.bool(forKey: "hiddenIconNoticeDismissed")
-        showInDock = UserDefaults.standard.bool(forKey: "showInDock")
+        hiddenIconNoticeDismissed = defaults.bool(forKey: "hiddenIconNoticeDismissed")
+        showInDock = defaults.bool(forKey: "showInDock")
         let config = EngineConfiguration(source: source, pixi: EngineConfiguration.findPixi(bundle: .main, environment: env),
                                          paths: paths, computerName: ComputerName.shown(system: systemName, custom: customName),
                                          adminToken: token,
@@ -115,7 +126,7 @@ final class AppModel {
         let hfToken = env["HF_TOKEN"].flatMap { $0.isEmpty ? nil : $0 }
         let savedKey = SavedKey(store: KeychainStore())
         self.savedKey = savedKey
-        downloader = ModelDownloader(models: AppModel.modelsDir(paths), hub: ModelCatalog.hubCache(environment: env),
+        downloader = ModelDownloader(models: AppModel.modelsDir(paths, defaults: defaults), hub: ModelCatalog.hubCache(environment: env),
                                      token: { hfToken ?? savedKey.value })
         #if DEBUG
         demo = env["BANDROOM_DEMO"] != nil
@@ -124,7 +135,7 @@ final class AppModel {
         #endif
         // A checkout that already has its environment needs no first-run setup.
         let checkoutReady: Bool = if case .checkout = source { source.isEnvironmentReady } else { false }
-        setupComplete = UserDefaults.standard.bool(forKey: "setupComplete") || checkoutReady || demo
+        setupComplete = defaults.bool(forKey: "setupComplete") || checkoutReady || demo
         loginItemEnabled = SMAppService.mainApp.status == .enabled
 
         let log = logger
@@ -289,10 +300,18 @@ final class AppModel {
     private func startSampling() {
         sampleTask?.cancel()
         let sampler = sampler, paths = paths
+        // UserDefaults is thread-safe, though not marked Sendable.
+        nonisolated(unsafe) let defaults = defaults
+        #if DEBUG
+        let demoHost: HostSnapshot? = demo ? DemoEngine.host : nil
+        #else
+        let demoHost: HostSnapshot? = nil
+        #endif
         sampleTask = Task { [weak self] in
             while !Task.isCancelled {
-                let snap = await Task.detached { sampler.sample() }.value
-                let models = await Task.detached { ModelCheck.check(models: AppModel.modelsDir(paths)) }.value
+                // The demo's computer is always the same one, so its screenshots don't change with this Mac's load.
+                let snap = if let demoHost { demoHost } else { await Task.detached { sampler.sample() }.value }
+                let models = await Task.detached { ModelCheck.check(models: AppModel.modelsDir(paths, defaults: defaults)) }.value
                 self?.host = snap
                 self?.models = (self?.demo ?? false) ? .init(missing: []) : models
                 self?.announceIfChanged()
@@ -302,8 +321,8 @@ final class AppModel {
     }
 
     /// The folder the engine reads its models from (`EngineSource.modelsFolder`).
-    nonisolated static func modelsDir(_ paths: BandroomPaths) -> URL {
-        EngineConfiguration.resolveSource(environment: ProcessInfo.processInfo.environment, defaults: .standard, paths: paths,
+    nonisolated static func modelsDir(_ paths: BandroomPaths, defaults: UserDefaults) -> URL {
+        EngineConfiguration.resolveSource(environment: ProcessInfo.processInfo.environment, defaults: defaults, paths: paths,
                                           bundle: .main).modelsFolder(paths: paths)
     }
 
@@ -360,7 +379,8 @@ final class AppModel {
 
     // MARK: actions
 
-    func start() { supervisor.start() }
+    /// The demo pretends the engine runs and never starts one.
+    func start() { if !demo { supervisor.start() } }
 
     func stopNow() {
         restartWhenDone = false
@@ -377,6 +397,7 @@ final class AppModel {
     }
 
     func tryAgain() {
+        guard !demo else { return }
         if case .failed(.notInstalled) = supervisor.phase {
             openWindow("setup")
             return
@@ -501,6 +522,7 @@ final class AppModel {
 
     /// Fetches what is missing, only that. Waits for nothing: the engine can run meanwhile.
     func downloadMissing() {
+        guard !demo else { return }
         let missing = ModelCheck.check(models: downloader.models).missing
         models = .init(missing: missing)
         guard !missing.isEmpty else { return }
@@ -547,7 +569,7 @@ final class AppModel {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed != customComputerName else { return }
         customComputerName = trimmed
-        UserDefaults.standard.set(trimmed, forKey: ComputerName.customNameKey)
+        defaults.set(trimmed, forKey: ComputerName.customNameKey)
         supervisor.configuration.computerName = shownComputerName
         logger.write("name shown to phones: \(shownComputerName)")
         guard isRunning else { return }
@@ -578,8 +600,8 @@ final class AppModel {
             iconHidden = hidden
             // The window opens by itself once; the notice stays in it until Got it.
             let key = "hiddenIconWindowOpened"
-            if hidden && !hiddenIconNoticeDismissed && setupComplete && !UserDefaults.standard.bool(forKey: key) {
-                UserDefaults.standard.set(true, forKey: key)
+            if hidden && !hiddenIconNoticeDismissed && setupComplete && !defaults.bool(forKey: key) {
+                defaults.set(true, forKey: key)
                 openWindow("main")
             }
         }
@@ -593,7 +615,7 @@ final class AppModel {
     func finishSetup(startAtLogin: Bool) {
         setupComplete = true
         if startAtLogin && environment["BANDROOM_NO_LOGIN_ITEM"] == nil { setLoginItem(true) }
-        supervisor.configuration.source = EngineConfiguration.resolveSource(environment: environment, defaults: .standard, paths: paths, bundle: .main)
+        supervisor.configuration.source = EngineConfiguration.resolveSource(environment: environment, defaults: defaults, paths: paths, bundle: .main)
         if !isRunning { supervisor.start() }
     }
 
