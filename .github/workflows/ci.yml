@@ -330,7 +330,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: apps/android
@@ -470,8 +470,8 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.m2/repository/org/robolectric
-          key: gradle-${{ runner.os }}-android-screens-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
-          restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-screens-', runner.os) || '' }}
+          key: gradle-${{ runner.os }}-android-screens-${{ matrix.app }}-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-screens-{1}-', runner.os, matrix.app) || '' }}
 
       # The pull request's own code runs here, without the token: the label is read in a step of its own.
       - name: Screen catalogues, compared with the merge base
