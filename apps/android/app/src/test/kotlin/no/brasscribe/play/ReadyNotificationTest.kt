@@ -49,16 +49,39 @@ class ReadyNotificationTest : ScreenTest() {
     private fun phoneRunsTheService() {
         ComputerJobService.startInForeground = {
             starts++
-            if (!AppInFront.now) throw IllegalStateException("startForegroundService() not allowed: the app is in the background")
-            services += Robolectric.buildService(ComputerJobService::class.java).create().also { it.startCommand(0, starts) }.get()
+            try {
+                if (!AppInFront.now) throw IllegalStateException("startForegroundService() not allowed: the app is in the background")
+                services += Robolectric.buildService(ComputerJobService::class.java).create().also { it.startCommand(0, starts) }.get()
+            } catch (e: Throwable) {
+                // (The app takes a refused start quietly; a test that did not expect one says what refused it.)
+                refused += e
+                throw e
+            }
         }
     }
+
+    /** The starts that were refused, or failed, each with what said so. */
+    private val refused = mutableListOf<Throwable>()
+
+    /** What the service holds and how it got there, for a failed check to say. */
+    private fun told() = "held ${held()}, the app in front ${AppInFront.now}, $starts start(s), ${services.size} service(s) made, " +
+        "refused: ${refused.map { it.stackTraceToString().take(4000) }}"
 
     private fun stopped(s: ComputerJobService = service) = shadowOf(s).isStoppedBySelf && shadowOf(s).isForegroundStopped
     private fun held() = ComputerJobService.held.value
     private fun leaveTheApp() = rule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
     private fun comeBack() = rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
     private fun ready() = shadowOf(app.getSystemService(NotificationManager::class.java)).allNotifications.filter { it.channelId == JobNotices.CHANNEL_DONE }
+
+    // TEMPORARY, to catch the failure where it happens (CI): removed before this is merged.
+    @get:org.junit.Rule(order = -100)
+    val often = org.junit.rules.TestRule { base, d ->
+        object : org.junit.runners.model.Statement() {
+            override fun evaluate() {
+                repeat(if (d.methodName.startsWith("aJobMade")) 25 else 1) { starts = 0; services.clear(); refused.clear(); base.evaluate() }
+            }
+        }
+    }
 
     @Before
     fun noServiceYet() = ComputerJobService.forget()
@@ -133,8 +156,8 @@ class ReadyNotificationTest : ScreenTest() {
         opened(slow = false)
         // Make the score, and away at once: the recording is still being sent, and the job is made with the app away.
         rule.runOnUiThread { vm.startTranscription() }
-        assertEquals(1, starts)
-        assertTrue(held().sending && held().jobs.isEmpty())
+        assertEquals(told(), 1, starts)
+        assertTrue(told(), held().sending && held().jobs.isEmpty())
         leaveTheApp()
         val first = service
         waitUntil(60_000) { ready().isNotEmpty() && stopped(first) }
