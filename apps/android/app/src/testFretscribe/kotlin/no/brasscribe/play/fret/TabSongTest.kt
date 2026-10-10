@@ -363,12 +363,13 @@ class TabSongTest {
             val strings = File(res, "$dir/strings.xml").readText()
             fun text(name: String) = Regex("""<string name="$name">(.*?)</string>""").find(strings)?.groupValues?.get(1)?.replace("\\'", "'")
             assertEquals(dir, words, text("error_core_missing"))
-            // Nothing tells the player when the tab is ready while the app is away: no promise that it will.
-            assertFalse(dir, Regex("tell you|sier fra|leave this screen|gå fra").containsMatchIn(text("transcribe_leave").orEmpty()))
+            // The app says when the tab is ready only with notifications allowed: the other words promise no notification.
+            assertFalse(dir, Regex("tell you|sier fra|leave this screen|gå fra").containsMatchIn(text("transcribe_leave_computer_quiet").orEmpty()))
+            assertTrue(dir, Regex("tells you|sier fra").containsMatchIn(text("transcribe_leave_computer").orEmpty()))
             assertFalse(dir, Regex("guess|gjett").containsMatchIn(text("fs_what_hint").orEmpty()))
             // Every word this path can show is Fretscribe's, in both languages.
             for (name in listOf("error_core_missing", "error_unreachable", "error_engine_failed", "error_invalid_options", "where_companion_missing",
-                "problem_score_title", "problem_score_body", "transcribe_leave", "transcribe_where_companion", "transcribe_done", "transcribe_cancel_title",
+                "problem_score_title", "problem_score_body", "transcribe_leave", "transcribe_leave_computer", "transcribe_leave_computer_quiet", "transcribe_where_companion", "transcribe_done", "transcribe_cancel_title",
                 "stage_beats", "stage_stems", "stage_transcribe", "stage_quantize", "stage_arrange", "stage_export")) {
                 val t = text(name)
                 assertTrue("$dir $name", t != null && !t.contains("Brasscribe") && !Regex("score|partitur|band(?!room)", RegexOption.IGNORE_CASE).containsMatchIn(t))
