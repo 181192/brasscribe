@@ -94,6 +94,8 @@ the page. Open issues: #66–#70, #75–#77.
 
 ## At the first quiet moment: split the core
 
+> Replaced by `docs/plan/scribe-platform.md` (2026-10-10): the names, the layout, the versions and the order of the split are decided there. What follows is kept for its reasoning.
+
 Needs a window with no open branches touching `core/`, `music/` or `engine/` pipeline code: merge or
 rebase what is open, then freeze those areas for the duration. Each step is one PR with goldens
 unchanged.
@@ -131,6 +133,8 @@ unchanged.
 - Rename this repository to a neutral name once both sites are on their own domains.
 
 ## Open decisions
+
+> Replaced by `docs/plan/scribe-platform.md` (2026-10-10): the names, the layout, the versions and the order of the split are decided there. What follows is kept for its reasoning.
 
 - Final umbrella and crate names (working names: `scribe-core`, `target-brass`, `target-fretted`).
 - Whether Bandroom keeps its name as the shared companion for both products.
