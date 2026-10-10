@@ -136,7 +136,32 @@ def synth_layers(song: Path, out: Path) -> Path:
     return out
 
 
-def all_cases(work: Path, only: str | None = None) -> list[Case]:
+# What an eval song is arranged from. The tab sets under data/eval (GuitarSet, the rendered ukulele and
+# mandolin passages, ...) keep other files next to their reference.json: they are scored by the tab benches,
+# not arranged for band.
+ARRANGE_INPUTS = ("beat-this.beats", "muscriptor-medium.mid", "basic-pitch.mid")
+
+
+def missing_inputs(song: Path) -> tuple[str, ...]:
+    """The files of ARRANGE_INPUTS an eval song does not have."""
+    return tuple(n for n in ARRANGE_INPUTS if not (song / n).exists())
+
+
+def skipped_lines(skipped: dict[str, list[tuple[str, tuple[str, ...]]]]) -> list[str]:
+    """One line per eval set with songs left out: how many, and the files they lack."""
+    lines = []
+    for name, songs in sorted(skipped.items()):
+        lacking = sorted({n for _, miss in songs for n in miss}, key=ARRANGE_INPUTS.index)
+        lines.append(f"SKIP {name}: {len(songs)} song{'' if len(songs) == 1 else 's'} without {', '.join(lacking)}: "
+                     f"not arranged, so not compared")
+    return lines
+
+
+def all_cases(work: Path, only: str | None = None,
+              skipped: dict[str, list[tuple[str, tuple[str, ...]]]] | None = None) -> list[Case]:
+    """Every case, or those whose id contains `only`. An eval song without the files it is arranged from gives
+    no arranging cases: it is added to `skipped` (eval set -> [(song, missing files)]) instead, under the same
+    `only` filter."""
     mikkel = {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
               **({"contour": c} if (c := mikkel_contour()) else {})}
     # Checked-in scores (compound time: no arranged input is), first since they need no data/: only their
@@ -153,20 +178,26 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
             base = f"{eval_set.name}/{song.name}"
             beats = song / "beat-this.beats"
             mus, bp = song / "muscriptor-medium.mid", song / "basic-pitch.mid"
-            cases.append(Case(f"{base}/song", "song", {"beats": beats, "melody": mus, "support": bp, "bass": mus,
-                                                       "harmony": [mus, bp], "title": song.name}))
-            cases.append(Case(f"{base}/lead", "lead", {"beats": beats, "melody": mus, "support": bp, "bass": mus,
-                                                       "title": song.name}))
-            cases.append(Case(f"{base}/layers", "layers", {"layers": work / "_layers" / base, "song": song,
-                                                           "beats": beats, "title": song.name}))
-            if eval_set.name in QUARTET_SETS:
-                cases.append(Case(f"{base}/song-quartet", "song", {**cases[-3].args, "options": QUARTET}))
-                cases.append(Case(f"{base}/song-lead-seat", "song", {**cases[-4].args, "options": SONG_SEAT}))
+            missing = missing_inputs(song)
+            if missing and skipped is not None and (only is None or only in base):
+                skipped.setdefault(eval_set.name, []).append((song.name, missing))
+            if not missing:
+                cases.append(Case(f"{base}/song", "song", {"beats": beats, "melody": mus, "support": bp, "bass": mus,
+                                                           "harmony": [mus, bp], "title": song.name}))
+                cases.append(Case(f"{base}/lead", "lead", {"beats": beats, "melody": mus, "support": bp, "bass": mus,
+                                                           "title": song.name}))
+                cases.append(Case(f"{base}/layers", "layers", {"layers": work / "_layers" / base, "song": song,
+                                                               "beats": beats, "title": song.name}))
+                if eval_set.name in QUARTET_SETS:
+                    cases.append(Case(f"{base}/song-quartet", "song", {**cases[-3].args, "options": QUARTET}))
+                    cases.append(Case(f"{base}/song-lead-seat", "song", {**cases[-4].args, "options": SONG_SEAT}))
+            # The notated reference alone is enough to arrange it; quantizing it needs the beats.
             if _has_quarter(song / "reference.json"):
                 cases.append(Case(f"{base}/bench", "bench", {"reference": song / "reference.json", "title": song.name}))
                 if eval_set.name in QUARTET_SETS:
                     cases.append(Case(f"{base}/bench-quartet", "bench", {**cases[-1].args, "options": QUARTET}))
-                cases.append(Case(f"{base}/quant", "quant", {"reference": song / "reference.json", "beats": beats}))
+                if beats.exists():
+                    cases.append(Case(f"{base}/quant", "quant", {"reference": song / "reference.json", "beats": beats}))
     # Solo takes written for a seat (the frozen ChoraleBricks stems of eval/fixtures/choralebricks-solo): one stem
     # per low or middle brass instrument, with no seat, with its seat and, where the seat offers it, in bass clef.
     solo_fx = REPO / "eval" / "fixtures" / "choralebricks-solo"
@@ -238,7 +269,7 @@ def all_cases(work: Path, only: str | None = None) -> list[Case]:
     # small0 on the part's own recording): meter_of alone, and the layered song with that part's beats.
     solo = DATA / "runs" / "music-core" / "solo-beats"
     eval_songs = {s.name: s for es in eval_sets for s in es.iterdir()
-                  if (s / "reference.json").exists()}
+                  if (s / "reference.json").exists() and not missing_inputs(s)}
     for song in sorted(solo.glob("*/*")) if solo.exists() else []:
         if not (song / "reference.json").exists():
             continue

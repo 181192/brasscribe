@@ -10,7 +10,9 @@ canonicalisation (see canon.py), including the split parts. Each run starts
 from an empty <case>/rust, and the reference from an empty <case>/py. The
 Mikkel case is also compared file by file against the golden output in
 data/golden/mikkel-arranged-band; a case whose golden output is missing fails.
-A run that selects no cases fails too. With --musescore every Rust score
+A run that selects no cases fails too. An eval song without the files it is
+arranged from (cases.ARRANGE_INPUTS; the tab sets have none) is skipped and
+named in a SKIP line, never compared and never a failure. With --musescore every Rust score
 and lead sheet is round-tripped through MuseScore in one batched launch.
 """
 
@@ -28,7 +30,7 @@ from pathlib import Path
 
 from . import extras
 from .canon import json_equal, musicxml_equal
-from .cases import REPO, Case, all_cases, synth_layers
+from .cases import REPO, Case, all_cases, skipped_lines, synth_layers
 
 CORE = REPO / "core"
 OUTPUTS = {"layers": ["composition.json", "brass-band.musicxml"], "song": ["composition.json", "brass-band.musicxml"],
@@ -169,7 +171,11 @@ def main() -> None:
     ap.add_argument("--report", type=Path)
     ap.add_argument("--no-extras", action="store_true", help="skip the talking-score and humanize checks")
     args = ap.parse_args()
-    cases = all_cases(args.work, args.only)
+    skipped: dict[str, list[tuple[str, tuple[str, ...]]]] = {}
+    cases = all_cases(args.work, args.only, skipped)
+    skips = skipped_lines(skipped)
+    for line in skips:
+        print(line, flush=True)
     if not cases and not args.skip_rust:
         sys.exit(f"no conformance cases{f' match --only {args.only!r}' if args.only else ''}: nothing was compared")
     binary = None if args.skip_rust else rust_bin()
@@ -240,6 +246,9 @@ def main() -> None:
         files = [c for r in results for c in r["checks"]]
         n_ok = sum(r["ok"] for r in results)
         print(f"\ncases identical: {n_ok}/{len(results)}; files identical: {sum(c['ok'] for c in files)}/{len(files)}")
+        if skips:
+            print(f"eval songs skipped for missing inputs: {sum(len(v) for v in skipped.values())} "
+                  f"({', '.join(sorted(skipped))})")
         gold = [c for r in results for c in r["checks"] if c["file"].startswith("golden:")]
         if gold:
             print(f"golden files identical: {sum(c['ok'] for c in gold)}/{len(gold)}")
