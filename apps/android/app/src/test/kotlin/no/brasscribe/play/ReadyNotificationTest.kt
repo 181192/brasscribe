@@ -160,8 +160,7 @@ class ReadyNotificationTest : ScreenTest() {
         opened(slow = false)
         // Make the score, and away at once: the recording is still being sent, and the job is made with the app away.
         // The sending is held until the player has left: the fixture computer answers at once, and whenever the main
-        // thread got to run in between (the first start of the service takes its time on a slow machine), the job was
-        // made, or done, with the app still in front.
+        // thread got to run in between, as it does here on purpose, the job was made, or done, with the app in front.
         val send = holdSending()
         try {
             rule.runOnUiThread { vm.startTranscription() }
