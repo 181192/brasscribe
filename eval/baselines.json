@@ -2420,7 +2420,7 @@
       }
     },
     "mandolin-tab": {
-      "source": "measured by this suite (brasscribe bench mandolin-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate",
+      "source": "measured by this suite (brasscribe bench mandolin-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate. tremolo (mandolin_tremolo, mandolin_heldout_tremolo): a melody picked in thirty-seconds, scored apart and skipped where it has not been rendered (small_tab_bench synthesize --only-new and prepare make it)",
       "metrics": {
         "mandolin.instrument.onset_f1": 0.847,
         "mandolin.instrument.onset_p": 0.8,
@@ -2695,7 +2695,187 @@
           "tolerance": 0
         },
         "mandolin_heldout_dev.song.bar_ok": 1.0,
-        "mandolin_heldout_dev.instrument.bar_ok": 1.0
+        "mandolin_heldout_dev.instrument.bar_ok": 1.0,
+        "mandolin_tremolo.song.onset_f1": 0.516,
+        "mandolin_tremolo.song.onset_p": 0.914,
+        "mandolin_tremolo.song.onset_r": 0.359,
+        "mandolin_tremolo.song.octave_err_rate": {
+          "value": 0.016,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.song.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.song.hand_travel": {
+          "value": 0.426,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin_tremolo.song.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.song.tempo_ok": 1.0,
+        "mandolin_tremolo.song.meter_ok": 1.0,
+        "mandolin_tremolo.song.bar_ok": 1.0,
+        "mandolin_tremolo.song.chord_recall": 0.0,
+        "mandolin_tremolo.song.chord_precision": 0.667,
+        "mandolin_tremolo.song.string_agreement": 0.0,
+        "mandolin_tremolo.song.string_recall": 0.0,
+        "mandolin_tremolo.song.doubt_precision": 1.0,
+        "mandolin_tremolo.song.unplayable_dropped": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.song.leftovers_dropped": {
+          "value": 0.424,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.song.violations": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.song.excerpts": {
+          "value": 1.0,
+          "tolerance": 0
+        },
+        "mandolin_tremolo.instrument.onset_f1": 0.656,
+        "mandolin_tremolo.instrument.onset_p": 0.955,
+        "mandolin_tremolo.instrument.onset_r": 0.5,
+        "mandolin_tremolo.instrument.octave_err_rate": {
+          "value": 0.003,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.instrument.hand_travel": {
+          "value": 0.241,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin_tremolo.instrument.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.instrument.tempo_ok": 0.0,
+        "mandolin_tremolo.instrument.meter_ok": 1.0,
+        "mandolin_tremolo.instrument.bar_ok": 0.0,
+        "mandolin_tremolo.instrument.chord_recall": 0.0,
+        "mandolin_tremolo.instrument.chord_precision": 0.0,
+        "mandolin_tremolo.instrument.string_agreement": 0.0,
+        "mandolin_tremolo.instrument.string_recall": 0.0,
+        "mandolin_tremolo.instrument.doubt_precision": 1.0,
+        "mandolin_tremolo.instrument.unplayable_dropped": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.instrument.leftovers_dropped": {
+          "value": 0.313,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.instrument.violations": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin_tremolo.instrument.excerpts": {
+          "value": 1.0,
+          "tolerance": 0
+        },
+        "mandolin_heldout_tremolo.song.onset_f1": 0.165,
+        "mandolin_heldout_tremolo.song.onset_p": 0.692,
+        "mandolin_heldout_tremolo.song.onset_r": 0.094,
+        "mandolin_heldout_tremolo.song.octave_err_rate": {
+          "value": 0.003,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.song.out_of_range": {
+          "value": 0.019,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.song.hand_travel": {
+          "value": 0.389,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin_heldout_tremolo.song.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.song.tempo_ok": 0.0,
+        "mandolin_heldout_tremolo.song.meter_ok": 1.0,
+        "mandolin_heldout_tremolo.song.bar_ok": 0.0,
+        "mandolin_heldout_tremolo.song.chord_recall": 0.0,
+        "mandolin_heldout_tremolo.song.chord_precision": 0.0,
+        "mandolin_heldout_tremolo.song.string_agreement": 0.0,
+        "mandolin_heldout_tremolo.song.string_recall": 0.0,
+        "mandolin_heldout_tremolo.song.doubt_precision": 1.0,
+        "mandolin_heldout_tremolo.song.unplayable_dropped": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.song.leftovers_dropped": {
+          "value": 0.308,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.song.violations": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.song.excerpts": {
+          "value": 1.0,
+          "tolerance": 0
+        },
+        "mandolin_heldout_tremolo.instrument.onset_f1": 0.635,
+        "mandolin_heldout_tremolo.instrument.onset_p": 0.869,
+        "mandolin_heldout_tremolo.instrument.onset_r": 0.5,
+        "mandolin_heldout_tremolo.instrument.octave_err_rate": {
+          "value": 0.029,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.instrument.out_of_range": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.instrument.hand_travel": {
+          "value": 0.413,
+          "higher_is_better": false,
+          "tolerance": 0.05
+        },
+        "mandolin_heldout_tremolo.instrument.high_fret_share": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.instrument.tempo_ok": 0.0,
+        "mandolin_heldout_tremolo.instrument.meter_ok": 1.0,
+        "mandolin_heldout_tremolo.instrument.bar_ok": 0.0,
+        "mandolin_heldout_tremolo.instrument.chord_recall": 0.0,
+        "mandolin_heldout_tremolo.instrument.chord_precision": 0.0,
+        "mandolin_heldout_tremolo.instrument.string_agreement": 0.0,
+        "mandolin_heldout_tremolo.instrument.string_recall": 0.0,
+        "mandolin_heldout_tremolo.instrument.doubt_precision": 1.0,
+        "mandolin_heldout_tremolo.instrument.unplayable_dropped": {
+          "value": 0.0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.instrument.leftovers_dropped": {
+          "value": 0.145,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.instrument.violations": {
+          "value": 0.0,
+          "tolerance": 0,
+          "higher_is_better": false
+        },
+        "mandolin_heldout_tremolo.instrument.excerpts": {
+          "value": 1.0,
+          "tolerance": 0
+        }
       }
     },
     "guitar-rendered-tab": {
