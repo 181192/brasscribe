@@ -94,7 +94,7 @@ Steps 2, 3 and 4 do not touch each other and run side by side. Step 5 waits for 
 |---|---|
 | Android | 17 and 16 |
 | iPhone, iPad, Mac | 27 and 26 |
-| Windows | the current Windows 11 release and the one before |
+| Windows | Windows 11 |
 
 The floor moves up when a new system is released. Raising it is one pull request per platform that also removes the checks and fallbacks the older system needed.
 
