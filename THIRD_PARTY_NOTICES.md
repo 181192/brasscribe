@@ -82,22 +82,23 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
 - **Rust core:** crates under MIT, Apache-2.0, BSD-style or Unicode-3.0 licences, plus UniFFI (MPL-2.0,
   above). `cargo metadata` in `core/` lists them.
 - **Android** (Play and Fretscribe): AndroidX and Jetpack Compose (Apache-2.0), Kotlin coroutines and
-  serialization (Apache-2.0), Ktor (Apache-2.0) with OkHttp (Apache-2.0), Oboe (Apache-2.0), ONNX Runtime
-  (MIT), JNA (Apache-2.0 option of LGPL-2.1/Apache-2.0), CameraX (Apache-2.0) and
+  serialization (Apache-2.0), Ktor (Apache-2.0) with OkHttp (Apache-2.0), Oboe (Apache-2.0), JNA
+  (Apache-2.0 option of LGPL-2.1/Apache-2.0), CameraX (Apache-2.0) and
   [ZXing](https://github.com/zxing/zxing) core (Apache-2.0), which read the pairing QR code on the phone.
+  Play for Android also has ONNX Runtime (MIT), for the models it listens with.
 - **Fretscribe for Android** is built from the same code as Play for Android. Its release APK ships
   alphaTab with Bravura and the Sonivox SoundFont, alphaSkia and AndroidX Media3 (the table above), the
-  Rust core with UniFFI, the Android libraries in the line above (ONNX Runtime as the library alone), and
-  its two fonts, Atkinson Hyperlegible Next and Fretscribe Tab, with their licence texts. It does not
-  ship sfizz or what comes linked in with it, a band SoundFont, a model, or Instrument Serif.
+  Rust core with UniFFI, the Android libraries in the line above, and its two fonts, Atkinson
+  Hyperlegible Next and Fretscribe Tab, with their licence texts. It does not ship sfizz or what comes
+  linked in with it, a band SoundFont, a model or ONNX Runtime to run one, or Instrument Serif.
 - **Windows:** Windows App SDK (Microsoft software licence), ONNX Runtime with DirectML (MIT),
   NAudio (MIT), CommunityToolkit.Mvvm (MIT). Play for Windows also ships `vcruntime140.dll`, a
   redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
   needs.
 - **ONNX Runtime's telemetry.** Microsoft's builds of ONNX Runtime report to Microsoft by default
   (its `Privacy.md`): on Android, macOS and Linux through their own uploader, on Windows through ETW.
-  On Android, macOS and Linux Brasscribe turns it off: Play and Fretscribe for Android remove the AAR's telemetry
-  provider and set `ORT_DISABLE_TELEMETRY=1`, and the engine, Bandroom and the pixi environments set
+  On Android, macOS and Linux Brasscribe turns it off: Play for Android removes the AAR's telemetry
+  provider and sets `ORT_DISABLE_TELEMETRY=1`, and the engine, Bandroom and the pixi environments set
   `ORT_DISABLE_TELEMETRY=1` for every adapter. On Windows it is not fully off. Windows builds do not
   read that variable. Play for Windows and the swift-f0 adapter switch the runtime's telemetry events
   off before their first session, but the runtime emits a start-up event to Windows diagnostics before

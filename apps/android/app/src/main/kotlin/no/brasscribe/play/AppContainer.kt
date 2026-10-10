@@ -19,10 +19,6 @@ import no.brasscribe.play.connection.Credential
 import no.brasscribe.play.connection.CredentialStore
 import no.brasscribe.play.connection.KeystoreCipher
 import no.brasscribe.play.connection.PrefsStore
-import no.brasscribe.play.pitch.BasicPitch
-import no.brasscribe.play.pitch.BeatThis
-import no.brasscribe.play.pitch.SoloPipeline
-import no.brasscribe.play.pitch.SwiftF0
 
 /**
  * Companion engine settings, kept in SharedPreferences. The credential itself is not here: it is in
@@ -272,41 +268,16 @@ class AppContainer(private val context: Context) {
 
     fun engineLabel(): String = if (usingFixture) FixtureEngineApi.SERVER_NAME else settings.url.removePrefix("http://").removePrefix("https://")
 
-    /** SwiftF0 export from models/convert, bundled as an asset when it was present at build time. */
-    val hasPitchModel: Boolean by lazy { runCatching { context.assets.open(MODEL_ASSET).close() }.isSuccess }
+    /** What this app writes down on the phone itself: Brasscribe's models, or nothing in Fretscribe. */
+    val onPhone: OnPhone by lazy { Product.onPhone(context, core) }
 
-    fun openPitchModel(): SwiftF0 = SwiftF0(asset(MODEL_ASSET)!!, threads = 2)
+    /** A solo can be written down on the phone. */
+    val hasPitchModel: Boolean get() = onPhone.hasPitchModel
+
+    /** The phone can make a band draft. */
+    val hasBandModels: Boolean get() = onPhone.hasBandModels
 
     private fun asset(name: String): ByteArray? = runCatching { context.assets.open(name).use { it.readBytes() } }.getOrNull()
-
-    /** SwiftF0 plus Basic Pitch and Beat This! small when their models are bundled. */
-    class OpenPipeline(val pipeline: SoloPipeline, private val models: List<AutoCloseable>) : AutoCloseable {
-        override fun close() = models.forEach { it.close() }
-    }
-
-    fun openSoloPipeline(): OpenPipeline {
-        val sw = openPitchModel()
-        val bp = asset(BASIC_PITCH_ASSET)?.let { BasicPitch(it) }
-        val bt = asset(BEAT_THIS_ASSET)?.let { BeatThis(it) }
-        return OpenPipeline(SoloPipeline(sw, bp, bt, core), listOfNotNull(sw, bp, bt))
-    }
-
-    /** Basic Pitch and Beat This! small are bundled: the phone can make a band draft. */
-    val hasBandModels: Boolean by lazy {
-        listOf(BASIC_PITCH_ASSET, BEAT_THIS_ASSET).all { runCatching { context.assets.open(it).close() }.isSuccess }
-    }
-
-    /** Basic Pitch on the whole mix and Beat This! small, for a band draft ([hasBandModels] must be true). */
-    class OpenBandPipeline(val pipeline: no.brasscribe.play.pitch.BandDraftPipeline, private val models: List<AutoCloseable>) : AutoCloseable {
-        override fun close() = models.forEach { it.close() }
-    }
-
-    fun openBandDraftPipeline(): OpenBandPipeline {
-        val bp = BasicPitch(requireNotNull(asset(BASIC_PITCH_ASSET)) { "Basic Pitch is not bundled" })
-        val bt = runCatching { BeatThis(requireNotNull(asset(BEAT_THIS_ASSET)) { "Beat This! is not bundled" }) }
-            .onFailure { bp.close() }.getOrThrow()
-        return OpenBandPipeline(no.brasscribe.play.pitch.BandDraftPipeline(bp, bt, core), listOf(bp, bt))
-    }
 
     /** Band SoundFont presets and balance per part (assets/sounds/mapping.json). */
     val bandSoundMap: no.brasscribe.play.score.BandSoundMap? by lazy {
@@ -326,8 +297,5 @@ class AppContainer(private val context: Context) {
     companion object {
         /** Encrypted credentials; excluded from backup (res/xml/backup_rules.xml, data_extraction_rules.xml). */
         const val CREDENTIALS_PREFS = "credentials"
-        const val MODEL_ASSET = "models/swift-f0-window.onnx"
-        const val BASIC_PITCH_ASSET = "models/nmp-b1.onnx"
-        const val BEAT_THIS_ASSET = "models/beat-this-small0.onnx"
     }
 }
