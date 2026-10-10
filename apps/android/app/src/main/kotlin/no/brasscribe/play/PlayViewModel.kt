@@ -61,7 +61,7 @@ import java.util.zip.ZipInputStream
 enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES, SHEET_MUSIC }
+enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES, SHEET_MUSIC, OPEN_FAILED }
 
 /** [r] is to be checked note by note, and holds no note to check: it opens on the problem screen instead. */
 fun foundNoNotes(r: TranscriptionResult, then: Screen): Boolean =
@@ -1325,13 +1325,26 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 saveCurrentScore(r, entry.title)
                 backStack.value = opened(review)
             } catch (e: Exception) {
-                // A connection or engine failure is no unreadable file: its own words, not "try an MP3".
-                val why = ErrorWords.of(e).takeIf { it != R.string.error_generic }
-                showProblem(if (why != null) Problem.SCORE_FAILED else Problem.FILE_UNREADABLE, e.message, why)
+                // A score that was made and could not be fetched: its own problem. It is no unreadable file ("try an MP3"),
+                // and no score that could not be made: trying again opens it again, and the recording in hand, if there
+                // is one, has nothing to do with it.
+                failedOpen = { openEntry(entry, review, stand) }
+                showProblem(Problem.OPEN_FAILED, e.message, ErrorWords.of(e).takeIf { it != R.string.error_generic })
             } finally {
                 openingScore.value = null
             }
         }
+    }
+
+    /** Opens the score that could not be opened ([Problem.OPEN_FAILED]) again, as it was asked for. */
+    private var failedOpen: (() -> Unit)? = null
+
+    /** Try again on the problem screen of a score that could not be opened. */
+    fun retryOpen() {
+        val again = failedOpen ?: return home()
+        failedOpen = null
+        backStack.update { it.dropLast(1) }
+        again()
     }
 
     fun renameEntry(entry: ScoreEntry, title: String) {

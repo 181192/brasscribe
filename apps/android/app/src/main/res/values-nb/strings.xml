@@ -431,6 +431,8 @@
     <string name="problem_record_reason">En annen app bruker kanskje mikrofonen. Lukk den og prøv igjen.</string>
     <string name="problem_score_title">Partituret kunne ikke lages</string>
     <string name="problem_score_body">Noe gikk galt mens Brasscribe arbeidet med det.</string>
+    <string name="problem_open_title">Dette partituret kunne ikke åpnes</string>
+    <string name="problem_open_body">Brasscribe fikk ikke hentet det fra datamaskinen din.</string>
     <string name="problem_score_body_unpaired">Dette opptaket trenger datamaskinen din, og ingen er koblet til denne telefonen.</string>
     <string name="problem_score_kept">Opptaket ditt er tatt vare på. Du kan prøve igjen nå eller senere.</string>
     <string name="problem_score_kept_scores">Opptaket ditt er tatt vare på i Partiturene dine. Du kan prøve igjen nå eller senere.</string>

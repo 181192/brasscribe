@@ -446,6 +446,8 @@
     <string name="problem_score_body_unpaired">This recording needs your computer, and none is connected to this phone.</string>
     <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
     <string name="problem_score_kept_scores">Your recording is kept in Your scores. You can try again now or later.</string>
+    <string name="problem_open_title">This score couldn\'t be opened</string>
+    <string name="problem_open_body">Brasscribe couldn\'t get it from your computer.</string>
     <string name="problem_too_large_title">This file is too big for the phone</string>
     <string name="problem_too_large_body">The phone ran out of memory while working on it.</string>
     <string name="problem_too_large_reason">Try a shorter recording, or split the video into parts.</string>
