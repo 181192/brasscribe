@@ -160,9 +160,11 @@ if ($Mode -eq "compare") {
                         if ($LASTEXITCODE -ne 0 -or -not $FfiDll) {
                             Log "the core differs at the base: building it there"
                             Push-Location (Join-Path $tree "core")
-                            try { cargo build --release --locked -p scribe-ffi | Out-Host } finally { Pop-Location }
+                            # Every library of the workspace, so this does not depend on what the base calls its crates.
+                            # Its app then finds the library in its own core/target/release, under the name it knows.
+                            try { cargo build --release --locked --lib | Out-Host } finally { Pop-Location }
                             if ($LASTEXITCODE -ne 0) { $why = "its core did not build" }
-                            $baseFfi = Join-Path $tree "core/target/release/scribe_ffi.dll"
+                            $baseFfi = $null
                         }
                         if (-not $why) {
                             try {
