@@ -50,13 +50,28 @@ title() {
   esac
 }
 
+# gh api, tried a few times: an answer cut off by the network is not "no record".
+api() {
+  local try
+  for try in 1 2 3 4; do
+    if gh api "$@"; then return 0; fi
+    sleep $((try * 5))
+  done
+  return 1
+}
+
 # The artefacts of a run that are records: "<name> <id>" lines.
-records() { gh api --paginate "repos/$repo/actions/runs/$1/artifacts?per_page=100" --jq '.artifacts[] | select(.expired | not) | select(.name | startswith("screens-")) | "\(.name) \(.id)"'; }
+records() { api --paginate "repos/$repo/actions/runs/$1/artifacts?per_page=100" --jq '.artifacts[] | select(.expired | not) | select(.name | startswith("screens-")) | "\(.name) \(.id)"'; }
 
 # An artefact's files into a folder.
 fetch() {
   mkdir -p "$2"
-  gh api "repos/$repo/actions/artifacts/$1/zip" > "$2.zip"
+  local try
+  for try in 1 2 3 4; do
+    if gh api "repos/$repo/actions/artifacts/$1/zip" > "$2.zip"; then break; fi
+    [ "$try" -lt 4 ] || return 1
+    sleep $((try * 5))
+  done
   unzip -q -o "$2.zip" -d "$2"
   rm -f "$2.zip"
 }
@@ -70,7 +85,7 @@ flat() {
   done
 }
 
-info="$(gh api "repos/$repo/actions/runs/$run")"
+info="$(api "repos/$repo/actions/runs/$run")"
 sha="$(jq -r .head_sha <<< "$info")"
 created="$(jq -r .created_at <<< "$info")"
 say "Screens of ${sha:0:12} (run $run), compared with the record before each."
@@ -80,7 +95,7 @@ records "$run" > "$work/now.txt"
 if [ ! -s "$work/now.txt" ]; then say "The run has no screen records: nothing to compare."; exit 0; fi
 
 # Earlier runs of the same kind, newest first; their records are listed once, when first asked for.
-gh api "repos/$repo/actions/workflows/ci.yml/runs?branch=$branch&event=$event&per_page=30" \
+api "repos/$repo/actions/workflows/ci.yml/runs?branch=$branch&event=$event&per_page=30" \
   --jq ".workflow_runs[] | select(.created_at < \"$created\") | \"\(.id) \(.head_sha)\"" > "$work/earlier.txt"
 
 while read -r name id; do
