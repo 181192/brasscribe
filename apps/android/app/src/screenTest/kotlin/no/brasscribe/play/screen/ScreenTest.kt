@@ -102,6 +102,7 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
         rule.runOnUiThread {
             container.fixtureSource = null
             container.qrCamera = no.brasscribe.play.ui.PhoneQrCamera
+            container.shownVersion = no.brasscribe.play.BuildConfig.VERSION_NAME
             container.updateAppearance(Appearance.SYSTEM)
             vm.scores.value.forEach(vm::deleteEntry)
             vm.home()
