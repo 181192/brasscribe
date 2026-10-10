@@ -44,7 +44,7 @@ The uncertainty hues are the blue/orange pair from the Okabe-Ito palette, which 
 | focus / surface | 15.42 | 14.46 | 21.00 | 3 |
 | error / bg | 6.26 | 10.96 | 8.65 | 4.5 |
 
-All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 432 pairs, all pass.
+All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 444 pairs, all pass.
 
 ### Colour-vision simulation (CIEDE2000, from the generated report)
 
