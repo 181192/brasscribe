@@ -22,7 +22,7 @@ Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/f
 Once per checkout or worktree:
 
 ```sh
-eval "$(scripts/worktree-setup.sh)"      # later shells: source .brasscribe-env
+eval "$(scripts/worktree-setup.sh)"      # later shells: source .scribe-env
 ```
 
 The script is idempotent. `--print-env` only prints the environment, `--no-core` skips the prebuilt
@@ -38,13 +38,14 @@ core, and `--core host,apple` limits it to those components. It does four things
   - `ScribeFFI.xcframework`
   - the Android `jniLibs`
 - Clones `studio/node_modules` from the main checkout when the lock files match.
-- Prints the environment, and writes it to `.brasscribe-env`: `BRASSCRIBE_REPO`, `SCRIBE_FFI_PATH`,
+- Prints the environment, and writes it to `.scribe-env`: `BRASSCRIBE_REPO`, `SCRIBE_FFI_PATH`,
   `SCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
   `PATH` with rustup and the Android tools.
-  The tests of the native core skip themselves without `SCRIBE_FFI_PATH`, so `scripts/check.sh` refuses to run the
-  `windows`, `core-dotnet` and `android` areas when it or `SCRIBE_CORE_CLI` is not set or names a file that is gone
-  (a `.brasscribe-env` from before a change of names, for one): run the setup again. Windows Play's tests fail for the
-  same reason when the checkout has a built core that `SCRIBE_FFI_PATH` does not point at.
+  The tests of the native core skip themselves when they cannot find it, so `scripts/check.sh` refuses to run the
+  `windows`, `core-dotnet` and `android` areas when `SCRIBE_FFI_PATH` is not set or names a file that is gone, and
+  the `engine` area likewise for `SCRIBE_CORE_CLI`: run the setup again. For the same reason Windows Play's tests fail
+  when the checkout has a built core that `SCRIBE_FFI_PATH` does not point at, and the Android core bridge's tests
+  fail when the host library is built but does not load.
 
 ### The core artifact cache
 

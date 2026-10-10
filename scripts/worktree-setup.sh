@@ -12,7 +12,7 @@
 #    command line, the Apple xcframework and the Android jniLibs, built once per core change and
 #    shared by all worktrees.
 # 3. Prints the environment to export on stdout (progress goes to stderr), and writes it to
-#    .brasscribe-env for `source .brasscribe-env` in later shells.
+#    .scribe-env for `source .scribe-env` in later shells.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -94,6 +94,6 @@ if [ "$ROOT" != "$MAIN" ] && [ ! -d "$ROOT/studio/node_modules" ] && [ -d "$MAIN
 fi
 
 # 3. Environment
-env_lines > "$ROOT/.brasscribe-env"
-log "environment written to .brasscribe-env (source it in new shells)"
+env_lines > "$ROOT/.scribe-env"
+log "environment written to .scribe-env (source it in new shells)"
 env_lines

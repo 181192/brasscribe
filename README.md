@@ -45,7 +45,7 @@ toolchain (Xcode 16+ and `xcodegen`, the Android SDK, the .NET 10 SDK, Rust stab
 in its README.
 
 ```sh
-eval "$(scripts/worktree-setup.sh)"   # once per checkout: prebuilt Rust core, environment in .brasscribe-env
+eval "$(scripts/worktree-setup.sh)"   # once per checkout: prebuilt Rust core, environment in .scribe-env
 pixi install                          # engine, music library, benchmarks, tests
 pixi run test-fast                    # engine + music unit tests
 pixi run studio                       # engine + Studio on http://127.0.0.1:8765/

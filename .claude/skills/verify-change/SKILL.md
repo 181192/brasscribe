@@ -8,7 +8,7 @@ description: Pick and run the right checks for a change in Brasscribe, and repor
 The tiers, the areas and what each runs are defined by `scripts/check.sh` and
 [docs/dev/verify.md](../../../docs/dev/verify.md). Read them; don't rely on a remembered list.
 
-1. **Set up once per checkout:** `eval "$(scripts/worktree-setup.sh)"` (later shells: `source .brasscribe-env`).
+1. **Set up once per checkout:** `eval "$(scripts/worktree-setup.sh)"` (later shells: `source .scribe-env`).
 2. **While working:** `make check-fast`. It runs the areas the branch touches. To name areas:
    `AREAS="engine core" make check-fast`. Run `scripts/check.sh` without arguments to see the areas.
 3. **Before handing off:** `make check` (the full suites, as CI runs them).

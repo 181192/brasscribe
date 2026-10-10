@@ -13,7 +13,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 # shellcheck disable=SC1091
-[ -f .brasscribe-env ] && . ./.brasscribe-env
+[ -f .scribe-env ] && . ./.scribe-env
 export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
@@ -68,14 +68,14 @@ free_port() { python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",
 need_node_modules() { [ -d studio/node_modules ] || (cd studio && npm ci --no-audit --no-fund); }
 
 # The tests of the native core skip themselves when they are not pointed at it, so an environment that
-# is stale (no SCRIBE_FFI_PATH or SCRIBE_CORE_CLI, as .brasscribe-env from before a change of names) or
-# that names a file that is gone would pass with those tests left out. Refuse it instead.
+# is stale (a variable of the core not set) or that names a file that is gone would pass with those tests
+# left out. Refuse it instead. Arguments: the variables the area's tests read.
 native_core_env() {
   local var path
-  for var in SCRIBE_FFI_PATH SCRIBE_CORE_CLI; do
+  for var in "$@"; do
     path="${!var:-}"
     if [ -z "$path" ]; then
-      echo "check: $var is not set, so the tests of the native core would skip: run scripts/worktree-setup.sh (it writes .brasscribe-env)" >&2
+      echo "check: $var is not set, so the tests of the native core would skip: run scripts/worktree-setup.sh (it writes .scribe-env)" >&2
       return 1
     elif [ ! -f "$path" ]; then
       echo "check: $var names $path, which is not there: run scripts/worktree-setup.sh" >&2
@@ -88,9 +88,11 @@ run_area() {
   local area="$1"
   # The apps test against the prebuilt core: refresh it first (about a second when nothing changed).
   case "$area" in
-    windows|core-dotnet) scripts/core-artifacts.sh ensure host && native_core_env || return 1 ;;
-    android) scripts/core-artifacts.sh ensure host android && native_core_env || return 1 ;;
+    windows|core-dotnet) scripts/core-artifacts.sh ensure host && native_core_env SCRIBE_FFI_PATH || return 1 ;;
+    android) scripts/core-artifacts.sh ensure host android && native_core_env SCRIBE_FFI_PATH || return 1 ;;
     apple) scripts/core-artifacts.sh ensure apple || return 1 ;;
+    # The tab profile's tests run the core's command line where SCRIBE_CORE_CLI says it is.
+    engine) native_core_env SCRIBE_CORE_CLI || return 1 ;;
   esac
   case "$tier:$area" in
     fast:engine) pixi run test-fast ;;

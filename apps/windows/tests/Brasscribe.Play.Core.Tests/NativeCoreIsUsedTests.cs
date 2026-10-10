@@ -31,6 +31,6 @@ public class NativeCoreIsUsedTests
     {
         if (Named is not null || Built() is not { } built) return;
         Assert.Fail($"the core is built at {built}, but SCRIBE_FFI_PATH is not set, so every test of the native core would skip: "
-                    + "run scripts/worktree-setup.sh and load .brasscribe-env, or set SCRIBE_FFI_PATH");
+                    + "run scripts/worktree-setup.sh and load .scribe-env, or set SCRIBE_FFI_PATH");
     }
 }
