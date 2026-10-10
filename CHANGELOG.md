@@ -2,6 +2,69 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.8.0 (2026-10-10)
+
+### New features
+
+- **Android:** Both apps call the computer's program Brasscribe Bandroom and say where to get it ([#237](https://github.com/181192/brasscribe/pull/237))
+- **Android:** Fretscribe keeps a take whose tab was not made in Your songs for 30 days ([#242](https://github.com/181192/brasscribe/pull/242))
+- **Android:** Leave the app while the computer works, and get told when the score or tab is ready ([#246](https://github.com/181192/brasscribe/pull/246))
+
+### Fixes
+
+- **Android:** Fretscribe names the computer Bandroom on Kari's Mac ([#287](https://github.com/181192/brasscribe/pull/287))
+- **Android:** Fretscribe's tab opens on its first line on a phone on its side ([#250](https://github.com/181192/brasscribe/pull/250))
+- **Android:** Fretscribe says it can't open sheet music yet instead of showing it on Brasscribe's score screen ([#268](https://github.com/181192/brasscribe/pull/268))
+- **Android:** Fretscribe is built without sfizz, and both apps credit JNA ([#290](https://github.com/181192/brasscribe/pull/290))
+- **Android:** On the music stand, Leave and Turn the music say when they have the keyboard's focus ([#303](https://github.com/181192/brasscribe/pull/303))
+- **Android:** A score that can't be opened from the computer says so, and Try again opens it again ([#309](https://github.com/181192/brasscribe/pull/309))
+- **Android:** On Fretscribe's tab, Tab reaches the note's Close after the tab and the player, not before them ([#305](https://github.com/181192/brasscribe/pull/305))
+- **Android:** Tab reaches the part picker and Music stand above the score, and the part chips on Check the notes ([#313](https://github.com/181192/brasscribe/pull/313))
+- **Android:** A score on the computer opened with no computer connected says where it is ([#319](https://github.com/181192/brasscribe/pull/319))
+- **iPhone, iPad and Mac:** No crash when a score closes while another opens ([#276](https://github.com/181192/brasscribe/pull/276))
+- **iPhone, iPad and Mac:** On the Mac, VoiceOver reaches Done after the settings, not before them ([#306](https://github.com/181192/brasscribe/pull/306))
+- **iPhone, iPad and Mac:** The version in Settings takes a tap or click on 44 × 44 pt ([#307](https://github.com/181192/brasscribe/pull/307))
+- **iPhone, iPad and Mac:** Check the notes marks the note it asks about, not one in the next bar ([#304](https://github.com/181192/brasscribe/pull/304))
+- **iPhone, iPad and Mac:** On the Mac, the score's Speed slider is easier to grab ([#308](https://github.com/181192/brasscribe/pull/308))
+- **Core:** The talking score names a pickup, with its notes on the beats they fall on, instead of reading it as bar 0 ([#299](https://github.com/181192/brasscribe/pull/299))
+- **Design:** Pink light's very-unsure "?" is readable on its tonal fills ([#286](https://github.com/181192/brasscribe/pull/286))
+- **Engine:** A mandolin tremolo in a song is read from the separator's other stem ([#239](https://github.com/181192/brasscribe/pull/239))
+- **Engine:** A stopped sheet-music export also stops MuseScore behind a launcher ([#285](https://github.com/181192/brasscribe/pull/285))
+- **Studio:** The keyboard shortcuts sheet fits a 320 px window and opens at its heading ([#288](https://github.com/181192/brasscribe/pull/288))
+- **Studio:** Tab in a table that scrolls sideways brings the focused button fully into view ([#293](https://github.com/181192/brasscribe/pull/293))
+- **Windows:** Pink colours the library pane and screen ground when you choose it in Settings ([#278](https://github.com/181192/brasscribe/pull/278))
+- **Windows:** Switches in Settings say «På» and «Av» in Norwegian ([#279](https://github.com/181192/brasscribe/pull/279))
+- **Windows:** No "Something went wrong" when the theme changes as a window closes ([#280](https://github.com/181192/brasscribe/pull/280))
+
+<details><summary>Under the hood (23 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Android:** On the JVM a recording plays out by the clock, so a repeat turns back once ([#283](https://github.com/181192/brasscribe/pull/283))
+- **Android:** The tab tests wait for the player under the tab before they use the page ([#274](https://github.com/181192/brasscribe/pull/274))
+- **Android:** The catalogue's About shows a fixed version, so a release leaves its pictures alone ([#294](https://github.com/181192/brasscribe/pull/294))
+- **Android:** The talking-score screen's touch targets are checked to be 48 dp ([#314](https://github.com/181192/brasscribe/pull/314))
+- **Android:** The solo test waits for the "your part" chip after coming back to the score ([#317](https://github.com/181192/brasscribe/pull/317))
+- **Android:** The ready notification test no longer fails now and then at its first check ([#316](https://github.com/181192/brasscribe/pull/316))
+- **Android:** The landscape test takes the score's picture again when a render came in between ([#320](https://github.com/181192/brasscribe/pull/320))
+- **iPhone, iPad and Mac:** Run the Apple apps' checks on pull requests, with screen catalogues for Play and Bandroom for Mac ([#265](https://github.com/181192/brasscribe/pull/265))
+- **iPhone, iPad and Mac:** The layout tests size their window themselves, so they no longer crash on macOS 27 ([#310](https://github.com/181192/brasscribe/pull/310))
+- **iPhone, iPad and Mac:** The music stand's UI tests count their waits between answers, not through them ([#312](https://github.com/181192/brasscribe/pull/312))
+- **Bandroom for Mac:** The throttle's tests move its time themselves, so a busy machine no longer fails them ([#311](https://github.com/181192/brasscribe/pull/311))
+- **Core:** The full conformance run skips eval songs that have nothing to arrange from ([#297](https://github.com/181192/brasscribe/pull/297))
+- **Deps-dev:** Bump source-map-js from 1.2.1 to 1.2.2 in /studio in the security group across 1 directory ([#291](https://github.com/181192/brasscribe/pull/291))
+- **Eval:** Regenerating the bench baselines changes only the values that moved ([#289](https://github.com/181192/brasscribe/pull/289))
+- **Studio:** The catalogue pictures the engraved score again, and a changed view fails the Studio job ([#296](https://github.com/181192/brasscribe/pull/296))
+- **Windows:** A screen catalogue for Play and Bandroom, compared with the merge base ([#266](https://github.com/181192/brasscribe/pull/266))
+- **Windows:** Narrower path filters, a group for each way in, and the engine test's packages kept ([#295](https://github.com/181192/brasscribe/pull/295))
+- Bump actions/cache from 4 to 6 in /.github/actions/band-sounds ([#156](https://github.com/181192/brasscribe/pull/156))
+- Bump actions/download-artifact from 4 to 8 ([#96](https://github.com/181192/brasscribe/pull/96))
+- Bump softprops/action-gh-release from 2.6.2 to 3.0.3 ([#95](https://github.com/181192/brasscribe/pull/95))
+- Bump gradle/actions/dependency-submission from 6.3.0 to 6.4.0 in the minor-and-patch group ([#94](https://github.com/181192/brasscribe/pull/94))
+- The screenshot comparisons use the main the pull request was merged into as their base ([#292](https://github.com/181192/brasscribe/pull/292))
+- Setup-gradle 6.4.0 everywhere, with its cache off and a plain cache for what Gradle downloads ([#284](https://github.com/181192/brasscribe/pull/284))
+
+</details>
+
 ## 0.7.1 (2026-10-04)
 
 ### Fixes
