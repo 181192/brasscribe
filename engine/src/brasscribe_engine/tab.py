@@ -6,11 +6,14 @@
                                 (bass_tab.py), stage for stage, so the two share their cache entries.
     guitar-6, guitar-7, guitar-8
     ukulele, ukulele-baritone   chords and lines. The stages below. All of them are read from the separator's
-    mandolin                    guitar stem in a song: it has no stem for a ukulele or a mandolin.
+    mandolin                    guitar stem in a song: it has no stem for a ukulele or a mandolin. A mandolin
+                                is read from its `other` stem when the guitar stem is empty (a tremolo).
 
     beats                              Beat This! on the recording
     stems                              BS-RoFormer SW, as in pop-rock and bass-tab; left out when the
                                        recording is the instrument alone
+    stem                               a mandolin in a song: its guitar stem, or `other` when that is empty
+                                       (stem_to_read)
     transcribe.<kind>.basic-pitch      Basic Pitch on the instrument's stem, or on the recording when it is
                                        the instrument alone (then retuned to A = 440 first: tuning.py)
     transcribe.<kind>.swift-f0         SwiftF0 on the same audio. It follows one line, so its opinion counts
@@ -32,6 +35,7 @@ from __future__ import annotations
 import bisect
 import itertools
 import json
+import tempfile
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -102,6 +106,9 @@ class Heard:
     # note was wrong 40 times in 41, and it pulled the real note up the neck to be fingered with it; elsewhere
     # it was not measured to help as much (a mandolin's and a guitar's held-out passages lost doubt precision).
     unheard_overtones_out: bool = False
+    # In a song, the stem read instead when `stem` is empty (stem_to_read). A mandolin's tremolo comes out of the
+    # separator in its `other` stem, and none of it in `guitar`.
+    empty_stem_fallback: str | None = None
 
 
 GUITAR_CHORD_HIGH = 76  # E5: the 12th fret of a guitar's top string in standard tuning (six, seven and eight strings alike)
@@ -113,12 +120,65 @@ HEARD = {
     "guitar-7": Heard("guitar", "guitar", 34, 88, 7, GUITAR_CHORD_HIGH, apart_overtones_out=True),
     "guitar-8": Heard("guitar", "guitar", 30, 88, 8, GUITAR_CHORD_HIGH, apart_overtones_out=True),
     # The separator has no stem for a ukulele or a mandolin. Rendered ones under a bass and drums came out in its
-    # guitar stem almost whole (recall 0.96) and nowhere else (small_tab_bench). In a song that also has a guitar
-    # the two share the stem and the tab holds both, so a song is not their default (alone_by_default).
+    # guitar stem almost whole (recall 0.96) and nowhere else (small_tab_bench), except a mandolin's tremolo, which
+    # went to `other` (empty_stem_fallback). In a song that also has a guitar the two share the stem and the tab
+    # holds both, so a song is not their default (alone_by_default).
     "ukulele": Heard("ukulele", "guitar", 55, 87, 4, 69 + 12, True, True, True, True, unheard_overtones_out=True),
     "ukulele-baritone": Heard("ukulele", "guitar", 50, 83, 4, 64 + 12, True, True, True, True, unheard_overtones_out=True),
-    "mandolin": Heard("mandolin", "guitar", 55, 96, 4, None, True, False, True, True),
+    "mandolin": Heard("mandolin", "guitar", 55, 96, 4, None, True, False, True, True, empty_stem_fallback="other"),
 }
+# A stem whose loudest second is this far below the song (level_db, in dB) is empty: nothing of the instrument went
+# there. Chosen on the rendered passages the rules are chosen on (small_tab_bench, its held-out groups apart), the
+# middle of the gap there: the loudest second of a stem that held an instrument was at most 7 dB below the song, of
+# one that held none at least 47 dB below it (Basic Pitch still hears up to 16 notes of bleed in such a stem), and a
+# mandolin's tremolo left the guitar stem's loudest second 52 dB below. On the held-out passages the stems with notes
+# in them were at most 14 dB below, the empty ones at least 44.
+EMPTY_STEM_DB = -27.0
+
+
+LOUDEST_SECONDS = 1.0  # the window a stem's level is read in (level_db)
+
+
+def level_db(stem: Path, song: Path) -> float:
+    """How far `stem` is below `song`: the RMS of the stem's loudest LOUDEST_SECONDS against the song's RMS over the
+    whole recording, in dB. The loudest window, not the whole stem: an instrument that plays a few seconds of a long
+    song is sparse there, not absent."""
+    import soundfile as sf
+
+    def windows(path: Path) -> tuple[float, float]:
+        """(the loudest window's mean square, the whole recording's mean square)."""
+        with tempfile.TemporaryDirectory() as tmp, sf.SoundFile(str(tuning._decoded(path, tmp, mono=True))) as f:
+            loudest, total, count = 0.0, 0.0, 0
+            for block in f.blocks(blocksize=max(1, int(f.samplerate * LOUDEST_SECONDS)), dtype="float64", always_2d=True):
+                square = block.mean(axis=1) ** 2
+                loudest = max(loudest, float(np.mean(square)))
+                total += float(np.sum(square))
+                count += len(block)
+        return loudest, (total / count if count else 0.0)
+
+    return float(10 * np.log10(max(windows(stem)[0], 1e-24) / max(windows(song)[1], 1e-24)))
+
+
+def stem_to_read(instrument: str, stem_file: Callable[[str], Path], song: Path) -> str:
+    """The separator's stem a song is read from for `instrument`: its own (Heard.stem), or, when that is empty
+    (EMPTY_STEM_DB) and the instrument has one, Heard.empty_stem_fallback. `stem_file` gives a stem's file."""
+    heard = HEARD[instrument]
+    if heard.empty_stem_fallback and level_db(stem_file(heard.stem), song) < EMPTY_STEM_DB:
+        return heard.empty_stem_fallback
+    return heard.stem
+
+
+def stem_stage(ctx: StageContext) -> None:
+    """The stem the instrument is read from in a song (stem_to_read), as `<kind>.wav`."""
+    import shutil
+
+    chosen = stem_to_read(ctx.params["instrument"], lambda s: ctx.inputs[s], ctx.inputs["song"])
+    if chosen != HEARD[ctx.params["instrument"]].stem:
+        ctx.log(f"nothing in the separator's {HEARD[ctx.params['instrument']].stem} stem: read from its {chosen} stem")
+    shutil.copyfile(ctx.inputs[chosen], ctx.out / ctx.params["output"])
+    (ctx.out / "stem.json").write_text(json.dumps({"stem": chosen}))
+
+
 DEFAULT_LAYOUT = "tab"
 DEFAULT_INSTRUMENT = "guitar-6"
 
@@ -784,6 +844,12 @@ def build(title: str, params: dict) -> Pipeline:
         st.append(Stage("stems", "stems", {"audio": Input(SOURCE)}, S.stems_sw, adapter="separator",
                         outputs=tuple(f"{s}.wav" for s in P.SW_STEMS)))
         audio = Input("stems", f"{heard.stem}.wav")
+        if heard.empty_stem_fallback:
+            st.append(Stage("stem", "stems", {"song": Input(SOURCE), heard.stem: audio,
+                                              heard.empty_stem_fallback: Input("stems", f"{heard.empty_stem_fallback}.wav")},
+                            stem_stage, params={"instrument": opts["instrument"], "output": f"{heard.kind}.wav"}, code=(THIS,),
+                            outputs=(f"{heard.kind}.wav", "stem.json")))
+            audio = Input("stem", f"{heard.kind}.wav")
     kind = heard.kind
     st.append(P._transcribe(kind, "basic-pitch", "bp", audio, None, retune=whole))
     st.append(Stage(f"transcribe.{kind}.swift-f0", "transcribe", {"audio": audio}, tuning.transcribe if whole else S.transcribe,
