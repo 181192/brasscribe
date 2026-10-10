@@ -103,6 +103,15 @@ test("reflow: the page scrolls sideways at 320 px", async ({ page }) => {
   expect(after).toContainEqual(expect.stringMatching(/^reflow: div#broken-wide reaches \d+ px$/));
 });
 
+test("reflow: a part of the page that scrolls sideways within itself at 320 px, but not a data table or code", async ({ page }) => {
+  const { before, after } = await beforeAfter(page, reflow, add(
+    '<div id="broken-panel" style="overflow:auto"><p style="width:30rem;margin:0">A panel wider than the window</p></div>' +
+    '<div class="table-wrap"><table style="width:30rem"><tbody><tr><td>A data table scrolls in its wrapper</td></tr></tbody></table></div>' +
+    '<pre style="overflow-x:auto">const preformatted = "text keeps its lines, however long they are, and scrolls sideways";</pre>'), narrow);
+  expect(before).toEqual([]);
+  expect(after).toEqual([expect.stringMatching(/^reflow: div#broken-panel scrolls sideways: \d+ px wide in \d+ px$/)]);
+});
+
 test("text spacing: a box sized to its text cuts it once the spacing grows", async ({ page }) => {
   await openView(page, { route: "runs" }, light);
   await page.evaluate(() => {
