@@ -10,6 +10,10 @@ plugins {
 val repoRoot = rootProject.extra["repoRoot"] as File
 // The band SoundFonts (data/sounds/band, outside git); BRASSCRIBE_BAND_SOUNDS_DIR points at another pack to try it.
 val bandSoundsDir = System.getenv("BRASSCRIBE_BAND_SOUNDS_DIR")?.let(::File) ?: File(repoRoot, "data/sounds/band")
+// Fretscribe's own version, for a release of its own: -Pfretscribe.versionName=1.2.3 -Pfretscribe.versionCode=7.
+// Without them it has the version in defaultConfig, as it is released with Brasscribe today.
+val fretscribeVersionName = providers.gradleProperty("fretscribe.versionName").orNull?.takeIf(String::isNotBlank)
+val fretscribeVersionCode = providers.gradleProperty("fretscribe.versionCode").orNull?.takeIf(String::isNotBlank)?.toInt()
 
 android {
     namespace = "no.brasscribe.play"
@@ -36,14 +40,15 @@ android {
     }
 
     // One code base, two apps. Brasscribe is the default and overrides nothing; Fretscribe installs beside
-    // it under its own applicationId and version. The namespace (R, packages) is shared.
+    // it under its own applicationId. Its version is the one above unless the build is given its own
+    // (fretscribe.versionName, fretscribe.versionCode). The namespace (R, packages) is shared.
     flavorDimensions += "product"
     productFlavors {
         create("brasscribe") { isDefault = true }
         create("fretscribe") {
             applicationId = "no.fretscribe.play"
-            versionCode = 1
-            versionName = "0.0.1"
+            fretscribeVersionName?.let { versionName = it }
+            fretscribeVersionCode?.let { versionCode = it }
         }
     }
 
@@ -266,8 +271,6 @@ abstract class VerifyNoTelemetry : DefaultTask() {
 }
 
 androidComponents {
-    // Fretscribe has no release build yet.
-    beforeVariants(selector().withFlavor("product" to "fretscribe").withBuildType("release")) { it.enable = false }
     onVariants { variant ->
         val variantName = variant.name.replaceFirstChar(Char::uppercase)
         val verifyNoTelemetry = tasks.register<VerifyNoTelemetry>("verifyNoTelemetry$variantName") {
@@ -342,7 +345,6 @@ mapOf(
 dependencies {
     implementation(project(":model"))
     implementation(project(":engine-client"))
-    implementation(project(":pitch"))
     implementation(project(":audio"))
     implementation(project(":core-bridge"))
 
@@ -370,10 +372,13 @@ dependencies {
     "fretscribeImplementation"(libs.alphaskia)
     // The recording as the sound of the tab: slowed down or sped up with its pitch kept. Fretscribe only.
     "fretscribeImplementation"(libs.media3.exoplayer)
+    // Listening on the phone is Brasscribe's (src/brasscribe, OnPhoneModels): the models' code and ONNX Runtime
+    // to run them. Fretscribe's tabs are written on the computer, so its app has neither.
+    "brasscribeImplementation"(project(":pitch"))
     // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
     // 13.4 MB instead of 33.0 MB per arm64 APK. Otherwise the full Maven build.
     val reducedOrt = rootProject.file("third_party/onnxruntime/onnxruntime-android-reduced.aar")
-    if (reducedOrt.isFile) implementation(files(reducedOrt)) else implementation(libs.onnxruntime.android)
+    if (reducedOrt.isFile) "brasscribeImplementation"(files(reducedOrt)) else "brasscribeImplementation"(libs.onnxruntime.android)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)

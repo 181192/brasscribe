@@ -25,7 +25,10 @@ the notes: write them for the people who use the apps. If a tag push does not st
 The Android APKs are signed in CI with the release key, held in the secrets of the `release`
 environment (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`), which only `v*` tags may use; the
 job checks the certificate
-against the one every earlier release used. The Mac apps are re-signed ad hoc (there is no Apple
+against the one every earlier release used. Fretscribe's APKs are signed in the same job with a key
+of their own, shared with other prototype apps (`PROTOTYPES_KEYSTORE_B64`,
+`PROTOTYPES_KEYSTORE_PASSWORD`, alias `prototypes`), and the job fails if an APK carries the other
+app's certificate. The Mac apps are re-signed ad hoc (there is no Apple
 Developer ID), and the Windows builds are not signed. The sections below are the local build, kept
 for when CI cannot be used; v0.1.0 to v0.3.0 were made that way.
 
@@ -35,7 +38,10 @@ What a release ships:
 |---|---|
 | `brasscribe-play-android-arm64-v8a.apk` | Play for Android, most devices |
 | `brasscribe-play-android-universal.apk` | Play for Android, all CPU types |
+| `fretscribe-android-arm64-v8a.apk` | Fretscribe for Android, most devices |
+| `fretscribe-android-universal.apk` | Fretscribe for Android, all CPU types |
 | `brasscribe-play-macos-arm64.zip` | Play for Mac (Apple silicon), ad-hoc signed |
+| `brasscribe-play-ios-unsigned.ipa` | Play for iPhone and iPad, unsigned: a tester signs it with their own Apple account |
 | `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` and `brasscribe-core` inside |
 | `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` and `brasscribe-core` inside |
 | `brasscribe-play-windows-x64.zip` | Play for Windows, self-contained (preview) |
@@ -43,7 +49,10 @@ What a release ships:
 | `SHA256SUMS` | checksums of the files above |
 
 Bandroom is how the engine is installed: it bundles the engine workspace and `pixi`, and the first run
-sets up the engine. There is no iPhone/iPad build yet: iOS needs an Apple Developer account.
+sets up the engine. The iPhone and iPad app cannot be signed for others without an Apple Developer
+account, so it ships unsigned (`apps/apple/scripts/make-ipa.sh`, job `ios` in apple.yml): see
+[apps/apple/README.md](../../apps/apple/README.md#iphone-and-ipad-test-build). To build only the Apple
+assets from a branch, without a release: `gh workflow run apple.yml -f release=true --ref <branch>`.
 
 Below, `$S` is a scratch directory (DerivedData, staging) and `$OUT` the directory of finished assets.
 Disk is tight on the build Mac: keep DerivedData in `$S`, and delete staging directories and unshipped
@@ -65,7 +74,7 @@ python3 sounds/tools/band_sounds.py verify # the pinned band pack is in data/sou
 Bump the version in its own commit and push it to main **before** building, because Bandroom's
 workspace stamp records the commit it was built from:
 
-- `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; the `fretscribe` flavour has its own)
+- `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; Fretscribe takes them too, unless a build is given `-Pfretscribe.versionName` and `-Pfretscribe.versionCode`)
 - `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
 - `apps/windows/Directory.Build.props` and `apps/bandroom/windows/Directory.Build.props`: `<Version>`
 - Leave the core's Cargo version alone: the fixtures embed `brasscribe-core 0.1.0` in their MusicXML.
@@ -102,6 +111,12 @@ rm -f "$S/tmp.apk" "$OUT"/*.idsig
 Check each APK: `apksigner verify --print-certs` shows the same certificate SHA-256 as the previous
 release's APK, `aapt2 dump badging` shows the new `versionCode`/`versionName`, and `unzip -l` lists
 `brasscribe-band-mobile.sf2`.
+
+`assembleRelease` also writes Fretscribe's APKs, to `app/build/outputs/apk/fretscribe/release/`
+(`app-fretscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`). They are signed the same way with
+the prototypes key (alias `prototypes`), never with Brasscribe's, and are named
+`fretscribe-android-{arm64-v8a,universal}.apk`. `.github/workflows/android.yml` has the certificate
+digest of each key and what a Fretscribe APK must not carry (the band SoundFont, the models, sfizz).
 
 ## 3. Play for Mac
 

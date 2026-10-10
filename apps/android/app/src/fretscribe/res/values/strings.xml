@@ -79,7 +79,7 @@
     <string name="problem_record_body">The phone didn\'t let Fretscribe record.</string>
 
     <!-- About -->
-    <string name="about_text">Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) with the Bravura font (SIL OFL 1.1) and alphaSkia (BSD-3-Clause) to draw the tab, AndroidX Media3 (Apache-2.0) to play the recording, and the Sonivox SoundFont (Apache-2.0) for alphaTab\'s own sounds. Its shared code also carries Oboe (Apache-2.0), ONNX Runtime (MIT), UniFFI (MPL-2.0) and JNA (Apache-2.0). Bandroom on your computer writes down the notes.</string>
+    <string name="about_text">Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) with the Bravura font (SIL OFL 1.1) and alphaSkia (BSD-3-Clause) to draw the tab, AndroidX Media3 (Apache-2.0) to play the recording, and the Sonivox SoundFont (Apache-2.0) for alphaTab\'s own sounds. Its shared code also carries Oboe (Apache-2.0), UniFFI (MPL-2.0) and JNA (Apache-2.0), and CameraX and ZXing (Apache-2.0) read the code that connects it to your computer. Bandroom on your computer writes down the notes.</string>
     <string name="about_font">Titles are set in Atkinson Hyperlegible Next, and fret numbers in Fretscribe Tab (both SIL Open Font License 1.1).</string>
     <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>

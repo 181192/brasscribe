@@ -92,16 +92,6 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
 
-        <!-- ONNX Runtime's AAR adds this provider so that the runtime can report to Microsoft: before the
-             app starts it reads the device's ANDROID_ID, maker and model and follows the network and the
-             battery. Nothing leaves the phone but what goes to the player's own computer, so it is taken
-             out. PlayApplication also turns the runtime's telemetry off, and verifyNoTelemetry<Variant>
-             fails the build if the provider is back in the merged manifest. -->
-        <provider
-            android:name="ai.onnxruntime.TelemetryInitializer"
-            android:authorities="${applicationId}.onnxruntime_telemetry_initializer"
-            tools:node="remove" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.exports"

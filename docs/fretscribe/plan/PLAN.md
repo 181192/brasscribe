@@ -94,6 +94,8 @@ the page. Open issues: #66–#70, #75–#77.
 
 ## At the first quiet moment: split the core
 
+> Replaced by `docs/plan/scribe-platform.md` (2026-10-10): the names, the layout, the versions and the order of the split are decided there. What follows is kept for its reasoning.
+
 Needs a window with no open branches touching `core/`, `music/` or `engine/` pipeline code: merge or
 rebase what is open, then freeze those areas for the duration. Each step is one PR with goldens
 unchanged.
@@ -107,11 +109,14 @@ unchanged.
 3. Split `pipeline` into shared transcription, which produces the composition, and a `Target` that
    arranges it. The engine profile chooses the target.
 4. Split the benchmark gates into shared transcription gates and per-target suites.
-5. Make the design tooling product-neutral: the token roles `brass`, `brass-text` and `brass-tint`
-   become `brand*` (Fretscribe's tokens already use `brand*`), and the generated theme gets neutral type
-   names. Until then `design/tokens/build.py` writes Fretscribe's Android theme under Brasscribe's names,
-   through the alias map in Fretscribe's tokens. The tokens build and the mockup renderer then serve
-   both products on every platform.
+5. Make the design tooling product-neutral. Done for the tokens build: `design/tokens/build.py` writes
+   every brand's Apple, Android, Windows and web files, with a small set of neutral names (`Scribe…`)
+   that are the same for every brand and each brand's own names for the rest
+   ([`design/tokens/README.md`](../../../design/tokens/README.md)). Brasscribe's token roles keep their
+   names (`brass*`); its tokens map them to the neutral `brand*`. Left: the clients move their shared
+   code to the neutral names; Fretscribe's Android theme, still written under Brasscribe's names through
+   the alias map in its tokens, gets its own; the folders move to `design/tooling` and
+   `design/brands/<name>`; the mockup renderer serves both products.
 
 ## First Fretscribe: bass tab
 
@@ -132,6 +137,8 @@ unchanged.
 - Rename this repository to a neutral name once both sites are on their own domains.
 
 ## Open decisions
+
+> Replaced by `docs/plan/scribe-platform.md` (2026-10-10): the names, the layout, the versions and the order of the split are decided there. What follows is kept for its reasoning.
 
 - Final umbrella and crate names (working names: `scribe-core`, `target-brass`, `target-fretted`).
 - Whether Bandroom keeps its name as the shared companion for both products.
