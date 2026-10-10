@@ -448,7 +448,7 @@
 
     <!-- Om -->
     <string name="about_title">Om appen og lisenser</string>
-    <string name="about_text">Brasscribe Play er et ikke-kommersielt prosjekt. Appen bruker alphaTab (MPL-2.0) til noter og avspilling med lydfonten Sonivox (Apache-2.0), sfizz (BSD-2-Clause) til realistisk lyd, Oboe (Apache-2.0) til lyd, og ONNX Runtime (MIT) med SwiftF0, Basic Pitch og Beat This! (MIT) til å lytte på telefonen. Fullt band på datamaskinen bruker MuScriptor (CC BY-NC 4.0), som lastes ned med din egen Hugging Face-konto.</string>
+    <string name="about_text">Brasscribe Play er et ikke-kommersielt prosjekt. Appen bruker alphaTab (MPL-2.0) til noter og avspilling med lydfonten Sonivox (Apache-2.0), sfizz (BSD-2-Clause) til realistisk lyd, Oboe (Apache-2.0) til lyd, JNA (Apache-2.0) til å nå sin egen delte kode, og ONNX Runtime (MIT) med SwiftF0, Basic Pitch og Beat This! (MIT) til å lytte på telefonen. Fullt band på datamaskinen bruker MuScriptor (CC BY-NC 4.0), som lastes ned med din egen Hugging Face-konto.</string>
     <string name="about_font">Overskriftene er satt i Instrument Serif (SIL Open Font License 1.1).</string>
     <!-- Music stand (design/music-stand.md §9) -->
     <string name="stand_enter">Notestativ</string>

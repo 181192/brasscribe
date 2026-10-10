@@ -43,7 +43,7 @@ class PairingWordsTest {
     /**
      * About credits what the Fretscribe app carries, as THIRD_PARTY_NOTICES.md lists it: the notation and playback
      * libraries for Android or for every app with the Rust core, the fonts of Fretscribe, and the Android
-     * dependencies with code of their own in the app (Oboe's and ONNX Runtime's native libraries).
+     * dependencies with code of their own in the app (Oboe's, ONNX Runtime's and JNA's native libraries).
      */
     @Test
     fun aboutNamesEverythingTheAppCarries() {
@@ -59,10 +59,13 @@ class PairingWordsTest {
             section(title).lines().filter { it.startsWith("| ") && !it.startsWith("| Component") && !it.startsWith("| Font") && carried(it) }.map(::component)
         val libraries = rows("Notation and playback libraries") { row ->
             val where = row.split("|").getOrNull(3).orEmpty()
-            where.contains("Android") || where.contains("Rust core")
+            (where.contains("Android") || where.contains("Rust core")) && !where.contains("Brasscribe only")
         }
+        // The realistic sound is Brasscribe's: Fretscribe's audio library is built without sfizz (audio/build.gradle.kts).
+        assertTrue(section("Notation and playback libraries").lines().any { it.startsWith("| [sfizz]") })
+        assertTrue(libraries.toString(), "sfizz" !in libraries)
         val fonts = rows("Fonts") { it.contains("Fretscribe") }
-        val carried = libraries + fonts + listOf("Oboe", "ONNX Runtime")
+        val carried = libraries + fonts + listOf("Oboe", "ONNX Runtime", "JNA")
         assertTrue(carried.toString(), carried.containsAll(listOf("alphaTab", "Bravura", "Sonivox SoundFont", "alphaSkia", "AndroidX Media3", "UniFFI",
             "Atkinson Hyperlegible Next", "Fretscribe Tab")))
         for (dir in listOf("values", "values-nb")) {

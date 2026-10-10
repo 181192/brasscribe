@@ -455,7 +455,7 @@
 
     <!-- About -->
     <string name="about_title">About and licences</string>
-    <string name="about_text">Brasscribe Play is a non-commercial project. It uses alphaTab (MPL-2.0) for notation and playback with the Sonivox SoundFont (Apache-2.0), sfizz (BSD-2-Clause) for realistic sound, Oboe (Apache-2.0) for audio, and ONNX Runtime (MIT) with SwiftF0, Basic Pitch and Beat This! (MIT) to listen on the phone. A full band on your computer uses MuScriptor (CC BY-NC 4.0), downloaded with your own Hugging Face account.</string>
+    <string name="about_text">Brasscribe Play is a non-commercial project. It uses alphaTab (MPL-2.0) for notation and playback with the Sonivox SoundFont (Apache-2.0), sfizz (BSD-2-Clause) for realistic sound, Oboe (Apache-2.0) for audio, JNA (Apache-2.0) to reach its own shared code, and ONNX Runtime (MIT) with SwiftF0, Basic Pitch and Beat This! (MIT) to listen on the phone. A full band on your computer uses MuScriptor (CC BY-NC 4.0), downloaded with your own Hugging Face account.</string>
     <string name="about_font">Headings are set in Instrument Serif (SIL Open Font License 1.1).</string>
     <!-- Music stand (design/music-stand.md §9) -->
     <string name="stand_enter">Music stand</string>

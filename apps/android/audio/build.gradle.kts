@@ -4,7 +4,7 @@ plugins {
 
 val repoRoot = rootProject.extra["repoRoot"] as File
 
-/** sfizz checkout for the realistic playback tier; see gradle.properties. */
+/** sfizz checkout for the realistic playback tier (Brasscribe only); see gradle.properties. */
 val sfizzDir: String? = (findProperty("brasscribe.sfizzDir") as String?)
     ?: rootDir.resolve("third_party/sfizz").takeIf { it.resolve("CMakeLists.txt").isFile }?.absolutePath
 
@@ -19,11 +19,22 @@ android {
         externalNativeBuild {
             cmake {
                 arguments += listOf("-DANDROID_STL=c++_shared")
-                if (sfizzDir != null) arguments += "-DSFIZZ_SOURCE_DIR=$sfizzDir"
             }
         }
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // The app's two products (app/build.gradle.kts), so each gets its own native library. Only Brasscribe
+    // has the realistic tier: Fretscribe plays the recording, so its library is always built with the stub
+    // and carries no sfizz, with or without a checkout.
+    flavorDimensions += "product"
+    productFlavors {
+        create("brasscribe") {
+            isDefault = true
+            if (sfizzDir != null) externalNativeBuild { cmake { arguments += "-DSFIZZ_SOURCE_DIR=$sfizzDir" } }
+        }
+        create("fretscribe")
     }
 
     buildFeatures { prefab = true }
@@ -51,6 +62,13 @@ android {
 kotlin {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
+
+// The task names from before there were two products stay, and mean Brasscribe's library (the one with sfizz
+// when there is a checkout). The Kotlin and its tests are the same for both.
+mapOf(
+    "testDebugUnitTest" to "testBrasscribeDebugUnitTest",
+    "connectedDebugAndroidTest" to "connectedBrasscribeDebugAndroidTest",
+).forEach { (name, variantTask) -> tasks.register(name) { dependsOn(variantTask) } }
 
 dependencies {
     implementation(libs.oboe)

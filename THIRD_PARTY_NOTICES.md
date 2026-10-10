@@ -15,6 +15,7 @@ tools use.
 | Bravura font (shipped with alphaTab) | SIL OFL 1.1 | Play for Android and Windows, Studio | Music glyphs for alphaTab. |
 | Sonivox SoundFont (shipped with alphaTab) | Apache-2.0, Copyright (c) 2004-2006 Sonic Network Inc. | Studio, Play for Android | alphaTab's default General MIDI sounds, used when the band sounds are missing. |
 | [alphaSkia](https://github.com/CoderLine/alphaSkia) 3.5.147 (Android), 3.4.135 (Windows) | BSD-3-Clause (Skia: BSD-3-Clause) | Play for Android and Windows | Drawing backend for alphaTab. |
+| [sfizz](https://github.com/sfztools/sfizz) 1.2.3 | BSD-2-Clause | Play for Android (Brasscribe only) | The realistic sound: built from the unmodified source (`apps/android/scripts/fetch-sfizz.sh`) into the app's audio library, in release builds. Fretscribe's audio library is built without it. |
 | [AndroidX Media3](https://github.com/androidx/media) ExoPlayer 1.11.1 | Apache-2.0 | Fretscribe for Android | Plays the recording under the tab, at any speed with its pitch kept. Unmodified package (Maven `androidx.media3:media3-exoplayer`, with the Media3 modules it needs and [Guava](https://github.com/google/guava), Apache-2.0). |
 | [UniFFI](https://github.com/mozilla/uniffi-rs) runtime | MPL-2.0 | Every app that links the Rust core | Unmodified crate, linked into `brasscribe_ffi`. |
 
