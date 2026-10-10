@@ -52,6 +52,22 @@ struct ChecksTests {
         #expect(Checks.run([below], bounds: CGRect(x: 0, y: 0, width: 200, height: 200), text: TextFit()).isEmpty)
     }
 
+    /// The player's bar under a score: the score's bars go on under it, out of their scroll area's view.
+    @Test func whatAnotherScrollAreaHasOutOfViewDoesNotCrowdAStandardControl() {
+        let score = CGRect(x: 0, y: 0, width: 600, height: 400), bar = CGRect(x: 0, y: 400, width: 600, height: 100)
+        let window = CGRect(x: 0, y: 0, width: 600, height: 500)
+        let slider = AXNode(role: "AXSlider", label: "Speed", frame: CGRect(x: 70, y: 440, width: 140, height: 16), viewport: bar)
+        let hidden = AXNode(role: "AXButton", label: "Bar 9", frame: CGRect(x: 100, y: 436, width: 200, height: 50), viewport: score)
+        #expect(hidden.isOutOfView)
+        #expect(!Checks.run([hidden, slider], bounds: window, text: TextFit()).contains { $0.kind == .smallTarget })
+        // in view in the same scroll area, it is beside the slider
+        let shown = AXNode(role: "AXButton", label: "Slower", frame: CGRect(x: 100, y: 458, width: 80, height: 28), viewport: bar)
+        #expect(Checks.run([slider, shown], bounds: window, text: TextFit()).contains { $0.kind == .smallTarget })
+        // and one of the app's own buttons is small wherever the others are
+        let more = AXNode(role: "AXButton", label: "More", frame: CGRect(x: 300, y: 440, width: 20, height: 14), viewport: bar)
+        #expect(Checks.run([hidden, more], bounds: window, text: TextFit()).contains { $0.kind == .smallTarget })
+    }
+
     @Test func aControlWithoutANameAndTextOutsideTheWindowAreFound() {
         let nodes = [button("", 10, 10, 30, 30), AXNode(role: "AXStaticText", label: "", value: "Below", frame: CGRect(x: 10, y: 190, width: 60, height: 20))]
         let found = Checks.run(nodes, bounds: CGRect(x: 0, y: 0, width: 200, height: 200), text: TextFit())

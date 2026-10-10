@@ -9,10 +9,17 @@ public struct AXNode: CustomStringConvertible, Sendable {
     public let isLeaf: Bool
     /// Inside a scroll area, which may have it out of view.
     public let inScrollArea: Bool
+    /// The part of the view its scroll area shows (the innermost one's frame, within those around it); nil outside one.
+    public let viewport: CGRect?
 
-    public init(role: String, label: String, value: String = "", frame: CGRect, isLeaf: Bool = true, inScrollArea: Bool = false) {
-        self.role = role; self.label = label; self.value = value; self.frame = frame; self.isLeaf = isLeaf; self.inScrollArea = inScrollArea
+    public init(role: String, label: String, value: String = "", frame: CGRect, isLeaf: Bool = true, inScrollArea: Bool = false,
+                viewport: CGRect? = nil) {
+        self.role = role; self.label = label; self.value = value; self.frame = frame; self.isLeaf = isLeaf
+        self.inScrollArea = inScrollArea || viewport != nil; self.viewport = viewport
     }
+
+    /// Scrolled out of its scroll area's view: it is there for VoiceOver and the keyboard, and not there to click.
+    public var isOutOfView: Bool { viewport.map { !$0.intersects(frame) } ?? false }
 
     /// Its words: for a text what it shows (a form's value is titled by its row's label), else its name.
     public var words: String { (role == "AXStaticText" && !value.isEmpty) || label.isEmpty ? value : label }
@@ -50,10 +57,11 @@ public enum AXTree {
             default: ""
             }
         }
-        func walk(_ element: Any, depth: Int, scrolled: Bool) {
+        func walk(_ element: Any, depth: Int, viewport: CGRect?) {
             guard depth < 60, let o = element as? NSObject else { return }
             let children = get(o, "accessibilityChildren") as? [Any] ?? []
             let role = depth > 0 ? text(get(o, "accessibilityRole")) : ""
+            var inner = viewport
             if depth > 0 {
                 // The name: its label, its title, or the text that titles it (a switch or a field in a form has it beside it).
                 let titledBy = (get(o, "accessibilityTitleUIElement") as? NSObject).map {
@@ -61,16 +69,16 @@ public enum AXTree {
                 } ?? ""
                 let label = [text(get(o, "accessibilityLabel")), text(get(o, "accessibilityTitle")), titledBy].first { !$0.isEmpty } ?? ""
                 let value = text(get(o, "accessibilityValue"))
-                let screen = (o as? NSAccessibilityElementProtocol)?.accessibilityFrame() ?? .zero
-                nodes.append(AXNode(role: role, label: label, value: value, frame: local(screen, in: view), isLeaf: children.isEmpty,
-                                    inScrollArea: scrolled))
+                let frame = local((o as? NSAccessibilityElementProtocol)?.accessibilityFrame() ?? .zero, in: view)
+                nodes.append(AXNode(role: role, label: label, value: value, frame: frame, isLeaf: children.isEmpty, viewport: viewport))
+                if role == "AXScrollArea" { inner = viewport.map { $0.intersection(frame) } ?? frame }
             }
             // In the order VoiceOver and the keyboard go through them (it follows accessibilitySortPriority), which the
             // plain list of children does not.
             let navigation = get(o, "accessibilityChildrenInNavigationOrder") as? [Any] ?? []
-            for c in navigation.isEmpty ? children : navigation { walk(c, depth: depth + 1, scrolled: scrolled || role == "AXScrollArea") }
+            for c in navigation.isEmpty ? children : navigation { walk(c, depth: depth + 1, viewport: inner) }
         }
-        walk(view, depth: 0, scrolled: false)
+        walk(view, depth: 0, viewport: nil)
         return nodes
     }
 

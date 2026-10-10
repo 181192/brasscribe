@@ -37,9 +37,6 @@ import TranscriptionKit
     static var known: [(screen: String?, kind: Finding.Kind, words: String, issue: String)] {
         [
             ("sheet-settings", .outOfOrder, "comes after AXButton “\(String(localized: "Done"))”", "#254"),
-            ("score", .smallTarget, "“\(String(localized: "Speed"))”", "#255"),
-            ("score", .smallTarget, "“\(String(localized: "Repeat from bar"))”", "#255"),
-            ("score", .smallTarget, "“\(String(localized: "Repeat to bar"))”", "#255"),
             ("sheet-settings", .smallTarget, "“\(String(localized: "Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")"))”", "#256"),
         ]
     }

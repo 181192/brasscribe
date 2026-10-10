@@ -396,6 +396,16 @@ extension View {
         if PageActions.followContent { self } else { safeAreaInset(edge: .bottom) { actions() } }
     }
 
+    /// A larger system control on the Mac, where a slider is 16 pt high and a stepper 20 pt wide at the regular
+    /// size; iPhone and iPad draw theirs large enough to touch.
+    func macControlSize(_ size: ControlSize) -> some View {
+        #if os(macOS)
+        controlSize(size)
+        #else
+        self
+        #endif
+    }
+
     func card(padding: CGFloat = Space.s4) -> some View { modifier(CardModifier(padding: padding)) }
 
     /// The page background and the reading column (at most 720 pt, centred).

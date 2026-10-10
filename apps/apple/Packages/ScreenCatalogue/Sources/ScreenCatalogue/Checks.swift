@@ -26,7 +26,9 @@ public enum Checks {
             if n.label.trimmingCharacters(in: .whitespaces).isEmpty && n.role != "AXTextField" && n.role != "AXSlider" {
                 found.append(Finding(kind: .unlabelled, node: n.description))
             }
-            if isSmall(n, among: controls) { found.append(Finding(kind: .smallTarget, node: n.description)) }
+            // What another scroll area has scrolled out of view (a score's bars under the player's bar) is not beside it.
+            let beside = controls.filter { !$0.isOutOfView || $0.viewport == n.viewport }
+            if isSmall(n, among: beside) { found.append(Finding(kind: .smallTarget, node: n.description)) }
         }
         for n in shown where n.role == "AXImage" && n.words.isEmpty {
             found.append(Finding(kind: .unlabelled, node: n.description))
