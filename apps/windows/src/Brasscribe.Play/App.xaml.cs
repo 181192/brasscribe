@@ -14,7 +14,6 @@ namespace Brasscribe.Play;
 public partial class App : Application
 {
     private MainWindow? _window;
-    private WasapiSynthOutput? _audioOut;
 
     public App()
     {
@@ -97,17 +96,71 @@ public partial class App : Application
     /// <summary>Other launches with a pairing link are sent to the running app under this key.</summary>
     private const string InstanceKey = "BrasscribePlay";
 
+    /// <summary>
+    /// The screen catalogue (tests/Brasscribe.Play.Catalogue) takes over the start here when the app is built as its
+    /// test host (-p:BrasscribeCatalogue=true); in the app itself this has no body and is compiled away.
+    /// </summary>
+    static partial void RunCatalogue(App app, ref bool handled);
+
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        bool catalogue = false;
+        RunCatalogue(this, ref catalogue);
+        if (catalogue) return;
+
         bool preview = Option("--show") is not null;
         // A brasscribe://pair link while the app already runs: hand it to that window and quit.
         string? pairingLink = PairingLinkFromLaunch();
         if (!preview && await RedirectToRunningAppAsync(pairingLink)) return;
 
         var queue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        // --theme light|dark|pink-light|pink-dark: a fixed theme for screenshots; otherwise the Appearance setting decides.
+        var (main, settingsVm) = Compose(Settings, JsonSettingsStore.WorkDirectory, Option("--theme"));
+        var window = _window!;
+        window.HeartbeatEnabled = !preview;
+        window.Activate();
+
+        if (!preview)
+        {
+            settingsVm.Connection.Start();
+            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += (_, _) => queue.TryEnqueue(settingsVm.Connection.Kick);
+            RegisterPairingLinks(queue);
+            if (pairingLink is not null)
+                window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () => await window.OpenSettingsAsync(pairingLink));
+        }
+
+        // --show NAME [--score FILE]: one screen with sample content, for screenshots (see PreviewScenes).
+        if (Option("--show") is { } scene)
+        {
+            // "settings": Home with Settings open.
+            if (PreviewScenes.Show(main, scene == "settings" ? "home" : scene, Option("--score")) && scene is "export" or "settings")
+                window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
+                {
+                    await Task.Delay(1500);
+                    await (scene == "export" ? window.ShowExportAsync() : window.OpenSettingsAsync());
+                });
+            return;
+        }
+
+        // "Open with" and the command line: open the file directly.
+        if (pairingLink is not null) return;
+        var cli = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(File.Exists);
+        if (cli is not null) _ = main.Start.OpenPathAsync(cli);
+    }
+
+    /// <summary>
+    /// The view models over this PC's services and the window that shows them, with Settings › Appearance on it: the
+    /// app's window and <see cref="Theme"/> from now on. Nothing starts talking to a computer yet. The screen catalogue
+    /// composes a window like this for each of its screens, with settings kept in memory.
+    /// </summary>
+    /// <param name="forcedTheme">"--theme": wins over the stored Appearance (never over a contrast theme).</param>
+    internal (MainViewModel Main, SettingsViewModel Settings) Compose(ISettingsStore settings, string workDirectory, string? forcedTheme)
+    {
+        MainWindow? window = null;
+        var queue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         var ui = new DispatcherQueueDispatcher(queue);
-        var announcer = new UiaAnnouncer(() => _window?.AnnouncerHost, queue);
-        var dialogs = new WinFileDialogs(() => _window is null ? 0 : WinRT.Interop.WindowNative.GetWindowHandle(_window));
+        var announcer = new UiaAnnouncer(() => window?.AnnouncerHost, queue);
+        var dialogs = new WinFileDialogs(() => window is null ? 0 : WinRT.Interop.WindowNative.GetWindowHandle(window));
         var core = CoreBridge.Create();
 
         var synthOut = new BufferedSynthOutput();
@@ -115,8 +168,8 @@ public partial class App : Application
         LoadSoundFonts(player);
         // The output device opens when the band plays, and follows Windows' default device. Without one the
         // app still works for reading and exports, and playing starts once a device appears.
-        _audioOut = new WasapiSynthOutput();
-        _audioOut.Start(synthOut);
+        var audioOut = new WasapiSynthOutput();
+        audioOut.Start(synthOut);
 
         var original = new MediaPlayerOriginal(queue);
         var playerVm = new PlayerViewModel(player, announcer, Strings, ui);
@@ -128,7 +181,7 @@ public partial class App : Application
         // Heartbeats and pairing share one client with short timeouts; the credential is in the Credential Locker.
         var shortHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(4) }) { Timeout = TimeSpan.FromSeconds(15) };
         // RequestedTheme is never set by the app, so it is Windows' app mode at start-up.
-        var settingsVm = new SettingsViewModel(Settings, announcer, Strings, vault: CredentialLockerVault.Create(),
+        var settingsVm = new SettingsViewModel(settings, announcer, Strings, vault: CredentialLockerVault.Create(),
             clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token }, systemDark: RequestedTheme == ApplicationTheme.Dark);
 
         // No overall timeout (the event stream stays open for the whole job), but a LAN address that
@@ -141,7 +194,7 @@ public partial class App : Application
 
         MainViewModel? main = null;
         main = new MainViewModel(
-            new StartViewModel(new WasapiCaptureService(), new MediaFoundationDecoder(), dialogs, announcer, Strings, ui, JsonSettingsStore.WorkDirectory),
+            new StartViewModel(new WasapiCaptureService(), new MediaFoundationDecoder(), dialogs, announcer, Strings, ui, workDirectory),
             new SourceKindViewModel(Strings),
             new TranscriptionViewModel(() => main!.Engine, announcer, Strings, ui),
             score,
@@ -149,49 +202,22 @@ public partial class App : Application
             new OutputOptionsViewModel(core, announcer, Strings),
             settingsVm,
             EngineFactory, announcer, Strings, core,
-            new ScoreLibrary(System.IO.Path.Combine(JsonSettingsStore.WorkDirectory, "library")))
+            new ScoreLibrary(System.IO.Path.Combine(workDirectory, "library")))
         {
-            LayerCacheRoot = System.IO.Path.Combine(JsonSettingsStore.WorkDirectory, "layers"),
+            LayerCacheRoot = System.IO.Path.Combine(workDirectory, "layers"),
         };
 
-        // --theme light|dark|pink-light|pink-dark: a fixed theme for screenshots; otherwise the Appearance setting decides.
-        Theme = new ThemeController(settingsVm, queue, Option("--theme"));
-        _window = new MainWindow(main, Strings);
-        Theme.Attach(_window);
-        _window.Closed += (_, _) =>
+        Theme = new ThemeController(settingsVm, queue, forcedTheme);
+        window = new MainWindow(main, Strings);
+        Theme.Attach(window);
+        window.Closed += (_, _) =>
         {
-            _audioOut?.Dispose();
+            audioOut.Dispose();
             player.Dispose();
             original.Dispose();
         };
-        _window.HeartbeatEnabled = !preview;
-        _window.Activate();
-
-        if (!preview)
-        {
-            settingsVm.Connection.Start();
-            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += (_, _) => queue.TryEnqueue(settingsVm.Connection.Kick);
-            RegisterPairingLinks(queue);
-            if (pairingLink is not null)
-                _window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () => await _window.OpenSettingsAsync(pairingLink));
-        }
-
-        // --show NAME [--score FILE]: one screen with sample content, for screenshots (see PreviewScenes).
-        if (Option("--show") is { } scene)
-        {
-            if (PreviewScenes.Show(main, scene, Option("--score")) && scene == "export")
-                _window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
-                {
-                    await Task.Delay(1500);
-                    await _window.ShowExportAsync();
-                });
-            return;
-        }
-
-        // "Open with" and the command line: open the file directly.
-        if (pairingLink is not null) return;
-        var cli = Environment.GetCommandLineArgs().Skip(1).FirstOrDefault(File.Exists);
-        if (cli is not null) _ = main.Start.OpenPathAsync(cli);
+        _window = window;
+        return (main, settingsVm);
     }
 
     /// <summary>A brasscribe://pair link this launch was started with (protocol activation, or on the command line).</summary>
