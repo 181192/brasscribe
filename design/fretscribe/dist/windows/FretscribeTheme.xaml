@@ -231,7 +231,7 @@
             <StaticResource x:Key="FsSecondaryColor" ResourceKey="SystemColorButtonFaceColor"/>
             <StaticResource x:Key="FsOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
             <StaticResource x:Key="FsBrandColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="FsBrandTextColor" ResourceKey="SystemColorHotlightColor"/>
+            <StaticResource x:Key="FsBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="FsBrandTintColor" ResourceKey="SystemColorWindowColor"/>
             <StaticResource x:Key="FsSuccessColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="FsWarningColor" ResourceKey="SystemColorWindowTextColor"/>
@@ -260,7 +260,7 @@
             <SolidColorBrush x:Key="FsSecondaryBrush" Color="{ThemeResource SystemColorButtonFaceColor}"/>
             <SolidColorBrush x:Key="FsOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
             <SolidColorBrush x:Key="FsBrandBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="FsBrandTextBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
+            <SolidColorBrush x:Key="FsBrandTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="FsBrandTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
             <SolidColorBrush x:Key="FsSuccessBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="FsWarningBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
@@ -290,7 +290,7 @@
             <StaticResource x:Key="ScribeOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
             <StaticResource x:Key="ScribeAccentColor" ResourceKey="SystemColorHotlightColor"/>
             <StaticResource x:Key="ScribeBrandColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorHotlightColor"/>
+            <StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="ScribeBrandTintColor" ResourceKey="SystemColorWindowColor"/>
             <StaticResource x:Key="ScribeSuccessColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="ScribeWarningColor" ResourceKey="SystemColorWindowTextColor"/>
@@ -313,7 +313,7 @@
             <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
             <SolidColorBrush x:Key="ScribeAccentBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
             <SolidColorBrush x:Key="ScribeBrandBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
             <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="ScribeWarningBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>

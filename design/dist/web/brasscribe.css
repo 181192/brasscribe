@@ -565,7 +565,7 @@
     --scribe-on-secondary: ButtonText;
     --scribe-brand: CanvasText;
     --scribe-accent: LinkText;
-    --scribe-brand-text: LinkText;
+    --scribe-brand-text: CanvasText;
     --scribe-brand-tint: Canvas;
     --scribe-success: CanvasText;
     --scribe-warning: CanvasText;
