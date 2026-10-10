@@ -8,7 +8,7 @@
 #                    (its parts: make package-test, make test-mac-app, make test-iphone)
 #   make package-test-fast  package tests without the slow audio-rendering suites
 #   make build-for-testing-mac, then make test-mac-unit (repeatable): macOS app unit tests without rebuilding
-#   scripts/screenshots.sh compare  the Mac screen catalogue, off screen, compared with the merge base (README, Testing)
+#   scripts/screenshots.sh record   the Mac screen catalogue, off screen, with its checks and a screenshot of each (README, Testing)
 #   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only in the
 #                    macOS VM (scripts/mac-vm.sh test-ui, docs/dev/macos-vm.md) or in CI
 #   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked

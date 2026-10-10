@@ -193,21 +193,15 @@ jobs:
 
   # Play for Mac's screen catalogue (apps/apple/README.md, Testing): every screen and sheet off screen in light, dark,
   # increased contrast and bokmål, with its checks, in the macOS app's unit-test bundle. Beside job play, so the
-  # pull request waits for neither. On a pull request the screenshots are compared with the same taken at the merge
-  # base (apps/apple/scripts/screenshots.sh compare); job play-screenshots decides from the outcome, and the label
-  # screenshots-changed lets changed screens through.
+  # pull request waits for neither. Its screenshots are an artefact to look at; nothing waits for them.
   play-screens:
     name: Play for Mac screen catalogue
     if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play }}
     runs-on: macos-26
     timeout-minutes: 60
-    outputs:
-      screenshots: ${{ steps.compare.outputs.status }}
     steps:
       - uses: actions/checkout@v7
         with:
-          # The merge base is taken out next to this checkout for the screenshots.
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
@@ -218,10 +212,7 @@ jobs:
           echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
           xcodebuild -version
 
-      # The iOS targets too, for now: when the core differs at the merge base, the comparison builds it there for all three.
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim
 
       # What job play saves from main (the same crates, built for the Mac among its targets): read, not saved again.
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
@@ -249,101 +240,48 @@ jobs:
           CORE_SLICES: macos
         run: scripts/build-core.sh
 
-      # Builds the app's tests at the merge base and here. The step itself does not fail: its status (0 same, 1 screens
-      # changed, 2 the checks failed, 3 the base could not be taken) goes to play-screenshots.
-      - name: Screen catalogue, compared with the merge base
-        id: compare
-        if: github.event_name == 'pull_request'
-        run: |
-          # The checkout is the pull request merged into main: its first parent is the main it was merged into. The
-          # event's base can be an older main, and then main's own changes would show as this pull request's.
-          base="$(git rev-parse --verify 'HEAD^1^{commit}')"
-          echo "Comparing with $(git log -1 --format='%H %s' "$base")"
-          status=0
-          scripts/screenshots.sh compare "$base" || status=$?
-          cat build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-
       - name: Screen catalogue
-        if: github.event_name != 'pull_request'
         run: scripts/screenshots.sh record
 
+      # What the pictures were taken with, beside them: after a merge they are compared with the record before
+      # them only when this is the same (screens.yml). Written only when the catalogue passed.
+      - name: What the screenshots were taken with
+        if: github.event_name != 'pull_request'
+        shell: bash
+        working-directory: .
+        env:
+          CATALOGUE: play-mac
+          DIR: apps/apple/build/catalogue/screenshots
+        run: |
+          jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
+            --arg toolchain "$(xcodebuild -version | tr '\n' ' ')" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
+          cat "$DIR/record.json"
+
+      # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
+      # named by its commit and kept longer, for the comparison with the next record.
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: play-mac-screenshots
-          path: |
-            apps/apple/build/reports/screenshots
-            apps/apple/build/catalogue/screenshots
+          name: ${{ github.event_name == 'pull_request' && 'play-mac-screenshots' || format('screens-play-mac-{0}', github.sha) }}
+          path: apps/apple/build/catalogue/screenshots
           if-no-files-found: ignore
-          retention-days: 14
-
-  # The outcome of Play's comparison, as bandroom-screenshots does for Bandroom.
-  play-screenshots:
-    name: Play for Mac screenshots
-    needs: play-screens
-    if: ${{ always() && github.event_name == 'pull_request' && needs.play-screens.result != 'skipped' }}
-    runs-on: ubuntu-24.04
-    # Nothing is checked out here: the workflow's working directory (apps/apple) is not there.
-    defaults:
-      run:
-        working-directory: .
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Is the change meant (label screenshots-changed)
-        id: label
-        if: needs.play-screens.outputs.screenshots == '1'
-        env:
-          PR: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # An error from GitHub (a 503) is not the same as no label.
-          meant=false
-          for try in 1 2 3 4 5; do
-            if meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")'); then break; fi
-            meant=false; sleep $((try * 5))
-          done
-          echo "meant=$meant" >> "$GITHUB_OUTPUT"
-
-      - name: Screenshot result
-        env:
-          JOB: ${{ needs.play-screens.result }}
-          STATUS: ${{ needs.play-screens.outputs.screenshots }}
-          MEANT: ${{ steps.label.outputs.meant }}
-        run: |
-          # 1: screens changed (shown in the play-mac-screenshots artefact). 2: a screen's own checks failed;
-          # 3: the base's screenshots could not be taken. No label lets 2 or 3 through.
-          [ "$JOB" = success ] || { echo "The Play screen catalogue job did not finish ($JOB)."; exit 1; }
-          if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
-            echo "Screens changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          [ "$STATUS" = 1 ] && echo "Screens changed: see the play-mac-screenshots artefact; add the label screenshots-changed if that is meant." >> "$GITHUB_STEP_SUMMARY"
-          exit "${STATUS:-1}"
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
 
   # What scripts/check.sh full bandroom-mac runs: the reader of requires-pixi, BandroomKit's unit tests, and the
   # screen catalogue (apps/bandroom/macos/README.md, Testing): every screen in light, dark, increased contrast,
-  # the largest text size and bokmål, with its checks, in a Debug build of the app hosting the tests, off screen.
-  # On a pull request the catalogue's screenshots are compared with the same taken at the merge base
-  # (apps/bandroom/macos/scripts/screenshots.sh); job bandroom-screenshots decides from the outcome, and the
-  # label screenshots-changed lets changed screens through.
+  # the largest text size and bokmål, with its checks, in a Debug build of the app hosting the tests, off screen
+  # (apps/bandroom/macos/scripts/screenshots.sh). Its screenshots are an artefact to look at; nothing waits for them.
   bandroom:
     name: Bandroom for Mac (BandroomKit, screen catalogue)
     if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_bandroom }}
     runs-on: macos-26
     timeout-minutes: 40
-    outputs:
-      screenshots: ${{ steps.compare.outputs.status }}
     defaults:
       run:
         working-directory: apps/bandroom/macos
     steps:
       - uses: actions/checkout@v7
         with:
-          # The merge base is taken out next to this checkout for the screenshots.
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
@@ -362,81 +300,32 @@ jobs:
           scripts/test-kit.sh
           (cd ../../apple/Packages/ScreenCatalogue && swift test)
 
-      # Builds the app and its tests at the merge base and here. The step itself does not fail: its status
-      # (0 same, 1 screens changed, 2 the checks failed, 3 the base could not be taken) goes to bandroom-screenshots.
-      - name: Screen catalogue, compared with the merge base
-        id: compare
-        if: github.event_name == 'pull_request'
-        run: |
-          # The checkout is the pull request merged into main: its first parent is the main it was merged into. The
-          # event's base can be an older main, and then main's own changes would show as this pull request's.
-          base="$(git rev-parse --verify 'HEAD^1^{commit}')"
-          echo "Comparing with $(git log -1 --format='%H %s' "$base")"
-          status=0
-          scripts/screenshots.sh compare "$base" || status=$?
-          cat build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-
       - name: Screen catalogue
-        if: github.event_name != 'pull_request'
         run: scripts/screenshots.sh record
 
+      # What the pictures were taken with, beside them: after a merge they are compared with the record before
+      # them only when this is the same (screens.yml). Written only when the catalogue passed.
+      - name: What the screenshots were taken with
+        if: github.event_name != 'pull_request'
+        shell: bash
+        working-directory: .
+        env:
+          CATALOGUE: bandroom-mac
+          DIR: apps/bandroom/macos/build/catalogue/screenshots
+        run: |
+          jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
+            --arg toolchain "$(xcodebuild -version | tr '\n' ' ')" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
+          cat "$DIR/record.json"
+
+      # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
+      # named by its commit and kept longer, for the comparison with the next record.
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: bandroom-mac-screenshots
-          path: |
-            apps/bandroom/macos/build/reports/screenshots
-            apps/bandroom/macos/build/catalogue/screenshots
+          name: ${{ github.event_name == 'pull_request' && 'bandroom-mac-screenshots' || format('screens-bandroom-mac-{0}', github.sha) }}
+          path: apps/bandroom/macos/build/catalogue/screenshots
           if-no-files-found: ignore
-          retention-days: 14
-
-  # The outcome of the comparison, on a runner of its own that runs none of the pull request's code: the label
-  # screenshots-changed is read as it is now (a re-run keeps the event's labels), with a few tries, and only when
-  # screens changed; when it cannot be read, the change is taken as not meant.
-  bandroom-screenshots:
-    name: Bandroom for Mac screenshots
-    needs: bandroom
-    if: ${{ always() && github.event_name == 'pull_request' && needs.bandroom.result != 'skipped' }}
-    runs-on: ubuntu-24.04
-    # Nothing is checked out here: the workflow's working directory (apps/apple) is not there.
-    defaults:
-      run:
-        working-directory: .
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Is the change meant (label screenshots-changed)
-        id: label
-        if: needs.bandroom.outputs.screenshots == '1'
-        env:
-          PR: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # An error from GitHub (a 503) is not the same as no label.
-          meant=false
-          for try in 1 2 3 4 5; do
-            if meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")'); then break; fi
-            meant=false; sleep $((try * 5))
-          done
-          echo "meant=$meant" >> "$GITHUB_OUTPUT"
-
-      - name: Screenshot result
-        env:
-          JOB: ${{ needs.bandroom.result }}
-          STATUS: ${{ needs.bandroom.outputs.screenshots }}
-          MEANT: ${{ steps.label.outputs.meant }}
-        run: |
-          # 1: screens changed (shown in the bandroom-mac-screenshots artefact). 2: a screen's own checks failed;
-          # 3: the base's screenshots could not be taken. No label lets 2 or 3 through.
-          [ "$JOB" = success ] || { echo "The Bandroom job did not finish ($JOB)."; exit 1; }
-          if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
-            echo "Screens changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          [ "$STATUS" = 1 ] && echo "Screens changed: see the bandroom-mac-screenshots artefact; add the label screenshots-changed if that is meant." >> "$GITHUB_STEP_SUMMARY"
-          exit "${STATUS:-1}"
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
 
   build:
     name: release build

@@ -1,10 +1,8 @@
-using System.Net;
-using System.Text.Json;
-
 namespace Brasscribe.ScreenCheck;
 
 /// <summary>
-/// What changed between two screenshots of one screen, the way Studio's catalogue compares (studio/catalogue/compare.mjs).
+/// What differs between two pictures of one screen taken in the same run (Home started in a theme against Home switched
+/// to it, a screen before and after its dialog), counted as studio/catalogue/compare.mjs counts.
 /// A pixel counts as changed when a channel moves by more than 2, except where each picture's shade is one found
 /// around that place in the other (an anti-aliased edge a fraction of a pixel elsewhere) and moved by at most 16.
 /// </summary>
@@ -68,98 +66,4 @@ public static class ImageDiff
     }
 
     private static bool Within(double v, (double Lo, double Hi) r) => v >= r.Lo && v <= r.Hi;
-}
-
-/// <summary>
-/// Compares a catalogue's screenshots taken at the merge base with the same taken here, and writes the report:
-/// index.html (before, the difference and after for each changed screen), summary.md and result.json (written last;
-/// without it the comparison did not finish).
-/// </summary>
-public static class ScreenshotReport
-{
-    public sealed record Result(int Screens, IReadOnlyList<string> Changed, IReadOnlyList<string> Added, IReadOnlyList<string> Gone,
-        IReadOnlyList<string> Minor, string Summary)
-    {
-        public bool Any => Changed.Count + Added.Count + Gone.Count > 0;
-    }
-
-    /// <param name="load">Reads a PNG.</param>
-    /// <param name="save">Writes a PNG.</param>
-    /// <param name="skip">Screens that were not taken (or not steady when taken) on either side: not compared.</param>
-    public static Result Write(string beforeDir, string afterDir, string reportDir, Func<string, Picture> load, Action<string, Picture> save,
-        IReadOnlySet<string>? skip = null)
-    {
-        var images = Path.Combine(reportDir, "images");
-        Directory.CreateDirectory(images);
-        static List<string> Pngs(string dir) => Directory.Exists(dir)
-            ? Directory.GetFiles(dir, "*.png").Select(f => Path.GetFileName(f)!).Order(StringComparer.Ordinal).ToList()
-            : [];
-        skip ??= new HashSet<string>();
-        var had = Pngs(beforeDir).Where(f => !skip.Contains(Stem(f))).ToList();
-        var now = Pngs(afterDir).Where(f => !skip.Contains(Stem(f))).ToList();
-        var added = had.Count > 0 ? now.Except(had).ToList() : [];
-        var gone = now.Count > 0 ? had.Except(now).ToList() : [];
-        var changed = new List<string>();
-        var minor = new List<string>();
-        var counts = new Dictionary<string, (int N, double Share)>();
-        foreach (var f in now.Intersect(had))
-        {
-            string pa = Path.Combine(beforeDir, f), pb = Path.Combine(afterDir, f);
-            if (File.ReadAllBytes(pa).AsSpan().SequenceEqual(File.ReadAllBytes(pb))) continue;
-            var a = load(pa);
-            var b = load(pb);
-            var (n, diff) = ImageDiff.Of(a, b);
-            if (n == 0) continue;
-            counts[f] = (n, (double)n / (diff.Width * diff.Height));
-            bool resized = a.Width != b.Width || a.Height != b.Height;
-            // A handful of pixels on an anti-aliased edge can come out differently from one run to the next on one
-            // machine: under the floor a difference is reported, but is not a change.
-            if (n <= ImageDiff.FloorPixels && !resized)
-            {
-                minor.Add(f);
-                continue;
-            }
-            changed.Add(f);
-            File.Copy(pa, Path.Combine(images, $"{Stem(f)}-before.png"), true);
-            save(Path.Combine(images, $"{Stem(f)}-diff.png"), diff);
-            File.Copy(pb, Path.Combine(images, $"{Stem(f)}-after.png"), true);
-        }
-        foreach (var f in added) File.Copy(Path.Combine(afterDir, f), Path.Combine(images, f), true);
-
-        var lines = new List<string> { $"Screenshots: {now.Count} screens, {changed.Count} changed, {added.Count} new, {gone.Count} gone." };
-        if (had.Count == 0) lines.Add("The commit compared with has no screen catalogue: there was nothing to compare with.");
-        lines.AddRange(changed.Select(f => $"- changed: `{f}` ({counts[f].N} pixels, {counts[f].Share * 100:0.00} %)"));
-        lines.AddRange(minor.Select(f => $"- within the noise floor, not a change: `{f}` ({counts[f].N} pixels)"));
-        lines.AddRange(added.Select(f => $"- new: `{f}`"));
-        lines.AddRange(gone.Select(f => $"- gone: `{f}`"));
-        if (skip.Count > 0) lines.Add($"- not compared, the screen was not taken on one side: {string.Join(", ", skip.Order().Select(s => $"`{s}`"))}");
-        string summary = string.Join("\n", lines) + "\n";
-        File.WriteAllText(Path.Combine(reportDir, "summary.md"), "# Screenshots\n\n" + summary);
-
-        static string E(string s) => WebUtility.HtmlEncode(s);
-        static string Img(string src) => $"<img src=\"images/{E(src)}\" alt=\"\">";
-        static string Block(string title, string rows) => rows.Length > 0 ? $"<h2>{E(title)}</h2>{rows}" : "";
-        File.WriteAllText(Path.Combine(reportDir, "index.html"), string.Join("\n",
-            "<!doctype html><meta charset=utf-8><title>Screenshots</title>",
-            "<style>body{font:16px system-ui;margin:16px}.row{display:flex;gap:8px;align-items:flex-start}.row img{max-width:32%;border:1px solid #ccc}</style>",
-            $"<h1>Screenshots</h1><p>{E(lines[0])}</p><p>Each changed screen: before, the difference (in red), after.</p>",
-            Block("Changed", string.Concat(changed.Select(f =>
-                $"<h3>{E(f)}</h3><div class=\"row\">{Img($"{Stem(f)}-before.png")}{Img($"{Stem(f)}-diff.png")}{Img($"{Stem(f)}-after.png")}</div>"))),
-            Block("New", string.Concat(added.Select(f => $"<h3>{E(f)}</h3>{Img(f)}"))),
-            Block("Gone", string.Concat(gone.Select(f => $"<p>{E(f)}</p>")))));
-
-        var result = new Result(now.Count, changed, added, gone, minor, summary);
-        File.WriteAllText(Path.Combine(reportDir, "result.json"), JsonSerializer.Serialize(new
-        {
-            any = result.Any,
-            screens = now.Count,
-            changed,
-            added,
-            gone,
-            minor,
-        }, new JsonSerializerOptions { WriteIndented = true }));
-        return result;
-    }
-
-    private static string Stem(string file) => Path.GetFileNameWithoutExtension(file);
 }

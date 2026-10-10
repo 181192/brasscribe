@@ -87,7 +87,7 @@ public sealed class ScreenCatalogue
                     first ??= taken.Picture!;
                     Save(Path.Combine(Options.Out, shot + ".png"), taken.Picture!);
                     Run.Shots.Add(shot);
-                    if (Options.Checks) Run.Findings.AddRange(Contrast.Check(shot, taken.Picture!, taken.Texts));
+                    Run.Findings.AddRange(Contrast.Check(shot, taken.Picture!, taken.Texts));
                 }
                 if (dialog is not null && !await CloseDialogsAsync(window))
                     throw new ScreenNotTakenException("screen not taken: its dialog did not close, so the next one could not open");
@@ -410,9 +410,6 @@ public sealed class ScreenCatalogue
             Contrast || PinkScenes is null || PinkScenes.Contains(scene)
                 ? Variants
                 : Variants.Where(v => !AppearanceSetting.IsPink(v)).DefaultIfEmpty(Appearance.Light).ToArray();
-
-        /// <summary>The checks run (off at the base: only its screenshots are wanted).</summary>
-        public static bool Checks { get; } = Env("CHECKS") != "0";
 
         public static string? Score { get; } = Env("SCORE");
 

@@ -22,10 +22,6 @@ jobs:
   iphone:
     name: iPhone
     uses: ./.github/workflows/apple.yml
-    # apple.yml's screenshot jobs (not run here) read pull request labels; a called workflow gets no more than this.
-    permissions:
-      contents: read
-      pull-requests: read
     with:
       iphone_tests: true
 

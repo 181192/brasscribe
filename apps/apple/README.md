@@ -136,7 +136,7 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
 
 | Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
 | --- | --- | --- |
-| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh compare` (the Mac screen catalogue) | `make test-ios-unit` (headless simulator), `make test-iphone` (its unit and UI tests; CI runs them every night, not on pull requests); `make test-mac-ui` only in the macOS VM |
+| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh record` (the Mac screen catalogue) | `make test-ios-unit` (headless simulator), `make test-iphone` (its unit and UI tests; CI runs them every night, not on pull requests); `make test-mac-ui` only in the macOS VM |
 
 See [docs/dev/verify.md](../../docs/dev/verify.md).
 
@@ -159,10 +159,10 @@ There is no large-text variant on the Mac: macOS has no Dynamic Type for an app'
 does not do: a real Tab walk (SwiftUI moves focus only in a key window on a screen), multi-line text cut at its last
 line, the colour contrast of each text, and iOS and iPadOS.
 
-`scripts/screenshots.sh compare` takes its screenshots at the merge base with `origin/main` and on the branch, on
-the same machine, and writes `build/reports/screenshots/`. It exits 1 when a screen changed, appeared or went
-away, 2 when the catalogue's checks failed, and 3 when the base could not be taken. CI (`apple.yml`, job
-`play-screens`) runs it on every pull request that reaches Play. A changed screen fails `Play for Mac screenshots`
-unless the pull request has the label `screenshots-changed`; the images are in the `play-mac-screenshots`
-artefact. `scripts/screenshots.sh record` only takes them. The catalogue is left out of `make test` and
+`scripts/screenshots.sh record` builds the macOS app's tests and runs the catalogue with its checks; it fails when
+a screen fails one. The screenshots and each screen's tree go into `build/catalogue/screenshots/`. CI (`apple.yml`,
+job `play-screens`) runs it on every pull request that reaches Play, and the pictures are in the
+`play-mac-screenshots` artefact, to look at: no check waits for them. After a merge, CI compares the pictures on
+`main` with those of the `main` before it and lists changed screens in an issue
+([docs/dev/verify.md](../../docs/dev/verify.md#screenshots)). The catalogue is left out of `make test` and
 `make test-mac-unit`. No images are committed.
