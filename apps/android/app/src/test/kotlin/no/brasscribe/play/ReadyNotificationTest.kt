@@ -24,6 +24,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * A job on the computer goes on while the player is away from the app, and a notification says when it is done: the
@@ -73,16 +75,6 @@ class ReadyNotificationTest : ScreenTest() {
     private fun comeBack() = rule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
     private fun ready() = shadowOf(app.getSystemService(NotificationManager::class.java)).allNotifications.filter { it.channelId == JobNotices.CHANNEL_DONE }
 
-    // TEMPORARY, to catch the failure where it happens (CI): removed before this is merged.
-    @get:org.junit.Rule(order = -100)
-    val often = org.junit.rules.TestRule { base, d ->
-        object : org.junit.runners.model.Statement() {
-            override fun evaluate() {
-                repeat(if (d.methodName.startsWith("aJobMade")) 25 else 1) { starts = 0; services.clear(); refused.clear(); base.evaluate() }
-            }
-        }
-    }
-
     @Before
     fun noServiceYet() = ComputerJobService.forget()
 
@@ -107,6 +99,18 @@ class ReadyNotificationTest : ScreenTest() {
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(recording())) }
         waitUntil(20_000) { vm.screen.value.last() == Screen.PROFILE }
         rule.runOnUiThread { vm.chooseProfile(profile); vm.where.value = Where.COMPANION }
+    }
+
+    /**
+     * Holds what the app does on Dispatchers.IO, where it reads the recording and sends it, until the latch that is
+     * returned is counted down (or for a minute): every thread of the dispatcher is kept busy, so the sending waits
+     * behind them.
+     */
+    private fun holdSending(): CountDownLatch {
+        val go = CountDownLatch(1)
+        // (More tasks than Dispatchers.IO runs at once: 64 threads, unless a system property sets more.)
+        repeat(128) { CoroutineScope(Dispatchers.IO).launch { go.await(60, TimeUnit.SECONDS) } }
+        return go
     }
 
     private fun send(slow: Boolean) {
@@ -155,10 +159,20 @@ class ReadyNotificationTest : ScreenTest() {
         phoneRunsTheService()
         opened(slow = false)
         // Make the score, and away at once: the recording is still being sent, and the job is made with the app away.
-        rule.runOnUiThread { vm.startTranscription() }
-        assertEquals(told(), 1, starts)
-        assertTrue(told(), held().sending && held().jobs.isEmpty())
-        leaveTheApp()
+        // The sending is held until the player has left: the fixture computer answers at once, and whenever the main
+        // thread got to run in between (the first start of the service takes its time on a slow machine), the job was
+        // made, or done, with the app still in front.
+        val send = holdSending()
+        try {
+            rule.runOnUiThread { vm.startTranscription() }
+            settle()
+            assertEquals(told(), 1, starts)
+            assertTrue(told(), held().sending && held().jobs.isEmpty())
+            leaveTheApp()
+            assertTrue(told(), held().sending && held().jobs.isEmpty())
+        } finally {
+            send.countDown()
+        }
         val first = service
         waitUntil(60_000) { ready().isNotEmpty() && stopped(first) }
         // One start in the foreground for the whole job (a second one, from the background, is refused); "ready" once,
