@@ -40,7 +40,7 @@
                     <!-- 1: choose this computer on the phone, then allow it here (no code at all). -->
                     <Grid ColumnSpacing="14">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource BcTextBrush}"
+                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource ScribeTextBrush}"
                                 VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw">
                             <TextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource StrongStyle}" />
                         </Border>
@@ -51,7 +51,7 @@
                     <!-- 2: scan the code. -->
                     <Grid ColumnSpacing="14">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource BcTextBrush}"
+                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource ScribeTextBrush}"
                                 VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw">
                             <TextBlock Text="2" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource StrongStyle}" />
                         </Border>
@@ -60,20 +60,20 @@
                     <!-- 3: type the code. -->
                     <Grid ColumnSpacing="14">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource BcTextBrush}"
+                        <Border Width="28" Height="28" CornerRadius="14" BorderThickness="1.5" BorderBrush="{ThemeResource ScribeTextBrush}"
                                 VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw">
                             <TextBlock Text="3" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource StrongStyle}" />
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="4">
                             <TextBlock Text="{x:Bind Vm.Way3}" Style="{StaticResource BodyStyle}" FontSize="16" />
                             <TextBlock x:Name="CodeText" Text="{x:Bind Vm.CodeDisplay, Mode=OneWay}" FontSize="40" FontWeight="Bold"
-                                       CharacterSpacing="120" Foreground="{ThemeResource BcTextBrush}" IsTextSelectionEnabled="True"
+                                       CharacterSpacing="120" Foreground="{ThemeResource ScribeTextBrush}" IsTextSelectionEnabled="True"
                                        AutomationProperties.Name="{x:Bind Vm.CodeSpoken, Mode=OneWay}" />
                         </StackPanel>
                     </Grid>
 
                     <!-- Waiting, or paired. -->
-                    <Border Style="{StaticResource CardStyle}" Background="{ThemeResource BcSurfaceBrush}" Visibility="{x:Bind Vm.IsWaiting, Mode=OneWay}">
+                    <Border Style="{StaticResource CardStyle}" Background="{ThemeResource ScribeSurfaceBrush}" Visibility="{x:Bind Vm.IsWaiting, Mode=OneWay}">
                         <StackPanel Spacing="4">
                             <TextBlock Text="{x:Bind Vm.WaitingText, Mode=OneWay}" Style="{StaticResource StrongStyle}" />
                             <TextBlock Text="{x:Bind Vm.Limit}" Style="{StaticResource MutedStyle}" />
@@ -82,14 +82,14 @@
                     <Border Style="{StaticResource CardStyle}" Visibility="{x:Bind Vm.IsLockedOut, Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <FontIcon Glyph="&#xE946;" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="18"
-                                      Foreground="{ThemeResource BcTextBrush}" AutomationProperties.AccessibilityView="Raw" />
+                                      Foreground="{ThemeResource ScribeTextBrush}" AutomationProperties.AccessibilityView="Raw" />
                             <TextBlock Text="{x:Bind Vm.LockoutText}" Style="{StaticResource BodyStyle}" />
                         </StackPanel>
                     </Border>
                     <Border x:Name="PairedCard" Style="{StaticResource CardStyle}" Visibility="{x:Bind Vm.HasPaired, Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <FontIcon Glyph="&#xE930;" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="18"
-                                      Foreground="{ThemeResource BcSuccessBrush}" AutomationProperties.AccessibilityView="Raw" />
+                                      Foreground="{ThemeResource ScribeSuccessBrush}" AutomationProperties.AccessibilityView="Raw" />
                             <TextBlock x:Name="PairedText" Text="{x:Bind Vm.PairedText, Mode=OneWay}" Style="{StaticResource BodyStyle}"
                                        AutomationProperties.LiveSetting="Polite" />
                         </StackPanel>
@@ -98,7 +98,7 @@
 
                 <!-- The QR: always black on a white plate, in every theme. -->
                 <StackPanel Grid.Column="1" Spacing="8" Width="262" VerticalAlignment="Top" Visibility="{x:Bind Vm.IsOpen, Mode=OneWay}">
-                    <Border Background="White" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
+                    <Border Background="White" BorderBrush="{ThemeResource ScribeBorderStrongBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
                         <Image x:Name="QrImage" Width="244" Height="244" AutomationProperties.Name="{x:Bind Vm.QrSpoken, Mode=OneWay}" />
                     </Border>
                     <TextBlock Text="{x:Bind Vm.QrCaption}" Style="{StaticResource CaptionStyle}" />
@@ -118,7 +118,7 @@
                 </StackPanel>
             </Expander>
 
-            <Grid Grid.Row="4" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+            <Grid Grid.Row="4" BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
                 <Button x:Name="AnotherButton" Style="{StaticResource OutlineButtonStyle}" Content="{x:Bind Vm.AnotherLabel}"
                         Command="{x:Bind Vm.OpenCommand}" />
                 <Button x:Name="DoneButton" Style="{StaticResource PrimaryButtonStyle}" Content="{x:Bind Vm.DoneLabel}" HorizontalAlignment="Right"

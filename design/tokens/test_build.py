@@ -127,8 +127,8 @@ def test_every_platform_gets_the_pink_palette():
     assert "Pink" not in (build.DIST / "windows" / "BrasscribeTheme.xaml").read_text()
     xaml = (build.DIST / "windows" / "BrasscribePinkTheme.xaml").read_text()
     light, dark = xaml.index('x:Key="Light"'), xaml.index('x:Key="Dark"')
-    assert xaml.index('<Color x:Key="BcBgColor">#FFFFF6F9</Color>') in range(light, dark)
-    assert xaml.index('<Color x:Key="BcPrimaryColor">#FFFF9ECF</Color>') > dark
+    assert xaml.index('<Color x:Key="ScribeBgColor">#FFFFF6F9</Color>') in range(light, dark)
+    assert xaml.index('<Color x:Key="ScribePrimaryColor">#FFFF9ECF</Color>') > dark
     assert 'x:Key="HighContrast"' in xaml
 
 
@@ -309,14 +309,26 @@ def test_neutral_colours_have_the_brands_values_in_every_theme():
         themes = {d.get(f"{x}Key"): {e.get(f"{x}Key"): (e.text or e.get("ResourceKey") or e.get("Color")) for e in d}
                   for d in root.iter("{http://schemas.microsoft.com/winfx/2006/xaml/presentation}ResourceDictionary") if d.get(f"{x}Key")}
         assert set(themes) == {"Light", "Dark", "HighContrast"}, name
+        # Windows: a neutral role has its Scribe key with the brand's value (in a contrast theme the neutral
+        # role's system colour) and no key under the brand's prefix; the brand's own roles have only that.
+        modes = {"Light": "light", "Dark": "dark"}
         for theme, keys in themes.items():
             for role, src in b.neutral_roles().items():
-                own, neutral = f"{b.KEY}{b.pascal(src)}", f"Scribe{b.pascal(role)}"
-                if theme == "HighContrast":  # the system colour of the neutral role, whatever the brand's key takes
+                neutral = f"Scribe{b.pascal(role)}"
+                assert f"{b.KEY}{b.pascal(src)}Color" not in keys and f"{b.KEY}{b.pascal(src)}Brush" not in keys, (name, theme, src)
+                if theme == "HighContrast":
                     assert keys[f"{neutral}Color"] == build.NEUTRAL["roles"][role]["windows"], (name, role)
-                    continue
-                assert keys[f"{neutral}Color"] == keys[f"{own}Color"], (name, theme, role)
-                assert keys[f"{neutral}Brush"] == keys[f"{own}Brush"].replace(own, neutral), (name, theme, role)
+                else:
+                    assert keys[f"{neutral}Color"] == f"#{round(b.alpha(modes[theme], src) * 255):02X}{b.hexval(modes[theme], src)[1:]}", (name, theme, role)
+                assert f"{neutral}Brush" in keys, (name, theme, role)
+            for role in b.own_roles():
+                assert f"{b.KEY}{b.pascal(role)}Brush" in keys and f"Scribe{b.pascal(role)}Brush" not in keys, (name, theme, role)
+        rest = {e.get(f"{x}Key") for e in root if e.get(f"{x}Key")}
+        assert {"ScribeSpace4", "ScribePadding4", "ScribeRadiusMd", "ScribeTouchMin", "ScribeDurationFast", "ScribeDisplayFontFamily",
+                "ScribeBodyTextBlockStyle"} <= rest, name
+        view = b.pascal(b.EXT["notation"])
+        assert {f"{b.KEY}{view}CursorWidth", f"{b.KEY}IconPlay"} <= rest, name
+        assert not {k for k in rest if k.startswith(b.KEY) and not k.startswith((f"{b.KEY}{view}", f"{b.KEY}Icon", f"{b.KEY}TabFontFamily"))}, name
         css = (b.DIST / "web" / f"{b.PRODUCT.lower()}.css").read_text()
         # The web: a neutral role is declared once, under its neutral name, with the brand's value in every
         # mode; the brand's prefix is left for what is the brand's own.
@@ -340,14 +352,8 @@ def test_system_colours_go_by_the_name_a_role_is_read_under():
         xaml = (b.DIST / "windows" / f"{b.PRODUCT}Theme.xaml").read_text()
         assert '<StaticResource x:Key="ScribeAccentColor" ResourceKey="SystemColorHotlightColor"/>' in xaml, name
         assert '<StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>' in xaml, name
-        assert f'<StaticResource x:Key="{b.KEY}{b.pascal(token)}Color" ResourceKey="SystemColorWindowTextColor"/>' in xaml, name
         forced = (b.DIST / "web" / f"{b.PRODUCT.lower()}.css").read_text().split("@media (forced-colors: active)")[1]
         assert "--scribe-accent: LinkText;" in forced and "--scribe-brand-text: CanvasText;" in forced, name
-
-
-def test_a_token_read_by_roles_with_different_system_colours_has_to_say_its_own(tmp_path):
-    refused(tmp_path, lambda raw, ext: ext["system-colours"].pop("brand-text"),
-            r"no system colour \(windows\) for 'brand-text'.*the neutral roles that read it have different ones")
 
 
 def test_every_variable_the_web_clients_read_is_declared():
@@ -524,7 +530,7 @@ def test_fretscribe_has_its_own_names_and_none_of_brasscribes():
         assert "Instrument" not in body
     assert "public static var uncertainTint: Color" in swift and 'public static var line: Color { catalogColor("string") }' in swift
     assert "public enum Tab {" in swift and "enum Fretscribe {" in swift
-    assert 'x:Key="FsUncertainTintBrush"' in xaml and 'x:Key="FsStringBrush"' in xaml and 'x:Key="FsTabCursorWidth"' in xaml
+    assert 'x:Key="FsUncertainTintBrush"' in xaml and 'x:Key="ScribeLineBrush"' in xaml and 'x:Key="FsStringBrush"' not in xaml and 'x:Key="FsTabCursorWidth"' in xaml
     assert "--fs-uncertain-tint: #FCF0DB;" in css and "--scribe-line: #737983;" in css and "--fs-tab-cursor-width:" in css
     assert "globalThis.FretscribeIcons = {" in js
     assert not (fs.DIST / "windows" / "FretscribePinkTheme.xaml").exists()

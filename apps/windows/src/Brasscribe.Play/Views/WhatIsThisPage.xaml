@@ -10,7 +10,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="820" Padding="40,64,40,32" Spacing="12" HorizontalAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <FontIcon Glyph="{StaticResource BcIconFile}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" />
+                <FontIcon Glyph="{StaticResource BcIconFile}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
                 <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.SourceLine, Mode=OneWay}" />
             </StackPanel>
             <TextBlock x:Name="Heading" x:Uid="KindHeading" Style="{StaticResource ScreenHeadingStyle}"
@@ -41,7 +41,7 @@
             <!-- The player's seat is percussion: why One instrument is refused, and the way to change the answer. -->
             <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.IsPercussionSeat, Mode=OneWay}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                    <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
                     <TextBlock x:Uid="KindPercussionNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" MaxWidth="640" />
                 </StackPanel>
                 <Button x:Name="ChangeSeatButton" x:Uid="KindChangeSeatButton" Style="{StaticResource PlainButtonStyle}" Click="OnChangeSeat" />
@@ -55,7 +55,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" />
+                    <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
                     <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.WhereText, Mode=OneWay}" />
                 </StackPanel>
                 <Button x:Name="CancelButton" x:Uid="KindCancelButton" Grid.Column="1" Style="{StaticResource PlainButtonStyle}" Click="OnCancel" />

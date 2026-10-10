@@ -15,7 +15,7 @@
                 <TextBlock Text="{x:Bind Vm.MatchLabel}" Style="{StaticResource BodyStyle}" HorizontalAlignment="Center"
                            AutomationProperties.AccessibilityView="Raw" />
                 <TextBlock Text="{x:Bind Vm.MatchCode}" FontSize="32" FontWeight="SemiBold" CharacterSpacing="200"
-                           Foreground="{ThemeResource BcTextBrush}" HorizontalAlignment="Center"
+                           Foreground="{ThemeResource ScribeTextBrush}" HorizontalAlignment="Center"
                            AutomationProperties.AccessibilityView="Raw" />
             </StackPanel>
             <Button x:Name="AllowButton" Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch"

@@ -11,7 +11,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="640" Padding="40,96,40,32" Spacing="16" HorizontalAlignment="Center" MinWidth="520">
             <Border Style="{StaticResource IconWellStyle}" Width="56" Height="56" HorizontalAlignment="Left">
-                <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="22" Foreground="{ThemeResource BcErrorBrush}" />
+                <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="22" Foreground="{ThemeResource ScribeErrorBrush}" />
             </Border>
             <TextBlock x:Name="Heading" Style="{StaticResource ScreenHeadingStyle}" AutomationProperties.HeadingLevel="Level1" IsTabStop="True"
                        Text="{x:Bind ViewModel.Title, Mode=OneWay}" />

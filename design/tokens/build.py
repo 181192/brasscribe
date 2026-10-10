@@ -20,8 +20,8 @@ file that is not listed (a test, a trial) is built with --tokens FILE --out DIR.
 
 Names. Every brand gets the same neutral names (Scribe*, --scribe-*; design/tokens/neutral.json lists the
 roles), so shared code compiles against any brand, and its own names for everything (its product name and
-its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. On the web and on Apple a neutral role has its
-neutral name only; on Windows and Android the brand's names still hold it too. design/tokens/README.md has the rule
+its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. On the web, Apple and Windows a neutral role has
+its neutral name only; on Android Brasscribe's names still hold it too. design/tokens/README.md has the rule
 and the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
 written under Brasscribe's names, through the map in $extensions.<brand>.android (see android_source).
 
@@ -151,7 +151,7 @@ def check_tokens() -> None:
             fail(f"color.{mode} " + " and ".join(
                 p for p in (f"lacks {', '.join(missing)}" if missing else "", f"has {', '.join(extra)} that color.light lacks" if extra else "") if p))
     neutral_roles()
-    for role in light:
+    for role in own_roles():
         for platform in ("windows", "web"):
             system_colour(role, platform)
     name = EXT.get("notation")
@@ -242,20 +242,18 @@ def neutral_roles() -> dict[str, str]:
     return found
 
 
+def own_roles() -> list[str]:
+    """The colour roles that are the brand's own: no neutral role reads them."""
+    return [r for r in roles() if r not in neutral_roles().values()]
+
+
 def system_colour(role: str, platform: str) -> str:
-    """The system colour one of the brand's tokens takes in a Windows contrast theme ("windows") or under
-    forced-colors ("web"), under the brand's own name: the one of the neutral role that reads it, or what
-    the brand's tokens say under system-colours. They have to say it for a role of the brand's own, and for
-    a token that two neutral roles with different system colours read (a link colour that is also brand
-    text). Under a neutral name a role always takes the neutral role's system colour."""
-    neutral = {NEUTRAL["roles"][name][platform] for name, src in neutral_roles().items() if src == role}
+    """The system colour one of the brand's own roles takes in a Windows contrast theme ("windows") or under
+    forced-colors ("web"): its tokens say it under system-colours. A neutral role takes the one in neutral.json."""
     own = EXT.get("system-colours", {}).get(role, {})
-    if platform in own:
-        return own[platform]
-    if len(neutral) == 1:
-        return neutral.pop()
-    fail(f"no system colour ({platform}) for '{role}'; add it under $extensions.*.system-colours"
-         + (" (the neutral roles that read it have different ones)" if neutral else ""))
+    if platform not in own:
+        fail(f"no system colour ({platform}) for '{role}'; add it under $extensions.*.system-colours")
+    return own[platform]
 
 
 def notation() -> tuple[str, dict]:
@@ -393,7 +391,6 @@ def apple_outputs() -> dict[str, str | bytes]:
 
     faces = {key: (font, found) for key, font, found in fonts("apple")}
     files = [f"Fonts/{Path(face['file']).name}" for _, found in faces.values() for face in found]
-    own_roles = [r for r in roles() if r not in neutral_roles().values()]
     lines = [f"// {HEADER}", "//", f"// Add {PRODUCT}Design.xcassets and {' and '.join(files)} to the same target",
              f"// as this file, and list the font{'s' if len(files) > 1 else ''} under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).",
              "//",
@@ -475,7 +472,7 @@ def apple_outputs() -> dict[str, str | bytes]:
         lines.append(f"        /// {desc(src)}")
         lines.append(f'        public static var {camel(name)}: Color {{ catalogColor("{camel(src)}") }}')
     lines += ["    }", "", f"    /// {PRODUCT}'s own colour roles.", f"    enum {PRODUCT} {{"]
-    for role in own_roles:
+    for role in own_roles():
         lines.append(f"        /// {desc(role)}")
         lines.append(f'        public static var {camel(role)}: Color {{ catalogColor("{camel(role)}") }}')
     lines += ["    }", "}", ""]
@@ -841,26 +838,24 @@ def android_neutral(pkg: str) -> str:
 # ---------------------------------------------------------------- Windows
 
 def windows_theme_dictionaries(light: str, dark: str) -> list[str]:
-    """The Light, Dark and HighContrast theme dictionaries of every colour role, for two modes of tokens.json."""
-    # Every role under the brand's prefix, then the neutral roles under theirs. The neutral keys carry the
-    # values themselves: a key that pointed at the brand's would not follow a palette merged later (Pink).
-    names = [(KEY + pascal(r), r) for r in roles()]
-    neutral = [("Scribe" + pascal(name), src) for name, src in neutral_roles().items()]
+    """The Light, Dark and HighContrast theme dictionaries of every colour role, for two modes of tokens.json:
+    the neutral roles under Scribe…, then the brand's own under its prefix. A role has one key."""
+    neutral = [("Scribe" + pascal(name), src, NEUTRAL["roles"][name]["windows"]) for name, src in neutral_roles().items()]
+    own = [(KEY + pascal(r), r, system_colour(r, "windows")) for r in own_roles()]
     X = ["    <ResourceDictionary.ThemeDictionaries>"]
     for mode, key in ((light, "Light"), (dark, "Dark")):
         X.append(f'        <ResourceDictionary x:Key="{key}">')
-        for part in (names, neutral):
-            for k, r in part:
+        for part in (neutral, own):
+            for k, r, _ in part:
                 X.append(f'            <Color x:Key="{k}Color">#{round(alpha(mode, r) * 255):02X}{hexval(mode, r)[1:]}</Color>')
-            for k, r in part:
+            for k, r, _ in part:
                 X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{StaticResource {k}Color}}"/>')
         X.append("        </ResourceDictionary>")
     X.append('        <ResourceDictionary x:Key="HighContrast">')
-    system = [(k, system_colour(r, "windows")) for k, r in names]
-    for part in (system, [("Scribe" + pascal(name), NEUTRAL["roles"][name]["windows"]) for name in neutral_roles()]):
-        for k, colour in part:
+    for part in (neutral, own):
+        for k, _, colour in part:
             X.append(f'            <StaticResource x:Key="{k}Color" ResourceKey="{colour}"/>')
-        for k, colour in part:
+        for k, _, colour in part:
             X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{ThemeResource {colour}}}"/>')
     X += ["        </ResourceDictionary>", "    </ResourceDictionary.ThemeDictionaries>"]
     return X
@@ -883,7 +878,8 @@ def windows_pink() -> str:
 def windows_outputs() -> dict[str, str | bytes]:
     X = ['<?xml version="1.0" encoding="utf-8"?>', f"<!-- {HEADER} -->",
          f"<!-- Merge into App.xaml: <ResourceDictionary Source=\"ms-appx:///Themes/{PRODUCT}Theme.xaml\"/>.",
-         f"     Use {{ThemeResource {KEY}TextBrush}} etc. Contrast themes map every role to the user's system colours. -->"]
+         f"     Use {{ThemeResource ScribeTextBrush}} etc.: Scribe… is what every brand has (design/tokens/README.md),",
+         f"     {KEY}… is {PRODUCT}'s own. Contrast themes map every role to the user's system colours. -->"]
     X += XAML_OPEN + windows_theme_dictionaries("light", "dark") + [""]
     B = ["    <!-- Spacing (epx), radii, sizes -->"]
     for k, v in group("space").items():
@@ -930,15 +926,9 @@ def windows_outputs() -> dict[str, str | bytes]:
             B.append(f'    <x:String x:Key="{KEY}Icon{pascal(a)}">&#x{v["glyph"]};</x:String>')
         else:
             B.append(f'    <x:String x:Key="{KEY}IconPath{pascal(a)}">{transform_path(v, 20 / 960, 0, 20)}</x:String>')
-    X += B
-    # The same resources under the neutral names, values and all (see windows_theme_dictionaries).
-    X += ["", "    <!-- The neutral names (design/tokens/README.md): the same keys in every brand's theme. The brand's own",
-          "         resources have the keys above only. -->"]
-    named = re.compile(rf'(x:Key="|\{{StaticResource ){KEY}(?=[A-Z0-9])')
-    for line in B:
-        if "<!--" in line or not line or any(f'x:Key="{start}' in line for start in own):
-            continue
-        X.append(named.sub(r"\1Scribe", line))
+    # Written with the brand's prefix above; what every brand has takes the neutral one.
+    named = re.compile(rf'(x:Key="|\{{StaticResource |fall back to ){KEY}(?=[A-Z0-9])')
+    X += [line if any(f'x:Key="{start}' in line for start in own) else named.sub(r"\1Scribe", line) for line in B]
     X += ["</ResourceDictionary>", ""]
     out: dict[str, str | bytes] = {f"windows/{PRODUCT}Theme.xaml": "\n".join(X)}
     if PINK:

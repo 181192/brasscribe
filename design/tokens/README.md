@@ -108,7 +108,7 @@ one in `icons.json`.
 |---|---|---|---|
 | Kotlin | `ScribeTheme { }`, `ScribeTheme.colors.brand`, `ScribeColors`, `ScribeSpace`, `ScribeSize`, `ScribeMotion`, `ScribeShapes`, `ScribeButtonShape`, `scribeTypography()`, `ScribeNumericStyle` | `BrasscribeTheme`, `BrasscribeColors.veryUncertain`, `BrasscribeScore` | see [Android](#android) |
 | Swift | `Color.Scribe.brand`, `Font.Scribe.title1`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion` | `Color.Brasscribe.cursor`, `BrasscribeDesign.Score`, `BrasscribePalette`, `BrasscribeIcon` | `Color.Fretscribe.uncertainTint`, `FretscribeDesign.Tab`, `Font.Fretscribe.tab(size:)` |
-| XAML | `ScribeBrandBrush`, `ScribeBrandColor`, `ScribeSpace4`, `ScribeTitle1TextBlockStyle` | `BcStaffBrush`, `BcScoreCursorWidth`, `BcIconPlay` | `FsStringBrush`, `FsTabCursorWidth`, `FsTabFontFamily` |
+| XAML | `ScribeBrandBrush`, `ScribeBrandColor`, `ScribeSpace4`, `ScribeTitle1TextBlockStyle` | `BcCursorBrush`, `BcScoreCursorWidth`, `BcIconPlay` | `FsUncertainTintBrush`, `FsTabCursorWidth`, `FsTabFontFamily` |
 | CSS | `--scribe-brand`, `--scribe-line`, `--scribe-space-4`, `--scribe-type-title-1-size` | `--bc-very-uncertain`, `--bc-cursor`, `--bc-score-cursor-width`, `--bc-type-studio-body-size`, `globalThis.BrasscribeIcons` | `--fs-uncertain-tint`, `--fs-tab-cursor-width`, `--fs-font-tab` |
 
 ### One name for each thing
@@ -124,9 +124,13 @@ brand's own, so code cannot read a neutral role under a brand's name.
   `BrasscribeDesign.Score` and `Font.Fretscribe` hold only the brand's own. The colour sets of the asset
   catalog keep the names of the brand's tokens (`Brasscribe/brass`); `Color.Scribe.brand` reads that set.
   A brand's app adds its own type helpers to `Font.<Brand>`.
-- **Windows and Android: not yet.** There a brand's own names still hold every role (`BcBgBrush` beside
-  `ScribeBgBrush`), and the neutral names read them or carry the same values. Each client moves to the neutral names in one step, and the
-  generator stops writing that platform's brand-named copies in the same step.
+- **Windows: done.** The theme has `Scribe…` keys for the neutral roles, spacing, radii, sizes, motion,
+  the display face and the type styles, and `Bc…` / `Fs…` keys for the brand's own colours, notation
+  metrics, icons and other faces. The Pink dictionary has the same keys. In a contrast theme each key
+  takes its role's system colour. Code that looks a key up by name fails only when it runs, so the
+  Windows tests check every such name in both apps against the theme.
+- **Android: not yet.** There Brasscribe's names still hold every role, and the neutral names are other
+  names for them.
 
 ### Android
 

@@ -40,17 +40,56 @@ public partial class XamlResourceTests
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")) continue;
             foreach (Match m in UseRegex().Matches(File.ReadAllText(file))) used.TryAdd(m.Groups[2].Value, Path.GetFileName(file));
         }
-        // The score view draws its overlays with these brushes from code.
-        var control = Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play.Controls", "ScoreView.cs");
-        foreach (Match m in CodeBrushRegex().Matches(File.ReadAllText(control))) used.TryAdd(m.Groups[1].Value, "ScoreView.cs");
-        foreach (Match m in AppResourceRegex().Matches(string.Concat(Directory.EnumerateFiles(App, "*.cs", SearchOption.AllDirectories)
-                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")).Select(File.ReadAllText))))
-            used.TryAdd(m.Groups[1].Value, "code");
+        // Code looks keys up by name too (the score view's overlay brushes, the title bar's colours, menu icons):
+        // every string that is a key of the design, in the app and in its controls.
+        foreach (var (key, file) in CodeKeys(App, Path.Combine(App, "..", "Brasscribe.Play.Controls"))) used.TryAdd(key, file);
 
         Assert.True(used.Count > 50, $"only {used.Count} keys found; the scan is broken");
         var missing = used.Where(u => !defined.Contains(u.Key) && !WinUi.Contains(u.Key)).Select(u => $"{u.Key} ({u.Value})").Order().ToList();
         Assert.True(missing.Count == 0, "undefined: " + string.Join(", ", missing));
     }
+
+    /// <summary>Bandroom reads the same theme: every design key its XAML and its code use is defined.</summary>
+    [SkippableFact]
+    public void Every_design_key_Bandroom_uses_is_defined()
+    {
+        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
+        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        string app = Path.Combine(TestPaths.RepoRoot!, "apps", "bandroom", "windows", "src", "Brasscribe.Bandroom");
+        var defined = new[] { theme!, Path.Combine(app, "Themes", "Styles.xaml"), Path.Combine(app, "App.xaml") }
+            .SelectMany(f => KeyRegex().Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value)).ToHashSet();
+        var used = new Dictionary<string, string>();
+        foreach (var file in Directory.EnumerateFiles(app, "*.xaml", SearchOption.AllDirectories).Where(NotBuilt))
+            foreach (Match m in UseRegex().Matches(File.ReadAllText(file)))
+                if (DesignKeyRegex().IsMatch(m.Groups[2].Value)) used.TryAdd(m.Groups[2].Value, Path.GetFileName(file));
+        foreach (var (key, file) in CodeKeys(app)) used.TryAdd(key, file);
+
+        Assert.True(used.Count > 15, $"only {used.Count} keys found; the scan is broken");
+        var missing = used.Where(u => !defined.Contains(u.Key)).Select(u => $"{u.Key} ({u.Value})").Order().ToList();
+        Assert.True(missing.Count == 0, "undefined: " + string.Join(", ", missing));
+    }
+
+    /// <summary>A key of the design that only a brand's own resources have: no key of a neutral role is left under it.</summary>
+    [SkippableFact]
+    public void The_theme_has_one_key_for_each_role()
+    {
+        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
+        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        var keys = KeyRegex().Matches(File.ReadAllText(theme!)).Select(m => m.Groups[1].Value).ToHashSet();
+        Assert.Contains("ScribeTextBrush", keys);
+        Assert.Contains("ScribeRadiusMd", keys);
+        Assert.Contains("BcCursorBrush", keys);
+        foreach (string gone in new[] { "BcTextBrush", "BcBgColor", "BcRadiusMd", "BcSpace4", "BcBodyTextBlockStyle", "BcBrassBrush", "BcStaffBrush", "BcDisplayFontFamily" })
+            Assert.DoesNotContain(gone, keys);
+    }
+
+    private static bool NotBuilt(string file) =>
+        !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
+
+    /// <summary>Every string in the C# of these folders that is a key of the design (Scribe… or Bc…), with its file.</summary>
+    private static IEnumerable<(string Key, string File)> CodeKeys(params string[] folders) =>
+        folders.SelectMany(folder => Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories)).Where(NotBuilt)
+            .SelectMany(file => CodeKeyRegex().Matches(File.ReadAllText(file)).Select(m => (m.Groups[1].Value, Path.GetFileName(file))));
 
     [Fact]
     public void The_theme_is_linked_from_design_not_copied()
@@ -68,9 +107,9 @@ public partial class XamlResourceTests
     [GeneratedRegex(@"\{(StaticResource|ThemeResource) ([A-Za-z0-9]+)\}|ResourceKey=""(?<2>[A-Za-z0-9]+)""")]
     private static partial Regex UseRegex();
 
-    [GeneratedRegex("Brush\\(\"(Bc[A-Za-z]+)\"\\)")]
-    private static partial Regex CodeBrushRegex();
+    [GeneratedRegex("\"((?:Scribe|Bc)[A-Z][A-Za-z0-9]+)\"")]
+    private static partial Regex CodeKeyRegex();
 
-    [GeneratedRegex("Resources\\[\"(Bc[A-Za-z]+)\"\\]")]
-    private static partial Regex AppResourceRegex();
+    [GeneratedRegex("^(?:Scribe|Bc)[A-Z]")]
+    private static partial Regex DesignKeyRegex();
 }

@@ -6,7 +6,7 @@
     xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
     xmlns:views="using:Brasscribe.Play.Views">
 
-    <Grid x:Name="Root" Background="{ThemeResource BcBgBrush}" KeyboardAcceleratorPlacementMode="Hidden">
+    <Grid x:Name="Root" Background="{ThemeResource ScribeBgBrush}" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.KeyboardAccelerators>
             <!-- Global shortcuts (qa/screen-reader-scripts/keyboard-desktop.md); all use a modifier. -->
             <KeyboardAccelerator Key="O" Modifiers="Control" Invoked="OnImportAccelerator" />
@@ -28,7 +28,7 @@
         <!-- Title bar: back, the page title and its subtitle, then the page's actions. The window's
              own caption buttons sit to the right (ExtendsContentIntoTitleBar). -->
         <Grid x:Name="AppTitleBar" Grid.Row="0" Height="52" Padding="12,0,140,0" ColumnSpacing="12"
-              Background="{ThemeResource BcBgBrush}" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,0,1">
+              Background="{ThemeResource ScribeBgBrush}" BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,0,0,1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -76,24 +76,24 @@
             <!-- The pane and content grounds per theme: a plain StaticResource here is looked up once, so after Settings ›
                  Appearance changed while the app runs they kept the first theme's ground (light behind dark text). In
                  Light and Dark the colour is a ThemeResource, so it is looked up again when the Pink palette comes or
-                 goes (ThemeController flips the theme once for that); an alias to BcSurfaceBrush kept the plain one. -->
+                 goes (ThemeController flips the theme once for that); an alias to ScribeSurfaceBrush kept the plain one. -->
             <NavigationView.Resources>
                 <ResourceDictionary>
                     <ResourceDictionary.ThemeDictionaries>
                         <ResourceDictionary x:Key="Light">
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource BcBgColor}" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource ScribeSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource ScribeSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource ScribeBgColor}" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="Dark">
-                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
-                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource BcSurfaceColor}" />
-                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource BcBgColor}" />
+                            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource ScribeSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource ScribeSurfaceColor}" />
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource ScribeBgColor}" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="HighContrast">
-                            <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="BcSurfaceBrush" />
-                            <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="BcSurfaceBrush" />
-                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="BcBgBrush" />
+                            <StaticResource x:Key="NavigationViewExpandedPaneBackground" ResourceKey="ScribeSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="ScribeSurfaceBrush" />
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="ScribeBgBrush" />
                         </ResourceDictionary>
                     </ResourceDictionary.ThemeDictionaries>
                     <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
@@ -105,14 +105,14 @@
                     <!-- Lockup: the mark in brass and "Brasscribe Play" with the product name in the brass italic. -->
                     <StackPanel Orientation="Horizontal" Spacing="8" Padding="4,0,0,0" AutomationProperties.Name="Brasscribe Play">
                         <Image Source="ms-appx:///Assets/Brand/mark-brass.svg" Width="22" Height="22" AutomationProperties.AccessibilityView="Raw" />
-                        <TextBlock FontFamily="{StaticResource BcDisplayFontFamily}" FontSize="22" Foreground="{ThemeResource BcTextBrush}"
+                        <TextBlock FontFamily="{StaticResource ScribeDisplayFontFamily}" FontSize="22" Foreground="{ThemeResource ScribeTextBrush}"
                                    AutomationProperties.AccessibilityView="Raw">
                             <Run Text="Brasscribe" />
-                            <Run Text="Play" FontFamily="{StaticResource BcDisplayItalicFontFamily}" FontStyle="Italic" Foreground="{ThemeResource BcBrassTextBrush}" />
+                            <Run Text="Play" FontFamily="{StaticResource BcDisplayItalicFontFamily}" FontStyle="Italic" Foreground="{ThemeResource ScribeBrandTextBrush}" />
                         </TextBlock>
                     </StackPanel>
                     <Button x:Name="NewScoreButton" x:Uid="NewScoreButton" Style="{StaticResource ActionButtonStyle}" HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Left" Background="{ThemeResource BcSurfaceRaisedBrush}" BorderBrush="{ThemeResource BcBorderBrush}"
+                            HorizontalContentAlignment="Left" Background="{ThemeResource ScribeSurfaceRaisedBrush}" BorderBrush="{ThemeResource ScribeBorderBrush}"
                             Command="{x:Bind ViewModel.NewScoreCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <FontIcon Glyph="{StaticResource BcIconImportFile}" FontSize="16" />

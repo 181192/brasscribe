@@ -20,7 +20,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- The notes to check, by part then bar; kept ones show a check. -->
-        <Border Background="{ThemeResource BcSurfaceBrush}" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,1,0">
+        <Border Background="{ThemeResource ScribeSurfaceBrush}" BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,0,1,0">
             <Grid RowSpacing="8" Padding="12,20,12,12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -44,7 +44,7 @@
                     <!-- The legend: "?" uncertain, boxed "?" very uncertain. -->
                     <StackPanel Orientation="Horizontal" Spacing="16" x:Uid="ReviewLegend">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource BcUncertainBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource ScribeUncertainBrush}" VerticalAlignment="Center" />
                             <TextBlock x:Uid="LegendUncertain" Style="{StaticResource MutedStyle}" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -84,9 +84,9 @@
                         <DataTemplate x:DataType="vm:ReviewItem">
                             <StackPanel Orientation="Horizontal" Spacing="12" MinHeight="40" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
                                 <Grid Width="18" Height="18" VerticalAlignment="Center">
-                                    <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                    <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="14" Foreground="{ThemeResource ScribeTextMutedBrush}"
                                               Visibility="{x:Bind IsKept, Mode=OneWay}" />
-                                    <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource BcUncertainBrush}" HorizontalAlignment="Center"
+                                    <TextBlock Text="?" FontWeight="Bold" Foreground="{ThemeResource ScribeUncertainBrush}" HorizontalAlignment="Center"
                                                Visibility="{x:Bind views:Shown.UncertainOpen(IsKept, IsVeryUncertain), Mode=OneWay}" />
                                     <Border BorderBrush="{ThemeResource BcVeryUncertainBrush}" BorderThickness="1.5" CornerRadius="2"
                                             Visibility="{x:Bind views:Shown.VeryUncertainOpen(IsKept, IsVeryUncertain), Mode=OneWay}">
@@ -109,7 +109,7 @@
                 <TextBlock x:Name="Heading" Style="{StaticResource ScreenHeadingStyle}" AutomationProperties.HeadingLevel="Level1" IsTabStop="True"
                            Text="{x:Bind ViewModel.Heading, Mode=OneWay}" />
                 <!-- Many marks: most are probably right; start with the very unsure ones. -->
-                <Border Style="{StaticResource CardStyle}" Background="{ThemeResource BcSurfaceBrush}" Padding="14,10"
+                <Border Style="{StaticResource CardStyle}" Background="{ThemeResource ScribeSurfaceBrush}" Padding="14,10"
                         Visibility="{x:Bind ViewModel.HasLead, Mode=OneWay}">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" VerticalAlignment="Top" Margin="0,2,0,0" />
@@ -126,7 +126,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Spacing="4">
-                        <TextBlock Style="{StaticResource BcTitle2TextBlockStyle}" Foreground="{ThemeResource BcTextBrush}" Text="{x:Bind ViewModel.NoteLine, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource ScribeTitle2TextBlockStyle}" Foreground="{ThemeResource ScribeTextBrush}" Text="{x:Bind ViewModel.NoteLine, Mode=OneWay}" />
                         <TextBlock Style="{StaticResource LeadStyle}" Text="{x:Bind ViewModel.LevelLine, Mode=OneWay}" TextWrapping="Wrap" />
                         <!-- After Save: what the note was changed to, and Undo. The note stays open until Keep. -->
                         <StackPanel x:Name="ChangedPanel" Orientation="Horizontal" Spacing="12" Margin="0,4,0,0"
@@ -175,9 +175,9 @@
                             <TextBlock HorizontalAlignment="Right" Style="{StaticResource HeadlineStyle}" Text="{x:Bind ViewModel.ConfidenceText, Mode=OneWay}" />
                         </Grid>
                         <ProgressBar x:Uid="ReviewConfidence" Maximum="100" Value="{x:Bind ViewModel.ConfidencePercent, Mode=OneWay}"
-                                     Foreground="{ThemeResource BcTextBrush}" Background="{ThemeResource BcBorderBrush}" MinHeight="4"
+                                     Foreground="{ThemeResource ScribeTextBrush}" Background="{ThemeResource ScribeBorderBrush}" MinHeight="4"
                                      AutomationProperties.ItemStatus="{x:Bind ViewModel.ConfidenceText, Mode=OneWay}" />
-                        <Border Height="1" Background="{ThemeResource BcBorderBrush}" Margin="0,4" />
+                        <Border Height="1" Background="{ThemeResource ScribeBorderBrush}" Margin="0,4" />
                         <TextBlock x:Uid="ReviewHeardHeading" Style="{StaticResource HeadlineStyle}" AutomationProperties.HeadingLevel="Level2" />
                         <ItemsControl ItemsSource="{x:Bind ViewModel.Heard}" IsTabStop="False">
                             <ItemsControl.ItemTemplate>
@@ -188,9 +188,9 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                        <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="14" Foreground="{ThemeResource ScribeTextMutedBrush}"
                                                   Visibility="{x:Bind Agrees}" AutomationProperties.AccessibilityView="Raw" />
-                                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="14" Foreground="{ThemeResource ScribeTextMutedBrush}"
                                                   Visibility="{x:Bind Differs}" AutomationProperties.AccessibilityView="Raw" />
                                         <TextBlock Grid.Column="1" Text="{x:Bind Name}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
                                         <TextBlock Grid.Column="2" Text="{x:Bind Heard}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center"
@@ -203,7 +203,7 @@
                         </ItemsControl>
                     </StackPanel>
                 </Border>
-                <Border Height="1" Background="{ThemeResource BcBorderBrush}" Margin="0,16" />
+                <Border Height="1" Background="{ThemeResource ScribeBorderBrush}" Margin="0,16" />
                 <Grid ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />

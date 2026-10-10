@@ -15,7 +15,7 @@
             <TextBlock x:Name="Heading" Style="{StaticResource HeroHeadingStyle}" AutomationProperties.HeadingLevel="Level1" IsTabStop="True">
                 <Run x:Uid="HomeHeadingLead" />
                 <Run x:Uid="HomeHeadingBrass" FontFamily="{StaticResource BcDisplayItalicFontFamily}" FontStyle="Italic"
-                     Foreground="{ThemeResource BcBrassTextBrush}" />
+                     Foreground="{ThemeResource ScribeBrandTextBrush}" />
             </TextBlock>
             <TextBlock x:Uid="HomeIntro" Style="{StaticResource LeadStyle}" Margin="0,-4,0,4" />
 
@@ -23,7 +23,7 @@
             <views:ConnectionRow x:Name="ConnectionStatus" Margin="0,0,0,8" ActionInvoked="OnConnectionAction" />
 
             <!-- The one primary: open a recording (or drop it here). -->
-            <Border Style="{StaticResource CardStyle}" BorderBrush="{ThemeResource BcBorderStrongBrush}" Padding="24">
+            <Border Style="{StaticResource CardStyle}" BorderBrush="{ThemeResource ScribeBorderStrongBrush}" Padding="24">
                 <Grid ColumnSpacing="20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -148,7 +148,7 @@
                      Message="{x:Bind ViewModel.ErrorText, Mode=OneWay}" />
 
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" />
+                <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
                 <TextBlock x:Uid="LinkNote" Style="{StaticResource MutedStyle}" />
             </StackPanel>
 
@@ -168,7 +168,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Spacing="2">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="14" Foreground="{ThemeResource BcTextMutedBrush}"
+                                        <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="14" Foreground="{ThemeResource ScribeTextMutedBrush}"
                                                   Visibility="{x:Bind OnComputer}" VerticalAlignment="Center" />
                                         <TextBlock Text="{x:Bind Title}" Style="{StaticResource HeadlineStyle}" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
