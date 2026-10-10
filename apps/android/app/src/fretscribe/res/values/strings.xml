@@ -37,7 +37,8 @@
     <string name="device_notice">Fretscribe records what other apps play. Streaming apps usually block recording; then Fretscribe hears nothing and tells you. Links can\'t be downloaded.</string>
     <!-- Brasscribe's says scores can still be made on the phone; this app has no models on the phone. -->
     <string name="conn_offline">Not connected. Fretscribe needs your computer to write a tab.</string>
-    <string name="server_name_format">Fretscribe on %1$s</string>
+    <!-- The computer by its name, as the program on it is called (Bandroom): "Bandroom on Kari's Mac". -->
+    <string name="server_name_format">Bandroom on %1$s</string>
 
     <!-- Settings -->
     <string name="settings_you">What you play</string>

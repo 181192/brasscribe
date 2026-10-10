@@ -17,4 +17,12 @@
     <BrasscribeWindowsTfm>net10.0-windows10.0.20348.0</BrasscribeWindowsTfm>
     <BrasscribeWindowsMinVersion>10.0.19041.0</BrasscribeWindowsMinVersion>
   </PropertyGroup>
+  <!-- The screen catalogue (tests/Brasscribe.Play.Catalogue) is the app built with -p:BrasscribeCatalogue=true: it
+       builds into bin/catalogue and obj/catalogue, so it never mixes with the app's own build, and leaves the app's
+       build folders out of its sources. -->
+  <PropertyGroup Condition="'$(BrasscribeCatalogue)' == 'true'">
+    <BaseIntermediateOutputPath>obj\catalogue\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin\catalogue\</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+  </PropertyGroup>
 </Project>
