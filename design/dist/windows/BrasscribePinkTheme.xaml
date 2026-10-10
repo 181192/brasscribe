@@ -75,6 +75,50 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
+            <Color x:Key="ScribeBgColor">#FFFFF6F9</Color>
+            <Color x:Key="ScribeSurfaceColor">#FFFCE9F0</Color>
+            <Color x:Key="ScribeSurfaceRaisedColor">#FFFFFFFF</Color>
+            <Color x:Key="ScribeTextColor">#FF2B1420</Color>
+            <Color x:Key="ScribeTextMutedColor">#FF6B4558</Color>
+            <Color x:Key="ScribeBorderColor">#FFF2D3E0</Color>
+            <Color x:Key="ScribeBorderStrongColor">#FFA0768A</Color>
+            <Color x:Key="ScribePrimaryColor">#FFAD1463</Color>
+            <Color x:Key="ScribeOnPrimaryColor">#FFFFFFFF</Color>
+            <Color x:Key="ScribeSecondaryColor">#FFF9DAE7</Color>
+            <Color x:Key="ScribeOnSecondaryColor">#FF2B1420</Color>
+            <Color x:Key="ScribeBrandColor">#FFA57A2C</Color>
+            <Color x:Key="ScribeBrandTextColor">#FF7A5719</Color>
+            <Color x:Key="ScribeBrandTintColor">#FFFBE4ED</Color>
+            <Color x:Key="ScribeSuccessColor">#FF2E6B3F</Color>
+            <Color x:Key="ScribeWarningColor">#FF8A5A00</Color>
+            <Color x:Key="ScribeErrorColor">#FFB3261E</Color>
+            <Color x:Key="ScribeFocusColor">#FF2B1420</Color>
+            <Color x:Key="ScribeScrimColor">#66000000</Color>
+            <Color x:Key="ScribeInkColor">#FF121110</Color>
+            <Color x:Key="ScribeLineColor">#FF57534B</Color>
+            <Color x:Key="ScribeUncertainColor">#FF0063A6</Color>
+            <SolidColorBrush x:Key="ScribeBgBrush" Color="{StaticResource ScribeBgColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceBrush" Color="{StaticResource ScribeSurfaceColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceRaisedBrush" Color="{StaticResource ScribeSurfaceRaisedColor}"/>
+            <SolidColorBrush x:Key="ScribeTextBrush" Color="{StaticResource ScribeTextColor}"/>
+            <SolidColorBrush x:Key="ScribeTextMutedBrush" Color="{StaticResource ScribeTextMutedColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderBrush" Color="{StaticResource ScribeBorderColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderStrongBrush" Color="{StaticResource ScribeBorderStrongColor}"/>
+            <SolidColorBrush x:Key="ScribePrimaryBrush" Color="{StaticResource ScribePrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
+            <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{StaticResource ScribeSuccessColor}"/>
+            <SolidColorBrush x:Key="ScribeWarningBrush" Color="{StaticResource ScribeWarningColor}"/>
+            <SolidColorBrush x:Key="ScribeErrorBrush" Color="{StaticResource ScribeErrorColor}"/>
+            <SolidColorBrush x:Key="ScribeFocusBrush" Color="{StaticResource ScribeFocusColor}"/>
+            <SolidColorBrush x:Key="ScribeScrimBrush" Color="{StaticResource ScribeScrimColor}"/>
+            <SolidColorBrush x:Key="ScribeInkBrush" Color="{StaticResource ScribeInkColor}"/>
+            <SolidColorBrush x:Key="ScribeLineBrush" Color="{StaticResource ScribeLineColor}"/>
+            <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{StaticResource ScribeUncertainColor}"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <Color x:Key="BcBgColor">#FF1B1017</Color>
@@ -145,6 +189,50 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
+            <Color x:Key="ScribeBgColor">#FF1B1017</Color>
+            <Color x:Key="ScribeSurfaceColor">#FF241620</Color>
+            <Color x:Key="ScribeSurfaceRaisedColor">#FF2E1D28</Color>
+            <Color x:Key="ScribeTextColor">#FFF8E9F0</Color>
+            <Color x:Key="ScribeTextMutedColor">#FFCDAABB</Color>
+            <Color x:Key="ScribeBorderColor">#FF3F2835</Color>
+            <Color x:Key="ScribeBorderStrongColor">#FF957082</Color>
+            <Color x:Key="ScribePrimaryColor">#FFFF9ECF</Color>
+            <Color x:Key="ScribeOnPrimaryColor">#FF2B0F1E</Color>
+            <Color x:Key="ScribeSecondaryColor">#FF44293A</Color>
+            <Color x:Key="ScribeOnSecondaryColor">#FFF8E9F0</Color>
+            <Color x:Key="ScribeBrandColor">#FFD2A955</Color>
+            <Color x:Key="ScribeBrandTextColor">#FFD9B266</Color>
+            <Color x:Key="ScribeBrandTintColor">#FF33202B</Color>
+            <Color x:Key="ScribeSuccessColor">#FF8BD39B</Color>
+            <Color x:Key="ScribeWarningColor">#FFE0B65C</Color>
+            <Color x:Key="ScribeErrorColor">#FFFF8A7A</Color>
+            <Color x:Key="ScribeFocusColor">#FFF8E9F0</Color>
+            <Color x:Key="ScribeScrimColor">#66000000</Color>
+            <Color x:Key="ScribeInkColor">#FFF2F0EB</Color>
+            <Color x:Key="ScribeLineColor">#FFA6A29A</Color>
+            <Color x:Key="ScribeUncertainColor">#FF56B4E9</Color>
+            <SolidColorBrush x:Key="ScribeBgBrush" Color="{StaticResource ScribeBgColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceBrush" Color="{StaticResource ScribeSurfaceColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceRaisedBrush" Color="{StaticResource ScribeSurfaceRaisedColor}"/>
+            <SolidColorBrush x:Key="ScribeTextBrush" Color="{StaticResource ScribeTextColor}"/>
+            <SolidColorBrush x:Key="ScribeTextMutedBrush" Color="{StaticResource ScribeTextMutedColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderBrush" Color="{StaticResource ScribeBorderColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderStrongBrush" Color="{StaticResource ScribeBorderStrongColor}"/>
+            <SolidColorBrush x:Key="ScribePrimaryBrush" Color="{StaticResource ScribePrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
+            <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
+            <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{StaticResource ScribeSuccessColor}"/>
+            <SolidColorBrush x:Key="ScribeWarningBrush" Color="{StaticResource ScribeWarningColor}"/>
+            <SolidColorBrush x:Key="ScribeErrorBrush" Color="{StaticResource ScribeErrorColor}"/>
+            <SolidColorBrush x:Key="ScribeFocusBrush" Color="{StaticResource ScribeFocusColor}"/>
+            <SolidColorBrush x:Key="ScribeScrimBrush" Color="{StaticResource ScribeScrimColor}"/>
+            <SolidColorBrush x:Key="ScribeInkBrush" Color="{StaticResource ScribeInkColor}"/>
+            <SolidColorBrush x:Key="ScribeLineBrush" Color="{StaticResource ScribeLineColor}"/>
+            <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{StaticResource ScribeUncertainColor}"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <StaticResource x:Key="BcBgColor" ResourceKey="SystemColorWindowColor"/>
@@ -215,6 +303,50 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <StaticResource x:Key="ScribeBgColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeSurfaceColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeSurfaceRaisedColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeTextColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeTextMutedColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBorderColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBorderStrongColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribePrimaryColor" ResourceKey="SystemColorHighlightColor"/>
+            <StaticResource x:Key="ScribeOnPrimaryColor" ResourceKey="SystemColorHighlightTextColor"/>
+            <StaticResource x:Key="ScribeSecondaryColor" ResourceKey="SystemColorButtonFaceColor"/>
+            <StaticResource x:Key="ScribeOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
+            <StaticResource x:Key="ScribeBrandColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeBrandTintColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeSuccessColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeWarningColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeErrorColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeFocusColor" ResourceKey="SystemColorHighlightColor"/>
+            <StaticResource x:Key="ScribeScrimColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="ScribeInkColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeLineColor" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="ScribeUncertainColor" ResourceKey="SystemColorHotlightColor"/>
+            <SolidColorBrush x:Key="ScribeBgBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeSurfaceRaisedBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeTextMutedBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBorderStrongBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribePrimaryBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
+            <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}"/>
+            <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{ThemeResource SystemColorButtonFaceColor}"/>
+            <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeSuccessBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeWarningBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeErrorBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeFocusBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
+            <SolidColorBrush x:Key="ScribeScrimBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="ScribeInkBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeLineBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

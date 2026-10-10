@@ -108,11 +108,14 @@ unchanged.
 3. Split `pipeline` into shared transcription, which produces the composition, and a `Target` that
    arranges it. The engine profile chooses the target.
 4. Split the benchmark gates into shared transcription gates and per-target suites.
-5. Make the design tooling product-neutral: the token roles `brass`, `brass-text` and `brass-tint`
-   become `brand*` (Fretscribe's tokens already use `brand*`), and the generated theme gets neutral type
-   names. Until then `design/tokens/build.py` writes Fretscribe's Android theme under Brasscribe's names,
-   through the alias map in Fretscribe's tokens. The tokens build and the mockup renderer then serve
-   both products on every platform.
+5. Make the design tooling product-neutral. Done for the tokens build: `design/tokens/build.py` writes
+   every brand's Apple, Android, Windows and web files, with a small set of neutral names (`Scribe…`)
+   that are the same for every brand and each brand's own names for the rest
+   ([`design/tokens/README.md`](../../../design/tokens/README.md)). Brasscribe's token roles keep their
+   names (`brass*`); its tokens map them to the neutral `brand*`. Left: the clients move their shared
+   code to the neutral names; Fretscribe's Android theme, still written under Brasscribe's names through
+   the alias map in its tokens, gets its own; the folders move to `design/tooling` and
+   `design/brands/<name>`; the mockup renderer serves both products.
 
 ## First Fretscribe: bass tab
 
