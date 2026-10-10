@@ -52,7 +52,7 @@ to a brand.
    under `Scribe…`: `ScribeTheme` and `ScribeColors` in Kotlin, `Color.Scribe`, `Font.Scribe` and
    `ScribeDesign` in Swift, `Scribe…Brush` in XAML, `--scribe-…` in CSS. Code that uses only these
    compiles against any brand.
-2. **A brand's own names** hold everything the brand has, its own roles included: `Color.Brasscribe.veryUncertain`,
+2. **A brand's own names** hold what is the brand's own: `Color.Brasscribe.veryUncertain`,
    `FsUncertainTintBrush`, `--fs-tab-cursor-width`. Code that uses them belongs to that product.
 3. **No neutral name carries one product's idea.** Staff, score, brass, string, tab, the ad lib and
    model colours, Pink and the notation metrics are never neutral. A product that wants the cursor or
@@ -107,7 +107,7 @@ one in `icons.json`.
 | | Neutral | Brasscribe's own | Fretscribe's own |
 |---|---|---|---|
 | Kotlin | `ScribeTheme { }`, `ScribeTheme.colors.brand`, `ScribeColors`, `ScribeSpace`, `ScribeSize`, `ScribeMotion`, `ScribeShapes`, `ScribeButtonShape`, `scribeTypography()`, `ScribeNumericStyle` | `BrasscribeTheme`, `BrasscribeColors.veryUncertain`, `BrasscribeScore` | see [Android](#android) |
-| Swift | `Color.Scribe.brand`, `Font.Scribe.title1`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion` | `Color.Brasscribe.staff`, `BrasscribeDesign.Score`, `BrasscribePalette`, `BrasscribeIcon` | `Color.Fretscribe.uncertainTint`, `FretscribeDesign.Tab`, `Font.Fretscribe.tab(size:)` |
+| Swift | `Color.Scribe.brand`, `Font.Scribe.title1`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion` | `Color.Brasscribe.cursor`, `BrasscribeDesign.Score`, `BrasscribePalette`, `BrasscribeIcon` | `Color.Fretscribe.uncertainTint`, `FretscribeDesign.Tab`, `Font.Fretscribe.tab(size:)` |
 | XAML | `ScribeBrandBrush`, `ScribeBrandColor`, `ScribeSpace4`, `ScribeTitle1TextBlockStyle` | `BcStaffBrush`, `BcScoreCursorWidth`, `BcIconPlay` | `FsStringBrush`, `FsTabCursorWidth`, `FsTabFontFamily` |
 | CSS | `--scribe-brand`, `--scribe-line`, `--scribe-space-4`, `--scribe-type-title-1-size` | `--bc-very-uncertain`, `--bc-cursor`, `--bc-score-cursor-width`, `--bc-type-studio-body-size`, `globalThis.BrasscribeIcons` | `--fs-uncertain-tint`, `--fs-tab-cursor-width`, `--fs-font-tab` |
 
@@ -120,9 +120,12 @@ brand's own, so code cannot read a neutral role under a brand's name.
   has and `--bc-…` / `--fs-…` for the brand's own, in every mode. Where two neutral roles read one
   token (`accent` and `brand-text`), each has its own variable, and under forced colours each takes its
   own system colour.
-- **Apple, Windows and Android: not yet.** There a brand's own names still hold every role
-  (`Color.Brasscribe.bg` beside `Color.Scribe.bg`, `BcBgBrush` beside `ScribeBgBrush`), and the neutral
-  names read them or carry the same values. Each client moves to the neutral names in one step, and the
+- **Apple: done.** `Color.Scribe`, `Font.Scribe` and `ScribeDesign` are the declarations; `Color.Brasscribe`,
+  `BrasscribeDesign.Score` and `Font.Fretscribe` hold only the brand's own. The colour sets of the asset
+  catalog keep the names of the brand's tokens (`Brasscribe/brass`); `Color.Scribe.brand` reads that set.
+  A brand's app adds its own type helpers to `Font.<Brand>`.
+- **Windows and Android: not yet.** There a brand's own names still hold every role (`BcBgBrush` beside
+  `ScribeBgBrush`), and the neutral names read them or carry the same values. Each client moves to the neutral names in one step, and the
   generator stops writing that platform's brand-named copies in the same step.
 
 ### Android

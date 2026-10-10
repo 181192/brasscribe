@@ -6,8 +6,8 @@ import SwiftUI
 // display face and the mark. Everything here is built from those; screens use these
 // pieces instead of their own colours or shapes.
 
-typealias Space = BrasscribeDesign.Space
-typealias Radius = BrasscribeDesign.Radius
+typealias Space = ScribeDesign.Space
+typealias Radius = ScribeDesign.Radius
 
 extension Font.Brasscribe {
     /// Instrument Serif for screen titles of 28 pt and up (scales with Dynamic Type).
@@ -26,13 +26,13 @@ struct DisplayTitle: View {
         Group {
             if let emphasis {
                 // the whole line carries the display face, so the space between the two parts is display-sized too
-                Text("\(Text(text)) \(Text(emphasis).font(Font.Brasscribe.display(size, italic: true)).foregroundStyle(Color.Brasscribe.brassText))")
+                Text("\(Text(text)) \(Text(emphasis).font(Font.Brasscribe.display(size, italic: true)).foregroundStyle(Color.Scribe.brandText))")
                     .font(Font.Brasscribe.display(size))
             } else {
                 Text(text).font(Font.Brasscribe.display(size))
             }
         }
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
         .accessibilityAddTraits(.isHeader)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -44,9 +44,9 @@ struct SectionLabel: View {
     init(_ text: String) { self.text = text }
     var body: some View {
         Text(text.uppercased(with: .current))
-            .font(Font.Brasscribe.caption.weight(.semibold))
+            .font(Font.Scribe.caption.weight(.semibold))
             .kerning(0.6)
-            .foregroundStyle(Color.Brasscribe.textMuted)
+            .foregroundStyle(Color.Scribe.textMuted)
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -67,12 +67,12 @@ struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Font.Brasscribe.label)
-            .foregroundStyle(Color.Brasscribe.onPrimary)
+            .font(Font.Scribe.label)
+            .foregroundStyle(Color.Scribe.onPrimary)
             .modifier(OneLineLabel(fullWidth: fullWidth))
             .padding(.horizontal, Space.s5)
             .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: buttonHeight)
-            .background(Color.Brasscribe.primary.opacity(configuration.isPressed ? 0.8 : 1), in: RoundedRectangle(cornerRadius: Radius.md))
+            .background(Color.Scribe.primary.opacity(configuration.isPressed ? 0.8 : 1), in: RoundedRectangle(cornerRadius: Radius.md))
             .opacity(enabled ? 1 : 0.4)
             .contentShape(RoundedRectangle(cornerRadius: Radius.md))
     }
@@ -86,15 +86,15 @@ struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Font.Brasscribe.label)
-            .foregroundStyle(outline ? Color.Brasscribe.text : Color.Brasscribe.onSecondary)
+            .font(Font.Scribe.label)
+            .foregroundStyle(outline ? Color.Scribe.text : Color.Scribe.onSecondary)
             .modifier(OneLineLabel(fullWidth: fullWidth))
             .padding(.horizontal, Space.s4)
             .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: minHeight ?? buttonHeight)
             .background {
                 RoundedRectangle(cornerRadius: Radius.md)
-                    .fill(outline ? Color.clear : Color.Brasscribe.secondary)
-                    .overlay { if outline { RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.borderStrong, lineWidth: 1) } }
+                    .fill(outline ? Color.clear : Color.Scribe.secondary)
+                    .overlay { if outline { RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Scribe.borderStrong, lineWidth: 1) } }
                     .opacity(configuration.isPressed ? 0.7 : 1)
             }
             .opacity(enabled ? 1 : 0.4)
@@ -133,8 +133,8 @@ struct PlainButtonStyle44: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .modifier(OneLineLabel())
-            .font(Font.Brasscribe.label)
-            .foregroundStyle(Color.Brasscribe.text)
+            .font(Font.Scribe.label)
+            .foregroundStyle(Color.Scribe.text)
             .padding(.horizontal, Space.s3)
             .frame(minHeight: 44)
             .contentShape(Rectangle())
@@ -164,17 +164,17 @@ struct ChipToggleStyle: ToggleStyle {
                 if configuration.isOn { Image(systemName: "checkmark").font(.body.weight(.bold)) }
                 configuration.label
             }
-            .font(Font.Brasscribe.label)
-            .foregroundStyle(Color.Brasscribe.text)
+            .font(Font.Scribe.label)
+            .foregroundStyle(Color.Scribe.text)
             .padding(.horizontal, Space.s3)
             .frame(minHeight: 48)
             .frame(maxWidth: .infinity)
             .background {
                 RoundedRectangle(cornerRadius: Radius.md)
-                    .fill(configuration.isOn ? Color.Brasscribe.secondary : Color.clear)
+                    .fill(configuration.isOn ? Color.Scribe.secondary : Color.clear)
                     .overlay {
                         RoundedRectangle(cornerRadius: Radius.md)
-                            .strokeBorder(configuration.isOn ? Color.Brasscribe.text : Color.Brasscribe.borderStrong,
+                            .strokeBorder(configuration.isOn ? Color.Scribe.text : Color.Scribe.borderStrong,
                                           lineWidth: configuration.isOn ? 1.5 : 1)
                     }
             }
@@ -205,17 +205,17 @@ struct ChipLabel: View {
             Text(title).monospacedDigit()
             if menu { Image(systemName: "chevron.down").font(.caption.weight(.semibold)).accessibilityHidden(true) }
         }
-        .font(Font.Brasscribe.label)
-        .foregroundStyle(Color.Brasscribe.text)
+        .font(Font.Scribe.label)
+        .foregroundStyle(Color.Scribe.text)
         .padding(.horizontal, Space.s3)
         .frame(minHeight: 48)
         .frame(maxWidth: .infinity)
         .background {
             RoundedRectangle(cornerRadius: Radius.md)
-                .fill(active ? Color.Brasscribe.secondary : Color.clear)
+                .fill(active ? Color.Scribe.secondary : Color.clear)
                 .overlay {
                     RoundedRectangle(cornerRadius: Radius.md)
-                        .strokeBorder(active ? Color.Brasscribe.text : Color.Brasscribe.borderStrong, lineWidth: active ? 1.5 : 1)
+                        .strokeBorder(active ? Color.Scribe.text : Color.Scribe.borderStrong, lineWidth: active ? 1.5 : 1)
                 }
         }
         .contentShape(RoundedRectangle(cornerRadius: Radius.md))
@@ -256,14 +256,14 @@ struct Segmented<Value: Hashable>: View {
                 let on = o.value == selection
                 Button { selection = o.value } label: {
                     Text(o.title)
-                        .font(on ? Font.Brasscribe.label : Font.Brasscribe.body)
-                        .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                        .font(on ? Font.Scribe.label : Font.Scribe.body)
+                        .foregroundStyle(on ? Color.Scribe.text : Color.Scribe.textMuted)
                         .padding(.horizontal, Space.s3)
                         .frame(maxWidth: vertical ? .infinity : nil, minHeight: 44, alignment: .leading)
                         .background {
                             if on {
-                                RoundedRectangle(cornerRadius: Radius.sm).fill(Color.Brasscribe.surfaceRaised)
-                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.Brasscribe.borderStrong))
+                                RoundedRectangle(cornerRadius: Radius.sm).fill(Color.Scribe.surfaceRaised)
+                                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.Scribe.borderStrong))
                             }
                         }
                         .contentShape(Rectangle())
@@ -273,7 +273,7 @@ struct Segmented<Value: Hashable>: View {
             }
         }
         .padding(2)
-        .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
+        .background(Color.Scribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
         .fixedSize(horizontal: !vertical, vertical: true)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(label))
@@ -285,14 +285,14 @@ struct Segmented<Value: Hashable>: View {
 /// A 40 pt icon well in `secondary`, for list rows and cards.
 struct IconWell: View {
     let systemName: String
-    var tint: Color = .Brasscribe.text
+    var tint: Color = .Scribe.text
     @ScaledMetric(relativeTo: .body) private var size: CGFloat = 40
     var body: some View {
         Image(systemName: systemName)
             .font(.body.weight(.medium))
             .foregroundStyle(tint)
             .frame(width: size, height: size)
-            .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.sm))
+            .background(Color.Scribe.secondary, in: RoundedRectangle(cornerRadius: Radius.sm))
             .accessibilityHidden(true)
     }
 }
@@ -304,9 +304,9 @@ struct CardModifier: ViewModifier {
         content
             .padding(padding)
             // the shadow sits on the card's shape only, never on the text inside it
-            .background(RoundedRectangle(cornerRadius: Radius.lg).fill(Color.Brasscribe.surfaceRaised)
+            .background(RoundedRectangle(cornerRadius: Radius.lg).fill(Color.Scribe.surfaceRaised)
                 .shadow(color: scheme == .dark ? .clear : .black.opacity(0.04), radius: 2, y: 1))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Brasscribe.border, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Scribe.border, lineWidth: 1))
     }
 }
 
@@ -320,11 +320,11 @@ struct NoticeBox: View {
             Text(text).fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
-        .font(Font.Brasscribe.body)
-        .foregroundStyle(Color.Brasscribe.text)
+        .font(Font.Scribe.body)
+        .foregroundStyle(Color.Scribe.text)
         .padding(Space.s4)
-        .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.border))
+        .background(Color.Scribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Scribe.border))
         .accessibilityElement(children: .combine)
     }
 }
@@ -335,8 +335,8 @@ struct HelperLine: View {
     let text: String
     var body: some View {
         Label { Text(text).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: systemImage) }
-            .font(Font.Brasscribe.callout)
-            .foregroundStyle(Color.Brasscribe.textMuted)
+            .font(Font.Scribe.callout)
+            .foregroundStyle(Color.Scribe.textMuted)
             .accessibilityElement(children: .combine)
     }
 }
@@ -378,7 +378,7 @@ struct SidePanel<Panel: View>: ViewModifier {
         HStack(spacing: 0) {
             content.frame(maxWidth: .infinity)
             if shown {
-                Divider().overlay(Color.Brasscribe.border)
+                Divider().overlay(Color.Scribe.border)
                 panel.frame(width: width).frame(maxHeight: .infinity)
             }
         }
@@ -420,11 +420,11 @@ extension View {
 
     /// The page background and the reading column (at most 720 pt, centred).
     func readingColumn() -> some View {
-        frame(maxWidth: BrasscribeDesign.Size.contentMaxWidth, alignment: .leading)
+        frame(maxWidth: ScribeDesign.Size.contentMaxWidth, alignment: .leading)
             .frame(maxWidth: .infinity)
     }
 
-    func pageBackground() -> some View { background(Color.Brasscribe.bg.ignoresSafeArea()) }
+    func pageBackground() -> some View { background(Color.Scribe.bg.ignoresSafeArea()) }
 }
 
 // MARK: the mark
@@ -432,7 +432,7 @@ extension View {
 /// The Brasscribe mark (design/brand/logo/mark.svg), drawn in brass or ink. Decorative.
 struct BrandMark: View {
     var size: CGFloat = 28
-    var color: Color = .Brasscribe.brass
+    var color: Color = .Scribe.brand
     private static let doc: SVGDocument? = Bundle.main.url(forResource: "mark", withExtension: "svg")
         .flatMap { try? Data(contentsOf: $0) }.flatMap { try? SVGDocument(data: $0) }
 
@@ -456,8 +456,8 @@ struct Lockup: View {
     var body: some View {
         HStack(spacing: Space.s2) {
             BrandMark(size: 24)
-            Text("\(Text(verbatim: "Brasscribe").font(.custom("InstrumentSerif-Regular", size: 24, relativeTo: .title2)))\(product ? Text(verbatim: " ") + Text(verbatim: "Play").font(.custom("InstrumentSerif-Italic", size: 24, relativeTo: .title2)).foregroundStyle(Color.Brasscribe.brassText) : Text(verbatim: ""))")
-                .foregroundStyle(Color.Brasscribe.text)
+            Text("\(Text(verbatim: "Brasscribe").font(.custom("InstrumentSerif-Regular", size: 24, relativeTo: .title2)))\(product ? Text(verbatim: " ") + Text(verbatim: "Play").font(.custom("InstrumentSerif-Italic", size: 24, relativeTo: .title2)).foregroundStyle(Color.Scribe.brandText) : Text(verbatim: ""))")
+                .foregroundStyle(Color.Scribe.text)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: product ? "Brasscribe Play" : "Brasscribe"))
@@ -472,7 +472,7 @@ struct UncertainMark: View {
     let level: UncertaintyLevel
     @ScaledMetric(relativeTo: .body) private var size: CGFloat = 17
     var body: some View {
-        let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
+        let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Scribe.uncertain
         Text(verbatim: "?")
             .font(.body.weight(.bold))   // Dynamic Type; the frame below scales with it
             .foregroundStyle(color)
@@ -508,9 +508,9 @@ extension View {
     /// label colour, which a custom tint only dims.
     @ViewBuilder func menuTint() -> some View {
         #if os(iOS)
-        tint(Color.Brasscribe.text)
+        tint(Color.Scribe.text)
         #else
-        foregroundStyle(Color.Brasscribe.text)
+        foregroundStyle(Color.Scribe.text)
         #endif
     }
 }
@@ -524,7 +524,7 @@ func percentText(_ value: Double) -> String { (value / 100).formatted(.percent.p
 enum SelectedRow {
     static let fill = Color.Brasscribe.selectionTint
     static let edge = Color.Brasscribe.selectionEdge
-    static let text = Color.Brasscribe.text
+    static let text = Color.Scribe.text
 
     /// The row background: this for the selected row, the list's own for the rest.
     static func background(_ selected: Bool) -> AnyView? {

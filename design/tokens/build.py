@@ -20,8 +20,8 @@ file that is not listed (a test, a trial) is built with --tokens FILE --out DIR.
 
 Names. Every brand gets the same neutral names (Scribe*, --scribe-*; design/tokens/neutral.json lists the
 roles), so shared code compiles against any brand, and its own names for everything (its product name and
-its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. On the web a neutral role has its neutral
-name only; on the other platforms the brand's names still hold it too. design/tokens/README.md has the rule
+its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. On the web and on Apple a neutral role has its
+neutral name only; on Windows and Android the brand's names still hold it too. design/tokens/README.md has the rule
 and the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
 written under Brasscribe's names, through the map in $extensions.<brand>.android (see android_source).
 
@@ -393,10 +393,15 @@ def apple_outputs() -> dict[str, str | bytes]:
 
     faces = {key: (font, found) for key, font, found in fonts("apple")}
     files = [f"Fonts/{Path(face['file']).name}" for _, found in faces.values() for face in found]
+    own_roles = [r for r in roles() if r not in neutral_roles().values()]
     lines = [f"// {HEADER}", "//", f"// Add {PRODUCT}Design.xcassets and {' and '.join(files)} to the same target",
-             f"// as this file, and list the font{'s' if len(files) > 1 else ''} under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).", "",
+             f"// as this file, and list the font{'s' if len(files) > 1 else ''} under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).",
+             "//",
+             "// Scribe… is what every brand's file declares, under the same names, so code that uses only those compiles",
+             f"// against any brand (design/tokens/README.md). {PRODUCT}… is what is {PRODUCT}'s own. A role has one name.", "",
              "import SwiftUI", "",
-             f"public enum {PRODUCT}Design {{",
+             "/// The scales every brand has.",
+             "public enum ScribeDesign {",
              "    private final class BundleToken {}",
              f"    /// The bundle that holds {PRODUCT}Design.xcassets: the package resources or the target this file is in.",
              "    public static let bundle: Bundle = {",
@@ -422,14 +427,6 @@ def apple_outputs() -> dict[str, str | bytes]:
               f"        public static let contentMaxWidth: CGFloat = {fmt(dimension(TOKENS['size']['content-max']))}",
               f"        public static let sidebarWidth: CGFloat = {fmt(dimension(TOKENS['size']['sidebar']))}",
               "    }", ""]
-    view, sc = notation()
-    lines += [f"    /// {pascal(view)}-view metrics. Colours are in Color.{PRODUCT}.", f"    public enum {pascal(view)} {{"]
-    for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
-        lines.append(f"        public static let {camel(k)}: CGFloat = {fmt(dimension(sc[k]))}")
-    for k in ("zoom-min", "zoom-max", "zoom-step", "single-part-reflow-zoom", "mark-size-staff-spaces", "staff-height-min-phone-mm"):
-        if k in sc:
-            lines.append(f"        public static let {camel(k)}: Double = {fmt(sc[k]['$value'])}")
-    lines += ["    }", ""]
     md = TOKENS["motion"]["duration"]
     ez = TOKENS["motion"]["easing"]
     lines += ["    /// Motion. Every animation goes through `animation(_:reduceMotion:)`.", "    public enum Motion {"]
@@ -446,8 +443,18 @@ def apple_outputs() -> dict[str, str | bytes]:
         "    }",
         "}", ""]
 
+    view, sc = notation()
+    lines += [f"/// {PRODUCT}'s own metrics.", f"public enum {PRODUCT}Design {{",
+              f"    /// {pascal(view)}-view metrics. Its colours are in Color.{PRODUCT}.", f"    public enum {pascal(view)} {{"]
+    for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
+        lines.append(f"        public static let {camel(k)}: CGFloat = {fmt(dimension(sc[k]))}")
+    for k in ("zoom-min", "zoom-max", "zoom-step", "single-part-reflow-zoom", "mark-size-staff-spaces", "staff-height-min-phone-mm"):
+        if k in sc:
+            lines.append(f"        public static let {camel(k)}: Double = {fmt(sc[k]['$value'])}")
+    lines += ["    }", "}", ""]
+
     if PINK:
-        lines += [f"/// Which palette `Color.{PRODUCT}` reads: the standard one, or the hidden Pink one (design/system.md §10).",
+        lines += ["/// Which palette the colours are read from: the standard one, or the hidden Pink one (design/system.md §10).",
                   "/// It is observable, so a view that reads a colour in `body` redraws when the palette changes. Light or",
                   "/// dark still follows the colour scheme, and Increase Contrast still gives the high-contrast colours.",
                   "@Observable",
@@ -459,20 +466,24 @@ def apple_outputs() -> dict[str, str | bytes]:
         namespace = f'({PRODUCT}Palette.shared.isPink ? "{PRODUCT}Pink/" : "{PRODUCT}/")'
     else:
         namespace = f'"{PRODUCT}/"'
-    lines += ["public extension Color {", "    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.",
-              f"    enum {PRODUCT} {{",
-              "        private static func named(_ role: String) -> Color {",
-              f"            Color({namespace} + role, bundle: {PRODUCT}Design.bundle)",
-              "        }", ""]
-    for role in roles():
+    lines += ["/// A colour set of the asset catalog, with its light, dark and high-contrast variants.",
+              "private func catalogColor(_ name: String) -> Color {",
+              f"    Color({namespace} + name, bundle: ScribeDesign.bundle)",
+              "}", "",
+              "public extension Color {", "    /// The colour roles every brand has.", "    enum Scribe {"]
+    for name, src in neutral_roles().items():
+        lines.append(f"        /// {desc(src)}")
+        lines.append(f'        public static var {camel(name)}: Color {{ catalogColor("{camel(src)}") }}')
+    lines += ["    }", "", f"    /// {PRODUCT}'s own colour roles.", f"    enum {PRODUCT} {{"]
+    for role in own_roles:
         lines.append(f"        /// {desc(role)}")
-        lines.append(f'        public static var {camel(role)}: Color {{ named("{camel(role)}") }}')
+        lines.append(f'        public static var {camel(role)}: Color {{ catalogColor("{camel(role)}") }}')
     lines += ["    }", "}", ""]
 
     typo = group("typography")
     weight = {400: "regular", 500: "medium", 600: "semibold", 700: "bold"}
-    lines += ["public extension Font {", "    /// The type ramp, built on Dynamic Type text styles so it scales with the user's text size.",
-              f"    enum {PRODUCT} {{"]
+    lines += ["public extension Font {", "    /// The type ramp every brand has, built on Dynamic Type text styles so it scales with the user's text size.",
+              "    enum Scribe {"]
     for k, v in typo.items():
         plat = v.get("$extensions", {}).get("no.brasscribe.platform")
         if not plat:
@@ -489,11 +500,14 @@ def apple_outputs() -> dict[str, str | bytes]:
                 expr += ".monospacedDigit()"
         lines.append(f"        /// {v.get('$description', '')}")
         lines.append(f"        public static let {camel(k)}: Font = {expr}")
-    for key, (font, found) in faces.items():
-        if key != "display" and found:
-            lines += ["", f"        /// {font['family']}. {font['note']}",
-                      f"        public static func {camel(key)}(size: CGFloat) -> Font {{ .custom(\"{found[0]['postscript']}\", size: size) }}"]
-    lines += ["    }", "}", ""]
+    lines += ["    }"]
+    own_faces = [(key, font, found) for key, (font, found) in faces.items() if key != "display" and found]
+    lines += ["", f"    /// {PRODUCT}'s own faces, and where a {PRODUCT} app adds its own type.", f"    enum {PRODUCT} {{"]
+    for key, font, found in own_faces:
+        lines += [f"        /// {font['family']}. {font['note']}",
+                  f"        public static func {camel(key)}(size: CGFloat) -> Font {{ .custom(\"{found[0]['postscript']}\", size: size) }}"]
+    lines += ["    }"]
+    lines += ["}", ""]
 
     lines += ["/// One SF Symbol per action. The label is the visible text and the accessible name.",
               f"public enum {PRODUCT}Icon: CaseIterable, Sendable {{"]
@@ -503,23 +517,6 @@ def apple_outputs() -> dict[str, str | bytes]:
     for a, v in ICONS.items():
         lines.append(f'        case .{camel(a)}: "{v["apple"]}"')
     lines += ["        }", "    }", "}", ""]
-
-    lines += ["// The neutral names (design/tokens/README.md). Every brand's file declares them, so code that uses only",
-              f"// these compiles against any brand. {PRODUCT}'s own roles and metrics are in the types above.", "",
-              "public enum ScribeDesign {",
-              f"    public static var bundle: Bundle {{ {PRODUCT}Design.bundle }}"]
-    lines += [f"    public typealias {name} = {PRODUCT}Design.{name}" for name in ("Space", "Radius", "Size", "Motion")]
-    lines += ["}", "", "public extension Color {", "    /// The colour roles every brand has.", "    enum Scribe {"]
-    for name, src in neutral_roles().items():
-        lines.append(f"        /// {desc(src)}")
-        lines.append(f"        public static var {camel(name)}: Color {{ {PRODUCT}.{camel(src)} }}")
-    lines += ["    }", "}", "",
-              "public extension Font {", "    /// The type ramp every brand has.", "    enum Scribe {"]
-    for k, v in typo.items():
-        if v.get("$extensions", {}).get("no.brasscribe.platform"):
-            lines.append(f"        /// {v.get('$description', '')}")
-            lines.append(f"        public static var {camel(k)}: Font {{ {PRODUCT}.{camel(k)} }}")
-    lines += ["    }", "}", ""]
     out[f"apple/{PRODUCT}Design.swift"] = "\n".join(lines)
     out.update(font_files("apple", "apple/Fonts"))
     return out

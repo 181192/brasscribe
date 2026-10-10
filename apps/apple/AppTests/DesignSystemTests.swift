@@ -10,9 +10,9 @@ import Testing
     @Test(arguments: ["bg", "text", "primary", "onPrimary", "uncertain", "veryUncertain", "cursor", "cursorTint", "loopTint", "adlibTint"])
     func colourSetIsInTheBundle(_ name: String) {
         #if os(iOS)
-        #expect(UIColor(named: "Brasscribe/\(name)", in: BrasscribeDesign.bundle, compatibleWith: nil) != nil)
+        #expect(UIColor(named: "Brasscribe/\(name)", in: ScribeDesign.bundle, compatibleWith: nil) != nil)
         #else
-        #expect(NSColor(named: "Brasscribe/\(name)", bundle: BrasscribeDesign.bundle) != nil)
+        #expect(NSColor(named: "Brasscribe/\(name)", bundle: ScribeDesign.bundle) != nil)
         #endif
     }
 
@@ -33,21 +33,23 @@ import Testing
     }
 
     /// The neutral names (design/tokens/README.md) are the same in every product's generated design;
-    /// here they read Brasscribe's.
+    /// here they read Brasscribe's colour sets. Brasscribe's own roles are on its own type.
     @Test func neutralNamesReadTheProductsDesign() {
-        #expect(Color.Scribe.brand == Color.Brasscribe.brass)
-        #expect(Color.Scribe.brandText == Color.Brasscribe.brassText)
-        #expect(Color.Scribe.accent == Color.Brasscribe.brassText)
-        #expect(Color.Scribe.brandTint == Color.Brasscribe.brassTint)
-        #expect(Color.Scribe.line == Color.Brasscribe.staff)
-        #expect(Color.Scribe.ink == Color.Brasscribe.ink)
-        #expect(Color.Scribe.uncertain == Color.Brasscribe.uncertain)
-        #expect(ScribeDesign.Space.s4 == BrasscribeDesign.Space.s4)
-        #expect(ScribeDesign.Radius.md == BrasscribeDesign.Radius.md)
-        #expect(ScribeDesign.Size.touchMin == BrasscribeDesign.Size.touchMin)
-        #expect(ScribeDesign.Motion.base == BrasscribeDesign.Motion.base)
-        #expect(ScribeDesign.bundle == BrasscribeDesign.bundle)
-        #expect(Font.Scribe.title1 == Font.Brasscribe.title1)
+        func set(_ name: String) -> Color { Color("Brasscribe/" + name, bundle: ScribeDesign.bundle) }
+        #expect(Color.Scribe.brand == set("brass"))
+        #expect(Color.Scribe.brandText == set("brassText"))
+        #expect(Color.Scribe.accent == set("brassText"))
+        #expect(Color.Scribe.brandTint == set("brassTint"))
+        #expect(Color.Scribe.line == set("staff"))
+        #expect(Color.Scribe.ink == set("ink"))
+        #expect(Color.Scribe.uncertain == set("uncertain"))
+        #expect(Color.Brasscribe.veryUncertain == set("veryUncertain"))
+        #expect(Color.Brasscribe.cursor == set("cursor"))
+        #expect(ScribeDesign.Space.s4 == 16)
+        #expect(ScribeDesign.Radius.md == 12)
+        #expect(ScribeDesign.Size.touchMin == 44)
+        #expect(BrasscribeDesign.Score.zoomMin < BrasscribeDesign.Score.zoomMax)
+        #expect(Font.Scribe.title1 == Font.title.weight(.semibold))
     }
 
     @Test func markAndLicenceAreBundled() {

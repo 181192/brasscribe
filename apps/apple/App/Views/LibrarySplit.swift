@@ -12,7 +12,7 @@ struct LibrarySplit<Detail: View>: View {
     var body: some View {
         NavigationSplitView(columnVisibility: $columns) {
             LibrarySidebar()
-                .navigationSplitViewColumnWidth(min: 240, ideal: BrasscribeDesign.Size.sidebarWidth, max: 340)
+                .navigationSplitViewColumnWidth(min: 240, ideal: ScribeDesign.Size.sidebarWidth, max: 340)
         } detail: {
             detail
         }

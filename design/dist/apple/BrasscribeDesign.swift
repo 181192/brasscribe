@@ -2,10 +2,14 @@
 //
 // Add BrasscribeDesign.xcassets and Fonts/InstrumentSerif-Regular.ttf to the same target
 // as this file, and list the font under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).
+//
+// Scribe… is what every brand's file declares, under the same names, so code that uses only those compiles
+// against any brand (design/tokens/README.md). Brasscribe… is what is Brasscribe's own. A role has one name.
 
 import SwiftUI
 
-public enum BrasscribeDesign {
+/// The scales every brand has.
+public enum ScribeDesign {
     private final class BundleToken {}
     /// The bundle that holds BrasscribeDesign.xcassets: the package resources or the target this file is in.
     public static let bundle: Bundle = {
@@ -50,21 +54,6 @@ public enum BrasscribeDesign {
         public static let sidebarWidth: CGFloat = 280
     }
 
-    /// Score-view metrics. Colours are in Color.Brasscribe.
-    public enum Score {
-        public static let cursorWidth: CGFloat = 3
-        public static let focusWidth: CGFloat = 2
-        public static let focusGap: CGFloat = 2
-        public static let loopEdgeWidth: CGFloat = 3
-        public static let selectionEdgeWidth: CGFloat = 1
-        public static let zoomMin: Double = 50
-        public static let zoomMax: Double = 400
-        public static let zoomStep: Double = 10
-        public static let singlePartReflowZoom: Double = 200
-        public static let markSizeStaffSpaces: Double = 1.6
-        public static let staffHeightMinPhoneMm: Double = 6
-    }
-
     /// Motion. Every animation goes through `animation(_:reduceMotion:)`.
     public enum Motion {
         public static let instant: Double = 0
@@ -81,7 +70,25 @@ public enum BrasscribeDesign {
     }
 }
 
-/// Which palette `Color.Brasscribe` reads: the standard one, or the hidden Pink one (design/system.md §10).
+/// Brasscribe's own metrics.
+public enum BrasscribeDesign {
+    /// Score-view metrics. Its colours are in Color.Brasscribe.
+    public enum Score {
+        public static let cursorWidth: CGFloat = 3
+        public static let focusWidth: CGFloat = 2
+        public static let focusGap: CGFloat = 2
+        public static let loopEdgeWidth: CGFloat = 3
+        public static let selectionEdgeWidth: CGFloat = 1
+        public static let zoomMin: Double = 50
+        public static let zoomMax: Double = 400
+        public static let zoomStep: Double = 10
+        public static let singlePartReflowZoom: Double = 200
+        public static let markSizeStaffSpaces: Double = 1.6
+        public static let staffHeightMinPhoneMm: Double = 6
+    }
+}
+
+/// Which palette the colours are read from: the standard one, or the hidden Pink one (design/system.md §10).
 /// It is observable, so a view that reads a colour in `body` redraws when the palette changes. Light or
 /// dark still follows the colour scheme, and Increase Contrast still gives the high-contrast colours.
 @Observable
@@ -91,87 +98,94 @@ public final class BrasscribePalette: @unchecked Sendable {
     public init() {}
 }
 
-public extension Color {
-    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.
-    enum Brasscribe {
-        private static func named(_ role: String) -> Color {
-            Color((BrasscribePalette.shared.isPink ? "BrasscribePink/" : "Brasscribe/") + role, bundle: BrasscribeDesign.bundle)
-        }
+/// A colour set of the asset catalog, with its light, dark and high-contrast variants.
+private func catalogColor(_ name: String) -> Color {
+    Color((BrasscribePalette.shared.isPink ? "BrasscribePink/" : "Brasscribe/") + name, bundle: ScribeDesign.bundle)
+}
 
+public extension Color {
+    /// The colour roles every brand has.
+    enum Scribe {
         /// Window and page background; also the score paper.
-        public static var bg: Color { named("bg") }
+        public static var bg: Color { catalogColor("bg") }
         /// Grouped areas: player bar, sidebars, list sections.
-        public static var surface: Color { named("surface") }
+        public static var surface: Color { catalogColor("surface") }
         /// Cards, sheets, dialogs and menus that sit above the background.
-        public static var surfaceRaised: Color { named("surfaceRaised") }
+        public static var surfaceRaised: Color { catalogColor("surfaceRaised") }
         /// Body text and icons.
-        public static var text: Color { named("text") }
+        public static var text: Color { catalogColor("text") }
         /// Secondary text. Still at least 4.5:1 on every surface.
-        public static var textMuted: Color { named("textMuted") }
+        public static var textMuted: Color { catalogColor("textMuted") }
         /// Decorative hairlines and dividers. Never the only boundary of a control.
-        public static var border: Color { named("border") }
+        public static var border: Color { catalogColor("border") }
         /// Boundaries of controls (text fields, outlined buttons, chips). At least 3:1.
-        public static var borderStrong: Color { named("borderStrong") }
+        public static var borderStrong: Color { catalogColor("borderStrong") }
         /// Fill of the one primary button per screen, selected chips and switches.
-        public static var primary: Color { named("primary") }
+        public static var primary: Color { catalogColor("primary") }
         /// Text and icons on primary.
-        public static var onPrimary: Color { named("onPrimary") }
+        public static var onPrimary: Color { catalogColor("onPrimary") }
         /// Fill of secondary (tonal) buttons and segmented controls.
-        public static var secondary: Color { named("secondary") }
+        public static var secondary: Color { catalogColor("secondary") }
         /// Text and icons on secondary.
-        public static var onSecondary: Color { named("onSecondary") }
-        /// Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list.
-        public static var brass: Color { named("brass") }
+        public static var onSecondary: Color { catalogColor("onSecondary") }
         /// Brand colour when it has to carry text, for example the product name under the wordmark.
-        public static var brassText: Color { named("brassText") }
+        public static var accent: Color { catalogColor("brassText") }
+        /// Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list.
+        public static var brand: Color { catalogColor("brass") }
+        /// Brand colour when it has to carry text, for example the product name under the wordmark.
+        public static var brandText: Color { catalogColor("brassText") }
         /// Background of brand moments: the onboarding hero and the About screen.
-        public static var brassTint: Color { named("brassTint") }
+        public static var brandTint: Color { catalogColor("brassTint") }
         /// Finished states: "Score ready", a passed Studio check. Always with text or an icon.
-        public static var success: Color { named("success") }
+        public static var success: Color { catalogColor("success") }
         /// Notices that need attention but do not block. Always with text or an icon.
-        public static var warning: Color { named("warning") }
+        public static var warning: Color { catalogColor("warning") }
         /// Error text and the error icon. Always with a sentence that says what to do.
-        public static var error: Color { named("error") }
+        public static var error: Color { catalogColor("error") }
         /// Keyboard focus ring: 2 px with a 2 px gap. Ink in light and paper in dark, so it can never be mistaken for the uncertain blue on notation. High contrast: yellow.
-        public static var focus: Color { named("focus") }
+        public static var focus: Color { catalogColor("focus") }
         /// Dimmed backdrop behind a sheet or dialog (40% alpha).
-        public static var scrim: Color { named("scrim") }
+        public static var scrim: Color { catalogColor("scrim") }
         /// Noteheads, stems, clefs and confident notes.
-        public static var ink: Color { named("ink") }
+        public static var ink: Color { catalogColor("ink") }
         /// Staff lines and bar lines.
-        public static var staff: Color { named("staff") }
+        public static var line: Color { catalogColor("staff") }
         /// Notes with confidence 0.4-0.7. Always with a "?" above the note.
-        public static var uncertain: Color { named("uncertain") }
+        public static var uncertain: Color { catalogColor("uncertain") }
+    }
+
+    /// Brasscribe's own colour roles.
+    enum Brasscribe {
         /// Notes with confidence below 0.4. Always with a boxed "?" above the note.
-        public static var veryUncertain: Color { named("veryUncertain") }
+        public static var veryUncertain: Color { catalogColor("veryUncertain") }
         /// Neutral band behind free-time (ad lib) bars; the italic "ad lib." and dashed bar lines carry the meaning. Not blue, so it never reads as uncertain. High contrast: none, outline instead.
-        public static var adlibTint: Color { named("adlibTint") }
+        public static var adlibTint: Color { catalogColor("adlibTint") }
         /// Band behind the loop range. High contrast: none, outline instead.
-        public static var loopTint: Color { named("loopTint") }
+        public static var loopTint: Color { catalogColor("loopTint") }
         /// Bracket markers at both ends of the loop range.
-        public static var loopEdge: Color { named("loopEdge") }
+        public static var loopEdge: Color { catalogColor("loopEdge") }
         /// Playback cursor: a 3 px full-staff-height line.
-        public static var cursor: Color { named("cursor") }
+        public static var cursor: Color { catalogColor("cursor") }
         /// Tint of the bar under the playback cursor: the cursor colour at 20% over the paper.
-        public static var cursorTint: Color { named("cursorTint") }
+        public static var cursorTint: Color { catalogColor("cursorTint") }
         /// Band behind a selected bar range (before it becomes a loop).
-        public static var selectionTint: Color { named("selectionTint") }
+        public static var selectionTint: Color { catalogColor("selectionTint") }
         /// 1 px outline of a selected bar range.
-        public static var selectionEdge: Color { named("selectionEdge") }
+        public static var selectionEdge: Color { catalogColor("selectionEdge") }
         /// Studio data series 1 (MuScriptor). Always repeated by a pattern or label.
-        public static var model1: Color { named("model1") }
+        public static var model1: Color { catalogColor("model1") }
         /// Studio data series 2 (Basic Pitch).
-        public static var model2: Color { named("model2") }
+        public static var model2: Color { catalogColor("model2") }
         /// Studio data series 3 (SwiftF0).
-        public static var model3: Color { named("model3") }
+        public static var model3: Color { catalogColor("model3") }
         /// Studio data series 4.
-        public static var model4: Color { named("model4") }
+        public static var model4: Color { catalogColor("model4") }
     }
 }
 
 public extension Font {
-    /// The type ramp, built on Dynamic Type text styles so it scales with the user's text size.
-    enum Brasscribe {
+    /// The type ramp every brand has, built on Dynamic Type text styles so it scales with the user's text size.
+    enum Scribe {
         /// Brand headline: home greeting, onboarding, the What is this? question. Serif.
         public static let display: Font = .custom("InstrumentSerif-Regular", size: 40, relativeTo: .largeTitle)
         /// Screen title when the display face is not used.
@@ -190,6 +204,10 @@ public extension Font {
         public static let caption: Font = .footnote
         /// Bar/beat, speed and tempo readouts with tabular figures (monospacedDigit / tnum).
         public static let numeric: Font = .body.weight(.medium).monospacedDigit()
+    }
+
+    /// Brasscribe's own faces, and where a Brasscribe app adds its own type.
+    enum Brasscribe {
     }
 }
 
@@ -315,92 +333,5 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
         case .running: "checkmark.circle"
         case .attention: "exclamationmark.triangle"
         }
-    }
-}
-
-// The neutral names (design/tokens/README.md). Every brand's file declares them, so code that uses only
-// these compiles against any brand. Brasscribe's own roles and metrics are in the types above.
-
-public enum ScribeDesign {
-    public static var bundle: Bundle { BrasscribeDesign.bundle }
-    public typealias Space = BrasscribeDesign.Space
-    public typealias Radius = BrasscribeDesign.Radius
-    public typealias Size = BrasscribeDesign.Size
-    public typealias Motion = BrasscribeDesign.Motion
-}
-
-public extension Color {
-    /// The colour roles every brand has.
-    enum Scribe {
-        /// Window and page background; also the score paper.
-        public static var bg: Color { Brasscribe.bg }
-        /// Grouped areas: player bar, sidebars, list sections.
-        public static var surface: Color { Brasscribe.surface }
-        /// Cards, sheets, dialogs and menus that sit above the background.
-        public static var surfaceRaised: Color { Brasscribe.surfaceRaised }
-        /// Body text and icons.
-        public static var text: Color { Brasscribe.text }
-        /// Secondary text. Still at least 4.5:1 on every surface.
-        public static var textMuted: Color { Brasscribe.textMuted }
-        /// Decorative hairlines and dividers. Never the only boundary of a control.
-        public static var border: Color { Brasscribe.border }
-        /// Boundaries of controls (text fields, outlined buttons, chips). At least 3:1.
-        public static var borderStrong: Color { Brasscribe.borderStrong }
-        /// Fill of the one primary button per screen, selected chips and switches.
-        public static var primary: Color { Brasscribe.primary }
-        /// Text and icons on primary.
-        public static var onPrimary: Color { Brasscribe.onPrimary }
-        /// Fill of secondary (tonal) buttons and segmented controls.
-        public static var secondary: Color { Brasscribe.secondary }
-        /// Text and icons on secondary.
-        public static var onSecondary: Color { Brasscribe.onSecondary }
-        /// Brand colour when it has to carry text, for example the product name under the wordmark.
-        public static var accent: Color { Brasscribe.brassText }
-        /// Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list.
-        public static var brand: Color { Brasscribe.brass }
-        /// Brand colour when it has to carry text, for example the product name under the wordmark.
-        public static var brandText: Color { Brasscribe.brassText }
-        /// Background of brand moments: the onboarding hero and the About screen.
-        public static var brandTint: Color { Brasscribe.brassTint }
-        /// Finished states: "Score ready", a passed Studio check. Always with text or an icon.
-        public static var success: Color { Brasscribe.success }
-        /// Notices that need attention but do not block. Always with text or an icon.
-        public static var warning: Color { Brasscribe.warning }
-        /// Error text and the error icon. Always with a sentence that says what to do.
-        public static var error: Color { Brasscribe.error }
-        /// Keyboard focus ring: 2 px with a 2 px gap. Ink in light and paper in dark, so it can never be mistaken for the uncertain blue on notation. High contrast: yellow.
-        public static var focus: Color { Brasscribe.focus }
-        /// Dimmed backdrop behind a sheet or dialog (40% alpha).
-        public static var scrim: Color { Brasscribe.scrim }
-        /// Noteheads, stems, clefs and confident notes.
-        public static var ink: Color { Brasscribe.ink }
-        /// Staff lines and bar lines.
-        public static var line: Color { Brasscribe.staff }
-        /// Notes with confidence 0.4-0.7. Always with a "?" above the note.
-        public static var uncertain: Color { Brasscribe.uncertain }
-    }
-}
-
-public extension Font {
-    /// The type ramp every brand has.
-    enum Scribe {
-        /// Brand headline: home greeting, onboarding, the What is this? question. Serif.
-        public static var display: Font { Brasscribe.display }
-        /// Screen title when the display face is not used.
-        public static var title1: Font { Brasscribe.title1 }
-        /// Section headings, sheet titles.
-        public static var title2: Font { Brasscribe.title2 }
-        /// List row titles, card titles.
-        public static var headline: Font { Brasscribe.headline }
-        /// Running text and list rows. Windows uses BodyLarge (18 epx) for Play; Studio uses 16 px.
-        public static var body: Font { Brasscribe.body }
-        /// Row subtitles and helper text.
-        public static var callout: Font { Brasscribe.callout }
-        /// Button labels. Apple: .body.weight(.semibold).
-        public static var label: Font { Brasscribe.label }
-        /// Metadata, timestamps. Never for instructions.
-        public static var caption: Font { Brasscribe.caption }
-        /// Bar/beat, speed and tempo readouts with tabular figures (monospacedDigit / tnum).
-        public static var numeric: Font { Brasscribe.numeric }
     }
 }

@@ -35,10 +35,10 @@ import Testing
                     let fill = resolved(SelectedRow.fill, dark: dark, contrast: contrast)
                     let text = resolved(SelectedRow.text, dark: dark, contrast: contrast)
                     let edge = resolved(SelectedRow.edge, dark: dark, contrast: contrast)
-                    let page = resolved(Color.Brasscribe.surfaceRaised, dark: dark, contrast: contrast)
+                    let page = resolved(Color.Scribe.surfaceRaised, dark: dark, contrast: contrast)
                     #expect(Self.ratio(text, fill) >= 4.5, "text on the selected row, \(name): \(Self.ratio(text, fill))")
                     // the "?" marks are bold glyphs: 3:1 as for large text and graphics
-                    for mark in [Color.Brasscribe.uncertain, Color.Brasscribe.veryUncertain] {
+                    for mark in [Color.Scribe.uncertain, Color.Brasscribe.veryUncertain] {
                         let m = resolved(mark, dark: dark, contrast: contrast)
                         #expect(Self.ratio(m, fill) >= 3, "? mark on the selected row, \(name): \(Self.ratio(m, fill))")
                     }

@@ -69,12 +69,12 @@ struct StatusPanel: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Brasscribe on \(app.hostName)")
                     .brFont(.heading)
-                    .foregroundStyle(Color.Brasscribe.text)
+                    .foregroundStyle(Color.Scribe.text)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityAddTraits(.isHeader)
                 HStack(spacing: 6) {
                     StatusIcon(state: state)
-                    Text(Strings.statusWord(state)).brFont(.body).foregroundStyle(Color.Brasscribe.text)
+                    Text(Strings.statusWord(state)).brFont(.body).foregroundStyle(Color.Scribe.text)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityFocused($voiceOverOnStatus)
@@ -95,14 +95,14 @@ struct StatusPanel: View {
         case .busy:
             if let job = app.monitor.job { NowCard(job: job) }
         case .running:
-            Text("Ready. Phones and tablets can send recordings.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+            Text("Ready. Phones and tablets can send recordings.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
         case .stopped:
-            Text("Phones can't send recordings until you start it.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+            Text("Phones can't send recordings until you start it.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
         case .updating:
             VStack(alignment: .leading, spacing: 6) {
                 Text("Updating Brasscribe…").brFont(.bodyStrong)
                 BrassProgress(fraction: Double(app.updater.percent) / 100)
-                Text("Back in about a minute. Phones reconnect by themselves.").brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+                Text("Back in about a minute. Phones reconnect by themselves.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
             }
         case .starting:
             EmptyView()
@@ -113,11 +113,11 @@ struct StatusPanel: View {
             }
         case .attention(let p):
             ProblemCard(title: Strings.problemTitle(p), why: Strings.problemWhy(p), symbol: "exclamationmark.triangle.fill",
-                        tint: Color.Brasscribe.warning)
+                        tint: Color.Scribe.warning)
             if app.isBusy, let job = app.monitor.job { NowCard(job: job) }
         case .error:
             ProblemCard(title: Strings.failureTitle(app.failure), why: Strings.failureWhy(app.failure),
-                        symbol: "xmark.circle.fill", tint: Color.Brasscribe.error)
+                        symbol: "xmark.circle.fill", tint: Color.Scribe.error)
         }
     }
 
@@ -170,15 +170,15 @@ struct StatusPanel: View {
             app.panelPage = .phones
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: "iphone").font(.system(size: 17)).frame(width: 24).foregroundStyle(Color.Brasscribe.text)
+                Image(systemName: "iphone").font(.system(size: 17)).frame(width: 24).foregroundStyle(Color.Scribe.text)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Phones and tablets").brFont(.bodyStrong).foregroundStyle(Color.Brasscribe.text)
+                    Text("Phones and tablets").brFont(.bodyStrong).foregroundStyle(Color.Scribe.text)
                     Text(Strings.devicesSummary(connected: app.monitor.status?.onlineDevices ?? 0,
                                                 paired: app.monitor.status?.pairedDevices ?? 0))
-                        .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").foregroundStyle(Color.Brasscribe.textMuted)
+                Image(systemName: "chevron.right").foregroundStyle(Color.Scribe.textMuted)
             }
             .frame(minHeight: 44)
             .contentShape(Rectangle())
@@ -204,7 +204,7 @@ struct StatusPanel: View {
                       value: app.models.isReady ? String(localized: "Ready") : Strings.missingDownloads(app.models.missing.count), meter: nil)
             Text(app.monitor.health?.device == "cpu" ? String(localized: "Processor only: slower")
                  : String(localized: "Uses the graphics chip"))
-                .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                .brFont(.caption).foregroundStyle(Color.Scribe.textMuted)
                 .padding(.top, 2)
         }
         .card(padding: 12)
@@ -266,7 +266,7 @@ struct StatusPanel: View {
                     techRow("Data folder", app.paths.data.path.replacingOccurrences(of: NSHomeDirectory(), with: "~"))
                 }
                 .brFont(.mono)
-                .foregroundStyle(Color.Brasscribe.text)
+                .foregroundStyle(Color.Scribe.text)
                 .textSelection(.enabled)
                 HStack(spacing: 8) {
                     Button { app.showLogs() } label: { Text("Show logs") }.buttonStyle(.brOutline)
@@ -278,7 +278,7 @@ struct StatusPanel: View {
 
     private func techRow(_ label: LocalizedStringKey, _ value: String) -> some View {
         GridRow {
-            Text(label).foregroundStyle(Color.Brasscribe.textMuted).fixedSize()
+            Text(label).foregroundStyle(Color.Scribe.textMuted).fixedSize()
             Text(value).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -290,7 +290,7 @@ struct StatusPanel: View {
         Text("Remove Brasscribe from this Mac?").brFont(.bodyStrong).multilineTextAlignment(.center)
             .accessibilityAddTraits(.isHeader)
         Text("Phones can't make full-band scores here after this. Scores on your phones stay.")
-            .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
+            .brFont(.callout).foregroundStyle(Color.Scribe.textMuted).multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
         if let gb = downloadsGB {
             let size = gb.formatted(.number.precision(.fractionLength(gb < 10 ? 1 : 0)))
@@ -299,7 +299,7 @@ struct StatusPanel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             if !deleteDownloads {
                 Text("The downloads stay in \(app.paths.models.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")), so installing again doesn't fetch them again.")
-                    .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    .brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -313,7 +313,7 @@ struct StatusPanel: View {
     @ViewBuilder private func confirmation(_ c: Confirmation) -> some View {
         let title = app.monitor.job?.title ?? String(localized: "this score")
         ZStack {
-            Color.Brasscribe.scrim.ignoresSafeArea().onTapGesture { confirm = nil }
+            Color.Scribe.scrim.ignoresSafeArea().onTapGesture { confirm = nil }
             VStack(spacing: 12) {
                 Mark(size: 36)
                 switch c {
@@ -326,7 +326,7 @@ struct StatusPanel: View {
                             Text("The phone keeps the recording and can send it again.")
                         }
                     }
-                        .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
+                        .brFont(.callout).foregroundStyle(Color.Scribe.textMuted).multilineTextAlignment(.center)
                     Button { confirm = nil; app.stopNow() } label: { Text("Stop now") }.buttonStyle(.brPrimary)
                     Button { confirm = nil } label: { Text("Keep going").frame(maxWidth: .infinity) }
                         .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
@@ -344,8 +344,8 @@ struct StatusPanel: View {
                 }
             }
             .padding(16)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.lg))
-            .overlay(RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.lg).strokeBorder(Color.Brasscribe.border))
+            .background(Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: ScribeDesign.Radius.lg))
+            .overlay(RoundedRectangle(cornerRadius: ScribeDesign.Radius.lg).strokeBorder(Color.Scribe.border))
             .padding(24)
             .accessibilityAddTraits(.isModal)
         }
@@ -376,10 +376,10 @@ struct StatusIcon: View {
 
     private var tint: Color {
         switch state {
-        case .running, .busy: Color.Brasscribe.success
-        case .attention: Color.Brasscribe.warning
-        case .error: Color.Brasscribe.error
-        default: Color.Brasscribe.text
+        case .running, .busy: Color.Scribe.success
+        case .attention: Color.Scribe.warning
+        case .error: Color.Scribe.error
+        default: Color.Scribe.text
         }
     }
 }
@@ -389,7 +389,7 @@ struct NowCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             SectionLabel(text: "Now")
-            Text(Strings.step(job.step)).brFont(.heading).foregroundStyle(Color.Brasscribe.text)
+            Text(Strings.step(job.step)).brFont(.heading).foregroundStyle(Color.Scribe.text)
             if let title = job.title {
                 Group {
                     if let device = job.deviceName {
@@ -398,7 +398,7 @@ struct NowCard: View {
                         Text("“\(title)”")
                     }
                 }
-                .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                .brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
             }
             BrassProgress(fraction: Double(job.percent) / 100).padding(.vertical, 4)
             HStack {
@@ -409,10 +409,10 @@ struct NowCard: View {
                         Text("\(job.percent)%")
                     }
                 }
-                .brFont(.callout).foregroundStyle(Color.Brasscribe.text)
+                .brFont(.callout).foregroundStyle(Color.Scribe.text)
                 Spacer()
                 if job.waiting > 0 {
-                    Text("\(job.waiting) more waiting").brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text("\(job.waiting) more waiting").brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
                 }
             }
         }
@@ -430,8 +430,8 @@ struct ProblemCard: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: symbol).foregroundStyle(tint).font(.system(size: 16)).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                Text(title).brFont(.bodyStrong).foregroundStyle(Color.Brasscribe.text)
-                Text(why).brFont(.callout).foregroundStyle(Color.Brasscribe.text).fixedSize(horizontal: false, vertical: true)
+                Text(title).brFont(.bodyStrong).foregroundStyle(Color.Scribe.text)
+                Text(why).brFont(.callout).foregroundStyle(Color.Scribe.text).fixedSize(horizontal: false, vertical: true)
             }
         }
         .card(padding: 12)
@@ -446,10 +446,10 @@ struct HealthRow: View {
     let meter: Int?
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: symbol).frame(width: 20).foregroundStyle(Color.Brasscribe.textMuted).accessibilityHidden(true)
-            Text(label).brFont(.body).foregroundStyle(Color.Brasscribe.text)
+            Image(systemName: symbol).frame(width: 20).foregroundStyle(Color.Scribe.textMuted).accessibilityHidden(true)
+            Text(label).brFont(.body).foregroundStyle(Color.Scribe.text)
             Spacer()
-            Text(value).brFont(.bodyStrong).foregroundStyle(Color.Brasscribe.text)
+            Text(value).brFont(.bodyStrong).foregroundStyle(Color.Scribe.text)
             if let meter { Meter(level: meter) }
         }
         .frame(minHeight: 44)
@@ -473,7 +473,7 @@ struct AllowCard: View {
                 .accessibilityAddTraits(.isHeader)
             Group {
                 Text("It can send recordings to this computer and get scores back. You can remove it any time.")
-                    .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
+                    .brFont(.callout).foregroundStyle(Color.Scribe.textMuted).multilineTextAlignment(.center)
                 Text("The phone shows the number:").brFont(.callout)
                 Text(request.matchCode)
                     .brFont(.matchCode)
@@ -483,7 +483,7 @@ struct AllowCard: View {
                     .buttonStyle(BRButtonStyle(kind: .secondary, fullWidth: true))
             }
         }
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
         .modifier(CardIf(on: !inSheet))
     }
 
@@ -507,7 +507,7 @@ struct KeyUnreadableCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "key").font(.system(size: 16)).foregroundStyle(Color.Brasscribe.textMuted)
+                Image(systemName: "key").font(.system(size: 16)).foregroundStyle(Color.Scribe.textMuted)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Brasscribe couldn't read your Hugging Face key").brFont(.bodyStrong)
@@ -528,7 +528,7 @@ struct KeyUnreadableCard: View {
                 Button { app.enterKeyAgain() } label: { Text("Enter the key again") }.buttonStyle(.brOutline)
             }
         }
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
         .card(padding: 12)
     }
 }
@@ -542,7 +542,7 @@ struct ExpiredCard: View {
             Text("This request has expired. Choose this computer on the phone again.").brFont(.callout)
             Button { app.expiredRequest = nil } label: { Text("OK") }.buttonStyle(.brOutline)
         }
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
         .card(padding: 12)
     }
 }

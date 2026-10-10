@@ -209,15 +209,42 @@ def test_light_very_uncertain_keeps_its_margin():
 
 # ---------------------------------------------------------------- the neutral names
 
+def swift_types(text: str) -> dict[str, list[str]]:
+    """The members of every type a generated Swift file declares, by the type's full name (Color.Scribe,
+    ScribeDesign.Space): the nesting is read from the braces."""
+    import re
+    found: dict[str, list[str]] = {}
+    stack: list[tuple[str, int]] = []
+    depth = 0
+    for line in text.splitlines():
+        opened = re.match(r"\s*(?:public |private |final )*(?:enum|extension|class) ([\w.]+)[^{]*\{\s*$", line)
+        if opened:
+            stack.append((opened.group(1), depth))
+            found.setdefault(".".join(n for n, _ in stack), [])
+        elif stack:
+            member = re.match(r"\s*(?:public |private )?(?:static let|static var|static func|case|var) (\w+)", line)
+            if member and depth == stack[-1][1] + 1:
+                found[".".join(n for n, _ in stack)].append(member.group(1))
+        depth += line.count("{") - line.count("}")
+        while stack and depth <= stack[-1][1]:
+            stack.pop()
+    return found
+
+
+def swift_neutral(b) -> dict[str, list[str]]:
+    """The neutral types of a brand's Swift file and their members."""
+    types = swift_types((b.DIST / "apple" / f"{b.PRODUCT}Design.swift").read_text())
+    return {k: sorted(v) for k, v in types.items() if "Scribe" in k}
+
+
 def neutral_names(b) -> dict[str, list[str]]:
     """The neutral names each platform's files declare for a brand, in order."""
     import re
     product = b.PRODUCT
-    swift = (b.DIST / "apple" / f"{product}Design.swift").read_text().split("// The neutral names")[1]
     xaml = (b.DIST / "windows" / f"{product}Theme.xaml").read_text()
     css = (b.DIST / "web" / f"{product.lower()}.css").read_text()
     return {
-        "apple": re.findall(r"(?:enum|typealias|static var) (\w+)", swift),
+        "apple": sorted(f"{t}.{m}" for t, ms in swift_neutral(b).items() for m in ms),
         "android": declarations((b.DIST / KOTLIN / "ScribeTheme.kt").read_text()),
         "windows": re.findall(r'x:Key="(Scribe\w+)"', xaml),
         "web": sorted(set(re.findall(r"^\s+(--scribe-[\w-]+):", css, re.M))),
@@ -239,7 +266,7 @@ def test_neutral_names_cover_the_neutral_roles_and_nothing_of_one_brand():
     for name, b in brands().items():
         found = neutral_names(b)
         for role in build.NEUTRAL["roles"]:
-            assert build.camel(role) in found["apple"], (name, role)
+            assert f"Color.Scribe.{build.camel(role)}" in found["apple"], (name, role)
             assert f"Scribe{build.pascal(role)}Brush" in found["windows"], (name, role)
             assert f"--scribe-{role}" in found["web"], (name, role)
         for platform, names in found.items():
@@ -353,28 +380,36 @@ def test_neutral_types_have_the_same_members_in_every_brand():
 
     def members(text: str, opening: str) -> list[str]:
         body = text.split(opening, 1)[1]
-        indent = re.match(r"\n?( *)", body.split("\n", 1)[1]).group(1)
-        end = re.search("^" + indent[:-4] + r"\}", body, re.M).start()
-        return sorted(re.findall(r"(?:static let|static var|static func|const val|val|case) (\w+)", body[:end]))
+        return sorted(re.findall(r"(?:const val|val) (\w+)", body[:body.index("\n}")]))
 
     found = {}
     for name, b in brands().items():
-        swift = (b.DIST / "apple" / f"{b.PRODUCT}Design.swift").read_text()
-        neutral = swift.split("// The neutral names")[1]
-        assert "typealias Scribe =" not in neutral, name
         kotlin = (b.DIST / KOTLIN / "BrasscribeTheme.kt").read_text()
-        found[name] = {
-            "Color.Scribe": members(neutral, "    enum Scribe {\n        /// " + b.desc("bg")),
-            "Font.Scribe": members(neutral, "    /// The type ramp every brand has.\n    enum Scribe {"),
-            **{f"ScribeDesign.{t}": members(swift, "    public enum " + t + " {") for t in ("Space", "Radius", "Size", "Motion")},
-            **{f"Scribe{t}": members(kotlin, "object Brasscribe" + t + " {") for t in ("Space", "Size", "Motion")},
-        }
+        found[name] = {**swift_neutral(b), **{f"Scribe{t}": members(kotlin, "object Brasscribe" + t + " {") for t in ("Space", "Size", "Motion")}}
+        assert set(found[name]) >= {"ScribeDesign", "ScribeDesign.Space", "ScribeDesign.Radius", "ScribeDesign.Size", "ScribeDesign.Motion",
+                                    "Color.Scribe", "Font.Scribe"}, name
         assert found[name]["Color.Scribe"] == sorted(build.camel(r) for r in build.NEUTRAL["roles"]), name
         assert "tab" not in found[name]["Font.Scribe"] and "title1" in found[name]["Font.Scribe"], name
+        assert "s4" in found[name]["ScribeDesign.Space"] and "animation" in found[name]["ScribeDesign.Motion"], name
     for name, theirs in found.items():
         assert theirs == found["brasscribe"], name
-    fs = (fretscribe().DIST / "apple" / "FretscribeDesign.swift").read_text()
-    assert "public static func tab(size: CGFloat)" in fs.split("// The neutral names")[0]
+
+
+def test_swift_has_one_name_for_each_role():
+    # Apple: a neutral role or scale is on the Scribe types only, and a brand's type holds only what is the
+    # brand's own, so code cannot read a neutral role under a brand's name.
+    for name, b in brands().items():
+        types = swift_types((b.DIST / "apple" / f"{b.PRODUCT}Design.swift").read_text())
+        own = sorted(b.camel(r) for r in b.roles() if r not in b.neutral_roles().values())
+        assert sorted(types[f"Color.{b.PRODUCT}"]) == own and own, name
+        assert not set(types[f"Color.{b.PRODUCT}"]) & set(types["Color.Scribe"]), name
+        assert not set(types[f"Font.{b.PRODUCT}"]) & set(types["Font.Scribe"]), name
+        view = b.pascal(b.EXT["notation"])
+        assert [k for k in types if k.startswith(f"{b.PRODUCT}Design")] == [f"{b.PRODUCT}Design", f"{b.PRODUCT}Design.{view}"], name
+        assert types[f"{b.PRODUCT}Design"] == [] and "cursorWidth" in types[f"{b.PRODUCT}Design.{view}"], name
+    fs = swift_types((fretscribe().DIST / "apple" / "FretscribeDesign.swift").read_text())
+    assert fs["Font.Fretscribe"] == ["tab"] and "uncertainTint" in fs["Color.Fretscribe"]
+    assert swift_types((build.DIST / "apple" / "BrasscribeDesign.swift").read_text())["Font.Brasscribe"] == []
 
 
 def test_accent_is_for_what_you_act_on_and_brand_is_identity():
@@ -487,7 +522,7 @@ def test_fretscribe_has_its_own_names_and_none_of_brasscribes():
         body = text.split("\n", 1)[1]  # the header names the generator's path
         assert "rasscribe" not in body and "--bc-" not in body and 'x:Key="Bc' not in body and "Pink" not in body
         assert "Instrument" not in body
-    assert "public static var uncertainTint: Color" in swift and "public static var string: Color" in swift
+    assert "public static var uncertainTint: Color" in swift and 'public static var line: Color { catalogColor("string") }' in swift
     assert "public enum Tab {" in swift and "enum Fretscribe {" in swift
     assert 'x:Key="FsUncertainTintBrush"' in xaml and 'x:Key="FsStringBrush"' in xaml and 'x:Key="FsTabCursorWidth"' in xaml
     assert "--fs-uncertain-tint: #FCF0DB;" in css and "--scribe-line: #737983;" in css and "--fs-tab-cursor-width:" in css

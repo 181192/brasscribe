@@ -92,7 +92,7 @@ import TranscriptionKit
     /// A sheet opens at its ideal size, within its minimum and maximum.
     private func sheet(_ name: String, app: AppModel, wait: (() -> Bool)? = nil, @ViewBuilder _ content: () -> some View) async -> ScreenReport {
         LayoutProbe.frames = [:]
-        let root = content().environment(app).tint(Color.Brasscribe.primary)
+        let root = content().environment(app).tint(Color.Scribe.primary)
         let measured = Measure.sizes(root)
         let size = CGSize(width: min(max(measured.ideal.width, measured.min.width), measured.max.width),
                           height: min(max(measured.ideal.height, measured.min.height), measured.max.height))

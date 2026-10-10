@@ -2,10 +2,14 @@
 //
 // Add FretscribeDesign.xcassets and Fonts/AtkinsonHyperlegibleNext-wght.ttf and Fonts/FretscribeTab-Regular.ttf to the same target
 // as this file, and list the fonts under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).
+//
+// Scribe… is what every brand's file declares, under the same names, so code that uses only those compiles
+// against any brand (design/tokens/README.md). Fretscribe… is what is Fretscribe's own. A role has one name.
 
 import SwiftUI
 
-public enum FretscribeDesign {
+/// The scales every brand has.
+public enum ScribeDesign {
     private final class BundleToken {}
     /// The bundle that holds FretscribeDesign.xcassets: the package resources or the target this file is in.
     public static let bundle: Bundle = {
@@ -50,18 +54,6 @@ public enum FretscribeDesign {
         public static let sidebarWidth: CGFloat = 280
     }
 
-    /// Tab-view metrics. Colours are in Color.Fretscribe.
-    public enum Tab {
-        public static let cursorWidth: CGFloat = 3
-        public static let focusWidth: CGFloat = 2
-        public static let focusGap: CGFloat = 2
-        public static let loopEdgeWidth: CGFloat = 3
-        public static let selectionEdgeWidth: CGFloat = 1.5
-        public static let zoomMin: Double = 50
-        public static let zoomMax: Double = 400
-        public static let zoomStep: Double = 10
-    }
-
     /// Motion. Every animation goes through `animation(_:reduceMotion:)`.
     public enum Motion {
         public static let instant: Double = 0
@@ -78,77 +70,99 @@ public enum FretscribeDesign {
     }
 }
 
-public extension Color {
-    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.
-    enum Fretscribe {
-        private static func named(_ role: String) -> Color {
-            Color("Fretscribe/" + role, bundle: FretscribeDesign.bundle)
-        }
+/// Fretscribe's own metrics.
+public enum FretscribeDesign {
+    /// Tab-view metrics. Its colours are in Color.Fretscribe.
+    public enum Tab {
+        public static let cursorWidth: CGFloat = 3
+        public static let focusWidth: CGFloat = 2
+        public static let focusGap: CGFloat = 2
+        public static let loopEdgeWidth: CGFloat = 3
+        public static let selectionEdgeWidth: CGFloat = 1.5
+        public static let zoomMin: Double = 50
+        public static let zoomMax: Double = 400
+        public static let zoomStep: Double = 10
+    }
+}
 
+/// A colour set of the asset catalog, with its light, dark and high-contrast variants.
+private func catalogColor(_ name: String) -> Color {
+    Color("Fretscribe/" + name, bundle: ScribeDesign.bundle)
+}
+
+public extension Color {
+    /// The colour roles every brand has.
+    enum Scribe {
         /// Paper: the app background.
-        public static var bg: Color { named("bg") }
+        public static var bg: Color { catalogColor("bg") }
         /// Grouped areas, sheets.
-        public static var surface: Color { named("surface") }
+        public static var surface: Color { catalogColor("surface") }
         /// Cards, the tab sheet.
-        public static var surfaceRaised: Color { named("surfaceRaised") }
+        public static var surfaceRaised: Color { catalogColor("surfaceRaised") }
         /// Body text.
-        public static var text: Color { named("text") }
+        public static var text: Color { catalogColor("text") }
         /// Secondary text.
-        public static var textMuted: Color { named("textMuted") }
+        public static var textMuted: Color { catalogColor("textMuted") }
         /// Hairlines and dividers (decorative).
-        public static var border: Color { named("border") }
+        public static var border: Color { catalogColor("border") }
         /// Input borders, outlines that carry meaning.
-        public static var borderStrong: Color { named("borderStrong") }
+        public static var borderStrong: Color { catalogColor("borderStrong") }
         /// The one primary button: ink on light, paper on dark.
-        public static var primary: Color { named("primary") }
+        public static var primary: Color { catalogColor("primary") }
         /// Label on the primary.
-        public static var onPrimary: Color { named("onPrimary") }
+        public static var onPrimary: Color { catalogColor("onPrimary") }
         /// Tonal buttons and toggles that are on.
-        public static var secondary: Color { named("secondary") }
+        public static var secondary: Color { catalogColor("secondary") }
         /// Label on secondary.
-        public static var onSecondary: Color { named("onSecondary") }
-        /// Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent.
-        public static var brand: Color { named("brand") }
+        public static var onSecondary: Color { catalogColor("onSecondary") }
         /// The accent: links and the progress bar. Also brand text.
-        public static var brandText: Color { named("brandText") }
+        public static var accent: Color { catalogColor("brandText") }
+        /// Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent.
+        public static var brand: Color { catalogColor("brand") }
+        /// The accent: links and the progress bar. Also brand text.
+        public static var brandText: Color { catalogColor("brandText") }
         /// Onboarding and empty-state wash.
-        public static var brandTint: Color { named("brandTint") }
+        public static var brandTint: Color { catalogColor("brandTint") }
         /// Status icons only.
-        public static var success: Color { named("success") }
+        public static var success: Color { catalogColor("success") }
         /// Status icons only; never inside the tab.
-        public static var warning: Color { named("warning") }
+        public static var warning: Color { catalogColor("warning") }
         /// Status icons and error text; never inside the tab (out-of-range notes use an ink "!").
-        public static var error: Color { named("error") }
+        public static var error: Color { catalogColor("error") }
         /// Focus ring: ink / paper, never a tab signal hue.
-        public static var focus: Color { named("focus") }
-        /// Fret numbers, rhythm stems, notation.
-        public static var ink: Color { named("ink") }
-        /// Tab lines (strings) and bar lines. Carries meaning: 3:1 minimum.
-        public static var string: Color { named("string") }
-        /// Doubtful pitch: the "?" above the tab column and the numeral itself. Always with the "?".
-        public static var uncertain: Color { named("uncertain") }
-        /// Wash behind a doubtful numeral (pencil, not highlighter).
-        public static var uncertainTint: Color { named("uncertainTint") }
-        /// Band behind repeated bars.
-        public static var loopTint: Color { named("loopTint") }
-        /// Repeat brackets at both ends, with the label "Repeat 12–16".
-        public static var loopEdge: Color { named("loopEdge") }
-        /// Playback cursor line.
-        public static var cursor: Color { named("cursor") }
-        /// The current beat column.
-        public static var cursorTint: Color { named("cursorTint") }
-        /// Selected notes.
-        public static var selectionTint: Color { named("selectionTint") }
-        /// Box around selected notes.
-        public static var selectionEdge: Color { named("selectionEdge") }
+        public static var focus: Color { catalogColor("focus") }
         /// Dimmed backdrop behind a sheet or dialog (40% alpha).
-        public static var scrim: Color { named("scrim") }
+        public static var scrim: Color { catalogColor("scrim") }
+        /// Fret numbers, rhythm stems, notation.
+        public static var ink: Color { catalogColor("ink") }
+        /// Tab lines (strings) and bar lines. Carries meaning: 3:1 minimum.
+        public static var line: Color { catalogColor("string") }
+        /// Doubtful pitch: the "?" above the tab column and the numeral itself. Always with the "?".
+        public static var uncertain: Color { catalogColor("uncertain") }
+    }
+
+    /// Fretscribe's own colour roles.
+    enum Fretscribe {
+        /// Wash behind a doubtful numeral (pencil, not highlighter).
+        public static var uncertainTint: Color { catalogColor("uncertainTint") }
+        /// Band behind repeated bars.
+        public static var loopTint: Color { catalogColor("loopTint") }
+        /// Repeat brackets at both ends, with the label "Repeat 12–16".
+        public static var loopEdge: Color { catalogColor("loopEdge") }
+        /// Playback cursor line.
+        public static var cursor: Color { catalogColor("cursor") }
+        /// The current beat column.
+        public static var cursorTint: Color { catalogColor("cursorTint") }
+        /// Selected notes.
+        public static var selectionTint: Color { catalogColor("selectionTint") }
+        /// Box around selected notes.
+        public static var selectionEdge: Color { catalogColor("selectionEdge") }
     }
 }
 
 public extension Font {
-    /// The type ramp, built on Dynamic Type text styles so it scales with the user's text size.
-    enum Fretscribe {
+    /// The type ramp every brand has, built on Dynamic Type text styles so it scales with the user's text size.
+    enum Scribe {
         /// Brand headline: home greeting, onboarding, the What is this? question. Atkinson Hyperlegible Next 600.
         public static let display: Font = .custom("AtkinsonHyperlegibleNext-Regular", size: 40, relativeTo: .largeTitle).weight(.semibold)
         /// Screen title when the display face is not used.
@@ -167,7 +181,10 @@ public extension Font {
         public static let caption: Font = .footnote
         /// Bar/beat, speed and tempo readouts with tabular figures (monospacedDigit / tnum).
         public static let numeric: Font = .body.weight(.medium).monospacedDigit()
+    }
 
+    /// Fretscribe's own faces, and where a Fretscribe app adds its own type.
+    enum Fretscribe {
         /// Fretscribe Tab. Fret numbers only.
         public static func tab(size: CGFloat) -> Font { .custom("FretscribeTab-Regular", size: size) }
     }
@@ -295,92 +312,5 @@ public enum FretscribeIcon: CaseIterable, Sendable {
         case .running: "checkmark.circle"
         case .attention: "exclamationmark.triangle"
         }
-    }
-}
-
-// The neutral names (design/tokens/README.md). Every brand's file declares them, so code that uses only
-// these compiles against any brand. Fretscribe's own roles and metrics are in the types above.
-
-public enum ScribeDesign {
-    public static var bundle: Bundle { FretscribeDesign.bundle }
-    public typealias Space = FretscribeDesign.Space
-    public typealias Radius = FretscribeDesign.Radius
-    public typealias Size = FretscribeDesign.Size
-    public typealias Motion = FretscribeDesign.Motion
-}
-
-public extension Color {
-    /// The colour roles every brand has.
-    enum Scribe {
-        /// Paper: the app background.
-        public static var bg: Color { Fretscribe.bg }
-        /// Grouped areas, sheets.
-        public static var surface: Color { Fretscribe.surface }
-        /// Cards, the tab sheet.
-        public static var surfaceRaised: Color { Fretscribe.surfaceRaised }
-        /// Body text.
-        public static var text: Color { Fretscribe.text }
-        /// Secondary text.
-        public static var textMuted: Color { Fretscribe.textMuted }
-        /// Hairlines and dividers (decorative).
-        public static var border: Color { Fretscribe.border }
-        /// Input borders, outlines that carry meaning.
-        public static var borderStrong: Color { Fretscribe.borderStrong }
-        /// The one primary button: ink on light, paper on dark.
-        public static var primary: Color { Fretscribe.primary }
-        /// Label on the primary.
-        public static var onPrimary: Color { Fretscribe.onPrimary }
-        /// Tonal buttons and toggles that are on.
-        public static var secondary: Color { Fretscribe.secondary }
-        /// Label on secondary.
-        public static var onSecondary: Color { Fretscribe.onSecondary }
-        /// The accent: links and the progress bar. Also brand text.
-        public static var accent: Color { Fretscribe.brandText }
-        /// Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent.
-        public static var brand: Color { Fretscribe.brand }
-        /// The accent: links and the progress bar. Also brand text.
-        public static var brandText: Color { Fretscribe.brandText }
-        /// Onboarding and empty-state wash.
-        public static var brandTint: Color { Fretscribe.brandTint }
-        /// Status icons only.
-        public static var success: Color { Fretscribe.success }
-        /// Status icons only; never inside the tab.
-        public static var warning: Color { Fretscribe.warning }
-        /// Status icons and error text; never inside the tab (out-of-range notes use an ink "!").
-        public static var error: Color { Fretscribe.error }
-        /// Focus ring: ink / paper, never a tab signal hue.
-        public static var focus: Color { Fretscribe.focus }
-        /// Dimmed backdrop behind a sheet or dialog (40% alpha).
-        public static var scrim: Color { Fretscribe.scrim }
-        /// Fret numbers, rhythm stems, notation.
-        public static var ink: Color { Fretscribe.ink }
-        /// Tab lines (strings) and bar lines. Carries meaning: 3:1 minimum.
-        public static var line: Color { Fretscribe.string }
-        /// Doubtful pitch: the "?" above the tab column and the numeral itself. Always with the "?".
-        public static var uncertain: Color { Fretscribe.uncertain }
-    }
-}
-
-public extension Font {
-    /// The type ramp every brand has.
-    enum Scribe {
-        /// Brand headline: home greeting, onboarding, the What is this? question. Atkinson Hyperlegible Next 600.
-        public static var display: Font { Fretscribe.display }
-        /// Screen title when the display face is not used.
-        public static var title1: Font { Fretscribe.title1 }
-        /// Section headings, sheet titles.
-        public static var title2: Font { Fretscribe.title2 }
-        /// List row titles, card titles.
-        public static var headline: Font { Fretscribe.headline }
-        /// Running text and list rows. Windows uses BodyLarge (18 epx) for Play; Studio uses 16 px.
-        public static var body: Font { Fretscribe.body }
-        /// Row subtitles and helper text.
-        public static var callout: Font { Fretscribe.callout }
-        /// Button labels. Apple: .body.weight(.semibold).
-        public static var label: Font { Fretscribe.label }
-        /// Metadata, timestamps. Never for instructions.
-        public static var caption: Font { Fretscribe.caption }
-        /// Bar/beat, speed and tempo readouts with tabular figures (monospacedDigit / tnum).
-        public static var numeric: Font { Fretscribe.numeric }
     }
 }
