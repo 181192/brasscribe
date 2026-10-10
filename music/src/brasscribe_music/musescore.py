@@ -24,6 +24,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable, Iterator, Sequence
 
+from .process_tree import kill_tree
+
 LOCK_FILE = Path(tempfile.gettempdir()) / "brasscribe-mscore.flock"
 AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg", ".flac"}
 
@@ -89,26 +91,27 @@ def _lock(cancel: threading.Event | None = None) -> Iterator[None]:
 
 
 def _run(cmd: list[str], timeout: float, cancel: threading.Event | None) -> None:
-    """MuseScore until it exits, `timeout` passes, or `cancel` is set (then it is killed)."""
-    if cancel is None:
-        try:
-            subprocess.run(cmd, capture_output=True, timeout=timeout)
-        except subprocess.TimeoutExpired:
-            pass
-        return
+    """MuseScore until it exits, `timeout` passes, or `cancel` is set. Then it is killed with every process
+    under it: behind a launcher that stays in between (a shell script, `flatpak run`) MuseScore is not the
+    process that was started."""
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     deadline = time.monotonic() + timeout
-    while True:
-        try:
-            proc.wait(timeout=0.2)
-            return
-        except subprocess.TimeoutExpired:
-            if cancel.is_set() or time.monotonic() > deadline:
-                proc.kill()
-                proc.wait()
-                if cancel.is_set():
-                    raise Cancelled("MuseScore conversion cancelled") from None
+    try:
+        while True:
+            try:
+                proc.wait(timeout=0.2)
                 return
+            except subprocess.TimeoutExpired:
+                cancelled = cancel is not None and cancel.is_set()
+                if cancelled or time.monotonic() > deadline:
+                    kill_tree(proc)
+                    if cancelled:
+                        raise Cancelled("MuseScore conversion cancelled") from None
+                    return
+    except BaseException:  # e.g. Ctrl-C: leave no MuseScore running
+        if proc.poll() is None:
+            kill_tree(proc)
+        raise
 
 
 def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: float = 600.0,
