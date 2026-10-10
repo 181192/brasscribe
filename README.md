@@ -36,7 +36,10 @@ is licensed for non-commercial use only; Bandroom asks you to accept its licence
 Face account. Its makers add one condition: only have Brasscribe write down music you have the rights
 to, and you take responsibility for that.
 
-iPhone and iPad builds need an Apple Developer account and are not distributed.
+For iPhone and iPad there is a test build, `brasscribe-play-ios-unsigned.ipa`. It is not signed (the
+project has no Apple Developer account), so you sign it with your own Apple Account, using a
+sideloading tool or Xcode, to put it on your device: see
+[apps/apple](apps/apple/README.md#iphone-and-ipad-test-build).
 
 ## Developing
 

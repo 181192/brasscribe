@@ -63,7 +63,7 @@
       <p class="overline">Brukerveiledning</p>
       <h1>Kom i gang</h1>
       <p class="lead">Brasscribe Play gjør et opptak om til et partitur for brassbandet ditt. Denne veiledningen går gjennom det én gang, fra opptaket til de utskrevne stemmene.</p>
-      <p>Brasscribe Play finnes for iPhone, iPad, Mac, Android og Windows. Den er i tidlig testing og ligger ikke i appbutikkene ennå. Android-telefoner, Mac og Windows-PC-er kan <a href="#download">laste den ned</a> (Windows som forhåndsversjon). På iPhone og iPad bygger den tekniske i bandet den fra <a href="https://github.com/181192/brasscribe#readme">kildekoden på GitHub</a>.</p>
+      <p>Brasscribe Play finnes for iPhone, iPad, Mac, Android og Windows. Den er i tidlig testing og ligger ikke i appbutikkene ennå. Android-telefoner, Mac og Windows-PC-er kan <a href="#download">laste den ned</a> (Windows som forhåndsversjon). For iPhone og iPad finnes en <a href="#download-ios">testversjon</a> som den tekniske i bandet signerer og legger inn på enheten.</p>
       <p>Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>, og så spør den <a href="#instrument">hva du spiller</a>. Den spør om mikrofonen først når du spiller inn.</p>
       <div class="note">
         <p><strong>Solo eller fullt band?</strong> Ett instrument kan skrives ned på telefonen. For et fullt band gjør Brasscribe på datamaskinen jobben. Se <a href="#computer">Brasscribe på datamaskinen</a>.</p>
@@ -81,6 +81,7 @@
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-android-arm64-v8a.apk"><code>brasscribe-play-android-arm64-v8a.apk</code></a></th><td>Brasscribe Play for de fleste Android-telefoner og -nettbrett</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-android-universal.apk"><code>brasscribe-play-android-universal.apk</code></a></th><td>Brasscribe Play for Android, alle typer prosessorer</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-macos-arm64.zip"><code>brasscribe-play-macos-arm64.zip</code></a></th><td>Brasscribe Play for Mac med Apple-prosessor</td></tr>
+            <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-ios-unsigned.ipa"><code>brasscribe-play-ios-unsigned.ipa</code></a></th><td>Brasscribe Play for iPhone og iPad, en <a href="#download-ios">testversjon</a> som du signerer selv</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-macos-arm64.zip"><code>brasscribe-bandroom-macos-arm64.zip</code></a></th><td>Brasscribe Bandroom for Mac med Apple-prosessor: <a href="#computer">datamaskinen</a> gjør det tunge arbeidet for et fullt band</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-windows-x64.zip"><code>brasscribe-bandroom-windows-x64.zip</code></a></th><td>Brasscribe Bandroom for Windows (x64): <a href="#computer">datamaskinen</a> gjør det tunge arbeidet for et fullt band</td></tr>
             <tr><th scope="row"><a href="https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-windows-x64.zip"><code>brasscribe-play-windows-x64.zip</code></a></th><td>Brasscribe Play for Windows (x64), en forhåndsversjon: ikke prøvd for hånd på en Windows-PC ennå</td></tr>
@@ -95,7 +96,15 @@
         <li><strong>Android:</strong> tillat installering fra nettleseren eller filbehandleren, og åpne APK-filen. Den oppdaterer en tidligere versjon, og partiturene dine blir liggende.</li>
         <li><strong>Mac:</strong> appene er ikke notarisert ennå. Pakk ut, flytt appen til Programmer og åpne den én gang. macOS stopper den; gå til <strong>Systeminnstillinger › Personvern og sikkerhet</strong>, velg <strong>Åpne likevel</strong> og bekreft. For å oppdatere bytter du ut den gamle appen i Programmer; partiturene og innstillingene blir liggende.</li>
         <li><strong>Windows:</strong> appene er ikke signert ennå. Pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>. For å oppdatere bytter du ut mappen; partiturene og innstillingene dine blir liggende.</li>
-        <li><strong>iPhone og iPad:</strong> ingen nedlasting ennå. De krever en Apple-utviklerkonto, så den tekniske i bandet bygger dem fra kildekoden.</li>
+      </ul>
+      <h3 id="download-ios">iPhone og iPad (testversjon)</h3>
+      <p>Brasscribe Play ligger ikke i App Store. Filen <code>brasscribe-play-ios-unsigned.ipa</code> er appen for iPhone og iPad uten signatur, og en iPhone eller iPad installerer ikke en app som ikke er signert. Derfor signerer du den selv, med din egen Apple-konto (Apple-ID). En gratis konto holder. Dette er en jobb for den tekniske i bandet.</p>
+      <ul>
+        <li><strong>Signer og installer:</strong> bruk et sidelastingsverktøy på en datamaskin, eller Xcode på en Mac. Det signerer filen med Apple-kontoen din og legger appen inn på iPhonen eller iPaden.</li>
+        <li><strong>Første gang:</strong> enheten ber deg slå på <strong>Utviklermodus</strong> (<strong>Innstillinger › Personvern og sikkerhet</strong>) og godkjenne kontoen din under <strong>Innstillinger › Generelt › VPN og enhetsadministrering</strong>.</li>
+        <li><strong>Sju dager:</strong> en signatur fra en gratis Apple-konto varer i 7 dager. Etterpå åpner ikke appen før du signerer den på nytt. Signer med samme konto og samme verktøy, så blir partiturene og innstillingene liggende.</li>
+        <li><strong>Noen få apper:</strong> en gratis Apple-konto kan bare ha noen få slike apper på en enhet om gangen.</li>
+        <li><strong>Ikke prøvd på en enhet ennå:</strong> filen bygges og kontrolleres for hver utgivelse, men ingen har installert den på en iPhone eller iPad på denne måten ennå, så tilbakemeldinger er velkomne.</li>
       </ul>
       <div class="note">
         <p><strong>Windows:</strong> Bandroom for Windows ligger i tabellen over. Den bygges på Windows for hver utgivelse, men er ikke prøvd for hånd på en Windows-PC ennå, så tilbakemeldinger er velkomne. Brasscribe Play for Windows ligger i tabellen som forhåndsversjon: den er fortsatt under testing, og den har notestativet, innstillingen for utseende og <em>Hva spiller du?</em>.</p>

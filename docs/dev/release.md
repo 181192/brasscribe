@@ -36,6 +36,7 @@ What a release ships:
 | `brasscribe-play-android-arm64-v8a.apk` | Play for Android, most devices |
 | `brasscribe-play-android-universal.apk` | Play for Android, all CPU types |
 | `brasscribe-play-macos-arm64.zip` | Play for Mac (Apple silicon), ad-hoc signed |
+| `brasscribe-play-ios-unsigned.ipa` | Play for iPhone and iPad, unsigned: a tester signs it with their own Apple account |
 | `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` and `brasscribe-core` inside |
 | `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` and `brasscribe-core` inside |
 | `brasscribe-play-windows-x64.zip` | Play for Windows, self-contained (preview) |
@@ -43,7 +44,10 @@ What a release ships:
 | `SHA256SUMS` | checksums of the files above |
 
 Bandroom is how the engine is installed: it bundles the engine workspace and `pixi`, and the first run
-sets up the engine. There is no iPhone/iPad build yet: iOS needs an Apple Developer account.
+sets up the engine. The iPhone and iPad app cannot be signed for others without an Apple Developer
+account, so it ships unsigned (`apps/apple/scripts/make-ipa.sh`, job `ios` in apple.yml): see
+[apps/apple/README.md](../../apps/apple/README.md#iphone-and-ipad-test-build). To build only the Apple
+assets from a branch, without a release: `gh workflow run apple.yml -f release=true --ref <branch>`.
 
 Below, `$S` is a scratch directory (DerivedData, staging) and `$OUT` the directory of finished assets.
 Disk is tight on the build Mac: keep DerivedData in `$S`, and delete staging directories and unshipped
