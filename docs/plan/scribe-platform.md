@@ -15,6 +15,7 @@ It replaces the "split the core" section of `docs/fretscribe/plan/PLAN.md` and t
 | Names on the wire (pairing link, network service) | Neutral, in the "scribe" family, shared by all apps. The old names are dropped in the same change. |
 | Compatibility | None before 1.0.0. Every part targets the latest of every other part. No code that exists only to keep an older app, engine, file or name working. After 1.0.0 a breaking change needs a new major version. |
 | How much the clients share | Logic is shared. Looks are not assumed to be. Each product owns its screens and can differ in layout, navigation and experience, not only in colour. |
+| Devices | The newest release of each operating system and the one before it. Nothing older. Code that exists only for an older system is removed. |
 | Fretscribe's first version | Everything in `docs/fretscribe/plan/android-app.md`'s roadmap and `design/fretscribe/flows.md`, as complete as possible, on every client. |
 | Clients | Android, Mac and Windows downloads for each app, and an unsigned test build for iPhone and iPad (there is no Apple Developer account). |
 
@@ -86,6 +87,16 @@ Each step lands as small reviewed pull requests. `main` stays releasable. A step
 12. **Fretscribe's remaining features**, built once per feature across all its clients: sharing and printing a tab, fixing a note, the tuning and capo sheet, the layers menu, count-in and metronome, the speed trainer, saved repeats, hiding the chrome, pedals, the screen reader reading beat by beat, the record preflight, left-handed views.
 
 Steps 2, 3 and 4 do not touch each other and run side by side. Step 5 waits for step 1. Steps 9 and 10 wait for 3 and are easier after 5 has shown the shape.
+
+## Devices
+
+| Platform | Supported on 2026-10-10 |
+|---|---|
+| Android | 17 and 16 |
+| iPhone, iPad, Mac | 27 and 26 |
+| Windows | the current Windows 11 release and the one before |
+
+The floor moves up when a new system is released. Raising it is one pull request per platform that also removes the checks and fallbacks the older system needed.
 
 ## What is not shared
 
