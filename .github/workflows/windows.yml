@@ -146,14 +146,24 @@ jobs:
         id: catalogue
         if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
         env:
-          BASE: ${{ inputs.screenshots_base || github.event.pull_request.base.sha }}
+          GIVEN: ${{ inputs.screenshots_base }}
+          PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           # A hand-started comparison takes the base even when nothing the screens are made from changed.
           ALWAYS: ${{ inputs.screenshots_base != '' && inputs.screenshots_base != null }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
-          if ($env:BASE) {
-            git fetch --no-tags origin $env:BASE
-            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base (git merge-base HEAD $env:BASE) -FfiDll $env:BRASSCRIBE_FFI_PATH -AlwaysBase:$($env:ALWAYS -eq 'true')
+          # On a pull request the checkout is the pull request merged into main: its first parent is the main it was
+          # merged into. The event's base can be an older main, which this checkout (depth 2) has no merge base with.
+          $base = $null
+          if ($env:GIVEN) {
+            git fetch --no-tags origin $env:GIVEN
+            $base = git merge-base HEAD $env:GIVEN
+          } elseif ($env:PULL_REQUEST -eq 'true') {
+            $base = git rev-parse --verify 'HEAD^1^{commit}'
+          }
+          if ($base) {
+            Write-Host "Comparing with $(git log -1 --format='%H %s' $base)"
+            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base $base -FfiDll $env:BRASSCRIBE_FFI_PATH -AlwaysBase:$($env:ALWAYS -eq 'true')
           } else {
             ./tools/Screenshots/catalogue.ps1 record -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:BRASSCRIBE_FFI_PATH
           }
@@ -454,14 +464,23 @@ jobs:
         id: catalogue
         if: ${{ !cancelled() && steps.exe.outputs.path != '' }}
         env:
-          BASE: ${{ inputs.screenshots_base || github.event.pull_request.base.sha }}
+          GIVEN: ${{ inputs.screenshots_base }}
+          PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           # A hand-started comparison takes the base even when nothing the screens are made from changed.
           ALWAYS: ${{ inputs.screenshots_base != '' && inputs.screenshots_base != null }}
         run: |
           $out = "$env:RUNNER_TEMP/bandroom-catalogue"
-          if ($env:BASE) {
-            git fetch --no-tags origin $env:BASE
-            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base (git merge-base HEAD $env:BASE) -AlwaysBase:$($env:ALWAYS -eq 'true')
+          # As for Play above: on a pull request, the merge commit's first parent.
+          $base = $null
+          if ($env:GIVEN) {
+            git fetch --no-tags origin $env:GIVEN
+            $base = git merge-base HEAD $env:GIVEN
+          } elseif ($env:PULL_REQUEST -eq 'true') {
+            $base = git rev-parse --verify 'HEAD^1^{commit}'
+          }
+          if ($base) {
+            Write-Host "Comparing with $(git log -1 --format='%H %s' $base)"
+            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base $base -AlwaysBase:$($env:ALWAYS -eq 'true')
           } else {
             ./tools/Screenshots/catalogue.ps1 record -Exe "${{ steps.exe.outputs.path }}" -Out $out
           }
