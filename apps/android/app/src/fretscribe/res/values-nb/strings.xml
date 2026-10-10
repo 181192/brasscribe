@@ -66,7 +66,7 @@
     <string name="problem_record_body">Telefonen lot ikke Fretscribe spille inn.</string>
 
     <!-- Om -->
-    <string name="about_text">Fretscribe er et ikke-kommersielt prosjekt. Appen bruker alphaTab (MPL-2.0) med fonten Bravura (SIL OFL 1.1) og alphaSkia (BSD-3-Clause) til å tegne tabben, AndroidX Media3 (Apache-2.0) til å spille av opptaket, og Sonivox SoundFont (Apache-2.0) til alphaTabs egne lyder. Den delte koden har også med Oboe (Apache-2.0), ONNX Runtime (MIT) og UniFFI (MPL-2.0). Bandroom på datamaskinen skriver ned tonene.</string>
+    <string name="about_text">Fretscribe er et ikke-kommersielt prosjekt. Appen bruker alphaTab (MPL-2.0) med fonten Bravura (SIL OFL 1.1) og alphaSkia (BSD-3-Clause) til å tegne tabben, AndroidX Media3 (Apache-2.0) til å spille av opptaket, og Sonivox SoundFont (Apache-2.0) til alphaTabs egne lyder. Den delte koden har også med Oboe (Apache-2.0), ONNX Runtime (MIT), UniFFI (MPL-2.0) og JNA (Apache-2.0). Bandroom på datamaskinen skriver ned tonene.</string>
     <string name="about_font">Titler er satt i Atkinson Hyperlegible Next, og båndtallene i Fretscribe Tab (begge SIL Open Font License 1.1).</string>
     <string name="settings_text_motion_desc">Fretscribe følger telefonens tekststørrelse, kontrast og animasjoner</string>
     <string name="appearance_contrast_note">Kontrastinnstillingen din er på, så Fretscribe bruker høykontrastfargene.</string>
