@@ -24,6 +24,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * A job on the computer goes on while the player is away from the app, and a notification says when it is done: the
@@ -49,10 +51,23 @@ class ReadyNotificationTest : ScreenTest() {
     private fun phoneRunsTheService() {
         ComputerJobService.startInForeground = {
             starts++
-            if (!AppInFront.now) throw IllegalStateException("startForegroundService() not allowed: the app is in the background")
-            services += Robolectric.buildService(ComputerJobService::class.java).create().also { it.startCommand(0, starts) }.get()
+            try {
+                if (!AppInFront.now) throw IllegalStateException("startForegroundService() not allowed: the app is in the background")
+                services += Robolectric.buildService(ComputerJobService::class.java).create().also { it.startCommand(0, starts) }.get()
+            } catch (e: Throwable) {
+                // (The app takes a refused start quietly; a test that did not expect one says what refused it.)
+                refused += e
+                throw e
+            }
         }
     }
+
+    /** The starts that were refused, or failed, each with what said so. */
+    private val refused = mutableListOf<Throwable>()
+
+    /** What the service holds and how it got there, for a failed check to say. */
+    private fun told() = "held ${held()}, the app in front ${AppInFront.now}, $starts start(s), ${services.size} service(s) made, " +
+        "refused: ${refused.map { it.stackTraceToString().take(4000) }}"
 
     private fun stopped(s: ComputerJobService = service) = shadowOf(s).isStoppedBySelf && shadowOf(s).isForegroundStopped
     private fun held() = ComputerJobService.held.value
@@ -84,6 +99,18 @@ class ReadyNotificationTest : ScreenTest() {
         rule.runOnUiThread { vm.home(); vm.importUri(Uri.fromFile(recording())) }
         waitUntil(20_000) { vm.screen.value.last() == Screen.PROFILE }
         rule.runOnUiThread { vm.chooseProfile(profile); vm.where.value = Where.COMPANION }
+    }
+
+    /**
+     * Holds what the app does on Dispatchers.IO, where it reads the recording and sends it, until the latch that is
+     * returned is counted down (or for a minute): every thread of the dispatcher is kept busy, so the sending waits
+     * behind them.
+     */
+    private fun holdSending(): CountDownLatch {
+        val go = CountDownLatch(1)
+        // (More tasks than Dispatchers.IO runs at once: 64 threads, unless a system property sets more.)
+        repeat(128) { CoroutineScope(Dispatchers.IO).launch { go.await(60, TimeUnit.SECONDS) } }
+        return go
     }
 
     private fun send(slow: Boolean) {
@@ -132,10 +159,19 @@ class ReadyNotificationTest : ScreenTest() {
         phoneRunsTheService()
         opened(slow = false)
         // Make the score, and away at once: the recording is still being sent, and the job is made with the app away.
-        rule.runOnUiThread { vm.startTranscription() }
-        assertEquals(1, starts)
-        assertTrue(held().sending && held().jobs.isEmpty())
-        leaveTheApp()
+        // The sending is held until the player has left: the fixture computer answers at once, and whenever the main
+        // thread got to run in between, as it does here on purpose, the job was made, or done, with the app in front.
+        val send = holdSending()
+        try {
+            rule.runOnUiThread { vm.startTranscription() }
+            settle()
+            assertEquals(told(), 1, starts)
+            assertTrue(told(), held().sending && held().jobs.isEmpty())
+            leaveTheApp()
+            assertTrue(told(), held().sending && held().jobs.isEmpty())
+        } finally {
+            send.countDown()
+        }
         val first = service
         waitUntil(60_000) { ready().isNotEmpty() && stopped(first) }
         // One start in the foreground for the whole job (a second one, from the background, is refused); "ready" once,
