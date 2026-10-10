@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
 import { compare } from "./compare.mjs";
 import { serveApi } from "./api";
-import { KNOWN, stale } from "./known";
+import { stale, type Known } from "./known";
 import { openView } from "./open";
 import { VARIANTS, type Variant } from "./views";
 
@@ -103,6 +103,15 @@ test("reflow: the page scrolls sideways at 320 px", async ({ page }) => {
   expect(after).toContainEqual(expect.stringMatching(/^reflow: div#broken-wide reaches \d+ px$/));
 });
 
+test("reflow: a part of the page that scrolls sideways within itself at 320 px, but not a data table or code", async ({ page }) => {
+  const { before, after } = await beforeAfter(page, reflow, add(
+    '<div id="broken-panel" style="overflow:auto"><p style="width:30rem;margin:0">A panel wider than the window</p></div>' +
+    '<div class="table-wrap"><table style="width:30rem"><tbody><tr><td>A data table scrolls in its wrapper</td></tr></tbody></table></div>' +
+    '<pre style="overflow-x:auto">const preformatted = "text keeps its lines, however long they are, and scrolls sideways";</pre>'), narrow);
+  expect(before).toEqual([]);
+  expect(after).toEqual([expect.stringMatching(/^reflow: div#broken-panel scrolls sideways: \d+ px wide in \d+ px$/)]);
+});
+
 test("text spacing: a box sized to its text cuts it once the spacing grows", async ({ page }) => {
   await openView(page, { route: "runs" }, light);
   await page.evaluate(() => {
@@ -159,8 +168,10 @@ test("screenshots: changed, new, gone and the same are told apart", async ({ pag
 });
 
 test("known findings: an entry that matches nothing is reported, so a fixed one is removed", () => {
-  const [k] = KNOWN;
-  expect(stale([], k.view, k.variant)).toContainEqual(k);
-  expect(stale([{ check: k.check, what: "anything else" }], k.view, k.variant)).toContainEqual(k);
-  expect(stale([{ check: k.check, what: k.what.source.replace(/^\^|\$$/g, "").replace(/\\/g, "") }], k.view, k.variant)).not.toContainEqual(k);
+  const k: Known = { check: "obscured", view: "bench", variant: "reflow320", what: /^button\.tip-btn has focus under div\.table-wrap$/, issue: 178 };
+  expect(stale([], k.view, k.variant, [k])).toEqual([k]);
+  expect(stale([{ check: k.check, what: "anything else" }], k.view, k.variant, [k])).toEqual([k]);
+  expect(stale([{ check: k.check, what: "button.tip-btn has focus under div.table-wrap" }], k.view, k.variant, [k])).toEqual([]);
+  // An entry is for one view and variant: in another it is neither matched nor missed.
+  expect(stale([], "runs", k.variant, [k])).toEqual([]);
 });

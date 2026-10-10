@@ -83,26 +83,42 @@ export async function clipped(page: Page, check: "clipped" | "spacing" = "clippe
   return cut.map((what) => ({ check, what }));
 }
 
-/** The page scrolls sideways (WCAG 1.4.10): the elements that stick out, outside any part that scrolls. */
+/**
+ * The page scrolls sideways (WCAG 1.4.10): the elements that stick out, outside any part that scrolls. At
+ * 320 px a part of the page that scrolls sideways within itself (a dialog, a panel) is found too: only what
+ * needs both directions may (a data table in its wrapper, preformatted text and code, the engraved score).
+ */
 export async function reflow(page: Page, check: "reflow" | "spacing" = "reflow"): Promise<Finding[]> {
   const wide = await page.evaluate(() => {
     const root = document.documentElement;
-    if (root.scrollWidth - root.clientWidth <= 1) return [];
+    const name = (el: Element) => `${el.localName}${el.id ? `#${el.id}` : ""}${[...el.classList].slice(0, 2).map((c) => `.${c}`).join("")}`;
     const out: string[] = [];
-    for (const el of Array.from(document.body.querySelectorAll("*"))) {
-      const r = el.getBoundingClientRect();
-      if (r.right <= root.clientWidth + 1 || r.width === 0) continue;
-      let inScroller = false;
-      for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
-        if (/auto|scroll|hidden|clip/.test(getComputedStyle(a).overflowX)) inScroller = true;
+    if (root.scrollWidth - root.clientWidth > 1) {
+      const sticking: string[] = [];
+      for (const el of Array.from(document.body.querySelectorAll("*"))) {
+        const r = el.getBoundingClientRect();
+        if (r.right <= root.clientWidth + 1 || r.width === 0) continue;
+        let inScroller = false;
+        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+          if (/auto|scroll|hidden|clip/.test(getComputedStyle(a).overflowX)) inScroller = true;
+        }
+        // Only the outermost element that sticks out: its children stick out with it.
+        const parent = el.parentElement?.getBoundingClientRect();
+        if (!inScroller && !(parent && parent.right > root.clientWidth + 1 && el.parentElement !== document.body)) {
+          sticking.push(`${name(el)} reaches ${Math.round(r.right)} px`);
+        }
       }
-      // Only the outermost element that sticks out: its children stick out with it.
-      const parent = el.parentElement?.getBoundingClientRect();
-      if (!inScroller && !(parent && parent.right > root.clientWidth + 1 && el.parentElement !== document.body)) {
-        out.push(`${el.localName}${el.id ? `#${el.id}` : ""}${[...el.classList].slice(0, 2).map((c) => `.${c}`).join("")} reaches ${Math.round(r.right)} px`);
+      out.push(`the page is ${root.scrollWidth} px wide in a ${root.clientWidth} px window`, ...sticking.slice(0, 3));
+    }
+    if (root.clientWidth <= 320) {
+      const TWO_WAY = ".table-wrap, pre, code, bs-score .score-view";
+      for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("*"))) {
+        if (el.scrollWidth - el.clientWidth <= 1 || el.clientWidth === 0 || el.matches(TWO_WAY)) continue;
+        if (!/auto|scroll/.test(getComputedStyle(el).overflowX) || !el.checkVisibility()) continue;
+        out.push(`${name(el)} scrolls sideways: ${el.scrollWidth} px wide in ${el.clientWidth} px`);
       }
     }
-    return [`the page is ${root.scrollWidth} px wide in a ${root.clientWidth} px window`, ...out.slice(0, 3)];
+    return out;
   });
   return wide.map((what) => ({ check, what }));
 }
