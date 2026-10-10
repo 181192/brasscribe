@@ -1,7 +1,8 @@
 # Bandroom for Windows' screen catalogue: every view (--show VIEW [--state STATE], sample content, no engine) in Light,
-# Dark, bokmål, a Windows contrast theme and 200 % text, with its checks, and what changed against the merge base.
+# Dark, bokmål, a Windows contrast theme and 200 % text, with its checks, and what changed against the base.
 # One start of the app per view (apps/windows/tools/ScreenCheck, bandroom). Windows only; meant for CI, since the
-# contrast theme and the text size are this user's Windows settings for the length of their run.
+# contrast theme, the text size and animation effects (off for every run) are this user's Windows settings for the
+# length of their run.
 #
 #   catalogue.ps1 record  -Exe EXE -Out DIR                 take them, with the checks
 #   catalogue.ps1 compare -Exe EXE -Out DIR [-Base COMMIT]  take them with Bandroom built at COMMIT (default: the merge
@@ -11,7 +12,7 @@
 # Writes and exits as apps/windows/tools/Screenshots/catalogue.ps1: DIR\shots, DIR\findings.md, DIR\report; 0 nothing
 # changed, 1 a view changed, appeared or went away, 2 the checks found something, 3 the screenshots could not be taken
 # here. The base is skipped when nothing its views are made from changed; a base that fails is a warning (nothing
-# compared, 0).
+# compared, 0); a -Base that is not a commit here is 3.
 param(
     [Parameter(Mandatory, Position = 0)] [ValidateSet("record", "compare")] [string] $Mode,
     [Parameter(Mandatory)] [string] $Exe,
@@ -27,8 +28,9 @@ $repo = Resolve-Path (Join-Path $bandroom "../../..")
 $windows = Join-Path $repo "apps/windows"
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $Out = Resolve-Path $Out
-# The text size this user had before a run at 200 %, put back after it.
+# The text size this user had before a run at 200 %, put back after it; and whether animation effects were on.
 $script:textScaleKeep = Join-Path $Out "text-scale-before.txt"
+$script:animationsKeep = Join-Path $Out "animations-before.txt"
 $Exe = Resolve-Path $Exe
 
 function Log($text) { Write-Host "catalogue: $text" }
@@ -44,16 +46,22 @@ function Invoke-Catalogue($exe, $shots, [bool] $checks) {
     $c = if ($checks) { "1" } else { "0" }
     $ok = $true
     $started = Get-Date
-    $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "en", "--themes", "light,dark", "--checks", $c)) -eq 0) -and $ok
-    $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "nb", "--themes", "light", "--checks", $c)) -eq 0) -and $ok
-    if ((Invoke-ScreenCheck @("system", "--contrast", "on")) -ne 0) { throw "the contrast theme could not be turned on" }
-    try { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "contrast", "--themes", "light", "--checks", $c)) -eq 0) -and $ok }
-    finally { if ((Invoke-ScreenCheck @("system", "--contrast", "off")) -ne 0) { throw "the contrast theme could not be turned off" } }
-    if ((Invoke-ScreenCheck @("system", "--text-scale", "200", "--keep", $script:textScaleKeep)) -ne 0) { throw "the text size could not be set" }
-    try { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "text200", "--themes", "light", "--checks", $c)) -eq 0) -and $ok }
-    finally { if ((Invoke-ScreenCheck @("system", "--text-scale", "restore", "--keep", $script:textScaleKeep)) -ne 0) { throw "the text size could not be put back" } }
-    # Axe.Windows and Tab last: after a Tab, Windows draws focus rectangles in the windows of later starts.
-    if ($checks) { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "scan", "--themes", "light")) -eq 0) -and $ok }
+    # No animation effects while the views are taken (Settings > Accessibility > Visual effects): a window or a dialog
+    # is on screen at once instead of fading or sliding in. The app reads it when it starts.
+    if ((Invoke-ScreenCheck @("system", "--animations", "off", "--keep", $script:animationsKeep)) -ne 0) { throw "animation effects could not be turned off" }
+    try {
+        $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "en", "--themes", "light,dark", "--checks", $c)) -eq 0) -and $ok
+        $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "nb", "--themes", "light", "--checks", $c)) -eq 0) -and $ok
+        if ((Invoke-ScreenCheck @("system", "--contrast", "on")) -ne 0) { throw "the contrast theme could not be turned on" }
+        try { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "contrast", "--themes", "light", "--checks", $c)) -eq 0) -and $ok }
+        finally { if ((Invoke-ScreenCheck @("system", "--contrast", "off")) -ne 0) { throw "the contrast theme could not be turned off" } }
+        if ((Invoke-ScreenCheck @("system", "--text-scale", "200", "--keep", $script:textScaleKeep)) -ne 0) { throw "the text size could not be set" }
+        try { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "text200", "--themes", "light", "--checks", $c)) -eq 0) -and $ok }
+        finally { if ((Invoke-ScreenCheck @("system", "--text-scale", "restore", "--keep", $script:textScaleKeep)) -ne 0) { throw "the text size could not be put back" } }
+        # Axe.Windows and Tab last: after a Tab, Windows draws focus rectangles in the windows of later starts.
+        if ($checks) { $ok = ((Invoke-ScreenCheck @("bandroom", "--exe", $exe, "--out", $shots, "--run", "scan", "--themes", "light")) -eq 0) -and $ok }
+    }
+    finally { if ((Invoke-ScreenCheck @("system", "--animations", "restore", "--keep", $script:animationsKeep)) -ne 0) { throw "animation effects could not be put back" } }
     Log ("the runs took {0:n0} s" -f ((Get-Date) - $started).TotalSeconds)
     return $ok
 }
@@ -73,10 +81,16 @@ if ($Mode -eq "compare") {
     if (Test-Path $report) { Remove-Item -Recurse -Force $report }
     New-Item -ItemType Directory -Force -Path $report | Out-Null
     $summary = Join-Path $report "summary.md"
+    $given = $Base
     if (-not $Base) { $Base = git -C $repo merge-base HEAD origin/main }
     $Base = git -C $repo rev-parse --verify --quiet "$Base^{commit}"
     $why = $null
-    if (-not $Base) { $why = "no such commit" }
+    if (-not $Base -and $given) {
+        # A base that was asked for by name: not finding it is not a comparison passed.
+        Write-Host "::error::Bandroom for Windows: the base to compare with, '$given', is not a commit in this checkout, so nothing was compared."
+        exit 3
+    }
+    if (-not $Base) { $why = "no merge base with origin/main" }
     else {
         git -C $repo diff --quiet $Base HEAD -- @madeFrom
         if ($LASTEXITCODE -eq 0 -and -not $AlwaysBase) {

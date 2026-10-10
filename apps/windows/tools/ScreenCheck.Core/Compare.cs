@@ -85,7 +85,7 @@ public static class ScreenshotReport
 
     /// <param name="load">Reads a PNG.</param>
     /// <param name="save">Writes a PNG.</param>
-    /// <param name="skip">Screens that were not steady when taken, on either side: not compared.</param>
+    /// <param name="skip">Screens that were not taken (or not steady when taken) on either side: not compared.</param>
     public static Result Write(string beforeDir, string afterDir, string reportDir, Func<string, Picture> load, Action<string, Picture> save,
         IReadOnlySet<string>? skip = null)
     {
@@ -132,7 +132,7 @@ public static class ScreenshotReport
         lines.AddRange(minor.Select(f => $"- within the noise floor, not a change: `{f}` ({counts[f].N} pixels)"));
         lines.AddRange(added.Select(f => $"- new: `{f}`"));
         lines.AddRange(gone.Select(f => $"- gone: `{f}`"));
-        if (skip.Count > 0) lines.Add($"- not compared, the screen did not keep still: {string.Join(", ", skip.Order().Select(s => $"`{s}`"))}");
+        if (skip.Count > 0) lines.Add($"- not compared, the screen was not taken on one side: {string.Join(", ", skip.Order().Select(s => $"`{s}`"))}");
         string summary = string.Join("\n", lines) + "\n";
         File.WriteAllText(Path.Combine(reportDir, "summary.md"), "# Screenshots\n\n" + summary);
 

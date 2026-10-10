@@ -13,6 +13,9 @@ internal static class DialogGate
 
     public static bool IsOpen => _open is not null;
 
+    /// <summary>The open dialog, once it has opened (its Opened event): the screen catalogue waits for it.</summary>
+    public static ContentDialog? Opened { get; private set; }
+
     /// <summary>The open dialog has closed; a dialog that had to wait can open now.</summary>
     public static event EventHandler? Closed;
 
@@ -20,12 +23,16 @@ internal static class DialogGate
     {
         if (_open is not null) return ContentDialogResult.None;
         _open = dialog;
+        void OnOpened(ContentDialog sender, ContentDialogOpenedEventArgs args) => Opened = sender;
+        dialog.Opened += OnOpened;
         try
         {
             return await dialog.ShowAsync();
         }
         finally
         {
+            dialog.Opened -= OnOpened;
+            Opened = null;
             _open = null;
             Closed?.Invoke(null, EventArgs.Empty);
         }

@@ -8,8 +8,9 @@ using Brasscribe.ScreenCheck;
 //   bandroom --exe EXE --out DIR --run en|nb|contrast|text200 [--themes light,dark] [--scenes a,b:state] [--checks 0]
 //                                                       Bandroom's catalogue: one start per view, its screenshots and checks
 //   system   --contrast on|off | --text-scale PERCENT --keep FILE | --text-scale restore --keep FILE
-//                                                       a contrast theme or a text size for the next run (this user); the
-//                                                       text size there was before is kept in FILE and put back
+//            | --animations off --keep FILE | --animations restore --keep FILE
+//                                                       a contrast theme, a text size or no animation effects for the next
+//                                                       run (this user); what there was before is kept in FILE and put back
 //   verdict  --dir DIR --known FILE --title TEXT [--summary FILE]
 //                                                       the findings of a catalogue's runs: exit 0 none new, 2 new, 3 screens not taken
 //   compare  --before DIR --after DIR --report DIR      screenshots at the merge base against these: exit 0 same, 1 changed
@@ -61,9 +62,11 @@ static int Verdict(Options o)
 static int Compare(Options o)
 {
     string before = o.Need("before"), after = o.Need("after"), report = o.Need("report");
-    // Screens that did not keep still on either side are not compared.
+    // Screens that were not taken on either side (or, from an older catalogue, did not keep still) are not compared:
+    // a screen the base could not take is not a new screen here.
     var skip = new[] { before, after }.Where(Directory.Exists)
-        .SelectMany(d => Directory.GetFiles(d, "catalogue-*.json")).SelectMany(f => CatalogueRun.Load(f).Unsteady).ToHashSet();
+        .SelectMany(d => Directory.GetFiles(d, "catalogue-*.json")).Select(CatalogueRun.Load)
+        .SelectMany(r => r.Unsteady.Concat(r.NotTaken())).ToHashSet();
     Directory.CreateDirectory(report);
     var result = ScreenshotReport.Write(before, after, report, Png.Load, Png.Save, skip);
     Console.WriteLine(result.Summary);
