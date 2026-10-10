@@ -24,6 +24,8 @@ pub const UNCERTAIN_BELOW: f64 = 0.7;
 pub const VERY_UNCERTAIN_BELOW: f64 = 0.4;
 /// Confidence of a note the MusicXML colours as uncertain, with no Composition match.
 pub const COLOUR_ONLY_CONFIDENCE: f64 = 0.55;
+/// The number of a pickup (anacrusis): spoken as "pickup", never as a bar number (spec §4.10).
+pub const PICKUP_BAR: i64 = 0;
 
 pub fn round_half_up(x: f64) -> i64 {
     (x + 0.5).floor() as i64
@@ -291,8 +293,27 @@ impl Lex {
         self.t(" of ", " av ")
     }
 
+    fn pickup(&self) -> &'static str {
+        self.t("pickup", "opptakt")
+    }
+
     fn bar(&self, n: i64) -> String {
+        if n == PICKUP_BAR {
+            return self.pickup().to_string();
+        }
         format!("{} {n}", self.t("bar", "takt"))
+    }
+
+    /// A rest over `n` bars from the pickup on: the pickup is named, and is not one of the bars counted.
+    fn pickup_rest(&self, n: i64) -> String {
+        let after = n - 1;
+        let and = self.t("and", "og");
+        let rest = self.t("rest", "pause");
+        match after {
+            i64::MIN..=0 => format!("{}: {rest}", self.pickup()),
+            1 => format!("{} {and} {}: {rest}", self.pickup(), self.bar(1)),
+            _ => format!("{} {and} {}: {}", self.pickup(), self.bars_range(1, after), self.rest_bars(after)),
+        }
     }
 
     fn bars_range(&self, a: i64, b: i64) -> String {
@@ -521,10 +542,18 @@ impl Lex {
     }
 
     fn ad_lib(&self, a: &Value, b: &Value, s: i64) -> String {
+        let pickup = |v: &Value| v.as_i64() == Some(PICKUP_BAR) || v.as_f64() == Some(PICKUP_BAR as f64);
+        let bars = match (pickup(a), pickup(b), self.nb) {
+            (true, true, _) => self.pickup().to_string(),
+            (true, false, true) => format!("opptakt til takt {}", fmt_num(b)),
+            (true, false, false) => format!("pickup to bar {}", fmt_num(b)),
+            (false, _, true) => format!("takt {} til {}", fmt_num(a), fmt_num(b)),
+            (false, _, false) => format!("bars {} to {}", fmt_num(a), fmt_num(b)),
+        };
         if self.nb {
-            format!("Ad lib, fritt tempo, takt {} til {}, omtrent {s} sekunder", fmt_num(a), fmt_num(b))
+            format!("Ad lib, fritt tempo, {bars}, omtrent {s} sekunder")
         } else {
-            format!("Ad lib, free time, bars {} to {}, about {s} seconds", fmt_num(a), fmt_num(b))
+            format!("Ad lib, free time, {bars}, about {s} seconds")
         }
     }
 
@@ -611,6 +640,16 @@ impl Lex {
 
     fn bar_heading(&self, a: i64, b: Option<i64>) -> String {
         let w = self.t("Bar", "Takt");
+        if a == PICKUP_BAR {
+            let p = self.t("Pickup", "Opptakt");
+            return match (b, self.nb) {
+                (None, _) => p.to_string(),
+                (Some(1), true) => format!("{p} og takt 1"),
+                (Some(1), false) => format!("{p} and bar 1"),
+                (Some(b), true) => format!("{p} og takt 1–{b}"),
+                (Some(b), false) => format!("{p} and bars 1–{b}"),
+            };
+        }
         match b {
             None => format!("{w} {a}"),
             Some(b) => format!("{}{} {a}–{b}", w, if self.nb { "" } else { "s" }),
@@ -682,7 +721,9 @@ pub fn announce(part: &Part, bar: &Bar, ev: &Value, ctx: &Context, s: &Settings,
 
     if kind == "bar-rest" {
         let n = gi(ev, "bars", 1);
-        if n > 1 {
+        if bar.number == PICKUP_BAR {
+            out.push_str(&l.pickup_rest(n));
+        } else if n > 1 {
             out.push_str(&format!("{}: {}", l.bars_range(bar.number, bar.number + n - 1), l.rest_bars(n)));
         } else {
             out.push_str(&format!("{}: {}", l.bar(bar.number), l.t("rest, whole bar", "pause hele takten")));
@@ -693,7 +734,7 @@ pub fn announce(part: &Part, bar: &Bar, ev: &Value, ctx: &Context, s: &Settings,
     let brief = s.verbosity == "brief";
     if !brief && show_bar {
         out.push_str(&l.bar(bar.number));
-        if s.verbosity == "full" && bar.total_bars > 0 {
+        if s.verbosity == "full" && bar.total_bars > 0 && bar.number != PICKUP_BAR {
             out.push_str(l.of_word());
             out.push_str(&bar.total_bars.to_string());
         }
@@ -1047,13 +1088,48 @@ struct Chain {
     count: i64,
 }
 
-fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percussion: bool, transpose: &Value, tuplet_count: &mut i64) -> Result<Option<Value>, String> {
+/// What a pickup measure lacks of a full bar, in divisions: 0 when it is a full bar or empty.
+fn lead_in(m: Node, mut divisions: i64, time: &Value) -> i64 {
+    let mut time = time.clone();
+    let (mut offset, mut length) = (0i64, 0i64);
+    for el in m.children().filter(|c| c.is_element()) {
+        match el.tag_name().name() {
+            "attributes" => {
+                divisions = el_int(find(el, "divisions"), divisions);
+                if find(el, "time").is_some() {
+                    time = json!({"beats": el_int(find(el, "time/beats"), 4), "beat_type": el_int(find(el, "time/beat-type"), 4)});
+                }
+            }
+            "backup" => offset -= el_int(find(el, "duration"), 0),
+            "forward" => {
+                offset += el_int(find(el, "duration"), 0);
+                length = length.max(offset);
+            }
+            "note" if find(el, "chord").is_none() && find(el, "grace").is_none() => {
+                offset += el_int(find(el, "duration"), 0);
+                length = length.max(offset);
+            }
+            _ => {}
+        }
+    }
+    let bt = gi(&time, "beat_type", 4);
+    let full = if bt > 0 { floordiv(divisions * 4 * gi(&time, "beats", 4), bt) } else { 0 };
+    if 0 < length && length < full {
+        full - length
+    } else {
+        0
+    }
+}
+
+/// `lead`: the divisions a pickup lacks of a full bar; `pos` counts from where that bar would start.
+#[allow(clippy::too_many_arguments)]
+fn read_note(el: Node, start: i64, dur: i64, divisions: i64, time: &Value, percussion: bool, transpose: &Value, tuplet_count: &mut i64, lead: i64) -> Result<Option<Value>, String> {
     let typ = findtext(el, "type");
     let mut ev = Map::new();
     ev.insert("kind".into(), json!("note"));
     ev.insert("tick".into(), json!(floordiv(start * TICKS_PER_QUARTER, divisions)));
     ev.insert("dur_ticks".into(), json!(floordiv(dur * TICKS_PER_QUARTER, divisions)));
-    ev.insert("pos".into(), position(start, divisions, time));
+    ev.insert("pos".into(), position(start + lead, divisions, time));
     ev.insert("type".into(), typ.clone().map(Value::String).unwrap_or(Value::Null));
     ev.insert("dots".into(), json!(children(el, "dot").count()));
     for k in ["tuplet", "tie"] {
@@ -1205,7 +1281,14 @@ pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, Strin
         let mut chain_of: HashMap<usize, usize> = HashMap::new();
         let mut chains: Vec<Chain> = Vec::new();
         for (idx, m) in children(part_el, "measure").enumerate() {
-            let number = m.attribute("number").and_then(|n| n.trim().parse::<i64>().ok()).unwrap_or(idx as i64 + 1);
+            let mut number = m.attribute("number").and_then(|n| n.trim().parse::<i64>().ok()).unwrap_or(idx as i64 + 1);
+            // A pickup: the first measure, numbered 0 or left out of the numbering. Its notes are placed on the
+            // beats they fall on in the bar they lead into.
+            let mut lead = 0i64;
+            if idx == 0 && (number == PICKUP_BAR || m.attribute("implicit") == Some("yes")) {
+                number = PICKUP_BAR;
+                lead = lead_in(m, divisions, &time);
+            }
             let (mut tempo, mut rehearsal, mut pending_dyn): (Option<f64>, Option<String>, Option<String>) = (None, None, None);
             let (mut offset, mut length) = (0i64, 0i64);
             let mut last: Option<usize> = None;
@@ -1272,7 +1355,7 @@ pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, Strin
                             }
                             continue;
                         }
-                        let Some(mut ev) = read_note(el, start, dur, divisions, &time, percussion, &transpose, &mut tuplet_count)? else { continue };
+                        let Some(mut ev) = read_note(el, start, dur, divisions, &time, percussion, &transpose, &mut tuplet_count, lead)? else { continue };
                         let kind = gs(&ev, "kind").unwrap_or("").to_string();
                         if pending_dyn.is_some() && kind != "rest" && kind != "bar-rest" {
                             ev["dynamic"] = json!(pending_dyn.take());
@@ -1415,7 +1498,8 @@ pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, Strin
         }
     }
 
-    let total = parts.iter().map(|p| p["bars"].as_array().unwrap().len()).max().unwrap_or(0);
+    // The pickup is not one of the bars counted.
+    let total = parts.iter().map(|p| p["bars"].as_array().unwrap().iter().filter(|b| gi(b, "number", 1) != PICKUP_BAR).count()).max().unwrap_or(0);
     let mut d = Map::new();
     d.insert("version".into(), json!(1));
     d.insert("title".into(), json!(title));

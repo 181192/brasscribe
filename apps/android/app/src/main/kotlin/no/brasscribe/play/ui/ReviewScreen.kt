@@ -89,6 +89,7 @@ import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.Instrument
 import no.brasscribe.play.model.Lang
 import no.brasscribe.play.model.reading
+import no.brasscribe.play.model.PICKUP_BAR
 import no.brasscribe.play.model.PartEvent
 import no.brasscribe.play.model.PartView
 import no.brasscribe.play.model.TsContext
@@ -412,8 +413,14 @@ fun ReviewScreen(vm: PlayViewModel) {
                 val rest = bar.events.singleOrNull()?.takeIf { it.note == null }
                 Column(Modifier.fillMaxWidth().padding(vertical = BrasscribeSpace.s1)) {
                     Text(
-                        if (rest != null && rest.stop.event.bars > 1) stringResource(R.string.bar_rest_heading, bar.number, bar.number + rest.stop.event.bars - 1)
-                        else stringResource(R.string.bar_heading, bar.number),
+                        when {
+                            // The pickup is named, never numbered (talking-score spec §4.10).
+                            bar.number == PICKUP_BAR && rest != null && rest.stop.event.bars > 1 ->
+                                stringResource(R.string.pickup_rest_heading, rest.stop.event.bars - 1)
+                            bar.number == PICKUP_BAR -> stringResource(R.string.pickup_heading)
+                            rest != null && rest.stop.event.bars > 1 -> stringResource(R.string.bar_rest_heading, bar.number, bar.number + rest.stop.event.bars - 1)
+                            else -> stringResource(R.string.bar_heading, bar.number)
+                        },
                         style = MaterialTheme.typography.titleSmall, color = c.textMuted,
                         modifier = Modifier.semantics { heading() },
                     )

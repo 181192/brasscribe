@@ -270,6 +270,32 @@ struct Reference: Decodable {
     #expect(SpelledPitch.spelling(midi: 66, fifths: 2) == .init(step: "F", alter: 1, octave: 4))
 }
 
+@Test func aPickupIsNamedAndItsNotesSitOnTheBeatsOfTheBarTheyLeadInto() throws {
+    let xml = """
+    <?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Cornet</part-name></score-part>
+    <score-part id="P2"><part-name>Horn</part-name></score-part></part-list>
+    <part id="P1"><measure number="0" implicit="yes"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>
+    <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><type>quarter</type></note></measure>
+    <measure number="1"><note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><type>whole</type></note></measure></part>
+    <part id="P2"><measure number="0" implicit="yes"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+    <note><rest/><duration>3</duration></note></measure>
+    <measure number="1"><note><pitch><step>C</step><octave>4</octave></pitch><duration>8</duration><type>whole</type></note></measure></part>
+    </score-partwise>
+    """
+    let s = try MusicXMLParser.parse(Data(xml.utf8))
+    let en = TalkingScore(score: s, language: .english)
+    #expect(en.barLabel(0) == "Pickup" && en.barLabel(1) == "Bar 1")
+    #expect(en.describe(part: s.parts[0], measureIndex: 0) == "Pickup, Cornet. beat 3 and: G 4, eighth note. beat 4: A 4, quarter note.")
+    #expect(en.describe(part: s.parts[1], measureIndex: 0) == "Pickup, Horn. rest.")
+    #expect(en.describe(part: s.parts[0], measureIndex: 1).hasPrefix("Bar 1, Cornet. beat 1: C 5"))
+    #expect(en.text().contains(" 1 bars.\n"))  // the pickup is not one of the bars counted
+    #expect(!en.text().contains("Bar 0"))
+    let nb = TalkingScore(score: s, language: .norwegian)
+    #expect(nb.describe(part: s.parts[0], measureIndex: 0).hasPrefix("Opptakt, Cornet. slag 3 og: G 4"))
+    #expect(nb.describe(part: s.parts[1], measureIndex: 0) == "Opptakt, Horn. pause.")
+}
+
 @Test func tiesMergeChordsShareOnsetAndDirectionsParse() throws {
     let xml = """
     <?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Cornet</part-name></score-part></part-list>

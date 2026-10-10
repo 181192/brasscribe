@@ -178,8 +178,23 @@ public struct TalkingScore: Sendable {
 
     // MARK: descriptions
 
+    /// A pickup (anacrusis): the first measure, numbered 0. It is named, never numbered, and is not one of the
+    /// bars counted (docs/accessibility/talking-score-spec.md §4.10).
+    public func isPickup(_ index: Int) -> Bool {
+        index == 0 && score.measures.first?.number == "0"
+    }
+
+    /// What a pickup lacks of a full bar, in ticks: its notes are placed on the beats they fall on in the bar
+    /// they lead into. 0 for every other bar.
+    func leadTicks(_ index: Int) -> Int {
+        guard isPickup(index) else { return 0 }
+        let m = score.measures[index]
+        return max(0, m.beats * m.beatTicks - m.lengthTicks)
+    }
+
     public func barLabel(_ index: Int) -> String {
-        (nb ? "Takt " : "Bar ") + (score.measures.indices.contains(index) ? score.measures[index].number : "\(index + 1)")
+        if isPickup(index) { return nb ? "Opptakt" : "Pickup" }
+        return (nb ? "Takt " : "Bar ") + (score.measures.indices.contains(index) ? score.measures[index].number : "\(index + 1)")
     }
 
     public func beatLabel(_ beat: Double) -> String {
@@ -198,15 +213,17 @@ public struct TalkingScore: Sendable {
         guard !notes.isEmpty else { return [nb ? "tom takt" : "empty bar"] }
         let m = score.measures[measureIndex]
         if notes.allSatisfy(\.isRest) {
+            if isPickup(measureIndex) { return [nb ? "pause" : "rest"] }
             return [nb ? "pause hele takten" : "rest for the whole bar"]
         }
+        let lead = leadTicks(measureIndex)
         var groups: [(Int, [ScoreNote])] = []
         for n in notes {
             if let last = groups.last, last.0 == n.startTick { groups[groups.count - 1].1.append(n) }
             else { groups.append((n.startTick, [n])) }
         }
         return groups.map { tick, ns in
-            let beat = 1 + Double(tick - m.startTick) / Double(m.beatTicks)
+            let beat = 1 + Double(tick - m.startTick + lead) / Double(m.beatTicks)
             let head = ns[0]
             if head.isRest {
                 return "\(beatLabel(beat)): \(nb ? "pause" : "rest"), \(durationName(type: head.type, dots: head.dots, ticks: head.durTicks))"
@@ -245,8 +262,9 @@ public struct TalkingScore: Sendable {
     /// Plain-text talking score of the whole piece: a heading per part, a line per bar.
     public func text(parts: [Part]? = nil) -> String {
         var out = "\(score.title)\n"
-        out += nb ? "Tempo \(Int(score.tempoBPM)) slag per minutt. \(score.measures.count) takter.\n"
-                  : "Tempo \(Int(score.tempoBPM)) beats per minute. \(score.measures.count) bars.\n"
+        let bars = score.measures.count - (isPickup(0) ? 1 : 0)
+        out += nb ? "Tempo \(Int(score.tempoBPM)) slag per minutt. \(bars) takter.\n"
+                  : "Tempo \(Int(score.tempoBPM)) beats per minute. \(bars) bars.\n"
         for t in score.tempos.dropFirst() {
             let bar = score.measureIndex(atTick: t.tick)
             out += nb ? "\(barLabel(bar)): tempo \(Int(t.bpm)).\n" : "\(barLabel(bar)): tempo \(Int(t.bpm)).\n"

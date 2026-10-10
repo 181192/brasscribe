@@ -26,6 +26,7 @@ TICKS_PER_QUARTER = 10080  # exact for every tuplet the engine writes
 UNCERTAIN_BELOW = 0.7
 VERY_UNCERTAIN_BELOW = 0.4
 COLOUR_ONLY_CONFIDENCE = 0.55  # a note the MusicXML colours as uncertain, with no Composition match
+PICKUP_BAR = 0  # the number of a pickup (anacrusis): spoken as "pickup", never as a bar number (spec §4.10)
 
 
 def round_half_up(x: float) -> int:
@@ -146,6 +147,7 @@ class _Lexicon:
 
 class _En(_Lexicon):
     OF, HELD, FROM, AND = " of ", "held", "from ", "and"
+    PICKUP, REST = "pickup", "rest"
     REST_WHOLE_BAR, UNCERTAIN, VERY_UNCERTAIN, CONFIDENT = "rest, whole bar", "uncertain", "very uncertain", "confident"
     CONCERT_PITCH, WRITTEN_PITCH = "Concert pitch", "Written pitch"
     TYPES = {"breve": ("double whole note", "double whole"), "whole": ("whole note", "whole"), "half": ("half note", "half"),
@@ -156,7 +158,7 @@ class _En(_Lexicon):
                      "trill-flat": "trill with flat", "trill-natural": "trill with natural",
                      "trill-double-sharp": "trill with double sharp", "trill-flat-flat": "trill with double flat"}
 
-    def bar(self, n): return f"bar {n}"
+    def bar(self, n): return self.PICKUP if n == PICKUP_BAR else f"bar {n}"
     def bars_range(self, a, b): return f"bars {a} to {b}"
     def rest_bars(self, n): return f"rest, {n} bars"
     def position(self, p): return "beat " + self.position_brief(p)
@@ -206,7 +208,10 @@ class _En(_Lexicon):
         m, r = divmod(s, 60)
         return f"at {m} {'minute' if m == 1 else 'minutes'} {r} {'second' if r == 1 else 'seconds'}"
 
-    def ad_lib(self, a, b, s): return f"Ad lib, free time, bars {a} to {b}, about {s} seconds"
+    def ad_lib(self, a, b, s):
+        bars = f"bars {a} to {b}" if a != PICKUP_BAR else "pickup" if b == PICKUP_BAR else f"pickup to bar {b}"
+        return f"Ad lib, free time, {bars}, about {s} seconds"
+
     def a_tempo(self, bpm): return f"A tempo, {bpm} beats per minute"
 
     def key(self, f):
@@ -223,12 +228,17 @@ class _En(_Lexicon):
     def written_sounds(self, w, s): return f"written {w}, sounds {s}"
     def instrument_name(self, i): return i.replace("♭", "-flat").replace("♯", "-sharp")
     def part_heading(self, n): return n
-    def bar_heading(self, a, b=None): return f"Bar {a}" if b is None else f"Bars {a}–{b}"
+
+    def bar_heading(self, a, b=None):
+        if a == PICKUP_BAR:
+            return "Pickup" if b is None else "Pickup and bar 1" if b == 1 else f"Pickup and bars 1–{b}"
+        return f"Bar {a}" if b is None else f"Bars {a}–{b}"
 
 
 class _Nb(_Lexicon):
     decimal = ","
     OF, HELD, FROM, AND = " av ", "holdes", "fra ", "og"
+    PICKUP, REST = "opptakt", "pause"
     REST_WHOLE_BAR, UNCERTAIN, VERY_UNCERTAIN, CONFIDENT = "pause hele takten", "usikker", "svært usikker", "sikker"
     CONCERT_PITCH, WRITTEN_PITCH = "Klingende tone", "Skrevet tone"
     TYPES = {"breve": ("brevis", "brevis"), "whole": ("helnote", "hel"), "half": ("halvnote", "halv"),
@@ -244,7 +254,7 @@ class _Nb(_Lexicon):
                      "trill-natural": "trille med oppløsningstegn", "trill-double-sharp": "trille med dobbeltkryss",
                      "trill-flat-flat": "trille med dobbelt-b"}
 
-    def bar(self, n): return f"takt {n}"
+    def bar(self, n): return self.PICKUP if n == PICKUP_BAR else f"takt {n}"
     def bars_range(self, a, b): return f"takt {a} til {b}"
     def rest_bars(self, n): return f"pause, {n} takter"
     def position(self, p): return "slag " + self.position_brief(p)
@@ -303,7 +313,10 @@ class _Nb(_Lexicon):
         m, r = divmod(s, 60)
         return f"ved {m} {'minutt' if m == 1 else 'minutter'} {r} {'sekund' if r == 1 else 'sekunder'}"
 
-    def ad_lib(self, a, b, s): return f"Ad lib, fritt tempo, takt {a} til {b}, omtrent {s} sekunder"
+    def ad_lib(self, a, b, s):
+        bars = f"takt {a} til {b}" if a != PICKUP_BAR else "opptakt" if b == PICKUP_BAR else f"opptakt til takt {b}"
+        return f"Ad lib, fritt tempo, {bars}, omtrent {s} sekunder"
+
     def a_tempo(self, bpm): return f"A tempo, {bpm} slag per minutt"
     def key(self, f): return "ingen faste fortegn" if f == 0 else f"{f} kryss" if f > 0 else f"{-f} b"
 
@@ -319,7 +332,11 @@ class _Nb(_Lexicon):
     def written_sounds(self, w, s): return f"skrevet {w}, klinger {s}"
     def instrument_name(self, i): return i
     def part_heading(self, n): return n
-    def bar_heading(self, a, b=None): return f"Takt {a}" if b is None else f"Takt {a}–{b}"
+
+    def bar_heading(self, a, b=None):
+        if a == PICKUP_BAR:
+            return "Opptakt" if b is None else "Opptakt og takt 1" if b == 1 else f"Opptakt og takt 1–{b}"
+        return f"Takt {a}" if b is None else f"Takt {a}–{b}"
 
 
 EN, NB = _En(), _Nb()
@@ -370,14 +387,19 @@ def announce(part: Part, bar: Bar, ev: dict, ctx: Context, s: Settings, by_bar: 
 
     if kind == "bar-rest":
         n = ev.get("bars", 1)
-        out.append(L.bars_range(bar.number, bar.number + n - 1) + ": " + L.rest_bars(n) if n > 1
-                   else L.bar(bar.number) + ": " + L.REST_WHOLE_BAR)
+        if bar.number == PICKUP_BAR:  # §4.10: the pickup is named, and is not one of the bars counted
+            after = n - 1
+            where = L.PICKUP if after <= 0 else f"{L.PICKUP} {L.AND} " + (L.bar(1) if after == 1 else L.bars_range(1, after))
+            out.append(where + ": " + (L.rest_bars(after) if after > 1 else L.REST))
+        else:
+            out.append(L.bars_range(bar.number, bar.number + n - 1) + ": " + L.rest_bars(n) if n > 1
+                       else L.bar(bar.number) + ": " + L.REST_WHOLE_BAR)
         return "".join(out)
 
     brief = s.verbosity == "brief"
     if not brief and show_bar:
         out.append(L.bar(bar.number))
-        if s.verbosity == "full" and bar.total_bars > 0:
+        if s.verbosity == "full" and bar.total_bars > 0 and bar.number != PICKUP_BAR:
             out.append(L.OF + str(bar.total_bars))
         for c in changes:
             out.append(", " + c)
@@ -599,6 +621,11 @@ def build(musicxml: str | Path, composition: dict | None = None) -> dict:
                 number = int(m.get("number"))
             except (TypeError, ValueError):
                 number = idx + 1
+            # A pickup: the first measure, numbered 0 or left out of the numbering. Its notes are placed on the
+            # beats they fall on in the bar they lead into.
+            lead = 0
+            if idx == 0 and (number == PICKUP_BAR or m.get("implicit") == "yes"):
+                number, lead = PICKUP_BAR, _lead_in(m, divisions, time)
             tempo = rehearsal = pending_dyn = None
             offset = length = 0
             last = None
@@ -648,7 +675,7 @@ def build(musicxml: str | Path, composition: dict | None = None) -> dict:
                         if voice != "1":
                             last = None
                         continue
-                    ev, tuplet_count = _read_note(el, start, dur, divisions, time, part, tuplet_count)
+                    ev, tuplet_count = _read_note(el, start, dur, divisions, time, part, tuplet_count, lead)
                     if ev is None:
                         continue
                     if pending_dyn and ev["kind"] not in ("rest", "bar-rest"):
@@ -713,16 +740,36 @@ def build(musicxml: str | Path, composition: dict | None = None) -> dict:
                 if b < len(p["bars"]) and p["bars"][b]["tempo_bpm"] is None:
                     p["bars"][b]["tempo_bpm"] = tempo
 
-    doc = {"version": 1, "title": title, "total_bars": max((len(p["bars"]) for p in parts), default=0),
+    # The pickup is not one of the bars counted.
+    doc = {"version": 1, "title": title,
+           "total_bars": max((sum(b["number"] != PICKUP_BAR for b in p["bars"]) for p in parts), default=0),
            "free_regions": [], "parts": parts}
     if composition and parts:
         doc["free_regions"] = _free_regions(composition, measure_starts, parts[0])
     return doc
 
 
-def _read_note(el, start, dur, divisions, time, part, tuplet_count):
+def _lead_in(m, divisions: int, time: dict) -> int:
+    """What a pickup measure lacks of a full bar, in divisions: 0 when it is a full bar or empty."""
+    offset = length = 0
+    for el in m:
+        if el.tag == "attributes":
+            divisions = _int(el.find("divisions"), divisions)
+            if el.find("time") is not None:
+                time = {"beats": _int(el.find("time/beats"), 4), "beat_type": _int(el.find("time/beat-type"), 4)}
+        elif el.tag == "backup":
+            offset -= _int(el.find("duration"))
+        elif el.tag == "forward" or (el.tag == "note" and el.find("chord") is None and el.find("grace") is None):
+            offset += _int(el.find("duration"))
+            length = max(length, offset)
+    full = divisions * 4 * time["beats"] // time["beat_type"] if time["beat_type"] > 0 else 0
+    return full - length if 0 < length < full else 0
+
+
+def _read_note(el, start, dur, divisions, time, part, tuplet_count, lead=0):
+    """`lead`: the divisions a pickup lacks of a full bar; `pos` counts from where that bar would start."""
     ev = {"kind": "note", "tick": start * TICKS_PER_QUARTER // divisions, "dur_ticks": dur * TICKS_PER_QUARTER // divisions,
-          "pos": position(start, divisions, time), "type": el.findtext("type"), "dots": len(el.findall("dot")),
+          "pos": position(start + lead, divisions, time), "type": el.findtext("type"), "dots": len(el.findall("dot")),
           "tuplet": None, "tie": None, "articulations": [], "dynamic": None, "confidence": None, "sources": [],
           "checked": False, "time_s": None, "performed_s": None}
     rest = el.find("rest")

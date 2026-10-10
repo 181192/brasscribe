@@ -81,6 +81,7 @@ location     := [bar_part ", "] position                      (standard, full)
               | bar_part                                      (body is bar_rest, one bar)
               | "bars " A " to " B                            (body is bar_rest over several bars; nb "takt A til B")
 bar_part     := "bar " N [" of " TOTAL] {", " bar_change}    (" of TOTAL" in full only; nb "takt N av TOTAL")
+              | "pickup" {", " bar_change}                    (the pickup, §4.10; nb "opptakt")
 position     := beat_position | time_position                 (time_position inside ad lib, §4.8)
 body         := note | held | rest | bar_rest | chord | unpitched
 note         := pitch ", " duration                           (standard, full)
@@ -226,6 +227,16 @@ In a region from `Composition.free_regions[]`:
 - After a part change, `bar_part` is always included, **with the new part's current key** as a `bar_change`, and its time signature if it differs from the previous part's. The key is included even when it doesn't change at this bar. Brass-band parts have different key signatures (the E♭ horns have 3 sharps where the B♭ cornets have 2), so a player moving between parts needs to hear it. Example: "Solo Horn. bar 12, key 3 sharps, beat 1: C-sharp 5, quarter note".
 - nb part names use the table in §7.
 
+### 4.10 Pickup
+
+A pickup (anacrusis) is the incomplete bar before bar 1. In the data it is the bar with `number` 0 (§6). It is named, never numbered:
+
+- **Bar:** en "pickup" / nb "opptakt" wherever a bar is named: in `bar_part` ("pickup, beat 4 and: A 4, eighth note" / "opptakt, slag 4-og: A 4, åttendedelsnote"), in `held` ("from pickup beat 4 and" / "fra opptakt slag 4-og") and in the ad lib range ("pickup to bar 4" / "opptakt til takt 4"; "pickup" alone when the region ends there).
+- **Not counted:** the pickup is not one of the bars. It never says " of TOTAL", and TOTAL counts the numbered bars only.
+- **Position:** its notes are on the beats they fall on in the bar they lead into. One eighth before bar 1 in 4/4 is "beat 4 and", in 6/8 "beat 2, eighth 3", never "beat 1".
+- **Rest:** a part that rests through the pickup says "pickup: rest" / "opptakt: pause". When the bars after it rest too, the pickup is named and the bars are counted without it: "pickup and bar 1: rest" / "opptakt og takt 1: pause"; "pickup and bars 1 to 3: rest, 3 bars" / "opptakt og takt 1 til 3: pause, 3 takter". For this `bar-rest` event, `bars` still counts the pickup (4 in the last example).
+- **Headings** in the text export: "Pickup" / "Opptakt"; over a run of rests "Pickup and bar 1" / "Opptakt og takt 1", "Pickup and bars 1–3" / "Opptakt og takt 1–3".
+
 ## 5. Navigation
 
 The same commands on every platform. The apps map them to native gestures.
@@ -306,6 +317,7 @@ The same commands on every platform. The apps map them to native gestures.
 - `tie`: `{"start": bool, "stop": bool, "next": {"bar", "type", "dots"}, "chain_beats": number|null}`.
 - `tuplet`: `{"actual": 3, "normal": 2, "index": 2}`.
 - `pos` is exact (rational), never a float. In compound time it also has `"compound": true` (§4.1); `held_from` copies it.
+- A pickup (§4.10) is a bar with `"number": 0`: the first measure of the MusicXML when it is numbered 0 or left out of the numbering (`implicit="yes"`). Its `pos` counts from where the full bar would start, so the last eighth of a 4/4 bar is `{"beat": 4, "num": 1, "den": 2}`; its `tick` still counts from its own first note. `total_bars` does not count it.
 - The text export ("talking-score text", one of Play's export formats) renders this structure as:
   - one heading per part
   - a sub-heading per bar
@@ -345,6 +357,10 @@ The same commands on every platform. The apps map them to native gestures.
 | compound-eighth | beat 2, eighth 2: D 5, eighth note | slag 2, 2. åttendedel: D 5, åttendedelsnote |
 | compound-sixteenth | beat 1, sixteenth 4: E 5, sixteenth note | slag 1, 4. sekstendedel: E 5, sekstendedelsnote |
 | very-uncertain-and-dynamic-and-articulation | beat 4: A 5, quarter note, accent, fortissimo, very uncertain | slag 4: A 5, fjerdedelsnote, aksent, fortissimo, svært usikker |
+| pickup-note | pickup, beat 4 and: A 4, eighth note | opptakt, slag 4-og: A 4, åttendedelsnote |
+| pickup-compound-time | pickup, beat 2, eighth 3: A 4, eighth note | opptakt, slag 2, 3. åttendedel: A 4, åttendedelsnote |
+| pickup-and-multi-bar-rest | pickup and bars 1 to 3: rest, 3 bars | opptakt og takt 1 til 3: pause, 3 takter |
+| held-from-pickup | bar 1, beat 1: A 4 held, from pickup beat 4 and | takt 1, slag 1: A 4 holdes, fra opptakt slag 4-og |
 | adlib-region-entry | Ad lib, free time, bars 1 to 4, about 32 seconds. bar 1, at 0 seconds: D 4, eighth note | Ad lib, fritt tempo, takt 1 til 4, omtrent 32 sekunder. takt 1, ved 0 sekunder: D 4, åttendedelsnote |
 | adlib-inside-held | at 22 seconds: D 5, half note, held about 2.5 seconds | ved 22 sekunder: D 5, halvnote, holdes omtrent 2,5 sekunder |
 | adlib-exit-a-tempo | A tempo, 136 beats per minute. bar 5, beat 1 and: D 4, sixteenth note | A tempo, 136 slag per minutt. takt 5, slag 1-og: D 4, sekstendedelsnote |

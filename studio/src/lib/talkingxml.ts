@@ -1,7 +1,7 @@
 // Builds the talking-score structure (spec §6) from MusicXML, so any score
 // Studio shows can be navigated and announced. Confidence is not in MusicXML;
 // notes the engine coloured are marked `uncertain`.
-import type { Pitch, Pos, TsBar, TsEvent, TsPart } from "./talking";
+import { PICKUP_BAR, type Pitch, type Pos, type TsBar, type TsEvent, type TsPart } from "./talking";
 
 export interface NavEvent extends TsEvent {
   bar: number; // index into part.bars
@@ -15,6 +15,8 @@ export interface NavBar extends TsBar {
   index: number;
   startTick: number;
   endTick: number;
+  /** A pickup: the ticks it lacks of a full bar. Its beats count from that far before `startTick`. */
+  lead?: number;
   events: NavEvent[];
 }
 
@@ -118,7 +120,15 @@ export function buildTalkingScore(xml: string): TalkingScore {
     let tupletIndex = 0;
     const measures = Array.from(p.children).filter((c) => c.nodeName === "measure");
     measures.forEach((m, index) => {
-      const number = Number(m.getAttribute("number")) || index + 1;
+      const printed = parseInt(m.getAttribute("number") ?? "", 10);
+      let number = Number.isNaN(printed) ? index + 1 : printed;
+      // A pickup: the first measure, numbered 0 or left out of the numbering. Its notes are placed on the
+      // beats they fall on in the bar they lead into.
+      let lead = 0; // divisions the pickup lacks of a full bar
+      if (index === 0 && (number === PICKUP_BAR || m.getAttribute("implicit") === "yes")) {
+        number = PICKUP_BAR;
+        lead = leadIn(m, divisions, beats, beatType);
+      }
       const bar: NavBar = { index, number, events: [], startTick: barStart, endTick: barStart };
       let pos = 0;
       let lastOnset = 0;
@@ -193,8 +203,8 @@ export function buildTalkingScore(xml: string): TalkingScore {
           }
           const compound = beatType === 8 && beats % 3 === 0 && beats > 3;
           const beatDiv = (divisions * 4) / beatType * (compound ? 3 : 1);
-          const beatIdx = Math.floor(onset / beatDiv) + 1;
-          const off = onset - (beatIdx - 1) * beatDiv;
+          const beatIdx = Math.floor((onset + lead) / beatDiv) + 1;
+          const off = onset + lead - (beatIdx - 1) * beatDiv;
           const g = gcd(Math.round(off * 1000), Math.round(beatDiv * 1000)) || 1;
           const pos_: Pos = off === 0 ? { beat: beatIdx, num: 0, den: 1 } : { beat: beatIdx, num: Math.round(off * 1000) / g, den: Math.round(beatDiv * 1000) / g };
           if (compound) pos_.compound = true;
@@ -251,6 +261,7 @@ export function buildTalkingScore(xml: string): TalkingScore {
       const nominal = Math.round(((beats * 4) / beatType) * TPQ);
       const len = Math.max(nominal, Math.round((maxPos / divisions) * TPQ));
       bar.endTick = barStart + len;
+      if (lead) bar.lead = Math.round((lead / divisions) * TPQ);
       barStart += len;
       // A bar of only rests, in the voice we read, counts as a bar rest.
       if (bar.events.length && bar.events.every((e) => e.kind === "rest" || e.kind === "bar-rest") && bar.events.some((e) => e.kind === "bar-rest")) {
@@ -260,10 +271,34 @@ export function buildTalkingScore(xml: string): TalkingScore {
     });
     linkTies(part);
     collapseRests(part);
-    total = Math.max(total, part.bars.length);
+    total = Math.max(total, part.bars.filter((b) => b.number !== PICKUP_BAR).length); // the pickup is not counted
     parts.push(part);
   }
   return { title, total_bars: total, parts };
+}
+
+/** What a pickup measure lacks of a full bar, in divisions: 0 when it is a full bar or empty. */
+function leadIn(m: Element, divisions: number, beats: number, beatType: number): number {
+  let pos = 0;
+  let length = 0;
+  for (const el of Array.from(m.children)) {
+    if (el.nodeName === "attributes") {
+      divisions = Number(text(el, "divisions")) || divisions;
+      const b = text(el, "time > beats");
+      const bt = text(el, "time > beat-type");
+      if (b && bt) {
+        beats = Number(b);
+        beatType = Number(bt);
+      }
+    } else if (el.nodeName === "backup") {
+      pos -= Number(text(el, "duration") ?? 0);
+    } else if (el.nodeName === "forward" || (el.nodeName === "note" && !child(el, "chord") && !child(el, "grace"))) {
+      pos += Number(text(el, "duration") ?? 0);
+      length = Math.max(length, pos);
+    }
+  }
+  const full = beatType > 0 ? Math.floor((divisions * 4 * beats) / beatType) : 0;
+  return length > 0 && length < full ? full - length : 0;
 }
 
 function midiOf(p: Pitch): number {

@@ -218,9 +218,19 @@ function timeWords(t: { beats: number; beat_type: number }, lang: Lang): string 
   return `${t.beats} ${nb[t.beat_type] ?? `${t.beat_type}-dels`} takt`;
 }
 
+/** The number of a pickup (anacrusis): spoken as "pickup", never as a bar number (spec §4.10). */
+export const PICKUP_BAR = 0;
+
+const pickupWord = (lang: Lang) => (lang === "nb" ? "opptakt" : "pickup");
+
+/** "bar 12" / "takt 12"; the pickup by its name. */
+function barWord(n: number, lang: Lang): string {
+  return n === PICKUP_BAR ? pickupWord(lang) : `${lang === "nb" ? "takt" : "bar"} ${n}`;
+}
+
 function barPart(bar: TsBar, lang: Lang, full: boolean, total: number | undefined, partChanged: boolean, skipTempo: boolean): string {
-  let s = `${lang === "nb" ? "takt" : "bar"} ${bar.number}`;
-  if (full && total) s += ` ${lang === "nb" ? "av" : "of"} ${total}`;
+  let s = barWord(bar.number, lang);
+  if (full && total && bar.number !== PICKUP_BAR) s += ` ${lang === "nb" ? "av" : "of"} ${total}`;
   const changes: string[] = [];
   if ((bar.key_change || partChanged) && bar.key_fifths !== undefined) changes.push(keyWords(bar.key_fifths, lang));
   if (bar.time_change && bar.time) changes.push(timeWords(bar.time, lang));
@@ -328,9 +338,12 @@ export function announce(r: Request, lang: Lang): string {
   if (bar?.free_region?.entering) {
     const fr = bar.free_region;
     const secs = round(fr.end_s - fr.start_s);
-    sentences.push(lang === "nb"
-      ? `Ad lib, fritt tempo, takt ${fr.start_bar} til ${fr.end_bar}, omtrent ${secs} sekunder.`
-      : `Ad lib, free time, bars ${fr.start_bar} to ${fr.end_bar}, about ${secs} seconds.`);
+    const bars = fr.start_bar !== PICKUP_BAR
+      ? (lang === "nb" ? `takt ${fr.start_bar} til ${fr.end_bar}` : `bars ${fr.start_bar} to ${fr.end_bar}`)
+      : fr.end_bar === PICKUP_BAR
+        ? pickupWord(lang)
+        : (lang === "nb" ? `opptakt til takt ${fr.end_bar}` : `pickup to bar ${fr.end_bar}`);
+    sentences.push(lang === "nb" ? `Ad lib, fritt tempo, ${bars}, omtrent ${secs} sekunder.` : `Ad lib, free time, ${bars}, about ${secs} seconds.`);
   }
   if (bar?.a_tempo && bar.tempo_bpm) {
     sentences.push(lang === "nb" ? `A tempo, ${bar.tempo_bpm} slag per minutt.` : `A tempo, ${bar.tempo_bpm} beats per minute.`);
@@ -345,7 +358,15 @@ export function announce(r: Request, lang: Lang): string {
   let body: string;
   if (e.kind === "bar-rest") {
     const n = e.bars ?? 1;
-    if (n > 1 && bar) {
+    if (bar?.number === PICKUP_BAR) {
+      // The pickup is named, and is not one of the bars counted.
+      const after = n - 1;
+      const and = lang === "nb" ? "og" : "and";
+      const restBars = lang === "nb" ? `pause, ${after} takter` : `rest, ${after} bars`;
+      location = after <= 0 ? barText
+        : `${pickupWord(lang)} ${and} ${after === 1 ? barWord(1, lang) : lang === "nb" ? `takt 1 til ${after}` : `bars 1 to ${after}`}`;
+      body = after > 1 ? restBars : lang === "nb" ? "pause" : "rest";
+    } else if (n > 1 && bar) {
       location = lang === "nb" ? `takt ${bar.number} til ${bar.number + n - 1}` : `bars ${bar.number} to ${bar.number + n - 1}`;
       body = lang === "nb" ? `pause, ${n} takter` : `rest, ${n} bars`;
     } else {
@@ -378,7 +399,7 @@ export function announce(r: Request, lang: Lang): string {
     case "held": {
       const hf = e.held_from;
       const from = hf
-        ? `${lang === "nb" ? "fra" : "from"} ${hf.bar !== bar?.number ? `${lang === "nb" ? "takt" : "bar"} ${hf.bar} ` : ""}${position(hf, lang)}`
+        ? `${lang === "nb" ? "fra" : "from"} ${hf.bar !== bar?.number ? `${barWord(hf.bar, lang)} ` : ""}${position(hf, lang)}`
         : "";
       body = `${pitchOf(e.written, e.concert)} ${lang === "nb" ? "holdes" : "held"}${from ? `, ${from}` : ""}`;
       break;

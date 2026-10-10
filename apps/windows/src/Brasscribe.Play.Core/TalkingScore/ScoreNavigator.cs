@@ -93,10 +93,12 @@ public sealed class ScoreNavigator
     private NavigationResult StepBeat(int dir)
     {
         int beatTicks = BeatTicks(Bar.Time);
-        int beat = TickInBar / beatTicks + dir;
+        int lead = LeadTicks(Bar);
+        int at = TickInBar + lead; // a pickup's beats count from where its full bar would start
+        int beat = at / beatTicks + dir;
         int b = BarIndex;
-        if (TickInBar % beatTicks != 0 && dir < 0) beat++; // from an off-beat, "previous" is this beat
-        if (beat < 0)
+        if (at % beatTicks != 0 && dir < 0) beat++; // from an off-beat, "previous" is this beat
+        if (beat < 0 || (dir < 0 && beat * beatTicks < lead))
         {
             if (--b < 0) return Stay(StartOfPart);
             beat = BarBeats(Part.Bars[b]) - 1;
@@ -106,7 +108,9 @@ public sealed class ScoreNavigator
             if (++b >= Part.Bars.Count) return Stay(EndOfPart);
             beat = 0;
         }
-        return GoToTick(PartIndex, b, beat * BeatTicks(Part.Bars[b].Time), byBar: false);
+        // A pickup that starts inside its last beat: its first note.
+        int tick = Math.Max(0, beat * BeatTicks(Part.Bars[b].Time) - LeadTicks(Part.Bars[b]));
+        return GoToTick(PartIndex, b, tick, byBar: false);
     }
 
     // ---- bars ----
@@ -286,7 +290,7 @@ public sealed class ScoreNavigator
         }
         var src = bar.Events[covering];
         EventIndex = covering;
-        var pos = MusicXmlTalkingScoreBuilder.Position(tick, MusicXmlTalkingScoreBuilder.TicksPerQuarter, bar.Time);
+        var pos = MusicXmlTalkingScoreBuilder.Position(tick + LeadTicks(bar), MusicXmlTalkingScoreBuilder.TicksPerQuarter, bar.Time);
         if (src.Kind is EventKind.Note or EventKind.Chord || IsTieContinuation(src))
         {
             var (headBar, head) = TieHead(p, b, covering);
@@ -387,6 +391,19 @@ public sealed class ScoreNavigator
     {
         bool compound = time.BeatType == 8 && time.Beats % 3 == 0 && time.Beats > 3;
         return MusicXmlTalkingScoreBuilder.TicksPerQuarter * 4 / time.BeatType * (compound ? 3 : 1);
+    }
+
+    /// <summary>
+    /// The ticks a pickup lacks of a full bar, read from where its first event is placed: its positions count from
+    /// where the full bar would start, its ticks from its own first note. 0 for every other bar.
+    /// </summary>
+    internal static int LeadTicks(TsBar bar)
+    {
+        if (bar.Number != Announcer.PickupBar) return 0;
+        var first = bar.Events.FirstOrDefault(e => e.Pos is not null && e.Kind != EventKind.BarRest);
+        if (first?.Pos is not { } p) return 0;
+        int beatTicks = BeatTicks(bar.Time);
+        return Math.Max(0, (p.Beat - 1) * beatTicks + (p.Den > 0 ? beatTicks * p.Num / p.Den : 0) - first.Tick);
     }
 
     private static int BarBeats(TsBar bar)

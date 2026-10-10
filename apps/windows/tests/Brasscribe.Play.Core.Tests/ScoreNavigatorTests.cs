@@ -1,3 +1,4 @@
+using Brasscribe.Play.Core.Export;
 using Brasscribe.Play.Core.Scores;
 using Brasscribe.Play.Core.TalkingScore;
 
@@ -170,5 +171,56 @@ public class ScoreNavigatorTests
         Assert.Equal(new TsPos(1, Compound: true), bars[0].Events[0].Pos);
         Assert.Equal(EventKind.BarRest, bars[2].Events[0].Kind);
         Assert.Equal(new TsPos(1, Compound: true), bars[2].Events[0].Pos);
+    }
+
+    private const string Pickup = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <score-partwise version="4.0"><work><work-title>Pickup</work-title></work>
+        <part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part><score-part id="P2"><part-name>2nd Horn</part-name></score-part></part-list>
+        <part id="P1">
+        <measure number="0" implicit="yes"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+        <note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>eighth</type></note>
+        <note><pitch><step>A</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type><tie type="start"/></note></measure>
+        <measure number="1"><note><pitch><step>A</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type><tie type="stop"/></note></measure>
+        <measure number="2"><note><pitch><step>C</step><octave>5</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+        </part>
+        <part id="P2">
+        <measure number="0" implicit="yes"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+        <note><rest measure="yes"/><duration>3</duration><voice>1</voice></note></measure>
+        <measure number="1"><note><rest measure="yes"/><duration>8</duration><voice>1</voice></note></measure>
+        <measure number="2"><note><pitch><step>C</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>whole</type></note></measure>
+        </part></score-partwise>
+        """;
+
+    [Fact]
+    public void A_pickup_is_named_and_its_notes_sit_on_the_beats_of_the_bar_they_lead_into()
+    {
+        var doc = MusicXmlTalkingScoreBuilder.Build(Pickup, nameNb: FixtureNb);
+        Assert.Equal(2, doc.TotalBars); // the pickup is not one of the bars counted
+        var pickup = doc.Parts[0].Bars[0];
+        Assert.Equal(0, pickup.Number);
+        Assert.Equal([0, MusicXmlTalkingScoreBuilder.TicksPerQuarter / 2], pickup.Events.Select(e => e.Tick));
+        Assert.Equal([new TsPos(3, 1, 2), new TsPos(4)], pickup.Events.Select(e => e.Pos));
+
+        var nav = new ScoreNavigator(doc);
+        Assert.Equal("pickup, beat 3 and: G 4, eighth note", nav.Text);
+        Assert.Equal("beat 4: A 4, quarter note, tied to whole note in bar 1", nav.NextNote().Text);
+        // By beat: the pickup's beats are those of the bar it leads into.
+        Assert.Equal("bar 1, beat 1: A 4 held, from pickup beat 4", nav.NextBeat().Text);
+        Assert.Equal("pickup, beat 4: A 4, quarter note, tied to whole note in bar 1", nav.PreviousBeat().Text);
+        Assert.False(nav.PreviousBeat().Moved); // beat 3 is before the pickup starts
+        Assert.Equal("bar 2, beat 1: C 5, whole note", nav.NextNote().Text);
+
+        var text = TalkingScoreExport.ToText(doc, new TalkingScoreSettings());
+        Assert.Contains("Pickup\n  pickup, beat 3 and: G 4, eighth note\n", text);
+        Assert.Contains("Pickup and bar 1\n  pickup and bar 1: rest\n", text);
+        Assert.DoesNotContain("ar 0", text);
+        var nb = TalkingScoreExport.ToText(doc, new TalkingScoreSettings("nb"));
+        Assert.Contains("Opptakt\n  opptakt, slag 3-og: G 4, åttendedelsnote\n", nb);
+        Assert.Contains("Opptakt og takt 1\n  opptakt og takt 1: pause\n", nb);
+
+        // A first measure left out of the numbering is the pickup too.
+        var unnumbered = MusicXmlTalkingScoreBuilder.Build(Pickup.Replace("number=\"0\" implicit=\"yes\"", "number=\"X1\" implicit=\"yes\""), nameNb: FixtureNb);
+        Assert.Equal(0, unnumbered.Parts[0].Bars[0].Number);
     }
 }
