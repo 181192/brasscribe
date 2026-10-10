@@ -323,6 +323,22 @@ def test_a_token_read_by_roles_with_different_system_colours_has_to_say_its_own(
             r"no system colour \(windows\) for 'brand-text'.*the neutral roles that read it have different ones")
 
 
+def test_every_variable_the_web_clients_read_is_declared():
+    # A style that reads a variable the style sheet does not declare fails silently, so a name that no
+    # longer exists (a brand-named copy of a neutral role) is caught here.
+    import re
+    declared = set(re.findall(r"(--[\w-]+):", (build.DIST / "web" / "brasscribe.css").read_text()))
+    read, checked = {}, 0
+    for folder in ("studio/src", "studio/browser", "site", "design/mockups"):
+        for path in (build.ROOT / folder).rglob("*"):
+            if path.suffix in (".css", ".ts", ".js", ".mjs", ".html") and "_site" not in path.parts and "node_modules" not in path.parts:
+                checked += 1
+                for name in re.findall(r"--(?:bc|scribe)-[a-z0-9]+(?:-[a-z0-9]+)*", path.read_text()):
+                    if name not in declared:
+                        read.setdefault(name, path.relative_to(build.ROOT).as_posix())
+    assert checked > 50 and not read, read
+
+
 def test_pink_follows_into_the_neutral_names_on_windows():
     # The Pink dictionary is merged after the theme, so it carries the neutral keys with Pink's values.
     xaml = (build.DIST / "windows" / "BrasscribePinkTheme.xaml").read_text()
