@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Builds Brasscribe Play for iPhone and iPad as an unsigned IPA: a Release archive for iOS devices with
 # code signing off, packed as Payload/<app>.app. There is no Apple Developer account behind the project,
-# so a tester signs the file with their own Apple account (a sideloading tool, or Xcode) to install it.
+# so a tester signs the file with their own Apple account, using a sideloading tool, to install it.
+# (Xcode does not sign an existing IPA: with Xcode one builds the app from the source instead.)
 #
-# Usage: scripts/make-ipa.sh [out.ipa]     (default build/brasscribe-play-ios-unsigned.ipa)
+# Usage: scripts/make-ipa.sh [out.ipa]     (default build/brasscribe-play-ios-unsigned.ipa here in apps/apple;
+#                                          a relative path is taken from the directory it is run in)
 # Needs what `make project` needs (Verovio and the core with their iOS device slices), and the phone
 # band SoundFont in data/sounds/band unless IPA_ALLOW_NO_BAND_SOUNDS=1 (a local try-out; never a release).
 #
@@ -12,10 +14,10 @@
 # simulator), and no signature or provisioning profile left inside.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$HERE"
-export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 OUT="${1:-$HERE/build/brasscribe-play-ios-unsigned.ipa}"
 case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
+cd "$HERE"
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 WORK="$HERE/build/ipa"
 fail() { echo "error: $*" >&2; exit 1; }
 

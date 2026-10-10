@@ -475,9 +475,9 @@ jobs:
 
 
   # Play for iPhone and iPad as a test build. There is no Apple Developer account, so the app is archived
-  # for devices with signing off and packed unsigned: a tester signs it with their own Apple account
-  # (a sideloading tool, or Xcode) to put it on their device. The app asks for no entitlements, so a free
-  # account can sign it. scripts/make-ipa.sh builds it and checks the file (iPhone and iPad, arm64 for
+  # for devices with signing off and packed unsigned: a tester signs it with their own Apple account,
+  # using a sideloading tool, to put it on their device (Xcode does not sign an existing IPA; with Xcode
+  # one builds from the source). The app asks for no entitlements, so a free account can sign it. scripts/make-ipa.sh builds it and checks the file (iPhone and iPad, arm64 for
   # devices and not the simulator, nothing signed left inside, the band sounds).
   ios:
     name: release build for iPhone and iPad (unsigned)

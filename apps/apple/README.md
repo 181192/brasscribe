@@ -31,10 +31,14 @@ both), built for devices and not signed. The project has no Apple Developer acco
 the app for others, and an iPhone or iPad does not install an unsigned app. A tester signs it with their
 own Apple Account; a free one is enough.
 
-- **Sign and install.** Use a sideloading tool on a computer, or Xcode on a Mac. It signs the file with
-  your Apple Account and puts the app on the device. The first time, the device asks you to turn on
-  Developer Mode (Settings › Privacy & Security) and to trust your account under Settings › General ›
-  VPN & Device Management.
+- **Sign and install.** Use a sideloading tool on a computer: it signs the file with your Apple Account
+  and puts the app on the device. Xcode does not sign an existing `.ipa`; with Xcode you build the app
+  from this source with your own team instead ([Build](#build)). The first time, the device asks you to
+  turn on Developer Mode (Settings › Privacy & Security) and to trust your account under Settings ›
+  General › VPN & Device Management.
+- **Scores come from the computer at first.** The on-device models are not in the app, and the address
+  they download from is empty until someone types it in (Settings › On this device › Details for the
+  band's tech person › Download address). Until then the app makes its scores through the paired computer.
 - **Seven days.** A signature from a free Apple Account lasts 7 days; after that the app does not open
   until it is signed again. Signed with the same account and the same tool it is the same app, so its
   scores, settings and paired computer stay. Another account or tool gives the app another bundle id:
@@ -55,7 +59,8 @@ The paired computer is kept in the Keychain without an access group, so it lands
 signature gives the app. Scores are in the app's own Application Support folder and settings in its own
 defaults, and nothing reads the bundle id. Finding the computer on the local network, the `brasscribe:`
 pairing address, the microphone, the camera and playing in the background are declared in `Info.plist`
-alone. The on-device models are not in the app; they download on demand.
+alone. The on-device models are not in the app: they download only once a download address is set in
+Settings (see "Offline solos" below).
 
 The macOS UI tests run only in a headless macOS VM, never on your desktop: see [docs/dev/macos-vm.md](../../docs/dev/macos-vm.md).
 
