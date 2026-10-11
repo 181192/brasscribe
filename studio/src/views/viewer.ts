@@ -51,7 +51,7 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
   /** The file could not be read or drawn: what the reader can do, and the player put away. */
   const failed = (name: string, e: unknown, retry: () => void) => {
     showPlayer(false);
-    clear(notice, errorNotice(e, { retry, title: t("viewer.unreadable", { name }), body: t("viewer.unreadableBody") }));
+    clear(notice, errorNotice(e, { retry, title: t("viewer.unreadable", { name }), body: t("viewer.unreadableBody"), refusedBody: t("viewer.refusedBody") }));
     status.textContent = t("viewer.failed", { name });
   };
 

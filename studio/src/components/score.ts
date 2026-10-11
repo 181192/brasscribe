@@ -573,10 +573,13 @@ export class ScoreElement extends HTMLElement {
       if (!part) return;
       const byBar = new Map<number, number[]>();
       part.notes.forEach((n, i) => (byBar.get(n.barIndex) ?? byBar.set(n.barIndex, []).get(n.barIndex)!).push(i));
+      // The "?" words directions are drawn by drawMarks() in the note colour, not as plain text
+      // (with tablature under notation they are written over the tablature staff).
+      for (const st of track.staves)
+        for (const bar of st.bars)
+          for (const v of bar.voices) for (const b of v.beats) if (b.text?.trim() === "?") b.text = null;
       const staff = track.staves[0];
       staff?.bars.forEach((bar, bi) => {
-        // The "?" words directions are drawn by drawMarks() in the note colour, not as plain text.
-        for (const v of bar.voices) for (const b of v.beats) if (b.text?.trim() === "?") b.text = null;
         const idx = byBar.get(bi);
         if (!idx) return;
         const notes = bar.voices.flatMap((v) => v.beats.flatMap((b) => b.notes));

@@ -64,6 +64,8 @@ export interface NoticeOptions {
    */
   title?: string;
   body?: string;
+  /** What the reader can do when the engine turned the request down; the engine's own words then go under "Details". */
+  refusedBody?: string;
 }
 
 /**
@@ -95,7 +97,8 @@ export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement
     body = [t("err.serverBody", { status: err.status }), err.message ? h("span", { class: "mono small detail" }, err.message) : null];
   } else if (err instanceof ApiError) {
     title = err.status === 404 ? t("err.notFound") : t("err.refused");
-    body = [err.message];
+    body = [opts.refusedBody ?? err.message];
+    if (opts.refusedBody) detail = err.message;
   } else {
     title = opts.title ?? t("err.other");
     body = [opts.body ?? t("err.otherBody")];

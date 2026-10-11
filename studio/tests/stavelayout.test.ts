@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -56,15 +56,22 @@ describe("a tab in the MusicXML reader", () => {
     expect(parseMusicXml(read("old-hundredth/brass-band.musicxml")).parts.every((p) => !p.tab)).toBe(true);
   });
 
-  it("counts each note once when the tablature sits under a notation staff", () => {
-    const probe = "tab-probes/chords";
-    const notes = (file: string) => parseMusicXml(read(`${probe}/${file}`)).parts[0].notes;
+  // Each probe is one tab written three ways. With tablature under notation every note is written
+  // twice and the "?" of an uncertain note once, over the tablature.
+  const probes = readdirSync(join(fixtures, "tab-probes"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
+  it.each(probes)("reads the same notes and uncertain marks from %s as notation, as tablature and as both", (probe) => {
+    const notes = (file: string) => parseMusicXml(read(`tab-probes/${probe}/${file}`)).parts[0].notes.map((n) => [n.barIndex, n.onset, n.written, n.color, n.level]);
     const alone = notes("notation.musicxml");
-    const both = notes("tab-and-notation.musicxml");
     expect(alone.length).toBeGreaterThan(0);
-    expect(both.map((n) => [n.barIndex, n.onset, n.written, n.color])).toEqual(alone.map((n) => [n.barIndex, n.onset, n.written, n.color]));
-    // The uncertain notes keep their mark (the colour is on both staves; the "?" word is over the tablature).
-    expect(both.filter((n) => n.level).length).toBe(both.filter((n) => n.color).length);
-    expect(notes("tab.musicxml")).toHaveLength(alone.length);
+    expect(notes("tab-and-notation.musicxml")).toEqual(alone);
+    // The tablature alone leaves out a note that has no place on the fretboard (no-place-in-a-chord).
+    const tab = notes("tab.musicxml");
+    expect(alone).toEqual(expect.arrayContaining(tab));
+    if (probe !== "no-place-in-a-chord") expect(tab).toHaveLength(alone.length);
+  });
+
+  it("has uncertain notes in the probes, so the comparison above checks their marks", () => {
+    const levels = probes.flatMap((probe) => parseMusicXml(read(`tab-probes/${probe}/tab-and-notation.musicxml`)).parts[0].notes.map((n) => n.level));
+    expect(levels.filter(Boolean).length).toBeGreaterThan(0);
   });
 });

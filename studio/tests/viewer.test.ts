@@ -38,6 +38,10 @@ describe("which scores a viewer link may open", () => {
     viewerView(root, new URLSearchParams({ src: "/v1/jobs/gone/musicxml", name: "Gone" }));
     await vi.waitFor(() => expect(root.querySelector(".notice-error")).not.toBeNull());
     expect(root.querySelector("#viewer-status")?.textContent).toBe("Could not open Gone.");
+    // What the reader can do, in the page's words; the engine's own under Details.
+    const notice = root.querySelector(".notice-error")!;
+    expect(notice.querySelector(":scope > p:not(.notice-title)")?.textContent).toContain("Open the run from Runs");
+    expect(notice.querySelector("details")?.textContent).toContain("no such run");
     expect(root.querySelector("bs-score")).not.toBeNull();
     expect(root.querySelector("#open-musicxml")).not.toBeNull();
   });

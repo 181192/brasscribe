@@ -369,6 +369,18 @@
   "type": "application/vnd.recordare.musicxml+xml",
   "file": "../../../../apps/fixtures/guitar-line/tab.musicxml"
  },
+ "/v1/jobs/guitar-line/roundtrip": {
+  "status": 200,
+  "body": {
+   "status": "not_run",
+   "musescore": null,
+   "parts": null,
+   "notes_in": null,
+   "notes_out": null,
+   "detail": null,
+   "part_results": []
+  }
+ },
  "/v1/jobs/guitar-line/stages": {
   "status": 200,
   "body": [

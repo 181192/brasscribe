@@ -67,6 +67,8 @@ export const VIEWS: View[] = [
   { name: "run-manifest", route: `${run}/manifest` },
   // A tab run: the run view links its tab to the viewer.
   { name: "run-tab", route: "runs/guitar-line/score", ready: async (p) => { await expect(p.locator("#main .empty a.button")).toBeVisible(); } },
+  // Its MusicXML view, where the link to the viewer also is: the part table, and no comparison with a band reference.
+  { name: "run-tab-musicxml", route: "runs/guitar-line/musicxml", ready: async (p) => { await expect(p.locator("#main a[href^='#/viewer?src=']")).toBeVisible(); } },
   { name: "run-failed", route: "runs/old-hundredth-failed", ready: async (p) => { await expect(p.locator(".notice-error").first()).toBeVisible(); } },
   { name: "viewer", route: "viewer" },
   { name: "viewer-score", route: "viewer?example=old-hundredth", ready: scoreRendered("#main bs-score") },

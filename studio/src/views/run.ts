@@ -597,7 +597,9 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   const rt = h("section", { "aria-labelledby": "rt-h" }, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading());
   const parts = h("section", { "aria-labelledby": "parts-h" }, h("h3", { id: "parts-h" }, t("mx.partsTitle")), loading());
   const golden = h("section", { "aria-labelledby": "gold-h" }, h("h3", { id: "gold-h" }, t("mx.reference")), loading());
-  clear(p, rt, golden, parts);
+  // The references are band scores: a tab run has nothing to be compared with among them.
+  const tab = isTabRun(ctx.job);
+  clear(p, rt, tab ? null : golden, parts);
 
   const renderRt = async (run = false) => {
     clear(rt, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading(run ? t("mx.running") : undefined));
@@ -617,7 +619,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   };
   void renderRt();
 
-  const refs = await api.references().catch((e) => e as Error);
+  const refs = tab ? [] : await api.references().catch((e) => e as Error);
   const renderGolden = async (ref: Reference) => {
     const out = h("div", {}, loading());
     const sel = h("select", { id: "gold-ref", onchange: () => { const r = (refs as Reference[]).find((x) => x.name === sel.value); if (r) void renderGolden(r); } },
@@ -636,7 +638,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
       clear(out, errorNotice(e));
     }
   };
-  if (Array.isArray(refs) && refs.length) void renderGolden(refs.find((r) => r.name.includes("mikkel")) ?? refs[0]);
+  if (tab) { /* no reference section */ } else if (Array.isArray(refs) && refs.length) void renderGolden(refs.find((r) => r.name.includes("mikkel")) ?? refs[0]);
   else clear(golden, h("h3", { id: "gold-h" }, t("mx.reference")), Array.isArray(refs) ? h("p", {}, t("mx.noRefs")) : errorNotice(refs));
 
   try {
