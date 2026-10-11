@@ -7,11 +7,11 @@
 //! element; every part names its MuseScore <instrument-sound>.
 
 use crate::arranger::{layer_of_part, Arrangement};
-use crate::model::Composition;
-use crate::quantize::QNote;
+use scribe_core::model::Composition;
+use scribe_core::quantize::QNote;
 
-pub use crate::notation::parts::split_parts;
-pub use crate::notation::score::{write_score, FreeSpan, InstrumentSpec, PartSpec, ScoreSpec, TRILL};
+pub use scribe_core::notation::parts::split_parts;
+pub use scribe_core::notation::score::{write_score, FreeSpan, InstrumentSpec, PartSpec, ScoreSpec, TRILL};
 
 /// Arrangement (concert notes per band part) -> transposing score in lineup order.
 /// Above the tempo mark when the beat grid was estimated from the onsets.
@@ -54,8 +54,8 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
         bpm: comp.bpm(),
         title: comp.title.clone(),
         pickup_ticks: 0,
-        low_confidence: crate::confidence::Model::load().mark_below(),
-        very_below: crate::confidence::Model::load().very_below(),
+        low_confidence: scribe_core::confidence::Model::load().mark_below(),
+        very_below: scribe_core::confidence::Model::load().very_below(),
         key_fifths: comp.keys.first().map(|k| k.fifths),
         sounds: band_sounds(arr),
         free_spans: comp.free_regions.iter().map(|r| FreeSpan { start: r.start, end: r.end, bpm: r.tempo_bpm, label: r.label.clone() }).collect(),

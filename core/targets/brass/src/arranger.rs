@@ -25,12 +25,12 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use crate::harmony::{harmony_slots, Slot};
+use scribe_core::harmony::{harmony_slots, Slot};
 use crate::instruments::{brass_band, minimal_band, Lineup, Part};
 
 /// Not a part name: the source harmony as chord context for the difficulty modes.
 const HARMONY_CONTEXT: &str = " harmony";
-use crate::model::{Composition, Note, VoiceRole};
+use scribe_core::model::{Composition, Note, VoiceRole};
 
 /// A rest of two beats or more starts a new phrase.
 pub const PHRASE_GAP_TICKS: i64 = 48;

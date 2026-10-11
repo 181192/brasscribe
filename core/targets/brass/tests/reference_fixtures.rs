@@ -1,11 +1,11 @@
 //! Unit-level conformance of the brass-band target: Rust functions against outputs of the Python
-//! reference (the fixtures are the shared core's, regenerated with
+//! reference on seeded synthetic inputs (regenerate with
 //! `uv run python -m scribe_conformance.fixtures` in core/conformance).
 
 use serde_json::Value;
 
 fn load(name: &str) -> Vec<Value> {
-    let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scribe-core/tests/fixtures").join(format!("{name}.json"));
+    let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures").join(format!("{name}.json"));
     serde_json::from_str::<Value>(&std::fs::read_to_string(p).unwrap()).unwrap().as_array().unwrap().clone()
 }
 
@@ -64,13 +64,13 @@ fn part_sources_match_reference() {
 }
 
 #[test]
-fn difficulty_trills_match_reference() {
+fn difficulty_matches_reference() {
     use target_brass::difficulty::apply_difficulty_opts;
     use target_brass::instruments::minimal_band;
     use scribe_core::model::Note;
     let notes = |v: &Value| -> Vec<Note> { serde_json::from_value(v.clone()).unwrap() };
-    for (i, c) in load("trills").iter().enumerate() {
-        let Some(runs) = c["difficulty"].as_array() else { continue };
+    for (i, c) in load("difficulty").iter().enumerate() {
+        let runs = c["difficulty"].as_array().unwrap();
         let parts: Vec<(String, Vec<Note>)> =
             c["parts"].as_array().unwrap().iter().map(|p| (p[0].as_str().unwrap().to_string(), notes(&p[1]))).collect();
         for r in runs {

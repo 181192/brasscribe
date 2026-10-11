@@ -12,24 +12,24 @@ use std::collections::{HashMap, HashSet};
 use serde_json::Value;
 
 use crate::arranger::Arrangement;
-use crate::beats::clean_beats_gated;
-use crate::consensus::{cluster, consensus, Sources};
-use crate::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
-use crate::dynamics::{layer_dynamics, Bar};
-use crate::energy::{gate, mono_of, Audio, Envelope, GATE_DB};
-use crate::freetime::{clip_to_regions, mark_fermatas, plan_free_time, unstable_runs, FreeTimePlan};
-use crate::harmony::{harmony_slots, slots_to_notes};
-use crate::keys::{key_plan, CHANGE_PENALTY};
-use crate::lines::{line, MIN_DUR};
-use crate::midi::{MidiFile, RawNote};
-use crate::model::{check_bar_beats, check_span, Composition, Dynamic, KeySig, Meter, Note, Section, Voice, VoiceRole, TICKS_PER_BEAT};
+use scribe_core::beats::clean_beats_gated;
+use scribe_core::consensus::{cluster, consensus, Sources};
+use scribe_core::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
+use scribe_core::dynamics::{layer_dynamics, Bar};
+use scribe_core::energy::{gate, mono_of, Audio, Envelope, GATE_DB};
+use scribe_core::freetime::{clip_to_regions, mark_fermatas, plan_free_time, unstable_runs, FreeTimePlan};
+use scribe_core::harmony::{harmony_slots, slots_to_notes};
+use scribe_core::keys::{key_plan, CHANGE_PENALTY};
+use scribe_core::lines::{line, MIN_DUR};
+use scribe_core::midi::{MidiFile, RawNote};
+use scribe_core::model::{check_bar_beats, check_span, Composition, Dynamic, KeySig, Meter, Note, Section, Voice, VoiceRole, TICKS_PER_BEAT};
 use crate::musicxml::{band_score, write_score, PartSpec, ScoreSpec};
-use crate::notation::score::write_score_with_parts;
-use crate::py;
-use crate::quantize::{choose_level, fill_gaps, quantize, quantize_coarse, quantize_with, BeatMap, QNote};
-use crate::separation::{check_stem, FAIL_DB as SEPARATION_FAIL_DB};
-use crate::spelling::key_of;
-use crate::structure::{bar_features, letters, section_starts};
+use scribe_core::notation::score::write_score_with_parts;
+use scribe_core::py;
+use scribe_core::quantize::{choose_level, fill_gaps, quantize, quantize_coarse, quantize_with, BeatMap, QNote};
+use scribe_core::separation::{check_stem, FAIL_DB as SEPARATION_FAIL_DB};
+use scribe_core::spelling::key_of;
+use scribe_core::structure::{bar_features, letters, section_starts};
 
 /// A beat table as written by the beat tracker: time in seconds and position in the bar (1 = downbeat).
 #[derive(Debug, Clone, PartialEq)]
@@ -108,7 +108,7 @@ fn check_notes(notes: &[Note]) -> Result<(), String> {
 
 /// `n` doubles `line`: the same pitch within the consensus onset tolerance of one of its notes.
 fn doubles(line: &[RawNote], n: &RawNote) -> bool {
-    line.iter().any(|m| m.pitch == n.pitch && (m.onset - n.onset).abs() <= crate::consensus::ONSET_TOL)
+    line.iter().any(|m| m.pitch == n.pitch && (m.onset - n.onset).abs() <= scribe_core::consensus::ONSET_TOL)
 }
 
 fn to_notes(qnotes: &[QNote], pickup: i64, source: &str) -> Vec<Note> {
@@ -305,7 +305,7 @@ pub const FREE_TEMPO_RANGE: (f64, f64) = (20.0, 400.0);
 
 /// Err when an option of [`arrange_layers_song`] has no meaning (an unknown lineup, difficulty,
 /// seat, clef, lead, language, kit or key, a key and a transposition together, a transposition
-/// beyond [`MAX_TRANSPOSE`](crate::model::MAX_TRANSPOSE) semitones, a free-time tempo outside
+/// beyond [`MAX_TRANSPOSE`](scribe_core::model::MAX_TRANSPOSE) semitones, a free-time tempo outside
 /// [`FREE_TEMPO_RANGE`]). Checked before anything is read, so the apps can tell a bad option
 /// from a recording that could not be arranged.
 pub fn check_layers_options(opts: &LayersOptions) -> Result<(), String> {
@@ -333,10 +333,10 @@ pub fn check_layers_options(opts: &LayersOptions) -> Result<(), String> {
     }
     if let Some(k) = &opts.key {
         // The key's syntax; the shift itself depends on the key the music turns out to be in.
-        crate::keys::semitones_to(&KeySig { tick: 0, fifths: 0, mode: "major".into() }, k)?;
+        scribe_core::keys::semitones_to(&KeySig { tick: 0, fifths: 0, mode: "major".into() }, k)?;
     }
     if let Some(t) = opts.transpose {
-        crate::model::check_transpose(t as i64)?;
+        scribe_core::model::check_transpose(t as i64)?;
     }
     if let Some(bpm) = opts.free_tempo {
         if !(FREE_TEMPO_RANGE.0..=FREE_TEMPO_RANGE.1).contains(&bpm) {
@@ -374,7 +374,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     // Under two tracked beats (a short, fast take): a grid from the onsets, and the score says so.
     let tempo_estimated = beats.times.len() < 2;
     let fallback = tempo_estimated.then(|| {
-        let (times, positions) = crate::beats::fallback_beats(&beats.times, &onsets);
+        let (times, positions) = scribe_core::beats::fallback_beats(&beats.times, &onsets);
         Beats { times, positions }
     });
     let beats = fallback.as_ref().unwrap_or(beats);
@@ -407,9 +407,9 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         // grid from the labels' periodicity and the solo's note accents, unless
         // the evidence is too weak (then the grid's own bars stay).
         let solo_notes = if solo_sw.is_empty() { layers.solo_mus.pitched() } else { solo_sw.clone() };
-        let grid_pos = crate::beats::labels_on(&times, &beats.times, &beats.positions, 0);
+        let grid_pos = scribe_core::beats::labels_on(&times, &beats.times, &beats.positions, 0);
         let grid_down: Vec<bool> = grid_pos.iter().map(|&p| p == 1).collect();
-        let m = crate::beats::solo_meter(
+        let m = scribe_core::beats::solo_meter(
             &times,
             &grid_down,
             &grid_pos,
@@ -465,9 +465,9 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     let fast_notes = difficulty == "faithful";
     // Standard and easier: a sustained alternation (a trill) the segmentation merged is one trill note (trills.rs).
     let solo_sw_f1 = if fast_notes {
-        crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp)
+        scribe_core::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp)
     } else {
-        crate::trills::with_trills(&solo_sw, &crate::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp))
+        scribe_core::trills::with_trills(&solo_sw, &scribe_core::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp))
     };
     let votes: Sources = vec![
         ("sw".into(), line(&solo_sw_f1, lo, hi, true, MIN_DUR)),
@@ -483,7 +483,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     };
     let mus_is_bp = key_set(&solo_mus) == key_set(&solo_bp);
     let separated = layers.bass_audio.is_some() || layers.drums_audio.is_some() || layers.orchestra_audio.is_some();
-    let model = crate::confidence::Model::load();
+    let model = scribe_core::confidence::Model::load();
     let split_onsets: HashSet<u64> = votes[0].1.iter().filter(|n| n.split).map(|n| n.onset.to_bits()).collect();
     let trill_of: HashMap<u64, (i32, f64)> = votes[0].1.iter().filter(|n| n.trill != 0).map(|n| (n.onset.to_bits(), (n.trill, n.offset))).collect();
     let cand: Vec<RawNote> = cluster(&votes)
@@ -498,13 +498,13 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
             if mus_is_bp {
                 src.remove("mus");
             }
-            let sup = crate::confidence::support(opts.solo_contour.as_ref(), on, c.pitch);
-            let x = crate::confidence::features(&src, off - on, sup, separated);
+            let sup = scribe_core::confidence::support(opts.solo_contour.as_ref(), on, c.pitch);
+            let x = scribe_core::confidence::features(&src, off - on, sup, separated);
             RawNote {
                 pitch: c.pitch,
                 onset: on,
                 offset: off,
-                confidence: Some(py::py_round(crate::confidence::p_correct(&x, &model), 3)),
+                confidence: Some(py::py_round(scribe_core::confidence::p_correct(&x, &model), 3)),
                 split: c.onsets.iter().any(|o| split_onsets.contains(&o.to_bits())),
                 trill,
             }
@@ -621,7 +621,7 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
     // Arrangement options: lineup, difficulty, transposition to a concert key.
     let shift = match (&opts.transpose, &opts.key) {
         (Some(t), _) => *t,
-        (None, Some(k)) => crate::keys::semitones_to(&comp.keys[0], k)?,
+        (None, Some(k)) => scribe_core::keys::semitones_to(&comp.keys[0], k)?,
         _ => 0,
     };
     if shift != 0 {
@@ -659,9 +659,9 @@ pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &L
         .filter(|v| v.layer.as_deref() != Some("drums"))
         .flat_map(|v| {
             let notes: Vec<(i64, i64, f64)> = v.notes.iter().map(|n| (n.start, n.end(), n.confidence)).collect();
-            crate::confidence::review_groups(&notes, bar_ticks, model.mark_below(), model.very_below())
+            scribe_core::confidence::review_groups(&notes, bar_ticks, model.mark_below(), model.very_below())
                 .into_iter()
-                .map(|g| crate::model::ReviewItem { voice: v.id.clone(), start: g.start, end: g.end, notes: g.notes, very: g.very })
+                .map(|g| scribe_core::model::ReviewItem { voice: v.id.clone(), start: g.start, end: g.end, notes: g.notes, very: g.very })
                 .collect::<Vec<_>>()
         })
         .collect();
@@ -865,7 +865,7 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
         title: title.into(),
         pickup_ticks: pickup,
         low_confidence: 0.7,
-        very_below: crate::notation::score::VERY_UNCERTAIN,
+        very_below: scribe_core::notation::score::VERY_UNCERTAIN,
         key_fifths: None,
         sounds: Vec::new(),
         free_spans: Vec::new(),

@@ -14,7 +14,7 @@
 use std::collections::{BTreeMap, HashSet};
 
 use crate::instruments::{Clef, Lineup, Part};
-use crate::model::Note;
+use scribe_core::model::Note;
 
 pub const MODES: [&str; 3] = ["faithful", "standard", "easier"];
 /// Semitones taken off the top of the reading range.
@@ -149,7 +149,7 @@ fn fold(notes: &[Note], lo: i32, hi: i32) -> Vec<Note> {
         if !(lo <= p && p <= hi) {
             let r = prev.map(|x| x as f64).unwrap_or((lo + hi) as f64 / 2.0);
             let opts = (0..11).map(|k| p.rem_euclid(12) + 12 * k).filter(|&x| lo <= x && x <= hi);
-            if let Some(best) = opts.min_by(|x, y| crate::py::fcmp(&(*x as f64 - r).abs(), &(*y as f64 - r).abs()).then(x.cmp(y))) {
+            if let Some(best) = opts.min_by(|x, y| scribe_core::py::fcmp(&(*x as f64 - r).abs(), &(*y as f64 - r).abs()).then(x.cmp(y))) {
                 p = best;
             }
         }
@@ -209,7 +209,7 @@ pub fn apply_difficulty_opts(parts: Vec<(String, Vec<Note>)>, lineup: &Lineup, m
         let mut mine = std::mem::take(&mut source[pi].1);
         // Trills first. The 16th merges then run on the collapsed notes; a clip they make to a note
         // kept as it was reaches the part's own notes too (the reference shares those objects).
-        let collapsed = if trills { crate::trills::collapse_trills_indexed(&mine) } else { None };
+        let collapsed = if trills { scribe_core::trills::collapse_trills_indexed(&mine) } else { None };
         if mode == "faithful" {
             if let (Some(c), Some(o)) = (collapsed, out.iter_mut().find(|(n, _)| n == name)) {
                 o.1 = c.into_iter().map(|(n, _)| n).collect();

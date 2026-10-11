@@ -7,12 +7,6 @@
 //!
 //! It depends on the shared core (`scribe-core`) and on no other target.
 
-// The modules of the shared core this crate builds on, under the paths they have there.
-pub(crate) use scribe_core::{
-    beats, confidence, consensus, durations, dynamics, energy, freetime, harmony, keys, lines, midi, model, notation, onsets, py, quantize,
-    separation, spelling, structure, trills,
-};
-
 pub mod arranger;
 pub mod difficulty;
 pub mod instruments;

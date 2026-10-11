@@ -2,8 +2,9 @@
 
     uv run python -m scribe_conformance.fixtures
 
-Writes core/scribe-core/tests/fixtures/*.json; `cargo test` compares the
-Rust functions with them (exact equality). No recorded data is involved.
+Writes core/scribe-core/tests/fixtures/*.json and, for the brass-band target,
+core/targets/brass/tests/fixtures/*.json; `cargo test` compares the Rust
+functions with them (exact equality). No recorded data is involved.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from brasscribe_music.spelling import key_of, spell
 from .cases import REPO
 
 OUT = REPO / "core" / "scribe-core" / "tests" / "fixtures"
+OUT_BRASS = REPO / "core" / "targets" / "brass" / "tests" / "fixtures"
 warnings.filterwarnings("ignore")
 
 
@@ -509,15 +511,22 @@ def trills_cases() -> list[dict]:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
+    OUT_BRASS.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(20260925)
-    for name, data in (("spelling", spelling_cases(rng)), ("quantize", quantize_cases(rng)),
-                       ("argsort", argsort_cases(rng)), ("duration", duration_cases()),
-                       ("freetime", freetime_cases_exact(rng)), ("durations", durations_cases(rng)),
-                       ("meter", meter_cases(rng)), ("confidence", confidence_cases(rng)),
-                       ("voice_satb", voice_satb_cases(rng)), ("seats", seat_cases()),
-                       ("part_sources", part_sources_cases()), ("quantize_dense", quantize_dense_cases()),
-                       ("onsets", onsets_cases()), ("trills", trills_cases())):
-        (OUT / f"{name}.json").write_text(json.dumps(data))
+    # In this order: the cases draw from one generator.
+    fixtures = [(OUT, "spelling", spelling_cases(rng)), (OUT, "quantize", quantize_cases(rng)),
+                (OUT, "argsort", argsort_cases(rng)), (OUT, "duration", duration_cases()),
+                (OUT, "freetime", freetime_cases_exact(rng)), (OUT, "durations", durations_cases(rng)),
+                (OUT, "meter", meter_cases(rng)), (OUT, "confidence", confidence_cases(rng)),
+                (OUT_BRASS, "voice_satb", voice_satb_cases(rng)), (OUT_BRASS, "seats", seat_cases()),
+                (OUT_BRASS, "part_sources", part_sources_cases()), (OUT, "quantize_dense", quantize_dense_cases()),
+                (OUT, "onsets", onsets_cases())]
+    # The trill cases that also went through the difficulty levels: that half is the brass-band target's.
+    trills = trills_cases()
+    difficulty = [{"parts": c.pop("parts"), "difficulty": c.pop("difficulty")} for c in trills if "difficulty" in c]
+    fixtures += [(OUT, "trills", trills), (OUT_BRASS, "difficulty", difficulty)]
+    for out, name, data in fixtures:
+        (out / f"{name}.json").write_text(json.dumps(data))
         print(name, len(data))
 
 
