@@ -25,6 +25,9 @@ How it works: [kalli.no/brasscribe/research](https://kalli.no/brasscribe/researc
 The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
 
 - Play for Android (`brasscribe-play-android-arm64-v8a.apk` for most devices, `-universal.apk` for all).
+- Fretscribe for Android, an early version (`fretscribe-android-arm64-v8a.apk` for most devices,
+  `-universal.apk` for all): a recording written down as a tab for guitar, bass, ukulele or mandolin,
+  by Bandroom on your computer.
 - Play for Mac and Bandroom for Mac (Apple silicon). They are not notarised: the first time, open the
   app, then go to **System Settings › Privacy & Security** and choose **Open Anyway**.
 - Bandroom for Windows (x64), and Play for Windows as a preview. They are not signed: if SmartScreen
@@ -36,7 +39,11 @@ is licensed for non-commercial use only; Bandroom asks you to accept its licence
 Face account. Its makers add one condition: only have Brasscribe write down music you have the rights
 to, and you take responsibility for that.
 
-iPhone and iPad builds need an Apple Developer account and are not distributed.
+For iPhone and iPad there is a test build, `brasscribe-play-ios-unsigned.ipa`. It is not signed (the
+project has no Apple Developer account), so you sign it with your own Apple Account, using a
+sideloading tool, to put it on your device: see
+[apps/apple](apps/apple/README.md#iphone-and-ipad-test-build). With Xcode you build the app from the
+source instead.
 
 ## Developing
 

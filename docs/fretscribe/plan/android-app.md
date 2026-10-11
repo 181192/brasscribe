@@ -7,7 +7,8 @@ from the repository root. alphaTab facts come from the 1.8.4 jar's class list; w
 
 **Flavour.** One dimension, `product`, in `apps/android/app/build.gradle.kts`:
 - `brasscribe` is the default and overrides nothing: its applicationId, versionCode and signing stay.
-- `fretscribe` sets `applicationId = "no.fretscribe.play"` and its own version.
+- `fretscribe` sets `applicationId = "no.fretscribe.play"`. It takes the version in `defaultConfig` while both apps
+  are released together (a build can give it its own: `fretscribe.versionName`, `fretscribe.versionCode`), and its release APK is signed with a key of its own (`.github/workflows/android.yml`).
 - `namespace` stays `no.brasscribe.play`, so `R`, packages and imports are untouched. Library modules get
   no flavours.
 
@@ -26,7 +27,8 @@ Brasscribe's files stay in `src/main`; nothing moves. `MainActivity` calls `Prod
 keeps the same Kotlin type and field names, generated from its own tokens into its own dist. Missing
 roles are aliased (`brass*` from `brand*`, `staff` from `string`, `veryUncertain` from `uncertain`,
 `adlibTint` from `loop-tint`, pink from standard). The neutral rename waits for the quiet moment.
-`design/tokens/build.py` takes `--tokens`, `--out` and `--only`; its defaults are Brasscribe's. The design
+`design/tokens/build.py` writes every brand of `design/tokens/brands.json`, with neutral names beside
+these (`design/tokens/README.md`). The design
 is in `design/fretscribe/`, the research and the plan in `docs/fretscribe/`.
 
 **Tab rendering.** alphaTab from `tab.musicxml`; the `/tab` JSON is the data model for Check the song,

@@ -43,7 +43,8 @@ class PairingWordsTest {
     /**
      * About credits what the Fretscribe app carries, as THIRD_PARTY_NOTICES.md lists it: the notation and playback
      * libraries for Android or for every app with the Rust core, the fonts of Fretscribe, and the Android
-     * dependencies with code of their own in the app (Oboe's, ONNX Runtime's and JNA's native libraries).
+     * dependencies with code of their own in the app (Oboe's, JNA's and CameraX's native libraries)
+     * and ZXing, which reads the pairing code with CameraX.
      */
     @Test
     fun aboutNamesEverythingTheAppCarries() {
@@ -65,13 +66,15 @@ class PairingWordsTest {
         assertTrue(section("Notation and playback libraries").lines().any { it.startsWith("| [sfizz]") })
         assertTrue(libraries.toString(), "sfizz" !in libraries)
         val fonts = rows("Fonts") { it.contains("Fretscribe") }
-        val carried = libraries + fonts + listOf("Oboe", "ONNX Runtime", "JNA")
+        val carried = libraries + fonts + listOf("Oboe", "JNA", "CameraX", "ZXing")
         assertTrue(carried.toString(), carried.containsAll(listOf("alphaTab", "Bravura", "Sonivox SoundFont", "alphaSkia", "AndroidX Media3", "UniFFI",
             "Atkinson Hyperlegible Next", "Fretscribe Tab")))
         for (dir in listOf("values", "values-nb")) {
             val words = strings(File(src, "fretscribe/res/$dir/strings.xml"))
             val about = words["about_text"].orEmpty() + " " + words["about_font"].orEmpty()
             assertEquals(dir, emptyList<String>(), carried.filterNot { about.contains(it) })
+            // Nor what it does not carry: the realistic sound, and ONNX Runtime (it has no models to run).
+            assertEquals(dir, emptyList<String>(), listOf("sfizz", "ONNX Runtime").filter { about.contains(it) })
         }
     }
 

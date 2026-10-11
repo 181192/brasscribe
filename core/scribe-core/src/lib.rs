@@ -1,4 +1,4 @@
-//! The shared core: the symbolic half of the pipeline, for every app and every kind of instrument.
+//! The shared core: the symbolic half of the pipeline, for every app.
 //!
 //! Composition model and JSON, beat-grid quantization, free-time planning,
 //! written durations, pitch spelling and key, harmony reduction, note voting
@@ -6,11 +6,15 @@
 //! (`brasscribe_music` and the eval entry points) exactly; `core/conformance`
 //! checks that.
 //!
-//! It knows no instruments. What turns notes into one kind of output (arranging for a brass band in
-//! `target-brass`, placing notes on strings in `target-fretted`) lives in a target crate that
-//! depends on this one; this crate depends on no target, and targets do not depend on each other
-//! (`tests/crate_graph.rs`). A target hands the writer what it needs as data:
-//! [`notation::score::InstrumentSpec`] for a part's instrument.
+//! What turns notes into one kind of output (arranging for a brass band in `target-brass`, placing
+//! notes on strings in `target-fretted`) lives in a target crate that depends on this one; this crate
+//! depends on no target, and targets do not depend on each other (`tests/crate_graph.rs`). A target
+//! hands the writer what it needs as data: [`notation::score::InstrumentSpec`] for a part's instrument.
+//!
+//! The core is not free of instruments yet. [`talking_score`] still holds the Norwegian names of the
+//! brass band's parts and instruments (`tests/shared_boundary.rs` keeps the other modules from using
+//! it), the writer's comments still speak of the band, and the transcription that every target needs
+//! sits in `target-brass`'s `pipeline` (docs/plan/scribe-platform.md, steps 2b and 2c).
 
 pub mod structure;
 pub mod separation;

@@ -1,6 +1,6 @@
 """The trumpet seat: a trumpet player takes the lead part (written for trumpet) in the bands.
 
-Twin of core/scribe-core/tests/seats.rs::the_trumpet_takes_the_lead, plus arrangements of Mikkel.
+Twin of core/targets/brass/tests/seats.rs::the_trumpet_takes_the_lead, plus arrangements of Mikkel.
 """
 
 import os
