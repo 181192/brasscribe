@@ -22,9 +22,10 @@ object Wire {
     const val SERVICE_TYPE = "_scribe._tcp"
 
     /**
-     * The interface version this app is built for. The engine says its own in `GET /v1/health`; when the two
-     * differ the app says which of them to update and asks that engine for its health only ([KtorEngineApi] refuses
-     * every other request).
+     * The interface version this app is built for. The engine says its own in `GET /v1/health`, and to a paired
+     * phone in `GET /v1/devices/me`; when the two
+     * differ the app says which of them to update and asks that engine for nothing but what says its number
+     * ([KtorEngineApi] refuses every other request).
      */
     const val INTERFACE_VERSION = 1
 }
@@ -48,8 +49,13 @@ enum class InterfaceMatch {
     }
 }
 
-/** The engine was asked for nothing more: its interface version is not this app's. [update] is never [InterfaceMatch.MATCH]. */
-class InterfaceMismatchException(val update: InterfaceMatch) : Exception("the engine's interface version is not this app's: $update")
+/**
+ * The engine was asked for nothing more: its interface version is not this app's. [update] is never
+ * [InterfaceMatch.MATCH]. [serverId] is the id of the engine that answered so, when the answer that said it could
+ * not be read in full: the one who asked compares it with the engine it meant to reach.
+ */
+class InterfaceMismatchException(val update: InterfaceMatch, val serverId: String? = null) :
+    Exception("the engine's interface version is not this app's: $update")
 
 /**
  * Reads `interface_version` as a whole number, and as none when the engine sent something else in its place (a

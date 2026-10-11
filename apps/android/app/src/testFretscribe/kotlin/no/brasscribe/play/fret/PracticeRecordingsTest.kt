@@ -127,6 +127,11 @@ class PracticeRecordingsTest {
         assertEquals(RecordingState.TOO_LARGE, PracticeRecordings.whyNot(no.brasscribe.play.engine.EngineException(413, "too large"), plenty))
         assertEquals(RecordingState.NO_ANSWER, PracticeRecordings.whyNot(no.brasscribe.play.engine.EngineException(500, "broken"), plenty))
         assertEquals(RecordingState.NO_ANSWER, PracticeRecordings.whyNot(java.net.ConnectException("refused"), plenty))
+        // Not asked, because one of the two needs an update: said as that, not as a computer that does not answer.
+        assertEquals(RecordingState.UPDATE_APP, PracticeRecordings.whyNot(
+            no.brasscribe.play.engine.InterfaceMismatchException(no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP), plenty))
+        assertEquals(RecordingState.UPDATE_COMPUTER, PracticeRecordings.whyNot(
+            no.brasscribe.play.engine.InterfaceMismatchException(no.brasscribe.play.engine.InterfaceMatch.UPDATE_COMPUTER), plenty))
         assertEquals(RecordingState.NO_ANSWER, PracticeRecordings.whyNot(java.io.IOException("the recording came empty"), plenty))
         // The phone is full, or the file could not be made: it is not the computer that is away.
         assertEquals(RecordingState.NO_ROOM, PracticeRecordings.whyNot(java.io.IOException("write failed: ENOSPC"), 1000))

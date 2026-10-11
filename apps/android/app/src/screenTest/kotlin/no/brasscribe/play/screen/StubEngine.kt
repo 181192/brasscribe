@@ -17,6 +17,15 @@ import kotlin.concurrent.thread
 class StubEngine(@Volatile var interfaceVersion: String?, private val serverId: String = SERVER_ID, private val name: String = "Brasscribe on Studio") : Closeable {
     constructor(interfaceVersion: Int?) : this(interfaceVersion?.toString())
 
+    /** When set, what `GET /v1/devices/me` answers in place of the phone's entry: 401 (this phone is not known), 404, 500. */
+    @Volatile var deviceStatus: Int? = null
+
+    /** When set, the whole body of `GET /v1/health` (something that is no engine's answer). */
+    @Volatile var healthBody: String? = null
+
+    /** When set, health answers with this status (an engine that is there and cannot answer). */
+    @Volatile var healthStatus: Int? = null
+
     private val server = ServerSocket(0, 16, InetAddress.getByName("127.0.0.1"))
     val url: String = "http://127.0.0.1:${server.localPort}"
     val address: String = "127.0.0.1:${server.localPort}"
@@ -51,6 +60,9 @@ class StubEngine(@Volatile var interfaceVersion: String?, private val serverId: 
             requests += "$method $path"
             val version = interfaceVersion?.let { ""","interface_version":$it""" }.orEmpty()
             val (status, body) = when {
+                method == "GET" && path == "/v1/health" && healthStatus != null -> "$healthStatus Error" to """{"detail":"no"}"""
+                method == "GET" && path == "/v1/health" && healthBody != null -> "200 OK" to healthBody!!
+                method == "GET" && path == "/v1/devices/me" && deviceStatus != null -> "$deviceStatus Error" to """{"detail":"no"}"""
                 method == "GET" && path == "/v1/health" ->
                     "200 OK" to """{"status":"ok","version":"0.0.0","device":"cpu","auth_required":true,"server_id":"$serverId","server_name":"$name"$version}"""
                 method == "GET" && path == "/v1/devices/me" && header("authorization") == "Bearer $TOKEN" ->

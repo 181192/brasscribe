@@ -220,6 +220,8 @@
     <string name="notif_failed">The score couldn\'t be made</string>
     <!-- The computer didn't answer for ten minutes: the job goes on there, and is listed once the phone reaches it again. -->
     <string name="notif_away">The score will be in Your scores when your computer is back</string>
+    <string name="notif_update_app">Update this app to get the score from your computer</string>
+    <string name="notif_update_computer">Update Bandroom on your computer to get the score</string>
     <!-- A tap on "ready" when the score is not on the phone and the computer can't be reached. -->
     <string name="ready_not_here">This score is on your computer. Connect to it to open the score.</string>
     <string name="transcribe_where_companion">On %1$s</string>

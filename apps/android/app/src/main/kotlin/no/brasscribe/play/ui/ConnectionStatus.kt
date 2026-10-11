@@ -50,6 +50,25 @@ fun connectionIcon(state: ConnectionState): Int = when (state) {
     is ConnectionState.NeedsUpdate -> R.drawable.ic_bc_attention
 }
 
+/** Opens the page the latest release of the app (and of Bandroom) is on; a phone with no browser says so. */
+fun openLatestRelease(context: android.content.Context, vm: PlayViewModel) {
+    runCatching {
+        context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(BANDROOM_DOWNLOAD))
+            .addCategory(android.content.Intent.CATEGORY_BROWSABLE))
+    }.onFailure { vm.say(R.string.bandroom_no_browser) }
+}
+
+/**
+ * Under a pairing that stopped because this app is older than the computer's Bandroom: the way to the app's latest
+ * release. (For an older Bandroom the screen has Get Bandroom, with the address to type on the computer.)
+ */
+@Composable
+fun UpdateAppAction(vm: PlayViewModel, said: String?) {
+    if (said == null || said != stringResource(R.string.conn_update_app)) return
+    val context = androidx.compose.ui.platform.LocalContext.current
+    OutlineButton(stringResource(R.string.conn_get_app_update), { openLatestRelease(context, vm) }, Modifier.heightIn(min = 44.dp), fill = false)
+}
+
 /**
  * The connection status row (Home, and Brasscribe on your computer), in the same form as Apple's: a
  * bordered surface row with the state's icon and words on the left and, when there is something to do,
@@ -78,13 +97,7 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
         s is ConnectionState.Offline && !onConnectionScreen -> stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
         s is ConnectionState.NeedsPairing && !onConnectionScreen -> stringResource(R.string.conn_pair_again) to { vm.navigate(Screen.COMPANION) }
         // The app is the one behind: the page its latest release is on. A phone with no browser says so.
-        s is ConnectionState.NeedsUpdate && s.update == InterfaceMatch.UPDATE_APP -> stringResource(R.string.conn_get_app_update) to {
-            runCatching {
-                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(BANDROOM_DOWNLOAD))
-                    .addCategory(android.content.Intent.CATEGORY_BROWSABLE))
-            }.onFailure { vm.say(R.string.bandroom_no_browser) }
-            Unit
-        }
+        s is ConnectionState.NeedsUpdate && s.update == InterfaceMatch.UPDATE_APP -> stringResource(R.string.conn_get_app_update) to { openLatestRelease(context, vm) }
         // Bandroom is the one behind: the pairing screen says where its latest one is, to type on the computer.
         s is ConnectionState.NeedsUpdate && !onConnectionScreen -> stringResource(R.string.bandroom_get_title) to { vm.navigate(Screen.COMPANION) }
         else -> null

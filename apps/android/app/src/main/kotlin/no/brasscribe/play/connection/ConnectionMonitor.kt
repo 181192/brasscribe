@@ -143,11 +143,11 @@ class ConnectionMonitor(
                 return
             }
             if (_state.value is ConnectionState.NetworkClosed) _state.value = ConnectionState.Reconnecting(t.serverName)
-            var r = host.check(t.url)
+            var r = checked(t.url)
             if (r == Check.Unreachable) {
                 val found = host.find(t.serverId)
                 if (found != null && found != t.url) {
-                    val again = host.check(found)
+                    val again = checked(found)
                     if (again != Check.Unreachable) {
                         host.moved(found)
                         r = again
@@ -195,6 +195,15 @@ class ConnectionMonitor(
                 }
             }
         }
+    }
+
+    /** [ConnectionHost.check], where anything it throws is a check that got no answer: the heartbeat goes on. */
+    private suspend fun checked(url: String): Check = try {
+        host.check(url)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Check.Unreachable
     }
 
     companion object {

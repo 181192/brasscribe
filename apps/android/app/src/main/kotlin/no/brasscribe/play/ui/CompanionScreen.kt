@@ -168,6 +168,7 @@ fun CompanionScreen(vm: PlayViewModel) {
                     color = c.textMuted,
                 )
                 state?.let { Text(it, color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+                UpdateAppAction(vm, state)
                 PlainButton(stringResource(R.string.cancel), { vm.pendingLink.value = null })
             }
             match != null -> MatchCode(match!!) { vm.cancelAsk() }
@@ -196,6 +197,7 @@ fun CompanionScreen(vm: PlayViewModel) {
                 OutlinedTextField(code, { code = it.trim() }, label = { Text(stringResource(R.string.companion_code)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 state?.let { Text(it, color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+                UpdateAppAction(vm, state)
                 if (askAgain != null) SecondaryButton(stringResource(R.string.pair_ask_again), { vm.askComputer(askAgain!!) }, icon = R.drawable.ic_bc_retry)
                 else PlainButton(stringResource(R.string.pair_ask), { vm.askComputer(url) }, enabled = url.startsWith("http"))
             }

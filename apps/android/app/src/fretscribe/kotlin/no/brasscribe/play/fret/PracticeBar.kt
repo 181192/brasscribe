@@ -95,6 +95,8 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 state == RecordingState.GETTING -> R.string.fs_practice_getting
                 state == RecordingState.GONE -> R.string.fs_practice_gone
                 state == RecordingState.NO_ANSWER -> R.string.fs_practice_no_answer
+                state == RecordingState.UPDATE_APP -> R.string.conn_update_app
+                state == RecordingState.UPDATE_COMPUTER -> R.string.conn_update_computer
                 state == RecordingState.NO_ROOM -> R.string.fs_practice_no_room
                 state == RecordingState.TOO_LARGE -> R.string.fs_practice_too_large
                 state == RecordingState.UNPLAYABLE -> R.string.fs_practice_unplayable

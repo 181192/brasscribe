@@ -153,6 +153,8 @@
     <string name="notif_ready">Your tab is ready</string>
     <string name="notif_failed">The tab couldn\'t be made</string>
     <string name="notif_away">The tab will be in Your songs when your computer is back</string>
+    <string name="notif_update_app">Update this app to get the tab from your computer</string>
+    <string name="notif_update_computer">Update Bandroom on your computer to get the tab</string>
     <string name="ready_not_here">This tab is on your computer. Connect to it to open the tab.</string>
     <!-- "Fretscribe on Kari's Mac is writing down the notes" -->
     <string name="transcribe_where_companion">%1$s is writing down the notes</string>

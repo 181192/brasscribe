@@ -52,6 +52,7 @@ import no.brasscribe.play.capture.CaptureController
 import no.brasscribe.play.engine.EngineException
 import no.brasscribe.play.engine.KtorEngineApi
 import no.brasscribe.play.engine.PairLink
+import no.brasscribe.play.engine.InterfaceMatch
 import no.brasscribe.play.engine.InterfaceMismatchException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -1291,20 +1292,29 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             val saved = withContext(storage) { scoreLibrary.list() }.firstOrNull { it.jobId == jobId }
             if (saved != null) { home(); openSavedScore(saved); return@launch }
-            val done = container.engine()?.let { engine -> runCatching { engine.job(jobId) }.getOrNull() }
-            val entry = done?.let { ScoreEntry.merge(emptyList(), listOf(it)).firstOrNull() }
+            val asked = container.engine()?.let { engine -> runCatching { engine.job(jobId) } }
+            val entry = asked?.getOrNull()?.let { ScoreEntry.merge(emptyList(), listOf(it)).firstOrNull() }
             home()
-            // Not on the phone, and the computer can't be reached (or no longer has it): said, not a silent Home.
-            if (entry == null) say(if (container.computerInReach()) R.string.ready_not_here else R.string.pair_network_refused) else openEntry(entry)
+            // Not on the phone, and the computer can't be reached (or no longer has it): said, not a silent Home. A computer
+            // with another interface version is said as that: which of the two to update.
+            val why = asked?.exceptionOrNull()
+            when {
+                entry != null -> openEntry(entry)
+                why != null && refused(why) -> say(ErrorWords.of(why))
+                else -> say(if (container.computerInReach()) R.string.ready_not_here else R.string.pair_network_refused)
+            }
         }
     }
 
-    /** Fetch the computer's finished scores; keeps the phone's list when the computer can't be reached. */
+    /**
+     * Fetches the computer's finished scores. They are listed only while the computer can be asked for them: with
+     * nothing paired, while it is not connected, and when it does not answer, the list holds the phone's own only.
+     */
     fun refreshComputerScores() {
-        val engine = container.engine()?.takeIf { !container.usingFixture && connection.state.value !is ConnectionState.NeedsUpdate }
+        val engine = container.engine()?.takeIf { !container.usingFixture && connection.state.value is ConnectionState.Connected }
             ?: run { computerJobs.value = emptyList(); return }
         viewModelScope.launch {
-            runCatching { engine.jobs() }.onSuccess { computerJobs.value = it }.onFailure(::refused)
+            runCatching { engine.jobs() }.onSuccess { computerJobs.value = it }.onFailure { computerJobs.value = emptyList(); refused(it) }
         }
     }
 
@@ -1316,9 +1326,18 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private fun refused(e: Throwable): Boolean {
         if (e !is InterfaceMismatchException) return false
         computerJobs.value = emptyList()
-        if (connection.state.value !is ConnectionState.NeedsUpdate) connection.retry()
+        // (While the computer is being looked for, the search goes on as it is: starting over would start its clock again.)
+        if (connection.state.value !is ConnectionState.NeedsUpdate && connection.state.value !is ConnectionState.Reconnecting) connection.retry()
         return true
     }
+
+    /** A request the computer was not sent because one of the two needs an update is said so; any other failure is its caller's. */
+    private fun saidIfRefused(e: Throwable) {
+        if (refused(e)) say(ErrorWords.of(e))
+    }
+
+    /** As [refused], for a screen that asked the computer itself; true when it has said which of the two to update. */
+    fun saidRefused(e: Throwable): Boolean = refused(e).also { if (it) say(ErrorWords.of(e)) }
 
     fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
         val opening = entry.opening(review, stand, Product::makes)
@@ -1377,7 +1396,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         entry.saved?.let { renameSavedScore(it.id, cleaned); return }
         val jobId = entry.jobId ?: return
         viewModelScope.launch {
-            runCatching { container.engine()?.renameRun(jobId, cleaned) }
+            runCatching { container.engine()?.renameRun(jobId, cleaned) }.onFailure(::saidIfRefused)
             refreshComputerScores()
         }
     }
@@ -1393,7 +1412,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         }
         val jobId = entry.jobId ?: return
         viewModelScope.launch {
-            runCatching { container.engine()?.deleteRun(jobId) }
+            runCatching { container.engine()?.deleteRun(jobId) }.onFailure(::saidIfRefused)
             refreshComputerScores()
         }
     }
@@ -1761,6 +1780,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      * neither a valid credential nor a code.
      */
     private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.brasscribe.play.engine.Health, code: String): Boolean {
+        // The engine's own answer first: with another interface version it is not connected to, trusted address or
+        // not, and it is "update", not "the code is needed".
+        InterfaceMatch.of(health.interfaceVersion).takeIf { it != InterfaceMatch.MATCH }?.let { throw InterfaceMismatchException(it) }
         val store = container.credentials
         // Only this phone itself or the emulator's host is let in without pairing; any other address that
         // says so pairs all the same.

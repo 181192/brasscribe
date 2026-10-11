@@ -225,7 +225,11 @@ class AppContainer(private val context: Context) {
             cachedEngine = key to created
             created
         }
-        (api as? KtorEngineApi)?.token = settings.token
+        (api as? KtorEngineApi)?.let {
+            it.token = settings.token
+            // The paired engine is the one this client is for: another engine at the address is not asked in its place.
+            it.serverId = settings.serverId
+        }
         return api
     }
 

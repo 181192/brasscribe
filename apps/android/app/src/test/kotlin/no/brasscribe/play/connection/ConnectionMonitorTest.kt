@@ -124,6 +124,20 @@ class ConnectionMonitorTest {
     }
 
     @Test
+    fun aCheckThatThrowsIsACheckWithNoAnswerAndTheHeartbeatGoesOn() = runTest {
+        var broken = true
+        val host = FakeHost(Target("s1", name, "http://a")) { if (broken) error("the check itself failed") else Check.Ok() }
+        val m = monitor(host)
+        m.start(); runCurrent()
+        assertTrue(m.running)
+        advanceTimeBy(2_001)
+        assertEquals(ConnectionState.Reconnecting(name), m.state.value)
+        broken = false
+        advanceTimeBy(4_001)
+        assertEquals(ConnectionState.Connected(name), m.state.value)
+    }
+
+    @Test
     fun only401MeansPairAgainAndItStopsTheHeartbeat() = runTest {
         val host = FakeHost(Target("s1", name, "http://a")) { Check.Unauthorized }
         val m = monitor(host)

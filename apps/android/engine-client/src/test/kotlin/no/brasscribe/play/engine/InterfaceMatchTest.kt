@@ -11,7 +11,6 @@ import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
 
@@ -95,9 +94,9 @@ class InterfaceMatchTest {
             healthBody(""","interface_version":${Wire.INTERFACE_VERSION - 1}""") to InterfaceMatch.UPDATE_COMPUTER,
             healthBody("") to InterfaceMatch.UPDATE_COMPUTER,
             healthBody(""","interface_version":"one"""") to InterfaceMatch.UPDATE_COMPUTER,
-            // An answer this app cannot read in full is still that engine's, not one that cannot be reached.
-            """{"interface_version":7}""" to InterfaceMatch.UPDATE_APP,
-            """{"status":"ok"}""" to InterfaceMatch.UPDATE_COMPUTER,
+            // An answer this app cannot read in full is still that engine's when it says which engine it is.
+            """{"server_id":"s","interface_version":7}""" to InterfaceMatch.UPDATE_APP,
+            """{"server_id":"s","status":"ok"}""" to InterfaceMatch.UPDATE_COMPUTER,
         )) {
             val asked = mutableListOf<String>()
             val api = KtorEngineApi("http://host", engine(asked) { body }, token = "t")
@@ -112,6 +111,54 @@ class InterfaceMatchTest {
             }
             assertEquals(body, listOf("GET /v1/health"), asked)
         }
+    }
+
+    @Test
+    fun anAnswerThatIsNoEnginesIsNotAnEngineToUpdate() = runTest {
+        // Something else at the address (a sign-in page, an empty object, an answer with no engine id): it cannot be
+        // read, nothing is known of an engine there, and it is asked again the next time.
+        for (body in listOf("<html><body>Sign in</body></html>", "{}", """{"status":"ok"}""", """{"interface_version":7}""", """{"server_id":7}""", "[]")) {
+            val asked = mutableListOf<String>()
+            val api = KtorEngineApi("http://host", engine(asked) { body }, token = "t")
+            val failed = runCatching { api.health() }.exceptionOrNull()
+            assertTrue("$body: $failed", failed != null && failed !is InterfaceMismatchException)
+            assertNull(body, api.interfaceMatch)
+            val again = runCatching { api.jobs() }.exceptionOrNull()
+            assertTrue("$body: $again", again != null && again !is InterfaceMismatchException)
+            assertEquals(body, listOf("GET /v1/health", "GET /v1/health"), asked)
+        }
+    }
+
+    @Test
+    fun anAnswerThatCannotBeReadInFullCarriesItsEnginesId() = runTest {
+        val api = KtorEngineApi("http://host", engine(mutableListOf()) { """{"server_id":"other","interface_version":7}""" })
+        val refused = runCatching { api.health() }.exceptionOrNull() as? InterfaceMismatchException
+        assertEquals("other", refused?.serverId)
+        assertEquals(InterfaceMatch.UPDATE_APP, refused?.update)
+        // Not the engine that was meant: what it said is not kept.
+        api.forget()
+        assertNull(api.interfaceMatch)
+    }
+
+    @Test
+    fun aClientForOneEngineDoesNotTakeAnotherEnginesAnswerAsIts() = runTest {
+        // Another engine answers at the paired one's address, older, newer or the same: none of it is the paired engine's.
+        for (body in listOf(healthBody(""), healthBody(""","interface_version":${Wire.INTERFACE_VERSION + 1}"""),
+            healthBody(""","interface_version":${Wire.INTERFACE_VERSION}"""), """{"server_id":"s","interface_version":7}""")) {
+            val asked = mutableListOf<String>()
+            val api = KtorEngineApi("http://host", engine(asked) { body }, token = "t").also { it.serverId = "paired" }
+            for (call in listOf<suspend () -> Any?>({ api.health() }, { api.jobs() })) {
+                val failed = runCatching { call() }.exceptionOrNull()
+                assertEquals(body, 0, (failed as? EngineException)?.status)
+            }
+            assertNull(body, api.interfaceMatch)
+            assertEquals(body, listOf("GET /v1/health", "GET /v1/health"), asked)
+        }
+        // The paired engine itself is asked as always.
+        val asked = mutableListOf<String>()
+        val api = KtorEngineApi("http://host", engine(asked) { healthBody(""","interface_version":${Wire.INTERFACE_VERSION}""") }).also { it.serverId = "s" }
+        api.jobs()
+        assertEquals(listOf("GET /v1/health", "GET /v1/jobs"), asked)
     }
 
     @Test
@@ -151,7 +198,8 @@ class InterfaceMatchTest {
     @Test
     fun theNamesAndTheNumberAreTheEngines() {
         val wire = File(System.getProperty("brasscribe.engine") ?: "", "wire.py")
-        assumeTrue("the engine's wire.py is in this checkout", wire.isFile)
+        // The engine is in the same repository: a file that is not where the build says it is, is a test that has gone blind.
+        assertTrue("the engine's wire.py is not at $wire", wire.isFile)
         val text = wire.readText()
         fun value(name: String) = Regex("""^$name\s*=\s*"?([^"\n]+?)"?\s*$""", RegexOption.MULTILINE).find(text)?.groupValues?.get(1)
         assertEquals(Wire.INTERFACE_VERSION.toString(), value("INTERFACE_VERSION"))

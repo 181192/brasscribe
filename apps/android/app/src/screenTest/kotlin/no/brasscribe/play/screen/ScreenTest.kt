@@ -201,6 +201,8 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
             if (container.settings.serverId == StubEngine.SERVER_ID) {
                 container.credentials.remove(StubEngine.SERVER_ID)
                 container.settings.paired = false
+                container.settings.serverId = null
+                container.settings.serverName = ""
                 vm.connection.retry()
             }
         }
