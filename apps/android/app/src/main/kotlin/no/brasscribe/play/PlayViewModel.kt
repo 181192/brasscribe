@@ -1655,7 +1655,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     val bytes = container.engine()?.renderedAudio(jobId) ?: return@runCatching null
                     f.writeBytes(bytes)
                     AudioDecoder.decode(getApplication(), Uri.fromFile(f)).audio
-                }.getOrNull()
+                    // (The computer was not asked because one of the two needs an update: said, not a bar that stays silent.)
+                }.onFailure(::saidIfRefused).getOrNull()
             } finally {
                 // Only needed to decode it: the samples are kept, not the file.
                 f.delete()
