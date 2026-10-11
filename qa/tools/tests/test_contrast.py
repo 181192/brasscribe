@@ -86,3 +86,7 @@ def test_a_malformed_brand_is_told_what_is_missing(tmp_path, monkeypatch):
     tokens.write_text(json.dumps(raw))
     with pytest.raises(SystemExit, match="a contrast pair names 'glow', which color.light does not have"):
         c.load_dtcg(tokens)
+    del raw["$extensions"]["no.brasscribe"]["contrast"]
+    tokens.write_text(json.dumps(raw))
+    with pytest.raises(SystemExit, match=r"tokens.json: expected one \$extensions entry with modes and contrast"):
+        c.load_dtcg(tokens)

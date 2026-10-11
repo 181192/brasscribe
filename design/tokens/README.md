@@ -60,13 +60,14 @@ to a brand.
 4. **A brand maps, it does not rename.** Where a brand's token has another name than the neutral role,
    its tokens say so under `$extensions.<brand>.neutral.roles`. A neutral role a brand neither has nor
    maps stops the generator.
-5. **`brand` is identity, `accent` is for what you act on or follow.** In every brand, `brand`,
-   `brand-text` and `brand-tint` are the mark, the wordmark and brand moments (onboarding, empty states,
-   About). They are never the colour of a link, a control or a state. `accent` is the one colour beside
-   the buttons that says "this does something" or "this is where it is": links and the progress bar. It
-   is readable as text (4.5:1) on `bg`, `surface` and `surface-raised` in every mode, and each brand
-   lists those pairs. A brand may give both the same hue; they are still two roles, so a brand whose
-   identity colour cannot carry a link is not forced to use it for one.
+5. **`brand` is identity, `accent` is for what you act on.** In every brand, `brand`, `brand-text` and
+   `brand-tint` are the mark, the wordmark and brand moments (onboarding, empty states, About). They are
+   never the colour of a link or a control. `accent` is the one colour beside the buttons that says
+   "this does something": links. It is readable as text (4.5:1) on `bg`, `surface` and `surface-raised`
+   in every mode, and each brand lists those pairs. A brand may give both the same hue; they are still
+   two roles, so a brand whose identity colour cannot carry a link is not forced to use it for one.
+   **A progress bar's fill is the brand colour**: it is not something to act on, `brand` passes 3:1 on
+   every ground, and in a contrast theme `accent` is the system's link colour, which is wrong for a bar.
 6. **A new neutral role** has to make sense for every brand, and every brand has to define it. A new
    role of one brand is added to that brand's tokens alone, with its system colour for Windows contrast
    themes and forced colours under `system-colours`.
@@ -142,9 +143,9 @@ and `ScribeTheme.kt` adds the neutral names on top. `ScribeColors` is another na
 its own names like on the other platforms, and Fretscribe's own roles (`uncertain-tint`) get a place on
 Android.
 
-Brasscribe's links are plain text colour with an underline today, and its progress bar is brass
-(`design/system.md`). Its `accent` is the brass that carries text. Fretscribe's `accent` is what it
-called `brand` for links and the progress bar; the value is the same blue ink.
+Brasscribe's links are plain text colour with an underline today; its `accent` is the brass that
+carries text, and the site's link hover uses it. Fretscribe's `accent` is what it called `brand` for
+links; the value is the same blue ink. Both fill their progress bars with `brand`.
 
 ## What stops the generator
 

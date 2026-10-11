@@ -151,20 +151,20 @@ def delta_e(a: str, b: str, kind: str | None) -> float:
     return ciede2000(lab(ra), lab(rb))
 
 
-def token_extension(raw: dict) -> dict:
+def token_extension(raw: dict, path: Path | str = "the token file") -> dict:
     """The product's extension block: the one entry under $extensions that lists modes and contrast pairs."""
     extensions = raw.get("$extensions")
     extensions = extensions if isinstance(extensions, dict) else {}
     found = [v for v in extensions.values() if isinstance(v, dict) and "modes" in v and "contrast" in v]
     if len(found) != 1:
-        raise SystemExit(f"expected one $extensions entry with modes and contrast, found {len(found)}")
+        raise SystemExit(f"{path}: expected one $extensions entry with modes and contrast (the brand's own), found {len(found)}")
     return found[0]
 
 
 def load_dtcg(path: Path) -> dict:
     """Flatten a DTCG token file into the {themes, pairs, distinguish, legacy} shape used below."""
     raw = json.loads(path.read_text())
-    ext = token_extension(raw)
+    ext = token_extension(raw, path)
     themes = {}
     for mode in ext["modes"]:
         if mode not in raw.get("color", {}):

@@ -177,8 +177,8 @@ function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<Return
       if (ch.b) lb.push(toRoll(b.composition, ch.b, mark === "removed" ? undefined : mark));
     }
     const layers: RollLayer[] = [
-      { id: "a", label: t("cmp.scoreA", { label: a.label }), colour: "m1", style: "block", notes: la },
-      { id: "b", label: t("cmp.scoreB", { label: b.label }), colour: "m2", style: "outline", notes: lb },
+      { id: "a", label: t("cmp.scoreA", { label: a.label }), colour: "bc-model-1", style: "block", notes: la },
+      { id: "b", label: t("cmp.scoreB", { label: b.label }), colour: "bc-model-2", style: "outline", notes: lb },
     ];
     const roll = h("bs-pianoroll", {}) as PianoRoll;
     roll.data = layers;

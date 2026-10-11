@@ -235,7 +235,7 @@ Rules for every Studio screen:
 - **Plain labels.** Say what a thing does ("From the cache", "Repeat bars"). Where a term of art stays (profile, stem, round trip), an info tip (a toggle button with the explanation in words) explains it.
 - **Few controls at once.** The score toolbar shows four groups, Play / Position / Repeat / View; speed, zoom, "Play bar" and the rest sit under **More**.
 - **8 px rhythm.** Spacing is a multiple of `space-2` (8 px); edges align to the page gutter; headers hold the brand, the nav and one status, nothing else.
-- Load `dist/web/brasscribe.css`, then Studio's own `studio/src/tokens.css`, which maps the short names its canvases read (`--bg`, `--text`, `--ok`, `--m1`…) onto the tokens.
+- Load `dist/web/brasscribe.css`. Styles and canvases read its variables by their own names (`--scribe-text`, `--bc-model-1`); Studio has no names of its own for them.
 
 ## 8. Brasscribe Bandroom: the engine on your computer
 

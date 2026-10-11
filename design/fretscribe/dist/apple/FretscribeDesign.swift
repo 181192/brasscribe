@@ -115,11 +115,11 @@ public extension Color {
         public static var secondary: Color { catalogColor("secondary") }
         /// Label on secondary.
         public static var onSecondary: Color { catalogColor("onSecondary") }
-        /// The accent: links and the progress bar. Also brand text.
+        /// The accent, for links, and brand text.
         public static var accent: Color { catalogColor("brandText") }
-        /// Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent.
+        /// Blue ink as identity: the mark, the wordmark, onboarding, empty states and the fill of a progress bar. Never a button fill and never something to act on; links use brand-text, the accent.
         public static var brand: Color { catalogColor("brand") }
-        /// The accent: links and the progress bar. Also brand text.
+        /// The accent, for links, and brand text.
         public static var brandText: Color { catalogColor("brandText") }
         /// Onboarding and empty-state wash.
         public static var brandTint: Color { catalogColor("brandTint") }

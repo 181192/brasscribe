@@ -53,7 +53,7 @@ data class BrasscribeColors(
     val onSecondary: Color,
     /** Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list. */
     val brass: Color,
-    /** Brand colour when it has to carry text, for example the product name under the wordmark. */
+    /** The brass that carries text: the accent, for links, and brand text such as the product name under the wordmark. */
     val brassText: Color,
     /** Background of brand moments: the onboarding hero and the About screen. */
     val brassTint: Color,

@@ -83,6 +83,43 @@ public partial class XamlResourceTests
             Assert.DoesNotContain(gone, keys);
     }
 
+    /// <summary>
+    /// A colour or brush is looked up in the theme that applies, and in the Pink dictionary while Pink is chosen.
+    /// So every themed key the two apps use is in Light, Dark and HighContrast of the theme and of the Pink theme:
+    /// a key missing from one of them fails only there, when it runs.
+    /// </summary>
+    [SkippableFact]
+    public void Every_themed_key_the_apps_use_is_in_each_theme_dictionary_and_in_Pink()
+    {
+        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
+        var pink = TestPaths.RepoFile("design/dist/windows/BrasscribePinkTheme.xaml");
+        Skip.If(theme is null || pink is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        var dictionaries = new Dictionary<string, HashSet<string>>();
+        foreach (var (file, name) in new[] { (theme!, "theme"), (pink!, "Pink") })
+            foreach (Match d in ThemeDictionaryRegex().Matches(File.ReadAllText(file)))
+                dictionaries[$"{name} {d.Groups[1].Value}"] = KeyRegex().Matches(d.Groups[2].Value).Select(m => m.Groups[1].Value).ToHashSet();
+        Assert.Equal(6, dictionaries.Count);
+        var themed = dictionaries.Values.SelectMany(k => k).ToHashSet();
+
+        string bandroom = Path.Combine(TestPaths.RepoRoot!, "apps", "bandroom", "windows", "src", "Brasscribe.Bandroom");
+        var used = new HashSet<string>();
+        foreach (string app in new[] { App, Path.Combine(App, "..", "Brasscribe.Play.Controls"), bandroom })
+        {
+            foreach (var file in Directory.EnumerateFiles(app, "*.xaml", SearchOption.AllDirectories).Where(NotBuilt))
+                foreach (Match m in UseRegex().Matches(File.ReadAllText(file))) used.Add(m.Groups[2].Value);
+            foreach (var (key, _) in CodeKeys(app))
+            {
+                used.Add(key);
+                // Code builds a brush from its colour (ThemedResources.Brush, ThemeBrushes.For).
+                if (key.EndsWith("Brush", StringComparison.Ordinal)) used.Add(key[..^"Brush".Length] + "Color");
+            }
+        }
+        used.IntersectWith(themed);
+        Assert.True(used.Count > 30, $"only {used.Count} themed keys found; the scan is broken");
+        var missing = dictionaries.SelectMany(d => used.Where(k => !d.Value.Contains(k)).Select(k => $"{k} ({d.Key})")).Order().ToList();
+        Assert.True(missing.Count == 0, "missing: " + string.Join(", ", missing));
+    }
+
     private static bool NotBuilt(string file) =>
         !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}");
 
@@ -109,6 +146,9 @@ public partial class XamlResourceTests
 
     [GeneratedRegex("\"((?:Scribe|Bc)[A-Z][A-Za-z0-9]+)\"")]
     private static partial Regex CodeKeyRegex();
+
+    [GeneratedRegex("<ResourceDictionary x:Key=\"(Light|Dark|HighContrast)\">(.*?)</ResourceDictionary>", RegexOptions.Singleline)]
+    private static partial Regex ThemeDictionaryRegex();
 
     [GeneratedRegex("^(?:Scribe|Bc)[A-Z]")]
     private static partial Regex DesignKeyRegex();

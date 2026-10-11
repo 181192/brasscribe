@@ -21,13 +21,13 @@ import androidx.compose.ui.text.font.FontFamily
 /** The colour roles every brand has (and, until the themes are split, the brand's own beside them). */
 typealias ScribeColors = BrasscribeColors
 
-/** The accent: links and the progress bar. Also brand text. */
+/** The accent, for links, and brand text. */
 val ScribeColors.accent: Color get() = brassText
 
-/** Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent. */
+/** Blue ink as identity: the mark, the wordmark, onboarding, empty states and the fill of a progress bar. Never a button fill and never something to act on; links use brand-text, the accent. */
 val ScribeColors.brand: Color get() = brass
 
-/** The accent: links and the progress bar. Also brand text. */
+/** The accent, for links, and brand text. */
 val ScribeColors.brandText: Color get() = brassText
 
 /** Onboarding and empty-state wash. */

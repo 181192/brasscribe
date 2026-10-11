@@ -115,7 +115,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] Mixer toggles are 40 epx tall on touch.
 
 ### Studio (`studio/`)
-- [ ] Load `brasscribe.css` and then Studio's own `tokens.css`, and delete the colour blocks in `styles.css`.
+- [ ] Load `brasscribe.css`, and delete the colour blocks in `styles.css`.
 - [ ] Put the lockup in the header, the favicon set in place, and the page title in the display face.
 - [ ] Map the piano-roll colours onto `model-1` to `model-4`, and keep the patterns.
 - [ ] Validator issues (range, crossing) use the warning icon, not the "?" glyphs, which mean uncertain notes in Play.

@@ -265,12 +265,12 @@ export class AudioAB extends HTMLElement {
   private drawWave(c: CanvasRenderingContext2D, w: number, hh: number): void {
     const dur = this.duration;
     if (!dur) {
-      c.fillStyle = token("text-muted");
+      c.fillStyle = token("scribe-text-muted");
       c.fillText(t("common.loading"), 8, 16);
       return;
     }
     const mid = (hh - 16) / 2;
-    const colours = [token("m1"), token("m2"), token("m3")];
+    const colours = [token("bc-model-1"), token("bc-model-2"), token("bc-model-3")];
     this.loaded.forEach((l, i) => {
       if (!l) return;
       const frac = l.buffer.duration / dur;
@@ -290,13 +290,13 @@ export class AudioAB extends HTMLElement {
     // Visible spectrogram window (outline, not only tint) and the play head.
     const x0 = (this.viewStart / dur) * w;
     const x1 = ((this.viewStart + this.window) / dur) * w;
-    c.strokeStyle = token("loop-edge");
+    c.strokeStyle = token("bc-loop-edge");
     c.lineWidth = 2;
     c.strokeRect(x0, 1, Math.max(2, x1 - x0), hh - 18);
     const px = (this.position() / dur) * w;
-    c.fillStyle = token("cursor");
+    c.fillStyle = token("bc-cursor");
     c.fillRect(px - 1.5, 0, 3, hh - 16);
-    timeAxis(c, w, hh - 16, 0, dur, token("text-muted"));
+    timeAxis(c, w, hh - 16, 0, dur, token("scribe-text-muted"));
   }
 
   private drawSpec(c: CanvasRenderingContext2D, w: number, hh: number): void {
@@ -345,7 +345,7 @@ export class AudioAB extends HTMLElement {
     c.font = "11px system-ui, sans-serif";
     c.fillText("8 kHz", 4, 12);
     c.fillText("0", 4, plotH - 4);
-    timeAxis(c, w, plotH, this.viewStart, this.viewStart + this.window, token("text-muted"));
+    timeAxis(c, w, plotH, this.viewStart, this.viewStart + this.window, token("scribe-text-muted"));
   }
 }
 

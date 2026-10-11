@@ -51,9 +51,9 @@ data class BrasscribeColors(
     val secondary: Color,
     /** Label on secondary. */
     val onSecondary: Color,
-    /** Fretscribe's `brand`. Blue ink as identity: the mark, the wordmark, onboarding and empty states. Never a button fill and never something to act on; links and the progress bar use brand-text, the accent. */
+    /** Fretscribe's `brand`. Blue ink as identity: the mark, the wordmark, onboarding, empty states and the fill of a progress bar. Never a button fill and never something to act on; links use brand-text, the accent. */
     val brass: Color,
-    /** Fretscribe's `brand-text`. The accent: links and the progress bar. Also brand text. */
+    /** Fretscribe's `brand-text`. The accent, for links, and brand text. */
     val brassText: Color,
     /** Fretscribe's `brand-tint`. Onboarding and empty-state wash. */
     val brassTint: Color,

@@ -370,6 +370,19 @@ def test_every_variable_the_web_clients_read_is_declared():
                     if name not in declared:
                         read.setdefault(name, path.relative_to(build.ROOT).as_posix())
     assert checked > 50 and not read, read
+    # Studio's canvases read variables by name from code: token("scribe-text"), tokenColour("bc-model-2") and
+    # the layers' colour: "…". Each name is a declared variable's, never a short name of Studio's own.
+    named = 0
+    for path in (build.ROOT / "studio" / "src").rglob("*.ts"):
+        text = path.read_text()
+        calls = [m.group(1) for m in re.finditer(r"\btoken(?:Colour)?\(((?:[^()]|\([^()]*\))*)\)", text)]
+        names = [n for call in calls for n in re.findall(r'"([^"]*)"', re.sub(r'[!=]==? "[^"]*"', "", call))]  # not what is compared
+        names += re.findall(r'\b(?:colour|token): "([^"]*)"', text)
+        for name in names:
+            named += 1
+            assert f"--{name}" in declared, (path.name, name)
+    assert named > 40, named
+    assert not (build.ROOT / "studio" / "src" / "tokens.css").exists()
 
 
 def test_pink_follows_into_the_neutral_names_on_windows():
@@ -446,6 +459,7 @@ def broken(tmp_path, change, source=None) -> Path:
     for key in ("file", "licence"):
         if "display-font" in ext.get("android", {}):
             ext["android"]["display-font"][key] = str((source.parent / ext["android"]["display-font"][key]).resolve())
+    ext["prefix"] = "tmp"  # a copy has the brand's prefix, which no second brand may have
     change(raw, ext)
     tokens = tmp_path / "tokens.json"
     tokens.write_text(json.dumps(raw))
@@ -479,12 +493,9 @@ def test_the_neutral_prefix_is_no_brands(tmp_path):
 
 
 def test_two_brands_cannot_have_one_prefix(tmp_path):
-    import pytest
-    fs = fretscribe()
-    fs.EXT["prefix"] = "bc"
-    fs.CSS = "bc"
-    with pytest.raises(SystemExit, match="the prefix 'bc' is brasscribe's too"):
-        fs.check_tokens()
+    # Also for a token file that is not in brands.json: a copy of a brand's file has that brand's prefix.
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="bc"), "the prefix 'bc' is brasscribe's too")
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="fs"), "the prefix 'fs' is fretscribe's too")
 
 
 def test_brands_json_is_checked():
@@ -513,6 +524,10 @@ def test_a_brand_with_something_missing_is_told_what(tmp_path):
     refused(tmp_path, lambda raw, ext: raw["color"]["dark"].update(glow=raw["color"]["dark"]["focus"]), r"color.dark has glow that color.light lacks")
     refused(tmp_path, lambda raw, ext: ext["modes"].remove("high-contrast-light"), "the mode 'high-contrast-light' is not listed")
     refused(tmp_path, lambda raw, ext: ext["modes"].append("sepia"), "the mode 'sepia' is listed .* and has no colours")
+    for name in ("typography", "space", "size", "radius", "elevation", "motion", "font", "color"):
+        refused(tmp_path, lambda raw, ext, name=name: raw.pop(name), f"tokens.json: no '{name}' group")
+    refused(tmp_path, lambda raw, ext: ext.pop("modes"), r"tokens.json: expected one \$extensions entry with modes and contrast")
+    refused(tmp_path, lambda raw, ext: ext.pop("contrast"), r"tokens.json: expected one \$extensions entry with modes and contrast")
 
 
 # ---------------------------------------------------------------- Fretscribe

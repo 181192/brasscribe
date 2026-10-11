@@ -2,14 +2,12 @@
    Colours, type, spacing, radii and motion come from the generated tokens; this file only
    lays them out. brasscribe.css handles dark mode, data-theme, prefers-contrast,
    forced-colors and reduced motion: --scribe-… is what every brand has, --bc-… is Brasscribe's
-   own. tokens.css maps the short names used by the canvases (--m1 … --m4, --uncertain, …)
-   onto them.
+   own. The canvases read the same variables from the document (token() in ui/dom.ts).
 
    Sizes are rem so browser zoom and the user's font size scale everything (WCAG 1.4.4);
    only hairlines, focus rings and canvas strokes are px. Spacing is on the 8 px grid. */
 @import "../../design/dist/web/brasscribe.css";
 @import "../../design/dist/web/fonts.css";
-@import "./tokens.css";
 
 :root {
   --gutter: var(--scribe-space-6);

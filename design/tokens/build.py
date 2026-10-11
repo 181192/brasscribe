@@ -86,11 +86,11 @@ def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else path.as_posix()
 
 
-def product_extension(tokens: dict) -> tuple[str, dict]:
+def product_extension(tokens: dict, file: Path) -> tuple[str, dict]:
     """The product's block under $extensions: the one entry that lists modes and contrast pairs."""
     found = [(k, v) for k, v in tokens.get("$extensions", {}).items() if isinstance(v, dict) and "modes" in v and "contrast" in v]
     if len(found) != 1:
-        raise SystemExit(f"expected one $extensions entry with modes and contrast, found {len(found)}")
+        raise SystemExit(f"{rel(file)}: expected one $extensions entry with modes and contrast (the brand's own), found {len(found)}")
     return found[0]
 
 
@@ -104,11 +104,11 @@ def configure(tokens: Path = DEFAULT_TOKENS, out: Path = DEFAULT_DIST, only: str
     global TOKENS_FILE, TOKENS, EXT, MODES, DIST, HEADER, ONLY, ANDROID, PRODUCT, CSS, KEY, PINK
     TOKENS_FILE, DIST = tokens.resolve(), out.resolve()
     TOKENS = json.loads(TOKENS_FILE.read_text())
-    namespace, EXT = product_extension(TOKENS)
+    namespace, EXT = product_extension(TOKENS, TOKENS_FILE)
     MODES = EXT["modes"]
     ANDROID = EXT.get("android", {})
     PRODUCT = namespace.rsplit(".", 1)[-1].capitalize()
-    # The brand's short prefix: --bc-text in CSS, BcTextBrush in XAML.
+    # The brand's short prefix, for what is its own: --bc-cursor in CSS, BcCursorBrush in XAML.
     CSS = EXT.get("prefix", PRODUCT.lower())
     KEY = CSS.capitalize()
     PINK = "pink" in MODES and "pink-dark" in MODES
@@ -133,11 +133,16 @@ def check_tokens() -> None:
         fail(f"'{NEUTRAL_PREFIX}' is the prefix of the neutral names; a brand needs its own")
     for brand in BRANDS:  # no two brands with one prefix: their variables and keys would be the same
         other = (ROOT / brand["tokens"]).resolve()
-        if other != TOKENS_FILE and other.exists() and brand_of(TOKENS_FILE):
-            name, ext = product_extension(json.loads(other.read_text()))
+        if other != TOKENS_FILE and other.exists():
+            name, ext = product_extension(json.loads(other.read_text()), other)
             if ext.get("prefix", name.rsplit(".", 1)[-1].lower()) == CSS:
                 fail(f"the prefix '{CSS}' is {brand['name']}'s too; every brand needs its own")
-    colours = TOKENS.get("color", {})
+    for name in ("color", "font", "typography", "space", "size", "radius", "elevation", "motion"):
+        if not isinstance(TOKENS.get(name), dict):
+            fail(f"no '{name}' group; every brand's tokens have color, font, typography, space, size, radius, elevation and motion")
+    if not isinstance(TOKENS["color"].get("light"), dict):
+        fail("no color.light; it names the brand's colour roles")
+    colours = TOKENS["color"]
     for mode in [*NEUTRAL["modes"], *MODES]:
         if mode not in MODES:
             fail(f"the mode '{mode}' is not listed under $extensions.*.modes; every brand has {', '.join(NEUTRAL['modes'])}")

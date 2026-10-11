@@ -128,11 +128,11 @@ public extension Color {
         public static var secondary: Color { catalogColor("secondary") }
         /// Text and icons on secondary.
         public static var onSecondary: Color { catalogColor("onSecondary") }
-        /// Brand colour when it has to carry text, for example the product name under the wordmark.
+        /// The brass that carries text: the accent, for links, and brand text such as the product name under the wordmark.
         public static var accent: Color { catalogColor("brassText") }
         /// Brand colour. Logo, app icon, onboarding art and the wordmark only. Never inside the score or the review list.
         public static var brand: Color { catalogColor("brass") }
-        /// Brand colour when it has to carry text, for example the product name under the wordmark.
+        /// The brass that carries text: the accent, for links, and brand text such as the product name under the wordmark.
         public static var brandText: Color { catalogColor("brassText") }
         /// Background of brand moments: the onboarding hero and the About screen.
         public static var brandTint: Color { catalogColor("brassTint") }
