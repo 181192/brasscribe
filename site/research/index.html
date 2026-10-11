@@ -77,7 +77,7 @@
       <p>A British-style brass band has 18 parts on a contest score: soprano cornet, solo, repiano, 2nd and 3rd cornets, flugelhorn, three tenor horns, two baritones, two tenor trombones and a bass trombone, euphonium, E♭ and B♭ basses, and percussion. Norwegian brass bands use the same layout. Most of these instruments share one family timbre, and the parts double each other all the time.</p>
       <p>We set three constraints:</p>
       <ul class="ticks">
-        <li><strong>Local first.</strong> A solo recording becomes a part on the phone, offline. A full band is processed on the musician's own computer. Nothing is sent to a cloud service.</li>
+        <li><strong>Local first.</strong> A solo recording becomes a part on the phone, offline. A full band is processed on the musician's own computer. No recording is sent to a cloud service.</li>
         <li><strong>Honest uncertainty.</strong> Every note carries a probability of being right. Doubtful notes are marked with a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span> (shape and colour), and the musician checks them in groups.</li>
         <li><strong>Measured, not assumed.</strong> Every stage was chosen by benchmark on recordings with known correct notes, and a regression gate protects each result.</li>
       </ul>
@@ -394,7 +394,7 @@
         <li><strong>Gated weights, downloaded by the user.</strong> MuScriptor's weights are gated on Hugging Face. Each musician accepts the licence with their own account, and the computer app downloads the file with their token. BS-RoFormer SW and Mega-53 have no stated weights licence. They are downloaded from their original release URLs and flagged in the model manager. We re-host none of these files. SwiftF0, Basic Pitch, Beat This! and HT-Demucs are MIT or Apache-2.0 and may be bundled. If the project ever became commercial, MuScriptor, BS-RoFormer SW and Mega-53 would have to go. The remaining licence-clean set cannot isolate a soloist or transcribe drums today.</li>
         <li><strong>Datasets.</strong> ChoraleBricks is CC BY 4.0. URMP and Slakh are downloaded on request and never bundled. CI uses only pinned ChoraleBricks annotations and our own cached model outputs.</li>
         <li><strong>No copyrighted demo.</strong> The recording we used to test the full pipeline end to end is a commercial release. It is used internally for measurement only. No audio, score or image of it is published here or shipped in the apps. The built-in example is a public-domain hymn tune (Old Hundredth).</li>
-        <li><strong>Recordings are the musician's.</strong> Links are not downloaded; musicians record playback or open their own files. Nothing goes to a cloud service. A shared public engine is not offered: it would redistribute non-commercial weights and process copyrighted recordings on someone else's behalf.</li>
+        <li><strong>Recordings are the musician's.</strong> Links are not downloaded; musicians record playback or open their own files. No recording goes to a cloud service. A shared public engine is not offered: it would redistribute non-commercial weights and process copyrighted recordings on someone else's behalf.</li>
         <li><strong>Accessibility.</strong> Uncertainty is shown by shape as well as colour. Every score can be exported as braille music (BRF) and as a talking score, and the apps target WCAG 2.2 AA.</li>
       </ul>
     </section>

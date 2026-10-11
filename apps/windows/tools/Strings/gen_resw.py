@@ -275,8 +275,10 @@ prop("PairingCodeBox", "PlaceholderText", "The six digits your computer shows", 
 text_button("ConnectButton", "Connect", "Koble til", "Open Brasscribe on your computer and choose Pair a device, then type the code here", "Åpne Brasscribe på datamaskinen og velg Koble til en enhet, og skriv inn koden her")
 prop("SettingsAboutHeading", "Text", "About", "Om")
 prop("AboutText", "Text",
-     "Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1).",
-     "Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1).")
+     "Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1). "
+     "Listening on this PC uses Microsoft's ONNX Runtime (MIT), which sends usage data to Microsoft through Windows' diagnostic data, never the recording.",
+     "Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1). "
+     "Lyttingen på denne PC-en bruker Microsofts ONNX Runtime (MIT), som sender bruksdata til Microsoft gjennom Windows' diagnostikkdata, aldri opptaket.")
 name("ErrorSteps", "What to do", "Hva du kan gjøre")
 name("LineupQuartetChoice", "Quartet", "Kvartett")
 prop("LineupQuartetTitle", "Text", "Quartet", "Kvartett")
