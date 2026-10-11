@@ -175,9 +175,9 @@ def export(ctx: StageContext) -> None:
         dsts = [ctx.out / f"brass-band.{ext}" for ext in formats]
         parts = sorted((score / "parts").glob("*.musicxml"))
         part_dsts = [ctx.out / "parts" / part.with_suffix(".pdf").name for part in parts]
-        missing = musescore.convert_many([(xml, dsts)])
+        missing = musescore.convert_many([(xml, dsts)], cancel=ctx.executor.cancel)  # stopping the job stops MuseScore
         missing += musescore.convert_many(list(zip(parts, part_dsts)),
-                                          style=PART_STYLE if PART_STYLE.exists() else None)
+                                          style=PART_STYLE if PART_STYLE.exists() else None, cancel=ctx.executor.cancel)
         if missing:
             raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
         written = [d.name for d in dsts] + [f"parts/{d.name}" for d in part_dsts]
