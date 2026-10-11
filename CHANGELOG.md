@@ -2,6 +2,19 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.10.2 (2026-10-11)
+
+### Fixes
+
+- **Android:** Delete is the error red, and both apps read the neutral theme with Fretscribe under its own names ([#353](https://github.com/181192/brasscribe/pull/353))
+
+<details><summary>Under the hood (1 change: docs, tests, CI, build, refactoring)</summary>
+
+
+- ONNX Runtime runs as Microsoft ships it, and the apps no longer say nothing goes online ([#335](https://github.com/181192/brasscribe/pull/335))
+
+</details>
+
 ## 0.10.1 (2026-10-11)
 
 ### Fixes
