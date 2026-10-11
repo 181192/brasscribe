@@ -23,9 +23,9 @@ import sys
 from contextlib import contextmanager
 from typing import Iterator
 
-from . import __version__
+from . import __version__, wire
 
-SERVICE_TYPE = "_brasscribe._tcp.local."
+SERVICE_TYPE = f"{wire.SERVICE_TYPE}.local."
 
 
 def lan_only(addresses: list[str]) -> list[str]:

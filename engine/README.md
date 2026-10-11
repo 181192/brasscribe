@@ -90,7 +90,7 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     are, not in CI.
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS
-  advertisement as `_brasscribe._tcp` (`discovery.py`). The contract is the committed
+  advertisement as `_scribe._tcp` (`discovery.py`). The contract is the committed
   [`openapi.json`](openapi.json); the apps generate their clients from it.
 - **Studio** is served at `/` from the committed bundle in `src/scribe_engine/static/`
   (built from [`studio/`](../studio/README.md)), so the engine runs without Node.

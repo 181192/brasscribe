@@ -254,7 +254,7 @@ def test_pairing_payload_uri(settings):
             st = c.get("/v1/pairing").json()
     u = urlsplit(st["uri"])
     q = {k: v[0] for k, v in parse_qs(u.query).items()}
-    assert (u.scheme, u.netloc) == ("brasscribe", "pair")
+    assert (u.scheme, u.netloc) == ("scribe", "pair")
     assert q == {"v": "1", "id": st["server_id"], "name": st["server_name"], "h": "192.0.2.20:8765,198.51.100.5:8765",
                  "code": st["code"]}
     assert st["fingerprint"] is None

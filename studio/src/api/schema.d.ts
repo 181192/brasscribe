@@ -1372,6 +1372,11 @@ export interface components {
              */
             device: string;
             /**
+             * Interface Version
+             * @description one whole number for everything an app and the engine say to each other. An app is built for one number: when this one differs it tells the user which of the two to update (this one higher: the app; lower: the engine) and sends the engine nothing else
+             */
+            interface_version: number;
+            /**
              * Server Id
              * @description stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.
              */
@@ -1829,7 +1834,7 @@ export interface components {
             single_use: boolean;
             /**
              * Uri
-             * @description pairing payload: brasscribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]
+             * @description pairing payload: scribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]
              */
             uri: string;
         };

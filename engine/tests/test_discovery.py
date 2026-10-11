@@ -6,8 +6,8 @@ from scribe_engine import __version__, discovery
 @pytest.mark.slow
 def test_service_info_advertises_port_addresses_and_pairing_hint():
     info = discovery.service_info(8765, ["192.0.2.20", "198.51.100.5"], hostname="studio-mac.local")
-    assert info.type == "_brasscribe._tcp.local."
-    assert info.name == "Brasscribe on studio-mac._brasscribe._tcp.local."
+    assert info.type == "_scribe._tcp.local."
+    assert info.name == "Brasscribe on studio-mac._scribe._tcp.local."
     assert info.server == "studio-mac.local."
     assert info.port == 8765
     assert sorted(info.parsed_addresses()) == ["192.0.2.20", "198.51.100.5"]
@@ -33,7 +33,7 @@ def test_the_desktop_helper_names_the_computer(monkeypatch):
     monkeypatch.setenv("SCRIBE_COMPUTER_NAME", "Karis MacBook\n")
     monkeypatch.setattr(discovery.socket, "gethostname", lambda: "Karis-MacBook-Pro.local")
     info = discovery.service_info(8765, ["192.0.2.20"], server_id="ab" * 16)
-    assert info.name == "Brasscribe on Karis MacBook._brasscribe._tcp.local."
+    assert info.name == "Brasscribe on Karis MacBook._scribe._tcp.local."
     assert info.server == "Karis-MacBook-Pro.local."
     assert info.decoded_properties["host"] == "Karis MacBook"
     assert discovery.service_name() == "Brasscribe on Karis MacBook"

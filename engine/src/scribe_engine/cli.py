@@ -20,7 +20,7 @@ from pathlib import Path
 
 from scribe_music.instruments import SEAT_IDS
 
-from . import bass_tab, config, profiles, runner, tab
+from . import bass_tab, config, profiles, runner, tab, wire
 
 # How long an idle connection is kept open for the next request. uvicorn closes one after 5 s by default; a phone
 # that sent a recording a few seconds after its last request found it closed (the upload failed).
@@ -186,7 +186,7 @@ def cmd_serve(args, open_browser: bool = False) -> int:
     addresses = (lan_addresses() if host in ("0.0.0.0", "::") else [host]) if on_lan else []
     with advertise(args.port, addresses, server_id=app.state.identity.server_id) as name:
         if name:
-            print(f"Advertised on the LAN as \"{name}\" (_brasscribe._tcp)", flush=True)
+            print(f"Advertised on the LAN as \"{name}\" ({wire.SERVICE_TYPE})", flush=True)
         uvicorn.run(app, host=host, port=args.port, log_level="warning", timeout_keep_alive=KEEP_ALIVE_S)
     return 0
 
@@ -299,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
         sv.add_argument("--lan", action="store_true",
                         help="listen on all interfaces and print the LAN URL and pairing code for the Play apps")
         sv.add_argument("--no-advertise", action="store_true",
-                        help="do not announce the engine over Bonjour/mDNS (_brasscribe._tcp) when on the LAN")
+                        help="do not announce the engine over Bonjour/mDNS (_scribe._tcp) when on the LAN")
         sv.add_argument("--no-trust-local", action="store_true",
                         help="require a token from clients on this computer too (as SCRIBE_TRUST_LOCAL=0); use "
                              "it when a proxy or tunnel on this computer forwards outside traffic to the engine")

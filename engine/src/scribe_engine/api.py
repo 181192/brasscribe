@@ -37,7 +37,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, 
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, bass_tab, build_info, history, inspection, profiles, tab
+from . import __version__, bass_tab, build_info, history, inspection, profiles, tab, wire
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
 from .adapters import host_device
@@ -234,7 +234,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/health", response_model=m.Health, operation_id="getHealth", tags=["session"])
     def health(request: Request) -> m.Health:
-        return m.Health(version=__version__, build=build_info.build(), device=host_device(),
+        return m.Health(version=__version__, interface_version=wire.INTERFACE_VERSION, build=build_info.build(), device=host_device(),
                         auth_required=not is_trusted(request), server_id=app.state.identity.server_id,
                         server_name=app.state.server_name)
 
