@@ -69,8 +69,9 @@ import TranscriptionKit
                            "3rd Cornet", "Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"],
         "review-contrast": ["Bar 2"],
         "sheet-settings-contrast": ["Your instrument", "New scores open on your part.", "Your computer", "On this device",
-                                    "Write down solos on this device", "Make band drafts on this device", "Listening files", "Ready",
-                                    "One instrument on its own can be written"],
+                                    "Write down solos on this device", "Make band drafts on this device", "Listening files",
+                                    // the listening files' state: there on a developer's Mac, to download on a runner
+                                    "Ready", "6 MB to download", "One instrument on its own can be written"],
         "sheet-what-you-play-contrast": ["Instrument"],
         "sheet-export-contrast": ["Show ? marks"],
     ])
