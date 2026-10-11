@@ -324,7 +324,12 @@ final class AppModel {
         if isPairWindowOpen {
             Task { await pairing.open() }
         } else {
-            Task { _ = try? await client.closePairing() }
+            let log = logger
+            Task {
+                do { _ = try await client.closePairing() } catch {
+                    log.write("the pairing code the engine opened at start could not be closed: \(error)")
+                }
+            }
         }
     }
 

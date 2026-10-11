@@ -143,17 +143,7 @@ class ConnectionMonitor(
                 return
             }
             if (_state.value is ConnectionState.NetworkClosed) _state.value = ConnectionState.Reconnecting(t.serverName)
-            var r = checked(t.url)
-            if (r == Check.Unreachable) {
-                val found = host.find(t.serverId)
-                if (found != null && found != t.url) {
-                    val again = checked(found)
-                    if (again != Check.Unreachable) {
-                        host.moved(found)
-                        r = again
-                    }
-                }
-            }
+            val r = checked(t)
             // A check can learn the engine's name (a token from an earlier version had none).
             val name = host.target()?.serverName ?: t.serverName
             when (r) {
@@ -197,9 +187,23 @@ class ConnectionMonitor(
         }
     }
 
-    /** [ConnectionHost.check], where anything it throws is a check that got no answer: the heartbeat goes on. */
-    private suspend fun checked(url: String): Check = try {
-        host.check(url)
+    /**
+     * One heartbeat: the last address, then the address the engine is found at now. Anything the host throws on the
+     * way (the check, the search, keeping the new address) is a heartbeat that got no answer: the next one goes on.
+     */
+    private suspend fun checked(t: Target): Check = try {
+        var r = host.check(t.url)
+        if (r == Check.Unreachable) {
+            val found = host.find(t.serverId)
+            if (found != null && found != t.url) {
+                val again = host.check(found)
+                if (again != Check.Unreachable) {
+                    host.moved(found)
+                    r = again
+                }
+            }
+        }
+        r
     } catch (e: kotlinx.coroutines.CancellationException) {
         throw e
     } catch (e: Exception) {

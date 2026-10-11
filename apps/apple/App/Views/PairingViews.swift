@@ -45,6 +45,9 @@ struct YourComputerSection: View {
         case .connected: return false
         // one of the two needs an update first; the pairing it has is kept
         case .mismatch: return false
+        // The paired computer was not found. It may be there under a new identity (its phones were reset, or its data
+        // folder is new): it then answers as another computer, which this device can only pair with again.
+        case .offline: return true
         default: return !paired
         }
     }

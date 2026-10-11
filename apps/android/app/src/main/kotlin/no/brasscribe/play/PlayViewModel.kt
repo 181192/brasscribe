@@ -1307,14 +1307,18 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     }
 
     /**
-     * Fetches the computer's finished scores. They are listed only while the computer can be asked for them: with
-     * nothing paired, while it is not connected, and when it does not answer, the list holds the phone's own only.
+     * Fetches the computer's finished scores. They are listed only while the connection says Connected: with nothing
+     * paired, while it is not connected, and when one of the two needs an update, the list holds the phone's own only.
+     * One request that does not get through while Connected takes nothing away: the heartbeat decides when the
+     * computer is gone, and the scores go with that change.
      */
     fun refreshComputerScores() {
         val engine = container.engine()?.takeIf { !container.usingFixture && connection.state.value is ConnectionState.Connected }
             ?: run { computerJobs.value = emptyList(); return }
         viewModelScope.launch {
-            runCatching { engine.jobs() }.onSuccess { computerJobs.value = it }.onFailure { computerJobs.value = emptyList(); refused(it) }
+            runCatching { engine.jobs() }
+                .onSuccess { if (connection.state.value is ConnectionState.Connected) computerJobs.value = it }
+                .onFailure(::refused)
         }
     }
 
@@ -1475,7 +1479,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             }
             savedScores.value = withContext(storage) { scoreLibrary.list() }
             val (job, composition, xml) = renamed ?: return@launch
-            job?.let { runCatching { container.engine()?.renameRun(it, cleaned) } }
+            job?.let { runCatching { container.engine()?.renameRun(it, cleaned) }.onFailure(::saidIfRefused) }
             if (currentSavedScoreId == id) {
                 result.value = result.value?.copy(composition = composition.first, musicXml = xml, compositionJson = composition.second)
                 source.value = source.value?.copy(name = cleaned)
@@ -1636,12 +1640,15 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // at the band's loudness: the whole recording measured once (off the main thread)
                 withContext(Dispatchers.Default) { recordingLevel.slice(a, span.start, span.endInclusive, r.musicXml) }
             }
-            val score = scoreBarAudio(r, map, bar)
-            BarListening.Clips(listOfNotNull(original, score), withRecording = original != null)
+            var said = false
+            val score = scoreBarAudio(r, map, bar) { said = true }
+            // With the recording's bar in hand it plays; with nothing, what was said (which of the two to update) stands.
+            BarListening.Clips(listOfNotNull(original, score), withRecording = original != null, said = said && original == null)
         }
     }
 
-    private suspend fun scoreBarAudio(r: TranscriptionResult, map: TickMap, bar: Int): PcmAudio? {
+    /** [refusedAndSaid] is called when the computer was not asked because one of the two needs an update, which has then been said. */
+    private suspend fun scoreBarAudio(r: TranscriptionResult, map: TickMap, bar: Int, refusedAndSaid: () -> Unit = {}): PcmAudio? {
         // A note changed on the phone is not in the engine's render: the bar is rendered here, with the new note.
         if (r.changedOnPhone) return withContext(Dispatchers.Default) {
             runCatching { no.brasscribe.play.score.BarAudio.render(getApplication(), r.musicXml, bar) }
@@ -1656,7 +1663,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     f.writeBytes(bytes)
                     AudioDecoder.decode(getApplication(), Uri.fromFile(f)).audio
                     // (The computer was not asked because one of the two needs an update: said, not a bar that stays silent.)
-                }.onFailure(::saidIfRefused).getOrNull()
+                }.onFailure { if (saidRefused(it)) refusedAndSaid() }.getOrNull()
             } finally {
                 // Only needed to decode it: the samples are kept, not the file.
                 f.delete()
@@ -1753,7 +1760,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             val urls = link.urls.ifEmpty { listOfNotNull(container.reconnectDiscovery.find(link.serverId)) }
             for (url in urls) {
-                val client = container.newEngineClient(url)
+                // The link names its engine: another engine at one of its addresses is not there, and the next is tried.
+                val client = container.newEngineClient(url).also { it.serverId = link.serverId }
                 try {
                     val health = client.health()
                     if (health.serverId != link.serverId) continue

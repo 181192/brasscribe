@@ -223,8 +223,10 @@ final class AppModel {
         let asked = connectionChanges
         do {
             let jobs = try await svc.jobs()
-            // the connection changed while the computer answered: that change fetched the scores again, or took them away
-            guard asked == connectionChanges else { return }
+            // the connection changed while the computer answered: that change fetched the scores again, or took them away.
+            // And a fetch begun while not connected (a pull to refresh, the moment after pairing) lists nothing under
+            // "Not connected": the change to Connected fetches them.
+            guard asked == connectionChanges, Self.scoresShow(connection: connection.state.kind) else { return }
             computerJobs = jobs
         } catch {
             let update = refused(error)
@@ -239,6 +241,9 @@ final class AppModel {
     nonisolated static func scoresGo(refusedForUpdate: Bool, connection: ConnectionState.Kind) -> Bool {
         refusedForUpdate || connection != .connected
     }
+
+    /// Whether the computer's scores are listed: only under a connection row that says Connected.
+    nonisolated static func scoresShow(connection: ConnectionState.Kind) -> Bool { connection == .connected }
 
     /// How many times the connection has changed: an answer asked for before the last change is not about this
     /// connection.

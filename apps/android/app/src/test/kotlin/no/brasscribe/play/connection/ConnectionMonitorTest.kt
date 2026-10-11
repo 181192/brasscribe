@@ -138,6 +138,22 @@ class ConnectionMonitorTest {
     }
 
     @Test
+    fun aNewAddressThatCannotBeKeptIsAHeartbeatWithNoAnswer() = runTest {
+        val host = object : ConnectionHost {
+            override fun target() = Target("s1", name, "http://old")
+            override suspend fun check(url: String): Check = if (url == "http://new") Check.Ok() else Check.Unreachable
+            override suspend fun find(serverId: String): String? = "http://new"
+            override fun moved(url: String): Unit = error("the new address could not be kept")
+            override suspend fun rotate() = Unit
+        }
+        val m = ConnectionMonitor(backgroundScope, host, now = { testScheduler.currentTime })
+        m.start(); runCurrent()
+        advanceTimeBy(10_000)
+        assertTrue("the heartbeat goes on", m.running)
+        assertEquals(ConnectionState.Reconnecting(name), m.state.value)
+    }
+
+    @Test
     fun only401MeansPairAgainAndItStopsTheHeartbeat() = runTest {
         val host = FakeHost(Target("s1", name, "http://a")) { Check.Unauthorized }
         val m = monitor(host)

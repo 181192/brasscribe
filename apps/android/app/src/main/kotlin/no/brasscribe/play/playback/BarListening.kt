@@ -34,8 +34,11 @@ class BarListening(
         data object Unavailable : Event
     }
 
-    /** What [load] found for a bar: the clips in order, and whether the first is the recording. */
-    data class Clips(val clips: List<PcmAudio>, val withRecording: Boolean)
+    /**
+     * What [load] found for a bar: the clips in order, and whether the first is the recording. [said] when [load] has
+     * itself told the player why there is nothing to hear: nothing else is said for that press.
+     */
+    data class Clips(val clips: List<PcmAudio>, val withRecording: Boolean, val said: Boolean = false)
 
     private val _playing = MutableStateFlow<Int?>(null)
     val playing: StateFlow<Int?> = _playing.asStateFlow()
@@ -59,7 +62,7 @@ class BarListening(
             }
             if (ms <= 0L) {
                 _playing.value = null
-                onEvent(Event.Unavailable)
+                if (!c.said) onEvent(Event.Unavailable)
                 return@launch
             }
             onEvent(Event.Started(bar, c.withRecording))

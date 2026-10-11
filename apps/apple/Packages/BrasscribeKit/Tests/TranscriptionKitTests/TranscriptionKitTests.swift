@@ -860,6 +860,29 @@ extension URLRequest {
         #expect(try store.record(serverID: "srv-1") == r)
     }
 
+    /// The computer's devices were reset: it answers 401 under a new identity, which from here is another computer at
+    /// the old address. The paired one is looked for and not found, and after two minutes the row says Not connected,
+    /// where the ways to pair are offered again. Nothing is forgotten and nothing is sent to the engine that answers.
+    @Test @MainActor func aComputerUnderANewIdentityIsLookedForAndThenNotConnected() async throws {
+        defer { StubEngine.oddAnswer = "{}" }
+        StubEngine.oddAnswer = #"{"status":"ok","version":"1","device":"cpu","auth_required":true,"server_id":"srv-new","server_name":"Brasscribe on Studio","interface_version":\#(Wire.interfaceVersion)}"#
+        StubEngine.requests = []
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://refusing.local:8765")
+        var clock = Self.now
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [StubEngine.self]
+        let store = InMemoryCredentialStore([r])
+        let m = ConnectionMonitor(store: store, session: URLSession(configuration: cfg), find: { _ in nil }, now: { clock })
+        m.resume(); m.suspend()
+        await m.heartbeat()
+        #expect(m.state == .reconnecting(serverName: "Brasscribe on Studio"))
+        clock = Self.now.addingTimeInterval(ConnectionMachine.giveUpAfter + 1)
+        await m.heartbeat()
+        #expect(m.state == .offline)
+        #expect(try store.record(serverID: "srv-1") == r)
+        #expect(Set(sent(to: "refusing.local")) == ["GET /v1/devices/me", "GET /v1/health"])
+    }
+
     /// An answer that can't be read but carries this app's interface version is a failure, not "update".
     @Test func anUnreadableAnswerWithThisAppsVersionIsNotAMismatch() async throws {
         defer { StubEngine.oddAnswer = "{}" }
