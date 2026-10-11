@@ -5,6 +5,7 @@ import type {
   JobEvent, Manifest, ParityReport, ProfileInfo, Reference, RoundTrip, Source, StageFiles, SuiteInfo,
   SuiteRun, ValidationIssue, PartSources,
 } from "./types";
+import { interfaceMatch, type InterfaceMatch } from "./wire";
 
 /** The engine answered 404 for a route it does not have (as opposed to a missing resource). */
 export class MissingEndpoint extends Error {
@@ -28,6 +29,44 @@ export class TimedOut extends Error {
     super(`no answer within ${seconds} s`);
   }
 }
+
+/** The engine's interface version is not this Studio's: the request was not sent. `which` is the one to update. */
+export class InterfaceMismatch extends Error {
+  constructor(readonly which: Exclude<InterfaceMatch, "match">) {
+    super(which === "update-studio" ? "The engine is newer than this page." : "The engine is older than this Studio.");
+  }
+}
+
+/**
+ * What the engine's last health answer said about its interface version. Undefined until it has answered, and again
+ * after a request that did not get through (the engine there may then be another one, or the same after its update).
+ */
+let known: InterfaceMatch | undefined;
+const watchers = new Set<(state: InterfaceMatch | undefined) => void>();
+
+function know(state: InterfaceMatch | undefined): void {
+  if (state === known) return;
+  known = state;
+  for (const w of Array.from(watchers)) w(state);
+}
+
+/** The engine's interface against this Studio's, as last heard; undefined while it is not known. */
+export function engineInterface(): InterfaceMatch | undefined {
+  return known;
+}
+
+/** Calls `fn` whenever what is known of the engine's interface changes; returns the way to stop. */
+export function onEngineInterface(fn: (state: InterfaceMatch | undefined) => void): () => void {
+  watchers.add(fn);
+  return () => watchers.delete(fn);
+}
+
+/** For a test whose engine answers the one request it is about and no health: takes the engine's interface as `state`. */
+export function assumeEngineInterface(state: InterfaceMatch | undefined): void {
+  know(state);
+}
+
+const HEALTH = "/v1/health";
 
 /** Default time to wait for an answer; long reads (audio, scores) pass their own. */
 const TIMEOUT_S = 60;
@@ -56,7 +95,16 @@ export interface CallOptions {
   signal?: AbortSignal;
 }
 
+/**
+ * Every request passes here. An engine with another interface version is asked for its health only: anything else
+ * is refused before it is sent (InterfaceMismatch). Until the engine has said its number, health is asked first.
+ */
 async function request(path: string, init: RequestInit = {}, timeoutS = TIMEOUT_S): Promise<Response> {
+  // (What is not the engine's API, the files Studio itself is served with, is not the engine's to refuse.)
+  if (path.startsWith("/v1/") && path !== HEALTH) {
+    if (known === undefined) await api.health();
+    if (known !== undefined && known !== "match") throw new InterfaceMismatch(known);
+  }
   const timeout = AbortSignal.timeout(timeoutS * 1000);
   const own = init.signal ?? null;
   try {
@@ -65,6 +113,7 @@ async function request(path: string, init: RequestInit = {}, timeoutS = TIMEOUT_
     // The caller's own cancel is passed on as an AbortError; only our deadline is a time-out.
     if (own?.aborted) throw new DOMException("The request was cancelled.", "AbortError");
     if (timeout.aborted) throw new TimedOut(timeoutS);
+    know(undefined);
     throw new Unreachable(e instanceof Error ? e.message : String(e));
   }
 }
@@ -131,7 +180,12 @@ export async function fetchText(path: string, endpoint = path, opts: CallOptions
 const enc = encodeURIComponent;
 
 export const api = {
-  health: () => get<Health>("/v1/health"),
+  /** Also notes whether the engine's interface version is this Studio's (engineInterface). */
+  health: async (): Promise<Health> => {
+    const answer = await get<Health>(HEALTH);
+    know(interfaceMatch((answer as { interface_version?: unknown } | null)?.interface_version));
+    return answer;
+  },
   profiles: () => get<ProfileInfo[]>("/v1/profiles"),
   jobs: () => get<Job[]>("/v1/jobs"),
   job: (id: string, opts?: CallOptions) => get<Job>(`/v1/jobs/${enc(id)}`, undefined, undefined, opts),

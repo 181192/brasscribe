@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { anySignal, api, isAbort, subscribe, SUITE_TIMEOUT_S, TimedOut, type StreamState } from "../src/api/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { anySignal, api, assumeEngineInterface, isAbort, subscribe, SUITE_TIMEOUT_S, TimedOut, type StreamState } from "../src/api/client";
 import type { JobEvent } from "../src/api/types";
 
 /** The browser's EventSource, driven by hand. */
@@ -45,6 +45,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+// These are about what comes after the engine is known to speak this Studio's interface version (wire.test.ts has the gate).
+beforeEach(() => assumeEngineInterface("match"));
 
 describe("cancelling requests", () => {
   it("passes the caller's cancel on as an AbortError, not a time-out", async () => {

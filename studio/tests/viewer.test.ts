@@ -1,8 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { assumeEngineInterface } from "../src/api/client";
 import { setLang } from "../src/i18n";
 import { engineScorePath, viewerView } from "../src/views/viewer";
 
 const origin = "http://127.0.0.1:8765";
+
+// The engine here answers the one file a test asks for, and no health: it is taken to speak this Studio's interface version.
+beforeEach(() => assumeEngineInterface("match"));
 
 afterEach(() => {
   vi.unstubAllGlobals();

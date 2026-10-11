@@ -1,6 +1,6 @@
 // Studio entry: hash router, language, engine status, global keyboard shortcuts.
-import { api } from "./api/client";
-import { interfaceMatch, type InterfaceMatch } from "./api/wire";
+import { api, engineInterface, onEngineInterface } from "./api/client";
+import type { InterfaceMatch } from "./api/wire";
 // Custom elements register themselves on import.
 import "./components/audio";
 import "./components/beats";
@@ -58,8 +58,13 @@ document.addEventListener("keydown", (e) => {
 syncNav();
 wireMenus();
 
-/** Whether the engine speaks this Studio's interface version; "match" until its health answer says otherwise. */
+/**
+ * Whether the engine speaks this Studio's interface version, as its last health answer said. An engine that does not
+ * answer is its own problem, which each view says for itself: until one answers otherwise, the views are shown.
+ */
 let match: InterfaceMatch = "match";
+/** False until the engine's health has been asked once: no view is shown, and so nothing asked of the engine, before. */
+let asked = false;
 
 /** In place of every view while the engine's interface version is another: which of the two to update, and nothing asked of it. */
 function updateNotice(which: Exclude<InterfaceMatch, "match">): HTMLElement {
@@ -72,6 +77,7 @@ function updateNotice(which: Exclude<InterfaceMatch, "match">): HTMLElement {
 }
 
 function route(initial = false): void {
+  if (!asked) return;
   const main = document.getElementById("main")!;
   const { name, args, query } = parseHash(location.hash);
   const r = routes.find((x) => x.name === name) ?? routes[0];
@@ -96,6 +102,8 @@ function route(initial = false): void {
 }
 
 let health: { version: string; device: string } | null | undefined;
+/** How often an open page asks the engine's health again. */
+const HEALTH_EVERY_MS = 60_000;
 
 function renderStatus(): void {
   const el = document.getElementById("engine-status")!;
@@ -108,15 +116,21 @@ function renderStatus(): void {
 
 async function engineStatus(): Promise<void> {
   try {
-    const answer = await api.health();
-    health = answer;
-    match = interfaceMatch(answer.interface_version);
+    health = await api.health();
   } catch {
     health = null;
-    // An engine that does not answer is its own problem, which each view says for itself.
-    match = "match";
   }
+  asked = true;
+  showInterface();
+}
+
+/** Takes what the client now knows of the engine's interface: the notice in place of the views, or the views back. */
+function showInterface(): void {
+  const now = engineInterface() ?? "match";
+  const changed = now !== match;
+  match = now;
   renderStatus();
+  if (changed && asked) route(true);
 }
 
 /** Static page chrome: header, nav, footer, and the lang attribute. */
@@ -287,6 +301,16 @@ globalKeys();
 // "Try again" in an error notice shows the current view again, once the engine has said which interface version it speaks.
 window.addEventListener("studio:retry", () => void engineStatus().then(() => route(true)));
 window.addEventListener("hashchange", () => route());
+// A page left open while the engine is replaced: its health is asked again when the page is looked at again, at a slow
+// pace while it is, and by the client before the next request after one that did not get through. An engine that now
+// has another interface version takes the views away at once.
+onEngineInterface(() => showInterface());
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && asked) void engineStatus();
+});
+setInterval(() => {
+  if (document.visibilityState === "visible" && asked) void engineStatus();
+}, HEALTH_EVERY_MS);
 // The skip link moves focus to the page's content; as a plain "#main" link it would go through the router.
 document.querySelector<HTMLAnchorElement>(".skip-link")?.addEventListener("click", (e) => {
   e.preventDefault();
