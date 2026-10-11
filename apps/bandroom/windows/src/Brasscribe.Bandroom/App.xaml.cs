@@ -21,7 +21,7 @@ namespace Brasscribe.Bandroom;
 ///
 /// Command line: --background (the sign-in start), --demo (sample content, no engine), --show
 /// flyout|devices|confirm-stop|window|pair|allow|settings (one view with sample content, for screenshots and
-/// the accessibility scan), --state running|busy|attention|stopped|error|setup|starting, --theme light|dark
+/// the accessibility scan), --state running|busy|attention|update|stopped|error|setup|starting, --theme light|dark
 /// (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
 /// </summary>
 public partial class App : Application, IBandroomActions, IPanelHost, ISettingsHost, IAnnouncer
@@ -395,7 +395,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _demoEngine = new DemoEngine();
         var state = Option("--state") ?? "running";
         ApplySnapshot(DemoEngine.Snapshot(state, _s));
-        _vm.ApplyDevices(_demoEngine.Devices, DateTimeOffset.UtcNow);
+        // An engine with another interface version is not asked for its phones.
+        _vm.ApplyDevices(state == "update" ? [] : _demoEngine.Devices, DateTimeOffset.UtcNow);
         string show = Option("--show") ?? "flyout";
         _ui.TryEnqueue(DispatcherQueuePriority.Low, async () =>
         {
@@ -469,10 +470,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     {
         if (_tray is null) return;
         bool running = _supervisor?.State is EngineState.Running or EngineState.Starting || _demo;
+        // No pairing on an engine with another interface version.
+        bool pairs = running && (_controller?.Interface ?? InterfaceAnswer.Same) == InterfaceAnswer.Same;
         var items = new List<(int, string?, bool)>
         {
             (1, _s["Tray_Open"], true),
-            (2, _s["Primary_Pair"], running),
+            (2, _s["Primary_Pair"], pairs),
             (0, null, true),
             (3, _s["Action_Restart"], running),
             (4, _s["Action_Stop"], running),
@@ -499,6 +502,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     public void OpenPairWindow()
     {
+        // No pairing on an engine with another interface version: the flyout says which of the two to update.
+        if (_controller is { Interface: not InterfaceAnswer.Same } && !_demo)
+        {
+            _flyout?.ShowFlyout();
+            return;
+        }
         _flyout?.HideFlyout();
         if (_pairWindow is null)
         {
@@ -624,7 +633,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             ProblemKind.LowDisk => "ms-settings:storagesense",
             ProblemKind.PublicNetwork => "ms-settings:network-status",
-            ProblemKind.PixiTooOld or ProblemKind.UpdateRefused => LatestRelease,
+            ProblemKind.PixiTooOld or ProblemKind.UpdateRefused or ProblemKind.UpdateBandroom => LatestRelease,
             ProblemKind.MissingDownload => _downloads?.Error switch
             {
                 DownloadError.LicenceNotAccepted => ModelComponent.BandWriter.Page().AbsoluteUri,
@@ -635,7 +644,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         };
         if (uri is not null) _ = Windows.System.Launcher.LaunchUriAsync(new Uri(uri));
         else if (problem == ProblemKind.KeyRefused || (problem == ProblemKind.MissingDownload && _downloads?.Error is DownloadError.KeyMissing)) OpenSettings();
-        else if (problem is ProblemKind.MissingDownload or ProblemKind.UpdateFailed) FinishSetup();
+        else if (problem is ProblemKind.MissingDownload or ProblemKind.UpdateFailed or ProblemKind.UpdateEngine) FinishSetup();
     }
 
     public async Task<bool> RemoveDeviceAsync(string deviceId)

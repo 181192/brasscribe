@@ -21,6 +21,8 @@ internal sealed class FakeLan
         public string ServerName { get; } = "Brasscribe on " + computer;
         public HashSet<string> Tokens { get; } = [];
         public bool AuthRequired { get; set; } = true;
+        /// <summary>What health says its interface version is; null leaves it out, as an engine from before the number does.</summary>
+        public int? InterfaceVersion { get; set; } = Wire.InterfaceVersion;
         public string Code { get; set; } = "482913";
         public string RotateAfter { get; set; } = "2099-01-01T00:00:00Z";
         public int Rotations { get; set; }
@@ -41,14 +43,16 @@ internal sealed class FakeLan
     {
         var path = r.RequestUri!.AbsolutePath;
         string? token = r.Headers.Authorization?.Parameter;
-        Requests.Add((address, path, token));
+        lock (Requests) Requests.Add((address, path, token));
         if (!At.TryGetValue(address, out var e)) throw new HttpRequestException("connection refused");
         bool known = token is not null && e.Tokens.Contains(token);
         string Json(object o) => JsonSerializer.Serialize(o);
         switch (r.Method.Method, path)
         {
             case ("GET", "/v1/health"):
-                return FakeHandler.Json(Json(new { version = "0.4.0", device = "cpu", auth_required = e.AuthRequired, server_id = e.ServerId, server_name = e.ServerName }));
+                return FakeHandler.Json(e.InterfaceVersion is { } version
+                    ? Json(new { version = "0.4.0", interface_version = version, device = "cpu", auth_required = e.AuthRequired, server_id = e.ServerId, server_name = e.ServerName })
+                    : Json(new { version = "0.4.0", device = "cpu", auth_required = e.AuthRequired, server_id = e.ServerId, server_name = e.ServerName }));
             case ("GET", "/v1/devices/me"):
                 if (!e.AuthRequired && token is null) return FakeHandler.Json("""{"detail":"not a paired device"}""", HttpStatusCode.NotFound);
                 if (!known) return FakeHandler.Json("""{"detail":"unknown token"}""", HttpStatusCode.Unauthorized);
@@ -358,8 +362,10 @@ public class ConnectionMonitorTests
     [Fact]
     public void Glyphs_differ_per_state_so_colour_is_never_the_only_cue()
     {
-        var glyphs = Enum.GetValues<ConnectionState>().Select(Screens.ConnectionGlyph).ToList();
+        // The two update states share the update icon: the words say which of the two to update.
+        var glyphs = Enum.GetValues<ConnectionState>().Where(s => s != ConnectionState.UpdateApp).Select(Screens.ConnectionGlyph).ToList();
         Assert.Equal(glyphs.Count, glyphs.Distinct().Count());
+        Assert.Equal(Screens.ConnectionGlyph(ConnectionState.UpdateBandroom), Screens.ConnectionGlyph(ConnectionState.UpdateApp));
     }
 }
 
@@ -466,11 +472,29 @@ public class PairingLinkTests
     [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdeg", PairingLinkProblem.BadServerId)]
     [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdef&fp=abc", PairingLinkProblem.NeedsPinning)]
     [InlineData("", PairingLinkProblem.NotAPairingLink)]
+    // The scheme from before this one is not accepted.
+    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
+    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef&h=192.0.2.20:8765&code=482913", PairingLinkProblem.NotAPairingLink)]
     public void Refuses_what_it_cannot_use_safely(string text, PairingLinkProblem expected)
     {
         Assert.Equal(expected, PairingLink.TryParse(text, out var link));
         Assert.Null(link);
     }
+
+    [Theory]
+    [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdef", "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    [InlineData("SCRIBE://pair?v=1&id=0123456789abcdef0123456789abcdef", "SCRIBE://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    [InlineData("\"C:\\Program Files\\Play\\Play.exe\" \"scribe://pair?v=1&id=0123456789abcdef0123456789abcdef&code=482913\"",
+        "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef&code=482913")]
+    [InlineData("Play.exe scribe://pair?v=1&id=0123456789abcdef0123456789abcdef --theme dark", "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    // The old scheme ends in this one's letters: it is another scheme, not a pairing link.
+    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef", null)]
+    [InlineData("Play.exe \"brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef\"", null)]
+    [InlineData("Play.exe --show home", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void The_pairing_link_in_a_command_line(string? text, string? expected) =>
+        Assert.Equal(expected, PairingLink.In(text));
 
     [Theory]
     [InlineData("198.51.100.2:8765", "http://198.51.100.2:8765/")]

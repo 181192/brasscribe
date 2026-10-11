@@ -69,7 +69,7 @@ public class AppFlowTests
         string path = r.RequestUri!.AbsolutePath;
         return (r.Method.Method, path) switch
         {
-            ("GET", "/v1/health") => FakeHandler.Json("""{"version":"0.1.0","device":"mps","auth_required":false}"""),
+            ("GET", "/v1/health") => FakeHandler.Json($$"""{"version":"0.1.0","interface_version":{{Wire.InterfaceVersion}},"device":"mps","auth_required":false}"""),
             ("GET", "/v1/profiles") => FakeHandler.Json("""[{"name":"solo","pipeline":"A-solo","description":"d","validated":false,"stages":[]},{"name":"brass-band","pipeline":"A","description":"d","validated":false,"stages":[]}]"""),
             ("POST", "/v1/audio") => FakeHandler.Json("""{"audio_id":"a1","sha256":"00","filename":"take.wav","bytes":4}""", HttpStatusCode.Created),
             ("POST", "/v1/jobs") => FakeHandler.Json(JobRunning, HttpStatusCode.Accepted),
@@ -135,6 +135,7 @@ public class AppFlowTests
         string Job() => $$"""{"id":"j1","profile":"solo","status":"succeeded","created":{{DateTimeOffset.Now.ToUnixTimeSeconds()}},"stages":[],"audio_id":"a1","title":"{{title}}","outputs":["solo.musicxml","composition.json"]}""";
         var engine = new FakeHandler((r, _) => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
         {
+            ("GET", "/v1/health") => FakeHandler.Json($$"""{"version":"0.1.0","interface_version":{{Wire.InterfaceVersion}},"device":"cpu","auth_required":false}"""),
             ("GET", "/v1/jobs") => FakeHandler.Json(gone ? "[]" : $"[{Job()}]"),
             ("GET", "/v1/jobs/j1") => FakeHandler.Json(Job()),
             ("GET", "/v1/jobs/j1/composition") => FakeHandler.Json("""
@@ -316,6 +317,7 @@ public class AppFlowTests
     [InlineData("first-run", Screen.FirstRun)]
     [InlineData("home", Screen.Start)]
     [InlineData("home-offline", Screen.Start)]
+    [InlineData("home-update", Screen.Start)]
     [InlineData("review-listening", Screen.Review)]
     [InlineData("what-is-this", Screen.SourceKind)]
     [InlineData("transcribing", Screen.Transcribing)]
@@ -339,6 +341,11 @@ public class AppFlowTests
         if (scene == "review") Assert.Equal("Listen to this bar", main.Review.ListenLabel);
         if (scene == "home") Assert.Equal("Connected to Brasscribe on Studio PC", main.Settings.Connection.StatusText);
         if (scene == "home-offline") Assert.Equal("Connect", main.Settings.Connection.ActionText);
+        if (scene == "home-update")
+        {
+            Assert.StartsWith("Update Bandroom on your computer.", main.Settings.Connection.StatusText);
+            Assert.False(main.Settings.Connection.HasAction);
+        }
         if (scene == "transcribing")
         {
             Assert.Equal("Writing down the notes", main.Transcription.StepHeading);
@@ -534,6 +541,37 @@ public class AppFlowTests
         main.BackCommand.Execute(null);
         Assert.Equal(Screen.Start, main.Screen);
         Assert.NotNull(main.Kind.Source); // the recording is kept for another try
+    }
+
+    [Theory]
+    [InlineData("""{"version":"0.1.0","interface_version":0,"device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Bandroom on your computer")]
+    [InlineData("""{"version":"0.1.0","device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Bandroom on your computer")]
+    [InlineData("""{"version":"9.0.0","interface_version":2,"device":"mps","auth_required":false}""", ErrorKind.UpdateApp, "Update Brasscribe Play")]
+    public async Task An_engine_with_another_interface_version_gets_no_recording_and_no_job(string health, ErrorKind kind, string title)
+    {
+        var engine = Engine("", first: r => r.RequestUri!.AbsolutePath == "/v1/health" ? FakeHandler.Json(health) : null);
+        var (main, said) = Build(engine);
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        main.Kind.Selected = main.Kind.Options[0];
+        main.Kind.ContinueCommand.Execute(null);
+
+        await Until(() => main.Screen == Screen.Error);
+        Assert.False(main.Transcription.IsRunning);
+        Assert.Equal(kind, main.Error.Kind);
+        Assert.Equal(title, main.Error.Title);
+        Assert.StartsWith("Your recording is safe.", main.Error.Reason);
+        Assert.EndsWith("they only work together when both are up to date.", main.Error.Reason);
+        Assert.Equal(2, main.Error.Steps.Count);
+        // The numbers are for the details only.
+        Assert.DoesNotContain("interface", main.Error.Title + main.Error.Reason + string.Join(" ", main.Error.Steps), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("this app is built for 1", main.Error.Details);
+        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Important && a.Text.StartsWith("Stopped: Update "));
+
+        // Only health was asked: no profiles, no upload, no job, no list of jobs.
+        await main.RefreshComputerScoresAsync();
+        Assert.All(engine.Requests, r => Assert.Equal("/v1/health", r.Request.RequestUri!.AbsolutePath));
+        Assert.DoesNotContain(main.LibraryItems, i => i.OnComputer);
     }
 
     [Fact]

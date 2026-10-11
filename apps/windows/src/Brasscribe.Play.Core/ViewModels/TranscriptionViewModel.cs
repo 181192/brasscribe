@@ -22,7 +22,7 @@ public sealed partial class TranscriptionStep(string key, string label) : Observ
 }
 
 /// <summary>Why making a score stopped, so the error screen can say what to do next.</summary>
-public enum TranscriptionFailure { None, ComputerUnreachable, Failed, RecordingUnreadable }
+public enum TranscriptionFailure { None, ComputerUnreachable, Failed, RecordingUnreadable, UpdateApp, UpdateBandroom }
 
 /// <summary>A finished transcription. <c>SeatFellBack</c>: the engine refused the seat and wrote the job for <see cref="EngineSeats.Fallback"/>'s seat.</summary>
 public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source,
@@ -205,6 +205,13 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         try
         {
             var health = await engine.GetHealthAsync(ct);
+            // Another interface version: nothing is uploaded and no job is sent.
+            var match = InterfaceMatch.Of(health.InterfaceVersion);
+            if (match != InterfaceAnswer.Same)
+            {
+                StopForUpdate(match, health.InterfaceVersion);
+                return;
+            }
             DeviceText = _s.Format("Transcribe_Device", health.Device.ToUpperInvariant());
 
             if (audioId is null)
@@ -315,6 +322,21 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         ErrorText = EngineErrors.Message(e, _s);
         ErrorDetail = e.Message;
         Failure = e.Status is null && e.Code is null ? TranscriptionFailure.ComputerUnreachable : TranscriptionFailure.Failed;
+        _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
+        FailedWith?.Invoke(this, Failure);
+    }
+
+    /// <summary>
+    /// The app and the engine have different interface versions: says which of the two to update. The numbers are for
+    /// the error screen's technical details only.
+    /// </summary>
+    private void StopForUpdate(InterfaceAnswer match, int? engineVersion)
+    {
+        bool app = match == InterfaceAnswer.UpdateApp;
+        ErrorText = _s[app ? "Connection_UpdateApp" : "Connection_UpdateBandroom"];
+        ErrorDetail = string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"The engine's interface version is {(engineVersion is { } v ? v : "not given")}; this app is built for {Wire.InterfaceVersion}.");
+        Failure = app ? TranscriptionFailure.UpdateApp : TranscriptionFailure.UpdateBandroom;
         _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
         FailedWith?.Invoke(this, Failure);
     }

@@ -258,6 +258,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             var health = await engine.GetHealthAsync();
+            if (NeedsUpdate(health)) return;
             if (!health.AuthRequired)
             {
                 Connected(health);
@@ -308,6 +309,25 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// An engine with another interface version: says which of the two to update, and pairing stops there. No pair
+    /// request is sent, and a stored pairing stays as it is.
+    /// </summary>
+    private bool NeedsUpdate(Health health)
+    {
+        string? key = InterfaceMatch.Of(health.InterfaceVersion) switch
+        {
+            InterfaceAnswer.UpdateApp => "Connection_UpdateApp",
+            InterfaceAnswer.UpdateBandroom => "Connection_UpdateBandroom",
+            _ => null,
+        };
+        if (key is null) return false;
+        Say(_s[key]);
+        Connection.Kick();
+        Connection.Start();
+        return true;
+    }
+
     /// <summary>What went wrong in plain words (the engine's own text is for logs, not for the screen).</summary>
     private string Explain(EngineException e) => _s[e.Status switch
     {
@@ -331,6 +351,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             var health = await engine.GetHealthAsync(cts.Token);
+            if (NeedsUpdate(health)) return;
             var request = await engine.RequestPairingAsync(Environment.MachineName, Platform, cts.Token);
             MatchCode = request.MatchCode;
             Say(_s.Format("Settings_Engine_AskWaiting", request.MatchCode));
@@ -390,7 +411,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>
     /// A scribe://pair link (the QR code, or the link opened on this PC): the first listed address that
     /// answers with the link's server id, else that id on the network; then the code in the link, or, when
-    /// there is none, the approve-on-the-computer path.
+    /// there is none, the approve-on-the-computer path. Both ask the engine's health first and stop at an engine
+    /// with another interface version.
     /// </summary>
     public async Task<bool> PairFromLinkAsync(string text)
     {

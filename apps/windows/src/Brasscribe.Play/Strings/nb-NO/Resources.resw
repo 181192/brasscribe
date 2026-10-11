@@ -204,6 +204,12 @@
   <data name="Connection_Reconnecting" xml:space="preserve">
     <value>Leter etter Brasscribe på {0} …</value>
   </data>
+  <data name="Connection_UpdateApp" xml:space="preserve">
+    <value>Oppdater Brasscribe Play. Bandroom på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Connection_UpdateBandroom" xml:space="preserve">
+    <value>Oppdater Bandroom på datamaskinen. Denne appen er nyere enn Bandroom der, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
   <data name="Connection_YourComputer" xml:space="preserve">
     <value>datamaskinen</value>
   </data>
@@ -344,6 +350,30 @@
   </data>
   <data name="Error_Unreachable" xml:space="preserve">
     <value>Får ikke kontakt med Brasscribe på datamaskinen. Sjekk at den er på og på samme nettverk.</value>
+  </data>
+  <data name="Error_UpdateApp_Reason" xml:space="preserve">
+    <value>Opptaket ditt er trygt. Bandroom på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Error_UpdateApp_Step1" xml:space="preserve">
+    <value>Oppdater Brasscribe Play på denne PC-en.</value>
+  </data>
+  <data name="Error_UpdateApp_Step2" xml:space="preserve">
+    <value>Velg Prøv igjen.</value>
+  </data>
+  <data name="Error_UpdateApp_Title" xml:space="preserve">
+    <value>Oppdater Brasscribe Play</value>
+  </data>
+  <data name="Error_UpdateBandroom_Reason" xml:space="preserve">
+    <value>Opptaket ditt er trygt. Denne appen er nyere enn Bandroom på datamaskinen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Error_UpdateBandroom_Step1" xml:space="preserve">
+    <value>Oppdater Bandroom på datamaskinen.</value>
+  </data>
+  <data name="Error_UpdateBandroom_Step2" xml:space="preserve">
+    <value>Velg Prøv igjen.</value>
+  </data>
+  <data name="Error_UpdateBandroom_Title" xml:space="preserve">
+    <value>Oppdater Bandroom på datamaskinen</value>
   </data>
   <data name="ExportAsHeading.Text" xml:space="preserve">
     <value>SOM</value>

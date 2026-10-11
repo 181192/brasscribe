@@ -11,7 +11,7 @@ namespace Brasscribe.Play.Core.ViewModels;
 public static class PreviewScenes
 {
     public static readonly string[] Names =
-        ["first-run", "home", "home-offline", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "export", "error"];
+        ["first-run", "home", "home-offline", "home-update", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "export", "error"];
 
     /// <summary>The computer in the sample scenes.</summary>
     public const string SampleServer = "Brasscribe on Studio PC";
@@ -26,13 +26,19 @@ public static class PreviewScenes
         var sample = new SourceAudio(Path.Combine(Path.GetTempPath(), "Band practice.m4a"), "Band practice.m4a", new TimeSpan(0, 3, 5), null, false);
         if (scene != "first-run") main.Settings.FirstRunDone = true;
         // A fixed connection row: the scenes never talk to a computer.
-        main.Settings.Connection.Show(scene == "home-offline" ? Engine.ConnectionState.Offline : Engine.ConnectionState.Connected, SampleServer);
+        main.Settings.Connection.Show(scene switch
+        {
+            "home-offline" => Engine.ConnectionState.Offline,
+            // The computer's interface version is older than this app's: the row says to update Bandroom.
+            "home-update" => Engine.ConnectionState.UpdateBandroom,
+            _ => Engine.ConnectionState.Connected,
+        }, SampleServer);
         switch (scene)
         {
             case "first-run":
                 main.Screen = Screen.FirstRun;
                 return true;
-            case "home" or "home-offline":
+            case "home" or "home-offline" or "home-update":
                 main.Screen = Screen.Start;
                 return true;
             case "what-is-this":

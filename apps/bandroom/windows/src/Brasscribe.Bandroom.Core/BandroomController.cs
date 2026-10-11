@@ -16,6 +16,9 @@ public sealed record MachineInfo(string ComputerName, string SpeedKey, string Ru
 /// Gathers the supervisor state, /v1/status, the running job, the device list and host health into
 /// snapshots for the flyout and the tray icon. Polls the engine every 5 s while the flyout is open and
 /// every 30 s otherwise (the contract's cadence); pair requests every 5 s always; host health every tick.
+/// An engine whose interface version is not this Bandroom's (<see cref="Interface"/>) is asked nothing: no status,
+/// jobs, devices or pair requests, and no pairing is opened on it; the snapshot carries the problem that says which
+/// of the two to update.
 /// </summary>
 public sealed class BandroomController
 {
@@ -82,11 +85,19 @@ public sealed class BandroomController
     public event Action<BandroomSnapshot>? SnapshotReady;
     public event Action<IReadOnlyList<DeviceInfo>>? DevicesChanged;
 
+    /// <summary>
+    /// What the running engine's interface version means for this Bandroom, from the health answer it was accepted
+    /// as running with; <see cref="InterfaceAnswer.Same"/> while none runs.
+    /// </summary>
+    public InterfaceAnswer Interface =>
+        _sup.State == EngineState.Running && _sup.Health is { } health ? InterfaceMatch.Of(health.InterfaceVersion) : InterfaceAnswer.Same;
+
+    /// <summary>The running engine, to ask and to pair on; null while none runs, and for one with another interface version.</summary>
     public IEngineApi? Api
     {
         get
         {
-            if (_sup.State != EngineState.Running || _sup.Port is not { } port) return null;
+            if (_sup.State != EngineState.Running || _sup.Port is not { } port || Interface != InterfaceAnswer.Same) return null;
             if (_api is not { } a || a.Port != port) _api = (port, _apiFor(port));
             return _api.Value.Api;
         }
@@ -221,6 +232,8 @@ public sealed class BandroomController
         if (UpdateFailure is { } failure && !Updating)
             problems.Add(UpdateRefusal is { } refused ? Problems.UpdateRefused(_s, refused) : Problems.UpdateFailed(_s, failure));
         if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));
+        // After an update that failed: that problem says why the previous engine runs, and its fix is the update.
+        if (Interface is var match and not InterfaceAnswer.Same) problems.Add(Problems.Interface(_s, match, _sup.Health?.InterfaceVersion));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
         string? downloading = null;
         if (SetupComplete && _health is { ModelsReady: false })

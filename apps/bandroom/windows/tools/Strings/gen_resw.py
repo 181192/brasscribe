@@ -243,6 +243,13 @@ ROWS = [
     ("Pixi_Why", "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.",
      "Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker."),
     ("Pixi_Fix", "Get the latest Bandroom", "Last ned den nyeste Bandroom"),
+    ("Interface_Bandroom_Title", "Update Bandroom", "Oppdater Bandroom"),  # (+) the engine is newer than this app
+    ("Interface_Bandroom_Why", "Brasscribe on this PC is newer than this copy of Bandroom, and they only work together when both are up to date.",
+     "Brasscribe på denne PC-en er nyere enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert."),  # (+)
+    ("Interface_Engine_Title", "Brasscribe needs to be updated", "Brasscribe må oppdateres"),  # (+) the engine is older than this app
+    ("Interface_Engine_Why", "Brasscribe on this PC is older than this copy of Bandroom, and they only work together when both are up to date.",
+     "Brasscribe på denne PC-en er eldre enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert."),  # (+)
+    ("Interface_Engine_Fix", "Update Brasscribe", "Oppdater Brasscribe"),  # (+)
     ("Error_Title", "Brasscribe stopped unexpectedly", "Brasscribe stoppet uventet"),
     ("Error_Why", "It tried to start three times. Recordings on your phones are safe.", "Den prøvde å starte tre ganger. Opptakene på telefonene er trygge."),
     ("Error_Copy", "Copy details for the tech person", "Kopier detaljer til den tekniske i bandet"),

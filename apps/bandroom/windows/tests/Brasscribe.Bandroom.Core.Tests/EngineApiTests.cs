@@ -49,7 +49,7 @@ public sealed class EngineApiTests
     {
         var (api, h) = Make();
         h.Routes["GET /v1/health"] = (HttpStatusCode.OK, """
-            {"status":"ok","version":"0.9.3","device":"cpu","auth_required":false,"server_id":"abc","server_name":"Brasscribe on Kari's PC"}
+            {"status":"ok","version":"0.9.3","interface_version":1,"device":"cpu","auth_required":false,"server_id":"abc","server_name":"Brasscribe on Kari's PC"}
             """);
         h.Routes["GET /v1/devices"] = (HttpStatusCode.OK, """
             [{"device_id":"d1","name":"Kari's iPhone","platform":"ios","paired_at":"2026-09-01T10:00:00Z","last_seen":"2026-09-27T11:59:30Z","rotated_at":null},

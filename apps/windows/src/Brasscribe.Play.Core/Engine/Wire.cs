@@ -18,3 +18,25 @@ public static class Wire
     /// </summary>
     public const int InterfaceVersion = 1;
 }
+
+/// <summary>What the engine's interface version means for this app.</summary>
+public enum InterfaceAnswer
+{
+    /// <summary>The same number: the two work together.</summary>
+    Same,
+    /// <summary>The engine's number is higher: this app is the older one.</summary>
+    UpdateApp,
+    /// <summary>The engine's number is lower, or it has none (an engine from before the number): Bandroom is the older one.</summary>
+    UpdateBandroom,
+}
+
+public static class InterfaceMatch
+{
+    /// <summary>Compares the number in an engine's health answer with <see cref="Wire.InterfaceVersion"/>.</summary>
+    public static InterfaceAnswer Of(int? engine) => engine switch
+    {
+        Wire.InterfaceVersion => InterfaceAnswer.Same,
+        > Wire.InterfaceVersion => InterfaceAnswer.UpdateApp,
+        _ => InterfaceAnswer.UpdateBandroom,
+    };
+}

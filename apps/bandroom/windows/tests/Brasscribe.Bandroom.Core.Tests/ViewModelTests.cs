@@ -551,7 +551,7 @@ public sealed class ControllerTests
             engine.Devices.Add(new("d1", "Kari's iPhone", "ios", "x", DateTimeOffset.UtcNow.ToString("O"), null, true));
             var launcher = new FakeLauncher();
             var sup = new EngineSupervisor(launcher, new FakePorts(),
-                (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC")),
+                (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC", InterfaceVersion: Wire.InterfaceVersion)),
                 p => new ProcessSpec("pixi", [], dir, new Dictionary<string, string>()), new EngineLog(null));
             var metrics = new Metrics();
             var ctl = new BandroomController(sup, _ => engine, metrics, Strings.En, new BandroomPaths(dir),

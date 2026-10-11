@@ -12,7 +12,14 @@ public enum TrayBadge { None, DownArrow, Dots, Pie, Triangle, Square, CircularAr
 /// <summary>The one primary button of the flyout.</summary>
 public enum PrimaryAction { None, PairPhone, StartEngine, FinishSetup, TryAgain, Fix }
 
-public enum ProblemKind { NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed, UpdateRefused, PixiTooOld }
+public enum ProblemKind
+{
+    NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed, UpdateRefused, PixiTooOld,
+    /// <summary>The engine that runs is newer than this Bandroom.</summary>
+    UpdateBandroom,
+    /// <summary>The engine that runs is older than this Bandroom.</summary>
+    UpdateEngine,
+}
 
 /// <summary>A Needs-attention problem (§6.2): a title, one sentence why, the fix, and details for the tech person.</summary>
 public sealed record Problem(ProblemKind Kind, string Title, string Why, string FixLabel, string Details);
@@ -161,6 +168,20 @@ public static class Problems
     public static Problem UpdateRefused(IStrings s, PixiRefusal refusal) =>
         new(ProblemKind.UpdateRefused, s["Update_Failed_Title"], s["Update_Refused_Why"], s["Pixi_Fix"],
             $"pixi {refusal.Found} refused the updated engine workspace (it requires pixi '{refusal.Required}'): {refusal.Message}");
+
+    /// <summary>
+    /// The engine that runs and this Bandroom have different interface versions, so Bandroom asks it nothing and
+    /// phones can't be paired. A newer engine: the fix is a newer Bandroom. An older one (or one from before the
+    /// number): the fix updates the engine from this app. The numbers are for the details only.
+    /// </summary>
+    public static Problem Interface(IStrings s, Engine.InterfaceAnswer match, int? engineVersion)
+    {
+        string details = string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"The engine's interface version is {(engineVersion is { } v ? v : "not given")}; this Bandroom is built for {Engine.Wire.InterfaceVersion}.");
+        return match == Engine.InterfaceAnswer.UpdateBandroom
+            ? new(ProblemKind.UpdateBandroom, s["Interface_Bandroom_Title"], s["Interface_Bandroom_Why"], s["Pixi_Fix"], details)
+            : new(ProblemKind.UpdateEngine, s["Interface_Engine_Title"], s["Interface_Engine_Why"], s["Interface_Engine_Fix"], details);
+    }
 
     public static Problem LowDisk(IStrings s, long freeBytes, string dataDir) =>
         new(ProblemKind.LowDisk, s["Disk_Title"], s.Format("Disk_Why", Health.HealthWords.GigabytesText(freeBytes, s.Culture)), s["Disk_Fix"],

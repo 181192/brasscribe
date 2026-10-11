@@ -19,7 +19,7 @@ public sealed class SupervisorTests : IDisposable
     private EngineSupervisor Make(EngineLaunchConfig? config = null) => new(
         _launcher, _ports,
         (port, _) => Task.FromResult(Interlocked.Increment(ref _healthChecks) > 0 && _healthy && _launcher.Started.Count > 0 && !_launcher.Last.WaitForExitAsync().IsCompleted
-            ? new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC")
+            ? new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC", InterfaceVersion: Wire.InterfaceVersion)
             : null),
         port => (config ?? Config()).Build(port),
         new EngineLog(Path.Combine(_dir, "logs"), _time),

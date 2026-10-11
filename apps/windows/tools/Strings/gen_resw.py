@@ -436,6 +436,10 @@ code = {
     "Connection_Reconnecting": ("Looking for Brasscribe on {0} …", "Leter etter Brasscribe på {0} …"),
     "Connection_Offline": ("Not connected. You can still make scores on this PC.", "Ikke tilkoblet. Du kan fortsatt lage partitur på denne PC-en."),
     "Connection_NeedsPairing": ("The computer no longer recognises this PC.", "Datamaskinen kjenner ikke igjen denne PC-en lenger."),
+    "Connection_UpdateApp": ("Update Brasscribe Play. Bandroom on your computer is newer than this app, and they only work together when both are up to date.",
+                             "Oppdater Brasscribe Play. Bandroom på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert."),
+    "Connection_UpdateBandroom": ("Update Bandroom on your computer. This app is newer than Bandroom there, and they only work together when both are up to date.",
+                                  "Oppdater Bandroom på datamaskinen. Denne appen er nyere enn Bandroom der, og de virker bare sammen når begge er oppdatert."),
     "Connection_Connect": ("Connect", "Koble til"),
     "Connection_PairAgain": ("Pair this PC again", "Koble til PC-en på nytt"),
     "Connection_YourComputer": ("your computer", "datamaskinen"),
@@ -841,6 +845,16 @@ add("Error_RecordingUnreadable_Reason", "Brasscribe couldn't open the recording 
     "Brasscribe fikk ikke åpnet opptaket på denne PC-en. Det kan være flyttet eller slettet, eller en annen app bruker det.")
 add("Error_RecordingUnreadable_Step1", "Close other apps that use the file, then choose Try again.", "Lukk andre apper som bruker filen, og velg Prøv igjen.")
 add("Error_RecordingUnreadable_Step2", "Or choose another recording.", "Eller velg et annet opptak.")
+add("Error_UpdateApp_Title", "Update Brasscribe Play", "Oppdater Brasscribe Play")
+add("Error_UpdateApp_Reason", "Your recording is safe. Bandroom on your computer is newer than this app, and they only work together when both are up to date.",
+    "Opptaket ditt er trygt. Bandroom på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.")
+add("Error_UpdateApp_Step1", "Update Brasscribe Play on this PC.", "Oppdater Brasscribe Play på denne PC-en.")
+add("Error_UpdateApp_Step2", "Choose Try again.", "Velg Prøv igjen.")
+add("Error_UpdateBandroom_Title", "Update Bandroom on your computer", "Oppdater Bandroom på datamaskinen")
+add("Error_UpdateBandroom_Reason", "Your recording is safe. This app is newer than Bandroom on your computer, and they only work together when both are up to date.",
+    "Opptaket ditt er trygt. Denne appen er nyere enn Bandroom på datamaskinen, og de virker bare sammen når begge er oppdatert.")
+add("Error_UpdateBandroom_Step1", "Update Bandroom on the computer.", "Oppdater Bandroom på datamaskinen.")
+add("Error_UpdateBandroom_Step2", "Choose Try again.", "Velg Prøv igjen.")
 add("Notice_Problem", "Something went wrong, but your work is safe. If it happens again, restart Brasscribe Play.",
     "Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.")
 add("Score_RenderFailed", "The notes can't be drawn. Try another zoom or part, or open the score again.",

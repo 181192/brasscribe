@@ -136,8 +136,12 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 TranscriptionFailure.ComputerUnreachable => ErrorKind.ComputerUnreachable,
                 TranscriptionFailure.RecordingUnreadable => ErrorKind.RecordingUnreadable,
+                TranscriptionFailure.UpdateApp => ErrorKind.UpdateApp,
+                TranscriptionFailure.UpdateBandroom => ErrorKind.UpdateBandroom,
                 _ => ErrorKind.ScoreFailed,
             }, Transcription.ErrorDetail);
+            // The status row says the same from now on, without waiting for the next heartbeat.
+            if (failure is TranscriptionFailure.UpdateApp or TranscriptionFailure.UpdateBandroom) Settings.Connection.Kick();
             Screen = Screen.Error;
         };
 
@@ -148,7 +152,7 @@ public sealed partial class MainViewModel : ObservableObject
             Kind.IsPercussionSeat = IsPercussionSeat;
             Kind.SetWhere(Settings.EngineUri);
             Screen = Screen.SourceKind;
-            await Kind.RefreshFromEngineAsync(Engine);
+            if (await EngineAnswersAsync()) await Kind.RefreshFromEngineAsync(Engine);
         };
         Start.ScoreOpened += (_, path) => OpenScoreFile(path);
         // "Change what I play" on "What is this?" goes through Settings: the refusal follows the answer.
@@ -194,7 +198,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
             Output.Title = r.Composition.Title;
             Output.LayerSource = r.JobId is { Length: > 0 } jobId && LayerCacheRoot is { } cache
-                ? ct => EngineLayerSource.LoadAsync(Engine, jobId, cache, ct)
+                ? ct => Settings.Connection.NeedsUpdate ? Task.FromResult<LayerInputs?>(null) : EngineLayerSource.LoadAsync(Engine, jobId, cache, ct)
                 : null;
             Score.Original?.Open(r.Source.OriginalPath ?? r.Source.WavPath, r.Source.HasVideo);
             if (Score.Original is { } original) _ = RecordingLevel.ApplyAsync(original, r.Source.WavPath);
@@ -494,12 +498,36 @@ public sealed partial class MainViewModel : ObservableObject
 
     private IReadOnlyList<Job> _computerJobs = [];
 
-    /// <summary>Fetches the computer's finished scores; keeps this PC's list when the computer can't be reached.</summary>
+    /// <summary>
+    /// Asks the engine's health before anything else is asked of it. False when it does not answer, and when its
+    /// interface version is not this app's: then it is left alone and the status row says which of the two to update.
+    /// </summary>
+    private async Task<bool> EngineAnswersAsync()
+    {
+        if (Settings.Connection.NeedsUpdate) return false;
+        try
+        {
+            var health = await Engine.GetHealthAsync();
+            if (InterfaceMatch.Of(health.InterfaceVersion) == InterfaceAnswer.Same) return true;
+            Settings.Connection.Kick();
+            return false;
+        }
+        catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException or TaskCanceledException
+                                   or System.Text.Json.JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Fetches the computer's finished scores; keeps this PC's list when the computer can't be reached or has another
+    /// interface version.
+    /// </summary>
     public async Task RefreshComputerScoresAsync()
     {
         try
         {
-            _computerJobs = await Engine.ListJobsAsync();
+            _computerJobs = await EngineAnswersAsync() ? await Engine.ListJobsAsync() : [];
         }
         catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException or TaskCanceledException
                                    or System.Text.Json.JsonException)
@@ -514,6 +542,12 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (item.OnComputer && item.JobId is { } jobId)
         {
+            if (Settings.Connection.NeedsUpdate)
+            {
+                Start.ErrorText = Settings.Connection.StatusText;
+                _announcer.Announce(Start.ErrorText, AnnouncementKind.Important);
+                return;
+            }
             try
             {
                 var job = await Engine.GetJobAsync(jobId);
@@ -584,6 +618,11 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (item.OnComputer)
         {
+            if (Settings.Connection.NeedsUpdate)
+            {
+                _announcer.Announce(Settings.Connection.StatusText, AnnouncementKind.Important);
+                return false;
+            }
             try
             {
                 if (item.JobId is { } jobId) await Engine.DeleteRunAsync(jobId);
@@ -610,6 +649,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task<bool> RenameOnComputerAsync(string jobId, string title)
     {
+        if (Settings.Connection.NeedsUpdate) return false;
         try
         {
             await Engine.RenameRunAsync(jobId, title);
@@ -734,7 +774,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(IsOnScore))]
     private void OpenExport() =>
-        Export.Prepare(Score, Score.Player.Player as AlphaTabScorePlayer, _result is null ? null : Engine, _result?.JobId, _result?.Outputs, ShownLineup);
+        Export.Prepare(Score, Score.Player.Player as AlphaTabScorePlayer, _result is null || Settings.Connection.NeedsUpdate ? null : Engine, _result?.JobId, _result?.Outputs, ShownLineup);
 
     private bool IsOnScore() => Screen == Screen.Score;
 

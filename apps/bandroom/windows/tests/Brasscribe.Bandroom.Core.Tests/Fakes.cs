@@ -90,7 +90,7 @@ internal sealed class FakeEngine : IEngineApi
         ["192.0.2.20:8765"], null, $"scribe://pair?v=1&id=3f9c2a7e11&h=192.0.2.20:8765&code={CodeCounter}", LockedUntil);
 
     public Task<HealthInfo> GetHealthAsync(CancellationToken ct = default) =>
-        Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC"));
+        Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC", InterfaceVersion: Wire.InterfaceVersion));
     public Task<StatusInfo> GetStatusAsync(CancellationToken ct = default) =>
         Task.FromResult(new StatusInfo("3f9c2a7e11", "Brasscribe on Kari's PC", "0.9.4", Devices.Count(d => d.Online == true), Devices.Count, PairingOpen, 0, 0));
     public Task<IReadOnlyList<DeviceInfo>> GetDevicesAsync(CancellationToken ct = default) { Log.Add("devices"); return Task.FromResult<IReadOnlyList<DeviceInfo>>(Devices.ToList()); }

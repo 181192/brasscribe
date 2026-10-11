@@ -12,7 +12,7 @@ namespace Brasscribe.ScreenCheck;
 /// </summary>
 internal static class BandroomCatalogue
 {
-    public const string Views = "flyout,flyout:busy,flyout:attention,flyout:stopped,flyout:error,devices,confirm-stop,window,pair,allow,settings";
+    public const string Views = "flyout,flyout:busy,flyout:attention,flyout:update,flyout:stopped,flyout:error,devices,confirm-stop,window,pair,allow,settings";
 
     public static int Run(Options o)
     {
