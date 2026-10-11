@@ -22,6 +22,8 @@ public sealed record BandroomPaths(string DataDir)
     /// <summary>The name shown to phones, when one is set in Settings.</summary>
     public string ComputerNameFile => Path.Combine(State, "computer-name");
     public string StatusFile => Path.Combine(DataDir, "engine.json");
+    /// <summary>The engine's entry point in its installed environment: the command a start runs, as pixi installs it.</summary>
+    public string EngineCommand => Path.Combine(Workspace, ".pixi", "envs", "default", "Scripts", EngineLaunchConfig.Command + ".exe");
 
     public static BandroomPaths ForCurrentUser() =>
         new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe"));
@@ -41,6 +43,9 @@ public sealed record EngineLaunchConfig(
     string? BandSoundsDir = null,
     string? CoreCli = null)
 {
+    /// <summary>The command the engine is started with (<c>pixi run … scribe serve</c>).</summary>
+    public const string Command = "scribe";
+
     /// <summary>The user's Hugging Face key (HF_TOKEN), read at each start so a key saved in Settings reaches the next one.</summary>
     public Func<string?>? HuggingFaceToken { get; init; }
 
@@ -97,7 +102,7 @@ public sealed record EngineLaunchConfig(
         return new ProcessSpec(
             PixiExe,
             ["run", "--manifest-path", Paths.Manifest, "--frozen", "-e", "default",
-             "scribe", "serve", "--lan", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)],
+             Command, "serve", "--lan", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)],
             Paths.Workspace,
             env)
         { Unset = CoreCli is { Length: > 0 } ? [] : ["SCRIBE_CORE_CLI"] };

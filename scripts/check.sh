@@ -18,12 +18,14 @@ cd "$ROOT"
 # that need data/ would skip without theirs), a package's old folder (Python imports what is left in it as
 # an empty package), or an environment that has the packages installed under the old names.
 old_python() {
-  local d
+  local d own
   { [ -f .scribe-env ] && grep -q 'BRASSCRIBE_' .scribe-env; } && return 0
   for d in engine/src/brasscribe_engine music/src/brasscribe_music eval/brasscribe_eval; do
     [ -e "$d" ] || continue
-    # Files git still tracks there are a branch's own (a merge left them at the old path): the setup does not touch them.
-    [ -n "$(git ls-files -- "$d")" ] && { echo "check: git tracks files under $d, the old folder of a package that is now ${d/brasscribe_/scribe_}: move them there (git mv) and change their imports" >&2; exit 2; }
+    # Files there that git tracks (a merge left them at the old path) or that are not yet added are someone's work:
+    # the setup does not touch them.
+    own="$(git ls-files --cached --others --exclude-standard -- "$d")"
+    [ -n "$own" ] && { echo "check: $d is the old folder of a package that is now ${d/brasscribe_/scribe_}, and it holds files that are yours: move them there and change their imports: $(echo "$own" | tr '\n' ' ')" >&2; exit 2; }
     return 0
   done
   # Not every environment exists in every checkout: ls failing for one of them must not hide a match in another.

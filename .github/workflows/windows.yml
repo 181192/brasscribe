@@ -434,6 +434,9 @@ jobs:
           $base = "http://127.0.0.1:$($engine.port)"
           $auth = @{ Authorization = "Bearer $token" }
           Invoke-RestMethod "$base/v1/health" | ConvertTo-Json
+          # Where Bandroom looks for the engine's command before it starts an engine that a failed update put back.
+          $command = Join-Path $data "envs/.pixi/envs/default/Scripts/scribe.exe"
+          if (-not (Test-Path $command)) { throw "the engine's command is not at $command" }
           # The bundled band sounds reach Studio through SCRIBE_BAND_SOUNDS_DIR.
           $sf2 = Invoke-WebRequest -Method Head "$base/assets/band/brasscribe-band.sf2"
           if ($sf2.StatusCode -ne 200) { throw "the engine does not serve the band SoundFont" }

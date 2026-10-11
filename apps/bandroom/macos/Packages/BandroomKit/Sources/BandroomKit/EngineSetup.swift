@@ -29,9 +29,20 @@ public enum EngineSource: Equatable, Sendable {
         }
     }
 
-    /// Whether `pixi install` has already made the engine environment.
+    /// The command the engine is started with: the entry point `pixi install` puts in the environment's `bin`.
+    public static let command = "scribe"
+
+    /// Whether `pixi install` has already made the engine environment: it holds the command this app starts.
     public var isEnvironmentReady: Bool {
-        FileManager.default.fileExists(atPath: workspace.appending(path: ".pixi/envs/default/bin/scribe").path)
+        FileManager.default.fileExists(atPath: workspace.appending(path: ".pixi/envs/default/bin/\(Self.command)").path)
+    }
+
+    /// Whether the engine may be started once the workspace was checked against the app's. After a failed update the
+    /// previous workspace is back, and it is started only when its environment can run this app's command. Otherwise
+    /// nothing is started: a start could only fail, and its error would hide the update's own problem and the Try
+    /// again that runs the update once more.
+    public func startsAfterUpdate(failed: Bool) -> Bool {
+        !failed || isEnvironmentReady
     }
 }
 
@@ -127,7 +138,7 @@ public struct EngineConfiguration: Equatable, Sendable {
         }
         return LaunchPlan(executable: pixi,
                           arguments: ["run", "--manifest-path", source.manifest.path, "--frozen", "-e", environmentName,
-                                      "scribe", "serve", "--lan", "--port", String(port)],
+                                      EngineSource.command, "serve", "--lan", "--port", String(port)],
                           environment: environment(base: base), workingDirectory: source.workspace,
                           log: paths.engineLog, port: port)
     }

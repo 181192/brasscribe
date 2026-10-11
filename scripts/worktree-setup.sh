@@ -76,12 +76,15 @@ for old in "$ROOT"/apps/android/core-bridge/src/main/jniLibs/*/libbrasscribe_ffi
 done
 # From before the Python packages took their names. An environment file with the old variables: it is
 # written again at the end, and until then it must not be read. Their old folders: git moved the files, and what
-# it does not track stays (__pycache__), which Python would still import as an empty package.
+# it ignores stays (__pycache__), which Python would still import as an empty package. A folder that holds
+# anything else is someone's work, tracked (a merge left it at the old path) or not yet added: it is named and
+# left as it is.
 if [ -f "$ROOT/.scribe-env" ] && grep -q 'BRASSCRIBE_' "$ROOT/.scribe-env"; then rm -f "$ROOT/.scribe-env"; stale=1; fi
 for old in engine/src/brasscribe_engine music/src/brasscribe_music eval/brasscribe_eval; do
   [ -e "$ROOT/$old" ] || continue
-  if [ -z "$(git -C "$ROOT" ls-files -- "$old")" ]; then rm -rf "${ROOT:?}/$old" && stale=1
-  else log "git tracks files under $old, the old folder of a package that is now ${old/brasscribe_/scribe_}: move them there (git mv) and change their imports; they are left as they are"; fi
+  own="$(git -C "$ROOT" ls-files --cached --others --exclude-standard -- "$old")"
+  if [ -z "$own" ]; then rm -rf "${ROOT:?}/$old" && stale=1
+  else log "$old is the old folder of a package that is now ${old/brasscribe_/scribe_}, and it holds files that are yours: move them there and change their imports; they are left as they are: $(echo "$own" | tr '\n' ' ')"; fi
 done
 find "$ROOT/engine" "$ROOT/music" "$ROOT/eval" -maxdepth 2 -name 'brasscribe_*.egg-info' -prune -exec rm -rf {} + 2>/dev/null || true
 # Environments that hold the packages under their old names (editable installs: a .pth file and a
