@@ -295,7 +295,7 @@ pub const FREE_TEMPO_RANGE: (f64, f64) = (20.0, 400.0);
 /// The solo is SwiftF0's line (notes without SwiftF0 are dropped); each note's
 /// confidence is the calibrated probability that it is right (confidence.rs).
 /// The orchestra residual is split by what the notes do: short notes attacked
-/// together with two or more others are brass-choir hits, the rest strings.
+/// together with two or more others are chordal hits, the rest lines.
 ///
 /// `solo_window` gives the range (lowest and highest MIDI pitch) the solo line is taken in. It is
 /// asked once the beat grid stands, and told whether the solo is the only layer with notes (a solo
