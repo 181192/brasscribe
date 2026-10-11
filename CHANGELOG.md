@@ -2,6 +2,28 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.11.0 (2026-10-11)
+
+### Breaking changes
+
+- **Android:** **Breaking:** Brasscribe and Fretscribe need Android 16 or newer ([#358](https://github.com/181192/brasscribe/pull/358))
+Brasscribe and Fretscribe for Android need Android 16 or newer.
+- **iPhone, iPad and Mac:** **Breaking:** The Apple apps need iOS, iPadOS and macOS 26 or newer, and what only older systems needed is gone ([#359](https://github.com/181192/brasscribe/pull/359))
+Brasscribe Play needs iOS 26, iPadOS 26 or macOS 26 or newer, and Bandroom for Mac needs macOS 26 or newer.
+- **Windows:** **Breaking:** The Windows apps need Windows 11, and what only Windows 10 needed is gone ([#360](https://github.com/181192/brasscribe/pull/360))
+Brasscribe Play and Bandroom for Windows need Windows 11.
+
+<details><summary>Under the hood (5 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Android:** **Breaking:** Brasscribe and Fretscribe need Android 16 or newer ([#358](https://github.com/181192/brasscribe/pull/358))
+- **iPhone, iPad and Mac:** **Breaking:** The Apple apps need iOS, iPadOS and macOS 26 or newer, and what only older systems needed is gone ([#359](https://github.com/181192/brasscribe/pull/359))
+- **Core:** The shared core transcribes for every target and knows no instruments, and a target names its own parts ([#364](https://github.com/181192/brasscribe/pull/364))
+- **Windows:** **Breaking:** The Windows apps need Windows 11, and what only Windows 10 needed is gone ([#360](https://github.com/181192/brasscribe/pull/360))
+- **Windows:** The score preview is checked to find Windows' text face, and Bandroom's unused refusal string is gone ([#363](https://github.com/181192/brasscribe/pull/363))
+
+</details>
+
 ## 0.10.2 (2026-10-11)
 
 ### Fixes

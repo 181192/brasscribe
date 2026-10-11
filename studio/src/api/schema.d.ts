@@ -30,7 +30,7 @@ export interface paths {
         };
         /**
          * List Conformance
-         * @description Rust-core conformance summary: every report.json in BRASSCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
+         * @description Rust-core conformance summary: every report.json in SCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
          *
          *     An empty list means no report yet (run `scribe_conformance.run`, or runConformance).
          */
@@ -736,7 +736,7 @@ export interface paths {
         };
         /**
          * List Parity
-         * @description Model-conversion parity reports as written (every *.json in BRASSCRIBE_PARITY_REPORTS), plus `_file`.
+         * @description Model-conversion parity reports as written (every *.json in SCRIBE_PARITY_REPORTS), plus `_file`.
          */
         get: operations["listParityReports"];
         put?: never;
@@ -936,7 +936,7 @@ export interface paths {
         };
         /**
          * Suite History
-         * @description Every stored suite result, newest first (from `brasscribe bench` and runSuite).
+         * @description Every stored suite result, newest first (from `scribe bench` and runSuite).
          */
         get: operations["listSuiteHistory"];
         put?: never;
@@ -1139,7 +1139,7 @@ export interface components {
         };
         /**
          * Composition
-         * @description The canonical score (brasscribe_music.score_model.Composition): concert pitch, integer ticks.
+         * @description The canonical score (scribe_music.score_model.Composition): concert pitch, integer ticks.
          */
         Composition: {
             /**
@@ -1373,7 +1373,7 @@ export interface components {
             device: string;
             /**
              * Server Id
-             * @description stable id of this engine: kept across restarts and address or port changes, new only after `brasscribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.
+             * @description stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.
              */
             server_id: string;
             /**
@@ -1685,7 +1685,7 @@ export interface components {
         PairRequest: {
             /**
              * Code
-             * @description pairing code shown by the engine (brasscribe serve --lan)
+             * @description pairing code shown by the engine (scribe serve --lan)
              */
             code: string;
             /** Device Name */

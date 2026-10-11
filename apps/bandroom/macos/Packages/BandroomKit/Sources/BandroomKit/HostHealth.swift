@@ -126,7 +126,7 @@ public enum ModelCheck {
         public init(missing: [ModelComponent]) { self.missing = missing }
     }
 
-    /// `models` is the folder the engine gets as BRASSCRIBE_MODELS; the band writer lives in the hub cache.
+    /// `models` is the folder the engine gets as SCRIBE_MODELS; the band writer lives in the hub cache.
     public static func check(models: URL, environment: [String: String] = ProcessInfo.processInfo.environment,
                              home: URL = FileManager.default.homeDirectoryForCurrentUser,
                              catalog: (ModelComponent) -> [ModelFile] = { ModelCatalog.files(for: $0) }) -> Result {

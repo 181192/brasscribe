@@ -43,7 +43,7 @@ It builds in 9 ordered steps (§9) after the connection, pairing and quartet bra
 The solo path is the same on the phone (Rust core, `arrangeLayersBand`) and in the engine's `solo` profile (Python `arrange_layers_song`). It runs in four steps:
 
 1. SwiftF0, Basic Pitch and (on the engine only) MuScriptor each transcribe the take.
-2. Each result is reduced to one line with `line(notes, 52, 88, top=True)`. Every note below E3 is dropped here: `core/scribe-core/src/pipeline.rs:331-333`, `eval/brasscribe_eval/arrange_layers_song.py:184-185`.
+2. Each result is reduced to one line with `line(notes, 52, 88, top=True)`. Every note below E3 is dropped here: `core/scribe-core/src/pipeline.rs:331-333`, `eval/scribe_eval/arrange_layers_song.py:184-185`.
 3. The notes SwiftF0 found are kept, with a confidence score from how many models agree. The kept line is filtered through the same window again (`pipeline.rs:359`, `arrange_layers_song.py:202`).
 4. The line goes to the Solo Cornet part (`arranger.rs:501-502`, `arranger.py:371`). `_place_line` picks the octave for each phrase that best fits Solo Cornet's reading range, 55–79 sounding.
 
@@ -427,18 +427,18 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 
 | File:line | Change |
 |---|---|
-| `music/src/brasscribe_music/instruments.py:129-175` | `SEATS` (id → BRASS_BAND part name), `seat_part(lineup, seat)`, and the §2.3 table. After kvartett: the lineups dict it adds. |
-| `music/src/brasscribe_music/arranger.py:102-127` | Leave `_place_line` alone. Add `place_as_played` next to it. |
+| `music/src/scribe_music/instruments.py:129-175` | `SEATS` (id → BRASS_BAND part name), `seat_part(lineup, seat)`, and the §2.3 table. After kvartett: the lineups dict it adds. |
+| `music/src/scribe_music/arranger.py:102-127` | Leave `_place_line` alone. Add `place_as_played` next to it. |
 | `arranger.py:165-209` `arrange` | the `lead` argument: melody to `seat_part` when `lead="seat"` |
 | `arranger.py:226-238` `layer_of_part` | the seat part → `solo` when `lead="seat"` (after kvartett, which makes it lineup-aware) |
 | `arranger.py:347-426` `arrange_layers` | `lead` and `seat` arguments: solo take → one part with `place_as_played`; lead=seat → the §4.4 changes at `:371`, `:387-398` (countermelody), `:403`, `:408`, `:418-420` (soprano) |
 | `arranger.py` (new) | `part_sources(comp, arr)`, the §2.4 rules |
-| `music/src/brasscribe_music/difficulty.py:28,132` | `SOLO_PART` → the arrangement's lead part: kvartett's `lineup.lead`, or the seat part when `lead="seat"` |
-| `music/src/brasscribe_music/musicxml.py:34,56-57,287,536` | `PartSpec` clef and transposition from `reads` for the seat part |
-| `eval/brasscribe_eval/arrange_layers_song.py:96-102,184-185,202,262-280` | `--seat`, `--reads`, `--lead`. The line window from the seat. Record the options in `comp.arrangement`. |
-| `eval/brasscribe_eval/arrange_song.py:36-44,68,87` | the same flags, and the melody window from the seat when `lead="seat"` |
-| `eval/brasscribe_eval/arrange_solo.py:29-33` | the window from a `--seat` flag |
-| `eval/brasscribe_eval/suites.py` | the new `solo-instruments` and `seat-voices` suites (§7) |
+| `music/src/scribe_music/difficulty.py:28,132` | `SOLO_PART` → the arrangement's lead part: kvartett's `lineup.lead`, or the seat part when `lead="seat"` |
+| `music/src/scribe_music/musicxml.py:34,56-57,287,536` | `PartSpec` clef and transposition from `reads` for the seat part |
+| `eval/scribe_eval/arrange_layers_song.py:96-102,184-185,202,262-280` | `--seat`, `--reads`, `--lead`. The line window from the seat. Record the options in `comp.arrangement`. |
+| `eval/scribe_eval/arrange_song.py:36-44,68,87` | the same flags, and the melody window from the seat when `lead="seat"` |
+| `eval/scribe_eval/arrange_solo.py:29-33` | the window from a `--seat` flag |
+| `eval/scribe_eval/suites.py` | the new `solo-instruments` and `seat-voices` suites (§7) |
 | `eval/baselines.json` | the new keys |
 
 ### 5.2 Rust core, CLI and conformance
@@ -475,15 +475,15 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 
 | File:line | Change |
 |---|---|
-| `engine/src/brasscribe_engine/schemas.py:10,138-157` | `Seat = Literal[...]` (the §2.1 ids), `Reads = Literal["treble","bass"]`, `Lead = Literal["lineup","seat"]`, and the three `JobCreate` fields with descriptions |
-| `engine/src/brasscribe_engine/profiles.py:36-56` | `ARRANGEMENT_DEFAULTS` gets `seat: None, reads: None, lead: "lineup"`, and `arrangement_options` validates them. Default jobs keep their cache keys, because only non-default values enter `opts`. |
+| `engine/src/scribe_engine/schemas.py:10,138-157` | `Seat = Literal[...]` (the §2.1 ids), `Reads = Literal["treble","bass"]`, `Lead = Literal["lineup","seat"]`, and the three `JobCreate` fields with descriptions |
+| `engine/src/scribe_engine/profiles.py:36-56` | `ARRANGEMENT_DEFAULTS` gets `seat: None, reads: None, lead: "lineup"`, and `arrangement_options` validates them. Default jobs keep their cache keys, because only non-default values enter `opts`. |
 | `profiles.py:152-178` `solo` | with a seat, `lead` becomes `"seat"` |
-| `engine/src/brasscribe_engine/api.py:393,423-428` | pass the fields into params, and add the `Form(...)` fields for the upload route |
-| `engine/src/brasscribe_engine/cli.py:42-43,230-232` | `--seat`, `--reads`, `--lead` |
-| `engine/src/brasscribe_engine/stages.py:107-123` | no change: the flags are found through `--help` |
+| `engine/src/scribe_engine/api.py:393,423-428` | pass the fields into params, and add the `Form(...)` fields for the upload route |
+| `engine/src/scribe_engine/cli.py:42-43,230-232` | `--seat`, `--reads`, `--lead` |
+| `engine/src/scribe_engine/stages.py:107-123` | no change: the flags are found through `--help` |
 | `engine/openapi.json` | `pixi run openapi` |
 | `engine/tests/` | a solo job with `seat=1st-baritone` gives one part named "1st Baritone" with notes below E3. `lead=seat` on orchestra-with-soloist puts the solo on Euphonium. An unknown seat → 422. |
-| `engine/src/brasscribe_engine/talking_score.py:443-447` | nothing new |
+| `engine/src/scribe_engine/talking_score.py:443-447` | nothing new |
 
 ### 5.5 Apple (`apps/apple`)
 
@@ -598,11 +598,11 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
   - Run with and without the seat, so the table in §1.2 is regenerated on every change.
   - Run with the full solo-path code (`arrange_layers_song` with the seat), not the bench's copy of the rule.
 - **Gate.** The §6.3 numbers.
-- **Script.** Port `docs/plan/my-instrument/measure.py` and `measure_urmp.py` into `eval/brasscribe_eval/solo_instruments_bench.py`.
+- **Script.** Port `docs/plan/my-instrument/measure.py` and `measure_urmp.py` into `eval/scribe_eval/solo_instruments_bench.py`.
 
 ### 7.2 "?" rate on low brass (measure first, then decide)
 
-- **Measure.** Run the real confidence path (`confidence.rs` `p_correct` through the Rust CLI, or `brasscribe_eval.confidence_bench`) on the solo fixtures. Report per instrument:
+- **Measure.** Run the real confidence path (`confidence.rs` `p_correct` through the Rust CLI, or `scribe_eval.confidence_bench`) on the solo fixtures. Report per instrument:
   - the share of *correct* notes that get "?" (false alarms)
   - the share of *wrong* notes that get "?" (hits)
 - **Expectation.** With Basic Pitch agreeing on only 55 % of tuba notes, false alarms are expected to be several times the cornet rate.
@@ -642,7 +642,7 @@ This builds on `feat/kvartett`, and it must land after it. The files below are a
 
 ## 9. Implementation steps
 
-Build these once the connection, pairing and quartet branches are on `main`. Each step ends green before the next one starts. The commands are the ones in kvartett §6 (`pixi run test`, `cargo test --release`, the conformance run, `brasscribe bench ci --require-data`).
+Build these once the connection, pairing and quartet branches are on `main`. Each step ends green before the next one starts. The commands are the ones in kvartett §6 (`pixi run test`, `cargo test --release`, the conformance run, `scribe bench ci --require-data`).
 
 1. **Seats and part sources, no behaviour change.**
    - `SEATS`, `seat_part` and the §2.3 table in Python and Rust.

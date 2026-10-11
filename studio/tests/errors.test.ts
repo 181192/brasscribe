@@ -25,7 +25,7 @@ describe("fetch errors", () => {
 
   it("never shows a bare browser message; each notice says what to do and offers Try again", () => {
     const cases: [unknown, RegExp][] = [
-      [new Unreachable("Failed to fetch"), /Couldn't reach Brasscribe on this computer\..*brasscribe serve.*running\?/],
+      [new Unreachable("Failed to fetch"), /Couldn't reach Brasscribe on this computer\..*scribe serve.*running\?/],
       [new TimedOut(20), /taking too long.*20 seconds/],
       [new MissingEndpoint("GET /v1/conformance"), /Not available in this version\..*GET \/v1\/conformance.*Update it/],
       [new ApiError(500, "boom"), /hit a problem\..*error 500.*boom/],

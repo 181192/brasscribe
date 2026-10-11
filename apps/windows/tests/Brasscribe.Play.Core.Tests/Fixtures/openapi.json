@@ -580,7 +580,7 @@
       },
       "Composition": {
         "additionalProperties": true,
-        "description": "The canonical score (brasscribe_music.score_model.Composition): concert pitch, integer ticks.",
+        "description": "The canonical score (scribe_music.score_model.Composition): concert pitch, integer ticks.",
         "properties": {
           "beat_times": {
             "description": "seconds of beat 0, 1, 2 ...",
@@ -1081,7 +1081,7 @@
             "type": "string"
           },
           "server_id": {
-            "description": "stable id of this engine: kept across restarts and address or port changes, new only after `brasscribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.",
+            "description": "stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.",
             "title": "Server Id",
             "type": "string"
           },
@@ -1857,7 +1857,7 @@
       "PairRequest": {
         "properties": {
           "code": {
-            "description": "pairing code shown by the engine (brasscribe serve --lan)",
+            "description": "pairing code shown by the engine (scribe serve --lan)",
             "title": "Code",
             "type": "string"
           },
@@ -3611,7 +3611,7 @@
   },
   "info": {
     "description": "Recording in, brass-band score out. Jobs run a profile's stage DAG with a content-addressed cache; progress streams as Server-Sent Events. Loopback clients are trusted; LAN clients pair once with the code the engine shows and then send their own long-lived bearer token.",
-    "title": "brasscribe engine",
+    "title": "scribe engine",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -3677,7 +3677,7 @@
     },
     "/v1/conformance": {
       "get": {
-        "description": "Rust-core conformance summary: every report.json in BRASSCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.\n\nAn empty list means no report yet (run `scribe_conformance.run`, or runConformance).",
+        "description": "Rust-core conformance summary: every report.json in SCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.\n\nAn empty list means no report yet (run `scribe_conformance.run`, or runConformance).",
         "operationId": "listConformanceReports",
         "parameters": [
           {
@@ -6332,7 +6332,7 @@
     },
     "/v1/parity": {
       "get": {
-        "description": "Model-conversion parity reports as written (every *.json in BRASSCRIBE_PARITY_REPORTS), plus `_file`.",
+        "description": "Model-conversion parity reports as written (every *.json in SCRIBE_PARITY_REPORTS), plus `_file`.",
         "operationId": "listParityReports",
         "parameters": [
           {
@@ -6925,7 +6925,7 @@
     },
     "/v1/suites/history": {
       "get": {
-        "description": "Every stored suite result, newest first (from `brasscribe bench` and runSuite).",
+        "description": "Every stored suite result, newest first (from `scribe bench` and runSuite).",
         "operationId": "listSuiteHistory",
         "parameters": [
           {

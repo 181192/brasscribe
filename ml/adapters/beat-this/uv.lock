@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "brasscribe-beat-this"
+name = "scribe-beat-this"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

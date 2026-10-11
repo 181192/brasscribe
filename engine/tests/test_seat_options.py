@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import profiles
-from brasscribe_engine.api import create_app
+from scribe_engine import profiles
+from scribe_engine.api import create_app
 
 from .test_api import wait
 

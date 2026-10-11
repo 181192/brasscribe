@@ -225,9 +225,9 @@ public class BandSoundFontTests(ITestOutputHelper log)
     public async Task Load_leaves_reading_the_soundfont_to_ApplyTo()
     {
         var mapping = TestPaths.RepoFile("sounds/mapping.json");
-        var small = TestPaths.RepoFile("engine/src/brasscribe_engine/static/assets/alphatab/soundfont/sonivox.sf2");
+        var small = TestPaths.RepoFile("engine/src/scribe_engine/static/assets/alphatab/soundfont/sonivox.sf2");
         Skip.If(mapping is null, TestPaths.Missing("sounds/mapping.json"));
-        Skip.If(small is null, TestPaths.Missing("engine/src/brasscribe_engine/static/assets/alphatab/soundfont/sonivox.sf2"));
+        Skip.If(small is null, TestPaths.Missing("engine/src/scribe_engine/static/assets/alphatab/soundfont/sonivox.sf2"));
         var path = Path.Combine(Path.GetTempPath(), $"band-{Guid.NewGuid():N}.sf2");
         File.Copy(small, path);
         try

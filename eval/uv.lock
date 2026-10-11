@@ -8,11 +8,11 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "brasscribe-eval"
+name = "scribe-eval"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "brasscribe-music" },
+    { name = "scribe-music" },
     { name = "mir-eval" },
     { name = "numpy" },
     { name = "pandas" },
@@ -23,7 +23,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "brasscribe-music", editable = "../music" },
+    { name = "scribe-music", editable = "../music" },
     { name = "mir-eval", specifier = ">=0.8.2" },
     { name = "numpy", specifier = ">=2.5.3" },
     { name = "pandas", specifier = ">=3.0.6" },
@@ -33,7 +33,7 @@ requires-dist = [
 ]
 
 [[package]]
-name = "brasscribe-music"
+name = "scribe-music"
 version = "0.1.0"
 source = { editable = "../music" }
 dependencies = [

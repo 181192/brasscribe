@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from brasscribe_music.beats import clean_beats
+from scribe_music.beats import clean_beats
 
 
 def grid(n=40, ibi=0.5):
@@ -40,12 +40,12 @@ def test_free_time_ranges_are_left_alone():
 def test_phase_by_majority_of_labels():
     lab = np.zeros(40, bool)
     lab[[2, 6, 10, 14, 17]] = True  # one stray label
-    from brasscribe_music.beats import CleanBeats
+    from scribe_music.beats import CleanBeats
     assert CleanBeats(grid(), lab, 0, 0).phase(4) == 2
 
 
 def test_gate_keeps_a_consistent_track_and_single_unlabelled_edits():
-    from brasscribe_music.beats import clean_beats_gated
+    from scribe_music.beats import clean_beats_gated
     t = np.delete(grid(), 10)
     lab = np.delete(np.arange(40) % 4 == 0, 10)
     # Labels already agree with the tracked beats before the gap: restoring would not improve them.
@@ -65,7 +65,7 @@ def _accents(meter, n_bars, ibi=0.5, strong=1.0, weak=0.25):
 
 
 def test_plausible_labels_pass_through():
-    from brasscribe_music.beats import meter_of
+    from scribe_music.beats import meter_of
     t = grid(40)
     lab = np.arange(40) % 4 == 1
     m = meter_of(t, lab, t, np.full(40, 0.2))
@@ -73,7 +73,7 @@ def test_plausible_labels_pass_through():
 
 
 def test_labels_on_every_beat_meter_from_accents():
-    from brasscribe_music.beats import meter_of
+    from scribe_music.beats import meter_of
     for meter in (3, 4):
         t, dur = _accents(meter, 12)
         on = t + 0.01
@@ -84,7 +84,7 @@ def test_labels_on_every_beat_meter_from_accents():
 
 
 def test_position_labels_set_the_phase():
-    from brasscribe_music.beats import meter_of
+    from scribe_music.beats import meter_of
     t = grid(48)
     k = np.arange(48)
     # True downbeats at 2, 5, 8, ... are always labelled 1; in every other bar the other beats are too.
@@ -95,7 +95,7 @@ def test_position_labels_set_the_phase():
 
 
 def test_track_bar_phase_drops_an_inserted_and_restores_a_missed_beat():
-    from brasscribe_music.beats import track_bar_phase
+    from scribe_music.beats import track_bar_phase
     t = grid(40)
     strength = (np.arange(40) % 4 == 0).astype(float)
     t_ins = np.insert(t, 11, 5.25)
@@ -115,9 +115,9 @@ def _grid(b, on, du, infer):
     """The solo path's grid as arrange_layers_song builds it (cleanup, level choice, then solo_meter)."""
     from collections import Counter
 
-    from brasscribe_music.beats import clean_beats_gated, labels_on, solo_meter
-    from brasscribe_music.freetime import unstable_runs
-    from brasscribe_music.quantize import choose_level
+    from scribe_music.beats import clean_beats_gated, labels_on, solo_meter
+    from scribe_music.freetime import unstable_runs
+    from scribe_music.quantize import choose_level
 
     pos = b[:, 1].astype(int)
     gaps = np.diff(np.where(pos == 1)[0])
@@ -139,7 +139,7 @@ def _grid(b, on, du, infer):
 def test_entertainer_clip_is_two_four_and_keeps_every_note():
     from music21 import converter
 
-    from brasscribe_music.beats import kept_notes
+    from scribe_music.beats import kept_notes
 
     b = np.loadtxt(REF / "beats-small0.beats", ndmin=2)
     flat = converter.parse(REF / "layers" / "solo-sw.mid").flatten()
@@ -153,7 +153,7 @@ def test_entertainer_clip_is_two_four_and_keeps_every_note():
 
 
 def test_solo_meter_never_merges_notes():
-    from brasscribe_music.beats import kept_notes, solo_meter
+    from scribe_music.beats import kept_notes, solo_meter
 
     rng = np.random.default_rng(0)
     for _ in range(20):
@@ -167,7 +167,7 @@ def test_solo_meter_never_merges_notes():
 
 
 def test_weak_evidence_keeps_the_grids_bars():
-    from brasscribe_music.beats import solo_meter
+    from scribe_music.beats import solo_meter
 
     t = np.arange(40) * 0.5
     lab = np.ones(40, bool)

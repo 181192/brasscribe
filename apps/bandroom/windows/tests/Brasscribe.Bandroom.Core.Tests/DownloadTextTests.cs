@@ -104,7 +104,7 @@ public sealed class DownloadTextTests
             Variable = n => vars.GetValueOrDefault(n),
         };
         var env = config.Build(8765).Environment;
-        Assert.Equal("Korpset", env["BRASSCRIBE_COMPUTER_NAME"]);
+        Assert.Equal("Korpset", env["SCRIBE_COMPUTER_NAME"]);
         Assert.Equal("hf_saved", env["HF_TOKEN"]);
         Assert.Equal(@"D:\hub", env["HF_HUB_CACHE"]);
         Assert.False(env.ContainsKey("HF_HOME"));

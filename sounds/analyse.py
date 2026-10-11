@@ -29,8 +29,8 @@ from dsp import SR, envelope_db, hz_to_midi, midi_from_name  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "sounds" / "raw"
-# BRASSCRIBE_SOUNDS_ANALYSIS: a staging catalogue, so a rebuild in one checkout leaves the shared one alone
-OUT = Path(os.environ.get("BRASSCRIBE_SOUNDS_ANALYSIS", ROOT / "data" / "sounds" / "analysis.json"))
+# SCRIBE_SOUNDS_ANALYSIS: a staging catalogue, so a rebuild in one checkout leaves the shared one alone
+OUT = Path(os.environ.get("SCRIBE_SOUNDS_ANALYSIS", ROOT / "data" / "sounds" / "analysis.json"))
 
 VSCO_INST = {"Trumpet": "trumpet", "F Horn": "horn", "Tenor Trombone": "tenor-trombone", "Tuba": "tuba"}
 F0_RANGE = {  # Hz, generous: sounding ranges of the source instruments

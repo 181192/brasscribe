@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace Brasscribe.Play.Core.Scores;
 
 /// <summary>
-/// The canonical score (brasscribe_music.score_model.Composition): concert pitch, integer ticks.
+/// The canonical score (scribe_music.score_model.Composition): concert pitch, integer ticks.
 /// Field names follow the JSON contract in music/README.md. Unknown fields are kept in
 /// <see cref="Extra"/> so a round trip does not drop data written by a newer engine.
 /// </summary>

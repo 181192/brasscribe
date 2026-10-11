@@ -113,7 +113,7 @@ OPENAIR = [
 
 
 def http_get(url: str, timeout: int = 120) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "brasscribe-sounds-fetch/1"})
+    req = urllib.request.Request(url, headers={"User-Agent": "scribe-sounds-fetch/1"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
 

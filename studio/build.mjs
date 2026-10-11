@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const out = join(here, "..", "engine", "src", "brasscribe_engine", "static");
+const out = join(here, "..", "engine", "src", "scribe_engine", "static");
 const assets = join(out, "assets");
 const alphaTab = join(here, "node_modules", "@coderline", "alphatab", "dist");
 const watch = process.argv.includes("--watch");

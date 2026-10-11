@@ -13,8 +13,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.10.2"
-    CURRENT_PROJECT_VERSION: "16"
+    MARKETING_VERSION: "0.11.0"
+    CURRENT_PROJECT_VERSION: "17"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     CODE_SIGN_IDENTITY: "-"
@@ -52,7 +52,7 @@ targets:
       - name: Engine workspace
         script: "\"$SRCROOT/scripts/stage-workspace.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/workspace\""
         basedOnDependencyAnalysis: false
-      # The band sounds Studio plays (the engine gets them through BRASSCRIBE_BAND_SOUNDS_DIR).
+      # The band sounds Studio plays (the engine gets them through SCRIBE_BAND_SOUNDS_DIR).
       - name: Band sounds
         script: "\"$SRCROOT/scripts/stage-band-sounds.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/band\""
         basedOnDependencyAnalysis: false

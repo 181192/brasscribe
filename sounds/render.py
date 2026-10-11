@@ -56,13 +56,13 @@ from dsp import SR, apply_eq  # noqa: E402
 import importlib.util  # noqa: E402
 
 _ms_spec = importlib.util.spec_from_file_location(
-    "brasscribe_musescore", Path(__file__).resolve().parents[1] / "music/src/brasscribe_music/musescore.py")
+    "scribe_musescore", Path(__file__).resolve().parents[1] / "music/src/scribe_music/musescore.py")
 musescore = importlib.util.module_from_spec(_ms_spec)
 _ms_spec.loader.exec_module(musescore)
 from humanize import TPB, Performance, ScoreNote, humanize  # noqa: E402
 import partsound  # noqa: E402
 
-BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))
+BUILT = Path(os.environ.get("SCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))
 RAW = ROOT / "data" / "sounds" / "raw"
 MSBASIC = RAW / "msbasic" / "MS Basic.sf3"
 SFIZZ = Path(os.environ.get("SFIZZ_RENDER", ROOT / "data" / "sounds" / "tools" / "bin" / "sfizz_render"))
@@ -392,7 +392,7 @@ def render(args: argparse.Namespace) -> None:
     (out / "stems").mkdir(parents=True, exist_ok=True)
     mapping = json.loads((HERE / "mapping.json").read_text())
     seating = json.loads((HERE / "seating.json").read_text())
-    work = Path(tempfile.mkdtemp(prefix="brasscribe-render-"))
+    work = Path(tempfile.mkdtemp(prefix="scribe-render-"))
     midi = to_midi(Path(args.score), work)
     parts, length_s = read_parts(midi)
     n = int((length_s + 4.0) * SR)

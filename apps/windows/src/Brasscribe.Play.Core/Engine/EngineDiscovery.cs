@@ -42,7 +42,7 @@ public interface IEngineDiscovery
 }
 
 /// <summary>
-/// Finds engines that advertise <c>_brasscribe._tcp</c> over mDNS (<c>brasscribe serve --lan</c>).
+/// Finds engines that advertise <c>_brasscribe._tcp</c> over mDNS (<c>scribe serve --lan</c>).
 /// Queries go out from an ephemeral port, so responders answer by unicast (RFC 6762 §6.7) and nothing
 /// competes with the Windows mDNS service for port 5353. Discovery only suggests addresses; pairing is still required.
 /// </summary>

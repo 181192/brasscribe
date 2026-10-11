@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music.score_model import (Articulation, Composition, FreeNotation, FreeRegion, KeySig, Meter, Note,
+from scribe_music.score_model import (Articulation, Composition, FreeNotation, FreeRegion, KeySig, Meter, Note,
                                           Voice, VoiceRole)
 
 GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"

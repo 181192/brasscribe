@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from brasscribe_engine import audio_level
+from scribe_engine import audio_level
 
 REPO = Path(__file__).resolve().parents[2]
 VECTORS = REPO / "sounds" / "output-stage-vectors.json"

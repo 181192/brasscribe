@@ -19,10 +19,10 @@ sys.path.insert(0, str(REPO / "eval"))
 warnings.filterwarnings("ignore")
 
 import numpy as np  # noqa: E402
-from brasscribe_eval import arrange_bench, arrange_layers_song, arrange_song, lead_sheet  # noqa: E402
-from brasscribe_eval.score import load_notes  # noqa: E402
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml  # noqa: E402
-from brasscribe_music.quantize import quantize  # noqa: E402
+from scribe_eval import arrange_bench, arrange_layers_song, arrange_song, lead_sheet  # noqa: E402
+from scribe_eval.score import load_notes  # noqa: E402
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml  # noqa: E402
+from scribe_music.quantize import quantize  # noqa: E402
 
 
 class _NoSubprocess:
@@ -50,7 +50,7 @@ def run(case: Case, out: Path) -> None:
     out.mkdir(parents=True)
     a = case.args
     if case.kind == "meter":
-        from brasscribe_music.beats import meter_of
+        from scribe_music.beats import meter_of
 
         b = np.loadtxt(a["beats"], ndmin=2)
         pos = b[:, 1].astype(int)
@@ -77,7 +77,7 @@ def run(case: Case, out: Path) -> None:
         _main(lead_sheet, ["--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support", str(a["support"]),
                            "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"]])
     elif case.kind == "bench":
-        from brasscribe_music.instruments import lineup_by_name
+        from scribe_music.instruments import lineup_by_name
 
         opts = a.get("options", [])
         lineup = opts[opts.index("--lineup") + 1] if "--lineup" in opts else "minimal"

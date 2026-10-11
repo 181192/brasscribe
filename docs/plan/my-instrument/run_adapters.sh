@@ -1,6 +1,6 @@
 #!/bin/sh
 # Transcribe every brass stem of ChoraleBricks with SwiftF0 and Basic Pitch (cached).
-DATA=${BRASSCRIBE_DATA:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/data}
+DATA=${SCRIBE_DATA:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel)/data}
 CB=${CHORALEBRICKS:-$DATA/choralebricks/01_AudioAndAnnotations}
 HERE=$(cd "$(dirname "$0")" && pwd)
 AD="$HERE/../../../ml/adapters"

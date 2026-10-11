@@ -67,7 +67,7 @@ public sealed class ModelDownloader : IDisposable
     private (long At, long Bytes)? _lastSample;
     private long _lastRaised;
 
-    /// <param name="models">The models folder (BRASSCRIBE_MODELS).</param>
+    /// <param name="models">The models folder (SCRIBE_MODELS).</param>
     /// <param name="hub">The Hugging Face hub cache.</param>
     /// <param name="token">The user's Hugging Face key, read at each run (null or empty when there is none).</param>
     /// <param name="handler">The HTTP stack; a handler that doesn't follow redirects itself.</param>

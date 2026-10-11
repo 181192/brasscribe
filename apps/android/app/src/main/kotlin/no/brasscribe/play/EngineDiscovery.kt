@@ -13,7 +13,7 @@ import java.net.InetAddress
 import java.util.concurrent.Executors
 
 /**
- * Finds engines on the local network that advertise `_brasscribe._tcp` (`brasscribe serve --lan`).
+ * Finds engines on the local network that advertise `_brasscribe._tcp` (`scribe serve --lan`).
  * Discovery only suggests addresses; the engine still requires pairing. mDNS does not cross the
  * emulator's NAT, so on an emulator the list stays empty and 10.0.2.2 remains the way in.
  */

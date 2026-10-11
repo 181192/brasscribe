@@ -6,7 +6,7 @@ Two applications on one shared engine:
 - **Brasscribe Play** ("Play" below): a musician app. Recording in, brass-band score out, then read, listen, practise and play along.
 
 **Status (2026-09-29): partly done.** Released as v0.2.0 (Android, Mac, Bandroom for Mac, the `scribe-core` CLI).
-- Done: the engine as a service (pixi workspace, FastAPI, `brasscribe bench`), free-time and durations from audio, Studio, the Rust core with conformance, Play for Apple (macOS; iOS/iPadOS builds but is not released), Play for Android, the on-device solo path (SwiftF0, Basic Pitch and Beat This! small on Apple and Android), the band sounds on every platform, Bandroom for macOS and Windows.
+- Done: the engine as a service (pixi workspace, FastAPI, `scribe bench`), free-time and durations from audio, Studio, the Rust core with conformance, Play for Apple (macOS; iOS/iPadOS builds but is not released), Play for Android, the on-device solo path (SwiftF0, Basic Pitch and Beat This! small on Apple and Android), the band sounds on every platform, Bandroom for macOS and Windows.
 - Left:
   - Windows Play has no download yet, and `main` lacks the music stand, the Appearance setting and "What do you play?" (they are on unmerged branches, waiting for a Windows test run);
   - iPhone/iPad releases need an Apple Developer account;
@@ -43,7 +43,7 @@ What exists today, all in this repo and committed:
   - BS-RoFormer SW and HT-Demucs (via audio-separator)
   - Mega-53
   - PANNs
-- **Core music library:** `music/src/brasscribe_music/`, 13 tests. It contains:
+- **Core music library:** `music/src/scribe_music/`, 13 tests. It contains:
   - canonical `Composition` model (`score_model.py`), the JSON contract between transcription and arrangement
   - quantizer with metrical-level selection
   - ps13 pitch spelling and key estimation
@@ -51,7 +51,7 @@ What exists today, all in this repo and committed:
   - instrument knowledge for the full brass band (transpositions, ranges)
   - deterministic arrangers: minimal band, and layered solo-with-band
   - MusicXML export with transposing parts, `<instrument-sound>` IDs and percussion
-- **Evaluation:** `eval/brasscribe_eval/`, with dataset builders (ChoraleBricks, URMP, Slakh) and benchmarks for:
+- **Evaluation:** `eval/scribe_eval/`, with dataset builders (ChoraleBricks, URMP, Slakh) and benchmarks for:
   - transcription
   - consensus
   - rhythm
@@ -59,7 +59,7 @@ What exists today, all in this repo and committed:
   - solo vote
   - arrangement
   - a MuseScore round-trip gate
-- **End to end:** `brasscribe_eval.song_pipeline`, which takes a recording to an 18-part brass-band MusicXML, PDF and MP3.
+- **End to end:** `scribe_eval.song_pipeline`, which takes a recording to an 18-part brass-band MusicXML, PDF and MP3.
   - Reproducible: a fresh run matched the golden output in `data/golden/mikkel-arranged-band/` note for note.
 
 **Known engine gaps.** Detail in §8; the first two are part of the kickoff:
@@ -107,7 +107,7 @@ Nobody writes this intro readably yet. Fixing items 1 and 2 would put us ahead.
  │ job DAG · artifact cache · profiles · benchmark suites        │        ▼                ▼              ▼
  │ adapters (pixi envs): MuScriptor, Mega-53, SW, Basic Pitch,   │   ┌──────────────── core (Rust) ─────────────────┐
  │ SwiftF0, Beat This!                                           │   │ Composition · quantize · spell · harmony      │
- │ music (brasscribe_music) = reference implementation           │◄──│ instruments · arrange · MusicXML · voting      │
+ │ music (scribe_music) = reference implementation           │◄──│ instruments · arrange · MusicXML · voting      │
  └───────────────────────────────────────────────────────────────┘   │ conformance-tested against the Python library │
           ▲  companion mode (LAN, pairing code)                       └───────────────────────────────────────────────┘
           └──────────────── Play apps send audio, get Composition/MusicXML ────────────────┘
@@ -136,7 +136,7 @@ pixi.toml        engine workspace
 
 **Who it's for:** Kalli and contributors. Insight over polish.
 
-**Form:** `brasscribe studio` starts the engine and opens `http://localhost:…` in the default browser.
+**Form:** `scribe studio` starts the engine and opens `http://localhost:…` in the default browser.
 - There's no desktop shell. The UI is plain TypeScript and web components, built into the engine package.
 - For viewing scores it uses alphaTab (web build, MPL-2.0).
 
@@ -159,12 +159,12 @@ pixi.toml        engine workspace
 
 ### Packaging and GPU
 - pixi environments per adapter, installed on first run, with model weights downloaded into a cache. The installer itself is small.
-- `brasscribe bench <suite>` works headless for CI. A Linux Docker image with the NVIDIA runtime is available for dedicated benchmark machines.
+- `scribe bench <suite>` works headless for CI. A Linux Docker image with the NVIDIA runtime is available for dedicated benchmark machines.
 - **Isolation:** adapters run as subprocesses in their own environments. All data lives in one directory: models, cache, datasets, runs.
 
 **Done means:**
 - It installs on clean macOS arm64, Windows 11 and Ubuntu 24.04.
-- `brasscribe run mikkel.wav` reproduces `data/golden/mikkel-arranged-band/` note for note.
+- `scribe run mikkel.wav` reproduces `data/golden/mikkel-arranged-band/` note for note.
 - The chorale and URMP suites match `10-benchmark-results.md` within ±0.01 F1.
 - The GPU is used on CUDA and MPS machines, confirmed in the run manifests.
 
@@ -260,7 +260,7 @@ The work is listed in dependency order. Each milestone ends with something runna
 ### Engine as a service, with the free-time and duration fixes
 - Migrate `ml/adapters/*`, `music/` and `eval/` into a pixi workspace.
 - FastAPI engine: job DAG, artifact cache, SSE progress, run manifests, profiles.
-- Port the benchmarks to suites, with the `brasscribe bench` CLI.
+- Port the benchmarks to suites, with the `scribe bench` CLI.
 - **Free-time detection:**
   - Detect passages where beat intervals are wildly irregular.
   - Mark them *ad lib* in the Composition and MusicXML.
@@ -271,7 +271,7 @@ The work is listed in dependency order. Each milestone ends with something runna
   - Infer staccato when the performed length is under half the written length.
   - Benchmark: duration accuracy on URMP and chorales (currently 0.61 / 0.88).
 - **Done when:**
-  - `brasscribe run mikkel.wav` reproduces `data/golden/mikkel-arranged-band/`, updated deliberately when the two fixes change it; the diff is reviewed and the golden output re-saved.
+  - `scribe run mikkel.wav` reproduces `data/golden/mikkel-arranged-band/`, updated deliberately when the two fixes change it; the diff is reviewed and the golden output re-saved.
   - Suites match within ±0.01 F1.
   - The Mikkel intro renders as readable sustained phrases marked *ad lib*.
   - CI runs the CPU suites on Linux.
@@ -411,7 +411,7 @@ Each role owns folders, which keeps parallel work conflict-free (use git worktre
 > - **Accessibility and QA** writes the WCAG 2.2 AA checklist and screen-reader test scripts for the three native platforms, and reviews output for readability.
 >
 > Acceptance:
-> - `brasscribe run` on `data/mikkel/mikkel.wav` reproduces `data/golden/mikkel-arranged-band/` before the fixes.
+> - `scribe run` on `data/mikkel/mikkel.wav` reproduces `data/golden/mikkel-arranged-band/` before the fixes.
 > - After the fixes, the intro renders as readable *ad lib* sustained phrases. Review the diff against the golden output and re-save it deliberately.
 > - All suites stay within ±0.01 F1 except where a fix is meant to improve them.
 >

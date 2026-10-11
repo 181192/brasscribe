@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_engine import talking_score as T
+from scribe_engine import talking_score as T
 
 ROOT = Path(__file__).resolve().parents[2]
 VECTORS = json.loads((ROOT / "docs" / "accessibility" / "talking-score-vectors.json").read_text())["cases"]

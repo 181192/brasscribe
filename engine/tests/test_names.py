@@ -8,8 +8,8 @@ from pathlib import PureWindowsPath
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine.api import create_app
-from brasscribe_engine.names import valid_id, valid_relpath
+from scribe_engine.api import create_app
+from scribe_engine.names import valid_id, valid_relpath
 
 from .test_inspection import run_job
 

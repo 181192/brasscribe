@@ -1,6 +1,6 @@
 import pytest
 
-from brasscribe_engine import __version__, discovery
+from scribe_engine import __version__, discovery
 
 
 @pytest.mark.slow
@@ -30,7 +30,7 @@ def test_service_info_carries_the_stable_server_id():
 
 
 def test_the_desktop_helper_names_the_computer(monkeypatch):
-    monkeypatch.setenv("BRASSCRIBE_COMPUTER_NAME", "Karis MacBook\n")
+    monkeypatch.setenv("SCRIBE_COMPUTER_NAME", "Karis MacBook\n")
     monkeypatch.setattr(discovery.socket, "gethostname", lambda: "Karis-MacBook-Pro.local")
     info = discovery.service_info(8765, ["192.0.2.20"], server_id="ab" * 16)
     assert info.name == "Brasscribe on Karis MacBook._brasscribe._tcp.local."
@@ -40,10 +40,10 @@ def test_the_desktop_helper_names_the_computer(monkeypatch):
 
 
 def test_computer_name_fits_one_dns_label(monkeypatch):
-    monkeypatch.setenv("BRASSCRIBE_COMPUTER_NAME", "Bjørnstjerne's " + "å" * 60)
+    monkeypatch.setenv("SCRIBE_COMPUTER_NAME", "Bjørnstjerne's " + "å" * 60)
     name = discovery.service_name()
     assert len(name.encode()) <= 63 and name.startswith("Brasscribe on Bjørnstjerne's å")
-    monkeypatch.setenv("BRASSCRIBE_COMPUTER_NAME", "   ")
+    monkeypatch.setenv("SCRIBE_COMPUTER_NAME", "   ")
     monkeypatch.setattr(discovery.socket, "gethostname", lambda: "studio-mac")
     assert discovery.service_name() == "Brasscribe on studio-mac"
 
@@ -51,8 +51,8 @@ def test_computer_name_fits_one_dns_label(monkeypatch):
 def test_server_name_in_health_matches_the_advertised_name(settings, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
-    monkeypatch.setenv("BRASSCRIBE_COMPUTER_NAME", "Karis MacBook")
+    monkeypatch.setenv("SCRIBE_COMPUTER_NAME", "Karis MacBook")
     with TestClient(create_app(settings)) as c:
         assert c.get("/v1/health").json()["server_name"] == "Brasscribe on Karis MacBook"

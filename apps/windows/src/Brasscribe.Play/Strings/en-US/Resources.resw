@@ -268,7 +268,7 @@
     <value>Choose another recording</value>
   </data>
   <data name="Error_ComputerUnreachable_Details" xml:space="preserve">
-    <value>Start it with: brasscribe serve. Settings shows the address it uses. The message was: {0}</value>
+    <value>Start it with: scribe serve. Settings shows the address it uses. The message was: {0}</value>
   </data>
   <data name="Error_ComputerUnreachable_Reason" xml:space="preserve">
     <value>Your recording is safe. Full-band scores are made on your computer, and it isn't answering.</value>

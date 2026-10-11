@@ -111,12 +111,12 @@ public class ScribeCoreTests
             Assert.Equal(sources[i].Source == "arranged", band.Parts[i].MusicXml.Contains("Arrangert av Brasscribe ut fra harmoniene i bandet."));
     }
 
-    /// <summary>data/mikkel/repro in this checkout, or in the one BRASSCRIBE_REPO names; null when neither has it.</summary>
+    /// <summary>data/mikkel/repro in this checkout, or in the one SCRIBE_REPO names; null when neither has it.</summary>
     private const string NoMikkelRepro =
-        "data/mikkel/repro not found: data/ is not in git (scripts/worktree-setup.sh links it into a worktree, or set BRASSCRIBE_REPO to a checkout that has it)";
+        "data/mikkel/repro not found: data/ is not in git (scripts/worktree-setup.sh links it into a worktree, or set SCRIBE_REPO to a checkout that has it)";
 
     private static string? MikkelRepro() =>
-        new[] { Path.Combine(AppContext.BaseDirectory, "../../../../../.."), Environment.GetEnvironmentVariable("BRASSCRIBE_REPO") }
+        new[] { Path.Combine(AppContext.BaseDirectory, "../../../../../.."), Environment.GetEnvironmentVariable("SCRIBE_REPO") }
             .Where(r => r is { Length: > 0 }).Select(r => Path.Combine(r!, "data/mikkel/repro"))
             .FirstOrDefault(d => File.Exists(Path.Combine(d, "layers/solo.wav")));
 

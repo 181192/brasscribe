@@ -1,11 +1,11 @@
-"""The solo beat-model bench (brasscribe_eval.solo_beat_model_bench): its score and its suite's gate."""
+"""The solo beat-model bench (scribe_eval.solo_beat_model_bench): its score and its suite's gate."""
 
 import json
 
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
-from brasscribe_eval import solo_beat_model_bench as M
-from brasscribe_eval import suites
+from scribe_eval import solo_beat_model_bench as M
+from scribe_eval import suites
 
 # A 3/4 line, one note a beat, a beat every half second; the tracker's beat is a quarter.
 REF = [{"pitch": 60 + k % 5, "onset": 0.5 * k, "offset": 0.5 * k + 0.4, "quarter": float(k)} for k in range(12)]

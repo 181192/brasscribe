@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from brasscribe_engine import profiles
-from brasscribe_engine.stages import _supported
+from scribe_engine import profiles
+from scribe_engine.stages import _supported
 
 
 def test_pop_rock_asks_for_the_pop_kit():
@@ -19,5 +19,5 @@ def test_other_profiles_keep_the_band_kit_and_their_cache_keys():
 
 def test_both_arrangers_take_the_kit():
     # _arrangement_flags fails a stage whose arranger does not list the flag.
-    for module in ("brasscribe_eval.arrange_song", "brasscribe_eval.arrange_layers_song"):
+    for module in ("scribe_eval.arrange_song", "scribe_eval.arrange_layers_song"):
         assert "--kit" in _supported(module), module

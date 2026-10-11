@@ -1,4 +1,4 @@
-"""The benchmark gate (brasscribe_eval.suites) and the benches it runs: failures and gaps never pass as results."""
+"""The benchmark gate (scribe_eval.suites) and the benches it runs: failures and gaps never pass as results."""
 
 import json
 import math
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from brasscribe_eval import suites
+from scribe_eval import suites
 
 
 def _report(value, higher_is_better=True):
@@ -32,7 +32,7 @@ def test_a_suite_that_exits_is_an_error_and_the_run_goes_on(monkeypatch):
 
 
 def test_a_crashing_clip_is_counted_not_scored_as_perfect(monkeypatch):
-    from brasscribe_eval import fast_notes_bench as B
+    from scribe_eval import fast_notes_bench as B
 
     def crash(*args, **kwargs):
         raise ValueError("under two beats")
@@ -44,7 +44,7 @@ def test_a_crashing_clip_is_counted_not_scored_as_perfect(monkeypatch):
 
 
 def test_solo_vote_reads_the_given_data_directory(tmp_path):
-    from brasscribe_eval import solo_vote_bench as B
+    from scribe_eval import solo_vote_bench as B
 
     note = {"pitch": 60, "onset": 0.0, "offset": 0.5}
     song = tmp_path / "eval" / "choralebricks-brass4" / "song"
@@ -61,7 +61,7 @@ def test_solo_vote_reads_the_given_data_directory(tmp_path):
 
 
 def test_parts_in_unison_keep_their_own_lengths(tmp_path):
-    from brasscribe_eval.quant_bench import evaluate
+    from scribe_eval.quant_bench import evaluate
 
     # Two parts start the same pitch together; one holds it a beat, the other two.
     ref = [{"pitch": 60, "onset": 0.0, "offset": 0.5, "quarter": 0.0, "dur_quarter": 1.0, "part": "A"},

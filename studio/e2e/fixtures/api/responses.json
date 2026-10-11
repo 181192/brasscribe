@@ -1759,7 +1759,7 @@
     "items": 0,
     "present": false,
     "cached_outputs": [],
-    "download": "python -m brasscribe_eval.choralebricks (from the downloaded ChoraleBricks v1.1.0)"
+    "download": "python -m scribe_eval.choralebricks (from the downloaded ChoraleBricks v1.1.0)"
    },
    {
     "name": "slakh-trumpet",
@@ -1771,7 +1771,7 @@
     "items": 0,
     "present": false,
     "cached_outputs": [],
-    "download": "python -m brasscribe_eval.slakh (from the downloaded BabySlakh)"
+    "download": "python -m scribe_eval.slakh (from the downloaded BabySlakh)"
    },
    {
     "name": "urmp-brass",
@@ -1783,7 +1783,7 @@
     "items": 0,
     "present": false,
     "cached_outputs": [],
-    "download": "python -m brasscribe_eval.urmp (from the downloaded URMP dataset)"
+    "download": "python -m scribe_eval.urmp (from the downloaded URMP dataset)"
    }
   ]
  },

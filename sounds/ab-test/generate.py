@@ -121,7 +121,7 @@ def main() -> None:
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    work = Path(tempfile.mkdtemp(prefix="brasscribe-ab-"))
+    work = Path(tempfile.mkdtemp(prefix="scribe-ab-"))
 
     base = decode(Path(args.baseline), work, reencode_mp3=False)
     real = decode(Path(args.realistic), work, reencode_mp3=Path(args.realistic).suffix.lower() != ".mp3")

@@ -24,7 +24,7 @@ from swift_f0 import SwiftF0, segment_notes
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "music" / "src"))
-from brasscribe_music.quantize import quantize  # noqa: E402
+from scribe_music.quantize import quantize  # noqa: E402
 
 SR = 16000
 RNG = np.random.default_rng(7)

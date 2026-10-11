@@ -1,7 +1,7 @@
-from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.keys import key_plan
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.arranger import arrange_layers
+from scribe_music.keys import key_plan
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 C_MAJOR = [60, 62, 64, 65, 67, 69, 71, 72]
 A_MAJOR = [69, 71, 73, 74, 76, 78, 80, 81]
@@ -46,7 +46,7 @@ def test_key_changes_and_very_uncertain_marks_are_written(tmp_path):
 
 
 def test_sharp_minor_keys_get_their_sharps():
-    from brasscribe_music.spelling import key_of
+    from scribe_music.spelling import key_of
 
     for tonic, name, fifths in ((68, "G#m", 5), (63, "D#m", 6)):
         # harmonic minor up and the tonic triad

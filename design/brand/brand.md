@@ -2,7 +2,7 @@
 
 ## Name
 
-- **Brasscribe** is one word with a capital B. Never write BrassScribe, BRASSCRIBE or brass-scribe. The CLI command `brasscribe` is the only lower-case form.
+- **Brasscribe** is one word with a capital B. Never write BrassScribe, BRASSCRIBE or brass-scribe. The lower-case form is for what a program reads, such as the pairing link. The engine's command is `scribe`: it serves every app and carries no product's name.
 - The products are **Brasscribe Play**, the musician app, **Brasscribe Studio**, the workbench, and **Brasscribe Bandroom**, which runs the engine on a Mac or PC in the background (spec: [`../server-app.md`](../server-app.md)).
   - Inside the apps, say "Brasscribe": "Brasscribe wasn't sure about these notes".
   - Use the product name only where the products appear together: store listings, About, the docs, installers, and the app lists (Applications, Start, Login Items).
@@ -116,7 +116,7 @@ The voice never says "we": write "Brasscribe will tell you when the score is rea
 | Android, What is this? | "Your answer decides how Play listens. It never guesses." | "Your answer decides how Brasscribe listens. It never guesses." |
 | Apple, What is this? | "This decides how the music is taken apart. Brasscribe never guesses." | "Your answer decides how Brasscribe listens. It never guesses." (one sentence on every platform) |
 | Android, where to transcribe | "On my computer (companion engine)" · nb "På datamaskinen min (motoren)" | "On your computer" · "På datamaskinen din" |
-| Apple, pairing | "Start Brasscribe on your computer with “brasscribe serve --host 0.0.0.0” and type the six-digit code it shows." | "Open Brasscribe on your computer and choose **Pair a phone**. Scan the code, or type the six digits." The command moves under "Details for the band's tech person". |
+| Apple, pairing | "Start Brasscribe on your computer with “scribe serve --host 0.0.0.0” and type the six-digit code it shows." | "Open Brasscribe on your computer and choose **Pair a phone**. Scan the code, or type the six digits." The command moves under "Details for the band's tech person". |
 | Apple, review legend | "Uncertain notes are marked with an open diamond and an orange colour." | "Notes Brasscribe isn't sure about have a “?” above them. A boxed “?” means very unsure." |
 | Android, review legend | "Uncertain: blue, with an open ring" · "Very uncertain: orange, in brackets, with a filled ring" | "Uncertain: “?” above the note" · "Very uncertain: boxed “?” above the note". Rings mean *open* to brass players, and brackets mean *optional*. |
 | Android nb, loop | "Repetisjon" / "Gjenta takter" / "Fjern repetisjon" | "Gjenta" / "Gjenta takt 12–16" / "Slutt å gjenta" (one word for one thing) |

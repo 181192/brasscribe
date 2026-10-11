@@ -8,8 +8,8 @@ plugins {
 }
 
 val repoRoot = rootProject.extra["repoRoot"] as File
-// The band SoundFonts (data/sounds/band, outside git); BRASSCRIBE_BAND_SOUNDS_DIR points at another pack to try it.
-val bandSoundsDir = System.getenv("BRASSCRIBE_BAND_SOUNDS_DIR")?.let(::File) ?: File(repoRoot, "data/sounds/band")
+// The band SoundFonts (data/sounds/band, outside git); SCRIBE_BAND_SOUNDS_DIR points at another pack to try it.
+val bandSoundsDir = System.getenv("SCRIBE_BAND_SOUNDS_DIR")?.let(::File) ?: File(repoRoot, "data/sounds/band")
 // Fretscribe's own version, for a release of its own: -Pfretscribe.versionName=1.2.3 -Pfretscribe.versionCode=7.
 // Without them it has the version in defaultConfig, as it is released with Brasscribe today.
 val fretscribeVersionName = providers.gradleProperty("fretscribe.versionName").orNull?.takeIf(String::isNotBlank)
@@ -24,8 +24,8 @@ android {
         applicationId = "no.brasscribe.play"
         minSdk = 36
         targetSdk = 37
-        versionCode = 16
-        versionName = "0.10.2"
+        versionCode = 17
+        versionName = "0.11.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
@@ -120,7 +120,7 @@ android {
             it.systemProperty("brasscribe.bandSounds", bandSoundsDir.absolutePath)
             // Fretscribe's tests ask the engine's own option check about the jobs the app sends, and read the
             // tab fixtures and the crate's presets: a change to any of them runs the tests again.
-            it.inputs.files(fileTree(File(repoRoot, "engine/src/brasscribe_engine")) { include("*.py") }).withPropertyName("engineOptionCheck")
+            it.inputs.files(fileTree(File(repoRoot, "engine/src/scribe_engine")) { include("*.py") }).withPropertyName("engineOptionCheck")
             it.inputs.files(File(repoRoot, "apps/android/scripts/check-tab-options.py"), File(repoRoot, "core/targets/fretted/src/instrument.rs"))
                 .withPropertyName("tabOptionSources")
             it.inputs.files(fileTree(File(repoRoot, "apps/fixtures")) { include("*-line/*") }).withPropertyName("tabFixtures")

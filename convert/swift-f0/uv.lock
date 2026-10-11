@@ -18,7 +18,7 @@ wheels = [
 ]
 
 [[package]]
-name = "brasscribe-convert-swift-f0"
+name = "scribe-convert-swift-f0"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

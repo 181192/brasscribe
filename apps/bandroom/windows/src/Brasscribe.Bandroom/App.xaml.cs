@@ -178,7 +178,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _cuda = cudaGpu is not null;
         foreach (var g in gpus) _log.Write($"bandroom: graphics {g.Description} vendor 0x{g.VendorId:X4} driver {g.DriverVersion} (NVIDIA {g.NvidiaDriver})");
         string pixi = FindPixi();
-        string bundled = Environment.GetEnvironmentVariable("BRASSCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 } w ? w : Path.Combine(AppContext.BaseDirectory, "workspace");
+        string bundled = Environment.GetEnvironmentVariable("SCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 } w ? w : Path.Combine(AppContext.BaseDirectory, "workspace");
         _nameStore = new ComputerNameStore(_paths.ComputerNameFile);
         _customName = _nameStore.Load();
         string computer = ComputerName.Shown(_systemName, _customName);
@@ -268,7 +268,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     /// <summary>
     /// After an app update: stop the engine, replace the workspace (pixi install only for a new lockfile), start it
-    /// again. A failure keeps the previous engine, which starts, with a Needs-attention problem and Try again.
+    /// again. A failure puts the previous engine back, with a Needs-attention problem and Try again; it starts when
+    /// this app can still start it (<see cref="Bootstrapper.StartsAfterUpdate"/>), and otherwise nothing runs.
     /// </summary>
     private async Task UpdateAsync()
     {
@@ -292,6 +293,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             }
             controller.Publish();
         });
+        bool failed = false;
         try
         {
             await Task.Run(() => bootstrap.RunAsync(_cuda, progress, _quit.Token));
@@ -301,16 +303,18 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         catch (Exception e)
         {
             _log?.Write("bandroom: update stopped: " + e);
-            // Still the old workspace: say so (and why, when pixi refused the new one); the previous engine starts below.
-            // A new one whose adapters stopped resumes like setup does.
+            // Still the old workspace: say so (and why, when pixi refused the new one); the previous engine starts below
+            // when it can. A new one whose adapters stopped resumes like setup does.
             if (!await Task.Run(() => bootstrap.WorkspaceCurrent))
             {
+                failed = true;
                 controller.UpdateFailure = e.Message;
                 controller.UpdateRefusal = (e as BootstrapException)?.Refusal;
             }
         }
         finally { controller.Updating = false; }
-        if (await Task.Run(() => bootstrap.EngineReady)) await supervisor.StartAsync();
+        if (await Task.Run(() => bootstrap.StartsAfterUpdate(failed))) await supervisor.StartAsync();
+        else if (failed) _log?.Write("bandroom: the previous engine has no " + EngineLaunchConfig.Command + " command to start: nothing runs until the update succeeds");
         controller.Publish();
     }
 

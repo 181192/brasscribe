@@ -15,7 +15,7 @@ public class NativeCoreIsUsedTests
     /// <summary>A host build of the core in this checkout, under whatever name: any *_ffi library.</summary>
     private static string? Built()
     {
-        var root = Environment.GetEnvironmentVariable("BRASSCRIBE_REPO") is { Length: > 0 } repo ? repo : TestPaths.RepoRoot;
+        var root = Environment.GetEnvironmentVariable("SCRIBE_REPO") is { Length: > 0 } repo ? repo : TestPaths.RepoRoot;
         var dir = root is null ? null : Path.Combine(root, "core", "target", "release");
         if (dir is null || !Directory.Exists(dir)) return null;
         return Directory.EnumerateFiles(dir)

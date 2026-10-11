@@ -18,7 +18,7 @@ public enum EngineSource: Equatable, Sendable {
     public var manifest: URL { workspace.appending(path: "pixi.toml") }
 
     /// The models folder: the one Bandroom checks and downloads into, and the one the engine and its adapters read
-    /// (BRASSCRIBE_MODELS), so they always agree. The data folder's `models`; for a checkout without one, the
+    /// (SCRIBE_MODELS), so they always agree. The data folder's `models`; for a checkout without one, the
     /// checkout's own `models`.
     public func modelsFolder(paths: BandroomPaths) -> URL {
         switch self {
@@ -29,9 +29,20 @@ public enum EngineSource: Equatable, Sendable {
         }
     }
 
-    /// Whether `pixi install` has already made the engine environment.
+    /// The command the engine is started with: the entry point `pixi install` puts in the environment's `bin`.
+    public static let command = "scribe"
+
+    /// Whether `pixi install` has already made the engine environment: it holds the command this app starts.
     public var isEnvironmentReady: Bool {
-        FileManager.default.fileExists(atPath: workspace.appending(path: ".pixi/envs/default/bin/brasscribe").path)
+        FileManager.default.fileExists(atPath: workspace.appending(path: ".pixi/envs/default/bin/\(Self.command)").path)
+    }
+
+    /// Whether the engine may be started once the workspace was checked against the app's. After a failed update the
+    /// previous workspace is back, and it is started only when its environment can run this app's command. Otherwise
+    /// nothing is started: a start could only fail, and its error would hide the update's own problem and the Try
+    /// again that runs the update once more.
+    public func startsAfterUpdate(failed: Bool) -> Bool {
+        !failed || isEnvironmentReady
     }
 }
 
@@ -68,9 +79,9 @@ public struct EngineConfiguration: Equatable, Sendable {
         return ["brasscribe-band.sf2", "mapping.json"].allSatisfy { fm.fileExists(atPath: dir.appending(path: $0).path) } ? dir : nil
     }
 
-    /// Checkout from BRASSCRIBE_CHECKOUT or the "engineCheckout" setting; otherwise the installed workspace.
+    /// Checkout from SCRIBE_CHECKOUT or the "engineCheckout" setting; otherwise the installed workspace.
     public static func resolveSource(environment: [String: String], defaults: UserDefaults, paths: BandroomPaths, bundle: Bundle) -> EngineSource {
-        let fromEnv = environment["BRASSCRIBE_CHECKOUT"].flatMap { $0.isEmpty ? nil : $0 }
+        let fromEnv = environment["SCRIBE_CHECKOUT"].flatMap { $0.isEmpty ? nil : $0 }
         let fromSetting = defaults.string(forKey: "engineCheckout").flatMap { $0.isEmpty ? nil : $0 }
         if let path = fromEnv ?? fromSetting {
             return .checkout(URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true))
@@ -85,7 +96,7 @@ public struct EngineConfiguration: Equatable, Sendable {
     public static func findPixi(bundle: Bundle, environment: [String: String]) -> URL? {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var candidates: [String] = []
-        if let explicit = environment["BRASSCRIBE_PIXI"] { candidates.append(explicit) }
+        if let explicit = environment["SCRIBE_PIXI"] { candidates.append(explicit) }
         if let bundled = bundle.url(forAuxiliaryExecutable: "pixi") ?? bundle.resourceURL?.appending(path: "bin/pixi") {
             candidates.append(bundled.path)
         }
@@ -100,19 +111,19 @@ public struct EngineConfiguration: Equatable, Sendable {
         }
         let pixiDir = pixi?.deletingLastPathComponent().path
         env["PATH"] = ([pixiDir].compactMap { $0 } + ["/usr/bin", "/bin", "/usr/sbin", "/sbin", "/opt/homebrew/bin"]).joined(separator: ":")
-        env["BRASSCRIBE_DATA"] = paths.data.path
-        env["BRASSCRIBE_COMPUTER_NAME"] = computerName
-        env["BRASSCRIBE_ADMIN_TOKEN"] = adminToken
+        env["SCRIBE_DATA"] = paths.data.path
+        env["SCRIBE_COMPUTER_NAME"] = computerName
+        env["SCRIBE_ADMIN_TOKEN"] = adminToken
         env["PYTHONUNBUFFERED"] = "1"
-        env.removeValue(forKey: "BRASSCRIBE_TOKEN")
-        if let bandSounds { env["BRASSCRIBE_BAND_SOUNDS_DIR"] = bandSounds.path }
-        env["BRASSCRIBE_MODELS"] = source.modelsFolder(paths: paths).path
+        env.removeValue(forKey: "SCRIBE_TOKEN")
+        if let bandSounds { env["SCRIBE_BAND_SOUNDS_DIR"] = bandSounds.path }
+        env["SCRIBE_MODELS"] = source.modelsFolder(paths: paths).path
         switch source {
         case .checkout:
             // A checkout brings its own ml/adapters; the engine finds them from its repo root.
             break
         case .installed(_, let adapters):
-            if let adapters { env["BRASSCRIBE_ADAPTERS"] = adapters.path }
+            if let adapters { env["SCRIBE_ADAPTERS"] = adapters.path }
             // The installed workspace has no core/ to build; a checkout uses its own build.
             if let coreCLI { env["SCRIBE_CORE_CLI"] = coreCLI.path }
             env["PIXI_CACHE_DIR"] = paths.pixiCache.path
@@ -127,7 +138,7 @@ public struct EngineConfiguration: Equatable, Sendable {
         }
         return LaunchPlan(executable: pixi,
                           arguments: ["run", "--manifest-path", source.manifest.path, "--frozen", "-e", environmentName,
-                                      "brasscribe", "serve", "--lan", "--port", String(port)],
+                                      EngineSource.command, "serve", "--lan", "--port", String(port)],
                           environment: environment(base: base), workingDirectory: source.workspace,
                           log: paths.engineLog, port: port)
     }

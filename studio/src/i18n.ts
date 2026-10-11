@@ -429,7 +429,7 @@ const en = {
   "parity.artifacts": "Converted artifacts",
   "parity.for": "Parity for {model}",
 
-  "conf.intro": "The Rust core must reproduce the Python reference (brasscribe_music) on the golden sets: quantisation, layers, songs and the full arrangement.",
+  "conf.intro": "The Rust core must reproduce the Python reference (scribe_music) on the golden sets: quantisation, layers, songs and the full arrangement.",
   "conf.summary": "{pass} of {total} cases identical, {fail} different, {missing} missing",
   "conf.meta": "core {v} · git {sha} · {time} · {file}",
   "conf.perSet": "Cases per set",
@@ -998,7 +998,7 @@ const nb: Record<Key, string> = {
   "parity.artifacts": "Konverterte filer",
   "parity.for": "Paritet for {model}",
 
-  "conf.intro": "Rust-kjernen må gjengi Python-referansen (brasscribe_music) på gullsettene: kvantisering, lag, sanger og hele arrangementet.",
+  "conf.intro": "Rust-kjernen må gjengi Python-referansen (scribe_music) på gullsettene: kvantisering, lag, sanger og hele arrangementet.",
   "conf.summary": "{pass} av {total} tilfeller identiske, {fail} forskjellige, {missing} mangler",
   "conf.meta": "kjerne {v} · git {sha} · {time} · {file}",
   "conf.perSet": "Tilfeller per sett",

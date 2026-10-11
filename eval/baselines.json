@@ -1,5 +1,5 @@
 {
-  "description": "Regression baselines for `brasscribe bench`, taken from docs/research/10-benchmark-results.md. Each suite cites the section its numbers come from. Default tolerance applies unless a metric sets its own. higher_is_better=false marks error-type metrics. Change a number only deliberately, together with the doc.",
+  "description": "Regression baselines for `scribe bench`, taken from docs/research/10-benchmark-results.md. Each suite cites the section its numbers come from. Default tolerance applies unless a metric sets its own. higher_is_better=false marks error-type metrics. Change a number only deliberately, together with the doc.",
   "tolerance": 0.01,
   "suites": {
     "chorales-transcription": {
@@ -339,7 +339,7 @@
       }
     },
     "durations": {
-      "source": "measured by this suite after the durations-from-audio change; not yet in 10-benchmark-results.md (brasscribe bench durations)",
+      "source": "measured by this suite after the durations-from-audio change; not yet in 10-benchmark-results.md (scribe bench durations)",
       "metrics": {
         "urmp.performed": 0.604,
         "urmp.fill8": 0.631,
@@ -358,7 +358,7 @@
       }
     },
     "freetime": {
-      "source": "measured by this suite after the free-time change; not yet in 10-benchmark-results.md (brasscribe bench freetime)",
+      "source": "measured by this suite after the free-time change; not yet in 10-benchmark-results.md (scribe bench freetime)",
       "metrics": {
         "grid.position": 0.474,
         "grid.subdivision": 0.886,
@@ -915,7 +915,7 @@
       }
     },
     "solo-beat-model": {
-      "source": "measured by this suite (brasscribe bench solo-beat-model) on the single parts of URMP and ChoraleBricks that solo_beats.py has beats for, the solo path once on Beat This! small0 beats and once on final0 beats of each part; not in 10-benchmark-results.md",
+      "source": "measured by this suite (scribe bench solo-beat-model) on the single parts of URMP and ChoraleBricks that solo_beats.py has beats for, the solo path once on Beat This! small0 beats and once on final0 beats of each part; not in 10-benchmark-results.md",
       "metrics": {
         "urmp.parts": {
           "value": 144.0,
@@ -944,7 +944,7 @@
       }
     },
     "bass-tab": {
-      "source": "measured by this suite (brasscribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable. phone: every Slakh bass stem and the synthesized low lines alone, high-passed at 100 and 200 Hz (4th order) as a phone's microphone would, and at 300 Hz (8th order), harsher, where most lines are heard an octave or two high (hp0: the Slakh stems unfiltered, the tracks with two bass stems among them); made by bass_tab_bench build-phone and prepare-phone, skipped where absent",
+      "source": "measured by this suite (scribe bench bass-tab) on the Slakh excerpts with one bass stem, a full mix (song) and the bass stem alone (instrument), and on bass lines synthesized here at the bottom of a four-string (low_e) and of a five-string (low_b); not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable. phone: every Slakh bass stem and the synthesized low lines alone, high-passed at 100 and 200 Hz (4th order) as a phone's microphone would, and at 300 Hz (8th order), harsher, where most lines are heard an octave or two high (hp0: the Slakh stems unfiltered, the tracks with two bass stems among them); made by bass_tab_bench build-phone and prepare-phone, skipped where absent",
       "metrics": {
         "song.onset_f1": 0.86,
         "song.onset_p": 0.887,
@@ -1214,7 +1214,7 @@
       }
     },
     "guitar-tab": {
-      "source": "measured by this suite (brasscribe bench guitar-tab): GuitarSet's guitar alone, single lines (solo) and comping (comp), the players the rules were set on (tune: 00 to 02) apart from the players they are quoted for (report: 03 to 05); and the guitars of the Slakh excerpts from the separator's guitar stem (song). Not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
+      "source": "measured by this suite (scribe bench guitar-tab): GuitarSet's guitar alone, single lines (solo) and comping (comp), the players the rules were set on (tune: 00 to 02) apart from the players they are quoted for (report: 03 to 05); and the guitars of the Slakh excerpts from the separator's guitar stem (song). Not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
       "metrics": {
         "tune.solo.onset_f1": 0.826,
         "tune.solo.onset_p": 0.812,
@@ -1601,7 +1601,7 @@
       }
     },
     "ukulele-tab": {
-      "source": "measured by this suite (brasscribe bench ukulele-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate",
+      "source": "measured by this suite (scribe bench ukulele-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate",
       "metrics": {
         "ukulele_baritone.instrument.onset_f1": 0.896,
         "ukulele_baritone.instrument.onset_p": 0.838,
@@ -2420,7 +2420,7 @@
       }
     },
     "mandolin-tab": {
-      "source": "measured by this suite (brasscribe bench mandolin-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate. tremolo (mandolin_tremolo, mandolin_heldout_tremolo): a melody picked in thirty-seconds, scored apart and skipped where it has not been rendered (small_tab_bench synthesize --only-new and prepare make it)",
+      "source": "measured by this suite (scribe bench mandolin-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, the instrument alone (instrument) and separated from a mix with a bass and drums (song). Rendered, one preset: weak evidence. The note rules were set on GuitarSet; the few chosen with these passages were chosen with the groups not named heldout, which are only reported. Not in 10-benchmark-results.md. violations is a hard gate. tremolo (mandolin_tremolo, mandolin_heldout_tremolo): a melody picked in thirty-seconds, scored apart and skipped where it has not been rendered (small_tab_bench synthesize --only-new and prepare make it)",
       "metrics": {
         "mandolin.instrument.onset_f1": 0.847,
         "mandolin.instrument.onset_p": 0.8,
@@ -2879,7 +2879,7 @@
       }
     },
     "guitar-rendered-tab": {
-      "source": "measured by this suite (brasscribe bench guitar-rendered-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont: a guitar's open chords picked and strummed, and a melody, alone (instrument) and separated from a mix with a bass and drums (song). The rules for overtones were chosen with guitar_nylon and guitar_steel (and GuitarSet's players 00 to 02); the two heldout groups were not used. Rendered: weak evidence. Not in 10-benchmark-results.md. violations is a hard gate",
+      "source": "measured by this suite (scribe bench guitar-rendered-tab) on passages written in small_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont: a guitar's open chords picked and strummed, and a melody, alone (instrument) and separated from a mix with a bass and drums (song). The rules for overtones were chosen with guitar_nylon and guitar_steel (and GuitarSet's players 00 to 02); the two heldout groups were not used. Rendered: weak evidence. Not in 10-benchmark-results.md. violations is a hard gate",
       "metrics": {
         "guitar_clean_heldout.instrument.onset_f1": 0.674,
         "guitar_clean_heldout.instrument.onset_p": 0.51,
@@ -3404,7 +3404,7 @@
       }
     },
     "meter-tab": {
-      "source": "measured by this suite (brasscribe bench meter-tab) on eight passages written in meter_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, one instrument alone. tracked_ok is the bar as the beat tracker found it (what the tab had before bar_beats), meter_ok the bar that is written. Rendered, one take each: weak evidence. Not in 10-benchmark-results.md",
+      "source": "measured by this suite (scribe bench meter-tab) on eight passages written in meter_tab_bench.py and rendered with FluidSynth and the MuseScore General SoundFont, one instrument alone. tracked_ok is the bar as the beat tracker found it (what the tab had before bar_beats), meter_ok the bar that is written. Rendered, one take each: weak evidence. Not in 10-benchmark-results.md",
       "metrics": {
         "tracked_ok": 0.5,
         "meter_ok": 0.5,

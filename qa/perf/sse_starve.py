@@ -18,9 +18,9 @@ from pathlib import Path
 import httpx
 import uvicorn
 
-from brasscribe_engine.api import create_app
-from brasscribe_engine.config import Settings
-from brasscribe_engine.jobs import Job
+from scribe_engine.api import create_app
+from scribe_engine.config import Settings
+from scribe_engine.jobs import Job
 
 app = create_app(Settings(data_dir=Path(tempfile.mkdtemp())), trust_loopback=True)
 job = Job("fake-running", "solo", "t", None, Path("x.wav"), {})

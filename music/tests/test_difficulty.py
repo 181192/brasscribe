@@ -1,8 +1,8 @@
-from brasscribe_music.arranger import _climax_spans, _figurate, arrange_layers
-from brasscribe_music.difficulty import apply_difficulty, easy_range
-from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND
-from brasscribe_music.keys import semitones_to
-from brasscribe_music.score_model import Composition, Dynamic, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.arranger import _climax_spans, _figurate, arrange_layers
+from scribe_music.difficulty import apply_difficulty, easy_range
+from scribe_music.instruments import BRASS_BAND, MINIMAL_BAND
+from scribe_music.keys import semitones_to
+from scribe_music.score_model import Composition, Dynamic, KeySig, Meter, Note, Voice, VoiceRole
 
 
 def _comp():
@@ -78,7 +78,7 @@ def test_semitones_to_target_key():
 
 
 def test_transposed_bass_phrase_wider_than_its_range_is_split():
-    from brasscribe_music.arranger import _split_wide
+    from scribe_music.arranger import _split_wide
     notes = [Note(p, i * 24, 24) for i, p in enumerate([29, 31, 33, 50, 48, 46])]
     parts = _split_wide(notes, 20)
     assert [len(p) for p in parts] == [3, 3]

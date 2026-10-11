@@ -3,9 +3,9 @@ import SystemConfiguration
 
 /// Where Bandroom keeps things on this Mac (design/server-app.md §5.2).
 public struct BandroomPaths: Sendable, Equatable {
-    /// `~/Library/Application Support/Brasscribe`: downloads, environments, paired devices. BRASSCRIBE_DATA overrides it.
+    /// `~/Library/Application Support/Brasscribe`: downloads, environments, paired devices. SCRIBE_DATA overrides it.
     public var data: URL
-    /// `~/Library/Logs/Brasscribe`. BRASSCRIBE_LOGS overrides it.
+    /// `~/Library/Logs/Brasscribe`. SCRIBE_LOGS overrides it.
     public var logs: URL
 
     public init(data: URL, logs: URL) {
@@ -16,9 +16,9 @@ public struct BandroomPaths: Sendable, Equatable {
     public static func standard(environment: [String: String] = ProcessInfo.processInfo.environment) -> BandroomPaths {
         let fm = FileManager.default
         let home = fm.homeDirectoryForCurrentUser
-        let data = environment["BRASSCRIBE_DATA"].map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+        let data = environment["SCRIBE_DATA"].map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
             ?? home.appending(path: "Library/Application Support/Brasscribe", directoryHint: .isDirectory)
-        let logs = environment["BRASSCRIBE_LOGS"].map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
+        let logs = environment["SCRIBE_LOGS"].map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
             ?? home.appending(path: "Library/Logs/Brasscribe", directoryHint: .isDirectory)
         return BandroomPaths(data: data, logs: logs)
     }
@@ -68,7 +68,7 @@ public enum ComputerName {
         looksMachineGenerated(system) || !(custom?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
     }
 
-    /// UserDefaults key for the name shown to phones (BRASSCRIBE_COMPUTER_NAME).
+    /// UserDefaults key for the name shown to phones (SCRIBE_COMPUTER_NAME).
     public static let customNameKey = "computerNameShown"
 
     /// "Brasscribe on Kari's MacBook" → "Kari's MacBook". Norwegian puts the name in its own sentence.

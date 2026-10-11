@@ -2,7 +2,7 @@
 
 Date: 2026-09-27. Desk research plus one-off measurements on the existing eval sets and the Mikkel run. The scripts were inline and are not committed. As in [10-benchmark-results.md](10-benchmark-results.md), treat the numbers as findings to re-derive, not as regression baselines.
 
-**Status (2026-09-29):** recommendation 3 (contour segmentation for the solo line) is built for fast notes and bends in `docs/plan/fast-notes.md`: a short semitone into or off a held note is now its bend, and alternations are split on contour plateaus. Recommendation 1 (voice separation that allows unisons) is open. Recommendation 2 is started (2026-10-01): in the brass-band profile, Basic Pitch hears the recording retuned to A = 440 (`engine/src/brasscribe_engine/tuning.py`). Retuning MuScriptor (it gains on average but collapses on single pieces), SwiftF0 and separated stems (whose estimates are unreliable), and the confidence feature are open.
+**Status (2026-09-29):** recommendation 3 (contour segmentation for the solo line) is built for fast notes and bends in `docs/plan/fast-notes.md`: a short semitone into or off a held note is now its bend, and alternations are split on contour plateaus. Recommendation 1 (voice separation that allows unisons) is open. Recommendation 2 is started (2026-10-01): in the brass-band profile, Basic Pitch hears the recording retuned to A = 440 (`engine/src/scribe_engine/tuning.py`). Retuning MuScriptor (it gains on average but collapses on single pieces), SwiftF0 and separated stems (whose estimates are unreliable), and the confidence feature are open.
 
 "Mellom toner" covers two different problems, and this report covers both:
 - **(a) Notes hidden where instruments overlap:** unisons (cornet + flugel on one pitch), octaves (E♭ and B♭ bass, euphonium under cornet), an upper note sitting on a partial of a lower one, and close voicings.
@@ -45,8 +45,8 @@ Date: 2026-09-27. Desk research plus one-off measurements on the existing eval s
 
 **Code touchpoints:**
 - `sounds/render.py:12–13, 457–459`: the renderer gives each player its own detune and lag "so unison desks never sum as sample clones". This is the synthesis side of the same effect, and it is useful for building test audio.
-- `music/src/brasscribe_music/confidence.py:33`: `SUPPORT_TOL = 1.0` semitone. A note 50 cents off still counts as fully supported by the contour.
-- `eval/brasscribe_eval/urmp.py:24`: URMP reference pitches are the annotated frequency rounded at A440.
+- `music/src/scribe_music/confidence.py:33`: `SUPPORT_TOL = 1.0` semitone. A note 50 cents off still counts as fully supported by the contour.
+- `eval/scribe_eval/urmp.py:24`: URMP reference pitches are the annotated frequency rounded at A440.
 - `docs/songs/mikkel.md:54`: the *arranger* writes unisons for paired parts. That is the output side, not detection.
 
 **Session memory:** the repository has no `.remember` folder. The notes folder one level up mentions unisons once (`today-2026-09-25.done.md:27`, "fixed unisons"), and that refers to the arranger forcing unisons ([10-benchmark-results.md:304](10-benchmark-results.md)), not to detection. The auto-memory files say nothing on the topic.
@@ -277,7 +277,7 @@ Reporting rules:
 
 ## 6. References
 
-**Our docs and code:** [00-summary](00-summary.md), [02](02-amt-multi-instrument.md), [03](03-amt-polyphonic-stem.md), [10](10-benchmark-results.md), `music/src/brasscribe_music/confidence.py`, `sounds/render.py`, `eval/brasscribe_eval/score.py`, `eval/brasscribe_eval/urmp.py`.
+**Our docs and code:** [00-summary](00-summary.md), [02](02-amt-multi-instrument.md), [03](03-amt-polyphonic-stem.md), [10](10-benchmark-results.md), `music/src/scribe_music/confidence.py`, `sounds/render.py`, `eval/scribe_eval/score.py`, `eval/scribe_eval/urmp.py`.
 
 **Voice separation and unisons:**
 - Chord-level voice separation with converging and diverging voices: https://arxiv.org/abs/2011.03028

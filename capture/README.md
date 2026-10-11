@@ -39,5 +39,5 @@ playing, or the source is protected content.
 ```sh
 make
 bin/brasscribe-capture --out /tmp/take.wav --seconds 30
-cd .. && pixi run brasscribe run /tmp/take.wav --out data/runs/capture-check
+cd .. && pixi run scribe run /tmp/take.wav --out data/runs/capture-check
 ```

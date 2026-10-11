@@ -1,7 +1,7 @@
 import numpy as np
 
-from brasscribe_music.durations import FRAME, Contour, apply_written, contour_offsets, written_durations
-from brasscribe_music.quantize import BeatMap, QNote
+from scribe_music.durations import FRAME, Contour, apply_written, contour_offsets, written_durations
+from scribe_music.quantize import BeatMap, QNote
 
 BM = BeatMap(np.arange(0, 20, 0.5))  # 120 BPM: one beat = 0.5 s = 24 ticks
 
@@ -88,8 +88,8 @@ def test_keep_grid_gives_a_detached_note_on_a_triplet_beat_a_triplet_value():
 
 
 def test_beat_values_follow_the_grid_quantize_chose():
-    from brasscribe_music.durations import STRAIGHT, TRIPLET, beat_values
-    from brasscribe_music.quantize import TICKS_PER_BEAT, choose_grids, choose_grids_dense, quantize
+    from scribe_music.durations import STRAIGHT, TRIPLET, beat_values
+    from scribe_music.quantize import TICKS_PER_BEAT, choose_grids, choose_grids_dense, quantize
 
     rng = np.random.default_rng(70)
     beats = np.arange(0, 40, 0.5)

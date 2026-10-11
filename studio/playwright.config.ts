@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-// e2e runs against a real `brasscribe studio` on its own port. Set
+// e2e runs against a real `scribe studio` on its own port. Set
 // STUDIO_URL to test an engine that is already running instead.
 const port = Number(process.env.STUDIO_PORT ?? 8799);
 const external = process.env.STUDIO_URL;
@@ -31,7 +31,7 @@ export default defineConfig({
     ...(external
       ? []
       : [{
-          command: `pixi run -e default brasscribe studio --no-browser --port ${port}`,
+          command: `pixi run -e default scribe studio --no-browser --port ${port}`,
           cwd: "..",
           url: `http://127.0.0.1:${port}/v1/health`,
           reuseExistingServer: true,
@@ -42,9 +42,9 @@ export default defineConfig({
       ? []
       : [{
           command: `rm -rf "${compareData}" && mkdir -p "${compareData}" && cp -R studio/e2e/fixtures/compare/runs "${compareData}/runs"`
-            + ` && pixi run -e default brasscribe studio --no-browser --port ${comparePort}`,
+            + ` && pixi run -e default scribe studio --no-browser --port ${comparePort}`,
           cwd: "..",
-          env: { BRASSCRIBE_DATA: compareData },
+          env: { SCRIBE_DATA: compareData },
           url: `http://127.0.0.1:${comparePort}/v1/health`,
           reuseExistingServer: false,
           timeout: 180_000,

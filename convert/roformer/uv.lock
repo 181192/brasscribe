@@ -42,7 +42,7 @@ wheels = [
 ]
 
 [[package]]
-name = "brasscribe-convert-roformer"
+name = "scribe-convert-roformer"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

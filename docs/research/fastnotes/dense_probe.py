@@ -1,6 +1,6 @@
 """Adversarial checks of the collision-aware ("dense") quantizer: kept notes and readability.
 
-Runs brasscribe_music.quantize(..., monophonic=True, dense=True) from the music/ tree given on PYTHONPATH
+Runs scribe_music.quantize(..., monophonic=True, dense=True) from the music/ tree given on PYTHONPATH
 (the fast-notes code under review) on exact and jittered figures, steady and rubato, and reports per case:
 
   kept      notes written / notes played
@@ -17,10 +17,10 @@ from __future__ import annotations
 from collections import Counter
 
 import numpy as np
-from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, quantize
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, quantize
 
 try:
-    from brasscribe_music.quantize import choose_grids_dense
+    from scribe_music.quantize import choose_grids_dense
 except ImportError:  # the base tree
     choose_grids_dense = None
 

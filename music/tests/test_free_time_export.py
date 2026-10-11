@@ -2,9 +2,9 @@ from fractions import Fraction
 
 from music21 import converter, stream
 
-from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import (Articulation, Composition, FreeRegion, KeySig, Meter, Note, Voice,
+from scribe_music.arranger import arrange_layers
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import (Articulation, Composition, FreeRegion, KeySig, Meter, Note, Voice,
                                           VoiceRole)
 
 

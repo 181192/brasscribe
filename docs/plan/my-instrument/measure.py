@@ -18,13 +18,13 @@ import mir_eval
 import numpy as np
 import pretty_midi
 
-from brasscribe_eval.arrange_solo import solo_line
-from brasscribe_eval.lead_sheet import line
-from brasscribe_eval.consensus import cluster
-from brasscribe_eval.paths import DATA
-from brasscribe_music.arranger import _place_line
-from brasscribe_music.instruments import MINIMAL_BAND, BRASS_BAND, INSTRUMENTS, Part
-from brasscribe_music.score_model import Note
+from scribe_eval.arrange_solo import solo_line
+from scribe_eval.lead_sheet import line
+from scribe_eval.consensus import cluster
+from scribe_eval.paths import DATA
+from scribe_music.arranger import _place_line
+from scribe_music.instruments import MINIMAL_BAND, BRASS_BAND, INSTRUMENTS, Part
+from scribe_music.score_model import Note
 
 CB = DATA / "choralebricks" / "01_AudioAndAnnotations"
 MID = Path(__file__).parent / "mid"

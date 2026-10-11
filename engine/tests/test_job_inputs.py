@@ -5,7 +5,7 @@ import shutil
 
 from fastapi.testclient import TestClient
 
-from brasscribe_engine.api import create_app
+from scribe_engine.api import create_app
 
 from .test_api import wait
 from .test_companion import bearer, lan, pair
@@ -72,7 +72,7 @@ def test_a_paired_device_gets_input_only_from_the_audio_folders(settings, audio)
 
 
 def test_the_owner_gets_audio_input_from_elsewhere_but_nothing_else(settings, audio):
-    """Runs started on the computer (`brasscribe run <file>`) keep A/B listening and re-runs in Studio."""
+    """Runs started on the computer (`scribe run <file>`) keep A/B listening and re-runs in Studio."""
     other_files(settings, audio)
     job_id = run_with_input(settings, audio, settings.data_dir / "companion" / "other.wav")
     with TestClient(create_app(settings)) as c:

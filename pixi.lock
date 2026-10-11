@@ -16077,10 +16077,10 @@ packages:
   size: 387535
   timestamp: 1786599623274
 - pypi: ./engine
-  name: brasscribe-engine
+  name: scribe-engine
   requires_dist:
-  - brasscribe-music
-  - brasscribe-eval
+  - scribe-music
+  - scribe-eval
   - fastapi>=0.115
   - uvicorn>=0.30
   - python-multipart>=0.0.9
@@ -16088,9 +16088,9 @@ packages:
   - zeroconf>=0.132
   requires_python: '>=3.12,<3.13'
 - pypi: ./eval
-  name: brasscribe-eval
+  name: scribe-eval
   requires_dist:
-  - brasscribe-music @ ./music
+  - scribe-music @ ./music
   - mir-eval>=0.8.2
   - numpy>=2.5.3
   - pandas>=3.0.6
@@ -16099,7 +16099,7 @@ packages:
   - soundfile>=0.14.0
   requires_python: '>=3.12,<3.13'
 - pypi: ./music
-  name: brasscribe-music
+  name: scribe-music
   requires_dist:
   - music21>=10.5.0
   - numpy>=2.5.3

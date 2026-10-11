@@ -16,12 +16,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from brasscribe_engine import bass_tab, profiles, runner, tab, tuning
-from brasscribe_engine import schemas as m
-from brasscribe_engine import stages as S
-from brasscribe_engine.adapters import AdapterRegistry
-from brasscribe_engine.config import Settings
-from brasscribe_engine.hashing import HashIndex
+from scribe_engine import bass_tab, profiles, runner, tab, tuning
+from scribe_engine import schemas as m
+from scribe_engine import stages as S
+from scribe_engine.adapters import AdapterRegistry
+from scribe_engine.config import Settings
+from scribe_engine.hashing import HashIndex
 
 REPO = Path(__file__).resolve().parents[2]
 BRASS_PROFILES = ("solo", "brass-band", "pop-rock", "orchestra-with-soloist")
@@ -134,8 +134,8 @@ def _stages(profile: str, params: dict) -> dict:
 def test_a_brass_job_from_the_api_has_the_parameters_it_had(profile, settings, audio, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
-    from brasscribe_engine.jobs import JobManager
+    from scribe_engine.api import create_app
+    from scribe_engine.jobs import JobManager
 
     seen = {}
     monkeypatch.setattr(JobManager, "submit", lambda self, path, profile, **kw: seen.update(kw) or
@@ -151,12 +151,12 @@ def test_a_brass_job_from_the_api_has_the_parameters_it_had(profile, settings, a
 
 
 def test_the_cli_passes_only_the_fretted_options_that_are_given(monkeypatch, tmp_path, core_present):
-    from brasscribe_engine import cli
+    from scribe_engine import cli
 
     seen = {}
     monkeypatch.setattr(runner, "run", lambda s, audio, profile, **kw: seen.update(kw) or
                         {"run_id": "r", "status": "succeeded", "seconds": 0.0, "devices": [], "stages": []})
-    monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path))
+    monkeypatch.setenv("SCRIBE_DATA", str(tmp_path))
     assert cli.main(["run", "song.wav", "--profile", "solo"]) == 0
     assert seen["params"] == {"audio": True, "lineup": None, "difficulty": "faithful", "key": None, "transpose": None,
                               "seat": None, "reads": None, "lead": "lineup"}
@@ -767,7 +767,7 @@ def test_a_core_from_before_the_text_formats_is_told_apart(tmp_path, monkeypatch
 
 
 def test_renaming_a_tab_retitles_its_text_and_its_playing_instructions(settings, audio):
-    from brasscribe_engine.jobs import JobManager
+    from scribe_engine.jobs import JobManager
 
     assert bass_tab.retitled_text("Old\nBass\n", "Old", "New") == "New\nBass\n"
     assert bass_tab.retitled_text("Old\n\nBass, 4 strings.\n", "Old", "New", "\n") == "New\n\nBass, 4 strings.\n"
@@ -811,7 +811,7 @@ def test_a_long_title_is_cut_to_the_page_and_the_job_keeps_its_name(tmp_path):
 
 
 def test_the_export_is_keyed_on_the_musescore_that_would_render_it(tmp_path, monkeypatch):
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     def key() -> dict:
         return profiles.build("bass-tab", Path("song.wav"), "T").stage("export").params
@@ -834,7 +834,7 @@ def test_the_export_is_keyed_on_the_musescore_that_would_render_it(tmp_path, mon
 
 @needs_core
 def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings, audio, monkeypatch, tmp_path):
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
@@ -864,7 +864,7 @@ def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings,
 def test_renaming_a_run_never_writes_a_control_character_into_its_musicxml(settings, audio, monkeypatch):
     from xml.etree import ElementTree
 
-    from brasscribe_engine.jobs import JobManager, _retitle_musicxml
+    from scribe_engine.jobs import JobManager, _retitle_musicxml
 
     for xml in ("<score-partwise><work><work-title>Old</work-title></work></score-partwise>", "<score-partwise/>",
                 '<score-partwise version="4.0"><part-list/></score-partwise>'):
@@ -887,7 +887,7 @@ def test_renaming_a_run_never_writes_a_control_character_into_its_musicxml(setti
 def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     monkeypatch.setattr(musescore, "binary", lambda: None)
     (tmp_path / "score").mkdir()
@@ -913,7 +913,7 @@ def test_a_tab_job_succeeds_without_the_pdf_and_the_next_job_tries_musescore_aga
     """MuseScore that writes no PDF (it did not come back, it broke on the score): the tab is made all the same,
     so the job succeeds without the PDF, and says so in its log and in export.json. The export is not kept for
     reuse: the next job of the same recording runs MuseScore again, and gets the PDF once MuseScore writes it."""
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
@@ -953,7 +953,7 @@ def test_stopping_a_job_stops_musescore_in_the_export(tmp_path, monkeypatch, pro
     MuseScore is done or at the conversion's time limit."""
     from types import SimpleNamespace
 
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     exe = tmp_path / "mscore"
     exe.write_text(f"#!{sys.executable}\nimport time\ntime.sleep(20)\n")
@@ -992,9 +992,9 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
     """The symbolic stages and the core for real, with the models' outputs written in their place."""
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     heard = _played([p + 12 for p in TYPICAL_LINE])
     # Basic Pitch heard the line an octave high; SwiftF0 heard it where it is (the octave check moves it down).
@@ -1098,7 +1098,7 @@ def test_a_job_without_the_core_fails_at_the_fingering_and_says_how_to_get_it(se
 def test_a_job_is_refused_at_submit_when_the_core_is_missing_and_the_profile_stays_listed(settings, audio, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
     missing = settings.data_dir / "no-such-core"
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(missing))
@@ -1120,10 +1120,10 @@ def test_a_job_is_refused_at_submit_when_the_core_is_missing_and_the_profile_sta
 
 
 def test_the_cli_refuses_the_run_before_any_model_when_the_core_is_missing(monkeypatch, tmp_path, capsys):
-    from brasscribe_engine import cli
+    from scribe_engine import cli
 
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(tmp_path / "no-such-core"))
-    monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path))
+    monkeypatch.setenv("SCRIBE_DATA", str(tmp_path))
     monkeypatch.setattr(runner, "run", lambda *a, **kw: pytest.fail("the run was started"))
     assert cli.main(["run", "song.wav", "--profile", "bass-tab"]) == 3
     assert "cargo build --release -p scribe-cli" in capsys.readouterr().err
@@ -1193,7 +1193,7 @@ def test_a_core_from_the_path_is_named_in_the_engines_log_and_only_mentioned_in_
 
 
 def _mscore_missing() -> str | None:
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     return _core_missing() or (None if musescore.available() else "MuseScore is not installed: the tab's PDF and MIDI are not rendered")
 
@@ -1204,7 +1204,7 @@ def test_a_job_renders_the_tab_as_pdf_and_midi_and_serves_them(settings, audio, 
     """The core and MuseScore for real, with the models' outputs written in their place."""
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
     monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
     monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
@@ -1278,7 +1278,7 @@ def test_a_synthetic_bass_take_becomes_a_playable_tab(tmp_path, monkeypatch):
         audio[at:at + len(tone)] += 0.25 * tone
     take = tmp_path / "open-strings.wav"
     sf.write(take, audio, sr)
-    monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path / "data"))
+    monkeypatch.setenv("SCRIBE_DATA", str(tmp_path / "data"))
     settings = Settings(models_override=Settings().models_dir)
     manifest = runner.run(settings, take, "bass-tab", params={"recording": "instrument"}, out=tmp_path / "out")
     assert manifest["status"] == "succeeded", manifest.get("error")

@@ -1,4 +1,4 @@
-"""The bass tab benchmark (brasscribe_eval.bass_tab_bench): its reference, its scores and its suite."""
+"""The bass tab benchmark (scribe_eval.bass_tab_bench): its reference, its scores and its suite."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import json
 import numpy as np
 import pytest
 
-from brasscribe_eval import bass_tab_bench as B
-from brasscribe_eval import suites
+from scribe_eval import bass_tab_bench as B
+from scribe_eval import suites
 
 SR = 16000
 
@@ -126,7 +126,7 @@ def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
 
 
 def test_a_phone_set_not_prepared_whole_is_skipped_not_scored(tmp_path, monkeypatch):
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     def entry(name: str, files: list[str]):
         d = tmp_path / name

@@ -2,12 +2,12 @@ import threading
 
 import pytest
 
-from brasscribe_engine import stages as S
-from brasscribe_engine.adapters import AdapterRegistry
-from brasscribe_engine.cache import ArtifactCache
-from brasscribe_engine.gpulock import is_locked
-from brasscribe_engine.dag import SOURCE, Cancelled, Executor, Input, Pipeline, Stage, StageFailed
-from brasscribe_engine.hashing import HashIndex
+from scribe_engine import stages as S
+from scribe_engine.adapters import AdapterRegistry
+from scribe_engine.cache import ArtifactCache
+from scribe_engine.gpulock import is_locked
+from scribe_engine.dag import SOURCE, Cancelled, Executor, Input, Pipeline, Stage, StageFailed
+from scribe_engine.hashing import HashIndex
 
 from .conftest import fake_pipeline
 
@@ -126,7 +126,7 @@ def test_cancel_between_stages(settings, audio, tmp_path):
 
 
 def test_profiles_build_valid_dags(tmp_path):
-    from brasscribe_engine import profiles
+    from scribe_engine import profiles
 
     for name in profiles.PROFILES:
         p = profiles.build(name, tmp_path / "x.wav")
@@ -149,26 +149,26 @@ open(dst, "w").write(json.dumps(dict(os.environ)))
 def test_programs_the_engine_starts_do_not_get_its_credentials(settings, audio, tmp_path, monkeypatch):
     import json
 
-    from brasscribe_engine import config
+    from scribe_engine import config
 
     for name in config.CREDENTIAL_ENV:
         monkeypatch.setenv(name, "owner-only")
-    monkeypatch.setenv("BRASSCRIBE_DEVICE", "cpu")
+    monkeypatch.setenv("SCRIBE_DEVICE", "cpu")
     (settings.adapters_dir / "run_adapter.py").write_text(ENV_DUMP)
     _, adapters = session(settings)
     adapters.run("swift-f0", audio, tmp_path / "env.json")
     env = json.loads((tmp_path / "env.json").read_text())
-    assert not set(config.CREDENTIAL_ENV) & set(env) and env["BRASSCRIBE_DEVICE"] == "cpu"
+    assert not set(config.CREDENTIAL_ENV) & set(env) and env["SCRIBE_DEVICE"] == "cpu"
     assert not set(config.CREDENTIAL_ENV) & set(config.child_env({"X": "1"}))
 
 
 def test_adapters_read_the_models_folder_the_engine_hashes(settings, audio, tmp_path, monkeypatch):
     import json
 
-    monkeypatch.delenv("BRASSCRIBE_MODELS", raising=False)
+    monkeypatch.delenv("SCRIBE_MODELS", raising=False)
     (settings.data_dir / "models").mkdir()
     (settings.adapters_dir / "run_adapter.py").write_text(ENV_DUMP)
     _, adapters = session(settings)
     adapters.run("swift-f0", audio, tmp_path / "env.json")
     env = json.loads((tmp_path / "env.json").read_text())
-    assert env["BRASSCRIBE_MODELS"] == str(settings.data_dir / "models") == str(adapters.models_dir)
+    assert env["SCRIBE_MODELS"] == str(settings.data_dir / "models") == str(adapters.models_dir)

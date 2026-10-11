@@ -2,11 +2,11 @@ import re
 
 import numpy as np
 
-from brasscribe_music import confidence as C
-from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.durations import Contour
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music import confidence as C
+from scribe_music.arranger import arrange_layers
+from scribe_music.durations import Contour
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 
 def test_calibration_is_shipped_and_orders_the_classes():
@@ -53,7 +53,7 @@ def test_one_mark_per_review_group_in_the_score(tmp_path):
 
 
 def test_review_items_in_the_composition_match_the_marks(tmp_path):
-    from brasscribe_music.confidence import review_groups
+    from scribe_music.confidence import review_groups
 
     solo = [Note(72 + i % 5, i * 12, 12, confidence=0.3 if i % 7 in (0, 1) else 0.99) for i in range(40)]
     comp = Composition("c", [Voice("solo", VoiceRole.MELODY, solo, layer="solo")], [Meter(0, 4)], [KeySig(0, 0)])
