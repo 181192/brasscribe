@@ -60,24 +60,25 @@ import TranscriptionKit
     static let text = TextFit(fonts: ["InstrumentSerif-Regular", "InstrumentSerif-Italic"])
 
     /// Texts drawn in the colour of what is behind them in light with Increase Contrast: black, the system's text colour
-    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture.
+    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture; an
+    /// entry whose text is drawn, or gone, fails the run. The list is of CI's runner (its macOS, and no listening files
+    /// downloaded): another macOS draws a few of these and misses a few others, and says which.
     static let unreadable = Unreadable(issue: "#368", screens: [
         "home-empty-contrast": ["Drop a recording here"], "home-scores-contrast": ["Drop a recording here"],
         "home-offline-contrast": ["Drop a recording here"],
         "output-contrast": ["Which band?", "How hard?", "Key"],
-        "score-contrast": ["Speed", "Repeat bars", "1", "to", "4", "Soprano Cornet", "Solo Cornet (you)", "Repiano Cornet", "2nd Cornet",
-                           "3rd Cornet", "Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"],
+        // the second "1" is the repeat's first bar; the first is the speed, which is drawn
+        "score-contrast": ["Speed", "Repeat bars", .init("1", nth: 2), "to", "4", "Soprano Cornet", "Solo Cornet (you)", "Repiano Cornet",
+                           "2nd Cornet", "3rd Cornet", "Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn"],
         "review-contrast": ["Bar 2"],
-        "sheet-settings-contrast": ["Your instrument", "New scores open on your part.", "Your computer", "On this device",
-                                    "Write down solos on this device", "Make band drafts on this device", "Listening files",
-                                    // the listening files' state: there on a developer's Mac, to download on a runner
-                                    "Ready", "6 MB to download", "One instrument on its own can be written"],
+        "sheet-settings-contrast": ["Your instrument", "New scores open on your part. Scores you already have keep the part you chose for them.",
+                                    "Your computer", "On this device", "Write down solos on this device", "Make band drafts on this device",
+                                    "Listening files", "6 MB to download"],
         "sheet-what-you-play-contrast": ["Instrument"],
-        "sheet-export-contrast": ["Show ? marks"],
     ])
 
     /// Takes the screen on `host` by the catalogue's rule (`ScreenTake`), checks it, and writes its screenshot and tree.
-    /// A screen that does not become the one asked for is not taken, and fails the run.
+    /// A screen that does not become the one asked for is not taken, and fails the run; after three, the catalogue stops.
     private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true, ready: () -> String? = { nil },
                         shows: ([AXNode]) -> String? = { _ in nil }) async throws {
         let name = Self.language == "en" ? "\(screen)-\(v.name)" : "\(screen)-\(v.name)-\(Self.language)"
@@ -85,16 +86,15 @@ import TranscriptionKit
         var picture: NSBitmapImageRep?
         if Self.unsteady[screen] == nil {
             do {
-                let take = try await host.take(name, controls: controls, ready: ready, shows: shows, unreadable: Self.unreadable.covers(name),
-                                               output: Self.output)
+                let take = try await host.take(name, controls: controls, ready: ready, shows: shows, unreadable: Self.unreadable, output: Self.output)
                 nodes = take.nodes
                 picture = take.picture
-                if let line = Self.unreadable.drawnAfterAll(name, picture: take.picture, nodes: nodes, bounds: host.hosting.bounds) {
-                    Pictures.log(line, to: Self.output, language: Self.language)
-                }
+                if let stale = take.stale { Issue.record(Comment(rawValue: stale)) }
             } catch let notTaken as ScreenNotTaken {
+                // No screenshot; its checks still run on the tree it had, when it had one.
                 Issue.record(Comment(rawValue: notTaken.description))
-                return
+                guard !notTaken.nodes.isEmpty else { return }
+                nodes = notTaken.nodes
             }
         } else {
             await host.settle(0.8)

@@ -74,26 +74,29 @@ enum Catalogue {
     /// The screen taken by the catalogue's rule (`ScreenTake`: the window at its size, the appearance and language asked
     /// for, its content in place and drawn, keeping still; `ready` says what the screen itself still waits for), its
     /// tree checked, and its screenshot and tree written as `name`. A screen that does not become the one asked for is
-    /// not taken, and fails the run. `unreadable` lists the texts known to be drawn in the colour of what is behind
-    /// them: those are not asked to be in the picture.
+    /// not taken, and fails the run (its checks still run on the tree it had); after three, the catalogue stops.
+    /// `unreadable` lists the texts known to be drawn in the colour of what is behind them: those are not asked to be
+    /// in the picture, and an entry whose text is drawn, or gone, fails the run.
     static func record(_ r: Rendering, name: String, ready: () -> String? = { nil }, unreadable: Unreadable? = nil,
                        known: (Finding) -> Bool = { _ in false }) async throws {
-        let take: ScreenTake
+        let nodes: [AXNode]
+        var picture: NSBitmapImageRep?
         do {
-            take = try await ScreenTake.take(name, window: r.window, view: r.hosting, size: { r.size }, asked: r.asked, witness: r.witness,
-                                             ready: ready, unreadable: unreadable?.covers(name) ?? { _ in false }, frames: { await r.frames() },
-                                             picture: { Pictures.bitmap(of: r.hosting) }, output: output)
+            let take = try await ScreenTake.take(name, window: r.window, view: r.hosting, size: { r.size }, asked: r.asked, witness: r.witness,
+                                                 ready: ready, unreadable: unreadable, frames: { await r.frames() },
+                                                 picture: { Pictures.bitmap(of: r.hosting) }, output: output)
+            nodes = take.nodes
+            picture = take.picture
+            if let stale = take.stale { Issue.record(Comment(rawValue: stale)) }
         } catch let notTaken as ScreenNotTaken {
             Issue.record(Comment(rawValue: notTaken.description))
-            return
+            guard !notTaken.nodes.isEmpty else { return }
+            nodes = notTaken.nodes
         }
-        if let line = unreadable?.drawnAfterAll(name, picture: take.picture, nodes: take.nodes, bounds: r.hosting.bounds) {
-            Pictures.log(line, to: output, language: language)
-        }
-        if let broken = Guards.tree(take.nodes, screen: name) { Issue.record(Comment(rawValue: broken)) }
-        let findings = Checks.run(take.nodes, bounds: r.hosting.bounds, text: text).filter { !known($0) }
+        if let broken = Guards.tree(nodes, screen: name) { Issue.record(Comment(rawValue: broken)) }
+        let findings = Checks.run(nodes, bounds: r.hosting.bounds, text: text).filter { !known($0) }
         #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
-        try Pictures.write(take.picture, tree: take.nodes, name: name, to: output)
+        if let picture { try Pictures.write(picture, tree: nodes, name: name, to: output) }
     }
 
     /// `<screen>-<variant>[-<language>]`.
@@ -114,11 +117,11 @@ final class Rendering {
 
     /// Draws `view` at `width` points wide and its own height (or `height`), in `variant`. The appearance is the
     /// window's, as on a Mac set that way: SwiftUI and AppKit both read it from there, and Increase Contrast from
-    /// `SystemContrast`, which a variant with increased contrast turns on until `close()`.
+    /// `SystemContrast`, which every rendering tells what its variant asks for, on or off.
     init(_ view: some View, width: CGFloat, height: CGFloat? = nil, variant: Variant, app: AppModel) async {
         asked = Asked(dark: variant.dark, increasedContrast: variant.increasedContrast)
         self.height = height
-        if variant.increasedContrast { SystemContrast.set(true) }
+        SystemContrast.set(variant.increasedContrast)
         let root = view
             .catalogueWitness(witness)
             .environment(app)
@@ -174,6 +177,5 @@ final class Rendering {
     func close() {
         window.contentView = nil
         window.close()
-        if asked.increasedContrast { SystemContrast.set(false) }
     }
 }

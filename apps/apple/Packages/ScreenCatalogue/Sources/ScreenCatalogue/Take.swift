@@ -18,9 +18,29 @@ public struct ScreenNotTaken: Error, CustomStringConvertible, Sendable {
     public let waitedFor: String
     public let tries: Int
     public let seconds: Double
+    /// The tree as it was last read, when there was one: the screen's checks still run on it.
+    public var nodes: [AXNode] = []
     public var description: String {
         "screen not taken: \(screen): \(waitedFor) (\(tries) tries in \(String(format: "%.1f", seconds)) s)"
     }
+}
+
+/// The catalogue stopped: so many screens were not taken that the rest are not tried. Each waits up to the rule's
+/// bound, and a catalogue in which nothing can be taken would otherwise run into its job's time limit.
+public struct CatalogueStopped: Error, CustomStringConvertible, Sendable {
+    public let notTaken: Int
+    public var description: String { "catalogue stopped: \(notTaken) screens were not taken, so the rest are not tried" }
+}
+
+/// How many screens may be not taken before the catalogue stops, and how many were so far.
+public struct NotTakenLimit: Sendable {
+    public let limit: Int
+    public private(set) var count = 0
+    public init(limit: Int = 3) { self.limit = limit }
+    /// One more screen was not taken.
+    public mutating func note() { count += 1 }
+    /// Throws `CatalogueStopped` once the limit is reached: the next screen is not tried.
+    public func check() throws { if count >= limit { throw CatalogueStopped(notTaken: count) } }
 }
 
 /// The rule for one screenshot (README, Screen catalogue): the picture is the last of `takes` takes in a row with the
@@ -110,18 +130,27 @@ public enum SteadyTake {
 public struct ScreenTake {
     public let picture: NSBitmapImageRep
     public let nodes: [AXNode]
+    /// The entries of `unreadable` for this screen that name no text missing from the picture, as a finding, or nil.
+    public let stale: String?
+
+    /// The screens not taken so far in this process: after three, the catalogue stops.
+    public private(set) static var notTaken = NotTakenLimit()
 
     /// Takes `view`, the content of `window`, once it is the screen asked for and keeps still (`SteadyTake`), reading
     /// before and after each picture: the window and its size (`size`, read each time, for a window that follows its
     /// content), the appearance and language (`asked`, `witness`), the screen's own readiness (`ready`: what it still
     /// waits for, or nil; `shows`: the same, asked of the tree) and its content (`Conditions.content`); and in each
-    /// picture, that its texts are drawn.
-    /// `frames` lets two display frames go by. A line goes to `takes-<language>.log` in `output`; a screen that is
-    /// not taken leaves its last picture in `not-taken/` there and throws `ScreenNotTaken`.
+    /// picture, that its texts are drawn, but for those `unreadable` names for this screen.
+    /// `frames` lets two display frames go by; before each, the process is told again what contrast this screen asked
+    /// for (a view of another suite, drawn meanwhile, may have asked for its own). A line goes to
+    /// `takes-<language>.log` in `output`; a screen that is not taken leaves its last picture in `not-taken/` there
+    /// and throws `ScreenNotTaken` with the tree it last read. After three screens were not taken (`notTaken`), no
+    /// screen is tried and `CatalogueStopped` is thrown.
     public static func take(_ name: String, window: NSWindow, view: NSView, size: () -> CGSize, asked: Asked, witness: AppearanceWitness,
                             controls: Bool = true, busyExpected: Bool = false, ready: () -> String? = { nil },
-                            shows: ([AXNode]) -> String? = { _ in nil }, unreadable: (AXNode) -> Bool = { _ in false }, rule: SteadyTake.Rule = SteadyTake.Rule(),
+                            shows: ([AXNode]) -> String? = { _ in nil }, unreadable: Unreadable? = nil, rule: SteadyTake.Rule = SteadyTake.Rule(),
                             frames: (() async -> Void)? = nil, picture: () -> NSBitmapImageRep, output: URL) async throws -> ScreenTake {
+        try notTaken.check()
         var nodes: [AXNode] = []
         var last: NSBitmapImageRep?
         let language = Bundle.main.preferredLocalizations.first ?? "en"
@@ -134,16 +163,22 @@ public struct ScreenTake {
                            state: "\(wanted.width) × \(wanted.height)\n" + Conditions.state(nodes))
         }
         do {
-            let taken = try await SteadyTake.take(name, rule: rule, frames: { if let frames { await frames() } else { await SteadyTake.frames(of: view) } },
-                                                  read: read, picture: picture,
-                                                  drawn: { Conditions.drawn($0, nodes: nodes, bounds: view.bounds, unreadable: unreadable) },
-                                                  lastPicture: { last = $0 })
+            let taken = try await SteadyTake.take(name, rule: rule, frames: {
+                SystemContrast.set(asked.increasedContrast)
+                if let frames { await frames() } else { await SteadyTake.frames(of: view) }
+            }, read: read, picture: picture, drawn: {
+                Conditions.drawn($0, nodes: nodes, bounds: view.bounds, unreadable: unreadable?.covers(name, in: nodes) ?? { _ in false })
+            }, lastPicture: { last = $0 })
             Pictures.log(taken.line(name), to: output, language: language)
-            return ScreenTake(picture: taken.picture, nodes: nodes)
-        } catch let notTaken as ScreenNotTaken {
-            Pictures.log(notTaken.description, to: output, language: language)
+            let stale = unreadable?.stale(name, picture: taken.picture, nodes: nodes, bounds: view.bounds)
+            if let stale { Pictures.log(stale, to: output, language: language) }
+            return ScreenTake(picture: taken.picture, nodes: nodes, stale: stale)
+        } catch var failed as ScreenNotTaken {
+            notTaken.note()
+            Pictures.log(failed.description, to: output, language: language)
             if let last { try? Pictures.write(last, tree: nodes, name: name, to: output.appending(path: "not-taken", directoryHint: .isDirectory)) }
-            throw notTaken
+            failed.nodes = nodes
+            throw failed
         }
     }
 }
@@ -203,10 +238,10 @@ public extension View {
 
 /// Increase Contrast for the process, as System Settings › Accessibility › Display sets it for the Mac. SwiftUI reads
 /// the setting from `NSWorkspace` in every hosting view (a split view's columns, a list's rows and a form's each have
-/// their own), so an environment value on the root view reaches only what the root draws itself. While a catalogue
-/// asks for it, `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` answers in this process what the catalogue
-/// asked, and the change is announced as the system announces it. Nothing outside the test process is changed.
-/// `Guards.contrast` checks that it still works.
+/// their own), so an environment value on the root view reaches only what the root draws itself. From the first view
+/// a test draws off screen, `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` answers in this process what the
+/// last such view asked for, on or off, whatever the Mac's own setting, and each change is announced as the system
+/// announces one. Nothing outside the test process is changed. `Guards.contrast` checks that it still works.
 @MainActor
 public enum SystemContrast {
     nonisolated(unsafe) fileprivate static var asked: Bool?
@@ -218,10 +253,11 @@ public enum SystemContrast {
         method_exchangeImplementations(system, ours)
     }()
 
-    /// What the process is told from now on. Until a screen asks for increased contrast, the system's own answer stands.
-    /// A screen that asks for it turns it off again when it is done: another suite's views drawn meanwhile never do.
+    /// What the process is told from now on. Every off-screen host says what it asks for when it is made, so a Mac
+    /// with Increase Contrast on draws the light and dark variants without it; the answer stays until the next host
+    /// asks. A take says it again before each of its frames.
     public static func set(_ increased: Bool) {
-        guard asked != increased, increased || asked != nil else { return }
+        guard asked != increased else { return }
         _ = installed
         asked = increased
         NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: NSWorkspace.shared)
@@ -293,9 +329,9 @@ public enum Conditions {
     /// one flat colour. `unreadable` names texts known to be drawn in their background's colour (`Unreadable`).
     public static func drawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
         if Pictures.isFlat(rep, in: CGRect(x: 0, y: 0, width: rep.pixelsWide, height: rep.pixelsHigh)) { return "nothing is drawn in its picture yet" }
-        let missing = undrawn(rep, nodes: nodes, bounds: bounds).filter { !unreadable($0) }.map { "“\($0.words.prefix(40))”" }
+        let missing = undrawn(rep, nodes: nodes, bounds: bounds).filter { !unreadable($0) }.map { Unreadable.text(of: $0, in: nodes).description }
         if missing.isEmpty { return nil }
-        // All of them, so that a screen that is not taken says everything it lacks in one run.
+        // All of them, each as `Unreadable` would name it, so that a screen that is not taken says everything it lacks in one run.
         return "its text\(missing.count == 1 ? "" : "s") \(missing.prefix(24).joined(separator: ", ")) \(missing.count == 1 ? "is" : "are") not drawn in its picture yet"
     }
 
@@ -315,26 +351,45 @@ public enum Conditions {
 }
 
 /// Texts known to be drawn in the colour of what is behind them, under one issue: for each screen (with its variant),
-/// how each such text begins (as a screen that is not taken names it). Those texts, and no others, are not asked to be
-/// in the screen's picture. Which texts they are differs between macOS versions, so a listed text that is drawn fails
-/// nothing: `drawnAfterAll` names them for the takes log.
+/// each such text by its exact words, and by which of the screen's texts with those words it is when there are
+/// several. Those texts, and no others, are not asked to be in the screen's picture. The list is of the macOS the
+/// catalogue is taken on in CI. An entry that names no text missing from the picture (the text is drawn, or is not in
+/// the tree) is stale and fails the run (`stale`), so the list cannot outlive the fault it stands for.
 public struct Unreadable: Sendable {
-    public let issue: String
-    public let screens: [String: [String]]
-    public init(issue: String, screens: [String: [String]]) { self.issue = issue; self.screens = screens }
-
-    /// Whether a text of `screen` is one of the listed ones.
-    public func covers(_ screen: String) -> @Sendable (AXNode) -> Bool {
-        let listed = screens[screen] ?? []
-        return { node in listed.contains { node.words.hasPrefix($0) } }
+    /// One text: its words, and which of the texts with those words in the tree's order (1, the first).
+    public struct Text: Sendable, Hashable, ExpressibleByStringLiteral, CustomStringConvertible {
+        public let words: String
+        public let nth: Int
+        public init(_ words: String, nth: Int = 1) { self.words = words; self.nth = nth }
+        public init(stringLiteral value: String) { self.init(value) }
+        public var description: String { nth == 1 ? "“\(words)”" : "“\(words)” (nth: \(nth))" }
     }
 
-    /// A line for the takes log when texts listed for `screen` are drawn in its picture after all, or nil.
+    public let issue: String
+    public let screens: [String: [Text]]
+    public init(issue: String, screens: [String: [Text]]) { self.issue = issue; self.screens = screens }
+
+    /// How an entry would name `node`: its words, and its place among the tree's texts with the same words.
+    public static func text(of node: AXNode, in nodes: [AXNode]) -> Text {
+        let same = nodes.filter { $0.isText && $0.words == node.words }
+        let place = same.firstIndex { $0.role == node.role && $0.frame == node.frame } ?? 0
+        return Text(node.words, nth: place + 1)
+    }
+
+    /// Whether a text of `screen`, in the tree `nodes`, is one an entry names.
+    public func covers(_ screen: String, in nodes: [AXNode]) -> (AXNode) -> Bool {
+        let listed = Set(screens[screen] ?? [])
+        if listed.isEmpty { return { _ in false } }
+        return { node in node.isText && listed.contains(Self.text(of: node, in: nodes)) }
+    }
+
+    /// The entries of `screen` that name no text missing from `picture`: what to take out of the list, or nil.
     @MainActor
-    public func drawnAfterAll(_ screen: String, picture: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> String? {
+    public func stale(_ screen: String, picture: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> String? {
         guard let listed = screens[screen] else { return nil }
-        let missing = Conditions.undrawn(picture, nodes: nodes, bounds: bounds).map(\.words)
-        let drawn = listed.filter { start in !missing.contains { $0.hasPrefix(start) } }
-        return drawn.isEmpty ? nil : "\(screen): listed as unreadable (\(issue)) and drawn on this macOS: " + drawn.map { "“\($0)”" }.joined(separator: ", ")
+        let missing = Set(Conditions.undrawn(picture, nodes: nodes, bounds: bounds).map { Self.text(of: $0, in: nodes) })
+        let stale = listed.filter { !missing.contains($0) }
+        return stale.isEmpty ? nil
+            : "\(screen): listed as unreadable (\(issue)), but drawn or not on the screen: \(stale.map(\.description).joined(separator: ", ")). Take \(stale.count == 1 ? "it" : "them") out of the list."
     }
 }

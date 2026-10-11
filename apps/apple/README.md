@@ -214,16 +214,22 @@ The screenshot is the last of five such takes in a row with the same pixels. A s
 picture in `not-taken/`, instead of keeping a picture of something else. `takes-<language>.log` beside the
 screenshots says how long each screen took and what it waited for.
 
-`unreadable` lists, under their issue, the texts a screen draws in the colour of what is behind them: those texts,
-and no others, are not asked to be in its picture. The takes log names a listed text that is drawn (which texts
-are affected differs between macOS versions).
+`unreadable` lists, under their issue, the texts a screen draws in the colour of what is behind them, each by its
+exact words (and by which of them it is, where a screen has the words twice): those texts, and no others, are not
+asked to be in its picture. An entry whose text is drawn, or is no longer on the screen, fails the run, so the list
+goes when the fault does. The list is of CI's runner: on another macOS a few of these texts are drawn and a few
+others are not, and the run there fails naming them.
+
+A screen that is not taken still gets its checks, on the tree it had. After three screens not taken the catalogue
+stops (`catalogue stopped: …`) instead of waiting 30 s for each of the rest.
 
 There is no large-text variant on the Mac: macOS has no Dynamic Type for an app's windows (a `dynamicTypeSize` of
 `accessibility3` draws the same pixels), and Play has no text size of its own. Two hooks, in the tests only, are
 checked on every run (`hooksStillWork`): `AXEnhancedUserInterface` on `NSApp` makes SwiftUI build its accessibility
 tree in the process, and `SystemContrast` answers `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` in the
 test process, which is where every hosting view of a screen (a split view's columns, a list's rows) reads Increase
-Contrast from; an environment value on the root view reaches only what the root draws itself. What the catalogue
+Contrast from; an environment value on the root view reaches only what the root draws itself. Every view a test
+draws off screen says what it asks for, on or off, so the Mac's own setting does not reach the pictures. What the catalogue
 does not do: a real Tab walk (SwiftUI moves focus only in a key window on a screen), multi-line text cut at its last
 line, the colour contrast of each text, and iOS and iPadOS.
 

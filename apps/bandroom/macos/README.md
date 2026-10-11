@@ -82,9 +82,11 @@ so it runs on a Mac in use and on CI's macOS runner.
   height; the appearance and language are the ones asked for, in the window, the process and the screen's own
   views; what the screen waits for is there (the pairing code, the request, the phones) and nothing is still
   loading; every text in view is drawn; and five takes in a row have the same pixels. A screen that does not get
-  there in 30 s is not taken and fails the run (`screen not taken: …`, its last picture in `not-taken/`).
+  there in 30 s is not taken and fails the run (`screen not taken: …`, its last picture in `not-taken/`); after
+  three, the catalogue stops.
   `takes-<language>.log` says what each screen waited for. `BandroomScreensTests.unreadable` lists, under their
-  issue, the texts drawn in the colour of what is behind them, which are not asked to be in the picture.
+  issue, the texts drawn in the colour of what is behind them, by their exact words: only those are not asked to be
+  in the picture, and an entry whose text is drawn or gone fails the run.
 - **The checks** (the Mac apps' shared package `apps/apple/Packages/ScreenCatalogue`), on the
   accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own
   buttons, menus and links are at least 24 × 24 pt, and the system's standard controls (switches, checkboxes, radio
@@ -97,7 +99,8 @@ so it runs on a Mac in use and on CI's macOS runner.
 - **Two hooks**, in the tests only: `AXEnhancedUserInterface` on `NSApp` makes SwiftUI build its
   accessibility tree without an assistive app running, and `SystemContrast` answers
   `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` in the test process, where every hosting view of a
-  screen reads Increase Contrast from (nothing outside the process is changed). Each is checked on every run
+  screen reads Increase Contrast from (nothing outside the process is changed; the Mac's own setting does not reach
+  the pictures). Each is checked on every run
   (`Guards`): a tree without controls, a contrast probe inside a navigation stack drawn as standard contrast, or
   English strings under `-testLanguage nb` fail the run, so an Xcode or macOS update that changes them is noticed
   instead of passing quietly.

@@ -27,8 +27,10 @@ import Testing
     static let known: [(screen: Screen?, kind: Finding.Kind, words: String, issue: String)] = []
 
     /// Texts drawn in the colour of what is behind them in light with Increase Contrast: black, the system's text colour
-    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture.
-    static let unreadable = Unreadable(issue: "#368", screens: ["panel-setting-up-contrast": ["Setting up"]])
+    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture; an
+    /// entry whose text is drawn, or gone, fails the run. The second "Setting up" is the line over the progress bar;
+    /// the first, in the headline, is drawn.
+    static let unreadable = Unreadable(issue: "#368", screens: ["panel-setting-up-contrast": [.init("Setting up", nth: 2)]])
 
     @Test(arguments: Screen.allCases)
     func screen(_ screen: Screen) async throws {

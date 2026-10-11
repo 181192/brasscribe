@@ -161,26 +161,93 @@ struct TakeTests {
         let below = AXNode(role: "AXStaticText", label: "", value: "Bar 40", frame: CGRect(x: 2, y: 30, width: 8, height: 4),
                            viewport: CGRect(x: 0, y: 0, width: 20, height: 10))
         #expect(Conditions.drawn(done, nodes: [row, mark, below], bounds: bounds) == nil)
-        // every text that is missing is named
+        // every text that is missing is named, as the list of unreadable texts would name it
         let second = AXNode(role: "AXStaticText", label: "", value: "Bar 2", frame: CGRect(x: 2, y: 6, width: 8, height: 4))
         #expect(Conditions.drawn(early, nodes: [row, second, mark], bounds: bounds) == "its texts “Bar 1, Solo Cornet”, “Bar 2” are not drawn in its picture yet")
     }
 
+    /// A view of 20 × 10 points with two lines of text, in a picture of 40 × 20 pixels.
+    private let view = CGRect(x: 0, y: 0, width: 20, height: 10)
+    private func line(_ words: String, y: CGFloat) -> AXNode {
+        AXNode(role: "AXStaticText", label: "", value: words, frame: CGRect(x: 2, y: y, width: 8, height: 4))
+    }
+    /// Something drawn at the right (so the picture is not flat), and in each of the lines named: the upper (y 0–4 pt)
+    /// and the lower (y 5–9 pt).
+    private func picture(upper: Bool, lower: Bool) -> NSBitmapImageRep {
+        var marks = [CGRect(x: 30, y: 2, width: 4, height: 4)]
+        if upper { marks.append(CGRect(x: 6, y: 3, width: 6, height: 2)) }
+        if lower { marks.append(CGRect(x: 6, y: 13, width: 6, height: 2)) }
+        return picture(marks: marks)
+    }
+
     @Test func onlyTheTextsListedAsUnreadableAreNotAskedFor() {
-        let bounds = CGRect(x: 0, y: 0, width: 20, height: 10)
-        let title = AXNode(role: "AXStaticText", label: "", value: "Speed", frame: CGRect(x: 2, y: 0, width: 8, height: 4))
-        let row = AXNode(role: "AXStaticText", label: "", value: "Bar 1", frame: CGRect(x: 2, y: 5, width: 8, height: 4))
+        let title = line("Speed", y: 0), row = line("Bar 1", y: 5)
         let known = Unreadable(issue: "#1", screens: ["score-contrast": ["Speed"]])
-        let neither = picture(marks: [CGRect(x: 30, y: 2, width: 4, height: 4)])
+        let neither = picture(upper: false, lower: false)
         // the listed text is not asked for; another text of the same screen still is
-        #expect(Conditions.drawn(neither, nodes: [title, row], bounds: bounds, unreadable: known.covers("score-contrast")) == "its text “Bar 1” is not drawn in its picture yet")
-        #expect(Conditions.drawn(neither, nodes: [title], bounds: bounds, unreadable: known.covers("score-contrast")) == nil)
+        #expect(Conditions.drawn(neither, nodes: [title, row], bounds: view, unreadable: known.covers("score-contrast", in: [title, row]))
+            == "its text “Bar 1” is not drawn in its picture yet")
+        #expect(Conditions.drawn(neither, nodes: [title], bounds: view, unreadable: known.covers("score-contrast", in: [title])) == nil)
         // and it is asked for on a screen it is not listed for
-        #expect(Conditions.drawn(neither, nodes: [title], bounds: bounds, unreadable: known.covers("score-dark")) != nil)
-        // a listed text that is drawn here is named for the log
-        let both = picture(marks: [CGRect(x: 6, y: 3, width: 6, height: 2), CGRect(x: 6, y: 13, width: 6, height: 2), CGRect(x: 30, y: 2, width: 4, height: 4)])
-        #expect(known.drawnAfterAll("score-contrast", picture: both, nodes: [title, row], bounds: bounds)?.contains("“Speed”") == true)
-        #expect(known.drawnAfterAll("score-contrast", picture: neither, nodes: [title, row], bounds: bounds) == nil)
+        #expect(Conditions.drawn(neither, nodes: [title], bounds: view, unreadable: known.covers("score-dark", in: [title])) != nil)
+    }
+
+    @Test func anEntryNamesATextByItsExactWords() {
+        // "1" is the repeat's first bar, not "1st Horn": a part name that is not drawn yet is still waited for.
+        let bar = line("1", y: 0), horn = line("1st Horn", y: 5)
+        let known = Unreadable(issue: "#1", screens: ["score-contrast": ["1"]])
+        let covers = known.covers("score-contrast", in: [bar, horn])
+        #expect(covers(bar))
+        #expect(!covers(horn))
+        #expect(Conditions.drawn(picture(upper: false, lower: false), nodes: [bar, horn], bounds: view, unreadable: covers)
+            == "its text “1st Horn” is not drawn in its picture yet")
+    }
+
+    @Test func ofTwoTextsWithTheSameWordsAnEntryNamesOne() {
+        // The headline and the line over the progress bar both say "Setting up"; only the second is the unreadable one.
+        let headline = line("Setting up", y: 0), over = line("Setting up", y: 5)
+        let known = Unreadable(issue: "#1", screens: ["panel-contrast": [.init("Setting up", nth: 2)]])
+        let covers = known.covers("panel-contrast", in: [headline, over])
+        #expect(!covers(headline))
+        #expect(covers(over))
+        // the headline not drawn yet is waited for, and named as the first of the two
+        #expect(Conditions.drawn(picture(upper: false, lower: false), nodes: [headline, over], bounds: view, unreadable: covers)
+            == "its text “Setting up” is not drawn in its picture yet")
+        #expect(Conditions.drawn(picture(upper: true, lower: false), nodes: [headline, over], bounds: view, unreadable: covers) == nil)
+        // and a missing second one is named with its place, as an entry is written
+        #expect(Conditions.drawn(picture(upper: true, lower: false), nodes: [headline, over], bounds: view)
+            == "its text “Setting up” (nth: 2) is not drawn in its picture yet")
+    }
+
+    @Test func anEntryWhoseTextIsDrawnOrGoneIsStale() {
+        let title = line("Speed", y: 0), row = line("Bar 1", y: 5)
+        let known = Unreadable(issue: "#1", screens: ["score-contrast": ["Speed", "Bar 1"]])
+        // both missing from the picture: the list is right
+        #expect(known.stale("score-contrast", picture: picture(upper: false, lower: false), nodes: [title, row], bounds: view) == nil)
+        // one is drawn now
+        let drawn = known.stale("score-contrast", picture: picture(upper: true, lower: false), nodes: [title, row], bounds: view)
+        #expect(drawn == "score-contrast: listed as unreadable (#1), but drawn or not on the screen: “Speed”. Take it out of the list.")
+        // one is no longer on the screen: that is not "missing from the picture"
+        let gone = known.stale("score-contrast", picture: picture(upper: false, lower: false), nodes: [row], bounds: view)
+        #expect(gone?.contains("“Speed”") == true && gone?.contains("“Bar 1”") == false)
+        // the second of two is listed, and only the first is missing
+        let twice = Unreadable(issue: "#1", screens: ["panel-contrast": [.init("Setting up", nth: 2)]])
+        let headline = line("Setting up", y: 0), over = line("Setting up", y: 5)
+        #expect(twice.stale("panel-contrast", picture: picture(upper: false, lower: true), nodes: [headline, over], bounds: view)?
+            .contains("“Setting up” (nth: 2)") == true)
+        #expect(twice.stale("panel-contrast", picture: picture(upper: true, lower: false), nodes: [headline, over], bounds: view) == nil)
+        // a screen without entries has none to be stale
+        #expect(known.stale("score-dark", picture: picture(upper: true, lower: true), nodes: [title, row], bounds: view) == nil)
+    }
+
+    @Test func theCatalogueStopsAfterThreeScreensNotTaken() throws {
+        var limit = NotTakenLimit()
+        try limit.check()
+        limit.note(); limit.note()
+        try limit.check()
+        limit.note()
+        #expect(throws: CatalogueStopped.self) { try limit.check() }
+        do { try limit.check() } catch { #expect("\(error)" == "catalogue stopped: 3 screens were not taken, so the rest are not tried") }
     }
 
     @Test func anAreaOfOneColourIsFlat() {

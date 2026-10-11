@@ -26,13 +26,13 @@ final class OffscreenHost {
 
     /// Light by default; the screen catalogue also draws it dark and with increased contrast. The appearance is the
     /// window's, as on a Mac set that way: SwiftUI and AppKit both read it from there (and Increase Contrast from
-    /// `SystemContrast`, which a host with increased contrast turns on until it is closed), in every hosting view of
+    /// `SystemContrast`, which every host tells what it asks for, on or off), in every hosting view of
     /// the screen. `witness` is given when the caller has put it where the screen's own views are (`catalogueWitness`);
     /// otherwise it sits at the root.
     init(_ view: some View, size: CGSize, dark: Bool = false, increasedContrast: Bool = false, witness: AppearanceWitness? = nil) {
         asked = Asked(dark: dark, increasedContrast: increasedContrast)
         self.size = size
-        if increasedContrast { SystemContrast.set(true) }
+        SystemContrast.set(increasedContrast)
         window = NSWindow(contentRect: CGRect(origin: CGPoint(x: -30_000, y: -30_000), size: size),
                           styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
@@ -84,7 +84,7 @@ final class OffscreenHost {
     /// this one at its size, in the appearance and language asked for, with its content in place (`ready` says what
     /// the screen itself still waits for, `shows` the same of its tree) and drawn, and keeping still.
     func take(_ name: String, controls: Bool = true, ready: () -> String? = { nil }, shows: ([AXNode]) -> String? = { _ in nil },
-              unreadable: (AXNode) -> Bool = { _ in false }, output: URL) async throws -> ScreenTake {
+              unreadable: Unreadable? = nil, output: URL) async throws -> ScreenTake {
         try await ScreenTake.take(name, window: window, view: hosting, size: { self.size }, asked: asked, witness: witness, controls: controls,
                                   ready: ready, shows: shows, unreadable: unreadable, picture: { self.bitmap() }, output: output)
     }
@@ -159,12 +159,7 @@ final class OffscreenHost {
     /// The smallest content size the window allows for this view: what SwiftUI hands the window.
     var windowMinimum: CGSize { window.contentMinSize }
 
-    /// Closes the window; a host that asked for increased contrast hands the process back to the system's setting.
-    func close() {
-        window.contentView = nil
-        window.close()
-        if asked.increasedContrast { SystemContrast.set(false) }
-    }
+    func close() { window.contentView = nil; window.close() }
 }
 
 /// The sizes SwiftUI reports for a view: its minimum, ideal (what a sheet opens at) and maximum.
