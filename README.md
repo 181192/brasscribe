@@ -31,7 +31,7 @@ The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
 - Play for Mac and Bandroom for Mac (Apple silicon). They are not notarised: the first time, open the
   app, then go to **System Settings › Privacy & Security** and choose **Open Anyway**.
 - Bandroom for Windows (x64), and Play for Windows as a preview. They are not signed: if SmartScreen
-  stops them, choose **More info › Run anyway**.
+  stops them, choose **More info › Run anyway**. They need Windows 11.
 - The `scribe-core` command-line tool for Mac, Linux and Windows, and `SHA256SUMS`.
 
 Bandroom's first run downloads the engine and its models (about 10 GB on a Mac). The band writer model

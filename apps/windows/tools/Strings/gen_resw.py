@@ -86,8 +86,6 @@ help_("AppPicker", "Apps that play sound right now are listed first", "Apper som
 icon_button("RefreshAppsButton", "Look for apps again", "Se etter apper på nytt", "Look again for apps that play sound", "Se etter apper som spiller lyd på nytt")
 name("RecordAppButton", "Record this app", "Ta opp denne appen"); help_("RecordAppButton", "Record the chosen app and nothing else", "Ta opp den valgte appen og ingenting annet")
 prop("RecordAppButtonLabel", "Text", "Record this app", "Ta opp denne appen")
-prop("AppCaptureUnavailable", "Text", "Needs Windows 11. You can still record everything this PC plays.",
-     "Krever Windows 11. Du kan fortsatt ta opp alt PC-en spiller.")
 name("RecordingTime", "Recording time", "Opptakstid")
 name("LevelMeter", "Input level", "Inngangsnivå")
 prop("StopRecordingButton", "Content", "Stop recording", "Stopp opptaket"); help_("StopRecordingButton", "Stop and continue with the recording (Ctrl+Shift+R)", "Stopp og gå videre med opptaket (Ctrl+Shift+R)")
@@ -317,7 +315,6 @@ code = {
     "Start_Error_Unsupported": ("{0} can't be opened. Try an MP3, WAV, M4A or MP4 file, or a MusicXML score.", "{0} kan ikke åpnes. Prøv en MP3-, WAV-, M4A- eller MP4-fil, eller et MusicXML-partitur."),
     "Start_Error_Decode": ("{0} can't be read. Try another file, or record it instead.", "{0} kan ikke leses. Prøv en annen fil, eller ta det opp i stedet."),
     "Start_Error_Score": ("{0} can't be opened as a score.", "{0} kan ikke åpnes som partitur."),
-    "Start_Error_AppCaptureUnsupported": ("Recording one app needs Windows 11. Record everything this PC plays instead.", "Opptak av én app krever Windows 11. Ta opp alt PC-en spiller i stedet."),
     "Start_Error_ChooseApp": ("Choose the app to record first.", "Velg først appen som skal tas opp."),
     "Start_Error_MicrophonePermission": ("Brasscribe may not use the microphone. Allow it in Windows Settings, Privacy, Microphone.", "Brasscribe har ikke lov til å bruke mikrofonen. Gi tilgang i Windows-innstillinger, Personvern, Mikrofon."),
     "Start_Error_Capture": ("Recording couldn't start: {0}", "Opptaket kunne ikke starte: {0}"),
