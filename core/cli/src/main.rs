@@ -305,7 +305,8 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 Some(c) => Some(serde_json::from_slice(&read(Path::new(&c))?).map_err(|e| e.to_string())?),
                 None => None,
             };
-            let doc = ts::build(&xml, comp.as_ref())?;
+            // The scores this command reads are band scores: the band names its parts.
+            let doc = ts::build(&xml, comp.as_ref(), &target_brass::names::BandNames)?;
             let d = ts::Settings::default();
             let settings = ts::Settings {
                 lang: a.opt("lang").unwrap_or(d.lang),

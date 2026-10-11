@@ -723,7 +723,7 @@ pub fn part_sources(composition_json: String) -> Result<Vec<PartSource>, CoreErr
 /// table, covering the band, small band and quartet parts. Names it doesn't know come back unchanged.
 #[uniffi::export]
 pub fn part_name_nb(name: String) -> String {
-    scribe_core::talking_score::nb_part_name(&name).to_string()
+    target_brass::names::nb_part_name(&name).to_string()
 }
 
 /// One seat of the contest band, for the "What do you play?" picker.
@@ -756,7 +756,7 @@ pub fn seats() -> Vec<SeatInfo> {
             SeatInfo {
                 id: s.id.into(),
                 name: s.part.into(),
-                nb_name: scribe_core::talking_score::nb_part_name(s.part).into(),
+                nb_name: target_brass::names::nb_part_name(s.part).into(),
                 instrument: inst.id.into(),
                 clef: inst.clef.as_str().into(),
                 reads: s.reads.iter().map(|r| r.to_string()).collect(),

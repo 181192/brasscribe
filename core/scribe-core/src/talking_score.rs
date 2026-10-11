@@ -2,7 +2,8 @@
 //!
 //! * [`build`] reads partwise MusicXML (spelled written pitch, types, ties,
 //!   tuplets) plus the Composition (confidence, sources, performed time, free
-//!   regions) into the TalkingScore JSON shape (spec §6).
+//!   regions) into the TalkingScore JSON shape (spec §6). What the parts and
+//!   instruments are called in Norwegian is the target's to say ([`Names`]).
 //! * [`announce`] produces one announcement string (spec §4).
 //! * [`part_lines`], [`to_text`] and [`to_html`] walk a part note by note the
 //!   way a reader does: a heading per part, a sub-heading per bar, one line per
@@ -876,58 +877,30 @@ pub fn announce(part: &Part, bar: &Bar, ev: &Value, ctx: &Context, s: &Settings,
 // ---------------------------------------------------------------------------
 // build from MusicXML
 
-pub fn nb_part_name(name: &str) -> &str {
-    match name {
-        "Soprano Cornet" => "Sopran-kornett",
-        "Solo Cornet" => "Solokornett",
-        "1st Cornet" => "1. kornett",
-        "Tenor Horn" => "Althorn",
-        "Repiano Cornet" => "Repiano-kornett",
-        "2nd Cornet" => "2. kornett",
-        "3rd Cornet" => "3. kornett",
-        "Flugelhorn" => "Flygelhorn",
-        "Solo Horn" => "Solo althorn",
-        "1st Horn" => "1. althorn",
-        "2nd Horn" => "2. althorn",
-        "1st Baritone" => "1. baryton",
-        "2nd Baritone" => "2. baryton",
-        "1st Trombone" => "1. trombone",
-        "2nd Trombone" => "2. trombone",
-        "Bass Trombone" => "Basstrombone",
-        "Euphonium" => "Eufonium",
-        "E♭ Bass" => "Ess-bass",
-        "B♭ Bass" => "B-bass",
-        "Percussion" => "Slagverk",
-        "Trumpet" => "Trompet",
-        other => other,
+/// What a target calls its parts and instruments in a language other than the score's own. The
+/// reading here is of any score and knows no instruments, so the names it says come from the target
+/// the score was written by.
+pub trait Names {
+    /// A part's name in `lang` ("nb"); None = the name the score gives it.
+    fn part(&self, name: &str, lang: &str) -> Option<String>;
+    /// An instrument's name in `lang`, as it is said inside a sentence; None = the name the score gives it.
+    fn instrument(&self, name: &str, lang: &str) -> Option<String>;
+}
+
+/// The names the score itself gives, in every language.
+pub struct ScoreNames;
+
+impl Names for ScoreNames {
+    fn part(&self, _: &str, _: &str) -> Option<String> {
+        None
+    }
+    fn instrument(&self, _: &str, _: &str) -> Option<String> {
+        None
     }
 }
 
-pub fn instrument_nb(en: &str) -> String {
-    let mut s = en.to_string();
-    for (a, b) in [
-        ("Soprano Cornet", "sopran-kornett"),
-        ("Cornet", "kornett"),
-        ("Trumpet", "trompet"),
-        ("Flugelhorn", "flygelhorn"),
-        ("Tenor Horn", "althorn"),
-        ("Horn", "althorn"),
-        ("Baritone", "baryton"),
-        ("Euphonium", "eufonium"),
-        ("Bass Trombone", "basstrombone"),
-        ("Drum Kit", "trommesett"),
-        (" in B♭", " i B"),
-        (" in E♭", " i Ess"),
-        (" in C", " i C"),
-    ] {
-        s = s.replace(a, b);
-    }
-    let mut c = s.chars();
-    match c.next() {
-        None => String::new(),
-        Some(f) => f.to_lowercase().collect::<String>() + c.as_str(),
-    }
-}
+/// The language the document carries names in beside the score's own (`name_nb`, `instrument_nb`).
+const NAMED_LANG: &str = "nb";
 
 fn drum(step: &str, octave: i64, notehead: Option<&str>) -> (&'static str, &'static str) {
     let x = notehead == Some("x");
@@ -1247,7 +1220,7 @@ fn add_chord_tone(head: &mut Value, el: Node, percussion: bool, transpose: &Valu
 }
 
 /// TalkingScore document (spec §6) from partwise MusicXML text, plus the Composition when known.
-pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, String> {
+pub fn build(musicxml: &str, composition: Option<&Value>, names: &dyn Names) -> Result<Value, String> {
     let opts = ParsingOptions { allow_dtd: true, ..Default::default() };
     let doc = Document::parse_with_options(musicxml, opts).map_err(|e| e.to_string())?;
     let root = doc.root_element();
@@ -1475,9 +1448,12 @@ pub fn build(musicxml: &str, composition: Option<&Value>) -> Result<Value, Strin
         let mut part = Map::new();
         part.insert("id".into(), part_el.attribute("id").map(|s| json!(s)).unwrap_or(Value::Null));
         part.insert("name".into(), json!(name));
-        part.insert("name_nb".into(), json!(nb_part_name(&name)));
+        part.insert("name_nb".into(), json!(names.part(&name, NAMED_LANG).unwrap_or_else(|| name.clone())));
         part.insert("instrument".into(), inst.clone().map(Value::String).unwrap_or(Value::Null));
-        part.insert("instrument_nb".into(), inst.as_deref().filter(|i| !i.is_empty()).map(|i| json!(instrument_nb(i))).unwrap_or(Value::Null));
+        part.insert(
+            "instrument_nb".into(),
+            inst.as_deref().filter(|i| !i.is_empty()).map(|i| json!(names.instrument(i, NAMED_LANG).unwrap_or_else(|| i.to_string()))).unwrap_or(Value::Null),
+        );
         part.insert("transpose".into(), transpose);
         part.insert("percussion".into(), json!(percussion));
         part.insert("bars".into(), Value::Array(bars_v));

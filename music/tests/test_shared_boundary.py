@@ -1,11 +1,15 @@
 """Keeps instrument knowledge out of the shared modules of the Python reference.
 
 In the Rust port the same line is a crate boundary: the modules below are the crate `target-brass`
-(core/targets/brass/src), the rest is the shared core (core/scribe-core), and
-core/scribe-core/tests/crate_graph.rs keeps the core from depending on a target. This package is not
+(core/targets/brass/src), the rest is the shared core (core/scribe-core), which knows no instruments:
+core/scribe-core/tests/crate_graph.rs keeps it from depending on a target, and
+core/scribe-core/tests/instrument_words.rs from naming an instrument itself. This package is not
 split yet, so here a test holds the line: only the modules below know about brass-band instruments,
 lineups, arranging or the score written from them. The rest serves any instrument family, and this test
 fails when one of them starts importing an instrument-aware module.
+
+The talking score's reference (engine/src/brasscribe_engine/talking_score.py) is outside this package
+and keeps its Norwegian names beside the reading; in the port they are target-brass's `names`.
 """
 
 import ast

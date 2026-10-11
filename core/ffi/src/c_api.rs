@@ -496,7 +496,7 @@ pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, compositi
     let comp = from_c(composition_json);
     let r = catch_unwind(AssertUnwindSafe(|| -> Result<serde_json::Value, (i32, String)> {
         let c: Option<serde_json::Value> = comp.map(|c| serde_json::from_str(&c)).transpose().map_err(|e| (SC_INVALID, e.to_string()))?;
-        scribe_core::talking_score::build(&xml, c.as_ref()).map_err(|e| (SC_INVALID, e))
+        scribe_core::talking_score::build(&xml, c.as_ref(), &target_brass::names::BandNames).map_err(|e| (SC_INVALID, e))
     }));
     match r {
         Ok(Ok(doc)) => {
