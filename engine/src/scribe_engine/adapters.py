@@ -1,7 +1,7 @@
 """Model adapters: subprocesses behind the `<input> <output>` contract.
 
 Each adapter lives in `<adapters_dir>/<name>/` with its own environment (the uv
-project on Apple silicon Macs; elsewhere, or with BRASSCRIBE_ADAPTER_RUNNER=pixi,
+project on Apple silicon Macs; elsewhere, or with SCRIBE_ADAPTER_RUNNER=pixi,
 the pixi environment of the same name). The engine never imports model code; it runs
 `<adapters_dir>/run_adapter.py <name> <input> <output>` with its own Python (the
 same runner every run.sh delegates to, so it works on Windows too; an adapter
@@ -14,7 +14,7 @@ dir without the runner falls back to run.sh) and records what ran:
 
 Heavy adapters (large models on long audio) take the machine-wide GPU mutex.
 An adapter that runs longer than its time limit (HEAVY_TIMEOUT_S, LIGHT_TIMEOUT_S, or
-BRASSCRIBE_ADAPTER_TIMEOUT_S for all), or whose job is cancelled, is stopped with every
+SCRIBE_ADAPTER_TIMEOUT_S for all), or whose job is cancelled, is stopped with every
 process it started: the model itself usually runs as a grandchild, under uv or pixi.
 """
 
@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from brasscribe_music.process_tree import kill_tree
+from scribe_music.process_tree import kill_tree
 
 from .config import child_env
 from .gpulock import default_path, file_lock
@@ -79,8 +79,8 @@ ADAPTERS: dict[str, Adapter] = {
 
 def host_device() -> str:
     """Accelerator a torch adapter uses on this host: cuda, mps or cpu."""
-    if os.environ.get("BRASSCRIBE_DEVICE"):
-        return os.environ["BRASSCRIBE_DEVICE"]
+    if os.environ.get("SCRIBE_DEVICE"):
+        return os.environ["SCRIBE_DEVICE"]
     if shutil.which("nvidia-smi"):
         try:
             if subprocess.run(["nvidia-smi", "-L"], capture_output=True, timeout=10).returncode == 0:
@@ -123,7 +123,7 @@ class AdapterRegistry:
     models_dir: Path
     hashes: HashIndex
     gpu_lock: Path = field(default_factory=default_path)
-    timeout_s: float | None = None  # every adapter's time limit (BRASSCRIBE_ADAPTER_TIMEOUT_S); None: by weight
+    timeout_s: float | None = None  # every adapter's time limit (SCRIBE_ADAPTER_TIMEOUT_S); None: by weight
     _fingerprints: dict[str, str] = field(default_factory=dict)
 
     def get(self, name: str) -> Adapter:
@@ -215,7 +215,7 @@ class AdapterRegistry:
         else:
             raise AdapterError(f"no run_adapter.py or {self.script(name)}")
         # The adapter reads its weights from the folder the engine hashes for the manifest.
-        full_env = child_env({**dict(a.env), **(env or {}), "BRASSCRIBE_MODELS": str(self.models_dir)})
+        full_env = child_env({**dict(a.env), **(env or {}), "SCRIBE_MODELS": str(self.models_dir)})
         t0 = time.time()
         limit = self.time_limit(name)
 
@@ -235,8 +235,8 @@ class AdapterRegistry:
                     if time.monotonic() > end:
                         kill_tree(proc)
                         raise AdapterError(f"{name} stopped after {limit:.0f} s, its time limit "
-                                           "(BRASSCRIBE_ADAPTER_TIMEOUT_S)") from None
-                except BaseException:  # e.g. Ctrl-C in `brasscribe run`: leave no model running
+                                           "(SCRIBE_ADAPTER_TIMEOUT_S)") from None
+                except BaseException:  # e.g. Ctrl-C in `scribe run`: leave no model running
                     kill_tree(proc)
                     raise
             if proc.returncode != 0:

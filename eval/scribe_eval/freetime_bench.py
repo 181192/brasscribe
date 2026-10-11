@@ -3,7 +3,7 @@
 For every piece with Beat This! beats and score-aligned reference notes
 (URMP brass, ChoraleBricks), the reference notes are quantized twice:
   grid   the beat grid as tracked (choose_level, as quant_bench does)
-  free   the same beats with free-time runs replaced (brasscribe_music.freetime)
+  free   the same beats with free-time runs replaced (scribe_music.freetime)
 Reported per piece: the detected regions, and for both variants
   - strict passages (notes outside any region): position / subdivision /
     duration accuracy as in quant_bench, the integer beat shift fitted per
@@ -13,7 +13,7 @@ Reported per piece: the detected regions, and for both variants
     one tempo factor per region (proportional notation cannot match score
     positions, but should keep long vs short)
 
-    uv run python -W ignore -m brasscribe_eval.freetime_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4
+    uv run python -W ignore -m scribe_eval.freetime_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.freetime import plan_free_time
-from brasscribe_music.quantize import TICKS_PER_BEAT, choose_level, quantize
+from scribe_music.freetime import plan_free_time
+from scribe_music.quantize import TICKS_PER_BEAT, choose_level, quantize
 
 from .score import load_notes
 

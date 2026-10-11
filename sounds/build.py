@@ -28,13 +28,13 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "music" / "src"))
-from brasscribe_music.instruments import INSTRUMENTS  # noqa: E402
+from scribe_music.instruments import INSTRUMENTS  # noqa: E402
 from dsp import SR, apply_eq, envelope_db, k_weight, loudest_window_db  # noqa: E402
 import sf2  # noqa: E402
 
 RAW = ROOT / "data" / "sounds" / "raw"
-BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))  # staging builds
-ANALYSIS = Path(os.environ.get("BRASSCRIBE_SOUNDS_ANALYSIS", ROOT / "data" / "sounds" / "analysis.json"))
+BUILT = Path(os.environ.get("SCRIBE_SOUNDS_BUILT", ROOT / "data" / "sounds" / "built"))  # staging builds
+ANALYSIS = Path(os.environ.get("SCRIBE_SOUNDS_ANALYSIS", ROOT / "data" / "sounds" / "analysis.json"))
 MAPPING = HERE / "mapping.json"
 
 # Nominal dynamic of each layer, by number of layers available (softest first).

@@ -15,12 +15,12 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.arranger import arrange, arrange_composition
-from brasscribe_music.instruments import CLEF_READINGS, SEAT_IDS, PERCUSSION_SOLO, check_reads, seat_by_id
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
-from brasscribe_music.score_model import Composition, KeySig, Meter, Voice, VoiceRole
-from brasscribe_music.spelling import key_of
+from scribe_music.arranger import arrange, arrange_composition
+from scribe_music.instruments import CLEF_READINGS, SEAT_IDS, PERCUSSION_SOLO, check_reads, seat_by_id
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
+from scribe_music.score_model import Composition, KeySig, Meter, Voice, VoiceRole
+from scribe_music.spelling import key_of
 
 from .arrange_layers_song import pitched
 from .arrange_song import to_notes

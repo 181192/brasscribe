@@ -1,7 +1,7 @@
 """Companion-mode credentials: a stable server identity, one long-lived credential per paired device,
 the pairing window and approve-on-the-computer requests.
 
-State lives in the companion state directory (BRASSCRIBE_STATE, default <data>/companion):
+State lives in the companion state directory (SCRIBE_STATE, default <data>/companion):
 
     server.json   {"server_id", "created_at"}: random, kept across restarts and address or port changes
     devices.json  {"devices": [...]}: one entry per paired device; tokens are stored only as SHA-256
@@ -10,7 +10,7 @@ A device pairs once. Its token stays valid until the device is revoked, the serv
 device has not been seen for `idle_days`. A device may rotate its token; the token it rotated with
 keeps working until the new one is first used (at most `grace_s`, 30 days), so a lost response, or a
 retry with the old token, cannot lock the device out. Files are rewritten atomically under a cross-process
-lock and re-read when they change on disk, so `brasscribe devices revoke` takes effect in a running engine
+lock and re-read when they change on disk, so `scribe devices revoke` takes effect in a running engine
 and is never undone by the engine's own writes. `last_seen` (presence) is tracked in memory on every request
 and flushed at most once a minute.
 
@@ -137,7 +137,7 @@ class Device:
 
 @contextmanager
 def file_lock(path: Path) -> Iterator[None]:
-    """Exclusive lock shared with other processes (the engine and `brasscribe devices`)."""
+    """Exclusive lock shared with other processes (the engine and `scribe devices`)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     try:
@@ -168,7 +168,7 @@ def file_lock(path: Path) -> Iterator[None]:
 
 
 class DeviceRegistry:
-    """Paired devices, shared by the running engine and `brasscribe devices` in another process.
+    """Paired devices, shared by the running engine and `scribe devices` in another process.
 
     Every change takes a cross-process file lock, re-reads the file, applies the change and writes it back,
     so a CLI revoke is never overwritten by the engine's own write. `last_seen` is updated in memory on every

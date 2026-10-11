@@ -114,19 +114,19 @@ hardcoded, and each would miss or mislabel a trumpet:
 | Where | What it hardcodes | A trumpet would… |
 |---|---|---|
 | `studio/src/lib/navigator.ts:225` | instrument name keyed by **transposition** (−2 → "Cornet in B♭" / «kornett i B») | be announced as "Cornet in B♭" (already true of Flugelhorn) |
-| `engine/src/brasscribe_engine/talking_score.py:442,452` | `NB_PART_NAMES`, `instrument_nb` string replacements | come out as «trumpet i B», half-translated |
+| `engine/src/scribe_engine/talking_score.py:442,452` | `NB_PART_NAMES`, `instrument_nb` string replacements | come out as «trumpet i B», half-translated |
 | `apps/windows/.../TalkingScore/MusicXmlTalkingScoreBuilder.cs:447` | its own nb part-name table (not the core's `nb_part_name`) | keep an English name in the Windows talking score |
 | `apps/android/model/.../Pitch.kt:76` | `Instrument` enum: en/nb names, transposition, program | have no entry (the enum decides written pitch and key names) |
 | `apps/android/.../MyInstrument.kt:112`, `Lineup.kt:14,36` | quartet aliases, lead names "Solo Cornet"/"1st Cornet" | not be recognised as the lead |
 | `apps/android/.../ui/WhatDoYouPlayScreen.kt`, `apps/apple/App/Seats.swift:133,143` | instrument picker order and titles by instrument id | not appear in "What do you play" |
 | `sounds/mapping.json` resolve (`keywords` "trumpet" → Solo Cornet; `instruments`), `sounds/partsound.py:73`, `partsound-vectors.json`, `seating.json` | the resolver every platform ports, plus its vectors and seat positions | play the cornet preset; «Trompet» misses the keyword (fallback only) |
 | `qa/tools/musicxml_readability.py:46` | `RANGES` by part-name substring | go unchecked (no "trumpet" row) |
-| `engine/src/brasscribe_engine/profiles.py:251` | title "solo cornet & brass band (draft)" | keep "solo cornet" in the title |
+| `engine/src/scribe_engine/profiles.py:251` | title "solo cornet & brass band (draft)" | keep "solo cornet" in the title |
 | `apps/windows/tests/.../PartSoundTests.cs:80` | renames "3rd Cornet" → "Trumpet in B♭" and expects the band SF2 to play it | already codifies trumpet = cornet preset, so a separate trumpet preset changes this test |
 | `design/mockups/scores.js`, `design/mockups/music-stand.js`, site `index.html`/`guide`/`nb` | cornet part lists and copy | show no trumpet (docs only) |
 | `core/ffi/src/lib.rs:607` `nb_part_name`, `c_api.rs` | the core's single nb table (good), but `seats()` exposes only `SEATS` | needs the new name here once and in no platform table |
 
-The Bandroom apps (`apps/bandroom`) and braille (`engine/src/brasscribe_engine/braille.py`, which
+The Bandroom apps (`apps/bandroom`) and braille (`engine/src/scribe_engine/braille.py`, which
 ASCII-folds `partName`) have no instrument tables. They follow whatever name the score carries.
 Braille would print "Trompet i B" when given the name, so nothing extra is needed there.
 

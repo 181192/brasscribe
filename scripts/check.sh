@@ -57,7 +57,7 @@ changed_areas() {
 
 # A hash of the Python reference sources (committed, uncommitted and untracked): the fast
 # conformance tier reuses the Python outputs of an earlier run only while this is unchanged.
-PY_REF_PATHS=(music/src eval/brasscribe_eval core/conformance/scribe_conformance)
+PY_REF_PATHS=(music/src eval/scribe_eval core/conformance/scribe_conformance)
 py_ref_stamp() {
   { git ls-files -s -- "${PY_REF_PATHS[@]}"; git diff HEAD -- "${PY_REF_PATHS[@]}"
     git ls-files -o --exclude-standard -z -- "${PY_REF_PATHS[@]}" | xargs -0 shasum 2>/dev/null; } | shasum | cut -d' ' -f1

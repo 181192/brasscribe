@@ -33,7 +33,7 @@ This plan adds a brass quartet as a third lineup, next to the full brass band an
 | Tenor Horn | `eb-tenor-horn` | reading 48–70 | M6 above | treble | 1 (the Solo Horn preset) | Althorn |
 | Euphonium | `euphonium` | reading 40–67, limit 34–72 | M9 above | treble | 3 | Eufonium |
 
-The ranges and transpositions come from `music/src/brasscribe_music/instruments.py:89-108` and `core/scribe-core/src/instruments.rs`. Nothing new goes into instrument knowledge. There is one player per part and no percussion.
+The ranges and transpositions come from `music/src/scribe_music/instruments.py:89-108` and `core/scribe-core/src/instruments.rs`. Nothing new goes into instrument knowledge. There is one player per part and no percussion.
 
 **Part names.** Use the names quartet parts are printed with. "2nd Cornet" and "Euphonium" already exist in the band tables. That leaves two new names, **"1st Cornet"** and **"Tenor Horn"**, to add to every table that matches on part name (§2.8). The alternative is to reuse the band seat names ("Solo Cornet", "Solo Horn"). That needs no table changes, but prints "Solo Cornet" on a quartet part. Open question 1.
 
@@ -92,23 +92,23 @@ On a solo take, bass and orchestra are empty, and three parts would be written a
 
 | File | Change |
 |---|---|
-| `music/src/brasscribe_music/instruments.py:129-175` | `Lineup` gets `lead: str`, `bass: str`, `second_bass: str \| None`, `satb: bool = False`. Set `BRASS_BAND` and `MINIMAL_BAND` to their current values ("Solo Cornet", "E♭ Bass", "B♭ Bass"). Add `QUARTET = Lineup("Brass quartet", [...], lead="1st Cornet", bass="Euphonium", second_bass=None, satb=True)` with the banks from §1.1. Add `LINEUPS = {"band": BRASS_BAND, "minimal": MINIMAL_BAND, "quartet": QUARTET}` and `lineup_by_name()`, accepting "full" as an alias for "band". |
+| `music/src/scribe_music/instruments.py:129-175` | `Lineup` gets `lead: str`, `bass: str`, `second_bass: str \| None`, `satb: bool = False`. Set `BRASS_BAND` and `MINIMAL_BAND` to their current values ("Solo Cornet", "E♭ Bass", "B♭ Bass"). Add `QUARTET = Lineup("Brass quartet", [...], lead="1st Cornet", bass="Euphonium", second_bass=None, satb=True)` with the banks from §1.1. Add `LINEUPS = {"band": BRASS_BAND, "minimal": MINIMAL_BAND, "quartet": QUARTET}` and `lineup_by_name()`, accepting "full" as an alias for "band". |
 | `core/scribe-core/src/instruments.rs:212-275` | The same: fields on `Lineup`, `quartet()`, `lineup_by_name(&str) -> Result<Lineup, String>` |
 
 ### 2.2 Python arrangers and difficulty
 
 | File:line | Change |
 |---|---|
-| `music/src/brasscribe_music/arranger.py:165-209` `arrange` | `lineup.lead` / `lineup.bass` / `lineup.second_bass` instead of the names at `:171`, `:174`, `:183`. Skip the B♭ Bass octave-down when there is no second bass. Use `voice_satb` for the inner parts when `lineup.satb`. |
+| `music/src/scribe_music/arranger.py:165-209` `arrange` | `lineup.lead` / `lineup.bass` / `lineup.second_bass` instead of the names at `:171`, `:174`, `:183`. Skip the B♭ Bass octave-down when there is no second bass. Use `voice_satb` for the inner parts when `lineup.satb`. |
 | `arranger.py:226-238` `layer_of_part` | Takes the lineup (lead → solo, bass/second_bass → bass). The band keeps its current mapping. |
 | `arranger.py:347-426` `arrange_layers` | `:371`, `:374`, `:380`, `:403`, `:408`, `:419` read the lineup roles. Satb branch as in §1.5. |
 | `arranger.py` (new) | `voice_satb(pcs, alto, tenor, soprano_at, bass_at, prev, ranges)` |
-| `music/src/brasscribe_music/difficulty.py:28,132` | `SOLO_PART` → `lineup.lead`. Satb inner parts are not folded (§1.4). |
-| `music/src/brasscribe_music/musicxml.py:519-521` | `_band_midi` reads banks from `arrangement.lineup`, not `BRASS_BAND` (the writer needs the lineup passed in: `write_musicxml(..., lineup=)`) |
+| `music/src/scribe_music/difficulty.py:28,132` | `SOLO_PART` → `lineup.lead`. Satb inner parts are not folded (§1.4). |
+| `music/src/scribe_music/musicxml.py:519-521` | `_band_midi` reads banks from `arrangement.lineup`, not `BRASS_BAND` (the writer needs the lineup passed in: `write_musicxml(..., lineup=)`) |
 | `musicxml.py:525-536` `build_band_score` | `layer_of_part(arrangement.lineup, name)` |
-| `eval/brasscribe_eval/arrange_layers_song.py:96,267-280` | `--lineup band\|full\|minimal\|quartet`, `lineup_by_name` |
-| `eval/brasscribe_eval/arrange_song.py:36-44` | new `--lineup` (default minimal), passed to `arrange`, written to `comp.arrangement` when not the default |
-| `eval/brasscribe_eval/musescore_roundtrip.py:51` | `lineup_by_name(opts.get("lineup"))` |
+| `eval/scribe_eval/arrange_layers_song.py:96,267-280` | `--lineup band\|full\|minimal\|quartet`, `lineup_by_name` |
+| `eval/scribe_eval/arrange_song.py:36-44` | new `--lineup` (default minimal), passed to `arrange`, written to `comp.arrangement` when not the default |
+| `eval/scribe_eval/musescore_roundtrip.py:51` | `lineup_by_name(opts.get("lineup"))` |
 
 ### 2.3 Rust core, CLI and conformance
 
@@ -144,12 +144,12 @@ Regenerate with `core/scripts/bindings.sh`. That rewrites `core/bindings/{swift,
 
 | File:line | Change |
 |---|---|
-| `engine/src/brasscribe_engine/schemas.py:10` | `Lineup = Literal["full", "minimal", "quartet"]`; description at `:133-134` |
-| `engine/src/brasscribe_engine/profiles.py:37` | `LINEUPS = ("full", "minimal", "quartet")`. `solo()` (`:153-176`) rejects `quartet` with a `ValueError` ("a quartet needs harmony; record the whole group"). |
+| `engine/src/scribe_engine/schemas.py:10` | `Lineup = Literal["full", "minimal", "quartet"]`; description at `:133-134` |
+| `engine/src/scribe_engine/profiles.py:37` | `LINEUPS = ("full", "minimal", "quartet")`. `solo()` (`:153-176`) rejects `quartet` with a `ValueError` ("a quartet needs harmony; record the whole group"). |
 | `profiles.py:139-149` `brass_band` | nothing to change once `arrange_song` has `--lineup`: `stages._arrangement_flags` (`stages.py:107-123`) finds the flag through `--help` and passes it on. Today it fails the stage. |
-| `engine/src/brasscribe_engine/cli.py:222` | `choices=["full", "minimal", "quartet"]` |
-| `engine/src/brasscribe_engine/api.py:347,375` | no code change (the typed `m.Lineup` carries it) |
-| `engine/src/brasscribe_engine/talking_score.py:443-447` | nb names: "1st Cornet" → "1. kornett", "Tenor Horn" → "Althorn" |
+| `engine/src/scribe_engine/cli.py:222` | `choices=["full", "minimal", "quartet"]` |
+| `engine/src/scribe_engine/api.py:347,375` | no code change (the typed `m.Lineup` carries it) |
+| `engine/src/scribe_engine/talking_score.py:443-447` | nb names: "1st Cornet" → "1. kornett", "Tenor Horn" → "Althorn" |
 | `engine/openapi.json:1043` + enum | regenerate: `pixi run openapi` |
 | `engine/tests/test_accessible.py:59-62,94-95,149` | `quartet` accepted. `lineup=quartet` on the test profile no longer fails. Solo + quartet → 422. |
 | braille (`braille.py`) | no change: it takes part names from the MusicXML as they are |
@@ -230,10 +230,10 @@ Every table must resolve "1st Cornet" and "Tenor Horn". If one doesn't, the resu
 
 ### 2.9 Benchmark, docs and site
 
-- `eval/brasscribe_eval/arrange_bench.py`: `evaluate(comp, lineup=MINIMAL_BAND)`. It uses `lineup.lead` / `lineup.bass` in place of `:78-85`, and adds the quartet metrics (§4).
-- `eval/brasscribe_eval/suites.py:266-274,481`: the `arrange` suite adds `quartet.*` keys. A new `quartet-audio` suite runs on the cached fixtures (§4).
+- `eval/scribe_eval/arrange_bench.py`: `evaluate(comp, lineup=MINIMAL_BAND)`. It uses `lineup.lead` / `lineup.bass` in place of `:78-85`, and adds the quartet metrics (§4).
+- `eval/scribe_eval/suites.py:266-274,481`: the `arrange` suite adds `quartet.*` keys. A new `quartet-audio` suite runs on the cached fixtures (§4).
 - `eval/baselines.json:146-170`: the new keys
-- `eval/brasscribe_eval/difficulty_bench.py:33,103`: add `("quartet", QUARTET)` to the lineup loop
+- `eval/scribe_eval/difficulty_bench.py:33,103`: add `("quartet", QUARTET)` to the lineup loop
 - `docs/research/10-benchmark-results.md`: a "Quartet arrangement" section with the numbers
 - `music/README.md`, `core/README.md`, `eval/README.md`, `docs/plan/apps-plan.md`: mention the third lineup
 - `design/mockups/choose-output.html:42-43,74-75` and `design/mockups/png/choose-output-*.png`: third card
@@ -294,7 +294,7 @@ All three take the scope labels from the recorded lineup, not from fixed strings
 
 ## 4. Benchmark: ChoraleBricks brass4 as quartet ground truth
 
-The brass4 set (`eval/brasscribe_eval/choralebricks.py:17-18`) is 10 chorales: S = trumpet, A = flugelhorn, T = baritone, B = tuba. Their alto and tenor lines lie almost entirely inside the reading ranges of 2nd Cornet (55–79) and Tenor Horn (48–70). So the original voices can be compared with ours pitch for pitch, not only as pitch-class sets.
+The brass4 set (`eval/scribe_eval/choralebricks.py:17-18`) is 10 chorales: S = trumpet, A = flugelhorn, T = baritone, B = tuba. Their alto and tenor lines lie almost entirely inside the reading ranges of 2nd Cornet (55–79) and Tenor Horn (48–70). So the original voices can be compared with ours pitch for pitch, not only as pitch-class sets.
 
 **Symbolic** (in CI, no audio). Take `composition_from_reference` (`arrange_bench.py:39-51`) and hand the arranger A and T merged as one harmony stream, as today. Arrange for the quartet, then measure:
 
@@ -324,7 +324,7 @@ Other branches are changing the apps' connection and pairing UI and the engine's
 |---|---|---|
 | `apps/apple/Packages/BrasscribeKit/Sources/TranscriptionKit/CompanionService.swift` | `feat/apple-listen-stop-connection` (diff seen: +119 lines) | certain |
 | `engine/openapi.json`, `apps/android/engine-client/openapi.json`, `apps/windows/tests/.../Fixtures/openapi.json`, `studio/src/api/schema.d.ts` | `feat/engine-presence-status`, `feat/engine-device-pairing` | high: all regenerated. Regenerate after rebasing, don't merge them by hand. |
-| `engine/src/brasscribe_engine/api.py`, `schemas.py` | engine presence and pairing | medium (the quartet change to them is one line) |
+| `engine/src/scribe_engine/api.py`, `schemas.py` | engine presence and pairing | medium (the quartet change to them is one line) |
 | `apps/android/.../PlayViewModel.kt` | `feat/android-listen-stop-connection` | high |
 | `apps/windows/.../MainViewModel.cs`, `MainWindow.xaml.cs` | `feat/windows-listen-stop-connection`, `feat/bandroom-windows` | high |
 | string catalogs: Android `values*/strings.xml`, Apple `make-string-catalog.py` + `Localizable.xcstrings`, Windows `gen_resw.py` + `Resources.resw` | every app UI branch | high. Add strings at the end of each block and regenerate after rebasing. |
@@ -345,7 +345,7 @@ pixi run test                                                          # Python:
 export PATH=$HOME/.rustup/toolchains/stable-aarch64-apple-darwin/bin:$PATH
 (cd core && cargo test --release)                                      # Rust unit + reference fixtures
 (cd core/conformance && uv run python -m scribe_conformance.run)   # Python vs Rust, goldens
-pixi run bench-cpu                                                     # or: brasscribe bench ci --require-data
+pixi run bench-cpu                                                     # or: scribe bench ci --require-data
 ```
 
 1. **The lineup carries its roles (no behaviour change).**
@@ -367,7 +367,7 @@ pixi run bench-cpu                                                     # or: bra
    - Put the numbers in `baselines.json` and `10-benchmark-results.md`.
    - Tune the scoring order in `voice_satb` until it meets §3.8, and freeze it before porting.
 
-   *Done when:* `brasscribe bench ci --require-data` passes, with the new keys present.
+   *Done when:* `scribe bench ci --require-data` passes, with the new keys present.
 4. **Rust port and conformance.**
    - `quartet()`, `voice_satb`, the arranger, difficulty and `arrange_song` lineup, and the CLI `--lineup` for `layers` and `song`.
    - A `voice_satb.json` fixture.

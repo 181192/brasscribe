@@ -29,7 +29,7 @@ The script is idempotent. `--print-env` only prints the environment, `--no-core`
 core, and `--core host,apple` limits it to those components. It does four things:
 
 - Links `data/`, `models/` and `apps/apple/Frameworks` (Verovio) from the main checkout. It finds
-  the main checkout through `git worktree list` (`BRASSCRIBE_MAIN` overrides it). `BRASSCRIBE_REPO`
+  the main checkout through `git worktree list` (`SCRIBE_MAIN` overrides it). `SCRIBE_REPO`
   is set to the worktree itself, since the tests also look up tracked files through it.
 - Copies in the prebuilt Rust core with `scripts/core-artifacts.sh ensure`:
   - the host library in `core/target/release` and `core/dist/macos`
@@ -38,8 +38,8 @@ core, and `--core host,apple` limits it to those components. It does four things
   - `ScribeFFI.xcframework`
   - the Android `jniLibs`
 - Clones `studio/node_modules` from the main checkout when the lock files match.
-- Prints the environment, and writes it to `.scribe-env`: `BRASSCRIBE_REPO`, `SCRIBE_FFI_PATH`,
-  `SCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
+- Prints the environment, and writes it to `.scribe-env`: `SCRIBE_REPO`, `SCRIBE_FFI_PATH`,
+  `SCRIBE_CORE_CLI`, `SCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
   `PATH` with rustup and the Android tools.
   The tests of the native core skip themselves when they cannot find it, so `scripts/check.sh` refuses to run the
   `windows`, `core-dotnet` and `android` areas when `SCRIBE_FFI_PATH` is not set or names a file that is gone, and
@@ -56,7 +56,7 @@ core, and `--core host,apple` limits it to those components. It does four things
 - `rustc -vV`
 - the component's toolchain (Xcode, NDK, cargo-ndk)
 
-The first `ensure` after a core change builds the component into `~/.cache/brasscribe/core-artifacts`,
+The first `ensure` after a core change builds the component into `~/.cache/scribe/core-artifacts`,
 through one shared `CARGO_TARGET_DIR` under a lock. Every other checkout then gets an APFS clone in
 about a second. `apps/apple/scripts/build-core.sh` and `apps/android/scripts/build-core.sh` use the
 cache locally. CI, or `SCRIBE_NO_ARTIFACT_CACHE=1`, builds in `core/target` as before.
@@ -72,7 +72,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | engine | `pixi run test-fast` | tests marked `@pytest.mark.slow` |
 | engine, affected only | `pixi run test-affected` | tests the change cannot reach (pytest-testmon; the first run records `.testmondata`) |
 | core | `cd core && cargo test --profile fast` | nothing. The `fast` profile is release without LTO, with parallel and incremental codegen, in `target/fast` |
-| conformance | `scripts/check.sh fast conformance` | every case but Mikkel. With reference outputs from an earlier run in `core/target/conformance` made from the same Python sources (`music/src`, `eval/brasscribe_eval`, the conformance runner; a hash in `.python-reference-stamp`), it also skips the Python side and the extras (`--skip-python --no-extras`) |
+| conformance | `scripts/check.sh fast conformance` | every case but Mikkel. With reference outputs from an earlier run in `core/target/conformance` made from the same Python sources (`music/src`, `eval/scribe_eval`, the conformance runner; a hash in `.python-reference-stamp`), it also skips the Python side and the extras (`--skip-python --no-extras`) |
 | studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, e2e |
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
@@ -193,7 +193,7 @@ skipped, with a reason that says what is missing and how to get it:
 - Rust: a `SKIPPED` line on stderr
 
 If the counts show skips you did not expect, run `scripts/worktree-setup.sh`. With
-`BRASSCRIBE_REQUIRE_DATA=1`, which the setup exports when the data is there, the Rust golden tests
+`SCRIBE_REQUIRE_DATA=1`, which the setup exports when the data is there, the Rust golden tests
 fail instead of skipping.
 
 ## Tier 3: devices and UI
@@ -325,5 +325,5 @@ outputs. The first open of each one appears to be slowed by the endpoint scanner
 Collecting the engine tests takes 48 s the first time and 2 s after. Nearly all of the first run is
 spent in `open_code`, about 6 ms per file, while the CPU is almost idle.
 
-Excluding `~/.cache/brasscribe` and the worktree root from on-access scanning would probably remove
+Excluding `~/.cache/scribe` and the worktree root from on-access scanning would probably remove
 most of the remaining cold cost. That is an IT policy decision.

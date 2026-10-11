@@ -1,10 +1,10 @@
 import numpy as np
 
-from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.dynamics import layer_dynamics, mark_of
-from brasscribe_music.energy import Envelope
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import Composition, Dynamic, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.arranger import arrange_layers
+from scribe_music.dynamics import layer_dynamics, mark_of
+from scribe_music.energy import Envelope
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import Composition, Dynamic, KeySig, Meter, Note, Voice, VoiceRole
 
 SR = 1000
 

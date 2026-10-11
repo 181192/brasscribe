@@ -6,7 +6,7 @@ import Testing
 // MARK: pairing link
 
 @Test func pairingLinkFromTheEnginesPayload() throws {
-    // as engine/src/brasscribe_engine/companion.py pairing_uri writes it
+    // as engine/src/scribe_engine/companion.py pairing_uri writes it
     let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.168.0.20:8765,100.64.0.2:8765&code=482913"))
     #expect(link.version == 1)
     #expect(link.serverID == "srv-7f3a")

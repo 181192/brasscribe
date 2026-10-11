@@ -15,10 +15,10 @@ recording. The written solo line is scored against the part's annotation:
 
 The beats are those of solo_beats.py, one folder per checkpoint:
 
-    python -m brasscribe_eval.solo_beats --urmp <URMP Dataset> --choralebricks <ChoraleBricks audio> \\
+    python -m scribe_eval.solo_beats --urmp <URMP Dataset> --choralebricks <ChoraleBricks audio> \\
         --model small0 --out <data>/runs/music-core/solo-beats
-    python -m brasscribe_eval.solo_beats ... --model final0 --out <data>/runs/music-core/solo-beats-final0
-    python -m brasscribe_eval.solo_beat_model_bench [--data DIR] [--list]
+    python -m scribe_eval.solo_beats ... --model final0 --out <data>/runs/music-core/solo-beats-final0
+    python -m scribe_eval.solo_beat_model_bench [--data DIR] [--list]
 
 Only the beats differ between the two folders: the transcriptions and the references are the small0
 folder's.

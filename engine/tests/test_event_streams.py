@@ -8,8 +8,8 @@ from pathlib import Path
 import httpx
 import uvicorn
 
-from brasscribe_engine.api import create_app
-from brasscribe_engine.jobs import Job
+from scribe_engine.api import create_app
+from scribe_engine.jobs import Job
 
 STREAMS = 45  # more than the 40 threads Starlette runs sync endpoints on
 

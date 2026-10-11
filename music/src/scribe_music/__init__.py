@@ -1,2 +1,2 @@
 def hello() -> str:
-    return "Hello from brasscribe-music!"
+    return "Hello from scribe-music!"

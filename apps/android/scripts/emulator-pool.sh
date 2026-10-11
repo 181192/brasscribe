@@ -16,7 +16,7 @@
 # BRASSCRIBE_AVD=bc37 for Android 17; the copy is <avd>-pool) with -read-only, headless
 # (-no-window -no-audio), on an even console port from 5556 up. emulator-5554 is never touched:
 # that is the interactive one. At most $BRASSCRIBE_EMULATORS_MAX (default 4) run at once; each
-# takes about 4 GB. Leases live in ~/.cache/brasscribe/emulators/<serial>/ (mkdir is the lock).
+# takes about 4 GB. Leases live in ~/.cache/scribe/emulators/<serial>/ (mkdir is the lock).
 # A lease past its expiry, or whose emulator died, is reaped by the next acquire.
 #
 # The phone: after device tests, install the current debug build again (./gradlew installDebug)
@@ -30,7 +30,7 @@ AVD="${BRASSCRIBE_AVD:-bc36}"
 POOL_AVD="$AVD-pool"
 MAX="${BRASSCRIBE_EMULATORS_MAX:-4}"
 PHONE="${BRASSCRIBE_PHONE_SERIAL:-}"
-POOL="${BRASSCRIBE_CACHE:-$HOME/.cache/brasscribe}/emulators"
+POOL="${SCRIBE_CACHE:-$HOME/.cache/scribe}/emulators"
 BOOT_TIMEOUT="${BRASSCRIBE_EMULATOR_BOOT_TIMEOUT:-300}"
 mkdir -p "$POOL"
 

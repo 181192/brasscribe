@@ -17,7 +17,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "music" / "src"))
-from brasscribe_music.quantize import quantize  # noqa: E402
+from scribe_music.quantize import quantize  # noqa: E402
 
 CLI = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "core" / "target" / "release" / "scribe-core"
 LEAD = 1.0

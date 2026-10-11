@@ -4,23 +4,23 @@
 
 ## Reproducing these numbers
 
-**Regression suites.** `pixi run brasscribe bench <suite>` (or `all`, or `ci` for the subset that gates in CI) runs every benchmark below from cached model outputs and gates against `eval/baselines.json` (±0.01 F1 unless a metric says otherwise). `eval/README.md` lists which suites gate in CI and which need local data.
+**Regression suites.** `pixi run scribe bench <suite>` (or `all`, or `ci` for the subset that gates in CI) runs every benchmark below from cached model outputs and gates against `eval/baselines.json` (±0.01 F1 unless a metric says otherwise). `eval/README.md` lists which suites gate in CI and which need local data.
 
-Individual benchmarks run from `eval/` with `uv run python -W ignore -m <module> ...`. Eval sets live in `data/eval/`; they are built by `brasscribe_eval.choralebricks`, `.urmp` and `.slakh` from the downloaded datasets.
+Individual benchmarks run from `eval/` with `uv run python -W ignore -m <module> ...`. Eval sets live in `data/eval/`; they are built by `scribe_eval.choralebricks`, `.urmp` and `.slakh` from the downloaded datasets.
 
 **From committed commands:**
 
 | Result | Command |
 |---|---|
-| Transcription per model (chorales, URMP, Slakh) | `brasscribe_eval.bench <eval_dir> <adapter run.sh> --name <label>` |
+| Transcription per model (chorales, URMP, Slakh) | `scribe_eval.bench <eval_dir> <adapter run.sh> --name <label>` |
 | Pipeline B (separate → transcribe) | `bench ... ../ml/pipelines/separate_transcribe.sh` |
-| Consensus sweeps | `brasscribe_eval.consensus_bench <eval_dir> label=file.mid[:split] ...` |
-| Rhythm / quantization | `brasscribe_eval.quant_bench <eval_dir> [--beats reference] [--source file.mid]` |
-| Melody line | `brasscribe_eval.melody_bench` |
-| Solo three-way vote | `brasscribe_eval.solo_vote_bench` (needs `data/mega53-out-bench`, made with `ml/adapters/mega53/run.sh` on each mix) |
-| Arrangement on ground truth | `brasscribe_eval.arrange_bench <eval_dir>` |
-| MuseScore round trip | `brasscribe_eval.musescore_roundtrip <musicxml> <composition.json>` |
-| Mikkel end to end | `brasscribe_eval.song_pipeline data/mikkel/mikkel.wav --out <dir>`. The golden output is in `data/golden/mikkel-arranged-band/`. A fresh run reproduced all 18 parts note for note. Upstream orchestra-hit detection varied slightly between runs (2 184 vs 2 212 notes), and the harmony reduction absorbed it |
+| Consensus sweeps | `scribe_eval.consensus_bench <eval_dir> label=file.mid[:split] ...` |
+| Rhythm / quantization | `scribe_eval.quant_bench <eval_dir> [--beats reference] [--source file.mid]` |
+| Melody line | `scribe_eval.melody_bench` |
+| Solo three-way vote | `scribe_eval.solo_vote_bench` (needs `data/mega53-out-bench`, made with `ml/adapters/mega53/run.sh` on each mix) |
+| Arrangement on ground truth | `scribe_eval.arrange_bench <eval_dir>` |
+| MuseScore round trip | `scribe_eval.musescore_roundtrip <musicxml> <composition.json>` |
+| Mikkel end to end | `scribe_eval.song_pipeline data/mikkel/mikkel.wav --out <dir>`. The golden output is in `data/golden/mikkel-arranged-band/`. A fresh run reproduced all 18 parts note for note. Upstream orchestra-hit detection varied slightly between runs (2 184 vs 2 212 notes), and the harmony reduction absorbed it |
 
 **One-off measurements.** These were made with inline scripts during research and not committed. Treat them as findings to re-derive, not as regression baselines:
 - pitch-spelling accuracy (ps13 99.9%)
@@ -36,15 +36,15 @@ Individual benchmarks run from `eval/` with `uv run python -W ignore -m <module>
 
 ## Setup
 
-- **Eval set: `choralebricks-brass4`.** Built by `eval/brasscribe_eval/choralebricks.py`.
+- **Eval set: `choralebricks-brass4`.** Built by `eval/scribe_eval/choralebricks.py`.
   - 10 ChoraleBricks v1.1.0 chorales, each a mono mix of four isolated real recordings.
   - Parts: S = trumpet (cornet proxy), A = flugelhorn, T = baritone, B = tuba.
   - Ground truth: per-part note CSVs with audio-aligned onset/offset and sounding pitch; 1 887 notes total.
-- **Metrics:** `eval/brasscribe_eval/score.py`, mir_eval, 50 ms onset tolerance.
+- **Metrics:** `eval/scribe_eval/score.py`, mir_eval, 50 ms onset tolerance.
   - Instrument-agnostic onset F1 and onset+offset F1.
   - Octave-error rate: an unmatched reference note with an estimate ±12/24 semitones away at the same onset.
   - Per-part recall.
-- **Runner:** `eval/brasscribe_eval/bench.py <eval_dir> <adapter run.sh> --name <label>`.
+- **Runner:** `eval/scribe_eval/bench.py <eval_dir> <adapter run.sh> --name <label>`.
 - **Machine:** M5 Pro, 48 GB. Runtime is wall-clock per song, including model load (songs are 15–60 s).
 
 ## Results (mean over 10 chorales)
@@ -80,7 +80,7 @@ Individual benchmarks run from `eval/` with `uv run python -W ignore -m <module>
 
 ## Song benchmark: Slakh trumpet-lead tracks
 
-Mikkel has no ground truth, so it is the end-to-end test only. The song-level benchmark is `slakh-trumpet`, built by `eval/brasscribe_eval/slakh.py`:
+Mikkel has no ground truth, so it is the end-to-end test only. The song-level benchmark is `slakh-trumpet`, built by `eval/scribe_eval/slakh.py`:
 - **BabySlakh Track00006** (241 s): trumpet melody, 2× string ensemble, French horn, trombone, fretless bass, drums, EP, guitars. The closest Mikkel-like texture available with exact notes.
 - **Track00014** (269 s): trumpet lead with band.
 - Each has `mix.wav` (16 kHz), per-stem MIDI ground truth, and `score.musicxml` (MuseScore conversion of the MIDI).
@@ -133,7 +133,7 @@ Corrected results (100 ms):
 | **B: SW → MuScriptor per stem** | **0.70** | .79 / .69 | .96 / .93 |
 | B: SW → Basic Pitch per stem | 0.56 | .87 / .68 | .91 / .84 |
 
-### Consensus (`eval/brasscribe_eval/consensus.py`, `consensus_bench.py`)
+### Consensus (`eval/scribe_eval/consensus.py`, `consensus_bench.py`)
 
 **Method:**
 - Notes from all sources are clustered on equal pitch with onsets within 100 ms.
@@ -162,12 +162,12 @@ Corrected results (100 ms):
 - Slakh MIDI is largely *unquantized*. It is live-played Lakh MIDI: only 12–25% of Track00014's trumpet onsets sit on any 1/4–1/12 grid. So it cannot serve as notation ground truth.
 - The ChoraleBricks alignments pair every performed note with its notated position (`start_quarter`, `dur_quarter`, time signature). `choralebricks.py` stores these in `reference.json`.
 
-**Method.** `music/src/brasscribe_music/quantize.py`:
+**Method.** `music/src/scribe_music/quantize.py`:
 - Warp times onto the beat grid, piecewise linear.
 - Per beat, pick the subdivision in {1, 2, 4, 3, 6} that minimizes squared snap error plus a complexity penalty.
 - 24 ticks per beat.
 
-`eval/brasscribe_eval/quant_bench.py` scores:
+`eval/scribe_eval/quant_bench.py` scores:
 - position (exact notated position, after an integer beat-offset alignment)
 - subdivision (position within the beat)
 - duration.
@@ -208,7 +208,7 @@ Corrected results (100 ms):
 
 ## URMP brass (real recordings)
 
-**Set.** `urmp-brass`, built by `eval/brasscribe_eval/urmp.py`: 8 brass-only URMP pieces, 5 129 notes.
+**Set.** `urmp-brass`, built by `eval/scribe_eval/urmp.py`: 8 brass-only URMP pieces, 5 129 notes.
 - Pieces: Entertainer, Air on the G String, Surprise, Slavonic Dance, Für Elise, Art of the Fugue, Arioso, Chorale (quintet).
 - Meters: 4/4, 2/4, 3/4, 6/8, 2/2.
 - Performed notes come from the per-track annotations.
@@ -245,8 +245,8 @@ Corrected results (100 ms):
 ## Basic Pitch on the recording retuned to A = 440
 
 The brass-band profile retunes the recording to A = 440 before Basic Pitch when it sits 5 cents or more off
-(`engine/src/brasscribe_engine/tuning.py`). `basic-pitch-retuned.mid` is that output for the 10 chorales, which sit
-−1 to +17 cents from A = 440 (9 of the 10 are retuned). `brasscribe bench chorales-transcription --mode live`
+(`engine/src/scribe_engine/tuning.py`). `basic-pitch-retuned.mid` is that output for the 10 chorales, which sit
+−1 to +17 cents from A = 440 (9 of the 10 are retuned). `scribe bench chorales-transcription --mode live`
 writes a missing one the same way.
 
 | Chorales (mean over 10) | Basic Pitch | Basic Pitch, retuned |
@@ -262,7 +262,7 @@ alto pitch-class recall 0.534 → 0.537, tenor 0.426 → 0.439, bass kept 0.922 
 
 ## Notation: spelling, durations, melody line
 
-**Pitch spelling (`music/src/brasscribe_music/spelling.py`).**
+**Pitch spelling (`music/src/scribe_music/spelling.py`).**
 - partitura's ps13s1 runs on the whole ensemble at concert pitch.
 - Ground truth is `pitch_written_name` in the ChoraleBricks alignments. `pitch_name` there is naive MIDI naming, not the score's spelling.
 - Accuracy: **99.9%** (2 errors in 1 887), against 99.1% for naive sharp naming.
@@ -284,7 +284,7 @@ These figures came from an uncommitted script. The committed `duration_bench` (w
 - The dominant remaining error on URMP is 899 notes where the score has an 8th plus an 8th rest and we write a quarter (staccato themes in Surprise and Slavonic).
 - That is a notation choice audio cannot settle. It should become staccato marks when the performed length is under half the written one.
 
-**Melody line (`eval/brasscribe_eval/melody_bench.py`).**
+**Melody line (`eval/scribe_eval/melody_bench.py`).**
 - Cases: Slakh trumpet, URMP track 1, chorale soprano. Metric: onset F1 at 100 ms.
 
 | Candidates → top line | Slakh | URMP | Chorales | mean |
@@ -301,7 +301,7 @@ These figures came from an uncommitted script. The committed `duration_bench` (w
 ## Arrangement (Milestone 7, minimal band)
 
 **Pipeline:**
-- `music/src/brasscribe_music/score_model.py`: the canonical Composition (concert pitch, ticks, voices tagged by role, confidence and sources). It is the only thing the arranger reads.
+- `music/src/scribe_music/score_model.py`: the canonical Composition (concert pitch, ticks, voices tagged by role, confidence and sources). It is the only thing the arranger reads.
 - `arranger.py`: melody → Solo Cornet (octave chosen per phrase); bass → E♭ Bass (lowest comfortable octave) with B♭ Bass an octave lower where comfortable; inner parts voiced greedily per harmony slot.
 - `harmony.py`: dense accompaniment → per-beat pitch-class sets.
 - `musicxml.build_band_score`: transposing parts, converted to written pitch once at export.
@@ -311,7 +311,7 @@ These figures came from an uncommitted script. The committed `duration_bench` (w
 - Export → re-import → sounding pitch equals the arranger's concert pitches in every part.
 - In concert F, B♭ parts read G major and E♭ parts D major.
 
-**Ground-truth benchmark (`eval/brasscribe_eval/arrange_bench.py`, no audio):**
+**Ground-truth benchmark (`eval/scribe_eval/arrange_bench.py`, no audio):**
 
 | Set | melody kept | bass kept | harmony fidelity | impossible | uncomfortable / piece | crossings |
 |---|---|---|---|---|---|---|
@@ -325,7 +325,7 @@ These figures came from an uncommitted script. The committed `duration_bench` (w
 - B♭ Bass pedal notes are no longer used by default.
 - URMP's 23/24-beat MIDI durations produced 64th rests and 12:11 tuplets that MuseScore rejects. Tiny gaps are now held, and ends are snapped to notatable positions.
 
-**MuseScore gate (`eval/brasscribe_eval/musescore_roundtrip.py`).**
+**MuseScore gate (`eval/scribe_eval/musescore_roundtrip.py`).**
 - The check re-exports through the MuseScore CLI, re-imports, collapses ties and compares sounding pitch per part.
 - Mikkel: **all 8 parts match** the arranger's concert pitches.
 - MuseScore assigns brass.cornet / flugelhorn / alto-horn / trombone / euphonium / tuba.
@@ -373,7 +373,7 @@ A slot with no legal pair falls back to the band voicer and is reported in the w
 
 Parallels must come before doubling: with doubling first the voicer happily moves in octaves with the bass. The remaining misses are mostly alto and tenor swapping the same two pitch classes, and passing tones the chorales' composers resolve differently (only one of the ten chorales is by Bach); the voicer cannot tell those apart from pitch classes alone. **`alto_recall_pc` ≥ 0.85 (plan §3.8) is not reached**; the baseline is set at the measured 0.80.
 
-**Symbolic benchmark (`brasscribe bench arrange`, keys `quartet.*`, `quartet-standard.*`, `quartet-easier.*`):**
+**Symbolic benchmark (`scribe bench arrange`, keys `quartet.*`, `quartet-standard.*`, `quartet-easier.*`):**
 
 | Chorales (10) | melody kept | bass kept | harmony fidelity | alto recall exact / pc | tenor recall exact / pc | parallels / 100 | spacing faults | crossings | impossible | uncomfortable |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -384,7 +384,7 @@ Parallels must come before doubling: with doubling first the voicer happily move
 
 The chorale bass (tuba, mean MIDI 38, lowest 28) is below the Euphonium's reading floor (40), so every chorale moves up an octave as a whole phrase. Tenor over bass still holds everywhere.
 
-**From recordings (`brasscribe bench quartet-audio`):** cached transcriptions of the ChoraleBricks recordings through `arrange_song --lineup quartet`, scored in seconds against the chorale (pitch class sounding 50 ms after each reference attack).
+**From recordings (`scribe bench quartet-audio`):** cached transcriptions of the ChoraleBricks recordings through `arrange_song --lineup quartet`, scored in seconds against the chorale (pitch class sounding 50 ms after each reference attack).
 
 | Source | melody kept | bass kept | alto recall (pc) | tenor recall (pc) | parallels / 100 | spacing faults | impossible | uncomfortable |
 |---|---|---|---|---|---|---|---|---|
@@ -405,7 +405,7 @@ Faithful keeps every transcribed note, so it keeps the solo's uncomfortable note
 
 ## Solo line: three-way vote (MuScriptor, Basic Pitch, SwiftF0)
 
-**Setup.** `eval/brasscribe_eval/solo_vote_bench.py`.
+**Setup.** `eval/scribe_eval/solo_vote_bench.py`.
 - Solo stems separated with Mega-53 from mixes with a known solo part: 10 ChoraleBricks brass quartets (trumpet = soprano) and Slakh T06/T14.
 - Each source is reduced to one line.
 - Notes are clustered across sources at 100 ms.
@@ -440,7 +440,7 @@ Faithful keeps every transcribed note, so it keeps the solo's uncomfortable note
 
 ## Free time (rubato)
 
-`music/src/brasscribe_music/freetime.py`; benchmark `brasscribe_eval.freetime_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4`.
+`music/src/scribe_music/freetime.py`; benchmark `scribe_eval.freetime_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4`.
 - Detection: runs of ≥ 3 beat intervals and ≥ 4 s that match neither the piece's beat nor its double, half or split, with spread ≥ 0.2 of the mean interval.
 - Fires on 1 of 18 eval pieces (Air on the G String, 169.6–181.1 s, a ritardando into a 4.5 s hold). Strict-passage position / subdivision / duration change by 0.000 on every piece (mean 0.474 / 0.886 / 0.627 in both runs).
 - Mikkel: 0.03–29.76 s detected, notated as 7 bars *ad lib.* at ♩≈57. Solo Cornet 16ths in the intro fall from 30.8% to 5.6% (`qa/tools/musicxml_readability.py --range`).
@@ -448,7 +448,7 @@ Faithful keeps every transcribed note, so it keeps the solo's uncomfortable note
 
 ## Durations from audio
 
-`music/src/brasscribe_music/durations.py`; benchmark `brasscribe_eval.duration_bench <eval_dir> [--contours <dir>]`.
+`music/src/scribe_music/durations.py`; benchmark `scribe_eval.duration_bench <eval_dir> [--contours <dir>]`.
 
 | Offsets | URMP: fill ≤ 8th → new rule | Chorales: fill ≤ 8th → new rule |
 |---|---|---|
@@ -461,7 +461,7 @@ Faithful keeps every transcribed note, so it keeps the solo's uncomfortable note
 
 ## Bar-line cleanup
 
-`beats.clean_beats_gated`; benchmark `brasscribe_eval.barline_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4`. The cleanup is applied only when the tracker's own downbeat labels agree better afterwards (by ≥ 0.02), or on one-beat-per-bar tracks with ≥ 3 edits.
+`beats.clean_beats_gated`; benchmark `scribe_eval.barline_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4`. The cleanup is applied only when the tracker's own downbeat labels agree better afterwards (by ≥ 0.02), or on one-beat-per-bar tracks with ≥ 3 edits.
 
 | Beats | Position | Subdivision | Duration | Drift events |
 |---|---|---|---|---|
@@ -472,7 +472,7 @@ Changed pieces all improve (Entertainer position 0.48 → 0.90, Air 0.07 → 0.3
 
 ## Difficulty modes and lineups
 
-`music/src/brasscribe_music/difficulty.py`; benchmark `brasscribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass --mikkel ../data/golden/mikkel-arranged-band/composition.json`. Faithful at default options stays identical to the golden output. Rerun 2026-09-29 on the fast-notes golden: faithful writes the solo's fast notes as played, so its solo 16ths rose from 38.8 % to 66.6 % (the bench counts the solo layer; the readability tool's Solo Cornet part is 63.6 %), and standard and easier now keep less of the melody than before.
+`music/src/scribe_music/difficulty.py`; benchmark `scribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass --mikkel ../data/golden/mikkel-arranged-band/composition.json`. Faithful at default options stays identical to the golden output. Rerun 2026-09-29 on the fast-notes golden: faithful writes the solo's fast notes as played, so its solo 16ths rose from 38.8 % to 66.6 % (the bench counts the solo layer; the readability tool's Solo Cornet part is 63.6 %), and standard and easier now keep less of the melody than before.
 
 | Mikkel, full band | Solo / other 16ths | Uncomfortable | Harmony fidelity | Melody kept | Contour | Key changes |
 |---|---|---|---|---|---|---|
@@ -485,7 +485,7 @@ Open: large transpositions put the basses on ledger lines (E♭ Bass with 3+ led
 
 ## Readability (Mikkel)
 
-`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json` (the baseline is the tool's `--json` output for the golden). Solo Cornet, from the first golden to the current one: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5 % → 6.7 %; 16ths 40.2 % → 63.6 %. The 16ths rose with the fast-notes golden (2026-09-29), which writes the solo's fast notes as played; the faithful Solo Cornet gate is 65 % 16ths (`FAITHFUL_LIMITS` in `eval/brasscribe_eval/suites.py`), and every other threshold is unchanged. Whole score: dynamics 0 → 209, rehearsal marks 0 → 11, key changes 0 → 8.
+`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json` (the baseline is the tool's `--json` output for the golden). Solo Cornet, from the first golden to the current one: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5 % → 6.7 %; 16ths 40.2 % → 63.6 %. The 16ths rose with the fast-notes golden (2026-09-29), which writes the solo's fast notes as played; the faithful Solo Cornet gate is 65 % 16ths (`FAITHFUL_LIMITS` in `eval/scribe_eval/suites.py`), and every other threshold is unchanged. Whole score: dynamics 0 → 209, rehearsal marks 0 → 11, key changes 0 → 8.
 
 ## Rust core conformance
 

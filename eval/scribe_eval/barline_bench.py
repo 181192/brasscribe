@@ -1,4 +1,4 @@
-"""Bar-line robustness: quant_bench metrics with the tracked beats raw vs cleaned (brasscribe_music.beats).
+"""Bar-line robustness: quant_bench metrics with the tracked beats raw vs cleaned (scribe_music.beats).
 
 Missed and inserted beats shift every later note by a beat, which the
 position metric (one integer beat shift per piece) counts as wrong. Cleaning
@@ -8,7 +8,7 @@ Because one global shift makes position accuracy swing on a single beat
 error, the bench also counts drift events: along the piece, the beat offset
 between our position and the score's (median over 9 notes) changes.
 
-    uv run python -W ignore -m brasscribe_eval.barline_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4
+    uv run python -W ignore -m scribe_eval.barline_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4
 """
 
 from __future__ import annotations
@@ -19,10 +19,10 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.beats import clean_beats_gated
-from brasscribe_music.freetime import unstable_runs
+from scribe_music.beats import clean_beats_gated
+from scribe_music.freetime import unstable_runs
 
-from brasscribe_music.quantize import TICKS_PER_BEAT, quantize
+from scribe_music.quantize import TICKS_PER_BEAT, quantize
 
 from .quant_bench import evaluate
 from .score import load_notes

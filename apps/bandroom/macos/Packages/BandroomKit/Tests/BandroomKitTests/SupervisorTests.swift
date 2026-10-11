@@ -157,13 +157,13 @@ import Testing
         #expect(sup.phase == .running)
         #expect(healthy)
         let plan = try #require(launcher.launched.first)
-        #expect(Array(plan.arguments.suffix(5)) == ["brasscribe", "serve", "--lan", "--port", "8765"])
+        #expect(Array(plan.arguments.suffix(5)) == ["scribe", "serve", "--lan", "--port", "8765"])
         #expect(plan.arguments.contains("--frozen"))
-        #expect(plan.environment["BRASSCRIBE_ADMIN_TOKEN"] == "secret")
-        #expect(plan.environment["BRASSCRIBE_COMPUTER_NAME"] == "Kari's MacBook")
+        #expect(plan.environment["SCRIBE_ADMIN_TOKEN"] == "secret")
+        #expect(plan.environment["SCRIBE_COMPUTER_NAME"] == "Kari's MacBook")
         #expect(plan.environment["PATH"]?.hasPrefix("/usr/bin") == true)
-        #expect(plan.environment["BRASSCRIBE_TOKEN"] == nil)
-        #expect(plan.environment["BRASSCRIBE_BAND_SOUNDS_DIR"] == nil)
+        #expect(plan.environment["SCRIBE_TOKEN"] == nil)
+        #expect(plan.environment["SCRIBE_BAND_SOUNDS_DIR"] == nil)
         let file = try #require(EngineStatusFile.read(statusFile))
         #expect(file.port == 8765)
         #expect(file.serverId == engine.healthValue.serverId)
@@ -298,7 +298,7 @@ import Testing
         let checkout = root.appending(path: "checkout", directoryHint: .isDirectory)
         func engineModels(_ source: EngineSource) -> String? {
             EngineConfiguration(source: source, pixi: nil, paths: paths, computerName: "Mac", adminToken: "t")
-                .environment(base: [:])["BRASSCRIBE_MODELS"]
+                .environment(base: [:])["SCRIBE_MODELS"]
         }
         // A checkout, and no models in the data folder: the checkout's.
         #expect(EngineSource.checkout(checkout).modelsFolder(paths: paths).path == checkout.appending(path: "models").path)
@@ -328,7 +328,7 @@ import Testing
         let paths = BandroomPaths(data: resources.appending(path: "data"), logs: resources.appending(path: "logs"))
         let config = EngineConfiguration(source: .checkout(resources), pixi: nil, paths: paths, computerName: "Mac",
                                          adminToken: "secret", bandSounds: found)
-        #expect(config.environment(base: [:])["BRASSCRIBE_BAND_SOUNDS_DIR"] == band.path)
+        #expect(config.environment(base: [:])["SCRIBE_BAND_SOUNDS_DIR"] == band.path)
     }
 }
 

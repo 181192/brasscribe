@@ -1,6 +1,6 @@
 """HTTP service: Studio (browser, same machine) and companion mode for the native Play apps.
 
-Clients on the loopback interface are trusted (BRASSCRIBE_TRUST_LOCAL, on by
+Clients on the loopback interface are trusted (SCRIBE_TRUST_LOCAL, on by
 default). Any other client pairs once: `POST /v1/pair` with the code the engine
 shows returns that device's own bearer token, and every other request carries
 `Authorization: Bearer <token>`. The token survives engine restarts and address
@@ -9,7 +9,7 @@ changes; every authenticated request marks the device as seen, which is what
 
 The owner manages devices on the computer (`/v1/status`, `/v1/devices`,
 `/v1/pairing*`). Those endpoints trust loopback only while no admin token is
-configured; with BRASSCRIBE_ADMIN_TOKEN (or _FILE) set they require
+configured; with SCRIBE_ADMIN_TOKEN (or _FILE) set they require
 `Authorization: Bearer <admin token>`, because a proxy on the same machine makes
 remote traffic look local. See companion.py, config.py and
 docs/plan/pairing-and-remote-access.md.
@@ -54,7 +54,7 @@ LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 STUDIO_CACHE = "no-cache"
 BAND_SOUNDS_CACHE = "public, max-age=86400"
 STATIC = Path(__file__).resolve().parent / "static"
-BAND_SOUND_FILES = ("brasscribe-band.sf2", "mapping.json")  # what Studio needs from BRASSCRIBE_BAND_SOUNDS_DIR
+BAND_SOUND_FILES = ("brasscribe-band.sf2", "mapping.json")  # what Studio needs from SCRIBE_BAND_SOUNDS_DIR
 HEARTBEAT_S = 15.0
 # Event streams wait on their job in threads of their own: in the shared pool (40 threads) forty open
 # streams would leave no thread for any other request.
@@ -94,7 +94,7 @@ class CachedStaticFiles(StaticFiles):
 
 
 def create_app(settings: Settings | None = None, *, trust_loopback: bool | None = None, workers: int = 1) -> FastAPI:
-    """`trust_loopback` overrides settings.trust_local (BRASSCRIBE_TRUST_LOCAL)."""
+    """`trust_loopback` overrides settings.trust_local (SCRIBE_TRUST_LOCAL)."""
     settings = (settings or Settings()).ensure()
 
     @asynccontextmanager
@@ -106,7 +106,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     app = FastAPI(
         lifespan=lifespan,
-        title="brasscribe engine",
+        title="scribe engine",
         version=__version__,
         description="Recording in, brass-band score out. Jobs run a profile's stage DAG with a content-addressed "
                     "cache; progress streams as Server-Sent Events. Loopback clients are trusted; LAN clients pair "
@@ -127,7 +127,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     # computer (POST /v1/pairing) is single-use and expires.
     app.state.pairing = PairingWindow()
     app.state.pair_requests = PairRequests()
-    app.state.hosts = []  # ip:port the engine is reachable on; set by `brasscribe serve`
+    app.state.hosts = []  # ip:port the engine is reachable on; set by `scribe serve`
 
     def trusted_address(host: str) -> bool:
         return app.state.trust_loopback and host in LOOPBACK | {"testclient"}
@@ -431,7 +431,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     def input_allowed(p: Path, anywhere: bool = False) -> bool:
         """Jobs read audio (or video) from the engine's own audio folders: uploads, captures and eval sets.
-        `anywhere`: an existing run's input may lie elsewhere (`brasscribe run <file>`), for the owner."""
+        `anywhere`: an existing run's input may lie elsewhere (`scribe run <file>`), for the owner."""
         roots = (settings.uploads_dir, settings.data_dir / "captures", settings.datasets_dir)
         return is_audio(p) and (anywhere or any(inspection.inside(r, p) for r in roots)) and p.is_file()
 
@@ -754,7 +754,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.get("/v1/suites", response_model=list[m.SuiteInfo], operation_id="listSuites", tags=["benchmarks"],
              dependencies=[Depends(auth)])
     def list_suites() -> list[m.SuiteInfo]:
-        from brasscribe_eval import suites
+        from scribe_eval import suites
 
         return [m.SuiteInfo(name=s.name, description=s.description, cpu=s.cpu, requires=list(s.requires))
                 for s in suites.SUITES.values()]
@@ -763,7 +763,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
               dependencies=[Depends(auth)])
     def run_suite(name: str, mode: str = Query("cached", pattern="^(cached|live)$")) -> m.BenchRun:
         """Run a suite or group (cpu, all) against eval/baselines.json; the result is stored in the history."""
-        from brasscribe_eval import suites
+        from scribe_eval import suites
 
         if name not in suites.SUITES and name not in suites.GROUPS:
             raise HTTPException(404, f"no suite {name}")
@@ -774,7 +774,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              tags=["benchmarks"], dependencies=[Depends(auth)])
     def suite_history(request: Request, suite: str | None = Query(None, description="only results of this suite"),
                       limit: int = Query(1000, ge=1, le=10000)) -> list[m.SuiteHistoryEntry]:
-        """Every stored suite result, newest first (from `brasscribe bench` and runSuite)."""
+        """Every stored suite result, newest first (from `scribe bench` and runSuite)."""
         rows = history.entries(settings, suite, limit)
         if is_device(request):
             rows = [{**r, "manifest": shown_path(r["manifest"])} for r in rows]
@@ -911,8 +911,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              tags=["results"], dependencies=[Depends(auth)])
     def get_part_sources(job_id: str) -> m.PartSources:
         """Where each part comes from: the player's own recording, the recording, or arranged from the harmony."""
-        from brasscribe_music.arranger import part_sources
-        from brasscribe_music.score_model import Composition
+        from scribe_music.arranger import part_sources
+        from scribe_music.score_model import Composition
 
         comp = jobs.run_dir(job_or_404(job_id).id) / "outputs" / "composition.json"
         if not comp.exists():
@@ -967,14 +967,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     @app.get("/v1/parity", response_model=list[m.Manifest], operation_id="listParityReports", tags=["inspection"],
              dependencies=[Depends(auth)])
     def list_parity() -> list[dict]:
-        """Model-conversion parity reports as written (every *.json in BRASSCRIBE_PARITY_REPORTS), plus `_file`."""
+        """Model-conversion parity reports as written (every *.json in SCRIBE_PARITY_REPORTS), plus `_file`."""
         return history.reports(settings.parity_reports_dir)
 
     @app.get("/v1/conformance", response_model=list[m.Manifest], operation_id="listConformanceReports",
              tags=["inspection"], dependencies=[Depends(auth)])
     def list_conformance(all: bool = Query(False, description="every JSON file of the run (large: each case's "
                                                                   "outputs), not only the summary reports")) -> list[dict]:
-        """Rust-core conformance summary: every report.json in BRASSCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
+        """Rust-core conformance summary: every report.json in SCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
 
         An empty list means no report yet (run `scribe_conformance.run`, or runConformance)."""
         root = settings.conformance_reports_dir

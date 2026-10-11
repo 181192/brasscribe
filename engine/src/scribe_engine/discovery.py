@@ -3,9 +3,9 @@
 The advertisement says where the engine is and which engine it is (`id`, the stable server id), so a paired
 client can find its engine again after the address or port changes. Clients still pair before they are trusted.
 
-The display name is "Brasscribe on <computer>". <computer> is BRASSCRIBE_COMPUTER_NAME when set (the desktop
+The display name is "Brasscribe on <computer>". <computer> is SCRIBE_COMPUTER_NAME when set (the desktop
 helper passes the user-visible name: macOS ComputerName, the Windows device name), else the operating system's
-computer name (macOS `scutil --get ComputerName`), else the short host name. BRASSCRIBE_SERVER_NAME replaces
+computer name (macOS `scutil --get ComputerName`), else the short host name. SCRIBE_SERVER_NAME replaces
 the whole display name. /v1/health, the pairing response and the pairing payload use the same name.
 The TXT record carries it as `host`, so apps can localise the label ("Brasscribe på <computer>"); the mDNS
 instance name may gain a " (2)" suffix on collision, so apps show `host`, not the instance name.
@@ -70,22 +70,22 @@ def _fit(text: str, room: int) -> str:
 def computer_name(hostname: str | None = None) -> str:
     """The name people know the computer by, cut so "Brasscribe on <name>" fits one DNS label (63 bytes).
 
-    BRASSCRIBE_COMPUTER_NAME, else the operating system's computer name, else the short host name. With an
+    SCRIBE_COMPUTER_NAME, else the operating system's computer name, else the short host name. With an
     explicit `hostname`, only that is used."""
     from .companion import clean_name
 
     raw = ""
     if hostname is None:
-        raw = os.environ.get("BRASSCRIBE_COMPUTER_NAME", "").strip() or os_computer_name() or ""
+        raw = os.environ.get("SCRIBE_COMPUTER_NAME", "").strip() or os_computer_name() or ""
     name = clean_name(raw.replace(".", " "), fallback="") if raw else (hostname or socket.gethostname()).split(".")[0]
     return _fit(name, INSTANCE_MAX_BYTES - len(PREFIX.encode())) or host_label(hostname)
 
 
 def server_names(hostname: str | None = None) -> tuple[str, str]:
     """(server name, computer name part). The server name is "Brasscribe on <computer>" unless
-    BRASSCRIBE_SERVER_NAME replaces it whole; the part is what follows "Brasscribe on ", or the whole
+    SCRIBE_SERVER_NAME replaces it whole; the part is what follows "Brasscribe on ", or the whole
     override when it has no such prefix. Both fit one DNS label, so the mDNS instance name is the same."""
-    override = os.environ.get("BRASSCRIBE_SERVER_NAME", "").strip() if hostname is None else ""
+    override = os.environ.get("SCRIBE_SERVER_NAME", "").strip() if hostname is None else ""
     if override:
         from .companion import clean_name
 

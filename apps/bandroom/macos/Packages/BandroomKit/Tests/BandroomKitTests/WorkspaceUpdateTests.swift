@@ -19,9 +19,9 @@ import Testing
     private func bundle(in root: URL, name: String = "bundle", studio: String, lock: String = "version: 6\n",
                         stamped: Bool = true) throws -> URL {
         let b = root.appending(path: name, directoryHint: .isDirectory)
-        try write("[workspace]\nname = \"brasscribe\"\n", b.appending(path: "pixi.toml"))
+        try write("[workspace]\nname = \"scribe\"\n", b.appending(path: "pixi.toml"))
         try write(lock, b.appending(path: "pixi.lock"))
-        try write(studio, b.appending(path: "engine/src/brasscribe_engine/static/assets/studio.js"))
+        try write(studio, b.appending(path: "engine/src/scribe_engine/static/assets/studio.js"))
         try write("# music\n", b.appending(path: "music/src/music.py"))
         try write("# adapters\n", b.appending(path: "ml/adapters/run_adapter.py"))
         if stamped {
@@ -36,7 +36,7 @@ import Testing
     private func installed(from bundle: URL, root: URL) throws -> URL {
         let ws = root.appending(path: "data/envs", directoryHint: .isDirectory)
         try WorkspaceSwap.install(from: bundle, into: ws).commit()
-        try write("#!/bin/sh\n", ws.appending(path: ".pixi/envs/default/bin/brasscribe"))
+        try write("#!/bin/sh\n", ws.appending(path: ".pixi/envs/default/bin/scribe"))
         try write("keep me", ws.appending(path: "notes.txt"))
         try write("{\"devices\": []}", root.appending(path: "data/companion/devices.json"))
         try write("weights", root.appending(path: "data/models/mega53/model.ckpt"))
@@ -44,11 +44,11 @@ import Testing
     }
 
     private func studio(_ ws: URL) -> String? {
-        read(ws.appending(path: "engine/src/brasscribe_engine/static/assets/studio.js"))
+        read(ws.appending(path: "engine/src/scribe_engine/static/assets/studio.js"))
     }
 
     private func userDataIsIntact(_ ws: URL, root: URL) {
-        #expect(read(ws.appending(path: ".pixi/envs/default/bin/brasscribe")) == "#!/bin/sh\n")
+        #expect(read(ws.appending(path: ".pixi/envs/default/bin/scribe")) == "#!/bin/sh\n")
         #expect(read(ws.appending(path: "notes.txt")) == "keep me")
         #expect(read(root.appending(path: "data/companion/devices.json")) == "{\"devices\": []}")
         #expect(read(root.appending(path: "data/models/mega53/model.ckpt")) == "weights")
@@ -63,7 +63,7 @@ import Testing
         let first = try WorkspaceStamp.compute(a)
         try fm.setAttributes([.modificationDate: Date(timeIntervalSince1970: 0)], ofItemAtPath: a.appending(path: "pixi.toml").path)
         #expect(try WorkspaceStamp.compute(a) == first)
-        try write("two", a.appending(path: "engine/src/brasscribe_engine/static/assets/studio.js"))
+        try write("two", a.appending(path: "engine/src/scribe_engine/static/assets/studio.js"))
         let second = try WorkspaceStamp.compute(a)
         #expect(second.stamp != first.stamp)
         #expect(second.lock == first.lock)
@@ -134,12 +134,12 @@ import Testing
         let root = tempDir()
         defer { try? fm.removeItem(at: root) }
         let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
-        try write("gone in v2", ws.appending(path: "engine/src/brasscribe_engine/removed.py"))
+        try write("gone in v2", ws.appending(path: "engine/src/scribe_engine/removed.py"))
         let v2 = try bundle(in: root, name: "v2", studio: "fixed studio")
 
         try WorkspaceSwap.install(from: v2, into: ws).commit()
         #expect(studio(ws) == "fixed studio")
-        #expect(!fm.fileExists(atPath: ws.appending(path: "engine/src/brasscribe_engine/removed.py").path))
+        #expect(!fm.fileExists(atPath: ws.appending(path: "engine/src/scribe_engine/removed.py").path))
         #expect(WorkspaceStamp.read(in: ws) == WorkspaceStamp.read(in: v2))
         #expect(!fm.fileExists(atPath: ws.appending(path: WorkspaceSwap.workDir).path))
         userDataIsIntact(ws, root: root)

@@ -5,9 +5,9 @@ Candidates are consensus notes of MuScriptor and Basic Pitch at a threshold.
 """
 from pathlib import Path
 import numpy as np, sys
-from brasscribe_eval.score import load_notes, score
-from brasscribe_eval.lead_sheet import line
-from brasscribe_eval.consensus import load_sources, consensus
+from scribe_eval.score import load_notes, score
+from scribe_eval.lead_sheet import line
+from scribe_eval.consensus import load_sources, consensus
 D=Path('../data/eval')
 cases=[]
 for t,part in [('Track00006','S02-Trumpet'),('Track00014','S00-Trumpet')]:

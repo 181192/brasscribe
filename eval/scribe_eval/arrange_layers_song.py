@@ -1,4 +1,4 @@
-"""Solo-with-band arrangement from textural layers (see brasscribe_music.arranger.arrange_layers).
+"""Solo-with-band arrangement from textural layers (see scribe_music.arranger.arrange_layers).
 
 Layers (from layers.py): solo (Mega-53 trumpet), bass, drums, and the orchestra
 residual (mix minus solo, bass and drums). The orchestra is split by what the
@@ -19,30 +19,30 @@ from pathlib import Path
 import numpy as np
 import pretty_midi
 import soundfile as sf
-from brasscribe_music.arranger import FOOTER_LANGS, Arrangement, arrange_layers, composition_lineup, part_footers
-from brasscribe_music import musescore
-from brasscribe_music.energy import Envelope, gate
-from brasscribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from brasscribe_music.beats import clean_beats_gated, downbeat_rate, fallback_beats, labels_on, solo_meter
-from brasscribe_music.confidence import Model as CalibrationModel
-from brasscribe_music.confidence import features as confidence_features
-from brasscribe_music.confidence import p_correct, review_groups
-from brasscribe_music.confidence import support as contour_support
-from brasscribe_music.difficulty import KEY_CHANGE_PENALTY
-from brasscribe_music.instruments import CLEF_READINGS, KITS, LEADS, PERCUSSION_SOLO, SEAT_IDS, check_reads, lead_lineup, lineup_by_name, seat_by_id
-from brasscribe_music.keys import key_plan, semitones_to
-from brasscribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
-from brasscribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
-from brasscribe_music.onsets import contour_notes
-from brasscribe_music.trills import with_trills
-from brasscribe_music.parts import STYLE as PART_STYLE
-from brasscribe_music.parts import split_parts
-from brasscribe_music.structure import bar_features, letters, section_starts
-from brasscribe_music.separation import check_stem
-from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
-from brasscribe_music.dynamics import layer_dynamics
-from brasscribe_music.score_model import Dynamic, ReviewItem, Section, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
-from brasscribe_music.spelling import key_of
+from scribe_music.arranger import FOOTER_LANGS, Arrangement, arrange_layers, composition_lineup, part_footers
+from scribe_music import musescore
+from scribe_music.energy import Envelope, gate
+from scribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
+from scribe_music.beats import clean_beats_gated, downbeat_rate, fallback_beats, labels_on, solo_meter
+from scribe_music.confidence import Model as CalibrationModel
+from scribe_music.confidence import features as confidence_features
+from scribe_music.confidence import p_correct, review_groups
+from scribe_music.confidence import support as contour_support
+from scribe_music.difficulty import KEY_CHANGE_PENALTY
+from scribe_music.instruments import CLEF_READINGS, KITS, LEADS, PERCUSSION_SOLO, SEAT_IDS, check_reads, lead_lineup, lineup_by_name, seat_by_id
+from scribe_music.keys import key_plan, semitones_to
+from scribe_music.freetime import clip_to_regions, mark_fermatas, plan_free_time, unstable_runs
+from scribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
+from scribe_music.onsets import contour_notes
+from scribe_music.trills import with_trills
+from scribe_music.parts import STYLE as PART_STYLE
+from scribe_music.parts import split_parts
+from scribe_music.structure import bar_features, letters, section_starts
+from scribe_music.separation import check_stem
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
+from scribe_music.dynamics import layer_dynamics
+from scribe_music.score_model import Dynamic, ReviewItem, Section, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.spelling import key_of
 
 from .arrange_song import to_notes
 from .consensus import cluster, doubles

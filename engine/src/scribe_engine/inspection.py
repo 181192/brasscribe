@@ -16,11 +16,11 @@ from .names import valid_id
 # Licences as recorded in docs/plan/apps-plan.md §7 and docs/research/00-summary.md §0/§3.
 DATASETS = {
     "choralebricks-brass4": {"licence": "CC-BY 4.0", "source_url": "https://zenodo.org/records/20849469",
-                             "download": "python -m brasscribe_eval.choralebricks (from the downloaded ChoraleBricks v1.1.0)"},
+                             "download": "python -m scribe_eval.choralebricks (from the downloaded ChoraleBricks v1.1.0)"},
     "urmp-brass": {"licence": None, "source_url": None,
-                   "download": "python -m brasscribe_eval.urmp (from the downloaded URMP dataset)"},
+                   "download": "python -m scribe_eval.urmp (from the downloaded URMP dataset)"},
     "slakh-trumpet": {"licence": None, "source_url": None,
-                      "download": "python -m brasscribe_eval.slakh (from the downloaded BabySlakh)"},
+                      "download": "python -m scribe_eval.slakh (from the downloaded BabySlakh)"},
 }
 
 
@@ -100,8 +100,8 @@ _FITTED = re.compile(r"^(?P<part>.+?): phrase at tick (?P<tick>-?\d+) (?:needed 
 
 def validation(composition: Path) -> list[dict]:
     """Arranger warnings for a run's Composition, located by bar and beat."""
-    from brasscribe_music.arranger import arrange_composition
-    from brasscribe_music.score_model import Composition
+    from scribe_music.arranger import arrange_composition
+    from scribe_music.score_model import Composition
 
     comp = Composition.from_json(composition)
     arr = arrange_composition(comp)
@@ -126,10 +126,10 @@ _DRUMS = re.compile(r"^(?P<name>.+?)\s+drum kit\s+events=\s*(?P<n>\d+)")
 
 
 def roundtrip(outputs: Path) -> dict:
-    """MuseScore round trip of a run's MusicXML (brasscribe_eval.musescore_roundtrip), run in a temp copy."""
-    from brasscribe_eval.musescore_roundtrip import check
+    """MuseScore round trip of a run's MusicXML (scribe_eval.musescore_roundtrip), run in a temp copy."""
+    from scribe_eval.musescore_roundtrip import check
 
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     mscore = musescore.binary()
     if not mscore:
@@ -140,8 +140,8 @@ def roundtrip(outputs: Path) -> dict:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             ok = check(Path(tmp) / "brass-band.musicxml", Path(tmp) / "composition.json")
-        from brasscribe_music.arranger import arrange, arrange_layers
-        from brasscribe_music.score_model import Composition
+        from scribe_music.arranger import arrange, arrange_layers
+        from scribe_music.score_model import Composition
 
         comp = Composition.from_json(Path(tmp) / "composition.json")
         arr = arrange_layers(comp) if any(v.layer for v in comp.voices) else arrange(comp)

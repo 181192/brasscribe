@@ -91,7 +91,7 @@ def option_error_code(e: ValueError) -> str:
 def option_error_message(code: str) -> str:
     """The fixed English message a 422 carries for `code`. The exception's own text stays in the engine's
     log: an unexpected ValueError could say more about the engine than a client should see."""
-    from brasscribe_music.instruments import PERCUSSION_SOLO
+    from scribe_music.instruments import PERCUSSION_SOLO
 
     return {
         QUARTET_NEEDS_GROUP_CODE: QUARTET_NEEDS_GROUP,
@@ -124,7 +124,7 @@ def arrangement_options(params: dict) -> dict:
 
 def _check_seat(opts: dict) -> None:
     """seat, reads and lead: a known seat, a clef it offers, and a tune it can carry in a band lineup."""
-    from brasscribe_music.instruments import LEADS, SEAT_IDS, check_reads
+    from scribe_music.instruments import LEADS, SEAT_IDS, check_reads
 
     seat = opts.get("seat")
     if seat is not None and seat not in SEAT_IDS:
@@ -143,7 +143,7 @@ def _check_seat(opts: dict) -> None:
 def job_options(profile: str, params: dict) -> dict:
     """arrangement_options, plus what the profile cannot do (the solo profile has no quartet; the tune moves to
     the seat's part in the band lineups only)."""
-    from brasscribe_music.instruments import PERCUSSION_SOLO, lead_lineup, lineup_by_name, seat_by_id
+    from scribe_music.instruments import PERCUSSION_SOLO, lead_lineup, lineup_by_name, seat_by_id
 
     if tab.is_tab(profile):
         opts = tab.job_options(profile, params)
@@ -169,7 +169,7 @@ def job_options(profile: str, params: dict) -> dict:
 
 def _arrange_params(title: str, params: dict, lineup: str = "full", kit: str = "band") -> dict:
     """lineup: the profile's lineup when the job does not choose one. kit: the drum kit the Percussion part
-    plays (brasscribe_music.instruments.KITS); set by the profile, not a job option, and passed only when it is
+    plays (scribe_music.instruments.KITS); set by the profile, not a job option, and passed only when it is
     not the band kit, so the other profiles keep their cache keys."""
     opts = arrangement_options({**params, "lineup": params.get("lineup") or lineup})
     if kit != "band":
@@ -226,7 +226,7 @@ def _outputs(arrange: str) -> dict[str, tuple[str, str]]:
     }
 
 
-# Layered solo-with-band: the song pipeline (brasscribe_eval.song_pipeline) as a DAG.
+# Layered solo-with-band: the song pipeline (scribe_eval.song_pipeline) as a DAG.
 # Stage outputs keep the song pipeline's file names, so an existing output directory
 # (mix.beats, stems/, layers/) can seed the cache.
 LAYER_TOOLS = {
@@ -303,13 +303,13 @@ def solo(title: str, params: dict) -> Pipeline:
     """
     if params.get("lineup") == "quartet":
         raise ValueError(QUARTET_NEEDS_GROUP)
-    from brasscribe_music.instruments import PERCUSSION_SOLO, seat_by_id
+    from scribe_music.instruments import PERCUSSION_SOLO, seat_by_id
 
     if params.get("seat") and not seat_by_id(params["seat"]).reads:
         raise ValueError(PERCUSSION_SOLO)
     mix = Input(SOURCE)
     # small0 on the computer too, not the adapter's own final0, so a solo score made here is the one the device
-    # makes. `brasscribe bench solo-beat-model` measured the two on the 184 single parts of URMP and ChoraleBricks:
+    # makes. `scribe bench solo-beat-model` measured the two on the 184 single parts of URMP and ChoraleBricks:
     # final0 got the metre right more often (URMP 0.24 -> 0.29, ChoraleBricks 0.43 -> 0.60) and written positions
     # were level, but no difference was significant (sign test p >= 0.12, ChoraleBricks' metre on 15 parts the
     # closest). Measure again on a larger set before letting the computer use final0.

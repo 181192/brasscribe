@@ -45,7 +45,7 @@ import no.brasscribe.play.model.Composition
 import no.brasscribe.play.model.CompositionJson
 
 /**
- * HTTP client for a brasscribe engine. Loopback and emulator-host clients are trusted by the engine;
+ * HTTP client for a scribe engine. Loopback and emulator-host clients are trusted by the engine;
  * LAN clients pair once with the code the engine prints and then send the bearer [token].
  */
 class KtorEngineApi(

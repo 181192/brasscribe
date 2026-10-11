@@ -7,8 +7,8 @@ import pretty_midi
 import pytest
 import soundfile as sf
 
-from brasscribe_engine import profiles, runner, tuning
-from brasscribe_engine.dag import SOURCE, Input, Stage
+from scribe_engine import profiles, runner, tuning
+from scribe_engine.dag import SOURCE, Input, Stage
 
 from .conftest import fake_pipeline
 from .test_dag import run
@@ -199,7 +199,7 @@ def test_estimate_file_reads_the_same_windows(tmp_path):
 
 
 def test_a_derive_that_raises_fails_its_stage(settings, audio, tmp_path):
-    from brasscribe_engine.dag import StageFailed
+    from scribe_engine.dag import StageFailed
 
     def boom(inputs):
         raise ValueError("unreadable")

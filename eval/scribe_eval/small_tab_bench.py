@@ -22,10 +22,10 @@ Each passage is rendered twice, alone (`instrument`) and under a bass and drums 
 `song` mix is separated. Which of the separator's stems carries the instrument is measured, not
 assumed: `stems` scores Basic Pitch on each stem against the passage.
 
-    python -m brasscribe_eval.small_tab_bench synthesize [--data DIR]    the passages (FluidSynth)
-    python -m brasscribe_eval.small_tab_bench prepare [--data DIR]       run the models (GPU)
-    python -m brasscribe_eval.small_tab_bench stems [--data DIR]         which stem carries the instrument
-    python -m brasscribe_eval.small_tab_bench report [--data DIR]        per-group numbers
+    python -m scribe_eval.small_tab_bench synthesize [--data DIR]    the passages (FluidSynth)
+    python -m scribe_eval.small_tab_bench prepare [--data DIR]       run the models (GPU)
+    python -m scribe_eval.small_tab_bench stems [--data DIR]         which stem carries the instrument
+    python -m scribe_eval.small_tab_bench report [--data DIR]        per-group numbers
 
 It runs on a computer that has the SoundFont and the models, not in CI.
 """
@@ -301,7 +301,7 @@ def prepare(entry: Path) -> None:
 def stem_scores(data: Path, groups: tuple[str, ...] | None = None) -> dict[str, dict[str, float]]:
     """For each stem the separator writes: how much of the instrument Basic Pitch finds in it, and how much
     of what it finds there is the instrument (recall and precision of onset and pitch, means over the passages)."""
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     from .score import score
 
@@ -333,7 +333,7 @@ def evaluate(data: Path, groups: tuple[str, ...], mode: str, clean: bool = True,
     """The passages of `groups` in one recording mode, through the tab profile's own stages. `stem`: the
     separator's stem a `song` run reads (default: the one the profile reads, tab.stem_to_read). `only`: the
     patterns to score (default all)."""
-    from brasscribe_engine import tab
+    from scribe_engine import tab
 
     from .guitar_tab_bench import score_tab, summarize, tab_of
 

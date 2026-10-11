@@ -10,7 +10,7 @@ as 23/24.
 Rules:
   performed   performed length, snapped
   fill8       hold until the next onset when the gap is <= an 8th (the previous rule)
-  audio       brasscribe_music.durations.written_durations: legato vs detached from
+  audio       scribe_music.durations.written_durations: legato vs detached from
               the performed length relative to the time to the next onset, plus
               staccato when the performed length is under half the written one
 
@@ -19,8 +19,8 @@ contour of that part's own track (DIR/<song>/<part>.npz, made by
 track_contours.py), i.e. offsets measured from audio instead of annotated.
 Onsets and pitches stay the reference ones, so only the offset source changes.
 
-    uv run python -W ignore -m brasscribe_eval.duration_bench ../data/eval/urmp-brass
-    uv run python -W ignore -m brasscribe_eval.duration_bench ../data/eval/urmp-brass --contours ../data/runs/contours/urmp-brass
+    uv run python -W ignore -m scribe_eval.duration_bench ../data/eval/urmp-brass
+    uv run python -W ignore -m scribe_eval.duration_bench ../data/eval/urmp-brass --contours ../data/runs/contours/urmp-brass
 """
 
 from __future__ import annotations
@@ -31,8 +31,8 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.durations import SEPARATED_STEM, Contour, contour_offsets, written_durations
-from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, QNote, fill_gaps, quantize
+from scribe_music.durations import SEPARATED_STEM, Contour, contour_offsets, written_durations
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, QNote, fill_gaps, quantize
 
 from .quant_bench import reference_beats
 from .score import load_notes

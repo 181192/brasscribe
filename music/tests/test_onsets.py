@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from brasscribe_music.durations import Contour
-from brasscribe_music.onsets import FRAME, contour_notes, octave_flips
+from scribe_music.durations import Contour
+from scribe_music.onsets import FRAME, contour_notes, octave_flips
 
 
 def contour(pitch: np.ndarray, confidence: bool = True) -> Contour:
@@ -87,7 +87,7 @@ def test_semitone_trill_with_a_transit_frame_splits():
 
 
 def test_glides_leading_nowhere_do_not_stretch_an_earlier_note(monkeypatch):
-    from brasscribe_music import onsets
+    from scribe_music import onsets
 
     # 61 scoops into 62, and 62 falls off 61 with a rest after it: both are glides, and 60 is a note apart
     notes = [note(60, 0.0, 0.5), note(61, 1.0, 1.1), note(62, 1.1, 1.2), note(64, 1.3, 2.0)]

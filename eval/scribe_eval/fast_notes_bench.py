@@ -27,7 +27,7 @@ closer: half the smaller inter-onset interval):
               the right auxiliary, covering at least 80 % of the figure
   trills      trill marks per clip (on the controls and every figure but those alternations: false trills, must be 0)
 
-    python -m brasscribe_eval.fast_notes_bench [--only PATTERN] [--beats oracle,small0] [--json FILE]
+    python -m scribe_eval.fast_notes_bench [--only PATTERN] [--beats oracle,small0] [--json FILE]
 """
 
 from __future__ import annotations
@@ -105,7 +105,7 @@ def contour_present(ref: list[dict], contour_npz: Path) -> list[dict]:
 
 
 def _seconds(ticks: list[int], times: np.ndarray) -> np.ndarray:
-    from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap
+    from scribe_music.quantize import TICKS_PER_BEAT, BeatMap
 
     return BeatMap(times).to_seconds(np.asarray(ticks, float) / TICKS_PER_BEAT)
 
@@ -113,8 +113,8 @@ def _seconds(ticks: list[int], times: np.ndarray) -> np.ndarray:
 def run_clip(clip: Path, beats: str, work: Path, argv_extra: list[str] | None = None, seg=None,
              ref: list[dict] | None = None) -> dict[str, list[dict]]:
     """Estimated notes (pitch, onset in seconds) at every stage for one clip."""
-    from brasscribe_music.arranger import arrange_layers, composition_lineup
-    from brasscribe_music.quantize import TICKS_PER_BEAT
+    from scribe_music.arranger import arrange_layers, composition_lineup
+    from scribe_music.quantize import TICKS_PER_BEAT
 
     from . import arrange_layers_song as A
     from .arrange_layers_song import pitched
@@ -144,7 +144,7 @@ def run_clip(clip: Path, beats: str, work: Path, argv_extra: list[str] | None = 
     out["line"] = trace["line"]
     q = trace["quantized"]
     if ref:
-        from brasscribe_music.quantize import quantize
+        from scribe_music.quantize import quantize
 
         qr = quantize([dict(n) for n in ref], times, monophonic=True, auto_level=False, coarse=trace["coarse"])
         out["q_ref"] = [{"pitch": x.pitch, "onset": float(s)} for x, s in zip(qr, _seconds([x.start for x in qr], times))]
@@ -379,7 +379,7 @@ def resegment(hold_ms: float):
 def collision_grids(onset_beats, coarse=None, extra=(8,), collide=1.0):
     """choose_grids, but a grid that puts two onsets of one beat on the same slot pays `collide` per lost note,
     and 32nds (8) are allowed."""
-    from brasscribe_music import quantize as Q
+    from scribe_music import quantize as Q
 
     by_beat: dict[int, list[float]] = {}
     for x in onset_beats:
@@ -415,7 +415,7 @@ ABLATIONS = {
 
 @contextlib.contextmanager
 def ablation(cfg: dict):
-    from brasscribe_music import quantize as Q
+    from scribe_music import quantize as Q
 
     from . import arrange_layers_song as A
 

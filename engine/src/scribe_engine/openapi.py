@@ -1,4 +1,4 @@
-"""Write the engine's OpenAPI spec: `python -m brasscribe_engine.openapi engine/openapi.json`.
+"""Write the engine's OpenAPI spec: `python -m scribe_engine.openapi engine/openapi.json`.
 
 The committed spec is the contract the native apps generate clients from; a
 test fails when the app and the committed file disagree.

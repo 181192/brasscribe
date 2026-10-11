@@ -3,8 +3,8 @@ import shutil
 
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import history
-from brasscribe_engine.api import create_app
+from scribe_engine import history
+from scribe_engine.api import create_app
 
 from .test_api import wait
 
@@ -93,7 +93,7 @@ def test_sources_and_job_from_source(settings, audio):
 
 
 def test_registry_history_and_reports(settings, monkeypatch, tmp_path):
-    monkeypatch.setenv("BRASSCRIBE_PARITY_REPORTS", str(tmp_path / "parity"))
+    monkeypatch.setenv("SCRIBE_PARITY_REPORTS", str(tmp_path / "parity"))
     (tmp_path / "parity").mkdir()
     (tmp_path / "parity" / "swift-f0-coreml.json").write_text(json.dumps({"model": "swift-f0", "f1": 0.99}))
     history.save(settings, {"passed": True, "suites": [{"suite": "arrange", "status": "pass", "metrics": {"x": 1.0},
@@ -150,7 +150,7 @@ def test_delete_run(settings, audio):
 
 
 def test_delete_active_run_is_refused(settings):
-    from brasscribe_engine.jobs import Job
+    from scribe_engine.jobs import Job
 
     with TestClient(create_app(settings)) as c:
         jobs = c.app.state.jobs
@@ -163,7 +163,7 @@ def test_conformance_default_is_only_the_summary(settings, monkeypatch, tmp_path
     root = tmp_path / "core-conformance"
     (root / "case1" / "py").mkdir(parents=True)
     (root / "case1" / "py" / "composition.json").write_text(json.dumps({"big": [0] * 1000}))
-    monkeypatch.setenv("BRASSCRIBE_CONFORMANCE_REPORTS", str(root))
+    monkeypatch.setenv("SCRIBE_CONFORMANCE_REPORTS", str(root))
     with TestClient(create_app(settings)) as c:
         assert c.get("/v1/conformance").json() == []  # no report yet
         (root / "report.json").write_text(json.dumps({"git_sha": "abc", "sets": []}))
@@ -174,7 +174,7 @@ def test_conformance_default_is_only_the_summary(settings, monkeypatch, tmp_path
 def test_conformance_run_lifecycle(settings, monkeypatch, tmp_path):
     import time
 
-    from brasscribe_engine import conformance
+    from scribe_engine import conformance
 
     project = tmp_path / "proj"
     (project / "scribe_conformance").mkdir(parents=True)

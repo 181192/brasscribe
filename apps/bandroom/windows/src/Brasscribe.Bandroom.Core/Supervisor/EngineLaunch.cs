@@ -62,20 +62,20 @@ public sealed record EngineLaunchConfig(
     }
 
     /// <summary>
-    /// <c>pixi run --manifest-path &lt;envs&gt;\pixi.toml --frozen -e default brasscribe serve --lan --port N</c>
+    /// <c>pixi run --manifest-path &lt;envs&gt;\pixi.toml --frozen -e default scribe serve --lan --port N</c>
     /// with the environment variables config.py reads (spec §5.2) and the admin credential.
     /// </summary>
     public ProcessSpec Build(int port)
     {
         var env = new Dictionary<string, string>
         {
-            ["BRASSCRIBE_DATA"] = Paths.DataDir,
-            ["BRASSCRIBE_MODELS"] = Paths.Models,
-            ["BRASSCRIBE_ADAPTERS"] = Paths.Adapters,
-            ["BRASSCRIBE_COMPUTER_NAME"] = ComputerName,
-            ["BRASSCRIBE_ADMIN_TOKEN"] = AdminToken,
+            ["SCRIBE_DATA"] = Paths.DataDir,
+            ["SCRIBE_MODELS"] = Paths.Models,
+            ["SCRIBE_ADAPTERS"] = Paths.Adapters,
+            ["SCRIBE_COMPUTER_NAME"] = ComputerName,
+            ["SCRIBE_ADMIN_TOKEN"] = AdminToken,
             // Adapters run in the pixi environments bootstrap installed; torch ones use <name>-cuda on an NVIDIA PC.
-            ["BRASSCRIBE_ADAPTER_RUNNER"] = "pixi",
+            ["SCRIBE_ADAPTER_RUNNER"] = "pixi",
             ["PIXI_CACHE_DIR"] = Paths.PixiCache,
             ["PYTHONUTF8"] = "1",
             // run_adapter.py calls "pixi" by name.
@@ -83,13 +83,13 @@ public sealed record EngineLaunchConfig(
                 ? dir + Path.PathSeparator + (Variable("PATH") ?? "")
                 : Variable("PATH") ?? "",
         };
-        if (UseCuda) env["BRASSCRIBE_CUDA"] = "1";
+        if (UseCuda) env["SCRIBE_CUDA"] = "1";
         // The muscriptor adapter finds the band writer in the hub cache Bandroom downloaded it to, with the same key.
         foreach (var name in (string[])["HF_HOME", "HF_HUB_CACHE"])
             if (Variable(name) is { Length: > 0 } value) env[name] = value;
         if ((Variable("HF_TOKEN") is { Length: > 0 } t ? t : HuggingFaceToken?.Invoke()) is { Length: > 0 } token) env["HF_TOKEN"] = token;
         // Studio (served by the engine) plays the band SoundFont from here.
-        if (BandSoundsDir is { Length: > 0 }) env["BRASSCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
+        if (BandSoundsDir is { Length: > 0 }) env["SCRIBE_BAND_SOUNDS_DIR"] = BandSoundsDir;
         // The installed workspace has no core to build: the bass-tab profile runs the bundled command line, and
         // only that one. Without it, a SCRIBE_CORE_CLI set for this user is not passed on, so the engine says
         // plainly that the core is missing instead of running some other build.
@@ -97,7 +97,7 @@ public sealed record EngineLaunchConfig(
         return new ProcessSpec(
             PixiExe,
             ["run", "--manifest-path", Paths.Manifest, "--frozen", "-e", "default",
-             "brasscribe", "serve", "--lan", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)],
+             "scribe", "serve", "--lan", "--port", port.ToString(System.Globalization.CultureInfo.InvariantCulture)],
             Paths.Workspace,
             env)
         { Unset = CoreCli is { Length: > 0 } ? [] : ["SCRIBE_CORE_CLI"] };

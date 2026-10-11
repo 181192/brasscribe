@@ -81,10 +81,10 @@ class JobManager:
     def __init__(self, settings: Settings, workers: int = 1):
         self.settings = settings.ensure()
         self.jobs: dict[str, Job] = {}
-        self.pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="brasscribe-job")
+        self.pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="scribe-job")
         self.lock = threading.Lock()
         # A renamed run's PDF, MIDI and braille are made again here, one at a time, away from the request.
-        self.render_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="brasscribe-render")
+        self.render_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="scribe-render")
         self._stopping = threading.Event()  # set by shutdown: a running render's MuseScore is killed
         # A rename's writes, a render's swap and a delete never interleave.
         self._rename_lock = threading.Lock()
@@ -315,7 +315,7 @@ class JobManager:
         if not self._current(job_id, title):
             return []
         try:
-            with tempfile.TemporaryDirectory(prefix="brasscribe-render-") as tmp:
+            with tempfile.TemporaryDirectory(prefix="scribe-render-") as tmp:
                 made = _render(out, Path(tmp), self._stopping)
                 with self._rename_lock:
                     if self._stopping.is_set() or not self._current(job_id, title) or not out.is_dir():
@@ -375,7 +375,7 @@ def _rendered(out: Path) -> bool:
 def _render(out: Path, into: Path, cancel: threading.Event) -> list[str]:
     """The rendered files `out` has, made again from its MusicXML into `into` (same names). PDF and MIDI as the
     export stages make them; none without MuseScore. Braille for the score and the parts that have it."""
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     from . import braille
     from .stages import PART_STYLE

@@ -7,13 +7,13 @@ line, clustered across sources, SwiftF0-supported candidates kept):
   single  every URMP and ChoraleBricks single part (sources sw, bp; solo_notes.py), a clean recording
 A candidate is correct when mir_eval matches it to a reference note (onset 100 ms, pitch).
 
-Fits a logistic regression (brasscribe_music.confidence.FEATURES) on the even-numbered songs
+Fits a logistic regression (scribe_music.confidence.FEATURES) on the even-numbered songs
 of each set and reports on the odd ones (held out): reliability per bin, and per set the flag
 rate / error recall / flag precision at the chosen thresholds, before (the old vote-count
 confidence, "?" below 0.7) and after. --write stores the model in
-music/src/brasscribe_music/calibration.json.
+music/src/scribe_music/calibration.json.
 
-    uv run python -W ignore -m brasscribe_eval.confidence_bench --single ../data/runs/music-core/solo-beats \\
+    uv run python -W ignore -m scribe_eval.confidence_bench --single ../data/runs/music-core/solo-beats \\
         --stem-contours ../data/runs/music-core/stem-contours [--write]
 """
 
@@ -25,8 +25,8 @@ from pathlib import Path
 
 import mir_eval
 import numpy as np
-from brasscribe_music import confidence as C
-from brasscribe_music.durations import Contour
+from scribe_music import confidence as C
+from scribe_music.durations import Contour
 
 from .consensus import cluster
 from .lead_sheet import line

@@ -1,7 +1,7 @@
 import Foundation
 
 /// The canonical symbolic score produced by transcription, at concert pitch in integer
-/// ticks. Mirrors `brasscribe_music.score_model.Composition` and the engine's
+/// ticks. Mirrors `scribe_music.score_model.Composition` and the engine's
 /// `Composition` schema field for field, so the same JSON decodes on every platform.
 public struct Composition: Codable, Sendable, Equatable {
     public enum VoiceRole: String, Codable, Sendable {

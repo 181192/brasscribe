@@ -1,5 +1,5 @@
 [workspace]
-name = "brasscribe"
+name = "scribe"
 channels = ["conda-forge"]
 # The *-cuda12 platforms are Linux and Windows with a CUDA 12 driver; only the
 # *-cuda environments are solved for them.
@@ -41,9 +41,9 @@ python = "3.10.*"
 # (eval/uv.lock), so the engine reproduces it bit for bit.
 # ---------------------------------------------------------------------------
 [feature.engine.pypi-dependencies]
-brasscribe-engine = { path = "engine", editable = true }
-brasscribe-music = { path = "music", editable = true }
-brasscribe-eval = { path = "eval", editable = true }
+scribe-engine = { path = "engine", editable = true }
+scribe-music = { path = "music", editable = true }
+scribe-eval = { path = "eval", editable = true }
 numpy = "==2.5.3"
 scipy = "==1.18.1"
 soundfile = "==0.14.0"
@@ -55,11 +55,11 @@ mir-eval = "==0.8.2"
 pandas = "==3.0.6"
 
 [feature.engine.tasks]
-engine = "brasscribe"
-serve = "brasscribe serve"
-serve-lan = "brasscribe serve --lan"
-studio = "brasscribe studio"
-openapi = "python -m brasscribe_engine.openapi engine/openapi.json"
+engine = "scribe"
+serve = "scribe serve"
+serve-lan = "scribe serve --lan"
+studio = "scribe studio"
+openapi = "python -m scribe_engine.openapi engine/openapi.json"
 
 [feature.test.pypi-dependencies]
 pytest = ">=8"
@@ -72,7 +72,7 @@ test = "pytest engine/tests music/tests"
 # (pytest-testmon; the first run records a baseline in .testmondata and runs everything).
 test-fast = "pytest engine/tests music/tests -m 'not slow' -q"
 test-affected = "pytest engine/tests music/tests --testmon -q"
-bench-cpu = "brasscribe bench cpu"
+bench-cpu = "scribe bench cpu"
 
 # ---------------------------------------------------------------------------
 # Accelerators. On macOS the PyPI wheel uses MPS. On Linux and Windows,

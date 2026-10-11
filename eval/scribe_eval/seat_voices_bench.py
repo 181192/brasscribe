@@ -7,7 +7,7 @@ and T as the bottom line of what is left. One pass, no tuning. Scored with onset
 the voice. This measures how far "follow my line" in a section recording is from shippable; inner
 parts stay arranged until a seat's voice reaches F1 0.85 here.
 
-    python -m brasscribe_eval.seat_voices_bench [--data DIR]
+    python -m scribe_eval.seat_voices_bench [--data DIR]
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ def _key(n: dict) -> tuple[float, int]:
 
 def voices(est: list[dict]) -> dict[str, list[dict]]:
     """S, A, T, B lines from one transcription of the mix, by seat range."""
-    from brasscribe_music.instruments import seat_by_id
+    from scribe_music.instruments import seat_by_id
 
     rng = {v: seat_by_id(s).own_part.instrument.pro for v, s in VOICE_SEATS.items()}
     s = line(est, *rng["S"], top=True)

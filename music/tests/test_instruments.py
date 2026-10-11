@@ -1,4 +1,4 @@
-from brasscribe_music.instruments import BRASS_BAND, INSTRUMENTS, validate_range
+from scribe_music.instruments import BRASS_BAND, INSTRUMENTS, validate_range
 
 # MIDI numbers
 C4, D4, Bb3, A4, Bb2, C5 = 60, 62, 58, 69, 46, 72
@@ -71,7 +71,7 @@ def test_score_order():
 
 
 def test_double_accidentals_are_simplified():
-    from brasscribe_music.spelling import _simplify
+    from scribe_music.spelling import _simplify
     assert _simplify("E", -2, 4, 62) == ("D", 0, 4)
     assert _simplify("F", 2, 4, 67) == ("G", 0, 4)
     assert _simplify("G", 2, 4, 69) == ("A", 0, 4)
@@ -79,7 +79,7 @@ def test_double_accidentals_are_simplified():
 
 
 def test_lineups_carry_their_roles():
-    from brasscribe_music.instruments import LINEUPS, MINIMAL_BAND, lineup_by_name
+    from scribe_music.instruments import LINEUPS, MINIMAL_BAND, lineup_by_name
 
     assert lineup_by_name("full") is BRASS_BAND and lineup_by_name(None) is BRASS_BAND
     assert lineup_by_name("minimal") is MINIMAL_BAND
@@ -89,7 +89,7 @@ def test_lineups_carry_their_roles():
 
 
 def test_a_part_name_means_one_bank_in_every_lineup():
-    from brasscribe_music.instruments import LINEUPS, part_banks
+    from scribe_music.instruments import LINEUPS, part_banks
 
     banks = part_banks()
     for lineup in LINEUPS.values():

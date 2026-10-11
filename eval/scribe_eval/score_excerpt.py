@@ -1,6 +1,6 @@
 """Cut bars from a MusicXML score (optionally only some parts) and render them with MuseScore.
 
-    uv run python -W ignore -m brasscribe_eval.score_excerpt brass-band.musicxml --bars 1 16 \
+    uv run python -W ignore -m scribe_eval.score_excerpt brass-band.musicxml --bars 1 16 \
         --parts "Solo Cornet" "Euphonium" "E♭ Bass" --out intro-solo.png
 
 MuseScore writes one PNG per page (intro-solo-1.png, ...). It aborts during
@@ -9,7 +9,7 @@ shutdown after writing, so the files are checked, not the exit code.
 
 from __future__ import annotations
 
-from brasscribe_music import musescore
+from scribe_music import musescore
 
 import argparse
 import subprocess

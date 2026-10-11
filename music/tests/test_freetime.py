@@ -1,8 +1,8 @@
 import numpy as np
 
-from brasscribe_music.freetime import local_tempo, mark_fermatas, plan_free_time, unstable_runs
-from brasscribe_music.quantize import TICKS_PER_BEAT, choose_grids
-from brasscribe_music.score_model import Articulation, Note
+from scribe_music.freetime import local_tempo, mark_fermatas, plan_free_time, unstable_runs
+from scribe_music.quantize import TICKS_PER_BEAT, choose_grids
+from scribe_music.score_model import Articulation, Note
 
 # Mikkel's detected beats: a free-time intro (1-6 s apart), then a steady ~136 BPM.
 MIKKEL = np.array([2.94, 8.92, 10.3, 12.82, 14.9, 15.94, 17.22, 18.28, 21.8, 23.5, 29.76, 30.62, 31.52, 32.38, 32.82,
@@ -70,7 +70,7 @@ def test_coarse_ranges_use_quarters_and_eighths_only():
 
 def test_fermata_on_last_note_of_region():
     notes = [Note(60, 0, 24), Note(62, 48, 24), Note(64, 120, 24)]
-    from brasscribe_music.score_model import FreeRegion
+    from scribe_music.score_model import FreeRegion
     mark_fermatas(notes, [FreeRegion(0, 96, 0.0, 4.0, 60.0)])
     assert notes[1].articulations == [Articulation.FERMATA] and not notes[0].articulations and not notes[2].articulations
 
@@ -106,8 +106,8 @@ def test_region_inside_the_pickup_bar_resumes_on_a_bar_line():
 
 
 def test_clip_to_regions_ends_notes_at_the_region_end():
-    from brasscribe_music.freetime import clip_to_regions
-    from brasscribe_music.score_model import FreeRegion
+    from scribe_music.freetime import clip_to_regions
+    from scribe_music.score_model import FreeRegion
     notes = [Note(60, 0, 6), Note(62, 60, 40), Note(64, 88, 20), Note(65, 96, 24)]
     region = FreeRegion(0, 96, 0.0, 4.0, 60.0)
     clip_to_regions(notes, [region])

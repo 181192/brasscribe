@@ -12,11 +12,11 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import companion, discovery
-from brasscribe_engine.api import create_app
-from brasscribe_engine.companion import DeviceRegistry
-from brasscribe_engine.config import Settings
-from brasscribe_engine.jobs import Job
+from scribe_engine import companion, discovery
+from scribe_engine.api import create_app
+from scribe_engine.companion import DeviceRegistry
+from scribe_engine.config import Settings
+from scribe_engine.jobs import Job
 
 from .test_companion import Clock, as_owner, bearer, lan, pair
 
@@ -73,7 +73,7 @@ def test_a_revoke_from_another_process_survives_the_engines_presence_flush(tmp_p
     clock.t += 5
     assert engine.authenticate(token_a)  # unflushed last_seen for A
     assert engine.authenticate(token_b)
-    DeviceRegistry(tmp_path / "devices.json", clock=clock).revoke(a.device_id)  # `brasscribe devices revoke`
+    DeviceRegistry(tmp_path / "devices.json", clock=clock).revoke(a.device_id)  # `scribe devices revoke`
     engine.flush()
     assert [d.device_id for d in DeviceRegistry(tmp_path / "devices.json", clock=clock).list()] == [b.device_id]
     assert engine.authenticate(token_a) is None
@@ -118,8 +118,8 @@ def test_status_for_the_desktop_helper(settings):
 
 
 def test_server_name_override_is_used_everywhere(settings, monkeypatch):
-    monkeypatch.setenv("BRASSCRIBE_COMPUTER_NAME", "ignored")
-    monkeypatch.setenv("BRASSCRIBE_SERVER_NAME", "Brasscribe on Band room")
+    monkeypatch.setenv("SCRIBE_COMPUTER_NAME", "ignored")
+    monkeypatch.setenv("SCRIBE_SERVER_NAME", "Brasscribe on Band room")
     with lan(settings) as c:
         c.app.state.hosts = ["192.0.2.20:8765"]
         assert c.get("/v1/health").json()["server_name"] == "Brasscribe on Band room"
@@ -136,13 +136,13 @@ def test_server_name_override_is_used_everywhere(settings, monkeypatch):
 
 
 def test_server_name_override_without_the_prefix_is_taken_whole(monkeypatch):
-    monkeypatch.setenv("BRASSCRIBE_SERVER_NAME", "Korpsets.maskin")
+    monkeypatch.setenv("SCRIBE_SERVER_NAME", "Korpsets.maskin")
     assert discovery.server_names() == ("Korpsets maskin", "Korpsets maskin")
 
 
 def test_the_operating_systems_computer_name_comes_before_the_host_name(monkeypatch):
-    monkeypatch.delenv("BRASSCRIBE_COMPUTER_NAME", raising=False)
-    monkeypatch.delenv("BRASSCRIBE_SERVER_NAME", raising=False)
+    monkeypatch.delenv("SCRIBE_COMPUTER_NAME", raising=False)
+    monkeypatch.delenv("SCRIBE_SERVER_NAME", raising=False)
     monkeypatch.setattr(discovery, "os_computer_name", lambda: "Kari's MacBook Pro")
     monkeypatch.setattr(discovery.socket, "gethostname", lambda: "Karis-MBP.local")
     assert discovery.server_names() == ("Brasscribe on Kari's MacBook Pro", "Kari's MacBook Pro")
@@ -164,7 +164,7 @@ def test_os_computer_name_reads_scutil_on_macos(monkeypatch):
 
 
 def test_local_trust_can_be_turned_off(settings, monkeypatch):
-    monkeypatch.setenv("BRASSCRIBE_TRUST_LOCAL", "0")
+    monkeypatch.setenv("SCRIBE_TRUST_LOCAL", "0")
     with TestClient(create_app(Settings(data_dir=settings.data_dir, adapters_dir=settings.adapters_dir))) as c:
         assert c.get("/v1/health").json()["auth_required"] is True
         assert c.get("/v1/jobs").status_code == 401
@@ -195,7 +195,7 @@ def test_admin_token_is_required_for_management_while_configured(settings):
 
 def test_admin_token_file(settings, tmp_path, monkeypatch):
     path = tmp_path / "bandroom" / "admin-token"
-    monkeypatch.setenv("BRASSCRIBE_ADMIN_TOKEN_FILE", str(path))
+    monkeypatch.setenv("SCRIBE_ADMIN_TOKEN_FILE", str(path))
     s = Settings(data_dir=settings.data_dir, adapters_dir=settings.adapters_dir)
     token = s.admin_credential()
     assert token and path.read_text().strip() == token

@@ -178,7 +178,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _cuda = cudaGpu is not null;
         foreach (var g in gpus) _log.Write($"bandroom: graphics {g.Description} vendor 0x{g.VendorId:X4} driver {g.DriverVersion} (NVIDIA {g.NvidiaDriver})");
         string pixi = FindPixi();
-        string bundled = Environment.GetEnvironmentVariable("BRASSCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 } w ? w : Path.Combine(AppContext.BaseDirectory, "workspace");
+        string bundled = Environment.GetEnvironmentVariable("SCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 } w ? w : Path.Combine(AppContext.BaseDirectory, "workspace");
         _nameStore = new ComputerNameStore(_paths.ComputerNameFile);
         _customName = _nameStore.Load();
         string computer = ComputerName.Shown(_systemName, _customName);

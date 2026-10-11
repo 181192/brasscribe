@@ -93,7 +93,7 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
         Assert.Equal(sonivox, Sha(BrassSoundSet.MovePresets(File.ReadAllBytes(path), offset)));
     }
 
-    private const string Sonivox = "engine/src/brasscribe_engine/static/assets/alphatab/soundfont/sonivox.sf2";
+    private const string Sonivox = "engine/src/scribe_engine/static/assets/alphatab/soundfont/sonivox.sf2";
 
     /// <summary>
     /// The app lists the set before its first frame; the files (about 283 MB in a dev build) must not be

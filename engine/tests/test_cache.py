@@ -1,8 +1,8 @@
 import os
 import stat
 
-from brasscribe_engine.cache import ArtifactCache
-from brasscribe_engine.hashing import HashIndex, source_fingerprint
+from scribe_engine.cache import ArtifactCache
+from scribe_engine.hashing import HashIndex, source_fingerprint
 
 
 def test_store_lookup_materialize(tmp_path):

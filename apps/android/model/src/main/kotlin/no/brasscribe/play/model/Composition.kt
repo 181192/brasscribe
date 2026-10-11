@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonObject
 /**
  * The canonical score shared by every Brasscribe app: concert pitch, integer ticks.
  *
- * Mirrors `brasscribe_music.score_model.Composition`. Unknown fields are ignored on decode so newer
+ * Mirrors `scribe_music.score_model.Composition`. Unknown fields are ignored on decode so newer
  * engines can add fields without breaking older apps.
  */
 @Serializable

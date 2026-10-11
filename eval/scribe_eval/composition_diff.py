@@ -7,7 +7,7 @@ reports how often the written length changed and by how much in seconds
 voice it also reports, per side of the split, the written note values as
 seconds and beats, and how much of the time the solo line sounds on paper.
 
-    uv run python -W ignore -m brasscribe_eval.composition_diff OLD.json NEW.json --split 29.76
+    uv run python -W ignore -m scribe_eval.composition_diff OLD.json NEW.json --split 29.76
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap
-from brasscribe_music.score_model import Composition
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap
+from scribe_music.score_model import Composition
 
 
 def _seconds(comp: Composition):

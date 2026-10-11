@@ -20,9 +20,9 @@ Renderers:
   room     `samples` convolved with a measured church impulse response (OpenAIR, St Margaret's, York)
   sf2      the band SoundFont's Solo Cornet (sus/stac presets) through FluidSynth, re-attacking every note
 
-    python -m brasscribe_eval.fast_notes build          # audio + reference.json + oracle.beats per clip
-    python -m brasscribe_eval.fast_notes track          # SwiftF0 notes + contour, Basic Pitch, Beat This! small0
-    python -m brasscribe_eval.fast_notes freeze         # tracker outputs + references -> eval/fixtures/fast-notes
+    python -m scribe_eval.fast_notes build          # audio + reference.json + oracle.beats per clip
+    python -m scribe_eval.fast_notes track          # SwiftF0 notes + contour, Basic Pitch, Beat This! small0
+    python -m scribe_eval.fast_notes freeze         # tracker outputs + references -> eval/fixtures/fast-notes
 
 Clips go to data/fast-notes/fast-notes/<id>/. Tracking runs the adapters' own environments in batches
 (the main checkout's ml/adapters when this checkout has none).

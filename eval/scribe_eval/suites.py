@@ -1,4 +1,4 @@
-"""Named benchmark suites with a regression gate (`brasscribe bench <suite>`).
+"""Named benchmark suites with a regression gate (`scribe bench <suite>`).
 
 Each suite returns flat metrics. In `cached` mode (the default, and what CPU CI
 runs) suites only score model outputs that already exist next to the eval
@@ -65,7 +65,7 @@ def _run_adapter(tool: str, src: Path, dst: Path) -> None:
 
 def _run_retuned(tool: str, src: Path, dst: Path) -> None:
     """Live mode: an adapter on src as the brass-band profile runs it, retuned to A = 440 when it is out of tune."""
-    from brasscribe_engine import tuning
+    from scribe_engine import tuning
 
     params, _ = tuning.derive({"audio": src})
     if not params:
@@ -280,7 +280,7 @@ def _solo_vote(data: Path, mode: str) -> dict[str, float]:
 # ---------------------------------------------------------------- arrangement
 
 def _arrange(data: Path, mode: str) -> dict[str, float]:
-    from brasscribe_music.instruments import QUARTET
+    from scribe_music.instruments import QUARTET
 
     from .arrange_bench import QUARTET_KEYS, composition_from_reference, evaluate, reference_row
 
@@ -308,8 +308,8 @@ def _arrange(data: Path, mode: str) -> dict[str, float]:
 def _quartet_audio(data: Path, mode: str) -> dict[str, float]:
     """Record a quartet, get quartet parts: cached MuScriptor and Basic Pitch transcriptions of the
     ChoraleBricks recordings through arrange_song for the quartet, scored against the chorale."""
-    from brasscribe_music.arranger import arrange
-    from brasscribe_music.instruments import QUARTET
+    from scribe_music.arranger import arrange
+    from scribe_music.instruments import QUARTET
 
     from .arrange_bench import audio_quartet_row
     from .arrange_song import song_composition
@@ -358,7 +358,7 @@ def _mikkel_arrangement(data: Path, out: Path, difficulty: str = "faithful") -> 
             raise SkipSuite(f"no cached solo contour and no {script}")
         subprocess.run([str(script), str(layers / "solo.wav"), str(view / contour.name)], check=True, capture_output=True)
     title = json.loads((data / f"{MIKKEL_GOLDEN}/composition.json").read_text())["title"]
-    subprocess.run([sys.executable, "-W", "ignore", "-m", "brasscribe_eval.arrange_layers_song",
+    subprocess.run([sys.executable, "-W", "ignore", "-m", "scribe_eval.arrange_layers_song",
                     "--layers", str(view), "--beats", str(data / "mikkel/repro/mix.beats"),
                     "--out", str(out / "score"), "--title", title, "--no-render", "--difficulty", difficulty],
                    check=True, capture_output=True)
@@ -367,7 +367,7 @@ def _mikkel_arrangement(data: Path, out: Path, difficulty: str = "faithful") -> 
 
 def _golden_arrange(data: Path, mode: str) -> dict[str, float]:
     """Re-arrange the cached Mikkel layers and compare with the golden output (no heavy models run)."""
-    from brasscribe_engine.compare import compare
+    from scribe_engine.compare import compare
 
     with tempfile.TemporaryDirectory() as tmp:
         xml = _mikkel_arrangement(data, Path(tmp))
@@ -526,9 +526,9 @@ def _solo_ondevice(data: Path, mode: str) -> dict[str, float]:
     and the minimal band. Cached mode seeds the engine's cache with those model outputs, so only the
     arrangement runs; live mode runs the light models (SwiftF0, Basic Pitch, contour) itself and
     seeds only the beats. Gates on note-for-note identity of the score and every part."""
-    from brasscribe_engine import runner
-    from brasscribe_engine.compare import compare
-    from brasscribe_engine.config import Settings
+    from scribe_engine import runner
+    from scribe_engine.compare import compare
+    from scribe_engine.config import Settings
 
     ref = data / ONDEVICE_REF
     clip = data / "runs" / "apple" / "entertainer-tpt1-30s.wav"
@@ -562,7 +562,7 @@ def _bass_tab(data: Path, mode: str) -> dict[str, float]:
 
     Cached mode scores the model outputs next to the eval data and runs only the profile's own stages
     and the Rust core. Live mode builds the set from the Slakh tracks and runs the models it lacks."""
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     from . import bass_tab_bench as B
 
@@ -619,7 +619,7 @@ def _guitar_tab(data: Path, mode: str) -> dict[str, float]:
 
     Cached mode scores the model outputs next to the eval data. Live mode builds the references from
     <data>/guitarset and the Slakh tracks and runs the models that are missing."""
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     from . import guitar_tab_bench as G
 
@@ -672,7 +672,7 @@ def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
     small_tab_bench (FluidSynth, MuseScore General): each alone and separated from a mix with a bass and drums."""
 
     def fn(data: Path, mode: str) -> dict[str, float]:
-        from brasscribe_engine import bass_tab
+        from scribe_engine import bass_tab
 
         from . import small_tab_bench as B
 
@@ -713,7 +713,7 @@ def _small_tab(suite: str) -> Callable[[Path, str], dict[str, float]]:
 def _meter_tab(data: Path, mode: str) -> dict[str, float]:
     """The bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4 (meter_tab_bench):
     rendered passages, the beats in a bar as tracked and as written."""
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     from . import meter_tab_bench as M
 

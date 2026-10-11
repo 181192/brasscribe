@@ -1,4 +1,4 @@
-# brasscribe-music
+# scribe-music
 
 Symbolic core: the `Composition` model, quantization, free-time detection,
 written durations and articulation, spelling, arrangement and MusicXML export.
@@ -124,7 +124,7 @@ match the score). Logistic regression over:
 | `sep_support`, `sep_voted` | `separated` × `support`, `separated` × (`mus` or `bp`) |
 
 `calibration.json` holds the weights, the clamping `ranges` (`log_dur`, `support` and `sep_support`
-are clamped into them before scoring), `mark_risk` and `very_risk`. `eval/brasscribe_eval/confidence_bench.py`
+are clamped into them before scoring), `mark_risk` and `very_risk`. `eval/scribe_eval/confidence_bench.py`
 fits it on notes with ground truth and checks it on held-out recordings.
 
 A note is **marked** when `1 - confidence >= mark_risk` and **very unsure** when `>= very_risk`.

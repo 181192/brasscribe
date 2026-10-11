@@ -96,7 +96,7 @@ def target_lufs(score: Path, levels_file: Path) -> float:
     levels = json.loads(levels_file.read_text())
     code = levels_file.with_name("playback_levels.py")
     if code.is_file() and score.is_file():
-        spec = importlib.util.spec_from_file_location("brasscribe_playback_levels", code)
+        spec = importlib.util.spec_from_file_location("scribe_playback_levels", code)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         est = mod.band_estimate_lufs(mod.musicxml_notes(score, levels), levels)

@@ -33,7 +33,7 @@ public enum UncertaintyLevel: Sendable, Equatable {
 }
 
 public struct UncertaintyIndex: Sendable {
-    /// The engine's calibration (music/src/brasscribe_music/calibration.json): a note is
+    /// The engine's calibration (music/src/scribe_music/calibration.json): a note is
     /// marked when `1 - confidence >= mark_risk` (0.241) and very unsure when `>= very_risk` (0.6).
     public static let threshold = 1 - 0.241
     public static let veryThreshold = 1 - 0.6

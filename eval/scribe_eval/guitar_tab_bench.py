@@ -5,14 +5,14 @@ playing 30 lead sheets twice, once comping (chords) and once soloing (a single l
 hexaphonic pickup, so every note is annotated with the string it was played on. The benchmark reads the
 `audio_mono-mic` recordings (the guitar alone, through a microphone) and the JAMS annotations.
 
-    python -m brasscribe_eval.guitar_tab_bench build <guitarset root> [--data DIR]    reference.json per excerpt
-    python -m brasscribe_eval.guitar_tab_bench prepare <guitarset root> [--data DIR] [--only beats|notes] [--reverse]
+    python -m scribe_eval.guitar_tab_bench build <guitarset root> [--data DIR]    reference.json per excerpt
+    python -m scribe_eval.guitar_tab_bench prepare <guitarset root> [--data DIR] [--only beats|notes] [--reverse]
                                                                                      run the models
-    python -m brasscribe_eval.guitar_tab_bench build-songs <slakh root> / prepare-songs <slakh root>
+    python -m scribe_eval.guitar_tab_bench build-songs <slakh root> / prepare-songs <slakh root>
                                                                                      guitars in a song (Slakh)
-    python -m brasscribe_eval.guitar_tab_bench build-idmt <IDMT-SMT-GUITAR_V2> / prepare-idmt <IDMT-SMT-GUITAR_V2>
+    python -m scribe_eval.guitar_tab_bench build-idmt <IDMT-SMT-GUITAR_V2> / prepare-idmt <IDMT-SMT-GUITAR_V2>
                                                                                      other guitars (IDMT-SMT-Guitar)
-    python -m brasscribe_eval.guitar_tab_bench report [--data DIR]                    per-group numbers
+    python -m scribe_eval.guitar_tab_bench report [--data DIR]                    per-group numbers
 
 <guitarset root> holds `annotation/*.jams` and `audio_mono-mic/*_mic.wav` as unpacked from Zenodo.
 
@@ -279,7 +279,7 @@ CHORD = 3  # notes that start together and make a chord
 def tab_of(entry: Path, clean: bool = True, params: dict | None = None, files: dict | None = None) -> dict:
     """tab.json's content for one excerpt, made by the tab profile's own stages from the cached model outputs.
     `clean` False is Basic Pitch straight to the grid: what the rules are measured against."""
-    from brasscribe_engine import bass_tab, tab
+    from scribe_engine import bass_tab, tab
 
     files = files or FILES
     opts = tab.options({"instrument": "guitar-6", "recording": "instrument", **(params or {})})

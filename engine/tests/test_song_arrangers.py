@@ -17,8 +17,8 @@ def _midi(path: Path, notes: list[tuple[int, float, float]]) -> Path:
 
 
 def test_the_melody_stays_out_of_the_harmony(tmp_path):
-    from brasscribe_eval.arrange_song import song_composition
-    from brasscribe_eval.consensus import doubles
+    from scribe_eval.arrange_song import song_composition
+    from scribe_eval.consensus import doubles
 
     in_line = doubles([{"pitch": 72, "onset": 1.004}])
     assert in_line({"pitch": 72, "onset": 1.05}) and not in_line({"pitch": 71, "onset": 1.004})
@@ -37,7 +37,7 @@ def test_the_melody_stays_out_of_the_harmony(tmp_path):
 
 
 def test_a_take_without_notes_says_so(tmp_path):
-    from brasscribe_eval.arrange_song import song_composition
+    from scribe_eval.arrange_song import song_composition
 
     beats = tmp_path / "b.beats"
     beats.write_text("".join(f"{k * 0.5:.3f} {k % 4 + 1}\n" for k in range(16)))
@@ -50,7 +50,7 @@ def test_a_take_without_notes_says_so(tmp_path):
 
 
 def test_layers_without_notes_say_so(tmp_path):
-    from brasscribe_eval import arrange_layers_song as A
+    from scribe_eval import arrange_layers_song as A
 
     layers = tmp_path / "layers"
     layers.mkdir()

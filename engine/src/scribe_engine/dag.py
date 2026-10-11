@@ -156,7 +156,7 @@ class Executor:
         self._fingerprints: dict[tuple, str] = {}
         self._waits: dict[str, float] = {}
         self._waits_lock = threading.Lock()
-        # Stages that may run at once (BRASSCRIBE_STAGE_PARALLELISM); 1 runs them in pipeline order.
+        # Stages that may run at once (SCRIBE_STAGE_PARALLELISM); 1 runs them in pipeline order.
         self.parallelism = max(1, int(parallelism))
         self._emit_lock = threading.RLock()
         self._not_for_reuse: set[str] = set()  # stages whose output of this run is not stored (StageContext.not_for_reuse)
@@ -255,7 +255,7 @@ class Executor:
         pending = list(pipeline.stages)
         running: dict[Future, Stage] = {}
         failure: BaseException | None = None
-        with ThreadPoolExecutor(max_workers=self.parallelism, thread_name_prefix="brasscribe-stage") as pool:
+        with ThreadPoolExecutor(max_workers=self.parallelism, thread_name_prefix="scribe-stage") as pool:
             while pending or running:
                 if failure is None and not self.cancel.is_set():
                     heavy_busy = any(self._heavy(st) for st in running.values())

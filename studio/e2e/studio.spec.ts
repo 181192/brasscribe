@@ -596,7 +596,7 @@ test("fetch errors explain what happened and recover with Try again", async ({ p
   await page.goto("/#/parity");
   const notice = page.locator("#main .notice-error");
   await expect(notice).toContainText("Couldn't reach Brasscribe on this computer.");
-  await expect(notice).toContainText("brasscribe serve");
+  await expect(notice).toContainText("scribe serve");
   await expect(page.locator("#main")).not.toContainText("Failed to fetch");
   await shot(page, "error-unreachable", false);
   await axe(page, "unreachable notice");

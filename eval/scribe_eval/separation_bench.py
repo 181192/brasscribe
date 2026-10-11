@@ -1,10 +1,10 @@
 """Separation-failure detection on the solo-vote cases (Mega-53 trumpet stems with a known solo part).
 
 A case counts as failed when SwiftF0 on the stem scores onset F1 < 0.5 against
-the reference solo; brasscribe_music.separation.check_stem should flag exactly
+the reference solo; scribe_music.separation.check_stem should flag exactly
 those, without the reference.
 
-    uv run python -W ignore -m brasscribe_eval.separation_bench
+    uv run python -W ignore -m scribe_eval.separation_bench
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import json
 
 import numpy as np
 import soundfile as sf
-from brasscribe_music.separation import check_stem
+from scribe_music.separation import check_stem
 
 from .lead_sheet import line
 from .score import load_notes, score

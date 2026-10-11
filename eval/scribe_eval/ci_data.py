@@ -9,11 +9,11 @@ Two sources:
   - eval/fixtures/: our own model outputs on those chorales (MuScriptor, Basic
     Pitch, Beat This! MIDI/beats; SwiftF0 contours of the part tracks).
 
-    python -m brasscribe_eval.ci_data --out ci-data              # download
-    python -m brasscribe_eval.ci_data --out ci-data --zip X.zip  # from a local copy of the archive
-    python -m brasscribe_eval.ci_data --pin                      # rewrite pins from data/ (maintainers)
+    python -m scribe_eval.ci_data --out ci-data              # download
+    python -m scribe_eval.ci_data --out ci-data --zip X.zip  # from a local copy of the archive
+    python -m scribe_eval.ci_data --pin                      # rewrite pins from data/ (maintainers)
 
-Then `BRASSCRIBE_DATA=ci-data brasscribe bench ci --require-data`.
+Then `SCRIBE_DATA=ci-data scribe bench ci --require-data`.
 """
 
 from __future__ import annotations

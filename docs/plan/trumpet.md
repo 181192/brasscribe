@@ -296,7 +296,7 @@ The Mikkel intro phrases at ticks 0 and 156 (2 notes and 1 note) are the solo li
   - `core/conformance/scribe_conformance/cases.py:108`
   - the Windows `NativeCoreBridgeTests.cs:20` `GoldenNotes` count, and `TestPaths.cs`
   - `music/tests/test_seats.py`
-  - `eval/baselines.json`, `eval/brasscribe_eval/difficulty_bench.py`, `suites.py`
+  - `eval/baselines.json`, `eval/scribe_eval/difficulty_bench.py`, `suites.py`
   - `qa/reports/mikkel-golden-readability.json`
   - the full list: the tests that turn red when `make check-all` runs with the old golden and the new code
 - **Fixture-only readers stay on the old directory.** These are the apps' playback and notation tests that only load the MusicXML.

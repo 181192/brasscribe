@@ -269,7 +269,7 @@ def core_call(command: str, request: dict, cancel: threading.Event | None = None
                 if time.monotonic() > end:
                     kill_tree(proc)
                     raise RuntimeError(f"scribe-core {command} stopped after {FRET_TIMEOUT_S:.0f} s, its time limit") from None
-            except BaseException:  # e.g. Ctrl-C in `brasscribe run`: leave no process running
+            except BaseException:  # e.g. Ctrl-C in `scribe run`: leave no process running
                 kill_tree(proc)
                 raise
         if proc.returncode != 0:
@@ -388,7 +388,7 @@ COMPOUND_BOTH = 0.25
 
 def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
     """The onsets divide the beats of `beat_times` in three (COMPOUND_*)."""
-    from brasscribe_music.quantize import BeatMap
+    from scribe_music.quantize import BeatMap
 
     at = BeatMap(beat_times).to_beats(np.unique(np.round(np.sort(onsets), 2))) % 1.0
     first, second = int(np.sum(np.abs(at - 1 / 3) <= COMPOUND_NEAR)), int(np.sum(np.abs(at - 2 / 3) <= COMPOUND_NEAR))
@@ -420,10 +420,10 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     There is no pitch window, so a line that was heard too high is all there for the octave check.
     `octave` (OCTAVES): auto runs the check, a number is the player's choice. `octave_shift` is what
     every pitch was moved by, and `octave_source` says who decided: auto or chosen."""
-    from brasscribe_eval.lead_sheet import line
-    from brasscribe_music.durations import apply_written
-    from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
-    from brasscribe_music.spelling import key_of
+    from scribe_eval.lead_sheet import line
+    from scribe_music.durations import apply_written
+    from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
+    from scribe_music.spelling import key_of
 
     beats = np.asarray(beats, dtype=float).reshape(-1, 2) if np.size(beats) else np.zeros((0, 2))
     if len(beats) < 2:
@@ -561,7 +561,7 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = solve) -> di
 
 def composition(tab: dict, title: str):
     """The canonical score of the tab: one bass voice, at the pitches the tab is written at."""
-    from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+    from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
     notes = [Note(n["pitch"], n["start"], n["dur"], n["confidence"], ["bass"], n["onset_s"], n["offset_s"])
              for n in tab["notes"]]
@@ -661,7 +661,7 @@ def musescore_fingerprint() -> str | None:
     """Which MuseScore would render the tab, for the export stage's cache key: None without one, else a
     digest of where its program is, its size and when it was written. So a run made without MuseScore is
     rendered once it is installed, and again after an update."""
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     exe = musescore.binary()
     found = shutil.which(exe) if exe else None
@@ -684,7 +684,7 @@ def export_stage(ctx: StageContext) -> None:
     A file MuseScore did not write does not fail the job: the tab itself (JSON, MusicXML, text) is made by the
     stage before, and the apps show it without the PDF. The log and export.json name what is missing, and the
     stage's output is not stored for reuse, so the next job tries MuseScore again."""
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
     names = [f"tab.{ext}" for ext in EXPORT_FORMATS]

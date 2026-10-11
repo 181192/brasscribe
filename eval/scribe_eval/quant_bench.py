@@ -22,7 +22,7 @@ from pathlib import Path
 
 import mir_eval
 import numpy as np
-from brasscribe_music.quantize import TICKS_PER_BEAT, quantize
+from scribe_music.quantize import TICKS_PER_BEAT, quantize
 
 from .score import LOOSE_TOL, load_notes, to_arrays
 

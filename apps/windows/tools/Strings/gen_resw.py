@@ -415,7 +415,7 @@ code = {
     "Error_ComputerUnreachable_Step1": ("Check that the computer is on and on the same network.", "Sjekk at datamaskinen er på og på samme nettverk."),
     "Error_ComputerUnreachable_Step2": ("Open Brasscribe on the computer.", "Åpne Brasscribe på datamaskinen."),
     "Error_ComputerUnreachable_Step3": ("Choose Try again.", "Velg Prøv igjen."),
-    "Error_ComputerUnreachable_Details": ("Start it with: brasscribe serve. Settings shows the address it uses. The message was: {0}", "Start den med: brasscribe serve. Innstillinger viser adressen den bruker. Meldingen var: {0}"),
+    "Error_ComputerUnreachable_Details": ("Start it with: scribe serve. Settings shows the address it uses. The message was: {0}", "Start den med: scribe serve. Innstillinger viser adressen den bruker. Meldingen var: {0}"),
     "Error_ScoreFailed_Title": ("The score couldn't be made", "Partituret kunne ikke lages"),
     "Error_ScoreFailed_Reason": ("Your recording is safe. Something stopped Brasscribe on your computer while it worked.", "Opptaket ditt er trygt. Noe stoppet Brasscribe på datamaskinen mens den arbeidet."),
     "Error_ScoreFailed_Step1": ("Choose Try again. It often works the second time.", "Velg Prøv igjen. Det går ofte andre gang."),

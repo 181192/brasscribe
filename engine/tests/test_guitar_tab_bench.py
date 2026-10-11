@@ -1,4 +1,4 @@
-"""The guitar tab benchmark (brasscribe_eval.guitar_tab_bench): its reference, its scores and its suite."""
+"""The guitar tab benchmark (scribe_eval.guitar_tab_bench): its reference, its scores and its suite."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from brasscribe_eval import guitar_tab_bench as G
-from brasscribe_eval import suites
+from scribe_eval import guitar_tab_bench as G
+from scribe_eval import suites
 
 
 def _jams(path, notes_by_source: dict[int, list[tuple[float, float, float]]]) -> None:

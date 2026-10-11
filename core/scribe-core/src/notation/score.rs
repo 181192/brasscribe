@@ -1652,7 +1652,7 @@ fn part_xml(part: &Part, idx: usize, bpb: i64, line_base: usize) -> X {
 /// pitch: a start takes the lowest number no open tie holds, its stop the number of the open tie on the
 /// same pitch. alphaTab 1.8.4 pairs unnumbered ties by comparing the stop's written pitch with the starts'
 /// sounding pitch, so in a transposing part a tie either failed (the note sounded again) or joined a stale
-/// start on another note (a note held for seconds). Mirrors `brasscribe_music.musicxml._number_ties`.
+/// start on another note (a note held for seconds). Mirrors `scribe_music.musicxml._number_ties`.
 fn number_ties(part: &mut X) {
     fn text<'a>(el: &'a X, name: &str) -> &'a str {
         el.children.iter().find(|c| c.name == name).and_then(|c| c.text.as_deref()).unwrap_or("")

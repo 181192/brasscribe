@@ -4,7 +4,7 @@
 
 **Instruments (one player each):**
 
-| Instrument | Sounding range to record (MIDI, from `music/src/brasscribe_music/instruments.py` pro range) | Notes |
+| Instrument | Sounding range to record (MIDI, from `music/src/scribe_music/instruments.py` pro range) | Notes |
 |---|---|---|
 | B♭ cornet | E3–A♭5 (52–80); also 81–82 if the player is comfortable | Also covers soprano cornet up to E♭6 (87) if a soprano player is available: second priority |
 | Flugelhorn | E3–A♭5 (52–80) | |

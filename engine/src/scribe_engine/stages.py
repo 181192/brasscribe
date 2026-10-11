@@ -1,7 +1,7 @@
 """Stage implementations: adapters for audio models, the reference library for the rest.
 
 Model stages call adapters as subprocesses. Symbolic stages run the reference
-modules in `brasscribe_eval` / `brasscribe_music` with the engine's own
+modules in `scribe_eval` / `scribe_music` with the engine's own
 interpreter, exactly as the song pipeline does, so the engine reproduces its
 output bit for bit.
 """
@@ -17,14 +17,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-import brasscribe_eval
-import brasscribe_music
+import scribe_eval
+import scribe_music
 
 from .config import child_env
 from .dag import StageContext, StageFailed
 
-MUSIC_SRC = Path(brasscribe_music.__file__).resolve().parent
-EVAL_SRC = Path(brasscribe_eval.__file__).resolve().parent
+MUSIC_SRC = Path(scribe_music.__file__).resolve().parent
+EVAL_SRC = Path(scribe_eval.__file__).resolve().parent
 THIS = Path(__file__).resolve()
 PART_STYLE = MUSIC_SRC / "parts.mss"  # MuseScore style for rendering individual parts
 EXPORT_CODE = (THIS, THIS.with_name("braille.py"), THIS.with_name("talking_score.py"))
@@ -72,8 +72,8 @@ def transcribe(ctx: StageContext) -> None:
 # ------------------------------------------------------------- symbolic stages
 
 def layers(ctx: StageContext) -> None:
-    """Solo / bass / drums from Mega-53, orchestra as the residual (brasscribe_eval.layers.build)."""
-    from brasscribe_eval import layers as L
+    """Solo / bass / drums from Mega-53, orchestra as the residual (scribe_eval.layers.build)."""
+    from scribe_eval import layers as L
 
     L.build(ctx.inputs["audio"], ctx.inputs["trumpet"].parent, ctx.out)
 
@@ -140,9 +140,9 @@ def arrange_layered(ctx: StageContext) -> None:
                 pretty_midi.PrettyMIDI().write(str(view / f"{layer}.mid"))
         # The footer on arranged parts is in the job's language when it has one (en otherwise).
         lang = ["--lang", ctx.params["lang"]] if ctx.params.get("lang") else []
-        _python(ctx, "brasscribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
+        _python(ctx, "scribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
                 "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render", *lang,
-                *_arrangement_flags(ctx, "brasscribe_eval.arrange_layers_song"))
+                *_arrangement_flags(ctx, "scribe_eval.arrange_layers_song"))
     _stable_musicxml(ctx)
 
 
@@ -154,7 +154,7 @@ def arrange_band(ctx: StageContext) -> None:
             "--harmony", *harmony, "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render"]
     if "melody_support" in i:
         args[4:4] = ["--melody-support", str(i["melody_support"])]
-    _python(ctx, "brasscribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "brasscribe_eval.arrange_song"))
+    _python(ctx, "scribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "scribe_eval.arrange_song"))
     _stable_musicxml(ctx)
 
 
@@ -167,7 +167,7 @@ def export(ctx: StageContext) -> None:
     score = ctx.inputs["score"]
     xml = score / "brass-band.musicxml"
     formats = ["pdf", "mid"] + (["mp3"] if ctx.params.get("audio", True) else [])
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
     written = []
@@ -198,7 +198,7 @@ def _level_mp3(mp3: Path, score: Path, ctx: StageContext) -> dict | None:
     """MuseScore's MP3 at the level the apps play the band (audio_level); left as written without the levels file."""
     from . import audio_level
 
-    band_dir = os.environ.get("BRASSCRIBE_BAND_SOUNDS_DIR")
+    band_dir = os.environ.get("SCRIBE_BAND_SOUNDS_DIR")
     levels = audio_level.levels_path(Path(band_dir) if band_dir else None)
     if levels is None:
         ctx.log("playback-levels.json not found: brass-band.mp3 keeps MuseScore's level")

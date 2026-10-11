@@ -5,7 +5,7 @@ This builds, per part:
   <out>/<set>/<song>/<part>.beats   Beat This! on that part's own recording (BEAT_THIS_MODEL, default small0)
   <out>/<set>/<song>/reference.json the song's reference notes with notated positions, plus the score meter
 
-    uv run python -W ignore -m brasscribe_eval.solo_beats --urmp ../data/urmp/Dataset \\
+    uv run python -W ignore -m scribe_eval.solo_beats --urmp ../data/urmp/Dataset \\
         --choralebricks ../data/choralebricks/01_AudioAndAnnotations --out ../data/runs/music-core/solo-beats
 
 Beat This! runs through ml/adapters/beat-this/run.sh inside the machine-wide heavy-model lock.
@@ -27,8 +27,8 @@ from . import urmp
 from .gpulock import gpu_lock
 BRASS_QUARTET = {"S": "Trumpet", "A": "Flugelhorn", "T": "Baritone", "B": "Tuba"}  # as choralebricks.py
 
-# The adapters' environments live in the main checkout; BRASSCRIBE_ADAPTERS points there from a worktree.
-ADAPTERS = Path(os.environ.get("BRASSCRIBE_ADAPTERS") or Path(__file__).resolve().parents[2] / "ml" / "adapters")
+# The adapters' environments live in the main checkout; SCRIBE_ADAPTERS points there from a worktree.
+ADAPTERS = Path(os.environ.get("SCRIBE_ADAPTERS") or Path(__file__).resolve().parents[2] / "ml" / "adapters")
 
 
 def _beats(wav: Path, dst: Path, model: str) -> None:

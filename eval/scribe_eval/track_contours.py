@@ -4,9 +4,9 @@ URMP ships each player's separate recording (AuSep_<k>_<inst>_*.wav) and
 ChoraleBricks each part's track (tracks_normalized/, chosen as in
 choralebricks.BRASS_QUARTET). Runs inside the SwiftF0 adapter's environment:
 
-    uv run --project ml/adapters/swift-f0 python eval/brasscribe_eval/track_contours.py \
+    uv run --project ml/adapters/swift-f0 python eval/scribe_eval/track_contours.py \
         urmp data/urmp/Dataset data/eval/urmp-brass data/runs/contours/urmp-brass
-    uv run --project ml/adapters/swift-f0 python eval/brasscribe_eval/track_contours.py \
+    uv run --project ml/adapters/swift-f0 python eval/scribe_eval/track_contours.py \
         choralebricks data/choralebricks/01_AudioAndAnnotations data/eval/choralebricks-brass4 data/runs/contours/choralebricks-brass4
 
 Writes <out>/<song>/<part>.npz (t, pitch_hz, confidence, loudness_db).

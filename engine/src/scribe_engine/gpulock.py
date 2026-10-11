@@ -9,7 +9,7 @@ someone waits on it would let a second process lock a new file of the same name.
 belong to an open file description, so two threads that each open the file exclude each other too.
 The holder's pid is written into the file, for people looking at a stuck machine.
 
-The default lock file is per user (/tmp/brasscribe-gpu-<uid>.lock on POSIX, the user's temp folder on
+The default lock file is per user (/tmp/scribe-gpu-<uid>.lock on POSIX, the user's temp folder on
 Windows). It is created readable by its owner only, never opened through a symbolic link, and on POSIX
 a lock file that belongs to another user is refused.
 """
@@ -55,10 +55,10 @@ else:
 
 
 def default_path() -> Path:
-    """The lock file every Brasscribe process of this user shares (brasscribe_eval.gpulock uses the same)."""
+    """The lock file every Brasscribe process of this user shares (scribe_eval.gpulock uses the same)."""
     if sys.platform == "win32":
-        return Path(tempfile.gettempdir()) / "brasscribe-gpu.lock"
-    return Path("/tmp") / f"brasscribe-gpu-{os.getuid()}.lock"
+        return Path(tempfile.gettempdir()) / "scribe-gpu.lock"
+    return Path("/tmp") / f"scribe-gpu-{os.getuid()}.lock"
 
 
 OPEN_FLAGS = os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
@@ -69,7 +69,7 @@ def _checked(fd: int, path: Path) -> int:
     st = os.fstat(fd)
     if not stat.S_ISREG(st.st_mode) or (hasattr(os, "getuid") and st.st_uid != os.getuid()):
         os.close(fd)
-        raise PermissionError(f"{path} is not a lock file of this user; set BRASSCRIBE_GPU_LOCK to another path")
+        raise PermissionError(f"{path} is not a lock file of this user; set SCRIBE_GPU_LOCK to another path")
     return fd
 
 

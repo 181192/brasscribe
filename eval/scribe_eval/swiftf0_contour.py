@@ -2,10 +2,10 @@
 
 Runs inside the SwiftF0 adapter's environment (it imports only swift_f0 and numpy):
 
-    uv run --project ml/adapters/swift-f0 python eval/brasscribe_eval/swiftf0_contour.py solo.wav solo-sw.contour.npz
+    uv run --project ml/adapters/swift-f0 python eval/scribe_eval/swiftf0_contour.py solo.wav solo-sw.contour.npz
 
 The file holds t (s), pitch_hz, confidence and loudness_db per 16 ms frame.
-brasscribe_music.durations reads it to find where each note really ends; the
+scribe_music.durations reads it to find where each note really ends; the
 adapter's MIDI output keeps only the segmented notes, which end early when the
 contour's confidence dips on a sustained, reverberant tone.
 """

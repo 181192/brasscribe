@@ -25,7 +25,7 @@ internal static class TestPaths
     /// <summary>A file under data/ or models/ in the repo, or null when it is not there.</summary>
     public static string? RepoFile(string relative)
     {
-        var env = Environment.GetEnvironmentVariable("BRASSCRIBE_REPO");
+        var env = Environment.GetEnvironmentVariable("SCRIBE_REPO");
         foreach (var root in new[] { env, RepoRoot }.Where(r => r is not null))
         {
             var p = Path.Combine(root!, relative);
@@ -37,10 +37,10 @@ internal static class TestPaths
     /// <summary>The skip reason for a test that needs <paramref name="relative"/> (as passed to <see cref="RepoFile"/>).</summary>
     public static string Missing(string relative) =>
         relative.StartsWith("data/sounds/", StringComparison.Ordinal)
-            ? $"{relative} not found: SoundFonts are downloads or build outputs (`pixi run fetch-sounds` fetches the band SoundFonts; scripts/worktree-setup.sh links data/ into a worktree, or set BRASSCRIBE_REPO)"
+            ? $"{relative} not found: SoundFonts are downloads or build outputs (`pixi run fetch-sounds` fetches the band SoundFonts; scripts/worktree-setup.sh links data/ into a worktree, or set SCRIBE_REPO)"
             : relative.StartsWith("data/", StringComparison.Ordinal) || relative.StartsWith("models/", StringComparison.Ordinal)
-                ? $"{relative} not found: data/ and models/ are not in git (scripts/worktree-setup.sh links them into a worktree, or set BRASSCRIBE_REPO to a checkout that has them)"
-                : $"{relative} not found: run the tests from a checkout, or set BRASSCRIBE_REPO";
+                ? $"{relative} not found: data/ and models/ are not in git (scripts/worktree-setup.sh links them into a worktree, or set SCRIBE_REPO to a checkout that has them)"
+                : $"{relative} not found: run the tests from a checkout, or set SCRIBE_REPO";
 
     /// <summary>The skip reason for a test that runs the Rust core through scribe_ffi.</summary>
     public const string NoNativeCore =

@@ -5,7 +5,7 @@
 
 The eval set is built from Slakh tracks with exactly one Bass-class stem (`build`), under
 <data>/eval/slakh-bass/<track>/: reference.json and, once the models have run (`prepare`, live mode),
-their outputs. The notes then go through the profile's own code (brasscribe_engine.bass_tab) and the
+their outputs. The notes then go through the profile's own code (scribe_engine.bass_tab) and the
 Rust core, so the numbers are those of a job's tab.json.
 
 The reference is at sounding pitch. Slakh writes bass an octave above where its patches sound; that is
@@ -21,14 +21,14 @@ there or really is there. It is reported apart, by cut.
 
 All three sets are rendered instruments. Nothing here measures a real recording.
 
-    python -m brasscribe_eval.bass_tab_bench build <slakh root> [--data DIR]     reference.json per Slakh track
-    python -m brasscribe_eval.bass_tab_bench synthesize [--data DIR]             the low-register set (FluidSynth)
-    python -m brasscribe_eval.bass_tab_bench prepare <slakh root> [--data DIR]   run the models (GPU)
-    python -m brasscribe_eval.bass_tab_bench build-phone <slakh root> [--data DIR]  the bass alone as a phone hears it
-    python -m brasscribe_eval.bass_tab_bench prepare-phone [--data DIR]          run the models on it
-    python -m brasscribe_eval.bass_tab_bench report [--data DIR]                 per-track numbers
+    python -m scribe_eval.bass_tab_bench build <slakh root> [--data DIR]     reference.json per Slakh track
+    python -m scribe_eval.bass_tab_bench synthesize [--data DIR]             the low-register set (FluidSynth)
+    python -m scribe_eval.bass_tab_bench prepare <slakh root> [--data DIR]   run the models (GPU)
+    python -m scribe_eval.bass_tab_bench build-phone <slakh root> [--data DIR]  the bass alone as a phone hears it
+    python -m scribe_eval.bass_tab_bench prepare-phone [--data DIR]          run the models on it
+    python -m scribe_eval.bass_tab_bench report [--data DIR]                 per-track numbers
 
-It runs on a computer that has the data and the models, not in CI: `brasscribe bench bass-tab` scores
+It runs on a computer that has the data and the models, not in CI: `scribe bench bass-tab` scores
 what `prepare` left next to the data, `--mode live` builds and prepares what is missing.
 """
 
@@ -341,7 +341,7 @@ def prepare_phone(entry: Path) -> None:
 
 def tab_of(entry: Path, mode: str, params: dict | None = None) -> dict:
     """tab.json's content for one entry, made by the profile's own stages from the cached model outputs."""
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     files = {**FILES, **PHONE_FILES}[mode]
     # An entry may say what the job would be given: a five-string for a line below E1.

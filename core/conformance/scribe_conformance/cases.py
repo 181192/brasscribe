@@ -229,7 +229,7 @@ def all_cases(work: Path, only: str | None = None, skipped: dict[str, list[str]]
             link.symlink_to(song / src)
         base = {"layers": layers, "beats": song / f"{stem}.beats", "title": stem, "contour": song / f"{stem}.contour.npz"}
         variants = [("no-seat", ["--lineup", "minimal"]), (seat, ["--lineup", "minimal", "--seat", seat])]
-        from brasscribe_music.instruments import seat_by_id
+        from scribe_music.instruments import seat_by_id
 
         if "bass" in seat_by_id(seat).reads and seat_by_id(seat).own_part.instrument.clef != "bass":
             variants.append((f"{seat}-bass-clef", ["--lineup", "minimal", "--seat", seat, "--reads", "bass"]))

@@ -6,7 +6,7 @@ bottom line of the bass source. Beats come from Beat This! (time, beat-in-bar).
 
 from __future__ import annotations
 
-from brasscribe_music import musescore
+from scribe_music import musescore
 
 import argparse
 import subprocess
@@ -14,8 +14,8 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.musicxml import PartSpec, build_score, write_musicxml
-from brasscribe_music.quantize import TICKS_PER_BEAT, fill_gaps, quantize
+from scribe_music.musicxml import PartSpec, build_score, write_musicxml
+from scribe_music.quantize import TICKS_PER_BEAT, fill_gaps, quantize
 
 from .consensus import consensus
 from .score import load_notes

@@ -6,10 +6,10 @@ reference.json), runs the light models on that part's own recording:
   <root>/<set>/<song>/<part>-bp.mid          Basic Pitch adapter
   <root>/<set>/<song>/<part>-sw.contour.npz  SwiftF0 contour
 
-    uv run python -W ignore -m brasscribe_eval.solo_notes ../data/runs/music-core/solo-beats \\
+    uv run python -W ignore -m scribe_eval.solo_notes ../data/runs/music-core/solo-beats \\
         --urmp ../data/urmp/Dataset --choralebricks ../data/choralebricks/01_AudioAndAnnotations
 
-Light models on single tracks: no GPU lock. BRASSCRIBE_ADAPTERS points at the adapters' environments.
+Light models on single tracks: no GPU lock. SCRIBE_ADAPTERS points at the adapters' environments.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import os
 import subprocess
 from pathlib import Path
 
-ADAPTERS = Path(os.environ.get("BRASSCRIBE_ADAPTERS") or Path(__file__).resolve().parents[2] / "ml" / "adapters")
+ADAPTERS = Path(os.environ.get("SCRIBE_ADAPTERS") or Path(__file__).resolve().parents[2] / "ml" / "adapters")
 BRASS_QUARTET = {"S": "Trumpet", "A": "Flugelhorn", "T": "Baritone", "B": "Tuba"}  # as choralebricks.py
 
 

@@ -3,17 +3,17 @@
 # Linux image for benchmark runners and headless engines (the repository root is the build context).
 #
 #   CPU (linux/amd64 or linux/arm64):
-#     docker build -f engine/Dockerfile --target cpu -t brasscribe:cpu .
+#     docker build -f engine/Dockerfile --target cpu -t scribe:cpu .
 #   NVIDIA (linux/amd64, run with --gpus all):
 #     docker build -f engine/Dockerfile --target cuda \
-#       --build-arg BASE=nvidia/cuda:12.8.1-runtime-ubuntu24.04 -t brasscribe:cuda .
+#       --build-arg BASE=nvidia/cuda:12.8.1-runtime-ubuntu24.04 -t scribe:cuda .
 #
-#   docker run --rm -v "$PWD/data:/data" -p 8765:8765 brasscribe:cpu              # engine, LAN pairing code printed
-#   docker run --rm brasscribe:cpu pixi run test                                   # unit tests
-#   docker run --rm brasscribe:cpu sh -c 'pixi run python -m brasscribe_eval.ci_data --out /tmp/ci && \
-#       BRASSCRIBE_DATA=/tmp/ci pixi run brasscribe bench ci --require-data'      # CI benchmark gate
+#   docker run --rm -v "$PWD/data:/data" -p 8765:8765 scribe:cpu              # engine, LAN pairing code printed
+#   docker run --rm scribe:cpu pixi run test                                   # unit tests
+#   docker run --rm scribe:cpu sh -c 'pixi run python -m scribe_eval.ci_data --out /tmp/ci && \
+#       SCRIBE_DATA=/tmp/ci pixi run scribe bench ci --require-data'      # CI benchmark gate
 #
-# Model weights and datasets are not in the image; mount a data directory at /data (and models at /brasscribe/models).
+# Model weights and datasets are not in the image; mount a data directory at /data (and models at /scribe/models).
 # The Rust core's command line (scribe-core, for the bass-tab profile) is built from core/ in its own stage.
 ARG BASE=ubuntu:24.04
 ARG RUST_VERSION=1.91
@@ -42,19 +42,19 @@ COPY .pixi-version /tmp/pixi-version
 RUN v="${PIXI_VERSION:-v$(tr -d ' \r\n' < /tmp/pixi-version | sed 's/^v//')}" \
  && curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION="$v" PIXI_HOME=/usr/local PIXI_NO_PATH_UPDATE=1 bash \
  && pixi --version
-WORKDIR /brasscribe
+WORKDIR /scribe
 COPY pixi.toml pixi.lock ./
 COPY music music
 COPY eval eval
 COPY engine engine
 COPY ml ml
 COPY qa qa
-ENV BRASSCRIBE_ADAPTER_RUNNER=pixi \
-    BRASSCRIBE_DATA=/data \
-    BRASSCRIBE_PYTHON=/brasscribe/.pixi/envs/default/bin/python
+ENV SCRIBE_ADAPTER_RUNNER=pixi \
+    SCRIBE_DATA=/data \
+    SCRIBE_PYTHON=/scribe/.pixi/envs/default/bin/python
 EXPOSE 8765
 # mDNS from a bridged container would advertise the container's own address.
-CMD ["pixi", "run", "brasscribe", "serve", "--lan", "--no-advertise"]
+CMD ["pixi", "run", "scribe", "serve", "--lan", "--no-advertise"]
 
 # Engine plus every adapter on CPU PyTorch.
 FROM base AS cpu
@@ -72,5 +72,5 @@ ARG ENVS="default swift-f0 basic-pitch muscriptor-cuda beat-this-cuda mega53-cud
 RUN for e in ${ENVS}; do CONDA_OVERRIDE_CUDA=12.8 pixi install --frozen -e "$e" || exit 1; done \
  && pixi clean cache --yes
 COPY --from=core /core/target/release/scribe-core /usr/local/bin/scribe-core
-ENV BRASSCRIBE_CUDA=1 \
+ENV SCRIBE_CUDA=1 \
     SCRIBE_CORE_CLI=/usr/local/bin/scribe-core

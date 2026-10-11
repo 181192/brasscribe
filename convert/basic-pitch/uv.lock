@@ -98,7 +98,7 @@ wheels = [
 ]
 
 [[package]]
-name = "brasscribe-convert-basic-pitch"
+name = "scribe-convert-basic-pitch"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -19,7 +19,7 @@ Per instrument (mean over its stems), scored with mir_eval onset F1 at 100 ms ag
   q_hit               share of wrong notes marked "?" (seat)
   q_missed            wrong notes without a "?", per 100 written notes (seat; lower is better)
 
-    python -m brasscribe_eval.solo_instruments_bench [--json FILE]
+    python -m scribe_eval.solo_instruments_bench [--json FILE]
 """
 
 from __future__ import annotations
@@ -126,7 +126,7 @@ def _as_dicts(notes) -> list[dict]:
 def evaluate(seats: bool = False, root: Path = FIXTURES, notes: list | None = None) -> dict[str, dict[str, float]]:
     """Per-instrument metrics; with `notes`, every seat-take note is appended to it as
     (song, instrument, confidence, pitch, right)."""
-    from brasscribe_music.confidence import Model
+    from scribe_music.confidence import Model
 
     from .arrange_layers_song import pitched
 
@@ -195,7 +195,7 @@ def fit_low(notes: list, grid: np.ndarray = np.round(np.arange(-3.0, 6.01, 0.05)
     weight held, by maximum
     likelihood on the seat-take notes; also left out song by song (fitted on the other songs, the
     "?" rates measured on the one left out)."""
-    from brasscribe_music.confidence import Model
+    from scribe_music.confidence import Model
 
     mark = 1 - Model.load().mark_risk
     songs = np.array([n[0] for n in notes])

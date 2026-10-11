@@ -1,7 +1,7 @@
 """Which build of the engine is running: the stamp Bandroom's workspace carries, or the checkout's git commit.
 
 `/v1/health` reports it, so an engine left behind by an app update is visible. Read once per process: from
-``.brasscribe-workspace.json`` at the workspace root (the installed copy Bandroom keeps in its data folder), else
+``.scribe-workspace.json`` at the workspace root (the installed copy Bandroom keeps in its data folder), else
 ``git rev-parse --short HEAD`` in a checkout. None where neither exists (a container image).
 """
 
@@ -12,9 +12,9 @@ import json
 import subprocess
 from pathlib import Path
 
-STAMP_FILE = ".brasscribe-workspace.json"
+STAMP_FILE = ".scribe-workspace.json"
 
-# engine/src/brasscribe_engine/build_info.py -> the workspace or repository root (an editable install).
+# engine/src/scribe_engine/build_info.py -> the workspace or repository root (an editable install).
 _HERE = Path(__file__).resolve()
 ROOT = _HERE.parents[3] if len(_HERE.parents) > 3 else _HERE.parent
 

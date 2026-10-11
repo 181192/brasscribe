@@ -17,7 +17,7 @@ Sets: the ground-truth arrange_bench compositions (chorales, URMP) through the
 minimal arranger, and the Mikkel layered composition through the layered
 arranger for both lineups.
 
-    uv run python -W ignore -m brasscribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass \\
+    uv run python -W ignore -m scribe_eval.difficulty_bench ../data/eval/choralebricks-brass4 ../data/eval/urmp-brass \\
         --mikkel ../data/golden/mikkel-arranged-band/composition.json
 """
 
@@ -28,11 +28,11 @@ import json
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.arranger import CHOIR_PARTS, PAD_PARTS, arrange, arrange_layers
-from brasscribe_music.difficulty import KEY_CHANGE_PENALTY, MODES, apply_difficulty, easy_range
-from brasscribe_music.instruments import BRASS_BAND, MINIMAL_BAND, QUARTET
-from brasscribe_music.keys import key_plan
-from brasscribe_music.score_model import Composition, VoiceRole
+from scribe_music.arranger import CHOIR_PARTS, PAD_PARTS, arrange, arrange_layers
+from scribe_music.difficulty import KEY_CHANGE_PENALTY, MODES, apply_difficulty, easy_range
+from scribe_music.instruments import BRASS_BAND, MINIMAL_BAND, QUARTET
+from scribe_music.keys import key_plan
+from scribe_music.score_model import Composition, VoiceRole
 
 from .arrange_bench import composition_from_reference
 

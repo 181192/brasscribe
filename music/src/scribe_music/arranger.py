@@ -332,7 +332,7 @@ def voice_satb(pcs: list[int], soprano: int | None, bass: int | None, prev: list
          the bass's own tone
       4. movement |dA| + |dT| from the previous slot
       5. the higher alto, then the higher tenor
-    The order was tuned on the ChoraleBricks chorales (eval/brasscribe_eval/arrange_bench.py)
+    The order was tuned on the ChoraleBricks chorales (eval/scribe_eval/arrange_bench.py)
     and is frozen: the Rust port (arranger.rs) must follow it exactly.
     `prev` is the previous slot's [S, A, T, B] (None where a voice was silent). A lead that moves
     during the slot is given as its lowest note (`soprano`, for crossing) and its highest

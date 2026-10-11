@@ -9,15 +9,15 @@ It also reports which instrument sound MuseScore assigned to each part.
 
 from __future__ import annotations
 
-from brasscribe_music import musescore
+from scribe_music import musescore
 
 import argparse
 import re
 import subprocess
 from pathlib import Path
 
-from brasscribe_music.arranger import arrange_composition
-from brasscribe_music.score_model import Composition
+from scribe_music.arranger import arrange_composition
+from scribe_music.score_model import Composition
 from music21 import converter
 
 

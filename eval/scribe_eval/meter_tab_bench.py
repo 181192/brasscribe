@@ -10,9 +10,9 @@ For each passage the benchmark reports the beats in a bar the beat tracker found
 the rule) and the beats in the bar that is written, against the meter it was written in. A compound
 meter is right counted either way: 6/8 as two beats or six, 12/8 as four or twelve.
 
-    python -m brasscribe_eval.meter_tab_bench synthesize [--data DIR]    the passages (FluidSynth)
-    python -m brasscribe_eval.meter_tab_bench prepare [--data DIR]       run the models
-    python -m brasscribe_eval.meter_tab_bench report [--data DIR]        per-passage meters
+    python -m scribe_eval.meter_tab_bench synthesize [--data DIR]    the passages (FluidSynth)
+    python -m scribe_eval.meter_tab_bench prepare [--data DIR]       run the models
+    python -m scribe_eval.meter_tab_bench report [--data DIR]        per-passage meters
 
 Rendered, one take each: weak evidence. It runs on a computer that has the SoundFont and the models.
 """
@@ -114,7 +114,7 @@ def prepare(entry: Path) -> None:
 def meters(entry: Path) -> dict:
     """The beats in a bar the tracker found for the passage (what the tab had before the bar rule) and the
     beats in the bar the tab profile writes, with the tempo it writes."""
-    from brasscribe_engine import bass_tab, tab
+    from scribe_engine import bass_tab, tab
 
     ref = json.loads((entry / "reference.json").read_text())
     heard, second = bass_tab.load_transcription(entry / FILES["bp"]), bass_tab.load_transcription(entry / FILES["sw"])

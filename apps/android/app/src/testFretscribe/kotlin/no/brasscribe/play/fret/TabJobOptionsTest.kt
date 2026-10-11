@@ -208,7 +208,7 @@ class TabJobOptionsTest {
         // The repository root is two up from the sounds folder the build passes in.
         val root = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }
         val script = root?.resolve("apps/android/scripts/check-tab-options.py")
-        assumeTrue("the engine is not in this checkout", script?.isFile == true && root.resolve("engine/src/brasscribe_engine/tab.py").isFile)
+        assumeTrue("the engine is not in this checkout", script?.isFile == true && root.resolve("engine/src/scribe_engine/tab.py").isFile)
         val tab = recorded()
         assumeTrue("apps/fixtures/guitar-line is not in this checkout", tab != null)
         val jobs = firstJobs() + changedJobs(tab!!)

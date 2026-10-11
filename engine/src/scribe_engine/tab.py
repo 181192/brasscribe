@@ -185,7 +185,7 @@ DEFAULT_INSTRUMENT = "guitar-6"
 # ---------------------------------------------------------------- how the notes are read (played_notes)
 #
 # The numbers below were set on GuitarSet's players 00 to 02 and are reported on players 03 to 05
-# (eval/brasscribe_eval/guitar_tab_bench.py). Each comment says what share of the notes a rule touches
+# (eval/scribe_eval/guitar_tab_bench.py). Each comment says what share of the notes a rule touches
 # were wrong on the players it was set on.
 
 MIN_SECONDS = 0.06  # a shorter note is not one (as the bass line's)
@@ -519,9 +519,9 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     """The notes of a chordal instrument on the beat grid: every note heard, not one line.
 
     `clean` False is Basic Pitch straight to the grid, which the benchmark measures the rules against."""
-    from brasscribe_music.durations import apply_written
-    from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
-    from brasscribe_music.spelling import key_of
+    from scribe_music.durations import apply_written
+    from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
+    from scribe_music.spelling import key_of
 
     heard = HEARD[instrument]
     beats = np.asarray(beats, dtype=float).reshape(-1, 2) if np.size(beats) else np.zeros((0, 2))
@@ -797,7 +797,7 @@ def fingered(doc: dict, opts: dict, solve: Callable[[dict], dict] = bass_tab.sol
 
 def composition(tab: dict, title: str, kind: str):
     """The canonical score of the tab: one voice named after the instrument, at the pitches the tab is written at."""
-    from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+    from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
     notes = [Note(n["pitch"], n["start"], n["dur"], n["confidence"], [kind], n["onset_s"], n["offset_s"]) for n in tab["notes"]]
     return Composition(title, [Voice(kind, VoiceRole.HARMONY, notes)],

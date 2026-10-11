@@ -9,10 +9,10 @@ send requests to that address too, and it must not count as a client the owner c
   Origin names anything but the engine itself, or when Sec-Fetch-Site says the request comes from another site.
 - A page loaded under some DNS name that resolves to this computer talks to the engine as its own origin,
   but its Host header carries that name. A request trusted by its address must name the engine by an IP
-  address, localhost, a .local name, this computer's host name, or a name in BRASSCRIBE_ALLOWED_HOSTS (for
+  address, localhost, a .local name, this computer's host name, or a name in SCRIBE_ALLOWED_HOSTS (for
   a proxy on this computer); anything else gets 400.
 
-Request bodies are capped (BRASSCRIBE_MAX_UPLOAD_BYTES, 2 GiB by default): a larger one gets 413, from its
+Request bodies are capped (SCRIBE_MAX_UPLOAD_BYTES, 2 GiB by default): a larger one gets 413, from its
 Content-Length before it is read, or as soon as a body sent without one passes the cap.
 
 Studio is served by the engine, so its requests are same-origin. The native apps send neither Origin nor
@@ -91,7 +91,7 @@ class RequestGuard:
         client = scope.get("client")[0] if scope.get("client") else ""
         if host is not None and self.trusted(client) and not host_allowed(host, self.allowed_hosts):
             return await JSONResponse({"detail": f"unknown host name {host_name(host)!r}; add it to "
-                                                 "BRASSCRIBE_ALLOWED_HOSTS if it is this computer"},
+                                                 "SCRIBE_ALLOWED_HOSTS if it is this computer"},
                                       status_code=400)(scope, receive, send)
         if scope["method"] in STATE_CHANGING:
             origin, site = headers.get("origin"), headers.get("sec-fetch-site")
@@ -111,7 +111,7 @@ class BodyLimit:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or scope["method"] not in STATE_CHANGING:
             return await self.app(scope, receive, send)
-        too_large = f"the request is larger than {self.max_bytes} bytes (BRASSCRIBE_MAX_UPLOAD_BYTES)"
+        too_large = f"the request is larger than {self.max_bytes} bytes (SCRIBE_MAX_UPLOAD_BYTES)"
         length = dict(scope["headers"]).get(b"content-length", b"")
         if length.isdigit() and int(length) > self.max_bytes:
             return await JSONResponse({"detail": too_large}, status_code=413)(scope, receive, send)

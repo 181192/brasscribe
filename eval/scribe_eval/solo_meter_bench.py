@@ -15,7 +15,7 @@ reference notes are quantized on the beats and scored:
 Extra cases (--case NAME=REFERENCE_DIR): a clip with beats-small0.beats, layers/solo-sw.mid and an
 expected time signature, e.g. the on-device reference clip (entertainer=../data/runs/apple/entertainer-ref:2/4).
 
-    uv run python -W ignore -m brasscribe_eval.solo_meter_bench ../data/runs/music-core/solo-beats
+    uv run python -W ignore -m scribe_eval.solo_meter_bench ../data/runs/music-core/solo-beats
 """
 
 from __future__ import annotations
@@ -27,9 +27,9 @@ from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.beats import clean_beats_gated, kept_notes, labels_on, solo_meter
-from brasscribe_music.freetime import unstable_runs
-from brasscribe_music.quantize import TICKS_PER_BEAT, choose_level, quantize
+from scribe_music.beats import clean_beats_gated, kept_notes, labels_on, solo_meter
+from scribe_music.freetime import unstable_runs
+from scribe_music.quantize import TICKS_PER_BEAT, choose_level, quantize
 
 BEAT_QUARTERS = (0.5, 1.0, 1.5, 2.0, 3.0)
 

@@ -7,8 +7,8 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import stages
-from brasscribe_engine.api import create_app
+from scribe_engine import stages
+from scribe_engine.api import create_app
 
 
 @pytest.fixture

@@ -34,10 +34,10 @@ enum TestHost {
     /// Before anything else runs: the environment `AppModel` reads.
     static func isolate() {
         setenv("BANDROOM_DEMO", "busy", 1)
-        setenv("BRASSCRIBE_DATA", root.appending(path: "data").path, 1)
-        setenv("BRASSCRIBE_LOGS", root.appending(path: "logs").path, 1)
+        setenv("SCRIBE_DATA", root.appending(path: "data").path, 1)
+        setenv("SCRIBE_LOGS", root.appending(path: "logs").path, 1)
         setenv("BANDROOM_NO_LOGIN_ITEM", "1", 1)
-        for name in ["BRASSCRIBE_CHECKOUT", "HF_TOKEN", "BANDROOM_OPEN", "BANDROOM_APPEARANCE", "BANDROOM_DEMO_REQUEST"] { unsetenv(name) }
+        for name in ["SCRIBE_CHECKOUT", "HF_TOKEN", "BANDROOM_OPEN", "BANDROOM_APPEARANCE", "BANDROOM_DEMO_REQUEST"] { unsetenv(name) }
     }
 
     /// Stops the test run unless the model is isolated: demo engine, data and logs under `root`, settings not the app's.

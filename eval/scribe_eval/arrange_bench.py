@@ -27,12 +27,12 @@ import json
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.arranger import _perfect_parallels, arrange
-from brasscribe_music.instruments import MINIMAL_BAND, Lineup, lineup_by_name
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.quantize import TICKS_PER_BEAT
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
-from brasscribe_music.spelling import key_of
+from scribe_music.arranger import _perfect_parallels, arrange
+from scribe_music.instruments import MINIMAL_BAND, Lineup, lineup_by_name
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.quantize import TICKS_PER_BEAT
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.spelling import key_of
 
 from .score import load_notes
 
@@ -109,7 +109,7 @@ def audio_quartet_row(comp: Composition, arr, reference: Path) -> dict:
     """A quartet arranged from a transcribed recording, against the chorale's own notes (in seconds):
     melody / bass kept (pitch class at each S / B onset), alto and tenor recall by pitch class, and
     the four-part metrics of the arrangement itself."""
-    from brasscribe_music.quantize import BeatMap
+    from scribe_music.quantize import BeatMap
 
     lineup = arr.lineup
     names = satb_names(lineup)

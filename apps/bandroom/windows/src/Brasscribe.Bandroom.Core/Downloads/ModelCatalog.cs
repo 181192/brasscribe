@@ -19,7 +19,7 @@ public abstract record ModelHome
 {
     private ModelHome() { }
 
-    /// <summary><c>&lt;models&gt;\&lt;folder&gt;</c>, the folder the engine reads through BRASSCRIBE_MODELS.</summary>
+    /// <summary><c>&lt;models&gt;\&lt;folder&gt;</c>, the folder the engine reads through SCRIBE_MODELS.</summary>
     public sealed record Models(string Folder) : ModelHome;
 
     /// <summary>

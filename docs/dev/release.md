@@ -61,7 +61,7 @@ APKs once the assets are uploaded.
 ## 1. A clean worktree and the version bump
 
 Build from a fresh worktree of `origin/main`, never from the main checkout. Gitignored leftovers there
-get staged into the app (a stray band SoundFont under `engine/src/brasscribe_engine/static/assets/band`
+get staged into the app (a stray band SoundFont under `engine/src/scribe_engine/static/assets/band`
 once grew Bandroom from 118 MB to 181 MB).
 
 ```sh
@@ -171,7 +171,7 @@ The build's post-build scripts stage what the first run installs from:
 - `scripts/stage-workspace.sh` copies the engine workspace (`pixi.toml`, `pixi.lock`, `engine`, `music`,
   the benchmark package, `ml/adapters` and the pinned MSST code, fetched once into `build/cache`, which
   needs the network) into `Resources/workspace`. Last, it writes the **workspace stamp**,
-  `.brasscribe-workspace.json`: a hash of every staged file, a hash of `pixi.lock`, the short commit,
+  `.scribe-workspace.json`: a hash of every staged file, a hash of `pixi.lock`, the short commit,
   the version and the build. On launch Bandroom compares it with the installed copy in
   `~/Library/Application Support/Brasscribe/envs`, swaps the workspace when they differ, and runs
   `pixi install` again only when the lock hash changed. Check that the stamp's commit is the release
@@ -182,7 +182,7 @@ The pixi version CI installs, and so the one both Bandroom builds bundle, is pin
 the requirement; `check-bundled-pixi.sh` fails when the pin or a bundled pixi doesn't meet it, so raise the pin
 first when the requirement goes up.
 
-The app bundles `pixi`, so a Mac without it can install the engine. Bandroom takes `BRASSCRIBE_PIXI` when set,
+The app bundles `pixi`, so a Mac without it can install the engine. Bandroom takes `SCRIBE_PIXI` when set,
 then the bundled `Contents/Resources/bin/pixi`, then `~/.pixi/bin` and Homebrew. Copy it in,
 then re-sign **pixi and `scribe-core` first, then the app**:
 

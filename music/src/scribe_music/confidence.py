@@ -8,7 +8,7 @@ match the score), estimated from:
   - how strongly the SwiftF0 contour supports it: mean voicing confidence of
     the frames near the note's pitch over its first 0.3 s
   - whether the solo was separated from a mix (a stem) or recorded alone
-The model is a logistic regression fitted by eval/brasscribe_eval/confidence_bench.py
+The model is a logistic regression fitted by eval/scribe_eval/confidence_bench.py
 on notes with ground truth (Mega-53 solo stems of ChoraleBricks and Slakh
 songs, and every URMP and ChoraleBricks single part) and stored in
 calibration.json next to this file. The bench checks it on a held-out half.

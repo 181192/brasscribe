@@ -10,7 +10,7 @@ judged by the output files existing, never by the exit code.
 On macOS MuseScore runs with a home folder of its own (see `_environment`), so it never opens the
 user's Documents folder and never waits for the system to ask permission for it.
 
-The binary is `$BRASSCRIBE_MSCORE`, falling back to `mscore` on PATH.
+The binary is `$SCRIBE_MSCORE`, falling back to `mscore` on PATH.
 """
 
 from __future__ import annotations
@@ -29,14 +29,14 @@ from typing import Iterable, Iterator, Sequence
 
 from .process_tree import kill_tree
 
-LOCK_FILE = Path(tempfile.gettempdir()) / "brasscribe-mscore.flock"
+LOCK_FILE = Path(tempfile.gettempdir()) / "scribe-mscore.flock"
 AUDIO_SUFFIXES = {".mp3", ".wav", ".ogg", ".flac"}
 
 Job = tuple[Path | str, Path | str | Sequence[Path | str]]
 
 
 def binary() -> str | None:
-    return os.environ.get("BRASSCRIBE_MSCORE") or shutil.which("mscore")
+    return os.environ.get("SCRIBE_MSCORE") or shutil.which("mscore")
 
 
 def available() -> bool:

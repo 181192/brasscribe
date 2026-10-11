@@ -72,7 +72,7 @@ export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement
   let role = "alert";
   if (err instanceof Unreachable) {
     title = t("err.unreachable");
-    body = withCode(t("err.unreachableBody"), { serve: "brasscribe serve", studio: "brasscribe studio" });
+    body = withCode(t("err.unreachableBody"), { serve: "scribe serve", studio: "scribe studio" });
   } else if (err instanceof TimedOut) {
     title = t("err.timeout");
     body = [t("err.timeoutBody", { s: err.seconds })];

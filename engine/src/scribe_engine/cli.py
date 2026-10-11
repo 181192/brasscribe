@@ -1,13 +1,13 @@
-"""`brasscribe` command line.
+"""`scribe` command line.
 
-    brasscribe run <audio> [--profile P] [--out DIR] [--reuse DIR] [--no-heavy] [--cold STAGES] [--check-golden DIR]
-    brasscribe bench <suite|group> [--mode cached|live] [--json FILE] [--allow-improved] [--require-data]
-    brasscribe serve [--host H] [--port N] [--lan] [--no-advertise] [--no-trust-local]
-    brasscribe studio [--port N] [--lan] [--no-advertise] [--no-browser]   (opens the default browser)
-    brasscribe manifest rerun <manifest.json> [--no-heavy] [--cold STAGES]
-    brasscribe compare <candidate dir> <reference dir>
-    brasscribe devices [list | revoke <device id> | reset]   (paired Play devices; takes effect in a running engine)
-    brasscribe profiles | suites
+    scribe run <audio> [--profile P] [--out DIR] [--reuse DIR] [--no-heavy] [--cold STAGES] [--check-golden DIR]
+    scribe bench <suite|group> [--mode cached|live] [--json FILE] [--allow-improved] [--require-data]
+    scribe serve [--host H] [--port N] [--lan] [--no-advertise] [--no-trust-local]
+    scribe studio [--port N] [--lan] [--no-advertise] [--no-browser]   (opens the default browser)
+    scribe manifest rerun <manifest.json> [--no-heavy] [--cold STAGES]
+    scribe compare <candidate dir> <reference dir>
+    scribe devices [list | revoke <device id> | reset]   (paired Play devices; takes effect in a running engine)
+    scribe profiles | suites
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import os
 import sys
 from pathlib import Path
 
-from brasscribe_music.instruments import SEAT_IDS
+from scribe_music.instruments import SEAT_IDS
 
 from . import bass_tab, config, profiles, runner, tab
 
@@ -77,7 +77,7 @@ def cmd_run(args) -> int:
 
 
 def cmd_bench(args) -> int:
-    from brasscribe_eval import suites
+    from scribe_eval import suites
 
     if args.suite in ("list", "--list"):
         for name, st in suites.SUITES.items():
@@ -142,7 +142,7 @@ def lan_addresses() -> list[str]:
 def serve_banner(app, host: str, port: int, ips: list[str] | None = None) -> tuple[str, list[str]]:
     """(URL to open locally, lines to print). Records the LAN addresses in the pairing payload."""
     local = f"http://{'127.0.0.1' if host in ('0.0.0.0', '::') else host}:{port}/"
-    lines = [f"brasscribe engine on {local}"]
+    lines = [f"scribe engine on {local}"]
     if host not in ("127.0.0.1", "localhost", "::1"):
         if ips is None:
             ips = lan_addresses() if host in ("0.0.0.0", "::") else [host]
@@ -152,11 +152,11 @@ def serve_banner(app, host: str, port: int, ips: list[str] | None = None) -> tup
                      f"paired devices stay paired across restarts)")
         n = len(app.state.devices.list())
         if n:
-            lines.append(f"Paired devices: {n}  (brasscribe devices list)")
+            lines.append(f"Paired devices: {n}  (scribe devices list)")
     if not app.state.trust_loopback:
         lines.append("Local trust is off: clients on this computer need a token too")
     if app.state.admin_token:
-        lines.append("Device management needs the admin token (BRASSCRIBE_ADMIN_TOKEN)")
+        lines.append("Device management needs the admin token (SCRIBE_ADMIN_TOKEN)")
     return local, lines
 
 
@@ -239,7 +239,7 @@ def cmd_compare(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(prog="brasscribe", description="brasscribe engine")
+    ap = argparse.ArgumentParser(prog="scribe", description="scribe engine")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="run a profile on a recording")
@@ -301,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
         sv.add_argument("--no-advertise", action="store_true",
                         help="do not announce the engine over Bonjour/mDNS (_brasscribe._tcp) when on the LAN")
         sv.add_argument("--no-trust-local", action="store_true",
-                        help="require a token from clients on this computer too (as BRASSCRIBE_TRUST_LOCAL=0); use "
+                        help="require a token from clients on this computer too (as SCRIBE_TRUST_LOCAL=0); use "
                              "it when a proxy or tunnel on this computer forwards outside traffic to the engine")
         if browser:
             sv.add_argument("--no-browser", action="store_true")

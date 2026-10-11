@@ -7,7 +7,7 @@ namespace Brasscribe.Bandroom.Core.Supervisor;
 /// <summary>
 /// The engine's admin credential: 256 random bits, made on first run and kept in a file only this user
 /// can read (an ACL with inheritance removed and one FullControl rule for the current user on Windows;
-/// mode 0600 elsewhere). Bandroom passes it to the engine as BRASSCRIBE_ADMIN_TOKEN and sends it as the
+/// mode 0600 elsewhere). Bandroom passes it to the engine as SCRIBE_ADMIN_TOKEN and sends it as the
 /// bearer on owner calls. It is never written to engine.json, logs or diagnostics.
 /// </summary>
 public static class AdminCredential

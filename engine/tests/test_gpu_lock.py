@@ -11,14 +11,14 @@ import time
 
 import pytest
 
-from brasscribe_engine.gpulock import file_lock, is_locked
+from scribe_engine.gpulock import file_lock, is_locked
 
 from .test_gpu_wait import run_heavy
 
 HOLD = textwrap.dedent("""
     import sys, time
     from pathlib import Path
-    from brasscribe_engine.gpulock import file_lock
+    from scribe_engine.gpulock import file_lock
     with file_lock(Path(sys.argv[1])):
         print("held", flush=True)
         time.sleep(600)
@@ -113,13 +113,13 @@ def test_the_holder_pid_is_in_the_file(tmp_path):
 
 
 def test_the_default_lock_is_per_user_and_shared_with_eval():
-    from brasscribe_eval import gpulock as eval_lock
+    from scribe_eval import gpulock as eval_lock
 
-    from brasscribe_engine.gpulock import default_path
+    from scribe_engine.gpulock import default_path
 
     assert eval_lock.default_path() == default_path()
     if sys.platform != "win32":
-        assert default_path().name == f"brasscribe-gpu-{os.getuid()}.lock"
+        assert default_path().name == f"scribe-gpu-{os.getuid()}.lock"
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")

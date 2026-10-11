@@ -7,7 +7,7 @@
 
 Each step is skipped when its output already exists, so a run can be resumed.
 
-    uv run python -m brasscribe_eval.song_pipeline data/mikkel/mikkel.wav --out data/mikkel/run --title "Mikkel"
+    uv run python -m scribe_eval.song_pipeline data/mikkel/mikkel.wav --out data/mikkel/run --title "Mikkel"
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def main() -> None:
     layers.transcribe(paths)
 
     print("arrangement…", flush=True)
-    subprocess.run([sys.executable, "-W", "ignore", "-m", "brasscribe_eval.arrange_layers_song",
+    subprocess.run([sys.executable, "-W", "ignore", "-m", "scribe_eval.arrange_layers_song",
                     "--layers", str(out / "layers"), "--beats", str(beats),
                     "--out", str(out / "arranged-band"), "--title", args.title], check=True)
 

@@ -16,7 +16,7 @@ public enum ModelComponent: String, CaseIterable, Sendable, Codable, Comparable 
 
     /// Where the component's files go.
     public enum Home: Sendable, Equatable {
-        /// `<models>/<folder>`, the folder the engine reads through BRASSCRIBE_MODELS.
+        /// `<models>/<folder>`, the folder the engine reads through SCRIBE_MODELS.
         case models(folder: String)
         /// The Hugging Face hub cache, laid out as `huggingface_hub` lays it out, so the adapter's
         /// `hf_hub_download` finds it without fetching again.

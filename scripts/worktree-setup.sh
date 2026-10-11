@@ -7,7 +7,7 @@
 #   scripts/worktree-setup.sh --core host,apple  only these core components (default: all installed toolchains)
 #
 # 1. Links data/, models/ and apps/apple/Frameworks (Verovio) from the main checkout, found through
-#    `git worktree list` (or BRASSCRIBE_MAIN). Nothing is linked in the main checkout itself.
+#    `git worktree list` (or SCRIBE_MAIN). Nothing is linked in the main checkout itself.
 # 2. Copies in the prebuilt Rust core (scripts/core-artifacts.sh ensure): the host library and
 #    command line, the Apple xcframework and the Android jniLibs, built once per core change and
 #    shared by all worktrees.
@@ -30,12 +30,12 @@ done
 log() { printf 'worktree-setup: %s\n' "$*" >&2; }
 
 main_checkout() {
-  # The first entry of `git worktree list` is the main working tree; BRASSCRIBE_MAIN overrides it.
-  if [ -n "${BRASSCRIBE_MAIN:-}" ] && [ -d "$BRASSCRIBE_MAIN" ]; then (cd "$BRASSCRIBE_MAIN" && pwd); return; fi
+  # The first entry of `git worktree list` is the main working tree; SCRIBE_MAIN overrides it.
+  if [ -n "${SCRIBE_MAIN:-}" ] && [ -d "$SCRIBE_MAIN" ]; then (cd "$SCRIBE_MAIN" && pwd); return; fi
   git -C "$ROOT" worktree list --porcelain | sed -n '1s/^worktree //p'
 }
 MAIN="$(main_checkout)"
-[ -n "$MAIN" ] || { log "cannot find the main checkout; set BRASSCRIBE_MAIN"; exit 1; }
+[ -n "$MAIN" ] || { log "cannot find the main checkout; set SCRIBE_MAIN"; exit 1; }
 
 ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
 env_lines() {
@@ -43,12 +43,12 @@ env_lines() {
   [ -d "$ANDROID_HOME/platform-tools" ] && path="$path:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator"
   # This checkout, not the main one: tests also look up tracked files (sounds/, design/) through
   # it, and data/ and models/ are linked in.
-  echo "export BRASSCRIBE_REPO='$ROOT'"
+  echo "export SCRIBE_REPO='$ROOT'"
   echo "export SCRIBE_FFI_PATH='$ROOT/core/target/release/libscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
   # The core's command line, for the engine's bass-tab profile and the tests that need it.
   [ -x "$ROOT/core/target/release/scribe-core" ] && echo "export SCRIBE_CORE_CLI='$ROOT/core/target/release/scribe-core'"
   # The data is here, so a Rust golden test that cannot find it fails instead of skipping.
-  [ -e "$MAIN/data/mikkel/repro/mix.beats" ] && echo "export BRASSCRIBE_REQUIRE_DATA=1"
+  [ -e "$MAIN/data/mikkel/repro/mix.beats" ] && echo "export SCRIBE_REQUIRE_DATA=1"
   echo "export ANDROID_HOME='$ANDROID_HOME'"
   [ -d "$ANDROID_HOME/ndk/28.2.13676358" ] && echo "export ANDROID_NDK_HOME='$ANDROID_HOME/ndk/28.2.13676358'"
   [ -d /Applications/Xcode.app ] && echo "export DEVELOPER_DIR='${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}'"

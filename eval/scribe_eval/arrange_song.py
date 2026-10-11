@@ -8,7 +8,7 @@ harmonic rhythm. Beats come from Beat This!; tick 0 is the first downbeat.
 
 from __future__ import annotations
 
-from brasscribe_music import musescore
+from scribe_music import musescore
 
 import argparse
 import subprocess
@@ -16,13 +16,13 @@ from collections import Counter
 from pathlib import Path
 
 import numpy as np
-from brasscribe_music.arranger import arrange, arrange_composition
-from brasscribe_music.instruments import CLEF_READINGS, KITS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name
-from brasscribe_music.harmony import harmony_slots, slots_to_notes
-from brasscribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
-from brasscribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
-from brasscribe_music.spelling import key_of
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.arranger import arrange, arrange_composition
+from scribe_music.instruments import CLEF_READINGS, KITS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name
+from scribe_music.harmony import harmony_slots, slots_to_notes
+from scribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
+from scribe_music.spelling import key_of
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 from .consensus import consensus, doubles
 from .lead_sheet import line

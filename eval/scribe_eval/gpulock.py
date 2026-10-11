@@ -1,6 +1,6 @@
-"""The machine-wide heavy-model lock the engine uses (BRASSCRIBE_GPU_LOCK), for live eval runs.
+"""The machine-wide heavy-model lock the engine uses (SCRIBE_GPU_LOCK), for live eval runs.
 
-The engine's OS file lock (brasscribe_engine.gpulock) when the engine is installed, as in the pixi
+The engine's OS file lock (scribe_engine.gpulock) when the engine is installed, as in the pixi
 environment; otherwise the same flock on the same file (POSIX), so both exclude each other. The
 kernel drops the lock when the holder dies, so a crashed run cannot block the GPU.
 """
@@ -18,19 +18,19 @@ from pathlib import Path
 
 
 def default_path() -> Path:
-    """brasscribe_engine.gpulock.default_path, for when the engine is not installed: the same file."""
+    """scribe_engine.gpulock.default_path, for when the engine is not installed: the same file."""
     if sys.platform == "win32":
-        return Path(tempfile.gettempdir()) / "brasscribe-gpu.lock"
-    return Path("/tmp") / f"brasscribe-gpu-{os.getuid()}.lock"
+        return Path(tempfile.gettempdir()) / "scribe-gpu.lock"
+    return Path("/tmp") / f"scribe-gpu-{os.getuid()}.lock"
 
 
-GPU_LOCK = Path(os.environ.get("BRASSCRIBE_GPU_LOCK") or default_path())
+GPU_LOCK = Path(os.environ.get("SCRIBE_GPU_LOCK") or default_path())
 
 
 @contextmanager
 def gpu_lock(poll: float = 1.0) -> Iterator[None]:
     try:
-        from brasscribe_engine.gpulock import file_lock
+        from scribe_engine.gpulock import file_lock
     except ImportError:
         file_lock = None
     if file_lock is not None:

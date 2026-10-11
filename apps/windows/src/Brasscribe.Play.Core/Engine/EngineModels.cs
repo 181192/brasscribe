@@ -4,7 +4,7 @@ using Brasscribe.Play.Core.Scores;
 
 namespace Brasscribe.Play.Core.Engine;
 
-// DTOs for the companion engine API (engine/openapi.json, "brasscribe engine" 0.1.0).
+// DTOs for the companion engine API (engine/openapi.json, "scribe engine" 0.1.0).
 // Property names map to snake_case through EngineJsonContext.
 
 public sealed record Health(string Version, string Device, bool AuthRequired, string Status = "ok",

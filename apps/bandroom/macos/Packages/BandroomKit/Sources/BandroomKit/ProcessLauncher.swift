@@ -104,7 +104,7 @@ public final class PosixLauncher: ProcessLauncher, @unchecked Sendable {
         var name = [CChar](repeating: 0, count: 256)
         proc_name(pid, &name, UInt32(name.count))
         let proc = String(cString: name).lowercased()
-        guard proc.contains("pixi") || proc.contains("python") || proc.contains("brasscribe") else { return }
+        guard proc.contains("pixi") || proc.contains("python") || proc.contains("scribe") else { return }
         kill(-pid, SIGTERM)
         for _ in 0..<50 where kill(-pid, 0) == 0 { usleep(100_000) }
         if kill(-pid, 0) == 0 { kill(-pid, SIGKILL) }

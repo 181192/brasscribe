@@ -1,5 +1,5 @@
 [project]
-name = "brasscribe-music"
+name = "scribe-music"
 version = "0.1.0"
 license = "MIT OR Apache-2.0"
 description = "Symbolic core: the Composition model, quantization, spelling, arrangement and MusicXML export"

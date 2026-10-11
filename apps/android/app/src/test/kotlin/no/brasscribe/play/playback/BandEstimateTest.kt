@@ -40,7 +40,7 @@ class BandEstimateTest {
 
     /** The golden arrangement (data/golden, when present): the estimate the offset was fitted on, and alphaTab's own velocities. */
     @Test fun goldenArrangementIsNearItsMeasuredLoudness() {
-        val roots = listOfNotNull(System.getenv("BRASSCRIBE_REPO")?.let(::File), sounds?.parentFile)
+        val roots = listOfNotNull(System.getenv("SCRIBE_REPO")?.let(::File), sounds?.parentFile)
         val golden = roots.map { File(it, "data/golden/mikkel-arranged-band/brass-band.musicxml") }.firstOrNull { it.isFile }
         assumeTrue("data/golden not found", golden != null)
         val score = BandEstimate.score(golden!!.readBytes())

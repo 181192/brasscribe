@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from brasscribe_music.beats import FALLBACK_PREFERRED, fallback_beats
+from scribe_music.beats import FALLBACK_PREFERRED, fallback_beats
 
 
 def test_grid_from_8th_notes_at_120():

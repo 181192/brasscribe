@@ -54,7 +54,7 @@ over with each of them.
 | Guitar instruments in the engine | engine, when guitar comes |
 | Text tab and playing instructions in Share or print | device: the core writes both (`fretted_tab_text_json`, `fretted_playing_instructions_json`), and a job on the computer has them as `tab.txt`, `tab-instructions.en.txt` and `tab-instructions.nb.txt` |
 | The core command line in Bandroom (the Docker image has it) | packaging (blocks the paired-computer flow with Bandroom) |
-| The recording of a job the computer made from a file outside its own audio folders (`brasscribe run <file>`): `GET /v1/jobs/{id}/input` gives a paired phone only what is in its uploads, captures and datasets | engine |
+| The recording of a job the computer made from a file outside its own audio folders (`scribe run <file>`): `GET /v1/jobs/{id}/input` gives a paired phone only what is in its uploads, captures and datasets | engine |
 | Fretscribe's own About text and credits (it shows Brasscribe's) | app |
 
 ## Roadmap

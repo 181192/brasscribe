@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 JobStatus = Literal["queued", "running", "succeeded", "failed", "cancelled"]
 Lineup = Literal["full", "minimal", "quartet"]
 Difficulty = Literal["faithful", "standard", "easier"]
-# The player's seat: one of the contest band's parts (brasscribe_music.instruments.SEATS).
+# The player's seat: one of the contest band's parts (scribe_music.instruments.SEATS).
 Seat = Literal["soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn",
                "solo-horn", "1st-horn", "2nd-horn", "1st-baritone", "2nd-baritone", "1st-trombone",
                "2nd-trombone", "bass-trombone", "euphonium", "eb-bass", "bb-bass", "percussion", "trumpet"]
@@ -35,14 +35,14 @@ class Health(BaseModel):
     device: str = Field(description="accelerator torch adapters use on this host: cuda, mps or cpu")
     auth_required: bool = Field(description="whether this client must send a bearer token")
     server_id: str = Field(description="stable id of this engine: kept across restarts and address or port changes, "
-                                       "new only after `brasscribe devices reset`. Match a rediscovered engine to "
+                                       "new only after `scribe devices reset`. Match a rediscovered engine to "
                                        "its stored credential by this id, not by address. An identifier, not proof "
                                        "of identity.")
     server_name: str = Field(description="display name, e.g. 'Brasscribe on studio-mac'")
 
 
 class PairRequest(BaseModel):
-    code: str = Field(description="pairing code shown by the engine (brasscribe serve --lan)")
+    code: str = Field(description="pairing code shown by the engine (scribe serve --lan)")
     device_name: str | None = None
     platform: str | None = Field(None, description="ios, macos, android or windows; shown in the device list")
 
@@ -330,7 +330,7 @@ class KeySig(BaseModel):
 
 
 class Composition(BaseModel):
-    """The canonical score (brasscribe_music.score_model.Composition): concert pitch, integer ticks."""
+    """The canonical score (scribe_music.score_model.Composition): concert pitch, integer ticks."""
 
     model_config = ConfigDict(extra="allow")
     title: str
