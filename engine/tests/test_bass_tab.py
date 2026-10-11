@@ -896,18 +896,54 @@ def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch
     ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=said.append, stage=SimpleNamespace(name="export"),
                           params={"musescore": None}, executor=SimpleNamespace(cancel=threading.Event()))
     bass_tab.export_stage(ctx)
-    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"]}
+    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"],
+                                                                  "missing": []}
     assert said == ["mscore not found: PDF and MIDI skipped"]
 
-    # With a MuseScore that writes one of the two files, the stage fails and names the other.
     monkeypatch.setattr(musescore, "binary", lambda: "mscore")
     ctx.params = {"musescore": "0123456789abcdef"}
-    monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [Path(jobs[0][1][1])])
-    with pytest.raises(bass_tab.StageFailed, match="MuseScore did not write tab.mid"):
-        bass_tab.export_stage(ctx)
     monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [])
     bass_tab.export_stage(ctx)
-    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": "mscore", "written": ["tab.pdf", "tab.mid"], "skipped": []}
+    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": "mscore", "written": ["tab.pdf", "tab.mid"], "skipped": [],
+                                                                  "missing": []}
+
+
+@needs_core
+def test_a_tab_job_succeeds_without_the_pdf_and_the_next_job_tries_musescore_again(settings, audio, tmp_path, monkeypatch):
+    """MuseScore that writes no PDF (it did not come back, it broke on the score): the tab is made all the same,
+    so the job succeeds without the PDF, and says so in its log and in export.json. The export is not kept for
+    reuse: the next job of the same recording runs MuseScore again, and gets the PDF once MuseScore writes it."""
+    from brasscribe_music import musescore
+
+    monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
+    monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+
+    def no_pdf(jobs, cancel=None):
+        (pdf, mid), = [dsts for _, dsts in jobs]
+        Path(mid).write_bytes(b"midi")
+        return [Path(pdf)]
+
+    monkeypatch.setattr(musescore, "convert_many", no_pdf)
+    first = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert first["status"] == "succeeded"
+    assert "tab.pdf" not in first["outputs"] and {"tab.mid", "tab.musicxml", "tab.json", "tab.txt"} <= set(first["outputs"])
+    run = settings.runs_dir / first["run_id"]
+    export = json.loads((run / "stages" / "export" / "export.json").read_text())
+    assert export["written"] == ["tab.mid"] and export["missing"] == ["tab.pdf"] and export["skipped"] == []
+    logged = [json.loads(line) for line in (run / "events.jsonl").read_text().splitlines()]
+    assert "MuseScore did not write tab.pdf: the tab is there without it" in [e.get("message") for e in logged]
+
+    monkeypatch.setattr(musescore, "convert_many",
+                        lambda jobs, cancel=None: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
+    second = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert second["stages"][-1]["stage"] == "export" and second["stages"][-1]["status"] == "ran"
+    assert "tab.pdf" in second["outputs"]
+    third = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert third["stages"][-1]["status"] == "cached" and "tab.pdf" in third["outputs"]
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")

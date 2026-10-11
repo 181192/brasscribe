@@ -679,22 +679,29 @@ def export_stage(ctx: StageContext) -> None:
 
     MuseScore 4 aborts during shutdown after writing its output, so success is judged by the output
     files, never the exit code. Without MuseScore nothing is rendered, and export.json and the log say so.
-    Stopping the job stops MuseScore."""
+    Stopping the job stops MuseScore.
+
+    A file MuseScore did not write does not fail the job: the tab itself (JSON, MusicXML, text) is made by the
+    stage before, and the apps show it without the PDF. The log and export.json name what is missing, and the
+    stage's output is not stored for reuse, so the next job tries MuseScore again."""
     from brasscribe_music import musescore
 
     mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
-    written = []
+    names = [f"tab.{ext}" for ext in EXPORT_FORMATS]
+    written: list[str] = []
+    missing: list[str] = []
     if mscore:
-        dsts = [ctx.out / f"tab.{ext}" for ext in EXPORT_FORMATS]
-        missing = musescore.convert_many([(ctx.inputs["score"] / "tab.musicxml", dsts)], cancel=ctx.executor.cancel)
+        not_written = musescore.convert_many([(ctx.inputs["score"] / "tab.musicxml", [ctx.out / n for n in names])],
+                                             cancel=ctx.executor.cancel)
+        missing = [p.name for p in not_written]
+        written = [n for n in names if n not in missing]
         if missing:
-            raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
-        written = [d.name for d in dsts]
+            ctx.log(f"MuseScore did not write {', '.join(missing)}: the tab is there without " + ("them" if len(missing) > 1 else "it"))
+            ctx.not_for_reuse()
     else:
         ctx.log("mscore not found: PDF and MIDI skipped")
     (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,
-                                                     "skipped": [] if mscore else [f"tab.{ext}" for ext in EXPORT_FORMATS]},
-                                                    indent=1))
+                                                     "skipped": [] if mscore else names, "missing": missing}, indent=1))
 
 
 # ---------------------------------------------------------------- the pipeline
