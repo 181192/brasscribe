@@ -13,12 +13,32 @@ use super::duration::{DType, Dur, Rat, TupletType};
 use super::pitch::{altered_names, transpose, transpose_key, update_accidental_display, Acc, P};
 use super::xml::El as X;
 use crate::rhythm_spelling::{pieces, SINGLE, TRIPLET};
-use crate::instruments::Instrument;
 use crate::quantize::QNote;
 use crate::spelling::{key_of, spell};
 
 pub const DIVISIONS: i64 = 10080;
 const TPB: i64 = 24;
+
+/// QNote articulation "trill:<semitones>" (Note::trill) inside the writer.
+pub const TRILL: &str = "trill:";
+
+/// What the writer needs to know about the instrument a part is written for. A target fills it in
+/// from its own instrument table; the writer itself knows no instruments.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct InstrumentSpec {
+    /// <instrument-name>.
+    pub name: &'static str,
+    /// <part-abbreviation>, unless the part gives its own.
+    pub short: &'static str,
+    /// Sounding minus written, semitones.
+    pub chromatic: i32,
+    /// Sounding minus written, staff steps (MusicXML <diatonic>).
+    pub diatonic: i32,
+    /// An unpitched part: no transposition, no <midi-program>, the drum channel.
+    pub percussion: bool,
+    /// 0-based General MIDI program for playback.
+    pub gm_program: i32,
+}
 
 #[derive(Clone, Debug)]
 pub struct PartSpec {
@@ -26,8 +46,9 @@ pub struct PartSpec {
     pub notes: Vec<QNote>,
     /// "treble" | "bass"
     pub clef: String,
-    /// Transposing band instrument; None = concert-pitch part.
-    pub instrument: Option<&'static Instrument>,
+    /// The instrument the part is written for (its transposition, names and playback program);
+    /// None = concert-pitch part.
+    pub instrument: Option<InstrumentSpec>,
     /// Staff label after the first system (default: the instrument's).
     pub abbreviation: Option<String>,
     /// (tick, marking) changes of this part's layer.
@@ -69,11 +90,14 @@ pub struct ScoreSpec {
     /// Rehearsal marks (tick, label), shown on the top part.
     pub rehearsal: Vec<(i64, String)>,
     pub encoding_date: String,
-    /// Text above the first tempo mark (musicxml::TEMPO_ESTIMATED when the beat grid is a guess).
+    /// Text above the first tempo mark (a target's note that the beat grid is a guess).
     pub tempo_note: Option<String>,
-    /// The drum kit a percussion part plays: its 0-based bank 128 program (instruments::KITS), written
-    /// as <midi-program> when it is not the band kit (0).
+    /// The drum kit a percussion part plays: its 0-based bank 128 program, written as <midi-program>
+    /// when it is not the default kit (0).
     pub kit_program: i64,
+    /// Part name -> <midi-bank> of the part's playback preset, for the parts that have one. Read
+    /// only when `sounds` is given.
+    pub banks: Vec<(String, i64)>,
 }
 
 // ---------------------------------------------------------------------------
@@ -218,7 +242,7 @@ enum ClefKind {
 struct Part {
     name: String,
     abbreviation: Option<String>,
-    inst: Option<&'static Instrument>,
+    inst: Option<InstrumentSpec>,
     clef: ClefKind,
     fifths: Option<i32>,
     measures: Vec<Measure>,
@@ -233,7 +257,7 @@ impl Part {
 
     /// Sounding minus written: (staff steps, semitones), for transposing instruments.
     fn transposition(&self) -> Option<(i32, i32)> {
-        self.inst.filter(|i| i.chromatic != 0 && !i.is_percussion()).map(|i| (i.diatonic, i.chromatic))
+        self.inst.filter(|i| i.chromatic != 0 && !i.percussion).map(|i| (i.diatonic, i.chromatic))
     }
 
     fn all_els(&self) -> impl Iterator<Item = &Elem> {
@@ -426,7 +450,7 @@ fn place_dynamics(spec: &PartSpec, bar: i64) -> Vec<(i64, String)> {
 }
 
 fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
-    let is_drums = |p: &PartSpec| p.instrument.is_some_and(|i| i.is_percussion());
+    let is_drums = |p: &PartSpec| p.instrument.is_some_and(|i| i.percussion);
     let part_events: Vec<Vec<Event>> = spec.parts.iter().map(|p| events(&p.notes)).collect();
     // Spell every note from the whole ensemble at concert pitch, and pick the key.
     let mut flat: Vec<(usize, i64, i64, i32)> = Vec::new();
@@ -1143,9 +1167,9 @@ fn to_written(part: &mut Part) {
 }
 
 fn trill_of(arts: &HashSet<String>) -> Option<i32> {
-    let mut v: Vec<&String> = arts.iter().filter(|a| a.starts_with(crate::musicxml::TRILL)).collect();
+    let mut v: Vec<&String> = arts.iter().filter(|a| a.starts_with(TRILL)).collect();
     v.sort();
-    v.first().and_then(|a| a[crate::musicxml::TRILL.len()..].parse().ok())
+    v.first().and_then(|a| a[TRILL.len()..].parse().ok())
 }
 
 /// The auxiliary of each trill, spelled from the written part's key: the next letter up at the
@@ -1716,7 +1740,7 @@ fn score_part_xml(part: &Part, idx: usize, channel: i64, sounds: &[(String, Stri
         sp.push(X::text("part-abbreviation", part.abbreviation.clone().unwrap_or_else(|| inst.short.to_string())));
         let iid = format!("I{}", idx + 1);
         let mut si = X::new("score-instrument").attr("id", iid.clone()).child(X::text("instrument-name", inst.name));
-        if inst.is_percussion() {
+        if inst.percussion {
             si.push(X::text("instrument-abbreviation", "Perc"));
         }
         if let Some((_, s)) = sounds.iter().find(|(n, _)| *n == part.name) {
@@ -1724,7 +1748,7 @@ fn score_part_xml(part: &Part, idx: usize, channel: i64, sounds: &[(String, Stri
         }
         sp.push(si);
         let mut mi = X::new("midi-instrument").attr("id", iid).child(X::text("midi-channel", (channel + 1).to_string()));
-        if !inst.is_percussion() {
+        if !inst.percussion {
             mi.push(X::text("midi-program", (inst.gm_program + 1).to_string()));
         }
         sp.push(mi);
@@ -1850,7 +1874,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
         line_base += p.lines.len();
     }
     if !spec.sounds.is_empty() {
-        band_midi(&mut root, spec.kit_program);
+        band_midi(&mut root, spec.kit_program, &spec.banks);
     }
     root
 }
@@ -1924,8 +1948,7 @@ fn tag_drum_notes(e: &mut X, base: &str, used: &mut Vec<(i64, &'static str)>) {
 /// channel 10 with <midi-unpitched> = GM note + 1, and an <instrument id> on
 /// every note; a kit other than the band kit (`kit_program`, 0-based: the pop
 /// kit is 1) as <midi-program> on each of those.
-fn band_midi(root: &mut X, kit_program: i64) {
-    let banks: Vec<(&'static str, i64)> = crate::instruments::part_banks();
+fn band_midi(root: &mut X, kit_program: i64, banks: &[(String, i64)]) {
     let channels: Vec<i64> = (1..=16).filter(|&c| c != DRUM_CHANNEL).collect();
     let Some(pl) = root.children.iter().position(|c| c.name == "part-list") else { return };
     let mut k = 0usize;

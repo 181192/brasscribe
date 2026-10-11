@@ -1,6 +1,6 @@
 //! Seats: the seat -> part table as the plan writes it, walked for every seat and lineup.
 
-use brasscribe_core::instruments::{brass_band, check_reads, lineup_by_name, part_banks, seat_part, SEATS};
+use target_brass::instruments::{brass_band, check_reads, lineup_by_name, part_banks, seat_part, SEATS};
 use brasscribe_core::talking_score::nb_part_name;
 
 /// (seat, full band, small band, quartet); None = no part.
@@ -40,7 +40,7 @@ fn seats_are_the_contest_band_then_the_trumpet() {
 /// A trumpet player takes the lead part in the bands (written for trumpet), and 1st Cornet in the quartet.
 #[test]
 fn the_trumpet_takes_the_lead() {
-    use brasscribe_core::instruments::{lead_lineup, seat_by_id, seat_lineup, with_seat, SeatPart};
+    use target_brass::instruments::{lead_lineup, seat_by_id, seat_lineup, with_seat, SeatPart};
     for lineup in ["band", "minimal"] {
         let sp = seat_part(lineup, "trumpet").unwrap();
         assert_eq!(sp, SeatPart { part: Some("Trumpet"), exact: false, same_key: true, takes: Some("Solo Cornet") }, "{lineup}");
@@ -99,11 +99,11 @@ fn seat_part_table() {
 /// bass-clef part at concert pitch: the bass trombonist gets E♭ Bass and Euphonium in bass clef.
 #[test]
 fn default_reading_in_every_lineup() {
-    use brasscribe_core::instruments::{seat_by_id, with_reading, Clef};
+    use target_brass::instruments::{seat_by_id, with_reading, Clef};
     for s in &SEATS {
         for lineup in ["band", "minimal", "quartet"] {
             let Some(part) = seat_part(lineup, s.id).unwrap().part else { continue };
-            let base = brasscribe_core::instruments::with_seat(lineup_by_name(lineup).unwrap(), lineup, s.id);
+            let base = target_brass::instruments::with_seat(lineup_by_name(lineup).unwrap(), lineup, s.id);
             let l = with_reading(base.clone(), seat_by_id(s.id).unwrap(), Some(part), None);
             let inst = l.by_name(part).instrument;
             match s.default_reading() {
@@ -130,7 +130,7 @@ fn default_reading_in_every_lineup() {
 
 #[test]
 fn percussion_has_no_solo_take() {
-    use brasscribe_core::instruments::{seat_lineup, PERCUSSION_SOLO};
+    use target_brass::instruments::{seat_lineup, PERCUSSION_SOLO};
     assert_eq!(seat_lineup("percussion", None).unwrap_err(), PERCUSSION_SOLO);
     assert!(SEATS.iter().filter(|s| !s.reads.is_empty()).all(|s| seat_lineup(s.id, None).is_ok()));
 }
@@ -147,7 +147,7 @@ fn clef_readings() {
 /// The seats whose part can carry the tune: Role Melody or Solo in instruments.rs, not the bass line.
 #[test]
 fn tune_follows_the_roles() {
-    use brasscribe_core::instruments::{lead_lineup, Role};
+    use target_brass::instruments::{lead_lineup, Role};
     let tune: Vec<&str> = SEATS.iter().filter(|s| s.tune()).map(|s| s.id).collect();
     assert_eq!(
         tune,

@@ -1367,7 +1367,7 @@
     "desk_variants": "Parts that play the same target (the three tenor horns, the two baritones, the two trombones) or the same recordings (baritone, euphonium and trombone from VSCO tenor trombone; E-flat and B-flat bass from VSCO tuba; the cornet desks) use different desk variants (players[].variant): variant v sounds, for each key, another round robin of the note or the v-th nearest other sampled note within 3 semitones. Two parts in unison then sum like two players (about +3 dB) instead of one waveform doubled (+6 dB, and a comb filter where the EQs differ). A key with no other note that close plays variant 0's sample 4 cents off. No sample is added."
   },
   "lineups": {
-    "about": "Every lineup the arranger writes (music/src/brasscribe_music/instruments.py, core/brasscribe-core/src/instruments.rs) and its score part names. sounds/checks.py coverage fails if any of these parts does not resolve to its own real-sample preset. The two 'trumpet seat' lineups are the arranger's lineups with a trumpet seat, whose Trumpet part takes the lead part in place.",
+    "about": "Every lineup the arranger writes (music/src/brasscribe_music/instruments.py, core/target-brass/src/instruments.rs) and its score part names. sounds/checks.py coverage fails if any of these parts does not resolve to its own real-sample preset. The two 'trumpet seat' lineups are the arranger's lineups with a trumpet seat, whose Trumpet part takes the lead part in place.",
     "Brass band": [
       "Soprano Cornet",
       "Solo Cornet",

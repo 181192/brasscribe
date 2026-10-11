@@ -32,8 +32,8 @@ use brasscribe_core::durations::Contour;
 use brasscribe_core::energy::Audio;
 use brasscribe_core::midi::MidiFile;
 use brasscribe_core::model::Composition;
-use brasscribe_core::musicxml::{band_score, write_score};
-use brasscribe_core::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
+use target_brass::musicxml::{band_score, write_score};
+use target_brass::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
 use serde_json::{json, Value};
 
 type R<T> = Result<T, String>;

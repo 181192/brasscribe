@@ -11,14 +11,11 @@ use crate::model::Composition;
 use crate::quantize::QNote;
 
 pub use crate::notation::parts::split_parts;
-pub use crate::notation::score::{write_score, FreeSpan, PartSpec, ScoreSpec};
+pub use crate::notation::score::{write_score, FreeSpan, InstrumentSpec, PartSpec, ScoreSpec, TRILL};
 
 /// Arrangement (concert notes per band part) -> transposing score in lineup order.
 /// Above the tempo mark when the beat grid was estimated from the onsets.
 pub const TEMPO_ESTIMATED: &str = "tempo?";
-
-/// QNote articulation "trill:<semitones>" (Note::trill) inside the writer.
-pub const TRILL: &str = "trill:";
 
 pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
     let parts = arr
@@ -45,7 +42,7 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
                 name: part.name.to_string(),
                 notes,
                 clef: part.instrument.clef.as_str().to_string(),
-                instrument: Some(part.instrument),
+                instrument: Some(part.instrument.spec()),
                 abbreviation: Some(part.abbreviation().to_string()),
                 dynamics,
             }
@@ -74,6 +71,7 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
             .and_then(|v| v.as_str())
             .and_then(|k| crate::instruments::kit_program(k).ok())
             .unwrap_or(0),
+        banks: crate::instruments::part_banks().into_iter().map(|(name, bank)| (name.to_string(), bank)).collect(),
     }
 }
 
