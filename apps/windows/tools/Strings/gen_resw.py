@@ -262,7 +262,6 @@ prop("SettingsEngineHeading", "Text", "Brasscribe on your computer", "Brasscribe
 prop("EngineAddressBox", "Header", "Address", "Adresse")
 prop("EngineDetails", "Header", "Details for the band's tech person", "Detaljer for den tekniske i bandet")
 name("EngineDetails", "Details for the band's tech person", "Detaljer for den tekniske i bandet")
-help_("ConnectionActionButton", "Connect this PC to Brasscribe on your computer", "Koble denne PC-en til Brasscribe på datamaskinen")
 text_button("AskComputerButton", "Ask on the computer instead", "Spør på datamaskinen i stedet", "No code to type: choose Allow on the computer", "Ingen kode å skrive: velg Godkjenn på datamaskinen")
 text_button("CancelAskButton", "Stop waiting", "Slutt å vente", "Stop waiting for the computer to allow this PC", "Slutt å vente på at datamaskinen godkjenner denne PC-en")
 prop("MatchCodeLabel", "Text", "The computer shows the same number", "Datamaskinen viser det samme tallet")
@@ -436,13 +435,19 @@ code = {
     "Connection_Reconnecting": ("Looking for Brasscribe on {0} …", "Leter etter Brasscribe på {0} …"),
     "Connection_Offline": ("Not connected. You can still make scores on this PC.", "Ikke tilkoblet. Du kan fortsatt lage partitur på denne PC-en."),
     "Connection_NeedsPairing": ("The computer no longer recognises this PC.", "Datamaskinen kjenner ikke igjen denne PC-en lenger."),
-    "Connection_UpdateApp": ("Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.",
-                             "Oppdater Brasscribe Play. Brasscribe på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert."),
-    "Connection_UpdateBandroom": ("Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.",
-                                  "Oppdater Brasscribe på datamaskinen. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert."),
+    # {0}: the computer, as in the rows above ("Studio PC"), "this PC" for an engine on this PC, else "your computer".
+    "Connection_UpdateApp": ("Update Brasscribe Play. Brasscribe on {0} is newer than this app, and they only work together when both are up to date.",
+                             "Oppdater Brasscribe Play. Brasscribe på {0} er nyere enn denne appen, og de virker bare sammen når begge er oppdatert."),
+    "Connection_UpdateBandroom": ("Update Brasscribe on {0}. This app is newer than Brasscribe there, and they only work together when both are up to date.",
+                                  "Oppdater Brasscribe på {0}. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert."),
     "Connection_Connect": ("Connect", "Koble til"),
     "Connection_PairAgain": ("Pair this PC again", "Koble til PC-en på nytt"),
+    "Connection_GetUpdate": ("Get the update", "Hent oppdateringen"),
+    "Connection_ConnectHelp": ("Connect this PC to Brasscribe on your computer", "Koble denne PC-en til Brasscribe på datamaskinen"),
+    "Connection_GetUpdateHelp": ("Opens the page with the newest Brasscribe Play and the newest Brasscribe for your computer",
+                                 "Åpner siden med nyeste Brasscribe Play og nyeste Brasscribe for datamaskinen"),
     "Connection_YourComputer": ("your computer", "datamaskinen"),
+    "Connection_ThisPc": ("this PC", "denne PC-en"),
     "Connection_DetailsAddress": ("Address: {0}", "Adresse: {0}"),
     "Connection_DetailsServerId": ("Server id: {0}", "Server-ID: {0}"),
     "Connection_DetailsLastSeen": ("Last answered: {0}", "Svarte sist: {0}"),
@@ -836,8 +841,6 @@ add("Output_YourPartNone", "You conduct or listen: every part opens.", "Du dirig
 add("Output_KeyAsItSounds", "{0}, as it sounds", "{0}, klingende")
 add("Score_AsWrittenBassClef", "As written (bass clef)", "Notert (F-nøkkel)")
 add("Output_KeyOnYourPart", "{0} on your part", "{0} på stemmen din")
-add("Output_OldComputer", "Brasscribe on your computer is too old to write for your instrument. Update it to use this.",
-    "Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.")
 
 # ---- problems the app recovers from ----
 add("Error_RecordingUnreadable_Title", "The recording can't be read", "Opptaket kan ikke leses")
@@ -855,6 +858,9 @@ add("Error_UpdateBandroom_Reason", "Your recording is safe. This app is newer th
     "Opptaket ditt er trygt. Denne appen er nyere enn Brasscribe på datamaskinen, og de virker bare sammen når begge er oppdatert.")
 add("Error_UpdateBandroom_Step1", "Update Brasscribe on the computer.", "Oppdater Brasscribe på datamaskinen.")
 add("Error_UpdateBandroom_Step2", "Choose Try again.", "Velg Prøv igjen.")
+add("Error_GetUpdate", "Get the update", "Hent oppdateringen")
+add("Error_GetUpdate_Help", "Opens the page with the newest Brasscribe Play and the newest Brasscribe for your computer",
+    "Åpner siden med nyeste Brasscribe Play og nyeste Brasscribe for datamaskinen")
 add("Notice_Problem", "Something went wrong, but your work is safe. If it happens again, restart Brasscribe Play.",
     "Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.")
 add("Score_RenderFailed", "The notes can't be drawn. Try another zoom or part, or open the score again.",

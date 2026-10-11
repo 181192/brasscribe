@@ -683,6 +683,15 @@
   <data name="Interface_Engine_Fix" xml:space="preserve">
     <value>Update Brasscribe</value>
   </data>
+  <data name="Interface_Behind_Why" xml:space="preserve">
+    <value>Brasscribe on this PC is older than this copy of Bandroom, and this copy can't update it. The latest Bandroom brings both up to date.</value>
+  </data>
+  <data name="Interface_Dev_Title" xml:space="preserve">
+    <value>Brasscribe and Bandroom don't match</value>
+  </data>
+  <data name="Interface_Dev_Why" xml:space="preserve">
+    <value>Brasscribe runs from a development folder here, and it and this copy of Bandroom only work together when both are up to date. Update the folder, or build Bandroom from it.</value>
+  </data>
   <data name="Error_Title" xml:space="preserve">
     <value>Brasscribe stopped unexpectedly</value>
   </data>

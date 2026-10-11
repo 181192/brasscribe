@@ -236,8 +236,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         if (engine is null) return;
         EngineAddress = engine.BaseAddress.ToString();
-        if (engine.ServerId is { } id && !string.Equals(id, Credentials.CurrentServerId, StringComparison.OrdinalIgnoreCase)
-            && Credentials.CurrentServerId != EngineCredentials.LegacyKey)
+        if (engine.ServerId is { } id && !string.Equals(id, Credentials.CurrentServerId, StringComparison.OrdinalIgnoreCase))
             Credentials.CurrentServerId = id;
         EngineToken = Credentials.Current?.Token;
         EngineStatus = Credentials.Current is not null
@@ -258,7 +257,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             var health = await engine.GetHealthAsync();
-            if (NeedsUpdate(health)) return;
+            if (NeedsUpdate(health, engine.BaseAddress)) return;
             if (!health.AuthRequired)
             {
                 Connected(health);
@@ -266,7 +265,6 @@ public sealed partial class SettingsViewModel : ObservableObject
             }
 
             var stored = health.ServerId is { } id ? Credentials.Get(id) : null;
-            stored ??= Credentials.Current is { } current && (current.ServerId == EngineCredentials.LegacyKey || health.ServerId is null) ? current : null;
             // Another engine than the one in use: the first one's record stays for later, this one is now current.
             if (stored is null && health.ServerId is { } other) Credentials.CurrentServerId = other;
             if (stored is not null)
@@ -274,8 +272,8 @@ public sealed partial class SettingsViewModel : ObservableObject
                 engine.Token = stored.Token;
                 try
                 {
-                    var me = await engine.GetThisDeviceAsync();
-                    Remember(stored, health, me.ServerId);
+                    await engine.GetThisDeviceAsync();
+                    Remember(stored, health);
                     Connected(health);
                     return;
                 }
@@ -305,27 +303,38 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
         catch (EngineException e)
         {
-            Say(Explain(e));
+            SayFailure(e, engine);
         }
     }
 
     /// <summary>
-    /// An engine with another interface version: says which of the two to update, and pairing stops there. No pair
-    /// request is sent, and a stored pairing stays as it is.
+    /// An engine with another interface version: says which of the two to update, naming that engine's computer, and
+    /// pairing stops there. No pair request is sent, and a stored pairing stays as it is.
     /// </summary>
-    private bool NeedsUpdate(Health health)
+    private bool NeedsUpdate(Health health, Uri address, string? linkName = null)
     {
-        string? key = InterfaceMatch.Of(health.InterfaceVersion) switch
-        {
-            InterfaceAnswer.UpdateApp => "Connection_UpdateApp",
-            InterfaceAnswer.UpdateBandroom => "Connection_UpdateBandroom",
-            _ => null,
-        };
-        if (key is null) return false;
-        Say(_s[key]);
+        var answer = InterfaceMatch.Of(health.InterfaceVersion);
+        if (answer == InterfaceAnswer.Same) return false;
+        SayUpdate(answer, address, health.ServerName ?? linkName);
+        return true;
+    }
+
+    /// <summary>Says which of the two to update, and the status row checks again at once.</summary>
+    private void SayUpdate(InterfaceAnswer answer, Uri address, string? serverName)
+    {
+        Say(ConnectionMonitor.UpdateText(_s, answer, address.IsLoopback, serverName));
         Connection.Kick();
         Connection.Start();
-        return true;
+    }
+
+    /// <summary>
+    /// A request the engine's client refused, or one that failed. The engine was found to have another interface version
+    /// after its health was asked (it was replaced meanwhile): the update words, not "can't reach".
+    /// </summary>
+    private void SayFailure(EngineException e, IEngineClient engine, Func<EngineException, string>? words = null)
+    {
+        if (e.Interface is { } answer) SayUpdate(answer, engine.BaseAddress, Credentials.Current?.ServerName);
+        else Say((words ?? Explain)(e));
     }
 
     /// <summary>What went wrong in plain words (the engine's own text is for logs, not for the screen).</summary>
@@ -351,7 +360,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             var health = await engine.GetHealthAsync(cts.Token);
-            if (NeedsUpdate(health)) return;
+            if (NeedsUpdate(health, engine.BaseAddress)) return;
             var request = await engine.RequestPairingAsync(Environment.MachineName, Platform, cts.Token);
             MatchCode = request.MatchCode;
             Say(_s.Format("Settings_Engine_AskWaiting", request.MatchCode));
@@ -385,11 +394,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         catch (EngineException e)
         {
             MatchCode = null;
-            Say(e.Status switch
+            SayFailure(e, engine, x => x.Status switch
             {
                 HttpStatusCode.TooManyRequests => _s["Settings_Engine_AskBusy"],
                 HttpStatusCode.NotFound => _s["Settings_Engine_AskExpired"],
-                _ => Explain(e),
+                _ => Explain(x),
             });
         }
         finally
@@ -411,8 +420,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>
     /// A scribe://pair link (the QR code, or the link opened on this PC): the first listed address that
     /// answers with the link's server id, else that id on the network; then the code in the link, or, when
-    /// there is none, the approve-on-the-computer path. Both ask the engine's health first and stop at an engine
-    /// with another interface version.
+    /// there is none, the approve-on-the-computer path. The engine's health is asked before anything is kept: for an
+    /// engine with another interface version the address, the engine in use and its pairing stay as they were, and
+    /// no pair request is sent.
     /// </summary>
     public async Task<bool> PairFromLinkAsync(string text)
     {
@@ -429,22 +439,25 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
         string computer = ServerNames.ComputerName(link.ServerName);
         Say(_s.Format("Settings_Link_Looking", computer));
-        var candidates = new List<Uri>(link.Hosts);
         Uri? found = null;
-        foreach (var host in candidates)
-            if (await ServerIdAtAsync(host) is { } id && string.Equals(id, link.ServerId, StringComparison.OrdinalIgnoreCase)) { found = host; break; }
+        Health? health = null;
+        foreach (var host in link.Hosts)
+            if (await HealthAtAsync(host) is { } h && string.Equals(h.ServerId, link.ServerId, StringComparison.OrdinalIgnoreCase)) { (found, health) = (host, h); break; }
         if (found is null)
         {
             IReadOnlyList<DiscoveredEngine> seen;
             try { seen = await _discovery.BrowseAsync(ConnectionMonitor.BrowseTime); }
             catch (Exception e) when (e is System.Net.Sockets.SocketException or InvalidOperationException) { seen = []; }
-            found = seen.FirstOrDefault(e => string.Equals(e.ServerId, link.ServerId, StringComparison.OrdinalIgnoreCase))?.BaseAddress;
+            foreach (var e in seen.Where(e => string.Equals(e.ServerId, link.ServerId, StringComparison.OrdinalIgnoreCase)))
+                if (await HealthAtAsync(e.BaseAddress) is { } h && string.Equals(h.ServerId, link.ServerId, StringComparison.OrdinalIgnoreCase)) { (found, health) = (e.BaseAddress, h); break; }
         }
-        if (found is null)
+        if (found is null || health is null)
         {
             Say(_s.Format("Settings_Link_NotFound", computer));
             return false;
         }
+        // Before the address or the engine in use changes: a link to an engine this app can't work with changes nothing.
+        if (NeedsUpdate(health, found, link.ServerName)) return false;
 
         EngineAddress = found.ToString();
         Credentials.CurrentServerId = link.ServerId;
@@ -459,7 +472,10 @@ public sealed partial class SettingsViewModel : ObservableObject
         return Credentials.Current is not null;
     }
 
-    /// <summary>"Unpair": the engine forgets this PC, and this PC forgets the engine.</summary>
+    /// <summary>
+    /// "Unpair": the engine forgets this PC, and this PC forgets the engine. An engine with another interface version
+    /// is not told (its client refuses the request): this PC forgets it all the same.
+    /// </summary>
     [RelayCommand]
     private async Task UnpairAsync()
     {
@@ -472,28 +488,26 @@ public sealed partial class SettingsViewModel : ObservableObject
         Connection.Kick();
     }
 
-    private async Task<string?> ServerIdAtAsync(Uri address)
+    /// <summary>The health of the engine at an address, or null when none answers there.</summary>
+    private async Task<Health?> HealthAtAsync(Uri address)
     {
         using var timeout = new CancellationTokenSource(ConnectionMonitor.ProbeTimeout);
-        try { return (await _clients(address, null).GetHealthAsync(timeout.Token)).ServerId; }
+        try { return await _clients(address, null).GetHealthAsync(timeout.Token); }
         catch (Exception e) when (e is EngineException or HttpRequestException or OperationCanceledException or System.Text.Json.JsonException) { return null; }
     }
 
     private void SavePairing(string token, string? deviceId, string? serverId, string? serverName, Uri address)
     {
-        // Engines from before pairing-once have no server id: the address stands in for it.
-        var id = serverId is { Length: > 0 } ? serverId : "address:" + address;
+        // A credential belongs to a server id; the engine always gives one.
+        if (serverId is not { Length: > 0 } id) throw new EngineException("The engine's answer had no server id.", HttpStatusCode.OK);
         Credentials.Save(new EngineCredential(id, token, serverName, deviceId, address.ToString(), _time.GetUtcNow()));
-        if (Credentials.Get(EngineCredentials.LegacyKey) is not null && id != EngineCredentials.LegacyKey) Credentials.Remove(EngineCredentials.LegacyKey);
         EngineToken = token;
     }
 
-    private void Remember(EngineCredential stored, Health health, string? serverId)
+    private void Remember(EngineCredential stored, Health health)
     {
         var record = stored with { LastAddress = EngineUri.ToString(), LastOk = _time.GetUtcNow(), ServerName = health.ServerName ?? stored.ServerName };
-        if (stored.ServerId == EngineCredentials.LegacyKey && (serverId ?? health.ServerId) is { Length: > 0 } id)
-            record = Credentials.Adopt(record, id, health.ServerName);
-        else Credentials.Save(record);
+        Credentials.Save(record);
         EngineToken = record.Token;
     }
 

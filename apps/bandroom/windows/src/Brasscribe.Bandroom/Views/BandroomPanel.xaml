@@ -240,8 +240,10 @@
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
             </Border>
-            <TextBlock Text="{x:Bind Vm.EmptyDevicesText}" Style="{StaticResource BodyStyle}" Visibility="{x:Bind Vm.HasNoDevices, Mode=OneWay}" />
+            <!-- "No phones yet", or why the phones are not listed (the engine has another interface version: no Pair then). -->
+            <TextBlock Text="{x:Bind Vm.EmptyDevicesText, Mode=OneWay}" Style="{StaticResource BodyStyle}" Visibility="{x:Bind Vm.HasNoDevices, Mode=OneWay}" />
             <Button Style="{StaticResource PrimaryButtonStyle}" HorizontalAlignment="Stretch" Command="{x:Bind Vm.PairCommand}"
+                    Visibility="{x:Bind Vm.CanPair, Mode=OneWay}"
                     AutomationProperties.Name="{x:Bind Vm.PairLabel}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="{StaticResource BcIconPairPhone}" FontFamily="{ThemeResource SymbolThemeFontFamily}" FontSize="16" />

@@ -16,9 +16,11 @@ public sealed record MachineInfo(string ComputerName, string SpeedKey, string Ru
 /// Gathers the supervisor state, /v1/status, the running job, the device list and host health into
 /// snapshots for the flyout and the tray icon. Polls the engine every 5 s while the flyout is open and
 /// every 30 s otherwise (the contract's cadence); pair requests every 5 s always; host health every tick.
-/// An engine whose interface version is not this Bandroom's (<see cref="Interface"/>) is asked nothing: no status,
+/// Every engine is told once, when it first runs, to close the pairing code it opened as it started (unless the Pair
+/// window is open): codes are opened from the Pair window only. Apart from that, and the supervisor's health checks,
+/// an engine whose interface version is not this Bandroom's (<see cref="Interface"/>) is asked nothing: no status,
 /// jobs, devices or pair requests, and no pairing is opened on it; the snapshot carries the problem that says which
-/// of the two to update.
+/// of the two to update, with a fix that does something (<see cref="InterfaceMatch.FixFor"/>).
 /// </summary>
 public sealed class BandroomController
 {
@@ -54,7 +56,39 @@ public sealed class BandroomController
         Machine = machine;
         _time = time ?? TimeProvider.System;
         _load = new LoadAverager(_time);
-        _sup.Changed += () => Publish();
+        _sup.Changed += OnSupervisorChanged;
+    }
+
+    /// <summary>The process whose start-up pairing code was closed (or left, for an open Pair window); 0 while none runs.</summary>
+    private int _greeted;
+
+    private void OnSupervisorChanged()
+    {
+        if (_sup.State == EngineState.Running && _sup.ProcessId is { } pid && _sup.Port is { } port)
+        {
+            // Once per engine start, whatever its interface version.
+            if (Interlocked.Exchange(ref _greeted, pid) != pid)
+            {
+                if (Interface == InterfaceAnswer.Same) EngineUpdateTried = false;
+                if (!PairWindowOpen()) _ = CloseStartupCodeAsync(port);
+            }
+        }
+        else if (_sup.State is EngineState.Stopped or EngineState.Error) Interlocked.Exchange(ref _greeted, 0);
+        Publish();
+    }
+
+    /// <summary>
+    /// The engine opens a pairing code as it starts (<c>scribe serve --lan</c> prints one). Bandroom shows codes in
+    /// its Pair window only, so that one is closed. This is the one thing an engine with another interface version
+    /// is told: a code nobody can see must not stay open on it either.
+    /// </summary>
+    private async Task CloseStartupCodeAsync(int port)
+    {
+        try { await _apiFor(port).ClosePairingAsync().ConfigureAwait(false); }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or EngineHttpException or System.Text.Json.JsonException)
+        {
+            Log?.Invoke("bandroom: closing the engine's start-up pairing code: " + e.Message);
+        }
     }
 
     public PairRequestWatcher Requests { get; } = new();
@@ -81,6 +115,17 @@ public sealed class BandroomController
     public string? WorkspaceStamp { get; set; }
     /// <summary>Where a check that went wrong is written (engine.log).</summary>
     public Action<string>? Log { get; set; }
+    /// <summary>The Pair window is open: the engine's pairing code is that window's, and is left open.</summary>
+    public Func<bool> PairWindowOpen { get; set; } = () => false;
+    /// <summary>The engine workspace comes from a developer's folder (SCRIBE_BANDROOM_WORKSPACE), not from this app's bundle.</summary>
+    public bool DevelopmentEngine { get; set; }
+    /// <summary>The workspace this app bundles is not the one installed: updating from this app would change the engine.</summary>
+    public bool EngineUpdatePending { get; set; }
+    /// <summary>
+    /// The update was run for an engine that is older than this Bandroom. While the engine that runs still is, the
+    /// fix offered is the latest Bandroom; an engine that matches clears it.
+    /// </summary>
+    public bool EngineUpdateTried { get; set; }
 
     public event Action<BandroomSnapshot>? SnapshotReady;
     public event Action<IReadOnlyList<DeviceInfo>>? DevicesChanged;
@@ -199,7 +244,11 @@ public sealed class BandroomController
         }
     }
 
-    /// <summary>Refreshes the devices now (opening Phones and tablets, after a removal).</summary>
+    /// <summary>
+    /// Refreshes the devices now (opening Phones and tablets, after a removal). With no engine to ask (none runs, or
+    /// it has another interface version) the list is emptied: its rows could not be acted on. The view then says why
+    /// from the snapshot's problem, not "No phones yet".
+    /// </summary>
     public async Task RefreshDevicesAsync()
     {
         if (Api is not { } api) { DevicesChanged?.Invoke([]); return; }
@@ -233,7 +282,9 @@ public sealed class BandroomController
             problems.Add(UpdateRefusal is { } refused ? Problems.UpdateRefused(_s, refused) : Problems.UpdateFailed(_s, failure));
         if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));
         // After an update that failed: that problem says why the previous engine runs, and its fix is the update.
-        if (Interface is var match and not InterfaceAnswer.Same) problems.Add(Problems.Interface(_s, match, _sup.Health?.InterfaceVersion));
+        if (Interface is var match and not InterfaceAnswer.Same)
+            problems.Add(Problems.Interface(_s, match, _sup.Health?.InterfaceVersion,
+                InterfaceMatch.FixFor(match, DevelopmentEngine, EngineUpdatePending, EngineUpdateTried)));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
         string? downloading = null;
         if (SetupComplete && _health is { ModelsReady: false })

@@ -16,7 +16,8 @@ public sealed record StatusInfo(
 
 /// <summary>
 /// GET /v1/health. <see cref="Build"/> (commit and workspace stamp) is null from engines that don't report it;
-/// <see cref="InterfaceVersion"/> is null from an engine from before the number (<see cref="InterfaceMatch"/>).
+/// <see cref="InterfaceVersion"/> is null when the answer has none that is a whole number (<see cref="InterfaceMatch"/>);
+/// from an engine with another version the other fields are read only as far as they can be (<see cref="EngineApi.GetHealthAsync"/>).
 /// </summary>
 public sealed record HealthInfo(string Status, string Version, string Device, bool AuthRequired, string? ServerId, string? ServerName,
     string? Build = null, int? InterfaceVersion = null);

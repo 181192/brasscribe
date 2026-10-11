@@ -21,8 +21,8 @@ namespace Brasscribe.Bandroom;
 ///
 /// Command line: --background (the sign-in start), --demo (sample content, no engine), --show
 /// flyout|devices|confirm-stop|window|pair|allow|settings (one view with sample content, for screenshots and
-/// the accessibility scan), --state running|busy|attention|update|stopped|error|setup|starting, --theme light|dark
-/// (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
+/// the accessibility scan), --state running|busy|attention|update|update-bandroom|update-behind|update-dev|stopped|
+/// error|setup|starting, --theme light|dark (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
 /// </summary>
 public partial class App : Application, IBandroomActions, IPanelHost, ISettingsHost, IAnnouncer
 {
@@ -218,6 +218,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             CheckModels = () => ModelCheck.Check(_paths.Models, _hub),
             Downloads = _downloads,
             Log = _log.Write,
+            // The Pair window's code is the engine's open one: an engine that starts while it shows keeps it.
+            PairWindowOpen = () => _pairWindow is not null,
+            // A workspace from a folder of the developer's choosing: this app can neither update it nor replace it.
+            DevelopmentEngine = Environment.GetEnvironmentVariable("SCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 },
         };
         _controller.SnapshotReady += snap => _ui.TryEnqueue(() => ApplySnapshot(snap));
         _controller.DevicesChanged += list => _ui.TryEnqueue(() => _vm.ApplyDevices(list, DateTimeOffset.UtcNow));
@@ -242,6 +246,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             // An engine that ran before, with another build of the workspace: the app was updated (§3.8).
             bool update = !complete && await Task.Run(() => bootstrap.IsUpdate);
             controller.SetupComplete = complete || update;
+            await NoteWorkspaceAsync();
             _ = controller.RunAsync(_quit.Token);
             polling = true;
             if (update) await _setup.RunAsync(UpdateAsync);
@@ -254,6 +259,18 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             SetupStopped(e);
             if (!polling) _ = controller.RunAsync(_quit.Token);
         }
+    }
+
+    /// <summary>
+    /// Whether the workspace this app bundles is the one installed, read again after everything that installs one.
+    /// It decides what is offered for an engine older than this Bandroom: the update from here while there is one to
+    /// install, else the latest Bandroom.
+    /// </summary>
+    private async Task NoteWorkspaceAsync()
+    {
+        if (_controller is not { } controller || _bootstrap is not { } bootstrap) return;
+        controller.EngineUpdatePending = !await Task.Run(() => bootstrap.WorkspaceCurrent);
+        controller.Publish();
     }
 
     /// <summary>Setup or an update stopped on something unexpected: logged, and shown as a problem with Finish setting up.</summary>
@@ -313,6 +330,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             }
         }
         finally { controller.Updating = false; }
+        await NoteWorkspaceAsync();
         if (await Task.Run(() => bootstrap.StartsAfterUpdate(failed))) await supervisor.StartAsync();
         else if (failed) _log?.Write("bandroom: the previous engine has no " + EngineLaunchConfig.Command + " command to start: nothing runs until the update succeeds");
         controller.Publish();
@@ -344,7 +362,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             SetupStopped(e);
             if (await Task.Run(() => _bootstrap!.EngineReady)) await _supervisor!.StartAsync();
         }
-        _controller!.Publish();
+        await NoteWorkspaceAsync();
     }
 
     private static string FindPixi()
@@ -395,8 +413,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _demoEngine = new DemoEngine();
         var state = Option("--state") ?? "running";
         ApplySnapshot(DemoEngine.Snapshot(state, _s));
-        // An engine with another interface version is not asked for its phones.
-        _vm.ApplyDevices(state == "update" ? [] : _demoEngine.Devices, DateTimeOffset.UtcNow);
+        // An engine with another interface version is not asked for its phones (the update states).
+        _vm.ApplyDevices(state.StartsWith("update", StringComparison.Ordinal) ? [] : _demoEngine.Devices, DateTimeOffset.UtcNow);
         string show = Option("--show") ?? "flyout";
         _ui.TryEnqueue(DispatcherQueuePriority.Low, async () =>
         {
@@ -502,10 +520,13 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     public void OpenPairWindow()
     {
-        // No pairing on an engine with another interface version: the flyout says which of the two to update.
+        // No pairing on an engine with another interface version: the panel goes to the problem that says which of the
+        // two to update, wherever it was (the flyout may be open on Phones and tablets), and says it.
         if (_controller is { Interface: not InterfaceAnswer.Same } && !_demo)
         {
-            _flyout?.ShowFlyout();
+            if (_window is not null) _window.Activate();
+            else if (_flyout is { IsOpen: false }) _flyout.ShowFlyout();
+            _vm.ShowProblem();
             return;
         }
         _flyout?.HideFlyout();
@@ -633,7 +654,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         {
             ProblemKind.LowDisk => "ms-settings:storagesense",
             ProblemKind.PublicNetwork => "ms-settings:network-status",
-            ProblemKind.PixiTooOld or ProblemKind.UpdateRefused or ProblemKind.UpdateBandroom => LatestRelease,
+            ProblemKind.PixiTooOld or ProblemKind.UpdateRefused or ProblemKind.UpdateBandroom or ProblemKind.EngineBehind => LatestRelease,
             ProblemKind.MissingDownload => _downloads?.Error switch
             {
                 DownloadError.LicenceNotAccepted => ModelComponent.BandWriter.Page().AbsoluteUri,
@@ -644,7 +665,15 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         };
         if (uri is not null) _ = Windows.System.Launcher.LaunchUriAsync(new Uri(uri));
         else if (problem == ProblemKind.KeyRefused || (problem == ProblemKind.MissingDownload && _downloads?.Error is DownloadError.KeyMissing)) OpenSettings();
-        else if (problem is ProblemKind.MissingDownload or ProblemKind.UpdateFailed or ProblemKind.UpdateEngine) FinishSetup();
+        else if (problem == ProblemKind.UpdateEngine)
+        {
+            // Offered only while this app has another engine than the installed one (InterfaceMatch.FixFor), so the
+            // update has something to install. Should the engine that comes up still be older, the fix is the latest
+            // Bandroom from then on, not this again.
+            if (_controller is { } controller) controller.EngineUpdateTried = true;
+            FinishSetup();
+        }
+        else if (problem is ProblemKind.MissingDownload or ProblemKind.UpdateFailed) FinishSetup();
     }
 
     public async Task<bool> RemoveDeviceAsync(string deviceId)

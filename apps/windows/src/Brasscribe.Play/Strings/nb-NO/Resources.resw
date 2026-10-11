@@ -174,11 +174,11 @@
   <data name="ConnectButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Åpne Brasscribe på datamaskinen og velg Koble til en enhet, og skriv inn koden her</value>
   </data>
-  <data name="ConnectionActionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
-    <value>Koble denne PC-en til Brasscribe på datamaskinen</value>
-  </data>
   <data name="Connection_Connect" xml:space="preserve">
     <value>Koble til</value>
+  </data>
+  <data name="Connection_ConnectHelp" xml:space="preserve">
+    <value>Koble denne PC-en til Brasscribe på datamaskinen</value>
   </data>
   <data name="Connection_Connected" xml:space="preserve">
     <value>Koblet til Brasscribe på {0}</value>
@@ -192,6 +192,12 @@
   <data name="Connection_DetailsServerId" xml:space="preserve">
     <value>Server-ID: {0}</value>
   </data>
+  <data name="Connection_GetUpdate" xml:space="preserve">
+    <value>Hent oppdateringen</value>
+  </data>
+  <data name="Connection_GetUpdateHelp" xml:space="preserve">
+    <value>Åpner siden med nyeste Brasscribe Play og nyeste Brasscribe for datamaskinen</value>
+  </data>
   <data name="Connection_NeedsPairing" xml:space="preserve">
     <value>Datamaskinen kjenner ikke igjen denne PC-en lenger.</value>
   </data>
@@ -204,11 +210,14 @@
   <data name="Connection_Reconnecting" xml:space="preserve">
     <value>Leter etter Brasscribe på {0} …</value>
   </data>
+  <data name="Connection_ThisPc" xml:space="preserve">
+    <value>denne PC-en</value>
+  </data>
   <data name="Connection_UpdateApp" xml:space="preserve">
-    <value>Oppdater Brasscribe Play. Brasscribe på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
+    <value>Oppdater Brasscribe Play. Brasscribe på {0} er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
   </data>
   <data name="Connection_UpdateBandroom" xml:space="preserve">
-    <value>Oppdater Brasscribe på datamaskinen. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert.</value>
+    <value>Oppdater Brasscribe på {0}. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert.</value>
   </data>
   <data name="Connection_YourComputer" xml:space="preserve">
     <value>datamaskinen</value>
@@ -296,6 +305,12 @@
   </data>
   <data name="Error_Engine" xml:space="preserve">
     <value>Brasscribe på datamaskinen fikk et problem. Prøv igjen.</value>
+  </data>
+  <data name="Error_GetUpdate" xml:space="preserve">
+    <value>Hent oppdateringen</value>
+  </data>
+  <data name="Error_GetUpdate_Help" xml:space="preserve">
+    <value>Åpner siden med nyeste Brasscribe Play og nyeste Brasscribe for datamaskinen</value>
   </data>
   <data name="Error_NeedsPairing" xml:space="preserve">
     <value>Datamaskinen må kobles til på nytt. Skriv inn koden den viser, i Innstillinger.</value>
@@ -968,9 +983,6 @@
   </data>
   <data name="Output_NeedsEngine" xml:space="preserve">
     <value>Vanskegrad og toneart settes av Brasscribe på datamaskinen. Åpne et partitur den har laget for å endre dem.</value>
-  </data>
-  <data name="Output_OldComputer" xml:space="preserve">
-    <value>Brasscribe på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</value>
   </data>
   <data name="Output_QuartetBody" xml:space="preserve">
     <value>4 musikere, én på hver stemme</value>

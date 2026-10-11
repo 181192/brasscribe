@@ -14,7 +14,7 @@ internal static class PlayScan
     /// <summary>The computer in Play's sample scenes (PreviewScenes.SampleServer).</summary>
     private const string PreviewServer = "Studio PC";
 
-    public const string Scenes = "first-run,home,home-offline,home-update,what-is-this,transcribing,review,review-listening,choose-output,score,part,export,error,settings";
+    public const string Scenes = "first-run,home,home-offline,home-update,home-update-app,what-is-this,transcribing,review,review-listening,choose-output,score,part,export,error,error-update,error-update-app,settings";
 
     public static int Run(Options o)
     {

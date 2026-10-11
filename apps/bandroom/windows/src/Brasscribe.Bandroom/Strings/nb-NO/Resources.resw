@@ -683,6 +683,15 @@
   <data name="Interface_Engine_Fix" xml:space="preserve">
     <value>Oppdater Brasscribe</value>
   </data>
+  <data name="Interface_Behind_Why" xml:space="preserve">
+    <value>Brasscribe på denne PC-en er eldre enn denne utgaven av Bandroom, og denne utgaven kan ikke oppdatere den. Den nyeste Bandroom oppdaterer begge.</value>
+  </data>
+  <data name="Interface_Dev_Title" xml:space="preserve">
+    <value>Brasscribe og Bandroom passer ikke sammen</value>
+  </data>
+  <data name="Interface_Dev_Why" xml:space="preserve">
+    <value>Brasscribe kjører fra en utviklingsmappe her, og den og denne utgaven av Bandroom virker bare sammen når begge er oppdatert. Oppdater mappen, eller bygg Bandroom fra den.</value>
+  </data>
   <data name="Error_Title" xml:space="preserve">
     <value>Brasscribe stoppet uventet</value>
   </data>

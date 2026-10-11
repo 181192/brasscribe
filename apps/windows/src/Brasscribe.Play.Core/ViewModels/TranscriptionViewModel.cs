@@ -24,33 +24,9 @@ public sealed partial class TranscriptionStep(string key, string label) : Observ
 /// <summary>Why making a score stopped, so the error screen can say what to do next.</summary>
 public enum TranscriptionFailure { None, ComputerUnreachable, Failed, RecordingUnreadable, UpdateApp, UpdateBandroom }
 
-/// <summary>A finished transcription. <c>SeatFellBack</c>: the engine refused the seat and wrote the job for <see cref="EngineSeats.Fallback"/>'s seat.</summary>
+/// <summary>A finished transcription.</summary>
 public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source,
-    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null, Evidence? Evidence = null, bool SeatFellBack = false);
-
-/// <summary>Seats an engine from before them refuses, and what to send it instead.</summary>
-public static class EngineSeats
-{
-    /// <summary>The seat whose part an older engine writes the same notes for: a trumpet takes the Solo Cornet part.</summary>
-    public static readonly IReadOnlyDictionary<string, string> Fallback = new Dictionary<string, string> { ["trumpet"] = "solo-cornet" };
-
-    /// <summary>
-    /// Creates the job; an engine from before the seat refuses it (422, no refusal code), and then it goes once more
-    /// with the fallback seat and no reading or lead. The second value says it fell back.
-    /// </summary>
-    public static async Task<(Job Job, bool FellBack)> CreateJobAsync(IEngineClient engine, JobCreate request, CancellationToken ct = default)
-    {
-        try
-        {
-            return (await engine.CreateJobAsync(request, ct), false);
-        }
-        catch (EngineException e) when (e.Status == System.Net.HttpStatusCode.UnprocessableEntity && e.Code is null
-                                        && request.Seat is { } seat && Fallback.ContainsKey(seat))
-        {
-            return (await engine.CreateJobAsync(request with { Seat = Fallback[request.Seat], Reads = null, Lead = null }, ct), true);
-        }
-    }
-}
+    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null, Evidence? Evidence = null);
 
 /// <summary>
 /// Runs a transcription on the companion engine: upload, job, live progress in plain language with
@@ -209,7 +185,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             var match = InterfaceMatch.Of(health.InterfaceVersion);
             if (match != InterfaceAnswer.Same)
             {
-                StopForUpdate(match, health.InterfaceVersion);
+                StopForUpdate(match, InterfaceMatch.Details(health.InterfaceVersion));
                 return;
             }
             DeviceText = _s.Format("Transcribe_Device", health.Device.ToUpperInvariant());
@@ -220,7 +196,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
                 audioId = (await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct)).AudioId;
             }
 
-            var (job, seatFellBack) = await EngineSeats.CreateJobAsync(engine, new JobCreate(audioId, profile, RenderAudio: true,
+            var job = await engine.CreateJobAsync(new JobCreate(audioId, profile, RenderAudio: true,
                 Title: Path.GetFileNameWithoutExtension(source.DisplayName),
                 Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose,
                 Seat: options.Seat, Reads: options.Reads, Lead: options.Lead), ct);
@@ -262,7 +238,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             try { evidence = await engine.GetEvidenceAsync(job.Id, ct); }
             catch (Exception e) when (e is EngineException or NotSupportedException or System.Text.Json.JsonException) { }
             _announcer.Announce(_s["Transcribe_Done"], AnnouncementKind.Important);
-            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options, evidence, seatFellBack));
+            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options, evidence));
         }
         catch (OperationCanceledException e) when (!ct.IsCancellationRequested && e.InnerException is TimeoutException)
         {
@@ -274,11 +250,10 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             StageText = _s["Transcribe_Cancelled"];
             _announcer.Announce(StageText, AnnouncementKind.Important);
         }
-        catch (EngineException e) when (e.Status == System.Net.HttpStatusCode.UnprocessableEntity && e.Code is null
-                                        && Lineups.Parse(options.Lineup) == Lineup.Quartet)
+        catch (EngineException e) when (e.Interface is { } answer)
         {
-            // An engine without codes refuses a quartet for a solo take with a bare 422.
-            Fail(new EngineException(e.Message, e.Status, e, "quartet_needs_group"));
+            // Found after the start (the engine was replaced while the job ran): the client sent it nothing more.
+            StopForUpdate(answer, e.Message);
         }
         catch (EngineException e)
         {
@@ -327,15 +302,14 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     }
 
     /// <summary>
-    /// The app and the engine have different interface versions: says which of the two to update. The numbers are for
-    /// the error screen's technical details only.
+    /// The app and the engine have different interface versions: says which of the two to update. The numbers
+    /// (<paramref name="details"/>) are for the error screen's technical details only.
     /// </summary>
-    private void StopForUpdate(InterfaceAnswer match, int? engineVersion)
+    private void StopForUpdate(InterfaceAnswer match, string details)
     {
         bool app = match == InterfaceAnswer.UpdateApp;
-        ErrorText = _s[app ? "Connection_UpdateApp" : "Connection_UpdateBandroom"];
-        ErrorDetail = string.Create(System.Globalization.CultureInfo.InvariantCulture,
-            $"The engine's interface version is {(engineVersion is { } v ? v : "not given")}; this app is built for {Wire.InterfaceVersion}.");
+        ErrorText = _s[app ? "Error_UpdateApp_Title" : "Error_UpdateBandroom_Title"];
+        ErrorDetail = details;
         Failure = app ? TranscriptionFailure.UpdateApp : TranscriptionFailure.UpdateBandroom;
         _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
         FailedWith?.Invoke(this, Failure);

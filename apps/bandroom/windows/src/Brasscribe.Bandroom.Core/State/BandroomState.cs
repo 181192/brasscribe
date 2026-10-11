@@ -15,14 +15,25 @@ public enum PrimaryAction { None, PairPhone, StartEngine, FinishSetup, TryAgain,
 public enum ProblemKind
 {
     NoFreePort, LowDisk, MissingDownload, FirewallBlocked, PublicNetwork, KeyRefused, UpdateFailed, UpdateRefused, PixiTooOld,
-    /// <summary>The engine that runs is newer than this Bandroom.</summary>
+    /// <summary>The engine that runs is newer than this Bandroom: the fix is the latest Bandroom.</summary>
     UpdateBandroom,
-    /// <summary>The engine that runs is older than this Bandroom.</summary>
+    /// <summary>The engine that runs is older than this Bandroom, which bundles a newer one: the fix is the update from this app.</summary>
     UpdateEngine,
+    /// <summary>The engine that runs is older, and this Bandroom has no newer one to install (or its update left it older): the fix is the latest Bandroom.</summary>
+    EngineBehind,
+    /// <summary>The engine comes from a developer's folder and has another interface version: no fix from this app.</summary>
+    DevelopmentEngine,
 }
 
-/// <summary>A Needs-attention problem (§6.2): a title, one sentence why, the fix, and details for the tech person.</summary>
-public sealed record Problem(ProblemKind Kind, string Title, string Why, string FixLabel, string Details);
+/// <summary>
+/// A Needs-attention problem (§6.2): a title, one sentence why, the fix, and details for the tech person. An empty
+/// <paramref name="FixLabel"/> means there is nothing this app can do about it, and no button is shown.
+/// </summary>
+public sealed record Problem(ProblemKind Kind, string Title, string Why, string FixLabel, string Details)
+{
+    /// <summary>The engine and Bandroom have different interface versions: the engine is asked nothing, and no phone can be paired.</summary>
+    public bool IsInterface => Kind is ProblemKind.UpdateBandroom or ProblemKind.UpdateEngine or ProblemKind.EngineBehind or ProblemKind.DevelopmentEngine;
+}
 
 /// <summary>Everything that decides the state, gathered from the supervisor, setup, host and engine status.</summary>
 public sealed record StateInputs(
@@ -122,7 +133,8 @@ public static class StateRules
         {
             DisplayState.SettingUp => PrimaryAction.FinishSetup,
             DisplayState.Running or DisplayState.Busy => PrimaryAction.PairPhone,
-            DisplayState.NeedsAttention => PrimaryAction.Fix,
+            // A problem with nothing to do about it from here has no button, rather than one that does nothing.
+            DisplayState.NeedsAttention => problem!.FixLabel.Length > 0 ? PrimaryAction.Fix : PrimaryAction.None,
             DisplayState.Stopped => PrimaryAction.StartEngine,
             DisplayState.Error => PrimaryAction.TryAgain,
             _ => PrimaryAction.None,
@@ -171,16 +183,24 @@ public static class Problems
 
     /// <summary>
     /// The engine that runs and this Bandroom have different interface versions, so Bandroom asks it nothing and
-    /// phones can't be paired. A newer engine: the fix is a newer Bandroom. An older one (or one from before the
-    /// number): the fix updates the engine from this app. The numbers are for the details only.
+    /// phones can't be paired. The words and the button follow <paramref name="fix"/> (<see cref="Engine.InterfaceMatch.FixFor"/>),
+    /// so the button always does something: a newer engine, or an older one this Bandroom can't update, gets the
+    /// latest Bandroom; an older one it can update gets the update; one from a developer's folder gets other words
+    /// and no button. The numbers are for the details only.
     /// </summary>
-    public static Problem Interface(IStrings s, Engine.InterfaceAnswer match, int? engineVersion)
+    public static Problem Interface(IStrings s, Engine.InterfaceAnswer match, int? engineVersion, Engine.InterfaceFix fix)
     {
         string details = string.Create(System.Globalization.CultureInfo.InvariantCulture,
-            $"The engine's interface version is {(engineVersion is { } v ? v : "not given")}; this Bandroom is built for {Engine.Wire.InterfaceVersion}.");
-        return match == Engine.InterfaceAnswer.UpdateBandroom
-            ? new(ProblemKind.UpdateBandroom, s["Interface_Bandroom_Title"], s["Interface_Bandroom_Why"], s["Pixi_Fix"], details)
-            : new(ProblemKind.UpdateEngine, s["Interface_Engine_Title"], s["Interface_Engine_Why"], s["Interface_Engine_Fix"], details);
+            $"The engine's interface version is {(engineVersion is { } v ? v : "not given as a whole number")}; this Bandroom is built for {Engine.Wire.InterfaceVersion}.");
+        return (fix, match) switch
+        {
+            (Engine.InterfaceFix.None, _) => new(ProblemKind.DevelopmentEngine, s["Interface_Dev_Title"], s["Interface_Dev_Why"], "",
+                details + " The engine comes from a development workspace (SCRIBE_BANDROOM_WORKSPACE)."),
+            (_, Engine.InterfaceAnswer.UpdateBandroom) => new(ProblemKind.UpdateBandroom, s["Interface_Bandroom_Title"], s["Interface_Bandroom_Why"], s["Pixi_Fix"], details),
+            (Engine.InterfaceFix.UpdateEngine, _) => new(ProblemKind.UpdateEngine, s["Interface_Engine_Title"], s["Interface_Engine_Why"], s["Interface_Engine_Fix"], details),
+            _ => new(ProblemKind.EngineBehind, s["Interface_Engine_Title"], s["Interface_Behind_Why"], s["Pixi_Fix"],
+                details + " This Bandroom has no engine to install that would match."),
+        };
     }
 
     public static Problem LowDisk(IStrings s, long freeBytes, string dataDir) =>

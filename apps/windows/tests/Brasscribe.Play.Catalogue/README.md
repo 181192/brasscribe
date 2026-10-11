@@ -21,7 +21,9 @@ still (below) and takes:
   dialog half transparent, as at the start of its opening animation, and without the dimming behind it);
 - the contrast of every text and icon on it, measured on the screenshot: 4.5:1 for body text, 3:1 for large text and
   icons (`tools/ScreenCheck.Core/Contrast.cs`), and text cut off (`TextBlock.IsTextTrimmed`, so only text whose
-  trimming is set: text clipped by its container without trimming is not seen);
+  trimming is set: text clipped by its container without trimming is not seen). An icon that a scrolling edge cuts
+  is not measured on that screen (the slice that shows may hold none of the glyph); the run keeps the icons it left
+  out, and one that was measured whole on no screen of the run is a contrast finding on `all--<run>any`;
 - an exception the app did not catch while the screen was open (its `crash.log`; the app then says "Something went
   wrong").
 

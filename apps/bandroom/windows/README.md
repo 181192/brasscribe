@@ -45,7 +45,8 @@ On macOS: `tools/check-macos.sh` runs the Core tests and type-checks the app's C
 on Windows; CI builds it: `.github/workflows/windows.yml`, job `bandroom`).
 
 Command line: `--background` (the sign-in start: no window), `--demo` / `--show flyout|devices|confirm-stop|window|pair|allow`
-(sample content, no engine), `--state running|busy|attention|update|stopped|error|setup|starting`, `--theme light|dark`, `--lang en|nb`.
+(sample content, no engine), `--state running|busy|attention|update|update-bandroom|update-behind|update-dev|stopped|error|setup|starting`
+(the four `update` states: an engine with another interface version, one per fix), `--theme light|dark`, `--lang en|nb`.
 
 ## How it runs
 
@@ -58,9 +59,17 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
   models, runs and paired devices stay. If the engine environment won't install, the old copy goes back, its
   engine starts, and a Needs-attention problem offers Try again.
 - **The engine and Bandroom must match.** The engine's health answer carries its interface version, and Bandroom
-  is built for one. When the engine that runs has another, Bandroom asks it nothing (no status, jobs, phones or
-  pair requests) and opens no pairing on it; the flyout says which of the two to update: a newer Bandroom when
-  the engine is newer, the engine (the update above, run again) when it is older.
+  is built for one (`Wire.InterfaceVersion`, the engine's `engine/src/scribe_engine/wire.py`). When the engine that
+  runs has another, Bandroom asks it for its health (the check that it still answers) and, once when it first
+  runs, tells it to close the pairing code it opened as it started; nothing else: no status, jobs, phones or pair
+  requests, and no pairing is opened on it. Phones and tablets says why instead of listing phones, and Pair a
+  phone is not offered. The flyout says which of the two to update, with a button that does something: the latest
+  Bandroom when the engine is newer; **Update Brasscribe** (the update above, run again) when it is older and this
+  Bandroom bundles another engine than the installed one; the latest Bandroom when it is older and there is nothing
+  to install, or that update left it older; and no button, with words of its own, for an engine from
+  `SCRIBE_BANDROOM_WORKSPACE`. A number that is not a whole number counts as an older engine.
+- **The start-up pairing code** (`scribe serve --lan` opens one) is closed when an engine first runs, whatever its
+  interface version, unless the Pair window is open: codes are shown in that window only.
 - **First run** installs, in order, `default` (the engine, so it can start early), `swift-f0`,
   `basic-pitch`, then the torch adapters. With an NVIDIA card (DXGI vendor 0x10DE) and a driver of 525 or
   newer they are the `-cuda` builds and the engine gets `SCRIBE_CUDA=1`; otherwise the CPU builds.

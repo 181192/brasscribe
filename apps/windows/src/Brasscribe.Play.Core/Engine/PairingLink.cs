@@ -13,8 +13,10 @@ public enum PairingLinkProblem { None, NotAPairingLink, NewerVersion, BadServerI
 public sealed record PairingLink(string ServerId, string ServerName, IReadOnlyList<Uri> Hosts, string? Code, string? Fingerprint)
 {
     /// <summary>
-    /// The pairing link inside a command line or a launch argument, or null. The scheme must start a word:
-    /// a link under another scheme that merely ends in this one's letters is not a pairing link.
+    /// The pairing link inside a command line or a launch argument, or null. Only a link under another scheme that
+    /// ends in this one's letters is passed over (the character before is one a scheme name can hold: a letter, a
+    /// digit, "+", "-" or "."), and the search goes on after it. Anything else may come before the link: a space, a
+    /// quote, "=" or ":" (protocol activation can hand it over as <c>----ms-protocol:scribe://…</c>).
     /// </summary>
     public static string? In(string? text)
     {
@@ -23,11 +25,14 @@ public sealed record PairingLink(string ServerId, string ServerName, IReadOnlyLi
         for (int at = text.IndexOf(scheme, StringComparison.OrdinalIgnoreCase); at >= 0;
              at = text.IndexOf(scheme, at + 1, StringComparison.OrdinalIgnoreCase))
         {
-            if (at > 0 && !char.IsWhiteSpace(text[at - 1]) && text[at - 1] != '"') continue;
+            if (at > 0 && IsSchemeCharacter(text[at - 1])) continue;
             return text[at..].Trim().Trim('"').Split(' ')[0].Trim('"');
         }
         return null;
     }
+
+    /// <summary>A character a URI scheme's name can hold (RFC 3986 §3.1).</summary>
+    private static bool IsSchemeCharacter(char c) => char.IsAsciiLetterOrDigit(c) || c is '+' or '-' or '.';
 
     /// <summary>
     /// Parses a link. A major version other than 1 or a server id that is not 32 hex digits is refused.

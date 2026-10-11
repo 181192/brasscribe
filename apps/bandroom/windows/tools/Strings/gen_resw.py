@@ -250,6 +250,13 @@ ROWS = [
     ("Interface_Engine_Why", "Brasscribe on this PC is older than this copy of Bandroom, and they only work together when both are up to date.",
      "Brasscribe på denne PC-en er eldre enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert."),  # (+)
     ("Interface_Engine_Fix", "Update Brasscribe", "Oppdater Brasscribe"),  # (+)
+    # (+) the engine is older and this copy has no newer one to install (or its update left it older): Pixi_Fix is the button
+    ("Interface_Behind_Why", "Brasscribe on this PC is older than this copy of Bandroom, and this copy can't update it. The latest Bandroom brings both up to date.",
+     "Brasscribe på denne PC-en er eldre enn denne utgaven av Bandroom, og denne utgaven kan ikke oppdatere den. Den nyeste Bandroom oppdaterer begge."),
+    # (+) a developer's own engine folder with another interface version: no button
+    ("Interface_Dev_Title", "Brasscribe and Bandroom don't match", "Brasscribe og Bandroom passer ikke sammen"),
+    ("Interface_Dev_Why", "Brasscribe runs from a development folder here, and it and this copy of Bandroom only work together when both are up to date. Update the folder, or build Bandroom from it.",
+     "Brasscribe kjører fra en utviklingsmappe her, og den og denne utgaven av Bandroom virker bare sammen når begge er oppdatert. Oppdater mappen, eller bygg Bandroom fra den."),
     ("Error_Title", "Brasscribe stopped unexpectedly", "Brasscribe stoppet uventet"),
     ("Error_Why", "It tried to start three times. Recordings on your phones are safe.", "Den prøvde å starte tre ganger. Opptakene på telefonene er trygge."),
     ("Error_Copy", "Copy details for the tech person", "Kopier detaljer til den tekniske i bandet"),

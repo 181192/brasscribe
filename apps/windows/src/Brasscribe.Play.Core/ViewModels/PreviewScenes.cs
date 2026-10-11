@@ -11,7 +11,8 @@ namespace Brasscribe.Play.Core.ViewModels;
 public static class PreviewScenes
 {
     public static readonly string[] Names =
-        ["first-run", "home", "home-offline", "home-update", "what-is-this", "transcribing", "review", "review-listening", "choose-output", "score", "part", "export", "error"];
+        ["first-run", "home", "home-offline", "home-update", "home-update-app", "what-is-this", "transcribing", "review", "review-listening",
+         "choose-output", "score", "part", "export", "error", "error-update", "error-update-app"];
 
     /// <summary>The computer in the sample scenes.</summary>
     public const string SampleServer = "Brasscribe on Studio PC";
@@ -29,8 +30,10 @@ public static class PreviewScenes
         main.Settings.Connection.Show(scene switch
         {
             "home-offline" => Engine.ConnectionState.Offline,
-            // The computer's interface version is older than this app's: the row says to update Bandroom.
-            "home-update" => Engine.ConnectionState.UpdateBandroom,
+            // The computer's interface version is older than this app's: the row says to update Brasscribe there.
+            "home-update" or "error-update" => Engine.ConnectionState.UpdateBandroom,
+            // It is newer: the row says to update this app.
+            "home-update-app" or "error-update-app" => Engine.ConnectionState.UpdateApp,
             _ => Engine.ConnectionState.Connected,
         }, SampleServer);
         switch (scene)
@@ -38,8 +41,15 @@ public static class PreviewScenes
             case "first-run":
                 main.Screen = Screen.FirstRun;
                 return true;
-            case "home" or "home-offline" or "home-update":
+            case "home" or "home-offline" or "home-update" or "home-update-app":
                 main.Screen = Screen.Start;
+                return true;
+            case "error-update" or "error-update-app":
+                // Making a score stopped before anything was sent: the engine has another interface version.
+                main.Transcription.ShowProgress(SampleTitle, "orchestra-with-soloist", "", "Ready", 0, null);
+                main.Error.Show(scene == "error-update" ? ErrorKind.UpdateBandroom : ErrorKind.UpdateApp,
+                    Engine.InterfaceMatch.Details(Engine.Wire.InterfaceVersion + (scene == "error-update" ? -1 : 1)));
+                main.Screen = Screen.Error;
                 return true;
             case "what-is-this":
                 main.Kind.Source = sample;

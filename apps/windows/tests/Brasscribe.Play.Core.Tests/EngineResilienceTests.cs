@@ -126,19 +126,29 @@ public class EngineResilienceTests
     public async Task A_short_outage_after_a_dropped_stream_does_not_end_the_job()
     {
         // The stream drops after event 0; the engine is then away for three tries, and comes back.
-        int n = 0;
-        var c = Client(new FakeHandler((r, _) =>
+        bool dropped = false;
+        int away = 0;
+        var h = new FakeHandler((r, _) =>
         {
-            n++;
-            if (r.RequestUri!.AbsolutePath.EndsWith("/events"))
-                return r.RequestUri.Query.Contains("after=-1") ? FakeHandler.Sse(First) : FakeHandler.Sse(Terminal);
-            if (n <= 6) throw new HttpRequestException("network is unreachable");
-            return FakeHandler.Json(JobJson);
-        }));
+            string path = r.RequestUri!.AbsolutePath;
+            if (path.EndsWith("/events"))
+            {
+                if (!r.RequestUri.Query.Contains("after=-1")) return FakeHandler.Sse(Terminal);
+                dropped = true;
+                return FakeHandler.Sse(First);
+            }
+            if (dropped && away++ < 3) throw new HttpRequestException("network is unreachable");
+            return FakeHandler.Json(path == "/v1/health" ? FakeHandler.CurrentHealth : JobJson);
+        });
+        var c = Client(h);
 
         var ids = new List<int>();
         await foreach (var e in c.StreamEventsAsync("j1")) ids.Add(e.Id);
         Assert.Equal([0, 2], ids);
+        // What answers after the outage is asked for its interface version before the stream is asked for again.
+        var paths = h.Requests.Select(r => r.Request.RequestUri!.AbsolutePath).ToList();
+        Assert.Equal("/v1/health", paths[^2]);
+        Assert.EndsWith("/events", paths[^1]);
     }
 
     [Fact]
@@ -146,7 +156,8 @@ public class EngineResilienceTests
     {
         var h = new AsyncHandler((r, _, _) =>
         {
-            if (!r.RequestUri!.AbsolutePath.EndsWith("/events")) return Task.FromResult(FakeHandler.Json(JobJson));
+            if (r.RequestUri!.AbsolutePath == "/v1/health") return Task.FromResult(FakeHandler.Json(FakeHandler.CurrentHealth));
+            if (!r.RequestUri.AbsolutePath.EndsWith("/events")) return Task.FromResult(FakeHandler.Json(JobJson));
             var body = r.RequestUri.Query.Contains("after=-1") ? new HangingStream(": keepalive\n\n" + First) : new HangingStream(Terminal);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(body) });
         });
@@ -211,7 +222,10 @@ public class EngineResilienceTests
     [Fact]
     public async Task An_upload_keeps_a_norwegian_file_name()
     {
-        var h = new FakeHandler((_, _) => FakeHandler.Json("""{"audio_id":"a1","sha256":"ff","filename":"x","bytes":4}""", HttpStatusCode.Created));
+        var h = new FakeHandler((_, _) => FakeHandler.Json("""{"audio_id":"a1","sha256":"ff","filename":"x","bytes":4}""", HttpStatusCode.Created))
+        {
+            Health = FakeHandler.CurrentHealth,
+        };
         var c = Client(h);
         await c.UploadAudioAsync(new MemoryStream([1, 2, 3, 4]), "Kjærlighet \"live\".wav");
 

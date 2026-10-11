@@ -22,6 +22,8 @@ public static class EngineErrors
     /// <summary>The string key for an engine failure.</summary>
     public static string Key(EngineException e) => e switch
     {
+        { Interface: InterfaceAnswer.UpdateApp } => "Error_UpdateApp_Title",
+        { Interface: InterfaceAnswer.UpdateBandroom } => "Error_UpdateBandroom_Title",
         { Code: { } code } when Codes.TryGetValue(code, out var key) => key,
         { Code: EngineException.JobFailed } => "Transcribe_Failed",
         { Code: EngineException.Timeout } => "Error_Timeout",
