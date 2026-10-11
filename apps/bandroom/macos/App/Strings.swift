@@ -94,6 +94,15 @@ enum Strings {
         }
     }
 
+    /// In the Pair window, for a failed update that keeps the engine behind: its own words are about the update, and
+    /// say nothing of phones. Nil for a problem whose words already say why nothing can be paired.
+    static func pairingWaits(for p: Problem) -> String? {
+        switch p {
+        case .updateFailed, .updateRefused: String(localized: "No phone can be paired until the update succeeds.")
+        default: nil
+        }
+    }
+
     /// The button's words, nil for a problem Bandroom has no fix for.
     static func problemFix(_ p: Problem) -> String? {
         switch p {

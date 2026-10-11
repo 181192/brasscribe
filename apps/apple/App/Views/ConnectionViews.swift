@@ -114,25 +114,39 @@ struct ConnectionStatusRow: View {
             Button(ConnectionCopy.pairAgain) { app.showSettings = true }
                 .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
                 .accessibilityIdentifier("connectionPairAgain")
-        // the update is made outside the app: this app's from its download page, the computer's on the computer,
-        // from the address to type there
-        case .mismatch(_, .app):
+        case .mismatch(_, let which):
+            UpdateAction(which: which, place: "connection")
+        case .connected, .reconnecting:
+            EmptyView()
+        }
+    }
+}
+
+/// Where the update is, for the one of the two that needs it. It is made outside the app: this app's from its download
+/// page, the computer's on the computer, from the address to type there. Shown wherever the update words are: the
+/// connection row, a pairing that was refused, and a score asked of the computer.
+struct UpdateAction: View {
+    let which: InterfaceMatch.Update
+    /// Where it is shown, the start of its accessibility identifiers ("connectionGetUpdate", "pairingUpdateAddress").
+    let place: String
+
+    var body: some View {
+        switch which {
+        case .app:
             Link(destination: ConnectionCopy.downloads) { Text("Open the download page") }
                 .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
-                .accessibilityIdentifier("connectionGetUpdate")
-        case .mismatch(_, .computer):
+                .accessibilityIdentifier("\(place)GetUpdate")
+        case .computer:
             VStack(alignment: .leading, spacing: Space.s1) {
                 Text("On your computer, download the latest Brasscribe Bandroom from this address:")
                     .foregroundStyle(Color.Scribe.textMuted)
                 Text(verbatim: ConnectionCopy.downloads.absoluteString)
                     .foregroundStyle(Color.Scribe.text)
                     .textSelection(.enabled)
-                    .accessibilityIdentifier("connectionUpdateAddress")
+                    .accessibilityIdentifier("\(place)UpdateAddress")
             }
             .font(Font.Scribe.callout)
             .fixedSize(horizontal: false, vertical: true)
-        case .connected, .reconnecting:
-            EmptyView()
         }
     }
 }

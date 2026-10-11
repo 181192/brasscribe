@@ -215,21 +215,38 @@ final class AppModel {
 
     private func rebuildScores() { scores = ScoreEntry.merge(pieces: pieces, jobs: computerJobs) }
 
-    /// Fetch the computer's finished scores. When they can't be had (the computer is not reachable, or has another
+    /// Fetch the computer's finished scores. When they can't be had (the computer is not connected, or has another
     /// interface version and is not asked), the ones listed from before go: they could not be opened. This device's
     /// own scores are never touched.
     func refreshComputerScores() async {
         guard !useFixtureService, let svc = service() as? CompanionService else { computerJobs = []; return }
+        let asked = connectionChanges
         do {
-            computerJobs = try await svc.jobs()
+            let jobs = try await svc.jobs()
+            // the connection changed while the computer answered: that change fetched the scores again, or took them away
+            guard asked == connectionChanges else { return }
+            computerJobs = jobs
         } catch {
-            computerJobs = []
-            refused(error)
+            let update = refused(error)
+            guard asked == connectionChanges else { return }
+            if Self.scoresGo(refusedForUpdate: update != nil, connection: connection.state.kind) { computerJobs = [] }
         }
     }
 
+    /// Whether the scores listed from the computer go when they could not be fetched. While the connection row says
+    /// Connected, one request that did not get through takes nothing away: the heartbeat decides when the computer
+    /// is gone, and the scores go with that change.
+    nonisolated static func scoresGo(refusedForUpdate: Bool, connection: ConnectionState.Kind) -> Bool {
+        refusedForUpdate || connection != .connected
+    }
+
+    /// How many times the connection has changed: an answer asked for before the last change is not about this
+    /// connection.
+    @ObservationIgnored private var connectionChanges = 0
+
     /// The connection to the computer changed: its scores are fetched again when it is there, and go when it is not.
     func connectionChanged() async {
+        connectionChanges += 1
         if case .connected = connection.state { await refreshComputerScores() } else { computerJobs = [] }
     }
 
@@ -570,6 +587,8 @@ final class TranscriptionJob: Identifiable {
     var failureWords: String?
     /// The failure's title when it is more specific than "The score couldn't be made".
     var failureTitle: String?
+    /// The computer's interface version is not this app's: which of the two to update before the score can be made.
+    var needsUpdate: InterfaceMatch.Update?
     /// The recording was too long for a draft on this device (DraftTooLong).
     var tooLong = false
     var cancelled = false
@@ -595,7 +614,7 @@ final class TranscriptionJob: Identifiable {
             } catch {
                 guard let self else { return }
                 if case TranscriptionError.notPaired = error { self.onRefused?() }
-                if case TranscriptionError.interfaceMismatch = error { self.onRefused?() }
+                if case TranscriptionError.interfaceMismatch(let which) = error { self.needsUpdate = which; self.onRefused?() }
                 if case TranscriptionError.cancelled = error { self.cancelled = true } else if case TranscriptionError.needsWholeGroup = error {
                     self.failure = String(localized: "Needs a recording of the whole group")
                 } else if !Task.isCancelled {

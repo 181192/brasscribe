@@ -299,8 +299,9 @@ NB = {
     "This copy of Bandroom is newer than the Brasscribe it runs, and has no newer one to put in its place. The latest Bandroom has one that works.":
         "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og har ingen nyere å sette inn i stedet. Den nyeste Bandroom har en som virker.",
     "This copy of Bandroom is newer than the Brasscribe it runs, which comes from a developer checkout. Update the checkout, then restart Brasscribe.":
-        "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og den kommer fra en utviklerkopi. Oppdater kopien, og start så Brasscribe på nytt.",
+        "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører. Brasscribe kommer fra en utviklerkopi: oppdater kopien, og start så Brasscribe på nytt.",
     "The update didn't finish, and the previous version was put back.": "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake.",
+    "No phone can be paired until the update succeeds.": "Ingen telefon kan kobles til før oppdateringen er fullført.",
     "Updating Brasscribe…": "Oppdaterer Brasscribe …",
     "Engine build": "Motorbygg",
     "Workspace": "Arbeidsområde",

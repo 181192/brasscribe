@@ -33,6 +33,9 @@ struct PairWindow: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(Strings.problemTitle(blocker)).brFont(.bodyStrong)
                             Text(Strings.problemWhy(blocker)).brFont(.body).fixedSize(horizontal: false, vertical: true)
+                            if let waits = Strings.pairingWaits(for: blocker) {
+                                Text(waits).brFont(.body).fixedSize(horizontal: false, vertical: true)
+                            }
                         }
                     }
                     .accessibilityElement(children: .combine)
@@ -105,10 +108,12 @@ struct PairWindow: View {
             AccessibilityNotification.Announcement(String(localized: "\(name) is paired.")).post()
             pairedFocused = true
         }
-        // the window changes under VoiceOver: what to update first, and when a code is there again
-        .onChange(of: app.pairingBlocker) { was, blocker in
+        // the window changes under VoiceOver: what to update first, and when a code is there again. Also said for a
+        // window that opens with nothing to scan or type.
+        .onChange(of: app.pairingBlocker, initial: true) { was, blocker in
             if let blocker {
-                AccessibilityNotification.Announcement("\(Strings.problemTitle(blocker)). \(Strings.problemWhy(blocker))").post()
+                let words = [Strings.problemTitle(blocker) + ".", Strings.problemWhy(blocker), Strings.pairingWaits(for: blocker)]
+                AccessibilityNotification.Announcement(words.compactMap { $0 }.joined(separator: " ")).post()
             } else if was != nil {
                 pairingWasBlocked = true
             }

@@ -185,8 +185,10 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     /// device) goes through here first: an engine with another interface version than this app's is sent nothing
     /// else. While the engine's version is not known, health is asked first.
     func requireMatch() async throws {
-        if interface == nil { _ = try await health(timeout: 5) }
-        if case .mismatch(let update) = interface { throw TranscriptionError.interfaceMismatch(update) }
+        // decided from the answer just read: a request that fails meanwhile may have cleared the stored one
+        let match: InterfaceMatch
+        if let known = interface { match = known } else { match = InterfaceMatch.of(engine: try await health(timeout: 5).interfaceVersion) }
+        if case .mismatch(let update) = match { throw TranscriptionError.interfaceMismatch(update) }
     }
 
     func send(_ r: URLRequest) async throws -> Data {
@@ -268,10 +270,9 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
 
     /// A paired device's heartbeat, sent without asking health first: its answer carries the interface version, which
     /// is noted for `requireMatch`. Throws `.notPaired` on 401, `.http(404, …)` for a client the engine accepts but
-    /// not as a paired device (loopback, a static token), and `.interfaceMismatch` when the answer can't be read and
-    /// its interface version is not this app's.
-    public func thisDevice(timeout: TimeInterval = 5) async throws -> DeviceSelf {
-        try noteInterface(DeviceSelf.self, in: try await sendUnchecked(request("v1/devices/me", timeout: timeout)))
+    /// not as a paired device (loopback, a static token), and `.interfaceMismatch` as `health(timeout:from:)` does.
+    public func thisDevice(timeout: TimeInterval = 5, from serverID: String? = nil) async throws -> DeviceSelf {
+        try noteInterface(DeviceSelf.self, in: try await sendUnchecked(request("v1/devices/me", timeout: timeout)), from: serverID)
     }
 
     /// A new token for this device. Store it before using it: the old one keeps working until then.
@@ -285,18 +286,28 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try await send(request("v1/devices/me", method: "DELETE"))
     }
 
-    /// Also notes whether the engine's interface version is this app's (`requireMatch`). Throws `.interfaceMismatch`
-    /// when the answer can't be read and its interface version is not this app's.
-    public func health(timeout: TimeInterval?) async throws -> Health {
-        try noteInterface(Health.self, in: try await sendUnchecked(request("v1/health", timeout: timeout)))
+    /// Also notes whether the engine's interface version is this app's (`requireMatch`). `serverID` is the engine the
+    /// caller expects at this address (the paired one, or a pairing link's), nil when any engine will do. Throws
+    /// `.interfaceMismatch` when the answer can't be read in full, is that engine's and its interface version is not
+    /// this app's. An answer that is not an engine's (a network's sign-in page, another program on the port), or is
+    /// another engine's, throws as any answer that can't be read: nothing was reached.
+    public func health(timeout: TimeInterval?, from serverID: String? = nil) async throws -> Health {
+        try noteInterface(Health.self, in: try await sendUnchecked(request("v1/health", timeout: timeout)), from: serverID)
     }
 
-    private struct InterfaceOnly: Decodable { let interface_version: Int }
+    /// What says an answer is an engine's, and which: both answers that carry the interface version name the engine.
+    private struct Identity: Decodable {
+        let serverID: String
+        let interface: InterfaceNumber?
+        enum CodingKeys: String, CodingKey { case serverID = "server_id", interface = "interface_version" }
+    }
 
-    /// Reads `interface_version` on its own before the rest of an answer that carries it. One that is not a whole
-    /// number, or sits in an answer with other fields missing, still says which of the two to update.
-    private func noteInterface<T: Decodable>(_ type: T.Type, in data: Data) throws -> T {
-        let match = InterfaceMatch.of(engine: (try? JSONDecoder().decode(InterfaceOnly.self, from: data))?.interface_version)
+    /// Reads who answers and `interface_version` on their own before the rest of an answer that carries them. A number
+    /// that is not a whole number, or sits in an answer with other fields missing, still says which of the two to
+    /// update, but only in an answer of the engine expected (any engine, when `expected` is nil).
+    private func noteInterface<T: Decodable>(_ type: T.Type, in data: Data, from expected: String?) throws -> T {
+        let engine = (try? JSONDecoder().decode(Identity.self, from: data)).flatMap { expected == nil || $0.serverID == expected ? $0 : nil }
+        let match = engine.map { InterfaceMatch.of(engine: $0.interface?.value) }
         interface = match
         do { return try JSONDecoder().decode(T.self, from: data) } catch {
             if case .mismatch(let update) = match { throw TranscriptionError.interfaceMismatch(update) }

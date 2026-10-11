@@ -169,6 +169,10 @@ import TranscriptionKit
         try await window("review", app: full) { ReviewView(piece: piece) }
         try piece.saveComposition(composition)
         try await window("problem-silence", app: full) { ProblemView(problem: .silence) }
+        // A score asked of a computer with another version: the update words, and where to get the update
+        for (name, update) in [("problem-update-computer", InterfaceMatch.Update.computer), ("problem-update-app", .app)] {
+            try await window(name, app: full) { ProblemView(problem: .needsUpdate(update)) }
+        }
 
         try await sheet("settings", app: full) { SettingsView() }
         // Your computer while one of the two needs an update: the words, where to get it, and Forget this computer

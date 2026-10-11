@@ -1351,6 +1351,16 @@
         }
       }
     },
+    "No phone can be paired until the update succeeds.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen telefon kan kobles til før oppdateringen er fullført."
+          }
+        }
+      }
+    },
     "No phones yet. Pair a phone to make full-band scores from it.": {
       "localizations": {
         "nb": {
@@ -2296,7 +2306,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og den kommer fra en utviklerkopi. Oppdater kopien, og start så Brasscribe på nytt."
+            "value": "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører. Brasscribe kommer fra en utviklerkopi: oppdater kopien, og start så Brasscribe på nytt."
           }
         }
       }

@@ -170,6 +170,11 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
             switch (request.httpMethod ?? "GET", path) {
             case ("GET", "/v1/health") where host == "odd.local", ("GET", "/v1/devices/me") where host == "odd.local":
                 return (200, Data(Self.oddAnswer.utf8), "application/json")
+            // refuses every credential, and answers health as `odd.local` does
+            case ("GET", "/v1/health") where host == "refusing.local":
+                return (200, Data(Self.oddAnswer.utf8), "application/json")
+            case ("GET", "/v1/devices/me") where host == "refusing.local":
+                return (401, Data(), "application/json")
             case ("GET", "/v1/health") where host == "loop.local":
                 return (200, Data(#"{"status":"ok","version":"1","device":"mps","auth_required":false,"server_id":"srv-local","server_name":"Brasscribe on This Mac","interface_version":\#(Wire.interfaceVersion)}"#.utf8), "application/json")
             // another engine than the one the tests pair with: it knows none of their credentials
@@ -734,9 +739,12 @@ extension URLRequest {
         #expect(m.state == .mismatch(serverName: "Brasscribe on Studio", update: update))
     }
 
-    @Test(arguments: [(#"{"interface_version":\#(Wire.interfaceVersion + 1)}"#, InterfaceMatch.Update.app),
-                      (#"{"interface_version":\#(Wire.interfaceVersion + 1),"status":7}"#, .app),
-                      (#"{"interface_version":\#(Wire.interfaceVersion - 1)}"#, .computer), ("{}", .computer), (#"{"status":"ok"}"#, .computer)])
+    /// The engine says who it is, and the rest of its answer can't be read: its interface version (or that it has none)
+    /// still says which of the two to update.
+    @Test(arguments: [(#"{"server_id":"srv-1","interface_version":\#(Wire.interfaceVersion + 1)}"#, InterfaceMatch.Update.app),
+                      (#"{"server_id":"srv-1","interface_version":\#(Wire.interfaceVersion + 1),"status":7}"#, .app),
+                      (#"{"server_id":"srv-1","interface_version":\#(Wire.interfaceVersion - 1)}"#, .computer),
+                      (#"{"server_id":"srv-1"}"#, .computer), (#"{"server_id":"srv-1","status":"ok"}"#, .computer)])
     @MainActor func anAnswerWithFieldsMissingStillSaysWhichToUpdate(body: String, update: InterfaceMatch.Update) async throws {
         defer { StubEngine.oddAnswer = "{}" }
         StubEngine.oddAnswer = body
@@ -760,32 +768,155 @@ extension URLRequest {
         await #expect(throws: TranscriptionError.interfaceMismatch(update)) { try await m.pair(link: link, deviceName: "x", platform: "ios") }
     }
 
+    /// A 200 that is not an engine's (a network's sign-in page, another program on the port) is nothing reached: never
+    /// "update the computer". The network is still searched for the paired engine, and a link's next address is tried.
+    @Test(arguments: ["<html><body>Sign in to this network</body></html>", "{}", #"{"status":"ok"}"#, "[]",
+                      #"{"interface_version":\#(Wire.interfaceVersion - 1)}"#, #"{"server_id":7,"interface_version":\#(Wire.interfaceVersion + 1)}"#])
+    @MainActor func anAnswerThatIsNotAnEnginesIsNothingReached(body: String) async throws {
+        defer { StubEngine.oddAnswer = "{}" }
+        StubEngine.oddAnswer = body
+        StubEngine.requests = []
+        let base = URL(string: "http://odd.local:8765")!
+        let svc = CompanionService(baseURL: base, session: session())
+        await #expect(throws: DecodingError.self) { _ = try await svc.health() }
+        // and the next request asks again: "update" is not remembered for it
+        await #expect(throws: DecodingError.self) { _ = try await svc.jobs() }
+        await #expect(throws: DecodingError.self) {
+            try await CompanionService(baseURL: base, session: session()).pair(code: "123456", deviceName: "x", platform: "ios")
+        }
+        #expect(Set(sent(to: "odd.local")) == ["GET /v1/health"])
+        // paired: the engine is looked for by its id, and found at its new address
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://odd.local:8765",
+                             rotateAfter: Self.now.addingTimeInterval(86_400))
+        let (m, store) = monitor([r], found: URL(string: "http://engine.local:8765")!)
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on Studio"))
+        #expect(try store.record(serverID: "srv-1")?.lastAddress == "http://engine.local:8765")
+        // not found either: looked for again, with the pairing as it was
+        let (lost, _) = monitor([r])
+        lost.resume(); lost.suspend()
+        #expect(await lost.heartbeat() == 2)
+        #expect(lost.state == .reconnecting(serverName: "Brasscribe on Studio"))
+        // on the same computer: no Brasscribe there
+        let (local, _) = monitor([])
+        local.localAddress = base
+        await local.heartbeat()
+        #expect(local.state == .offline)
+        // a link: its next address, and with none that is the engine's, "can't reach"
+        let (fresh, _) = monitor([])
+        let twoAddresses = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-1&name=x&h=odd.local:8765,engine.local:8765&code=123456"))
+        #expect(try await fresh.pair(link: twoAddresses, deviceName: "x", platform: "ios") == nil)
+        #expect(fresh.record?.lastAddress == "http://engine.local:8765")
+        let (none, _) = monitor([])
+        let oneAddress = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-1&name=x&h=odd.local:8765&code=123456"))
+        await #expect(throws: TranscriptionError.unreachable("")) { try await none.pair(link: oneAddress, deviceName: "x", platform: "ios") }
+        #expect(!sent(to: "odd.local").contains { $0.hasPrefix("POST") })
+    }
+
+    /// Another engine's answer that can't be read in full says nothing about the paired one, or the one a link is for:
+    /// it is "not there", whatever its interface version. A typed address has no engine to compare with.
+    @Test(arguments: [#"{"server_id":"srv-9"}"#, #"{"server_id":"srv-9","interface_version":\#(Wire.interfaceVersion + 1)}"#])
+    @MainActor func anotherEnginesUnreadableAnswerIsNotUpdate(body: String) async throws {
+        defer { StubEngine.oddAnswer = "{}" }
+        StubEngine.oddAnswer = body
+        StubEngine.requests = []
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://odd.local:8765")
+        let (m, store) = monitor([r])
+        m.resume(); m.suspend()
+        #expect(await m.heartbeat() == 2)
+        #expect(m.state == .reconnecting(serverName: "Brasscribe on Studio"))
+        #expect(try store.record(serverID: "srv-1") == r)
+        let link = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-1&name=x&h=odd.local:8765&code=123456"))
+        await #expect(throws: TranscriptionError.unreachable("")) { try await m.pair(link: link, deviceName: "x", platform: "ios") }
+        await #expect(throws: TranscriptionError.self) {
+            try await CompanionService(baseURL: URL(string: "http://odd.local:8765")!, session: session()).pair(code: "123456", deviceName: "x", platform: "ios")
+        }
+        #expect(!StubEngine.requests.contains { $0.httpMethod == "POST" })
+    }
+
+    /// 401 means "pair again" only when health says the engine that refuses the credential is the paired one. With
+    /// health not read it is not there; another engine never had the credential; and with another interface version
+    /// the update comes first.
+    @Test(arguments: [
+        ("<html>Sign in</html>", ConnectionState.reconnecting(serverName: "Brasscribe on Studio")),
+        ("{}", .reconnecting(serverName: "Brasscribe on Studio")),
+        (#"{"status":"ok","version":"1","device":"cpu","auth_required":true,"server_id":"srv-9","server_name":"Brasscribe on Other","interface_version":\#(Wire.interfaceVersion)}"#,
+         .reconnecting(serverName: "Brasscribe on Studio")),
+        (CompanionTests.healthBut + #","interface_version":\#(Wire.interfaceVersion)}"#, .needsPairing(serverName: "Brasscribe on Studio")),
+        (CompanionTests.healthBut + "}", .mismatch(serverName: "Brasscribe on Studio", update: .computer)),
+        (#"{"server_id":"srv-1","interface_version":\#(Wire.interfaceVersion + 1)}"#, .mismatch(serverName: "Brasscribe on Studio", update: .app)),
+    ])
+    @MainActor func aRefusedCredentialIsPairAgainOnlyFromThePairedEngine(health: String, state: ConnectionState) async throws {
+        defer { StubEngine.oddAnswer = "{}" }
+        StubEngine.oddAnswer = health
+        StubEngine.requests = []
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://refusing.local:8765")
+        let (m, store) = monitor([r])
+        m.resume(); m.suspend()
+        await m.heartbeat()
+        #expect(m.state == state)
+        #expect(sent(to: "refusing.local") == ["GET /v1/devices/me", "GET /v1/health"])
+        #expect(try store.record(serverID: "srv-1") == r)
+    }
+
     /// An answer that can't be read but carries this app's interface version is a failure, not "update".
     @Test func anUnreadableAnswerWithThisAppsVersionIsNotAMismatch() async throws {
         defer { StubEngine.oddAnswer = "{}" }
-        StubEngine.oddAnswer = #"{"interface_version":\#(Wire.interfaceVersion)}"#
+        StubEngine.oddAnswer = #"{"server_id":"srv-1","interface_version":\#(Wire.interfaceVersion)}"#
         let svc = CompanionService(baseURL: URL(string: "http://odd.local:8765")!, session: session())
         await #expect(throws: DecodingError.self) { _ = try await svc.health() }
     }
 }
 
-/// `engine/src/scribe_engine/wire.py`, found from this file; nil outside a checkout of the whole repository.
-func engineWire() -> String? {
+let enginesWirePath = "engine/src/scribe_engine/wire.py"
+
+/// The repository this package sits in, found from this file by the engine's `wire.py`; nil outside a checkout of the
+/// whole repository.
+func repository() -> URL? {
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<10 {
-        if let text = try? String(contentsOf: dir.appending(path: "engine/src/scribe_engine/wire.py"), encoding: .utf8) { return text }
+        if FileManager.default.fileExists(atPath: dir.appending(path: enginesWirePath).path) { return dir }
         dir = dir.deletingLastPathComponent()
     }
     return nil
 }
 
+/// The tests that read the engine's file are skipped outside a checkout of the whole repository, but never in CI: there
+/// a file that has moved fails them.
+let enginesWireIsRead = repository() != nil || ProcessInfo.processInfo.environment["CI"] != nil
+
+/// `NAME = value` in the engine's `wire.py`, without the quotes.
+func enginesWire(_ name: String) throws -> String {
+    let root = try #require(repository(), "\(enginesWirePath) was not found above this file")
+    let wire = try String(contentsOf: root.appending(path: enginesWirePath), encoding: .utf8)
+    let found = wire.firstMatch(of: try Regex("(?m)^\(name)\\s*=\\s*\"?([^\"\\s#]+)\"?"))?.output[1].substring.map(String.init)
+    return try #require(found, "\(name) is not in \(enginesWirePath)")
+}
+
 /// The app's wire constants are the engine's: a change to one without the other fails here.
-@Test(.enabled(if: engineWire() != nil)) func theWireConstantsAreTheEngines() throws {
-    let wire = try #require(engineWire())
-    func value(_ name: String) -> String? {
-        wire.firstMatch(of: try! Regex("(?m)^\(name)\\s*=\\s*\"?([^\"\\s#]+)\"?"))?.output[1].substring.map(String.init)
+@Test(.enabled(if: enginesWireIsRead)) func theWireConstantsAreTheEngines() throws {
+    #expect(try enginesWire("INTERFACE_VERSION") == String(Wire.interfaceVersion))
+    #expect(try enginesWire("PAIRING_SCHEME") == Wire.pairScheme)
+    #expect(try enginesWire("SERVICE_TYPE") == Wire.serviceType)
+}
+
+/// The system reads the link's scheme and the network service from the apps' Info.plist files, not from `Wire`: those,
+/// and the project file they are made from, carry the engine's names too.
+@Test(.enabled(if: enginesWireIsRead)) func theAppsInfoCarriesTheEnginesNames() throws {
+    let scheme = try enginesWire("PAIRING_SCHEME"), service = try enginesWire("SERVICE_TYPE")
+    let app = try #require(repository()).appending(path: "apps/apple")
+    for name in ["Info-iOS.plist", "Info-macOS.plist"] {
+        let data = try Data(contentsOf: app.appending(path: "App/\(name)"))
+        let info = try #require(try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any], "\(name)")
+        let schemes = (info["CFBundleURLTypes"] as? [[String: Any]] ?? []).flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
+        #expect(schemes == [scheme], "\(name)")
+        #expect(info["NSBonjourServices"] as? [String] == [service], "\(name)")
     }
-    #expect(value("INTERFACE_VERSION") == String(Wire.interfaceVersion))
-    #expect(value("PAIRING_SCHEME") == Wire.pairScheme)
-    #expect(value("SERVICE_TYPE") == Wire.serviceType)
+    let project = try String(contentsOf: app.appending(path: "project.yml"), encoding: .utf8)
+    func lists(_ key: String) throws -> [String] {
+        project.matches(of: try Regex("(?m)^\\s*\(key):\\s*\\[([^\\]]*)\\]")).compactMap { $0.output[1].substring }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+    }
+    #expect(try lists("CFBundleURLSchemes") == [scheme])
+    #expect(try lists("NSBonjourServices") == [service])
 }

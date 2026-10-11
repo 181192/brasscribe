@@ -55,6 +55,11 @@ enum Problem: Hashable, Identifiable {
         }
     }
 
+    /// Which of the two to update, for the problem that is one: where to get the update is shown under its words.
+    var update: InterfaceMatch.Update? {
+        if case .needsUpdate(let which) = self { which } else { nil }
+    }
+
     var hint: String? {
         switch self {
         case .copyProtected, .silence: return String(localized: "A file you own, or a recording with the microphone, always works.")

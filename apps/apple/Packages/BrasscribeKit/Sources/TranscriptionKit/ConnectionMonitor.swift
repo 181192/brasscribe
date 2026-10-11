@@ -4,8 +4,8 @@ import Observation
 /// Keeps this device connected to its paired computer while the app is in the foreground:
 /// a heartbeat every 20 s (one request: `GET /v1/devices/me` for a paired device, `GET /v1/health` without a
 /// credential), a silent move to the engine's new address (the last address first, then the network by server id),
-/// monthly token rotation, "pair again" only on 401, and "update" when the engine's interface version is not this
-/// app's (then the heartbeat is all it is asked).
+/// monthly token rotation, "pair again" only on 401 from the paired engine itself, and "update" when the engine's
+/// interface version is not this app's (then the heartbeat is all it is asked).
 /// The state logic lives in `ConnectionMachine`; this class adds the timers and the network.
 @MainActor @Observable
 public final class ConnectionMonitor {
@@ -173,21 +173,24 @@ public final class ConnectionMonitor {
     /// which says in one answer which engine this is, whether the credential still works and the engine's interface
     /// version (Bandroom may have been updated since the last one). `GET /v1/health` is asked without a credential,
     /// and when the engine accepts the credential but not as a device (404). Which engine answers is settled before
-    /// its interface version is looked at: another engine at the old address is not there, whatever its version.
+    /// its interface version is looked at: another engine at the old address is not there, whatever its version, and
+    /// neither is an answer that is no engine's (a network's sign-in page): the network is searched for ours.
     func check(_ r: EngineRecord, at address: String) async -> (Check, CompanionService?) {
         guard let url = URL(string: address) else { return (.unreachable, nil) }
         let svc = CompanionService(baseURL: url, token: r.token, session: session)
         var out = r
         out.lastAddress = address
+        // the engine this record is for; none yet for Brasscribe on this same computer
+        let ours = r.isProvisional ? nil : r.serverID
         // without a device entry, health is the whole heartbeat
         func fromHealth() async -> Check {
             let h: CompanionService.Health
-            do { h = try await svc.health(timeout: 5) }
+            do { h = try await svc.health(timeout: 5, from: ours) }
             catch TranscriptionError.interfaceMismatch(let update) { return .mismatch(update) }
             catch { return .unreachable }
             // Brasscribe on this same computer trusts loopback; an engine that wants pairing is not it
             if r.token == nil, h.authRequired { return .unreachable }
-            if !r.isProvisional, h.serverID != r.serverID { return .otherServer }
+            if let ours, h.serverID != ours { return .otherServer }
             if case .mismatch(let update) = InterfaceMatch.of(engine: h.interfaceVersion) { return .mismatch(update) }
             out.serverID = h.serverID
             out.serverName = h.serverName
@@ -195,8 +198,8 @@ public final class ConnectionMonitor {
         }
         if r.token == nil { return (await fromHealth(), svc) }
         do {
-            let me = try await svc.thisDevice()
-            if !r.isProvisional, me.serverID != r.serverID { return (.otherServer, svc) }
+            let me = try await svc.thisDevice(from: ours)
+            if let ours, me.serverID != ours { return (.otherServer, svc) }
             if case .mismatch(let update) = InterfaceMatch.of(engine: me.interfaceVersion) { return (.mismatch(update), svc) }
             out.serverID = me.serverID
             out.deviceID = me.deviceID
@@ -205,9 +208,19 @@ public final class ConnectionMonitor {
             if out.serverName.isEmpty, let h = try? await svc.health(timeout: 5) { out.serverName = h.serverName }
             return (.ok(out), svc)
         } catch TranscriptionError.notPaired {
-            // 401 from another engine at the old address says nothing about this device's credential
-            if !r.isProvisional, let h = try? await svc.health(timeout: 5), h.serverID != r.serverID { return (.otherServer, svc) }
-            return (.unauthorized, svc)
+            // 401 is "pair again" only from the engine that gave the credential, and health says which engine answers.
+            // Another engine at the old address never had it, and one that health does not reach is not there. With
+            // another interface version the update comes first: pairing would be refused until then.
+            do {
+                let h = try await svc.health(timeout: 5, from: ours)
+                if let ours, h.serverID != ours { return (.otherServer, svc) }
+                if case .mismatch(let update) = InterfaceMatch.of(engine: h.interfaceVersion) { return (.mismatch(update), svc) }
+                return (.unauthorized, svc)
+            } catch TranscriptionError.interfaceMismatch(let update) {
+                return (.mismatch(update), svc)
+            } catch {
+                return (.unreachable, svc)
+            }
         } catch TranscriptionError.http(404, _) {
             // loopback, or a static engine token: accepted without a device entry
             return (await fromHealth(), svc)
@@ -277,9 +290,9 @@ public final class ConnectionMonitor {
         for url in link.baseURLs {
             let svc = CompanionService(baseURL: url, session: session)
             let h: CompanionService.Health
-            do { h = try await svc.health(timeout: 4) }
+            do { h = try await svc.health(timeout: 4, from: link.serverID) }
             catch TranscriptionError.interfaceMismatch(let update) { throw TranscriptionError.interfaceMismatch(update) }
-            catch { continue }
+            catch { continue }   // nothing there, or not an engine's answer: the link's next address
             if h.serverID != link.serverID { continue }
             // the right computer with another interface version: no pair request, with a code or by asking it
             if case .mismatch(let update) = InterfaceMatch.of(engine: h.interfaceVersion) { throw TranscriptionError.interfaceMismatch(update) }

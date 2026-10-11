@@ -374,7 +374,7 @@ struct TranscribeView: View {
         ProblemContent(title: job.failureTitle ?? String(localized: "The score couldn't be made"),
                        lead: nil,
                        reasons: [job.failureWords ?? String(localized: "Brasscribe stopped before the notes were written down. Your recording is safe.")],
-                       hint: nil, detail: reason) {
+                       hint: nil, detail: reason, update: job.needsUpdate) {
             let full = !PageActions.followContent
             if PageActions.followContent {
                 Button { app.goHome() } label: { Text("Back to Home") }
@@ -430,7 +430,8 @@ struct ProblemView: View {
     let problem: Problem
 
     var body: some View {
-        ProblemContent(title: problem.title, lead: problem.lead, reasons: problem.reasons, hint: problem.hint, detail: problem.detail) {
+        ProblemContent(title: problem.title, lead: problem.lead, reasons: problem.reasons, hint: problem.hint, detail: problem.detail,
+                       update: problem.update) {
             // phone: the way forward on top, full width; Mac: a row with the primary last, on the right
             let wide = !PageActions.followContent
             let actions = Array(problem.actions.enumerated())
@@ -474,6 +475,8 @@ struct ProblemContent<Actions: View>: View {
     let reasons: [String]
     let hint: String?
     let detail: String?
+    /// The problem is that the app or the computer needs an update: where to get it, under the reasons.
+    var update: InterfaceMatch.Update?
     @ViewBuilder let actions: Actions
     @Environment(\.horizontalSizeClass) private var hsize
 
@@ -499,6 +502,7 @@ struct ProblemContent<Actions: View>: View {
                         .foregroundStyle(reasons.count > 1 || lead != nil ? Color.Scribe.textMuted : Color.Scribe.text)
                     }
                 }
+                if let update { UpdateAction(which: update, place: "problem") }
                 if let hint { NoticeBox(systemImage: BrasscribeIcon.info.systemName, text: hint) }
                 if let detail {
                     DisclosureGroup {

@@ -20,6 +20,8 @@ import Testing
         /// The engine behind comes from a developer checkout: other words, and no button that would do nothing.
         case panelUpdateCheckout = "panel-update-checkout"
         case pairUpdate = "pair-update"
+        /// The engine is behind because its update failed: the Pair window leads with that, and says no phone can be paired.
+        case pairUpdateFailed = "pair-update-failed"
         case phones
         case pair
         case setupCheck = "setup-check"
@@ -61,6 +63,31 @@ import Testing
         }
     }
 
+    /// The order the panel and the Pair window take their problem from. An update that failed is why the engine is
+    /// behind, so it comes before "Brasscribe needs an update"; with Bandroom behind, or nothing behind, the failed
+    /// update is listed but is not what stands between this Mac and a phone.
+    @Test func aFailedUpdateLeadsOnlyWhileTheEngineIsBehind() async throws {
+        let behind = await Catalogue.model(busy: false, interface: "older")
+        let engineBehind = try #require(behind.mismatchProblem)
+        #expect(behind.problems.first == engineBehind && behind.pairingBlocker == engineBehind)
+        behind.updateFailure = "pixi install stopped"
+        #expect(Array(behind.problems.prefix(2)) == [.updateFailed, engineBehind])
+        #expect(behind.problems.filter { $0 == .updateFailed }.count == 1)
+        #expect(behind.pairingBlocker == .updateFailed)
+        #expect(behind.displayState == .attention(.updateFailed))
+
+        let ahead = await Catalogue.model(busy: false, interface: "newer")
+        ahead.updateFailure = "pixi install stopped"
+        let bandroomBehind = try #require(ahead.mismatchProblem)
+        #expect(ahead.problems.first == bandroomBehind && ahead.problems.contains(.updateFailed))
+        #expect(ahead.pairingBlocker == bandroomBehind)
+
+        let matching = await Catalogue.model(busy: false)
+        matching.updateFailure = "pixi install stopped"
+        #expect(matching.mismatchProblem == nil && matching.pairingBlocker == nil)
+        #expect(matching.problems.contains(.updateFailed))
+    }
+
     /// The hooks still do what the catalogue needs, and the run is in the language it says.
     @Test func hooksStillWork() async {
         if let wrong = Guards.language(Catalogue.language, localized: String(localized: "Pair a phone"), english: "Pair a phone") {
@@ -78,6 +105,12 @@ import Testing
         case .panelRequest: await Catalogue.model(busy: true, request: true)
         case .panelReady, .pair, .settings: await Catalogue.model(busy: false)
         case .panelUpdateEngine, .pairUpdate: await Catalogue.model(busy: false, interface: "older")
+        case .pairUpdateFailed:
+            await {
+                let app = await Catalogue.model(busy: false, interface: "older")
+                app.updateFailure = "pixi install stopped"
+                return app
+            }()
         case .panelUpdateBandroom: await Catalogue.model(busy: false, interface: "newer")
         case .panelUpdateCheckout: await Catalogue.model(busy: false, interface: "older-checkout")
         case .panelSettingUp, .setupCheck, .setupLicence, .setupDownload, .setupReady:
@@ -98,7 +131,7 @@ import Testing
         case .phones:
             app.panelPage = .phones
             return AnyView(StatusPanel().background(Color.Scribe.bg))
-        case .pair, .pairUpdate: return AnyView(PairWindow())
+        case .pair, .pairUpdate, .pairUpdateFailed: return AnyView(PairWindow())
         case .setupCheck: return AnyView(SetupView(step: 0))
         case .setupLicence: return AnyView(SetupView(step: 1))
         case .setupDownload: return AnyView(SetupView(step: 2))
@@ -111,7 +144,7 @@ import Testing
     private func width(of screen: Screen) -> CGFloat {
         switch screen {
         case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout, .phones: 360
-        case .pair, .pairUpdate: 720
+        case .pair, .pairUpdate, .pairUpdateFailed: 720
         case .setupCheck, .setupLicence, .setupDownload, .setupReady: 760
         case .settings: 480
         }
@@ -122,6 +155,7 @@ import Testing
         switch screen {
         case .pair: app.pairing.displayCode != nil ? nil : "its pairing code is not there yet"
         case .pairUpdate: app.pairingBlocker != nil ? nil : "the engine's other interface version is not known yet"
+        case .pairUpdateFailed: app.pairingBlocker == .updateFailed ? nil : "its failed update is not what it leads with yet"
         case .panelRequest: !app.monitor.requests.isEmpty ? nil : "its request is not there yet"
         case .phones: !app.monitor.devices.isEmpty ? nil : "its phones are not there yet"
         default: nil

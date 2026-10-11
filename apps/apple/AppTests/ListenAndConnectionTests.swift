@@ -130,8 +130,21 @@ import TranscriptionKit
         let problem = Problem.needsUpdate(which)
         #expect(problem.reasons == [ConnectionCopy.update(which)])
         #expect(problem.actions == [.home] && problem.detail == nil)
+        // where to get the update is shown with it
+        #expect(problem.update == which)
     }
     #expect(Problem.needsUpdate(.app).title == Problem.needsUpdate(.computer).title)
+    #expect(Problem.silence.update == nil)
+}
+
+/// One request for the computer's scores that does not get through takes none away while it is still connected;
+/// they go when it is not, and when it was not asked because one of the two needs an update.
+@Test func theComputersScoresStayAfterOneFailedFetchWhileConnected() {
+    #expect(!AppModel.scoresGo(refusedForUpdate: false, connection: .connected))
+    #expect(AppModel.scoresGo(refusedForUpdate: true, connection: .connected))
+    for kind in [ConnectionState.Kind.reconnecting, .offline, .needsPairing, .mismatch] {
+        #expect(AppModel.scoresGo(refusedForUpdate: false, connection: kind), "\(kind)")
+    }
 }
 
 /// The computer's scores are listed only while it is connected: in every other state they go, so none is left to

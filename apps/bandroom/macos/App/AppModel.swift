@@ -18,8 +18,8 @@ final class AppModel {
     /// Replaces the engine workspace in the data folder after the app itself was updated (design/server-app.md §3.8).
     let updater = Bootstrapper()
     /// Why the last engine update failed; the previous engine runs meanwhile when it can still be started, and Try
-    /// again runs the update once more.
-    private(set) var updateFailure: String?
+    /// again runs the update once more. (Set from outside only by the tests of what the panel then leads with.)
+    var updateFailure: String?
     /// The installed engine workspace is this build's own: checked and found so, or just updated to it. Updating
     /// again would put the same engine back.
     private(set) var workspaceIsThisApps = false
@@ -703,6 +703,9 @@ final class AppModel {
         setupComplete = true
         if startAtLogin && environment["BANDROOM_NO_LOGIN_ITEM"] == nil { setLoginItem(true) }
         supervisor.configuration.source = EngineConfiguration.resolveSource(environment: environment, defaults: defaults, paths: paths, bundle: .main)
+        // Setup just installed this build's own workspace: an engine from it that is behind is not helped by
+        // installing it again.
+        if bootstrapper.phase == .done, case .installed = supervisor.configuration.source { workspaceIsThisApps = true }
         if !isRunning { supervisor.start() }
     }
 

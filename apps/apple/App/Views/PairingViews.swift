@@ -29,6 +29,14 @@ struct YourComputerSection: View {
         enum Outcome: Equatable { case waiting, expired, denied }
     }
 
+    /// The pairing was refused because one of the two needs an update, and the message still says so: which one, for
+    /// where to get the update. A device that is not paired has no connection row that shows it.
+    private var refusedForUpdate: InterfaceMatch.Update? {
+        // the row shows it already for a paired device
+        if case .mismatch = app.connection.state { return nil }
+        return [InterfaceMatch.Update.app, .computer].first { message == ConnectionCopy.update($0) }
+    }
+
     private var paired: Bool { app.connection.record?.token != nil }
     private var showPairing: Bool {
         switch app.connection.state {
@@ -50,6 +58,7 @@ struct YourComputerSection: View {
             if let message {
                 Text(message).font(Font.Scribe.callout).accessibilityIdentifier("pairingMessage")
             }
+            if let refusedForUpdate { UpdateAction(which: refusedForUpdate, place: "pairing") }
             if app.connection.record?.token != nil {
                 Button(role: .destructive) { confirmForget = true } label: { Text("Forget this computer") }
                     .disabled(busy)
