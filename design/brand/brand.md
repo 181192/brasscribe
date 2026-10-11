@@ -2,7 +2,7 @@
 
 ## Name
 
-- **Brasscribe** is one word with a capital B. Never write BrassScribe, BRASSCRIBE or brass-scribe. The CLI command `brasscribe` is the only lower-case form.
+- **Brasscribe** is one word with a capital B. Never write BrassScribe, BRASSCRIBE or brass-scribe. The lower-case form is for what a program reads, such as the pairing link. The engine's command is `scribe`: it serves every app and carries no product's name.
 - The products are **Brasscribe Play**, the musician app, **Brasscribe Studio**, the workbench, and **Brasscribe Bandroom**, which runs the engine on a Mac or PC in the background (spec: [`../server-app.md`](../server-app.md)).
   - Inside the apps, say "Brasscribe": "Brasscribe wasn't sure about these notes".
   - Use the product name only where the products appear together: store listings, About, the docs, installers, and the app lists (Applications, Start, Login Items).

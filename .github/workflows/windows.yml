@@ -282,7 +282,7 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
           dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
           if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
-          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/scribe-core.exe")) {
+          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/scribe_engine/cli.py", "workspace/music/src/scribe_music/__init__.py", "workspace/eval/scribe_eval/suites.py", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/scribe-core.exe")) {
             if (-not (Test-Path (Join-Path $out $f))) { throw "$f is not next to the exe" }
           }
           $stamp = Get-Content "$out/workspace/.scribe-workspace.json" -Raw
@@ -362,7 +362,7 @@ jobs:
         run: |
           $exe = Get-ChildItem -Recurse -Filter BrasscribeBandroom.exe src/Brasscribe.Bandroom/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribeBandroom.exe was not built" }
-          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/scribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/eval/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "band/mapping.json", "band/NOTICE.txt")) {
+          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/scribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/music/src/scribe_music/__init__.py", "workspace/eval/pyproject.toml", "workspace/eval/scribe_eval/suites.py", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "band/mapping.json", "band/NOTICE.txt")) {
             if (-not (Test-Path (Join-Path $exe.DirectoryName $f))) { throw "$f is not next to the exe" }
           }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT

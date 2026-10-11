@@ -431,6 +431,9 @@ jobs:
           stage="$RUNNER_TEMP/stage-band"; B="$stage/Brasscribe Bandroom.app"
           mkdir -p "$stage" && ditto "build/DerivedData/Build/Products/Release/Brasscribe Bandroom.app" "$B"
           [ -s "$B/Contents/Resources/band/brasscribe-band.sf2" ] || { echo "Bandroom has no band SoundFont" >&2; exit 1; }
+          for f in engine/src/scribe_engine/cli.py music/src/scribe_music/__init__.py eval/scribe_eval/suites.py; do
+            [ -s "$B/Contents/Resources/workspace/$f" ] || { echo "Bandroom's engine workspace has no $f" >&2; exit 1; }
+          done
           stamp="$B/Contents/Resources/workspace/.scribe-workspace.json"
           grep -q "$(git rev-parse --short HEAD)" "$stamp" || { echo "the workspace stamp is not from $(git rev-parse --short HEAD)" >&2; cat "$stamp" >&2; exit 1; }
           mkdir -p "$B/Contents/Resources/bin"

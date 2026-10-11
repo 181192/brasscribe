@@ -72,6 +72,14 @@
       <_WsMusicMeta Include="$(RepoRoot)music\pyproject.toml;$(RepoRoot)music\README.md" />
       <_WsEvMeta Include="$(RepoRoot)eval\pyproject.toml;$(RepoRoot)eval\README.md" />
     </ItemGroup>
+    <!--
+      A folder that is not where this target looks for it (renamed) would copy nothing and say nothing: the
+      build stops instead. And the copy starts from an empty folder, so that an output folder from an earlier
+      build never keeps a package this checkout no longer has.
+    -->
+    <Error Condition="'@(_WsEngine)' == '' Or '@(_WsMusic)' == '' Or '@(_WsEv)' == '' Or '@(_WsAdapters)' == ''"
+           Text="The engine workspace is incomplete: engine\src, music\src, eval\scribe_eval or ml\adapters has no files under $(RepoRoot)" />
+    <RemoveDir Directories="$(_Ws)" />
     <Copy SourceFiles="@(_WsRoot)" DestinationFolder="$(_Ws)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsEngineMeta)" DestinationFolder="$(_Ws)engine" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsMusicMeta)" DestinationFolder="$(_Ws)music" SkipUnchangedFiles="true" />
