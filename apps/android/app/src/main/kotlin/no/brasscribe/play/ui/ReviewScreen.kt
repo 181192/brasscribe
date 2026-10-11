@@ -104,7 +104,7 @@ fun currentLang(): Lang = if (Locale.getDefault().language in setOf("nb", "no", 
 /** The recording's layers by name (not band parts): what Review calls the voices other than the tune. */
 private val LAYER_NAMES = mapOf(
     "bass" to ("Bass" to "Bass"), "strings" to ("Strings" to "Strykere"),
-    "hits" to ("Brass" to "Messing"), "drums" to ("Drums" to "Trommer"),
+    "hits" to ("Chord hits" to "Akkordslag"), "drums" to ("Drums" to "Trommer"),
 )
 
 /**
