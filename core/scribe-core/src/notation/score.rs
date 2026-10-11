@@ -76,6 +76,9 @@ pub struct ScoreSpec {
     pub beats_per_bar: i64,
     pub bpm: f64,
     pub title: String,
+    /// Who the score names as its arranger (`<creator type="composer">`), which is the target's to say;
+    /// empty names nobody.
+    pub creator: String,
     pub pickup_ticks: i64,
     /// Notes below this confidence are marked "?" (grouped with their neighbours).
     pub low_confidence: f64,
@@ -1864,7 +1867,11 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
     for el in ["beam", "stem", "accidental"] {
         encoding.push(X::new("supports").attr("element", el).attr("type", "yes"));
     }
-    root.push(X::new("identification").child(X::text("creator", "arr. Brasscribe").attr("type", "composer")).child(encoding));
+    let mut identification = X::new("identification");
+    if !spec.creator.is_empty() {
+        identification.push(X::text("creator", spec.creator.clone()).attr("type", "composer"));
+    }
+    root.push(identification.child(encoding));
     root.push(X::new("defaults").child(X::new("scaling").child(X::text("millimeters", "7")).child(X::text("tenths", "40"))));
     let mut pl = X::new("part-list");
     for (i, p) in parts.iter().enumerate() {

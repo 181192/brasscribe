@@ -21,7 +21,7 @@ import uniffi.scribe_ffi.frettedTabTextJson
 
 /** Tab fingering through the core: target-fretted's JSON request in, its JSON answer or its text out. Skips without the host library. */
 class FrettedCoreTest {
-    private fun requireCore() = assumeTrue("host build of the Rust core not found", RustCoreBridge.load() != null)
+    private fun requireCore() = assumeTrue("host build of the Rust core not found", RustCoreBridge.load("brass") != null)
 
     // A bass line down to D1, which a 4-string bass in standard tuning cannot play.
     private fun request(pinString: Int) = """

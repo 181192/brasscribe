@@ -70,7 +70,7 @@ public class CompositionTests
         Skip.If(path is null, TestPaths.Missing(TestPaths.GoldenComposition));
         var c = CompositionJson.Parse(File.ReadAllText(path));
         // The golden output is re-saved when the engine improves, so check its shape, not exact counts.
-        Assert.Equal(["solo", "bass", "strings", "brass", "drums"], c.Voices.Select(v => v.Id));
+        Assert.Equal(["solo", "bass", "strings", "hits", "drums"], c.Voices.Select(v => v.Id));
         Assert.True(c.Voices.Single(v => v.Id == "solo").Notes.Count > 300);
         Assert.Contains(c.Voices.SelectMany(v => v.Notes), n => n.OnsetS is null); // drums carry no performed time
         Assert.All(c.FreeRegions, r => Assert.True(r.End > r.Start && r.EndS > r.StartS && r.TempoBpm > 0));

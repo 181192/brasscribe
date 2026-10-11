@@ -2,6 +2,7 @@
 import { api, MissingEndpoint } from "../api/client";
 import type { Job, ProfileInfo, Source } from "../api/types";
 import { locale, t } from "../i18n";
+import { TARGETS } from "../lib/targets";
 import { announce, clear, errorNotice, filePicker, fmt, h, infoTip, loading, more, pill, table, viewHead } from "../ui/dom";
 
 const short = (d: Date, time: boolean) =>
@@ -124,8 +125,11 @@ function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLEle
         items.map((s) => h("option", { value: s.id }, s.dataset ? `${s.dataset}: ${s.name}` : s.name))));
     }
   }
+  // The profiles under the target they belong to: what the run makes comes before how.
   const profile = h("select", { id: "run-profile", "aria-describedby": "run-profile-desc" },
-    profiles.map((p) => h("option", { value: p.name, selected: p.name === "orchestra-with-soloist" }, `${p.name}${p.validated ? ` (${t("runs.validated")})` : ""}`)));
+    TARGETS.map((target) => h("optgroup", { label: t(`runs.target.${target}`) },
+      profiles.filter((p) => p.target === target).map((p) => h("option", { value: p.name, selected: p.name === "orchestra-with-soloist" },
+        `${p.name}${p.validated ? ` (${t("runs.validated")})` : ""}`)))));
   const desc = h("p", { id: "run-profile-desc", class: "hint" });
   const chain = h("p", {});
   const showDesc = () => {

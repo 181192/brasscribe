@@ -13,6 +13,8 @@ import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from . import targets
+
 _ID = re.compile(r'"([PI][0-9a-f]{32})(-\d+)?"')
 _DATE = re.compile(r"<encoding-date>[^<]*</encoding-date>")
 _PART = re.compile(r'<part id="([^"]+)">(.*?)</part>', re.S)
@@ -97,8 +99,8 @@ class Comparison:
 def compare(candidate: Path, reference: Path) -> Comparison:
     candidate, reference = Path(candidate), Path(reference)
     comp_same = (candidate / "composition.json").read_bytes() == (reference / "composition.json").read_bytes()
-    a = (candidate / "brass-band.musicxml").read_text()
-    b = (reference / "brass-band.musicxml").read_text()
+    a = (candidate / targets.BRASS.musicxml).read_text()
+    b = (reference / targets.BRASS.musicxml).read_text()
     xml_same = canonical_musicxml(a) == canonical_musicxml(b)
     pa, pb = parts(a), parts(b)
     diffs = []

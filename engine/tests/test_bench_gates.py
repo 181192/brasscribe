@@ -10,7 +10,7 @@ from scribe_eval import suites
 
 
 def _report(value, higher_is_better=True):
-    baselines = {"tolerance": 0.01, "suites": {"s": {"metrics": {"m": {"value": 0.5, "higher_is_better": higher_is_better}}}}}
+    baselines = {"tolerance": 0.01, "targets": {"brass": {"suites": {"s": {"metrics": {"m": {"value": 0.5, "higher_is_better": higher_is_better}}}}}}}
     return suites.gate([{"suite": "s", "status": "ran", "metrics": {"m": value}}], baselines, allow_improved=True)
 
 
@@ -26,7 +26,7 @@ def test_a_suite_that_exits_is_an_error_and_the_run_goes_on(monkeypatch):
     def exits(data, mode):
         raise SystemExit("missing contour")
 
-    monkeypatch.setitem(suites.SUITES, "exits", suites.Suite("exits", "", exits))
+    monkeypatch.setitem(suites.SUITES, "exits", suites.Suite("exits", "brass", "", exits))
     r = suites.run_suite("exits", data=Path("."))
     assert r["status"] == "error" and "missing contour" in r["reason"]
 
@@ -73,9 +73,9 @@ def test_parts_in_unison_keep_their_own_lengths(tmp_path):
 
 
 def _rebaseline(stored: dict, measured: dict, **result) -> tuple[dict, list[dict]]:
-    baselines = {"tolerance": 0.01, "suites": {"s": {"source": "doc", "metrics": stored}}}
+    baselines = {"tolerance": 0.01, "targets": {"brass": {"suites": {"s": {"source": "doc", "metrics": stored}}}}}
     new, changes = suites.rebaseline([{"suite": "s", "status": "ran", "metrics": measured, **result}], baselines)
-    return new["suites"]["s"]["metrics"], changes
+    return suites.baseline(new, "s")["metrics"], changes
 
 
 def test_a_value_on_a_rounding_half_rounds_the_same_way_from_either_side():
@@ -123,14 +123,14 @@ def test_regenerating_baselines_changes_a_metric_that_fails_its_gate_even_within
     # With no tolerance the gate fails on 0.5948 against 0.6, so the baseline is what is wrong: it is rewritten.
     exact = {"m": {"value": 0.6, "tolerance": 0}}
     report = suites.gate([{"suite": "s", "status": "ran", "metrics": {"m": 0.5948}}],
-                         {"tolerance": 0.01, "suites": {"s": {"metrics": exact}}})
+                         {"tolerance": 0.01, "targets": {"brass": {"suites": {"s": {"metrics": exact}}}}})
     assert not report["passed"]
     metrics, changes = _rebaseline(exact, {"m": 0.5948})
     assert metrics == {"m": {"value": 0.595, "tolerance": 0}}
     assert changes == [{"suite": "s", "metric": "m", "old": 0.6, "new": 0.595}]
     assert _rebaseline(exact, {"m": 0.6}) == (exact, [])
 
-    untouched = {"tolerance": 0.01, "suites": {"s": {"metrics": {"m": 0.5}}, "other": {"metrics": {"m": 0.5}}}}
+    untouched = {"tolerance": 0.01, "targets": {"brass": {"suites": {"s": {"metrics": {"m": 0.5}}, "other": {"metrics": {"m": 0.5}}}}}}
     for status in ("skipped", "error"):
         new, changes = suites.rebaseline([{"suite": "s", "status": status, "metrics": {"m": 0.9}}], untouched)
         assert (new, changes) == (untouched, [])
@@ -140,3 +140,25 @@ def test_the_baselines_file_is_written_as_it_is_kept(tmp_path):
     kept = suites.BASELINES.read_text()
     suites.write_baselines(json.loads(kept), tmp_path / "baselines.json")
     assert (tmp_path / "baselines.json").read_text() == kept  # so a regeneration's diff is the changed values only
+
+
+def test_every_suite_gates_one_target_and_its_baselines_are_kept_under_it():
+    stored = suites.load_baselines()["targets"]
+    assert set(stored) == set(suites.TARGETS)
+    for target, kept in stored.items():
+        assert {suites.SUITES[name].target for name in kept["suites"]} == {target}
+    assert sorted(n for t in suites.TARGETS for n in suites.GROUPS[t]) == sorted(suites.SUITES)
+
+
+def test_the_gate_gives_a_verdict_per_target():
+    baselines = {"tolerance": 0.01, "targets": {"brass": {"suites": {"b": {"metrics": {"m": 0.5}}}},
+                                                "fretted": {"suites": {"f": {"metrics": {"m": 0.5}}}}}}
+    ran = [{"suite": "b", "status": "ran", "metrics": {"m": 0.5}, "seconds": 0.0},
+           {"suite": "f", "status": "ran", "metrics": {"m": 0.2}, "seconds": 0.0}]
+    report = suites.gate(ran, baselines)
+    assert [s["target"] for s in report["suites"]] == ["brass", "fretted"]
+    assert report["targets"] == {"brass": {"passed": True}, "fretted": {"passed": False}} and not report["passed"]
+    text = suites.format_report(report).splitlines()
+    assert text[0] == "[brass]" and "brass: PASSED  1 pass" in text and "fretted: FAILED  1 fail" in text
+    assert text[-1] == "FAILED  1 fail, 1 pass"
+    assert suites.gate(ran[:1], baselines)["targets"] == {"brass": {"passed": True}}  # only the targets that ran

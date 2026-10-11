@@ -32,7 +32,7 @@ import java.io.File
  * (`cargo build --release -p scribe-ffi` in core/). Skips when that library is missing.
  */
 class RustCoreBridgeTest {
-    private val core: RustCoreBridge? = RustCoreBridge.load()
+    private val core: RustCoreBridge? = RustCoreBridge.load("brass")
     private fun core(): RustCoreBridge { assumeTrue("host build of the Rust core not found", core != null); return core!! }
     private val golden = File(System.getProperty("brasscribe.golden") ?: "missing")
 
@@ -157,7 +157,7 @@ class RustCoreBridgeTest {
         val t1 = System.nanoTime()
         assertEquals("one parse of the composition for ${parts.size} parts", 1, c.performancesBuilt)
         // Identical to a Performance built for each part on its own.
-        val alone = parts.map { p -> RustCoreBridge.load()!!.humanize(notes, p, 0, json)!! }
+        val alone = parts.map { p -> RustCoreBridge.load("brass")!!.humanize(notes, p, 0, json)!! }
         println("humanize ${parts.size} parts: %d ms with one parse, %d ms with one per part".format((t1 - t0) / 1_000_000, (System.nanoTime() - t1) / 1_000_000))
         assertEquals(alone, shared)
         assertTrue("the composition shapes the result", shared.zip(parts.map { c.humanize(notes, it, 0, null)!! }).any { (a, b) -> a != b })

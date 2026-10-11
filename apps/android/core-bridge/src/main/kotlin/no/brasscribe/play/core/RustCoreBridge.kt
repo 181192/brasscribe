@@ -33,6 +33,7 @@ import uniffi.scribe_ffi.LayerStems
 import uniffi.scribe_ffi.Performance
 import uniffi.scribe_ffi.SoloContour
 import uniffi.scribe_ffi.TalkingSettings
+import uniffi.scribe_ffi.Target
 import uniffi.scribe_ffi.SongArrangeOptions
 import uniffi.scribe_ffi.arrangeLayersBand
 import uniffi.scribe_ffi.arrangeSongWith
@@ -64,7 +65,7 @@ import no.brasscribe.play.model.ScoreNote as ModelScoreNote
  * lineup, difficulty and key, the talking score of arranged scores, and playback humanization. The
  * solo quantizer and the monophonic MusicXML writer of app-made parts stay in Kotlin.
  */
-class RustCoreBridge private constructor(val version: String) : CoreBridge {
+class RustCoreBridge private constructor(val version: String, private val target: Target) : CoreBridge {
     override val name = "rust $version"
 
     override fun decodeComposition(json: String): Composition = CompositionJson.decode(normalizeComposition(json))
@@ -169,7 +170,9 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
         return talkingAnnounceJson(request.toString())
     }
 
-    override fun talkingScore(musicXml: String, compositionJson: String?): TalkingScoreDoc = Doc(CoreTalkingScore(musicXml, compositionJson))
+    // The target that wrote the app's scores names their parts and instruments.
+    override fun talkingScore(musicXml: String, compositionJson: String?): TalkingScoreDoc =
+        Doc(CoreTalkingScore(musicXml, compositionJson, target))
 
     private class Doc(private val ts: CoreTalkingScore) : TalkingScoreDoc {
         override val partNames: List<String> = ts.partNames()
@@ -211,11 +214,24 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
     }
 
     companion object {
-        /** The core, or null when its native library is not in this build. */
-        fun load(): RustCoreBridge? = try {
-            RustCoreBridge(coreVersion())
-        } catch (e: Throwable) {
-            null
+        /**
+         * The core for an app of `target` (the engine's id of it: "brass", "fretted"), or null when its native
+         * library is not in this build. A target the core does not have is an error.
+         */
+        fun load(target: String): RustCoreBridge? {
+            val coreTarget = coreTarget(target)
+            return try {
+                RustCoreBridge(coreVersion(), coreTarget)
+            } catch (e: Throwable) {
+                null
+            }
+        }
+
+        /** The core's own value for a target's id. */
+        fun coreTarget(id: String): Target = when (id) {
+            "brass" -> Target.BRASS
+            "fretted" -> Target.FRETTED
+            else -> throw IllegalArgumentException("unknown target $id")
         }
 
         /** The core's name of a lineup. An unknown name is an error, never quietly the full band. */

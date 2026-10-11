@@ -16,7 +16,7 @@ import java.io.File
 
 /** "What do you play?" through the core: the seats, seat → part, where parts come from and the nb names. */
 class MyInstrumentCoreTest {
-    private val core: RustCoreBridge? = RustCoreBridge.load()
+    private val core: RustCoreBridge? = RustCoreBridge.load("brass")
     private fun core(): RustCoreBridge { assumeTrue("host build of the Rust core not found", core != null); return core!! }
 
     @Test

@@ -47,12 +47,21 @@ from typing import Callable
 import numpy as np
 
 from . import stages as S
-from . import tuning
+from . import targets, tuning
 from .adapters import kill_tree
 from .config import REPO_ROOT, child_env
 from .dag import SOURCE, Input, Pipeline, Stage, StageContext, StageFailed
 
 PROFILE = "bass-tab"
+# The tab's files, named by its target: the tab as data, as MusicXML and as text for a monospace font.
+TAB_JSON = targets.FRETTED.file("json")
+TAB_XML = targets.FRETTED.musicxml
+TEXT_TAB = targets.FRETTED.file("txt")
+
+
+def instructions_file(lang: str) -> str:
+    """The playing instructions in words, in `lang`."""
+    return f"{targets.FRETTED.stem}-instructions.{lang}.txt"
 THIS = Path(__file__).resolve()
 
 # The instruments and their tunings: target-fretted's presets are "<instrument>-<tuning>", standard first.
@@ -604,13 +613,15 @@ def export_tab(tab: dict, title: str, layout: str, out: Path, tablature: Callabl
     The notes are written where tab.json has them, not fingered again. Returns how many notes the
     writer had to move to a start or length it can spell."""
     answer = tablature(tab_request(tab, title, layout))
-    (out / "tab.musicxml").write_text(answer["musicxml"])
+    (out / TAB_XML).write_text(answer["musicxml"])
     return int(answer["adjusted_notes"])
 
 
-TEXT_TAB = "tab.txt"
 TEXT_LANGS = ("en", "nb")  # the languages the playing instructions are written in
-TEXT_OUTPUTS = (TEXT_TAB, *(f"tab-instructions.{lang}.txt" for lang in TEXT_LANGS))
+TEXT_OUTPUTS = (TEXT_TAB, *(instructions_file(lang) for lang in TEXT_LANGS))
+# What the arrange stage of a tab profile writes, and where a run's outputs come from.
+ARRANGED = ("composition.json", TAB_JSON, TAB_XML, *TEXT_OUTPUTS)
+OUTPUTS = {**{name: ("arrange", name) for name in ARRANGED}, **{name: ("export", name) for name in targets.FRETTED.rendered}}
 
 
 def export_text(tab: dict, title: str, out: Path, text: Callable[[dict, str, str | None], str] = tab_text) -> None:
@@ -621,7 +632,7 @@ def export_text(tab: dict, title: str, out: Path, text: Callable[[dict, str, str
     request = tab_request(tab, title, DEFAULTS["layout"])
     (out / TEXT_TAB).write_text(text(request, "text", None), encoding="utf-8")
     for lang in TEXT_LANGS:
-        (out / f"tab-instructions.{lang}.txt").write_text(text(request, "instructions", lang), encoding="utf-8")
+        (out / instructions_file(lang)).write_text(text(request, "instructions", lang), encoding="utf-8")
 
 
 def retitled_text(text: str, old: str, new: str, gap: str = "") -> str:
@@ -650,7 +661,7 @@ def arrange_stage(ctx: StageContext) -> None:
     ctx.log(f"{len(tab['notes'])} notes on {tab['preset']}, {unplayable} out of range, {len(tab['violations'])} violations")
     if tab["adjusted_notes"]:
         ctx.log(f"{tab['adjusted_notes']} notes moved to a start or length that can be written")
-    (ctx.out / "tab.json").write_text(json.dumps(tab, indent=1))
+    (ctx.out / TAB_JSON).write_text(json.dumps(tab, indent=1))
     composition(tab, ctx.params["title"]).to_json(ctx.out / "composition.json")
 
 
@@ -687,11 +698,11 @@ def export_stage(ctx: StageContext) -> None:
     from scribe_music import musescore
 
     mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
-    names = [f"tab.{ext}" for ext in EXPORT_FORMATS]
+    names = [targets.FRETTED.file(ext) for ext in EXPORT_FORMATS]
     written: list[str] = []
     missing: list[str] = []
     if mscore:
-        not_written = musescore.convert_many([(ctx.inputs["score"] / "tab.musicxml", [ctx.out / n for n in names])],
+        not_written = musescore.convert_many([(ctx.inputs["score"] / TAB_XML, [ctx.out / n for n in names])],
                                              cancel=ctx.executor.cancel)
         missing = [p.name for p in not_written]
         written = [n for n in names if n not in missing]
@@ -740,10 +751,7 @@ def build(title: str, params: dict) -> Pipeline:
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "bass-notes.json")}, arrange_stage,
                     params={"title": title, "fingering": fingering, "layout": opts["layout"]},
                     # The core binary is part of the cache key: a new target-fretted fingers again.
-                    code=(THIS, core_cli_path()), outputs=("composition.json", "tab.json", "tab.musicxml", *TEXT_OUTPUTS)))
+                    code=(THIS, core_cli_path()), outputs=ARRANGED))
     st.append(Stage("export", "export", {"score": Input("arrange")}, export_stage,
                     params={"musescore": musescore_fingerprint()}, code=(THIS,), outputs=("export.json",)))
-    outputs = {"composition.json": ("arrange", "composition.json"), "tab.json": ("arrange", "tab.json"),
-               "tab.musicxml": ("arrange", "tab.musicxml"), **{name: ("arrange", name) for name in TEXT_OUTPUTS},
-               "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
-    return Pipeline(PROFILE, "tab", st, outputs, opts)
+    return Pipeline(PROFILE, "tab", st, dict(OUTPUTS), opts)

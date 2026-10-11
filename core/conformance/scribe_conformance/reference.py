@@ -13,7 +13,7 @@ import sys
 import warnings
 from pathlib import Path
 
-from .cases import REPO, Case, synth_layers
+from .cases import LEAD_CREATOR, REPO, Case, synth_layers
 
 sys.path.insert(0, str(REPO / "eval"))
 warnings.filterwarnings("ignore")
@@ -75,7 +75,8 @@ def run(case: Case, out: Path) -> None:
                              "--title", a["title"], "--no-render", *a.get("options", [])])
     elif case.kind == "lead":
         _main(lead_sheet, ["--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support", str(a["support"]),
-                           "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"]])
+                           "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"],
+                           "--creator", LEAD_CREATOR])
     elif case.kind == "bench":
         from scribe_music.instruments import lineup_by_name
 

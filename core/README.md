@@ -85,11 +85,11 @@ CLI (mirrors `eval/scribe_eval/*.py`):
 scribe-core arrange-layers --layers data/mikkel/repro/layers --beats data/mikkel/repro/mix.beats \
     --solo-contour <solo-sw.contour.npz> --out out/ --title "Mikkel"
 scribe-core arrange-song --beats b.beats --melody m.mid --melody-support bp.mid --bass m.mid --harmony m.mid bp.mid --out out/
-scribe-core lead-sheet --beats b.beats --melody m.mid --melody-support bp.mid --bass m.mid --out lead.musicxml
+scribe-core lead-sheet --beats b.beats --melody m.mid --melody-support bp.mid --bass m.mid --out lead.musicxml [--creator NAME]
 scribe-core arrange-reference --reference reference.json --out out/
 scribe-core musicxml --composition composition.json --out band.musicxml
 scribe-core humanize --notes notes.json --part "Solo Cornet" --player 0 [--composition c.json] [--timing performed] --out h.json
-scribe-core talking-score --musicxml band.musicxml --composition c.json --text t.txt --html t.html --json t.json [--lang nb]
+scribe-core talking-score --target brass --musicxml band.musicxml --composition c.json --text t.txt --html t.html --json t.json [--lang nb]
 scribe-core quantize --reference reference.json --beats b.beats --out q.json
 scribe-core meter --beats b.beats --notes notes.json --out meter.json
 scribe-core normalize --composition composition.json --out composition.json
@@ -203,7 +203,7 @@ let band = try arrangeLayersBand(layers: midi, stems: LayerStems(solo: soloWav, 
                                  beatsText: beats, title: "Mikkel", options: layersSongDefaults())
 let perf = try Performance(compositionJson: band.compositionJson)
 let played = try humanizePart(notes: notes, part: "Solo Cornet", player: 0, seed: "brasscribe", performance: perf, performedTiming: false)
-let ts = try TalkingScore(musicxml: band.musicxml, compositionJson: band.compositionJson)
+let ts = try TalkingScore(musicxml: band.musicxml, compositionJson: band.compositionJson, target: .brass)
 var cursor = TalkingCursor(part: 1, bar: 0, event: 0)
 let line = try ts.announce(cursor: cursor, context: TalkingContext(), settings: talkingSettingsDefault(), byBar: false)
 cursor = ts.navigate(cursor: cursor, unit: .note, forward: true) ?? cursor
@@ -218,7 +218,7 @@ string quartet = ScribeCore.ArrangeMusicXmlWith(compositionJson, lineup: "quarte
 var band = ScribeCore.ArrangeLayersBand(layers, new LayerStems(solo, bass, drums, orchestra), beatsText, "Mikkel",
                                             new LayersSongOptions(Difficulty: "easier"));
 var played = ScribeCore.Humanize(notes, "Solo Cornet", 0, compositionJson: band.CompositionJson);
-using var ts = new TalkingScore(band.MusicXml, band.CompositionJson);
+using var ts = new TalkingScore(band.MusicXml, ScoreTarget.Brass, band.CompositionJson);
 var (text, context) = ts.Announce(new TalkingCursor(1, 0, 0), settings: new TalkingSettings(Lang: "nb"));
 ```
 

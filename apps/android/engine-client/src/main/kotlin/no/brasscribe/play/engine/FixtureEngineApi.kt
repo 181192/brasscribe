@@ -52,7 +52,7 @@ class FixtureEngineApi(
     override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
     override suspend fun profiles(): List<ProfileInfo> = known().map {
-        ProfileInfo(it.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
+        ProfileInfo(it.id, it.target.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
     }
 
     /** The profiles this computer has: all of them, or the ones the fixture's profiles.json lists. */
@@ -92,7 +92,7 @@ class FixtureEngineApi(
                 (request.tuning != null && request.tuning !in instrument.tunings) || (instrument.isBass && request.chords == TabChords.COMPLETED)))
             throw EngineException(422, "not an instrument, a tuning or a chords choice of the ${profile.id} profile", Refusal.INVALID_OPTIONS.code)
         val stages = stagesOf(profile, wholeRecording = (request.recording ?: instrument.defaultRecording) == Recording.INSTRUMENT, instrument = instrument)
-        val job = Job(id, profile.id, JobStatus.QUEUED, now(), stages.map { StageState(it, StageStatus.PENDING, kindOf(it)) },
+        val job = Job(id, profile.id, profile.target.id, JobStatus.QUEUED, now(), stages.map { StageState(it, StageStatus.PENDING, kindOf(it)) },
             audioId = request.audioId, title = request.title)
         jobs[id] = job
         return job

@@ -301,7 +301,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         Voice("solo", VoiceRole.MELODY, solo, "trumpet/cornet", "solo"),
         Voice("bass", VoiceRole.BASS, bass, "electric bass", "bass"),
         Voice("strings", VoiceRole.HARMONY, lines, "orchestra", "strings"),
-        Voice("brass", VoiceRole.HARMONY, hits, "orchestra hits", "brass"),
+        Voice("hits", VoiceRole.HARMONY, hits, "orchestra hits", "hits"),
         Voice("drums", VoiceRole.RHYTHM, drums, "drum kit", "drums"),
     ], [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down,
         free_regions=plan.regions(first_down) if plan else [], tempo_estimated=tempo_estimated)
@@ -327,7 +327,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         if (L / f"{wav}.wav").exists():
             y, sr = sf.read(L / f"{wav}.wav", dtype="float32")
             envs[wav] = Envelope.of(y, sr)
-    for layer, wav in (("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")):
+    for layer, wav in (("solo", "solo"), ("strings", "orchestra"), ("hits", "orchestra"), ("bass", "bass"), ("drums", "drums")):
         if wav in envs:
             comp.dynamics += [Dynamic(t, layer, m) for t, m in layer_dynamics(envs[wav], bars)]
     # Rehearsal letters where the layers' energy changes, and where free time ends.

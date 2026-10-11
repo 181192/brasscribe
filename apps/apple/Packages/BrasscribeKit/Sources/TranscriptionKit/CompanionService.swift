@@ -83,13 +83,19 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         public let outputs: [String]
         public let error: String?
         public let profile: String?
+        /// The target the job belongs to ("brass", "fretted"); nil when the engine cannot say.
+        public let target: String?
         public let title: String?
         public let created: Double?
         public let audioID: String?
         enum CodingKeys: String, CodingKey {
-            case id, status, progress, stages, outputs, error, profile, title, created
+            case id, status, progress, stages, outputs, error, profile, target, title, created
             case audioID = "audio_id"
         }
+
+        /// The job belongs to this app: its target is the app's. A job without a target, or of a target this
+        /// app does not know, is not.
+        public var isOurs: Bool { target == SourceProfile.target }
     }
 
     /// What each transcriber heard at the notes Brasscribe is unsure about.
@@ -124,6 +130,8 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
 
     public struct ProfileInfo: Decodable, Sendable {
         public let name: String
+        /// The target the profile belongs to: what it makes ("brass", "fretted").
+        public let target: String
         public let description: String
         public let validated: Bool
     }
@@ -162,8 +170,15 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         try JSONDecoder().decode(Health.self, from: try await send(request("v1/health")))
     }
 
+    /// The engine's profiles this app can use: the ones of its own target.
     public func profiles() async throws -> [ProfileInfo] {
-        try JSONDecoder().decode([ProfileInfo].self, from: try await send(request("v1/profiles")))
+        try Self.ownProfiles(try await send(request("v1/profiles")))
+    }
+
+    /// The profiles of this app's target in the engine's answer to `/v1/profiles`. The engine serves every
+    /// app and lists the others' profiles too.
+    static func ownProfiles(_ data: Data) throws -> [ProfileInfo] {
+        try JSONDecoder().decode([ProfileInfo].self, from: data).filter { $0.target == SourceProfile.target }
     }
 
     /// Exchange the code shown by the engine for this device's own credential.
@@ -241,9 +256,10 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try? await send(request("v1/jobs/\(id)", method: "DELETE"))
     }
 
-    /// Every run on the computer, newest first.
+    /// This app's runs on the computer, newest first. The computer serves every app and lists the others'
+    /// runs too.
     public func jobs() async throws -> [Job] {
-        try JSONDecoder().decode([Job].self, from: try await send(request("v1/jobs")))
+        try JSONDecoder().decode([Job].self, from: try await send(request("v1/jobs"))).filter(\.isOurs)
     }
 
     public func evidence(jobID: String) async throws -> Evidence {

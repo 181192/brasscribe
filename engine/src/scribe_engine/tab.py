@@ -43,7 +43,7 @@ from typing import Callable
 
 import numpy as np
 
-from . import bass_tab, tuning
+from . import bass_tab, targets, tuning
 from . import stages as S
 from .bass_tab import DOUBT, LAYOUTS, MAX_CAPO, OCTAVES, RECORDINGS, STYLES
 from .dag import SOURCE, Input, Pipeline, Stage, StageContext, StageFailed
@@ -322,8 +322,8 @@ def preset(opts: dict) -> str:
 
 
 def is_tab(profile: str) -> bool:
-    """`profile` writes a tab: this profile, or its id for older apps."""
-    return profile in (PROFILE, bass_tab.PROFILE)
+    """`profile` writes a tab: it is one of the fretted target's."""
+    return profile in targets.FRETTED.profiles
 
 
 def job_options(profile: str, params: dict) -> dict:
@@ -820,7 +820,7 @@ def arrange_stage(ctx: StageContext) -> None:
     unplayable = sum(n["out_of_range"] for n in tab["notes"])
     ctx.log(f"{len(tab['notes'])} notes on {tab['preset']}, {unplayable} out of range, {tab['unplayable_dropped']} left out as "
             f"unplayable, {len(tab['violations'])} violations")
-    (ctx.out / "tab.json").write_text(json.dumps(tab, indent=1))
+    (ctx.out / bass_tab.TAB_JSON).write_text(json.dumps(tab, indent=1))
     composition(tab, ctx.params["title"], HEARD[opts["instrument"]].kind).to_json(ctx.out / "composition.json")
 
 
@@ -867,10 +867,7 @@ def build(title: str, params: dict) -> Pipeline:
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "tab-notes.json")}, arrange_stage,
                     params={"title": title, "fingering": fingering, "layout": opts["layout"]},
                     code=(THIS, bass_tab.THIS, bass_tab.core_cli_path()),
-                    outputs=("composition.json", "tab.json", "tab.musicxml", *bass_tab.TEXT_OUTPUTS)))
+                    outputs=bass_tab.ARRANGED))
     st.append(Stage("export", "export", {"score": Input("arrange")}, bass_tab.export_stage,
                     params={"musescore": bass_tab.musescore_fingerprint()}, code=(bass_tab.THIS,), outputs=("export.json",)))
-    outputs = {"composition.json": ("arrange", "composition.json"), "tab.json": ("arrange", "tab.json"),
-               "tab.musicxml": ("arrange", "tab.musicxml"), **{name: ("arrange", name) for name in bass_tab.TEXT_OUTPUTS},
-               "tab.pdf": ("export", "tab.pdf"), "tab.mid": ("export", "tab.mid")}
-    return Pipeline(PROFILE, "tab", st, outputs, opts)
+    return Pipeline(PROFILE, "tab", st, dict(bass_tab.OUTPUTS), opts)

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from scribe_engine import profiles
+from scribe_engine import profiles, targets
 from scribe_engine.config import Settings
 from scribe_engine.dag import SOURCE, Input, Pipeline, Stage
 
@@ -93,7 +93,7 @@ def settings(tmp_path: Path, monkeypatch) -> Settings:
     s = Settings(data_dir=tmp_path / "data", adapters_dir=adapters, gpu_lock=tmp_path / "gpu.lock")
     s.ensure()
     monkeypatch.setitem(profiles.PROFILES, "test", profiles.Profile("test", "test", "fake two-stage profile", False, fake_pipeline))
-    monkeypatch.setitem(profiles.DEFAULT_TITLES, "test", "{name} test")
+    monkeypatch.setitem(targets.BRASS.titles, "test", "{name} test")
     return s
 
 

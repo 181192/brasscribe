@@ -8,13 +8,13 @@
 //!                               [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--lang en|nb] [--kit band|pop]
 //! scribe-core arrange-song --beats FILE --melody MID [--melody-support MID] --bass MID --harmony MID... --out DIR [--title T]
 //!                               [--lineup minimal|quartet] [--seat SEAT] [--reads treble|bass] [--lead lineup|seat] [--kit band|pop]
-//! scribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T]
+//! scribe-core lead-sheet --beats FILE --melody MID [--melody-support MID] --bass MID --out FILE [--title T] [--creator NAME]
 //! scribe-core arrange-reference --reference JSON --out DIR [--title T] [--lineup minimal|quartet]
 //! scribe-core quantize --reference JSON --beats FILE --out FILE
 //! scribe-core musicxml --composition JSON --out FILE      (arrange an existing composition.json)
 //! scribe-core meter --beats FILE --notes JSON --out FILE     (beats per bar and bar phase; notes [{onset, offset}])
 //! scribe-core humanize --notes JSON --part P --player K [--seed S] [--composition JSON] [--timing score|performed] --out FILE
-//! scribe-core talking-score --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
+//! scribe-core talking-score --target brass|fretted --musicxml FILE [--composition JSON] [--json FILE] [--json-utf8 FILE] [--text FILE] [--html FILE]
 //!                               [--lang en|nb] [--verbosity brief|standard|full] [--pitch-mode written|concert] [--octave-style scientific|helmholtz]
 //! scribe-core fret --request JSON --out FILE     (a string and fret for every note: target-fretted's JSON request and response)
 //! scribe-core tab --request JSON --out FILE [--format json|text|instructions] [--lang en|nb] [--width N]
@@ -243,6 +243,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 &midi(Path::new(&a.one("bass")?))?,
                 &beats(Path::new(&a.one("beats")?))?,
                 &title,
+                &a.opt("creator").unwrap_or_default(),
             )?;
             write(Path::new(&a.one("out")?), &stamp(xml))
         }
@@ -305,8 +306,13 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 Some(c) => Some(serde_json::from_slice(&read(Path::new(&c))?).map_err(|e| e.to_string())?),
                 None => None,
             };
-            // The scores this command reads are band scores: the band names its parts.
-            let doc = ts::build(&xml, comp.as_ref(), &target_brass::names::BandNames)?;
+            // The target the score was written by names its parts and instruments.
+            let names: &dyn ts::Names = match a.one("target")?.as_str() {
+                "brass" => &target_brass::names::BandNames,
+                "fretted" => &ts::ScoreNames,
+                t => return Err(format!("unknown target {t}: brass or fretted")),
+            };
+            let doc = ts::build(&xml, comp.as_ref(), names)?;
             let d = ts::Settings::default();
             let settings = ts::Settings {
                 lang: a.opt("lang").unwrap_or(d.lang),

@@ -33,6 +33,8 @@ pub const CONFIDENCE: &str = "fretted-confidence";
 /// for, as its position in [`TabScore::notes`]: `<?fretted-note 17?>`. Every `<note>` with a pitch
 /// has one, on each staff and on each tied piece; a rest has none.
 pub const NOTE_INDEX: &str = "fretted-note";
+/// The program a tab names as the one that wrote it (MusicXML `<software>`): this target's app.
+pub const SOFTWARE: &str = "Fretscribe";
 /// Divisions per quarter note: durations are written in the model's ticks.
 const DIVISIONS: i64 = TICKS_PER_BEAT;
 /// Ticks of a whole note.
@@ -1143,7 +1145,7 @@ impl<'a> Plan<'a> {
         if !clean(&score.title).is_empty() {
             root.push(El::new("work").child(El::text("work-title", clean(&score.title))));
         }
-        root.push(El::new("identification").child(El::new("encoding").child(El::text("software", "Brasscribe"))));
+        root.push(El::new("identification").child(El::new("encoding").child(El::text("software", SOFTWARE))));
         root.push(El::new("part-list").child(El::new("score-part").attr("id", "P1").child(El::text("part-name", clean(&score.instrument.name)))));
         let mut part = El::new("part").attr("id", "P1");
         let count = self.measures.len();

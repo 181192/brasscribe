@@ -44,6 +44,10 @@ def test_health_and_profiles(client):
     assert {"solo", "brass-band", "pop-rock", "orchestra-with-soloist"} <= set(names)
     assert names["orchestra-with-soloist"]["validated"] is True
     assert "transcribe.solo.swift-f0" in names["orchestra-with-soloist"]["stages"]
+    # Each says which target it belongs to, so an app can offer its own.
+    assert {n: names[n]["target"] for n in ("solo", "brass-band", "pop-rock", "orchestra-with-soloist", "tab", "bass-tab")} == {
+        "solo": "brass", "brass-band": "brass", "pop-rock": "brass", "orchestra-with-soloist": "brass",
+        "tab": "fretted", "bass-tab": "fretted"}
 
 
 def test_upload_job_stream_and_fetch(client, audio):

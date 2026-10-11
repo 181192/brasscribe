@@ -270,7 +270,7 @@ void uniffi_scribe_ffi_fn_free_talkingscore(uint64_t handle, RustCallStatus *_No
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SCRIBE_FFI_FN_CONSTRUCTOR_TALKINGSCORE_NEW
 #define UNIFFI_FFIDEF_UNIFFI_SCRIBE_FFI_FN_CONSTRUCTOR_TALKINGSCORE_NEW
-uint64_t uniffi_scribe_ffi_fn_constructor_talkingscore_new(RustBuffer musicxml, RustBuffer composition_json, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_scribe_ffi_fn_constructor_talkingscore_new(RustBuffer musicxml, RustBuffer composition_json, RustBuffer target, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SCRIBE_FFI_FN_METHOD_TALKINGSCORE_ANNOUNCE

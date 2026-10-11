@@ -20,6 +20,7 @@ from pathlib import Path
 import scribe_eval
 import scribe_music
 
+from . import targets
 from .config import child_env
 from .dag import StageContext, StageFailed
 
@@ -27,6 +28,7 @@ MUSIC_SRC = Path(scribe_music.__file__).resolve().parent
 EVAL_SRC = Path(scribe_eval.__file__).resolve().parent
 THIS = Path(__file__).resolve()
 PART_STYLE = MUSIC_SRC / "parts.mss"  # MuseScore style for rendering individual parts
+BAND = targets.BRASS  # the stages here are the band's: its target names their files
 EXPORT_CODE = (THIS, THIS.with_name("braille.py"), THIS.with_name("talking_score.py"))
 SYMBOLIC_CODE = (MUSIC_SRC, EVAL_SRC, THIS, THIS.with_name("compare.py")) + ((PART_STYLE,) if PART_STYLE.exists() else ())
 
@@ -93,7 +95,7 @@ def _stable_musicxml(ctx: StageContext) -> None:
     """Deterministic part/instrument ids, so an unchanged arrangement has unchanged bytes (and downstream cache hits)."""
     from .compare import stable_ids
 
-    for xml in [ctx.out / "brass-band.musicxml", *sorted((ctx.out / "parts").glob("*.musicxml"))]:
+    for xml in [ctx.out / BAND.musicxml, *sorted((ctx.out / "parts").glob("*.musicxml"))]:
         if xml.exists():
             xml.write_text(stable_ids(xml.read_text()))
 
@@ -165,14 +167,14 @@ def export(ctx: StageContext) -> None:
     judged by the output file, never the exit code.
     """
     score = ctx.inputs["score"]
-    xml = score / "brass-band.musicxml"
+    xml = score / BAND.musicxml
     formats = ["pdf", "mid"] + (["mp3"] if ctx.params.get("audio", True) else [])
     from scribe_music import musescore
 
     mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
     written = []
     if mscore:
-        dsts = [ctx.out / f"brass-band.{ext}" for ext in formats]
+        dsts = [ctx.out / BAND.file(ext) for ext in formats]
         parts = sorted((score / "parts").glob("*.musicxml"))
         part_dsts = [ctx.out / "parts" / part.with_suffix(".pdf").name for part in parts]
         missing = musescore.convert_many([(xml, dsts)], cancel=ctx.executor.cancel)  # stopping the job stops MuseScore
@@ -181,11 +183,11 @@ def export(ctx: StageContext) -> None:
         if missing:
             raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
         written = [d.name for d in dsts] + [f"parts/{d.name}" for d in part_dsts]
-        mp3 = ctx.out / "brass-band.mp3"
+        mp3 = ctx.out / BAND.file("mp3")
         if mp3.exists():
             level = _level_mp3(mp3, xml, ctx)
             if level:
-                ctx.log(f"brass-band.mp3 levelled: {level}")
+                ctx.log(f"{mp3.name} levelled: {level}")
     if not mscore:
         ctx.log("mscore not found: PDF, MIDI and MP3 skipped")
     accessible = accessible_exports(score, ctx)
@@ -201,7 +203,7 @@ def _level_mp3(mp3: Path, score: Path, ctx: StageContext) -> dict | None:
     band_dir = os.environ.get("SCRIBE_BAND_SOUNDS_DIR")
     levels = audio_level.levels_path(Path(band_dir) if band_dir else None)
     if levels is None:
-        ctx.log("playback-levels.json not found: brass-band.mp3 keeps MuseScore's level")
+        ctx.log(f"playback-levels.json not found: {mp3.name} keeps MuseScore's level")
         return None
     return audio_level.level_mp3(mp3, score, levels)
 
@@ -213,9 +215,9 @@ def accessible_exports(score: Path, ctx: StageContext) -> dict:
     from . import braille, talking_score
 
     written, failed, dropped = [], {}, []
-    xml = score / "brass-band.musicxml"
+    xml = score / BAND.musicxml
     for src in [xml, *sorted((score / "parts").glob("*.musicxml"))]:
-        rel = "brass-band.brf" if src == xml else f"parts/{src.with_suffix('.brf').name}"
+        rel = BAND.file("brf") if src == xml else f"parts/{src.with_suffix('.brf').name}"
         try:
             r = braille.translate(src)
         except Exception as e:  # noqa: BLE001 - reported per file

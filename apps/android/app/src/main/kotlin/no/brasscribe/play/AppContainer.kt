@@ -179,7 +179,7 @@ class AppContainer(private val context: Context) {
         keepFor = Product.KEPT_RECORDING_DAYS?.let { java.util.concurrent.TimeUnit.DAYS.toMillis(it.toLong()) })
 
     /** The Rust core when its native library is in the APK (scripts/build-core.sh), else the Kotlin fallback. */
-    val core: CoreBridge = (RustCoreBridge.load() ?: KotlinCoreBridge).also { c -> no.brasscribe.play.ui.PartNames.nb = c::partNameNb }
+    val core: CoreBridge = (RustCoreBridge.load(Product.target.id) ?: KotlinCoreBridge).also { c -> no.brasscribe.play.ui.PartNames.nb = c::partNameNb }
 
     /** The contest band's seats, from the core; empty without it (then "What do you play?" is not asked). */
     val seats: List<no.brasscribe.play.model.Seat> by lazy { runCatching { core.seats() }.getOrDefault(emptyList()) }

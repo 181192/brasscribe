@@ -38,6 +38,19 @@ func goldenDir() -> URL? {
     #expect(q.feed(line: ": keepalive").isEmpty)
 }
 
+@Test func theAppSeesOnlyItsOwnTargetsProfiles() throws {
+    let answer = #"""
+    [{"name":"solo","target":"brass","pipeline":"layered-solo","description":"d","validated":true,"stages":[]},
+     {"name":"tab","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]},
+     {"name":"brass-band","target":"brass","pipeline":"A","description":"d","validated":false,"stages":[]}]
+    """#
+    let own = try CompanionService.ownProfiles(Data(answer.utf8))
+    #expect(own.map(\.name) == ["solo", "brass-band"])
+    #expect(own.allSatisfy { $0.target == SourceProfile.target })
+    // An answer without a target is not this engine's: it is refused, not shown whole.
+    #expect(throws: (any Error).self) { try CompanionService.ownProfiles(Data(#"[{"name":"solo","description":"d","validated":true}]"#.utf8)) }
+}
+
 @Test func stagesReadAsPlainSteps() {
     #expect(StageKind.classify(name: "separate-solo", kind: "adapter") == .separating)
     #expect(StageKind.classify(name: "beat-this", kind: nil) == .findingBeat)
@@ -177,7 +190,7 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
             case ("GET", "/v1/jobs/j1/talking-score"):
                 return request.url!.query?.contains("format=text") == true ? (200, Data("Bar 1".utf8), "text/plain") : (400, Data(), "text/plain")
             case ("GET", "/v1/jobs"):
-                return (200, Data(#"[{"id":"j2","profile":"brass-band","title":"Take","audio_id":"a1","status":"succeeded","progress":1,"stages":[],"outputs":["brass-band.musicxml"],"created":20}]"#.utf8), "application/json")
+                return (200, Data(#"[{"id":"j2","profile":"brass-band","target":"brass","title":"Take","audio_id":"a1","status":"succeeded","progress":1,"stages":[],"outputs":["brass-band.musicxml"],"created":20},{"id":"t1","profile":"tab","target":"fretted","status":"succeeded","progress":1,"stages":[],"outputs":["tab.musicxml"],"created":30},{"id":"x1","profile":"hymn","target":"choir","status":"succeeded","progress":1,"stages":[],"outputs":[],"created":31},{"id":"n1","profile":"gone","target":null,"status":"succeeded","progress":1,"stages":[],"outputs":[],"created":32}]"#.utf8), "application/json")
             case ("GET", "/v1/jobs/j1/evidence"):
                 return (200, Data(#"{"models":[{"model":"basic-pitch","name":"Basic Pitch"}],"notes":[{"voice":"melody","start":24,"pitch":67,"confidence":0.5,"onset_s":1.0,"models":[{"model":"basic-pitch","name":"Basic Pitch","pitch":69,"agrees":false}]}]}"#.utf8), "application/json")
             case ("PATCH", "/v1/runs/j1"):
@@ -327,6 +340,8 @@ extension URLRequest {
         StubEngine.requests = []
         let svc = service()
         let jobs = try await svc.jobs()
+        // The computer lists a tab, a job of a target this app does not know and one without a target: none is this app's.
+        #expect(jobs.map(\.id) == ["j2"])
         #expect(jobs.first?.title == "Take" && jobs.first?.audioID == "a1" && jobs.first?.created == 20)
         let e = try await svc.evidence(jobID: "j1")
         #expect(e.notes.first?.confidence == 0.5)

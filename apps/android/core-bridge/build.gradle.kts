@@ -7,7 +7,7 @@ plugins {
  * The Rust core (core/) behind CoreBridge. The UniFFI Kotlin bindings are compiled from
  * core/android/scribe-core/src/main/kotlin; the native libraries come from
  * scripts/build-core.sh (src/main/jniLibs, git-ignored). Without them the app uses the
- * Kotlin fallback: RustCoreBridge.load() returns null.
+ * Kotlin fallback: RustCoreBridge.load returns null.
  */
 val repoRoot = rootProject.extra["repoRoot"] as File
 val coreRoot = File(repoRoot, "core")
