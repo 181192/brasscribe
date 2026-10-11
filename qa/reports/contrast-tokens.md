@@ -98,34 +98,34 @@ CIEDE2000 difference (weak below 20; shape encoding is required regardless):
 
 | foreground | background | ratio | min | SC | result |
 |---|---|---|---|---|---|
-| text `#FFFFFF` | bg `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text `#FFFFFF` | surface `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#FFFFFF` | bg `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#FFFFFF` | surface `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| error `#FF8080` | bg `#000000` | 8.65:1 | 4.5:1 | 1.4.3 | pass |
-| error `#FF8080` | surface `#000000` | 8.65:1 | 4.5:1 | 1.4.3 | pass |
-| focus `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 2.4.13 (AAA, used as target) | pass |
-| focus `#FFFFFF` | surface `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| staff `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| staff `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| staff `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| uncertain `#00FFFF` | bg `#000000` | 16.75:1 | 3.0:1 | 1.4.11 | pass |
-| uncertain `#00FFFF` | adlib-tint `#000000` | 16.75:1 | 3.0:1 | 1.4.11 | pass |
-| uncertain `#00FFFF` | loop-tint `#000000` | 16.75:1 | 3.0:1 | 1.4.11 | pass |
-| very-uncertain `#FFFF00` | bg `#000000` | 19.56:1 | 3.0:1 | 1.4.11 | pass |
-| very-uncertain `#FFFF00` | adlib-tint `#000000` | 19.56:1 | 3.0:1 | 1.4.11 | pass |
-| very-uncertain `#FFFF00` | loop-tint `#000000` | 19.56:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#FFFF00` | bg `#000000` | 19.56:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#FFFF00` | loop-tint `#000000` | 19.56:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#FF80FF` | bg `#000000` | 9.78:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#FF80FF` | loop-tint `#000000` | 9.78:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#FF80FF` | adlib-tint `#000000` | 9.78:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| text `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text `#FFFFFF` | surface `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#FFFFFF` | surface `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| error `#FF8080` | bg `#000000` | 8.65:1 | 7.0:1 | 1.4.3 | pass |
+| error `#FF8080` | surface `#000000` | 8.65:1 | 7.0:1 | 1.4.3 | pass |
+| focus `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 2.4.13 (AAA, used as target) | pass |
+| focus `#FFFFFF` | surface `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| staff `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| staff `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| staff `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| uncertain `#00FFFF` | bg `#000000` | 16.75:1 | 7.0:1 | 1.4.11 | pass |
+| uncertain `#00FFFF` | adlib-tint `#000000` | 16.75:1 | 7.0:1 | 1.4.11 | pass |
+| uncertain `#00FFFF` | loop-tint `#000000` | 16.75:1 | 7.0:1 | 1.4.11 | pass |
+| very-uncertain `#FFFF00` | bg `#000000` | 19.56:1 | 7.0:1 | 1.4.11 | pass |
+| very-uncertain `#FFFF00` | adlib-tint `#000000` | 19.56:1 | 7.0:1 | 1.4.11 | pass |
+| very-uncertain `#FFFF00` | loop-tint `#000000` | 19.56:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#FFFF00` | bg `#000000` | 19.56:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#FFFF00` | loop-tint `#000000` | 19.56:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#FF80FF` | bg `#000000` | 9.78:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#FF80FF` | loop-tint `#000000` | 9.78:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#FF80FF` | adlib-tint `#000000` | 9.78:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | adlib-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
 
 CIEDE2000 difference (weak below 20; shape encoding is required regardless):
 

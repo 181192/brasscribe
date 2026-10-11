@@ -53,4 +53,4 @@ typography token (600, as in [`brand.md`](../brand/brand.md)).
 
 `qa/tools/contrast.py` exits 1 on any failure, and the tests in `qa/tools/tests` run it on these tokens.
 The current report is [`contrast.md`](contrast.md): 0 failures in light, dark, high contrast and high
-contrast light.
+contrast light. In the two high-contrast modes every pair has to reach 7:1.

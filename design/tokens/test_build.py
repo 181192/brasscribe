@@ -201,11 +201,54 @@ def test_every_brand_passes_its_contrast_pairs_in_every_mode():
             for fg, bg, minimum, _ in b.EXT["contrast"]["pairs"]:
                 r = contrast.contrast(b.hexval(mode, fg), b.hexval(mode, bg))
                 assert r + 1e-9 >= minimum, (name, mode, fg, bg, round(r, 2))
-        # Light high contrast reaches WCAG AAA, and the focus ring never looks like doubt.
-        for fg, bg, _, _ in b.EXT["contrast"]["pairs"]:
-            assert contrast.contrast(b.hexval("high-contrast-light", fg), b.hexval("high-contrast-light", bg)) >= 7, (name, fg, bg)
+        # Both high-contrast palettes reach WCAG AAA, and the focus ring never looks like doubt.
+        for mode in ("high-contrast-light", "high-contrast"):
+            for fg, bg, _, _ in b.EXT["contrast"]["pairs"]:
+                assert contrast.contrast(b.hexval(mode, fg), b.hexval(mode, bg)) >= 7, (name, mode, fg, bg)
         for mode in ("light", "dark", "high-contrast-light"):
             assert contrast.delta_e(b.hexval(mode, "focus"), b.hexval(mode, b.neutral_roles()["uncertain"]), None) >= 20, (name, mode)
+
+
+def test_more_contrast_keeps_light_or_dark_on_every_platform():
+    # A light appearance with more contrast is light: dark ink on a light ground, never the dark palette.
+    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    import contrast
+    for name, b in brands().items():
+        product = b.PRODUCT
+        light_bg, dark_bg = b.hexval("high-contrast-light", "bg"), b.hexval("high-contrast", "bg")
+        assert contrast.luminance(contrast.hex_rgb(light_bg)) > 0.8 > 0.05 > contrast.luminance(contrast.hex_rgb(dark_bg)), name
+
+        # Apple: "high" alone is the light appearance with Increase Contrast, "dark, high" the dark one.
+        sets = b.DIST / "apple" / f"{product}Design.xcassets"
+        palettes = [(product, "light", "dark")] + ([(f"{product}Pink", "pink", "pink-dark")] if b.PINK else [])
+        for namespace, light, dark in palettes:
+            for role in b.roles():
+                colours = json.loads((sets / namespace / f"{b.camel(role)}.colorset" / "Contents.json").read_text())["colors"]
+                by_appearance = {tuple(sorted(a["value"] for a in c.get("appearances", []))):
+                                 tuple(c["color"]["components"][k] for k in ("red", "green", "blue")) for c in colours}
+                want = {(): light, ("dark",): dark, ("high",): "high-contrast-light", ("dark", "high"): "high-contrast"}
+                assert by_appearance == {k: b.rgb_components(b.hexval(mode, role)) for k, mode in want.items()}, (name, namespace, role)
+
+        # Android: the palette, the brand's own roles and Material's scheme all follow `dark`.
+        kotlin = b.DIST / "android" / "kotlin" / "no"
+        neutral = (kotlin / "scribe" / "design" / "ScribeTheme.kt").read_text()
+        assert ("    highContrast && dark -> ScribeHighContrastColors\n"
+                "    highContrast -> ScribeHighContrastLightColors\n") in neutral, name
+        assert "colors.toColorScheme(dark = dark)," in neutral and "dark || highContrast" not in neutral, name
+        own = (kotlin / product.lower() / "design" / f"{product}Theme.kt").read_text()
+        assert (f"        highContrast && dark -> {product}HighContrastColors\n"
+                f"        highContrast -> {product}HighContrastLightColors\n") in own, name
+
+        # The web: more contrast without a dark scheme or a pinned dark theme is the light palette.
+        css = (b.DIST / "web" / f"{product.lower()}.css").read_text()
+        block = css[css.index('@media (prefers-contrast: more) and (forced-colors: none) {\n  :root:not([data-theme="dark"]) {'):]
+        assert f"--scribe-bg: {light_bg};" in block[:block.index("}")], name
+
+        # Windows: a contrast theme is the system's colours, in light and in dark; none of ours is written there.
+        xaml = (b.DIST / "windows" / f"{product}Theme.xaml").read_text()
+        high = xaml[xaml.index('<ResourceDictionary x:Key="HighContrast">'):]
+        high = high[:high.index("</ResourceDictionary>")]
+        assert "SystemColor" in high and "#FF" not in high, name
 
 
 def test_light_very_uncertain_keeps_its_margin():

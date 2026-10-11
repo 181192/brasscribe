@@ -176,70 +176,70 @@ CIEDE2000 difference (weak below 20; shape encoding is required regardless):
 
 | foreground | background | ratio | min | SC | result |
 |---|---|---|---|---|---|
-| text `#FFFFFF` | bg `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text `#FFFFFF` | surface `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#E6E6E6` | bg `#000000` | 16.83:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#E6E6E6` | surface `#000000` | 16.83:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#E6E6E6` | surface-raised `#0A0A0A` | 15.86:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#E6E6E6` | secondary `#1A1A1A` | 13.94:1 | 4.5:1 | 1.4.3 | pass |
-| text `#FFFFFF` | brand-tint `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| on-primary `#000000` | primary `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| on-secondary `#FFFFFF` | secondary `#1A1A1A` | 17.40:1 | 4.5:1 | 1.4.3 | pass |
-| brand-text `#A8CCFF` | bg `#000000` | 12.75:1 | 4.5:1 | 1.4.3 | pass |
-| brand-text `#A8CCFF` | surface-raised `#0A0A0A` | 12.02:1 | 4.5:1 | 1.4.3 | pass |
-| brand-text `#A8CCFF` | surface `#000000` | 12.75:1 | 4.5:1 | 1.4.3 (accent) | pass |
-| brand-text `#A8CCFF` | brand-tint `#000000` | 12.75:1 | 4.5:1 | 1.4.3 | pass |
-| success `#9BE8AE` | bg `#000000` | 14.55:1 | 4.5:1 | 1.4.3 | pass |
-| warning `#FFD27A` | bg `#000000` | 14.75:1 | 4.5:1 | 1.4.3 | pass |
-| error `#FFA8A0` | bg `#000000` | 11.36:1 | 4.5:1 | 1.4.3 | pass |
-| error `#FFA8A0` | surface-raised `#0A0A0A` | 10.71:1 | 4.5:1 | 1.4.3 | pass |
-| error `#FFA8A0` | surface `#000000` | 11.36:1 | 4.5:1 | 1.4.3 | pass |
-| border-strong `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| primary `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| brand `#A8CCFF` | bg `#000000` | 12.75:1 | 3.0:1 | 1.4.11 | pass |
-| border-strong `#FFFFFF` | surface `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| primary `#FFFFFF` | surface `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | surface `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| brand `#A8CCFF` | surface `#000000` | 12.75:1 | 3.0:1 | 1.4.11 | pass |
-| border-strong `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 3.0:1 | 1.4.11 | pass |
-| primary `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 3.0:1 | 1.4.11 | pass |
-| brand `#A8CCFF` | surface-raised `#0A0A0A` | 12.02:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | bg `#000000` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | bg `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | uncertain-tint `#000000` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#FFFFFF` | uncertain-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | uncertain-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | cursor-tint `#000000` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#FFFFFF` | cursor-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | cursor-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| uncertain `#FFC66B` | surface-raised `#0A0A0A` | 12.77:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#FFC66B` | bg `#000000` | 13.54:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#FFC66B` | uncertain-tint `#000000` | 13.54:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#FFC66B` | loop-tint `#000000` | 13.54:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#FFC66B` | cursor-tint `#000000` | 13.54:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#FFC66B` | selection-tint `#000000` | 13.54:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| cursor `#A8CCFF` | surface-raised `#0A0A0A` | 12.02:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#A8CCFF` | bg `#000000` | 12.75:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#A8CCFF` | loop-tint `#000000` | 12.75:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#A8CCFF` | uncertain-tint `#000000` | 12.75:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#7FE0BF` | surface-raised `#0A0A0A` | 12.55:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#7FE0BF` | loop-tint `#000000` | 13.32:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#7FE0BF` | bg `#000000` | 13.32:1 | 3.0:1 | 1.4.11 | pass |
-| selection-edge `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| selection-edge `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 3.0:1 | 1.4.11 | pass |
+| text `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text `#FFFFFF` | surface `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#E6E6E6` | bg `#000000` | 16.83:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#E6E6E6` | surface `#000000` | 16.83:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#E6E6E6` | surface-raised `#0A0A0A` | 15.86:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#E6E6E6` | secondary `#1A1A1A` | 13.94:1 | 7.0:1 | 1.4.3 | pass |
+| text `#FFFFFF` | brand-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| on-primary `#000000` | primary `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| on-secondary `#FFFFFF` | secondary `#1A1A1A` | 17.40:1 | 7.0:1 | 1.4.3 | pass |
+| brand-text `#A8CCFF` | bg `#000000` | 12.75:1 | 7.0:1 | 1.4.3 | pass |
+| brand-text `#A8CCFF` | surface-raised `#0A0A0A` | 12.02:1 | 7.0:1 | 1.4.3 | pass |
+| brand-text `#A8CCFF` | surface `#000000` | 12.75:1 | 7.0:1 | 1.4.3 (accent) | pass |
+| brand-text `#A8CCFF` | brand-tint `#000000` | 12.75:1 | 7.0:1 | 1.4.3 | pass |
+| success `#9BE8AE` | bg `#000000` | 14.55:1 | 7.0:1 | 1.4.3 | pass |
+| warning `#FFD27A` | bg `#000000` | 14.75:1 | 7.0:1 | 1.4.3 | pass |
+| error `#FFA8A0` | bg `#000000` | 11.36:1 | 7.0:1 | 1.4.3 | pass |
+| error `#FFA8A0` | surface-raised `#0A0A0A` | 10.71:1 | 7.0:1 | 1.4.3 | pass |
+| error `#FFA8A0` | surface `#000000` | 11.36:1 | 7.0:1 | 1.4.3 | pass |
+| border-strong `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| primary `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| brand `#A8CCFF` | bg `#000000` | 12.75:1 | 7.0:1 | 1.4.11 | pass |
+| border-strong `#FFFFFF` | surface `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| primary `#FFFFFF` | surface `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | surface `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| brand `#A8CCFF` | surface `#000000` | 12.75:1 | 7.0:1 | 1.4.11 | pass |
+| border-strong `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.11 | pass |
+| primary `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.11 | pass |
+| brand `#A8CCFF` | surface-raised `#0A0A0A` | 12.02:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | bg `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | uncertain-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#FFFFFF` | uncertain-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | uncertain-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | loop-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | cursor-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#FFFFFF` | cursor-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | cursor-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| uncertain `#FFC66B` | surface-raised `#0A0A0A` | 12.77:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#FFC66B` | bg `#000000` | 13.54:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#FFC66B` | uncertain-tint `#000000` | 13.54:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#FFC66B` | loop-tint `#000000` | 13.54:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#FFC66B` | cursor-tint `#000000` | 13.54:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#FFC66B` | selection-tint `#000000` | 13.54:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| cursor `#A8CCFF` | surface-raised `#0A0A0A` | 12.02:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#A8CCFF` | bg `#000000` | 12.75:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#A8CCFF` | loop-tint `#000000` | 12.75:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#A8CCFF` | uncertain-tint `#000000` | 12.75:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#7FE0BF` | surface-raised `#0A0A0A` | 12.55:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#7FE0BF` | loop-tint `#000000` | 13.32:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#7FE0BF` | bg `#000000` | 13.32:1 | 7.0:1 | 1.4.11 | pass |
+| selection-edge `#FFFFFF` | selection-tint `#000000` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| selection-edge `#FFFFFF` | surface-raised `#0A0A0A` | 19.80:1 | 7.0:1 | 1.4.11 | pass |
 
 CIEDE2000 difference (weak below 20; shape encoding is required regardless):
 
@@ -261,70 +261,70 @@ CIEDE2000 difference (weak below 20; shape encoding is required regardless):
 
 | foreground | background | ratio | min | SC | result |
 |---|---|---|---|---|---|
-| text `#000000` | bg `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text `#000000` | surface `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#1F1F1F` | bg `#FFFFFF` | 16.48:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#1F1F1F` | surface `#FFFFFF` | 16.48:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#1F1F1F` | surface-raised `#FFFFFF` | 16.48:1 | 4.5:1 | 1.4.3 | pass |
-| text-muted `#1F1F1F` | secondary `#EDEDED` | 14.08:1 | 4.5:1 | 1.4.3 | pass |
-| text `#000000` | brand-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| on-primary `#FFFFFF` | primary `#000000` | 21.00:1 | 4.5:1 | 1.4.3 | pass |
-| on-secondary `#000000` | secondary `#EDEDED` | 17.94:1 | 4.5:1 | 1.4.3 | pass |
-| brand-text `#0B3F80` | bg `#FFFFFF` | 10.31:1 | 4.5:1 | 1.4.3 | pass |
-| brand-text `#0B3F80` | surface-raised `#FFFFFF` | 10.31:1 | 4.5:1 | 1.4.3 | pass |
-| brand-text `#0B3F80` | surface `#FFFFFF` | 10.31:1 | 4.5:1 | 1.4.3 (accent) | pass |
-| brand-text `#0B3F80` | brand-tint `#FFFFFF` | 10.31:1 | 4.5:1 | 1.4.3 | pass |
-| success `#14502A` | bg `#FFFFFF` | 9.50:1 | 4.5:1 | 1.4.3 | pass |
-| warning `#5A4000` | bg `#FFFFFF` | 9.69:1 | 4.5:1 | 1.4.3 | pass |
-| error `#8C1A13` | bg `#FFFFFF` | 9.24:1 | 4.5:1 | 1.4.3 | pass |
-| error `#8C1A13` | surface-raised `#FFFFFF` | 9.24:1 | 4.5:1 | 1.4.3 | pass |
-| error `#8C1A13` | surface `#FFFFFF` | 9.24:1 | 4.5:1 | 1.4.3 | pass |
-| border-strong `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| primary `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| brand `#0B3F80` | bg `#FFFFFF` | 10.31:1 | 3.0:1 | 1.4.11 | pass |
-| border-strong `#000000` | surface `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| primary `#000000` | surface `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | surface `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| brand `#0B3F80` | surface `#FFFFFF` | 10.31:1 | 3.0:1 | 1.4.11 | pass |
-| border-strong `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| primary `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| brand `#0B3F80` | surface-raised `#FFFFFF` | 10.31:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#000000` | bg `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | bg `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#000000` | uncertain-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#000000` | uncertain-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | uncertain-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| ink `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 4.5:1 | 1.4.3 (fret numbers) | pass |
-| string `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| focus `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| uncertain `#6E3A00` | surface-raised `#FFFFFF` | 9.26:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#6E3A00` | bg `#FFFFFF` | 9.26:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#6E3A00` | uncertain-tint `#FFFFFF` | 9.26:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#6E3A00` | loop-tint `#FFFFFF` | 9.26:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#6E3A00` | cursor-tint `#FFFFFF` | 9.26:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| uncertain `#6E3A00` | selection-tint `#FFFFFF` | 9.26:1 | 4.5:1 | 1.4.3 (doubtful numeral and ?) | pass |
-| cursor `#0B3F80` | surface-raised `#FFFFFF` | 10.31:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#0B3F80` | bg `#FFFFFF` | 10.31:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#0B3F80` | loop-tint `#FFFFFF` | 10.31:1 | 3.0:1 | 1.4.11 | pass |
-| cursor `#0B3F80` | uncertain-tint `#FFFFFF` | 10.31:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#0F4F3E` | surface-raised `#FFFFFF` | 9.51:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#0F4F3E` | loop-tint `#FFFFFF` | 9.51:1 | 3.0:1 | 1.4.11 | pass |
-| loop-edge `#0F4F3E` | bg `#FFFFFF` | 9.51:1 | 3.0:1 | 1.4.11 | pass |
-| selection-edge `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
-| selection-edge `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 3.0:1 | 1.4.11 | pass |
+| text `#000000` | bg `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text `#000000` | surface `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#1F1F1F` | bg `#FFFFFF` | 16.48:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#1F1F1F` | surface `#FFFFFF` | 16.48:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#1F1F1F` | surface-raised `#FFFFFF` | 16.48:1 | 7.0:1 | 1.4.3 | pass |
+| text-muted `#1F1F1F` | secondary `#EDEDED` | 14.08:1 | 7.0:1 | 1.4.3 | pass |
+| text `#000000` | brand-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| on-primary `#FFFFFF` | primary `#000000` | 21.00:1 | 7.0:1 | 1.4.3 | pass |
+| on-secondary `#000000` | secondary `#EDEDED` | 17.94:1 | 7.0:1 | 1.4.3 | pass |
+| brand-text `#0B3F80` | bg `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.3 | pass |
+| brand-text `#0B3F80` | surface-raised `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.3 | pass |
+| brand-text `#0B3F80` | surface `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.3 (accent) | pass |
+| brand-text `#0B3F80` | brand-tint `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.3 | pass |
+| success `#14502A` | bg `#FFFFFF` | 9.50:1 | 7.0:1 | 1.4.3 | pass |
+| warning `#5A4000` | bg `#FFFFFF` | 9.69:1 | 7.0:1 | 1.4.3 | pass |
+| error `#8C1A13` | bg `#FFFFFF` | 9.24:1 | 7.0:1 | 1.4.3 | pass |
+| error `#8C1A13` | surface-raised `#FFFFFF` | 9.24:1 | 7.0:1 | 1.4.3 | pass |
+| error `#8C1A13` | surface `#FFFFFF` | 9.24:1 | 7.0:1 | 1.4.3 | pass |
+| border-strong `#000000` | bg `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| primary `#000000` | bg `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | bg `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| brand `#0B3F80` | bg `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.11 | pass |
+| border-strong `#000000` | surface `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| primary `#000000` | surface `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | surface `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| brand `#0B3F80` | surface `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.11 | pass |
+| border-strong `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| primary `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| brand `#0B3F80` | surface-raised `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#000000` | bg `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#000000` | bg `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | bg `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#000000` | uncertain-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#000000` | uncertain-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | uncertain-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | loop-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | cursor-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| ink `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.3 (fret numbers) | pass |
+| string `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| focus `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| uncertain `#6E3A00` | surface-raised `#FFFFFF` | 9.26:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#6E3A00` | bg `#FFFFFF` | 9.26:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#6E3A00` | uncertain-tint `#FFFFFF` | 9.26:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#6E3A00` | loop-tint `#FFFFFF` | 9.26:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#6E3A00` | cursor-tint `#FFFFFF` | 9.26:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| uncertain `#6E3A00` | selection-tint `#FFFFFF` | 9.26:1 | 7.0:1 | 1.4.3 (doubtful numeral and ?) | pass |
+| cursor `#0B3F80` | surface-raised `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#0B3F80` | bg `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#0B3F80` | loop-tint `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.11 | pass |
+| cursor `#0B3F80` | uncertain-tint `#FFFFFF` | 10.31:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#0F4F3E` | surface-raised `#FFFFFF` | 9.51:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#0F4F3E` | loop-tint `#FFFFFF` | 9.51:1 | 7.0:1 | 1.4.11 | pass |
+| loop-edge `#0F4F3E` | bg `#FFFFFF` | 9.51:1 | 7.0:1 | 1.4.11 | pass |
+| selection-edge `#000000` | selection-tint `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
+| selection-edge `#000000` | surface-raised `#FFFFFF` | 21.00:1 | 7.0:1 | 1.4.11 | pass |
 
 CIEDE2000 difference (weak below 20; shape encoding is required regardless):
 
