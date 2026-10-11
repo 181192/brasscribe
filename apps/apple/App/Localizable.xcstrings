@@ -631,6 +631,16 @@
         }
       }
     },
+    "An update is needed first": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det trengs en oppdatering først"
+          }
+        }
+      }
+    },
     "any recording.": {
       "localizations": {
         "nb": {
@@ -3011,6 +3021,16 @@
         }
       }
     },
+    "On your computer, download the latest Brasscribe Bandroom from this address:": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last ned nyeste Brasscribe Bandroom på datamaskinen fra denne adressen:"
+          }
+        }
+      }
+    },
     "On your computer. The recording is not sent online.": {
       "localizations": {
         "nb": {
@@ -3187,6 +3207,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Åpne på notestativet"
+          }
+        }
+      }
+    },
+    "Open the download page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne nedlastingssiden"
           }
         }
       }

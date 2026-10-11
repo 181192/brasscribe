@@ -119,6 +119,45 @@ import TranscriptionKit
     #expect(ErrorWords.specific(TranscriptionError.interfaceMismatch(.computer)) == computer)
 }
 
+/// A score on the computer that can't be opened, renamed or deleted because of its version says so in the update
+/// words, and the connection is checked at once; any other error is not that.
+@Test @MainActor func aComputerScoreRefusedForItsVersionSaysWhichToUpdate() {
+    let app = AppModel()
+    #expect(app.refused(TranscriptionError.interfaceMismatch(.computer)) == .computer)
+    #expect(app.refused(TranscriptionError.interfaceMismatch(.app)) == .app)
+    #expect(app.refused(TranscriptionError.unreachable("x")) == nil)
+    for which in [InterfaceMatch.Update.app, .computer] {
+        let problem = Problem.needsUpdate(which)
+        #expect(problem.reasons == [ConnectionCopy.update(which)])
+        #expect(problem.actions == [.home] && problem.detail == nil)
+    }
+    #expect(Problem.needsUpdate(.app).title == Problem.needsUpdate(.computer).title)
+}
+
+/// The computer's scores are listed only while it is connected: in every other state they go, so none is left to
+/// tap that could not be opened.
+@Test @MainActor func theComputersScoresGoWhenItIsNotConnected() async throws {
+    let jobs = try JSONDecoder().decode([CompanionService.Job].self, from: Data(
+        #"[{"id":"j2","profile":"brass-band","title":"Take","status":"succeeded","progress":1,"stages":[],"outputs":["brass-band.musicxml"],"created":20}]"#.utf8))
+    let record = EngineRecord(serverID: "7f3a9c2e", serverName: "Brasscribe on Studio Mac", deviceID: "d-41b2", token: "staged",
+                              lastAddress: "http://192.0.2.20:8765")
+    for state in [ConnectionState.reconnecting(serverName: "x"), .offline, .needsPairing(serverName: "x"),
+                  .mismatch(serverName: "x", update: .app), .mismatch(serverName: "x", update: .computer)] {
+        let app = AppModel()
+        app.pieces = []
+        app.computerJobs = jobs
+        #expect(app.scores.map(\.id) == ["job:j2"])
+        app.connection.stage(state, record: state == .offline ? nil : record)
+        await app.connectionChanged()
+        #expect(app.scores.isEmpty, "\(state)")
+    }
+}
+
+/// Where the update is: the latest release, never a version by name.
+@Test func theUpdateIsAtTheLatestRelease() {
+    #expect(ConnectionCopy.downloads.absoluteString == "https://github.com/181192/brasscribe/releases/latest")
+}
+
 /// Tests and screenshots never read or write the real Keychain.
 @Test @MainActor func testsUseAnInMemoryCredentialStore() {
     #expect(AppModel.makeCredentialStore() is InMemoryCredentialStore)

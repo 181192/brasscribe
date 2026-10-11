@@ -262,6 +262,8 @@ struct ConnectionLifecycle: ViewModifier {
                 }
             }
             .onChange(of: path.generation) { _, _ in app.connection.poke() }
+            // the computer's scores follow the connection: fetched when it is there, gone when it is not
+            .onChange(of: app.connection.state) { _, _ in Task { await app.connectionChanged() } }
             .task { path.start() }
     }
 }

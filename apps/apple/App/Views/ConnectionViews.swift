@@ -52,6 +52,9 @@ enum ConnectionCopy {
         }
     }
 
+    /// Where the latest Brasscribe Play and Brasscribe Bandroom are downloaded: always the latest release.
+    static let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
+
     static var pairAgain: String {
         switch device {
         case .phone: String(localized: "Pair this phone again")
@@ -72,7 +75,7 @@ enum ConnectionCopy {
 }
 
 /// The compact connection row: an icon and words (never colour alone), plus the one way forward when
-/// there is one ("Connect", "Pair this phone again"). On Home and in Settings.
+/// there is one ("Connect", "Pair this phone again", where to get the update). On Home and in Settings.
 struct ConnectionStatusRow: View {
     @Environment(AppModel.self) private var app
 
@@ -111,8 +114,24 @@ struct ConnectionStatusRow: View {
             Button(ConnectionCopy.pairAgain) { app.showSettings = true }
                 .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
                 .accessibilityIdentifier("connectionPairAgain")
-        // "update …" has no button: the update is made outside the app, and the row's words say which one
-        case .connected, .reconnecting, .mismatch:
+        // the update is made outside the app: this app's from its download page, the computer's on the computer,
+        // from the address to type there
+        case .mismatch(_, .app):
+            Link(destination: ConnectionCopy.downloads) { Text("Open the download page") }
+                .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+                .accessibilityIdentifier("connectionGetUpdate")
+        case .mismatch(_, .computer):
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("On your computer, download the latest Brasscribe Bandroom from this address:")
+                    .foregroundStyle(Color.Scribe.textMuted)
+                Text(verbatim: ConnectionCopy.downloads.absoluteString)
+                    .foregroundStyle(Color.Scribe.text)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("connectionUpdateAddress")
+            }
+            .font(Font.Scribe.callout)
+            .fixedSize(horizontal: false, vertical: true)
+        case .connected, .reconnecting:
             EmptyView()
         }
     }

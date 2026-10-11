@@ -187,8 +187,11 @@ public final class EngineSupervisor {
                         self.log("engine: its interface version is \(h.interfaceVersion.map(String.init) ?? "not given"), "
                                  + "this Bandroom is built for \(Wire.interfaceVersion): nothing more is asked of it")
                         // But for one thing: the engine opens a pairing code at start that works until it is closed,
-                        // and no Pair window will ever close this one. Closing opens nothing; if it fails, it fails.
-                        _ = try? await client.closePairing()
+                        // and no Pair window will ever close this one. Closing opens nothing; a close that fails is
+                        // logged, since the code then stays open until the engine stops.
+                        do { _ = try await client.closePairing() } catch {
+                            self.log("engine: the pairing code it opened at start could not be closed: \(error)")
+                        }
                     }
                     return
                 }

@@ -213,7 +213,7 @@ struct YourComputerSection: View {
                 case .pending: continue
                 case .approved(let result):
                     approval = nil
-                    await app.connection.adopt(result, address: url, fallbackName: "Brasscribe on \(name)")
+                    app.connection.adopt(result, address: url)
                     paired(name: app.connection.serverName)
                     return
                 case .denied:
@@ -229,6 +229,7 @@ struct YourComputerSection: View {
         } catch TranscriptionError.interfaceMismatch(let which) {
             approval = nil
             message = ConnectionCopy.update(which)
+            app.connection.poke()
         } catch {
             approval = nil
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
@@ -241,13 +242,14 @@ struct YourComputerSection: View {
         let url = URL(string: app.companionURL) ?? URL(string: "http://localhost:8765")!
         do {
             let r = try await CompanionService(baseURL: url).pair(code: code, deviceName: AppModel.deviceName, platform: AppModel.platform)
-            await app.connection.adopt(r, address: url)
+            app.connection.adopt(r, address: url)
             self.code = ""
             paired(name: app.connection.serverName)
         } catch TranscriptionError.pairingRejected {
             message = String(localized: "That code didn't work. Check the six digits on the computer, or choose the computer above and allow it there.")
         } catch TranscriptionError.interfaceMismatch(let which) {
             message = ConnectionCopy.update(which)
+            app.connection.poke()
         } catch {
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
         }
@@ -268,6 +270,7 @@ struct YourComputerSection: View {
             message = String(localized: "That code has been used or has run out. Show a new one on the computer, or choose the computer above and allow it there.")
         } catch TranscriptionError.interfaceMismatch(let which) {
             message = ConnectionCopy.update(which)
+            app.connection.poke()
         } catch {
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
         }

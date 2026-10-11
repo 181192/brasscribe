@@ -1,4 +1,5 @@
 import Foundation
+import TranscriptionKit
 
 /// Something went wrong. Every problem says what happened (title), why (one or two
 /// reasons), and offers the way forward (actions, the most likely fix first). The
@@ -9,6 +10,8 @@ enum Problem: Hashable, Identifiable {
     case cantOpenFile(String)
     case notAScore(String)
     case arrangeFailed(String)
+    /// A score on the computer was asked for, and the computer's interface version is not this app's.
+    case needsUpdate(InterfaceMatch.Update)
 
     enum Action: Hashable { case importFile, recordMic, home }
 
@@ -21,6 +24,7 @@ enum Problem: Hashable, Identifiable {
         case .cantOpenFile: return String(localized: "This file can't be opened")
         case .notAScore: return String(localized: "This isn't a score Brasscribe can read")
         case .arrangeFailed: return String(localized: "The score couldn't be arranged")
+        case .needsUpdate: return String(localized: "An update is needed first")
         }
     }
 
@@ -46,6 +50,8 @@ enum Problem: Hashable, Identifiable {
             return [String(localized: "Brasscribe opens MusicXML scores and its own score files.")]
         case .arrangeFailed:
             return [String(localized: "Brasscribe couldn't make brass-band parts from this score.")]
+        case .needsUpdate(let which):
+            return [ConnectionCopy.update(which)]
         }
     }
 
@@ -69,6 +75,7 @@ enum Problem: Hashable, Identifiable {
         case .copyProtected, .silence: return [.importFile, .recordMic]
         case .cantOpenFile, .notAScore: return [.importFile, .recordMic]
         case .arrangeFailed: return [.importFile, .home]
+        case .needsUpdate: return [.home]
         }
     }
 }

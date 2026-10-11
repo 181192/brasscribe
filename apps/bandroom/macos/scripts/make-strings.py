@@ -245,8 +245,8 @@ NB = {
     "The instrument separator isn't downloaded yet.": "Instrumentskilleren er ikke lastet ned ennå.",
     "The key is saved in your Keychain.": "Nøkkelen er lagret i nøkkelringen.",
     "The key may have been deleted or have expired.": "Nøkkelen kan være slettet eller utløpt.",
-    "The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.":
-        "Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
+    "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.":
+        "Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
     "The phone keeps the recording and can send it again.": "Telefonen beholder opptaket og kan sende det på nytt.",
     "The phone shows the number:": "Telefonen viser tallet:",
     "The phone shows the number: %@": "Telefonen viser tallet: %@",
@@ -295,8 +295,12 @@ NB = {
     "Brasscribe on this computer is newer than this copy of Bandroom, and they only work together when both are up to date.":
         "Brasscribe på denne datamaskinen er nyere enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert.",
     "This copy of Bandroom is newer than the Brasscribe it runs, and they only work together when both are up to date.":
-        "Denne utgaven av Bandroom er nyere enn den Brasscribe den kjører, og de virker bare sammen når begge er oppdatert.",
-    "The previous version is still running, so phones can keep sending recordings.": "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før.",
+        "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og de virker bare sammen når begge er oppdatert.",
+    "This copy of Bandroom is newer than the Brasscribe it runs, and has no newer one to put in its place. The latest Bandroom has one that works.":
+        "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og har ingen nyere å sette inn i stedet. Den nyeste Bandroom har en som virker.",
+    "This copy of Bandroom is newer than the Brasscribe it runs, which comes from a developer checkout. Update the checkout, then restart Brasscribe.":
+        "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og den kommer fra en utviklerkopi. Oppdater kopien, og start så Brasscribe på nytt.",
+    "The update didn't finish, and the previous version was put back.": "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake.",
     "Updating Brasscribe…": "Oppdaterer Brasscribe …",
     "Engine build": "Motorbygg",
     "Workspace": "Arbeidsområde",

@@ -3,7 +3,8 @@ import Foundation
 /// The number Bandroom shares with the engine it runs.
 public enum Wire {
     /// The interface version this Bandroom is built for. The engine says its own in `GET /v1/health`; when the two
-    /// differ Bandroom says which of them is behind and asks that engine nothing else (`InterfaceMatch`).
+    /// differ Bandroom says which of them is behind and asks that engine nothing else, but for closing the pairing
+    /// code it opened at start (`InterfaceMatch`, `EngineSupervisor`).
     public static let interfaceVersion = 1
 }
 
@@ -29,5 +30,24 @@ public enum InterfaceMatch: Equatable, Sendable {
     /// The one that is behind, nil when they match.
     public var behind: Behind? {
         if case .mismatch(let b) = self { b } else { nil }
+    }
+}
+
+/// What Bandroom offers to do about an engine with another interface version.
+public enum MismatchFix: Equatable, Sendable {
+    /// A newer Bandroom, from the latest release.
+    case getBandroom
+    /// Bring the installed engine up to this build of Bandroom.
+    case updateEngine
+    /// Nothing: the engine runs from a developer checkout, and whoever keeps the checkout updates it.
+    case none
+
+    /// Bandroom behind: a newer Bandroom. The engine behind: update it, but only where that can change something.
+    /// An installed engine that already is this build's (`engineIsThisApps`), or is still behind after an update
+    /// (`updateTried`), would come back the same, so the fix is the Bandroom that ships a newer one.
+    public static func of(behind: InterfaceMatch.Behind, source: EngineSource, engineIsThisApps: Bool, updateTried: Bool) -> MismatchFix {
+        guard behind == .engine else { return .getBandroom }
+        guard case .installed = source else { return .none }
+        return engineIsThisApps || updateTried ? .getBandroom : .updateEngine
     }
 }

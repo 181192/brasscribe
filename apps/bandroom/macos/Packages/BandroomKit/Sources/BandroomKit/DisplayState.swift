@@ -8,7 +8,8 @@ public enum Problem: Equatable, Sendable {
     case missingDownload([ModelComponent])
     case noFreePort
     /// The app was updated but its engine couldn't be. The previous one is back, and runs when this app can still
-    /// start it (`EngineSource.startsAfterUpdate`); when it can't, nothing runs. The fix tries the update again.
+    /// start it (`EngineSource.startsAfterUpdate`); when it can't, nothing runs, and when its interface version is
+    /// not this Bandroom's, phones can't use it. The fix tries the update again.
     case updateFailed
     /// As `updateFailed`, because pixi refused the new workspace (too old for it). The fix is a newer Bandroom. With
     /// no engine running because a start was refused, the problem is `pixiTooOld`.
@@ -18,10 +19,10 @@ public enum Problem: Equatable, Sendable {
     /// The pixi this app bundles is too old for its engine: first-run setup or a start was refused, so no engine
     /// runs. The fix is a newer Bandroom.
     case pixiTooOld(PixiRefusal)
-    /// The engine answers, but its interface version is not this Bandroom's (`InterfaceMatch`): nothing else is asked
+    /// The engine answers, but its interface version is not this Bandroom's (`InterfaceMatch`): nothing more is asked
     /// of it, so no phone can be paired here and nothing is shown of it. The fix is a newer Bandroom when Bandroom is
-    /// the one behind, and updating the engine when the engine is.
-    case interfaceMismatch(InterfaceMatch.Behind)
+    /// the one behind, and when the engine is, what `MismatchFix.of` says.
+    case interfaceMismatch(InterfaceMatch.Behind, fix: MismatchFix)
 
     /// Shown even while setting up: setup can't get past it.
     public var outranksSetup: Bool {

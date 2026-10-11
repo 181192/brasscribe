@@ -55,7 +55,7 @@ enum Catalogue {
     static let text = TextFit(fonts: ["InstrumentSerif-Regular"])
 
     /// A model of its own, on canned engine answers (`DemoEngine`): BANDROOM_DEMO, BANDROOM_DEMO_REQUEST and
-    /// BANDROOM_DEMO_INTERFACE ("older" or "newer": an engine with another interface version) are read when it starts.
+    /// BANDROOM_DEMO_INTERFACE ("older", "older-checkout" or "newer": an engine with another interface version) are read when it starts.
     static func model(busy: Bool, request: Bool = false, interface: String? = nil) async -> AppModel {
         AXTree.enableInProcess()
         setenv("BANDROOM_DEMO", busy ? "busy" : "idle", 1)

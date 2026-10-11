@@ -17,6 +17,8 @@ import Testing
         /// The engine's interface version is behind Bandroom's, or ahead of it: the panel says which to update.
         case panelUpdateEngine = "panel-update-engine"
         case panelUpdateBandroom = "panel-update-bandroom"
+        /// The engine behind comes from a developer checkout: other words, and no button that would do nothing.
+        case panelUpdateCheckout = "panel-update-checkout"
         case pairUpdate = "pair-update"
         case phones
         case pair
@@ -77,6 +79,7 @@ import Testing
         case .panelReady, .pair, .settings: await Catalogue.model(busy: false)
         case .panelUpdateEngine, .pairUpdate: await Catalogue.model(busy: false, interface: "older")
         case .panelUpdateBandroom: await Catalogue.model(busy: false, interface: "newer")
+        case .panelUpdateCheckout: await Catalogue.model(busy: false, interface: "older-checkout")
         case .panelSettingUp, .setupCheck, .setupLicence, .setupDownload, .setupReady:
             await {
                 let app = await Catalogue.model(busy: false)
@@ -89,7 +92,7 @@ import Testing
 
     private func view(for screen: Screen, app: AppModel) -> AnyView {
         switch screen {
-        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom:
+        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout:
             app.panelPage = .status
             return AnyView(StatusPanel().background(Color.Scribe.bg))
         case .phones:
@@ -107,7 +110,7 @@ import Testing
     /// The window's width: the panel's 360 pt, the others at their smallest.
     private func width(of screen: Screen) -> CGFloat {
         switch screen {
-        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .phones: 360
+        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout, .phones: 360
         case .pair, .pairUpdate: 720
         case .setupCheck, .setupLicence, .setupDownload, .setupReady: 760
         case .settings: 480
@@ -118,7 +121,7 @@ import Testing
     private func waitsFor(_ screen: Screen, _ app: AppModel) -> String? {
         switch screen {
         case .pair: app.pairing.displayCode != nil ? nil : "its pairing code is not there yet"
-        case .pairUpdate: app.interfaceMismatch != nil ? nil : "the engine's other interface version is not known yet"
+        case .pairUpdate: app.pairingBlocker != nil ? nil : "the engine's other interface version is not known yet"
         case .panelRequest: !app.monitor.requests.isEmpty ? nil : "its request is not there yet"
         case .phones: !app.monitor.devices.isEmpty ? nil : "its phones are not there yet"
         default: nil

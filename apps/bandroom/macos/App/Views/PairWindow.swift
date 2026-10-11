@@ -8,6 +8,8 @@ struct PairWindow: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismissWindow) private var dismissWindow
     @State private var helpOpen = false
+    /// One of the two needed an update while this window was open; said once pairing is open again.
+    @State private var pairingWasBlocked = false
     @AccessibilityFocusState private var pairedFocused: Bool
 
     private var pairing: PairingModel { app.pairing }
@@ -22,18 +24,28 @@ struct PairWindow: View {
                 .brFont(.body).foregroundStyle(Color.Scribe.textMuted)
                 .padding(.bottom, 20)
 
-            if let behind = app.interfaceMismatch {
+            if let blocker = app.pairingBlocker {
                 // No code is made on an engine with another interface version, so there is nothing to scan or type:
-                // only what to update first.
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.Scribe.warning).accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(Strings.problemTitle(.interfaceMismatch(behind))).brFont(.bodyStrong)
-                        Text(Strings.interfaceMismatch(behind)).brFont(.body).fixedSize(horizontal: false, vertical: true)
+                // only what to update first, with the same fix as on the panel.
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.Scribe.warning).accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(Strings.problemTitle(blocker)).brFont(.bodyStrong)
+                            Text(Strings.problemWhy(blocker)).brFont(.body).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                    HStack(spacing: 8) {
+                        if let fix = Strings.problemFix(blocker) {
+                            Button { app.fix(blocker) } label: { Text(fix) }.buttonStyle(.brOutline)
+                        }
+                        if blocker.pixiRefusal != nil {
+                            Button { app.copyDiagnostics() } label: { Text("Copy details for the tech person") }.buttonStyle(.brPlain)
+                        }
                     }
                 }
                 .card(padding: 14)
-                .accessibilityElement(children: .combine)
             } else {
                 HStack(alignment: .top, spacing: 28) {
                     VStack(alignment: .leading, spacing: 18) {
@@ -45,18 +57,21 @@ struct PairWindow: View {
                 }
             }
 
-            Disclosure(title: "Phone doesn't show this computer?", isExpanded: $helpOpen) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Check that both are on the same Wi-Fi.").brFont(.callout)
-                    if let a = pairing.address {
-                        Text("Or type this address in Brasscribe on the phone: \(a.ip), port \(a.port)")
-                            .brFont(.callout)
-                            .textSelection(.enabled)
-                            .accessibilityLabel(Text("Or type this address in Brasscribe on the phone: \(Strings.addressForVoiceOver(a.ip)), port \(a.port)"))
+            // not while one of the two needs an update: no phone can be paired, whatever it shows
+            if app.pairingBlocker == nil {
+                Disclosure(title: "Phone doesn't show this computer?", isExpanded: $helpOpen) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Check that both are on the same Wi-Fi.").brFont(.callout)
+                        if let a = pairing.address {
+                            Text("Or type this address in Brasscribe on the phone: \(a.ip), port \(a.port)")
+                                .brFont(.callout)
+                                .textSelection(.enabled)
+                                .accessibilityLabel(Text("Or type this address in Brasscribe on the phone: \(Strings.addressForVoiceOver(a.ip)), port \(a.port)"))
+                        }
                     }
                 }
+                .padding(.top, 18)
             }
-            .padding(.top, 18)
 
             Divider().padding(.vertical, 16)
             HStack {
@@ -89,6 +104,19 @@ struct PairWindow: View {
             guard let name else { return }
             AccessibilityNotification.Announcement(String(localized: "\(name) is paired.")).post()
             pairedFocused = true
+        }
+        // the window changes under VoiceOver: what to update first, and when a code is there again
+        .onChange(of: app.pairingBlocker) { was, blocker in
+            if let blocker {
+                AccessibilityNotification.Announcement("\(Strings.problemTitle(blocker)). \(Strings.problemWhy(blocker))").post()
+            } else if was != nil {
+                pairingWasBlocked = true
+            }
+        }
+        .onChange(of: pairing.phase) { _, phase in
+            guard phase == .open, pairingWasBlocked else { return }
+            pairingWasBlocked = false
+            AccessibilityNotification.Announcement(String(localized: "Waiting for a phone…")).post()
         }
         .onChange(of: pairing.isLockedOut) { _, locked in
             if locked { AccessibilityNotification.Announcement(String(localized: "Too many wrong codes. Wait a moment, or allow the phone here.")).post() }

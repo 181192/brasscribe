@@ -167,6 +167,11 @@ import TranscriptionKit
         try await window("problem-silence", app: full) { ProblemView(problem: .silence) }
 
         try await sheet("settings", app: full) { SettingsView() }
+        // Your computer while one of the two needs an update: the words, where to get it, and Forget this computer
+        for (name, update) in [("settings-update-computer", InterfaceMatch.Update.computer), ("settings-update-app", .app)] {
+            let app = LayoutFixtures.app(connection: .mismatch(serverName: "Brasscribe on Studio Mac", update: update))
+            try await sheet(name, app: app) { SettingsView() }
+        }
         try await sheet("what-you-play", app: full) { NavigationStack { WhatDoYouPlayView(mode: .settings, initial: full.seat) { _ in } } }
         let exportModel = try await LayoutFixtures.model(piece)
         try await sheet("export", app: full) { ExportView(model: exportModel) }

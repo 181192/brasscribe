@@ -3,7 +3,8 @@ import BandroomKit
 import Foundation
 
 /// Canned engine answers for screenshots (BANDROOM_DEMO=busy|idle): the mockup's band, no engine running.
-/// BANDROOM_DEMO_INTERFACE=older|newer gives it another interface version than this Bandroom's.
+/// BANDROOM_DEMO_INTERFACE=older|newer gives it another interface version than this Bandroom's; older-checkout is
+/// the older one in an engine from a developer checkout.
 final class DemoEngine: EngineAPI, @unchecked Sendable {
     let busy: Bool
     private let lock = NSLock()
@@ -15,7 +16,7 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
     /// This Bandroom's own interface version, unless BANDROOM_DEMO_INTERFACE asks for the one before or after it.
     let interfaceVersion: Int = {
         switch ProcessInfo.processInfo.environment["BANDROOM_DEMO_INTERFACE"] {
-        case "older": Wire.interfaceVersion - 1
+        case "older", "older-checkout": Wire.interfaceVersion - 1
         case "newer": Wire.interfaceVersion + 1
         default: Wire.interfaceVersion
         }

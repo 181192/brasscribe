@@ -274,8 +274,11 @@ import Testing
         #expect(monitor.status == nil && monitor.health == nil)
         // its health, and the closing of the code it opened at start; nothing is opened, nothing is polled
         #expect(engine.calls == ["health", "close"])
-        #expect(DisplayState.resolve(setupPercent: nil, phase: sup.phase, updating: false, problems: [.interfaceMismatch(behind)], jobPercent: nil)
-                == .attention(.interfaceMismatch(behind)))
+        let problem = Problem.interfaceMismatch(behind, fix: .getBandroom)
+        #expect(DisplayState.resolve(setupPercent: nil, phase: sup.phase, updating: false, problems: [problem], jobPercent: nil) == .attention(problem))
+        // an update that failed is why the engine is behind: listed first, it is what the panel leads with
+        #expect(DisplayState.resolve(setupPercent: nil, phase: sup.phase, updating: false, problems: [.updateFailed, problem], jobPercent: nil)
+                == .attention(.updateFailed))
         sup.stop()
         await settle()
         #expect(sup.interfaceMismatch == nil)

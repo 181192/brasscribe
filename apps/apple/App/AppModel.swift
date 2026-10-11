@@ -31,7 +31,8 @@ final class AppModel {
     var pieces: [Piece] = Piece.loadAll() { didSet { rebuildScores() } }
     /// "Your scores": this device's pieces and the computer's latest finished scores.
     private(set) var scores: [ScoreEntry] = ScoreEntry.merge(pieces: Piece.loadAll(), jobs: [])
-    private var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
+    /// The computer's runs as it last listed them; empty whenever it is not connected (`connectionChanged`).
+    var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
     var openingScore: String?
     /// The part the next score opens on ("Show my part" in Review).
     var showPartOnOpen: String?
@@ -214,16 +215,37 @@ final class AppModel {
 
     private func rebuildScores() { scores = ScoreEntry.merge(pieces: pieces, jobs: computerJobs) }
 
-    /// Fetch the computer's finished scores; silently keeps the local list when it is not reachable. A computer
-    /// with another interface version is not asked for them, and the ones listed from before go: they can't be opened.
+    /// Fetch the computer's finished scores. When they can't be had (the computer is not reachable, or has another
+    /// interface version and is not asked), the ones listed from before go: they could not be opened. This device's
+    /// own scores are never touched.
     func refreshComputerScores() async {
         guard !useFixtureService, let svc = service() as? CompanionService else { computerJobs = []; return }
         do {
             computerJobs = try await svc.jobs()
-        } catch TranscriptionError.interfaceMismatch {
+        } catch {
             computerJobs = []
-            connection.poke()
-        } catch {}
+            refused(error)
+        }
+    }
+
+    /// The connection to the computer changed: its scores are fetched again when it is there, and go when it is not.
+    func connectionChanged() async {
+        if case .connected = connection.state { await refreshComputerScores() } else { computerJobs = [] }
+    }
+
+    /// The computer was asked for something and has another interface version than this app's (nothing was sent):
+    /// the connection row is checked at once, so it says which of the two to update. Returns which, nil for any
+    /// other error.
+    @discardableResult
+    func refused(_ error: Error) -> InterfaceMatch.Update? {
+        guard case TranscriptionError.interfaceMismatch(let which) = error else { return nil }
+        connection.poke()
+        return which
+    }
+
+    /// What went wrong with a score on the computer: the update words when its interface version is not this app's.
+    private func showComputerProblem(_ error: Error) {
+        if let which = refused(error) { show(.needsUpdate(which)) } else { show(.cantOpenFile(error.localizedDescription)) }
     }
 
     func open(_ entry: ScoreEntry, review: Bool = false) {
@@ -249,7 +271,7 @@ final class AppModel {
             refresh()
             path = [review ? .review(p) : .score(p)]
         } catch {
-            show(.cantOpenFile(error.localizedDescription))
+            showComputerProblem(error)
         }
     }
 
@@ -262,7 +284,7 @@ final class AppModel {
             Task {
                 guard let svc = service() as? CompanionService else { return }
                 do { try await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
-                catch { show(.cantOpenFile(error.localizedDescription)) }
+                catch { showComputerProblem(error) }
             }
         }
     }
@@ -273,7 +295,7 @@ final class AppModel {
         case .computer(let jobID):
             Task {
                 guard let svc = service() as? CompanionService else { return }
-                try? await svc.deleteRun(jobID: jobID)
+                do { try await svc.deleteRun(jobID: jobID) } catch { if let which = refused(error) { show(.needsUpdate(which)) } }
                 await refreshComputerScores()
             }
         }
@@ -289,7 +311,11 @@ final class AppModel {
             try updated.save()
             pieces[index] = updated
             if let jobID = updated.remoteJobID, let svc = service() as? CompanionService, !useFixtureService {
-                Task { try? await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
+                // the score is renamed on this device either way; the computer's copy follows when it can
+                Task {
+                    do { try await svc.rename(jobID: jobID, title: cleaned) } catch { refused(error) }
+                    await refreshComputerScores()
+                }
             }
         } catch {
             show(.notAScore(error.localizedDescription))

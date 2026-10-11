@@ -264,7 +264,7 @@ struct SetupView: View {
                         .buttonStyle(BRButtonStyle(kind: .primary, height: 40)).keyboardShortcut(.defaultAction)
                 } else if case .failed = boot, let refusal = app.bootstrapper.pixiRefusal {
                     Button { app.copyDiagnostics() } label: { Text("Copy details for the tech person") }.buttonStyle(.brPlain)
-                    Button { app.openLatestRelease() } label: { Text(Strings.problemFix(.pixiTooOld(refusal))) }
+                    Button { app.openLatestRelease() } label: { Text(Strings.problemFix(.pixiTooOld(refusal)) ?? "") }
                         .buttonStyle(BRButtonStyle(kind: .primary, height: 40))
                 } else if case .failed = boot {
                     Button { run() } label: { Text("Try again") }.buttonStyle(BRButtonStyle(kind: .primary, height: 40))

@@ -141,26 +141,17 @@ struct StatusPanel: View {
             Button { app.copyDiagnostics() } label: { Text("Copy details for the tech person") }
                 .buttonStyle(.brPlain)
         case .attention(let p):
-            Button { fix(p) } label: { Text(Strings.problemFix(p)) }
-                .buttonStyle(.brPrimary).focused($primaryFocused)
+            // a problem Bandroom can't fix itself has no button: one that did nothing would be worse than none
+            if let fix = Strings.problemFix(p) {
+                Button { app.fix(p) } label: { Text(fix) }
+                    .buttonStyle(.brPrimary).focused($primaryFocused)
+            }
             if p.pixiRefusal != nil {
                 Button { app.copyDiagnostics() } label: { Text("Copy details for the tech person") }
                     .buttonStyle(.brPlain)
             }
         case .starting, .updating:
             EmptyView()
-        }
-    }
-
-    private func fix(_ p: Problem) {
-        switch p {
-        case .lowDisk: app.openStorageSettings()
-        case .missingDownload: app.openWindow("setup")
-        case .noFreePort: app.tryAgain()
-        case .updateFailed: app.retryUpdate()
-        case .notResponding: app.restartNow()
-        case .pixiTooOld, .updateRefused, .interfaceMismatch(.bandroom): app.openLatestRelease()
-        case .interfaceMismatch(.engine): app.updateEngine()
         }
     }
 
