@@ -7,4 +7,7 @@
     <color name="window_dark">#FF15171A</color>
     <color name="window_pink">#FFFAF8F3</color>
     <color name="window_pink_dark">#FF15171A</color>
+    <!-- With the phone's high contrast on: the bg of the high-contrast palettes. -->
+    <color name="window_contrast_light">#FFFFFFFF</color>
+    <color name="window_contrast_dark">#FF000000</color>
 </resources>

@@ -226,7 +226,7 @@ struct TakeTests {
         #expect(known.stale("score-contrast", picture: picture(upper: false, lower: false), nodes: [title, row], bounds: view) == nil)
         // one is drawn now
         let drawn = known.stale("score-contrast", picture: picture(upper: true, lower: false), nodes: [title, row], bounds: view)
-        #expect(drawn == "score-contrast: listed as unreadable (#1), but drawn or not on the screen: “Speed”. Take it out of the list.")
+        #expect(drawn == "score-contrast: listed as unreadable (#1), but readable or not on the screen: “Speed”. Take it out of the list.")
         // one is no longer on the screen: that is not "missing from the picture"
         let gone = known.stale("score-contrast", picture: picture(upper: false, lower: false), nodes: [row], bounds: view)
         #expect(gone?.contains("“Speed”") == true && gone?.contains("“Bar 1”") == false)

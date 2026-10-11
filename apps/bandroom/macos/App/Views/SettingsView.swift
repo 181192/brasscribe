@@ -17,7 +17,7 @@ struct SettingsView: View {
                 Toggle("Start when I log in", isOn: Binding(get: { app.loginItemEnabled }, set: { app.setLoginItem($0) }))
                 Toggle("Show in the Dock", isOn: Binding(get: { app.showInDock }, set: { app.showInDock = $0 }))
                 Text("For when the Brasscribe mark is hidden in the menu bar, for example behind the camera notch.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Color.Scribe.textMuted)
             }
             if app.offersCustomComputerName {
                 Section("Name shown to phones") {
@@ -25,7 +25,7 @@ struct SettingsView: View {
                         .onSubmit { app.setCustomComputerName(shownName) }
                     HStack {
                         Text("Phones list this Mac as “Brasscribe on \(app.shownComputerName)”.")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(Color.Scribe.textMuted)
                         Spacer()
                         Button("Use this name") { app.setCustomComputerName(shownName) }
                             .disabled(shownName.trimmingCharacters(in: .whitespaces) == app.customComputerName)
@@ -36,6 +36,7 @@ struct SettingsView: View {
             Section("Where downloads are kept") {
                 LabeledContent("Data folder") {
                     Text(app.paths.data.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")).textSelection(.enabled)
+                        .foregroundStyle(Color.Scribe.textMuted)
                 }
             }
             Section("Hugging Face access") {
@@ -53,7 +54,7 @@ struct SettingsView: View {
                 // Increase Contrast wins: the choice stays, and AppKit uses the high-contrast colours in either mode.
                 if contrast == .increased {
                     Text("Increase contrast is on, so Brasscribe uses its high-contrast colours.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(Color.Scribe.textMuted)
                 }
             }
             Section("Text size") {
@@ -67,12 +68,17 @@ struct SettingsView: View {
             }
             Section("Details for the band's tech person") {
                 TextField("Engine from a checkout (folder with pixi.toml)", text: $checkout)
-                Text("Takes effect the next time Brasscribe starts.").font(.caption).foregroundStyle(.secondary)
+                Text("Takes effect the next time Brasscribe starts.").font(.caption).foregroundStyle(Color.Scribe.textMuted)
             }
         }
         .formStyle(.grouped)
+        // On the page's ground, with the notes in its muted text: the system's secondary colour on the window's own
+        // ground is too faint in the light appearance. The rows' own fills are the system's (a grouped form draws
+        // them whatever ground a row is given); the screen catalogue measures every text on them.
+        .scrollContentBackground(.hidden)
         .frame(width: 480)
         .padding(.vertical, 8)
+        .background(Color.Scribe.bg)
     }
 }
 

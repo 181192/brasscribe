@@ -194,14 +194,18 @@ struct SectionLabel: View {
     }
 }
 
-/// The brass progress bar: the one working brand moment (system.md §5).
+/// The brass progress bar: the one working brand moment (system.md §5). Under Increase Contrast the track's fill is
+/// the colour of the ground it lies on, so the track gets an edge in the strong border colour: how far there is to go
+/// can be seen.
 struct BrassProgress: View {
     let fraction: Double
+    @Environment(\.colorSchemeContrast) private var contrast
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.Scribe.secondary)
                 Capsule().fill(Color.Scribe.brand).frame(width: max(6, geo.size.width * min(1, max(0, fraction))))
+                if contrast == .increased { Capsule().strokeBorder(Color.Scribe.borderStrong, lineWidth: 1) }
             }
         }
         .frame(height: 6)

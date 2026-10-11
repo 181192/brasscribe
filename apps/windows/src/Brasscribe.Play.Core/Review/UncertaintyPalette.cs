@@ -55,7 +55,7 @@ public sealed record UncertaintyPalette(
     {
         ThemeKind.Dark => Rgb.Parse("#2C2A26"),
         ThemeKind.HighContrast => Rgb.Parse("#000000"),
-        _ => Rgb.Parse("#E8E5DE"),
+        _ => Rgb.Parse("#ECE9E2"),
     };
 
     public static readonly UncertaintyPalette Light = new(ThemeKind.Light,

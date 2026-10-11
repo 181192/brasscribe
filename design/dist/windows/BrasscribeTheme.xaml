@@ -60,7 +60,7 @@
             <Color x:Key="BcLoopEdgeColor">#FF8A5A00</Color>
             <Color x:Key="BcCursorColor">#FF6B3FA0</Color>
             <Color x:Key="BcCursorTintColor">#FFDED5E6</Color>
-            <Color x:Key="BcSelectionTintColor">#FFE8E5DE</Color>
+            <Color x:Key="BcSelectionTintColor">#FFECE9E2</Color>
             <Color x:Key="BcSelectionEdgeColor">#FF1B1A17</Color>
             <Color x:Key="BcModel1Color">#FF0072B2</Color>
             <Color x:Key="BcModel2Color">#FFA65E00</Color>
