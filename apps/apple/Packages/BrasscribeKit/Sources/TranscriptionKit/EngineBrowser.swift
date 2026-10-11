@@ -2,12 +2,12 @@ import Foundation
 import Network
 import Observation
 
-/// Finds engines on the local network that advertise `_brasscribe._tcp` (`scribe serve --lan`).
+/// Finds engines on the local network that advertise `_scribe._tcp` (`scribe serve --lan`).
 /// Discovery only suggests addresses; the engine still requires pairing. The TXT record carries the
 /// engine's stable `id` (matched against a stored credential) and `host`, the computer's own name.
 @MainActor @Observable
 public final class EngineBrowser {
-    public static let serviceType = "_brasscribe._tcp"
+    public static let serviceType = Wire.serviceType
 
     public struct Engine: Identifiable, Hashable, Sendable {
         /// The mDNS instance name ("Brasscribe on Studio", maybe with " (2)" after a name clash).

@@ -58,7 +58,7 @@ The app is made so that such a signature is enough. It asks for no entitlements 
 (`App/BrasscribePlay-iOS.entitlements` is empty): no app groups, push, iCloud or associated domains.
 The paired computer is kept in the Keychain without an access group, so it lands in the group the
 signature gives the app. Scores are in the app's own Application Support folder and settings in its own
-defaults, and nothing reads the bundle id. Finding the computer on the local network, the `brasscribe:`
+defaults, and nothing reads the bundle id. Finding the computer on the local network, the `scribe:`
 pairing address, the microphone, the camera and playing in the background are declared in `Info.plist`
 alone. The on-device models are not in the app: they download only once a download address is set in
 Settings (see "Offline solos" below).

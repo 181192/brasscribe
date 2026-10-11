@@ -134,7 +134,7 @@ The model: each phone pairs **once** and gets its own long-lived credential, whi
 The **Pair a phone** window offers three ways, easiest first. They all end in the same place.
 
 1. **Choose this computer on the phone, then allow it here.** No code at all: this is the WCAG 3.3.8 path, and it also works for VoiceOver and TalkBack users.
-   - The phone lists "Brasscribe on Kari's MacBook", found over the local network (mDNS, `_brasscribe._tcp`).
+   - The phone lists "Brasscribe on Kari's MacBook", found over the local network (mDNS, `_scribe._tcp`).
    - The user taps it, and the computer asks **Allow Kari's iPhone?**
    - The dialog shows a four-digit match number that the phone also shows. The user compares the numbers but never copies one.
    - A request waits 2 minutes, and at most three can wait at once (a phone that asks again replaces its own waiting request). If it lapses, the dialog says "This request has expired. Choose this computer on the phone again."
@@ -285,7 +285,7 @@ WantedBy=default.target
 | macOS format | `.dmg`, drag to Applications, no admin. Not `.pkg`: a `.pkg` needs an admin password and could install a LaunchAgent we don't need. | – |
 | macOS login | `SMAppService.mainApp` (the app itself), not a separate `SMAppService.agent` LaunchAgent for the engine. One process tree, one item in Login Items, and Stop means stop. | If the shell crashes, the engine child goes with it. That is acceptable: the next login or a relaunch restores it. |
 | macOS signing | Developer ID + hardened runtime + notarisation for the shell and the bundled `pixi` binary. | Environments built at runtime by pixi are **not quarantined**, so Gatekeeper doesn't assess them. Verify that nothing in the chain sets `com.apple.quarantine`. The engine runs as a separate process, so library validation in the shell doesn't apply to it. |
-| macOS Local Network | `NSLocalNetworkUsageDescription` and `NSBonjourServices` = `_brasscribe._tcp` in the shell's Info.plist. The setup step warns before the prompt appears. | Verify that the prompt and the permission are attributed to the shell, the responsible process, when the Python child registers the mDNS service and listens on the LAN. |
+| macOS Local Network | `NSLocalNetworkUsageDescription` and `NSBonjourServices` = `_scribe._tcp` in the shell's Info.plist. The setup step warns before the prompt appears. | Verify that the prompt and the permission are attributed to the shell, the responsible process, when the Python child registers the mDNS service and listens on the LAN. |
 | macOS firewall | Off by default. If it is on, the first LAN listen prompts for **python3.12** (unsigned by us), and the prompt names Python, not Brasscribe. | Bad for non-tech users. See "LAN front door" below. |
 | Windows format | MSIX with `runFullTrust`, per user, no admin. `uap5:StartupTask` for login. App Installer (`.appinstaller`) for auto-update; also listed in winget. | The **Microsoft Store is not recommended**: its policy on apps that download and run code that changes their function (pixi environments) is a risk. Distribute signed MSIX from the download page. |
 | Windows data | `%LOCALAPPDATA%\Brasscribe`. MSIX redirects AppData writes into the package's own store, which is **deleted on uninstall**. That is what we want for 10 GB of downloads. | Verify that the redirected path is what the Python child sees (it inherits the package context when launched by the packaged shell) and that the engine's `engine.json` is reachable by Play. |
@@ -331,7 +331,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 
 | Problem | Title (en) | Why, one sentence | Primary (the fix) | Secondary | Details for the band's tech person |
 |---|---|---|---|---|---|
-| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`; verify the pane URL on macOS 26 and 27) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_brasscribe._tcp` not advertised." |
+| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`; verify the pane URL on macOS 26 and 27) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_scribe._tcp` not advertised." |
 | Windows firewall blocked | Phones can't find this computer | Windows Firewall is blocking Brasscribe on this network. | **Allow on private networks** (runs an elevated helper; Windows asks for permission) | – | "Inbound TCP 8765 blocked for python.exe (profile: Private)." |
 | Network is Public (Windows) | Phones can't find this computer | This network is set to Public, so Windows hides this PC. If it's your home or band-room Wi-Fi, set it to Private. | **Open network settings** (`ms-settings:network-status`) | – | "Active profile: Public." |
 | Low disk | Space is running low | 2.1 GB free. Brasscribe needs 3 GB to make a score. | **Free up space…** (the system storage settings) | Delete old results (1.4 GB) | data folder path and size per folder |
@@ -688,7 +688,7 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
   - `extend: true` keeps the code and moves the expiry.
   - `GET /v1/pairing` reads the state; `DELETE /v1/pairing` closes it when the window closes.
   - The engine ignores spaces, so "482 913" can be typed as shown.
-- **The QR** is the `uri`: `brasscribe://pair?v=1&id=<server id>&name=<"Brasscribe on host">&h=<ip:port>[,…]&code=<6 digits>[&fp=<SPKI SHA-256>]`.
+- **The QR** is the `uri`: `scribe://pair?v=1&id=<server id>&name=<"Brasscribe on host">&h=<ip:port>[,…]&code=<6 digits>[&fp=<SPKI SHA-256>]`.
   - `id` is stable across address, port and restart.
   - `fp` appears once the engine serves TLS, and clients pin it.
 - **Wrong codes:** after 5 from one address, code entry is locked for that address for 30 s, doubling up to 15 min (after 20 from all addresses, for everyone; a new code lifts every lock). The engine answers 429 with `Retry-After`. It never swaps the code silently.

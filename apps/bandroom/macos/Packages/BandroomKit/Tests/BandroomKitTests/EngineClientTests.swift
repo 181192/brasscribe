@@ -41,7 +41,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
 }
 
 let pairingJSON = """
-{"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"3f9c2a7e","server_name":"Brasscribe on Kari's MacBook","hosts":["192.0.2.20:8765"],"fingerprint":null,"uri":"brasscribe://pair?v=1&id=3f9c2a7e&code=482913"}
+{"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"3f9c2a7e","server_name":"Brasscribe on Kari's MacBook","hosts":["192.0.2.20:8765"],"fingerprint":null,"uri":"scribe://pair?v=1&id=3f9c2a7e&code=482913"}
 """
 
 @Suite(.serialized) struct EngineClientTests {

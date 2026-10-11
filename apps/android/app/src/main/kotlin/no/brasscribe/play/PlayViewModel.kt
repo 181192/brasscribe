@@ -308,7 +308,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     /** Connected, looking for, offline or pair again: the status row on Home and in Settings. */
     val connection = ConnectionMonitor(viewModelScope, EngineConnection(container))
-    /** A pairing link (QR code or brasscribe://pair) waiting for the user to press Connect. */
+    /** A pairing link (QR code or scribe://pair) waiting for the user to press Connect. */
     val pendingLink = MutableStateFlow<PairLink?>(null)
     /** The four-digit code both screens show while the computer is asked to allow this phone. */
     val matchCode = MutableStateFlow<String?>(null)
@@ -1679,7 +1679,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         }
     }
 
-    /** A pairing link from a QR code or brasscribe://pair: shown on the connection screen, connected on Connect. */
+    /** A pairing link from a QR code or scribe://pair: shown on the connection screen, connected on Connect. */
     fun openPairLink(text: String): Boolean {
         val link = PairLink.parse(text)
         if (link == null) {

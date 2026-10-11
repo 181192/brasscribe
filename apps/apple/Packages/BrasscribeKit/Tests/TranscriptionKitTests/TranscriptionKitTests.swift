@@ -443,16 +443,16 @@ extension URLRequest {
     @Test @MainActor func pairingFromALinkAndUnpairing() async throws {
         StubEngine.requests = []
         let (m, store) = monitor([])
-        let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-1&name=Brasscribe%20on%20Studio&h=down.local:8765,engine.local:8765&code=123456"))
+        let link = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-1&name=Brasscribe%20on%20Studio&h=down.local:8765,engine.local:8765&code=123456"))
         #expect(try await m.pair(link: link, deviceName: "Kari's iPhone", platform: "ios") == nil)
         #expect(try store.record(serverID: "srv-1")?.token == "tok")
         #expect(m.record?.lastAddress == "http://engine.local:8765")
         m.suspend()
         // a link without a code: the address to ask for approval at
-        let noCode = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-1&name=x&h=engine.local:8765"))
+        let noCode = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-1&name=x&h=engine.local:8765"))
         #expect(try await m.pair(link: noCode, deviceName: "x", platform: "ios")?.absoluteString == "http://engine.local:8765")
         // a link for another engine is not paired with whatever answers at the address
-        let other = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-9&name=x&h=engine.local:8765&code=123456"))
+        let other = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-9&name=x&h=engine.local:8765&code=123456"))
         await #expect(throws: TranscriptionError.self) { try await m.pair(link: other, deviceName: "x", platform: "ios") }
 
         await m.forget()

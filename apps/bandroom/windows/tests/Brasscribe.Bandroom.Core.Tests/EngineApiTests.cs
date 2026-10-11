@@ -8,7 +8,7 @@ public sealed class EngineApiTests
 {
     private const string Pairing = """
         {"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"3f9c2a7e11","server_name":"Brasscribe on Kari's PC",
-         "hosts":["192.0.2.20:8765"],"fingerprint":null,"uri":"brasscribe://pair?v=1&id=3f9c2a7e11&code=482913"}
+         "hosts":["192.0.2.20:8765"],"fingerprint":null,"uri":"scribe://pair?v=1&id=3f9c2a7e11&code=482913"}
         """;
 
     private static (EngineApi Api, StubHandler Handler) Make()

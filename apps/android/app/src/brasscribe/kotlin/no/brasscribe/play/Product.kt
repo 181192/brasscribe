@@ -11,12 +11,9 @@ import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.ui.theme.LocalProductColors
 import no.brasscribe.play.ui.theme.ProductColors
 
-/** What makes this build Brasscribe: its name, its pairing link, the screens it opens with and the scores it makes. */
+/** What makes this build Brasscribe: its name, the screens it opens with and the scores it makes. */
 object Product {
     const val NAME = "Brasscribe"
-
-    /** The scheme of the pairing link in the computer's QR code. */
-    const val PAIR_SCHEME = "brasscribe"
 
     /** The band's sounds are in this app, so Settings offers the choice between them. */
     const val BAND_SOUNDS = true

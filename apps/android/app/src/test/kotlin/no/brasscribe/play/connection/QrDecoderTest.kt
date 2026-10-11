@@ -15,7 +15,7 @@ import org.junit.Test
  * plane, its rows padded past the width as a phone's camera pads them, the code somewhere in it.
  */
 class QrDecoderTest {
-    private val link = "brasscribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac" +
+    private val link = "scribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac" +
         "&h=192.168.0.20:8765,[fd00::5]:8765&code=482913&fp=abc_-DEF"
 
     /** A camera frame of [width] x [height] (rows [rowStride] bytes) with [text]'s QR code at ([left], [top]). */
@@ -97,7 +97,7 @@ class QrDecoderTest {
         val decoder = QrDecoder()
         assertNull(decoder.decode(ByteArray(640 * 480) { 128.toByte() }, 640, 480))
         assertEquals(link, decoder.decode(frame(link), 640, 480, 704))
-        assertEquals("brasscribe://pair?v=1&id=a&h=10.0.0.2:8765&code=1",
-            decoder.decode(frame("brasscribe://pair?v=1&id=a&h=10.0.0.2:8765&code=1", left = 20, top = 20), 640, 480, 704))
+        assertEquals("scribe://pair?v=1&id=a&h=10.0.0.2:8765&code=1",
+            decoder.decode(frame("scribe://pair?v=1&id=a&h=10.0.0.2:8765&code=1", left = 20, top = 20), 640, 480, 704))
     }
 }

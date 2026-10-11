@@ -73,12 +73,12 @@
                 <data android:mimeType="application/vnd.recordare.musicxml+xml" />
                 <data android:mimeType="application/vnd.recordare.musicxml" />
             </intent-filter>
-            <!-- Pairing link from the computer's QR code: brasscribe://pair?v=1&id=…&h=…&code=… -->
+            <!-- Pairing link from the computer's QR code: scribe://pair?v=1&id=…&h=…&code=… -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="brasscribe" android:host="pair" />
+                <data android:scheme="scribe" android:host="pair" />
             </intent-filter>
         </activity>
 

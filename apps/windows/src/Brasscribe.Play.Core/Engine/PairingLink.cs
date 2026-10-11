@@ -7,12 +7,27 @@ public enum PairingLinkProblem { None, NotAPairingLink, NewerVersion, BadServerI
 
 /// <summary>
 /// The pairing payload the computer shows as a QR code and link:
-/// <c>brasscribe://pair?v=1&amp;id=&lt;server_id&gt;&amp;name=&lt;name&gt;&amp;h=ip:port,...&amp;code=&lt;6 digits&gt;[&amp;fp=&lt;spki&gt;]</c>
+/// <c>scribe://pair?v=1&amp;id=&lt;server_id&gt;&amp;name=&lt;name&gt;&amp;h=ip:port,...&amp;code=&lt;6 digits&gt;[&amp;fp=&lt;spki&gt;]</c>
 /// (docs/plan/pairing-and-remote-access.md §4.2). Unknown keys are ignored.
 /// </summary>
 public sealed record PairingLink(string ServerId, string ServerName, IReadOnlyList<Uri> Hosts, string? Code, string? Fingerprint)
 {
-    public const string Scheme = "brasscribe";
+    /// <summary>
+    /// The pairing link inside a command line or a launch argument, or null. The scheme must start a word:
+    /// a link under another scheme that merely ends in this one's letters is not a pairing link.
+    /// </summary>
+    public static string? In(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return null;
+        string scheme = Wire.PairScheme + ":";
+        for (int at = text.IndexOf(scheme, StringComparison.OrdinalIgnoreCase); at >= 0;
+             at = text.IndexOf(scheme, at + 1, StringComparison.OrdinalIgnoreCase))
+        {
+            if (at > 0 && !char.IsWhiteSpace(text[at - 1]) && text[at - 1] != '"') continue;
+            return text[at..].Trim().Trim('"').Split(' ')[0].Trim('"');
+        }
+        return null;
+    }
 
     /// <summary>
     /// Parses a link. A major version other than 1 or a server id that is not 32 hex digits is refused.
@@ -23,7 +38,7 @@ public sealed record PairingLink(string ServerId, string ServerName, IReadOnlyLi
     {
         link = null;
         if (string.IsNullOrWhiteSpace(text) || !Uri.TryCreate(text.Trim(), UriKind.Absolute, out var uri)
-            || !uri.Scheme.Equals(Scheme, StringComparison.OrdinalIgnoreCase)
+            || !uri.Scheme.Equals(Wire.PairScheme, StringComparison.OrdinalIgnoreCase)
             || !uri.Host.Equals("pair", StringComparison.OrdinalIgnoreCase))
             return PairingLinkProblem.NotAPairingLink;
 

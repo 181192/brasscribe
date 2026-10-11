@@ -149,7 +149,7 @@ struct YourComputerSection: View {
                 .accessibilityIdentifier("pairingLink")
             Button("Use link") {
                 if let link = PairingLink(string: linkText) { Task { await pair(link) } }
-                else { message = String(localized: "That isn't a Brasscribe pairing link. It starts with brasscribe://pair.") }
+                else { message = String(localized: "That isn't a Brasscribe pairing link. It starts with scribe://pair.") }
             }
             .disabled(linkText.isEmpty || busy)
         }
@@ -331,7 +331,7 @@ struct QRScannerSheet: View {
 
             func dataScanner(_ scanner: DataScannerViewController, didAdd items: [RecognizedItem], allItems: [RecognizedItem]) {
                 for case let .barcode(code) in items {
-                    guard !done, let text = code.payloadStringValue, text.lowercased().hasPrefix("brasscribe://") else { continue }
+                    guard !done, let text = code.payloadStringValue, text.lowercased().hasPrefix(Wire.pairScheme + "://") else { continue }
                     done = true
                     scanner.stopScanning()
                     found(text)

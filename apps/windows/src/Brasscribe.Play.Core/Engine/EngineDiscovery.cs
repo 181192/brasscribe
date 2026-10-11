@@ -42,13 +42,13 @@ public interface IEngineDiscovery
 }
 
 /// <summary>
-/// Finds engines that advertise <c>_brasscribe._tcp</c> over mDNS (<c>scribe serve --lan</c>).
+/// Finds engines that advertise <c>_scribe._tcp</c> over mDNS (<c>scribe serve --lan</c>).
 /// Queries go out from an ephemeral port, so responders answer by unicast (RFC 6762 §6.7) and nothing
 /// competes with the Windows mDNS service for port 5353. Discovery only suggests addresses; pairing is still required.
 /// </summary>
 public sealed class EngineDiscovery : IEngineDiscovery
 {
-    public const string ServiceType = "_brasscribe._tcp.local";
+    public const string ServiceType = Wire.ServiceType + ".local";
     private static readonly IPEndPoint Group = new(IPAddress.Parse("224.0.0.251"), 5353);
 
     public async Task<IReadOnlyList<DiscoveredEngine>> BrowseAsync(TimeSpan duration, CancellationToken ct = default)

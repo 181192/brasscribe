@@ -388,7 +388,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// A brasscribe://pair link (the QR code, or the link opened on this PC): the first listed address that
+    /// A scribe://pair link (the QR code, or the link opened on this PC): the first listed address that
     /// answers with the link's server id, else that id on the network; then the code in the link, or, when
     /// there is none, the approve-on-the-computer path.
     /// </summary>

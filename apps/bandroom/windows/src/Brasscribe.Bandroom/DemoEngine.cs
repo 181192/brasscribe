@@ -33,7 +33,7 @@ internal sealed class DemoEngine : IEngineApi
 
     private PairingState State() => new(_open, _open ? _code.ToString() : null, null, true, "3f9c2a7e5d1b", "Brasscribe on Kari's PC",
         ["192.0.2.20:8765"], null,
-        $"brasscribe://pair?v=1&id=3f9c2a7e5d1b&name=Brasscribe%20on%20Kari%27s%20PC&h=192.0.2.20:8765&code={_code}");
+        $"scribe://pair?v=1&id=3f9c2a7e5d1b&name=Brasscribe%20on%20Kari%27s%20PC&h=192.0.2.20:8765&code={_code}");
 
     public Task<HealthInfo> GetHealthAsync(CancellationToken ct = default) =>
         Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e5d1b", "Brasscribe on Kari's PC"));

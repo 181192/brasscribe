@@ -496,7 +496,7 @@ NB = {
     "That code didn't work. Check the six digits on the computer, or choose the computer above and allow it there.": "Koden virket ikke. Sjekk de seks sifrene på datamaskinen, eller velg datamaskinen over og godkjenn den der.",
     "That code has been used or has run out. Show a new one on the computer, or choose the computer above and allow it there.": "Koden er brukt eller utløpt. Vis en ny på datamaskinen, eller velg datamaskinen over og godkjenn den der.",
     "That code isn't a Brasscribe pairing code.": "Det er ikke en tilkoblingskode fra Brasscribe.",
-    "That isn't a Brasscribe pairing link. It starts with brasscribe://pair.": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med brasscribe://pair.",
+    "That isn't a Brasscribe pairing link. It starts with scribe://pair.": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med scribe://pair.",
     "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.": "Får ikke kontakt med datamaskinen. Sjekk at Brasscribe på datamaskinen sier Kjører, og at begge er på samme nettverk.",
     "The computer didn't allow this device.": "Datamaskinen godkjente ikke denne enheten.",
     "The computer no longer recognises this Mac.": "Datamaskinen kjenner ikke igjen denne Macen lenger.",

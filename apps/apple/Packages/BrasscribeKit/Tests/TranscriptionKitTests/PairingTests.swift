@@ -7,7 +7,7 @@ import Testing
 
 @Test func pairingLinkFromTheEnginesPayload() throws {
     // as engine/src/scribe_engine/companion.py pairing_uri writes it
-    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.168.0.20:8765,100.64.0.2:8765&code=482913"))
+    let link = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.168.0.20:8765,100.64.0.2:8765&code=482913"))
     #expect(link.version == 1)
     #expect(link.serverID == "srv-7f3a")
     #expect(link.serverName == "Brasscribe on Kari’s Mac")
@@ -18,25 +18,25 @@ import Testing
 }
 
 @Test func pairingLinkOptionalPartsAndPastedText() throws {
-    let link = try #require(PairingLink(string: "  brasscribe://pair?v=1&id=abc&name=X&h=[fe80::1]:8765&fp=q83vEjRWeJA\n"))
+    let link = try #require(PairingLink(string: "  scribe://pair?v=1&id=abc&name=X&h=[fe80::1]:8765&fp=q83vEjRWeJA\n"))
     #expect(link.code == nil)
     #expect(link.fingerprint == "q83vEjRWeJA")
     #expect(link.baseURLs.first?.host() == "fe80::1")
     // a code shown as "482 913" still works
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765&code=482%20913")?.code == "482913")
-    #expect(PairingLink(url: URL(string: "brasscribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765")!)?.serverID == "a")
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765&code=482%20913")?.code == "482913")
+    #expect(PairingLink(url: URL(string: "scribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765")!)?.serverID == "a")
 }
 
 @Test func pairingLinkRejectsWhatItCannotUse() {
     #expect(PairingLink(string: "https://pair?v=1&id=a&h=10.0.0.2:8765") == nil)          // other scheme
-    #expect(PairingLink(string: "brasscribe://open?v=1&id=a&h=10.0.0.2:8765") == nil)      // other action
-    #expect(PairingLink(string: "brasscribe://pair?v=2&id=a&h=10.0.0.2:8765") == nil)      // newer version
-    #expect(PairingLink(string: "brasscribe://pair?id=a&h=10.0.0.2:8765") == nil)          // no version
-    #expect(PairingLink(string: "brasscribe://pair?v=1&h=10.0.0.2:8765") == nil)           // no server id
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n") == nil)               // no address
+    #expect(PairingLink(string: "scribe://open?v=1&id=a&h=10.0.0.2:8765") == nil)      // other action
+    #expect(PairingLink(string: "scribe://pair?v=2&id=a&h=10.0.0.2:8765") == nil)      // newer version
+    #expect(PairingLink(string: "scribe://pair?id=a&h=10.0.0.2:8765") == nil)          // no version
+    #expect(PairingLink(string: "scribe://pair?v=1&h=10.0.0.2:8765") == nil)           // no server id
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&name=n") == nil)               // no address
     #expect(PairingLink(string: "482913") == nil)
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=203.0.113.9:8765") == nil)    // not on the local network
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=example.com:8765") == nil)
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=203.0.113.9:8765") == nil)    // not on the local network
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=example.com:8765") == nil)
     #expect(PairingLink(string: "") == nil)
 }
 
@@ -229,7 +229,7 @@ func otherHostsAreRefused(host: String) {
 }
 
 @Test func onlyTheLocalAddressesOfALinkAreKept() throws {
-    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n&h=203.0.113.9:8765,192.168.0.20:8765,[fe80::1]:8765&code=1"))
+    let link = try #require(PairingLink(string: "scribe://pair?v=1&id=a&name=n&h=203.0.113.9:8765,192.168.0.20:8765,[fe80::1]:8765&code=1"))
     #expect(link.hosts == ["192.168.0.20:8765", "[fe80::1]:8765"])
     #expect(link.displayHost == "192.168.0.20")
 }
@@ -240,5 +240,5 @@ func otherHostsAreRefused(host: String) {
     // what a URL would connect to is example.com, whatever the text around it says
     #expect(PairingLink.host(of: "example.com#.local:8765") == nil)
     #expect(PairingLink.host(of: "192.168.0.2@example.com:8765") == nil)
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=example.com%23.local:8765") == nil)
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=example.com%23.local:8765") == nil)
 }

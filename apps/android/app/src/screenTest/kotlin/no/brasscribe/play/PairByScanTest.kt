@@ -38,7 +38,7 @@ class PairByScanTest : ScreenTest() {
     @Test
     fun aScannedCodeGoesToPairing() {
         // A link that asks for a pinned certificate is answered on the phone, before any address is tried.
-        pairingScanner("brasscribe://pair?v=1&id=srv-1&name=Studio&h=127.0.0.1:9&code=482913&fp=abc")
+        pairingScanner("scribe://pair?v=1&id=srv-1&name=Studio&h=127.0.0.1:9&code=482913&fp=abc")
         waitForText(R.string.pair_needs_update)
         assertEquals(text(R.string.pair_needs_update), vm.companionState.value)
         theWaysToPair()
@@ -66,7 +66,7 @@ class PairByScanTest : ScreenTest() {
         // The answer to the system's question is given by the test on the JVM; on a device it is the system's dialog.
         assumeTrue(ScreenDevice.JVM)
         ScreenDevice.cameraNotAllowedYet(rule)
-        rule.runOnUiThread { container.qrCamera = ShownQrCode("brasscribe://pair?v=1&id=srv-1&h=127.0.0.1:9&code=1&fp=abc"); vm.navigate(Screen.SETTINGS); vm.navigate(Screen.COMPANION) }
+        rule.runOnUiThread { container.qrCamera = ShownQrCode("scribe://pair?v=1&id=srv-1&h=127.0.0.1:9&code=1&fp=abc"); vm.navigate(Screen.SETTINGS); vm.navigate(Screen.COMPANION) }
         rule.waitForIdle()
         rule.onNode(hasText(text(R.string.pair_scan))).performScrollTo().performClick()
         waitForText(R.string.pair_scan_title)
@@ -83,7 +83,7 @@ class PairByScanTest : ScreenTest() {
     fun aCameraAllowedWhenAskedScans() {
         assumeTrue(ScreenDevice.JVM)
         ScreenDevice.cameraNotAllowedYet(rule)
-        rule.runOnUiThread { container.qrCamera = ShownQrCode("brasscribe://pair?v=1&id=srv-1&h=127.0.0.1:9&code=1&fp=abc"); vm.navigate(Screen.SETTINGS); vm.navigate(Screen.COMPANION) }
+        rule.runOnUiThread { container.qrCamera = ShownQrCode("scribe://pair?v=1&id=srv-1&h=127.0.0.1:9&code=1&fp=abc"); vm.navigate(Screen.SETTINGS); vm.navigate(Screen.COMPANION) }
         rule.waitForIdle()
         rule.onNode(hasText(text(R.string.pair_scan))).performScrollTo().performClick()
         waitForText(R.string.pair_scan_title)

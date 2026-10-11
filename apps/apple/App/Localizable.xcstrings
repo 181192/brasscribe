@@ -4511,12 +4511,12 @@
         }
       }
     },
-    "That isn't a Brasscribe pairing link. It starts with brasscribe://pair.": {
+    "That isn't a Brasscribe pairing link. It starts with scribe://pair.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med brasscribe://pair."
+            "value": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med scribe://pair."
           }
         }
       }

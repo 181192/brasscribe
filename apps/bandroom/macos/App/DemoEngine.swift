@@ -45,7 +45,7 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
     private func state(open: Bool) -> PairingState {
         PairingState(open: open, code: open ? "482913" : nil, serverId: Self.serverId, serverName: Self.name,
                      hosts: ["192.0.2.20:8765", "198.51.100.4:8765"],
-                     uri: "brasscribe://pair?v=1&id=\(Self.serverId)&name=Brasscribe%20on%20Kari%27s%20MacBook&h=192.0.2.20:8765,198.51.100.4:8765"
+                     uri: "scribe://pair?v=1&id=\(Self.serverId)&name=Brasscribe%20on%20Kari%27s%20MacBook&h=192.0.2.20:8765,198.51.100.4:8765"
                         + (open ? "&code=482913" : ""))
     }
 

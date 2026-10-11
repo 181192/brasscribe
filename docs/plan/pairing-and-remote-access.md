@@ -4,7 +4,7 @@ How the Play apps (Apple, Android, Windows) find the engine, pair with it once, 
 
 Read it together with `docs/plan/apps-plan.md` (§3 architecture, §7 licences) and `design/system.md` (rule 8: commands and addresses go under **Details for the band's tech person**).
 
-**Status (2026-09-29): partly done.** Pair once is built: per-device credentials that survive restarts and address changes, the approve-on-the-computer path, rotation, unpair and revoke, and the lockout (§4.8). All three Play apps keep the token in the platform keystore (Keychain, Android Keystore, a Windows credential vault), reconnect by server id and scan the `brasscribe://pair` QR code. Bandroom for macOS and Windows is the desktop helper.
+**Status (2026-09-29): partly done.** Pair once is built: per-device credentials that survive restarts and address changes, the approve-on-the-computer path, rotation, unpair and revoke, and the lockout (§4.8). All three Play apps keep the token in the platform keystore (Keychain, Android Keystore, a Windows credential vault), reconnect by server id and scan the `scribe://pair` QR code. Bandroom for macOS and Windows is the desktop helper.
 Left (§7): LAN TLS with a pinned key (§4.9), the `--mode home|remote|hosted` switch, device-bound (DPoP) tokens, and everything for hosted mode.
 
 ---
@@ -23,7 +23,7 @@ Left (§7): LAN TLS with a pinned key (§4.9), the `--mode home|remote|hosted` s
 
 Line numbers refer to commit `f20ba42`, the state before this work.
 
-- **Discovery.** `scribe serve --lan` advertises `_brasscribe._tcp` over mDNS. The service name is `Brasscribe on <host>` and the TXT record is `v`, `api` and `auth=pair` (`engine/src/scribe_engine/discovery.py:30-41`). The apps browse for it: Apple `EngineBrowser.swift` (NWBrowser), Android `EngineDiscovery.kt` (NsdManager), Windows `EngineDiscovery.cs`.
+- **Discovery.** `scribe serve --lan` advertises `_scribe._tcp` over mDNS. The service name is `Brasscribe on <host>` and the TXT record is `v`, `api` and `auth=pair` (`engine/src/scribe_engine/discovery.py:30-41`). The apps browse for it: Apple `EngineBrowser.swift` (NWBrowser), Android `EngineDiscovery.kt` (NsdManager), Windows `EngineDiscovery.cs`.
 - **Pairing.** At start the engine creates a 6-digit code and prints it (`api.py:59`, `cli.py:126`). `POST /v1/pair {code, device_name}` returns `{token}` (`api.py:135-141`). The request carries `device_name`, and the engine ignores it.
 - **Auth.** Loopback clients are trusted with no token (`api.py:87-89`). Every other request must carry `Authorization: Bearer <token>`, checked against **one** shared token (`api.py:91-96`).
 - **Transport.** Plain HTTP on port 8765, with no TLS.
@@ -77,7 +77,7 @@ Causes 1, 3 and 4 are the everyday ones. Cause 1 alone logs out every phone each
 The canonical form, shared with the desktop helper (the tray or menu-bar app) and every client:
 
 ```
-brasscribe://pair?v=1&id=<server_id>&name=<display name>&h=<ip:port>[,<ip:port>...]&code=<6 digits>[&fp=<spki sha256, base64url>]
+scribe://pair?v=1&id=<server_id>&name=<display name>&h=<ip:port>[,<ip:port>...]&code=<6 digits>[&fp=<spki sha256, base64url>]
 ```
 
 | Key | Required | Meaning |
@@ -172,7 +172,7 @@ sequenceDiagram
     alt reachable, same engine
         E-->>P: 200 {device_id, rotate_after, ...}
     else timeout, refused, or other server_id
-        P->>P: browse _brasscribe._tcp, pick TXT id == server_id
+        P->>P: browse _scribe._tcp, pick TXT id == server_id
         P->>E: GET /v1/devices/me at the new address
         E-->>P: 200
         P->>P: last_address = new address
@@ -416,14 +416,14 @@ The split to use: the API and job queue on a small always-on CPU instance or a p
 
 ### Rust core
 
-Nothing. `core/` has no networking or storage, and credential handling stays native per platform. It would be a reasonable home for the payload parser later (`brasscribe://pair` → struct) if three copies drift apart.
+Nothing. `core/` has no networking or storage, and credential handling stays native per platform. It would be a reasonable home for the payload parser later (`scribe://pair` → struct) if three copies drift apart.
 
 ### Apple (SwiftUI, `apps/apple`)
 
 - Move `companionToken` from `UserDefaults` (`AppModel.swift:50-51`) to the Keychain: `kSecClassGenericPassword`, service `no.brasscribe.engine`, account = `server_id`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Move the old value once, then delete it.
 - Store the record from §4.5, keyed by `server_id`. The saved "companion URL" becomes `last_address`.
 - `EngineBrowser` reads the TXT `id` and matches it. On launch: try `/v1/devices/me` at `last_address`, then mDNS by id (§4.5).
-- Pair only on 401. Send `platform` (`ios` or `macos`). Scan QR codes (`brasscribe://pair`) with VisionKit `DataScannerViewController`, and register the URL scheme.
+- Pair only on 401. Send `platform` (`ios` or `macos`). Scan QR codes (`scribe://pair`) with VisionKit `DataScannerViewController`, and register the URL scheme.
 - Approve-on-the-computer path in Settings → Your computer, showing the match code.
 - Rotation when `rotate_after` has passed. Unpair button (`DELETE /v1/devices/me`).
 - Once the engine serves TLS: SPKI pinning in the `URLSession` delegate.
@@ -434,7 +434,7 @@ Nothing. `core/` has no networking or storage, and credential handling stays nat
 - Move `token` out of `SharedPreferences` (`AppContainer.kt:29-31`). Encrypt it with an AES-GCM key held in the Android Keystore (StrongBox when available), and keep the ciphertext in DataStore. `EncryptedSharedPreferences` is deprecated. Exclude it from backup (`android:dataExtractionRules`).
 - Store the record keyed by `server_id`. `EngineDiscovery` reads the TXT `id` (`NsdServiceInfo.attributes["id"]`).
 - `PlayViewModel.connect` (`PlayViewModel.kt:696-698`): call `/v1/devices/me` with the stored token first, and pair only on 401. Send `platform = "android"`.
-- QR scanning (CameraX + ML Kit barcode, or the system code scanner) and a `brasscribe://pair` intent filter. Approve-on-the-computer path.
+- QR scanning (CameraX + ML Kit barcode, or the system code scanner) and a `scribe://pair` intent filter. Approve-on-the-computer path.
 - Rotation and Unpair. Once the engine serves TLS: an OkHttp `CertificatePinner` does not fit self-signed certificates, so use a custom `X509TrustManager` that checks the SPKI hash.
 - Contract: after `./gradlew :engine-client:syncOpenApi`, `EngineContractTest` fails until:
   - the new operationIds are in `EngineApi.OPERATIONS` or `NOT_USED`: `getThisDevice`, `rotateDeviceToken`, `unpairThisDevice`, `requestPairing` and `pollPairingRequest` go in OPERATIONS once implemented; `listDevices`, `revokeDevice`, `getPairing`, `openPairing`, `closePairing`, `listPairingRequests` and `decidePairingRequest` go in NOT_USED, since they are loopback-only

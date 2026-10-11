@@ -100,8 +100,8 @@ targets:
         NSCameraUsageDescription: Brasscribe Play scans the code your computer shows, to connect to it.
         CFBundleURLTypes:
           - CFBundleURLName: no.brasscribe.pair
-            CFBundleURLSchemes: [brasscribe]
-        NSBonjourServices: [_brasscribe._tcp]
+            CFBundleURLSchemes: [scribe]
+        NSBonjourServices: [_scribe._tcp]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         UIBackgroundModes: [audio]

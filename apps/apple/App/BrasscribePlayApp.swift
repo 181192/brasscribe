@@ -30,7 +30,7 @@ struct BrasscribePlayApp: App {
                 .environment(app)
                 .appAppearance()
                 .onOpenURL { url in
-                    if url.scheme?.lowercased() == "brasscribe" {
+                    if url.scheme?.lowercased() == Wire.pairScheme {
                         if let link = PairingLink(url: url) { app.openPairingLink(link) }
                     } else {
                         Task { await app.accept(url: url) }

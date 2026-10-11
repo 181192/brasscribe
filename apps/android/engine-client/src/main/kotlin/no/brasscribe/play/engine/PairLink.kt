@@ -5,7 +5,7 @@ import java.net.URLDecoder
 
 /**
  * The pairing payload the computer shows as a QR code:
- * `brasscribe://pair?v=1&id=<server id>&name=<server name>&h=<ip:port>,<ip:port>&code=<code>[&fp=<SPKI sha-256>]`.
+ * `scribe://pair?v=1&id=<server id>&name=<server name>&h=<ip:port>,<ip:port>&code=<code>[&fp=<SPKI sha-256>]`.
  * Only `v` and `id` are required. Without [hosts] the engine is found by mDNS; without [code] the phone
  * asks the computer to allow it instead. A [fingerprint] means the engine must be reached over pinned TLS.
  * Addresses off the local network are dropped ([validHost]).
@@ -22,13 +22,11 @@ data class PairLink(
     val urls: List<String> get() = hosts.map { "http://$it" }
 
     companion object {
-        const val SCHEME = "brasscribe"
-
         /** Null for anything that is not a version 1 pairing link with a server id. Unknown keys are ignored. */
         fun parse(text: String): PairLink? {
             val uri = runCatching { URI(text.trim()) }.getOrNull() ?: return null
-            if (!uri.scheme.equals(SCHEME, ignoreCase = true)) return null
-            // brasscribe://pair?… puts "pair" in the authority; brasscribe:pair?… is opaque.
+            if (!uri.scheme.equals(Wire.PAIR_SCHEME, ignoreCase = true)) return null
+            // scribe://pair?… puts "pair" in the authority; scribe:pair?… is opaque.
             val target = uri.authority ?: uri.schemeSpecificPart?.substringBefore('?')
             if (target != "pair") return null
             val query = uri.rawQuery ?: uri.rawSchemeSpecificPart?.substringAfter('?', "") ?: return null

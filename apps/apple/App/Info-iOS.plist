@@ -73,7 +73,7 @@
 			<string>no.brasscribe.pair</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>brasscribe</string>
+				<string>scribe</string>
 			</array>
 		</dict>
 	</array>
@@ -90,7 +90,7 @@
 	<string>Brasscribe Play records the sound playing on this Mac to turn it into a score.</string>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_brasscribe._tcp</string>
+		<string>_scribe._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Brasscribe Play scans the code your computer shows, to connect to it.</string>

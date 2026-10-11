@@ -30,12 +30,9 @@ import no.brasscribe.play.fret.yourInstrumentValue
 import no.brasscribe.play.ui.theme.LocalProductColors
 import no.brasscribe.play.ui.theme.ProductColors
 
-/** What makes this build Fretscribe: its name, its pairing link, the screens it opens with and the tabs it makes. */
+/** What makes this build Fretscribe: its name, the screens it opens with and the tabs it makes. */
 object Product {
     const val NAME = "Fretscribe"
-
-    /** The scheme of the pairing link in the computer's QR code: Brasscribe's, until Fretscribe has its own. */
-    const val PAIR_SCHEME = "brasscribe"
 
     /** Fretscribe carries no band sounds, so Settings has no choice between them. */
     const val BAND_SOUNDS = false

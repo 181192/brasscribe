@@ -57,7 +57,7 @@ class LocalNetworkTest : ScreenTest() {
     @Test
     fun aPairingLinkSaysSoToo() {
         shadowOf(rule.activity.application).denyPermissions(LocalNetwork.PERMISSION)
-        rule.runOnUiThread { vm.openPairLink("brasscribe://pair?v=1&id=srv-1&name=Studio&h=192.168.0.2:8765&code=482913") }
+        rule.runOnUiThread { vm.openPairLink("scribe://pair?v=1&id=srv-1&name=Studio&h=192.168.0.2:8765&code=482913") }
         rule.waitForIdle()
         ScreenDevice.answerPermission(rule, allow = false)
         waitForText(R.string.pair_network_refused)

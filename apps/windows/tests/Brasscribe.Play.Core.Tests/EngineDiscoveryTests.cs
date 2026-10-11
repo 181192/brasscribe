@@ -29,7 +29,7 @@ public class EngineDiscoveryTests
         }
 
         var serviceAt = m.Count;
-        m.AddRange([.. Labels("_brasscribe", "_tcp", "local"), 0]);
+        m.AddRange([.. Labels("_scribe", "_tcp", "local"), 0]);
         var instanceAt = Record(12, [.. Labels(instance), 0xC0, (byte)serviceAt]);
         m.AddRange([0xC0, (byte)instanceAt]);
         Record(33, [0, 0, 0, 0, (byte)(port >> 8), (byte)port, .. Labels(host, "local"), 0]);

@@ -40,7 +40,7 @@
 	</dict>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_brasscribe._tcp</string>
+		<string>_scribe._tcp</string>
 	</array>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Kristoffer-Andre Kalliainen. MIT or Apache-2.0.</string>

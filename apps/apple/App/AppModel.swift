@@ -133,7 +133,7 @@ final class AppModel {
         #endif
     }
 
-    /// A `brasscribe://pair` link opened from outside the app (the camera, another app): Settings asks
+    /// A `scribe://pair` link opened from outside the app (the camera, another app): Settings asks
     /// before it pairs, or asks the computer to allow this device when the link has no code.
     var pendingLink: PairingLink?
 

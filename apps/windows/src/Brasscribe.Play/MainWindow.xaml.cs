@@ -264,7 +264,7 @@ public sealed partial class MainWindow : Window
     private string? _waitingLink;
 
     /// <summary>
-    /// Settings; with a brasscribe://pair link it pairs from the link while the dialog shows the progress.
+    /// Settings; with a scribe://pair link it pairs from the link while the dialog shows the progress.
     /// A link that arrives while another dialog is open waits until that dialog closes.
     /// </summary>
     public async Task OpenSettingsAsync(string? pairingLink = null)

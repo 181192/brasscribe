@@ -439,7 +439,7 @@ public class PairingLinkTests
     public void Parses_the_link_the_computer_shows()
     {
         // As companion.py writes it: urlencode(quote_via=quote, safe=":,").
-        var text = $"brasscribe://pair?v=1&id={Id}&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.0.2.20:8765,[fe80::1]:8765&code=482913";
+        var text = $"scribe://pair?v=1&id={Id}&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.0.2.20:8765,[fe80::1]:8765&code=482913";
         Assert.Equal(PairingLinkProblem.None, PairingLink.TryParse(text, out var link));
         Assert.Equal(Id.ToLowerInvariant(), link!.ServerId);
         Assert.Equal("Brasscribe on Kari’s Mac", link.ServerName);
@@ -451,7 +451,7 @@ public class PairingLinkTests
     [Fact]
     public void Plus_is_a_space_unknown_keys_are_ignored_and_code_and_hosts_are_optional()
     {
-        Assert.Equal(PairingLinkProblem.None, PairingLink.TryParse($"BRASSCRIBE://pair?v=1&id={Id}&name=Brasscribe+on+studio&future=1", out var link));
+        Assert.Equal(PairingLinkProblem.None, PairingLink.TryParse($"SCRIBE://pair?v=1&id={Id}&name=Brasscribe+on+studio&future=1", out var link));
         Assert.Equal("Brasscribe on studio", link!.ServerName);
         Assert.Empty(link.Hosts);
         Assert.Null(link.Code);
@@ -459,12 +459,12 @@ public class PairingLinkTests
 
     [Theory]
     [InlineData("https://example.com/pair?v=1", PairingLinkProblem.NotAPairingLink)]
-    [InlineData("brasscribe://open?v=1&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
-    [InlineData("brasscribe://pair?id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
-    [InlineData("brasscribe://pair?v=2&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NewerVersion)]
-    [InlineData("brasscribe://pair?v=1&id=1234", PairingLinkProblem.BadServerId)]
-    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdeg", PairingLinkProblem.BadServerId)]
-    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef&fp=abc", PairingLinkProblem.NeedsPinning)]
+    [InlineData("scribe://open?v=1&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
+    [InlineData("scribe://pair?id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
+    [InlineData("scribe://pair?v=2&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NewerVersion)]
+    [InlineData("scribe://pair?v=1&id=1234", PairingLinkProblem.BadServerId)]
+    [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdeg", PairingLinkProblem.BadServerId)]
+    [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdef&fp=abc", PairingLinkProblem.NeedsPinning)]
     [InlineData("", PairingLinkProblem.NotAPairingLink)]
     public void Refuses_what_it_cannot_use_safely(string text, PairingLinkProblem expected)
     {
@@ -653,7 +653,7 @@ public class PairOnceTests
         lan.At.Remove(Old);
         lan.At[New] = studio;
         lan.At[new Uri("http://198.51.100.5:8765/")] = new FakeLan.Engine("ffffffffffffffffffffffffffffffff", "Other");
-        var link = $"brasscribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&h=198.51.100.5:8765,192.0.2.44:8765&code=482913";
+        var link = $"scribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&h=198.51.100.5:8765,192.0.2.44:8765&code=482913";
 
         Assert.True(await vm.PairFromLinkAsync(link));
         Assert.Equal(New.ToString(), vm.EngineAddress);
@@ -669,7 +669,7 @@ public class PairOnceTests
         lan.At.Remove(Old);
         lan.At[New] = studio;
         network.Add(new DiscoveredEngine("Brasscribe on Studio PC", New, StudioId, "Studio PC"));
-        Assert.True(await vm.PairFromLinkAsync($"brasscribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&code=482913"));
+        Assert.True(await vm.PairFromLinkAsync($"scribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&code=482913"));
         Assert.Equal(New.ToString(), vm.EngineAddress);
         vm.Connection.Stop();
     }
@@ -678,9 +678,9 @@ public class PairOnceTests
     public async Task A_link_from_a_newer_app_or_with_a_pin_is_refused()
     {
         var (vm, lan, _, _, _, _) = Make();
-        Assert.False(await vm.PairFromLinkAsync($"brasscribe://pair?v=2&id={StudioId}"));
+        Assert.False(await vm.PairFromLinkAsync($"scribe://pair?v=2&id={StudioId}"));
         Assert.Equal("That link is from a newer Brasscribe. Update this app, then try again.", vm.EngineStatus);
-        Assert.False(await vm.PairFromLinkAsync($"brasscribe://pair?v=1&id={StudioId}&h=192.0.2.20:8765&code=482913&fp=abc"));
+        Assert.False(await vm.PairFromLinkAsync($"scribe://pair?v=1&id={StudioId}&h=192.0.2.20:8765&code=482913&fp=abc"));
         Assert.Empty(lan.Requests);
     }
 
