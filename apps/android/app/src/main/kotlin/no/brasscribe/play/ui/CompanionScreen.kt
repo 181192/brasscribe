@@ -18,7 +18,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.clip
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -55,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import no.scribe.design.ScribeSpace
 import no.scribe.design.ScribeTheme
+import no.brasscribe.play.LocalNetwork
 import no.brasscribe.play.PinkUnlock
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
@@ -84,7 +84,17 @@ fun CompanionScreen(vm: PlayViewModel) {
     var heavy by rememberSaveable { mutableStateOf(settings.allowHeavy) }
     val discovery = vm.container.discovery
     val found by discovery.engines.collectAsState()
-    DisposableEffect(discovery) {
+    // Android 17 asks before the app may reach the local network: asked here, where the computer is looked for.
+    var networkOk by remember { mutableStateOf(LocalNetwork.allowed(context)) }
+    var networkRefused by rememberSaveable { mutableStateOf(false) }
+    val networkPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        // What the phone says now, not what the answer says: only that opens the network.
+        networkOk = LocalNetwork.allowed(context)
+        networkRefused = !networkOk
+        if (networkOk) vm.connection.networkChanged()
+    }
+    LaunchedEffect(Unit) { if (!networkOk) networkPermission.launch(LocalNetwork.PERMISSION) }
+    DisposableEffect(discovery, networkOk) {
         discovery.start()
         // Asking the computer survives rotation; the view model ends it when the user leaves this place.
         onDispose { discovery.stop() }
@@ -94,11 +104,16 @@ fun CompanionScreen(vm: PlayViewModel) {
     // The camera is asked for on the scanner's own screen, which says what it is for.
     var scanning by rememberSaveable { mutableStateOf(false) }
     var cameraRefused by rememberSaveable { mutableStateOf(false) }
-    fun cameraAllowed() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    fun cameraAllowed() = context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
     var cameraOk by remember { mutableStateOf(cameraAllowed()) }
     val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         cameraOk = granted
         if (!granted) { scanning = false; cameraRefused = true }
+    }
+    fun appSettings() {
+        runCatching {
+            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
+        }
     }
     fun scan() {
         if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) vm.say(R.string.pair_scan_unavailable)
@@ -109,6 +124,8 @@ fun CompanionScreen(vm: PlayViewModel) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         cameraOk = cameraAllowed()
         if (cameraOk) cameraRefused = false
+        networkOk = LocalNetwork.allowed(context)
+        if (networkOk) networkRefused = false
     }
     fun scanned(text: String) {
         scanning = false
@@ -150,13 +167,15 @@ fun CompanionScreen(vm: PlayViewModel) {
                 SecondaryButton(stringResource(R.string.pair_scan), ::scan, icon = R.drawable.ic_bc_pair_phone)
                 if (cameraRefused) {
                     Text(stringResource(R.string.pair_camera_refused), color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                    PlainButton(stringResource(R.string.pair_camera_settings), {
-                        runCatching {
-                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
-                        }
-                    })
+                    PlainButton(stringResource(R.string.pair_camera_settings), ::appSettings)
                 }
-                if (found.isEmpty()) {
+                if (!networkOk) {
+                    // Nothing is looked for while the network is closed to the app, so the screen does not say it is looking.
+                    if (networkRefused) {
+                        Text(stringResource(R.string.pair_network_refused), color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                        PlainButton(stringResource(R.string.pair_camera_settings), ::appSettings)
+                    }
+                } else if (found.isEmpty()) {
                     Text(stringResource(R.string.companion_searching), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 } else {
                     RowGroup {

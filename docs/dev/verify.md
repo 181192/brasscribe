@@ -210,6 +210,9 @@ fail instead of skipping.
 
   - Pool emulators run `-read-only` copies of the AVD (`bc36-pool`) on even ports from 5556. The
     copy's first boot saves a quick-boot snapshot, once.
+  - The default AVD, `bc36`, is Android 16, the oldest system the apps run on. `BRASSCRIBE_AVD=bc37`
+    hands out Android 17 (an AVD of that name on the `google_apis_ps16k` image, which also has 16 KB
+    memory pages).
   - `acquire` returns your existing lease when you already hold one. `list` shows the leases.
   - Leases expire after `--ttl` minutes (default 120) and are reaped by the next `acquire`.
   - At most four run at once (`BRASSCRIBE_EMULATORS_MAX`).

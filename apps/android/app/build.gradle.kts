@@ -22,8 +22,8 @@ android {
 
     defaultConfig {
         applicationId = "no.brasscribe.play"
-        minSdk = 29
-        targetSdk = 36
+        minSdk = 36
+        targetSdk = 37
         versionCode = 15
         versionName = "0.10.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -349,7 +349,6 @@ dependencies {
     implementation(project(":core-bridge"))
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

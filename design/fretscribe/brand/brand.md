@@ -41,7 +41,7 @@ strings, as a pen stroke, and as the place a fret number interrupts its line.
 | `logo-mark.svg`, `logo-mark-dark.svg` | The mark on light and dark grounds, 24 px and up |
 | `favicon-16.svg` | Pixel-hinted version for 16 and 32 px |
 | `app-icon-fullbleed.svg` | iOS, store listings. Square, no baked corners; the art at 78% |
-| `../dist/icons/android/res` | Android launcher icon, written by `build.py`: adaptive foreground with the art at 64% (the 78% art breaks the 66 dp safe zone), a monochrome layer and legacy squares |
+| `../dist/icons/android/res` | Android launcher icon, written by `build.py`: adaptive foreground with the art at 64% (the 78% art breaks the 66 dp safe zone), and a monochrome layer |
 | `wordmark.svg`, `wordmark-dark.svg` | "fretscribe" outlined, Atkinson Hyperlegible Next 600, −8/1000 em |
 | `lockup.svg`, `lockup-dark.svg` | Mark plus wordmark |
 

@@ -207,15 +207,11 @@ def build_icons() -> None:
             images.append({"filename": fn, "idiom": "mac", "scale": f"{scale}x", "size": f"{pt}x{pt}"})
     (apple / "Contents.json").write_text(json.dumps({"images": images, "info": {"author": "xcode", "version": 1}}, indent=2) + "\n")
 
-    # Android: adaptive icon (vector foreground + colour background + monochrome) and legacy PNGs.
+    # Android: adaptive icon (vector foreground + colour background + monochrome).
     res = DIST / "android" / "res"
-    dens = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
-    for d, k in dens.items():
-        render(full, res / f"mipmap-{d}" / "ic_launcher.png", round(48 * k))
-        render(ICON / "android-foreground.svg", res / f"mipmap-{d}" / "ic_launcher_foreground.png", round(108 * k))
     render(full, DIST / "android" / "play-store-512.png", 512)
-    (res / "mipmap-anydpi-v26").mkdir(parents=True, exist_ok=True)
-    (res / "mipmap-anydpi-v26" / "ic_launcher.xml").write_text(
+    (res / "mipmap-anydpi").mkdir(parents=True, exist_ok=True)
+    (res / "mipmap-anydpi" / "ic_launcher.xml").write_text(
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
         '    <background android:drawable="@color/ic_launcher_background"/>\n'

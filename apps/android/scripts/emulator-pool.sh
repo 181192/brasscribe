@@ -12,7 +12,8 @@
 #   --ttl MIN      lease length in minutes (default 120); acquire again to renew it
 #   --phone        hand out the attached phone ($BRASSCRIBE_PHONE_SERIAL) instead, if it is free
 #
-# Each emulator runs a copy of the AVD ($BRASSCRIBE_AVD, default bc36; the copy is <avd>-pool) with -read-only, headless
+# Each emulator runs a copy of the AVD ($BRASSCRIBE_AVD, default bc36, Android 16, the oldest the apps run on;
+# BRASSCRIBE_AVD=bc37 for Android 17; the copy is <avd>-pool) with -read-only, headless
 # (-no-window -no-audio), on an even console port from 5556 up. emulator-5554 is never touched:
 # that is the interactive one. At most $BRASSCRIBE_EMULATORS_MAX (default 4) run at once; each
 # takes about 4 GB. Leases live in ~/.cache/brasscribe/emulators/<serial>/ (mkdir is the lock).

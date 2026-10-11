@@ -295,7 +295,7 @@ class AppContainer(private val context: Context) {
     val deviceName: String get() = "${Build.MANUFACTURER} ${Build.MODEL}"
 
     companion object {
-        /** Encrypted credentials; excluded from backup (res/xml/backup_rules.xml, data_extraction_rules.xml). */
+        /** Encrypted credentials; excluded from backup (res/xml/data_extraction_rules.xml). */
         const val CREDENTIALS_PREFS = "credentials"
     }
 }

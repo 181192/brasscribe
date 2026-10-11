@@ -245,7 +245,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { notifies = no.brasscribe.play.JobNotices.allowed(context) }
     LaunchedEffect(onComputer) {
-        if (!onComputer || notifies || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU || vm.container.notificationsAsked) return@LaunchedEffect
+        if (!onComputer || notifies || vm.container.notificationsAsked) return@LaunchedEffect
         vm.container.notificationsAsked = true
         askToNotify.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }

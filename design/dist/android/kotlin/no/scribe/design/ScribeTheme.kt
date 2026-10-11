@@ -2,7 +2,6 @@
 package no.scribe.design
 
 import android.app.UiModeManager
-import android.os.Build
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -286,11 +285,10 @@ object ScribeMotion {
 
 val LocalScribeColors = staticCompositionLocalOf { ScribeLightColors }
 
-/** Android 14+ reports the system contrast level; 0.5 and above is treated as high contrast. */
+/** The system contrast level; 0.5 and above is treated as high contrast. */
 @Composable
 fun systemHighContrast(): Boolean {
     val context = LocalContext.current
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
     val ui = context.getSystemService(UiModeManager::class.java) ?: return false
     return ui.contrast >= 0.5f
 }

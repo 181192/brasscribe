@@ -7,6 +7,10 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -16,7 +20,6 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.core.content.IntentCompat
 import no.brasscribe.play.ui.AboutScreen
 import no.brasscribe.play.ui.CompanionScreen
 import no.brasscribe.play.ui.ExportScreen
@@ -45,6 +48,7 @@ class MainActivity : ComponentActivity() {
             val dark = appearance.isDark(isSystemInDarkTheme())
             SideEffect { applyWindowTheme(dark, appearance.isPink) }
             PlayTheme(dark = dark, pink = appearance.isPink) { Product.Root(vm) }
+            AskForLocalNetwork(vm)
         }
     }
 
@@ -118,7 +122,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         val uri: Uri? = when (intent?.action) {
-            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            Intent.ACTION_SEND -> intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
             Intent.ACTION_VIEW -> intent.data
             else -> null
         }
@@ -126,6 +130,20 @@ class MainActivity : ComponentActivity() {
             vm.home()
             vm.importUri(uri)
         }
+    }
+}
+
+/**
+ * A paired phone that may not reach the local network (Android 17: the app was updated to ask, or the player took
+ * the leave back) is asked when the app opens, so the computer is found again. A phone that is not paired is asked
+ * on the pairing screen, which asks for itself.
+ */
+@Composable
+private fun AskForLocalNetwork(vm: PlayViewModel) {
+    val context = LocalContext.current
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (LocalNetwork.allowed(context)) vm.connection.networkChanged() }
+    LaunchedEffect(Unit) {
+        if (vm.container.settings.paired && vm.screen.value.last() != Screen.COMPANION && !LocalNetwork.allowed(context)) ask.launch(LocalNetwork.PERMISSION)
     }
 }
 

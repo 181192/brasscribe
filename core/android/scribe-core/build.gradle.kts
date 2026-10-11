@@ -7,10 +7,10 @@ plugins {
 
 android {
     namespace = "no.brasscribe.core"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
-        minSdk = 26
+        minSdk = 36
         consumerProguardFiles("consumer-rules.pro")
     }
 

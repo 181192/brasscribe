@@ -17,7 +17,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        minSdk = 29
+        minSdk = 36
         consumerProguardFiles("consumer-rules.pro")
     }
 
@@ -26,8 +26,6 @@ android {
             kotlin.directories.add(File(coreRoot, "android/scribe-core/src/main/kotlin").path)
         }
     }
-
-    lint { lintConfig = file("lint.xml") }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

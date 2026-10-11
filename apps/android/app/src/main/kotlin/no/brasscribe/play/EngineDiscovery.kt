@@ -3,8 +3,6 @@ package no.brasscribe.play
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
-import android.os.Build
-import androidx.annotation.RequiresApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +17,7 @@ import java.util.concurrent.Executors
  * Discovery only suggests addresses; the engine still requires pairing. mDNS does not cross the
  * emulator's NAT, so on an emulator the list stays empty and 10.0.2.2 remains the way in.
  */
-class EngineDiscovery(context: Context) {
+class EngineDiscovery(private val context: Context) {
     /** [id] is the engine's server id from the TXT record (null for engines that do not advertise one). */
     data class Found(val name: String, val url: String, val id: String? = null)
 
@@ -30,15 +28,14 @@ class EngineDiscovery(context: Context) {
 
     private val found = linkedMapOf<String, Found>()
     private val callbacks = mutableMapOf<String, NsdManager.ServiceInfoCallback>()
-    private val pending = ArrayDeque<NsdServiceInfo>()
-    private var resolving = false
     private var listener: NsdManager.DiscoveryListener? = null
 
     @Synchronized
     fun start() {
-        if (listener != null) return
+        // Until the player allows the local network (Android 17) there is nothing to look on.
+        if (listener != null || !LocalNetwork.allowed(context)) return
         val l = object : NsdManager.DiscoveryListener {
-            override fun onServiceFound(info: NsdServiceInfo) = resolve(info)
+            override fun onServiceFound(info: NsdServiceInfo) = watch(info)
             override fun onServiceLost(info: NsdServiceInfo) = lost(info.serviceName)
             override fun onDiscoveryStarted(serviceType: String) = Unit
             override fun onDiscoveryStopped(serviceType: String) = Unit
@@ -46,30 +43,20 @@ class EngineDiscovery(context: Context) {
             override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
         }
         listener = l
-        nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, l)
+        runCatching { nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, l) }.onFailure { listener = null }
     }
 
     @Synchronized
     fun stop() {
         listener?.let { runCatching { nsd.stopServiceDiscovery(it) } }
         listener = null
-        if (Build.VERSION.SDK_INT >= 34) callbacks.values.forEach { runCatching { nsd.unregisterServiceInfoCallback(it) } }
+        callbacks.values.forEach { runCatching { nsd.unregisterServiceInfoCallback(it) } }
         callbacks.clear()
-        pending.clear()
         found.clear()
         _engines.value = emptyList()
     }
 
     @Synchronized
-    private fun resolve(info: NsdServiceInfo) {
-        if (Build.VERSION.SDK_INT >= 34) watch(info)
-        else {
-            pending.addLast(info)
-            resolveNext()
-        }
-    }
-
-    @RequiresApi(34)
     private fun watch(info: NsdServiceInfo) {
         val name = info.serviceName
         if (name in callbacks) return
@@ -83,26 +70,6 @@ class EngineDiscovery(context: Context) {
         nsd.registerServiceInfoCallback(info, executor, cb)
     }
 
-    /** Before API 34 only one resolve may run at a time. */
-    @Suppress("DEPRECATION")
-    @Synchronized
-    private fun resolveNext() {
-        if (resolving || listener == null) return
-        val next = pending.removeFirstOrNull() ?: return
-        resolving = true
-        nsd.resolveService(next, object : NsdManager.ResolveListener {
-            override fun onServiceResolved(info: NsdServiceInfo) {
-                put(info.serviceName, engineUrl(listOfNotNull(info.host), info.port), serverId(info))
-                done()
-            }
-            override fun onResolveFailed(info: NsdServiceInfo, errorCode: Int) = done()
-            private fun done() {
-                synchronized(this@EngineDiscovery) { resolving = false }
-                resolveNext()
-            }
-        })
-    }
-
     @Synchronized
     private fun put(name: String, url: String?, id: String?) {
         if (listener == null) return
@@ -112,7 +79,7 @@ class EngineDiscovery(context: Context) {
 
     @Synchronized
     private fun lost(name: String) {
-        if (Build.VERSION.SDK_INT >= 34) callbacks.remove(name)?.let { runCatching { nsd.unregisterServiceInfoCallback(it) } }
+        callbacks.remove(name)?.let { runCatching { nsd.unregisterServiceInfoCallback(it) } }
         found.remove(name)
         _engines.value = found.values.sortedBy { it.name }
     }

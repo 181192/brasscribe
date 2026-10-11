@@ -40,7 +40,7 @@ node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/n
 
 ```sh
 uv run design/tokens/build.py --brand fretscribe [--check]
-uv run design/fretscribe/brand/build.py  # Fretscribe's Android launcher icon (needs rsvg-convert)
+uv run design/fretscribe/brand/build.py  # Fretscribe's Android launcher icon
 ```
 
 **Contrast:** all 456 pairs pass (76 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).

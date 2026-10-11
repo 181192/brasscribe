@@ -55,8 +55,12 @@ fun connectionIcon(state: ConnectionState): Int = when (state) {
 fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConnectionScreen: Boolean = false) {
     val state by vm.connection.state.collectAsState()
     val c = ScribeTheme.colors
+    val context = androidx.compose.ui.platform.LocalContext.current
     val s = state
     val action: Pair<String, () -> Unit>? = when {
+        // The network is closed to the app (Android 17): the pairing screen asks for it, and says so when refused.
+        s is ConnectionState.Offline && s.paired && !onConnectionScreen && !no.brasscribe.play.LocalNetwork.allowed(context) ->
+            stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
         s is ConnectionState.Offline && s.paired -> stringResource(R.string.companion_connect) to { vm.connection.retry() }
         s is ConnectionState.Offline && !onConnectionScreen -> stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
         s is ConnectionState.NeedsPairing && !onConnectionScreen -> stringResource(R.string.conn_pair_again) to { vm.navigate(Screen.COMPANION) }

@@ -7,15 +7,13 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
 
 /**
  * Keeps the app in the foreground, with a notification, while a band draft is made on the phone, so it
  * keeps going when the player leaves the app. The work itself runs in the view model; this service only
- * holds the process. Type `dataSync` below Android 15, `mediaProcessing` from 15 (its own time limit).
+ * holds the process. Type `mediaProcessing` (its own time limit).
  */
 class DraftService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
@@ -30,12 +28,9 @@ class DraftService : Service() {
             .setContentIntent(openApp())
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .build()
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-        else ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
         // Always before anything else: a service started with startForegroundService that stops without
-        // reaching the foreground ends the app. The platform call, not ServiceCompat's: that one masks the type
-        // with the types it knows, which leaves mediaProcessing as none, and the system refuses none.
-        val entered = runCatching { enterForeground(this, NOTIFICATION_ID, notification, type) }
+        // reaching the foreground ends the app.
+        val entered = runCatching { enterForeground(this, NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING) }
             .onFailure { android.util.Log.w("BrasscribePlay", "draft service not in the foreground", it) }
         starting = false
         // The phone refused (the type's time for the day is used up, for one): no draft outside the foreground.
@@ -48,7 +43,7 @@ class DraftService : Service() {
         // The draft ended (refused, failed or cancelled) before the service got here.
         if (stopWhenStarted) {
             stopWhenStarted = false
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
         return START_NOT_STICKY

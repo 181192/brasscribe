@@ -157,6 +157,9 @@ jobs:
             [ -n "$audio" ] && [ "$audio" -lt 1000000 ] || fail "its audio library is not the one without sfizz ($audio bytes)"
             cp "$apk" "$RUNNER_TEMP/unsigned/fretscribe-$a-release-unsigned.apk"
           done
+          # All four: Android 16 is the floor, Android 17 the target, and every native library is built and
+          # placed for a phone with 16 KB memory pages.
+          scripts/check-apk.sh "$RUNNER_TEMP"/unsigned/*.apk
 
       - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}
