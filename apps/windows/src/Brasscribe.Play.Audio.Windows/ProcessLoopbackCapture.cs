@@ -1,16 +1,8 @@
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using Brasscribe.Play.Audio.Windows.Interop;
 using NAudio.Wave;
 
 namespace Brasscribe.Play.Audio.Windows;
-
-/// <summary>Whether this Windows build has process loopback (Windows 11, Windows Server 2022, build 20348+).</summary>
-public static class ProcessLoopback
-{
-    [SupportedOSPlatformGuard("windows10.0.20348")]
-    public static bool IsSupported => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20348);
-}
 
 /// <summary>
 /// Records one process and its children with WASAPI process loopback: ActivateAudioInterfaceAsync
@@ -20,11 +12,8 @@ public static class ProcessLoopback
 /// Protected (DRM) streams arrive as silent buffers, which is reported through
 /// <see cref="BufferCaptured"/>'s silent flag instead of being hidden.
 /// </summary>
-[SupportedOSPlatform("windows10.0.20348")]
 public sealed class ProcessLoopbackCapture : IDisposable
 {
-    public const int MinimumBuild = 20348;
-
     private readonly int _processId;
     private readonly bool _includeTree;
     private IAudioClient? _client;

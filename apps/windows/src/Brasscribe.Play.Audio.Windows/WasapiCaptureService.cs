@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using Brasscribe.Play.Core.Capture;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
@@ -9,13 +8,12 @@ namespace Brasscribe.Play.Audio.Windows;
 
 /// <summary>
 /// <see cref="ICaptureService"/> on WASAPI: microphone (shared-mode capture), everything the default
-/// output plays (endpoint loopback) and one app (process loopback, build 20348+). Writes a WAV file
+/// output plays (endpoint loopback) and one app (process loopback). Writes a WAV file
 /// and reports peak level per buffer for the meter and the silence watch. Loopback gets no audio
 /// while nothing plays, so silence is written for those stretches (<see cref="LoopbackGap"/>). A
 /// recording that stops by itself (device unplugged, disk full) is said at once, and what was
 /// recorded until then is kept.
 /// </summary>
-[SupportedOSPlatform("windows10.0.19041")]
 public sealed class WasapiCaptureService : ICaptureService, IDisposable
 {
     private IWaveIn? _waveIn;
@@ -30,7 +28,6 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
     private WaveFormat? _gapFormat;
     private readonly object _gate = new();
 
-    public bool SupportsAppCapture => ProcessLoopback.IsSupported;
     public bool IsCapturing { get; private set; }
 
     public event EventHandler<CaptureLevel>? Level;
@@ -105,8 +102,6 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
                     break;
                 case CaptureKind.App:
                 {
-                    if (!ProcessLoopback.IsSupported)
-                        throw new InvalidOperationException("Recording one app needs Windows 11 or Windows Server 2022 (build 20348).");
                     if (request.ProcessId is not { } pid) throw new ArgumentException("No process chosen", nameof(request));
                     var capture = new ProcessLoopbackCapture(pid);
                     var format = capture.WaveFormat;
@@ -168,7 +163,7 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         try { _waveIn?.Dispose(); }
         catch (Exception e) when (e is COMException or InvalidOperationException) { }
         _waveIn = null;
-        if (_process is not null && ProcessLoopback.IsSupported) _process.Dispose();
+        _process?.Dispose();
         _process = null;
         lock (_gate)
         {
@@ -262,7 +257,7 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
             await StopWait.WithinAsync(done, StopWait.Limit, ct).ConfigureAwait(false);
             waveIn.Dispose();
         }
-        if (process is not null && ProcessLoopback.IsSupported)
+        if (process is not null)
         {
             format = process.WaveFormat;
             process.Dispose();

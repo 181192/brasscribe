@@ -1,4 +1,3 @@
-using System.Runtime.Versioning;
 using Brasscribe.Play.Core.Capture;
 using NAudio.MediaFoundation;
 using NAudio.Wave;
@@ -9,7 +8,6 @@ namespace Brasscribe.Play.Audio.Windows;
 /// Decodes audio files and the audio track of video files with Media Foundation (the codecs Windows
 /// has: MP3, AAC/M4A, WMA, FLAC, ALAC, MP4/MOV/WMV video) to 16-bit PCM WAV for the engine.
 /// </summary>
-[SupportedOSPlatform("windows10.0.19041")]
 public sealed class MediaFoundationDecoder : IMediaDecoder
 {
     static MediaFoundationDecoder() => MediaFoundationApi.Startup();

@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- The app version, bumped with the others by scripts/release.sh. -->
-    <Version>0.10.1</Version>
+    <Version>0.10.2</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -13,8 +13,9 @@
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
     <!-- Lets the Windows-only projects compile against reference assemblies on macOS and Linux. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <BrasscribeWindowsTfm>net10.0-windows10.0.20348.0</BrasscribeWindowsTfm>
-    <BrasscribeWindowsMinVersion>10.0.19041.0</BrasscribeWindowsMinVersion>
+    <!-- Windows target: Windows 11 (build 22000) is the oldest system the app runs on. -->
+    <BrasscribeWindowsTfm>net10.0-windows10.0.22000.0</BrasscribeWindowsTfm>
+    <BrasscribeWindowsMinVersion>10.0.22000.0</BrasscribeWindowsMinVersion>
     <!-- The repository root: design/ (theme, icons, the mark) and the pixi workspace are linked from there, never copied. -->
     <RepoRoot>$(MSBuildThisFileDirectory)..\..\..\</RepoRoot>
     <DesignDir>$(RepoRoot)design\</DesignDir>

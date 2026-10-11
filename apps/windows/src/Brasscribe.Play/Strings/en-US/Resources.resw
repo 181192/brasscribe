@@ -45,9 +45,6 @@
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Some bars have no steady beat (ad lib.). Their rhythms are approximate.</value>
   </data>
-  <data name="AppCaptureUnavailable.Text" xml:space="preserve">
-    <value>Needs Windows 11. You can still record everything this PC plays.</value>
-  </data>
   <data name="AppPicker.Header" xml:space="preserve">
     <value>App to record</value>
   </data>
@@ -2150,9 +2147,6 @@
   </data>
   <data name="StartError.Title" xml:space="preserve">
     <value>That didn't work</value>
-  </data>
-  <data name="Start_Error_AppCaptureUnsupported" xml:space="preserve">
-    <value>Recording one app needs Windows 11. Record everything this PC plays instead.</value>
   </data>
   <data name="Start_Error_Capture" xml:space="preserve">
     <value>Recording couldn't start: {0}</value>
