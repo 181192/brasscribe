@@ -75,7 +75,7 @@ enum Catalogue {
     /// for, its content in place and drawn, keeping still; `ready` says what the screen itself still waits for), its
     /// tree checked, and its screenshot and tree written as `name`. A screen that does not become the one asked for is
     /// not taken, and fails the run. `unreadable` is the issue of a screen known to draw some text in the colour of what
-    /// is behind it: its texts are not asked to be in the picture, and it fails the run once they all are.
+    /// is behind it: its texts are not asked to be in the picture, and the takes log says so once they all are.
     static func record(_ r: Rendering, name: String, ready: () -> String? = { nil }, unreadable: String? = nil,
                        known: (Finding) -> Bool = { _ in false }) async throws {
         let take: ScreenTake
@@ -88,7 +88,8 @@ enum Catalogue {
             return
         }
         if let unreadable, Conditions.drawn(take.picture, nodes: take.nodes, bounds: r.hosting.bounds) == nil {
-            Issue.record("\(name) draws all its text now: take it out of `unreadable` (\(unreadable))")
+            Pictures.log("\(name): draws all its text here; its entry in `unreadable` (\(unreadable)) is not needed on this macOS",
+                         to: output, language: language)
         }
         if let broken = Guards.tree(take.nodes, screen: name) { Issue.record(Comment(rawValue: broken)) }
         let findings = Checks.run(take.nodes, bounds: r.hosting.bounds, text: text).filter { !known($0) }

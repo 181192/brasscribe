@@ -215,7 +215,8 @@ picture in `not-taken/`, instead of keeping a picture of something else. `takes-
 screenshots says how long each screen took and what it waited for.
 
 `unreadable` lists the screens that draw some text in the colour of what is behind it, each with its issue: their
-texts are not asked to be in the picture, and an entry fails the run once its screen draws all its text.
+texts are not asked to be in the picture. The takes log says when a listed screen draws all its text (which texts
+are affected differs between macOS versions).
 
 There is no large-text variant on the Mac: macOS has no Dynamic Type for an app's windows (a `dynamicTypeSize` of
 `accessibility3` draws the same pixels), and Play has no text size of its own. Two hooks, in the tests only, are

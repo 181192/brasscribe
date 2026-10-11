@@ -27,7 +27,7 @@ import Testing
     static let known: [(screen: Screen?, kind: Finding.Kind, words: String, issue: String)] = []
 
     /// Screens (with their variant) that draw some text in the colour of what is behind it, each with its issue: their
-    /// texts are not asked to be in the picture. An entry whose screen draws all its text fails the run.
+    /// texts are not asked to be in the picture. An entry whose screen draws all its text is noted in the takes log.
     static let unreadable: [String: String] = ["panel-setting-up-contrast": "#368"]
 
     @Test(arguments: Screen.allCases)
