@@ -213,7 +213,7 @@ This is implemented in `engine/src/scribe_engine/companion.py`, `api.py` and `cl
 
 | Endpoint | Who | Purpose |
 |---|---|---|
-| `GET /v1/health` | anyone | adds `server_id`, `server_name` |
+| `GET /v1/health` | anyone | adds `server_id`, `server_name`, and `interface_version`: the one number an app and the engine must share (`docs/plan/scribe-platform.md`, "App and engine must match") |
 | `POST /v1/pair` | anyone with the code | unchanged shape; response adds `device_id`, `server_id`, `server_name` (all strings: Apple decodes it as `[String: String]`). A request that carries a valid bearer re-issues that device's token instead of adding a duplicate. 429 + `Retry-After` while locked |
 | `POST /v1/pair/requests`, `GET /v1/pair/requests/{id}` | anyone | approve-on-the-computer |
 | `GET /v1/devices/me`, `POST /v1/devices/me/rotate`, `DELETE /v1/devices/me` | paired device | check, rotate (the token used keeps working until the new one is used), unpair |
