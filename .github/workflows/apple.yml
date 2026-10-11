@@ -6,7 +6,8 @@ name: apple
 # `iphone_tests`, only the iPhone simulator app's unit and UI tests (job `play-iphone`): nightly.yml runs them
 # every night, since they take longer than everything else here together. With `release`: Release builds of Play
 # for Mac and of Bandroom for Mac (which installs and runs the engine), both re-signed ad hoc, uploaded as
-# dist-macos (job `build`).
+# dist-macos (job `build`), and Play for iPhone and iPad as an unsigned IPA that a tester signs with their
+# own Apple account, uploaded as dist-ios (job `ios`).
 # The checks run on pull requests that touch what the Apple apps build from, and on pushes to main:
 # ci.yml calls this workflow (job `apple`) after its `changes` job, with skip_play or skip_bandroom
 # for an app the change does not reach. Releases (release.yml) call it with `release`; it can also be
@@ -34,7 +35,7 @@ on:
         type: boolean
         default: false
       release:
-        description: Build the macOS app for download instead of running checks
+        description: Build the Mac apps and the unsigned iPhone and iPad app for download instead of running checks
         type: boolean
         default: false
 
@@ -561,3 +562,71 @@ jobs:
           path: ${{ runner.temp }}/out/*.zip
           if-no-files-found: error
 
+
+  # Play for iPhone and iPad as a test build. There is no Apple Developer account, so the app is archived
+  # for devices with signing off and packed unsigned: a tester signs it with their own Apple account,
+  # using a sideloading tool, to put it on their device (Xcode does not sign an existing IPA; with Xcode
+  # one builds from the source). The app asks for no entitlements, so a free account can sign it. scripts/make-ipa.sh builds it and checks the file (iPhone and iPad, arm64 for
+  # devices and not the simulator, nothing signed left inside, the band sounds).
+  ios:
+    name: release build for iPhone and iPad (unsigned)
+    if: ${{ inputs.release }}
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # DEVELOPER_DIR as well as xcode-select: the scripts and the Rust iOS builds read it.
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          dev="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          test -d "$dev" || { echo "Xcode $XCODE_VERSION is not on this image" >&2; ls -d /Applications/Xcode_* >&2; exit 1; }
+          sudo xcode-select -s "$dev"
+          echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: core
+          save-if: false
+
+      - run: brew install xcodegen
+
+      # The device slice alone, under its own key: the Mac release caches a macOS-only framework.
+      - name: Cache Verovio.xcframework
+        id: verovio
+        uses: actions/cache@v6
+        with:
+          path: apps/apple/Frameworks
+          key: verovio-${{ runner.os }}-${{ runner.arch }}-xcode${{ env.XCODE_VERSION }}-ios-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
+
+      - name: Build Verovio.xcframework
+        if: steps.verovio.outputs.cache-hit != 'true'
+        env:
+          VEROVIO_SLICES: ios
+        run: make verovio
+
+      # Builds the core for iOS devices among its slices; the bindings are committed.
+      - name: Build BrasscribeFFI.xcframework
+        run: scripts/build-core.sh
+
+      # The phone SoundFont only. Fetched before the project is generated, which stages it into the app.
+      - name: Band sounds
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-mobile.sf2
+
+      - name: Unsigned IPA of Play for iPhone and iPad
+        run: scripts/make-ipa.sh "$RUNNER_TEMP/out/brasscribe-play-ios-unsigned.ipa"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-ios
+          path: ${{ runner.temp }}/out/*.ipa
+          if-no-files-found: error

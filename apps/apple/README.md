@@ -17,11 +17,50 @@ make build          # macOS, iPhone simulator, iPad simulator
 make test           # package tests, macOS app unit tests, then app unit and UI tests on the iPhone simulator
 ../../scripts/mac-vm.sh test-ui   # macOS UI tests (make test-mac-ui), only in the macOS VM or in CI
 make size           # Release build for iOS devices, prints the .app size
+make ipa            # unsigned Release build for iPhone and iPad (see "iPhone and iPad (test build)")
 make install-mac    # Release build into /Applications/Brasscribe Play.app (ad-hoc signed), launched and checked
 scripts/run-fixture-mac.sh                                        # open the Old Hundredth fixture score on the Mac
 scripts/run-fixture-sim.sh "iPhone 17" docs/screenshots/x.png     # same on a simulator, with a screenshot
 scripts/screenshots.sh mac|iphone|ipad [screen …]                 # docs/screenshots, from the same fixture
 ```
+
+## iPhone and iPad (test build)
+
+Each release has `brasscribe-play-ios-unsigned.ipa`: Brasscribe Play for iPhone and iPad (one file for
+both), built for devices and not signed. The project has no Apple Developer account, so it cannot sign
+the app for others, and an iPhone or iPad does not install an unsigned app. A tester signs it with their
+own Apple Account; a free one is enough.
+
+- **Sign and install.** Use a sideloading tool on a computer: it signs the file with your Apple Account
+  and puts the app on the device. Xcode does not sign an existing `.ipa`; with Xcode you build the app
+  from this source with your own team instead ([Build](#build)). The first time, the device asks you to
+  turn on Developer Mode (Settings › Privacy & Security) and to trust your account under Settings ›
+  General › VPN & Device Management.
+- **Scores come from the computer at first.** The on-device models are not in the app, and the address
+  they download from is empty until someone types it in (Settings › On this device › Details for the
+  band's tech person › Download address). Until then the app makes its scores through the paired computer.
+- **Seven days.** A signature from a free Apple Account lasts 7 days; after that the app does not open
+  until it is signed again. Signed with the same account and the same tool it is the same app, so its
+  scores, settings and paired computer stay. Another account or tool gives the app another bundle id:
+  iOS takes that as a new app, with nothing in it.
+- **A few apps.** A free Apple Account can keep only a few sideloaded apps on a device at a time.
+- **Not tried on a device yet.** The file is built and checked in CI for every release; installing it
+  on an iPhone or iPad through a sideloading tool has not been tried by hand.
+
+`make ipa` (`scripts/make-ipa.sh`) builds the same file locally: an archive for `generic/platform=iOS`
+with code signing off, packed as `Payload/BrasscribePlay.app`. The script checks the file before it
+keeps it: iPhone and iPad as device families, the texts iOS shows when it asks for the microphone, the
+camera and the local network, every binary arm64 for iOS devices (not the simulator), and no signature
+or provisioning profile inside.
+
+The app is made so that such a signature is enough. It asks for no entitlements on iOS
+(`App/BrasscribePlay-iOS.entitlements` is empty): no app groups, push, iCloud or associated domains.
+The paired computer is kept in the Keychain without an access group, so it lands in the group the
+signature gives the app. Scores are in the app's own Application Support folder and settings in its own
+defaults, and nothing reads the bundle id. Finding the computer on the local network, the `brasscribe:`
+pairing address, the microphone, the camera and playing in the background are declared in `Info.plist`
+alone. The on-device models are not in the app: they download only once a download address is set in
+Settings (see "Offline solos" below).
 
 The macOS UI tests run only in a headless macOS VM, never on your desktop: see [docs/dev/macos-vm.md](../../docs/dev/macos-vm.md).
 
