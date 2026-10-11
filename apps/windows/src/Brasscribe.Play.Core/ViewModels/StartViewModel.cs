@@ -51,8 +51,6 @@ public sealed partial class StartViewModel : ObservableObject
     /// <summary>Raised when a MusicXML file was opened: it goes straight to the score.</summary>
     public event EventHandler<string>? ScoreOpened;
 
-    public bool SupportsAppCapture => _capture.SupportsAppCapture;
-
     public ObservableCollection<AudioApp> Apps { get; } = [];
 
     [ObservableProperty] public partial AudioApp? SelectedApp { get; set; }
@@ -130,11 +128,6 @@ public sealed partial class StartViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanStart))]
     private Task RecordAppAsync()
     {
-        if (!SupportsAppCapture)
-        {
-            Fail(_s["Start_Error_AppCaptureUnsupported"]);
-            return Task.CompletedTask;
-        }
         if (SelectedApp is null)
         {
             Fail(_s["Start_Error_ChooseApp"]);

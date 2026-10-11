@@ -161,7 +161,6 @@ public class ScoreEditingTests
 
     private sealed class NoCapture : ICaptureService
     {
-        public bool SupportsAppCapture => false;
         public bool IsCapturing => false;
         public event EventHandler<CaptureLevel>? Level { add { } remove { } }
         public event EventHandler<CaptureNotice>? Notice { add { } remove { } }

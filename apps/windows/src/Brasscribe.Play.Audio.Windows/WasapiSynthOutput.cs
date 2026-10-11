@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using Brasscribe.Play.Core.Playback;
 using Brasscribe.Play.Core.Services;
 using NAudio.CoreAudioApi;
@@ -17,7 +16,6 @@ namespace Brasscribe.Play.Audio.Windows;
 /// moves to the new default device; a stream that could not open (no device at all) is tried again
 /// when a device appears. All opening and closing happens on one thread of its own.
 /// </summary>
-[SupportedOSPlatform("windows10.0.19041")]
 public sealed class WasapiSynthOutput : IAudioOutput
 {
     private readonly BlockingCollection<Action> _work = new();

@@ -72,7 +72,7 @@ flowchart LR
   - It refuses to run on an Intel Mac or on macOS older than 14. `pixi.toml` only solves for `osx-arm64` with macOS 14 or later.
   - The refusal is one plain sentence: "Brasscribe needs a Mac with Apple silicon (M1 or newer) and macOS 14 or later."
 - **Windows:** an MSIX package, installed per user with no administrator prompt (§5.3).
-  - Windows 10 22H2 or later and Windows 11, x64 only. `win-64` is the only Windows platform in `pixi.toml`. On an Arm PC it says so plainly.
+  - Windows 11, x64 only. `win-64` is the only Windows platform in `pixi.toml`. On an Arm PC it says so plainly.
 - The installer is small, **about 60 MB (target, not measured)**: a native shell plus the pinned `pixi` binary and the lockfile. Everything else comes in the first run.
 
 ### 3.2 First run: a four-step setup window
@@ -635,7 +635,7 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | setup.4.heads-up.win | Next, Windows may ask whether Brasscribe may use the network. Tick **Private networks** and choose **Allow**. | Nå kan Windows spørre om Brasscribe får bruke nettverket. Kryss av for **Private nettverk** og velg **Tillat**. |
 | setup.4.done | Done | Ferdig |
 | setup.refuse.mac | Brasscribe needs a Mac with Apple silicon (M1 or newer) and macOS 14 or later. | Brasscribe trenger en Mac med Apple-brikke (M1 eller nyere) og macOS 14 eller nyere. |
-| setup.refuse.win | Brasscribe needs a 64-bit Intel or AMD PC with Windows 10 (22H2) or Windows 11. | Brasscribe trenger en 64-biters PC med Intel eller AMD og Windows 10 (22H2) eller Windows 11. |
+| setup.refuse.win | Brasscribe needs a 64-bit Intel or AMD PC with Windows 11. | Brasscribe trenger en 64-biters PC med Intel eller AMD og Windows 11. |
 
 The macOS Local Network dialog is the system's own, so the heads-up names the button the user will see. That button is **Allow** in English. **Verify** the Norwegian label («Tillat» is assumed) on a Mac set to Norwegian, and the Windows firewall labels, before shipping.
 

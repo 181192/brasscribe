@@ -45,9 +45,6 @@
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Noen takter har ingen fast puls (ad lib.). Rytmene der er omtrentlige.</value>
   </data>
-  <data name="AppCaptureUnavailable.Text" xml:space="preserve">
-    <value>Krever Windows 11. Du kan fortsatt ta opp alt PC-en spiller.</value>
-  </data>
   <data name="AppPicker.Header" xml:space="preserve">
     <value>App som skal tas opp</value>
   </data>
@@ -2150,9 +2147,6 @@
   </data>
   <data name="StartError.Title" xml:space="preserve">
     <value>Det gikk ikke</value>
-  </data>
-  <data name="Start_Error_AppCaptureUnsupported" xml:space="preserve">
-    <value>Opptak av én app krever Windows 11. Ta opp alt PC-en spiller i stedet.</value>
   </data>
   <data name="Start_Error_Capture" xml:space="preserve">
     <value>Opptaket kunne ikke starte: {0}</value>
