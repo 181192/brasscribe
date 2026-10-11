@@ -22,9 +22,10 @@ struct SettingsView: View {
         @Bindable var app = app
         NavigationStack {
             // On the page's ground, with every footer and row value in the page's muted text: left to the form, they
-            // take the system's secondary colour, which is too faint on this ground in the light appearance.
+            // take the system's secondary colour, which is too faint on this ground in the light appearance. The
+            // rows' own fills are the system's (on the Mac a grouped form draws them whatever ground a row is given);
+            // the Mac screen catalogue measures every text on them.
             Form {
-              Group {
                 Section {
                     NavigationLink {
                         WhatDoYouPlayView(mode: .settings, initial: app.seat) { answer in
@@ -122,8 +123,6 @@ struct SettingsView: View {
                     Text("Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework.")
                     Text("Band sounds built from VSCO 2 Community Edition (CC0), the University of Iowa Musical Instrument Samples and MS Basic (MIT).")
                 } header: { Text("About") }
-              }
-              .formRowsOnSurface()
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)

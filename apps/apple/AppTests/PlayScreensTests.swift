@@ -169,7 +169,8 @@ import TranscriptionKit
         exportModel.stopAll()
         try await sheet("first-run", app: full) { FirstRunView() }
         try await sheet("record-mic", app: full) { MicRecordView() }
-        // on the surface, the ground of the Settings row the app shows it in
+        // On the surface, which stands in here for the Settings row the app shows it in: the view has no ground of
+        // its own, and the row's is the form's.
         try await sheet("match-code", app: full, controls: false) {
             MatchCodeView(code: "4821").padding(Space.s5).background(Color.Scribe.surface)
         }

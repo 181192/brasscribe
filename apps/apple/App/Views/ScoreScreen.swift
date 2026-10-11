@@ -927,15 +927,10 @@ struct RepeatSheet: View {
         let last = model.score.measures.count - 1
         NavigationStack {
             Form {
-                Group {
-                    Stepper(value: $model.loopFrom, in: 0...last) { Text("From bar \(model.loopFrom + 1)").monospacedDigit() }
-                    Stepper(value: $model.loopTo, in: 0...last) { Text("To bar \(model.loopTo + 1)").monospacedDigit() }
-                    Text("Plays these bars over and over.").foregroundStyle(Color.Scribe.textMuted)
-                }
-                .formRowsOnSurface()
+                Stepper(value: $model.loopFrom, in: 0...last) { Text("From bar \(model.loopFrom + 1)").monospacedDigit() }
+                Stepper(value: $model.loopTo, in: 0...last) { Text("To bar \(model.loopTo + 1)").monospacedDigit() }
+                Text("Plays these bars over and over.").foregroundStyle(Color.Scribe.textMuted)
             }
-            .scrollContentBackground(.hidden)
-            .pageBackground()
             .navigationTitle(Text("Repeat bars"))
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

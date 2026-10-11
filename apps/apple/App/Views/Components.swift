@@ -425,20 +425,6 @@ extension View {
     }
 
     func pageBackground() -> some View { background(Color.Scribe.bg.ignoresSafeArea()) }
-
-    /// A grouped form on the page's ground with its rows on the page's surface, not on the fills the system draws
-    /// for them: the page's text colours are then on grounds the design tokens check them against. Put it on the
-    /// form's content (a `Group` of its sections); a row with a ground of its own keeps it.
-    func formRowsOnSurface() -> some View { listRowBackground(FormRowGround()) }
-}
-
-/// The ground of a form's row: the surface, and under Increase Contrast, where the surface is the colour of the
-/// page, an edge around it.
-struct FormRowGround: View {
-    @Environment(\.colorSchemeContrast) private var contrast
-    var body: some View {
-        Color.Scribe.surface.overlay { if contrast == .increased { Rectangle().strokeBorder(Color.Scribe.border, lineWidth: 1) } }
-    }
 }
 
 // MARK: the mark
