@@ -95,7 +95,10 @@ public enum Pictures {
     /// contrast ratio between the ground (the colour most of the pixels have) and the colour furthest from it that at
     /// least `share` of the pixels reach (and at least three: one stray pixel of a neighbour's edge is not text).
     /// A glyph's edges blend into the ground, so its core is what counts, and a small, thin text in a wide frame has
-    /// only a few pixels of it: the share is that small. 1 when nothing is drawn there; nil when the
+    /// only a few pixels of it (a caption of two lines at 13 pt has under ten in 40 000): the share is that small.
+    /// The measure does not know which pixels are the text's: anything else in the frame that stands out more than
+    /// the text (an icon, an edge, a rule that crosses it) decides the ratio, so a faint text beside something
+    /// strong passes. 1 when nothing is drawn there; nil when the
     /// ground is not in the picture (it is see-through there: whatever is behind the view on a Mac decides).
     public static func contrast(_ rep: NSBitmapImageRep, in rect: CGRect, share: Double = 0.0002) -> Double? {
         guard let data = rep.bitmapData else { return 1 }

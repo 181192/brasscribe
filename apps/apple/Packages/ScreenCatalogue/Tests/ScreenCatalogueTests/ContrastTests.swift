@@ -74,7 +74,7 @@ struct ContrastTests {
         // The view draws its text and nothing behind it: what is behind the view on a Mac decides, and the picture cannot say.
         let rep = picture(ground: nil, marks: [glyphs(.black), other])
         #expect(Pictures.contrast(rep, in: frame) == nil)
-        #expect(Conditions.drawn(rep, nodes: [text("Play when you're ready.")], bounds: view)
+        #expect(Conditions.readable(rep, nodes: [text("Play when you're ready.")], bounds: view, minimum: 4.5)
             == "its text “Play when you're ready.” has no ground drawn behind it, so nothing gives it 4.5:1")
     }
 
@@ -84,36 +84,90 @@ struct ContrastTests {
         // #6A6A6A on white is 5.41:1: readable, and not enough under Increase Contrast.
         let rep = picture(ground: .white, marks: [glyphs(grey(0x6A)), other])
         let caption = text("Very unsure")
-        #expect(Conditions.drawn(rep, nodes: [caption], bounds: view, minimum: 4.5) == nil)
-        #expect(Conditions.drawn(rep, nodes: [caption], bounds: view, minimum: 7) == "its text “Very unsure” is 5.41:1 on its ground, under 7:1")
+        #expect(Conditions.readable(rep, nodes: [caption], bounds: view, minimum: 4.5) == nil)
+        #expect(Conditions.readable(rep, nodes: [caption], bounds: view, minimum: 7) == "its text “Very unsure” is 5.41:1 on its ground, under 7:1")
         // Near invisible: something is drawn, which used to be enough.
         let faint = picture(ground: .white, marks: [glyphs(grey(0xE0)), other])
         #expect(!Pictures.isFlat(faint, in: frame))
-        #expect(Conditions.drawn(faint, nodes: [caption], bounds: view, minimum: 4.5) == "its text “Very unsure” is 1.32:1 on its ground, under 4.5:1")
+        #expect(Conditions.readable(faint, nodes: [caption], bounds: view, minimum: 4.5) == "its text “Very unsure” is 1.32:1 on its ground, under 4.5:1")
         // A text that passes exactly passes.
-        #expect(Conditions.drawn(picture(ground: .white, marks: [glyphs(grey(0x59)), other]), nodes: [caption], bounds: view, minimum: 7) == nil)
+        #expect(Conditions.readable(picture(ground: .white, marks: [glyphs(grey(0x59)), other]), nodes: [caption], bounds: view, minimum: 7) == nil)
     }
 
     @Test func everyFaintTextIsNamedWithItsRatio() {
         let rep = picture(ground: .white, marks: [glyphs(grey(0x6A)), glyphs(grey(0x99), y: 12), other])
         let nodes = [text("Brasscribe wasn't sure"), text("Very unsure", y: 5)]
-        #expect(Conditions.drawn(rep, nodes: nodes, bounds: view, minimum: 7)
+        #expect(Conditions.readable(rep, nodes: nodes, bounds: view, minimum: 7)
             == "its texts “Brasscribe wasn't sure” (5.41:1), “Very unsure” (2.85:1) are under 7:1 on their ground")
         #expect(Conditions.faint(rep, nodes: nodes, bounds: view, minimum: 4.5).map(\.node.words) == ["Very unsure"])
-        // A text that is not drawn yet is waited for first, by the words it always had.
-        let early = picture(ground: .white, marks: [glyphs(grey(0x99), y: 12), other])
-        #expect(Conditions.drawn(early, nodes: nodes, bounds: view, minimum: 7) == "its text “Brasscribe wasn't sure” is not drawn in its picture yet")
+        // A text that is not drawn yet is not a faint one: it is waited for, by the words it always had.
+        let early = picture(ground: .white, marks: [glyphs(.black, y: 12), other])
+        #expect(Conditions.drawn(early, nodes: nodes, bounds: view) == "its text “Brasscribe wasn't sure” is not drawn in its picture yet")
+        #expect(Conditions.readable(early, nodes: nodes, bounds: view, minimum: 7) == nil)
+        // and a faint one is drawn: nothing to wait for
+        #expect(Conditions.drawn(rep, nodes: nodes, bounds: view) == nil)
+    }
+
+    @Test func aFaintTextInASteadyPictureFailsTheTakeAtOnce() async {
+        // The screen keeps still and is the one asked for; its caption is too faint. Waiting would not change it:
+        // the take ends as soon as it has its steady pictures, with the text and its ratio.
+        let caption = text("Very unsure")
+        let rep = picture(ground: .white, marks: [glyphs(grey(0x6A)), other])
+        var taken = 0
+        var clock = 0.0
+        do {
+            _ = try await SteadyTake.take("review-contrast", rule: .init(takes: 3, bound: 30), now: { clock += 0.1; return clock }, frames: {},
+                                          read: { Reading() }, picture: { taken += 1; return rep },
+                                          drawn: { Conditions.drawn($0, nodes: [caption], bounds: self.view) },
+                                          readable: { Conditions.readable($0, nodes: [caption], bounds: self.view, minimum: 7) })
+            Issue.record("taken")
+        } catch let notTaken as ScreenNotTaken {
+            #expect(taken == 3)
+            #expect(notTaken.unreadable)
+            #expect(notTaken.seconds < 1)
+            #expect(notTaken.description.hasPrefix("screen not taken: review-contrast: its text “Very unsure” is 5.41:1 on its ground, under 7:1 ("))
+        } catch {
+            Issue.record("\(error)")
+        }
+    }
+
+    @Test func aTextNotDrawnYetIsStillWaitedForAndCountsAsNotTaken() async {
+        // The caption's frame is empty the whole time: that is waited for to the bound, and is not "unreadable".
+        let caption = text("Very unsure")
+        let rep = picture(ground: .white, marks: [other])
+        var clock = 0.0
+        do {
+            _ = try await SteadyTake.take("review-contrast", rule: .init(takes: 3, bound: 5), now: { clock += 0.1; return clock }, frames: {},
+                                          read: { Reading() }, picture: { rep },
+                                          drawn: { Conditions.drawn($0, nodes: [caption], bounds: self.view) },
+                                          readable: { Conditions.readable($0, nodes: [caption], bounds: self.view, minimum: 7) })
+            Issue.record("taken")
+        } catch let notTaken as ScreenNotTaken {
+            #expect(!notTaken.unreadable)
+            #expect(notTaken.seconds >= 5)
+            #expect(notTaken.waitedFor == "its text “Very unsure” is not drawn in its picture yet")
+        } catch {
+            Issue.record("\(error)")
+        }
+    }
+
+    @Test func aReadableSteadyPictureIsTaken() async throws {
+        let caption = text("Very unsure")
+        let rep = picture(ground: .white, marks: [glyphs(.black), other])
+        let result = try await SteadyTake.take("review-contrast", rule: .init(takes: 3, bound: 30), frames: {}, read: { Reading() }, picture: { rep },
+                                               readable: { Conditions.readable($0, nodes: [caption], bounds: self.view, minimum: 7) })
+        #expect(result.tries == 3)
     }
 
     @Test func aFaintTextCanBeListedAsUnreadableAndTheEntryGoesStaleWhenItCanBeRead() {
         let nodes = [text("Brasscribe wasn't sure"), text("Very unsure", y: 5)]
         let known = Unreadable(issue: "#1", screens: ["review-contrast": ["Very unsure"]])
         let rep = picture(ground: .white, marks: [glyphs(.black), glyphs(grey(0x99), y: 12), other])
-        #expect(Conditions.drawn(rep, nodes: nodes, bounds: view, minimum: 7, unreadable: known.covers("review-contrast", in: nodes)) == nil)
+        #expect(Conditions.readable(rep, nodes: nodes, bounds: view, minimum: 7, unreadable: known.covers("review-contrast", in: nodes)) == nil)
         #expect(known.stale("review-contrast", picture: rep, nodes: nodes, bounds: view, minimum: 7) == nil)
         // only the listed one is excused
         let both = picture(ground: .white, marks: [glyphs(grey(0x6A)), glyphs(grey(0x99), y: 12), other])
-        #expect(Conditions.drawn(both, nodes: nodes, bounds: view, minimum: 7, unreadable: known.covers("review-contrast", in: nodes))
+        #expect(Conditions.readable(both, nodes: nodes, bounds: view, minimum: 7, unreadable: known.covers("review-contrast", in: nodes))
             == "its text “Brasscribe wasn't sure” is 5.41:1 on its ground, under 7:1")
         // fixed: the entry has to go
         let fixed = picture(ground: .white, marks: [glyphs(.black), glyphs(.black, y: 12), other])

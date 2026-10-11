@@ -158,7 +158,11 @@ import TranscriptionKit
         }
         stand.leaveStand()
         stand.stopAll()
+        // The note the list opens on is a very unsure one: its boxed "?" on the selected row is the mark with the
+        // least contrast to its ground.
+        let composition = try LayoutFixtures.makeFirstNoteVeryUnsure(piece)
         try await window("review", app: full) { ReviewView(piece: piece) }
+        try piece.saveComposition(composition)
         try await window("problem-silence", app: full) { ProblemView(problem: .silence) }
 
         try await sheet("settings", app: full) { SettingsView() }

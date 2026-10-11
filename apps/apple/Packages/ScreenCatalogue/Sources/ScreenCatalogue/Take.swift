@@ -20,6 +20,9 @@ public struct ScreenNotTaken: Error, CustomStringConvertible, Sendable {
     public let seconds: Double
     /// The tree as it was last read, when there was one: the screen's checks still run on it.
     public var nodes: [AXNode] = []
+    /// It kept still and was the screen asked for, and its picture cannot be read (`SteadyTake.take`, `readable`):
+    /// nothing was waited for, so it does not count towards the screens after which the catalogue stops.
+    public var unreadable = false
     public var description: String {
         "screen not taken: \(screen): \(waitedFor) (\(tries) tries in \(String(format: "%.1f", seconds)) s)"
     }
@@ -71,11 +74,14 @@ public enum SteadyTake {
     public static let restless = "it does not keep still"
 
     /// `frames` lets two display frames go by; `read` reads the conditions; `picture` takes the screen's pixels;
-    /// `drawn` says what of the reading the picture does not show (nil when it shows all of it). `lastPicture` gets
-    /// each picture as it is taken, so a screen that is not taken still leaves its last one to look at.
+    /// `drawn` says what of the reading the picture does not show yet (nil when it shows all of it), which is waited
+    /// for. `readable` says what in the steady picture cannot be read (nil when all of it can): waiting does not
+    /// change a picture that keeps still, so the screen is not taken at once, with that as its reason. `lastPicture`
+    /// gets each picture as it is taken, so a screen that is not taken still leaves its last one to look at.
     public static func take(_ screen: String, rule: Rule = Rule(), now: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
                             frames: () async -> Void, read: () -> Reading, picture: () -> NSBitmapImageRep,
                             drawn: (NSBitmapImageRep) -> String? = { _ in nil },
+                            readable: (NSBitmapImageRep) -> String? = { _ in nil },
                             lastPicture: (NSBitmapImageRep) -> Void = { _ in }) async throws -> Taken {
         let start = now()
         var tries = 0, run = 0
@@ -107,7 +113,12 @@ public enum SteadyTake {
                 run = 1
                 last = pixels
             }
-            if run >= rule.takes { return Taken(picture: rep, tries: tries, seconds: now() - start, waited: waited) }
+            if run >= rule.takes {
+                if let faint = readable(rep) {
+                    throw ScreenNotTaken(screen: screen, waitedFor: faint, tries: tries, seconds: now() - start, unreadable: true)
+                }
+                return Taken(picture: rep, tries: tries, seconds: now() - start, waited: waited)
+            }
         } while now() - start < rule.bound
         throw ScreenNotTaken(screen: screen, waitedFor: waited.last?.condition ?? restless, tries: tries, seconds: now() - start)
     }
@@ -146,7 +157,8 @@ public struct ScreenTake {
     /// for (a view of another suite, drawn meanwhile, may have asked for its own). A line goes to
     /// `takes-<language>.log` in `output`; a screen that is not taken leaves its last picture in `not-taken/` there
     /// and throws `ScreenNotTaken` with the tree it last read. After three screens were not taken (`notTaken`), no
-    /// screen is tried and `CatalogueStopped` is thrown.
+    /// screen is tried and `CatalogueStopped` is thrown; a screen not taken for a text too faint to read, which is
+    /// found as soon as the screen keeps still, is not one of the three.
     public static func take(_ name: String, window: NSWindow, view: NSView, size: () -> CGSize, asked: Asked, witness: AppearanceWitness,
                             controls: Bool = true, busyExpected: Bool = false, ready: () -> String? = { nil },
                             shows: ([AXNode]) -> String? = { _ in nil }, unreadable: Unreadable? = nil, rule: SteadyTake.Rule = SteadyTake.Rule(),
@@ -169,15 +181,18 @@ public struct ScreenTake {
                 SystemContrast.set(asked.increasedContrast)
                 if let frames { await frames() } else { await SteadyTake.frames(of: view) }
             }, read: read, picture: picture, drawn: {
-                Conditions.drawn($0, nodes: nodes, bounds: view.bounds, minimum: minimum,
-                                 unreadable: unreadable?.covers(name, in: nodes) ?? { _ in false })
+                Conditions.drawn($0, nodes: nodes, bounds: view.bounds, unreadable: unreadable?.covers(name, in: nodes) ?? { _ in false })
+            }, readable: {
+                Conditions.readable($0, nodes: nodes, bounds: view.bounds, minimum: minimum,
+                                    unreadable: unreadable?.covers(name, in: nodes) ?? { _ in false })
             }, lastPicture: { last = $0 })
             Pictures.log(taken.line(name), to: output, language: language)
             let stale = unreadable?.stale(name, picture: taken.picture, nodes: nodes, bounds: view.bounds, minimum: minimum)
             if let stale { Pictures.log(stale, to: output, language: language) }
             return ScreenTake(picture: taken.picture, nodes: nodes, stale: stale)
         } catch var failed as ScreenNotTaken {
-            notTaken.note()
+            // A text too faint to read is found at once, not waited for: every screen that has one is reported.
+            if !failed.unreadable { notTaken.note() }
             Pictures.log(failed.description, to: output, language: language)
             if let last { try? Pictures.write(last, tree: nodes, name: name, to: output.appending(path: "not-taken", directoryHint: .isDirectory)) }
             failed.nodes = nodes
@@ -331,18 +346,22 @@ public enum Conditions {
     /// (1.4.3). The tree does not say how large a text is, so large text gets no lower bar of its own.
     public nonisolated static func minimumContrast(increased: Bool) -> Double { increased ? 7 : 4.5 }
 
-    /// The picture shows the tree's texts so that they can be read: every text in view has something drawn in its
-    /// frame, with at least `minimum` contrast to the ground it is drawn on. A window that has not drawn yet, or a
-    /// list whose rows have their words in the tree before they are on the screen, has frames of one flat colour.
-    /// `unreadable` names texts known to fall short (`Unreadable`).
-    public static func drawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double = 4.5,
-                             unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
+    /// The picture shows the tree's texts: every text in view has something drawn in its frame. A window that has
+    /// not drawn yet, or a list whose rows have their words in the tree before they are on the screen, has frames of
+    /// one flat colour: this is waited for. `unreadable` names texts known to fall short (`Unreadable`).
+    public static func drawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
         if Pictures.isFlat(rep, in: CGRect(x: 0, y: 0, width: rep.pixelsWide, height: rep.pixelsHigh)) { return "nothing is drawn in its picture yet" }
         let missing = undrawn(rep, nodes: nodes, bounds: bounds).filter { !unreadable($0) }.map { Unreadable.text(of: $0, in: nodes).description }
         // All of them, each as `Unreadable` would name it, so that a screen that is not taken says everything it lacks in one run.
-        if !missing.isEmpty {
-            return "its text\(missing.count == 1 ? "" : "s") \(missing.prefix(24).joined(separator: ", ")) \(missing.count == 1 ? "is" : "are") not drawn in its picture yet"
-        }
+        if missing.isEmpty { return nil }
+        return "its text\(missing.count == 1 ? "" : "s") \(missing.prefix(24).joined(separator: ", ")) \(missing.count == 1 ? "is" : "are") not drawn in its picture yet"
+    }
+
+    /// The texts the picture shows can be read: each has at least `minimum` contrast to the ground it is drawn on.
+    /// Asked of a picture that keeps still, where waiting changes nothing: what it returns is why the screen is not
+    /// taken. `unreadable` names texts known to fall short (`Unreadable`).
+    public static func readable(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double,
+                                unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
         let faint = faint(rep, nodes: nodes, bounds: bounds, minimum: minimum).filter { !unreadable($0.node) }
         if faint.isEmpty { return nil }
         let least = ratio(minimum)

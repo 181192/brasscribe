@@ -502,8 +502,15 @@ struct UncertaintyLegend: View {
         HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); caption(Text("Very unsure")) }
     }
 
-    /// In the page's muted text: left to the list it is in, a caption takes the system's colour.
-    private func caption(_ text: Text) -> some View { text.foregroundStyle(Color.Scribe.textMuted) }
+    /// On the Mac in the page's muted text: left to the list it is in, a caption takes the system's colour, and the
+    /// Mac's list is on the page's surface. The iPad's list is the system's, with its colours.
+    @ViewBuilder private func caption(_ text: Text) -> some View {
+        #if os(macOS)
+        text.foregroundStyle(Color.Scribe.textMuted)
+        #else
+        text
+        #endif
+    }
 }
 
 extension View {

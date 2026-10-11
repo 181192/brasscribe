@@ -255,6 +255,22 @@ enum LayoutFixtures {
     }
 
     static func model(_ piece: Piece) async throws -> PracticeModel { try await PracticeModel.open(piece) }
+
+    /// The piece's first note to check as one Brasscribe is very unsure of (a boxed "?"), which the fixture has none
+    /// of. Returns the composition as it was, to put back with `saveComposition`.
+    static func makeFirstNoteVeryUnsure(_ piece: Piece) throws -> Composition {
+        let was = try #require(piece.loadComposition())
+        var comp = was
+        let group = try #require(comp.review.first)
+        comp.review[0].very = true
+        for v in comp.voices.indices where comp.voices[v].id == group.voice {
+            for n in comp.voices[v].notes.indices where comp.voices[v].notes[n].start >= group.start && comp.voices[v].notes[n].start < group.end {
+                comp.voices[v].notes[n].confidence = 0.2
+            }
+        }
+        try piece.saveComposition(comp)
+        return was
+    }
 }
 
 /// Where the thumbnails go: apps/apple/docs/responsive, only when BRASSCRIBE_RESPONSIVE_SHOTS is set

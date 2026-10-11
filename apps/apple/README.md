@@ -220,10 +220,22 @@ frame has, and the text is the colour furthest from it that the frame has more t
 the glyphs, not their blended edges). The ratio between the two is the WCAG contrast ratio, the one
 `qa/tools/contrast.py` computes for the design tokens. The tree does not say how large a text is, so large text gets
 no lower bar. A text that falls short fails the take by name, with its ratio: `its text “Very unsure” is 4.65:1 on
-its ground, under 7:1`. A text drawn with nothing behind it in the picture (a view without a ground of its own, which
+its ground, under 7:1`. That is found as soon as the screen keeps still and is not waited for (waiting does not
+change a steady picture), and such a screen is not one of the three after which the catalogue stops: a colour that
+falls short on many screens is reported for each of them in one run. A text drawn with nothing behind it in the picture (a view without a ground of its own, which
 on a Mac lies on whatever the system puts behind it) has no ratio and fails too. This is what checks a token colour
-on a ground the system draws (a form's row, a list), which the token pairs cannot. What it does not see: a text
-that is not in the tree off screen (the rows of a `List` on the Mac), and marks that are not text.
+on a ground the system draws (a form's row, a list), which the token pairs cannot. The share of pixels that has to reach the text's colour is small (0.02 % of the frame, at least three pixels),
+because a small, thin text has few pixels of its full colour: a caption of two lines has under ten.
+
+What it does not see:
+
+- a text that is not in the tree off screen (the rows of a `List` on the Mac);
+- the titles of buttons, menus, links and checkboxes, and a text field's value: the tree gives a control's frame,
+  not its title's, and does not say whether the control is disabled (exempt) or draws its name at all (a bar of the
+  score is a button named by its notes), so measuring them reports mostly things that are not faults;
+- marks that are not text;
+- a faint text beside something stronger: the measure does not know which pixels are the text's, so an icon, an
+  edge or a rule inside the text's frame decides the ratio.
 
 Every text of every screen is asked to be readable in its picture, in each appearance. Should a screen draw a text
 too faint, or in the colour of what is behind it, and the fix has to wait (a control the system draws), the take can
