@@ -10,6 +10,9 @@ Reads docs/accessibility/design-tokens.json and prints a markdown report:
     simulated protanopia, deuteranopia, tritanopia (Machado et al. 2009, severity 1.0)
     and achromatopsia (luminance only)
 
+In a high-contrast theme (its name starts with "high-contrast") every pair's minimum is 7:1, WCAG AAA
+(1.4.6), whatever the pair lists: the theme is for people who asked for more contrast, in light and in dark.
+
 Exit code 1 if any contrast pair is below its minimum (use in CI). Colour differences
 below DE_MIN are reported as "weak"; they do not fail the run because uncertainty is
 also encoded by notehead shape (WCAG 1.4.1).
@@ -39,6 +42,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TOKENS = ROOT / "docs" / "accessibility" / "design-tokens.json"
 BRANDS = ROOT / "design" / "tokens" / "brands.json"
 DE_MIN = 20.0  # heuristic: CIEDE2000 below this reads as "similar" at notehead size
+HIGH_CONTRAST_MIN = 7.0  # WCAG 1.4.6 (AAA): every pair of a high-contrast theme
 
 MACHADO = {
     "protan": ((0.152286, 1.052583, -0.204868),
@@ -225,6 +229,11 @@ def main(argv: list[str] | None = None) -> int:
     return 1 if failures else 0
 
 
+def required(theme: str, minimum: float) -> float:
+    """The ratio a pair must reach in `theme`: its own minimum, and 7:1 in a high-contrast theme."""
+    return max(minimum, HIGH_CONTRAST_MIN) if theme.startswith("high-contrast") else minimum
+
+
 def report(data: dict, cmd: str, label: str) -> tuple[str, int]:
     """The markdown report of a palette and the number of contrast pairs below their minimum."""
     failures = 0
@@ -234,6 +243,7 @@ def report(data: dict, cmd: str, label: str) -> tuple[str, int]:
     for theme, tok in data["themes"].items():
         out += [f"## {theme}", "", "| foreground | background | ratio | min | SC | result |", "|---|---|---|---|---|---|"]
         for fg, bg, minimum, sc in data["pairs"]:
+            minimum = required(theme, minimum)
             r = contrast(tok[fg], tok[bg])
             ok = r + 1e-9 >= minimum
             failures += 0 if ok else 1

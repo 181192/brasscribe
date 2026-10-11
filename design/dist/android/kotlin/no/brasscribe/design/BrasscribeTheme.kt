@@ -225,7 +225,8 @@ fun BrasscribeTheme(
     content: @Composable () -> Unit,
 ) {
     val own = when {
-        highContrast -> BrasscribeHighContrastColors
+        highContrast && dark -> BrasscribeHighContrastColors
+        highContrast -> BrasscribeHighContrastLightColors
         pink && dark -> BrasscribePinkDarkColors
         pink -> BrasscribePinkColors
         dark -> BrasscribeDarkColors

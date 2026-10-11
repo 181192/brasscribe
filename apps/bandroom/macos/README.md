@@ -84,9 +84,9 @@ so it runs on a Mac in use and on CI's macOS runner.
   loading; every text in view is drawn; and five takes in a row have the same pixels. A screen that does not get
   there in 30 s is not taken and fails the run (`screen not taken: …`, its last picture in `not-taken/`); after
   three, the catalogue stops.
-  `takes-<language>.log` says what each screen waited for. `BandroomScreensTests.unreadable` lists, under their
-  issue, the texts drawn in the colour of what is behind them, by their exact words: only those are not asked to be
-  in the picture, and an entry whose text is drawn or gone fails the run.
+  `takes-<language>.log` says what each screen waited for. Every text is asked to be in the picture, in each
+  appearance; a text known to be drawn in the colour of what is behind it can be listed for a while, under its
+  issue, in an `Unreadable` list (see [the Play apps' README](../../apple/README.md#screen-catalogue-mac)).
 - **The checks** (the Mac apps' shared package `apps/apple/Packages/ScreenCatalogue`), on the
   accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own
   buttons, menus and links are at least 24 × 24 pt, and the system's standard controls (switches, checkboxes, radio

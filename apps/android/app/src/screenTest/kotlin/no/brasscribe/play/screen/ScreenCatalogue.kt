@@ -110,6 +110,13 @@ abstract class ScreenCatalogue : ScreenTest() {
     }
 
     @Test
+    fun highContrastDark() {
+        rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
+        assumeTrue("this device does not take the contrast setting", ScreenDevice.highContrast(rule, true))
+        onEveryScreen("high-contrast-dark")
+    }
+
+    @Test
     fun at200PercentText() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         textSize(2f)

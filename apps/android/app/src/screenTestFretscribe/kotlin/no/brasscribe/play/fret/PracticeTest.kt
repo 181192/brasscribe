@@ -38,7 +38,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import no.scribe.design.ScribeColors
 import no.scribe.design.ScribeDarkColors
-import no.scribe.design.ScribeHighContrastColors
+import no.scribe.design.ScribeHighContrastLightColors
 import no.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.MainActivity
@@ -897,7 +897,7 @@ class PracticeTest : ScreenTest() {
         }
         settle()
         assertNotNull(cursor(tab))
-        assertTheCursorIsDrawn(tab, ScribeHighContrastColors, "in high contrast")
+        assertTheCursorIsDrawn(tab, ScribeHighContrastLightColors, "in high contrast")
         // A repeat over every line of the tab: each line has the rail under its bars, also the ones between the two brackets.
         val e = tab.engraving.value!!
         assumeTrue("the tab is not three lines here", e.lines.size >= 3)
@@ -913,7 +913,7 @@ class PracticeTest : ScreenTest() {
             val rail = onScreen(tab, first.left + 40 * density, bottom - TabTokens.CURSOR_DP * density, lastOfLine.right - 40 * density, bottom - 1)
             if (rail.bottom > inView) continue
             if (n == 1) middle = true
-            val drawn = count(image, rail, own(ScribeHighContrastColors).loopEdge.toArgb())
+            val drawn = count(image, rail, own(ScribeHighContrastLightColors).loopEdge.toArgb())
             assertTrue("the rail under bars ${line.firstBar}–${line.lastBar} ($drawn of ${rail.width() * rail.height()} px)", drawn >= rail.width() * rail.height() * 0.8)
         }
         assertTrue("the line between the brackets was in view", middle)
