@@ -22,7 +22,7 @@ struct BandroomApp: App {
         // The same content as a normal window, for when the menu-bar icon is hidden (§3.3).
         Window(Text("Brasscribe on this Mac"), id: "main") {
             PanelRoot(isMenuBar: false)
-                .background(Color.Brasscribe.bg)
+                .background(Color.Scribe.bg)
                 .environment(app)
                 .environment(\.textScale, textSize.scale)
         }
@@ -73,7 +73,7 @@ struct PanelRoot: View {
         }
             .scrollBounceBehavior(.basedOnSize)
             .frame(width: 360, height: min(contentHeight, maxHeight))
-            .background(Color.Brasscribe.bg)
+            .background(Color.Scribe.bg)
             .background(WindowKeyObserver { key in
                 if app.monitor.isPanelOpen != key { app.log("panel \(isMenuBar ? "popover" : "window") \(key ? "open: polling every 5 s" : "closed: polling every 30 s")") }
                 app.monitor.isPanelOpen = key
@@ -90,10 +90,10 @@ struct HiddenIconNotice: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "menubar.rectangle").font(.system(size: 16)).foregroundStyle(Color.Brasscribe.textMuted)
+                Image(systemName: "menubar.rectangle").font(.system(size: 16)).foregroundStyle(Color.Scribe.textMuted)
                     .accessibilityHidden(true)
                 Text("The Brasscribe mark may be hidden behind the camera notch. Open Brasscribe from Launchpad any time, or make room in System Settings › Menu Bar.")
-                    .brFont(.callout).foregroundStyle(Color.Brasscribe.text).fixedSize(horizontal: false, vertical: true)
+                    .brFont(.callout).foregroundStyle(Color.Scribe.text).fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 8) {
                 Button { app.openMenuBarSettings() } label: { Text("Open Menu Bar settings") }.buttonStyle(.brOutline)

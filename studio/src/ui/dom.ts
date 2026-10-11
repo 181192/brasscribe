@@ -392,7 +392,7 @@ export function tabs(label: string, items: { id: string; label: string; render: 
   return h("div", { class: "tabs" }, list, panels);
 }
 
-/** Read a CSS custom property (design token) from the document. */
+/** Read a design token from the document, by its variable's name without the dashes ("scribe-text", "bc-model-1"). */
 export function token(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim() || "#000";
 }

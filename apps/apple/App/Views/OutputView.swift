@@ -62,7 +62,7 @@ struct OutputView: View {
                     if wide { SectionLabel(String(localized: "Last step")) }
                     DisplayTitle(text: String(localized: "How should the score be?"))
                     Text("You can change this later. Nothing is lost.")
-                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
                 }
                 if wide {
                     HStack(alignment: .top, spacing: Space.s8) {
@@ -92,8 +92,8 @@ struct OutputView: View {
             .frame(maxWidth: .infinity)
             // An opaque band down to the screen edge, with a hairline, so the choices scroll under it
             // rather than showing through; the inset keeps the last row (and a focused one) above it.
-            .background(Color.Brasscribe.bg.ignoresSafeArea(edges: .bottom))
-            .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+            .background(Color.Scribe.bg.ignoresSafeArea(edges: .bottom))
+            .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
         }
         .navigationTitle(Text(piece.title))
         #if os(iOS)
@@ -124,7 +124,7 @@ struct OutputView: View {
                 Button { app.path.removeLast() } label: { Text("Back") }.buttonStyle(.plainText)
             }
             Button { Task { await show() } } label: {
-                if busy { ProgressView().controlSize(.small).tint(Color.Brasscribe.onPrimary) } else { Text("Show the score") }
+                if busy { ProgressView().controlSize(.small).tint(Color.Scribe.onPrimary) } else { Text("Show the score") }
             }
             .buttonStyle(PrimaryButtonStyle(fullWidth: !wide))
             .disabled(busy)
@@ -140,7 +140,7 @@ struct OutputView: View {
                 .accessibilityIdentifier("soloOnePart")
         } else {
             VStack(alignment: .leading, spacing: Space.s3) {
-                Text("Which band?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+                Text("Which band?").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
                 // Unavailable for a whole-band recording: only the small band or the quartet is made from it.
                 radio(String(localized: "Full brass band"),
                       fullBandPossible ? withPart(String(localized: "About 25 players"), .fullBand) : String(localized: "Not yet for whole-band recordings"),
@@ -155,7 +155,7 @@ struct OutputView: View {
             }
             if asksWhoPlaysTune, let part = yourPart(lineup) {
                 VStack(alignment: .leading, spacing: Space.s3) {
-                    Text("Who plays the tune?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+                    Text("Who plays the tune?").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
                     radio(String(localized: "\(Seats.leadName(lineup)) (as usual)"), nil, !tuneOnMine) { tuneOnMine = false }
                         .accessibilityIdentifier("tuneLineup")
                     radio(String(localized: "You: \(PartNames.display(part))"), nil, tuneOnMine) { tuneOnMine = true }
@@ -176,7 +176,7 @@ struct OutputView: View {
     @ViewBuilder private var who: some View {
         if isSolo {
             VStack(alignment: .leading, spacing: Space.s3) {
-                Text("Who played this?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+                Text("Who played this?").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
                 Picker(selection: Binding(get: { seatID }, set: { id in
                     seatID = id
                     reads = id != nil && id == app.seat.id ? app.seat.reads : nil
@@ -194,7 +194,7 @@ struct OutputView: View {
 
     private var hard: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Text("How hard?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+            Text("How hard?").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
             Segmented(label: String(localized: "How hard?"), selection: $difficulty,
                       options: [(Difficulty.easier, String(localized: "Easier")), (Difficulty.standard, String(localized: "A bit easier")),
                                 (Difficulty.faithful, String(localized: "As played"))])
@@ -204,7 +204,7 @@ struct OutputView: View {
 
     private var key: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Text("Key").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+            Text("Key").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: Space.s3) { lowerButton; keyBox; higherButton }
                 VStack(alignment: .leading, spacing: Space.s3) { keyBox; HStack(spacing: Space.s3) { lowerButton; higherButton } }
@@ -230,14 +230,14 @@ struct OutputView: View {
 
     private var keyBox: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(keyName).font(Font.Brasscribe.headline)
-            Text(keyDetail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+            Text(keyName).font(Font.Scribe.headline)
+            Text(keyDetail).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, Space.s4)
         .padding(.vertical, Space.s2)
         .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.borderStrong))
+        .background(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Scribe.borderStrong))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("keyPicker")
         .accessibilityAdjustableAction { d in
@@ -299,21 +299,21 @@ struct OutputView: View {
         Button(action: pick) {
             HStack(spacing: Space.s3) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Font.Brasscribe.headline).foregroundStyle(available ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                    Text(title).font(Font.Scribe.headline).foregroundStyle(available ? Color.Scribe.text : Color.Scribe.textMuted)
                     if let detail {
-                        Text(detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        Text(detail).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 Spacer()
                 Image(systemName: on ? "largecircle.fill.circle" : "circle").font(.title2)
-                    .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
+                    .foregroundStyle(on ? Color.Scribe.text : Color.Scribe.borderStrong)
                     .accessibilityHidden(true)
             }
             .padding(Space.s4)
             .frame(minHeight: 64)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong, lineWidth: on ? 2 : 1))
+            .background(Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(on ? Color.Scribe.text : Color.Scribe.borderStrong, lineWidth: on ? 2 : 1))
             .contentShape(RoundedRectangle(cornerRadius: Radius.lg))
         }
         .buttonStyle(.plain)

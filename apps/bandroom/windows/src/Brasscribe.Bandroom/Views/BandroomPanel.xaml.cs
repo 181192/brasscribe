@@ -130,10 +130,10 @@ public sealed partial class BandroomPanel : UserControl
     {
         string key = s switch
         {
-            DisplayState.Running or DisplayState.Busy => "BcSuccessBrush",
-            DisplayState.NeedsAttention => "BcWarningBrush",
-            DisplayState.Error => "BcErrorBrush",
-            _ => "BcTextBrush",
+            DisplayState.Running or DisplayState.Busy => "ScribeSuccessBrush",
+            DisplayState.NeedsAttention => "ScribeWarningBrush",
+            DisplayState.Error => "ScribeErrorBrush",
+            _ => "ScribeTextBrush",
         };
         return ThemeBrushes.For(this, key);
     }
@@ -151,7 +151,7 @@ public sealed partial class BandroomPanel : UserControl
 
     /// <summary>Filled for the segments up to the level; the meter never uses brass or a status colour.</summary>
     public Brush Segment(int level, int index) =>
-        index <= level ? ThemeBrushes.For(this, "BcTextMutedBrush") : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        index <= level ? ThemeBrushes.For(this, "ScribeTextMutedBrush") : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
 }
 
 /// <summary>Glyph helpers usable from data templates.</summary>

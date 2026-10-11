@@ -267,17 +267,17 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         if (ViewModel.Stand.IsOpen)
         {
             // The stand: the music alone on the paper, edge to edge with a small margin.
-            PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "BcBgBrush");
+            PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
             PageSheet.MaxWidth = double.PositiveInfinity;
             PageSheet.Margin = new Thickness(24, 0, 24, 0);
-            PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "BcBgBrush");
+            PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
             return;
         }
         bool part = ViewModel.IsPartView;
-        PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, part ? "BcSurfaceBrush" : "BcBgBrush");
+        PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, part ? "ScribeSurfaceBrush" : "ScribeBgBrush");
         PageSheet.MaxWidth = part ? 960 : double.PositiveInfinity;
         PageSheet.Margin = part ? new Thickness(24, 24, 24, 0) : new Thickness(0);
-        PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "BcBgBrush");
+        PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
     }
 
     private bool _syncing;

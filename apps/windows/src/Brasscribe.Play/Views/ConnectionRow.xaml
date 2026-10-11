@@ -20,7 +20,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <FontIcon Glyph="{x:Bind vm:Screens.ConnectionGlyph(Connection.State), Mode=OneWay}" FontSize="16"
-                      Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                      Foreground="{ThemeResource ScribeTextMutedBrush}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
             <TextBlock x:Name="StatusText" Grid.Column="1" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
                        Text="{x:Bind Connection.StatusText, Mode=OneWay}" />
             <Button x:Name="ActionButton" x:Uid="ConnectionActionButton" Grid.Column="2" Style="{StaticResource ActionButtonStyle}"

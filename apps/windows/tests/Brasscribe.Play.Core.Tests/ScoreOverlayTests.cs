@@ -102,7 +102,7 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         foreach (var (key, kind) in new[] { ("Light", ThemeKind.Light), ("Dark", ThemeKind.Dark) })
         {
             var dict = Regex.Match(xaml, $"<ResourceDictionary x:Key=\"{key}\">(.*?)</ResourceDictionary>", RegexOptions.Singleline).Groups[1].Value;
-            string Color(string name) => "#" + Regex.Match(dict, $"<Color x:Key=\"Bc{name}Color\">#FF([0-9A-F]{{6}})</Color>").Groups[1].Value;
+            string Color(string name) => "#" + Regex.Match(dict, $"<Color x:Key=\"(?:Scribe|Bc){name}Color\">#FF([0-9A-F]{{6}})</Color>").Groups[1].Value;
             var pink = UncertaintyPalette.For(kind, pink: true);
             Assert.Equal(Color("VeryUncertain"), pink.VeryUncertain.ToString());
             Assert.Equal(Color("Uncertain"), pink.Uncertain.ToString());
@@ -122,13 +122,13 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         foreach (var (key, palette) in new[] { ("Light", UncertaintyPalette.Light), ("Dark", UncertaintyPalette.Dark) })
         {
             var dict = Regex.Match(xaml, $"<ResourceDictionary x:Key=\"{key}\">(.*?)</ResourceDictionary>", RegexOptions.Singleline).Groups[1].Value;
-            string Color(string name) => "#" + Regex.Match(dict, $"<Color x:Key=\"Bc{name}Color\">#FF([0-9A-F]{{6}})</Color>").Groups[1].Value;
+            string Color(string name) => "#" + Regex.Match(dict, $"<Color x:Key=\"(?:Scribe|Bc){name}Color\">#FF([0-9A-F]{{6}})</Color>").Groups[1].Value;
             Assert.Equal(Color("Bg"), palette.Background.ToString());
             Assert.Equal(Color("Surface"), palette.Surface.ToString());
             Assert.Equal(Color("Text"), palette.Text.ToString());
             Assert.Equal(Color("TextMuted"), palette.TextMuted.ToString());
             Assert.Equal(Color("Ink"), palette.Ink.ToString());
-            Assert.Equal(Color("Staff"), palette.Staff.ToString());
+            Assert.Equal(Color("Line"), palette.Staff.ToString());
             Assert.Equal(Color("Uncertain"), palette.Uncertain.ToString());
             Assert.Equal(Color("VeryUncertain"), palette.VeryUncertain.ToString());
             Assert.Equal(Color("Cursor"), palette.Cursor.ToString());

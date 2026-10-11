@@ -89,7 +89,7 @@ final class OffscreenHost {
         let h = hosting.bounds.height
         func flip(_ r: CGRect) -> CGRect { CGRect(x: r.minX, y: h - r.maxY, width: r.width, height: r.height) }
         // the blurred strip behind a floating sidebar shows the page
-        NSColor(Color.Brasscribe.bg).setFill()
+        NSColor(Color.Scribe.bg).setFill()
         for a in all where named(a, ["BlurryAlleywayView"]) { flip(a.convert(a.bounds, to: hosting)).fill() }
         let dark = window.appearance?.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         for g in glass {
@@ -156,7 +156,7 @@ struct HarnessShell<Content: View>: View {
 
     var body: some View {
         LibrarySplit(columns: $columns) { NavigationStack { content } }
-            .tint(Color.Brasscribe.primary)
+            .tint(Color.Scribe.primary)
     }
 }
 

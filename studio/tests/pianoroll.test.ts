@@ -8,7 +8,7 @@ describe("the piano roll", () => {
     const notes = Array.from({ length: 1_000_000 }, (_, i) => ({ pitch: 60 + (i % 12), start: i * 0.01, end: i * 0.01 + 0.5 }));
     const roll = new PianoRoll();
     document.body.append(roll);
-    expect(() => { roll.data = [{ id: "m", label: "Model", colour: "m1", style: "line", notes }]; }).not.toThrow();
+    expect(() => { roll.data = [{ id: "m", label: "Model", colour: "bc-model-1", style: "line", notes }]; }).not.toThrow();
     // "Whole piece" measures the piece's length over every note.
     const whole = Array.from(roll.querySelectorAll("button")).find((b) => b.textContent === t("roll.whole"))!;
     expect(() => whole.click()).not.toThrow();

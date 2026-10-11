@@ -183,7 +183,7 @@ export class StemsMixer extends HTMLElement {
   }
 
   private colours(): string[] {
-    return [token("m1"), token("m2"), token("m3"), token("m4"), token("ink")];
+    return [token("bc-model-1"), token("bc-model-2"), token("bc-model-3"), token("bc-model-4"), token("scribe-ink")];
   }
 
   private renderLegend(): void {
@@ -198,7 +198,7 @@ export class StemsMixer extends HTMLElement {
     const plotH = hh - 16;
     this.chart.box.style.height = "";
     if (!rows.length) {
-      c.fillStyle = token("text-muted");
+      c.fillStyle = token("scribe-text-muted");
       c.font = "12px system-ui, sans-serif";
       c.fillText(t("stems.energyEmpty"), 8, 20);
       return;
@@ -224,7 +224,7 @@ export class StemsMixer extends HTMLElement {
     });
     c.setLineDash([]);
     c.globalAlpha = 1;
-    timeAxis(c, w, plotH, 0, dur, token("text-muted"));
+    timeAxis(c, w, plotH, 0, dur, token("scribe-text-muted"));
     this.chart.setLabel(t("stems.energyLabel", { names: rows.map((r) => r.src.name).join(", ") }));
   }
 }

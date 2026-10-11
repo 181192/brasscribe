@@ -37,9 +37,9 @@ export function hasIcon(name: string): boolean {
  */
 export function lockup(): SVGSVGElement {
   const themed = lockupSvg
-    .replace(/fill="#A57A2C"/g, 'style="fill:var(--bc-brass)"')
-    .replace(/fill="#1B1A17"/g, 'style="fill:var(--bc-text)"')
-    .replace(/fill="#7A5719"/g, 'style="fill:var(--bc-brass-text)"');
+    .replace(/fill="#A57A2C"/g, 'style="fill:var(--scribe-brand)"')
+    .replace(/fill="#1B1A17"/g, 'style="fill:var(--scribe-text)"')
+    .replace(/fill="#7A5719"/g, 'style="fill:var(--scribe-brand-text)"');
   const doc = new DOMParser().parseFromString(themed, "image/svg+xml");
   const svg = document.importNode(doc.documentElement, true) as unknown as SVGSVGElement;
   svg.setAttribute("aria-hidden", "true");

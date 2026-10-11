@@ -16,10 +16,10 @@ struct PairWindow: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Pair a phone")
                 .brFont(.display)
-                .foregroundStyle(Color.Brasscribe.text)
+                .foregroundStyle(Color.Scribe.text)
                 .accessibilityAddTraits(.isHeader)
             Text("Do this once for each phone or tablet. It stays paired.")
-                .brFont(.body).foregroundStyle(Color.Brasscribe.textMuted)
+                .brFont(.body).foregroundStyle(Color.Scribe.textMuted)
                 .padding(.bottom, 20)
 
             HStack(alignment: .top, spacing: 28) {
@@ -58,8 +58,8 @@ struct PairWindow: View {
         .padding(.horizontal, 32)
         .padding(.vertical, 28)
         .frame(minWidth: 720, idealWidth: 860, maxWidth: 1000)
-        .background(Color.Brasscribe.bg)
-        .foregroundStyle(Color.Brasscribe.text)
+        .background(Color.Scribe.bg)
+        .foregroundStyle(Color.Scribe.text)
         .sheet(item: Binding(get: { app.monitor.requests.first }, set: { _ in })) { r in
             AllowCard(request: r, inSheet: true).frame(width: 340)
         }
@@ -105,7 +105,7 @@ struct PairWindow: View {
     @ViewBuilder private var statusBox: some View {
         if let name = pairing.pairedDevice {
             HStack(spacing: 10) {
-                Image(systemName: "checkmark.circle").foregroundStyle(Color.Brasscribe.success).accessibilityHidden(true)
+                Image(systemName: "checkmark.circle").foregroundStyle(Color.Scribe.success).accessibilityHidden(true)
                 Text("\(name) is paired.").brFont(.body)
             }
             .card(padding: 14)
@@ -119,7 +119,7 @@ struct PairWindow: View {
             .card(padding: 14)
         } else if pairing.phase == .unavailable {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.Brasscribe.warning).accessibilityHidden(true)
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.Scribe.warning).accessibilityHidden(true)
                 Text("Brasscribe isn't running. Start it from the menu bar, then pair.").brFont(.body)
             }
             .card(padding: 14)
@@ -130,12 +130,12 @@ struct PairWindow: View {
                     Text("Waiting for a phone…").brFont(.bodyStrong)
                 }
                 Text("This code works while this window is open, and only once.")
-                    .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    .brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md))
-            .overlay(RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md).strokeBorder(Color.Brasscribe.border))
+            .background(Color.Scribe.surface, in: RoundedRectangle(cornerRadius: ScribeDesign.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: ScribeDesign.Radius.md).strokeBorder(Color.Scribe.border))
             .accessibilityElement(children: .combine)
         }
     }
@@ -148,7 +148,7 @@ struct PairWindow: View {
                 .accessibilityLabel(Text("QR code for pairing with Brasscribe on \(pairing.host ?? app.hostName). It holds the same code: \(pairing.displayCode ?? "")."))
                 .accessibilityAddTraits(.isImage)
             Text("Scan with the camera, or in Brasscribe on the phone.")
-                .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                .brFont(.caption).foregroundStyle(Color.Scribe.textMuted)
                 .frame(width: 260, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -163,7 +163,7 @@ private struct WayRow<Content: View>: View {
             Text("\(n)")
                 .font(.system(size: 14, weight: .semibold))
                 .frame(width: 26, height: 26)
-                .overlay(Circle().strokeBorder(Color.Brasscribe.text, lineWidth: 1.5))
+                .overlay(Circle().strokeBorder(Color.Scribe.text, lineWidth: 1.5))
                 .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 5 }
                 .accessibilityHidden(true)
             content.fixedSize(horizontal: false, vertical: true)
@@ -178,8 +178,8 @@ struct QRPlate: View {
     var isLoading = true
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md).fill(Color.white)
-            RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md).strokeBorder(Color.black.opacity(0.35), lineWidth: 1)
+            RoundedRectangle(cornerRadius: ScribeDesign.Radius.md).fill(Color.white)
+            RoundedRectangle(cornerRadius: ScribeDesign.Radius.md).strokeBorder(Color.black.opacity(0.35), lineWidth: 1)
             if let payload, let image = QRCode.image(payload) {
                 GeometryReader { geo in
                     let modules = CGFloat(image.width)
