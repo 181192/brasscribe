@@ -46,7 +46,6 @@ changed_areas() {
       apps/apple/Packages/ScreenCatalogue/*) add apple; add bandroom-mac ;;
       apps/apple/*|capture/*) add apple ;;
       apps/bandroom/macos/*|.pixi-version) add bandroom-mac ;;
-      scripts/screenshot-compare.swift) add bandroom-mac ;;
       apps/android/*) add android ;;
       apps/windows/*) add windows ;;
     esac
@@ -96,32 +95,31 @@ run_area() {
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
                          && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
                         && echo "$stamp" > "$PY_REF_STAMP" ;;
-    # The screen catalogue (studio/README.md, Test): fast runs its checks on every view, full adds the
-    # screenshots' comparison with the merge base.
+    # The screen catalogue (studio/README.md, Test): its checks on every view, in both tiers (none reads a
+    # picture; scripts/screenshots.sh record takes the screenshots too). full adds the browser tests.
     fast:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
                    && STUDIO_STATIC_PORT="$(free_port)" npm run test:catalogue) ;;
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
-                   && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser && scripts/screenshots.sh compare) ;;
+                   && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser && npm run test:catalogue) ;;
     fast:apple) make -C apps/apple package-test-fast ;;
     full:apple) (cd apps/apple/Packages/BrasscribeKit && swift test --no-parallel) \
                 && (cd apps/apple/Packages/NotationKit && swift test --no-parallel) \
                 && (cd apps/apple/Packages/ScreenCatalogue && swift test) \
                 && (cd capture && swift test --no-parallel) \
-                && make -C apps/apple build-for-testing-mac test-mac-unit && apps/apple/scripts/screenshots.sh compare ;;
+                && make -C apps/apple build-for-testing-mac test-mac-unit && apps/apple/scripts/screenshots.sh record ;;
     # Both apps' unit tests and their screens on the JVM (apps/android/README.md, Testing); fast leaves out the
-    # Slow ones (the screen catalogues, practice in real time), full adds them through the screenshots' comparison
-    # with the merge base, which also runs every screen's own checks.
+    # Slow ones (the screen catalogues, practice in real time), full adds them through scripts/screenshots.sh,
+    # which runs every screen's own checks and takes its screenshot.
     fast:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast --console=plain -q) ;;
     full:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint lintFretscribeDebug assembleDebug -Pbrasscribe.withoutCatalogues --console=plain \
-                     && scripts/screenshots.sh compare) ;;
+                     && scripts/screenshots.sh record) ;;
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;
     fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/Packages/ScreenCatalogue && swift test) ;;
-    # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen, compared with the merge base;
-    # its build is the app's build.
+    # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen; its build is the app's build.
     full:bandroom-mac) (cd apps/apple/Packages/ScreenCatalogue && swift test) \
-                       && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh compare) ;;
+                       && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh record) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac
 }

@@ -19,7 +19,6 @@ internal static class BandroomCatalogue
         string exe = Path.GetFullPath(o.Need("exe"));
         string outDir = Path.GetFullPath(o.Need("out"));
         string run = o.Get("run") ?? "en";
-        bool checks = o.Get("checks") != "0";
         // "scan": Axe.Windows and the walk with Tab, no screenshots. A run of its own, after every screenshot: once a
         // Tab has been pressed, Windows draws keyboard focus rectangles in the windows started after it.
         bool scan = run == "scan";
@@ -61,7 +60,6 @@ internal static class BandroomCatalogue
                                 }
                                 Png.Save(Path.Combine(outDir, shot + ".png"), picture);
                                 result.Shots.Add(shot);
-                                if (!checks) continue;
                                 result.Findings.AddRange(Contrast.Check(shot, picture, taken.Texts));
                             }
                         }
