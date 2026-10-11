@@ -11,7 +11,7 @@ namespace Brasscribe.Play.Core.Playback;
 /// </summary>
 public static class ScorePreview
 {
-    private static string[] _sans = ["Segoe UI Variable Text", "Segoe UI", "Helvetica Neue", "Arial"];
+    private static string[] _sans = ["Segoe UI Variable Text", "Helvetica Neue", "Arial"];
     private static string[] _serif = ["Instrument Serif", "Georgia", "Times New Roman"];
     private static bool _fontsReady;
 

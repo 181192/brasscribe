@@ -29,7 +29,7 @@ checked on every pull request by the screen catalogue below.
 ## Prerequisites
 
 - .NET 10 SDK (`global.json` pins `10.0.100`, `rollForward: latestFeature`)
-- Windows 10 21H2 (10.0.19041) or newer to run; Windows SDK 10.0.20348 to build
+- Windows 11 to run; Windows SDK 10.0.22000 to build
 - Rust stable, to build `scribe_ffi.dll`
 
 ## Build
@@ -46,7 +46,7 @@ dotnet restore Brasscribe.Play.slnx -p:Platform=x64
 dotnet build src/Brasscribe.Play -c Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=$dll"
 ```
 
-The exe lands in `src/Brasscribe.Play/bin/Release/net10.0-windows10.0.20348.0/win-x64/BrasscribePlay.exe`,
+The exe lands in `src/Brasscribe.Play/bin/Release/net10.0-windows10.0.22000.0/win-x64/BrasscribePlay.exe`,
 with `scribe_ffi.dll` beside it — the app will not start without it.
 
 The band sounds are bundled as `SoundFonts\brasscribe-band.sf2` (the 16-bit build, 191 MB with `sounds-2026.09.30`) when
@@ -57,7 +57,7 @@ are missing. Release builds in CI fetch it first and stop if they cannot.
 ## Run
 
 ```powershell
-src/Brasscribe.Play/bin/Release/net10.0-windows10.0.20348.0/win-x64/BrasscribePlay.exe
+src/Brasscribe.Play/bin/Release/net10.0-windows10.0.22000.0/win-x64/BrasscribePlay.exe
 ```
 
 Open a MusicXML score (for example `apps/fixtures/old-hundredth/brass-band.musicxml`, a

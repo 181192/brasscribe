@@ -77,9 +77,8 @@
                         </StackPanel>
                     </StackPanel>
                 </Button>
-                <!-- One app only (Windows 11 process loopback): the app is picked in a flyout. -->
-                <Button x:Name="RecordAppCard" x:Uid="RecordAppCard" Grid.Column="2" Style="{StaticResource CardButtonStyle}"
-                        IsEnabled="{x:Bind ViewModel.SupportsAppCapture}">
+                <!-- One app only (process loopback): the app is picked in a flyout. -->
+                <Button x:Name="RecordAppCard" x:Uid="RecordAppCard" Grid.Column="2" Style="{StaticResource CardButtonStyle}">
                     <Button.Flyout>
                         <Flyout Placement="Bottom" Opened="OnAppFlyoutOpened">
                             <StackPanel Spacing="12" MinWidth="320">
@@ -109,10 +108,7 @@
                         </Border>
                         <StackPanel Spacing="2">
                             <TextBlock x:Uid="RecordAppTitle" Style="{StaticResource HeadlineStyle}" />
-                            <TextBlock Style="{StaticResource MutedStyle}" x:Uid="RecordAppBody"
-                                       Visibility="{x:Bind ViewModel.SupportsAppCapture}" />
-                            <TextBlock Style="{StaticResource MutedStyle}" x:Uid="AppCaptureUnavailable"
-                                       Visibility="{x:Bind views:Shown.Not(ViewModel.SupportsAppCapture)}" />
+                            <TextBlock Style="{StaticResource MutedStyle}" x:Uid="RecordAppBody" />
                         </StackPanel>
                     </StackPanel>
                 </Button>

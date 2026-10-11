@@ -6,7 +6,7 @@ public enum CaptureKind
     Microphone,
     /// <summary>Everything the default output device plays (WASAPI loopback).</summary>
     SystemAudio,
-    /// <summary>One app and its child processes (process loopback, Windows build 20348 and later).</summary>
+    /// <summary>One app and its child processes (process loopback).</summary>
     App,
 }
 
@@ -24,8 +24,6 @@ public sealed record CaptureResult(string Path, TimeSpan Duration, int SampleRat
 /// <summary>Records audio to a WAV file. Implemented with WASAPI on Windows.</summary>
 public interface ICaptureService
 {
-    /// <summary>Whether per-app capture is available (Windows build 20348 or later).</summary>
-    bool SupportsAppCapture { get; }
     Task<IReadOnlyList<AudioDevice>> ListMicrophonesAsync(CancellationToken ct = default);
     Task<IReadOnlyList<AudioApp>> ListAudioAppsAsync(CancellationToken ct = default);
     Task StartAsync(CaptureRequest request, CancellationToken ct = default);
