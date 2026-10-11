@@ -183,7 +183,13 @@ export const api = {
   /** Also notes whether the engine's interface version is this Studio's (engineInterface). */
   health: async (): Promise<Health> => {
     const answer = await get<Health>(HEALTH);
-    know(interfaceMatch((answer as { interface_version?: unknown } | null)?.interface_version));
+    // An engine's answer says which engine it is. Anything else at the address (an empty object, a list) is no
+    // engine's answer, and says nothing of an interface version: it fails as an answer that cannot be read.
+    if (typeof (answer as { server_id?: unknown } | null)?.server_id !== "string") {
+      know(undefined);
+      throw new ApiError(200, "GET /v1/health did not answer as an engine does.");
+    }
+    know(interfaceMatch((answer as { interface_version?: unknown }).interface_version));
     return answer;
   },
   profiles: () => get<ProfileInfo[]>("/v1/profiles"),
@@ -253,17 +259,24 @@ export const api = {
 /** The stream's state: connected, trying to reconnect after a drop, or given up by the browser. */
 export type StreamState = "open" | "reconnecting" | "closed";
 
+/** How long after a dropped stream the engine is asked again. */
+export const STREAM_RETRY_MS = 1000;
+
 /**
  * Subscribe to a job's progress. Returns a function that closes the stream.
  *
- * A dropped connection is left to the browser to reopen: the engine resumes after the last event
- * id it sent (Last-Event-ID), and an event seen twice is dropped here. The caller closes the stream
- * when the job ends.
+ * The stream passes the same gate as every request. It is opened once the engine is known to speak this Studio's
+ * interface version. A dropped connection is not left to the browser to reopen (that would go round the gate):
+ * the stream is closed, the engine's health is asked again, and the stream is opened again after the last event
+ * seen, where the engine resumes; an event seen twice is dropped here. With another interface version on the
+ * engine, now or later, the stream is closed for good. The caller closes the stream when the job ends.
  */
 export function subscribe(id: string, onEvent: (e: JobEvent) => void, onState?: (s: StreamState) => void): () => void {
-  const es = new EventSource(api.eventsUrl(id));
+  let es: EventSource | undefined;
   let last = -Infinity;
   let state: StreamState = "open";
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const set = (s: StreamState) => {
     if (s === state) return;
     state = s;
@@ -283,8 +296,53 @@ export function subscribe(id: string, onEvent: (e: JobEvent) => void, onState?: 
     }
     onEvent(e);
   };
-  for (const t of ["message", "job", "stage", "log"]) es.addEventListener(t, handler as EventListener);
-  es.onopen = () => set("open");
-  es.onerror = () => set(es.readyState === EventSource.CLOSED ? "closed" : "reconnecting");
-  return () => es.close();
+  const open = () => {
+    const stream = new EventSource(api.eventsUrl(id, Number.isFinite(last) ? last : -1));
+    es = stream;
+    for (const t of ["message", "job", "stage", "log"]) stream.addEventListener(t, handler as EventListener);
+    stream.onopen = () => set("open");
+    stream.onerror = () => {
+      // The browser gave up (the engine refused the stream): nothing to open again.
+      const gaveUp = stream.readyState === EventSource.CLOSED;
+      stream.close();
+      if (stopped || es !== stream) return;
+      if (gaveUp) return set("closed");
+      set("reconnecting");
+      // Whichever engine answers next says its interface version before the stream is asked of it.
+      know(undefined);
+      again();
+    };
+  };
+  const again = () => {
+    timer = setTimeout(() => void openWhenTheEngineMatches(), STREAM_RETRY_MS);
+  };
+  const openWhenTheEngineMatches = async () => {
+    if (stopped) return;
+    if (known === undefined) {
+      try {
+        await api.health();
+      } catch {
+        if (!stopped) again();
+        return;
+      }
+    }
+    if (stopped) return;
+    if (known === "match") open();
+    else set("closed");
+  };
+  const off = onEngineInterface((now) => {
+    if (now === undefined || now === "match" || stopped) return;
+    es?.close();
+    es = undefined;
+    clearTimeout(timer);
+    set("closed");
+  });
+  if (known === "match") open();
+  else void openWhenTheEngineMatches();
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+    off();
+    es?.close();
+  };
 }

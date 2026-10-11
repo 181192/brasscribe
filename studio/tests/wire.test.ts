@@ -74,6 +74,18 @@ describe("the client's gate", () => {
     }
   });
 
+  it("does not take an answer that is no engine's for an engine to update", async () => {
+    for (const body of ["{}", "[]", JSON.stringify({ interface_version: 7 }), JSON.stringify({ status: "ok" })]) {
+      assumeEngineInterface(undefined);
+      const asked = engine(() => body);
+      const failed = await api.jobs().then(() => undefined, (e: unknown) => e);
+      expect(failed, body).toBeInstanceOf(Error);
+      expect(failed, body).not.toBeInstanceOf(InterfaceMismatch);
+      expect(engineInterface(), body).toBeUndefined();
+      expect(asked, body).toEqual(["/v1/health"]);
+    }
+  });
+
   it("asks again after a request that did not get through, and tells who listens", async () => {
     assumeEngineInterface(undefined);
     let body: string | undefined = health(INTERFACE_VERSION);
