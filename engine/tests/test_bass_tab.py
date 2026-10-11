@@ -7,7 +7,10 @@ import json
 import os
 import re
 import shutil
+import sys
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 import numpy as np
@@ -848,7 +851,7 @@ def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings,
     exe.write_text("#!/bin/sh\n")
     exe.chmod(0o755)
     monkeypatch.setattr(musescore, "binary", lambda: str(exe))
-    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
     installed = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert {s["stage"]: s["status"] for s in installed["stages"]} == {
         "beats": "cached", "transcribe.bass.basic-pitch": "cached",
@@ -891,7 +894,7 @@ def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch
     (tmp_path / "score" / "tab.musicxml").write_text("<score-partwise/>")
     said: list[str] = []
     ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=said.append, stage=SimpleNamespace(name="export"),
-                          params={"musescore": None})
+                          params={"musescore": None}, executor=SimpleNamespace(cancel=threading.Event()))
     bass_tab.export_stage(ctx)
     assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"]}
     assert said == ["mscore not found: PDF and MIDI skipped"]
@@ -899,12 +902,41 @@ def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch
     # With a MuseScore that writes one of the two files, the stage fails and names the other.
     monkeypatch.setattr(musescore, "binary", lambda: "mscore")
     ctx.params = {"musescore": "0123456789abcdef"}
-    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(jobs[0][1][1])])
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [Path(jobs[0][1][1])])
     with pytest.raises(bass_tab.StageFailed, match="MuseScore did not write tab.mid"):
         bass_tab.export_stage(ctx)
-    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [])
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [])
     bass_tab.export_stage(ctx)
     assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": "mscore", "written": ["tab.pdf", "tab.mid"], "skipped": []}
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")
+@pytest.mark.parametrize("profile", ["tab", "band"])
+def test_stopping_a_job_stops_musescore_in_the_export(tmp_path, monkeypatch, profile):
+    """A MuseScore that does not come back (here for 20 s): stopping the job ends the export at once, not when
+    MuseScore is done or at the conversion's time limit."""
+    from types import SimpleNamespace
+
+    from brasscribe_music import musescore
+
+    exe = tmp_path / "mscore"
+    exe.write_text(f"#!{sys.executable}\nimport time\ntime.sleep(20)\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    monkeypatch.setattr(musescore, "LOCK_FILE", tmp_path / "mscore.flock")
+    monkeypatch.setattr(S, "accessible_exports", lambda score, ctx: {"written": []})
+    (tmp_path / "score").mkdir()
+    for name in ("tab.musicxml", "brass-band.musicxml"):
+        (tmp_path / "score" / name).write_text("<score-partwise/>")
+    cancel = threading.Event()
+    ctx = SimpleNamespace(out=tmp_path / "out", inputs={"score": tmp_path / "score"}, log=lambda m: None,
+                          stage=SimpleNamespace(name="export"), params={"audio": False, "musescore": "0123456789abcdef"},
+                          executor=SimpleNamespace(cancel=cancel))
+    threading.Timer(0.5, cancel.set).start()
+    started = time.monotonic()
+    with pytest.raises(musescore.Cancelled):
+        (bass_tab.export_stage if profile == "tab" else S.export)(ctx)
+    assert time.monotonic() - started < 10
 
 
 # ---------------------------------------------------------------- end to end

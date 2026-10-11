@@ -678,14 +678,15 @@ def export_stage(ctx: StageContext) -> None:
     """PDF and MIDI of the tab's MusicXML through MuseScore, as the band profiles' export stage.
 
     MuseScore 4 aborts during shutdown after writing its output, so success is judged by the output
-    files, never the exit code. Without MuseScore nothing is rendered, and export.json and the log say so."""
+    files, never the exit code. Without MuseScore nothing is rendered, and export.json and the log say so.
+    Stopping the job stops MuseScore."""
     from brasscribe_music import musescore
 
     mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
     written = []
     if mscore:
         dsts = [ctx.out / f"tab.{ext}" for ext in EXPORT_FORMATS]
-        missing = musescore.convert_many([(ctx.inputs["score"] / "tab.musicxml", dsts)])
+        missing = musescore.convert_many([(ctx.inputs["score"] / "tab.musicxml", dsts)], cancel=ctx.executor.cancel)
         if missing:
             raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
         written = [d.name for d in dsts]
