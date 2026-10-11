@@ -1,9 +1,10 @@
 """Targets: the kinds of output the engine makes, and what each one calls its files.
 
 A target turns the notes that were heard into one kind of output: a score for a brass band, a tab for a
-fretted instrument. Every profile belongs to one target. What a target's files are called and the title
-a job gets when none is given are defined here and nowhere else: shared code asks the target of a job's
-profile instead of naming a file itself.
+fretted instrument. Every profile belongs to one target. What a target's score files are called and the
+title a job gets when none is given are defined here, and the engine's own code asks the target of a job's
+profile instead of naming a score file itself (tests/test_targets.py reads the code for it). The reference
+arrangers and the core's command line, which the stages run, write the band score under the same name.
 
 The pipelines themselves are built in profiles.py (the band's) and tab.py, bass_tab.py (the tab's).
 """
@@ -74,3 +75,12 @@ def in_dir(outputs) -> Target | None:
         if (outputs / t.musicxml).exists():
             return t
     return None
+
+
+def of_run(profile: str, outputs) -> Target | None:
+    """The target of a run: its profile's, or for a profile the engine does not list (a run kept on disk from
+    before a profile was removed), the one whose score it wrote. None when neither says."""
+    try:
+        return of(profile)
+    except KeyError:
+        return in_dir(outputs)

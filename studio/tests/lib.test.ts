@@ -91,7 +91,7 @@ describe("note diff", () => {
 
 describe("events", () => {
   const job: Job = {
-    id: "r1", profile: "p", status: "queued", created: 0, progress: 0, outputs: [],
+    id: "r1", profile: "p", target: "brass", status: "queued", created: 0, progress: 0, outputs: [],
     stages: [
       { name: "beats", kind: "beats", status: "pending" },
       { name: "stems", kind: "stems", status: "pending" },

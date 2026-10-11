@@ -23,7 +23,7 @@ class RearrangeTest {
 
     @Test
     fun normalizeKeepsTheReviewGroups() {
-        val core = RustCoreBridge.load()
+        val core = RustCoreBridge.load("brass")
         assumeTrue("host core missing", core != null)
         val comp = File(golden, "composition.json")
         assumeTrue("golden missing", comp.isFile)
@@ -34,7 +34,7 @@ class RearrangeTest {
 
     @Test
     fun goldenCompositionGivesTheGoldenScore() {
-        val core = RustCoreBridge.load()
+        val core = RustCoreBridge.load("brass")
         assumeTrue("host core missing", core != null)
         val comp = File(golden, "composition.json")
         assumeTrue("golden missing", comp.isFile)

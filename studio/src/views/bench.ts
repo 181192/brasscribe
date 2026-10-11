@@ -78,7 +78,7 @@ function suiteTable(suites: SuiteInfo[], hist: SuiteRun[], running: boolean, run
 
 export function benchResult(run: BenchRun): HTMLElement {
   return h("div", { class: "stack" },
-    h("p", { class: "row" }, pill(run.passed ? "pass" : "fail"), t("bench.gate", { state: run.passed ? t("bench.passed") : t("bench.failed"), target: run.target, mode: run.mode }),
+    h("p", { class: "row" }, pill(run.passed ? "pass" : "fail"), t("bench.gate", { state: run.passed ? t("bench.passed") : t("bench.failed"), target: run.ran, mode: run.mode }),
       h("span", { class: "small muted" }, `${fmt.date(run.created)} · git ${fmt.hash(run.git_sha)} · ${run.device ?? "–"}`)),
     run.suites.map(suiteResult));
 }

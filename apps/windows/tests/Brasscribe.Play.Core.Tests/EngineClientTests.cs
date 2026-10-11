@@ -27,7 +27,7 @@ internal sealed class FakeHandler(Func<HttpRequestMessage, int, HttpResponseMess
 
 public class EngineClientTests
 {
-    private const string JobJson = """{"id":"j1","profile":"solo","status":"running","created":1.0,"stages":[{"name":"f0","status":"started"}],"progress":0.5}""";
+    private const string JobJson = """{"id":"j1","profile":"solo","target":"brass","status":"running","created":1.0,"stages":[{"name":"f0","status":"started"}],"progress":0.5}""";
 
     private static (EngineClient Client, FakeHandler Handler) Make(Func<HttpRequestMessage, int, HttpResponseMessage> f)
     {

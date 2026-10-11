@@ -203,12 +203,19 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return m.Job(id=job.id, profile=job.profile, title=job.title, audio_id=job.audio_id, status=job.status,
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
-                     device_name=job.device_name,
+                     device_name=job.device_name, target=getattr(target_of(job), "id", None),
                      stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job))
 
+    def target_of(job: Job) -> targets.Target | None:
+        return targets.of_run(job.profile, jobs.run_dir(job.id) / "outputs")
+
     def score_file(job_id: str, suffix: str) -> FileResponse:
-        """The job's score in one format, under the name its profile's target gives it."""
-        return output_file(job_id, targets.of(job_or_404(job_id).profile).file(suffix))
+        """The job's score in one format, under the name its target gives it."""
+        job = job_or_404(job_id)
+        target = target_of(job)
+        if target is None:
+            raise HTTPException(404, f"no score available for job {job_id} (status {job.status})")
+        return output_file(job_id, target.file(suffix))
 
     def output_file(job_id: str, name: str) -> FileResponse:
         job = job_or_404(job_id)
@@ -745,13 +752,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def list_suites() -> list[m.SuiteInfo]:
         from scribe_eval import suites
 
-        return [m.SuiteInfo(name=s.name, description=s.description, cpu=s.cpu, requires=list(s.requires))
+        return [m.SuiteInfo(name=s.name, target=s.target, description=s.description, cpu=s.cpu, requires=list(s.requires))
                 for s in suites.SUITES.values()]
 
     @app.post("/v1/suites/{name}/run", response_model=m.BenchRun, operation_id="runSuite", tags=["benchmarks"],
               dependencies=[Depends(auth)])
     def run_suite(name: str, mode: str = Query("cached", pattern="^(cached|live)$")) -> m.BenchRun:
-        """Run a suite or group (cpu, all) against eval/baselines.json; the result is stored in the history."""
+        """Run a suite or a group (cpu, ci, all, or one target's suites: brass, fretted) against
+        eval/baselines.json. The answer has a verdict per target; the result is stored in the history."""
         from scribe_eval import suites
 
         if name not in suites.SUITES and name not in suites.GROUPS:

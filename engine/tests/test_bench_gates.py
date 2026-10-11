@@ -26,7 +26,7 @@ def test_a_suite_that_exits_is_an_error_and_the_run_goes_on(monkeypatch):
     def exits(data, mode):
         raise SystemExit("missing contour")
 
-    monkeypatch.setitem(suites.SUITES, "exits", suites.Suite("exits", "", exits))
+    monkeypatch.setitem(suites.SUITES, "exits", suites.Suite("exits", "brass", "", exits))
     r = suites.run_suite("exits", data=Path("."))
     assert r["status"] == "error" and "missing contour" in r["reason"]
 

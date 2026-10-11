@@ -196,6 +196,11 @@ data class StageState(
 data class Job(
     val id: String,
     val profile: String,
+    /**
+     * The target the job belongs to, as the engine says it ([Target.id]): whose job it is. Null only for a run of a
+     * profile the engine no longer lists that wrote no score.
+     */
+    val target: String?,
     val status: JobStatus,
     val created: Double,
     val stages: List<StageState>,

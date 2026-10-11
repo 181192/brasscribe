@@ -18,7 +18,8 @@ def test_paired_devices_get_paths_relative_to_the_data_folder(settings, audio):
     item.mkdir(parents=True)
     shutil.copy(audio, item / "mix.wav")
     (item / "reference.json").write_text("{}")
-    history.save(settings, {"passed": True, "suites": [{"suite": "arrange", "status": "pass", "checks": []}]},
+    history.save(settings, {"passed": True, "targets": {"brass": {"passed": True}},
+                            "suites": [{"suite": "arrange", "target": "brass", "status": "pass", "checks": []}]},
                  "arrange", "cached")
     data = str(settings.data_dir.resolve())
 

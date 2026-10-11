@@ -13,22 +13,20 @@ class BrasscribeProductTest {
     fun everyBandScoreIsMadeAndArrangedHereAndATabIsNot() {
         val band = listOf(Profile.SOLO, Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK)
         band.forEach {
-            assertTrue(it.id, Product.makes(it.id))
             assertTrue(it.id, Product.arranges(it))
         }
         // A tab is Fretscribe's, whichever instrument it is for: also a bass tab an older app made.
         val tabs = listOf(Profile.TAB, Profile.BASS_TAB)
         assertEquals(Profile.entries.toSet(), (band + tabs).toSet())
         tabs.forEach {
-            assertFalse(it.id, Product.makes(it.id))
             // No band options and no Check the notes for it.
             assertFalse(it.id, Product.arranges(it))
         }
-        assertFalse(Product.makes("tab"))
-        assertFalse(Product.makes("bass-tab"))
-        // A profile this app has never heard of belongs to no target it knows: not its to open.
-        assertFalse(Product.makes("big-band"))
+        // Whose a job is goes by the target the engine gives it: the band's are this app's, and a tab's, a target
+        // this app has never heard of and a job without one are not.
         assertEquals(Target.BRASS, Product.target)
+        assertTrue(Product.makes("brass"))
+        listOf("fretted", "choir", "", null).forEach { assertFalse("$it", Product.makes(it)) }
     }
 
     @Test
@@ -51,7 +49,7 @@ class BrasscribeProductTest {
 
     @Test
     fun aTabInTheComputersListOpensInFretscribeAndIsListedApartFromTheBandScoreOfTheSameRecording() {
-        fun job(id: String, profile: String, created: Double) = no.brasscribe.play.engine.Job(id, profile, no.brasscribe.play.engine.JobStatus.SUCCEEDED, created,
+        fun job(id: String, profile: String, created: Double) = no.brasscribe.play.engine.Job(id, profile, Profile.of(profile)!!.target.id, no.brasscribe.play.engine.JobStatus.SUCCEEDED, created,
             emptyList(), audioId = "audio-1", title = id, outputs = listOf(if (Profile.writesTab(profile)) "tab.musicxml" else "brass-band.musicxml"))
         val entries = ScoreEntry.merge(emptyList(), listOf(job("band", "brass-band", 1000.0), job("guitar", "tab", 2000.0), job("bass", "bass-tab", 3000.0)))
         // The two tab runs of the recording collapse to the latest; the band score is never hidden by them.
@@ -61,7 +59,7 @@ class BrasscribeProductTest {
         assertTrue(entries.last().opening(review = false, stand = false, Product::makes).here)
         for (profile in listOf("tab", "bass-tab")) {
             val entry = ScoreEntry.merge(emptyList(), listOf(job("t", profile, 1.0))).single()
-            assertTrue(profile, entry.onComputer && !Product.makes(entry.profile))
+            assertTrue(profile, entry.onComputer && !Product.makes(entry.target))
             assertFalse(profile, entry.opening(review = true, stand = false, Product::makes).here)
         }
     }

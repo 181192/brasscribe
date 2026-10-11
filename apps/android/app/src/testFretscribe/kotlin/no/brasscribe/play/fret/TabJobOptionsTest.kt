@@ -199,7 +199,7 @@ class TabJobOptionsTest {
             assertEquals(FrettedInstrument.UKULELE to "low-g", job.instrument to job.tuning)
             assertNull(job.chords)
         }
-        assertTrue(Product.makes("tab") && Product.makes("bass-tab"))
+        assertTrue(Product.makes("fretted") && !Product.makes("brass"))
     }
 
     /** The computer's check of the options (the engine's profiles.job_options), on every job above. */

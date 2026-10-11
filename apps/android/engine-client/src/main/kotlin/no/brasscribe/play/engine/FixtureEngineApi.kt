@@ -92,7 +92,7 @@ class FixtureEngineApi(
                 (request.tuning != null && request.tuning !in instrument.tunings) || (instrument.isBass && request.chords == TabChords.COMPLETED)))
             throw EngineException(422, "not an instrument, a tuning or a chords choice of the ${profile.id} profile", Refusal.INVALID_OPTIONS.code)
         val stages = stagesOf(profile, wholeRecording = (request.recording ?: instrument.defaultRecording) == Recording.INSTRUMENT, instrument = instrument)
-        val job = Job(id, profile.id, JobStatus.QUEUED, now(), stages.map { StageState(it, StageStatus.PENDING, kindOf(it)) },
+        val job = Job(id, profile.id, profile.target.id, JobStatus.QUEUED, now(), stages.map { StageState(it, StageStatus.PENDING, kindOf(it)) },
             audioId = request.audioId, title = request.title)
         jobs[id] = job
         return job

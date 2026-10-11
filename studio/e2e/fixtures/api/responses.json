@@ -73,6 +73,7 @@
    {
     "id": "old-hundredth-failed",
     "profile": "brass-band",
+    "target": "brass",
     "title": "Old Hundredth (beat grid failed)",
     "audio_id": null,
     "status": "failed",
@@ -99,6 +100,7 @@
    {
     "id": "old-hundredth-b",
     "profile": "orchestra-with-soloist",
+    "target": "brass",
     "title": "Old Hundredth (two notes changed)",
     "audio_id": null,
     "status": "succeeded",
@@ -118,6 +120,7 @@
    {
     "id": "old-hundredth-a",
     "profile": "orchestra-with-soloist",
+    "target": "brass",
     "title": "Old Hundredth",
     "audio_id": null,
     "status": "succeeded",
@@ -137,6 +140,7 @@
    {
     "id": "guitar-line",
     "profile": "tab",
+    "target": "fretted",
     "title": "Guitar line",
     "audio_id": "ae3be0fa611d53ec",
     "status": "succeeded",
@@ -219,6 +223,7 @@
   "body": {
    "id": "guitar-line",
    "profile": "tab",
+   "target": "fretted",
    "title": "Guitar line",
    "audio_id": "ae3be0fa611d53ec",
    "status": "succeeded",
@@ -472,6 +477,7 @@
   "body": {
    "id": "old-hundredth-a",
    "profile": "orchestra-with-soloist",
+   "target": "brass",
    "title": "Old Hundredth",
    "audio_id": null,
    "status": "succeeded",
@@ -707,6 +713,7 @@
   "body": {
    "id": "old-hundredth-failed",
    "profile": "brass-band",
+   "target": "brass",
    "title": "Old Hundredth (beat grid failed)",
    "audio_id": null,
    "status": "failed",
@@ -2133,6 +2140,7 @@
   "body": [
    {
     "name": "chorales-transcription",
+    "target": "brass",
     "description": "transcription per model on ChoraleBricks brass quartets (cached MIDI)",
     "cpu": true,
     "requires": [
@@ -2141,6 +2149,7 @@
    },
    {
     "name": "urmp-transcription",
+    "target": "brass",
     "description": "transcription per model on URMP brass (cached MIDI)",
     "cpu": true,
     "requires": [
@@ -2149,6 +2158,7 @@
    },
    {
     "name": "slakh-transcription",
+    "target": "brass",
     "description": "pipelines A and B on Slakh trumpet-lead songs (cached MIDI)",
     "cpu": true,
     "requires": [
@@ -2157,6 +2167,7 @@
    },
    {
     "name": "quant-chorales",
+    "target": "brass",
     "description": "beat grid + quantizer vs notated positions, chorales",
     "cpu": true,
     "requires": [
@@ -2165,6 +2176,7 @@
    },
    {
     "name": "quant-urmp",
+    "target": "brass",
     "description": "beat grid + quantizer vs notated positions, URMP",
     "cpu": true,
     "requires": [
@@ -2173,6 +2185,7 @@
    },
    {
     "name": "melody",
+    "target": "brass",
     "description": "melody top line from MuScriptor/Basic Pitch consensus",
     "cpu": true,
     "requires": [
@@ -2183,6 +2196,7 @@
    },
    {
     "name": "consensus-chorales",
+    "target": "brass",
     "description": "MuScriptor + Basic Pitch consensus on chorales (leave-one-song-out precision)",
     "cpu": true,
     "requires": [
@@ -2191,6 +2205,7 @@
    },
    {
     "name": "consensus-chorales-retuned",
+    "target": "brass",
     "description": "the same, with Basic Pitch on the recording retuned to A = 440",
     "cpu": true,
     "requires": [
@@ -2199,6 +2214,7 @@
    },
    {
     "name": "consensus-urmp",
+    "target": "brass",
     "description": "MuScriptor + Basic Pitch consensus on URMP brass",
     "cpu": true,
     "requires": [
@@ -2207,6 +2223,7 @@
    },
    {
     "name": "consensus-slakh",
+    "target": "brass",
     "description": "four-source consensus on Slakh (both models on mix and SW stems)",
     "cpu": true,
     "requires": [
@@ -2215,6 +2232,7 @@
    },
    {
     "name": "solo-vote",
+    "target": "brass",
     "description": "SwiftF0 / MuScriptor / Basic Pitch vote on Mega-53 solo stems (cached MIDI)",
     "cpu": true,
     "requires": [
@@ -2225,6 +2243,7 @@
    },
    {
     "name": "arrange",
+    "target": "brass",
     "description": "minimal-band and quartet arrangers on ground-truth scores (no audio)",
     "cpu": true,
     "requires": [
@@ -2234,6 +2253,7 @@
    },
    {
     "name": "quartet-audio",
+    "target": "brass",
     "description": "quartet from cached transcriptions of the ChoraleBricks recordings, vs the chorale",
     "cpu": true,
     "requires": [
@@ -2242,6 +2262,7 @@
    },
    {
     "name": "mikkel-golden",
+    "target": "brass",
     "description": "re-arrange cached Mikkel layers and compare with the golden output",
     "cpu": true,
     "requires": [
@@ -2251,6 +2272,7 @@
    },
    {
     "name": "readability",
+    "target": "brass",
     "description": "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
     "cpu": true,
     "requires": [
@@ -2260,18 +2282,21 @@
    },
    {
     "name": "solo-instruments",
+    "target": "brass",
     "description": "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
     "cpu": true,
     "requires": []
    },
    {
     "name": "fast-notes",
+    "target": "brass",
     "description": "fast runs, repeated notes and two-note alternations through the solo path, stage by stage (frozen SwiftF0/Basic Pitch/Beat This! outputs on real trumpet samples)",
     "cpu": true,
     "requires": []
    },
    {
     "name": "seat-voices",
+    "target": "brass",
     "description": "each seat's voice picked out of the brass4 mixes by its range (MuScriptor, Basic Pitch, consensus)",
     "cpu": true,
     "requires": [
@@ -2280,6 +2305,7 @@
    },
    {
     "name": "durations",
+    "target": "brass",
     "description": "written durations and staccato from performed lengths (duration_bench)",
     "cpu": true,
     "requires": [
@@ -2289,6 +2315,7 @@
    },
    {
     "name": "freetime",
+    "target": "brass",
     "description": "free-time detection on rubato/fermata material (freetime_bench)",
     "cpu": true,
     "requires": [
@@ -2298,6 +2325,7 @@
    },
    {
     "name": "solo-ondevice",
+    "target": "brass",
     "description": "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
     "cpu": true,
     "requires": [
@@ -2307,6 +2335,7 @@
    },
    {
     "name": "solo-beat-model",
+    "target": "brass",
     "description": "the solo path on Beat This! small0 (the device's) and final0 beats of every single part of URMP and ChoraleBricks: onset and written-position F1, bar position and metre per checkpoint (cached beats and transcriptions)",
     "cpu": true,
     "requires": [
@@ -2315,6 +2344,7 @@
    },
    {
     "name": "bass-tab",
+    "target": "fretted",
     "description": "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, range, playability, tempo and meter, hand travel (cached model outputs)",
     "cpu": true,
     "requires": [
@@ -2323,6 +2353,7 @@
    },
    {
     "name": "guitar-tab",
+    "target": "fretted",
     "description": "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and reporting players apart) and on Slakh's guitars in a song: notes, chords, string agreement, playability (cached model outputs)",
     "cpu": true,
     "requires": [
@@ -2331,6 +2362,7 @@
    },
    {
     "name": "ukulele-tab",
+    "target": "fretted",
     "description": "the tab profile with a ukulele (high G, low G, baritone) on rendered passages, alone and separated from a mix: notes, chords, the string of each note, playability (cached model outputs)",
     "cpu": true,
     "requires": [
@@ -2339,6 +2371,7 @@
    },
    {
     "name": "mandolin-tab",
+    "target": "fretted",
     "description": "the tab profile with a mandolin on rendered passages, alone and separated from a mix (cached model outputs)",
     "cpu": true,
     "requires": [
@@ -2347,6 +2380,7 @@
    },
    {
     "name": "guitar-rendered-tab",
+    "target": "fretted",
     "description": "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two groups the rules were chosen with and two held out (cached model outputs)",
     "cpu": true,
     "requires": [
@@ -2355,6 +2389,7 @@
    },
    {
     "name": "meter-tab",
+    "target": "fretted",
     "description": "the bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4: rendered passages, the beats in a bar as tracked and as written (cached model outputs)",
     "cpu": true,
     "requires": [
@@ -2363,6 +2398,7 @@
    },
    {
     "name": "musescore-roundtrip",
+    "target": "brass",
     "description": "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
     "cpu": true,
     "requires": [
@@ -2378,7 +2414,8 @@
    {
     "time": 1767430800.0,
     "run_id": "20260103T090000000000Z",
-    "target": "cpu",
+    "ran": "cpu",
+    "target": "brass",
     "suite": "quant-urmp",
     "status": "fail",
     "reason": null,
@@ -2409,7 +2446,8 @@
    {
     "time": 1767430800.0,
     "run_id": "20260103T090000000000Z",
-    "target": "cpu",
+    "ran": "cpu",
+    "target": "brass",
     "suite": "quant-chorales",
     "status": "pass",
     "reason": null,
@@ -2432,7 +2470,8 @@
    {
     "time": 1767344400.0,
     "run_id": "20260102T090000000000Z",
-    "target": "cpu",
+    "ran": "cpu",
+    "target": "brass",
     "suite": "quant-urmp",
     "status": "pass",
     "reason": null,
@@ -2463,7 +2502,8 @@
    {
     "time": 1767344400.0,
     "run_id": "20260102T090000000000Z",
-    "target": "cpu",
+    "ran": "cpu",
+    "target": "brass",
     "suite": "quant-chorales",
     "status": "pass",
     "reason": null,
@@ -2486,7 +2526,8 @@
    {
     "time": 1767258000.0,
     "run_id": "20260101T090000000000Z",
-    "target": "cpu",
+    "ran": "cpu",
+    "target": "brass",
     "suite": "quant-urmp",
     "status": "pass",
     "reason": null,
@@ -2517,7 +2558,8 @@
    {
     "time": 1767258000.0,
     "run_id": "20260101T090000000000Z",
-    "target": "cpu",
+    "ran": "cpu",
+    "target": "brass",
     "suite": "quant-chorales",
     "status": "pass",
     "reason": null,

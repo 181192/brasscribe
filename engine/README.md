@@ -6,7 +6,8 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
 - **Targets.** A target is one kind of output: a score for a brass band (`brass`), a tab for a fretted instrument
   (`fretted`). Every profile belongs to one target, and the target says what its files are called and what a job
   is titled when it has no title (`targets.py`, the one place that does). `/v1/profiles` gives each profile's
-  target, so an app offers the profiles of its own.
+  target and every job carries its own (`Job.target`), so an app offers its own profiles and knows its own jobs
+  without a table of profile names.
 - **Pipeline.** A profile picks the stages a recording goes through (`profiles.py`). Stages form a DAG
   with a content-addressed cache (`dag.py`, `cache.py`); `runner.py` writes each run to
   `<data>/runs/<run-id>/`: `composition.json`, MusicXML, PDF, MIDI and MP3 under `outputs/`, each

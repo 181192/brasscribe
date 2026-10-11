@@ -143,9 +143,12 @@ class PairRequestResult(BaseModel):
     server_name: str | None = None
 
 
+Target = Literal["brass", "fretted"]
+
+
 class ProfileInfo(BaseModel):
     name: str
-    target: Literal["brass", "fretted"] = Field(description="the target the profile belongs to: what it makes (a brass-band "
+    target: Target = Field(description="the target the profile belongs to: what it makes (a brass-band "
                                                             "score, a tab for a fretted instrument). An app offers the "
                                                             "profiles of its own target")
     pipeline: str
@@ -253,6 +256,9 @@ class StageState(BaseModel):
 class Job(BaseModel):
     id: str
     profile: str
+    target: Target | None = Field(description="the target the job belongs to: its profile's, so an app knows its own jobs "
+                                              "without knowing every profile. null only for a run kept from a profile the "
+                                              "engine no longer lists that wrote no score")
     title: str | None = None
     audio_id: str | None = None
     status: JobStatus | Literal["unknown"]
@@ -450,9 +456,9 @@ class Tab(BaseModel):
     tuning_suggestions: list[TuningFit] = Field(description="the instrument's tunings ranked by fit to the notes, "
                                                             "best first; when the first is not `preset`, the song "
                                                             "sounds like that tuning")
-    layout: TabLayout = Field(description="what tab.musicxml (and the PDF made from it) shows")
+    layout: TabLayout = Field(description="what the MusicXML of the tab (and the PDF made from it) shows")
     adjusted_notes: int = Field(description="notes whose start or length no note value could spell, written at the "
-                                            "nearest one that can; in tab.musicxml only, the notes here are unchanged")
+                                            "nearest one that can; in the MusicXML only, the notes here are unchanged")
     octave_shift: int = Field(description="semitones the whole line was moved after transcription. With octave auto: "
                                           "0, or -12 (or -24) when it was heard an octave above where a bass plays, "
                                           "the same for every instrument, tuning and capo. With a chosen octave: "
@@ -496,6 +502,7 @@ class Tab(BaseModel):
 
 class SuiteInfo(BaseModel):
     name: str
+    target: Target = Field(description="the target the suite gates")
     description: str
     cpu: bool = Field(description="runs on CPU from cached model outputs")
     requires: list[str] = Field(description="data paths the suite reads, relative to the data directory")
@@ -511,6 +518,7 @@ class Check(BaseModel):
 
 class SuiteResult(BaseModel):
     suite: str
+    target: Target = Field(description="the target the suite gates")
     status: Literal["pass", "fail", "skipped", "error"]
     reason: str | None = None
     seconds: float = 0.0
@@ -519,12 +527,17 @@ class SuiteResult(BaseModel):
     skipped_parts: list[str] = Field(default_factory=list, description="eval sets (metric prefixes) without data")
 
 
+class TargetVerdict(BaseModel):
+    passed: bool
+
+
 class BenchRun(BaseModel):
     id: str
     created: str
-    target: str = Field(description="suite or group that was run")
+    ran: str = Field(description="what was asked for: a suite, several, or a group (cpu, ci, all, brass, fretted)")
     mode: Literal["cached", "live"]
-    passed: bool
+    passed: bool = Field(description="every target passed")
+    targets: dict[str, TargetVerdict] = Field(description="the verdict per target that had a suite in the run")
     git_sha: str | None = None
     device: str | None = None
     suites: list[SuiteResult]
@@ -533,7 +546,8 @@ class BenchRun(BaseModel):
 class SuiteHistoryEntry(BaseModel):
     time: float = Field(description="unix seconds")
     run_id: str
-    target: str
+    ran: str = Field(description="what the run was asked for: a suite, several, or a group")
+    target: Target = Field(description="the target the suite gates")
     suite: str
     status: Literal["pass", "fail", "skipped", "error"]
     reason: str | None = None

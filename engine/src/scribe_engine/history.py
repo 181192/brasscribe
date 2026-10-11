@@ -15,14 +15,15 @@ from .adapters import host_device
 from .config import Settings
 
 
-def save(settings: Settings, report: dict, target: str, mode: str) -> dict:
+def save(settings: Settings, report: dict, ran: str, mode: str) -> dict:
+    """Store a gated report. `ran` is what was asked for: a suite, several, or a group."""
     from .runner import git_state
 
     d = settings.bench_history_dir
     d.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
-    run = {"id": now.strftime("%Y%m%dT%H%M%S%fZ"), "created": now.isoformat(), "target": target, "mode": mode,
-           "passed": report["passed"], "git_sha": git_state().get("sha"), "device": host_device(),
+    run = {"id": now.strftime("%Y%m%dT%H%M%S%fZ"), "created": now.isoformat(), "ran": ran, "mode": mode,
+           "passed": report["passed"], "targets": report["targets"], "git_sha": git_state().get("sha"), "device": host_device(),
            "suites": report["suites"]}
     (d / f"{run['id']}.json").write_text(json.dumps(run, indent=1))
     return run
@@ -36,7 +37,7 @@ def entries(settings: Settings, suite: str | None = None, limit: int = 1000) -> 
         try:  # a file that cannot be read or lacks a field is left out, not an error for the whole history
             run = json.loads(p.read_text())
             t = datetime.fromisoformat(run["created"]).timestamp()
-            found = [{"time": t, "run_id": run["id"], "target": run["target"], "suite": s["suite"],
+            found = [{"time": t, "run_id": run["id"], "ran": run["ran"], "target": s["target"], "suite": s["suite"],
                       "status": s["status"], "reason": s.get("reason"), "metrics": s.get("metrics", {}),
                       "checks": s.get("checks", []), "manifest": str(p), "git_sha": run.get("git_sha"),
                       "device": run.get("device")}

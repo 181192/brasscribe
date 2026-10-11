@@ -74,11 +74,14 @@ object Product {
     /** What this app is for: of the engine's profiles, the ones of this target are its own. */
     val target = Target.BRASS
 
-    /** The computer's scores this app opens: the ones of its target's profiles, every band score. A tab is Fretscribe's. */
-    fun makes(profile: String): Boolean = Profile.of(profile)?.target == target
+    /**
+     * Whether a job on the computer is this app's: the engine says which target each job belongs to
+     * ([no.brasscribe.play.engine.Job.target]). A job of another target, or of none, is not.
+     */
+    fun makes(target: String?): Boolean = target == this.target.id
 
     /** Check the notes and the output choices are offered for this profile's scores. */
-    fun arranges(profile: Profile): Boolean = makes(profile.id)
+    fun arranges(profile: Profile): Boolean = profile.target == target
 
     /** The job as it is sent to the computer: the band profiles take nothing more. */
     @Suppress("UNUSED_PARAMETER")
@@ -125,5 +128,5 @@ object Product {
     /** A row in Your scores that is not a band score: a tab says where it opens. Null for the usual line. */
     @Composable
     fun rowSubtitle(entry: ScoreEntry): String? =
-        if (entry.onComputer && !makes(entry.profile)) stringResource(R.string.other_product_row) else null
+        if (entry.onComputer && !makes(entry.target)) stringResource(R.string.other_product_row) else null
 }

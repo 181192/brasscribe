@@ -1,6 +1,7 @@
 {
  "id": "ukulele-line",
  "profile": "tab",
+ "target": "fretted",
  "title": "Ukulele line",
  "audio_id": "a11073fc9a8a4924",
  "status": "succeeded",

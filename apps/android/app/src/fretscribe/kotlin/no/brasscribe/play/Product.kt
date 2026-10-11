@@ -132,8 +132,11 @@ object Product {
     /** What this app is for: of the engine's profiles, the ones of this target are its own. */
     val target = Target.FRETTED
 
-    /** The computer's scores this app opens: the ones of its target's profiles, tabs, also a bass tab made before there were other instruments. A band score is Brasscribe's. */
-    fun makes(profile: String): Boolean = Profile.of(profile)?.target == target
+    /**
+     * Whether a job on the computer is this app's: the engine says which target each job belongs to
+     * ([no.brasscribe.play.engine.Job.target]). A job of another target, or of none, is not.
+     */
+    fun makes(target: String?): Boolean = target == this.target.id
 
     /** Brasscribe's Check the notes and output choices write for a band: never offered here. */
     @Suppress("UNUSED_PARAMETER")

@@ -38,13 +38,13 @@ class SkipSuite(Exception):
 @dataclass(frozen=True)
 class Suite:
     name: str
+    target: str  # the target the suite gates (TARGETS): its baselines and its verdict are that target's
     description: str
     fn: Callable[[Path, str], dict[str, float]]
     requires: tuple[str, ...] = ()
     cpu: bool = True
     tools: tuple[str, ...] = field(default=())
     ci: bool = False  # gates in CI on the redistributable data built by ci_data (ChoraleBricks + our outputs)
-    target: str = "brass"  # the target the suite gates (TARGETS): its baselines and its verdict are that target's
 
 
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
@@ -783,76 +783,76 @@ def _solo_beat_model(data: Path, mode: str) -> dict[str, float]:
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
 SUITES: dict[str, Suite] = {s.name: s for s in [
-    Suite("chorales-transcription", "transcription per model on ChoraleBricks brass quartets (cached MIDI)",
+    Suite("chorales-transcription", "brass", "transcription per model on ChoraleBricks brass quartets (cached MIDI)",
           _transcription("choralebricks-brass4", {m: _CHORALE_KEYS for m in [
               "basic-pitch", "basic-pitch-retuned", "muscriptor-medium", "muscriptor-large", "muscriptor-medium-brass",
               "muscriptor-large-brass"]}),
           ("eval/choralebricks-brass4",), ci=True),
-    Suite("urmp-transcription", "transcription per model on URMP brass (cached MIDI)",
+    Suite("urmp-transcription", "brass", "transcription per model on URMP brass (cached MIDI)",
           _transcription("urmp-brass", {m: ["onset_f1", "onset100_f1", "octave_err_rate"] for m in ["basic-pitch", "muscriptor-medium"]}),
           ("eval/urmp-brass",)),
-    Suite("slakh-transcription", "pipelines A and B on Slakh trumpet-lead songs (cached MIDI)",
+    Suite("slakh-transcription", "brass", "pipelines A and B on Slakh trumpet-lead songs (cached MIDI)",
           _transcription("slakh-trumpet", {m: ["onset100_f1", "onset_f1"] for m in [
               "basic-pitch", "muscriptor-medium", "pipeB-sw-muscriptor", "pipeB-sw-basicpitch"]}),
           ("eval/slakh-trumpet",)),
-    Suite("quant-chorales", "beat grid + quantizer vs notated positions, chorales", _quant("choralebricks-brass4"),
+    Suite("quant-chorales", "brass", "beat grid + quantizer vs notated positions, chorales", _quant("choralebricks-brass4"),
           ("eval/choralebricks-brass4",), ci=True),
-    Suite("quant-urmp", "beat grid + quantizer vs notated positions, URMP", _quant("urmp-brass"), ("eval/urmp-brass",)),
-    Suite("melody", "melody top line from MuScriptor/Basic Pitch consensus", _melody,
+    Suite("quant-urmp", "brass", "beat grid + quantizer vs notated positions, URMP", _quant("urmp-brass"), ("eval/urmp-brass",)),
+    Suite("melody", "brass", "melody top line from MuScriptor/Basic Pitch consensus", _melody,
           ("eval/slakh-trumpet", "eval/urmp-brass", "eval/choralebricks-brass4")),
-    Suite("consensus-chorales", "MuScriptor + Basic Pitch consensus on chorales (leave-one-song-out precision)",
+    Suite("consensus-chorales", "brass", "MuScriptor + Basic Pitch consensus on chorales (leave-one-song-out precision)",
           _consensus("choralebricks-brass4", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch.mid", False)],
                      [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]), ("eval/choralebricks-brass4",), ci=True),
-    Suite("consensus-chorales-retuned", "the same, with Basic Pitch on the recording retuned to A = 440",
+    Suite("consensus-chorales-retuned", "brass", "the same, with Basic Pitch on the recording retuned to A = 440",
           _consensus("choralebricks-brass4", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch-retuned.mid", False)],
                      [0.3, 0.4, 0.5, 0.6, 0.7, 0.8]), ("eval/choralebricks-brass4",), ci=True),
-    Suite("consensus-urmp", "MuScriptor + Basic Pitch consensus on URMP brass",
+    Suite("consensus-urmp", "brass", "MuScriptor + Basic Pitch consensus on URMP brass",
           _consensus("urmp-brass", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch.mid", False)], [0.8]),
           ("eval/urmp-brass",)),
-    Suite("consensus-slakh", "four-source consensus on Slakh (both models on mix and SW stems)",
+    Suite("consensus-slakh", "brass", "four-source consensus on Slakh (both models on mix and SW stems)",
           _consensus("slakh-trumpet", [("mus", "muscriptor-medium.mid", False), ("bp", "basic-pitch.mid", False),
                                        ("musB", "pipeB-sw-muscriptor.mid", True), ("bpB", "pipeB-sw-basicpitch.mid", True)],
                      [0.7, 0.8]), ("eval/slakh-trumpet",)),
-    Suite("solo-vote", "SwiftF0 / MuScriptor / Basic Pitch vote on Mega-53 solo stems (cached MIDI)", _solo_vote,
+    Suite("solo-vote", "brass", "SwiftF0 / MuScriptor / Basic Pitch vote on Mega-53 solo stems (cached MIDI)", _solo_vote,
           ("mega53-out-bench", "eval/choralebricks-brass4", "eval/slakh-trumpet")),
-    Suite("arrange", "minimal-band and quartet arrangers on ground-truth scores (no audio)", _arrange,
+    Suite("arrange", "brass", "minimal-band and quartet arrangers on ground-truth scores (no audio)", _arrange,
           ("eval/choralebricks-brass4", "eval/urmp-brass"), ci=True),
-    Suite("quartet-audio", "quartet from cached transcriptions of the ChoraleBricks recordings, vs the chorale",
+    Suite("quartet-audio", "brass", "quartet from cached transcriptions of the ChoraleBricks recordings, vs the chorale",
           _quartet_audio, ("eval/choralebricks-brass4",), ci=True),
-    Suite("mikkel-golden", "re-arrange cached Mikkel layers and compare with the golden output", _golden_arrange,
+    Suite("mikkel-golden", "brass", "re-arrange cached Mikkel layers and compare with the golden output", _golden_arrange,
           ("mikkel/repro/layers", MIKKEL_GOLDEN)),
-    Suite("readability", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
+    Suite("readability", "brass", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
           _readability, ("mikkel/repro/layers", MIKKEL_GOLDEN)),
-    Suite("solo-instruments", "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
+    Suite("solo-instruments", "brass", "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
           _solo_instruments, (), ci=True),
-    Suite("fast-notes", "fast runs, repeated notes and two-note alternations through the solo path, stage by stage "
+    Suite("fast-notes", "brass", "fast runs, repeated notes and two-note alternations through the solo path, stage by stage "
           "(frozen SwiftF0/Basic Pitch/Beat This! outputs on real trumpet samples)", _fast_notes, (), ci=True),
-    Suite("seat-voices", "each seat's voice picked out of the brass4 mixes by its range (MuScriptor, Basic Pitch, consensus)",
+    Suite("seat-voices", "brass", "each seat's voice picked out of the brass4 mixes by its range (MuScriptor, Basic Pitch, consensus)",
           _seat_voices, ("eval/choralebricks-brass4",), ci=True),
-    Suite("durations", "written durations and staccato from performed lengths (duration_bench)", _durations,
+    Suite("durations", "brass", "written durations and staccato from performed lengths (duration_bench)", _durations,
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
-    Suite("freetime", "free-time detection on rubato/fermata material (freetime_bench)", _freetime,
+    Suite("freetime", "brass", "free-time detection on rubato/fermata material (freetime_bench)", _freetime,
           ("eval/urmp-brass", "eval/choralebricks-brass4"), ci=True),
-    Suite("solo-ondevice", "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
+    Suite("solo-ondevice", "brass", "engine solo profile vs the on-device reference (URMP Entertainer trumpet, 30 s), note for note",
           _solo_ondevice, (ONDEVICE_REF, "runs/apple/entertainer-tpt1-30s.wav")),
-    Suite("solo-beat-model", "the solo path on Beat This! small0 (the device's) and final0 beats of every single part of URMP "
+    Suite("solo-beat-model", "brass", "the solo path on Beat This! small0 (the device's) and final0 beats of every single part of URMP "
           "and ChoraleBricks: onset and written-position F1, bar position and metre per checkpoint (cached beats and "
           "transcriptions)", _solo_beat_model, ("runs/music-core/solo-beats",)),
-    Suite("bass-tab", "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, "
-          "range, playability, tempo and meter, hand travel (cached model outputs)", _bass_tab, ("eval/slakh-bass",), target="fretted"),
-    Suite("guitar-tab", "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and "
+    Suite("bass-tab", "fretted", "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, "
+          "range, playability, tempo and meter, hand travel (cached model outputs)", _bass_tab, ("eval/slakh-bass",)),
+    Suite("guitar-tab", "fretted", "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and "
           "reporting players apart) and on Slakh's guitars in a song: notes, chords, string agreement, playability "
-          "(cached model outputs)", _guitar_tab, ("eval/guitarset",), target="fretted"),
-    Suite("ukulele-tab", "the tab profile with a ukulele (high G, low G, baritone) on rendered passages, alone and separated "
+          "(cached model outputs)", _guitar_tab, ("eval/guitarset",)),
+    Suite("ukulele-tab", "fretted", "the tab profile with a ukulele (high G, low G, baritone) on rendered passages, alone and separated "
           "from a mix: notes, chords, the string of each note, playability (cached model outputs)", _small_tab("ukulele"),
-          ("eval/small-tab",), target="fretted"),
-    Suite("mandolin-tab", "the tab profile with a mandolin on rendered passages, alone and separated from a mix (cached model "
-          "outputs)", _small_tab("mandolin"), ("eval/small-tab",), target="fretted"),
-    Suite("guitar-rendered-tab", "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two "
-          "groups the rules were chosen with and two held out (cached model outputs)", _small_tab("guitar-rendered"), ("eval/small-tab",), target="fretted"),
-    Suite("meter-tab", "the bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4: rendered passages, "
-          "the beats in a bar as tracked and as written (cached model outputs)", _meter_tab, ("eval/meter-tab",), target="fretted"),
-    Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
+          ("eval/small-tab",)),
+    Suite("mandolin-tab", "fretted", "the tab profile with a mandolin on rendered passages, alone and separated from a mix (cached model "
+          "outputs)", _small_tab("mandolin"), ("eval/small-tab",)),
+    Suite("guitar-rendered-tab", "fretted", "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two "
+          "groups the rules were chosen with and two held out (cached model outputs)", _small_tab("guitar-rendered"), ("eval/small-tab",)),
+    Suite("meter-tab", "fretted", "the bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4: rendered passages, "
+          "the beats in a bar as tracked and as written (cached model outputs)", _meter_tab, ("eval/meter-tab",)),
+    Suite("musescore-roundtrip", "brass", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}
 

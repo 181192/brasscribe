@@ -53,7 +53,7 @@ class EngineHttpTest {
             }
             val path = lines.first().split(" ")[1]
             val body = when {
-                path.startsWith("/v1/jobs/upload") -> """{"id":"j1","profile":"solo","status":"queued","created":1.0,"stages":[]}"""
+                path.startsWith("/v1/jobs/upload") -> """{"id":"j1","profile":"solo","target":"brass","status":"queued","created":1.0,"stages":[]}"""
                 else -> """{"version":"x","device":"cpu","auth_required":false,"server_id":"s","server_name":"Fixture"}"""
             }
             out.write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\n\r\n$body".toByteArray())
