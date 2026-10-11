@@ -26,8 +26,13 @@ eval "$(scripts/worktree-setup.sh)"      # later shells: source .scribe-env
 ```
 
 The script is idempotent. `--print-env` only prints the environment, `--no-core` skips the prebuilt
-core, and `--core host,apple` limits it to those components. It does four things:
+core, and `--core host,apple` limits it to those components. It does five things:
 
+- First, removes what a checkout from before a rename still holds under an old name: build outputs, an
+  environment file with old variables, a Python package's old folder (git moves the files, but `__pycache__`
+  stays and Python imports it as an empty package), and environments that have the packages installed under
+  old names. This runs before anything slow, so a run that is cut short still leaves none of it.
+  `scripts/check.sh` refuses to run beside any of it and says to run the setup.
 - Links `data/`, `models/` and `apps/apple/Frameworks` (Verovio) from the main checkout. It finds
   the main checkout through `git worktree list` (`SCRIBE_MAIN` overrides it). `SCRIBE_REPO`
   is set to the worktree itself, since the tests also look up tracked files through it.
