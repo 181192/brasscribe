@@ -289,6 +289,13 @@ NB = {
     "“%@”": "«%@»",
     "“%@” from %@": "«%@» fra %@",
     "Brasscribe couldn't finish updating": "Brasscribe fikk ikke fullført oppdateringen",
+    "Bandroom needs an update": "Bandroom må oppdateres",
+    "Brasscribe needs an update": "Brasscribe må oppdateres",
+    "Update Brasscribe": "Oppdater Brasscribe",
+    "Brasscribe on this computer is newer than this copy of Bandroom, and they only work together when both are up to date.":
+        "Brasscribe på denne datamaskinen er nyere enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert.",
+    "This copy of Bandroom is newer than the Brasscribe it runs, and they only work together when both are up to date.":
+        "Denne utgaven av Bandroom er nyere enn den Brasscribe den kjører, og de virker bare sammen når begge er oppdatert.",
     "The previous version is still running, so phones can keep sending recordings.": "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før.",
     "Updating Brasscribe…": "Oppdaterer Brasscribe …",
     "Engine build": "Motorbygg",

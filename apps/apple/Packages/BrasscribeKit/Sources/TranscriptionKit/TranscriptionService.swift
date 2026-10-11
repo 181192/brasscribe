@@ -124,6 +124,8 @@ public enum TranscriptionError: Error, Equatable, Sendable, LocalizedError {
     case artifactUnavailable(ArtifactKind)
     /// A quartet was asked for a take with one line only (the app shows its own words).
     case needsWholeGroup
+    /// The computer's interface version is not this app's: nothing was sent to it (the app shows its own words).
+    case interfaceMismatch(InterfaceMatch.Update)
 
     public var errorDescription: String? {
         switch self {
@@ -135,6 +137,8 @@ public enum TranscriptionError: Error, Equatable, Sendable, LocalizedError {
         case .cancelled: return "Cancelled."
         case .artifactUnavailable(let k): return "\(k.engineName) is not available for this transcription."
         case .needsWholeGroup: return "Needs a recording of the whole group"
+        case .interfaceMismatch(.app): return "This app is older than Brasscribe on the computer."
+        case .interfaceMismatch(.computer): return "Brasscribe on the computer is older than this app."
         }
     }
 }

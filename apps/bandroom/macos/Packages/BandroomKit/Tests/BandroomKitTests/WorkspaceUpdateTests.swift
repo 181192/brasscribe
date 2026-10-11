@@ -374,8 +374,10 @@ import Testing
     @Test func healthDecodesTheBuildAndOlderEnginesWithout() throws {
         let old = #"{"status":"ok","version":"0.1.0","device":"mps","auth_required":false,"server_id":"a","server_name":"b"}"#
         #expect(try JSONDecoder().decode(Health.self, from: Data(old.utf8)).build == nil)
-        let new = #"{"status":"ok","version":"0.1.0","build":"c3dc2ad 5faffacca071","device":"mps","auth_required":false,"server_id":"a","server_name":"b"}"#
+        #expect(try JSONDecoder().decode(Health.self, from: Data(old.utf8)).interfaceVersion == nil)
+        let new = #"{"status":"ok","version":"0.1.0","build":"c3dc2ad 5faffacca071","device":"mps","auth_required":false,"server_id":"a","server_name":"b","interface_version":\#(Wire.interfaceVersion)}"#
         #expect(try JSONDecoder().decode(Health.self, from: Data(new.utf8)).build == "c3dc2ad 5faffacca071")
+        #expect(try JSONDecoder().decode(Health.self, from: Data(new.utf8)).interfaceVersion == Wire.interfaceVersion)
     }
 
     @Test func theUpdateShowsAsUpdatingAndAFailureNeedsAttention() {

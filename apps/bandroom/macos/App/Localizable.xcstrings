@@ -361,6 +361,16 @@
         }
       }
     },
+    "Bandroom needs an update": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom må oppdateres"
+          }
+        }
+      }
+    },
     "Brasscribe can't start": {
       "localizations": {
         "nb": {
@@ -471,6 +481,16 @@
         }
       }
     },
+    "Brasscribe needs an update": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe må oppdateres"
+          }
+        }
+      }
+    },
     "Brasscribe needs attention: %@": {
       "localizations": {
         "nb": {
@@ -507,6 +527,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe på denne Macen lytter med Microsofts ONNX Runtime, som sender bruksdata og en enhetsidentifikator til Microsoft, aldri et opptak."
+          }
+        }
+      }
+    },
+    "Brasscribe on this computer is newer than this copy of Bandroom, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på denne datamaskinen er nyere enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert."
           }
         }
       }
@@ -2241,6 +2271,16 @@
         }
       }
     },
+    "This copy of Bandroom is newer than the Brasscribe it runs, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne utgaven av Bandroom er nyere enn den Brasscribe den kjører, og de virker bare sammen når begge er oppdatert."
+          }
+        }
+      }
+    },
     "This request has expired. Choose this computer on the phone again.": {
       "localizations": {
         "nb": {
@@ -2267,6 +2307,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prøv igjen"
+          }
+        }
+      }
+    },
+    "Update Brasscribe": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater Brasscribe"
           }
         }
       }

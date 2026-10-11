@@ -40,6 +40,11 @@ import TranscriptionKit
     #expect(!app.computerThere)
     app.connection.stage(.needsPairing(serverName: "Band room"), record: rec)
     #expect(!app.computerThere)
+    // app and computer on different versions: nothing is sent to it, so a band is a draft on this device
+    app.connection.stage(.mismatch(serverName: "Band room", update: .computer), record: rec)
+    #expect(!app.computerThere && app.computerPaired)
+    app.connection.stage(.mismatch(serverName: "Band room", update: .app), record: rec)
+    #expect(!app.computerThere)
     // nothing paired
     app.connection.stage(.connected(serverName: ""), record: nil)
     app.connection.localAddress = nil

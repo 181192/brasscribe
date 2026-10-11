@@ -14,6 +14,7 @@ enum ErrorWords {
         case TranscriptionError.needsWholeGroup: return String(localized: "Needs a recording of the whole group")
         case TranscriptionError.notPaired, TranscriptionError.pairingRejected:
             return String(localized: "Your computer no longer knows this device. Connect them again in Settings.")
+        case TranscriptionError.interfaceMismatch(let which): return ConnectionCopy.update(which)
         case TranscriptionError.unreachable: return unreachable
         case TranscriptionError.jobFailed: return String(localized: "Brasscribe on your computer couldn't finish the score. Try again.")
         case TranscriptionError.http(let status, let body): return http(status, code: engineCode(body))

@@ -159,7 +159,8 @@ struct StatusPanel: View {
         case .noFreePort: app.tryAgain()
         case .updateFailed: app.retryUpdate()
         case .notResponding: app.restartNow()
-        case .pixiTooOld, .updateRefused: app.openLatestRelease()
+        case .pixiTooOld, .updateRefused, .interfaceMismatch(.bandroom): app.openLatestRelease()
+        case .interfaceMismatch(.engine): app.updateEngine()
         }
     }
 

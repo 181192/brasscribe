@@ -54,15 +54,17 @@ enum Catalogue {
     /// The faces Bandroom draws text in, for the cut-off text check: the system font and Instrument Serif (titles).
     static let text = TextFit(fonts: ["InstrumentSerif-Regular"])
 
-    /// A model of its own, on canned engine answers (`DemoEngine`): BANDROOM_DEMO and BANDROOM_DEMO_REQUEST are read
-    /// when it starts.
-    static func model(busy: Bool, request: Bool = false) async -> AppModel {
+    /// A model of its own, on canned engine answers (`DemoEngine`): BANDROOM_DEMO, BANDROOM_DEMO_REQUEST and
+    /// BANDROOM_DEMO_INTERFACE ("older" or "newer": an engine with another interface version) are read when it starts.
+    static func model(busy: Bool, request: Bool = false, interface: String? = nil) async -> AppModel {
         AXTree.enableInProcess()
         setenv("BANDROOM_DEMO", busy ? "busy" : "idle", 1)
         if request { setenv("BANDROOM_DEMO_REQUEST", "1", 1) } else { unsetenv("BANDROOM_DEMO_REQUEST") }
+        if let interface { setenv("BANDROOM_DEMO_INTERFACE", interface, 1) } else { unsetenv("BANDROOM_DEMO_INTERFACE") }
         let app = AppModel(defaults: defaults)
         app.launch()
         unsetenv("BANDROOM_DEMO_REQUEST")
+        unsetenv("BANDROOM_DEMO_INTERFACE")
         await app.monitor.refresh()
         await app.monitor.refreshRequests()
         // The first sample of this computer (the demo's own) comes from a task of its own.

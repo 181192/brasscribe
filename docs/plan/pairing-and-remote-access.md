@@ -187,6 +187,7 @@ Client rules:
 - **Match engines by `server_id`, never by address or mDNS name.** The id is in the TXT record (`id=`) and in `/v1/health`.
 - **An address change never clears a credential.** A credential belongs to a `server_id`.
 - **Ask for a code only after a 401** from `/v1/devices/me` (or any call). An unreachable engine means "can't reach your computer", not "pair again".
+- **Read the interface version first.** Every heartbeat, every pairing (with a code, from a link, by asking the computer) and every job starts with `GET /v1/health`. When `interface_version` is not the number the app is built for, the app shows its own connection state beside connected, looking for, not connected and pair again: "update this app" when the engine's number is higher, "update Bandroom on the computer" when it is lower or missing. In that state the app asks the engine for its health only, at the heartbeat's pace: no pair request, no upload, no job, no list of scores. The credential is kept, so the app connects again without pairing once both are up to date. With nothing paired, an engine like that at the address shows the same state.
 - When the engine shows up with a **different** `server_id` at the old address, it is a different engine, or the old one after a reset. Keep the old record, and show the new engine as a new one to pair.
 - Keep several records, one per engine. A band laptop and a home desktop should both just work.
 

@@ -124,6 +124,11 @@ import TranscriptionKit
         try LayoutFixtures.library(full)
         try await window("home-scores", app: full) { HomeView() }
         try await window("home-offline", app: LayoutFixtures.app(connection: .offline)) { HomeView() }
+        // app and computer on different versions: the row says which of the two to update
+        for (name, update) in [("home-update-computer", InterfaceMatch.Update.computer), ("home-update-app", .app)] {
+            let app = LayoutFixtures.app(connection: .mismatch(serverName: "Brasscribe on Studio Mac", update: update))
+            try await window(name, app: app) { HomeView() }
+        }
 
         let src = PendingSource(audioURL: ScreenshotScenes.sceneRecording, title: "Band practice", name: "Band practice.m4a")
         try await window("source", app: full) { SourceView(source: src) }

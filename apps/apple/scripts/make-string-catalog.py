@@ -508,6 +508,10 @@ NB = {
     "Waiting for your computer …": "Venter på datamaskinen …",
     "bars %lld to %lld": "takt %lld til %lld",
     "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.": "Klikk på Brasscribe-merket i menylinjen (Mac) eller i hjørnet av oppgavelinjen (Windows) på datamaskinen, og velg Koble til en telefon.",
+    "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.":
+        "Oppdater Brasscribe Play. Brasscribe på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.",
+    "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.":
+        "Oppdater Brasscribe på datamaskinen. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert.",
     "Without Brasscribe Bandroom, start the engine with “scribe serve --lan”.": "Uten Brasscribe Bandroom starter du motoren med «scribe serve --lan».",
     # Settings → Display → Appearance
     "Appearance": "Utseende",

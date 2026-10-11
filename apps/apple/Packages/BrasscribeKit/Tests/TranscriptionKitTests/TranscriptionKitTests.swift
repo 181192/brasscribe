@@ -104,6 +104,9 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var uploads: [String] = []
     /// Requests that were answered after a delay (a cancelled request is not).
     nonisolated(unsafe) static var answered: [String] = []
+    /// The interface version `newer.local` answers with; nil is one above the app's. `older.local` has none, as an
+    /// engine from before the number.
+    nonisolated(unsafe) static var newerInterface: Int?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -136,9 +139,13 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
         let (code, body, type): (Int, Data, String) = {
             switch (request.httpMethod ?? "GET", path) {
             case ("GET", "/v1/health") where request.url?.host() == "loop.local":
-                return (200, Data(#"{"status":"ok","version":"1","device":"mps","auth_required":false,"server_id":"srv-local","server_name":"Brasscribe on This Mac"}"#.utf8), "application/json")
-            case ("GET", "/v1/health"):
+                return (200, Data(#"{"status":"ok","version":"1","device":"mps","auth_required":false,"server_id":"srv-local","server_name":"Brasscribe on This Mac","interface_version":\#(Wire.interfaceVersion)}"#.utf8), "application/json")
+            case ("GET", "/v1/health") where request.url?.host() == "older.local":
                 return (200, Data(#"{"status":"ok","version":"1","device":"cpu","auth_required":true,"server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json")
+            case ("GET", "/v1/health") where request.url?.host() == "newer.local":
+                return (200, Data(#"{"status":"ok","version":"1","device":"cpu","auth_required":true,"server_id":"srv-1","server_name":"Brasscribe on Studio","interface_version":\#(Self.newerInterface ?? Wire.interfaceVersion + 1)}"#.utf8), "application/json")
+            case ("GET", "/v1/health"):
+                return (200, Data(#"{"status":"ok","version":"1","device":"cpu","auth_required":true,"server_id":"srv-1","server_name":"Brasscribe on Studio","interface_version":\#(Wire.interfaceVersion)}"#.utf8), "application/json")
             case ("POST", "/v1/pair"):
                 return request.bodyStreamData.contains("123456") ? (200, Data(#"{"token":"tok","device_id":"d1","server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json") : (403, Data(), "application/json")
             case ("GET", "/v1/devices/me"):
@@ -459,5 +466,108 @@ extension URLRequest {
         #expect(StubEngine.requests.contains { $0.httpMethod == "DELETE" && $0.url?.path == "/v1/devices/me" })
         #expect(try store.all().isEmpty)
         #expect(m.record == nil && m.state == .offline)
+    }
+
+    // MARK: an engine with another interface version
+
+    /// What was sent to `host`, as "GET /v1/health".
+    func sent(to host: String) -> [String] {
+        StubEngine.requests.filter { $0.url?.host() == host }.map { "\($0.httpMethod ?? "GET") \($0.url?.path ?? "")" }
+    }
+
+    @Test @MainActor func heartbeatAgainstAnotherInterfaceVersionSaysWhichToUpdateAndAsksNothingElse() async throws {
+        StubEngine.requests = []
+        StubEngine.newerInterface = nil
+        // rotate_after has passed, and still no rotation is asked of this engine
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://newer.local:8765",
+                             rotateAfter: Self.now.addingTimeInterval(-86_400))
+        let (m, store) = monitor([r], found: URL(string: "http://engine.local:9000")!)
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .mismatch(serverName: "Brasscribe on Studio", update: .app))
+        #expect(sent(to: "newer.local") == ["GET /v1/health"])
+        // the engine itself answered: it is not looked for elsewhere, and the pairing is kept as it was
+        #expect(sent(to: "engine.local").isEmpty)
+        #expect(try store.record(serverID: "srv-1") == r)
+
+        let old = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://older.local:8765")
+        let (m2, store2) = monitor([old])
+        #expect(await m2.heartbeat() == 20)
+        #expect(m2.state == .mismatch(serverName: "Brasscribe on Studio", update: .computer))
+        #expect(sent(to: "older.local") == ["GET /v1/health"])
+        #expect(try store2.record(serverID: "srv-1") == old)
+    }
+
+    @Test @MainActor func aComputerUpdatedDuringTheSessionIsFoundAtTheNextHeartbeatAndThePairingIsKept() async throws {
+        StubEngine.requests = []
+        StubEngine.newerInterface = Wire.interfaceVersion
+        defer { StubEngine.newerInterface = nil }
+        let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://newer.local:8765",
+                             rotateAfter: Self.now.addingTimeInterval(86_400))
+        let (m, store) = monitor([r])
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on Studio"))
+        // Bandroom is updated while the app is open
+        StubEngine.newerInterface = Wire.interfaceVersion + 1
+        StubEngine.requests = []
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .mismatch(serverName: "Brasscribe on Studio", update: .app))
+        #expect(sent(to: "newer.local") == ["GET /v1/health"])
+        // both up to date again: connected with the same pairing, nothing paired again
+        StubEngine.newerInterface = Wire.interfaceVersion
+        #expect(await m.heartbeat() == 20)
+        #expect(m.state == .connected(serverName: "Brasscribe on Studio"))
+        #expect(try store.all().map(\.deviceID) == ["d1"])
+        #expect(!StubEngine.requests.contains { $0.url?.path == "/v1/pair" })
+    }
+
+    @Test @MainActor func pairingWithAnotherInterfaceVersionSendsNoPairRequest() async throws {
+        StubEngine.requests = []
+        StubEngine.newerInterface = nil
+        let (m, store) = monitor([])
+        // from a link or QR code, with the code
+        let withCode = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-1&name=x&h=older.local:8765&code=123456"))
+        await #expect(throws: TranscriptionError.interfaceMismatch(.computer)) { try await m.pair(link: withCode, deviceName: "x", platform: "ios") }
+        // from a link without a code: no address to ask the computer at either
+        let noCode = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-1&name=x&h=newer.local:8765"))
+        await #expect(throws: TranscriptionError.interfaceMismatch(.app)) { try await m.pair(link: noCode, deviceName: "x", platform: "ios") }
+        // the six digits, and asking the computer to allow this device
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [StubEngine.self]
+        let session = URLSession(configuration: cfg)
+        for (host, update) in [("older.local", InterfaceMatch.Update.computer), ("newer.local", .app)] {
+            let base = URL(string: "http://\(host):8765")!
+            await #expect(throws: TranscriptionError.interfaceMismatch(update)) {
+                try await CompanionService(baseURL: base, session: session).pair(code: "123456", deviceName: "x", platform: "ios")
+            }
+            await #expect(throws: TranscriptionError.interfaceMismatch(update)) {
+                try await CompanionService(baseURL: base, session: session).requestPairing(deviceName: "x", platform: "ios")
+            }
+            #expect(Set(sent(to: host)) == ["GET /v1/health"])
+        }
+        #expect(!StubEngine.requests.contains { $0.httpMethod == "POST" })
+        #expect(try store.all().isEmpty)
+        #expect(m.record == nil && m.state == .offline)
+    }
+
+    @Test func noJobIsSentToAnotherInterfaceVersion() async throws {
+        StubEngine.requests = []
+        StubEngine.uploads = []
+        StubEngine.newerInterface = nil
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.protocolClasses = [StubEngine.self]
+        let session = URLSession(configuration: cfg)
+        let audio = FileManager.default.temporaryDirectory.appending(path: "m.wav")
+        try Data(repeating: 1, count: 3000).write(to: audio)
+        for (host, update) in [("older.local", InterfaceMatch.Update.computer), ("newer.local", .app)] {
+            let svc = CompanionService(baseURL: URL(string: "http://\(host):8765")!, token: "tok", session: session)
+            await #expect(throws: TranscriptionError.interfaceMismatch(update)) {
+                for try await _ in svc.transcribe(.init(audioURL: audio, profile: .solo, title: "t")) {}
+            }
+            // nor are its jobs listed or its scores fetched
+            await #expect(throws: TranscriptionError.interfaceMismatch(update)) { _ = try await svc.jobs() }
+            await #expect(throws: TranscriptionError.interfaceMismatch(update)) { _ = try await svc.artifact(.musicXML, jobID: "j1") }
+            #expect(Set(sent(to: host)) == ["GET /v1/health"])
+        }
+        #expect(StubEngine.uploads.isEmpty)
     }
 }

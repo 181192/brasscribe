@@ -343,7 +343,7 @@ public class AppFlowTests
         if (scene == "home-offline") Assert.Equal("Connect", main.Settings.Connection.ActionText);
         if (scene == "home-update")
         {
-            Assert.StartsWith("Update Bandroom on your computer.", main.Settings.Connection.StatusText);
+            Assert.StartsWith("Update Brasscribe on your computer.", main.Settings.Connection.StatusText);
             Assert.False(main.Settings.Connection.HasAction);
         }
         if (scene == "transcribing")
@@ -544,8 +544,8 @@ public class AppFlowTests
     }
 
     [Theory]
-    [InlineData("""{"version":"0.1.0","interface_version":0,"device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Bandroom on your computer")]
-    [InlineData("""{"version":"0.1.0","device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Bandroom on your computer")]
+    [InlineData("""{"version":"0.1.0","interface_version":0,"device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
+    [InlineData("""{"version":"0.1.0","device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
     [InlineData("""{"version":"9.0.0","interface_version":2,"device":"mps","auth_required":false}""", ErrorKind.UpdateApp, "Update Brasscribe Play")]
     public async Task An_engine_with_another_interface_version_gets_no_recording_and_no_job(string health, ErrorKind kind, string title)
     {

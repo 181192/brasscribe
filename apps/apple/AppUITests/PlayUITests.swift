@@ -212,6 +212,7 @@ final class PlayUITests: XCTestCase {
     /// The connection row: words and an icon, and the way forward for each state.
     func testConnectionRowStates() throws {
         for (arg, text, action) in [("offline", "Not connected", "connectionConnect"), ("needs-pairing", "no longer recognises", "connectionPairAgain"),
+                                    ("update-computer", "Update Brasscribe on your computer", nil), ("update-app", "Update Brasscribe Play", nil),
                                     ("connected", "Connected to Brasscribe on Studio Mac", nil), ("reconnecting", "Looking for Brasscribe on Studio Mac", nil)] {
             app.terminate()
             app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run", "-connection", arg]

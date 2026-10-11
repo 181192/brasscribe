@@ -22,13 +22,27 @@ struct PairWindow: View {
                 .brFont(.body).foregroundStyle(Color.Scribe.textMuted)
                 .padding(.bottom, 20)
 
-            HStack(alignment: .top, spacing: 28) {
-                VStack(alignment: .leading, spacing: 18) {
-                    ways
-                    statusBox
+            if let behind = app.interfaceMismatch {
+                // No code is made on an engine with another interface version, so there is nothing to scan or type:
+                // only what to update first.
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.Scribe.warning).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(Strings.problemTitle(.interfaceMismatch(behind))).brFont(.bodyStrong)
+                        Text(Strings.interfaceMismatch(behind)).brFont(.body).fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                qr
+                .card(padding: 14)
+                .accessibilityElement(children: .combine)
+            } else {
+                HStack(alignment: .top, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        ways
+                        statusBox
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    qr
+                }
             }
 
             Disclosure(title: "Phone doesn't show this computer?", isExpanded: $helpOpen) {

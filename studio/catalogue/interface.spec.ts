@@ -17,17 +17,17 @@ function asked(page: Page): string[] {
   return paths;
 }
 
-test("an engine without the number: update Bandroom, and only its health is asked for", async ({ page }) => {
+test("an engine without the number: update the engine, and only its health is asked for", async ({ page }) => {
   const paths = asked(page);
   await openView(page, view("update-engine"), light);
-  await expect(page.locator("#main h1")).toHaveText("Update Bandroom on this computer");
-  await expect(page.locator("#engine-status")).toHaveText("Update Bandroom on this computer");
+  await expect(page.locator("#main h1")).toHaveText("Update the engine on this computer");
+  await expect(page.locator("#engine-status")).toHaveText("Update the engine on this computer");
   await expect(page.locator(".runs-table")).toHaveCount(0);
   // Another view is no way round it, and Try again asks for the health once more and nothing else.
   await page.goto("/#/registry");
-  await expect(page.locator("#main h1")).toHaveText("Update Bandroom on this computer");
+  await expect(page.locator("#main h1")).toHaveText("Update the engine on this computer");
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.locator("#main h1")).toHaveText("Update Bandroom on this computer");
+  await expect(page.locator("#main h1")).toHaveText("Update the engine on this computer");
   expect(new Set(paths)).toEqual(new Set(["/v1/health"]));
 });
 

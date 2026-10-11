@@ -18,6 +18,10 @@ public enum Problem: Equatable, Sendable {
     /// The pixi this app bundles is too old for its engine: first-run setup or a start was refused, so no engine
     /// runs. The fix is a newer Bandroom.
     case pixiTooOld(PixiRefusal)
+    /// The engine answers, but its interface version is not this Bandroom's (`InterfaceMatch`): nothing else is asked
+    /// of it, so no phone can be paired here and nothing is shown of it. The fix is a newer Bandroom when Bandroom is
+    /// the one behind, and updating the engine when the engine is.
+    case interfaceMismatch(InterfaceMatch.Behind)
 
     /// Shown even while setting up: setup can't get past it.
     public var outranksSetup: Bool {

@@ -35,6 +35,8 @@ struct YourComputerSection: View {
         case .needsPairing: return true
         // Brasscribe on this same Mac needs no pairing
         case .connected: return false
+        // one of the two needs an update first; the pairing it has is kept
+        case .mismatch: return false
         default: return !paired
         }
     }
@@ -224,6 +226,9 @@ struct YourComputerSection: View {
                     return
                 }
             }
+        } catch TranscriptionError.interfaceMismatch(let which) {
+            approval = nil
+            message = ConnectionCopy.update(which)
         } catch {
             approval = nil
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
@@ -241,6 +246,8 @@ struct YourComputerSection: View {
             paired(name: app.connection.serverName)
         } catch TranscriptionError.pairingRejected {
             message = String(localized: "That code didn't work. Check the six digits on the computer, or choose the computer above and allow it there.")
+        } catch TranscriptionError.interfaceMismatch(let which) {
+            message = ConnectionCopy.update(which)
         } catch {
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
         }
@@ -259,6 +266,8 @@ struct YourComputerSection: View {
             }
         } catch TranscriptionError.pairingRejected {
             message = String(localized: "That code has been used or has run out. Show a new one on the computer, or choose the computer above and allow it there.")
+        } catch TranscriptionError.interfaceMismatch(let which) {
+            message = ConnectionCopy.update(which)
         } catch {
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
         }

@@ -9,3 +9,24 @@ public enum Wire {
     /// differ the app says which of them to update and sends that engine nothing else (`InterfaceMatch`).
     public static let interfaceVersion = 1
 }
+
+/// Whether this app and an engine speak the same interface, and if not, which of the two is behind.
+public enum InterfaceMatch: Equatable, Sendable {
+    case match
+    case mismatch(Update)
+
+    /// The one to update.
+    public enum Update: Equatable, Sendable {
+        /// The engine's number is higher: this app is the older one.
+        case app
+        /// The engine's number is lower, or it has none (an engine from before the number): Bandroom on the
+        /// computer is the older one.
+        case computer
+    }
+
+    /// `engine` is `interface_version` of the engine's health answer; nil when it has none.
+    public static func of(engine: Int?, app: Int = Wire.interfaceVersion) -> InterfaceMatch {
+        guard let engine, engine >= app else { return .mismatch(.computer) }
+        return engine == app ? .match : .mismatch(.app)
+    }
+}

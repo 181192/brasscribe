@@ -71,7 +71,7 @@ let pairingJSON = """
         let f = ISO8601DateFormatter()
         let recent = f.string(from: now.addingTimeInterval(-10)), old = f.string(from: now.addingTimeInterval(-86400))
         let c = client([
-            "GET /v1/health": (200, #"{"status":"ok","version":"0.9.4","device":"mps","auth_required":false,"server_id":"3f9c","server_name":"Brasscribe on Kari's MacBook"}"#),
+            "GET /v1/health": (200, #"{"status":"ok","version":"0.9.4","device":"mps","auth_required":false,"server_id":"3f9c","server_name":"Brasscribe on Kari's MacBook","interface_version":\#(Wire.interfaceVersion)}"#),
             "GET /v1/devices": (200, """
             [{"device_id":"a","name":"Kari's iPhone","platform":"ios","paired_at":"\(old)","last_seen":"\(recent)","rotated_at":null},
              {"device_id":"b","name":"Pixel 9","platform":"android","paired_at":"\(old)","last_seen":"\(old)","rotated_at":null}]

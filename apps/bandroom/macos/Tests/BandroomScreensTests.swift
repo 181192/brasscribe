@@ -14,6 +14,10 @@ import Testing
         case panelReady = "panel-ready"
         case panelRequest = "panel-request"
         case panelSettingUp = "panel-setting-up"
+        /// The engine's interface version is behind Bandroom's, or ahead of it: the panel says which to update.
+        case panelUpdateEngine = "panel-update-engine"
+        case panelUpdateBandroom = "panel-update-bandroom"
+        case pairUpdate = "pair-update"
         case phones
         case pair
         case setupCheck = "setup-check"
@@ -71,6 +75,8 @@ import Testing
         case .panelBusy, .phones: await Catalogue.model(busy: true)
         case .panelRequest: await Catalogue.model(busy: true, request: true)
         case .panelReady, .pair, .settings: await Catalogue.model(busy: false)
+        case .panelUpdateEngine, .pairUpdate: await Catalogue.model(busy: false, interface: "older")
+        case .panelUpdateBandroom: await Catalogue.model(busy: false, interface: "newer")
         case .panelSettingUp, .setupCheck, .setupLicence, .setupDownload, .setupReady:
             await {
                 let app = await Catalogue.model(busy: false)
@@ -83,13 +89,13 @@ import Testing
 
     private func view(for screen: Screen, app: AppModel) -> AnyView {
         switch screen {
-        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp:
+        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom:
             app.panelPage = .status
             return AnyView(StatusPanel().background(Color.Scribe.bg))
         case .phones:
             app.panelPage = .phones
             return AnyView(StatusPanel().background(Color.Scribe.bg))
-        case .pair: return AnyView(PairWindow())
+        case .pair, .pairUpdate: return AnyView(PairWindow())
         case .setupCheck: return AnyView(SetupView(step: 0))
         case .setupLicence: return AnyView(SetupView(step: 1))
         case .setupDownload: return AnyView(SetupView(step: 2))
@@ -101,8 +107,8 @@ import Testing
     /// The window's width: the panel's 360 pt, the others at their smallest.
     private func width(of screen: Screen) -> CGFloat {
         switch screen {
-        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .phones: 360
-        case .pair: 720
+        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .phones: 360
+        case .pair, .pairUpdate: 720
         case .setupCheck, .setupLicence, .setupDownload, .setupReady: 760
         case .settings: 480
         }
@@ -112,6 +118,7 @@ import Testing
     private func ready(_ screen: Screen, _ app: AppModel) -> Bool {
         switch screen {
         case .pair: app.pairing.displayCode != nil
+        case .pairUpdate: app.interfaceMismatch != nil
         case .panelRequest: !app.monitor.requests.isEmpty
         case .phones: !app.monitor.devices.isEmpty
         default: true

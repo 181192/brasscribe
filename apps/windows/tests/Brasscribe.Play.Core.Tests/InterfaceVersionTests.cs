@@ -16,8 +16,8 @@ public class InterfaceVersionTests
     private static readonly Uri Old = new("http://192.0.2.20:8765/");
     private static readonly Uri New = new("http://192.0.2.44:8765/");
 
-    private const string UpdateBandroom = "Update Bandroom on your computer. This app is newer than Bandroom there, and they only work together when both are up to date.";
-    private const string UpdateApp = "Update Brasscribe Play. Bandroom on your computer is newer than this app, and they only work together when both are up to date.";
+    private const string UpdateBandroom = "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.";
+    private const string UpdateApp = "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.";
 
     [Theory]
     [InlineData(Wire.InterfaceVersion, InterfaceAnswer.Same)]
@@ -109,10 +109,10 @@ public class InterfaceVersionTests
         var rig = new Rig("nb-NO");
         rig.Studio.InterfaceVersion = 0;
         await rig.Monitor.CheckAsync();
-        Assert.Equal("Oppdater Bandroom på datamaskinen. Denne appen er nyere enn Bandroom der, og de virker bare sammen når begge er oppdatert.", rig.Monitor.StatusText);
+        Assert.Equal("Oppdater Brasscribe på datamaskinen. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert.", rig.Monitor.StatusText);
         rig.Studio.InterfaceVersion = 2;
         await rig.Monitor.CheckAsync();
-        Assert.Equal("Oppdater Brasscribe Play. Bandroom på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.", rig.Monitor.StatusText);
+        Assert.Equal("Oppdater Brasscribe Play. Brasscribe på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.", rig.Monitor.StatusText);
     }
 
     [Fact]

@@ -101,10 +101,22 @@ import TranscriptionKit
     #expect(ConnectionCopy.status(.connected(serverName: "Brasscribe on Studio Mac")).contains("Studio Mac"))
     #expect(ConnectionCopy.status(.reconnecting(serverName: "Brasscribe on Studio Mac")).hasSuffix("…"))
     // the state is always in words and has an icon, never colour alone
-    for s in [ConnectionState.connected(serverName: "x"), .reconnecting(serverName: "x"), .offline, .needsPairing(serverName: "x")] {
+    for s in [ConnectionState.connected(serverName: "x"), .reconnecting(serverName: "x"), .offline, .needsPairing(serverName: "x"),
+              .mismatch(serverName: "x", update: .app), .mismatch(serverName: "x", update: .computer)] {
         #expect(!ConnectionCopy.status(s).isEmpty)
         #expect(!ConnectionCopy.systemImage(s).isEmpty)
     }
+}
+
+/// App and computer on different versions: the words name the one to update, never the numbers, and the same
+/// sentence is what a score asked of the computer fails with.
+@Test func theUpdateWordsNameWhichOfTheTwoToUpdate() {
+    let app = ConnectionCopy.status(.mismatch(serverName: "Brasscribe on Studio Mac", update: .app))
+    let computer = ConnectionCopy.status(.mismatch(serverName: "Brasscribe on Studio Mac", update: .computer))
+    #expect(app != computer)
+    for words in [app, computer] { #expect(words.allSatisfy { !$0.isNumber }) }
+    #expect(ErrorWords.specific(TranscriptionError.interfaceMismatch(.app)) == app)
+    #expect(ErrorWords.specific(TranscriptionError.interfaceMismatch(.computer)) == computer)
 }
 
 /// Tests and screenshots never read or write the real Keychain.

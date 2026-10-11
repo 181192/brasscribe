@@ -37,6 +37,18 @@ enum ConnectionCopy {
             case .iPad: String(localized: "The computer no longer recognises this iPad.")
             case .mac: String(localized: "The computer no longer recognises this Mac.")
             }
+        case .mismatch(_, let which): update(which)
+        }
+    }
+
+    /// The app and Brasscribe on the computer are not the same version: which of the two to update. The sentence is the
+    /// whole message, on the connection row, when pairing and when a score is asked of the computer.
+    static func update(_ which: InterfaceMatch.Update) -> String {
+        switch which {
+        case .app:
+            String(localized: "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.")
+        case .computer:
+            String(localized: "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.")
         }
     }
 
@@ -54,6 +66,7 @@ enum ConnectionCopy {
         case .reconnecting: BrasscribeIcon.network.systemName
         case .offline: "wifi.slash"
         case .needsPairing: BrasscribeIcon.accessKey.systemName
+        case .mismatch: BrasscribeIcon.download.systemName
         }
     }
 }
@@ -98,7 +111,8 @@ struct ConnectionStatusRow: View {
             Button(ConnectionCopy.pairAgain) { app.showSettings = true }
                 .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
                 .accessibilityIdentifier("connectionPairAgain")
-        case .connected, .reconnecting:
+        // "update …" has no button: the update is made outside the app, and the row's words say which one
+        case .connected, .reconnecting, .mismatch:
             EmptyView()
         }
     }

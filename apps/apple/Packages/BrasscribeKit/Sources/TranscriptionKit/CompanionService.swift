@@ -10,6 +10,8 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     public let baseURL: URL
     public private(set) var token: String?
     let session: URLSession
+    /// What the engine's last health answer said about its interface version; nil until it has been asked.
+    private var interface: InterfaceMatch?
 
     public var displayName: String { baseURL.host() ?? baseURL.absoluteString }
 
@@ -25,9 +27,12 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         /// Older engines leave these out.
         public let serverID: String?
         public let serverName: String?
+        /// The engine's interface version; nil from an engine from before the number.
+        public let interfaceVersion: Int?
         enum CodingKeys: String, CodingKey {
             case status, version, device
             case authRequired = "auth_required", serverID = "server_id", serverName = "server_name"
+            case interfaceVersion = "interface_version"
         }
     }
 
@@ -149,7 +154,19 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         return r
     }
 
+    /// Everything but health goes through here first: an engine with another interface version than this app's is
+    /// sent nothing else. Health is asked once per service, unless a caller already did.
+    func requireMatch() async throws {
+        if interface == nil { _ = try await health(timeout: 5) }
+        if case .mismatch(let update) = interface { throw TranscriptionError.interfaceMismatch(update) }
+    }
+
     func send(_ r: URLRequest) async throws -> Data {
+        try await requireMatch()
+        return try await sendUnchecked(r)
+    }
+
+    private func sendUnchecked(_ r: URLRequest) async throws -> Data {
         let (data, resp): (Data, URLResponse)
         do { (data, resp) = try await session.data(for: r) } catch { throw TranscriptionError.unreachable(error.localizedDescription) }
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
@@ -158,9 +175,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         return data
     }
 
-    public func health() async throws -> Health {
-        try JSONDecoder().decode(Health.self, from: try await send(request("v1/health")))
-    }
+    public func health() async throws -> Health { try await health(timeout: nil) }
 
     public func profiles() async throws -> [ProfileInfo] {
         try JSONDecoder().decode([ProfileInfo].self, from: try await send(request("v1/profiles")))
@@ -229,8 +244,11 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try await send(request("v1/devices/me", method: "DELETE"))
     }
 
-    public func health(timeout: TimeInterval) async throws -> Health {
-        try JSONDecoder().decode(Health.self, from: try await send(request("v1/health", timeout: timeout)))
+    /// Also notes whether the engine's interface version is this app's (`requireMatch`).
+    public func health(timeout: TimeInterval?) async throws -> Health {
+        let h = try JSONDecoder().decode(Health.self, from: try await sendUnchecked(request("v1/health", timeout: timeout)))
+        interface = InterfaceMatch.of(engine: h.interfaceVersion)
+        return h
     }
 
     public func job(_ id: String) async throws -> Job {
@@ -282,6 +300,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     }
 
     private func uploadOnce(_ req: TranscriptionRequest) async throws -> Job {
+        try await requireMatch()
         let boundary = "brasscribe-\(UUID().uuidString)"
         let tmp = FileManager.default.temporaryDirectory.appending(path: "upload-\(UUID().uuidString)")
         FileManager.default.createFile(atPath: tmp.path, contents: nil)
@@ -404,6 +423,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
+                    try await self.requireMatch()
                     let (bytes, resp) = try await session.bytes(for: req)
                     let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
                     guard (200..<300).contains(code) else { throw TranscriptionError.http(code, "events") }

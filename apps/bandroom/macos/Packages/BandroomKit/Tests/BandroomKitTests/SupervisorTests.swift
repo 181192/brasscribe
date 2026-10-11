@@ -248,6 +248,56 @@ import Testing
         await settle(60)
         #expect(launcher.launched.count == 1)
     }
+
+    /// An engine with another interface version is up, but nothing is asked of it: no pairing is opened, nothing polled.
+    @Test(arguments: [Wire.interfaceVersion + 1, Wire.interfaceVersion - 1, nil] as [Int?])
+    func anEngineWithAnotherInterfaceVersionIsNotHandedOn(version: Int?) async {
+        let behind: InterfaceMatch.Behind = (version ?? 0) > Wire.interfaceVersion ? .bandroom : .engine
+        let launcher = FakeLauncher(), engine = FakeEngine()
+        engine.healthValue.interfaceVersion = version
+        let (sup, statusFile) = make(launcher, engine)
+        let pairing = PairingModel(sleep: { _ in }), monitor = StatusMonitor()
+        // as the app wires them: the pairing window and the status polling get the engine that is handed on
+        sup.onHealthy = { client in pairing.client = client; monitor.client = client }
+        sup.start()
+        await settle()
+        // the process is up, so Stop and Restart apply, and a later Bandroom can still find it through engine.json
+        #expect(sup.phase == .running)
+        #expect(EngineStatusFile.read(statusFile) != nil)
+        #expect(sup.interfaceMismatch == behind)
+        #expect(sup.engineInterface == version)
+        #expect(sup.client == nil)
+        await pairing.open()
+        await monitor.tick()
+        #expect(pairing.phase == .unavailable)
+        #expect(pairing.code == nil && pairing.uri == nil)
+        #expect(monitor.status == nil && monitor.health == nil)
+        // its health, and the closing of the code it opened at start; nothing is opened, nothing is polled
+        #expect(engine.calls == ["health", "close"])
+        #expect(DisplayState.resolve(setupPercent: nil, phase: sup.phase, updating: false, problems: [.interfaceMismatch(behind)], jobPercent: nil)
+                == .attention(.interfaceMismatch(behind)))
+        sup.stop()
+        await settle()
+        #expect(sup.interfaceMismatch == nil)
+    }
+
+    @Test func anEngineReplacedByOneWithThisInterfaceVersionIsHandedOn() async {
+        let launcher = FakeLauncher(), engine = FakeEngine()
+        engine.healthValue.interfaceVersion = Wire.interfaceVersion - 1
+        let (sup, _) = make(launcher, engine)
+        var handedOn = 0
+        sup.onHealthy = { _ in handedOn += 1 }
+        sup.start()
+        await settle()
+        #expect(handedOn == 0 && sup.interfaceMismatch == .engine)
+        // the update put this Bandroom's engine in place
+        engine.healthValue.interfaceVersion = Wire.interfaceVersion
+        sup.restart()
+        await settle(60)
+        #expect(sup.phase == .running)
+        #expect(handedOn == 1 && sup.interfaceMismatch == nil && sup.client != nil)
+        #expect(sup.engineInterface == Wire.interfaceVersion)
+    }
 }
 
 @Suite struct PortPickerTests {

@@ -11,18 +11,22 @@ public struct Health: Codable, Sendable, Equatable {
     public var serverName: String
     /// Which build is running: the commit and workspace stamp of an installed engine; nil from older engines.
     public var build: String?
+    /// The engine's interface version, to compare with `Wire.interfaceVersion`; nil from an engine from before the number.
+    public var interfaceVersion: Int?
 
     enum CodingKeys: String, CodingKey {
         case status, version, device, build
         case authRequired = "auth_required"
         case serverId = "server_id"
         case serverName = "server_name"
+        case interfaceVersion = "interface_version"
     }
 
     public init(status: String = "ok", version: String, device: String, authRequired: Bool = false, serverId: String, serverName: String,
-                build: String? = nil) {
+                build: String? = nil, interfaceVersion: Int?) {
         self.status = status; self.version = version; self.device = device
         self.authRequired = authRequired; self.serverId = serverId; self.serverName = serverName; self.build = build
+        self.interfaceVersion = interfaceVersion
     }
 }
 

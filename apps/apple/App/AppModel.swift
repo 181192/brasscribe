@@ -182,12 +182,12 @@ final class AppModel {
     var computerPaired: Bool { connection.record != nil || connection.localAddress != nil }
 
     /// The computer counts as there when one is paired (or Brasscribe runs on this Mac) and its
-    /// connection is Connected or still Reconnecting; Offline and needs-pairing do not count.
+    /// connection is Connected or still Reconnecting; Offline, needs-pairing and "update …" do not count.
     var computerThere: Bool {
         guard computerPaired else { return false }
         switch connection.state.kind {
         case .connected, .reconnecting: return true
-        case .offline, .needsPairing: return false
+        case .offline, .needsPairing, .mismatch: return false
         }
     }
 
@@ -214,10 +214,16 @@ final class AppModel {
 
     private func rebuildScores() { scores = ScoreEntry.merge(pieces: pieces, jobs: computerJobs) }
 
-    /// Fetch the computer's finished scores; silently keeps the local list when it is not reachable.
+    /// Fetch the computer's finished scores; silently keeps the local list when it is not reachable. A computer
+    /// with another interface version is not asked for them, and the ones listed from before go: they can't be opened.
     func refreshComputerScores() async {
         guard !useFixtureService, let svc = service() as? CompanionService else { computerJobs = []; return }
-        if let jobs = try? await svc.jobs() { computerJobs = jobs }
+        do {
+            computerJobs = try await svc.jobs()
+        } catch TranscriptionError.interfaceMismatch {
+            computerJobs = []
+            connection.poke()
+        } catch {}
     }
 
     func open(_ entry: ScoreEntry, review: Bool = false) {
@@ -443,8 +449,8 @@ final class AppModel {
         }
         let job = TranscriptionJob(source: src, profile: profile, output: output,
                                    service: onComputer ? service() : service(for: profile), onComputer: onComputer)
-        // a 401 from the computer turns the connection row into "pair again"
-        job.onUnauthorized = { [weak self] in self?.connection.poke() }
+        // a 401 from the computer turns the connection row into "pair again", another interface version into "update …"
+        job.onRefused = { [weak self] in self?.connection.poke() }
         jobs[job.id] = job
         // the transcribing screen takes the place of "What is this?"
         if case .source = path.last { path[path.count - 1] = .transcribe(job.id) } else { path.append(.transcribe(job.id)) }
@@ -542,7 +548,8 @@ final class TranscriptionJob: Identifiable {
     var tooLong = false
     var cancelled = false
     private var task: Task<Void, Never>?
-    var onUnauthorized: (@MainActor () -> Void)?
+    /// The computer refused this device (401), or its interface version is not this app's and nothing was sent.
+    var onRefused: (@MainActor () -> Void)?
 
     init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService, onComputer: Bool = false) {
         self.source = source; self.profile = profile; self.output = output; self.service = service; self.onComputer = onComputer
@@ -561,7 +568,8 @@ final class TranscriptionJob: Identifiable {
                 }
             } catch {
                 guard let self else { return }
-                if case TranscriptionError.notPaired = error { self.onUnauthorized?() }
+                if case TranscriptionError.notPaired = error { self.onRefused?() }
+                if case TranscriptionError.interfaceMismatch = error { self.onRefused?() }
                 if case TranscriptionError.cancelled = error { self.cancelled = true } else if case TranscriptionError.needsWholeGroup = error {
                     self.failure = String(localized: "Needs a recording of the whole group")
                 } else if !Task.isCancelled {

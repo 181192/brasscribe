@@ -1,6 +1,6 @@
 import Foundation
 
-/// How this device stands with its computer, the same four states on every Play app.
+/// How this device stands with its computer, the same five states on every Play app.
 public enum ConnectionState: Equatable, Sendable {
     /// The last heartbeat was answered.
     case connected(serverName: String)
@@ -10,15 +10,19 @@ public enum ConnectionState: Equatable, Sendable {
     case offline
     /// The computer answered 401: this device's credential is no longer accepted.
     case needsPairing(serverName: String)
+    /// The computer answered, but its interface version is not this app's: one of the two needs an update, and
+    /// until then nothing else is sent to it. The pairing is kept.
+    case mismatch(serverName: String, update: InterfaceMatch.Update)
 
     /// The kind without the name, for deciding whether a change is worth announcing.
-    public enum Kind: Sendable { case connected, reconnecting, offline, needsPairing }
+    public enum Kind: Sendable { case connected, reconnecting, offline, needsPairing, mismatch }
     public var kind: Kind {
         switch self {
         case .connected: .connected
         case .reconnecting: .reconnecting
         case .offline: .offline
         case .needsPairing: .needsPairing
+        case .mismatch: .mismatch
         }
     }
 }
@@ -43,6 +47,8 @@ public struct ConnectionMachine: Equatable, Sendable {
         case heartbeatOK(serverName: String)
         case heartbeatFailed
         case unauthorized
+        /// The engine answered with another interface version than this app's.
+        case mismatch(serverName: String, InterfaceMatch.Update)
         /// No engine paired any more (unpaired, or nothing stored).
         case forgotten
         /// App went to the background: stop heartbeats, keep the state as it was.
@@ -66,6 +72,8 @@ public struct ConnectionMachine: Equatable, Sendable {
             if case .needsPairing = state, event == .start(serverName: name) { return nil }
             // back in the foreground: keep showing the last known state while checking
             if case .connected = state { failingSince = nil; attempt = 0; return 0 }
+            // the same for "update …": it stays until the computer answers with this app's version
+            if case .mismatch = state { failingSince = nil; attempt = 0; return 0 }
             state = .reconnecting(serverName: name)
             failingSince = now
             attempt = 0
@@ -88,6 +96,7 @@ public struct ConnectionMachine: Equatable, Sendable {
             }
             // one missed heartbeat keeps "Connected": the row changes after two in a row
             if case .connected = state, attempt < 2 { return Self.backoff(attempt: attempt) }
+            if case .mismatch = state, attempt < 2 { return Self.backoff(attempt: attempt) }
             state = .reconnecting(serverName: serverName)
             return min(Self.backoff(attempt: attempt), max(0, Self.giveUpAfter - now.timeIntervalSince(since)))
         case .unauthorized:
@@ -95,6 +104,13 @@ public struct ConnectionMachine: Equatable, Sendable {
             failingSince = nil
             attempt = 0
             return nil
+        case .mismatch(let name, let update):
+            // keep asking: after the update the computer answers with this app's version, and the pairing still works
+            serverName = name
+            state = .mismatch(serverName: name, update: update)
+            failingSince = nil
+            attempt = 0
+            return Self.heartbeatInterval
         case .forgotten:
             state = .offline
             failingSince = nil

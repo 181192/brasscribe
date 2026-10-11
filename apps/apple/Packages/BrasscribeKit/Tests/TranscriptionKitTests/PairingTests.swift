@@ -40,6 +40,24 @@ import Testing
     #expect(PairingLink(string: "") == nil)
 }
 
+/// The scheme from before the link took the family's name is not a pairing link any more.
+@Test func pairingLinkWithTheOldSchemeIsRejected() {
+    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=10.0.0.2:8765") == nil)
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=10.0.0.2:8765") != nil)
+}
+
+// MARK: interface version
+
+@Test func interfaceMatchSaysWhichOfTheTwoToUpdate() {
+    #expect(InterfaceMatch.of(engine: 3, app: 3) == .match)
+    #expect(InterfaceMatch.of(engine: 4, app: 3) == .mismatch(.app))          // the engine is newer
+    #expect(InterfaceMatch.of(engine: 2, app: 3) == .mismatch(.computer))     // the engine is older
+    #expect(InterfaceMatch.of(engine: nil, app: 3) == .mismatch(.computer))   // an engine from before the number
+    // the app's own number is the one in Wire
+    #expect(InterfaceMatch.of(engine: Wire.interfaceVersion) == .match)
+    #expect(InterfaceMatch.of(engine: nil) == .mismatch(.computer))
+}
+
 // MARK: record and storage
 
 @Test func recordNamesAndRotation() {
@@ -210,6 +228,30 @@ private func freshDefaults() -> UserDefaults {
     #expect(m.state == .connected(serverName: "B"))
     m.handle(.forgotten, at: t0 + 6)
     #expect(m.state == .offline)
+}
+
+@Test func connectionWithAnotherInterfaceVersionIsItsOwnStateAndKeepsAsking() {
+    var m = ConnectionMachine()
+    let t0 = Date()
+    m.handle(.start(serverName: "B"), at: t0)
+    m.handle(.heartbeatOK(serverName: "B"), at: t0)
+    // the computer was updated during the session: the next heartbeat says so, and health is asked again later
+    #expect(m.handle(.mismatch(serverName: "B", .app), at: t0 + 20) == 20)
+    #expect(m.state == .mismatch(serverName: "B", update: .app))
+    #expect(m.state.kind == .mismatch)
+    // back in the foreground: the words stay while it is checked again
+    #expect(m.handle(.start(serverName: "B"), at: t0 + 300) == 0)
+    #expect(m.state == .mismatch(serverName: "B", update: .app))
+    // the computer restarting for its update: one missed heartbeat changes nothing, the second is "Looking for …"
+    #expect(m.handle(.heartbeatFailed, at: t0 + 301) == 2)
+    #expect(m.state == .mismatch(serverName: "B", update: .app))
+    m.handle(.heartbeatFailed, at: t0 + 303)
+    #expect(m.state == .reconnecting(serverName: "B"))
+    #expect(m.handle(.mismatch(serverName: "B", .computer), at: t0 + 305) == 20)
+    #expect(m.state == .mismatch(serverName: "B", update: .computer))
+    // both up to date: connected again, with the pairing it had
+    #expect(m.handle(.heartbeatOK(serverName: "B"), at: t0 + 325) == 20)
+    #expect(m.state == .connected(serverName: "B"))
 }
 
 @Test func connectionBackoffSequence() {

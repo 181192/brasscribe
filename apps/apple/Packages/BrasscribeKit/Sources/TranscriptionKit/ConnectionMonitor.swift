@@ -2,8 +2,9 @@ import Foundation
 import Observation
 
 /// Keeps this device connected to its paired computer while the app is in the foreground:
-/// a `GET /v1/devices/me` heartbeat every 20 s, a silent move to the engine's new address (the last
-/// address first, then the network by server id), monthly token rotation, and "pair again" only on 401.
+/// a heartbeat every 20 s (`GET /v1/health`, then `GET /v1/devices/me`), a silent move to the engine's new address
+/// (the last address first, then the network by server id), monthly token rotation, "pair again" only on 401, and
+/// "update" when the engine's interface version is not this app's (then health is all it is asked).
 /// The state logic lives in `ConnectionMachine`; this class adds the timers and the network.
 @MainActor @Observable
 public final class ConnectionMonitor {
@@ -98,6 +99,7 @@ public final class ConnectionMonitor {
         case .reconnecting(let n): m.handle(.start(serverName: n), at: t)
         case .offline: m.handle(.forgotten, at: t)
         case .needsPairing(let n): m.handle(.start(serverName: n), at: t); m.handle(.unauthorized, at: t)
+        case .mismatch(let n, let update): m.handle(.mismatch(serverName: n, update), at: t)
         }
         machine = m
     }
@@ -117,7 +119,7 @@ public final class ConnectionMonitor {
 
     // MARK: heartbeat
 
-    enum Check: Equatable { case ok(EngineRecord), unauthorized, unreachable, otherServer }
+    enum Check: Equatable { case ok(EngineRecord), unauthorized, unreachable, otherServer, mismatch(InterfaceMatch.Update) }
 
     /// One heartbeat: the last address, then the network by server id. Returns the delay to the next one.
     @discardableResult
@@ -125,9 +127,12 @@ public final class ConnectionMonitor {
         defer { checks += 1 }
         guard var r = record ?? localRecord() else { return machine.handle(.forgotten, at: now()) }
         var result = await check(r, at: r.lastAddress)
-        if case .ok = result {} else if result != .unauthorized, !r.isProvisional, let found = await find(r.serverID),
-                                         found.absoluteString != r.lastAddress {
-            result = await check(r, at: found.absoluteString)
+        switch result {
+        case .unreachable, .otherServer:
+            if !r.isProvisional, let found = await find(r.serverID), found.absoluteString != r.lastAddress {
+                result = await check(r, at: found.absoluteString)
+            }
+        case .ok, .unauthorized, .mismatch: break   // the engine itself answered: nothing to look for
         }
         if staged { return nil }
         switch result {
@@ -140,6 +145,9 @@ public final class ConnectionMonitor {
             return machine.handle(.heartbeatOK(serverName: r.serverName), at: now())
         case .unauthorized:
             return machine.handle(.unauthorized, at: now())
+        case .mismatch(let update):
+            // nothing is rotated or stored: the record is as it was when the computer answers with this app's version
+            return machine.handle(.mismatch(serverName: r.serverName, update), at: now())
         case .unreachable, .otherServer:
             if record == nil { return machine.handle(.forgotten, at: now()) }   // no engine on this Mac
             return machine.handle(.heartbeatFailed, at: now())
@@ -151,40 +159,38 @@ public final class ConnectionMonitor {
         localAddress.map { EngineRecord(serverID: "", serverName: "", token: nil, lastAddress: $0.absoluteString) }
     }
 
+    /// Health first, at every heartbeat: it says which engine answers and whether its interface version is this
+    /// app's (Bandroom may have been updated since the last one). Only then the device's own check.
     func check(_ r: EngineRecord, at address: String) async -> Check {
         guard let url = URL(string: address) else { return .unreachable }
         let svc = CompanionService(baseURL: url, token: r.token, session: session)
         var out = r
         out.lastAddress = address
-        if r.token == nil {
-            // Brasscribe on this same computer trusts loopback: its heartbeat is /v1/health
-            guard let h = try? await svc.health(timeout: 5), !h.authRequired else { return .unreachable }
-            if let id = h.serverID {
-                if !r.isProvisional, id != r.serverID { return .otherServer }
-                out.serverID = id
-            }
+        guard let h = try? await svc.health(timeout: 5) else { return .unreachable }
+        // Brasscribe on this same computer trusts loopback; an engine that wants pairing is not it
+        if r.token == nil, h.authRequired { return .unreachable }
+        if let id = h.serverID, !r.isProvisional, id != r.serverID { return .otherServer }
+        if case .mismatch(let update) = InterfaceMatch.of(engine: h.interfaceVersion) { return .mismatch(update) }
+        // without a device entry, health is the whole heartbeat
+        func fromHealth() -> Check {
+            if let id = h.serverID { out.serverID = id }
             if let n = h.serverName { out.serverName = n }
             return .ok(out)
         }
+        if r.token == nil { return fromHealth() }
         do {
             let me = try await svc.thisDevice()
             if !r.isProvisional, me.serverID != r.serverID { return .otherServer }
             out.serverID = me.serverID
             out.deviceID = me.deviceID
             out.rotateAfter = me.rotateAfter
-            if out.serverName.isEmpty || r.isProvisional, let h = try? await svc.health(timeout: 5), let n = h.serverName { out.serverName = n }
+            if out.serverName.isEmpty || r.isProvisional, let n = h.serverName { out.serverName = n }
             return .ok(out)
         } catch TranscriptionError.notPaired {
             return .unauthorized
         } catch TranscriptionError.http(404, _) {
             // loopback, or a static engine token: accepted without a device entry
-            guard let h = try? await svc.health(timeout: 5) else { return .unreachable }
-            if let id = h.serverID {
-                if !r.isProvisional, id != r.serverID { return .otherServer }
-                out.serverID = id
-            }
-            if let n = h.serverName { out.serverName = n }
-            return .ok(out)
+            return fromHealth()
         } catch {
             return .unreachable
         }
@@ -245,13 +251,16 @@ public final class ConnectionMonitor {
     }
 
     /// Pair from a scanned or pasted link: the first address that answers as the right engine gets the code.
-    /// Without a code in the link, returns the address to ask for approval at.
+    /// Without a code in the link, returns the address to ask for approval at. Throws `.interfaceMismatch` when that
+    /// engine's interface version is not this app's.
     public func pair(link: PairingLink, deviceName: String, platform: String) async throws -> URL? {
         var lastError: Error = TranscriptionError.unreachable("")
         for url in link.baseURLs {
             let svc = CompanionService(baseURL: url, session: session)
             guard let h = try? await svc.health(timeout: 4) else { continue }
             if let id = h.serverID, id != link.serverID { continue }
+            // the right computer with another interface version: no pair request, with a code or by asking it
+            if case .mismatch(let update) = InterfaceMatch.of(engine: h.interfaceVersion) { throw TranscriptionError.interfaceMismatch(update) }
             guard let code = link.code else { return url }
             do {
                 let result = try await svc.pair(code: code, deviceName: deviceName, platform: platform)

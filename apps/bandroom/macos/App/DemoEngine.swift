@@ -3,6 +3,7 @@ import BandroomKit
 import Foundation
 
 /// Canned engine answers for screenshots (BANDROOM_DEMO=busy|idle): the mockup's band, no engine running.
+/// BANDROOM_DEMO_INTERFACE=older|newer gives it another interface version than this Bandroom's.
 final class DemoEngine: EngineAPI, @unchecked Sendable {
     let busy: Bool
     private let lock = NSLock()
@@ -10,6 +11,15 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
 
     /// A phone asking to pair (BANDROOM_DEMO_REQUEST), as it was when the demo started.
     let request = ProcessInfo.processInfo.environment["BANDROOM_DEMO_REQUEST"] != nil
+
+    /// This Bandroom's own interface version, unless BANDROOM_DEMO_INTERFACE asks for the one before or after it.
+    let interfaceVersion: Int = {
+        switch ProcessInfo.processInfo.environment["BANDROOM_DEMO_INTERFACE"] {
+        case "older": Wire.interfaceVersion - 1
+        case "newer": Wire.interfaceVersion + 1
+        default: Wire.interfaceVersion
+        }
+    }()
 
     init(busy: Bool) { self.busy = busy }
 
@@ -25,7 +35,7 @@ final class DemoEngine: EngineAPI, @unchecked Sendable {
     }
 
     func health() async throws -> Health {
-        Health(version: "0.9.4", device: "mps", serverId: Self.serverId, serverName: Self.name)
+        Health(version: "0.9.4", device: "mps", serverId: Self.serverId, serverName: Self.name, interfaceVersion: interfaceVersion)
     }
 
     func status() async throws -> EngineStatus {

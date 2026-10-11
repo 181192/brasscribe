@@ -62,6 +62,8 @@ enum Strings {
         case .updateFailed, .updateRefused: String(localized: "Brasscribe couldn't finish updating")
         case .notResponding: String(localized: "Brasscribe isn't answering")
         case .pixiTooOld: String(localized: "Brasscribe can't start")
+        case .interfaceMismatch(.bandroom): String(localized: "Bandroom needs an update")
+        case .interfaceMismatch(.engine): String(localized: "Brasscribe needs an update")
         }
     }
 
@@ -74,6 +76,8 @@ enum Strings {
         case .updateFailed, .updateRefused: String(localized: "Brasscribe couldn't finish updating")
         case .notResponding: String(localized: "Brasscribe isn't answering")
         case .pixiTooOld: String(localized: "Brasscribe can't start")
+        case .interfaceMismatch(.bandroom): String(localized: "Bandroom needs an update")
+        case .interfaceMismatch(.engine): String(localized: "Brasscribe needs an update")
         }
     }
 
@@ -86,6 +90,7 @@ enum Strings {
         case .updateRefused: String(localized: "The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.")
         case .notResponding: String(localized: "It is running but hasn't answered for a while. Restarting it usually helps.")
         case .pixiTooOld: String(localized: "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.")
+        case .interfaceMismatch(let behind): interfaceMismatch(behind)
         }
     }
 
@@ -98,6 +103,18 @@ enum Strings {
         case .updateRefused: String(localized: "Get the latest Bandroom")
         case .notResponding: String(localized: "Restart")
         case .pixiTooOld: String(localized: "Get the latest Bandroom")
+        case .interfaceMismatch(.bandroom): String(localized: "Get the latest Bandroom")
+        case .interfaceMismatch(.engine): String(localized: "Update Brasscribe")
+        }
+    }
+
+    /// Bandroom and the Brasscribe it runs are not the same version: which of the two is behind. Never the numbers.
+    static func interfaceMismatch(_ behind: InterfaceMatch.Behind) -> String {
+        switch behind {
+        case .bandroom:
+            String(localized: "Brasscribe on this computer is newer than this copy of Bandroom, and they only work together when both are up to date.")
+        case .engine:
+            String(localized: "This copy of Bandroom is newer than the Brasscribe it runs, and they only work together when both are up to date.")
         }
     }
 

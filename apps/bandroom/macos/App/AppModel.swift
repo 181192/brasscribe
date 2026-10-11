@@ -79,6 +79,8 @@ final class AppModel {
     @ObservationIgnored private let environment = ProcessInfo.processInfo.environment
     /// BANDROOM_DEMO=busy|idle (Debug builds): canned engine data for screenshots, no engine started.
     @ObservationIgnored let demo: Bool
+    /// The demo engine's interface version is not this Bandroom's (BANDROOM_DEMO_INTERFACE).
+    private var demoMismatch: InterfaceMatch.Behind?
     /// The settings: the app's own (`.standard`); the screen catalogue's tests give it a store of their own.
     @ObservationIgnored let defaults: UserDefaults
 
@@ -196,8 +198,12 @@ final class AppModel {
         #if DEBUG
         if demo {
             let engine = DemoEngine(busy: environment["BANDROOM_DEMO"] == "busy")
-            monitor.client = engine
-            pairing.client = engine
+            demoMismatch = InterfaceMatch.of(engine: engine.interfaceVersion).behind
+            // as with a real engine: one with another interface version gets no client
+            if demoMismatch == nil {
+                monitor.client = engine
+                pairing.client = engine
+            }
             return
         }
         #endif
@@ -270,6 +276,16 @@ final class AppModel {
         updateThenStart()
     }
 
+    /// The engine is behind this Bandroom: stop it, bring its workspace up to this build of the app, and start it.
+    func updateEngine() {
+        guard !demo else { return }
+        updateFailure = nil
+        Task { [weak self] in
+            await self?.stopEngine()
+            self?.updateThenStart()
+        }
+    }
+
     private func stopEngine() async {
         switch supervisor.phase {
         case .idle, .stopped, .failed: return
@@ -336,6 +352,8 @@ final class AppModel {
 
     var problems: [Problem] {
         var list: [Problem] = []
+        // First: with it, nothing below about a running engine is true (phones can't use this one through Bandroom).
+        if let behind = interfaceMismatch { list.append(.interfaceMismatch(behind)) }
         if case .running = phase, monitor.isUnresponsive { list.append(.notResponding) }
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
         if let refusal = pixiRefusal { list.append(.pixiTooOld(refusal)) }
@@ -364,7 +382,11 @@ final class AppModel {
                                     problems: problems, jobPercent: jobPercent)
     }
 
-    var isRunning: Bool { phase == .running }
+    /// Running, and with this Bandroom's interface version: phones can be paired and its numbers are shown.
+    var isRunning: Bool { phase == .running && interfaceMismatch == nil }
+
+    /// The running engine's interface version is not this Bandroom's: which of the two is behind.
+    var interfaceMismatch: InterfaceMatch.Behind? { demo ? demoMismatch : supervisor.interfaceMismatch }
 
     /// The engine's phase; a screenshot demo pretends it runs.
     var phase: SupervisorPhase { demo ? .running : supervisor.phase }
@@ -447,6 +469,7 @@ final class AppModel {
                       "Phones: \(s.onlineDevices) connected, \(s.pairedDevices) paired", "Jobs: \(s.jobsRunning) running, \(s.jobsQueued) waiting"]
         }
         lines.append("Engine build: \(monitor.health?.build ?? "–"); this app's workspace: \(bundledStamp?.short ?? "–")")
+        lines.append("Interface version: engine \(supervisor.engineInterface.map(String.init) ?? "–"), this app \(Wire.interfaceVersion)")
         if let updateFailure { lines.append("Engine update failed: \(updateFailure)") }
         let refusal = pixiRefusal ?? (updateFailure != nil ? updater.pixiRefusal : nil)
             ?? { if case .pixiTooOld(let r) = failure { r } else { nil } }()
