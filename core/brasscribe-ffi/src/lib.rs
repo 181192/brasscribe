@@ -11,13 +11,13 @@
 //! [`fretted`] is the one part that is not brasscribe-core: tab fingering for fretted
 //! instruments (`target-fretted`), as JSON.
 
-use brasscribe_core::arranger::{arrange, arrange_layers};
+use target_brass::arranger::{arrange, arrange_layers};
 use brasscribe_core::durations::Contour;
 use brasscribe_core::energy::Audio;
 use brasscribe_core::midi::{MidiFile, RawNote};
 use brasscribe_core::model::Composition;
-use brasscribe_core::musicxml::{band_score, write_score};
-use brasscribe_core::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
+use target_brass::musicxml::{band_score, write_score};
+use target_brass::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
 use brasscribe_core::quantize::{choose_level, fill_gaps, quantize};
 
 pub mod c_api;
@@ -131,14 +131,14 @@ pub fn arrange_musicxml_with(composition_json: String, options: ArrangeOptions) 
 }
 
 pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> Result<String, CoreError> {
-    use brasscribe_core::instruments::{check_reads, lead_lineup, lineup_by_name, lineup_key, seat_by_id, LEADS};
+    use target_brass::instruments::{check_reads, lead_lineup, lineup_by_name, lineup_key, seat_by_id, LEADS};
     use brasscribe_core::model::check_transpose;
 
     let mut comp = Composition::from_json_str(composition_json).map_err(invalid)?;
     let key = lineup_key(&o.lineup).map_err(invalid)?;
     let difficulty = if o.difficulty.is_empty() { "faithful" } else { o.difficulty.as_str() };
-    if !brasscribe_core::difficulty::MODES.contains(&difficulty) {
-        return Err(invalid(format!("difficulty must be one of {:?}", brasscribe_core::difficulty::MODES)));
+    if !target_brass::difficulty::MODES.contains(&difficulty) {
+        return Err(invalid(format!("difficulty must be one of {:?}", target_brass::difficulty::MODES)));
     }
     if o.key.is_some() && o.transpose.is_some() {
         return Err(invalid("give a key or a transposition, not both"));
@@ -176,7 +176,7 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     let layered = comp.voices.iter().any(|v| v.layer.is_some());
     // Only the layered arranger writes the full band.
     let key = if !layered && key == "band" { "minimal" } else { key };
-    let trills = o.trills.or_else(|| brasscribe_core::pipeline::recorded_trills(&comp));
+    let trills = o.trills.or_else(|| target_brass::pipeline::recorded_trills(&comp));
     let mut a = serde_json::Map::new();
     a.insert("lineup".into(), key.into());
     a.insert("difficulty".into(), difficulty.into());
@@ -184,10 +184,10 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     if let Some(t) = trills {
         a.insert("trills".into(), t.into());
     }
-    let solo_take = brasscribe_core::arranger::is_solo_take(&comp);
+    let solo_take = target_brass::arranger::is_solo_take(&comp);
     if let Some(s) = &o.seat {
         if solo_take && seat_by_id(s).map_err(invalid)?.reads.is_empty() {
-            return Err(invalid(brasscribe_core::instruments::PERCUSSION_SOLO));
+            return Err(invalid(target_brass::instruments::PERCUSSION_SOLO));
         }
         a.insert("seat".into(), s.as_str().into());
         if let Some(r) = &o.reads {
@@ -202,11 +202,11 @@ pub(crate) fn arrange_with_impl(composition_json: &str, o: &ArrangeOptions) -> R
     }
     comp.arrangement = Some(serde_json::Value::Object(a));
     // The lineup as the composition now records it (seat, reading and lead included).
-    let lineup = brasscribe_core::arranger::composition_lineup(&comp).0;
+    let lineup = target_brass::arranger::composition_lineup(&comp).0;
     let arr = if layered {
-        brasscribe_core::arranger::arrange_layers_opts(&comp, lineup, &brasscribe_core::arranger::LayersArrangeOptions { difficulty: difficulty.into(), trills, ..Default::default() })
+        target_brass::arranger::arrange_layers_opts(&comp, lineup, &target_brass::arranger::LayersArrangeOptions { difficulty: difficulty.into(), trills, ..Default::default() })
     } else {
-        brasscribe_core::arranger::arrange_opts_trills(&comp, lineup, difficulty, trills)
+        target_brass::arranger::arrange_opts_trills(&comp, lineup, difficulty, trills)
     }
     .map_err(failed)?;
     Ok(write_score(&band_score(&arr, &comp)))
@@ -662,7 +662,7 @@ pub struct InstrumentInfo {
 /// The brass-band instrument table (ranges are sounding MIDI pitches).
 #[uniffi::export]
 pub fn instruments() -> Vec<InstrumentInfo> {
-    brasscribe_core::instruments::INSTRUMENTS
+    target_brass::instruments::INSTRUMENTS
         .iter()
         .map(|i| InstrumentInfo {
             id: i.id.into(),
@@ -699,7 +699,7 @@ pub struct SeatPart {
 /// the core for every app.
 #[uniffi::export]
 pub fn seat_part(lineup: String, seat: String) -> Result<SeatPart, CoreError> {
-    let sp = brasscribe_core::instruments::seat_part(&lineup, &seat).map_err(invalid)?;
+    let sp = target_brass::instruments::seat_part(&lineup, &seat).map_err(invalid)?;
     Ok(SeatPart { part: sp.part.map(String::from), exact: sp.exact, same_key: sp.same_key, takes: sp.takes.map(String::from) })
 }
 
@@ -715,7 +715,7 @@ pub struct PartSource {
 #[uniffi::export]
 pub fn part_sources(composition_json: String) -> Result<Vec<PartSource>, CoreError> {
     let comp = Composition::from_json_str(&composition_json).map_err(invalid)?;
-    Ok(brasscribe_core::arranger::part_sources(&comp).into_iter().map(|(part, s)| PartSource { part, source: s.into() }).collect())
+    Ok(target_brass::arranger::part_sources(&comp).into_iter().map(|(part, s)| PartSource { part, source: s.into() }).collect())
 }
 
 /// A part's name in Norwegian («Solokornett», «Solo althorn», «1. kornett», «Althorn»): the core's one
@@ -748,7 +748,7 @@ pub struct SeatInfo {
 /// The seats: the 18 of the contest band in score order, then the trumpet (it takes the lead part).
 #[uniffi::export]
 pub fn seats() -> Vec<SeatInfo> {
-    brasscribe_core::instruments::SEATS
+    target_brass::instruments::SEATS
         .iter()
         .map(|s| {
             let inst = s.own_part().instrument;

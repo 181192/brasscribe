@@ -1,23 +1,16 @@
-//! Keeps instrument knowledge out of the shared modules.
+//! Keeps the last instrument knowledge in this crate out of its other modules.
 //!
-//! The transcription side of the core (model, beats, quantization, spelling, keys, confidence and the
-//! rest) is meant to serve any instrument family. Only the modules below know about brass-band
-//! instruments, lineups, arranging, part names or the score layout built on them. This test fails
-//! when a shared module starts using one of them, so the boundary stays where it is while both sides
-//! keep changing.
+//! The core serves any instrument family: the brass-band instruments, lineups, arrangers and band
+//! score live in `target-brass`, and the crate graph keeps them out (`crate_graph.rs`). What is left
+//! here are the modules below. This test fails when another module of the core starts using one of
+//! them, so they can leave for their target without anything else following.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Modules that know about instruments, as `::` paths from the crate root. They may use each other.
 const INSTRUMENT_AWARE: &[&str] = &[
-    "instruments",
-    "arranger",
-    "difficulty",
-    "musicxml",
-    "notation::score",
-    "pipeline",
-    "talking_score", // Norwegian names of the brass-band parts
+    "talking_score", // Norwegian names of the brass-band parts and instruments
 ];
 
 fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -203,8 +196,8 @@ fn shared_modules_do_not_use_instrument_knowledge() {
     violations.dedup();
     assert!(
         violations.is_empty(),
-        "shared modules must not depend on instrument knowledge; move the code into an instrument-aware \
-         module or pass what it needs in as data:\n  {}",
+        "shared modules must not depend on instrument knowledge; move the code into a target \
+         crate or pass what it needs in as data:\n  {}",
         violations.join("\n  ")
     );
 }
@@ -234,10 +227,10 @@ fn the_scanner_resolves_crate_super_and_groups() {
 #[test]
 fn the_instrument_aware_check_matches_whole_segments() {
     let p = |s: &str| s.split("::").map(str::to_owned).collect::<Vec<_>>();
-    assert!(is_instrument_aware(&p("notation::score::Score")));
-    assert!(is_instrument_aware(&p("instruments")));
-    assert!(!is_instrument_aware(&p("notation::xml")));
-    assert!(!is_instrument_aware(&p("notation")));
+    assert!(is_instrument_aware(&p("talking_score::build")));
+    assert!(is_instrument_aware(&p("talking_score")));
+    assert!(!is_instrument_aware(&p("talking_score_vectors")));
+    assert!(!is_instrument_aware(&p("notation::score")));
 }
 
 #[test]

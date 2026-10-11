@@ -5,6 +5,8 @@
 //! limit), `comfortable` the amateur range (soft preference). `chromatic` is
 //! sounding minus written, so written = sounding - chromatic.
 
+use brasscribe_core::notation::score::InstrumentSpec;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Role {
     Melody,
@@ -125,6 +127,18 @@ impl Instrument {
 
     pub fn is_percussion(&self) -> bool {
         self.clef == Clef::Percussion
+    }
+
+    /// What the shared MusicXML writer reads of an instrument.
+    pub fn spec(&self) -> InstrumentSpec {
+        InstrumentSpec {
+            name: self.name,
+            short: self.short,
+            chromatic: self.chromatic,
+            diatonic: self.diatonic,
+            percussion: self.is_percussion(),
+            gm_program: self.gm_program,
+        }
     }
 }
 
