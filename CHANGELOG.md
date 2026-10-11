@@ -2,6 +2,34 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.12.0 (2026-10-11)
+
+### Breaking changes
+
+- **Engine:** **Breaking:** The engine's command is scribe, and its Python packages and settings take scribe names ([#369](https://github.com/181192/brasscribe/pull/369))
+The engine's command is now `scribe` (`scribe serve`, `scribe run`, …), its Python packages are `scribe_engine`, `scribe_music` and `scribe_eval`, and its settings are `SCRIBE_…` where they were `BRASSCRIBE_…` (`SCRIBE_DATA`, `SCRIBE_MODELS`, `SCRIBE_TOKEN`, …). The old names are gone, not aliased: a variable under its old name is ignored. If you run the engine from a checkout, run `scripts/worktree-setup.sh` once and rename the variables you set. If you run it in Docker, build the image again (`scribe:cpu`) and rename the variables you pass; the image's folder is `/scribe`, so models are mounted at `/scribe/models`. Bandroom users do nothing themselves: the app replaces its engine at the first start after the update, which downloads the engine's packages again and so needs the network; until that has worked no engine runs, and Bandroom offers to try again. Every engine works out its model results again on its first job (what it had stored is not read any more), so that job takes as long as a first one.
+- **Engine:** **Breaking:** Every profile belongs to a target, which names its files, and each app offers its own target's profiles ([#380](https://github.com/181192/brasscribe/pull/380))
+/v1/profiles gives a required `target` ("brass" or "fretted") for each profile, and a job has a required `target` ("brass", "fretted" or null). In composition.json the voice and layer `brass` are `hits`; a composition saved with the layer `brass` loses the parts arranged from it when it is arranged again, since the arranger reads `hits`. The core's TalkingScore constructor takes the target that wrote the score (UniFFI `Target`, C `sc_talking_score_new(..., target, ...)` with SC_TARGET_BRASS and SC_TARGET_FRETTED, .NET `TalkingScore(xml, target, composition)`), and `scribe-core talking-score` needs `--target brass|fretted`. `scribe-core lead-sheet` and the reference's lead sheet name an arranger only when given `--creator`. A tab's MusicXML names Fretscribe in `<software>`. eval/baselines.json holds the suites under `targets.<target>.suites`. In benchmark answers a run's `target` is `ran`, a run has `targets`, and a suite result, a history entry and a listed suite have `target`. Benchmark history stored before this change is no longer listed.
+- **Wire:** **Breaking:** The pairing link and the network service take the scribe name, and app and engine say which to update when they don't match ([#377](https://github.com/181192/brasscribe/pull/377))
+the pairing link is scribe://pair and the network service is _scribe._tcp, and the engine's answers carry an interface version that every app checks. Update every app and Bandroom together. An updated app keeps its pairing; an app or an engine left on the old version can neither find nor pair with the other.
+
+### Fixes
+
+- **iPhone, iPad and Mac:** With Increase Contrast, the texts in Check the notes reach 7:1, a progress track can be seen, and the Mac screen catalogues fail a text that is too faint to read ([#383](https://github.com/181192/brasscribe/pull/383))
+- **Design:** With Increase Contrast in the light appearance, the Mac apps' text can be read again, and more contrast keeps light or dark on every platform ([#378](https://github.com/181192/brasscribe/pull/378))
+- **Studio:** A tab opens in the score viewer as tablature and plays, and a file that cannot be shown says what to do ([#374](https://github.com/181192/brasscribe/pull/374))
+
+<details><summary>Under the hood (5 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **iPhone, iPad and Mac:** The Mac screen catalogues take a screen only when it is the screen asked for ([#370](https://github.com/181192/brasscribe/pull/370))
+- **Data:** The references with the layer id hits take their final names ([#384](https://github.com/181192/brasscribe/pull/384))
+- **Engine:** **Breaking:** The engine's command is scribe, and its Python packages and settings take scribe names ([#369](https://github.com/181192/brasscribe/pull/369))
+- **Engine:** **Breaking:** Every profile belongs to a target, which names its files, and each app offers its own target's profiles ([#380](https://github.com/181192/brasscribe/pull/380))
+- **Wire:** **Breaking:** The pairing link and the network service take the scribe name, and app and engine say which to update when they don't match ([#377](https://github.com/181192/brasscribe/pull/377))
+
+</details>
+
 ## 0.11.0 (2026-10-11)
 
 ### Breaking changes
