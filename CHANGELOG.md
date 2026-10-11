@@ -2,6 +2,14 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.10.1 (2026-10-11)
+
+### Fixes
+
+- **Engine:** Stopping a job during the sheet-music export stops it at once, not after MuseScore is done ([#348](https://github.com/181192/brasscribe/pull/348))
+- **Engine:** With Bandroom for Mac, a job no longer fails at the sheet-music export while macOS waits for permission to the Documents folder ([#347](https://github.com/181192/brasscribe/pull/347))
+- **Engine:** A tab job no longer fails when only the PDF is missing ([#350](https://github.com/181192/brasscribe/pull/350))
+
 ## 0.10.0 (2026-10-11)
 
 ### Breaking changes
