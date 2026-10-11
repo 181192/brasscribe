@@ -225,8 +225,8 @@ jobs:
 
   # Studio's unit tests, then its browser tests and its screen catalogue on the built bundle, with the API
   # answered from committed fixtures (no engine): every view in light, dark, high contrast, bokmål, 200 % and
-  # 320 px, with its checks (studio/README.md, Test). Its screenshots are an artefact to look at; nothing waits
-  # for them.
+  # 320 px, with its checks (studio/README.md, Test). None of them reads a picture, so screenshots are taken only
+  # on main, for the comparison after a merge.
   studio:
     name: Studio (Ubuntu 24.04)
     needs: changes
@@ -276,7 +276,15 @@ jobs:
         working-directory: studio
         run: npm run test:browser
 
+      # No check of Studio's catalogue reads a picture (they read the page), so a pull request takes none.
       - name: Screen catalogue
+        if: github.event_name == 'pull_request'
+        working-directory: studio
+        run: npm run test:catalogue
+
+      # On main after a merge, and in a hand-started run: the same, with a screenshot of each view, for the record.
+      - name: Screen catalogue, with screenshots
+        if: github.event_name != 'pull_request'
         working-directory: studio
         run: scripts/screenshots.sh record
 
@@ -294,15 +302,14 @@ jobs:
             --arg toolchain "$(cd studio && npx playwright --version)" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
           cat "$DIR/record.json"
 
-      # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
-      # named by its commit and kept longer, for the comparison with the next record.
+      # Named by its commit and kept, for the comparison with the next record.
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         with:
-          name: ${{ github.event_name == 'pull_request' && 'studio-screenshots' || format('screens-studio-{0}', github.sha) }}
+          name: screens-studio-${{ github.sha }}
           path: studio/build/catalogue/screenshots
           if-no-files-found: ignore
-          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
+          retention-days: 90
 
       - uses: actions/upload-artifact@v7
         if: failure()

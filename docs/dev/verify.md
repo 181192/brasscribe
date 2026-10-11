@@ -68,7 +68,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | engine, affected only | `pixi run test-affected` | tests the change cannot reach (pytest-testmon; the first run records `.testmondata`) |
 | core | `cd core && cargo test --profile fast` | nothing. The `fast` profile is release without LTO, with parallel and incremental codegen, in `target/fast` |
 | conformance | `scripts/check.sh fast conformance` | every case but Mikkel. With reference outputs from an earlier run in `core/target/conformance` made from the same Python sources (`music/src`, `eval/brasscribe_eval`, the conformance runner; a hash in `.python-reference-stamp`), it also skips the Python side and the extras (`--skip-python --no-extras`) |
-| studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, the screenshots, e2e |
+| studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, e2e |
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
 | android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
@@ -95,8 +95,8 @@ build for testing again.
 - `pixi run test`
 - `cargo test --release`
 - conformance on every case
-- vitest, the Playwright browser tests, then `studio/scripts/screenshots.sh record`: Studio's screen catalogue with
-  its checks, and a screenshot of each view ([studio/README.md](../../studio/README.md#test))
+- vitest, the Playwright browser tests, then `npm run test:catalogue`: Studio's screen catalogue with its checks
+  ([studio/README.md](../../studio/README.md#test))
 - the Swift packages (BrasscribeKit, NotationKit, ScreenCatalogue, `capture`) and the macOS app unit tests, then
   `apps/apple/scripts/screenshots.sh record`: the Mac screen catalogue with its checks
 - `./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug` (both apps' tests on the JVM, lint
@@ -149,15 +149,16 @@ Every screen catalogue (both Android apps, Play and Bandroom for Mac, Play and B
 once on a pull request, on the pull request's own build, with every check it has: accessible names, target sizes,
 contrast, cut-off text, the keyboard's reach and order, Axe, a screen that is not the one asked for or does not
 keep still. A failed check fails the job. The pictures are an artefact of the run (`android-screenshots-<app>`,
-`play-mac-screenshots`, `bandroom-mac-screenshots`, `windows-screenshots`, `bandroom-windows-screenshots`,
-`studio-screenshots`), to look at. No check compares them with anything, so there is nothing to approve when a
+`play-mac-screenshots`, `bandroom-mac-screenshots`, `windows-screenshots`, `bandroom-windows-screenshots`), to look
+at; Studio takes none on a pull request (below). No check compares them with anything, so there is nothing to approve when a
 screen is meant to change.
 
 Which checks read the picture: on Android the contrast check (the Accessibility Test Framework measures it from a
 picture of the screen); on Windows the contrast check, the rule that a screen is taken only when
 it is the one asked for and keeps still, and the comparison of Home started in a theme with Home switched to it;
 on the Mac the rule that a screen draws the same twice before it is taken. Studio's checks read the page, not the
-picture: its screenshots are only to look at, and `npm run test:catalogue` runs the same checks without them.
+picture, so a pull request runs them without taking any (`npm run test:catalogue`);
+`studio/scripts/screenshots.sh record` takes them, locally and on `main`.
 
 After a merge, the run on `main` keeps each catalogue's pictures as the artefact `screens-<catalogue>-<commit>`
 (90 days), with the runner image and toolchain they were taken with. `screens.yml` then compares them with the

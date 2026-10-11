@@ -6,9 +6,9 @@
 #                                           build/catalogue/screenshots/
 #
 # It fails when a view fails a check. No check reads the screenshots: they are to look at (`npm run test:catalogue`
-# runs the same checks without taking them). They are not kept in git, and nothing here compares them. After a
-# merge, CI compares main's with those of the main before it (.github/workflows/screens.yml, with
-# catalogue/compare.mjs), and that blocks nothing.
+# runs the same checks without taking them, and is what CI runs on a pull request). They are not kept in git, and
+# nothing here compares them. After a merge, CI takes them on main and compares them with those of the main before
+# it (.github/workflows/screens.yml, with catalogue/compare.mjs), and that blocks nothing.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
