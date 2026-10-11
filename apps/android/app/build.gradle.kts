@@ -24,8 +24,8 @@ android {
         applicationId = "no.brasscribe.play"
         minSdk = 36
         targetSdk = 37
-        versionCode = 16
-        versionName = "0.10.2"
+        versionCode = 17
+        versionName = "0.11.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
