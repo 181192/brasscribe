@@ -69,7 +69,8 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
   to install, or that update left it older; and no button, with words of its own, for an engine from
   `SCRIBE_BANDROOM_WORKSPACE`. A number that is not a whole number counts as an older engine.
 - **The start-up pairing code** (`scribe serve --lan` opens one) is closed when an engine first runs, whatever its
-  interface version, unless the Pair window is open: codes are shown in that window only.
+  interface version: codes are shown in the Pair window only. A Pair window that already shows the code asks for a
+  new one at its next check. A close that fails is tried again a few times.
 - **First run** installs, in order, `default` (the engine, so it can start early), `swift-f0`,
   `basic-pitch`, then the torch adapters. With an NVIDIA card (DXGI vendor 0x10DE) and a driver of 525 or
   newer they are the `-cuda` builds and the engine gets `SCRIBE_CUDA=1`; otherwise the CPU builds.

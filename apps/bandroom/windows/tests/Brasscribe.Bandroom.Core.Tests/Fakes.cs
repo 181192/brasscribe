@@ -140,6 +140,8 @@ internal sealed class FlakyEngine(FakeEngine inner) : IEngineApi
     public Func<Task>? OnStatus { get; set; }
     public Func<Task>? OnPairRequests { get; set; }
     public Func<Task>? OnDecide { get; set; }
+    public Func<Task>? OnClose { get; set; }
+    public int CloseCalls;
     public int StatusCalls;
     public int PairRequestCalls;
 
@@ -156,7 +158,12 @@ internal sealed class FlakyEngine(FakeEngine inner) : IEngineApi
     public Task RemoveDeviceAsync(string deviceId, CancellationToken ct = default) => Inner.RemoveDeviceAsync(deviceId, ct);
     public Task<PairingState> GetPairingAsync(CancellationToken ct = default) => Inner.GetPairingAsync(ct);
     public Task<PairingState> OpenPairingAsync(PairingOpenRequest request, CancellationToken ct = default) => Inner.OpenPairingAsync(request, ct);
-    public Task<PairingState> ClosePairingAsync(CancellationToken ct = default) => Inner.ClosePairingAsync(ct);
+    public async Task<PairingState> ClosePairingAsync(CancellationToken ct = default)
+    {
+        Interlocked.Increment(ref CloseCalls);
+        await Run(OnClose);
+        return await Inner.ClosePairingAsync(ct);
+    }
     public async Task<IReadOnlyList<PairRequestInfo>> GetPairRequestsAsync(CancellationToken ct = default)
     {
         Interlocked.Increment(ref PairRequestCalls);

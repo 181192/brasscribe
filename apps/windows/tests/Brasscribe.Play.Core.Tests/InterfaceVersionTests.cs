@@ -35,8 +35,11 @@ public class InterfaceVersionTests
     public void The_apps_number_scheme_and_service_are_the_engines()
     {
         const string wire = "engine/src/scribe_engine/wire.py";
-        // Outside a checkout (the tests copied somewhere to run) there is no engine source to compare with.
-        Skip.If(TestPaths.RepoRoot is null && Environment.GetEnvironmentVariable("SCRIBE_REPO") is null, TestPaths.Missing(wire));
+        // Outside a checkout (the tests copied somewhere to run) there is no engine source to compare with. CI always
+        // runs in one: there the comparison is never skipped.
+        bool outside = TestPaths.RepoRoot is null && Environment.GetEnvironmentVariable("SCRIBE_REPO") is null;
+        if (Environment.GetEnvironmentVariable("CI") is { Length: > 0 }) Assert.False(outside, TestPaths.Missing(wire));
+        Skip.If(outside, TestPaths.Missing(wire));
         string python = File.ReadAllText(TestPaths.RepoFile(wire)!);
         string Value(string name) => Regex.Match(python, $@"^{name}\s*=\s*""?([^""\r\n]+?)""?\s*$", RegexOptions.Multiline) is { Success: true } m
             ? m.Groups[1].Value
@@ -227,6 +230,61 @@ public class InterfaceVersionTests
         Assert.Equal(InterfaceAnswer.UpdateApp, (await Assert.ThrowsAsync<EngineException>(() => client.ListJobsAsync())).Interface);
     }
 
+    public static TheoryData<string> NotAnEnginesAnswer() => new()
+    {
+        "{}",
+        "<html><body>Sign in to the network</body></html>",
+        "[]",
+        """{"interface_version":0}""",
+        $$"""{"interface_version":{{Wire.InterfaceVersion + 1}}}""",
+        """{"interface_version":0,"server_id":7}""",
+        """{"status":"ok"}""",
+    };
+
+    [Theory]
+    [MemberData(nameof(NotAnEnginesAnswer))]
+    public async Task An_answer_that_does_not_say_which_engine_it_is_could_not_be_read_and_is_no_reason_to_update(string body)
+    {
+        var handler = new FakeHandler((_, _) => FakeHandler.Json(body));
+        var client = new EngineClient(new HttpClient(handler), Old);
+        int told = 0;
+        client.InterfaceMismatch = () => told++;
+
+        Assert.Null((await Assert.ThrowsAsync<EngineException>(() => client.GetHealthAsync())).Interface);
+        Assert.Null((await Assert.ThrowsAsync<EngineException>(() => client.GetThisDeviceAsync())).Interface);
+        var failed = await Assert.ThrowsAsync<EngineException>(() => client.ListJobsAsync());
+        Assert.Null(failed.Interface);
+        Assert.NotEqual("Error_UpdateBandroom_Title", EngineErrors.Key(failed));
+        Assert.Equal(0, told);
+        // Nothing was learnt: the next request asks again, and nothing else is sent.
+        await Assert.ThrowsAsync<EngineException>(() => client.ListJobsAsync());
+        Assert.Equal(["GET /v1/health", "GET /v1/devices/me", "GET /v1/health", "GET /v1/health"], Paths(handler));
+    }
+
+    [Fact]
+    public async Task A_request_decides_from_the_health_it_asked_itself_whatever_another_request_does_meanwhile()
+    {
+        bool down = false;
+        var handler = new FakeHandler((r, _) =>
+        {
+            if (down) throw new HttpRequestException("connection refused");
+            return r.RequestUri!.AbsolutePath == "/v1/health" ? FakeHandler.Json(HealthWith("0")) : FakeHandler.Json($"[{Job}]");
+        });
+        var client = new EngineClient(new HttpClient(handler), Old);
+        // While the list's own health answer is being noted, another request on the same client loses its connection.
+        client.InterfaceMismatch = () =>
+        {
+            down = true;
+            try { client.GetHealthAsync().GetAwaiter().GetResult(); }
+            catch (EngineException) { }
+            down = false;
+        };
+
+        var refused = await Assert.ThrowsAsync<EngineException>(() => client.ListJobsAsync());
+        Assert.Equal(InterfaceAnswer.UpdateBandroom, refused.Interface);
+        Assert.DoesNotContain("GET /v1/jobs", Paths(handler));
+    }
+
     // ---- the status row ----
 
     private sealed class Rig
@@ -349,8 +407,8 @@ public class InterfaceVersionTests
     }
 
     [Theory]
-    [InlineData("http://127.0.0.1:8765/", "en-US", "Update Brasscribe on this PC. This app is newer than Brasscribe there, and they only work together when both are up to date.")]
-    [InlineData("http://localhost:8765/", "nb-NO", "Oppdater Brasscribe på denne PC-en. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert.")]
+    [InlineData("http://127.0.0.1:8765/", "en-US", "Update Brasscribe on this PC. It is older than this app, and they only work together when both are up to date.")]
+    [InlineData("http://localhost:8765/", "nb-NO", "Oppdater Brasscribe på denne PC-en. Den er eldre enn denne appen, og de virker bare sammen når begge er oppdatert.")]
     public async Task An_engine_on_this_pc_is_named_this_pc(string address, string lang, string sentence)
     {
         var rig = new Rig(lang);
@@ -430,6 +488,33 @@ public class InterfaceVersionTests
         Assert.Equal(["GET /v1/health"], rig.Lan.Calls);
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("<html><body>Sign in to the network</body></html>")]
+    public async Task Something_else_answering_at_the_address_is_not_an_engine_to_update(string body)
+    {
+        // Paired: the engine is looked for, and found where it now is.
+        var rig = new Rig();
+        rig.Lan.At.Remove(Old);
+        rig.Lan.NotAnEngine[Old] = body;
+        await rig.Monitor.CheckAsync();
+        Assert.Equal(ConnectionState.Reconnecting, await rig.Monitor.CheckAsync());
+        Assert.False(rig.Monitor.NeedsUpdate);
+        Assert.Null(rig.Monitor.ActionUri);
+        rig.Lan.At[New] = rig.Studio;
+        rig.OnNetwork.Add(new DiscoveredEngine("Brasscribe on Studio PC", New, StudioId, "Studio PC"));
+        Assert.Equal(ConnectionState.Connected, await rig.Monitor.CheckAsync());
+        Assert.Equal(New, rig.Address);
+
+        // Nothing paired: not connected, and nothing to update.
+        var unpaired = new Rig();
+        unpaired.Credentials.Remove(StudioId);
+        unpaired.Lan.At.Remove(Old);
+        unpaired.Lan.NotAnEngine[Old] = body;
+        Assert.Equal(ConnectionState.Offline, await unpaired.Monitor.CheckAsync());
+        Assert.False(unpaired.Monitor.NeedsUpdate);
+    }
+
     // ---- pairing and unpairing ----
 
     private static (SettingsViewModel Vm, FakeLan Lan, FakeLan.Engine Studio) Settings(int? engine, string? pairedWith = null)
@@ -472,6 +557,50 @@ public class InterfaceVersionTests
         Assert.Equal(0, studio.Pairings);
         Assert.False(vm.IsPaired);
         OnlyTheNumberWasAsked(lan);
+        // Not words only: the pairing screen offers the page with the update, as the status row does.
+        Assert.True(vm.HasEngineStatusLink);
+        Assert.Equal(ConnectionMonitor.LatestRelease, vm.EngineStatusLink);
+        Assert.Equal("Get the update", vm.EngineStatusLinkLabel);
+        Assert.StartsWith("Opens the page", vm.EngineStatusLinkHelp);
+
+        // After the update the pairing goes through, and the link is gone with the sentence.
+        studio.InterfaceVersion = Wire.InterfaceVersion;
+        await vm.ConnectCommand.ExecuteAsync(null);
+        vm.Connection.Stop();
+        Assert.True(vm.IsPaired);
+        Assert.False(vm.HasEngineStatusLink);
+    }
+
+    [Fact]
+    public async Task Something_else_answering_at_a_typed_address_is_a_failure_to_connect_with_no_update_offered()
+    {
+        var (vm, lan, _) = Settings(Wire.InterfaceVersion);
+        lan.At.Remove(Old);
+        lan.NotAnEngine[Old] = "{}";
+        vm.PairingCode = "482913";
+        await vm.ConnectCommand.ExecuteAsync(null);
+        vm.Connection.Stop();
+
+        Assert.Equal("Something went wrong talking to your computer. Try again.", vm.EngineStatus);
+        Assert.False(vm.HasEngineStatusLink);
+        Assert.False(vm.IsPaired);
+        OnlyTheNumberWasAsked(lan);
+    }
+
+    [Fact]
+    public async Task A_link_whose_first_address_is_not_the_engine_is_tried_at_its_next_one()
+    {
+        var (vm, lan, studio) = Settings(Wire.InterfaceVersion);
+        lan.At.Remove(Old);
+        lan.NotAnEngine[Old] = "{}";
+        lan.At[New] = studio;
+
+        Assert.True(await vm.PairFromLinkAsync($"scribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&h=192.0.2.20:8765,192.0.2.44:8765&code=482913"));
+        vm.Connection.Stop();
+
+        Assert.Equal(New.ToString(), vm.EngineAddress);
+        Assert.Equal(1, studio.Pairings);
+        Assert.False(vm.HasEngineStatusLink);
     }
 
     [Fact]
@@ -483,6 +612,7 @@ public class InterfaceVersionTests
 
         Assert.Equal(UpdateBandroom, vm.EngineStatus);
         Assert.False(vm.IsAsking);
+        Assert.Equal(ConnectionMonitor.LatestRelease, vm.EngineStatusLink);
         Assert.Equal(0, studio.Polls);
         OnlyTheNumberWasAsked(lan);
     }
@@ -499,6 +629,7 @@ public class InterfaceVersionTests
         Assert.Equal(UpdateApp, vm.EngineStatus);
         Assert.Equal(0, studio.Pairings);
         Assert.Equal(0, studio.Polls);
+        Assert.Equal(ConnectionMonitor.LatestRelease, vm.EngineStatusLink);
         Assert.Null(vm.Credentials.CurrentServerId);
         OnlyTheNumberWasAsked(lan);
     }
@@ -525,6 +656,8 @@ public class InterfaceVersionTests
 
         // The sentence names the link's computer, and everything about the engine in use is as it was.
         Assert.Equal("Update Brasscribe Play. Brasscribe on Band laptop is newer than this app, and they only work together when both are up to date.", vm.EngineStatus);
+        // The status row is about the engine in use: the update for the link's engine is offered next to the sentence.
+        Assert.Equal(ConnectionMonitor.LatestRelease, vm.EngineStatusLink);
         Assert.Equal(Old.ToString(), vm.EngineAddress);
         Assert.Equal(StudioId, vm.Credentials.CurrentServerId);
         Assert.Equal("tok-1", vm.EngineToken);

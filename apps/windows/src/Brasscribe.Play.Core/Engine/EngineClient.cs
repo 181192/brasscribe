@@ -162,9 +162,19 @@ public sealed class EngineClient : IEngineClient
     public string? Token { get; set; }
     public Action? InterfaceMismatch { get; set; }
 
-    /// <summary>What the engine's last answer with its interface version meant; null while it is not known.</summary>
-    private InterfaceAnswer? _interface;
-    private int? _engineInterface;
+    /// <summary>What an answer with the engine's interface version meant, and the number it gave.</summary>
+    private sealed record Known(InterfaceAnswer Answer, int? Number)
+    {
+        public static Known Of(int? engineVersion) => new(InterfaceMatch.Of(engineVersion), engineVersion);
+    }
+
+    /// <summary>
+    /// The engine's last answer with its interface version; null while it is not known. One reference, read and
+    /// replaced whole: requests on this client run side by side (a stream, the list, an export).
+    /// </summary>
+    private Known? _known;
+
+    private void Forget() => Volatile.Write(ref _known, null);
 
     public Task<Health> GetHealthAsync(CancellationToken ct = default) =>
         SendNumberedAsync("v1/health", EngineJsonContext.Default.Health,
@@ -330,7 +340,7 @@ public sealed class EngineClient : IEngineClient
             {
                 resp?.Dispose();
                 dropped = e;
-                _interface = null;
+                Forget();
             }
             catch (EngineException e) when (IsUnanswered(e))
             {
@@ -348,7 +358,7 @@ public sealed class EngineClient : IEngineClient
                     {
                         bool more;
                         try { more = await events.MoveNextAsync().ConfigureAwait(false); }
-                        catch (Exception e) when (IsTransport(e, ct)) { more = false; dropped = e; _interface = null; }
+                        catch (Exception e) when (IsTransport(e, ct)) { more = false; dropped = e; Forget(); }
                         if (!more) break;
 
                         var sse = events.Current;
@@ -373,7 +383,7 @@ public sealed class EngineClient : IEngineClient
                 // The stream closed without a terminal event: the engine may have been replaced, so its health is asked
                 // again, and then the job state, before reconnecting.
                 // An engine that cannot be reached right now counts as one more failed attempt.
-                _interface = null;
+                Forget();
                 Job? job = null;
                 try { job = await GetJobAsync(jobId, ct).ConfigureAwait(false); }
                 catch (EngineException e) when (IsUnanswered(e)) { dropped = e; }
@@ -412,7 +422,7 @@ public sealed class EngineClient : IEngineClient
     /// </summary>
     private EngineException Transport(Exception e)
     {
-        _interface = null;
+        Forget();
         return e is OperationCanceledException or TimeoutException
             ? new EngineException($"The engine at {BaseAddress} did not answer in time.", null, e, EngineException.Timeout)
             : new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
@@ -423,22 +433,19 @@ public sealed class EngineClient : IEngineClient
 
     /// <summary>
     /// Before every request but the two that carry the engine's interface version: asks health when the number is
-    /// not known, and refuses (nothing is sent) when it is not this app's.
+    /// not known, and refuses (nothing is sent) when it is not this app's. It decides from the health answer it
+    /// read itself: another request may have made the number unknown again meanwhile.
     /// </summary>
     private async Task EnsureInterfaceAsync(CancellationToken ct)
     {
-        if (_interface is null) await GetHealthAsync(ct).ConfigureAwait(false);
-        if (_interface is { } answer and not InterfaceAnswer.Same) throw EngineException.Mismatch(answer, _engineInterface);
+        var known = Volatile.Read(ref _known) ?? Known.Of((await GetHealthAsync(ct).ConfigureAwait(false)).InterfaceVersion);
+        if (known.Answer != InterfaceAnswer.Same) throw EngineException.Mismatch(known.Answer, known.Number);
     }
 
-    private InterfaceAnswer Note(int? engineVersion)
+    private void Note(Known now)
     {
-        var answer = InterfaceMatch.Of(engineVersion);
-        bool news = _interface != answer && answer != InterfaceAnswer.Same;
-        _engineInterface = engineVersion;
-        _interface = answer;
-        if (news) InterfaceMismatch?.Invoke();
-        return answer;
+        var before = Interlocked.Exchange(ref _known, now);
+        if (now.Answer != InterfaceAnswer.Same && before?.Answer != now.Answer) InterfaceMismatch?.Invoke();
     }
 
     /// <summary>
@@ -446,6 +453,8 @@ public sealed class EngineClient : IEngineClient
     /// itself first: a float, a string, a bool, a number out of range or none at all is another interface version
     /// (the computer's side is the one to update), not an unreadable answer. With another version the rest of the
     /// answer is not read: <paramref name="other"/> makes the result from the number, the server id and the name.
+    /// That holds for an engine's answer only, and an engine always says who it is: an answer without a server id
+    /// (an empty object, some other service at the address) could not be read, like a page of HTML.
     /// </summary>
     private async Task<T> SendNumberedAsync<T>(string path, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> type,
         Func<int?, string?, string?, T> other, CancellationToken ct)
@@ -470,10 +479,16 @@ public sealed class EngineClient : IEngineClient
                 using var doc = JsonDocument.Parse(body);
                 var root = doc.RootElement;
                 if (root.ValueKind != JsonValueKind.Object) throw new JsonException("not an object");
-                int? version = InterfaceMatch.Read(root);
-                if (Note(version) != InterfaceAnswer.Same)
-                    return other(version, Text(root, "server_id"), Text(root, "server_name"));
-                return JsonSerializer.Deserialize(body, type) ?? throw new JsonException("empty");
+                var known = Known.Of(InterfaceMatch.Read(root));
+                if (known.Answer != InterfaceAnswer.Same)
+                {
+                    string id = Text(root, "server_id") ?? throw new JsonException("no server id");
+                    Note(known);
+                    return other(known.Number, id, Text(root, "server_name"));
+                }
+                var value = JsonSerializer.Deserialize(body, type) ?? throw new JsonException("empty");
+                Note(known);
+                return value;
             }
             catch (Exception e) when (IsTransport(e, ct))
             {
@@ -481,7 +496,7 @@ public sealed class EngineClient : IEngineClient
             }
             catch (JsonException e)
             {
-                _interface = null;
+                Forget();
                 throw new EngineException($"The engine's answer to {path} could not be read.", resp.StatusCode, e);
             }
         }

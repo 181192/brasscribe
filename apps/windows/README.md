@@ -71,7 +71,9 @@ The app and the engine must have the same interface version (`Wire.InterfaceVers
 answers had the app's number, and asks health first when it does not know (at start, and after a request that got
 no answer or a dropped event stream). With another number the request is not sent: the connection row says which
 of the two to update, with **Get the update** (the releases page), the pairing is kept, and Unpair forgets the
-computer on this PC only.
+computer on this PC only. A pairing that stops for this reason offers the same page next to its sentence. An
+answer that does not name an engine (no `server_id`: an empty object, a sign-in page) is one that could not be
+read, never a reason to update.
 
 ## Test
 

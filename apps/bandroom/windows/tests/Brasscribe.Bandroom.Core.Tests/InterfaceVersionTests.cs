@@ -12,7 +12,7 @@ namespace Brasscribe.Bandroom.Core.Tests;
 /// <summary>
 /// Bandroom and the engine it starts must have the same interface version. When they differ Bandroom says which of
 /// the two to update, with a fix that does something, and asks that engine nothing: no status, jobs, devices or pair
-/// requests, and no pairing is opened. The one thing every engine is told, once when it first runs, is to close the
+/// requests, and no pairing is opened. The one thing every engine is told, when it first runs, is to close the
 /// pairing code it opened as it started.
 /// </summary>
 public sealed class InterfaceVersionTests : IDisposable
@@ -40,18 +40,35 @@ public sealed class InterfaceVersionTests : IDisposable
     public void The_engines_number_is_the_same_newer_older_or_missing(int? engine, InterfaceAnswer expected) =>
         Assert.Equal(expected, InterfaceMatch.Of(engine));
 
-    /// <summary>Bandroom's number is the engine's own (engine/src/scribe_engine/wire.py).</summary>
+    /// <summary>
+    /// Bandroom's number is the engine's own (engine/src/scribe_engine/wire.py). The engine's other two names, the
+    /// pairing link's scheme and the network service, are not Bandroom's to hold: the engine makes the link and
+    /// advertises itself, and Bandroom shows what it is given. So the test also says that this is still so.
+    /// </summary>
     [SkippableFact]
     public void Bandrooms_number_is_the_engines()
     {
         const string relative = "engine/src/scribe_engine/wire.py";
-        string? wire;
-        try { wire = Path.Combine(TestPaths.RepoRoot, "engine", "src", "scribe_engine", "wire.py"); }
-        catch (DirectoryNotFoundException) { wire = null; }
-        Skip.If(wire is null, $"{relative} not found: the tests run outside a checkout");
-        var number = Regex.Match(File.ReadAllText(wire!), @"^INTERFACE_VERSION\s*=\s*(\d+)\s*$", RegexOptions.Multiline);
-        Assert.True(number.Success, $"{relative} has no INTERFACE_VERSION");
-        Assert.Equal(number.Groups[1].Value, Wire.InterfaceVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        string? root;
+        try { root = TestPaths.RepoRoot; }
+        catch (DirectoryNotFoundException) { root = null; }
+        // CI always runs in a checkout: there the comparison is never skipped.
+        if (Environment.GetEnvironmentVariable("CI") is { Length: > 0 }) Assert.True(root is not null, $"{relative} not found: CI must run these tests from a checkout");
+        Skip.If(root is null, $"{relative} not found: the tests run outside a checkout");
+        string python = File.ReadAllText(Path.Combine(root!, "engine", "src", "scribe_engine", "wire.py"));
+        string Value(string name) => Regex.Match(python, $@"^{name}\s*=\s*""?([^""\r\n]+?)""?\s*$", RegexOptions.Multiline) is { Success: true } m
+            ? m.Groups[1].Value
+            : throw new Xunit.Sdk.XunitException($"{relative} has no {name}");
+        Assert.Equal(Value("INTERFACE_VERSION"), Wire.InterfaceVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        string scheme = Value("PAIRING_SCHEME") + "://", service = Value("SERVICE_TYPE");
+        string core = Path.Combine(root!, "apps", "bandroom", "windows", "src", "Brasscribe.Bandroom.Core");
+        var holders = Directory.EnumerateFiles(core, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(f => File.ReadAllText(f) is var text && (text.Contains(scheme, StringComparison.Ordinal) || text.Contains(service, StringComparison.Ordinal)))
+            .Select(f => Path.GetRelativePath(core, f));
+        Assert.True(!holders.Any(), $"Brasscribe.Bandroom.Core now holds the engine's {scheme} or {service} ({string.Join(", ", holders)}): put it in Wire and compare it with {relative} here");
     }
 
     private static EngineApi ApiAnswering(string health)
@@ -148,7 +165,7 @@ public sealed class InterfaceVersionTests : IDisposable
         Assert.False(_engine.Inner.PairingOpen);
         Assert.Empty(_engine.Inner.Opens);
 
-        // Once: checks and snapshots while it runs do not close a code the Pair window opens later.
+        // Once it has succeeded: checks and snapshots while it runs do not close a code the Pair window opens later.
         await ctl.TickAsync();
         ctl.Publish();
         Assert.Single(_engine.Inner.Log, "close");
@@ -161,13 +178,63 @@ public sealed class InterfaceVersionTests : IDisposable
     }
 
     [Fact]
-    public async Task An_engine_that_starts_while_the_Pair_window_is_open_keeps_its_code()
+    public async Task An_engine_that_starts_while_the_Pair_window_shows_a_code_has_its_code_closed_and_the_window_asks_for_a_new_one()
+    {
+        var (sup, ctl) = await RunningAsync(Wire.InterfaceVersion);
+        await using var _ = sup;
+        var pair = new PairViewModel(Strings.En, () => ctl.Api, new RecordingAnnouncer());
+        await pair.OpenAsync();
+        Assert.True(pair.IsOpen);
+        string shown = pair.Code;
+
+        // The engine starts again under the open window: its own start-up code is not the one on screen.
+        await sup.RestartAsync();
+        await Until(() => _engine.Inner.Log.Count(l => l == "close") == 2, "the restarted engine's start-up code was not closed");
+        Assert.False(_engine.Inner.PairingOpen);
+
+        // The window's next check finds the code closed with nothing paired, and opens one of its own.
+        await pair.TickAsync();
+        Assert.True(pair.IsOpen);
+        Assert.True(_engine.Inner.PairingOpen);
+        Assert.NotEqual(shown, pair.Code);
+        Assert.Equal(2, _engine.Inner.Opens.Count);
+    }
+
+    [Fact]
+    public async Task A_start_up_code_that_could_not_be_closed_is_closed_at_a_later_try()
     {
         _engine.Inner.PairingOpen = true;
-        var (sup, _) = await RunningAsync(Wire.InterfaceVersion, before: ctl => ctl.PairWindowOpen = () => true);
+        int failures = 2;
+        _engine.OnClose = () => failures-- > 0 ? throw new HttpRequestException("connection refused") : Task.CompletedTask;
+        var log = new List<string>();
+        var (sup, ctl) = await RunningAsync(Wire.InterfaceVersion, before: c =>
+        {
+            c.CloseRetryDelay = TimeSpan.FromMilliseconds(5);
+            c.Log = log.Add;
+        });
+        await using var _ = sup;
+
+        await Until(() => !_engine.Inner.PairingOpen, "the start-up code stayed open after the first close failed");
+        Assert.Equal(3, _engine.CloseCalls);
+        Assert.Equal(2, log.Count(l => l.Contains("start-up pairing code", StringComparison.Ordinal)));
+
+        // And then no more: a code the Pair window opens later is left alone.
+        await Task.Delay(100);
+        await ctl.TickAsync();
+        Assert.Equal(3, _engine.CloseCalls);
+    }
+
+    [Fact]
+    public async Task Closing_the_start_up_code_gives_up_after_a_few_tries()
+    {
+        _engine.Inner.PairingOpen = true;
+        _engine.OnClose = () => throw new HttpRequestException("connection refused");
+        var (sup, _) = await RunningAsync(Wire.InterfaceVersion, before: c => c.CloseRetryDelay = TimeSpan.FromMilliseconds(1));
         await using var __ = sup;
-        Assert.DoesNotContain("close", _engine.Inner.Log);
-        Assert.True(_engine.Inner.PairingOpen);
+
+        await Until(() => _engine.CloseCalls == BandroomController.CloseRetries + 1, "the close was not tried again");
+        await Task.Delay(100);
+        Assert.Equal(BandroomController.CloseRetries + 1, _engine.CloseCalls);
     }
 
     [Fact]
@@ -339,10 +406,32 @@ public sealed class InterfaceVersionTests : IDisposable
     {
         var (sup, ctl) = await RunningAsync(0, before: c => c.EngineUpdatePending = true);
         await using var _ = sup;
+        // Update Brasscribe was chosen, and the update stopped.
+        ctl.EngineUpdateTried = true;
         ctl.UpdateFailure = "pixi install -e default exited with 1";
         var problems = ctl.Build().Inputs.Problems;
+        // Not "this copy can't update it": Try again runs the update, and it may well go through.
         Assert.Equal([ProblemKind.UpdateFailed, ProblemKind.UpdateEngine], problems.Select(p => p.Kind));
+        Assert.Equal("The update didn't finish, and the previous version was put back.", problems[0].Why);
         Assert.Null(ctl.Api);
+
+        // The update tried again and done, and the engine is still older: now this copy can't.
+        ctl.UpdateFailure = null;
+        ctl.EngineUpdatePending = false;
+        Assert.Equal(ProblemKind.EngineBehind, Assert.Single(ctl.Build().Inputs.Problems).Kind);
+    }
+
+    [Theory]
+    [InlineData("en", "The update didn't finish, and the previous version was put back.",
+        "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.")]
+    [InlineData("nb", "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake.",
+        "Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
+    public void A_failed_update_does_not_say_that_the_previous_version_runs(string language, string failed, string refused)
+    {
+        // It may not: it has another interface version, or this app can no longer start it.
+        var s = language == "nb" ? Strings.Nb : Strings.En;
+        Assert.Equal(failed, s["Update_Failed_Why"]);
+        Assert.Equal(refused, s["Update_Refused_Why"]);
     }
 
     [Fact]
@@ -412,11 +501,12 @@ public sealed class InterfaceVersionTests : IDisposable
     {
         var (sup, ctl) = await RunningAsync(0, before: c => c.EngineUpdatePending = true);
         await using var _ = sup;
+        ctl.EngineUpdateTried = true;
         ctl.UpdateFailure = "pixi install -e default exited with 1";
         var vm = new FlyoutViewModel(Strings.En, new FakeActions(), new RecordingAnnouncer());
         vm.Apply(ctl.Build());
         Assert.Equal("Brasscribe couldn't finish updating", vm.ProblemTitle);
         Assert.False(vm.CanPair);
-        Assert.StartsWith("Brasscribe on this PC is older than this copy of Bandroom", vm.EmptyDevicesText);
+        Assert.Equal("Brasscribe on this PC is older than this copy of Bandroom, and they only work together when both are up to date.", vm.EmptyDevicesText);
     }
 }

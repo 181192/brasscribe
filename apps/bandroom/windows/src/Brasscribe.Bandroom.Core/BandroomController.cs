@@ -16,8 +16,8 @@ public sealed record MachineInfo(string ComputerName, string SpeedKey, string Ru
 /// Gathers the supervisor state, /v1/status, the running job, the device list and host health into
 /// snapshots for the flyout and the tray icon. Polls the engine every 5 s while the flyout is open and
 /// every 30 s otherwise (the contract's cadence); pair requests every 5 s always; host health every tick.
-/// Every engine is told once, when it first runs, to close the pairing code it opened as it started (unless the Pair
-/// window is open): codes are opened from the Pair window only. Apart from that, and the supervisor's health checks,
+/// Every engine is told, when it first runs, to close the pairing code it opened as it started: codes are opened
+/// from the Pair window only. Apart from that, and the supervisor's health checks,
 /// an engine whose interface version is not this Bandroom's (<see cref="Interface"/>) is asked nothing: no status,
 /// jobs, devices or pair requests, and no pairing is opened on it; the snapshot carries the problem that says which
 /// of the two to update, with a fix that does something (<see cref="InterfaceMatch.FixFor"/>).
@@ -59,8 +59,14 @@ public sealed class BandroomController
         _sup.Changed += OnSupervisorChanged;
     }
 
-    /// <summary>The process whose start-up pairing code was closed (or left, for an open Pair window); 0 while none runs.</summary>
+    /// <summary>The engine process last seen to run, whose start-up pairing code is closed; 0 while none runs.</summary>
     private int _greeted;
+
+    /// <summary>How many times closing an engine's start-up pairing code is tried again after a failure.</summary>
+    public const int CloseRetries = 3;
+
+    /// <summary>The wait before the first of those; it doubles each time.</summary>
+    public TimeSpan CloseRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
 
     private void OnSupervisorChanged()
     {
@@ -70,7 +76,7 @@ public sealed class BandroomController
             if (Interlocked.Exchange(ref _greeted, pid) != pid)
             {
                 if (Interface == InterfaceAnswer.Same) EngineUpdateTried = false;
-                if (!PairWindowOpen()) _ = CloseStartupCodeAsync(port);
+                _ = CloseStartupCodeAsync(pid, port);
             }
         }
         else if (_sup.State is EngineState.Stopped or EngineState.Error) Interlocked.Exchange(ref _greeted, 0);
@@ -80,14 +86,26 @@ public sealed class BandroomController
     /// <summary>
     /// The engine opens a pairing code as it starts (<c>scribe serve --lan</c> prints one). Bandroom shows codes in
     /// its Pair window only, so that one is closed. This is the one thing an engine with another interface version
-    /// is told: a code nobody can see must not stay open on it either.
+    /// is told: a code nobody can see must not stay open on it either. A Pair window that already shows the code
+    /// asks for a new one at its next check (<see cref="PairViewModel.TickAsync"/>). An engine that does not answer
+    /// (it is slow in its first seconds) is told again, a few times, while it is still the one that runs.
     /// </summary>
-    private async Task CloseStartupCodeAsync(int port)
+    private async Task CloseStartupCodeAsync(int pid, int port)
     {
-        try { await _apiFor(port).ClosePairingAsync().ConfigureAwait(false); }
-        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or EngineHttpException or System.Text.Json.JsonException)
+        for (int attempt = 0; ; attempt++)
         {
-            Log?.Invoke("bandroom: closing the engine's start-up pairing code: " + e.Message);
+            try
+            {
+                await _apiFor(port).ClosePairingAsync().ConfigureAwait(false);
+                return;
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or EngineHttpException or System.Text.Json.JsonException)
+            {
+                Log?.Invoke("bandroom: closing the engine's start-up pairing code: " + e.Message);
+            }
+            if (attempt == CloseRetries) return;
+            await Task.Delay(CloseRetryDelay * (1 << attempt), _time).ConfigureAwait(false);
+            if (Volatile.Read(ref _greeted) != pid) return;
         }
     }
 
@@ -115,15 +133,13 @@ public sealed class BandroomController
     public string? WorkspaceStamp { get; set; }
     /// <summary>Where a check that went wrong is written (engine.log).</summary>
     public Action<string>? Log { get; set; }
-    /// <summary>The Pair window is open: the engine's pairing code is that window's, and is left open.</summary>
-    public Func<bool> PairWindowOpen { get; set; } = () => false;
     /// <summary>The engine workspace comes from a developer's folder (SCRIBE_BANDROOM_WORKSPACE), not from this app's bundle.</summary>
     public bool DevelopmentEngine { get; set; }
     /// <summary>The workspace this app bundles is not the one installed: updating from this app would change the engine.</summary>
     public bool EngineUpdatePending { get; set; }
     /// <summary>
-    /// The update was run for an engine that is older than this Bandroom. While the engine that runs still is, the
-    /// fix offered is the latest Bandroom; an engine that matches clears it.
+    /// The update was chosen for an engine that is older than this Bandroom. Once it has run without failing and the
+    /// engine that runs still is older, the fix offered is the latest Bandroom; an engine that matches clears it.
     /// </summary>
     public bool EngineUpdateTried { get; set; }
 
@@ -281,10 +297,11 @@ public sealed class BandroomController
         if (UpdateFailure is { } failure && !Updating)
             problems.Add(UpdateRefusal is { } refused ? Problems.UpdateRefused(_s, refused) : Problems.UpdateFailed(_s, failure));
         if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));
-        // After an update that failed: that problem says why the previous engine runs, and its fix is the update.
+        // After an update that failed: that problem says why the previous engine runs, and its fix is the update. The
+        // update has not been tried to its end then, so this copy may still be able to do it.
         if (Interface is var match and not InterfaceAnswer.Same)
             problems.Add(Problems.Interface(_s, match, _sup.Health?.InterfaceVersion,
-                InterfaceMatch.FixFor(match, DevelopmentEngine, EngineUpdatePending, EngineUpdateTried)));
+                InterfaceMatch.FixFor(match, DevelopmentEngine, EngineUpdatePending, EngineUpdateTried && UpdateFailure is null)));
         if (_health is { LowDisk: true } h) problems.Add(Problems.LowDisk(_s, h.FreeBytes, _paths.DataDir));
         string? downloading = null;
         if (SetupComplete && _health is { ModelsReady: false })

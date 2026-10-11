@@ -178,6 +178,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string PairingCode { get; set; } = "";
     [ObservableProperty] public partial string? EngineStatus { get; set; }
 
+    /// <summary>
+    /// Where the update is, while <see cref="EngineStatus"/> says that one of the two must be updated; null otherwise.
+    /// The status row offers the same page, but only for the engine in use: a refused pairing can be about another one.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasEngineStatusLink))]
+    public partial Uri? EngineStatusLink { get; private set; }
+
+    public bool HasEngineStatusLink => EngineStatusLink is not null;
+    public string EngineStatusLinkLabel => _s["Connection_GetUpdate"];
+    public string EngineStatusLinkHelp => _s["Connection_GetUpdateHelp"];
+
+    partial void OnEngineStatusChanged(string? value) => EngineStatusLink = null;
+
     /// <summary>While waiting for the owner to allow this PC on the computer: the match code both screens show.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsAsking))]
@@ -319,10 +333,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>Says which of the two to update, and the status row checks again at once.</summary>
+    /// <summary>Says which of the two to update and where the update is, and the status row checks again at once.</summary>
     private void SayUpdate(InterfaceAnswer answer, Uri address, string? serverName)
     {
         Say(ConnectionMonitor.UpdateText(_s, answer, address.IsLoopback, serverName));
+        EngineStatusLink = ConnectionMonitor.LatestRelease;
         Connection.Kick();
         Connection.Start();
     }

@@ -219,6 +219,9 @@
   <data name="Connection_UpdateBandroom" xml:space="preserve">
     <value>Oppdater Brasscribe på {0}. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert.</value>
   </data>
+  <data name="Connection_UpdateBandroomHere" xml:space="preserve">
+    <value>Oppdater Brasscribe på denne PC-en. Den er eldre enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
   <data name="Connection_YourComputer" xml:space="preserve">
     <value>datamaskinen</value>
   </data>

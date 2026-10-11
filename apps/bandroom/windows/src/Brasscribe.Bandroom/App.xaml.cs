@@ -218,8 +218,6 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             CheckModels = () => ModelCheck.Check(_paths.Models, _hub),
             Downloads = _downloads,
             Log = _log.Write,
-            // The Pair window's code is the engine's open one: an engine that starts while it shows keeps it.
-            PairWindowOpen = () => _pairWindow is not null,
             // A workspace from a folder of the developer's choosing: this app can neither update it nor replace it.
             DevelopmentEngine = Environment.GetEnvironmentVariable("SCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 },
         };

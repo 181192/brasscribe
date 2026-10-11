@@ -45,10 +45,10 @@
     <value>Brasscribe fikk ikke fullført oppdateringen</value>
   </data>
   <data name="Update_Refused_Why" xml:space="preserve">
-    <value>Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.</value>
+    <value>Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.</value>
   </data>
   <data name="Update_Failed_Why" xml:space="preserve">
-    <value>Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før.</value>
+    <value>Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake.</value>
   </data>
   <data name="Status_Setup" xml:space="preserve">
     <value>Gjøres klar</value>

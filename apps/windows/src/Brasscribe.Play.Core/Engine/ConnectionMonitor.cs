@@ -460,6 +460,7 @@ public sealed partial class ConnectionMonitor : ObservableObject
     /// </summary>
     public static string UpdateText(IStrings s, InterfaceAnswer answer, bool onThisPc, string? serverName)
     {
+        if (onThisPc && answer == InterfaceAnswer.UpdateBandroom) return s["Connection_UpdateBandroomHere"];
         string computer = onThisPc ? s["Connection_ThisPc"]
             : ServerNames.ComputerName(serverName) is { Length: > 0 } name ? name : s["Connection_YourComputer"];
         return s.Format(answer == InterfaceAnswer.UpdateApp ? "Connection_UpdateApp" : "Connection_UpdateBandroom", computer);

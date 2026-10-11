@@ -440,6 +440,9 @@ code = {
                              "Oppdater Brasscribe Play. Brasscribe på {0} er nyere enn denne appen, og de virker bare sammen når begge er oppdatert."),
     "Connection_UpdateBandroom": ("Update Brasscribe on {0}. This app is newer than Brasscribe there, and they only work together when both are up to date.",
                                   "Oppdater Brasscribe på {0}. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert."),
+    # The same for an engine on this PC, which is not "there".
+    "Connection_UpdateBandroomHere": ("Update Brasscribe on this PC. It is older than this app, and they only work together when both are up to date.",
+                                      "Oppdater Brasscribe på denne PC-en. Den er eldre enn denne appen, og de virker bare sammen når begge er oppdatert."),
     "Connection_Connect": ("Connect", "Koble til"),
     "Connection_PairAgain": ("Pair this PC again", "Koble til PC-en på nytt"),
     "Connection_GetUpdate": ("Get the update", "Hent oppdateringen"),

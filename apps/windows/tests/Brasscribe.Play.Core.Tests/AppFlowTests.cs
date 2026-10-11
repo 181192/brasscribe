@@ -589,9 +589,9 @@ public class AppFlowTests
     }
 
     [Theory]
-    [InlineData("""{"version":"0.1.0","interface_version":0,"device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
-    [InlineData("""{"version":"0.1.0","device":"mps","auth_required":false}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
-    [InlineData("""{"version":"9.0.0","interface_version":2,"device":"mps","auth_required":false}""", ErrorKind.UpdateApp, "Update Brasscribe Play")]
+    [InlineData("""{"version":"0.1.0","interface_version":0,"device":"mps","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef"}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
+    [InlineData("""{"version":"0.1.0","device":"mps","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef"}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
+    [InlineData("""{"version":"9.0.0","interface_version":2,"device":"mps","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef"}""", ErrorKind.UpdateApp, "Update Brasscribe Play")]
     public async Task An_engine_with_another_interface_version_gets_no_recording_and_no_job(string health, ErrorKind kind, string title)
     {
         var engine = Engine("", first: r => r.RequestUri!.AbsolutePath == "/v1/health" ? FakeHandler.Json(health) : null);
@@ -635,7 +635,7 @@ public class AppFlowTests
         engine.Requests.Select(r => $"{r.Request.Method.Method} {r.Request.RequestUri!.AbsolutePath}").ToList();
 
     [Theory]
-    [InlineData(0, "Update Brasscribe on this PC. This app is newer than Brasscribe there, and they only work together when both are up to date.")]
+    [InlineData(0, "Update Brasscribe on this PC. It is older than this app, and they only work together when both are up to date.")]
     [InlineData(2, "Update Brasscribe Play. Brasscribe on this PC is newer than this app, and they only work together when both are up to date.")]
     public async Task Opening_renaming_and_deleting_a_listed_score_on_an_engine_with_another_version_say_update(int version, string sentence)
     {

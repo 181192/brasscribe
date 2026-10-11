@@ -36,6 +36,8 @@ internal sealed class FakeLan
     }
 
     public Dictionary<Uri, Engine> At { get; } = [];
+    /// <summary>Addresses where something that is no engine answers every request with 200 and this body.</summary>
+    public Dictionary<Uri, string> NotAnEngine { get; } = [];
     public List<(Uri Address, string Path, string? Token)> Requests { get; } = [];
 
     /// <summary>Every request as "GET /v1/health", in the order sent.</summary>
@@ -53,6 +55,7 @@ internal sealed class FakeLan
             Requests.Add((address, path, token));
             Calls.Add($"{r.Method.Method} {path}");
         }
+        if (NotAnEngine.TryGetValue(address, out var page)) return FakeHandler.Json(page);
         if (!At.TryGetValue(address, out var e)) throw new HttpRequestException("connection refused");
         bool known = token is not null && e.Tokens.Contains(token);
         string Json(object o) => JsonSerializer.Serialize(o);
