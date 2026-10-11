@@ -202,8 +202,8 @@ answer both times:
   high-contrast one under Increase Contrast), Increase Contrast as the process is told it, and what the screen's
   own views are drawn in, read where they are (inside the split view's column and its navigation stack); and the
   run is in the language the script asked for;
-- the content is in place: what the screen itself waits for (the score engraved, the stand open), the screen's
-  controls in the tree, and no spinner;
+- the content is in place: what the screen itself waits for (the score engraved and the bar it opens at in view, the
+  stand open), the screen's controls in the tree, and no spinner;
 - two display frames were committed since the take before (the window is never on a screen, so a frame is a turn
   of the main run loop, then layout, drawing and the layer tree committed);
 - the picture shows it: it is not one flat colour, and every text in view has something drawn in its frame (a

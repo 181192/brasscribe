@@ -82,11 +82,11 @@ final class OffscreenHost {
 
     /// The screen's picture and tree for the catalogue, taken by its rule (`ScreenTake`): only once the window is
     /// this one at its size, in the appearance and language asked for, with its content in place (`ready` says what
-    /// the screen itself still waits for) and drawn, and keeping still.
-    func take(_ name: String, controls: Bool = true, ready: () -> String? = { nil }, unreadable: (AXNode) -> Bool = { _ in false },
-              output: URL) async throws -> ScreenTake {
+    /// the screen itself still waits for, `shows` the same of its tree) and drawn, and keeping still.
+    func take(_ name: String, controls: Bool = true, ready: () -> String? = { nil }, shows: ([AXNode]) -> String? = { _ in nil },
+              unreadable: (AXNode) -> Bool = { _ in false }, output: URL) async throws -> ScreenTake {
         try await ScreenTake.take(name, window: window, view: hosting, size: { self.size }, asked: asked, witness: witness, controls: controls,
-                                  ready: ready, unreadable: unreadable, picture: { self.bitmap() }, output: output)
+                                  ready: ready, shows: shows, unreadable: unreadable, picture: { self.bitmap() }, output: output)
     }
 
     /// The window's pixels. On macOS 26 the sidebar and the inspector float in glass that only the

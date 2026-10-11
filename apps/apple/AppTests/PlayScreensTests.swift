@@ -70,14 +70,16 @@ import TranscriptionKit
 
     /// Takes the screen on `host` by the catalogue's rule (`ScreenTake`), checks it, and writes its screenshot and tree.
     /// A screen that does not become the one asked for is not taken, and fails the run.
-    private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true, ready: () -> String? = { nil }) async throws {
+    private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true, ready: () -> String? = { nil },
+                        shows: ([AXNode]) -> String? = { _ in nil }) async throws {
         let name = Self.language == "en" ? "\(screen)-\(v.name)" : "\(screen)-\(v.name)-\(Self.language)"
         let nodes: [AXNode]
         var picture: NSBitmapImageRep?
         if Self.unsteady[screen] == nil {
             do {
                 let listed = Self.unreadable[name]
-                let take = try await host.take(name, controls: controls, ready: ready, unreadable: { _ in listed != nil }, output: Self.output)
+                let take = try await host.take(name, controls: controls, ready: ready, shows: shows, unreadable: { _ in listed != nil },
+                                               output: Self.output)
                 nodes = take.nodes
                 picture = take.picture
                 if let listed, Conditions.drawn(take.picture, nodes: nodes, bounds: host.hosting.bounds) == nil {
@@ -102,9 +104,11 @@ import TranscriptionKit
     }
 
     /// A screen in the window, the library beside it, as `RootView` lays it out. `opened` is run once the screen is
-    /// up; `ready` says what the screen still waits for (nil when it is the screen to take).
+    /// up; `ready` says what the screen still waits for (nil when it is the screen to take), and `shows` the same of
+    /// its accessibility tree.
     private func window(_ screen: String, app: AppModel, sidebar: Bool = true, opened: (() -> Void)? = nil,
-                        ready: () -> String? = { nil }, @ViewBuilder _ content: () -> some View) async throws {
+                        ready: () -> String? = { nil }, shows: ([AXNode]) -> String? = { _ in nil },
+                        @ViewBuilder _ content: () -> some View) async throws {
         for v in Self.variants {
             // Where the screen's own views are: in the detail column's navigation stack.
             let witness = AppearanceWitness()
@@ -112,7 +116,7 @@ import TranscriptionKit
                                      dark: v.dark, increasedContrast: v.increasedContrast, witness: witness)
             defer { host.close() }
             if let opened { await host.settle(0.8); opened() }
-            try await record(host, screen, v, ready: ready)
+            try await record(host, screen, v, ready: ready, shows: shows)
         }
     }
 
@@ -150,7 +154,12 @@ import TranscriptionKit
         let piece = try LayoutFixtures.piece()
         try await window("output", app: full) { OutputView(piece: piece) }
         let score = try await LayoutFixtures.model(piece)
-        try await window("score", app: full, ready: { !score.pages.isEmpty && !score.engraving ? nil : "its score is not engraved yet" }) {
+        // Engraved, and scrolled to the bar it opens at with that bar's parts laid out: the pages come in after the model has them.
+        let opensAt = score.barLabel(score.currentBar) + ","
+        try await window("score", app: full, ready: { !score.pages.isEmpty && !score.engraving ? nil : "its score is not engraved yet" },
+                         shows: { nodes in
+                             nodes.contains { !$0.isOutOfView && $0.label.hasPrefix(opensAt) } ? nil : "its score's bars are not in view yet"
+                         }) {
             PracticeView(model: score).pageBackground()
         }
         score.stopAll()

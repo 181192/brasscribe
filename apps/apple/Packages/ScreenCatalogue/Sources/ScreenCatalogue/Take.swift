@@ -114,12 +114,13 @@ public struct ScreenTake {
     /// Takes `view`, the content of `window`, once it is the screen asked for and keeps still (`SteadyTake`), reading
     /// before and after each picture: the window and its size (`size`, read each time, for a window that follows its
     /// content), the appearance and language (`asked`, `witness`), the screen's own readiness (`ready`: what it still
-    /// waits for, or nil) and its content (`Conditions.content`); and in each picture, that its texts are drawn.
+    /// waits for, or nil; `shows`: the same, asked of the tree) and its content (`Conditions.content`); and in each
+    /// picture, that its texts are drawn.
     /// `frames` lets two display frames go by. A line goes to `takes-<language>.log` in `output`; a screen that is
     /// not taken leaves its last picture in `not-taken/` there and throws `ScreenNotTaken`.
     public static func take(_ name: String, window: NSWindow, view: NSView, size: () -> CGSize, asked: Asked, witness: AppearanceWitness,
                             controls: Bool = true, busyExpected: Bool = false, ready: () -> String? = { nil },
-                            unreadable: (AXNode) -> Bool = { _ in false }, rule: SteadyTake.Rule = SteadyTake.Rule(),
+                            shows: ([AXNode]) -> String? = { _ in nil }, unreadable: (AXNode) -> Bool = { _ in false }, rule: SteadyTake.Rule = SteadyTake.Rule(),
                             frames: (() async -> Void)? = nil, picture: () -> NSBitmapImageRep, output: URL) async throws -> ScreenTake {
         var nodes: [AXNode] = []
         var last: NSBitmapImageRep?
@@ -129,7 +130,7 @@ public struct ScreenTake {
             if let unmet = Conditions.window(window, shows: view, at: wanted) ?? Conditions.appearance(asked, window: window, witness: witness)
                 ?? ready() { return Reading(unmet: unmet) }
             nodes = AXTree.read(view)
-            return Reading(unmet: Conditions.content(nodes, controls: controls, busyExpected: busyExpected),
+            return Reading(unmet: Conditions.content(nodes, controls: controls, busyExpected: busyExpected) ?? shows(nodes),
                            state: "\(wanted.width) × \(wanted.height)\n" + Conditions.state(nodes))
         }
         do {
