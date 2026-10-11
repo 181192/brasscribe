@@ -153,6 +153,24 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         Assert.DoesNotContain(player.Score!.Tracks[0].Staves[0].Bars[0].Voices[0].Beats.SelectMany(b => b.Notes), n => n.IsGhost);
     }
 
+    /// <summary>On Windows the "?" marks and the loop label are drawn in Windows' own text face, not in a stand-in.</summary>
+    [SkippableFact]
+    public void The_preview_finds_the_Windows_text_face()
+    {
+        Skip.IfNot(OperatingSystem.IsWindows(), "the families are Windows' own");
+        string? Resolved(string family)
+        {
+            using var face = AlphaSkia.AlphaSkiaTypeface.Create(family, (ushort)400, false);
+            return face?.FamilyName;
+        }
+        var families = ScorePreview.SansFamilies;
+        foreach (var family in families.Concat(["Segoe UI Variable", "Segoe UI", "No Such Family 4711"]))
+            log.WriteLine($"{family} -> {Resolved(family) ?? "(none)"}");
+        string? first = Resolved(families[0]), missing = Resolved("No Such Family 4711");
+        Assert.True(first is not null && first.StartsWith("Segoe UI Variable", StringComparison.Ordinal) && first != missing,
+            $"'{families[0]}' resolves to '{first ?? "(none)"}'; a family that does not exist resolves to '{missing ?? "(none)"}'");
+    }
+
     /// <summary>Full score (bars 9–16 with a loop and the cursor), the solo part and a review snippet, light and dark.</summary>
     [SkippableFact]
     [Trait("Category", "Slow")] // seconds; the fast tier filters it out (docs/dev/verify.md)

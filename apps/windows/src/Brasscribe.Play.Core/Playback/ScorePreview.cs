@@ -23,6 +23,12 @@ public static class ScorePreview
         if (face is not null) _serif = [face.FamilyName, .. _serif];
     }
 
+    /// <summary>The families the loop label and the "?" marks are asked for, in order; with the system's fonts switched on.</summary>
+    internal static IReadOnlyList<string> SansFamilies
+    {
+        get { EnsureFonts(); return _sans; }
+    }
+
     /// <summary>
     /// The notation of <paramref name="output"/> with its overlays. <paramref name="viewport"/> crops to a
     /// part of the score (in score coordinates), as the score view's scroll position does; alphaTab's own
