@@ -147,6 +147,11 @@ fun CompanionScreen(vm: PlayViewModel) {
     ) {
         ScreenTitle(stringResource(R.string.companion_title))
         ConnectionStatusRow(vm, onConnectionScreen = true)
+        // Whichever way the player pairs, the computer is out of reach until the phone lets the app onto the network.
+        if (networkRefused && !scanning) {
+            Text(stringResource(R.string.pair_network_refused), color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            PlainButton(stringResource(R.string.pair_camera_settings), ::appSettings)
+        }
         when {
             pending != null -> {
                 SubHeading(stringResource(R.string.pair_link_title, vm.serverDisplayName(pending.serverName)))
@@ -171,10 +176,6 @@ fun CompanionScreen(vm: PlayViewModel) {
                 }
                 if (!networkOk) {
                     // Nothing is looked for while the network is closed to the app, so the screen does not say it is looking.
-                    if (networkRefused) {
-                        Text(stringResource(R.string.pair_network_refused), color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-                        PlainButton(stringResource(R.string.pair_camera_settings), ::appSettings)
-                    }
                 } else if (found.isEmpty()) {
                     Text(stringResource(R.string.companion_searching), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 } else {
