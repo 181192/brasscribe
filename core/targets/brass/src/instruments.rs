@@ -132,8 +132,8 @@ impl Instrument {
     /// What the shared MusicXML writer reads of an instrument.
     pub fn spec(&self) -> InstrumentSpec {
         InstrumentSpec {
-            name: self.name,
-            short: self.short,
+            name: self.name.to_string(),
+            short: self.short.to_string(),
             chromatic: self.chromatic,
             diatonic: self.diatonic,
             percussion: self.is_percussion(),

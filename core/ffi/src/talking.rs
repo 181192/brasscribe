@@ -115,7 +115,7 @@ impl TalkingScore {
     #[uniffi::constructor]
     pub fn new(musicxml: String, composition_json: Option<String>) -> Result<Arc<Self>, CoreError> {
         let comp: Option<Value> = composition_json.map(|c| serde_json::from_str(&c)).transpose().map_err(invalid)?;
-        Ok(Arc::new(TalkingScore { doc: ts::build(&musicxml, comp.as_ref()).map_err(invalid)? }))
+        Ok(Arc::new(TalkingScore { doc: ts::build(&musicxml, comp.as_ref(), &target_brass::names::BandNames).map_err(invalid)? }))
     }
 
     /// The document as JSON (spec §6 shape).

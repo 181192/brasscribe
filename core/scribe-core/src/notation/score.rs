@@ -24,12 +24,12 @@ pub const TRILL: &str = "trill:";
 
 /// What the writer needs to know about the instrument a part is written for. A target fills it in
 /// from its own instrument table; the writer itself knows no instruments.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InstrumentSpec {
     /// <instrument-name>.
-    pub name: &'static str,
+    pub name: String,
     /// <part-abbreviation>, unless the part gives its own.
-    pub short: &'static str,
+    pub short: String,
     /// Sounding minus written, semitones.
     pub chromatic: i32,
     /// Sounding minus written, staff steps (MusicXML <diatonic>).
@@ -257,7 +257,7 @@ impl Part {
 
     /// Sounding minus written: (staff steps, semitones), for transposing instruments.
     fn transposition(&self) -> Option<(i32, i32)> {
-        self.inst.filter(|i| i.chromatic != 0 && !i.percussion).map(|i| (i.diatonic, i.chromatic))
+        self.inst.as_ref().filter(|i| i.chromatic != 0 && !i.percussion).map(|i| (i.diatonic, i.chromatic))
     }
 
     fn all_els(&self) -> impl Iterator<Item = &Elem> {
@@ -450,7 +450,7 @@ fn place_dynamics(spec: &PartSpec, bar: i64) -> Vec<(i64, String)> {
 }
 
 fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
-    let is_drums = |p: &PartSpec| p.instrument.is_some_and(|i| i.percussion);
+    let is_drums = |p: &PartSpec| p.instrument.as_ref().is_some_and(|i| i.percussion);
     let part_events: Vec<Vec<Event>> = spec.parts.iter().map(|p| events(&p.notes)).collect();
     // Spell every note from the whole ensemble at concert pitch, and pick the key.
     let mut flat: Vec<(usize, i64, i64, i32)> = Vec::new();
@@ -713,7 +713,7 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
         parts.push(Part {
             name: p.name.clone(),
             abbreviation: p.abbreviation.clone(),
-            inst: p.instrument,
+            inst: p.instrument.clone(),
             clef,
             fifths: if drums { None } else { Some(fifths) },
             measures,
@@ -1698,13 +1698,16 @@ fn bracket_xml(k: usize, typ: &str) -> X {
     )
 }
 
+/// <instrument-abbreviation> of an unpitched part's instrument, as the reference exporter writes it.
+const UNPITCHED_ABBREVIATION: &str = "Perc";
+
 /// Assign MIDI channels as the reference exporter does: in part order, skipping
 /// the percussion channel, and falling back to channel 1 once 15 are used.
 fn midi_channels(parts: &[Part]) -> Vec<i64> {
     let mut used: Vec<Option<i64>> = Vec::new();
-    let auto = |used: &[Option<i64>], perc: bool| -> Result<i64, ()> {
+    let auto = |used: &[Option<i64>], unpitched: bool| -> Result<i64, ()> {
         let set: HashSet<Option<i64>> = used.iter().copied().collect();
-        if perc && !set.contains(&Some(9)) {
+        if unpitched && !set.contains(&Some(9)) {
             return Ok(9);
         }
         if set.is_empty() {
@@ -1723,25 +1726,25 @@ fn midi_channels(parts: &[Part]) -> Vec<i64> {
     };
     let mut assigned: Vec<(Option<i64>, bool)> = Vec::new();
     for p in parts {
-        let perc = p.is_drums();
-        let mut ch: Option<i64> = if perc { Some(9) } else { None };
+        let unpitched = p.is_drums();
+        let mut ch: Option<i64> = if unpitched { Some(9) } else { None };
         if ch.is_none() || used.contains(&ch) {
-            ch = auto(&used, perc).ok();
+            ch = auto(&used, unpitched).ok();
         }
         used.push(ch);
-        assigned.push((ch, perc));
+        assigned.push((ch, unpitched));
     }
-    assigned.into_iter().map(|(c, perc)| c.unwrap_or_else(|| auto(&used, perc).unwrap_or(0))).collect()
+    assigned.into_iter().map(|(c, unpitched)| c.unwrap_or_else(|| auto(&used, unpitched).unwrap_or(0))).collect()
 }
 
 fn score_part_xml(part: &Part, idx: usize, channel: i64, sounds: &[(String, String)]) -> X {
     let mut sp = X::new("score-part").attr("id", format!("P{}", idx + 1)).child(X::text("part-name", part.name.clone()));
-    if let Some(inst) = part.inst {
-        sp.push(X::text("part-abbreviation", part.abbreviation.clone().unwrap_or_else(|| inst.short.to_string())));
+    if let Some(inst) = &part.inst {
+        sp.push(X::text("part-abbreviation", part.abbreviation.clone().unwrap_or_else(|| inst.short.clone())));
         let iid = format!("I{}", idx + 1);
-        let mut si = X::new("score-instrument").attr("id", iid.clone()).child(X::text("instrument-name", inst.name));
+        let mut si = X::new("score-instrument").attr("id", iid.clone()).child(X::text("instrument-name", inst.name.clone()));
         if inst.percussion {
-            si.push(X::text("instrument-abbreviation", "Perc"));
+            si.push(X::text("instrument-abbreviation", UNPITCHED_ABBREVIATION));
         }
         if let Some((_, s)) = sounds.iter().find(|(n, _)| *n == part.name) {
             si.push(X::text("instrument-sound", s.clone()));
@@ -1874,7 +1877,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
         line_base += p.lines.len();
     }
     if !spec.sounds.is_empty() {
-        band_midi(&mut root, spec.kit_program, &spec.banks);
+        playback_midi(&mut root, spec.kit_program, &spec.banks);
     }
     root
 }
@@ -1883,7 +1886,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
 fn _unused(_: DType) {}
 
 // ---------------------------------------------------------------------------
-// MIDI setup for the band SoundFont
+// MIDI setup for playback from a SoundFont with a preset per part
 
 /// Percussion instruments by written position and notehead, as General MIDI notes.
 const DRUM_SOUNDS: [(&str, &str, i64, &str); 13] = [
@@ -1946,9 +1949,9 @@ fn tag_drum_notes(e: &mut X, base: &str, used: &mut Vec<(i64, &'static str)>) {
 /// score order, skipping the drum channel; past 15 parts the channels continue
 /// on MIDI port 2. Percussion: one score-instrument per drum sound used, on
 /// channel 10 with <midi-unpitched> = GM note + 1, and an <instrument id> on
-/// every note; a kit other than the band kit (`kit_program`, 0-based: the pop
-/// kit is 1) as <midi-program> on each of those.
-fn band_midi(root: &mut X, kit_program: i64, banks: &[(String, i64)]) {
+/// every note; a kit other than the default one (`kit_program`, 0-based, not 0)
+/// as <midi-program> on each of those.
+fn playback_midi(root: &mut X, kit_program: i64, banks: &[(String, i64)]) {
     let channels: Vec<i64> = (1..=16).filter(|&c| c != DRUM_CHANNEL).collect();
     let Some(pl) = root.children.iter().position(|c| c.name == "part-list") else { return };
     let mut k = 0usize;

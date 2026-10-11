@@ -33,7 +33,8 @@ use scribe_core::energy::Audio;
 use scribe_core::midi::MidiFile;
 use scribe_core::model::Composition;
 use target_brass::musicxml::{band_score, write_score};
-use target_brass::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
+use scribe_core::transcription::{self, Beats, Layers, SongInputs};
+use target_brass::pipeline::{self, LayersOptions};
 use serde_json::{json, Value};
 
 type R<T> = Result<T, String>;
@@ -236,7 +237,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         }
         "lead-sheet" => {
             let support = a.opt("melody-support").map(|p| midi(Path::new(&p))).transpose()?;
-            let xml = pipeline::lead_sheet(
+            let xml = transcription::lead_sheet(
                 &midi(Path::new(&a.one("melody")?))?,
                 support.as_ref(),
                 &midi(Path::new(&a.one("bass")?))?,
@@ -252,7 +253,7 @@ fn run(cmd: &str, a: &Args) -> R<()> {
         }
         "quantize" => {
             let v: Value = serde_json::from_slice(&read(Path::new(&a.one("reference")?))?).map_err(|e| e.to_string())?;
-            let q = pipeline::quantize_reference(&v, &beats(Path::new(&a.one("beats")?))?);
+            let q = transcription::quantize_reference(&v, &beats(Path::new(&a.one("beats")?))?);
             let rows: Vec<Value> = q
                 .iter()
                 .map(|x| json!({"pitch": x.pitch, "start": x.start, "end": x.end, "onset_s": x.onset_s, "offset_s": x.offset_s, "confidence": x.confidence}))
@@ -304,7 +305,8 @@ fn run(cmd: &str, a: &Args) -> R<()> {
                 Some(c) => Some(serde_json::from_slice(&read(Path::new(&c))?).map_err(|e| e.to_string())?),
                 None => None,
             };
-            let doc = ts::build(&xml, comp.as_ref())?;
+            // The scores this command reads are band scores: the band names its parts.
+            let doc = ts::build(&xml, comp.as_ref(), &target_brass::names::BandNames)?;
             let d = ts::Settings::default();
             let settings = ts::Settings {
                 lang: a.opt("lang").unwrap_or(d.lang),
