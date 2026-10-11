@@ -76,19 +76,45 @@ fn the_reader_finds_words_in_code_and_comments_but_not_in_unit_tests() {
     assert!(instrument_words("// the percussion staff, a bass drum, the bass line").is_empty());
 }
 
+/// What is wrong with where a file keeps its unit tests, if anything: they are one module, marked
+/// `#[cfg(test)]`, and the last item of the file, so that everything before the mark is the code.
+fn tests_module_fault(text: &str) -> Option<&'static str> {
+    let lines: Vec<&str> = text.lines().collect();
+    let marks: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.trim() == "#[cfg(test)]").map(|(i, _)| i).collect();
+    let Some(&at) = marks.first() else { return None };
+    if marks.len() > 1 {
+        return Some("more than one `#[cfg(test)]`");
+    }
+    if !lines.get(at + 1).is_some_and(|l| l.starts_with("mod ") && l.ends_with('{')) {
+        return Some("`#[cfg(test)]` is not on a module at the top level");
+    }
+    // The module closes on the first `}` in the first column; nothing but blank lines may follow it.
+    match lines[at + 2..].iter().position(|l| l.starts_with('}')) {
+        None => Some("the tests module does not end"),
+        Some(end) if lines[at + 2 + end + 1..].iter().any(|l| !l.trim().is_empty()) => Some("code after the tests module is not read"),
+        Some(_) => None,
+    }
+}
+
 #[test]
-fn what_is_not_read_is_the_tests_module() {
-    // What follows `#[cfg(test)]` is not read, so in every file it has to be the one tests module.
+fn the_unit_tests_are_the_last_item_of_every_file() {
     let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut files = Vec::new();
     rust_files(&src, &mut files);
     for file in &files {
-        let text = fs::read_to_string(file).unwrap();
-        let marks: Vec<usize> = text.lines().enumerate().filter(|(_, l)| l.trim() == "#[cfg(test)]").map(|(i, _)| i).collect();
-        assert!(marks.len() <= 1, "{}: more than one `#[cfg(test)]`", file.display());
-        if let Some(&at) = marks.first() {
-            let next = text.lines().nth(at + 1).unwrap_or("");
-            assert!(next.starts_with("mod "), "{}: `#[cfg(test)]` is not on a tests module", file.display());
-        }
+        let fault = tests_module_fault(&fs::read_to_string(file).unwrap());
+        assert_eq!(fault, None, "{}", file.display());
     }
+}
+
+#[test]
+fn code_after_the_tests_module_is_a_fault() {
+    let tests = "#[cfg(test)]\nmod tests {\n    #[test]\n    fn t() {}\n}\n";
+    assert_eq!(tests_module_fault("fn f() {}\n"), None);
+    assert_eq!(tests_module_fault(&format!("fn f() {{}}\n\n{tests}")), None);
+    assert_eq!(tests_module_fault(&format!("fn f() {{}}\n\n{tests}\n\n")), None);
+    assert_eq!(tests_module_fault(&format!("{tests}\nfn tuba() {{}}\n")), Some("code after the tests module is not read"));
+    assert_eq!(tests_module_fault(&format!("{tests}\n{tests}")), Some("more than one `#[cfg(test)]`"));
+    assert_eq!(tests_module_fault("#[cfg(test)]\nfn helper() {}\n"), Some("`#[cfg(test)]` is not on a module at the top level"));
+    assert_eq!(tests_module_fault("#[cfg(test)]\nmod tests {\n    fn t() {}\n"), Some("the tests module does not end"));
 }
