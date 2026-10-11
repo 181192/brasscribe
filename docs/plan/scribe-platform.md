@@ -128,4 +128,6 @@ Steps 1, 2, 4 and 5 run side by side. Step 3 touches what every client loads, so
 - How tab is drawn on Apple: alphaTab in a web view, a native drawing of the core's tab data, or Verovio. Decided by a spike in step 10.
 - The desktop program's name. It serves every app; "Bandroom" without a product's name in front is the working choice.
 - When the repository itself takes a neutral name.
+- The Android core library's namespace, `no.brasscribe.core` (`core/android/scribe-core`). It is the core's by this plan's definition, and step 3 left it: the new reverse-domain name is the owner's to choose.
+- The environment variables that still say `BRASSCRIBE_`. `BRASSCRIBE_REPO`, `BRASSCRIBE_REQUIRE_DATA` and `BRASSCRIBE_CACHE` (with `~/.cache/brasscribe`) take a new name with the repository's own. `BRASSCRIBE_CONFORMANCE_REPORTS` and `BRASSCRIBE_PARITY_REPORTS` are the engine's settings and change in step 7.
 - With both apps on one phone before step 7, a pairing link offers a choice of the two. After step 7 the link names the family, and the question of which app opens it remains.

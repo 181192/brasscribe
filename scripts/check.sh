@@ -12,6 +12,8 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# The environment file from before the core took its name: it is no longer read, and no longer ignored.
+[ -e .brasscribe-env ] && { echo "check: .brasscribe-env is from before the core was renamed: run scripts/worktree-setup.sh (it removes it and writes .scribe-env)" >&2; exit 2; }
 # shellcheck disable=SC1091
 [ -f .scribe-env ] && . ./.scribe-env
 export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"
@@ -90,8 +92,13 @@ run_area() {
     windows|core-dotnet) scripts/core-artifacts.sh ensure host && native_core_env SCRIBE_FFI_PATH || return 1 ;;
     android) scripts/core-artifacts.sh ensure host android && native_core_env SCRIBE_FFI_PATH || return 1 ;;
     apple) scripts/core-artifacts.sh ensure apple || return 1 ;;
-    # The tab profile's tests run the core's command line where SCRIBE_CORE_CLI says it is.
-    engine) native_core_env SCRIBE_CORE_CLI || return 1 ;;
+    # The tab profile's tests run the core's command line where SCRIBE_CORE_CLI says it is. Without one
+    # built (no Rust toolchain, or a setup with --no-core) they skip, and say so; a variable that names a
+    # file that is gone is a stale environment.
+    engine) if [ -n "${SCRIBE_CORE_CLI:-}" ]; then native_core_env SCRIBE_CORE_CLI || return 1
+            elif [ -x core/target/release/scribe-core ]; then
+              echo "check: core/target/release/scribe-core is built but SCRIBE_CORE_CLI is not set: run scripts/worktree-setup.sh" >&2; return 1
+            else echo "check: no core command line is built: the engine's tab tests that run it will skip" >&2; fi ;;
   esac
   case "$tier:$area" in
     fast:engine) pixi run test-fast ;;

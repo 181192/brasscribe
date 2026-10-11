@@ -1,4 +1,4 @@
-// Android library (AAR) around the brasscribe Rust core: the UniFFI Kotlin
+// Android library (AAR) around the scribe Rust core: the UniFFI Kotlin
 // bindings (src/main/kotlin, from core/scripts/bindings.sh) and the native
 // libraries per ABI (src/main/jniLibs, from core/scripts/build-all.sh).
 plugins {

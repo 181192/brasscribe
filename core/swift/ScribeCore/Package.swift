@@ -1,5 +1,5 @@
 // swift-tools-version:5.9
-// brasscribe core for Apple platforms: the Rust core as a static XCFramework
+// The scribe core for Apple platforms: the Rust core as a static XCFramework
 // (built by core/scripts/build-all.sh) plus the UniFFI-generated Swift API.
 import PackageDescription
 

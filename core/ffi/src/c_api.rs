@@ -482,13 +482,13 @@ pub unsafe extern "C" fn sc_fretted_playing_instructions_json(request: *const c_
 }
 
 /// Opaque talking-score document.
-pub struct BcTalkingScore(crate::talking::TalkingScore);
+pub struct ScTalkingScore(crate::talking::TalkingScore);
 
 /// Build a talking score from MusicXML and (optionally, may be null) the
 /// Composition JSON. Writes a handle to `*out`; release with
 /// [`sc_talking_score_free`].
 #[no_mangle]
-pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, composition_json: *const c_char, out: *mut *mut BcTalkingScore, err: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, composition_json: *const c_char, out: *mut *mut ScTalkingScore, err: *mut *mut c_char) -> i32 {
     let Some(xml) = from_c(musicxml) else { return SC_NULL };
     if out.is_null() {
         return SC_NULL;
@@ -500,7 +500,7 @@ pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, compositi
     }));
     match r {
         Ok(Ok(doc)) => {
-            *out = Box::into_raw(Box::new(BcTalkingScore(crate::talking::TalkingScore::from_doc(doc))));
+            *out = Box::into_raw(Box::new(ScTalkingScore(crate::talking::TalkingScore::from_doc(doc))));
             SC_OK
         }
         Ok(Err((code, msg))) => {
@@ -516,7 +516,7 @@ pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, compositi
 
 /// Release a talking score. Null is ignored.
 #[no_mangle]
-pub unsafe extern "C" fn sc_talking_score_free(ts: *mut BcTalkingScore) {
+pub unsafe extern "C" fn sc_talking_score_free(ts: *mut ScTalkingScore) {
     if !ts.is_null() {
         drop(Box::from_raw(ts));
     }
@@ -524,7 +524,7 @@ pub unsafe extern "C" fn sc_talking_score_free(ts: *mut BcTalkingScore) {
 
 /// The document as JSON (spec §6 shape).
 #[no_mangle]
-pub unsafe extern "C" fn sc_talking_score_json(ts: *const BcTalkingScore, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn sc_talking_score_json(ts: *const ScTalkingScore, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
     let Some(t) = ts.as_ref() else { return SC_NULL };
     run(out, err, || Ok(scribe_core::pyjson::dumps(t.0.doc())))
 }
@@ -541,7 +541,7 @@ fn cursor_of(v: &serde_json::Value) -> scribe_core::talking_score::Cursor {
 /// Writes `{"text": "...", "context": {...}}`: the announcement and the
 /// context it leaves behind.
 #[no_mangle]
-pub unsafe extern "C" fn sc_talking_score_announce(ts: *const BcTalkingScore, request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn sc_talking_score_announce(ts: *const ScTalkingScore, request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
     use scribe_core::talking_score as t;
     let Some(ts) = ts.as_ref() else { return SC_NULL };
     let Some(req) = from_c(request) else { return SC_NULL };
@@ -562,7 +562,7 @@ pub unsafe extern "C" fn sc_talking_score_announce(ts: *const BcTalkingScore, re
 /// "part" | "uncertain", "forward": true}`. Writes the new cursor as JSON, or
 /// `null` at either end of the score.
 #[no_mangle]
-pub unsafe extern "C" fn sc_talking_score_navigate(ts: *const BcTalkingScore, request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn sc_talking_score_navigate(ts: *const ScTalkingScore, request: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
     use scribe_core::talking_score as t;
     let Some(ts) = ts.as_ref() else { return SC_NULL };
     let Some(req) = from_c(request) else { return SC_NULL };
@@ -586,7 +586,7 @@ pub unsafe extern "C" fn sc_talking_score_navigate(ts: *const BcTalkingScore, re
 /// Export the talking score. `format`: "text" or "html"; `settings_json` may be
 /// null (defaults).
 #[no_mangle]
-pub unsafe extern "C" fn sc_talking_score_export(ts: *const BcTalkingScore, format: *const c_char, settings_json: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn sc_talking_score_export(ts: *const ScTalkingScore, format: *const c_char, settings_json: *const c_char, out: *mut *mut c_char, err: *mut *mut c_char) -> i32 {
     use scribe_core::talking_score as t;
     let Some(ts) = ts.as_ref() else { return SC_NULL };
     let format = from_c(format).unwrap_or_else(|| "text".into());

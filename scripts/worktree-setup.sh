@@ -93,7 +93,22 @@ if [ "$ROOT" != "$MAIN" ] && [ ! -d "$ROOT/studio/node_modules" ] && [ -d "$MAIN
     && log "cloned studio/node_modules from $MAIN" || rm -rf "$ROOT/studio/node_modules"
 fi
 
-# 3. Environment
+# 3. What a checkout from before the core took its name still holds. The environment file has this
+# machine's paths in it and is no longer ignored, as are the two folders; the libraries are still
+# ignored, and a debug build of the Android app would pack the old one.
+stale=0
+for old in .brasscribe-env core/swift/BrasscribeCore core/android/brasscribe-core; do
+  [ -e "$ROOT/$old" ] || continue
+  # Only what git does not track: build outputs and the file this script wrote.
+  if [ -z "$(git -C "$ROOT" ls-files -- "$old")" ]; then rm -rf "${ROOT:?}/$old" && stale=1; fi
+done
+for old in "$ROOT"/apps/android/core-bridge/src/main/jniLibs/*/libbrasscribe_ffi.so "$ROOT"/core/dist/*/libbrasscribe_ffi.* \
+           "$ROOT"/core/dist/*/brasscribe_ffi.dll; do
+  [ -e "$old" ] && rm -f "$old" && stale=1
+done
+[ $stale = 1 ] && log "removed what was left under the core's old name (.brasscribe-env, the old wrappers' build folders, old libraries)"
+
+# 4. Environment
 env_lines > "$ROOT/.scribe-env"
 log "environment written to .scribe-env (source it in new shells)"
 env_lines

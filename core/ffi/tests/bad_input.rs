@@ -7,7 +7,7 @@ use std::os::raw::c_char;
 
 use scribe_ffi::c_api::{
     sc_arrange_layers_band, sc_arrange_musicxml, sc_arrange_with, sc_humanize_json, sc_spell_json, sc_string_free, sc_talking_score_free,
-    sc_talking_score_navigate, sc_talking_score_new, BcTalkingScore, SC_INVALID, SC_OK,
+    sc_talking_score_navigate, sc_talking_score_new, ScTalkingScore, SC_INVALID, SC_OK,
 };
 use scribe_ffi::talking::{talking_settings_default, TalkingScore};
 use scribe_ffi::{
@@ -374,7 +374,7 @@ fn talking_score_of_odd_musicxml() {
     let zero_tuplet = "<time-modification><actual-notes>0</actual-notes><normal-notes>2</normal-notes></time-modification>";
     assert!(reason(TalkingScore::new(musicxml("<divisions>1</divisions>", zero_tuplet), None).map(|_| ())).contains("tuplet"));
     let (xml, none) = (cs(&musicxml("<divisions>0</divisions>", "")), std::ptr::null());
-    let mut ts: *mut BcTalkingScore = std::ptr::null_mut();
+    let mut ts: *mut ScTalkingScore = std::ptr::null_mut();
     let mut err: *mut c_char = std::ptr::null_mut();
     assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), none, &mut ts, &mut err) }, SC_INVALID);
     unsafe { sc_string_free(err) };
@@ -393,7 +393,7 @@ fn talking_score_parts_and_cursors_out_of_range() {
     assert!(ts.to_html(s(), Some(vec![0, 99, u32::MAX])).contains("Solo Cornet"));
     assert!(ts.part_lines(99, s()).is_empty());
     let xml = cs(&musicxml("<divisions>1</divisions>", ""));
-    let mut h: *mut BcTalkingScore = std::ptr::null_mut();
+    let mut h: *mut ScTalkingScore = std::ptr::null_mut();
     let mut err: *mut c_char = std::ptr::null_mut();
     assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), std::ptr::null(), &mut h, &mut err) }, SC_OK);
     for unit in ["part", "bar"] {

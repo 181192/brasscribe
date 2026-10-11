@@ -193,21 +193,21 @@ int32_t sc_fretted_playing_instructions_json(const char *request, char **out, ch
 // [`sc_talking_score_free`].
 int32_t sc_talking_score_new(const char *musicxml,
                              const char *composition_json,
-                             struct BcTalkingScore **out,
+                             struct ScTalkingScore **out,
                              char **err);
 
 // Release a talking score. Null is ignored.
-void sc_talking_score_free(struct BcTalkingScore *ts);
+void sc_talking_score_free(struct ScTalkingScore *ts);
 
 // The document as JSON (spec §6 shape).
-int32_t sc_talking_score_json(const struct BcTalkingScore *ts, char **out, char **err);
+int32_t sc_talking_score_json(const struct ScTalkingScore *ts, char **out, char **err);
 
 // Announce at a cursor. `request`: `{"cursor": {"part", "bar", "event"},
 // "context": {"part", "bar", "pitch_mode"}, "settings": {"lang", "pitch_mode",
 // "verbosity", "octave_style", "announce_confident"}, "by_bar": false}`.
 // Writes `{"text": "...", "context": {...}}`: the announcement and the
 // context it leaves behind.
-int32_t sc_talking_score_announce(const struct BcTalkingScore *ts,
+int32_t sc_talking_score_announce(const struct ScTalkingScore *ts,
                                   const char *request,
                                   char **out,
                                   char **err);
@@ -215,14 +215,14 @@ int32_t sc_talking_score_announce(const struct BcTalkingScore *ts,
 // One navigation step. `request`: `{"cursor": {...}, "unit": "note" | "bar" |
 // "part" | "uncertain", "forward": true}`. Writes the new cursor as JSON, or
 // `null` at either end of the score.
-int32_t sc_talking_score_navigate(const struct BcTalkingScore *ts,
+int32_t sc_talking_score_navigate(const struct ScTalkingScore *ts,
                                   const char *request,
                                   char **out,
                                   char **err);
 
 // Export the talking score. `format`: "text" or "html"; `settings_json` may be
 // null (defaults).
-int32_t sc_talking_score_export(const struct BcTalkingScore *ts,
+int32_t sc_talking_score_export(const struct ScTalkingScore *ts,
                                 const char *format,
                                 const char *settings_json,
                                 char **out,

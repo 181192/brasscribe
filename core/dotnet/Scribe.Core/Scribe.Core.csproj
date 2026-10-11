@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Scribe.Core</RootNamespace>
-    <Description>P/Invoke wrapper of the brasscribe Rust core (scribe_ffi C ABI).</Description>
+    <Description>P/Invoke wrapper of the scribe Rust core (scribe_ffi C ABI).</Description>
     <Copyright>Copyright (c) 2026 Kristoffer-Andre Kalliainen</Copyright>
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
