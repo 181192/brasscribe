@@ -12,6 +12,9 @@ name: apple
 # ci.yml calls this workflow (job `apple`) after its `changes` job, with skip_play or skip_bandroom
 # for an app the change does not reach. Releases (release.yml) call it with `release`; it can also be
 # started by hand.
+# Started by hand with `noise_play` or `noise_bandroom`, it runs only that app's Mac screen catalogue, twice on one
+# runner, and compares the two takes' pictures file by file: with nothing changed between them, a picture that
+# differs was taken in the wrong state. It takes the commit it is started on (`gh workflow run apple.yml --ref …`).
 on:
   workflow_call:
     inputs:
@@ -38,15 +41,23 @@ on:
         description: Build the Mac apps and the unsigned iPhone and iPad app for download instead of running checks
         type: boolean
         default: false
+      noise_play:
+        description: Only take Play for Mac's screen catalogue twice and compare take against take
+        type: boolean
+        default: false
+      noise_bandroom:
+        description: Only take Bandroom for Mac's screen catalogue twice and compare take against take
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 # One group for each way in, as in windows.yml: called from ci.yml, nightly.yml or release.yml, github.workflow
 # is the caller's name, so the nightly tests on main neither wait for ci's run there nor take the place of one
-# that is waiting.
+# that is waiting. Each noise run is a group of its own: several are started on one branch, and all must run.
 concurrency:
-  group: apple-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release }}-${{ inputs.iphone_tests }}
+  group: apple-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release }}-${{ inputs.iphone_tests }}-${{ (inputs.noise_play || inputs.noise_bandroom) && github.run_id || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -60,7 +71,7 @@ env:
 jobs:
   play:
     name: Play (packages, macOS app, iPhone simulator build)
-    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play }}
+    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play && !inputs.noise_play && !inputs.noise_bandroom }}
     # Newest GA macOS image (macos-latest points here too).
     runs-on: macos-26
     timeout-minutes: 60
@@ -197,7 +208,7 @@ jobs:
   # pull request waits for neither. Its screenshots are an artefact to look at; nothing waits for them.
   play-screens:
     name: Play for Mac screen catalogue
-    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play }}
+    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play && (inputs.noise_play || !inputs.noise_bandroom) }}
     runs-on: macos-26
     timeout-minutes: 60
     steps:
@@ -242,12 +253,56 @@ jobs:
         run: scripts/build-core.sh
 
       - name: Screen catalogue
+        if: ${{ !inputs.noise_play }}
         run: scripts/screenshots.sh record
+
+      # A noise run: the catalogue twice, the second take's pictures against the first's, file by file (the same
+      # pixels make the same file). A picture that differs, or that only one take has, fails the job; both takes
+      # are the artefact screens-noise-play-mac-<run>.
+      - name: Screen catalogue, twice, take against take
+        if: ${{ inputs.noise_play }}
+        shell: bash
+        env:
+          SHOTS: build/catalogue/screenshots
+          OUT: ${{ runner.temp }}/noise
+          TITLE: Play for Mac
+        run: |
+          status=0
+          mkdir -p "$OUT"
+          for take in 1 2; do
+            scripts/screenshots.sh record || { echo "::error::take $take: the catalogue failed"; status=1; }
+            mkdir -p "$SHOTS"
+            mv "$SHOTS" "$OUT/$take"
+          done
+          names="$(cd "$OUT" && find 1 2 -maxdepth 1 -name '*.png' -exec basename {} \; | sort -u)"
+          total=0; differ=()
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            total=$((total + 1))
+            cmp -s "$OUT/1/$f" "$OUT/2/$f" || differ+=("$f")
+          done <<< "$names"
+          {
+            echo "### $TITLE, take against take at $(git rev-parse --short=12 HEAD)"
+            echo
+            echo "$total screens, ${#differ[@]} differ between the two takes."
+            for f in ${differ[@]+"${differ[@]}"}; do echo "- \`$f\`"; done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$total" -gt 0 ] || { echo "::error::no screenshots"; status=1; }
+          [ "${#differ[@]}" -eq 0 ] || status=1
+          exit "$status"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() && inputs.noise_play }}
+        with:
+          name: screens-noise-play-mac-${{ github.run_id }}
+          path: ${{ runner.temp }}/noise
+          if-no-files-found: ignore
+          retention-days: 14
 
       # What the pictures were taken with, beside them: after a merge they are compared with the record before
       # them only when this is the same (screens.yml). Written only when the catalogue passed.
       - name: What the screenshots were taken with
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' && !inputs.noise_play }}
         shell: bash
         working-directory: .
         env:
@@ -261,7 +316,7 @@ jobs:
       # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
       # named by its commit and kept longer, for the comparison with the next record.
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: ${{ always() && !inputs.noise_play }}
         with:
           name: ${{ github.event_name == 'pull_request' && 'play-mac-screenshots' || format('screens-play-mac-{0}', github.sha) }}
           path: apps/apple/build/catalogue/screenshots
@@ -274,7 +329,7 @@ jobs:
   # (apps/bandroom/macos/scripts/screenshots.sh). Its screenshots are an artefact to look at; nothing waits for them.
   bandroom:
     name: Bandroom for Mac (BandroomKit, screen catalogue)
-    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_bandroom }}
+    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_bandroom && (inputs.noise_bandroom || !inputs.noise_play) }}
     runs-on: macos-26
     timeout-minutes: 40
     defaults:
@@ -296,18 +351,63 @@ jobs:
       - run: brew install xcodegen
 
       - name: Unit tests (requires-pixi reader, BandroomKit, the catalogue's checks)
+        if: ${{ !inputs.noise_bandroom }}
         run: |
           scripts/test-pixi-spec.sh
           scripts/test-kit.sh
           (cd ../../apple/Packages/ScreenCatalogue && swift test)
 
       - name: Screen catalogue
+        if: ${{ !inputs.noise_bandroom }}
         run: scripts/screenshots.sh record
+
+      # A noise run: the catalogue twice, the second take's pictures against the first's, file by file (the same
+      # pixels make the same file). A picture that differs, or that only one take has, fails the job; both takes
+      # are the artefact screens-noise-bandroom-mac-<run>.
+      - name: Screen catalogue, twice, take against take
+        if: ${{ inputs.noise_bandroom }}
+        shell: bash
+        env:
+          SHOTS: build/catalogue/screenshots
+          OUT: ${{ runner.temp }}/noise
+          TITLE: Bandroom for Mac
+        run: |
+          status=0
+          mkdir -p "$OUT"
+          for take in 1 2; do
+            scripts/screenshots.sh record || { echo "::error::take $take: the catalogue failed"; status=1; }
+            mkdir -p "$SHOTS"
+            mv "$SHOTS" "$OUT/$take"
+          done
+          names="$(cd "$OUT" && find 1 2 -maxdepth 1 -name '*.png' -exec basename {} \; | sort -u)"
+          total=0; differ=()
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            total=$((total + 1))
+            cmp -s "$OUT/1/$f" "$OUT/2/$f" || differ+=("$f")
+          done <<< "$names"
+          {
+            echo "### $TITLE, take against take at $(git rev-parse --short=12 HEAD)"
+            echo
+            echo "$total screens, ${#differ[@]} differ between the two takes."
+            for f in ${differ[@]+"${differ[@]}"}; do echo "- \`$f\`"; done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$total" -gt 0 ] || { echo "::error::no screenshots"; status=1; }
+          [ "${#differ[@]}" -eq 0 ] || status=1
+          exit "$status"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() && inputs.noise_bandroom }}
+        with:
+          name: screens-noise-bandroom-mac-${{ github.run_id }}
+          path: ${{ runner.temp }}/noise
+          if-no-files-found: ignore
+          retention-days: 14
 
       # What the pictures were taken with, beside them: after a merge they are compared with the record before
       # them only when this is the same (screens.yml). Written only when the catalogue passed.
       - name: What the screenshots were taken with
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' && !inputs.noise_bandroom }}
         shell: bash
         working-directory: .
         env:
@@ -321,7 +421,7 @@ jobs:
       # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
       # named by its commit and kept longer, for the comparison with the next record.
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: ${{ always() && !inputs.noise_bandroom }}
         with:
           name: ${{ github.event_name == 'pull_request' && 'bandroom-mac-screenshots' || format('screens-bandroom-mac-{0}', github.sha) }}
           path: apps/bandroom/macos/build/catalogue/screenshots

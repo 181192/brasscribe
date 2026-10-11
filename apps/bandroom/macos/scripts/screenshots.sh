@@ -9,9 +9,10 @@
 # item is made, and the app runs on canned engine answers with data of its own, so it can be run on a Mac in use. It
 # runs twice: in English and in bokmål (xcodebuild -testLanguage nb).
 #
-# It fails when a screen fails a check. The screenshots are to look at; they are not kept in git, and nothing here
-# compares them. After a merge, CI compares main's with those of the main before it
-# (.github/workflows/screens.yml), and that blocks nothing.
+# It fails when a screen fails a check, or is not taken because it did not become the screen asked for (its last
+# picture is then in not-taken/; takes-<language>.log says what each screen waited for). The screenshots are to look
+# at; they are not kept in git, and nothing here compares them. After a merge, CI compares main's with those of the
+# main before it (.github/workflows/screens.yml), and that blocks nothing.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -28,7 +29,7 @@ case "${1:-}" in
     status=0
     # Only what failed, and the totals: the rest of what the tests print is the app's own logging.
     for lang in en nb; do
-      (cd "$app" && TEST_RUNNER_CATALOGUE_OUT="$shots" \
+      (cd "$app" && TEST_RUNNER_CATALOGUE_OUT="$shots" TEST_RUNNER_CATALOGUE_LANGUAGE="$lang" \
         xcodebuild -project BrasscribeBandroom.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribeBandroom \
           -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribeBandroomTests \
           test-without-building 2>&1 | { grep -E "^(✘|↳|✔ Test run|Failing tests|Restarting)|^\t[A-Za-z].*\(\)$|: error:" || true; }) || status=1
@@ -37,7 +38,7 @@ case "${1:-}" in
     exit "$status"
     ;;
   *)
-    sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac

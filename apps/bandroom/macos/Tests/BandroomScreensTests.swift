@@ -30,20 +30,25 @@ import Testing
     /// Findings that are known and not yet fixed, each with its issue: the screen, the kind, and words the finding names.
     static let known: [(screen: Screen?, kind: Finding.Kind, words: String, issue: String)] = []
 
+    /// Texts drawn in the colour of what is behind them in light with Increase Contrast: black, the system's text colour
+    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture; an
+    /// entry whose text is drawn, or gone, fails the run. The second "Setting up" is the line over the progress bar;
+    /// the first, in the headline, is drawn.
+    static let unreadable = Unreadable(issue: "#368", screens: ["panel-setting-up-contrast": [.init("Setting up", nth: 2)]])
+
     @Test(arguments: Screen.allCases)
     func screen(_ screen: Screen) async throws {
         let app = await model(for: screen)
         for variant in Variant.all {
             let r = await Rendering(view(for: screen, app: app), width: width(of: screen), variant: variant, app: app)
-            await r.settle(until: { ready(screen, app) })
-            try Catalogue.record(r, name: Catalogue.name(screen.rawValue, variant)) { f in
+            defer { r.close() }
+            let name = Catalogue.name(screen.rawValue, variant)
+            try await Catalogue.record(r, name: name, ready: { waitsFor(screen, app) }, unreadable: Self.unreadable) { f in
                 Self.known.contains { ($0.screen == nil || $0.screen == screen) && $0.kind == f.kind && f.node.contains($0.words) }
             }
-            r.close()
         }
     }
 
-    /// The undocumented hooks still do what the catalogue needs, and the run is in the language it says.
     /// The ⋯ menu takes clicks on 28 × 28 pt: its frame in the tree, and any AppKit control under it (for an AppKit-backed
     /// control the tree can report a SwiftUI wrapper's frame, while clicks outside the control itself go nowhere).
     @Test func theMoreMenuTakesClicksOn28Points() async throws {
@@ -60,12 +65,13 @@ import Testing
         }
     }
 
+    /// The hooks still do what the catalogue needs, and the run is in the language it says.
     @Test func hooksStillWork() async {
         if let wrong = Guards.language(Catalogue.language, localized: String(localized: "Pair a phone"), english: "Pair a phone") {
             Issue.record(Comment(rawValue: wrong))
         }
         let app = await Catalogue.model(busy: false)
-        let r = await Rendering(ContrastProbe(), width: 20, height: 20, variant: .contrast, app: app)
+        let r = await Rendering(NavigationStack { ContrastProbe() }, width: 200, height: 200, variant: .contrast, app: app)
         if let broken = Guards.contrast(Pictures.bitmap(of: r.hosting)) { Issue.record(Comment(rawValue: broken)) }
         r.close()
     }
@@ -114,14 +120,14 @@ import Testing
         }
     }
 
-    /// What the screen waits for before its picture is taken.
-    private func ready(_ screen: Screen, _ app: AppModel) -> Bool {
+    /// What the screen still waits for before its picture counts, or nil.
+    private func waitsFor(_ screen: Screen, _ app: AppModel) -> String? {
         switch screen {
-        case .pair: app.pairing.displayCode != nil
-        case .pairUpdate: app.interfaceMismatch != nil
-        case .panelRequest: !app.monitor.requests.isEmpty
-        case .phones: !app.monitor.devices.isEmpty
-        default: true
+        case .pair: app.pairing.displayCode != nil ? nil : "its pairing code is not there yet"
+        case .pairUpdate: app.interfaceMismatch != nil ? nil : "the engine's other interface version is not known yet"
+        case .panelRequest: !app.monitor.requests.isEmpty ? nil : "its request is not there yet"
+        case .phones: !app.monitor.devices.isEmpty ? nil : "its phones are not there yet"
+        default: nil
         }
     }
 }
