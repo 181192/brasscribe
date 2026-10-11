@@ -169,8 +169,10 @@ import TranscriptionKit
         exportModel.stopAll()
         try await sheet("first-run", app: full) { FirstRunView() }
         try await sheet("record-mic", app: full) { MicRecordView() }
-        // on the page's ground, as in the Settings row it is shown in
-        try await sheet("match-code", app: full, controls: false) { MatchCodeView(code: "4821").padding(Space.s5).pageBackground() }
+        // on the surface, the ground of the Settings row the app shows it in
+        try await sheet("match-code", app: full, controls: false) {
+            MatchCodeView(code: "4821").padding(Space.s5).background(Color.Scribe.surface)
+        }
     }
 
     /// The hooks still do what the catalogue needs, and the run is in the language it says.

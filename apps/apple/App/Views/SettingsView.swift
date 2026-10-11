@@ -24,6 +24,7 @@ struct SettingsView: View {
             // On the page's ground, with every footer and row value in the page's muted text: left to the form, they
             // take the system's secondary colour, which is too faint on this ground in the light appearance.
             Form {
+              Group {
                 Section {
                     NavigationLink {
                         WhatDoYouPlayView(mode: .settings, initial: app.seat) { answer in
@@ -121,6 +122,8 @@ struct SettingsView: View {
                     Text("Notation engraved with Verovio (LGPL-3.0), included as an unmodified dynamic framework.")
                     Text("Band sounds built from VSCO 2 Community Edition (CC0), the University of Iowa Musical Instrument Samples and MS Basic (MIT).")
                 } header: { Text("About") }
+              }
+              .formRowsOnSurface()
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)

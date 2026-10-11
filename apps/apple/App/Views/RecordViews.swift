@@ -112,6 +112,7 @@ struct CaptureView: View {
     var body: some View {
         NavigationStack {
             Form {
+              Group {
                 Picker(selection: $choice) {
                     Text("Everything playing on this Mac").tag("system")
                     ForEach(apps) { a in
@@ -129,6 +130,8 @@ struct CaptureView: View {
                 Button(recorder == nil ? String(localized: "Start recording") : String(localized: "Stop")) { toggle() }
                     .buttonStyle(.primary)
                     .keyboardShortcut(.space, modifiers: [])
+              }
+              .formRowsOnSurface()
             }
             .padding()
             .formStyle(.grouped)

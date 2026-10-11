@@ -194,6 +194,16 @@ struct SectionLabel: View {
     }
 }
 
+/// The ground of a form's row: the surface, not the fill the system draws for it, so the page's text colours are on
+/// a ground the design tokens check them against; under Increase Contrast, where the surface is the colour of the
+/// page, with an edge around it.
+struct FormRowGround: View {
+    @Environment(\.colorSchemeContrast) private var contrast
+    var body: some View {
+        Color.Scribe.surface.overlay { if contrast == .increased { Rectangle().strokeBorder(Color.Scribe.border, lineWidth: 1) } }
+    }
+}
+
 /// The brass progress bar: the one working brand moment (system.md §5). Under Increase Contrast the track's fill is
 /// the colour of the ground it lies on, so the track gets an edge in the strong border colour: how far there is to go
 /// can be seen.

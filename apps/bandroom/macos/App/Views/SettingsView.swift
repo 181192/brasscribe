@@ -13,6 +13,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+          Group {
             Section {
                 Toggle("Start when I log in", isOn: Binding(get: { app.loginItemEnabled }, set: { app.setLoginItem($0) }))
                 Toggle("Show in the Dock", isOn: Binding(get: { app.showInDock }, set: { app.showInDock = $0 }))
@@ -70,10 +71,12 @@ struct SettingsView: View {
                 TextField("Engine from a checkout (folder with pixi.toml)", text: $checkout)
                 Text("Takes effect the next time Brasscribe starts.").font(.caption).foregroundStyle(Color.Scribe.textMuted)
             }
+          }
+          .listRowBackground(FormRowGround())
         }
         .formStyle(.grouped)
-        // On the page's ground, with the notes in its muted text: the system's secondary colour on the window's own
-        // ground is too faint in the light appearance.
+        // On the page's ground, its rows on the page's surface and the notes in its muted text: the system's
+        // secondary colour on the window's own ground is too faint in the light appearance.
         .scrollContentBackground(.hidden)
         .frame(width: 480)
         .padding(.vertical, 8)

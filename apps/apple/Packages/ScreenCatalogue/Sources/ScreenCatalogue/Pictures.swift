@@ -94,9 +94,10 @@ public enum Pictures {
     /// How well what is drawn in `rect` (in pixels, origin top left) stands out from what it is drawn on: the WCAG
     /// contrast ratio between the ground (the colour most of the pixels have) and the colour furthest from it that at
     /// least `share` of the pixels reach (and at least three: one stray pixel of a neighbour's edge is not text).
-    /// A glyph's edges blend into the ground, so its core is what counts. 1 when nothing is drawn there; nil when the
+    /// A glyph's edges blend into the ground, so its core is what counts, and a small, thin text in a wide frame has
+    /// only a few pixels of it: the share is that small. 1 when nothing is drawn there; nil when the
     /// ground is not in the picture (it is see-through there: whatever is behind the view on a Mac decides).
-    public static func contrast(_ rep: NSBitmapImageRep, in rect: CGRect, share: Double = 0.004) -> Double? {
+    public static func contrast(_ rep: NSBitmapImageRep, in rect: CGRect, share: Double = 0.0002) -> Double? {
         guard let data = rep.bitmapData else { return 1 }
         let x0 = max(0, Int(rect.minX.rounded(.down))), x1 = min(rep.pixelsWide, Int(rect.maxX.rounded(.up)))
         let y0 = max(0, Int(rect.minY.rounded(.down))), y1 = min(rep.pixelsHigh, Int(rect.maxY.rounded(.up)))
