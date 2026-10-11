@@ -58,7 +58,7 @@ folder (its own under `build/dev` by default, so it never shares the installed B
 and canned demo states for screenshots.
 
 `scripts/check.sh fast bandroom-mac` runs the unit tests, `full bandroom-mac` also builds the app and runs the
-screen catalogue, compared with the merge base.
+screen catalogue.
 Release builds are made by hand: [docs/dev/release.md](../../../docs/dev/release.md) §4.
 
 ## Testing
@@ -99,15 +99,12 @@ CI), the menu-bar item and its popover window, notifications, the keychain, the 
 `scripts/desktop-screenshots.sh` takes the real popover from the menu bar; run it in the macOS VM
 ([docs/dev/macos-vm.md](../../../docs/dev/macos-vm.md)).
 
-**Screenshots** are not kept in git. `scripts/screenshots.sh compare` takes the catalogue's screenshots at the merge
-base with `origin/main` and then on the branch, on the same machine, and writes `build/reports/screenshots/`
-(`index.html` with before, the difference and after for each changed screen; `summary.md`). It exits 1 when a screen
-changed, appeared or went away, 2 when the catalogue's own checks failed, and 3 when the screenshots could not be
-taken at the base (nothing was compared). CI does the same on every pull request that reaches Bandroom
-(`apple.yml`): a changed screen fails the `Bandroom for Mac screenshots` job and its images are in the
-`bandroom-mac-screenshots` artefact; when the change is meant, the label `screenshots-changed` on the pull request
-lets it through. The label is read when the job runs, in a job that runs none of the pull request's code, and never
-lets a failed check or a failed base through.
+**Screenshots** are not kept in git, and no check waits for them. `scripts/screenshots.sh record` builds the app for
+testing and runs the catalogue with its checks; it fails when a screen fails one. The screenshots and each screen's
+tree go into `build/catalogue/screenshots/`. CI does the same on every pull request that reaches Bandroom
+(`apple.yml`), and the pictures are in the `bandroom-mac-screenshots` artefact, to look at. After a merge, CI
+compares the pictures on `main` with those of the `main` before it and lists changed screens in an issue
+([docs/dev/verify.md](../../../docs/dev/verify.md#screenshots)).
 
 A new screen or state gets a `Screen` in the catalogue; a found problem the change does not fix is an issue, and an
 entry in `known` only with that issue named.

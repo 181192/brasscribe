@@ -1,8 +1,7 @@
 # Screen catalogue (Play for Windows, and Bandroom for Windows)
 
-Every screen of Brasscribe Play for Windows with sample content, in every appearance, with its checks, and
-screenshots compared with the main a pull request was merged into. Bandroom for Windows has the same catalogue over
-its views (below).
+Every screen of Brasscribe Play for Windows with sample content, in every appearance, with its checks, and a
+screenshot of each to look at. Bandroom for Windows has the same catalogue over its views (below).
 Windows only: CI runs both on every pull request that reaches the apps (`.github/workflows/windows.yml`).
 
 ## How it runs
@@ -71,7 +70,7 @@ settles when an app starts:
 |---|---|---|
 | English | Light and Dark; Pink light and Pink dark on First run, Home, the score, Check the notes, Share or print and Settings | `home--light`, `home--pink-dark` |
 | Bokmål (`nb-NO`) | Light | `home--nb-light` |
-| A contrast theme on in Windows | Match system, and here (not at the base) also Pink dark, which must look the same (the contrast theme wins); one screenshot is kept | `home--contrast` |
+| A contrast theme on in Windows | Match system, and also Pink dark, which must look the same (the contrast theme wins); one screenshot is kept | `home--contrast` |
 | Text size 200 % (Settings › Accessibility › Text size) | Light | `home--text200-light` |
 
 The contrast theme, the text size and animation effects are this user's Windows settings (`tools/ScreenCheck system`):
@@ -85,29 +84,17 @@ every part of the window (finding `theme-at-start`).
 ## What it answers
 
 ```powershell
-tools/Screenshots/catalogue.ps1 record  -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll>
-tools/Screenshots/catalogue.ps1 compare -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll> [-Base <commit>]
+tools/Screenshots/catalogue.ps1 -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll>
 ```
 
-`compare` takes the screenshots at the base (the merge base with `origin/main` by default) on the same machine, without
-the checks, then here with them. `out\` gets `shots\`, `findings.md` and `report\` (`index.html` with before, the
-difference and after for each changed screen, `summary.md`, `result.json`). A pixel counts as changed as in Studio's
-catalogue, and a screen with 4 or fewer changed pixels is within the noise floor. Exit codes, as for the other apps'
-catalogues: 0 nothing changed; 1 a screen changed, appeared or went away; 2 a check found something new; 3 the
-screenshots could not be taken here (a screen that was not taken counts, and so does a `-Base` that is not a commit
-in the checkout). A commit without a catalogue has nothing to compare with: every screen is new and
-nothing counts as changed. The base is not taken at all when nothing the screens are made from changed since it (the
-app's sources, the catalogue, the core, the design tokens and Windows theme, the brand, the fixtures and the sounds;
-the list is in the script), and when its screenshots cannot be taken (a change to the catalogue itself can do that)
-it is a warning and nothing is compared: this side's checks still decide.
+`out\` gets `shots\` and `findings.md`. Exit codes: 0 every check passed; 2 a check found something new; 3 the
+screenshots could not be taken (a screen that was not taken counts: one that was not the screen asked for, or did not
+keep still).
 
-In CI a changed screen fails the job `screenshots` unless the pull request has the label `screenshots-changed` (read
-when that job runs, with retries; adding or removing the label starts CI again). The label never lets 2 or 3 through.
-On a pull request the base is the main it was merged into (the merge commit's first parent).
-`windows.yml` started by hand takes `screenshots_base` to compare with any commit, and then always takes the base
-(`-AlwaysBase`; with the same commit it takes the catalogue twice and compares take with take, which measures the
-noise: nothing may change). A `screenshots_base` that cannot be found fails the step. The images are in the
-`windows-screenshots` and `bandroom-windows-screenshots` artefacts; no screenshot is kept in git.
+The screenshots are the `windows-screenshots` and `bandroom-windows-screenshots` artefacts of a pull request's run, to
+look at; no check waits for them, and none is kept in git. After a merge, CI compares the pictures on `main` with those
+of the `main` before it and lists changed screens in an issue
+([docs/dev/verify.md](../../../../docs/dev/verify.md#screenshots)).
 
 `known-findings.json` lists findings that are accepted for now, each with the issue that tracks it and why (`check`,
 `shot` and `what` are regular expressions over a finding); an entry without its issue is refused, and one that
@@ -123,8 +110,7 @@ Where its text is comes from UI Automation, so icons (which UI Automation does n
 text is not checked. A view is taken from outside its process (`tools/ScreenCheck/WindowShot.cs`), with the same rule
 as above over what can be read from there: the process runs, the window is shown with the same place and size before
 and after each take, its text is drawn in the picture, and six takes in a row are the same; otherwise the view is not
-taken (3). The base is Bandroom built at the main the pull request was merged into, so its views are compared from the
-first pull request on.
+taken (3).
 Its accepted findings are in `apps/bandroom/windows/tools/Screenshots/known-findings.json`.
 
 ## Off Windows

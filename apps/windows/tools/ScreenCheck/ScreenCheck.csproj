@@ -2,8 +2,8 @@
   <!--
     The Windows screen catalogues' tool, run on Windows (CI): the Axe.Windows rules and a walk with Tab on a running
     window (from its own process: a UI Automation client must not be the app it reads), Bandroom's catalogue (one
-    start per view, with its switches), turning a contrast theme and a text size on for a run, the verdict over a
-    catalogue's findings and the comparison with the merge base. See apps/windows/tests/Brasscribe.Play.Catalogue/README.md.
+    start per view, with its switches), turning a contrast theme and a text size on for a run, and the verdict over a
+    catalogue's findings. See apps/windows/tests/Brasscribe.Play.Catalogue/README.md.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

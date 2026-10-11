@@ -11,30 +11,35 @@ on:
   # Pushes to main and pull requests: a branch is checked once, through its pull request.
   push:
     branches: [main]
-    paths-ignore: &ignore
+    paths-ignore:
       - "site/**"
       - "**/*.md"
       - "design/mockups/png/**"
       - "apps/*/docs/screenshots/**"
       - ".github/workflows/pages.yml"
   # Every pull request, so `CI result` is always reported; the `changes` job skips what it doesn't touch.
-  # labeled/unlabeled: the screenshot check reads the label screenshots-changed when it runs.
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A pull request's newer push cancels its older run. A run on main is never cancelled half way: the next push
+# waits for it, and of several waiting only the newest is kept, so merges that land close together are checked
+# as one batch and the caches saved from main (at the end of their jobs) do get saved.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # On pull requests, which parts to check: the paths each job's tests read (the Python tests also read
   # design tokens and the sound pack). Pushes to main, releases and hand-started runs check everything,
   # but for the Windows apps on a release tag: release.yml builds them itself (job `windows` below).
+  # This file is in no filter: a change to it is checked by job `workflows`, and a hand-started run
+  # (`gh workflow run ci.yml --ref <branch>`) runs every job. A pull request that only sets the version
+  # (what scripts/release.sh writes) starts none of the platform jobs: the release run on its tag runs them all
+  # before anything is built.
   # The Windows filters name what each app's build and tests read, not whole folders: a Windows runner
   # is the slowest here. windows_play takes the core's crates behind brasscribe_ffi.dll and its C header
   # (not the Android, Swift, Kotlin, .NET or conformance sides, nor the command line) and the two fixtures
@@ -46,31 +51,61 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      python: ${{ github.event_name != 'pull_request' || steps.filter.outputs.python == 'true' }}
-      core: ${{ github.event_name != 'pull_request' || steps.filter.outputs.core == 'true' }}
-      studio: ${{ github.event_name != 'pull_request' || steps.filter.outputs.studio == 'true' }}
-      android: ${{ github.event_name != 'pull_request' || steps.filter.outputs.android == 'true' }}
-      windows_play: ${{ github.event_name != 'pull_request' || steps.filter.outputs.windows_play == 'true' }}
-      windows_bandroom: ${{ github.event_name != 'pull_request' || steps.filter.outputs.windows_bandroom == 'true' }}
-      apple_play: ${{ github.event_name != 'pull_request' || steps.filter.outputs.apple_play == 'true' }}
-      apple_bandroom: ${{ github.event_name != 'pull_request' || steps.filter.outputs.apple_bandroom == 'true' }}
+      workflows: ${{ github.event_name != 'pull_request' || steps.filter.outputs.workflows == 'true' }}
+      python: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.python == 'true' && steps.version.outputs.only != 'true') }}
+      core: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.core == 'true' && steps.version.outputs.only != 'true') }}
+      studio: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.studio == 'true' && steps.version.outputs.only != 'true') }}
+      android: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.android == 'true' && steps.version.outputs.only != 'true') }}
+      windows_play: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.windows_play == 'true' && steps.version.outputs.only != 'true') }}
+      windows_bandroom: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.windows_bandroom == 'true' && steps.version.outputs.only != 'true') }}
+      apple_play: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.apple_play == 'true' && steps.version.outputs.only != 'true') }}
+      apple_bandroom: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.apple_bandroom == 'true' && steps.version.outputs.only != 'true') }}
     steps:
       - uses: actions/checkout@v7
         with:
+          # On a pull request the checkout is the pull request merged into main; with its first parent, the main
+          # it was merged into, the step below reads what the pull request changes.
+          fetch-depth: ${{ github.event_name == 'pull_request' && 2 || 1 }}
           persist-credentials: false
+      - name: Is it only the version (a release pull request)
+        id: version
+        if: github.event_name == 'pull_request'
+        run: |
+          if .github/scripts/version-only.sh HEAD^1 HEAD; then echo "only=true" >> "$GITHUB_OUTPUT"; else echo "only=false" >> "$GITHUB_OUTPUT"; fi
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         if: github.event_name == 'pull_request'
         with:
           filters: |
-            python: ['engine/**', 'docs/accessibility/talking-score-vectors.json', 'apps/android/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*', '.github/workflows/ci.yml']
-            core: ['core/**', 'docs/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**', '.github/workflows/ci.yml']
-            studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**', '.github/workflows/ci.yml']
-            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/brasscribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json', '.github/workflows/ci.yml']
-            windows_play: ['apps/windows/**', 'core/Cargo.toml', 'core/Cargo.lock', 'core/.cargo/**', 'core/brasscribe-core/**', 'core/brasscribe-ffi/**', 'core/target-brass/**', 'core/target-fretted/**', 'core/bindings/c/**', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'apps/fixtures/old-hundredth/**', 'apps/fixtures/ties-and-trills.musicxml', 'sounds/**', 'engine/src/brasscribe_engine/static/assets/alphatab/**', 'docs/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
-            apple_play: ['apps/apple/**', 'scripts/screenshot-compare.swift', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tokens/**', 'design/dist/apple/**', 'design/brand/**', 'design/pink/**', 'sounds/**', '.github/workflows/apple.yml', '.github/workflows/ci.yml']
-            apple_bandroom: ['apps/bandroom/macos/**', 'apps/apple/Packages/ScreenCatalogue/**', 'scripts/screenshot-compare.swift', 'design/tokens/**', 'design/dist/apple/**', 'design/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml', '.github/workflows/ci.yml']
-            windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'music/README.md', 'eval/brasscribe_eval/**', 'eval/pyproject.toml', 'eval/README.md', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml', '.github/workflows/ci.yml']
+            workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**']
+            python: ['engine/**', 'docs/accessibility/talking-score-vectors.json', 'apps/android/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
+            core: ['core/**', 'docs/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
+            studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/brasscribe_engine/static/**', 'apps/fixtures/old-hundredth/**']
+            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/brasscribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json']
+            windows_play: ['apps/windows/**', 'core/Cargo.toml', 'core/Cargo.lock', 'core/.cargo/**', 'core/brasscribe-core/**', 'core/brasscribe-ffi/**', 'core/target-brass/**', 'core/target-fretted/**', 'core/bindings/c/**', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'apps/fixtures/old-hundredth/**', 'apps/fixtures/ties-and-trills.musicxml', 'sounds/**', 'engine/src/brasscribe_engine/static/assets/alphatab/**', 'docs/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml']
+            apple_play: ['apps/apple/**', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tokens/**', 'design/dist/apple/**', 'design/brand/**', 'design/pink/**', 'sounds/**', '.github/workflows/apple.yml']
+            apple_bandroom: ['apps/bandroom/macos/**', 'apps/apple/Packages/ScreenCatalogue/**', 'design/tokens/**', 'design/dist/apple/**', 'design/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml']
+            windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'music/README.md', 'eval/brasscribe_eval/**', 'eval/pyproject.toml', 'eval/README.md', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml']
+
+  # The workflows themselves: their syntax, expressions, and the inputs and outputs of the workflows they call.
+  workflows:
+    name: workflows (actionlint)
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The whole history: the test of version-only.sh runs it on the release commits.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color -shellcheck= -pyflakes=
+      - name: The scripts the workflows run
+        run: shellcheck .github/scripts/*.sh
+      - name: What counts as only the version (version-only.sh)
+        run: .github/scripts/test-version-only.sh
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -194,23 +229,17 @@ jobs:
 
   # Studio's unit tests, then its browser tests and its screen catalogue on the built bundle, with the API
   # answered from committed fixtures (no engine): every view in light, dark, high contrast, bokmål, 200 % and
-  # 320 px, with its checks (studio/README.md, Test). On a pull request the catalogue's screenshots are
-  # compared with the same taken at the merge base (studio/scripts/screenshots.sh); a changed view fails the job
-  # and is shown in the studio-screenshots artefact, unless the pull request has the label screenshots-changed.
+  # 320 px, with its checks (studio/README.md, Test). None of them reads a picture, so screenshots are taken only
+  # on main, for the comparison after a merge.
   studio:
     name: Studio (Ubuntu 24.04)
     needs: changes
     if: needs.changes.outputs.studio == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    permissions:
-      contents: read
-      pull-requests: read
     steps:
       - uses: actions/checkout@v7
         with:
-          # The merge base is taken out next to this checkout for the screenshots.
-          fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/setup-node@v7
@@ -251,71 +280,40 @@ jobs:
         working-directory: studio
         run: npm run test:browser
 
-      # The pull request's own code runs here, without the token: the label is read in a step of its own.
-      - name: Screen catalogue, compared with the merge base
-        id: compare
+      # No check of Studio's catalogue reads a picture (they read the page), so a pull request takes none.
+      - name: Screen catalogue
         if: github.event_name == 'pull_request'
         working-directory: studio
-        run: |
-          # The checkout is the pull request merged into main: its first parent is the main it was merged into. The
-          # event's base can be an older main, and then main's own changes would show as this pull request's.
-          base="$(git rev-parse --verify 'HEAD^1^{commit}')"
-          echo "Comparing with $(git log -1 --format='%H %s' "$base")"
-          status=0
-          scripts/screenshots.sh compare "$base" || status=$?
-          cat build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
-          echo "status=$status" >> "$GITHUB_OUTPUT"
+        run: npm run test:catalogue
 
-      # Only when views changed. The labels as they are now, not as they were when the run started (a re-run keeps
-      # the event's); when they cannot be read, the change is taken as not meant.
-      - name: Is the change meant (label screenshots-changed)
-        id: label
-        if: github.event_name == 'pull_request' && steps.compare.outputs.status == '1'
-        env:
-          PR: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
-        # Earlier steps ran the pull request's code, which can add to the job's environment and PATH: this step
-        # starts bash and gh by their full paths, with only the variables gh needs.
-        shell: /usr/bin/env -u BASH_ENV -u ENV /bin/bash --noprofile --norc -eo pipefail {0}
-        run: |
-          # A few tries: an error from GitHub (a 503) is not the same as no label.
-          names=""
-          for try in 1 2 3 4 5; do
-            if names=$(/usr/bin/env -i PATH=/usr/bin:/bin HOME="$HOME" GH_TOKEN="$GH_TOKEN" \
-              /usr/bin/gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name'); then break; fi
-            names=""; sleep $((try * 5))
-          done
-          if printf '%s\n' "$names" | /usr/bin/grep -qx 'screenshots-changed'; then meant=true; else meant=false; fi
-          echo "meant=$meant" >> "$GITHUB_OUTPUT"
-
-      - name: Screenshot result
-        if: github.event_name == 'pull_request'
-        env:
-          STATUS: ${{ steps.compare.outputs.status }}
-          MEANT: ${{ steps.label.outputs.meant }}
-        run: |
-          # 1: views changed (shown in the artefact). 2: a view's own checks failed; 3: the base's screenshots could
-          # not be taken. No label lets 2 or 3 through.
-          if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
-            echo "Views changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit "${STATUS:-1}"
-
-      - name: Screen catalogue
+      # On main after a merge, and in a hand-started run: the same, with a screenshot of each view, for the record.
+      - name: Screen catalogue, with screenshots
         if: github.event_name != 'pull_request'
         working-directory: studio
         run: scripts/screenshots.sh record
 
+      # What the pictures were taken with, beside them: after a merge they are compared with the record before
+      # them only when this is the same (screens.yml). Written only when the catalogue passed.
+      - name: What the screenshots were taken with
+        if: github.event_name != 'pull_request'
+        shell: bash
+        working-directory: .
+        env:
+          CATALOGUE: studio
+          DIR: studio/build/catalogue/screenshots
+        run: |
+          jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
+            --arg toolchain "$(cd studio && npx playwright --version)" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
+          cat "$DIR/record.json"
+
+      # Named by its commit and kept, for the comparison with the next record.
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         with:
-          name: studio-screenshots
-          path: |
-            studio/build/reports/screenshots
-            studio/build/catalogue/screenshots
+          name: screens-studio-${{ github.sha }}
+          path: studio/build/catalogue/screenshots
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 90
 
       - uses: actions/upload-artifact@v7
         if: failure()
@@ -326,11 +324,8 @@ jobs:
 
   # The Android app's tests on the JVM (Robolectric), no emulator, in two jobs side by side: the unit tests
   # with the screens' flows and their accessibility checks; and the screen catalogues of both apps (every
-  # screen in light, dark, high contrast, 200 % text, on its side and in bokmål, with their checks), whose
-  # screenshots are compared on a pull request with the same taken at the merge base
-  # (apps/android/scripts/screenshots.sh). A screen that changed fails that job and is shown in the
-  # android-screenshots-<app> artefact, unless the pull request has the label screenshots-changed, which says the
-  # change is meant.
+  # screen in light, dark, high contrast, 200 % text, on its side and in bokmål, with their checks;
+  # apps/android/scripts/screenshots.sh). Their screenshots are an artefact to look at; nothing waits for them.
   android:
     name: Android unit and screen tests (Ubuntu 24.04)
     needs: changes
@@ -359,6 +354,7 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: core
+          shared-key: android
 
       - name: Host build of the core
         working-directory: core
@@ -416,14 +412,11 @@ jobs:
           if-no-files-found: ignore
 
   android-screens:
-    name: Android screen catalogue and screenshots, ${{ matrix.app }} (Ubuntu 24.04)
+    name: Android screen catalogue, ${{ matrix.app }} (Ubuntu 24.04)
     needs: changes
     if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    permissions:
-      contents: read
-      pull-requests: read
     strategy:
       fail-fast: false
       matrix:
@@ -436,8 +429,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # The merge base is taken out next to this checkout for the screenshots.
-          fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/setup-java@v6
@@ -451,9 +442,12 @@ jobs:
 
       # The screens run against the host build of the core (the JVM tests load it through JNA).
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      # The same build as job android makes: its cache is read here, and not saved a second time.
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: core
+          shared-key: android
+          save-if: false
 
       - name: Host build of the core
         working-directory: core
@@ -479,55 +473,7 @@ jobs:
           key: gradle-${{ runner.os }}-android-screens-${{ matrix.app }}-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
           restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-screens-{1}-', runner.os, matrix.app) || '' }}
 
-      # The pull request's own code runs here, without the token: the label is read in a step of its own.
-      - name: Screen catalogues, compared with the merge base
-        id: compare
-        if: github.event_name == 'pull_request'
-        run: |
-          # The checkout is the pull request merged into main: its first parent is the main it was merged into. The
-          # event's base can be an older main, and then main's own changes would show as this pull request's.
-          base="$(git rev-parse --verify 'HEAD^1^{commit}')"
-          echo "Comparing with $(git log -1 --format='%H %s' "$base")"
-          status=0
-          scripts/screenshots.sh compare "$base" || status=$?
-          cat app/build/reports/screenshots/summary.md >> "$GITHUB_STEP_SUMMARY" || true
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-
-      # Only when screens changed. The labels as they are now, not as they were when the run started (a re-run keeps
-      # the event's); when they cannot be read, the change is taken as not meant.
-      - name: Is the change meant (label screenshots-changed)
-        id: label
-        if: github.event_name == 'pull_request' && steps.compare.outputs.status == '1'
-        working-directory: .
-        env:
-          PR: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # A few tries: an error from GitHub (a 503) is not the same as no label.
-          meant=false
-          for try in 1 2 3 4 5; do
-            if meant=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq 'any(.[]; .name == "screenshots-changed")'); then break; fi
-            meant=false; sleep $((try * 5))
-          done
-          echo "meant=$meant" >> "$GITHUB_OUTPUT"
-
-      - name: Screenshot result
-        if: github.event_name == 'pull_request'
-        working-directory: .
-        env:
-          STATUS: ${{ steps.compare.outputs.status }}
-          MEANT: ${{ steps.label.outputs.meant }}
-        run: |
-          # 1: screens changed (shown in the artefact). 2: a screen's own checks failed; 3: the base's screenshots
-          # could not be taken. No label lets 2 or 3 through.
-          if [ "$STATUS" = 1 ] && [ "$MEANT" = true ]; then
-            echo "Screens changed, and the pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit "${STATUS:-1}"
-
-      - name: Screen catalogues
-        if: github.event_name != 'pull_request'
+      - name: Screen catalogue
         run: scripts/screenshots.sh record
 
       # Stopped first, so the daemon isn't writing to the directories while they are packed.
@@ -544,15 +490,29 @@ jobs:
             ~/.m2/repository/org/robolectric
           key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
+      # What the pictures were taken with, beside them: after a merge they are compared with the record before
+      # them only when this is the same (screens.yml). Written only when the catalogue passed.
+      - name: What the screenshots were taken with
+        if: github.event_name != 'pull_request'
+        shell: bash
+        working-directory: .
+        env:
+          CATALOGUE: android-${{ matrix.app }}
+          DIR: apps/android/app/build/outputs/roborazzi
+        run: |
+          jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
+            --arg toolchain "$(java -version 2>&1 | head -1)" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
+          cat "$DIR/record.json"
+
+      # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
+      # named by its commit and kept longer, for the comparison with the next record.
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: android-screenshots-${{ matrix.app }}
-          path: |
-            apps/android/app/build/reports/screenshots
-            apps/android/app/build/outputs/roborazzi
+          name: ${{ github.event_name == 'pull_request' && format('android-screenshots-{0}', matrix.app) || format('screens-android-{0}-{1}', matrix.app, github.sha) }}
+          path: apps/android/app/build/outputs/roborazzi
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
 
       - uses: actions/upload-artifact@v7
         if: failure()
@@ -565,8 +525,8 @@ jobs:
           if-no-files-found: ignore
 
   # Play and Bandroom for Windows (windows.yml): core tests, the WinUI builds, start-up smoke tests, the Bandroom
-  # engine test and the screen catalogues (Axe.Windows, Tab, screenshots), on a Windows runner. On a pull request only for the app the
-  # change reaches; on pushes to main both, which also fills the caches pull requests read. Not on a release
+  # engine test and the screen catalogues (their checks, Axe.Windows, Tab), on a Windows runner. On a pull request
+  # only for the app the change reaches; on pushes to main both, which also fills the caches pull requests read. Not on a release
   # tag: release.yml calls windows.yml itself, for the release builds.
   windows:
     name: Windows
@@ -574,17 +534,14 @@ jobs:
     if: >-
       !startsWith(github.ref, 'refs/tags/')
       && (needs.changes.outputs.windows_play == 'true' || needs.changes.outputs.windows_bandroom == 'true')
-    permissions:
-      contents: read
-      # The screenshot check reads the pull request's labels (windows.yml, job `screenshots`).
-      pull-requests: read
     uses: ./.github/workflows/windows.yml
     with:
       skip_play: ${{ needs.changes.outputs.windows_play != 'true' }}
       skip_bandroom: ${{ needs.changes.outputs.windows_bandroom != 'true' }}
 
-  # Play for Mac, iOS and iPadOS and Bandroom for Mac (apple.yml): Play's package and app tests on macOS and the
-  # iPhone simulator, BandroomKit's tests and the Bandroom build, on a macOS runner. On a pull request only for
+  # Play for Mac, iOS and iPadOS and Bandroom for Mac (apple.yml): Play's package tests, the macOS app's unit tests
+  # and a build of the iPhone simulator app with its tests (they run at night, nightly.yml), BandroomKit's tests
+  # and the Bandroom build, on a macOS runner. On a pull request only for
   # the app the change reaches; on pushes to main both, which also fills the caches pull requests read. Not on a
   # release tag: release.yml calls apple.yml itself, for the release builds.
   apple:
@@ -593,10 +550,6 @@ jobs:
     if: >-
       !startsWith(github.ref, 'refs/tags/')
       && (needs.changes.outputs.apple_play == 'true' || needs.changes.outputs.apple_bandroom == 'true')
-    permissions:
-      contents: read
-      # The screenshot comparison reads the pull request's labels.
-      pull-requests: read
     uses: ./.github/workflows/apple.yml
     with:
       skip_play: ${{ needs.changes.outputs.apple_play != 'true' }}
@@ -605,13 +558,13 @@ jobs:
   # One check that is always reported, whichever jobs ran: the one to make required.
   result:
     name: CI result
-    needs: [changes, linux, core, studio, android, android-screens, windows, apple]
+    needs: [changes, workflows, linux, core, studio, android, android-screens, windows, apple]
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - env:
           CHANGES: ${{ needs.changes.result }}
-          RESULTS: ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }} ${{ needs.android.result }} ${{ needs.android-screens.result }} ${{ needs.windows.result }} ${{ needs.apple.result }}
+          RESULTS: ${{ needs.workflows.result }} ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }} ${{ needs.android.result }} ${{ needs.android-screens.result }} ${{ needs.windows.result }} ${{ needs.apple.result }}
         run: |
           echo "changes: $CHANGES, jobs: $RESULTS"
           [ "$CHANGES" = success ] || exit 1
