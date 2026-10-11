@@ -8,20 +8,20 @@
 <script src="scores.js"></script>
 <script src="mockup.js"></script>
 <style>
-  .os { background: var(--bc-surface); }
+  .os { background: var(--scribe-surface); }
   .col { position: absolute; }
   .pw { width: 860px; }
   .pw .body { padding: 28px 32px 22px; display: flex; flex-direction: column; gap: 18px; }
-  .pw h1 { font-family: var(--bc-font-display); font-weight: 400; font-size: 2.5rem; line-height: 1.1; margin: 0; }
+  .pw h1 { font-family: var(--scribe-font-display); font-weight: 400; font-size: 2.5rem; line-height: 1.1; margin: 0; }
   .ways { display: grid; grid-template-columns: 1fr 260px; gap: 28px; }
   .way { display: flex; gap: 14px; align-items: flex-start; }
-  .num-dot { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.9375rem; box-shadow: inset 0 0 0 1.5px var(--bc-text); }
+  .num-dot { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 0.9375rem; box-shadow: inset 0 0 0 1.5px var(--scribe-text); }
   .way p { font-size: 1.0625rem; }
   .waiting { display: flex; gap: 8px; align-items: center; font-weight: 600; }
   .qrbox { display: flex; flex-direction: column; gap: 10px; }
   .qrbox img { width: 260px; height: 260px; }
-  .foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; box-shadow: inset 0 1px 0 var(--bc-border); padding-top: 16px; }
-  .match { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 2rem; letter-spacing: 0.12em; color: var(--bc-text); }
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; box-shadow: inset 0 1px 0 var(--scribe-border); padding-top: 16px; }
+  .match { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 2rem; letter-spacing: 0.12em; color: var(--scribe-text); }
 </style>
 </head>
 <body>
@@ -29,7 +29,7 @@
 
   <div class="col" style="left: 40px; top: 40px">
     <div class="win-frame pw">
-      <div class="wbar"><span style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t" data-nb="Koble til en telefon">Pair a phone</span></div>
+      <div class="wbar"><span style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i></span><span class="t" data-nb="Koble til en telefon">Pair a phone</span></div>
       <div class="body">
         <div>
           <h1 data-nb="Koble til en telefon">Pair a phone</h1>
@@ -68,10 +68,10 @@
   <div class="col" style="left: 960px; top: 40px; width: 440px">
     <p class="cap" data-nb="Telefonen valgte denne datamaskinen">The phone chose this computer</p>
     <div class="alert" style="width: 320px; margin: 0 auto; gap: 10px">
-      <span data-mark="40" style="color: var(--bc-brass); margin: 0 auto"></span>
+      <span data-mark="40" style="color: var(--scribe-brand); margin: 0 auto"></span>
       <div class="t" data-nb="Godkjenne Karis iPhone?">Allow Kari's iPhone?</div>
       <p data-nb="Den kan sende opptak til denne datamaskinen og få partitur tilbake. Du kan fjerne den når som helst.">It can send recordings to this computer and get scores back. You can remove it any time.</p>
-      <p style="color: var(--bc-text)" data-nb="Telefonen viser tallet:">The phone shows the number:</p>
+      <p style="color: var(--scribe-text)" data-nb="Telefonen viser tallet:">The phone shows the number:</p>
       <div class="match" aria-label="4 7 1 9">4719</div>
       <div style="display:flex; flex-direction:column; gap: 8px; margin-top: 4px">
         <button class="btn primary desk" data-nb="Godkjenn">Allow</button>
@@ -79,9 +79,9 @@
       </div>
     </div>
 
-    <p class="cap" style="margin-top: var(--bc-space-8)" data-nb="Etterpå">Afterwards</p>
+    <p class="cap" style="margin-top: var(--scribe-space-8)" data-nb="Etterpå">Afterwards</p>
     <div class="notice ok" role="status"><i data-i="running" class="sm"></i><span data-nb="Karis iPhone er koblet til.">Kari's iPhone is paired.</span></div>
-    <p class="cap" style="margin-top: var(--bc-space-6)" data-nb="Etter for mange feil koder">After too many wrong codes</p>
+    <p class="cap" style="margin-top: var(--scribe-space-6)" data-nb="Etter for mange feil koder">After too many wrong codes</p>
     <div class="notice" role="status"><i data-i="info" class="sm"></i><span data-nb="For mange feil koder. Vent litt, eller godkjenn telefonen her.">Too many wrong codes. Wait a moment, or allow the phone here.</span></div>
   </div>
 

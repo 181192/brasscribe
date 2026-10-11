@@ -31,14 +31,14 @@ struct SetupView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
-                Mark(size: 32, color: Color.Brasscribe.brass).padding(.bottom, 10)
+                Mark(size: 32, color: Color.Scribe.brand).padding(.bottom, 10)
                 ForEach(steps.indices, id: \.self) { i in
                     HStack(spacing: 8) {
                         Image(systemName: i < step ? "checkmark.circle.fill" : (i == step ? "circle.inset.filled" : "circle"))
                             .accessibilityHidden(true)
                         Text(steps[i]).brFont(i == step ? .bodyStrong : .body)
                     }
-                    .foregroundStyle(i <= step ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                    .foregroundStyle(i <= step ? Color.Scribe.text : Color.Scribe.textMuted)
                     .accessibilityElement(children: .combine)
                     .accessibilityAddTraits(i == step ? .isSelected : [])
                 }
@@ -47,7 +47,7 @@ struct SetupView: View {
             .padding(24)
             .frame(width: 230, alignment: .leading)
             .frame(maxHeight: .infinity)
-            .background(Color.Brasscribe.brassTint)
+            .background(Color.Scribe.brandTint)
 
             VStack(alignment: .leading, spacing: 16) {
                 switch step {
@@ -61,8 +61,8 @@ struct SetupView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(minWidth: 760, minHeight: 520)
-        .background(Color.Brasscribe.bg)
-        .foregroundStyle(Color.Brasscribe.text)
+        .background(Color.Scribe.bg)
+        .foregroundStyle(Color.Scribe.text)
         .onDisappear { app.isSetupWindowOpen = false }
         .onChange(of: app.setupOpensAtKey) { _, now in if now { openAtKey() } }
         .onAppear {
@@ -125,7 +125,7 @@ struct SetupView: View {
             Text("1. Sign in and choose **Agree** on the MuScriptor page.").brFont(.body)
             Text("2. Come back here. Brasscribe downloads it for you.").brFont(.body)
             Text("Brasscribe uses the key only to download the band writer from Hugging Face, and keeps it in your Keychain.")
-                .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).fixedSize(horizontal: false, vertical: true)
+                .brFont(.callout).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
                 Button { NSWorkspace.shared.open(LicenceStep.termsPage) } label: {
                     Text("Read the full terms")
@@ -172,7 +172,7 @@ struct SetupView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Button { step = 2 } label: { Text("Skip for now") }.buttonStyle(.brPlain)
                     Text("Without it, Brasscribe can't write down a full band. You can add it later.")
-                        .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                        .brFont(.caption).foregroundStyle(Color.Scribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
@@ -239,18 +239,18 @@ struct SetupView: View {
             }
             if case .failed = boot, let refusal = app.bootstrapper.pixiRefusal {
                 ProblemCard(title: Strings.problemTitle(.pixiTooOld(refusal)), why: Strings.problemWhy(.pixiTooOld(refusal)),
-                            symbol: "exclamationmark.triangle.fill", tint: Color.Brasscribe.warning)
+                            symbol: "exclamationmark.triangle.fill", tint: Color.Scribe.warning)
             } else if case .failed(let why) = boot {
                 ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill",
-                            tint: Color.Brasscribe.warning)
+                            tint: Color.Scribe.warning)
             }
             if case .failed(let e) = d.phase { downloadProblem(e) }
             if items.contains(where: { $0 != .bandWriter }) {
                 Text("The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.")
-                    .brFont(.caption).foregroundStyle(Color.Brasscribe.textMuted).fixedSize(horizontal: false, vertical: true)
+                    .brFont(.caption).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
             }
             Text("You can close this window. Brasscribe keeps downloading and tells you when it's ready.")
-                .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                .brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
             Spacer()
             HStack {
                 if d.phase == .downloading || d.phase == .checking {
@@ -321,9 +321,9 @@ struct SetupView: View {
         return HStack(spacing: 8) {
             Image(systemName: symbol).frame(width: 20).accessibilityHidden(true)
             Text(title).brFont(.body)
-            if let size { Text("\(Strings.gigabytes(size)) GB").brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted) }
+            if let size { Text("\(Strings.gigabytes(size)) GB").brFont(.callout).foregroundStyle(Color.Scribe.textMuted) }
             Spacer()
-            Text(word).brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+            Text(word).brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
         }
         .accessibilityElement(children: .combine)
     }
@@ -343,7 +343,7 @@ struct SetupView: View {
 
     /// Each reason in its own words, with the one thing that fixes it.
     @ViewBuilder private func downloadProblem(_ e: DownloadError) -> some View {
-        let warn = Color.Brasscribe.warning
+        let warn = Color.Scribe.warning
         switch e {
         case .keyMissing:
             ProblemCard(title: String(localized: "The band writer needs your Hugging Face access key"),
@@ -401,7 +401,7 @@ struct SetupView: View {
             Text("Brasscribe is ready").brFont(.display)
             Text("It runs quietly in the menu bar. Look for the Brasscribe mark at the top of the screen.").brFont(.body)
             Text("Don't see it? On a MacBook it can hide behind the camera notch. Open Brasscribe from Launchpad any time.")
-                .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).fixedSize(horizontal: false, vertical: true)
+                .brFont(.callout).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
             Toggle(isOn: $startAtLogin) { Text("Start when I log in").brFont(.body) }
                 .toggleStyle(.switch)
             Text("Next, your Mac asks whether Brasscribe may find devices on your network. Choose **Allow** so phones can connect.")

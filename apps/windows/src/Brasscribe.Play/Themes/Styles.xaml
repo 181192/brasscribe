@@ -43,14 +43,14 @@
     <!-- ===== Text ===== -->
 
     <!-- Screen titles in the display face (28 epx and up only). Landmarks for screen readers and focus targets. -->
-    <Style x:Key="ScreenHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource BcDisplayTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="ScreenHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeDisplayTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="Margin" Value="0,0,0,8" />
     </Style>
 
     <!-- The home and first-run greeting: the display face at its largest. -->
-    <Style x:Key="HeroHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource BcDisplayTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="HeroHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeDisplayTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="FontSize" Value="56" />
         <Setter Property="LineHeight" Value="64" />
     </Style>
@@ -59,45 +59,45 @@
     <FontFamily x:Key="BcDisplayItalicFontFamily">ms-appx:///Assets/Fonts/InstrumentSerif-Italic.ttf#Instrument Serif</FontFamily>
 
     <!-- Step and dialog titles below 28 epx are in the UI face. -->
-    <Style x:Key="SectionHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource BcTitle2TextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="SectionHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeTitle2TextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="Margin" Value="0,16,0,8" />
     </Style>
 
-    <Style x:Key="HeadlineStyle" TargetType="TextBlock" BasedOn="{StaticResource BcHeadlineTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="HeadlineStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeHeadlineTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
     </Style>
 
     <!-- Small capitals above a title: "STEP 4 OF 6 · SOLOIST WITH ORCHESTRA OR BAND", "YOUR SCORES". -->
-    <Style x:Key="OverlineStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCaptionTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+    <Style x:Key="OverlineStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeCaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextMutedBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="CharacterSpacing" Value="80" />
     </Style>
 
-    <Style x:Key="BodyStyle" TargetType="TextBlock" BasedOn="{StaticResource BcBodyTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="BodyStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeBodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
     </Style>
 
-    <Style x:Key="LeadStyle" TargetType="TextBlock" BasedOn="{StaticResource BcBodyTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+    <Style x:Key="LeadStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeBodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextMutedBrush}" />
     </Style>
 
-    <Style x:Key="MutedStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCalloutTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+    <Style x:Key="MutedStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeCalloutTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextMutedBrush}" />
     </Style>
 
-    <Style x:Key="LabelStyle" TargetType="TextBlock" BasedOn="{StaticResource BcLabelTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="LabelStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeLabelTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
     </Style>
 
-    <Style x:Key="NumericStyle" TargetType="TextBlock" BasedOn="{StaticResource BcNumericTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="NumericStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeNumericTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
     </Style>
 
     <!-- Errors keep the text in ink; only the icon carries the error colour. -->
-    <Style x:Key="ErrorTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BcLabelTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="ErrorTextStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeLabelTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
     </Style>
 
     <!-- ===== Buttons: 12 epx corners everywhere, one primary per screen ===== -->
@@ -108,9 +108,9 @@
         <Setter Property="Padding" Value="20,10" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
         <Setter Property="FocusVisualSecondaryThickness" Value="2" />
     </Style>
@@ -121,12 +121,12 @@
         <Setter Property="Padding" Value="20,10" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
-        <Setter Property="Foreground" Value="{ThemeResource BcOnSecondaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeOnSecondaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
     </Style>
 
@@ -136,12 +136,12 @@
         <Setter Property="MinWidth" Value="40" />
         <Setter Property="Padding" Value="14,8" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderStrongBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
     </Style>
 
@@ -150,13 +150,13 @@
          sentence of explanation; the same words on every screen and platform. -->
     <Style x:Key="SourcePillStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderStrongBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="20" />
         <Setter Property="Padding" Value="10,2" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="HorizontalAlignment" Value="Left" />
     </Style>
 
@@ -166,11 +166,11 @@
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
     </Style>
 
     <!-- Icon-only buttons of the title bar and the transport row (each has a name matching its tooltip). -->
@@ -179,11 +179,11 @@
         <Setter Property="Height" Value="40" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusSm}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusSm}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
     </Style>
 
     <!-- The round Play button: the primary of the player. -->
@@ -194,7 +194,7 @@
         <Setter Property="FontSize" Value="22" />
         <Setter Property="CornerRadius" Value="28" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
     </Style>
 
@@ -205,11 +205,11 @@
         <Setter Property="Padding" Value="14,8" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderStrongBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <!-- On = tonal fill, a 1.5 epx ink edge and a check before the label; off = an outline.
@@ -219,21 +219,21 @@
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
                             Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <FontIcon x:Name="Check" Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource BcTextBrush}" Visibility="Collapsed" />
+                            <FontIcon x:Name="Check" Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource ScribeTextBrush}" Visibility="Collapsed" />
                             <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              Foreground="{ThemeResource BcTextBrush}" VerticalAlignment="Center" />
+                                              Foreground="{ThemeResource ScribeTextBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSurfaceBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSecondaryBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
@@ -243,24 +243,24 @@
                                 </VisualState>
                                 <VisualState x:Name="Checked">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
-                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource ScribeTextBrush}" />
                                         <Setter Target="Chip.BorderThickness" Value="1.5" />
                                         <Setter Target="Check.Visibility" Value="Visible" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="CheckedPointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
-                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource ScribeTextBrush}" />
                                         <Setter Target="Chip.BorderThickness" Value="1.5" />
                                         <Setter Target="Check.Visibility" Value="Visible" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="CheckedPressed">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
-                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSurfaceBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource ScribeTextBrush}" />
                                         <Setter Target="Chip.BorderThickness" Value="1.5" />
                                         <Setter Target="Check.Visibility" Value="Visible" />
                                     </VisualState.Setters>
@@ -285,9 +285,9 @@
         <Setter Property="Padding" Value="12,6" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusSm}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusSm}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
     </Style>
 
     <!-- A segment that is one of a group (RadioButton with GroupName): the chosen one is raised with an outline. -->
@@ -295,22 +295,22 @@
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="Padding" Value="12,6" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Border x:Name="Segment" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
-                            CornerRadius="{StaticResource BcRadiusSm}" Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                            CornerRadius="{StaticResource ScribeRadiusSm}" Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
                         <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                          Foreground="{ThemeResource BcTextMutedBrush}" FontWeight="SemiBold" />
+                                          Foreground="{ThemeResource ScribeTextMutedBrush}" FontWeight="SemiBold" />
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource ScribeTextBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed" />
@@ -323,9 +323,9 @@
                             <VisualStateGroup x:Name="CheckStates">
                                 <VisualState x:Name="Checked">
                                     <VisualState.Setters>
-                                        <Setter Target="Segment.Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
-                                        <Setter Target="Segment.BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
-                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Segment.Background" Value="{ThemeResource ScribeSurfaceRaisedBrush}" />
+                                        <Setter Target="Segment.BorderBrush" Value="{ThemeResource ScribeBorderStrongBrush}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource ScribeTextBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Unchecked" />
@@ -339,8 +339,8 @@
     </Style>
 
     <Style x:Key="SegmentGroupStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="Padding" Value="3" />
     </Style>
 
@@ -351,11 +351,11 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderStrongBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusSm}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusSm}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="Template">
             <Setter.Value>
                 <!-- On = tonal fill, a 1.5 epx ink edge and a check before the label; off = an outline.
@@ -365,21 +365,21 @@
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
                             Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <FontIcon x:Name="Check" Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource BcTextBrush}" Visibility="Collapsed" />
+                            <FontIcon x:Name="Check" Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource ScribeTextBrush}" Visibility="Collapsed" />
                             <ContentPresenter x:Name="Presenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              Foreground="{ThemeResource BcTextBrush}" VerticalAlignment="Center" />
+                                              Foreground="{ThemeResource ScribeTextBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSurfaceBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSecondaryBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
@@ -389,24 +389,24 @@
                                 </VisualState>
                                 <VisualState x:Name="Checked">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
-                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource ScribeTextBrush}" />
                                         <Setter Target="Chip.BorderThickness" Value="1.5" />
                                         <Setter Target="Check.Visibility" Value="Visible" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="CheckedPointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSecondaryBrush}" />
-                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource ScribeTextBrush}" />
                                         <Setter Target="Chip.BorderThickness" Value="1.5" />
                                         <Setter Target="Check.Visibility" Value="Visible" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="CheckedPressed">
                                     <VisualState.Setters>
-                                        <Setter Target="Chip.Background" Value="{ThemeResource BcSurfaceBrush}" />
-                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource BcTextBrush}" />
+                                        <Setter Target="Chip.Background" Value="{ThemeResource ScribeSurfaceBrush}" />
+                                        <Setter Target="Chip.BorderBrush" Value="{ThemeResource ScribeTextBrush}" />
                                         <Setter Target="Chip.BorderThickness" Value="1.5" />
                                         <Setter Target="Check.Visibility" Value="Visible" />
                                     </VisualState.Setters>
@@ -428,19 +428,19 @@
     <!-- ===== Surfaces ===== -->
 
     <Style x:Key="CardStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusLg}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusLg}" />
         <Setter Property="Padding" Value="16" />
     </Style>
 
     <!-- The connection status row (Home, Settings): surface fill, 1 px border, 12 px corners, as on Apple and Android. -->
     <Style x:Key="StatusRowStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BcSurfaceBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="Padding" Value="16,10" />
     </Style>
 
@@ -448,8 +448,8 @@
     <Style x:Key="IconWellStyle" TargetType="Border">
         <Setter Property="Width" Value="40" />
         <Setter Property="Height" Value="40" />
-        <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusSm}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusSm}" />
     </Style>
 
     <!-- A card-sized action (Record with the microphone, Record what's playing, Open a score). -->
@@ -460,12 +460,12 @@
         <Setter Property="VerticalContentAlignment" Value="Top" />
         <Setter Property="Padding" Value="16" />
         <Setter Property="MinHeight" Value="120" />
-        <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusLg}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusLg}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
     </Style>
 
     <!-- "What is this?" answers: a card with the radio at the right, a 2 epx ink ring when chosen. -->
@@ -474,17 +474,17 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="MinHeight" Value="112" />
         <Setter Property="Padding" Value="20,18" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
-        <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderStrongBrush}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualMargin" Value="-3" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Grid x:Name="Card" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                          BorderThickness="1" CornerRadius="{StaticResource BcRadiusLg}" Padding="{TemplateBinding Padding}" ColumnSpacing="16">
+                          BorderThickness="1" CornerRadius="{StaticResource ScribeRadiusLg}" Padding="{TemplateBinding Padding}" ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
@@ -492,21 +492,21 @@
                         <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
                                           Foreground="{TemplateBinding Foreground}" VerticalAlignment="Top" />
                         <Grid Grid.Column="1" Width="24" Height="24" VerticalAlignment="Top" Margin="0,4,0,0">
-                            <Ellipse x:Name="Outer" Stroke="{ThemeResource BcBorderStrongBrush}" StrokeThickness="2" />
-                            <Ellipse x:Name="Filled" Fill="{ThemeResource BcPrimaryBrush}" Opacity="0" />
-                            <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{ThemeResource BcOnPrimaryBrush}" Opacity="0" />
+                            <Ellipse x:Name="Outer" Stroke="{ThemeResource ScribeBorderStrongBrush}" StrokeThickness="2" />
+                            <Ellipse x:Name="Filled" Fill="{ThemeResource ScribePrimaryBrush}" Opacity="0" />
+                            <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{ThemeResource ScribeOnPrimaryBrush}" Opacity="0" />
                         </Grid>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Card.Background" Value="{ThemeResource BcSurfaceBrush}" />
+                                        <Setter Target="Card.Background" Value="{ThemeResource ScribeSurfaceBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
-                                        <Setter Target="Card.Background" Value="{ThemeResource BcSecondaryBrush}" />
+                                        <Setter Target="Card.Background" Value="{ThemeResource ScribeSecondaryBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
@@ -518,11 +518,11 @@
                             <VisualStateGroup x:Name="CheckStates">
                                 <VisualState x:Name="Checked">
                                     <VisualState.Setters>
-                                        <Setter Target="Card.BorderBrush" Value="{ThemeResource BcPrimaryBrush}" />
+                                        <Setter Target="Card.BorderBrush" Value="{ThemeResource ScribePrimaryBrush}" />
                                         <Setter Target="Card.BorderThickness" Value="2" />
                                         <Setter Target="Filled.Opacity" Value="1" />
                                         <Setter Target="Dot.Opacity" Value="1" />
-                                        <Setter Target="Outer.Stroke" Value="{ThemeResource BcPrimaryBrush}" />
+                                        <Setter Target="Outer.Stroke" Value="{ThemeResource ScribePrimaryBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Unchecked" />
@@ -537,8 +537,8 @@
 
     <!-- The progress bar is the one working brand moment: brass fill. -->
     <Style x:Key="BrassProgressStyle" TargetType="ProgressBar">
-        <Setter Property="Foreground" Value="{ThemeResource BcBrassBrush}" />
-        <Setter Property="Background" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeBrandBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeBorderBrush}" />
         <Setter Property="Height" Value="6" />
         <Setter Property="MinHeight" Value="6" />
         <Setter Property="CornerRadius" Value="3" />

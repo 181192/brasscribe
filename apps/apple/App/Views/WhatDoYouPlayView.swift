@@ -41,7 +41,7 @@ struct WhatDoYouPlayView: View {
                     DisplayTitle(text: String(localized: "What do you play?"))
                         .accessibilityFocused($titleFocused)
                     Text("Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.")
-                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 instrumentGroup
@@ -73,7 +73,7 @@ struct WhatDoYouPlayView: View {
 
     private var instrumentGroup: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Text("Instrument").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+            Text("Instrument").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.s2), count: oneColumn ? 1 : 2), spacing: Space.s2) {
                 ForEach(instruments) { i in tile(i) }
             }
@@ -87,8 +87,8 @@ struct WhatDoYouPlayView: View {
         return Button { pick(i) } label: {
             HStack(spacing: Space.s2) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(i.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    if let d = i.detail { Text(d).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted) }
+                    Text(i.title).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                    if let d = i.detail { Text(d).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted) }
                 }
                 .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
@@ -97,9 +97,9 @@ struct WhatDoYouPlayView: View {
             .padding(.horizontal, Space.s4)
             .padding(.vertical, Space.s2)
             .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.md))
+            .background(Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.md))
             .overlay(RoundedRectangle(cornerRadius: Radius.md)
-                .strokeBorder(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong, lineWidth: on ? 2 : 1))
+                .strokeBorder(on ? Color.Scribe.text : Color.Scribe.borderStrong, lineWidth: on ? 2 : 1))
             .contentShape(RoundedRectangle(cornerRadius: Radius.md))
         }
         .buttonStyle(.plain)
@@ -110,7 +110,7 @@ struct WhatDoYouPlayView: View {
 
     private func partGroup(_ i: Seats.Instrument) -> some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Text("Which part?").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+            Text("Which part?").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
             ChoiceSegments(label: String(localized: "Which part?"), selection: seatID,
                            options: i.seats.map { ($0.id, Seats.name($0), Seats.name($0).spokenFlats) }) { id in
                 seatID = id
@@ -121,7 +121,7 @@ struct WhatDoYouPlayView: View {
 
     private func readsGroup(_ s: SeatInfo) -> some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            Text("You read").font(Font.Brasscribe.headline).accessibilityAddTraits(.isHeader)
+            Text("You read").font(Font.Scribe.headline).accessibilityAddTraits(.isHeader)
             ChoiceSegments(label: String(localized: "You read"), selection: reads,
                            options: s.reads.map { r in (r, Seats.readingTitle(r, seat: s), Seats.readingTitle(r, seat: s).spokenFlats) }) { reads = $0 }
         }
@@ -144,7 +144,7 @@ struct WhatDoYouPlayView: View {
                 .accessibilityIdentifier("seatContinue")
                 .afterTheContentItIsDockedUnder()
             if let hint {
-                Text(hint).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                Text(hint).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityHidden(true)
@@ -156,10 +156,10 @@ struct WhatDoYouPlayView: View {
         }
         .padding(.horizontal, Space.s5)
         .padding(.vertical, Space.s3)
-        .frame(maxWidth: BrasscribeDesign.Size.contentMaxWidth)
+        .frame(maxWidth: ScribeDesign.Size.contentMaxWidth)
         .frame(maxWidth: .infinity)
-        .background(Color.Brasscribe.bg.ignoresSafeArea(edges: .bottom))
-        .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+        .background(Color.Scribe.bg.ignoresSafeArea(edges: .bottom))
+        .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
     }
 
     /// Settings goes back to the What you play row, which then shows the answer.
@@ -212,16 +212,16 @@ struct ChoiceSegments: View {
                 Button { pick(o.0) } label: {
                     HStack(spacing: Space.s2) {
                         if on { Image(systemName: "checkmark").font(.body.weight(.semibold)).accessibilityHidden(true) }
-                        Text(o.1).font(on ? Font.Brasscribe.label : Font.Brasscribe.body)
+                        Text(o.1).font(on ? Font.Scribe.label : Font.Scribe.body)
                             .fixedSize(horizontal: !vertical, vertical: true)
                         if vertical { Spacer(minLength: 0) }
                     }
-                    .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                    .foregroundStyle(on ? Color.Scribe.text : Color.Scribe.textMuted)
                     .padding(.horizontal, Space.s3)
                     .frame(maxWidth: .infinity, minHeight: 48, alignment: vertical ? .leading : .center)
-                    .background(on ? Color.Brasscribe.secondary : Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.md))
+                    .background(on ? Color.Scribe.secondary : Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Radius.md)
-                        .strokeBorder(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong, lineWidth: on ? 1.5 : 1))
+                        .strokeBorder(on ? Color.Scribe.text : Color.Scribe.borderStrong, lineWidth: on ? 1.5 : 1))
                     .contentShape(RoundedRectangle(cornerRadius: Radius.md))
                 }
                 .buttonStyle(.plain)

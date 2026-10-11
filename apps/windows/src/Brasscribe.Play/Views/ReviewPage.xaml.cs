@@ -146,7 +146,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         if (ViewModel.Current is null) return;
         var strings = App.Strings;
         int shift = 0;
-        var name = new TextBlock { Style = (Style)Application.Current.Resources["BcTitle1TextBlockStyle"], HorizontalAlignment = HorizontalAlignment.Center };
+        var name = new TextBlock { Style = (Style)Application.Current.Resources["ScribeTitle1TextBlockStyle"], HorizontalAlignment = HorizontalAlignment.Center };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetLiveSetting(name, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
         var choices = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         ContentDialog? dialog = null;

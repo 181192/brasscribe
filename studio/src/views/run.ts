@@ -25,9 +25,9 @@ const TAB_FOR_KIND: Record<string, string> = {
   arrange: "score", export: "musicxml",
 };
 const MODEL_STYLE: Record<string, { colour: string; style: RollLayer["style"]; label: string }> = {
-  muscriptor: { colour: "m1", style: "line", label: "MuScriptor" },
-  "basic-pitch": { colour: "m2", style: "dashed", label: "Basic Pitch" },
-  "swift-f0": { colour: "m3", style: "dotted", label: "SwiftF0" },
+  muscriptor: { colour: "bc-model-1", style: "line", label: "MuScriptor" },
+  "basic-pitch": { colour: "bc-model-2", style: "dashed", label: "Basic Pitch" },
+  "swift-f0": { colour: "bc-model-3", style: "dotted", label: "SwiftF0" },
 };
 const AUDIO = /\.(wav|flac|mp3|ogg|m4a|aiff?)$/i;
 
@@ -473,7 +473,7 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
     pending = ctl;
     clear(holder, loading());
     const layers: RollLayer[] = comp.voices.filter((v) => layerGroup(v.layer ?? v.id) === g).map((v) => ({
-      id: v.id, label: t("roll.final", { id: v.id, role: v.role }), colour: "ink", style: "block" as const,
+      id: v.id, label: t("roll.final", { id: v.id, role: v.role }), colour: "scribe-ink", style: "block" as const,
       notes: v.notes.map((n) => ({
         pitch: n.pitch,
         start: n.onset_s ?? tickTime(comp, n.start),
@@ -483,7 +483,7 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
     }));
     for (const { stage, file } of transcribes.filter(({ stage }) => (stage.stage.split(".")[1] ?? "all") === g)) {
       const model = stage.stage.split(".").slice(2).join(".") || file.name;
-      const st = MODEL_STYLE[model] ?? { colour: "m4", style: "outline" as const, label: model };
+      const st = MODEL_STYLE[model] ?? { colour: "bc-model-4", style: "outline" as const, label: model };
       try {
         const midi = parseMidi(await fetchBytes(file.url, undefined, { signal: ctl.signal }));
         layers.push({ id: stage.stage, label: `${st.label} (${file.name})`, colour: st.colour, style: st.style,

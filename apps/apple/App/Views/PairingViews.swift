@@ -46,7 +46,7 @@ struct YourComputerSection: View {
             if let approval { approvalView(approval) }
             if showPairing && approval == nil { pairingWays }
             if let message {
-                Text(message).font(Font.Brasscribe.callout).accessibilityIdentifier("pairingMessage")
+                Text(message).font(Font.Scribe.callout).accessibilityIdentifier("pairingMessage")
             }
             if app.connection.record?.token != nil {
                 Button(role: .destructive) { confirmForget = true } label: { Text("Forget this computer") }
@@ -54,11 +54,11 @@ struct YourComputerSection: View {
             }
             DisclosureGroup {
                 Text("Without Brasscribe Bandroom, start the engine with “brasscribe serve --lan”.")
-                    .font(Font.Brasscribe.callout)
+                    .font(Font.Scribe.callout)
                 ConnectionDetails()
                 if showPairing && approval == nil { linkField }
                 if let problem = browser.problem {
-                    Text(problem).font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text(problem).font(Font.Scribe.caption).foregroundStyle(Color.Scribe.textMuted)
                 }
                 TextField(text: $app.companionURL) { Text("Address") }
                     .textContentType(.URL)
@@ -105,7 +105,7 @@ struct YourComputerSection: View {
 
     @ViewBuilder private var pairingWays: some View {
         Text("On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.")
-            .font(Font.Brasscribe.body).fixedSize(horizontal: false, vertical: true)
+            .font(Font.Scribe.body).fixedSize(horizontal: false, vertical: true)
         // 1. choose the computer here, then allow it there (no code)
         ForEach(browser.engines) { engine in
             Button { Task { await ask(engine) } } label: {
@@ -115,7 +115,7 @@ struct YourComputerSection: View {
             .accessibilityHint(Text("Asks the computer to allow this device."))
         }
         if browser.engines.isEmpty {
-            Text("Looking for Brasscribe on your network…").foregroundStyle(Color.Brasscribe.textMuted)
+            Text("Looking for Brasscribe on your network…").foregroundStyle(Color.Scribe.textMuted)
         }
         // 2. scan the QR code (the camera app also opens its link here)
         #if os(iOS)
@@ -160,17 +160,17 @@ struct YourComputerSection: View {
             switch a.outcome {
             case .waiting:
                 Text("On \(ConnectionCopy.named(computer: a.engineName)), choose Allow. Check that it shows the same number:")
-                    .font(Font.Brasscribe.body).fixedSize(horizontal: false, vertical: true)
+                    .font(Font.Scribe.body).fixedSize(horizontal: false, vertical: true)
                 MatchCodeView(code: a.matchCode)
                 HStack(spacing: Space.s2) {
                     ProgressView().controlSize(.small)
-                    Text("Waiting for your computer …").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text("Waiting for your computer …").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                 }
                 Button("Cancel") { approval = nil }.buttonStyle(.plainText)
             case .expired, .denied:
                 Text(a.outcome == .expired ? "The request ran out before it was allowed on the computer."
                                            : "The computer didn't allow this device.")
-                    .font(Font.Brasscribe.body).fixedSize(horizontal: false, vertical: true)
+                    .font(Font.Scribe.body).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: Space.s3) {
                     Button("Ask again") { Task { await ask(at: a.address, name: a.engineName) } }
                         .buttonStyle(SecondaryButtonStyle(minHeight: 44))

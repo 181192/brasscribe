@@ -106,10 +106,10 @@ const KINDS: ChangeKind[] = ["same", "added", "removed", "moved", "octave"];
 
 // Each kind of change has a token colour and its own notehead (shape repeats the colour).
 const MARK_TOKEN: Record<MarkKind, { token: string; head: NoteMark["head"] }> = {
-  removed: { token: "error", head: "x" },
-  added: { token: "success", head: "diamond" },
-  octave: { token: "model-2", head: "triangle" },
-  moved: { token: "model-4", head: "square" },
+  removed: { token: "scribe-error", head: "x" },
+  added: { token: "scribe-success", head: "diamond" },
+  octave: { token: "bc-model-2", head: "triangle" },
+  moved: { token: "bc-model-4", head: "square" },
 };
 const mark = (k: MarkKind): NoteMark => ({ colour: tokenColour(MARK_TOKEN[k].token), head: MARK_TOKEN[k].head });
 
@@ -177,8 +177,8 @@ function renderDiff(a: Side, b: Side, d: CompositionDiff, engine: Awaited<Return
       if (ch.b) lb.push(toRoll(b.composition, ch.b, mark === "removed" ? undefined : mark));
     }
     const layers: RollLayer[] = [
-      { id: "a", label: t("cmp.scoreA", { label: a.label }), colour: "m1", style: "block", notes: la },
-      { id: "b", label: t("cmp.scoreB", { label: b.label }), colour: "m2", style: "outline", notes: lb },
+      { id: "a", label: t("cmp.scoreA", { label: a.label }), colour: "bc-model-1", style: "block", notes: la },
+      { id: "b", label: t("cmp.scoreB", { label: b.label }), colour: "bc-model-2", style: "outline", notes: lb },
     ];
     const roll = h("bs-pianoroll", {}) as PianoRoll;
     roll.data = layers;
@@ -246,7 +246,7 @@ function notation(a: Side, b: Side, tolerance: number): HTMLElement {
   partSel.addEventListener("change", () => void load());
   const legend = h("ul", { class: "legend" },
     (["removed", "added", "octave", "moved"] as MarkKind[]).map((k) => h("li", {},
-      h("span", { class: "sw", "aria-hidden": "true", style: `background:var(--bc-${MARK_TOKEN[k].token});border-color:var(--bc-${MARK_TOKEN[k].token})` }), t(`cmp.legend.${k}`))));
+      h("span", { class: "sw", "aria-hidden": "true", style: `background:var(--${MARK_TOKEN[k].token});border-color:var(--${MARK_TOKEN[k].token})` }), t(`cmp.legend.${k}`))));
   queueMicrotask(() => void load());
   return h("section", { "aria-labelledby": "cmp-notation-h", class: "stack" },
     h("h2", { id: "cmp-notation-h" }, t("cmp.notation"), infoTip(t("cmp.notation"), t("cmp.notationHint"))),

@@ -17,11 +17,11 @@ struct SourceLabel: View {
                     .lineLimit(compact ? 1 : nil)
                     .fixedSize(horizontal: false, vertical: !compact)
             }
-            .font(compact ? Font.Brasscribe.caption.weight(.semibold) : Font.Brasscribe.label)
-            .foregroundStyle(Color.Brasscribe.text)
+            .font(compact ? Font.Scribe.caption.weight(.semibold) : Font.Scribe.label)
+            .foregroundStyle(Color.Scribe.text)
             .padding(.horizontal, compact ? Space.s3 : Space.s4)
             .frame(minHeight: compact ? 30 : 44)
-            .overlay(Capsule().strokeBorder(Color.Brasscribe.borderStrong, lineWidth: 1))
+            .overlay(Capsule().strokeBorder(Color.Scribe.borderStrong, lineWidth: 1))
             .padding(.vertical, compact ? 7 : 0)
             .contentShape(Rectangle())
         }
@@ -31,7 +31,7 @@ struct SourceLabel: View {
         .accessibilityIdentifier("sourceLabel")
         .popover(isPresented: $explaining) {
             Text(kind.explanation)
-                .font(Font.Brasscribe.body)
+                .font(Font.Scribe.body)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(idealWidth: 300)
                 .padding(Space.s4)
@@ -46,8 +46,8 @@ struct SourceCaption: View {
     let kind: PartSourceKind
     var body: some View {
         Label { Text(kind.title) } icon: { Image(systemName: kind.icon.systemName) }
-            .font(Font.Brasscribe.caption)
-            .foregroundStyle(Color.Brasscribe.textMuted)
+            .font(Font.Scribe.caption)
+            .foregroundStyle(Color.Scribe.textMuted)
             .labelStyle(.titleAndIcon)
     }
 }
@@ -90,8 +90,8 @@ struct PartHeader: View {
                     Text(short).lineLimit(typeSize >= .accessibility1 ? 2 : 1).minimumScaleFactor(0.7).truncationMode(.tail)
                     Spacer(minLength: 0)
                 }
-                .font(Font.Brasscribe.caption)
-                .foregroundStyle(Color.Brasscribe.text)
+                .font(Font.Scribe.caption)
+                .foregroundStyle(Color.Scribe.text)
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
@@ -100,7 +100,7 @@ struct PartHeader: View {
             .accessibilityIdentifier("seatNotice")
             .popover(isPresented: $explaining) {
                 Text(model.seatNotice ?? short)
-                    .font(Font.Brasscribe.body)
+                    .font(Font.Scribe.body)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(idealWidth: 300)
                     .padding(Space.s4)
@@ -110,12 +110,12 @@ struct PartHeader: View {
                 Image(systemName: BrasscribeIcon.close.systemName).frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.Brasscribe.textMuted)
+            .foregroundStyle(Color.Scribe.textMuted)
             .accessibilityLabel(Text("Close"))
             .accessibilityIdentifier("seatNoticeClose")
         }
         .padding(.leading, Space.s2)
-        .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.border))
+        .background(Color.Scribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Scribe.border))
     }
 }

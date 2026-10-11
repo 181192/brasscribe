@@ -1,7 +1,7 @@
 # Visual design tokens: colour, shape, contrast, motion, zoom
 
 - **Source of truth:** [design/tokens/tokens.json](../../design/tokens/tokens.json), the Brasscribe design tokens. [design-tokens.json](design-tokens.json) is generated from it by `uv run design/tokens/build.py` and keeps its existing shape for tools that read it.
-- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/tokens/tokens.json` (every design-system role, 74 pairs in each of six modes: light, dark, two high-contrast and two hidden Pink palettes) exit 1 on any contrast failure and run in CI.
+- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/tokens/tokens.json` (every design-system role, 76 pairs in each of six modes: light, dark, two high-contrast and two hidden Pink palettes) exit 1 on any contrast failure and run in CI.
 - **Generated reports:** [qa/reports/contrast-tokens.md](../../qa/reports/contrast-tokens.md) and [qa/reports/contrast-design-tokens.md](../../qa/reports/contrast-design-tokens.md). Every ratio below is copied from the first; don't edit numbers by hand.
 
 ## 1. Palette
@@ -44,7 +44,7 @@ The uncertainty hues are the blue/orange pair from the Okabe-Ito palette, which 
 | focus / surface | 15.42 | 14.46 | 21.00 | 3 |
 | error / bg | 6.26 | 10.96 | 8.65 | 4.5 |
 
-All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 444 pairs, all pass.
+All 84 pairs pass (28 pairs × 3 themes). The design-token report adds the UI roles and every score foreground on every score tint: 456 pairs, all pass.
 
 ### Colour-vision simulation (CIEDE2000, from the generated report)
 

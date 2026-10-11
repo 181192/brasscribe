@@ -8,25 +8,25 @@
 <script src="scores.js"></script>
 <script src="mockup.js"></script>
 <style>
-  .err-icon { width: 56px; height: 56px; border-radius: var(--bc-radius-lg); background: var(--bc-surface); box-shadow: inset 0 0 0 1px var(--bc-border); display: grid; place-items: center; color: var(--bc-error); }
+  .err-icon { width: 56px; height: 56px; border-radius: var(--scribe-radius-lg); background: var(--scribe-surface); box-shadow: inset 0 0 0 1px var(--scribe-border); display: grid; place-items: center; color: var(--scribe-error); }
   .err-icon .i { width: 28px; height: 28px; }
-  ol.fix { margin: var(--bc-space-4) 0 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: var(--bc-space-2); }
-  code { font-family: var(--bc-font-mono); font-size: 0.9em; background: var(--bc-surface); padding: 1px 6px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--bc-border); }
+  ol.fix { margin: var(--scribe-space-4) 0 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: var(--scribe-space-2); }
+  code { font-family: var(--scribe-font-mono); font-size: 0.9em; background: var(--scribe-surface); padding: 1px 6px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--scribe-border); }
 </style>
 </head>
 <body>
 <div class="phone">
   <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
   <div class="navbar"><span class="back"><i data-i="back"></i>Home</span><span></span><span></span></div>
-  <div class="content" style="padding-top: var(--bc-space-8)">
+  <div class="content" style="padding-top: var(--scribe-space-8)">
     <span class="err-icon"><i data-i="error"></i></span>
-    <h1 class="display" style="margin-top: var(--bc-space-5); font-size: 2.25rem">Nothing was heard</h1>
-    <p style="margin-top: var(--bc-space-3); font-size: 1.0625rem">The recording is silent. This usually means one of these:</p>
-    <ul style="margin: var(--bc-space-3) 0 0; padding-left: 1.2em; color: var(--bc-text-muted); display:flex; flex-direction:column; gap: 6px">
+    <h1 class="display" style="margin-top: var(--scribe-space-5); font-size: 2.25rem">Nothing was heard</h1>
+    <p style="margin-top: var(--scribe-space-3); font-size: 1.0625rem">The recording is silent. This usually means one of these:</p>
+    <ul style="margin: var(--scribe-space-3) 0 0; padding-left: 1.2em; color: var(--scribe-text-muted); display:flex; flex-direction:column; gap: 6px">
       <li>The music app blocks recording. Streaming apps usually do.</li>
       <li>Nothing was playing while you recorded.</li>
     </ul>
-    <div class="notice" style="margin-top: var(--bc-space-6)"><i data-i="info" class="sm"></i><span>A file you own, or a recording with the microphone, always works.</span></div>
+    <div class="notice" style="margin-top: var(--scribe-space-6)"><i data-i="info" class="sm"></i><span>A file you own, or a recording with the microphone, always works.</span></div>
   </div>
   <div class="bottom stack">
     <button class="btn primary block"><i data-i="import-file" class="sm"></i>Open a recording instead</button>
@@ -40,20 +40,20 @@
   <main class="main">
     <div class="pane" style="max-width: 620px; padding-top: 110px">
       <span class="err-icon"><i data-i="computer"></i></span>
-      <h1 class="display" style="margin-top: var(--bc-space-5); font-size: 2.75rem">Can't reach Brasscribe on your computer</h1>
-      <p style="margin-top: var(--bc-space-3); font-size: 1.0625rem" class="muted">Your recording is safe. Full-band scores are made on your computer, and it isn't answering.</p>
+      <h1 class="display" style="margin-top: var(--scribe-space-5); font-size: 2.75rem">Can't reach Brasscribe on your computer</h1>
+      <p style="margin-top: var(--scribe-space-3); font-size: 1.0625rem" class="muted">Your recording is safe. Full-band scores are made on your computer, and it isn't answering.</p>
       <ol class="fix">
         <li>Check that the computer is on and on the same Wi-Fi.</li>
         <li>Open Brasscribe on the computer.</li>
         <li>Choose <b>Try again</b>.</li>
       </ol>
-      <div style="display:flex; justify-content: flex-end; gap: var(--bc-space-3); margin-top: var(--bc-space-8)">
+      <div style="display:flex; justify-content: flex-end; gap: var(--scribe-space-3); margin-top: var(--scribe-space-8)">
         <button class="btn secondary">Make a solo score on this Mac</button>
         <button class="btn primary"><i data-i="retry" class="sm"></i>Try again</button>
       </div>
       <details class="tech" open>
         <summary>Details for the band's tech person</summary>
-        <p class="muted" style="margin-top: var(--bc-space-2)">Error C-2: no answer from 192.0.2.20:8765. On the computer, run <code>brasscribe serve --host 0.0.0.0</code> and check that the firewall allows port 8765.</p>
+        <p class="muted" style="margin-top: var(--scribe-space-2)">Error C-2: no answer from 192.0.2.20:8765. On the computer, run <code>brasscribe serve --host 0.0.0.0</code> and check that the firewall allows port 8765.</p>
       </details>
     </div>
   </main>

@@ -28,7 +28,7 @@
       stopped: `<rect x="39" y="39" width="22" height="22" rx="3" fill="currentColor"/>`,
       starting: `<circle cx="38.5" cy="50" r="4.5" fill="currentColor"/><circle cx="50" cy="50" r="4.5" fill="currentColor"/><circle cx="61.5" cy="50" r="4.5" fill="currentColor"/>`,
       updating: `<path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" d="M60 45a11 11 0 1 0 1 8"/><path fill="currentColor" d="M63.5 36v12h-12Z"/>`,
-      error: `<circle cx="50" cy="50" r="13" fill="currentColor"/><path stroke="var(--sm-knock, var(--bc-surface-raised))" stroke-width="4" stroke-linecap="round" d="m44.5 44.5 11 11m0-11-11 11"/>`,
+      error: `<circle cx="50" cy="50" r="13" fill="currentColor"/><path stroke="var(--sm-knock, var(--scribe-surface-raised))" stroke-width="4" stroke-linecap="round" d="m44.5 44.5 11 11m0-11-11 11"/>`,
       setup: `<path fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" d="M50 37v24m-9-9 9 9 9-9"/>`,
     }[kind];
     return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><defs><mask id="${id}"><rect width="64" height="64" fill="white"/>${cut}</mask></defs>` +
@@ -204,7 +204,7 @@
   }
   function drawStem(out, n, sp, fs, flag) {
     const p = stemPos(n, sp);
-    out.push(`<line class="stem" x1="${p.x}" x2="${p.x}" y1="${p.y1}" y2="${p.y2}" stroke-width="${sp * 0.12}" style="stroke:var(--bc-${n.cls === "ink" ? "ink" : n.cls === "u" ? "uncertain" : "very-uncertain"})"/>`);
+    out.push(`<line class="stem" x1="${p.x}" x2="${p.x}" y1="${p.y1}" y2="${p.y2}" stroke-width="${sp * 0.12}" style="stroke:var(--${n.cls === "ink" ? "scribe-ink" : n.cls === "u" ? "scribe-uncertain" : "bc-very-uncertain"})"/>`);
     if (flag) out.push(`<text class="${n.cls}" font-family="Bravura" font-size="${fs}" x="${p.x - sp * 0.06}" y="${p.y2}">${n.up ? G.flagUp : G.flagDown}</text>`);
   }
   function drawBeam(out, notes, sp) {
@@ -217,8 +217,8 @@
     const by = (x) => y1 + (x - a.x) * slope;
     notes.forEach((n, k) => {
       const p = ps[k];
-      const c = n.cls === "u" ? "uncertain" : n.cls === "vu" ? "very-uncertain" : "ink";
-      out.push(`<line x1="${p.x}" x2="${p.x}" y1="${p.y1}" y2="${by(p.x)}" stroke-width="${sp * 0.12}" style="stroke:var(--bc-${c})"/>`);
+      const c = n.cls === "u" ? "scribe-uncertain" : n.cls === "vu" ? "bc-very-uncertain" : "scribe-ink";
+      out.push(`<line x1="${p.x}" x2="${p.x}" y1="${p.y1}" y2="${by(p.x)}" stroke-width="${sp * 0.12}" style="stroke:var(--${c})"/>`);
     });
     const th = sp * 0.5 * (up ? 1 : -1);
     out.push(`<path class="ink" d="M${a.x - sp * 0.06} ${by(a.x)}L${z.x + sp * 0.06} ${by(z.x)}l0 ${th}L${a.x - sp * 0.06} ${by(a.x) + th}Z"/>`);
