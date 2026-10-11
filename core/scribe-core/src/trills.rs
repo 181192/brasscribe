@@ -9,7 +9,7 @@
 //!
 //! [`with_trills`] writes them in the transcription at standard and easier (on the simpler line,
 //! from the contour-split notes); [`collapse_trills`] in the arrangement (written-out alternations,
-//! at standard and easier, and at faithful when asked for). Mirrors `brasscribe_music.trills`.
+//! at standard and easier, and at faithful when asked for). Mirrors `scribe_music.trills`.
 
 use crate::midi::RawNote;
 use crate::model::Note;

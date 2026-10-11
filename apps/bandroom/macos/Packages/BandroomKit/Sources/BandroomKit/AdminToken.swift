@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 /// The local admin credential for the engine's owner endpoints (/v1/status, /v1/devices, /v1/pairing…).
-/// Bandroom creates it once, owner-only (0600), passes it to the engine as BRASSCRIBE_ADMIN_TOKEN and
+/// Bandroom creates it once, owner-only (0600), passes it to the engine as SCRIBE_ADMIN_TOKEN and
 /// sends it as a bearer token.
 public enum AdminToken {
     public enum Failure: Error, Equatable {

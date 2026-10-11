@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine.api import create_app
+from scribe_engine.api import create_app
 
 
 def finished_run(settings, run_id: str, files: dict[str, str], title: str = "Old") -> None:
@@ -43,8 +43,8 @@ def test_rename_replaces_outputs_that_are_read_only_links_into_the_cache(setting
     import os
     import stat
 
-    from brasscribe_engine import jobs
-    from brasscribe_engine.cache import _read_only
+    from scribe_engine import jobs
+    from scribe_engine.cache import _read_only
 
     finished_run(settings, "run-a", {})
     cached = settings.cache_dir / "composition.json"
@@ -66,7 +66,7 @@ def test_rename_replaces_outputs_that_are_read_only_links_into_the_cache(setting
 
 
 def test_rename_retitles_the_parts_and_the_talking_score(settings, client):
-    from brasscribe_engine import talking_score
+    from scribe_engine import talking_score
 
     doc = {"version": 1, "title": "Old", "total_bars": 0, "parts": []}
     finished_run(settings, "run-a", {
@@ -88,7 +88,7 @@ SCORE = "<score-partwise><work><work-title>Old</work-title></work></score-partwi
 
 @pytest.fixture
 def jobs(settings):
-    from brasscribe_engine.jobs import JobManager
+    from scribe_engine.jobs import JobManager
 
     manager = JobManager(settings)
     yield manager
@@ -105,7 +105,7 @@ def mscore(monkeypatch):
     """A MuseScore that writes the work title of what it renders, and records the style of each launch."""
     import re
 
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     styles: list = []
 
@@ -124,7 +124,7 @@ def mscore(monkeypatch):
 
 
 def fake_braille(monkeypatch):
-    from brasscribe_engine import braille
+    from scribe_engine import braille
 
     monkeypatch.setattr(braille, "translate", lambda src: type("R", (), {"brf": "BRF " + Path(src).read_text()[-60:]})())
 
@@ -164,7 +164,7 @@ def test_quick_renames_in_a_row_launch_musescore_once(settings, jobs, mscore):
 
 
 def test_a_render_for_a_title_the_run_no_longer_has_is_thrown_away(settings, jobs, mscore, monkeypatch):
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old"})
     convert = musescore.convert_many
@@ -182,7 +182,7 @@ def test_a_render_for_a_title_the_run_no_longer_has_is_thrown_away(settings, job
 
 
 def test_a_run_deleted_while_it_renders_stays_deleted(settings, jobs, mscore, monkeypatch):
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old"})
     convert = musescore.convert_many
@@ -199,7 +199,7 @@ def test_a_run_deleted_while_it_renders_stays_deleted(settings, jobs, mscore, mo
 
 
 def test_a_swap_that_fails_leaves_no_partial_file_and_none_is_listed(settings, jobs, mscore, monkeypatch):
-    from brasscribe_engine import jobs as J
+    from scribe_engine import jobs as J
 
     finished_run(settings, "run-a", {"brass-band.musicxml": SCORE, "brass-band.pdf": "old", "brass-band.mid": "old"})
     replace = J.os.replace
@@ -221,8 +221,8 @@ def test_shutdown_stops_a_running_render_and_drops_the_queued_ones(settings, mon
     import threading
     import time
 
-    from brasscribe_engine.jobs import JobManager
-    from brasscribe_music import musescore
+    from scribe_engine.jobs import JobManager
+    from scribe_music import musescore
 
     started, launches = threading.Event(), []
 
@@ -247,7 +247,7 @@ def test_shutdown_stops_a_running_render_and_drops_the_queued_ones(settings, mon
 
 
 def test_a_renamed_tab_is_rendered_again_with_its_page_title(settings, jobs, mscore):
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     finished_run(settings, "run-t", {"tab.musicxml": SCORE, "tab.pdf": "old", "tab.mid": "old"})
     title = "A very long title " * 10
@@ -258,7 +258,7 @@ def test_a_renamed_tab_is_rendered_again_with_its_page_title(settings, jobs, msc
 
 
 def test_without_musescore_a_rename_keeps_the_pdf_and_still_makes_the_braille(settings, jobs, monkeypatch):
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     monkeypatch.setattr(musescore, "binary", lambda: None)
     fake_braille(monkeypatch)

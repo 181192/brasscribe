@@ -100,7 +100,7 @@ import Testing
         let fm = FileManager.default
         let home = fm.temporaryDirectory.appending(path: "bandroom-override-\(UUID().uuidString)", directoryHint: .isDirectory)
         defer { try? fm.removeItem(at: home) }
-        // BRASSCRIBE_DATA and BRASSCRIBE_LOGS pointed at a folder the user keeps other things in.
+        // SCRIBE_DATA and SCRIBE_LOGS pointed at a folder the user keeps other things in.
         let documents = home.appending(path: "Documents", directoryHint: .isDirectory)
         let paths = BandroomPaths(data: documents, logs: documents)
         for dir in [paths.models, paths.state, paths.workspace.appending(path: ".pixi")] {

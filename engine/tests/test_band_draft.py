@@ -5,7 +5,7 @@ from pathlib import Path
 
 from types import SimpleNamespace
 
-from brasscribe_engine import profiles, tuning
+from scribe_engine import profiles, tuning
 
 
 def test_the_draft_runs_basic_pitch_alone_with_the_small_beat_tracker():
@@ -47,8 +47,8 @@ def test_beats_are_only_reused_from_the_same_model(tmp_path):
 
 
 def test_the_model_listing_has_both_beat_models(tmp_path):
-    from brasscribe_engine.adapters import AdapterRegistry
-    from brasscribe_engine.hashing import HashIndex
+    from scribe_engine.adapters import AdapterRegistry
+    from scribe_engine.hashing import HashIndex
 
     listed = [m["name"] for m in AdapterRegistry(tmp_path, tmp_path, HashIndex(None)).models("beat-this")]
     assert listed == ["beat_this-final0.ckpt", "beat_this-small0.ckpt"]

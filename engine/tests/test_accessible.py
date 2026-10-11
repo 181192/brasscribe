@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import braille, profiles
-from brasscribe_engine.api import create_app
+from scribe_engine import braille, profiles
+from scribe_engine.api import create_app
 
 from .test_api import wait
 from .test_talking_score import SMALL
@@ -89,7 +89,7 @@ def test_arrangement_options_only_non_defaults():
 
 
 def test_difficulty_is_a_cache_key_pass_through(settings, audio):
-    from brasscribe_engine import runner, stages
+    from scribe_engine import runner, stages
 
     ran = []
 
@@ -125,8 +125,8 @@ def test_braille_and_talking_score_endpoints(settings, audio, tmp_path):
         (out / "parts").mkdir()
         (out / "parts" / "02-Solo-Cornet.musicxml").write_text(SMALL)
         (out / "brass-band.musicxml").write_text(SMALL)
-        from brasscribe_engine import talking_score as T
-        from brasscribe_engine.stages import accessible_exports
+        from scribe_engine import talking_score as T
+        from scribe_engine.stages import accessible_exports
 
         class Ctx:
             out = tmp_path / "export"
@@ -227,7 +227,7 @@ def test_a_bar_of_32nds_with_review_marks_still_translates(tmp_path):
 
 
 def test_the_band_export_is_keyed_on_the_musescore_that_would_render_it(tmp_path, monkeypatch):
-    from brasscribe_music import musescore
+    from scribe_music import musescore
 
     def key(profile: str) -> dict:
         return profiles.build(profile, Path("song.wav"), "T").stage("export").params
@@ -248,9 +248,9 @@ def test_the_band_export_is_keyed_on_the_musescore_that_would_render_it(tmp_path
 
 
 def test_a_band_run_made_without_musescore_is_rendered_once_it_is_installed(settings, audio, tmp_path, monkeypatch):
-    from brasscribe_engine import runner
-    from brasscribe_engine import stages as S
-    from brasscribe_music import musescore
+    from scribe_engine import runner
+    from scribe_engine import stages as S
+    from scribe_music import musescore
 
     from .conftest import fake_pipeline
 
@@ -285,8 +285,8 @@ def test_the_band_export_renders_only_with_the_musescore_it_was_keyed_on(tmp_pat
     than its key."""
     from types import SimpleNamespace
 
-    from brasscribe_engine import stages as S
-    from brasscribe_music import musescore
+    from scribe_engine import stages as S
+    from scribe_music import musescore
 
     (tmp_path / "score").mkdir()
     (tmp_path / "score" / "brass-band.musicxml").write_text("<score-partwise/>")

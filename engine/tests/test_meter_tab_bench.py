@@ -1,11 +1,11 @@
-"""The meter benchmark of the tab profiles (brasscribe_eval.meter_tab_bench): its passages and its suite."""
+"""The meter benchmark of the tab profiles (scribe_eval.meter_tab_bench): its passages and its suite."""
 
 from __future__ import annotations
 
 import pytest
 
-from brasscribe_eval import meter_tab_bench as M
-from brasscribe_eval import suites
+from scribe_eval import meter_tab_bench as M
+from scribe_eval import suites
 
 
 def test_each_passage_is_in_its_meter_and_the_same_every_time():

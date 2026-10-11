@@ -71,7 +71,7 @@ PROBES = {
 
 
 def main() -> int:
-    from brasscribe_engine import bass_tab
+    from scribe_engine import bass_tab
 
     first = json.loads((FIRST / "tab.json").read_text())
     request = json.loads((FIRST / "request.json").read_text())

@@ -3,7 +3,7 @@
 Both run on the reference's own outputs (brass-band.musicxml, composition.json), so a
 difference here is in the talking score or the humanizer, not in the arrangement.
 
-* Talking score (engine/src/brasscribe_engine/talking_score.py): the document JSON and
+* Talking score (engine/src/scribe_engine/talking_score.py): the document JSON and
   the text and HTML exports under several settings.
 * Humanization (sounds/humanize.py): every non-drum voice of the Composition as a part,
   on the voice's own ticks and shifted off them, two players, score and performed timing,
@@ -43,7 +43,7 @@ _TS = _HU = None
 def talking():
     global _TS
     if _TS is None:
-        _TS = _load("sc_talking_score", REPO / "engine" / "src" / "brasscribe_engine" / "talking_score.py")
+        _TS = _load("sc_talking_score", REPO / "engine" / "src" / "scribe_engine" / "talking_score.py")
     return _TS
 
 

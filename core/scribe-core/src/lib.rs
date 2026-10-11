@@ -4,7 +4,7 @@
 //! written durations, pitch spelling and key, harmony reduction, note voting,
 //! the transcription that puts them together ([`transcription`]: transcriptions
 //! and beats in, a Composition out) and the MusicXML writer. It reproduces the Python reference
-//! (`brasscribe_music` and the eval entry points) exactly; `core/conformance`
+//! (`scribe_music` and the eval entry points) exactly; `core/conformance`
 //! checks that.
 //!
 //! What turns notes into one kind of output (arranging for a brass band in `target-brass`, placing

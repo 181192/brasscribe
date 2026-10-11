@@ -1,5 +1,5 @@
 [project]
-name = "brasscribe-sounds"
+name = "scribe-sounds"
 version = "0.1.0"
 license = "MIT OR Apache-2.0"
 description = "Realistic playback tier: sample fetching, instrument building, room placement and offline reference rendering"

@@ -29,4 +29,4 @@ strings: build
 	python3 scripts/make-strings.py $(DERIVED)/Build/Intermediates.noindex
 
 run: build
-	BRASSCRIBE_CHECKOUT="$(CHECKOUT)" "$(APP)/Contents/MacOS/Brasscribe Bandroom"
+	SCRIBE_CHECKOUT="$(CHECKOUT)" "$(APP)/Contents/MacOS/Brasscribe Bandroom"

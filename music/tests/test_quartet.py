@@ -4,12 +4,12 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from brasscribe_music.arranger import (_perfect_parallels, arrange, arrange_composition, arrange_layers, chord_root,
+from scribe_music.arranger import (_perfect_parallels, arrange, arrange_composition, arrange_layers, chord_root,
                                        layer_of_part, voice_satb)
-from brasscribe_music.difficulty import easy_range
-from brasscribe_music.instruments import QUARTET, lineup_by_name, part_banks
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.difficulty import easy_range
+from scribe_music.instruments import QUARTET, lineup_by_name, part_banks
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 NAMES = ["1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium"]
 

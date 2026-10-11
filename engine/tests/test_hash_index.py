@@ -9,12 +9,12 @@ import textwrap
 
 import pytest
 
-from brasscribe_engine.hashing import HashIndex
+from scribe_engine.hashing import HashIndex
 
 WRITER = textwrap.dedent("""
     import sys
     from pathlib import Path
-    from brasscribe_engine.hashing import HashIndex
+    from scribe_engine.hashing import HashIndex
     index, files, rounds = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3])
     h = HashIndex(index)
     for f in sorted(files.iterdir()):

@@ -2,13 +2,13 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 
-from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.durations import written_durations
-from brasscribe_music.energy import Envelope, gate
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.parts import split_parts
-from brasscribe_music.quantize import BeatMap, QNote
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.arranger import arrange_layers
+from scribe_music.durations import written_durations
+from scribe_music.energy import Envelope, gate
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.parts import split_parts
+from scribe_music.quantize import BeatMap, QNote
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 
 def test_gate_drops_notes_where_the_layer_is_silent():
@@ -30,7 +30,7 @@ def test_part_writing_options_make_staccato_eighths():
 
 
 def test_parts_have_one_part_multi_rests_tempo_and_tacet(tmp_path):
-    from brasscribe_music.score_model import Section
+    from scribe_music.score_model import Section
     solo = [Note(72, 0, 96), Note(74, 5 * 96, 96), Note(74, 12 * 96, 96)]
     comp = Composition("t", [Voice("solo", VoiceRole.MELODY, solo, layer="solo")], [Meter(0, 4)], [KeySig(0, 0)],
                        [0.5 * i for i in range(60)], sections=[Section(8 * 96, "A")])
@@ -49,7 +49,7 @@ def test_parts_have_one_part_multi_rests_tempo_and_tacet(tmp_path):
 
 
 def test_arranged_parts_carry_the_source_footer(tmp_path):
-    from brasscribe_music.arranger import ARRANGED, RECORDING, part_footers, part_sources, source_footer
+    from scribe_music.arranger import ARRANGED, RECORDING, part_footers, part_sources, source_footer
     solo = [Note(72, 0, 96), Note(74, 96, 96)]
     bass = [Note(36, 0, 192)]
     comp = Composition("t", [Voice("solo", VoiceRole.MELODY, solo, layer="solo"), Voice("bass", VoiceRole.BASS, bass, layer="bass")],

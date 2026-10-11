@@ -46,7 +46,7 @@ from dsp import SR  # noqa: E402
 DATA = ROOT / "data" / "sounds"
 PHRASES = DATA / "phrases"
 SFIZZ = DATA / "tools" / "bin" / "sfizz_render"
-BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", DATA / "built"))  # a staging build: its band/ sits next to it
+BUILT = Path(os.environ.get("SCRIBE_SOUNDS_BUILT", DATA / "built"))  # a staging build: its band/ sits next to it
 BAND_SF2 = BUILT.parent / "band" / "brasscribe-band.sf2"
 MOBILE_SF2 = BUILT.parent / "band" / "brasscribe-band-mobile.sf2"
 MSBASIC = DATA / "raw" / "msbasic" / "MS Basic.sf3"

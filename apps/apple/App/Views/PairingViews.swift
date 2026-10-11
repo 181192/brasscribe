@@ -53,7 +53,7 @@ struct YourComputerSection: View {
                     .disabled(busy)
             }
             DisclosureGroup {
-                Text("Without Brasscribe Bandroom, start the engine with “brasscribe serve --lan”.")
+                Text("Without Brasscribe Bandroom, start the engine with “scribe serve --lan”.")
                     .font(Font.Scribe.callout)
                 ConnectionDetails()
                 if showPairing && approval == nil { linkField }

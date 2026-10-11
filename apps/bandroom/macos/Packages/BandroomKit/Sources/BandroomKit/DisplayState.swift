@@ -7,10 +7,11 @@ public enum Problem: Equatable, Sendable {
     /// environment) aren't installed yet.
     case missingDownload([ModelComponent])
     case noFreePort
-    /// The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.
+    /// The app was updated but its engine couldn't be. The previous one is back, and runs when this app can still
+    /// start it (`EngineSource.startsAfterUpdate`); when it can't, nothing runs. The fix tries the update again.
     case updateFailed
-    /// As `updateFailed`, because pixi refused the new workspace (too old for it). The previous engine still runs, so
-    /// Brasscribe can start; the fix is a newer Bandroom. With no engine running, a start refusal says `pixiTooOld`.
+    /// As `updateFailed`, because pixi refused the new workspace (too old for it). The fix is a newer Bandroom. With
+    /// no engine running because a start was refused, the problem is `pixiTooOld`.
     case updateRefused(PixiRefusal)
     /// The engine runs but hasn't answered for several checks in a row (hung). The fix restarts it.
     case notResponding
@@ -31,7 +32,7 @@ public enum Problem: Equatable, Sendable {
         }
     }
 
-    /// What a failed update shows while the previous engine stays: why it failed, when pixi said.
+    /// What a failed update shows, whether or not the previous engine could be started: why it failed, when pixi said.
     public static func afterFailedUpdate(refusal: PixiRefusal?) -> Problem {
         refusal.map(Problem.updateRefused) ?? .updateFailed
     }

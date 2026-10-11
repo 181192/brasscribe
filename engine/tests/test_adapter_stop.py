@@ -8,12 +8,12 @@ import time
 
 import pytest
 
-from brasscribe_engine import jobs as J
-from brasscribe_engine import stages as S
-from brasscribe_engine.adapters import AdapterCancelled, AdapterError
-from brasscribe_engine.dag import SOURCE, Cancelled, Executor, Input, Pipeline, Stage
-from brasscribe_engine.gpulock import file_lock, is_locked
-from brasscribe_engine.jobs import JobManager
+from scribe_engine import jobs as J
+from scribe_engine import stages as S
+from scribe_engine.adapters import AdapterCancelled, AdapterError
+from scribe_engine.dag import SOURCE, Cancelled, Executor, Input, Pipeline, Stage
+from scribe_engine.gpulock import file_lock, is_locked
+from scribe_engine.jobs import JobManager
 
 from .test_dag import session
 
@@ -89,8 +89,8 @@ def test_cancelling_a_running_job_ends_it_as_cancelled(settings, audio, tmp_path
 def test_a_model_past_its_time_limit_is_stopped(settings, audio, tmp_path, monkeypatch):
     pid_file = tmp_path / "model.pid"
     monkeypatch.setenv("FAKE_HANG", str(pid_file))
-    monkeypatch.setenv("BRASSCRIBE_ADAPTER_TIMEOUT_S", "1")
-    from brasscribe_engine.config import Settings
+    monkeypatch.setenv("SCRIBE_ADAPTER_TIMEOUT_S", "1")
+    from scribe_engine.config import Settings
 
     assert Settings().adapter_timeout_s == 1.0
     _, adapters = session(settings)
@@ -103,7 +103,7 @@ def test_a_model_past_its_time_limit_is_stopped(settings, audio, tmp_path, monke
 
 
 def test_time_limits_by_weight(settings):
-    from brasscribe_engine.adapters import HEAVY_TIMEOUT_S, LIGHT_TIMEOUT_S
+    from scribe_engine.adapters import HEAVY_TIMEOUT_S, LIGHT_TIMEOUT_S
 
     _, adapters = session(settings)
     assert adapters.time_limit("muscriptor") == HEAVY_TIMEOUT_S > adapters.time_limit("swift-f0") == LIGHT_TIMEOUT_S
@@ -125,7 +125,7 @@ def test_cancel_while_waiting_for_the_gpu(settings, audio, tmp_path):
 def test_stopping_the_engine_cancels_its_jobs_and_stops_their_models(settings, audio, tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
     pid_file = tmp_path / "model.pid"
     monkeypatch.setenv("FAKE_HANG", str(pid_file))

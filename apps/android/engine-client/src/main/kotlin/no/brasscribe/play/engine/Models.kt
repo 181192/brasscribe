@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /*
- * Wire types of the brasscribe engine companion API (engine/openapi.json, version 0.1.0).
+ * Wire types of the scribe engine companion API (engine/openapi.json, version 0.1.0).
  * EngineContractTest checks these against the vendored spec: every property the spec requires must be
  * declared here under the same name.
  */

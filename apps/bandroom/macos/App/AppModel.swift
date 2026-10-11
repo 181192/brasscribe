@@ -17,7 +17,8 @@ final class AppModel {
     let bootstrapper = Bootstrapper()
     /// Replaces the engine workspace in the data folder after the app itself was updated (design/server-app.md §3.8).
     let updater = Bootstrapper()
-    /// Why the last engine update failed; the previous engine runs meanwhile, and Try again tries once more.
+    /// Why the last engine update failed; the previous engine runs meanwhile when it can still be started, and Try
+    /// again runs the update once more.
     private(set) var updateFailure: String?
     /// The workspace this build of the app ships, and its stamp.
     let bundledWorkspace: URL? = Bundle.main.resourceURL.map { $0.appending(path: "workspace") }
@@ -219,12 +220,17 @@ final class AppModel {
 
     // MARK: engine update
 
-    /// Brings the engine workspace up to this build of the app, then starts the engine: the new one, or the
-    /// previous one when the update failed.
+    /// Brings the engine workspace up to this build of the app, then starts the engine: the new one, or, when the
+    /// update failed, the previous one if this app can still start it. If it cannot, nothing is started and the
+    /// update's problem stays on screen with its Try again.
     private func updateThenStart() {
         Task { [weak self] in
             guard let self else { return }
             await self.updateWorkspaceIfNeeded()
+            guard self.supervisor.configuration.source.startsAfterUpdate(failed: self.updateFailure != nil) else {
+                self.logger.write("the previous engine has no \(EngineSource.command) command to start: nothing runs until the update succeeds")
+                return
+            }
             // A quick key read makes the first launch; one waiting on a Keychain prompt doesn't hold up the
             // engine, which restarts with the key if it's allowed later.
             await self.savedKey.settled(within: .seconds(2))
@@ -254,7 +260,7 @@ final class AppModel {
         } else {
             let why = if case .failed(let e) = updater.phase { e } else { "unknown" }
             updateFailure = why
-            logger.write("engine update failed, the previous engine stays: \(why)")
+            logger.write("engine update failed, the previous workspace is back: \(why)")
         }
     }
 
@@ -339,7 +345,7 @@ final class AppModel {
     }
 
     /// pixi refused the engine workspace during first-run setup, so there is no engine to run. (A refused start is the
-    /// supervisor's failure; a refused update keeps the previous engine, `Problem.updateRefused`.)
+    /// supervisor's failure; a refused update puts the previous engine back, `Problem.updateRefused`.)
     var pixiRefusal: PixiRefusal? {
         if case .failed = bootstrapper.phase, let r = bootstrapper.pixiRefusal { return r }
         return nil

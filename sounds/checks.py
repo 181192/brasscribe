@@ -39,7 +39,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "music" / "src"))
 from dsp import SR  # noqa: E402
 
-BUILT = Path(os.environ.get("BRASSCRIBE_SOUNDS_BUILT", HERE.parent / "data" / "sounds" / "built"))
+BUILT = Path(os.environ.get("SCRIBE_SOUNDS_BUILT", HERE.parent / "data" / "sounds" / "built"))
 BAND_SF2 = BUILT.parent / "band" / "brasscribe-band.sf2"
 MAX_STRETCH_COMFORTABLE = 3
 MIN_SF2_RELEASE_S = 0.4
@@ -109,7 +109,7 @@ def balance(runs: list[str]) -> None:
 
 def coverage() -> int:
     import partsound
-    from brasscribe_music.instruments import INSTRUMENTS
+    from scribe_music.instruments import INSTRUMENTS
     from sf3 import SoundFontReader
     mapping = json.loads((HERE / "mapping.json").read_text())
     sf = SoundFontReader(str(BAND_SF2))
@@ -117,7 +117,7 @@ def coverage() -> int:
     problems = []
     rows = []
     # mapping.json `lineups` must list every lineup the arrangers write, part for part.
-    from brasscribe_music.instruments import LINEUPS
+    from scribe_music.instruments import LINEUPS
     for lu in LINEUPS.values():
         listed = mapping["lineups"].get(lu.name)
         if listed != [p.name for p in lu.parts]:

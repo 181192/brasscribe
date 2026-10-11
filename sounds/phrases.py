@@ -3,7 +3,7 @@
     uv run --project sounds python sounds/phrases.py -o data/sounds/phrases
 
 Writes, per lineup part (sounds/mapping.json `parts`, which covers every lineup in
-music/src/brasscribe_music/instruments.py):
+music/src/scribe_music/instruments.py):
   <part>.mid       one track, the part's band SoundFont bank/program on channel 0
   phrases.json     where each test section starts and ends, and every note, in seconds
 and band.mid, all parts together on their own channels (percussion on channel 10) with the
@@ -34,7 +34,7 @@ import mido
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT / "music" / "src"))
-from brasscribe_music.instruments import BRASS_BAND, INSTRUMENTS, MINIMAL_BAND  # noqa: E402
+from scribe_music.instruments import BRASS_BAND, INSTRUMENTS, MINIMAL_BAND  # noqa: E402
 
 TPS = 1920  # MIDI ticks per second at 120 bpm with 960 ticks per beat
 SIXTEENTH = 60 / 132 / 4

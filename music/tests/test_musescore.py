@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music import musescore
+from scribe_music import musescore
 
 
 def test_lock_excludes_and_is_released(tmp_path, monkeypatch):

@@ -79,7 +79,7 @@ android/smoke/run.sh                       # Kotlin bindings on the JVM against 
 cd android && gradle :scribe-core:assembleRelease   # AAR
 ```
 
-CLI (mirrors `eval/brasscribe_eval/*.py`):
+CLI (mirrors `eval/scribe_eval/*.py`):
 
 ```sh
 scribe-core arrange-layers --layers data/mikkel/repro/layers --beats data/mikkel/repro/mix.beats \

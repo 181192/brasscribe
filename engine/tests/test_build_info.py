@@ -1,6 +1,6 @@
 import json
 
-from brasscribe_engine import build_info
+from scribe_engine import build_info
 
 
 def test_the_workspace_stamp_names_the_build(tmp_path):

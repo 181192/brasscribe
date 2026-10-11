@@ -66,22 +66,30 @@
       <_WsRoot Include="$(RepoRoot)pixi.toml;$(RepoRoot)pixi.lock" />
       <_WsEngine Include="$(RepoRoot)engine\src\**\*" Exclude="$(_NoCache)" />
       <_WsMusic Include="$(RepoRoot)music\src\**\*" Exclude="$(_NoCache)" />
-      <_WsEv Include="$(RepoRoot)eval\brasscribe_eval\**\*" Exclude="$(_NoCache)" />
+      <_WsEv Include="$(RepoRoot)eval\scribe_eval\**\*" Exclude="$(_NoCache)" />
       <_WsAdapters Include="$(RepoRoot)ml\adapters\**\*" Exclude="$(_NoCache)" />
       <_WsEngineMeta Include="$(RepoRoot)engine\pyproject.toml;$(RepoRoot)engine\openapi.json" />
       <_WsMusicMeta Include="$(RepoRoot)music\pyproject.toml;$(RepoRoot)music\README.md" />
       <_WsEvMeta Include="$(RepoRoot)eval\pyproject.toml;$(RepoRoot)eval\README.md" />
     </ItemGroup>
+    <!--
+      A folder that is not where this target looks for it (renamed) would copy nothing and say nothing: the
+      build stops instead. And the copy starts from an empty folder, so that an output folder from an earlier
+      build never keeps a package this checkout no longer has.
+    -->
+    <Error Condition="'@(_WsEngine)' == '' Or '@(_WsMusic)' == '' Or '@(_WsEv)' == '' Or '@(_WsAdapters)' == ''"
+           Text="The engine workspace is incomplete: engine\src, music\src, eval\scribe_eval or ml\adapters has no files under $(RepoRoot)" />
+    <RemoveDir Directories="$(_Ws)" />
     <Copy SourceFiles="@(_WsRoot)" DestinationFolder="$(_Ws)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsEngineMeta)" DestinationFolder="$(_Ws)engine" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsMusicMeta)" DestinationFolder="$(_Ws)music" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsEvMeta)" DestinationFolder="$(_Ws)eval" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsEngine)" DestinationFiles="@(_WsEngine->'$(_Ws)engine\src\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsMusic)" DestinationFiles="@(_WsMusic->'$(_Ws)music\src\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(_WsEv)" DestinationFiles="@(_WsEv->'$(_Ws)eval\brasscribe_eval\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(_WsEv)" DestinationFiles="@(_WsEv->'$(_Ws)eval\scribe_eval\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsAdapters)" DestinationFiles="@(_WsAdapters->'$(_Ws)ml\adapters\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <!--
-      The build's half of the workspace stamp (.brasscribe-workspace.json): the commit and version. Bandroom hashes
+      The build's half of the workspace stamp (.scribe-workspace.json): the commit and version. Bandroom hashes
       the files itself at launch and replaces the copy in the data folder when the hash differs (spec §3.8).
     -->
     <Exec Command="git -C &quot;$(RepoRoot).&quot; rev-parse --short HEAD 2&gt;nul" ConsoleToMSBuild="true" IgnoreExitCode="true"
@@ -92,11 +100,11 @@
     <PropertyGroup>
       <_WsCommit Condition="'$(_WsGitExit)' != '0'"></_WsCommit>
     </PropertyGroup>
-    <WriteLinesToFile File="$(_Ws).brasscribe-workspace.json" Overwrite="true" WriteOnlyWhenDifferent="true"
+    <WriteLinesToFile File="$(_Ws).scribe-workspace.json" Overwrite="true" WriteOnlyWhenDifferent="true"
                       Lines="{&quot;commit&quot;: &quot;$(_WsCommit.Trim())&quot;, &quot;version&quot;: &quot;$(Version)&quot;}" />
   </Target>
   <!--
-    The band sounds Studio plays (the engine serves them through BRASSCRIBE_BAND_SOUNDS_DIR): the phone band
+    The band sounds Studio plays (the engine serves them through SCRIBE_BAND_SOUNDS_DIR): the phone band
     SoundFont with its part map and notice under band\ next to the exe. The SoundFont is not in git; fetch it with
     `pixi run fetch-sounds` (sounds/tools/band_sounds.py). Without it Bandroom logs that the band sounds are missing.
   -->

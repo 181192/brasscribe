@@ -1,11 +1,11 @@
-// Serves the built Studio bundle (engine/src/brasscribe_engine/static) as plain files, with no
+// Serves the built Studio bundle (engine/src/scribe_engine/static) as plain files, with no
 // engine behind it, for the browser tests in this directory. Usage: node browser/serve.mjs [port]
 import { createReadStream, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, extname, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "engine", "src", "brasscribe_engine", "static");
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "engine", "src", "scribe_engine", "static");
 const port = Number(process.argv[2] ?? 8798);
 const types = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",

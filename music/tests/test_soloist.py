@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music.arranger import _layer, _place_line, arrange_layers, in_register, place_soloist
-from brasscribe_music.instruments import (BRASS_BAND, INSTRUMENTS, MINIMAL_BAND, QUARTET, lead_lineup, seat_lineup,
+from scribe_music.arranger import _layer, _place_line, arrange_layers, in_register, place_soloist
+from scribe_music.instruments import (BRASS_BAND, INSTRUMENTS, MINIMAL_BAND, QUARTET, lead_lineup, seat_lineup,
                                           validate_part)
-from brasscribe_music.score_model import Composition, Note
+from scribe_music.score_model import Composition, Note
 
 GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
 CORNET = INSTRUMENTS["bb-cornet"]
@@ -82,7 +82,7 @@ def test_not_a_soloist_lead_quartet_solo_take_or_moved_tune():
 @pytest.fixture(scope="module")
 def mikkel():
     if not GOLDEN.exists():
-        if os.environ.get("BRASSCRIBE_REQUIRE_DATA"):
+        if os.environ.get("SCRIBE_REQUIRE_DATA"):
             pytest.fail(f"missing {GOLDEN}")
         pytest.skip("data/golden not available")
     return Composition.from_json(GOLDEN)

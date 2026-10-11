@@ -15,7 +15,7 @@
 # The key is a hash of the core sources (tracked and untracked, not ignored), Cargo.lock, this
 # script, rustc -vV and the component's own toolchain (Xcode, NDK, cargo-ndk). An edit to the core
 # makes a new key, so the next ensure rebuilds from this checkout's sources. Entries live in
-# $BRASSCRIBE_CACHE/core-artifacts (default ~/.cache/brasscribe). Builds run under a lock on a copy
+# $SCRIBE_CACHE/core-artifacts (default ~/.cache/scribe). Builds run under a lock on a copy
 # of the sources at a fixed path (core-src) with one shared CARGO_TARGET_DIR, so only what changed
 # is compiled again.
 # Files are copied into the checkout as APFS clones (cp -c): instant, and no extra disk.
@@ -23,7 +23,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CORE="$ROOT/core"
-CACHE="${BRASSCRIBE_CACHE:-$HOME/.cache/brasscribe}"
+CACHE="${SCRIBE_CACHE:-$HOME/.cache/scribe}"
 STORE="$CACHE/core-artifacts"
 export CARGO_TARGET_DIR="$CACHE/cargo-target/artifacts"
 export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"

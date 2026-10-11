@@ -40,7 +40,7 @@ def main() -> None:
     args = ap.parse_args()
     info = json.loads(Path(args.realistic_info).read_text())
     wtd = info["wet_to_direct_db"]
-    work = Path(tempfile.mkdtemp(prefix="brasscribe-roombase-"))
+    work = Path(tempfile.mkdtemp(prefix="scribe-roombase-"))
     dec = work / "baseline.wav"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", args.baseline, "-ar", str(SR), "-ac", "2", str(dec)], check=True)
     x, _ = sf.read(str(dec), dtype="float64", always_2d=True)

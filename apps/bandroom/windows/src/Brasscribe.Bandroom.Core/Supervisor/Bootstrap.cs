@@ -204,6 +204,14 @@ public sealed class Bootstrapper
     /// <summary>The engine environment is installed, so the engine can start while adapters still download.</summary>
     public bool EngineReady => HasInstalledEngine;
 
+    /// <summary>
+    /// Whether the engine may be started once an update stopped with the previous workspace put back
+    /// (<paramref name="failed"/>). That engine is ready by its marker, but it is started only when its environment
+    /// holds the command this app runs. Otherwise nothing is started: a start could only fail, and its error would
+    /// hide the update's own problem, whose fix runs the update again.
+    /// </summary>
+    public bool StartsAfterUpdate(bool failed) => EngineReady && (!failed || File.Exists(_paths.EngineCommand));
+
     public ProcessSpec InstallSpec(string environment) => new(
         _pixiExe,
         ["install", "--manifest-path", _paths.Manifest, "--frozen", "-e", environment],

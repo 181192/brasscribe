@@ -56,7 +56,7 @@ coreml = [
 ]
 
 [[package]]
-name = "brasscribe-basic-pitch"
+name = "scribe-basic-pitch"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

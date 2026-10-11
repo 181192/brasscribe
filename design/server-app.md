@@ -99,7 +99,7 @@ This is one window, not a wizard of dialogs, and it has **one decision per step*
    - "Band writer (MuScriptor)" (1.2 GB)
 
    "You can close this window. Brasscribe keeps downloading and tells you when it's ready." **Pause** / **Resume** is secondary. There is no primary, because nothing needs deciding.
-   - **Where the files come from** (apps-plan §7). The separators have no stated licence, so the user's own app fetches them from the original release URLs (GitHub releases of python-audio-separator and Music-Source-Separation-Training) into `<data>/models/separator` and `<data>/models/mega53`, the folder the engine gets as `BRASSCRIBE_MODELS`. A caption says so: "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them." MuScriptor comes from Hugging Face with the user's key, into the Hugging Face cache (`HF_HUB_CACHE`, else `HF_HOME/hub`, else `~/.cache/huggingface/hub`) in `huggingface_hub`'s own layout, pinned to one revision, because the adapter always asks the hub for `MuScriptor/muscriptor-medium`.
+   - **Where the files come from** (apps-plan §7). The separators have no stated licence, so the user's own app fetches them from the original release URLs (GitHub releases of python-audio-separator and Music-Source-Separation-Training) into `<data>/models/separator` and `<data>/models/mega53`, the folder the engine gets as `SCRIBE_MODELS`. A caption says so: "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them." MuScriptor comes from Hugging Face with the user's key, into the Hugging Face cache (`HF_HUB_CACHE`, else `HF_HOME/hub`, else `~/.cache/huggingface/hub`) in `huggingface_hub`'s own layout, pinned to one revision, because the adapter always asks the hub for `MuScriptor/muscriptor-medium`.
    - **Checks:** free space per disk before any byte (the downloads plus 1 GB), then each file's size and the SHA-256 upstream publishes (GitHub's release asset digest, Hugging Face's `X-Linked-Etag`). A stopped or paused file continues where it was with an HTTP Range request.
    - **Errors, each with its own fix:** no key → "The band writer needs your Hugging Face access key" [Add an access key]; 401 → "Hugging Face didn't accept the access key" [Paste a new key]; 403 → "Accept the licence on Hugging Face, then try again" [Open the MuScriptor page]; not enough space [Free up space…]; a damaged file (deleted, fetched afresh on Try again); the network ("It continues where it stopped"). **Continue without it** carries on; the popover then says what is missing.
    - **Finish setting up** later opens this step with **only the missing downloads** (or the licence step first, when the band writer is missing and there is no key).
@@ -197,7 +197,7 @@ Play for macOS and Windows uses Bandroom over loopback, where it is **trusted an
   - A row in the popover: "Version 1.3 is ready. It installs when nothing is being made." **Update now** is secondary.
   - While updating, the state is **Updating**: "Back in about a minute. Phones reconnect by themselves."
 - **An update never unpairs a phone.** The device credentials live in the data folder, not in the app bundle.
-- **As built today.** Neither Sparkle nor App Installer is wired up: an update is a new download that replaces the app. On its next launch Bandroom compares the stamp of the engine workspace in the data folder (`envs/.brasscribe-workspace.json`: a hash of the files and the commit, written last) with the one in the app. When they differ it shows **Updating**, stops the engine, swaps the code folders in all at once (a journal makes the swap safe to interrupt) and reinstalls environments only when `pixi.lock` changed; models, runs and paired phones stay. `/v1/health` reports which build is running. After updating an ad-hoc-signed Mac build, macOS asks once for the Keychain password before Bandroom can read the saved Hugging Face key (§3.2).
+- **As built today.** Neither Sparkle nor App Installer is wired up: an update is a new download that replaces the app. On its next launch Bandroom compares the stamp of the engine workspace in the data folder (`envs/.scribe-workspace.json`: a hash of the files and the commit, written last) with the one in the app. When they differ it shows **Updating**, stops the engine, swaps the code folders in all at once (a journal makes the swap safe to interrupt) and reinstalls environments only when `pixi.lock` changed; models, runs and paired phones stay. `/v1/health` reports which build is running. After updating an ad-hoc-signed Mac build, macOS asks once for the Keychain password before Bandroom can read the saved Hugging Face key (§3.2).
 
 ### 3.9 Remove a phone
 - Open **Phones and tablets**, then choose **Remove** on a row.
@@ -210,7 +210,7 @@ Play for macOS and Windows uses Bandroom over loopback, where it is **trusted an
   - ☑ "Also delete the downloads (9.8 GB)", on by default.
   - "Scores on your phones stay."
   - [Cancel] [**Remove**]
-  - It unregisters the login item, deletes the data folder and moves the app to the Bin. The downloads are the models folder and the band writer in the Hugging Face cache. A data or logs folder moved elsewhere (`BRASSCRIBE_DATA`, `BRASSCRIBE_LOGS`) loses only what Brasscribe put there.
+  - It unregisters the login item, deletes the data folder and moves the app to the Bin. The downloads are the models folder and the band writer in the Hugging Face cache. A data or logs folder moved elsewhere (`SCRIBE_DATA`, `SCRIBE_LOGS`) loses only what Brasscribe put there.
   - Dragging the app to the Bin also works. macOS drops the login item, but the data folder (`~/Library/Application Support/Brasscribe`) stays, and the download page says so.
 - **Windows:** Settings › Apps › Installed apps › Brasscribe Bandroom › Uninstall. MSIX removes the package and its redirected app data (§5.3). The More menu has the same **Remove Brasscribe from this PC…**, which opens that Settings page.
 
@@ -265,16 +265,16 @@ WantedBy=default.target
 
 | Variable | macOS | Windows |
 |---|---|---|
-| `BRASSCRIBE_DATA` | `~/Library/Application Support/Brasscribe` | `%LOCALAPPDATA%\Brasscribe` |
-| `BRASSCRIBE_MODELS` | `<data>/models` | `<data>\models` |
-| `BRASSCRIBE_ADAPTERS` | `Brasscribe Bandroom.app/Contents/Resources/adapters` | `<package>\adapters` |
+| `SCRIBE_DATA` | `~/Library/Application Support/Brasscribe` | `%LOCALAPPDATA%\Brasscribe` |
+| `SCRIBE_MODELS` | `<data>/models` | `<data>\models` |
+| `SCRIBE_ADAPTERS` | `Brasscribe Bandroom.app/Contents/Resources/adapters` | `<package>\adapters` |
 | `SCRIBE_CORE_CLI` | `Brasscribe Bandroom.app/Contents/Resources/bin/scribe-core` | `<package>\core\scribe-core.exe` |
-| `BRASSCRIBE_GPU_LOCK` | default (`/tmp/brasscribe-gpu-<uid>.lock`) | default (temp folder) |
-| `BRASSCRIBE_TOKEN` | unset: per-device credentials replace it (§11) | unset |
-| `BRASSCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kari's MacBook"; Settings › Name shown to phones replaces it when it looks machine-made ("ABCD1234EF") | the device name from Settings › System › About; the same setting for "DESKTOP-ABC1234" |
+| `SCRIBE_GPU_LOCK` | default (`/tmp/scribe-gpu-<uid>.lock`) | default (temp folder) |
+| `SCRIBE_TOKEN` | unset: per-device credentials replace it (§11) | unset |
+| `SCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kari's MacBook"; Settings › Name shown to phones replaces it when it looks machine-made ("ABCD1234EF") | the device name from Settings › System › About; the same setting for "DESKTOP-ABC1234" |
 
 - **Environments** go in `<data>/envs`, as a pixi workspace copied from the app, with `PIXI_CACHE_DIR=<data>/cache/pixi`.
-- **Engine command:** `pixi run -e <env> brasscribe serve --lan --port <p>`. The first free port from 8765 to 8775 is used. mDNS advertises the actual port, so phones find it.
+- **Engine command:** `pixi run -e <env> scribe serve --lan --port <p>`. The first free port from 8765 to 8775 is used. mDNS advertises the actual port, so phones find it.
 - **Status file:** the shell writes `engine.json` with the port, pid and server id, for Play on the same computer (§3.5).
 - **Adapters on Windows:** they use `ml/adapters/run_adapter.py`, not `run.sh`. There is no shell on a clean Windows install.
 
@@ -680,7 +680,7 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 ## 11. What this design assumes from the engine
 The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` §4. What this design relies on:
 
-- **Owner endpoints** (`/v1/status`, `/v1/devices`, `/v1/pairing*`): the shell generates a random token at first run, starts the engine with `BRASSCRIBE_ADMIN_TOKEN=<token>` (or `BRASSCRIBE_ADMIN_TOKEN_FILE`, mode 0600) and sends `Authorization: Bearer <token>` on every owner call. While an admin token is set, loopback alone gets 403 there, so a proxy on the same computer cannot manage devices. Loopback trust for Studio stays on (`BRASSCRIBE_TRUST_LOCAL=1`, the default). See plan §4.10.
+- **Owner endpoints** (`/v1/status`, `/v1/devices`, `/v1/pairing*`): the shell generates a random token at first run, starts the engine with `SCRIBE_ADMIN_TOKEN=<token>` (or `SCRIBE_ADMIN_TOKEN_FILE`, mode 0600) and sends `Authorization: Bearer <token>` on every owner call. While an admin token is set, loopback alone gets 403 there, so a proxy on the same computer cannot manage devices. Loopback trust for Studio stays on (`SCRIBE_TRUST_LOCAL=1`, the default). See plan §4.10.
 - **Status:** `GET /v1/status` returns `server_id`, `server_name`, `version`, `online_devices`, `paired_devices`, `pairing_open`, `jobs_running` and `jobs_queued`. Bandroom polls it every 5 s while the popover or flyout is open, and every 30 s otherwise. A device is online when it was seen in the last 60 s. Paired phones send a heartbeat every 20 s while the app is open.
 
 - **The pairing window:** `POST /v1/pairing {ttl_s, single_use, extend}` returns the state: `open`, `code`, `expires_at`, `server_id`, `server_name`, `hosts`, `fingerprint` and `uri`.
@@ -692,13 +692,13 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
   - `id` is stable across address, port and restart.
   - `fp` appears once the engine serves TLS, and clients pin it.
 - **Wrong codes:** after 5 from one address, code entry is locked for that address for 30 s, doubling up to 15 min (after 20 from all addresses, for everyone; a new code lifts every lock). The engine answers 429 with `Retry-After`. It never swaps the code silently.
-- **Devices:** `GET /v1/devices` (device_id, name, platform, paired_at, last_seen, rotated_at, online) and `DELETE /v1/devices/{id}`. The CLI equivalent for Linux is `brasscribe devices list|revoke|reset`.
+- **Devices:** `GET /v1/devices` (device_id, name, platform, paired_at, last_seen, rotated_at, online) and `DELETE /v1/devices/{id}`. The CLI equivalent for Linux is `scribe devices list|revoke|reset`.
 - **Approve on the computer:** the phone sends `POST /v1/pair/requests` and gets `{request_id, name, platform, match_code (4 digits), created_at, status, name_in_use}`.
   - `name_in_use` is true when a device already paired has the same name (ignoring case), so the apps can suggest another name.
   - Bandroom polls `GET /v1/pairing/requests` and calls `POST /v1/pairing/requests/{id}/approve` or `/deny`.
   - A request expires after 2 minutes, and at most three wait at once (429 beyond that).
 - **Health:** `/v1/health` gives the version, device, `server_id` and `server_name`. Work load, memory and free space come from the **native shell** (host APIs), not the engine, so the engine needs no new endpoint for them. Job progress uses the existing `/v1/jobs` and SSE.
-- **The computer's name:** the shell sets `BRASSCRIBE_COMPUTER_NAME` (§5.2). Without it, the engine uses the macOS ComputerName, else the host name. `BRASSCRIBE_SERVER_NAME` replaces the whole display name.
+- **The computer's name:** the shell sets `SCRIBE_COMPUTER_NAME` (§5.2). Without it, the engine uses the macOS ComputerName, else the host name. `SCRIBE_SERVER_NAME` replaces the whole display name.
   - `server_name` in `/v1/health`, `/v1/pair`, `/v1/status`, the pairing state, the QR `name` and the mDNS instance name is always exactly "Brasscribe on <name>". The popover header uses that string as it is.
   - The engine cleans the name: control characters and "." become spaces, whitespace collapses, and the name is cut to fit one DNS label (about 49 bytes). If nothing is left, it falls back to the short host name.
   - The mDNS TXT record carries `host=<name>` and `id=<server id>`. Phones build "Brasscribe på <host>" from `host`. They never show the mDNS instance name, because a name collision can add " (2)" to it.
@@ -709,10 +709,10 @@ These still tell people to type a command, or use other words.
 
 | Where | Today | Change to |
 |---|---|---|
-| Apple `SettingsView.swift` | "On the computer, start Brasscribe with “brasscribe serve --lan”. It shows the pairing code…" | "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose **Pair a phone**." The command moves under the tech disclosure. |
-| Android `companion_tech_details` | "Start the server on the computer with “brasscribe serve --lan”…" | Tech disclosure: "Brasscribe Bandroom shows the address under Details for the band's tech person." No developer command on the phone. |
+| Apple `SettingsView.swift` | "On the computer, start Brasscribe with “scribe serve --lan”. It shows the pairing code…" | "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose **Pair a phone**." The command moves under the tech disclosure. |
+| Android `companion_tech_details` | "Start the server on the computer with “scribe serve --lan”…" | Tech disclosure: "Brasscribe Bandroom shows the address under Details for the band's tech person." No developer command on the phone. |
 | Windows `Resources.resw` (nb) | «Koble til en enhet» | «Koble til en telefon» (the same words as the computer) |
-| `mockups/error.html` (desktop tech details) | "run `brasscribe serve --host 0.0.0.0`" | "Open Brasscribe Bandroom on the computer. Without it: `pixi run serve-lan`." |
+| `mockups/error.html` (desktop tech details) | "run `scribe serve --host 0.0.0.0`" | "Open Brasscribe Bandroom on the computer. Without it: `pixi run serve-lan`." |
 | Play "Can't reach Brasscribe on your computer" steps | "Open Brasscribe on the computer." | "Check that Brasscribe on the computer says **Running**." |
 
 ## 13. Mockups

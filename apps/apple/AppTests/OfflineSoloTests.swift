@@ -52,7 +52,7 @@ func soloF1(_ a: [PlaybackNote], _ b: [PlaybackNote]) -> Double {
 
 /// Recorded solo (30 s URMP trumpet part) → readable part, fully on the device: Core ML
 /// models plus the Rust core. Compared with the Python pipeline (SwiftF0 + Basic Pitch +
-/// Beat This small0 → brasscribe_eval.arrange_solo) on the same clip.
+/// Beat This small0 → scribe_eval.arrange_solo) on the same clip.
 @Test(.enabled(if: onDeviceRef() != nil && convertedModels != nil))
 func offlineSoloMatchesThePythonPipeline() async throws {
     let ref = try #require(onDeviceRef())

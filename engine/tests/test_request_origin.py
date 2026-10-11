@@ -3,8 +3,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import guard
-from brasscribe_engine.api import create_app
+from scribe_engine import guard
+from scribe_engine.api import create_app
 
 from .test_companion import lan
 
@@ -57,7 +57,7 @@ def test_studio_and_native_clients_still_work(local, audio):
 
 
 def test_a_proxy_host_name_can_be_allowed(settings, monkeypatch):
-    monkeypatch.setenv("BRASSCRIBE_ALLOWED_HOSTS", "engine.example.net, other.example.net")
+    monkeypatch.setenv("SCRIBE_ALLOWED_HOSTS", "engine.example.net, other.example.net")
     s = type(settings)(data_dir=settings.data_dir, adapters_dir=settings.adapters_dir, gpu_lock=settings.gpu_lock)
     with TestClient(create_app(s), client=("127.0.0.1", 50000)) as c:
         assert c.get("/v1/health", headers={"Host": "engine.example.net"}).status_code == 200

@@ -66,7 +66,7 @@ slurred alternation hard:
 
 ## 1. The eval set
 
-Code: `eval/brasscribe_eval/fast_notes.py` builds the set, and `fast_notes_bench.py` measures it. Clips are in
+Code: `eval/scribe_eval/fast_notes.py` builds the set, and `fast_notes_bench.py` measures it. Clips are in
 `data/fast-notes/fast-notes*/` (outside data/eval, whose scans expect the eval-set layout). Nothing goes into `data/golden`.
 
 | Set | Clips | Ground truth | Licence |
@@ -139,10 +139,10 @@ is smaller.
 - `extra`: control clips, extra notes per reference note.
 
 ```
-python -m brasscribe_eval.fast_notes build|track|urmp|chorales|separate
-python -m brasscribe_eval.fast_notes_bench --root data/fast-notes/fast-notes [--beats oracle,small0]
-python -m brasscribe_eval.fast_notes_bench --root … --ablate today,hold40,line30,grid-collide,…
-python -m brasscribe_eval.fast_notes_bench --mikkel --ablate today,…
+python -m scribe_eval.fast_notes build|track|urmp|chorales|separate
+python -m scribe_eval.fast_notes_bench --root data/fast-notes/fast-notes [--beats oracle,small0]
+python -m scribe_eval.fast_notes_bench --root … --ablate today,hold40,line30,grid-collide,…
+python -m scribe_eval.fast_notes_bench --mikkel --ablate today,…
 ```
 
 ## 2. Where the notes are lost
@@ -285,7 +285,7 @@ reaches the core on every platform (`Layers.solo_contour`). So:
 - the cached SwiftF0 outputs and the `choralebricks-solo` and `contours` fixtures keep their fingerprints;
 - the on-device path gets the fix through the core.
 
-**F1. Contour onsets for the solo line** (new `brasscribe_music/onsets.py`, `core/.../onsets.rs`). This runs
+**F1. Contour onsets for the solo line** (new `scribe_music/onsets.py`, `core/.../onsets.rs`). This runs
 before `cluster()`, on the SwiftF0 notes, when a contour is present. It splits a note in two cases:
 - **Pitch change.** The contour holds another semitone for at least 3 frames (48 ms). "Holds" means within
   ±35 c on the piece's own tuning, which is the circular mean of the confident frames, as in doc 11.
@@ -359,7 +359,7 @@ Scope risk is high. The step goes in only after F1–F4 land, and only if the re
 | Control extras (vibrato, scoop, fall, slow slur), written | 0 / 0.62 / 1.50 / 0.46 | no increase |
 | Review's real vibrato set: extras, trill marks | 0.14 dry / 0.40 hall, 0 | no increase, 0 |
 | Chorale solo stems, written note F1 (small0) | 0.710 (trumpet 0.904) | ≥ 0.705 (trumpet ≥ 0.899) |
-| `brasscribe bench cpu` | 19 pass, 1 pre-existing fail\* | no new failure |
+| `scribe bench cpu` | 19 pass, 1 pre-existing fail\* | no new failure |
 | Mikkel golden | — | the diff explained, in a sibling directory |
 
 \* `solo-ondevice.part_files_identical_frac` is 0.125 against 1.000 at base 9e59634c, before any change.
@@ -406,7 +406,7 @@ tracker outputs. "Written" means the Composition's solo voice at faithful diffic
 
 ### 7.1 What changed
 
-**Contour onsets** (`brasscribe_music/onsets.py`, `core/.../onsets.rs`). These run at faithful difficulty only,
+**Contour onsets** (`scribe_music/onsets.py`, `core/.../onsets.rs`). These run at faithful difficulty only,
 before the consensus:
 
 1. **Plateaus.**
@@ -572,7 +572,7 @@ It also has two new metrics:
 
 ### 8.1 Trill notation (F5)
 
-`brasscribe_music/trills.py`, `core/.../trills.rs`.
+`scribe_music/trills.py`, `core/.../trills.rs`.
 
 **What counts as a trill.** A run of at least 7 notes, alternating between two pitches a semitone or a whole tone
 apart.

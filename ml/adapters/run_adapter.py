@@ -4,10 +4,10 @@ Each adapter's run.sh delegates here, and the engine calls this file directly,
 so the same invocation works on macOS, Linux and Windows. The command runs in
 the adapter's environment:
 
-  BRASSCRIBE_ADAPTER_RUNNER=uv    the uv project in ml/adapters/<adapter> (default on macOS on Apple
+  SCRIBE_ADAPTER_RUNNER=uv    the uv project in ml/adapters/<adapter> (default on macOS on Apple
                                   silicon, the only platform the uv lock files are solved for)
-  BRASSCRIBE_ADAPTER_RUNNER=pixi  the pixi environment <adapter> of the repo's pixi.toml (default elsewhere);
-                                  BRASSCRIBE_CUDA=1 picks <adapter>-cuda for torch adapters
+  SCRIBE_ADAPTER_RUNNER=pixi  the pixi environment <adapter> of the repo's pixi.toml (default elsewhere);
+                                  SCRIBE_CUDA=1 picks <adapter>-cuda for torch adapters
 
 Outputs appear whole or not at all: each is written next to its destination and renamed into place.
 
@@ -37,7 +37,7 @@ from typing import Iterator
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-MODELS = Path(os.environ.get("BRASSCRIBE_MODELS") or ROOT / "models")
+MODELS = Path(os.environ.get("SCRIBE_MODELS") or ROOT / "models")
 TORCH = {"beat-this", "mega53", "muscriptor", "separator"}
 MSST_REPO = "https://github.com/ZFTurbo/Music-Source-Separation-Training"
 MSST_REV = "050cae7"
@@ -57,11 +57,11 @@ STDERR_TAIL = 4000  # characters of a failed model's stderr to pass on
 def runner() -> str:
     """The uv projects are locked for macOS on Apple silicon only; anywhere else pixi is the default."""
     default = "uv" if sys.platform == "darwin" and platform.machine() == "arm64" else "pixi"
-    return os.environ.get("BRASSCRIBE_ADAPTER_RUNNER") or default
+    return os.environ.get("SCRIBE_ADAPTER_RUNNER") or default
 
 
 def cuda() -> bool:
-    return os.environ.get("BRASSCRIBE_CUDA", "").strip().lower() not in ("", "0", "false", "no", "off")
+    return os.environ.get("SCRIBE_CUDA", "").strip().lower() not in ("", "0", "false", "no", "off")
 
 
 def env_cmd(project: str, cmd: list[str]) -> list[str]:

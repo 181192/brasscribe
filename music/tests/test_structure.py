@@ -1,6 +1,6 @@
 import numpy as np
 
-from brasscribe_music.structure import MAX_GAP, MIN_GAP, letters, section_starts
+from scribe_music.structure import MAX_GAP, MIN_GAP, letters, section_starts
 
 
 def test_boundary_where_a_layer_enters_and_forced_a_tempo():

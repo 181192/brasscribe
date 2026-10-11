@@ -8,19 +8,19 @@ split yet, so here a test holds the line: only the modules below know about bras
 lineups, arranging or the score written from them. The rest serves any instrument family, and this test
 fails when one of them starts importing an instrument-aware module.
 
-The talking score's reference (engine/src/brasscribe_engine/talking_score.py) is outside this package
+The talking score's reference (engine/src/scribe_engine/talking_score.py) is outside this package
 and keeps its Norwegian names beside the reading; in the port they are target-brass's `names`.
 """
 
 import ast
 from pathlib import Path
 
-import brasscribe_music
+import scribe_music
 
 # target-brass's modules, by the same names. `musicxml` is brass only in part: its band score
 # (build_band_score, band_sounds, composition_kit) is target-brass's `musicxml`, its writer is the
 # shared core's `notation::score`, which this package has not separated. The entry points in
-# eval/brasscribe_eval, outside this package, are the core's `transcription` and target-brass's `pipeline`.
+# eval/scribe_eval, outside this package, are the core's `transcription` and target-brass's `pipeline`.
 INSTRUMENT_AWARE = {"instruments", "arranger", "difficulty", "musicxml"}
 
 
@@ -32,17 +32,17 @@ def imported_modules(tree: ast.AST) -> set[str]:
                 found.add(node.module.split(".")[0])
             elif node.level == 1:
                 found.update(alias.name for alias in node.names)
-            elif node.module == "brasscribe_music":
+            elif node.module == "scribe_music":
                 found.update(alias.name for alias in node.names)
-            elif node.module and node.module.startswith("brasscribe_music."):
+            elif node.module and node.module.startswith("scribe_music."):
                 found.add(node.module.split(".")[1])
         elif isinstance(node, ast.Import):
-            found.update(a.name.split(".")[1] for a in node.names if a.name.startswith("brasscribe_music."))
+            found.update(a.name.split(".")[1] for a in node.names if a.name.startswith("scribe_music."))
     return found
 
 
 def test_shared_modules_do_not_import_instrument_knowledge():
-    package = Path(brasscribe_music.__file__).parent
+    package = Path(scribe_music.__file__).parent
     violations = []
     for path in sorted(package.glob("*.py")):
         if path.stem in INSTRUMENT_AWARE or path.stem == "__init__":
@@ -54,10 +54,10 @@ def test_shared_modules_do_not_import_instrument_knowledge():
 
 def test_the_import_scanner_sees_inline_and_grouped_imports():
     tree = ast.parse("def f():\n    from .instruments import BRASS_BAND\nfrom . import arranger, quantize\n"
-                     "from brasscribe_music import difficulty\nimport brasscribe_music.musicxml as mx\n")
+                     "from scribe_music import difficulty\nimport scribe_music.musicxml as mx\n")
     assert imported_modules(tree) == {"instruments", "arranger", "quantize", "difficulty", "musicxml"}
 
 
 def test_every_instrument_aware_module_exists():
-    package = Path(brasscribe_music.__file__).parent
+    package = Path(scribe_music.__file__).parent
     assert all((package / f"{m}.py").exists() for m in INSTRUMENT_AWARE)

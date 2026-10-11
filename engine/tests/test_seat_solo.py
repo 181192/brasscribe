@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_eval import arrange_layers_song
-from brasscribe_eval.solo_instruments_bench import FIXTURES
-from brasscribe_music.arranger import YOUR_RECORDING, arrange_composition, part_sources, place_as_played
-from brasscribe_music.instruments import BRASS_BAND, seat_lineup
-from brasscribe_music.score_model import Composition, Note
+from scribe_eval import arrange_layers_song
+from scribe_eval.solo_instruments_bench import FIXTURES
+from scribe_music.arranger import YOUR_RECORDING, arrange_composition, part_sources, place_as_played
+from scribe_music.instruments import BRASS_BAND, seat_lineup
+from scribe_music.score_model import Composition, Note
 
 SONG = FIXTURES / "Drese_JesuGehVoran"
 

@@ -268,7 +268,7 @@
     <value>Velg et annet opptak</value>
   </data>
   <data name="Error_ComputerUnreachable_Details" xml:space="preserve">
-    <value>Start den med: brasscribe serve. Innstillinger viser adressen den bruker. Meldingen var: {0}</value>
+    <value>Start den med: scribe serve. Innstillinger viser adressen den bruker. Meldingen var: {0}</value>
   </data>
   <data name="Error_ComputerUnreachable_Reason" xml:space="preserve">
     <value>Opptaket ditt er trygt. Partitur for fullt band lages på datamaskinen, og den svarer ikke.</value>

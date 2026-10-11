@@ -32,7 +32,7 @@ import Testing
         let paths = BandroomPaths(data: URL(fileURLWithPath: "/tmp/d"), logs: URL(fileURLWithPath: "/tmp/l"))
         let config = EngineConfiguration(source: .checkout(URL(fileURLWithPath: "/tmp/c")), pixi: nil, paths: paths,
                                          computerName: ComputerName.shown(system: "ABCD1234EF", custom: "Korpset"), adminToken: "t")
-        #expect(config.environment(base: [:])["BRASSCRIBE_COMPUTER_NAME"] == "Korpset")
+        #expect(config.environment(base: [:])["SCRIBE_COMPUTER_NAME"] == "Korpset")
         #expect(config.environment(base: ["HF_HUB_CACHE": "/h"])["HF_HUB_CACHE"] == "/h")
     }
 }

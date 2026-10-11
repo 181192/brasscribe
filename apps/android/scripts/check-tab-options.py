@@ -17,7 +17,7 @@ import json
 import sys
 from pathlib import Path
 
-from brasscribe_engine import bass_tab, profiles, schemas, tab
+from scribe_engine import bass_tab, profiles, schemas, tab
 
 
 def params_of(body: schemas.JobCreate) -> dict:

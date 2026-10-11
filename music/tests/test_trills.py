@@ -3,12 +3,12 @@
 import json
 import xml.etree.ElementTree as ET
 
-from brasscribe_music.arranger import arrange
-from brasscribe_music.difficulty import apply_difficulty
-from brasscribe_music.instruments import MINIMAL_BAND
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
-from brasscribe_music.trills import collapse_trills, timed_runs, with_trills
+from scribe_music.arranger import arrange
+from scribe_music.difficulty import apply_difficulty
+from scribe_music.instruments import MINIMAL_BAND
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.trills import collapse_trills, timed_runs, with_trills
 
 
 def _alt(a: int, b: int, n: int, ioi: float, t0: float = 1.0) -> list[dict]:

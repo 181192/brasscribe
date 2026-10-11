@@ -4,7 +4,7 @@
 //! instruments are called in Norwegian), the two brass-band arrangers, the difficulty levels, the band
 //! score handed to the core's MusicXML writer, and the entry points that go from transcriptions to an
 //! arranged band. It reproduces the Python reference
-//! (`brasscribe_music` and the eval entry points) exactly; `core/conformance` checks that.
+//! (`scribe_music` and the eval entry points) exactly; `core/conformance` checks that.
 //!
 //! It depends on the shared core (`scribe-core`) and on no other target.
 

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from brasscribe_engine import runner
+from scribe_engine import runner
 
 
 def test_run_writes_manifest_and_outputs(settings, audio, tmp_path):

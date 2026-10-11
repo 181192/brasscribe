@@ -30,15 +30,15 @@ public sealed class WorkspaceUpdateTests : IDisposable
 
     private static string? Read(string path) => File.Exists(path) ? File.ReadAllText(path) : null;
 
-    private string Studio => Path.Combine(_paths.Workspace, "engine", "src", "brasscribe_engine", "static", "assets", "studio.js");
+    private string Studio => Path.Combine(_paths.Workspace, "engine", "src", "scribe_engine", "static", "assets", "studio.js");
 
     /// <summary>An app workspace; <paramref name="studio"/> is the file that changes between builds.</summary>
     private string Bundle(string name, string studio, string lockText = "version: 6\n")
     {
         var b = Path.Combine(_dir, name);
-        Write(Path.Combine(b, "pixi.toml"), "[workspace]\nname = \"brasscribe\"\n");
+        Write(Path.Combine(b, "pixi.toml"), "[workspace]\nname = \"scribe\"\n");
         Write(Path.Combine(b, "pixi.lock"), lockText);
-        Write(Path.Combine(b, "engine", "src", "brasscribe_engine", "static", "assets", "studio.js"), studio);
+        Write(Path.Combine(b, "engine", "src", "scribe_engine", "static", "assets", "studio.js"), studio);
         Write(Path.Combine(b, "music", "src", "music.py"), "# music\n");
         Write(Path.Combine(b, "ml", "adapters", "run_adapter.py"), "# adapters\n");
         Write(Path.Combine(b, WorkspaceStamp.FileName), "{\"commit\": \"c3dc2ad\", \"version\": \"0.1.0\"}");
@@ -52,7 +52,7 @@ public sealed class WorkspaceUpdateTests : IDisposable
     private async Task Installed(string bundle)
     {
         await Boot(_paths, bundle, new FakeLauncher { ExitImmediately = _ => 0 }).RunAsync(false, null, CancellationToken.None);
-        Write(Path.Combine(_paths.Workspace, ".pixi", "envs", "default", "Scripts", "brasscribe.exe"), "engine env");
+        Write(_paths.EngineCommand, "engine env");
         Write(Path.Combine(_paths.Workspace, "notes.txt"), "keep me");
         Write(Path.Combine(_paths.DataDir, "companion", "devices.json"), "{\"devices\": []}");
         Write(Path.Combine(_paths.Models, "mega53", "model.ckpt"), "weights");
@@ -61,7 +61,8 @@ public sealed class WorkspaceUpdateTests : IDisposable
 
     private void UserDataIsIntact()
     {
-        Assert.Equal("engine env", Read(Path.Combine(_paths.Workspace, ".pixi", "envs", "default", "Scripts", "brasscribe.exe")));
+        Assert.Equal("engine env", Read(_paths.EngineCommand));
+        Assert.EndsWith(Path.Combine(".pixi", "envs", "default", "Scripts", "scribe.exe"), _paths.EngineCommand);
         Assert.Equal("keep me", Read(Path.Combine(_paths.Workspace, "notes.txt")));
         Assert.Equal("{\"devices\": []}", Read(Path.Combine(_paths.DataDir, "companion", "devices.json")));
         Assert.Equal("weights", Read(Path.Combine(_paths.Models, "mega53", "model.ckpt")));
@@ -115,14 +116,14 @@ public sealed class WorkspaceUpdateTests : IDisposable
     public async Task An_unchanged_lockfile_replaces_the_code_and_reuses_the_environments()
     {
         await Installed(Bundle("v1", "old studio"));
-        Write(Path.Combine(_paths.Workspace, "engine", "src", "brasscribe_engine", "removed.py"), "gone in v2");
+        Write(Path.Combine(_paths.Workspace, "engine", "src", "scribe_engine", "removed.py"), "gone in v2");
         var launcher = new FakeLauncher { ExitImmediately = _ => 0 };
         var boot = Boot(_paths, Bundle("v2", "fixed studio"), launcher);
 
         await boot.RunAsync(false, null, CancellationToken.None);
         Assert.Empty(launcher.Started);
         Assert.Equal("fixed studio", Read(Studio));
-        Assert.False(File.Exists(Path.Combine(_paths.Workspace, "engine", "src", "brasscribe_engine", "removed.py")));
+        Assert.False(File.Exists(Path.Combine(_paths.Workspace, "engine", "src", "scribe_engine", "removed.py")));
         Assert.True(boot.IsComplete(false));
         Assert.True(boot.EngineReady);
         Assert.False(Directory.Exists(Path.Combine(_paths.Workspace, WorkspaceSwap.WorkDir)));
@@ -159,7 +160,15 @@ public sealed class WorkspaceUpdateTests : IDisposable
         Assert.Equal("old studio", Read(Studio));
         Assert.Equal("version: 6\n", Read(Path.Combine(_paths.Workspace, "pixi.lock")));
         Assert.Equal(before, WorkspaceStamp.Read(_paths.Workspace));
-        Assert.True(boot.EngineReady); // the previous engine starts meanwhile
+        Assert.True(boot.EngineReady);
+        Assert.True(boot.StartsAfterUpdate(failed: true)); // the previous engine starts meanwhile: its command is this app's
+        // A previous engine whose environment has no such command (it was started under another one) is not started:
+        // the start could only fail, and the update's own problem, with its Try again, must be what is shown.
+        File.Move(_paths.EngineCommand, Path.Combine(Path.GetDirectoryName(_paths.EngineCommand)!, "engine-before.exe"));
+        Assert.True(boot.EngineReady);
+        Assert.False(boot.StartsAfterUpdate(failed: true));
+        Assert.True(boot.StartsAfterUpdate(failed: false)); // a start that follows no failure does not depend on it
+        File.Move(Path.Combine(Path.GetDirectoryName(_paths.EngineCommand)!, "engine-before.exe"), _paths.EngineCommand);
         Assert.Equal(["workspace", "default"], boot.Pending(false).Take(2)); // Try again does it all again
         UserDataIsIntact();
     }
@@ -241,7 +250,7 @@ public sealed class WorkspaceUpdateTests : IDisposable
 
         WorkspaceSwap.Recover(_paths.Workspace, log.Add);
         // Nothing guessed at: the replaced files stay where they were moved to, so they can still be put back.
-        Assert.Equal("old studio", Read(Path.Combine(swap.Backup, "engine", "src", "brasscribe_engine", "static", "assets", "studio.js")));
+        Assert.Equal("old studio", Read(Path.Combine(swap.Backup, "engine", "src", "scribe_engine", "static", "assets", "studio.js")));
         Assert.True(File.Exists(swap.Journal));
         Assert.Contains(log, l => l.Contains("can't be read", StringComparison.Ordinal));
 
@@ -330,6 +339,18 @@ public sealed class WorkspaceUpdateTests : IDisposable
         Assert.Equal(ProblemKind.UpdateFailed, info.Problem?.Kind);
         Assert.Equal("Brasscribe couldn't finish updating", info.Problem?.Title);
         Assert.Equal("Try again", info.PrimaryLabel);
+
+        // The previous engine could not be started and was left alone (Bootstrapper.StartsAfterUpdate): the update's
+        // problem shows, and its button is the fix that runs the update again.
+        var notStarted = failed with { Engine = EngineState.Stopped };
+        info = StateRules.Describe(notStarted, Strings.En);
+        Assert.Equal(DisplayState.NeedsAttention, info.State);
+        Assert.Equal(ProblemKind.UpdateFailed, info.Problem?.Kind);
+        Assert.Equal(PrimaryAction.Fix, info.Primary);
+        // Had it been started, its exits would end in Error, which comes first and whose Try again only starts it again.
+        info = StateRules.Describe(failed with { Engine = EngineState.Error }, Strings.En);
+        Assert.Equal(DisplayState.Error, info.State);
+        Assert.Equal(PrimaryAction.TryAgain, info.Primary);
     }
 
     [Fact]

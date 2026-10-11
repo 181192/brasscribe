@@ -1,6 +1,6 @@
 //! Pitch-change onsets from the SwiftF0 contour: notes the segmentation merged
 //! (slurred trills and runs), octave flips, and glides it split off. The same
-//! rules as the reference (brasscribe_music/onsets.py), bit for bit.
+//! rules as the reference (scribe_music/onsets.py), bit for bit.
 
 use crate::durations::Contour;
 use crate::midi::RawNote;

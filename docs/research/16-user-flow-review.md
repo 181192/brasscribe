@@ -9,10 +9,10 @@
 - `apps/apple` (`App/Localizable.xcstrings`)
 - `apps/windows` (`tools/Strings/gen_resw.py`, which generates both `.resw`)
 - `studio/src/i18n.ts`
-- the engine (`engine/src/brasscribe_engine/{profiles,stages,api}.py`)
+- the engine (`engine/src/scribe_engine/{profiles,stages,api}.py`)
 - the seat tables in core and music:
   - `core/scribe-core/src/instruments.rs:418-571`
-  - `music/src/brasscribe_music/instruments.py:266-431`
+  - `music/src/scribe_music/instruments.py:266-431`
   - `nb_part_name` in `core/scribe-core/src/talking_score.rs:810`
 
 The outcomes for the bass trombone and percussion seats were checked by running `seat_part` / `with_reading` / `seat_lineup` in `music`. The screens were checked against the committed screenshots:
@@ -184,7 +184,7 @@ In each walkthrough, "phone" means Android and iOS, which behave the same unless
 
 **P1-3. "Full brass band" is the default, but band and pop recordings are always made for the small band.**
 - **Where.**
-  - `eval/brasscribe_eval/arrange_song.py:90` (`--lineup` choices are minimal and quartet only)
+  - `eval/scribe_eval/arrange_song.py:90` (`--lineup` choices are minimal and quartet only)
   - `core/scribe-core/src/arranger.rs:925-930` (a non-layered composition gets minimal)
   - `apps/android/app/src/main/kotlin/no/brasscribe/play/Lineup.kt:60` (`FULL → MINIMAL` silently)
   - engine `profiles.py` default `full`, dropped as a default (Studio report B1)

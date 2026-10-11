@@ -20,7 +20,7 @@ private func writeLog(_ url: URL, _ text: String) {
     try? Data(text.utf8).write(to: url)
 }
 
-private let stamp = "\n--- 2026-10-01 19:31:32 +0000 pixi run --manifest-path envs/pixi.toml --frozen -e default brasscribe serve\n"
+private let stamp = "\n--- 2026-10-01 19:31:32 +0000 pixi run --manifest-path envs/pixi.toml --frozen -e default scribe serve\n"
 
 @Suite struct PixiRefusalTests {
     @Test func readsTheRequirementAndTheVersion() throws {

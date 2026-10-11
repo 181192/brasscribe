@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music.arranger import arrange_layers, composition_lineup
-from brasscribe_music.instruments import (INSTRUMENTS, LINEUPS, SeatPart, lead_lineup, part_banks, seat_by_id, seat_lineup,
+from scribe_music.arranger import arrange_layers, composition_lineup
+from scribe_music.instruments import (INSTRUMENTS, LINEUPS, SeatPart, lead_lineup, part_banks, seat_by_id, seat_lineup,
                                           seat_part, with_seat)
-from brasscribe_music.score_model import Composition
+from scribe_music.score_model import Composition
 
 GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
 
@@ -52,7 +52,7 @@ def test_seat_facts():
 @pytest.fixture(scope="module")
 def mikkel():
     if not GOLDEN.exists():
-        if os.environ.get("BRASSCRIBE_REQUIRE_DATA"):
+        if os.environ.get("SCRIBE_REQUIRE_DATA"):
             pytest.fail(f"missing {GOLDEN}")
         pytest.skip("data/golden not available")
     return Composition.from_json(GOLDEN)

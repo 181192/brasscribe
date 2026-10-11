@@ -3,7 +3,7 @@
 //! Everything is at concert pitch in integer ticks (`TICKS_PER_BEAT` per beat);
 //! seconds are kept alongside so the score can be aligned back to the
 //! recording. The JSON form is the `composition.json` written by the Python
-//! reference (`brasscribe_music.score_model`), field for field and in the
+//! reference (`scribe_music.score_model`), field for field and in the
 //! same order.
 
 use serde::{Deserialize, Serialize};

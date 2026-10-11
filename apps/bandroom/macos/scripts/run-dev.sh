@@ -9,7 +9,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$HERE/build/DerivedData/Build/Products/Debug/Brasscribe Bandroom.app"
 CHECKOUT="${CHECKOUT:-$(cd "$HERE/../../.." && pwd)}"
-args=(--env "BRASSCRIBE_CHECKOUT=$CHECKOUT" --env BANDROOM_NO_LOGIN_ITEM=1)
+args=(--env "SCRIBE_CHECKOUT=$CHECKOUT" --env BANDROOM_NO_LOGIN_ITEM=1)
 data="$HERE/build/dev/data"
 logs="$HERE/build/dev/logs"
 lang=()
@@ -25,5 +25,5 @@ while [ $# -gt 0 ]; do
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
 done
-args+=(--env "BRASSCRIBE_DATA=$data" --env "BRASSCRIBE_LOGS=$logs")
+args+=(--env "SCRIBE_DATA=$data" --env "SCRIBE_LOGS=$logs")
 open -n "${args[@]}" "$APP" ${lang[@]+"${lang[@]}"}

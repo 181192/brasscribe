@@ -14,7 +14,7 @@ public sealed class BootstrapTests : IDisposable
         var b = Path.Combine(_dir, "bundle");
         Directory.CreateDirectory(Path.Combine(b, "engine", "src"));
         Directory.CreateDirectory(Path.Combine(b, "ml", "adapters"));
-        File.WriteAllText(Path.Combine(b, "pixi.toml"), "[workspace]\nname = \"brasscribe\"\n");
+        File.WriteAllText(Path.Combine(b, "pixi.toml"), "[workspace]\nname = \"scribe\"\n");
         File.WriteAllText(Path.Combine(b, "pixi.lock"), "version: 6\n");
         File.WriteAllText(Path.Combine(b, "engine", "src", "api.py"), "# engine\n");
         File.WriteAllText(Path.Combine(b, "ml", "adapters", "run_adapter.py"), "# adapters\n");
@@ -123,7 +123,7 @@ public sealed class BootstrapTests : IDisposable
         var boot = new Bootstrapper(paths, bundle, "pixi", new FakeLauncher { ExitImmediately = _ => 0 }, new EngineLog(null));
         await boot.RunAsync(false, null, CancellationToken.None);
         Directory.CreateDirectory(Path.Combine(bundle, "music"));
-        File.WriteAllText(Path.Combine(bundle, "music", "pyproject.toml"), "[project]\nname = \"brasscribe-music\"\n");
+        File.WriteAllText(Path.Combine(bundle, "music", "pyproject.toml"), "[project]\nname = \"scribe-music\"\n");
         Assert.Equal(["workspace"], boot.Pending(false));
         await boot.RunAsync(false, null, CancellationToken.None);
         Assert.True(File.Exists(Path.Combine(paths.Workspace, "music", "pyproject.toml")));

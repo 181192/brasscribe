@@ -14,7 +14,7 @@ public sealed record ModelCheckResult(IReadOnlyList<ModelComponent> Missing, IRe
 /// </summary>
 public static class ModelCheck
 {
-    /// <param name="models">The folder the engine gets as BRASSCRIBE_MODELS.</param>
+    /// <param name="models">The folder the engine gets as SCRIBE_MODELS.</param>
     /// <param name="hub">The Hugging Face hub cache (<see cref="ModelCatalog.HubCache()"/>), where the band writer lives.</param>
     /// <param name="catalog">The files of each component; the real catalogue unless a test says otherwise.</param>
     public static ModelCheckResult Check(string models, string hub, Func<ModelComponent, IReadOnlyList<ModelFile>>? catalog = null)

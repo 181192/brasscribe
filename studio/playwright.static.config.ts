@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Browser tests against the built bundle served as static files: no engine, no data/.
-// `npm run build` first; the bundle under engine/src/brasscribe_engine/static is what runs.
+// `npm run build` first; the bundle under engine/src/scribe_engine/static is what runs.
 const port = Number(process.env.STUDIO_STATIC_PORT ?? 8798);
 
 export default defineConfig({

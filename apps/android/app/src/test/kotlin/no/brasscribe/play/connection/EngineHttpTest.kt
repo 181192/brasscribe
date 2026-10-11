@@ -108,7 +108,7 @@ class EngineHttpTest {
     }
 
     private companion object {
-        /** uvicorn's default timeout_keep_alive, which engines before the longer one in engine/src/brasscribe_engine/cli.py run with. */
+        /** uvicorn's default timeout_keep_alive, which engines before the longer one in engine/src/scribe_engine/cli.py run with. */
         const val SERVER_IDLE_MS = 5_000L
     }
 }

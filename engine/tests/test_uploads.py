@@ -5,9 +5,9 @@ import json
 
 from fastapi.testclient import TestClient
 
-from brasscribe_engine.api import create_app
-from brasscribe_engine.config import Settings
-from brasscribe_engine.guard import BodyLimit
+from scribe_engine.api import create_app
+from scribe_engine.config import Settings
+from scribe_engine.guard import BodyLimit
 
 from .test_api import wait
 
@@ -25,7 +25,7 @@ def test_default_cap_is_generous(settings):
 
 
 def test_cap_from_the_environment(settings, monkeypatch):
-    monkeypatch.setenv("BRASSCRIBE_MAX_UPLOAD_BYTES", "1000")
+    monkeypatch.setenv("SCRIBE_MAX_UPLOAD_BYTES", "1000")
     assert Settings(data_dir=settings.data_dir).max_upload_bytes == 1000
 
 

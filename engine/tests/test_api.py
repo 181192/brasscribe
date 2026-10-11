@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import openapi
-from brasscribe_engine.api import create_app
+from scribe_engine import openapi
+from scribe_engine.api import create_app
 
 ENGINE = Path(__file__).resolve().parents[1]
 
@@ -143,14 +143,14 @@ def test_the_windows_contract_snapshot_is_the_committed_openapi():
 
 
 def test_serve_banner_lists_lan_url_and_pairing_code(settings):
-    from brasscribe_engine.cli import serve_banner
+    from scribe_engine.cli import serve_banner
 
     app = create_app(settings)
     url, lines = serve_banner(app, "0.0.0.0", 8765)
     assert url == "http://127.0.0.1:8765/"
     assert any(line.startswith("LAN URL: ") for line in lines)
     assert any(app.state.pairing.code in line for line in lines)
-    assert serve_banner(app, "127.0.0.1", 8765)[1] == ["brasscribe engine on http://127.0.0.1:8765/"]
+    assert serve_banner(app, "127.0.0.1", 8765)[1] == ["scribe engine on http://127.0.0.1:8765/"]
 
 
 def test_job_names_the_paired_device_that_started_it(settings, audio):
@@ -204,7 +204,7 @@ def test_band_sounds_dir_is_served_to_studio(settings, tmp_path):
 
 
 def test_static_files_say_how_long_to_cache(settings, tmp_path):
-    from brasscribe_engine.api import BAND_SOUNDS_CACHE, STATIC, STUDIO_CACHE
+    from scribe_engine.api import BAND_SOUNDS_CACHE, STATIC, STUDIO_CACHE
 
     band = tmp_path / "band"
     band.mkdir()
@@ -224,7 +224,7 @@ def test_static_files_say_how_long_to_cache(settings, tmp_path):
 
 
 def test_band_sounds_dir_without_the_soundfont_is_skipped(settings, tmp_path, capsys):
-    from brasscribe_engine.api import STATIC
+    from scribe_engine.api import STATIC
 
     settings.band_sounds_dir = tmp_path / "empty"
     settings.band_sounds_dir.mkdir()

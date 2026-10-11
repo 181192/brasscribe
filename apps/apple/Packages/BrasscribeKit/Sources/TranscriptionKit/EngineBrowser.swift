@@ -2,7 +2,7 @@ import Foundation
 import Network
 import Observation
 
-/// Finds engines on the local network that advertise `_brasscribe._tcp` (`brasscribe serve --lan`).
+/// Finds engines on the local network that advertise `_brasscribe._tcp` (`scribe serve --lan`).
 /// Discovery only suggests addresses; the engine still requires pairing. The TXT record carries the
 /// engine's stable `id` (matched against a stored credential) and `host`, the computer's own name.
 @MainActor @Observable

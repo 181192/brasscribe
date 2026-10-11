@@ -83,7 +83,7 @@
 | Desktop What is this? | Transcribed on this Mac · Transkriberes på denne Macen | **Made on this Mac. Nothing goes online.** · **Lages på denne Macen. Ingenting sendes til nettet.** (breaks brand.md voice §7 and the avoid-list "transcribe") | – |
 | Part page header | Transcribed with Brasscribe · … | **Written down by Brasscribe. Check the notes marked ? before the rehearsal.** | – |
 | Phone error | Protected (DRM) streams always do. | "Streaming apps usually block recording." · «Strømmeapper stopper som regel opptak.» | – |
-| Desktop error | "…or run `brasscribe serve`" | Remove it. Put it under **Details for the band's tech person** (a disclosure), as brand.md "Before and after: Apple, pairing" already requires | – |
+| Desktop error | "…or run `scribe serve`" | Remove it. Put it under **Details for the band's tech person** (a disclosure), as brand.md "Before and after: Apple, pairing" already requires | – |
 | Review phone | Done · Ferdig | **Finish later** · **Fortsett senere** (see P1-4) | – |
 
 ---
@@ -166,7 +166,7 @@
 | 4 | Review phone ("Done") and desktop ("Done checking") | Leaving silently abandons the unchecked notes, and there's no way back from the score. | Rename to **Finish later (9 left)** / **Fortsett senere (9 igjen)** and confirm: "9 notes keep their ? marks. You can check them from the score." Add the score-view status "9 notes marked ? · Check them". Add **Skip** on the phone. |
 | 5 | Export (phone and desktop) | The defaults, All parts + PDF + MusicXML, make 12 files. There's no Print. "My part" doesn't name the part. The title is "Export". | Default **Solo Cornet (you)** + **PDF** only. Add a **Print** primary (phone: Print · Share… · Save to Files). Title **Share or print**. Same scope labels on every platform. |
 | 6 | Every phone screen | Secondary controls are 40 pt (chips, toolbar, Listen / Change note…, segmented controls). Previous / next bar has no visible hit area. | ≥ 44 pt everywhere, 48 pt for the player and review controls. |
-| 7 | Error desktop ("Can't reach Brasscribe on your computer") | It shows the terminal command `brasscribe serve`, which breaks brand.md voice §7 and the pairing rule. | Remove it from the body. Put it under a **Details for the band's tech person** disclosure. |
+| 7 | Error desktop ("Can't reach Brasscribe on your computer") | It shows the terminal command `scribe serve`, which breaks brand.md voice §7 and the pairing rule. | Remove it from the body. Put it under a **Details for the band's tech person** disclosure. |
 | 8 | Choose output (not mocked) | This flow step is unreviewable, and it holds "lineup / difficulty / key". | Mock it before build, with the §2 copy: **Which band? / How hard? / Key**, a tip on difficulty, and **Show the score** as the primary. |
 
 ### P2

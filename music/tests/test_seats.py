@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music.arranger import ARRANGED, EMPTY, RECORDING, YOUR_RECORDING, part_sources
-from brasscribe_music.instruments import (BRASS_BAND, LINEUPS, SEAT_IDS, SEAT_PARTS, SEATS, check_reads, lead_lineup,
+from scribe_music.arranger import ARRANGED, EMPTY, RECORDING, YOUR_RECORDING, part_sources
+from scribe_music.instruments import (BRASS_BAND, LINEUPS, SEAT_IDS, SEAT_PARTS, SEATS, check_reads, lead_lineup,
                                           part_banks, seat_by_id, seat_part)
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 ROOT = Path(__file__).resolve().parents[2]
 GOLDEN = ROOT / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
@@ -92,7 +92,7 @@ def test_tune_follows_the_roles():
 def test_default_reading_in_every_lineup(seat, lineup):
     """With no `reads`, the seat's part is written in the seat's own first clef, and a bass-clef part at
     concert pitch: the bass trombonist gets E♭ Bass and Euphonium in bass clef."""
-    from brasscribe_music.instruments import with_reading
+    from scribe_music.instruments import with_reading
 
     s, part = seat_by_id(seat), seat_part(lineup, seat).part
     if part is None or s.default_reading is None:  # percussion: no part, or no clef to read
@@ -108,7 +108,7 @@ def test_default_reading_in_every_lineup(seat, lineup):
 
 
 def test_bass_trombone_reads_bass_clef_in_the_small_band_and_quartet():
-    from brasscribe_music.arranger import composition_lineup
+    from scribe_music.arranger import composition_lineup
 
     for lineup, part in (("minimal", "E♭ Bass"), ("quartet", "Euphonium")):
         c = Composition("t", [Voice("melody", VoiceRole.MELODY, [Note(60, 0, 24)])], [Meter(0, 4)], [KeySig(0, 0)])
@@ -120,7 +120,7 @@ def test_bass_trombone_reads_bass_clef_in_the_small_band_and_quartet():
 
 
 def test_percussion_has_no_solo_take():
-    from brasscribe_music.instruments import PERCUSSION_SOLO, seat_lineup
+    from scribe_music.instruments import PERCUSSION_SOLO, seat_lineup
 
     with pytest.raises(ValueError, match="percussion"):
         seat_lineup("percussion")
@@ -171,7 +171,7 @@ def test_part_sources_mikkel():
 @pytest.mark.parametrize("difficulty", ["faithful", "standard", "easier"])
 @pytest.mark.parametrize("drums", [True, False])
 def test_empty_iff_the_arranged_part_has_no_notes(difficulty, drums):
-    from brasscribe_music.arranger import arrange_composition
+    from scribe_music.arranger import arrange_composition
 
     comp = Composition.from_json(GOLDEN)
     if not drums:
@@ -211,7 +211,7 @@ def test_part_sources_solo_take():
 
 
 def test_lead_lineup():
-    from brasscribe_music.instruments import MINIMAL_BAND, QUARTET, lead_lineup
+    from scribe_music.instruments import MINIMAL_BAND, QUARTET, lead_lineup
 
     assert lead_lineup(BRASS_BAND, "euphonium").lead == "Euphonium"
     assert lead_lineup(BRASS_BAND, "solo-cornet") is BRASS_BAND
@@ -224,7 +224,7 @@ def test_lead_lineup():
 
 @pytest.mark.skipif(not GOLDEN.exists(), reason="no Mikkel golden output")
 def test_euphonium_solo_with_band():
-    from brasscribe_music.arranger import arrange_composition, layer_of_part
+    from scribe_music.arranger import arrange_composition, layer_of_part
 
     comp = Composition.from_json(GOLDEN)
     plain = arrange_composition(comp)
