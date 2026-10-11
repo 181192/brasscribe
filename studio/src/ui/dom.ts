@@ -58,18 +58,29 @@ function withCode(text: string, parts: Record<string, string>): Child[] {
 export interface NoticeOptions {
   /** What "Try again" does; by default the current view is shown again. */
   retry?: () => void;
+  /**
+   * What to say about an error that is not the engine's answer (a file that could not be read or
+   * drawn): what happened and what the reader can do, in the page's language.
+   */
+  title?: string;
+  body?: string;
+  /** What the reader can do when the engine turned the request down; the engine's own words then go under "Details". */
+  refusedBody?: string;
 }
 
 /**
  * The state shown in place of a view (or a panel) whose data could not be
  * loaded: what happened, why (in words), and the way forward, with a
- * Try again button. Never a bare browser message such as "Failed to fetch".
+ * Try again button. Never a bare browser message such as "Failed to fetch":
+ * an error that comes from the code (not from the engine) is told in words,
+ * with its own message kept under "Details".
  */
 export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement {
   let title: string;
   let body: Child[];
   let cls = "notice notice-error";
   let role = "alert";
+  let detail: string | null = null;
   if (err instanceof Unreachable) {
     title = t("err.unreachable");
     body = withCode(t("err.unreachableBody"), { serve: "scribe serve", studio: "scribe studio" });
@@ -86,17 +97,20 @@ export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement
     body = [t("err.serverBody", { status: err.status }), err.message ? h("span", { class: "mono small detail" }, err.message) : null];
   } else if (err instanceof ApiError) {
     title = err.status === 404 ? t("err.notFound") : t("err.refused");
-    body = [err.message];
+    body = [opts.refusedBody ?? err.message];
+    if (opts.refusedBody) detail = err.message;
   } else {
-    title = t("err.other");
-    body = [err instanceof Error ? err.message : String(err)];
+    title = opts.title ?? t("err.other");
+    body = [opts.body ?? t("err.otherBody")];
+    detail = err instanceof Error ? err.message : String(err);
   }
   const retry = h("button", { type: "button", class: "ghost" }, t("err.retry"));
   retry.addEventListener("click", () => (opts.retry ? opts.retry() : window.dispatchEvent(new CustomEvent("studio:retry"))));
   return h("div", { class: cls, role },
     h("p", { class: "notice-title" }, h("strong", {}, title)),
     h("p", {}, ...body),
-    h("p", {}, retry));
+    h("p", {}, retry),
+    detail ? more(t("err.details"), h("p", { class: "mono small detail" }, detail)) : null);
 }
 
 /**
