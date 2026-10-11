@@ -379,8 +379,9 @@ def apple_outputs() -> dict[str, str | bytes]:
 
     dark = {"appearance": "luminosity", "value": "dark"}
     high = {"appearance": "contrast", "value": "high"}
-    # The hidden Pink palette has its own namespace with the same high-contrast appearances, so Increase
-    # Contrast still wins over it.
+    # Increase Contrast keeps the appearance's light or dark: "high" alone is the light appearance with more
+    # contrast, and takes the light high-contrast colours. The hidden Pink palette has its own namespace with
+    # the same high-contrast appearances, so Increase Contrast still wins over it.
     palettes = [(PRODUCT, "light", "dark")]
     if PINK:
         out[f"{base}/{PRODUCT}Pink/Contents.json"] = out[f"{base}/{PRODUCT}/Contents.json"]
@@ -388,7 +389,7 @@ def apple_outputs() -> dict[str, str | bytes]:
     for role in roles():
         for ns, light, dk in palettes:
             colors = [entry(light, role, []), entry(dk, role, [dark]),
-                      entry("high-contrast", role, [high]), entry("high-contrast", role, [dark, high])]
+                      entry("high-contrast-light", role, [high]), entry("high-contrast", role, [dark, high])]
             out[f"{base}/{ns}/{camel(role)}.colorset/Contents.json"] = json.dumps(
                 {"colors": colors, "info": {"author": "xcode", "version": 1}}, indent=2) + "\n"
 
@@ -590,10 +591,12 @@ def android_outputs() -> dict[str, str | bytes]:
     L += ["    val isHighContrast: Boolean,", ")", ""]
     for mode, name in modes:
         L += android_palette(f"Scribe{name}Colors", "ScribeColors", mode, neutral,
-                             "/** High contrast on a light ground. Not chosen by [scribeColors], which uses the dark one. */" if mode == "high-contrast-light" else "")
-    L += ["/** The palette for light or dark; the high-contrast one when the system asks for more contrast. */",
+                             {"high-contrast": "/** High contrast on a dark ground. */",
+                              "high-contrast-light": "/** High contrast on a light ground. */"}.get(mode, ""))
+    L += ["/** The palette for light or dark; its high-contrast one when the system asks for more contrast. */",
           "fun scribeColors(dark: Boolean, highContrast: Boolean): ScribeColors = when {",
-          "    highContrast -> ScribeHighContrastColors",
+          "    highContrast && dark -> ScribeHighContrastColors",
+          "    highContrast -> ScribeHighContrastLightColors",
           "    dark -> ScribeDarkColors",
           "    else -> ScribeLightColors",
           "}", "",
@@ -695,7 +698,7 @@ def android_outputs() -> dict[str, str | bytes]:
           ") {",
           "    CompositionLocalProvider(LocalScribeColors provides colors) {",
           "        MaterialTheme(",
-          "            colorScheme = colors.toColorScheme(dark = dark || highContrast),",
+          "            colorScheme = colors.toColorScheme(dark = dark),",
           "            typography = scribeTypography(display),",
           "            shapes = ScribeShapes,",
           "            content = content,",
@@ -764,7 +767,8 @@ def android_outputs() -> dict[str, str | bytes]:
           "    content: @Composable () -> Unit,",
           ") {",
           "    val own = when {",
-          f"        highContrast -> {PRODUCT}HighContrastColors"]
+          f"        highContrast && dark -> {PRODUCT}HighContrastColors",
+          f"        highContrast -> {PRODUCT}HighContrastLightColors"]
     if PINK:
         B += [f"        pink && dark -> {PRODUCT}PinkDarkColors", f"        pink -> {PRODUCT}PinkColors"]
     B += [f"        dark -> {PRODUCT}DarkColors",

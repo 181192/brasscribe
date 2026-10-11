@@ -21,7 +21,8 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 
 - **Source:** [`tokens/tokens.json`](tokens/tokens.json), in W3C Design Tokens (DTCG 2025.10) format.
   - Colour roles are sibling groups `color.light`, `color.dark`, `color.high-contrast` (on a dark ground), `color.high-contrast-light` (on a light ground), and the hidden `color.pink` / `color.pink-dark` (§10 of system.md).
-  - Studio's `brasscribe.css` picks the high-contrast palette that matches the resolved theme under `prefers-contrast: more`. Compose gets `ScribeHighContrastLightColors`, but `ScribeTheme` still chooses the dark one. The Apple asset catalog and WinUI (system colours) are unchanged.
+  - More contrast keeps light or dark on every platform: `high-contrast-light` in a light appearance, `high-contrast` in a dark one. Studio's `brasscribe.css` picks by the resolved theme under `prefers-contrast: more`, the Apple asset catalog has the light one under its `high` appearance and the dark one under `dark` + `high`, and Compose's `scribeColors` picks by `dark`. WinUI takes the system's colours in a contrast theme.
+  - Every checked pair of both high-contrast palettes reaches 7:1 (WCAG 1.4.6); `qa/tools/contrast.py` fails below that.
   - Typography roles name their Dynamic Type style, Material role and Windows ramp style.
 - **Icons:** [`tokens/icons.json`](tokens/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
 
@@ -123,6 +124,6 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 ## Open questions
 
 1. Do brass-band players read "?" and a boxed "?" as "check this note"? This is carried over from `docs/accessibility/visual-design-tokens.md`.
-2. On Apple and Android, more contrast in light mode still switches to the dark high-contrast palette. `high-contrast-light` now exists (Studio uses it) and is not yet wired into the asset catalog's `high` appearance or `ScribeTheme`; test it with low-vision users first.
+2. `high-contrast-light` is what a light appearance with more contrast gets on every platform. It has not been tested with low-vision users, nor looked at on a Mac with Increase Contrast turned on in System Settings (the screen catalogues draw it off screen).
 3. Instrument Serif at 28 pt with Dynamic Type AX sizes: confirm on a device that the relative scaling to `largeTitle` stays readable.
 4. The Windows XAML is checked for well-formed XML only; it has not been compiled with WinUI on this machine (no Windows).

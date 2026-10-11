@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.scribe.design.ScribeDarkColors
 import no.scribe.design.ScribeHighContrastColors
+import no.scribe.design.ScribeHighContrastLightColors
 import no.scribe.design.ScribeLightColors
 import no.scribe.design.scribeTypography
 import no.brasscribe.play.screen.ScreenDevice
@@ -66,8 +67,10 @@ class FretscribeThemeTest : ScreenTest() {
         rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
         assertWears(home("home-dark"), ScribeDarkColors, "dark")
 
-        // The phone's contrast setting (Android 14 and later) wins over both.
+        // The phone's contrast setting (Android 14 and later) wins over both, and keeps the appearance's light or dark.
         assumeTrue("this device does not take the contrast setting", ScreenDevice.highContrast(rule, true))
-        assertWears(home("home-high-contrast"), ScribeHighContrastColors, "high contrast")
+        assertWears(home("home-high-contrast"), ScribeHighContrastColors, "high contrast, dark")
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        assertWears(home("home-high-contrast-light"), ScribeHighContrastLightColors, "high contrast, light")
     }
 }

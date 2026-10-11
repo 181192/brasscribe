@@ -20,6 +20,7 @@ uv run design/tokens/build.py --check             # CI: exit 1 if any brand's ou
 uv run design/tokens/build.py --brand fretscribe  # one brand
 uv run --with pytest pytest design/tokens
 uv run qa/tools/contrast.py --brands              # every brand, every mode; exit 1 on a failure or a stale report
+                                                  # (a high-contrast mode needs 7:1 for every pair)
 uv run qa/tools/contrast.py --brands --write      # rewrite the contrast reports
 ```
 
@@ -162,8 +163,8 @@ there.
 
 ## Adding a brand
 
-1. Write its `tokens.json`: every colour role in `light`, `dark`, `high-contrast` and
-   `high-contrast-light`, and under `$extensions.<brand>`: `modes`, `contrast`, `prefix`, `neutral`
+1. Write its `tokens.json`: every colour role in `light`, `dark`, `high-contrast` (on a dark ground, for a
+   dark appearance with more contrast) and `high-contrast-light` (on a light ground, for a light one), and under `$extensions.<brand>`: `modes`, `contrast`, `prefix`, `neutral`
    (only the roles it names differently), `notation`, `system-colours` for its own roles, and `fonts`
    (the display face with its `android-resource`, its name in `res/font`).
 2. Add it to `brands.json` with its own output folder.
