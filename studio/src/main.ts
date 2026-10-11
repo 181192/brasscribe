@@ -1,5 +1,6 @@
 // Studio entry: hash router, language, engine status, global keyboard shortcuts.
 import { api } from "./api/client";
+import { interfaceMatch, type InterfaceMatch } from "./api/wire";
 // Custom elements register themselves on import.
 import "./components/audio";
 import "./components/beats";
@@ -57,6 +58,19 @@ document.addEventListener("keydown", (e) => {
 syncNav();
 wireMenus();
 
+/** Whether the engine speaks this Studio's interface version; "match" until its health answer says otherwise. */
+let match: InterfaceMatch = "match";
+
+/** In place of every view while the engine's interface version is another: which of the two to update, and nothing asked of it. */
+function updateNotice(which: Exclude<InterfaceMatch, "match">): HTMLElement {
+  const again = h("button", { type: "button", class: "primary" }, t(which === "update-studio" ? "app.update.reload" : "err.retry"));
+  again.addEventListener("click", () => (which === "update-studio" ? location.reload() : window.dispatchEvent(new CustomEvent("studio:retry"))));
+  return h("div", { class: "notice notice-error", role: "alert" },
+    h("h1", { class: "notice-title" }, t(which === "update-studio" ? "app.update.studio" : "app.update.engine")),
+    h("p", {}, t(which === "update-studio" ? "app.update.studioBody" : "app.update.engineBody")),
+    h("p", {}, again));
+}
+
 function route(initial = false): void {
   const main = document.getElementById("main")!;
   const { name, args, query } = parseHash(location.hash);
@@ -72,7 +86,7 @@ function route(initial = false): void {
   if (typeof cleanup === "function") cleanup();
   clear(main);
   document.title = `${r.title()} – Brasscribe Studio`;
-  cleanup = r.render(main, args, query);
+  cleanup = match === "match" ? r.render(main, args, query) : void main.append(updateNotice(match));
   // Move focus to the new view so keyboard and screen-reader users start there.
   const heading = main.querySelector("h1");
   if (heading && !initial) {
@@ -85,17 +99,22 @@ let health: { version: string; device: string } | null | undefined;
 
 function renderStatus(): void {
   const el = document.getElementById("engine-status")!;
-  el.classList.toggle("up", !!health);
-  el.classList.toggle("down", health === null);
-  if (health) clear(el, t("app.engine", { version: health.version, device: health.device.toUpperCase() }));
+  el.classList.toggle("up", !!health && match === "match");
+  el.classList.toggle("down", health === null || match !== "match");
+  if (health && match !== "match") el.textContent = t(match === "update-studio" ? "app.update.studio" : "app.update.engine");
+  else if (health) clear(el, t("app.engine", { version: health.version, device: health.device.toUpperCase() }));
   else el.textContent = health === undefined ? t("app.connecting") : t("app.engineDown");
 }
 
 async function engineStatus(): Promise<void> {
   try {
-    health = await api.health();
+    const answer = await api.health();
+    health = answer;
+    match = interfaceMatch(answer.interface_version);
   } catch {
     health = null;
+    // An engine that does not answer is its own problem, which each view says for itself.
+    match = "match";
   }
   renderStatus();
 }
@@ -264,17 +283,14 @@ document.getElementById("brand")!.addEventListener("click", () => {
 });
 translateChrome();
 shortcutsDialog();
-engineStatus();
 globalKeys();
-// "Try again" in an error notice shows the current view again.
-window.addEventListener("studio:retry", () => {
-  void engineStatus();
-  route(true);
-});
+// "Try again" in an error notice shows the current view again, once the engine has said which interface version it speaks.
+window.addEventListener("studio:retry", () => void engineStatus().then(() => route(true)));
 window.addEventListener("hashchange", () => route());
 // The skip link moves focus to the page's content; as a plain "#main" link it would go through the router.
 document.querySelector<HTMLAnchorElement>(".skip-link")?.addEventListener("click", (e) => {
   e.preventDefault();
   document.getElementById("main")?.focus();
 });
-route(true);
+// The engine's health first: a view asks the engine for nothing before its interface version is known to be this Studio's.
+void engineStatus().then(() => route(true));

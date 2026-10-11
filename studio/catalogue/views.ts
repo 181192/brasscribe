@@ -12,6 +12,8 @@ export type View = {
   only?: string[];
   /** The keyboard walk starts on this element instead of the top of the page. */
   walkFrom?: string;
+  /** What the engine answers differently for this view, by path (an engine with another interface version). */
+  engine?: Record<string, unknown>;
   /** Console errors this view is there to show (a file that cannot be drawn), which are not problems of it. */
   expectedErrors?: RegExp[];
 };
@@ -55,6 +57,13 @@ const scoreRendered = (selector: string, player = true) => async (page: Page) =>
 
 const run = "runs/old-hundredth-a";
 
+/** The catalogue engine's health answer, with another interface version (none: an engine from before the number). */
+const health = (interfaceVersion?: number) => ({
+  status: "ok", version: "0.1.0", build: "catalogue", device: "cpu", auth_required: false,
+  server_id: "00000000000000000000000000000000", server_name: "Brasscribe Studio catalogue",
+  ...(interfaceVersion === undefined ? {} : { interface_version: interfaceVersion }),
+});
+
 export const VIEWS: View[] = [
   { name: "runs", route: "runs", ready: async (p) => { await expect(p.locator(".runs-table tbody tr").first()).toBeVisible(); } },
   { name: "run-score", route: `${run}/score`, ready: scoreRendered("#main bs-score") },
@@ -72,6 +81,11 @@ export const VIEWS: View[] = [
   // Its manifest, as an engine that is installed (not a checkout) writes it: no source revision.
   { name: "run-tab-manifest", route: "runs/guitar-line/manifest", ready: async (p) => { await expect(p.locator("#main [role=tabpanel] .kv").first()).toBeVisible(); } },
   { name: "run-failed", route: "runs/old-hundredth-failed", ready: async (p) => { await expect(p.locator(".notice-error").first()).toBeVisible(); } },
+  // An engine from before this Studio's interface version: which of the two to update (interface.spec.ts checks
+  // that nothing but its health is asked for).
+  { name: "update-engine", route: "runs", engine: { "/v1/health": health() }, ready: async (p) => { await expect(p.locator("#main .notice-error h1")).toBeVisible(); } },
+  // A newer engine than this page: reload it.
+  { name: "update-studio", route: "runs", engine: { "/v1/health": health(2) }, ready: async (p) => { await expect(p.locator("#main .notice-error h1")).toBeVisible(); } },
   { name: "viewer", route: "viewer" },
   { name: "viewer-score", route: "viewer?example=old-hundredth", ready: scoreRendered("#main bs-score") },
   // A tab run's notes, opened the way the run links to them: tablature only, as the engine's tab profiles write it.

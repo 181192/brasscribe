@@ -60,6 +60,7 @@
   "body": {
    "status": "ok",
    "version": "0.1.0",
+   "interface_version": 1,
    "build": "catalogue",
    "device": "cpu",
    "auth_required": false,
