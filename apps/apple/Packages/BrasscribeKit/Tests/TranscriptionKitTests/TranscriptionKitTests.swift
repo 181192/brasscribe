@@ -831,7 +831,8 @@ extension URLRequest {
         await #expect(throws: TranscriptionError.self) {
             try await CompanionService(baseURL: URL(string: "http://odd.local:8765")!, session: session()).pair(code: "123456", deviceName: "x", platform: "ios")
         }
-        #expect(!StubEngine.requests.contains { $0.httpMethod == "POST" })
+        // (what was sent to this address: other tests post to theirs at the same time)
+        #expect(!sent(to: "odd.local").contains { $0.hasPrefix("POST") })
     }
 
     /// 401 means "pair again" only when health says the engine that refuses the credential is the paired one. With
