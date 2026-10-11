@@ -70,6 +70,12 @@ describe("a tab in the MusicXML reader", () => {
     if (probe !== "no-place-in-a-chord") expect(tab).toHaveLength(alone.length);
   });
 
+  it("reads a band score's uncertain marks as before", () => {
+    const levels = (file: string) => parseMusicXml(read(file)).parts.flatMap((p) => p.notes.map((n) => n.level)).filter(Boolean);
+    // Old Hundredth as the core arranges it: four notes marked.
+    expect(levels("old-hundredth/brass-band.musicxml").sort()).toEqual(["u", "u", "u", "u"]);
+  });
+
   it("has uncertain notes in the probes, so the comparison above checks their marks", () => {
     const levels = probes.flatMap((probe) => parseMusicXml(read(`tab-probes/${probe}/tab-and-notation.musicxml`)).parts[0].notes.map((n) => n.level));
     expect(levels.filter(Boolean).length).toBeGreaterThan(0);

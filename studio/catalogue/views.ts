@@ -69,6 +69,8 @@ export const VIEWS: View[] = [
   { name: "run-tab", route: "runs/guitar-line/score", ready: async (p) => { await expect(p.locator("#main .empty a.button")).toBeVisible(); } },
   // Its MusicXML view, where the link to the viewer also is: the part table, and no comparison with a band reference.
   { name: "run-tab-musicxml", route: "runs/guitar-line/musicxml", ready: async (p) => { await expect(p.locator("#main a[href^='#/viewer?src=']")).toBeVisible(); } },
+  // Its manifest, as an engine that is installed (not a checkout) writes it: no source revision.
+  { name: "run-tab-manifest", route: "runs/guitar-line/manifest", ready: async (p) => { await expect(p.locator("#main [role=tabpanel] .kv").first()).toBeVisible(); } },
   { name: "run-failed", route: "runs/old-hundredth-failed", ready: async (p) => { await expect(p.locator(".notice-error").first()).toBeVisible(); } },
   { name: "viewer", route: "viewer" },
   { name: "viewer-score", route: "viewer?example=old-hundredth", ready: scoreRendered("#main bs-score") },

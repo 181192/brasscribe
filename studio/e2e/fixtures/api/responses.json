@@ -314,7 +314,12 @@
    "profile": "tab",
    "pipeline": "tab",
    "title": "Guitar line",
-   "params": {},
+   "params": {
+    "instrument": "guitar-6",
+    "tuning": "standard",
+    "capo": 0,
+    "layout": "tab"
+   },
    "options": {
     "allow_heavy": false,
     "cold": []
@@ -361,7 +366,12 @@
      "status": "ran",
      "seconds": 1.0
     }
-   ]
+   ],
+   "git": {
+    "sha": null,
+    "branch": null,
+    "dirty": null
+   }
   }
  },
  "/v1/jobs/guitar-line/musicxml": {

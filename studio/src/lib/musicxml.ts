@@ -68,6 +68,8 @@ export function parseMusicXml(xml: string): XmlScore {
     const tabStaves = new Set<number>();
     let staves = 1;
     const notes: (XmlNote & { staff: number; at: number; first: boolean })[] = [];
+    // Where a "?" stands: "bar index:divisions from the bar's start".
+    const qAt = new Map<string, "u" | "vu">();
     const measures = Array.from(p.children).filter((c) => c.nodeName === "measure");
     measures.forEach((m, barIndex) => {
       const bar = Number(m.getAttribute("number")) || barIndex + 1;
@@ -76,9 +78,6 @@ export function parseMusicXml(xml: string): XmlScore {
       let maxPos = 0;
       // A "?" words direction marks the next note's onset; a rectangle enclosure means very uncertain.
       let qMark: "u" | "vu" | null = null;
-      // Where in the bar (divisions) a "?" stands, and this bar's first note.
-      const qAt = new Map<number, "u" | "vu">();
-      const barFrom = notes.length;
       for (const el of Array.from(m.children)) {
         switch (el.nodeName) {
           case "direction": {
@@ -133,7 +132,7 @@ export function parseMusicXml(xml: string): XmlScore {
             const nh = el.querySelector(":scope > notehead");
             const color = el.getAttribute("color") ?? nh?.getAttribute("color") ?? undefined;
             const level: XmlNote["level"] = color?.toLowerCase() === VERY_UNCERTAIN || (color && qMark === "vu") ? "vu" : color || qMark ? "u" : undefined;
-            if (!chord && qMark) qAt.set(onsetDiv, qMark);
+            if (!chord && qMark) qAt.set(`${barIndex}:${onsetDiv}`, qMark);
             if (!chord) qMark = null;
             notes.push({
               bar,
@@ -153,18 +152,20 @@ export function parseMusicXml(xml: string): XmlScore {
           }
         }
       }
-      // With tablature under notation the "?" is written once, over the tablature: it marks the
-      // note at that place on the other staff too.
-      for (const n of notes.slice(barFrom)) {
-        const q = n.first ? qAt.get(n.at) : undefined;
-        if (q && !n.level) n.level = n.color && q === "vu" ? "vu" : "u";
-      }
       const nominal = (beats * 4) / beatType;
       barStart += Math.max(nominal, maxPos / divisions);
     });
     maxBars = Math.max(maxBars, measures.length);
     // Tablature under a notation staff writes every note twice: the notes are those of the notation staff.
+    // The "?" of an uncertain note is written once, over the tablature: it marks the note at that
+    // place on the notation staff too. (Only there: a band part's marks are read as they always were.)
     const both = tabStaves.size > 0 && staves > tabStaves.size;
+    if (both) {
+      for (const n of notes) {
+        const q = n.first ? qAt.get(`${n.barIndex}:${n.at}`) : undefined;
+        if (q && !n.level) n.level = n.color && q === "vu" ? "vu" : "u";
+      }
+    }
     parts.push({
       id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id), tab: tabStaves.size > 0,
       notes: (both ? notes.filter((n) => !tabStaves.has(n.staff)) : notes).map(({ staff: _staff, at: _at, first: _first, ...n }) => n), bars: measures.length,
