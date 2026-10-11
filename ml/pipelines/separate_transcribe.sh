@@ -13,4 +13,4 @@ for stem in "$work"/stems/*.wav; do
   case "$name" in *drums*) continue ;; esac
   "$adapters/${TRANSCRIBER:-muscriptor}/run.sh" "$stem" "$work/midi/$name.mid"
 done
-uv run --project "$here/../../eval" python -W ignore -m brasscribe_eval.merge_midi "$out" "$work"/midi/*.mid
+uv run --project "$here/../../eval" python -W ignore -m scribe_eval.merge_midi "$out" "$work"/midi/*.mid

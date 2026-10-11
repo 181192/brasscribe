@@ -7,8 +7,8 @@ import time
 
 import pytest
 
-from brasscribe_engine.dag import SOURCE, Executor, Input, Pipeline, StageFailed, Stage
-from brasscribe_engine.gpulock import is_locked
+from scribe_engine.dag import SOURCE, Executor, Input, Pipeline, StageFailed, Stage
+from scribe_engine.gpulock import is_locked
 
 from .test_dag import session
 

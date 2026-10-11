@@ -228,18 +228,18 @@ public sealed class SupervisorTests : IDisposable
         var spec = Config(cuda: true).Build(8767);
         Assert.EndsWith("pixi.exe", spec.FileName);
         Assert.Equal(["run", "--manifest-path", Path.Combine(_dir, "envs", "pixi.toml"), "--frozen", "-e", "default",
-                      "brasscribe", "serve", "--lan", "--port", "8767"], spec.Arguments);
-        Assert.Equal(_dir, spec.Environment["BRASSCRIBE_DATA"]);
-        Assert.Equal(Path.Combine(_dir, "models"), spec.Environment["BRASSCRIBE_MODELS"]);
-        Assert.Equal(Path.Combine(_dir, "envs", "ml", "adapters"), spec.Environment["BRASSCRIBE_ADAPTERS"]);
-        Assert.Equal("Kari's PC", spec.Environment["BRASSCRIBE_COMPUTER_NAME"]);
-        Assert.Equal("secret-admin-token-0123456789abcdef", spec.Environment["BRASSCRIBE_ADMIN_TOKEN"]);
-        Assert.Equal("pixi", spec.Environment["BRASSCRIBE_ADAPTER_RUNNER"]);
-        Assert.Equal("1", spec.Environment["BRASSCRIBE_CUDA"]);
+                      "scribe", "serve", "--lan", "--port", "8767"], spec.Arguments);
+        Assert.Equal(_dir, spec.Environment["SCRIBE_DATA"]);
+        Assert.Equal(Path.Combine(_dir, "models"), spec.Environment["SCRIBE_MODELS"]);
+        Assert.Equal(Path.Combine(_dir, "envs", "ml", "adapters"), spec.Environment["SCRIBE_ADAPTERS"]);
+        Assert.Equal("Kari's PC", spec.Environment["SCRIBE_COMPUTER_NAME"]);
+        Assert.Equal("secret-admin-token-0123456789abcdef", spec.Environment["SCRIBE_ADMIN_TOKEN"]);
+        Assert.Equal("pixi", spec.Environment["SCRIBE_ADAPTER_RUNNER"]);
+        Assert.Equal("1", spec.Environment["SCRIBE_CUDA"]);
         Assert.Equal(Path.Combine(_dir, "cache", "pixi"), spec.Environment["PIXI_CACHE_DIR"]);
-        Assert.DoesNotContain("BRASSCRIBE_TOKEN", spec.Environment.Keys);
-        Assert.False(Config(cuda: false).Build(8765).Environment.ContainsKey("BRASSCRIBE_CUDA"));
-        Assert.False(spec.Environment.ContainsKey("BRASSCRIBE_BAND_SOUNDS_DIR"));
+        Assert.DoesNotContain("SCRIBE_TOKEN", spec.Environment.Keys);
+        Assert.False(Config(cuda: false).Build(8765).Environment.ContainsKey("SCRIBE_CUDA"));
+        Assert.False(spec.Environment.ContainsKey("SCRIBE_BAND_SOUNDS_DIR"));
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public sealed class SupervisorTests : IDisposable
         File.WriteAllText(Path.Combine(band, "mapping.json"), "{}");
         Assert.Equal(band, EngineLaunchConfig.FindBandSounds(app));
         var spec = (Config() with { BandSoundsDir = band }).Build(8765);
-        Assert.Equal(band, spec.Environment["BRASSCRIBE_BAND_SOUNDS_DIR"]);
+        Assert.Equal(band, spec.Environment["SCRIBE_BAND_SOUNDS_DIR"]);
     }
 
     [Fact]

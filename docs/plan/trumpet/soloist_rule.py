@@ -20,9 +20,9 @@ from pathlib import Path
 
 from dataclasses import replace
 
-from brasscribe_music.arranger import _hold_small_gaps, _moved, _phrases, _place_line, place_soloist
-from brasscribe_music.instruments import MINIMAL_BAND, Part
-from brasscribe_music.score_model import Note
+from scribe_music.arranger import _hold_small_gaps, _moved, _phrases, _place_line, place_soloist
+from scribe_music.instruments import MINIMAL_BAND, Part
+from scribe_music.score_model import Note
 
 REPO = Path(__file__).resolve().parents[3]
 CB = REPO / "data/choralebricks/01_AudioAndAnnotations"

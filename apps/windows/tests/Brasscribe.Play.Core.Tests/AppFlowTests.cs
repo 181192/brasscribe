@@ -522,8 +522,8 @@ public class AppFlowTests
         Assert.Equal(3, main.Error.Steps.Count);
         Assert.StartsWith("1. ", main.Error.Steps[0]);
         // Commands and technical messages only in the details, never in the body.
-        Assert.DoesNotContain("brasscribe serve", main.Error.Reason + string.Join(" ", main.Error.Steps));
-        Assert.Contains("brasscribe serve", main.Error.Details);
+        Assert.DoesNotContain("scribe serve", main.Error.Reason + string.Join(" ", main.Error.Steps));
+        Assert.Contains("scribe serve", main.Error.Details);
         Assert.Contains("could not be reached", main.Error.Details);
         Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Important && a.Text.StartsWith("Stopped:"));
 

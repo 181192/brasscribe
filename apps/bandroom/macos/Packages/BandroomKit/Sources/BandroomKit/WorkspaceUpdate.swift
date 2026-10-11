@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// Which build a workspace is: `.brasscribe-workspace.json`, written into the app's workspace when the app is built
+/// Which build a workspace is: `.scribe-workspace.json`, written into the app's workspace when the app is built
 /// (scripts/stage-workspace.sh) and copied along with it into the data folder.
 public struct WorkspaceStamp: Codable, Equatable, Sendable {
     /// A hash of every file's path and content.
@@ -12,7 +12,7 @@ public struct WorkspaceStamp: Codable, Equatable, Sendable {
     public var version: String?
     public var build: String?
 
-    public static let fileName = ".brasscribe-workspace.json"
+    public static let fileName = ".scribe-workspace.json"
 
     public init(stamp: String, lock: String? = nil, commit: String? = nil, version: String? = nil, build: String? = nil) {
         self.stamp = stamp; self.lock = lock; self.commit = commit; self.version = version; self.build = build

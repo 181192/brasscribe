@@ -1,6 +1,6 @@
 // Range and voice-crossing checks on an arranged MusicXML score. Used when
 // the engine does not serve its own validator results. Ranges are sounding
-// MIDI pitches copied from music/src/brasscribe_music/instruments.py
+// MIDI pitches copied from music/src/scribe_music/instruments.py
 // (MuseScore instruments.xml: `pro` hard limit, `comfortable` soft limit).
 import type { ValidationIssue } from "../api/types";
 import type { XmlPart, XmlScore } from "./musicxml";

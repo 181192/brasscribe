@@ -4,12 +4,12 @@
 #   <out>/bp.mid            Basic Pitch adapter (defaults: onset 0.5, frame 0.3, 127.7 ms)
 #   <out>/beats-small0.beats Beat This! small0, minimal postprocessing
 #   <out>/logmel.f32        Beat This! log-mel frontend, float32 frames x 128, little endian
-#   <out>/solo/             brasscribe_eval.arrange_solo with Basic Pitch standing in for MuScriptor
+#   <out>/solo/             scribe_eval.arrange_solo with Basic Pitch standing in for MuScriptor
 # Light models on a short clip: no GPU lock needed.
 # Usage: scripts/make-ondevice-reference.sh clip.wav out-dir
 set -euo pipefail
-# the repository: BRASSCRIBE_REPO, else the checkout this script is in
-ROOT="${BRASSCRIBE_REPO:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+# the repository: SCRIBE_REPO, else the checkout this script is in
+ROOT="${SCRIBE_REPO:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 IN="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 OUT="$2"; mkdir -p "$OUT"; OUT="$(cd "$OUT" && pwd)"
 "$ROOT/ml/adapters/swift-f0/run.sh" "$IN" "$OUT/sw.mid"
@@ -28,10 +28,10 @@ beats, downs = a2b(sig, sr)
 save_beat_tsv(beats, downs, f"{out}/beats-small0.beats")
 print("logmel", tuple(spect.shape), "beats", len(beats), "downbeats", len(downs))
 PY
-(cd "$ROOT/eval" && uv run python -m brasscribe_eval.arrange_solo --beats "$OUT/beats-small0.beats" \
+(cd "$ROOT/eval" && uv run python -m scribe_eval.arrange_solo --beats "$OUT/beats-small0.beats" \
   --sw "$OUT/sw.mid" --mus "$OUT/bp.mid" --bp "$OUT/bp.mid" --out "$OUT/solo" --title Reference)
 # The same inputs through the layered solo-with-band path the Rust core ports
-# (brasscribe_eval.arrange_layers_song), with only the solo layer present.
+# (scribe_eval.arrange_layers_song), with only the solo layer present.
 L="$OUT/layers"; mkdir -p "$L"
 cp "$OUT/sw.mid" "$L/solo-sw.mid"; cp "$OUT/bp.mid" "$L/solo-bp.mid"; cp "$OUT/bp.mid" "$L/solo-mus.mid"
 "$ROOT/ml/adapters/swift-f0/contour.sh" "$IN" "$L/solo-sw.contour.npz"
@@ -40,5 +40,5 @@ import sys, pretty_midi
 for name in ('bass-mus', 'orchestra-mus', 'drums-mus'):
     pretty_midi.PrettyMIDI().write(sys.argv[1] + '/' + name + '.mid')
 " "$L")
-(cd "$ROOT/eval" && uv run python -m brasscribe_eval.arrange_layers_song --layers "$L" --beats "$OUT/beats-small0.beats" \
+(cd "$ROOT/eval" && uv run python -m scribe_eval.arrange_layers_song --layers "$L" --beats "$OUT/beats-small0.beats" \
   --out "$OUT/layered" --title Reference --no-render --lineup minimal)

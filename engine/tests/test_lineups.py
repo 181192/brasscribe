@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_engine.talking_score import NB_PART_NAMES
-from brasscribe_music.instruments import LINEUPS, part_banks
+from scribe_engine.talking_score import NB_PART_NAMES
+from scribe_music.instruments import LINEUPS, part_banks
 
 MAPPING = Path(__file__).resolve().parents[2] / "sounds" / "mapping.json"
 

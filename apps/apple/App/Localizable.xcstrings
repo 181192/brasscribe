@@ -5501,12 +5501,12 @@
         }
       }
     },
-    "Without Brasscribe Bandroom, start the engine with “brasscribe serve --lan”.": {
+    "Without Brasscribe Bandroom, start the engine with “scribe serve --lan”.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uten Brasscribe Bandroom starter du motoren med «brasscribe serve --lan»."
+            "value": "Uten Brasscribe Bandroom starter du motoren med «scribe serve --lan»."
           }
         }
       }

@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace Brasscribe.Bandroom.Core.Supervisor;
 
 /// <summary>
-/// Which build a workspace is: <c>.brasscribe-workspace.json</c>. <see cref="Stamp"/> hashes every file's path and
+/// Which build a workspace is: <c>.scribe-workspace.json</c>. <see cref="Stamp"/> hashes every file's path and
 /// content (never dates); the build writes the commit and version next to the app's workspace, and the stamp is
 /// computed from the files at launch. The copy in the data folder carries the stamp it was installed with.
 /// </summary>
@@ -16,7 +16,7 @@ public sealed record WorkspaceStamp(
     [property: JsonPropertyName("commit")] string? Commit = null,
     [property: JsonPropertyName("version")] string? Version = null)
 {
-    public const string FileName = ".brasscribe-workspace.json";
+    public const string FileName = ".scribe-workspace.json";
 
     private static readonly JsonSerializerOptions Json = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 

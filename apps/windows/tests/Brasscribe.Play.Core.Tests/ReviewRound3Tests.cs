@@ -70,7 +70,7 @@ public class ReviewRound3Tests(ITestOutputHelper log)
     }
 
     private const string NoGolden =
-        "data/golden/mikkel-arranged-band not found or its composition has no review groups: data/ is not in git (scripts/worktree-setup.sh links it into a worktree, or set BRASSCRIBE_REPO)";
+        "data/golden/mikkel-arranged-band not found or its composition has no review groups: data/ is not in git (scripts/worktree-setup.sh links it into a worktree, or set SCRIBE_REPO)";
 
     [SkippableFact]
     public void The_golden_is_reviewed_by_group()

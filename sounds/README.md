@@ -16,7 +16,7 @@ python3 sounds/tools/band_sounds.py verify                              # exit 1
 
 | File | Size | Bundled by |
 |---|---|---|
-| `brasscribe-band-mobile.sf2` | 68 MB | Android (`assets/sounds/`), iPhone and iPad (`Sounds/`), Bandroom for macOS and Windows (`band/brasscribe-band.sf2`, served to Studio through the engine's `BRASSCRIBE_BAND_SOUNDS_DIR`) |
+| `brasscribe-band-mobile.sf2` | 68 MB | Android (`assets/sounds/`), iPhone and iPad (`Sounds/`), Bandroom for macOS and Windows (`band/brasscribe-band.sf2`, served to Studio through the engine's `SCRIBE_BAND_SOUNDS_DIR`) |
 | `brasscribe-band-16bit.sf2` | 191 MB | macOS Play (`Sounds/`), Windows Play (`SoundFonts\brasscribe-band.sf2`) |
 
 CI uses the same script through `.github/actions/band-sounds` (the job's `GITHUB_TOKEN`, cached per pin). The

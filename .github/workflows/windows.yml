@@ -282,10 +282,10 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
           dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
           if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
-          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/scribe-core.exe")) {
+          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/scribe_engine/cli.py", "workspace/music/src/scribe_music/__init__.py", "workspace/eval/scribe_eval/suites.py", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/scribe-core.exe")) {
             if (-not (Test-Path (Join-Path $out $f))) { throw "$f is not next to the exe" }
           }
-          $stamp = Get-Content "$out/workspace/.brasscribe-workspace.json" -Raw
+          $stamp = Get-Content "$out/workspace/.scribe-workspace.json" -Raw
           $commit = git rev-parse --short HEAD
           if ($stamp -notmatch $commit) { throw "the workspace stamp is not from $commit`: $stamp" }
           $pixi = (Get-Command pixi).Source
@@ -362,7 +362,7 @@ jobs:
         run: |
           $exe = Get-ChildItem -Recurse -Filter BrasscribeBandroom.exe src/Brasscribe.Bandroom/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribeBandroom.exe was not built" }
-          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/brasscribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/eval/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "band/mapping.json", "band/NOTICE.txt")) {
+          foreach ($f in @("Strings/en-US/Resources.resw", "Strings/nb-NO/Resources.resw", "workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/scribe_engine/api.py", "workspace/music/pyproject.toml", "workspace/music/src/scribe_music/__init__.py", "workspace/eval/pyproject.toml", "workspace/eval/scribe_eval/suites.py", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "band/mapping.json", "band/NOTICE.txt")) {
             if (-not (Test-Path (Join-Path $exe.DirectoryName $f))) { throw "$f is not next to the exe" }
           }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
@@ -434,7 +434,10 @@ jobs:
           $base = "http://127.0.0.1:$($engine.port)"
           $auth = @{ Authorization = "Bearer $token" }
           Invoke-RestMethod "$base/v1/health" | ConvertTo-Json
-          # The bundled band sounds reach Studio through BRASSCRIBE_BAND_SOUNDS_DIR.
+          # Where Bandroom looks for the engine's command before it starts an engine that a failed update put back.
+          $command = Join-Path $data "envs/.pixi/envs/default/Scripts/scribe.exe"
+          if (-not (Test-Path $command)) { throw "the engine's command is not at $command" }
+          # The bundled band sounds reach Studio through SCRIBE_BAND_SOUNDS_DIR.
           $sf2 = Invoke-WebRequest -Method Head "$base/assets/band/brasscribe-band.sf2"
           if ($sf2.StatusCode -ne 200) { throw "the engine does not serve the band SoundFont" }
           Invoke-RestMethod "$base/v1/devices" -Headers $auth | ConvertTo-Json

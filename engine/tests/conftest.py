@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_engine import profiles
-from brasscribe_engine.config import Settings
-from brasscribe_engine.dag import SOURCE, Input, Pipeline, Stage
+from scribe_engine import profiles
+from scribe_engine.config import Settings
+from scribe_engine.dag import SOURCE, Input, Pipeline, Stage
 
 FAKE_RUNNER = """import os, sys
 # fake run_adapter.py: <adapter> <in> <out>; copies the input and appends the adapter name
@@ -47,7 +47,7 @@ def fake_arrange(ctx) -> None:
 
 
 def fake_pipeline(title: str, params: dict) -> Pipeline:
-    from brasscribe_engine import stages as S
+    from scribe_engine import stages as S
 
     st = [
         Stage("transcribe.mix.swift-f0", "transcribe", {"audio": Input(SOURCE)}, S.transcribe, adapter="swift-f0",
@@ -62,16 +62,16 @@ def fake_pipeline(title: str, params: dict) -> Pipeline:
     return Pipeline("test", "test", st, outs, params)
 
 
-ENGINE_ENV = ("BRASSCRIBE_STATE", "BRASSCRIBE_TOKEN", "BRASSCRIBE_DEVICE_IDLE_DAYS", "BRASSCRIBE_COMPUTER_NAME",
-              "BRASSCRIBE_SERVER_NAME", "BRASSCRIBE_TRUST_LOCAL", "BRASSCRIBE_ADMIN_TOKEN", "BRASSCRIBE_ADMIN_TOKEN_FILE",
-              "BRASSCRIBE_BAND_SOUNDS_DIR", "BRASSCRIBE_STAGE_PARALLELISM", "BRASSCRIBE_ALLOWED_HOSTS",
-              "BRASSCRIBE_ADAPTER_TIMEOUT_S")
+ENGINE_ENV = ("SCRIBE_STATE", "SCRIBE_TOKEN", "SCRIBE_DEVICE_IDLE_DAYS", "SCRIBE_COMPUTER_NAME",
+              "SCRIBE_SERVER_NAME", "SCRIBE_TRUST_LOCAL", "SCRIBE_ADMIN_TOKEN", "SCRIBE_ADMIN_TOKEN_FILE",
+              "SCRIBE_BAND_SOUNDS_DIR", "SCRIBE_STAGE_PARALLELISM", "SCRIBE_ALLOWED_HOSTS",
+              "SCRIBE_ADAPTER_TIMEOUT_S")
 
 
 @pytest.fixture(autouse=True)
 def _host_name_only(monkeypatch):
     """Names come from the environment or the host name in tests, never from this machine's settings."""
-    from brasscribe_engine import discovery
+    from scribe_engine import discovery
 
     monkeypatch.setattr(discovery, "os_computer_name", lambda: None)
 
@@ -79,7 +79,7 @@ def _host_name_only(monkeypatch):
 @pytest.fixture(autouse=True)
 def _test_client_host(monkeypatch):
     """TestClient sends `Host: testserver`; accept it as one of this computer's names."""
-    from brasscribe_engine import guard
+    from scribe_engine import guard
 
     names = guard.own_names() | {"testserver"}
     monkeypatch.setattr(guard, "own_names", lambda: names)

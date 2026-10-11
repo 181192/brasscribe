@@ -1,8 +1,8 @@
 from music21 import converter
 
-from brasscribe_music.arranger import arrange
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.arranger import arrange
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 F_MAJOR_TUNE = [65, 67, 69, 70, 72, 70, 69, 67, 65]  # F G A Bb C Bb A G F (concert)
 
@@ -75,7 +75,7 @@ def test_composition_json_round_trip_keeps_numbers(tmp_path):
 def test_ties_are_numbered_so_readers_pair_them_without_guessing(tmp_path):
     """Every <tied> has a number: a start takes the lowest free one, its stop the open one on the same pitch. alphaTab
     1.8.4 mismatched unnumbered ties in transposing parts (notes sounding again, or held into the next phrase)."""
-    from brasscribe_music.musicxml import _number_ties
+    from scribe_music.musicxml import _number_ties
 
     def note(step: str, *tied: str, alter: str = "") -> str:
         a = f"<alter>{alter}</alter>" if alter else ""

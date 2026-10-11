@@ -3,7 +3,7 @@ import Testing
 import ScoreKit
 @testable import TranscriptionKit
 
-/// Against a running engine (`brasscribe serve`), when BRASSCRIBE_ENGINE_URL is set.
+/// Against a running engine (`scribe serve`), when BRASSCRIBE_ENGINE_URL is set.
 /// Uses a finished job already on the engine, so no model runs.
 @Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["BRASSCRIBE_ENGINE_URL"] != nil))
 struct LiveEngineTests {

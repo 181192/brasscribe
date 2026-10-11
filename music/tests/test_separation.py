@@ -1,6 +1,6 @@
 import numpy as np
 
-from brasscribe_music.separation import check_stem
+from scribe_music.separation import check_stem
 
 SR = 1000
 

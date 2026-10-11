@@ -14,6 +14,25 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 # The environment file from before the core took its name: it is no longer read, and no longer ignored.
 [ -e .brasscribe-env ] && { echo "check: .brasscribe-env is from before the core was renamed: run scripts/worktree-setup.sh (it removes it and writes .scribe-env)" >&2; exit 2; }
+# From before the Python packages took their names: an environment file with the old variables (the tests
+# that need data/ would skip without theirs), a package's old folder (Python imports what is left in it as
+# an empty package), or an environment that has the packages installed under the old names.
+old_python() {
+  local d own
+  { [ -f .scribe-env ] && grep -q 'BRASSCRIBE_' .scribe-env; } && return 0
+  for d in engine/src/brasscribe_engine music/src/brasscribe_music eval/brasscribe_eval; do
+    [ -e "$d" ] || continue
+    # Files there that git tracks (a merge left them at the old path) or that are not yet added are someone's work:
+    # the setup does not touch them.
+    own="$(git ls-files --cached --others --exclude-standard -- "$d")"
+    [ -n "$own" ] && { echo "check: $d is the old folder of a package that is now ${d/brasscribe_/scribe_}, and it holds files that are yours: move them there and change their imports: $(echo "$own" | tr '\n' ' ')" >&2; exit 2; }
+    return 0
+  done
+  # Not every environment exists in every checkout: ls failing for one of them must not hide a match in another.
+  { ls .pixi/envs/*/lib/python*/site-packages music/.venv/lib/python*/site-packages eval/.venv/lib/python*/site-packages \
+       core/conformance/.venv/lib/python*/site-packages 2>/dev/null || true; } | grep -qE '^(_editable_impl_)?brasscribe_'
+}
+old_python && { echo "check: this checkout still holds the Python packages under their old names (an old .scribe-env, an old package folder or an old install): run scripts/worktree-setup.sh (it removes them)" >&2; exit 2; }
 # shellcheck disable=SC1091
 [ -f .scribe-env ] && . ./.scribe-env
 export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"
@@ -57,8 +76,10 @@ changed_areas() {
 
 # A hash of the Python reference sources (committed, uncommitted and untracked): the fast
 # conformance tier reuses the Python outputs of an earlier run only while this is unchanged.
-PY_REF_PATHS=(music/src eval/brasscribe_eval core/conformance/scribe_conformance)
+PY_REF_PATHS=(music/src eval/scribe_eval core/conformance/scribe_conformance)
 py_ref_stamp() {
+  # A path that is not there would hash to nothing and never change: a stale name here must not pass.
+  local p; for p in "${PY_REF_PATHS[@]}"; do [ -d "$p" ] || { echo "check: $p, one of the Python reference's folders, is not there" >&2; return 1; }; done
   { git ls-files -s -- "${PY_REF_PATHS[@]}"; git diff HEAD -- "${PY_REF_PATHS[@]}"
     git ls-files -o --exclude-standard -z -- "${PY_REF_PATHS[@]}" | xargs -0 shasum 2>/dev/null; } | shasum | cut -d' ' -f1
 }
@@ -109,7 +130,7 @@ run_area() {
     # Mikkel cases against reference outputs of an earlier run in this worktree, as long as the
     # Python sources are the ones that run used (else, or with none yet, all of Mikkel), then the
     # checked-in talking-score fixtures (under a second, no data/ needed).
-    fast:conformance) stamp=$(py_ref_stamp)
+    fast:conformance) stamp=$(py_ref_stamp) || return 1
                       if [ -d core/target/conformance/mikkel ] && [ "$(cat "$PY_REF_STAMP" 2>/dev/null)" = "$stamp" ]; then
                         conf=(--skip-python --no-extras); else conf=(); fi
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
@@ -117,7 +138,7 @@ run_area() {
                          --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" \
                       && (cd core/conformance && uv run python -m scribe_conformance.run --only talking/ \
                          --work "$ROOT/core/target/conformance-talking") ;;
-    full:conformance) stamp=$(py_ref_stamp)
+    full:conformance) stamp=$(py_ref_stamp) || return 1
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
                          && uv run python -m scribe_conformance.run --work "$ROOT/core/target/conformance") \
                         && echo "$stamp" > "$PY_REF_STAMP" ;;

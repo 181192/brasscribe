@@ -7,9 +7,9 @@ A lone outlier moving on its own is covered in test_soloist.py.
 
 import pytest
 
-from brasscribe_music.arranger import place_soloist
-from brasscribe_music.instruments import BRASS_BAND
-from brasscribe_music.score_model import Note
+from scribe_music.arranger import place_soloist
+from scribe_music.instruments import BRASS_BAND
+from scribe_music.score_model import Note
 
 
 def line(pitches):

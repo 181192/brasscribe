@@ -16,8 +16,8 @@ import pretty_midi
 
 sys.path.insert(0, str(Path(__file__).parent))
 from measure import f1, midi_notes, vote  # noqa: E402
-from brasscribe_music.instruments import INSTRUMENTS  # noqa: E402
-from brasscribe_eval.paths import DATA  # noqa: E402
+from scribe_music.instruments import INSTRUMENTS  # noqa: E402
+from scribe_eval.paths import DATA  # noqa: E402
 
 U = DATA / "urmp" / "Dataset"
 MID = Path(__file__).parent / "urmp"

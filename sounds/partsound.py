@@ -112,7 +112,7 @@ REAL_LIBRARIES = {"vsco2ce", "iowa-mis"}
 def check(mapping: dict) -> list[str]:
     errors = []
     sys.path.insert(0, str(HERE.parent / "music" / "src"))
-    from brasscribe_music.instruments import INSTRUMENTS
+    from scribe_music.instruments import INSTRUMENTS
     for lineup, names in mapping["lineups"].items():
         if lineup == "about":
             continue

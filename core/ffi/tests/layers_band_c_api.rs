@@ -1,6 +1,6 @@
 //! sc_arrange_layers_band (the C ABI Windows Play calls with four WAV stems) against the UniFFI
 //! arrange_layers_band, on Mikkel's layers, with and without the solo contour as arrays. The Mikkel
-//! cases skip when data/mikkel/repro is not in the checkout (BRASSCRIBE_REPO points at one that has it).
+//! cases skip when data/mikkel/repro is not in the checkout (SCRIBE_REPO points at one that has it).
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;

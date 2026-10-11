@@ -1,4 +1,4 @@
-"""The ukulele and mandolin tab benchmark (brasscribe_eval.small_tab_bench): its passages and its suites."""
+"""The ukulele and mandolin tab benchmark (scribe_eval.small_tab_bench): its passages and its suites."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from brasscribe_eval import small_tab_bench as B
-from brasscribe_eval import suites
+from scribe_eval import small_tab_bench as B
+from scribe_eval import suites
 
 
 def test_the_passages_are_the_same_every_time_and_on_the_instruments_strings():
@@ -71,7 +71,7 @@ def test_the_bank_is_selected_before_the_program():
 
 
 def test_a_song_run_reads_the_stem_the_profile_reads(tmp_path, monkeypatch):
-    from brasscribe_eval import guitar_tab_bench as G
+    from scribe_eval import guitar_tab_bench as G
 
     entry = tmp_path / "eval" / B.SET / "ukulele-high-g-melody"
     entry.mkdir(parents=True)
@@ -111,7 +111,7 @@ def test_a_mandolin_tremolo_is_scored_apart_and_skipped_where_it_was_not_rendere
     monkeypatch.setattr(B, "evaluate", lambda data, groups, mode, only=None: seen.append(only) or (
         ({"onset_f1": 1.0}, [{}]) if B.TREMOLO not in only else ({}, [])))
     monkeypatch.setattr(B, "stem_scores", lambda data, groups: {})
-    monkeypatch.setattr("brasscribe_engine.bass_tab.core_cli", lambda: None)
+    monkeypatch.setattr("scribe_engine.bass_tab.core_cli", lambda: None)
     for f in [*B.FILES["instrument"].values(), *(f for stem in B.STEMS for f in B.song_files(stem).values())]:
         (tmp_path / "x").mkdir(exist_ok=True)
         (tmp_path / "x" / f).write_text("")

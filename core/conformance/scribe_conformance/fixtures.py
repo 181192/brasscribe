@@ -16,8 +16,8 @@ from pathlib import Path
 import numpy as np
 from music21 import duration as m21duration
 
-from brasscribe_music.quantize import choose_level, fill_gaps, quantize
-from brasscribe_music.spelling import key_of, spell
+from scribe_music.quantize import choose_level, fill_gaps, quantize
+from scribe_music.spelling import key_of, spell
 
 from .cases import REPO
 
@@ -99,8 +99,8 @@ def onsets_cases() -> list[dict]:
     """contour_notes on seeded synthetic contours: trills, runs, repeated notes, vibrato (centred, one-sided),
     scoops, falls, rips, octave flips, frames exactly at TIGHT and runs of exactly MIN_RUN frames, with and
     without SwiftF0 confidence, with and without confirming notes."""
-    from brasscribe_music.durations import Contour
-    from brasscribe_music.onsets import FRAME, MIN_RUN, TIGHT, contour_notes
+    from scribe_music.durations import Contour
+    from scribe_music.onsets import FRAME, MIN_RUN, TIGHT, contour_notes
 
     rng = np.random.default_rng(20260930)
     cases = []
@@ -190,7 +190,7 @@ def duration_cases() -> list[dict]:
 
 def freetime_cases_exact(rng) -> list[dict]:
     """Same as freetime_cases, recording which tempo onsets were passed."""
-    from brasscribe_music.freetime import local_tempo, plan_free_time, unstable_runs
+    from scribe_music.freetime import local_tempo, plan_free_time, unstable_runs
 
     out = []
     for k in range(150):
@@ -227,8 +227,8 @@ def freetime_cases_exact(rng) -> list[dict]:
 
 
 def durations_cases(rng) -> list[dict]:
-    from brasscribe_music.durations import SEPARATED_STEM, Contour, contour_offsets, written_durations
-    from brasscribe_music.quantize import BeatMap, QNote
+    from scribe_music.durations import SEPARATED_STEM, Contour, contour_offsets, written_durations
+    from scribe_music.quantize import BeatMap, QNote
 
     out = []
     for k in range(120):
@@ -277,7 +277,7 @@ def durations_cases(rng) -> list[dict]:
 def meter_cases(rng) -> list[dict]:
     """Solo meter on synthetic beat tracks: labels on (almost) every beat, jittered tempo, an inserted
     and a missed beat, accents on the true downbeats of 2, 3 or 4 beats per bar."""
-    from brasscribe_music.beats import labels_on, solo_meter, track_bar_phase
+    from scribe_music.beats import labels_on, solo_meter, track_bar_phase
 
     out = []
     for _ in range(60):
@@ -319,8 +319,8 @@ def meter_cases(rng) -> list[dict]:
 
 def confidence_cases(rng) -> list[dict]:
     """Calibrated confidence (features, clamping, logistic) and review groups on random notes."""
-    from brasscribe_music.confidence import Model, features, p_correct, review_groups, support
-    from brasscribe_music.durations import Contour
+    from scribe_music.confidence import Model, features, p_correct, review_groups, support
+    from scribe_music.durations import Contour
 
     model = Model.load()
     out = []
@@ -353,9 +353,9 @@ def confidence_cases(rng) -> list[dict]:
 
 def voice_satb_cases(rng) -> list[dict]:
     """voice_satb, chord_root and parallel counting on random slots in the quartet's ranges."""
-    from brasscribe_music.arranger import _perfect_parallels, chord_root, voice_satb
-    from brasscribe_music.difficulty import easy_range
-    from brasscribe_music.instruments import QUARTET
+    from scribe_music.arranger import _perfect_parallels, chord_root, voice_satb
+    from scribe_music.difficulty import easy_range
+    from scribe_music.instruments import QUARTET
 
     alto, tenor = QUARTET.by_name("2nd Cornet"), QUARTET.by_name("Tenor Horn")
     ranges = [(alto.instrument.preferred, tenor.instrument.preferred), (easy_range(alto), easy_range(tenor))]
@@ -379,7 +379,7 @@ def voice_satb_cases(rng) -> list[dict]:
 
 def seat_cases() -> list[dict]:
     """seat_part for every seat in every lineup name, and which clefs every seat may read."""
-    from brasscribe_music.instruments import CLEF_READINGS, SEAT_IDS, check_reads, seat_part
+    from scribe_music.instruments import CLEF_READINGS, SEAT_IDS, check_reads, seat_part
 
     out = []
     for seat in SEAT_IDS:
@@ -402,8 +402,8 @@ def part_sources_cases() -> list[dict]:
     from dataclasses import asdict
     from itertools import product
 
-    from brasscribe_music.arranger import part_sources
-    from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+    from scribe_music.arranger import part_sources
+    from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
     roles = {"solo": VoiceRole.MELODY, "bass": VoiceRole.BASS, "strings": VoiceRole.HARMONY, "brass": VoiceRole.HARMONY,
              "drums": VoiceRole.RHYTHM}
@@ -434,10 +434,10 @@ def trills_cases() -> list[dict]:
     """Trill runs on seeded synthetic lines: with_trills on performed notes (alternations at 1-3 semitones, fast and
     slow, jittered, with gaps, dropped notes and held ends, among other notes), collapse_trills on written notes
     (performed times or not, chords), and apply_difficulty with trills on and off per mode."""
-    from brasscribe_music.difficulty import apply_difficulty
-    from brasscribe_music.instruments import MINIMAL_BAND
-    from brasscribe_music.score_model import Articulation, Note
-    from brasscribe_music.trills import collapse_trills, with_trills
+    from scribe_music.difficulty import apply_difficulty
+    from scribe_music.instruments import MINIMAL_BAND
+    from scribe_music.score_model import Articulation, Note
+    from scribe_music.trills import collapse_trills, with_trills
 
     rng = np.random.default_rng(20260929)
     cases = []

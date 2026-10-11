@@ -22,14 +22,14 @@ dotnet build src/Brasscribe.Bandroom -p:Platform=x64 -p:RuntimeIdentifier=win-x6
 ```
 
 `-p:BandroomBundleWorkspace=true` copies the pixi workspace from this checkout next to the exe (`workspace\`: the
-same files a release bundles), and Bandroom installs from there. `BRASSCRIBE_BANDROOM_WORKSPACE` points it at
+same files a release bundles), and Bandroom installs from there. `SCRIBE_BANDROOM_WORKSPACE` points it at
 another folder laid out the same way. Never point it at the checkout itself: Bandroom copies and hashes the whole
 folder, `.git`, `.pixi` and `data` included.
 
 The build puts the band sounds Studio plays under `band\` next to the exe (`brasscribe-band.sf2`, the phone
 build, with `mapping.json` and `NOTICE.txt`), from `data/sounds/band`: run `pixi run fetch-sounds` at the
 repository root once (needs `gh auth login`). Bandroom passes the folder to the engine as
-`BRASSCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`; without it `engine.log` says the band
+`SCRIBE_BAND_SOUNDS_DIR`, which serves it to Studio at `/assets/band/`; without it `engine.log` says the band
 sounds are missing and Studio plays General MIDI sounds. The SoundFont adds 68 MB to the install (the
 `sounds-2026.09.30` phone build). The engine's MP3 export does not use it: that is MuseScore's own sounds, levelled
 to the band's loudness with `playback-levels.json`, which Bandroom stages next to it.
@@ -52,23 +52,23 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
 - **Data** in `%LOCALAPPDATA%\Brasscribe` (§5.2): `envs` (the pixi workspace, copied from the app's
   `workspace\` on first run), `cache\pixi`, `models`, `logs\engine.log` (rolls at 5 MB), `bandroom\` (admin
   credential, setup markers) and `engine.json` (port, pid, server id, version: for Play on the same PC).
-- **After an app update** the copy's stamp (`envs\.brasscribe-workspace.json`: a hash of the files, and the
+- **After an app update** the copy's stamp (`envs\.scribe-workspace.json`: a hash of the files, and the
   commit) differs from the app's. Bandroom shows Updating, stops the engine, swaps the code folders in (staged
   in `envs\.bandroom-update`, stamp last) and reinstalls environments only when `pixi.lock` changed. `.pixi`,
   models, runs and paired devices stay. If the engine environment won't install, the old copy goes back, its
   engine starts, and a Needs-attention problem offers Try again.
 - **First run** installs, in order, `default` (the engine, so it can start early), `swift-f0`,
   `basic-pitch`, then the torch adapters. With an NVIDIA card (DXGI vendor 0x10DE) and a driver of 525 or
-  newer they are the `-cuda` builds and the engine gets `BRASSCRIBE_CUDA=1`; otherwise the CPU builds.
+  newer they are the `-cuda` builds and the engine gets `SCRIBE_CUDA=1`; otherwise the CPU builds.
   A marker per environment holds the lockfile hash, so a stopped setup resumes and an update reinstalls only
   when `pixi.lock` changed.
-- **The engine** is `pixi run --manifest-path <envs>\pixi.toml --frozen -e default brasscribe serve --lan
+- **The engine** is `pixi run --manifest-path <envs>\pixi.toml --frozen -e default scribe serve --lan
   --port N` on the first free port from 8765, in a job object (Stop, Restart and Bandroom exiting end the
   whole tree). It is Running once `/v1/health` answers, and is asked again every 30 s: four unanswered in a row
   count as stuck, and it is ended and restarted like an exit. An unexpected exit restarts it after 2, 4, 8 … 30 s;
   three in five minutes is **Stopped unexpectedly**.
 - **Admin credential**: 256 random bits in `bandroom\admin-token`, with an ACL that allows only the current
-  user (inheritance removed). Passed as `BRASSCRIBE_ADMIN_TOKEN`; sent as `Authorization: Bearer` on every
+  user (inheritance removed). Passed as `SCRIBE_ADMIN_TOKEN`; sent as `Authorization: Bearer` on every
   call. Never written to `engine.json`, logs or diagnostics.
 - **Polling**: `/v1/status` every 5 s while the flyout or window is open, every 30 s otherwise; the running
   job from `/v1/jobs`; pair requests every 5 s always (a request lapses after 2 minutes). Engines without

@@ -23,7 +23,7 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   (`ModelCatalog.swift`). The band writer is gated on Hugging Face: the user accepts its licence with
   their own account and pastes their key, which Bandroom keeps in the keychain. Setup shows the model's
   terms, and Continue waits for the user to tick the box under them (`LicenceStep.swift`).
-- **Engine.** It starts `brasscribe serve --lan` on the first free port of 8765–8775, restarts it if it
+- **Engine.** It starts `scribe serve --lan` on the first free port of 8765–8775, restarts it if it
   stops, and shows its state in the menu bar. The band sounds Studio plays are bundled
   (`scripts/stage-band-sounds.sh`).
 - **Bass tabs.** The engine's `bass-tab` profile runs the Rust core's command line, `scribe-core`.
@@ -32,8 +32,8 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   `SCRIBE_CORE_CLI`. An engine run from a checkout uses the checkout's own build instead.
 - **Pairing.** Pair a phone shows a QR code and a code to type; the phones list removes paired devices.
 
-Data lives in `~/Library/Application Support/Brasscribe` (`BRASSCRIBE_DATA` overrides it), logs in
-`~/Library/Logs/Brasscribe` (`BRASSCRIBE_LOGS`).
+Data lives in `~/Library/Application Support/Brasscribe` (`SCRIBE_DATA` overrides it), logs in
+`~/Library/Logs/Brasscribe` (`SCRIBE_LOGS`).
 
 ## Build and run
 
@@ -51,7 +51,7 @@ make run          # build, then run against this checkout (CHECKOUT=/path/to/bra
 make strings      # rebuild App/Localizable.xcstrings (en + nb) from the last build
 ```
 
-Against a checkout (`BRASSCRIBE_CHECKOUT`, or the `engineCheckout` setting), Bandroom runs the engine
+Against a checkout (`SCRIBE_CHECKOUT`, or the `engineCheckout` setting), Bandroom runs the engine
 with `pixi run` in that checkout instead of installing its own copy; the checkout needs `pixi install`
 first. `scripts/run-dev.sh` launches the built app the way Finder does, with options for the data
 folder (its own under `build/dev` by default, so it never shares the installed Bandroom's), appearance, language

@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "brasscribe-convert-beat-this"
+name = "scribe-convert-beat-this"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

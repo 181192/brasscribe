@@ -1,6 +1,6 @@
 """Frame-level SwiftF0 contour of a monophonic stem -> .npz (t, pitch_hz, confidence, loudness_db per frame).
 
-Same output as eval/brasscribe_eval/swiftf0_contour.py; brasscribe_music.durations
+Same output as eval/scribe_eval/swiftf0_contour.py; scribe_music.durations
 reads it to find where sustained notes really end.
 """
 import sys

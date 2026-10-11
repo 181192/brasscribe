@@ -7,8 +7,8 @@ import shutil
 
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import history
-from brasscribe_engine.api import create_app
+from scribe_engine import history
+from scribe_engine.api import create_app
 
 from .test_api import wait, wait_with
 

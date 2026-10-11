@@ -66,13 +66,13 @@ public sealed class BandroomController
     /// <summary>The computer's name and hardware; the name changes when one is set in Settings.</summary>
     public MachineInfo Machine { get; set; }
     public bool Updating { get; set; }
-    /// <summary>Why the last engine update failed; the previous engine runs meanwhile.</summary>
+    /// <summary>Why the last engine update failed; the previous engine runs meanwhile when it can still be started.</summary>
     public string? UpdateFailure { get; set; }
     /// <summary>Why setup stopped (details for the tech person); Finish setting up tries again.</summary>
     public string? SetupFailure { get; set; }
     /// <summary>Set when first-run setup stopped because pixi refused the workspace (too old for it).</summary>
     public PixiRefusal? SetupRefusal { get; set; }
-    /// <summary>Set with <see cref="UpdateFailure"/> when pixi refused the updated workspace; the previous engine stays.</summary>
+    /// <summary>Set with <see cref="UpdateFailure"/> when pixi refused the updated workspace; the previous engine is back.</summary>
     public PixiRefusal? UpdateRefusal { get; set; }
     /// <summary>The app's own workspace stamp, for the tech-person details.</summary>
     public string? WorkspaceStamp { get; set; }

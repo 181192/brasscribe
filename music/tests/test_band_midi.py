@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.instruments import BRASS_BAND, SEAT_OWN_PARTS
-from brasscribe_music.musicxml import band_sounds, build_band_score, write_musicxml
-from brasscribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
+from scribe_music.arranger import arrange_layers
+from scribe_music.instruments import BRASS_BAND, SEAT_OWN_PARTS
+from scribe_music.musicxml import band_sounds, build_band_score, write_musicxml
+from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 MAPPING = Path(__file__).resolve().parents[2] / "sounds" / "mapping.json"
 
@@ -71,7 +71,7 @@ def test_pop_kit_is_the_percussion_program(tmp_path):
 
 @pytest.mark.skipif(not MAPPING.exists(), reason="sounds/mapping.json not available")
 def test_kits_match_the_band_soundfont_mapping():
-    from brasscribe_music.instruments import KITS
+    from scribe_music.instruments import KITS
 
     m = json.loads(MAPPING.read_text())
     assert sorted(KITS.values()) == m["resolve"]["kit_programs"]

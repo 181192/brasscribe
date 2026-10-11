@@ -1,4 +1,4 @@
-# brasscribe-engine
+# scribe-engine
 
 The Python engine: it turns a recording into a brass-band score and serves the HTTP API that Studio and
 the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine.
@@ -9,7 +9,7 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   stage's files, and a manifest of what ran.
 - **Beats.** Beat This! gives the beats. The solo profile and the band draft run its small0 checkpoint, the one
   the Play apps run on the device, so a score made on the computer is the one the device makes; the other
-  profiles run the adapter's own final0. `brasscribe bench solo-beat-model` measured final0 on solo takes and
+  profiles run the adapter's own final0. `scribe bench solo-beat-model` measured final0 on solo takes and
   found no significant gain, which is why the solo profile keeps small0 (the numbers are by `solo()` in
   `profiles.py`).
 - **Models** run as subprocesses behind a `<input> <output>` contract, each in its own environment under
@@ -82,17 +82,17 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
   - Options: `instrument`, `tuning`, `capo` (frets are counted from it, and the page names it), `style`, `octave`
     (`auto`, or the player's choice), `layout` (`tab`, `tab-and-notation`, `notation`) and `chords` (`heard`,
     `completed`; not for a bass), and none of the band options. `bass-tab` is the same profile with a bass under the id older apps use.
-  - `brasscribe bench bass-tab`, `guitar-tab`, `ukulele-tab` and `mandolin-tab` measure it: on Slakh's bass lines
+  - `scribe bench bass-tab`, `guitar-tab`, `ukulele-tab` and `mandolin-tab` measure it: on Slakh's bass lines
     and synthesized low ones, on GuitarSet and Slakh's guitars, and on rendered ukulele and mandolin passages
-    ([`bass_tab_bench.py`](../eval/brasscribe_eval/bass_tab_bench.py),
-    [`guitar_tab_bench.py`](../eval/brasscribe_eval/guitar_tab_bench.py),
-    [`small_tab_bench.py`](../eval/brasscribe_eval/small_tab_bench.py)); they run where the data and the models
+    ([`bass_tab_bench.py`](../eval/scribe_eval/bass_tab_bench.py),
+    [`guitar_tab_bench.py`](../eval/scribe_eval/guitar_tab_bench.py),
+    [`small_tab_bench.py`](../eval/scribe_eval/small_tab_bench.py)); they run where the data and the models
     are, not in CI.
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS
   advertisement as `_brasscribe._tcp` (`discovery.py`). The contract is the committed
   [`openapi.json`](openapi.json); the apps generate their clients from it.
-- **Studio** is served at `/` from the committed bundle in `src/brasscribe_engine/static/`
+- **Studio** is served at `/` from the committed bundle in `src/scribe_engine/static/`
   (built from [`studio/`](../studio/README.md)), so the engine runs without Node.
 
 ## Running
@@ -100,9 +100,9 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
 From the repository root, after `pixi install`:
 
 ```sh
-pixi run brasscribe profiles                    # the transcription profiles
-pixi run brasscribe run take.wav --profile solo --out data/runs/my-take
-pixi run brasscribe run song.wav --profile tab --instrument guitar-6 --capo 2 --out data/runs/my-tab
+pixi run scribe profiles                    # the transcription profiles
+pixi run scribe run take.wav --profile solo --out data/runs/my-take
+pixi run scribe run song.wav --profile tab --instrument guitar-6 --capo 2 --out data/runs/my-tab
 pixi run studio                                 # engine + Studio on http://127.0.0.1:8765/, opens a browser
 pixi run serve --lan                            # listen on the LAN, print the URL and a 6-digit pairing code
 curl -s http://127.0.0.1:8765/v1/health
@@ -110,12 +110,12 @@ curl -s http://127.0.0.1:8765/v1/health
 
 Other commands: `bench` (benchmark suites against `eval/baselines.json`), `compare` (a run against a
 reference output), `manifest` (show or re-run a run), `devices` (list or revoke paired devices).
-`pixi run brasscribe <command> --help` has the options.
+`pixi run scribe <command> --help` has the options.
 
 On macOS on Apple silicon the model adapters use [uv](https://docs.astral.sh/uv/) by default
 (`uv run --frozen --project ml/adapters/<name>`; the uv lock files are solved for that platform only).
-Elsewhere, or with `BRASSCRIBE_ADAPTER_RUNNER=pixi`, they use the pixi environment of the same name
-(`pixi install -e muscriptor`, …). Model weights are not in git: they go under `BRASSCRIBE_MODELS`, or
+Elsewhere, or with `SCRIBE_ADAPTER_RUNNER=pixi`, they use the pixi environment of the same name
+(`pixi install -e muscriptor`, …). Model weights are not in git: they go under `SCRIBE_MODELS`, or
 the adapter downloads them from where their makers publish them (licences in
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md)).
 
@@ -128,20 +128,20 @@ refused the same way (`core_missing`), before any model runs. Bandroom for Mac a
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `BRASSCRIBE_DATA` | `<repo>/data` | Cache, runs, uploads, datasets |
-| `BRASSCRIBE_MODELS` | `<data>/models`, then `<repo>/models` | Model weights |
-| `BRASSCRIBE_ADAPTERS` | `<repo>/ml/adapters` | Adapter directory |
-| `BRASSCRIBE_ADAPTER_RUNNER` | `uv` on Apple silicon Macs, else `pixi` | `uv` or `pixi` |
-| `BRASSCRIBE_TOKEN` | none | Static bearer token for scripts; the apps pair and get their own |
-| `BRASSCRIBE_TRUST_LOCAL` | `1` | Clients on this computer use the API without a token |
-| `BRASSCRIBE_ALLOWED_HOSTS` | none | Extra host names (comma-separated) clients on this computer may use, e.g. a local proxy's |
-| `BRASSCRIBE_MAX_UPLOAD_BYTES` | 2 GiB | Largest upload (request body); larger ones get 413 |
-| `BRASSCRIBE_GPU_LOCK` | `/tmp/brasscribe-gpu-<uid>.lock` | Lock for heavy models, shared by this user's runs |
-| `BRASSCRIBE_ADAPTER_TIMEOUT_S` | 3 h heavy, 1 h other models | How long one model run may take before it is stopped |
-| `BRASSCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
+| `SCRIBE_DATA` | `<repo>/data` | Cache, runs, uploads, datasets |
+| `SCRIBE_MODELS` | `<data>/models`, then `<repo>/models` | Model weights |
+| `SCRIBE_ADAPTERS` | `<repo>/ml/adapters` | Adapter directory |
+| `SCRIBE_ADAPTER_RUNNER` | `uv` on Apple silicon Macs, else `pixi` | `uv` or `pixi` |
+| `SCRIBE_TOKEN` | none | Static bearer token for scripts; the apps pair and get their own |
+| `SCRIBE_TRUST_LOCAL` | `1` | Clients on this computer use the API without a token |
+| `SCRIBE_ALLOWED_HOSTS` | none | Extra host names (comma-separated) clients on this computer may use, e.g. a local proxy's |
+| `SCRIBE_MAX_UPLOAD_BYTES` | 2 GiB | Largest upload (request body); larger ones get 413 |
+| `SCRIBE_GPU_LOCK` | `/tmp/scribe-gpu-<uid>.lock` | Lock for heavy models, shared by this user's runs |
+| `SCRIBE_ADAPTER_TIMEOUT_S` | 3 h heavy, 1 h other models | How long one model run may take before it is stopped |
+| `SCRIBE_BAND_SOUNDS_DIR` | none | Band SoundFont and part map Studio plays |
 | `SCRIBE_CORE_CLI` | `<repo>/core/target/release/scribe-core`, then the `PATH` | The Rust core's command line, for the `tab` profile. A checkout gets it from `scripts/worktree-setup.sh` (or `cargo build --release -p scribe-cli` in `core/`); the Docker image builds it and sets the variable |
 
-`src/brasscribe_engine/config.py` lists the rest (companion state, device expiry, display name, owner
+`src/scribe_engine/config.py` lists the rest (companion state, device expiry, display name, owner
 credential, report folders).
 
 ## Tests
@@ -164,8 +164,8 @@ engine's tests fail while the Android or Windows copy is behind, and Studio's wh
 ## Docker
 
 ```sh
-docker build -f engine/Dockerfile --target cpu -t brasscribe:cpu .    # --target cuda for NVIDIA GPUs
-docker run --rm -v "$PWD/data:/data" -p 8765:8765 brasscribe:cpu
+docker build -f engine/Dockerfile --target cpu -t scribe:cpu .    # --target cuda for NVIDIA GPUs
+docker run --rm -v "$PWD/data:/data" -p 8765:8765 scribe:cpu
 ```
 
 The image has the engine, every adapter environment and the Rust core's command line (built from `core/`

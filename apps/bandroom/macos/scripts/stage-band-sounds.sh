@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copies the band sounds Studio plays into the app bundle (Contents/Resources/band): the phone band
 # SoundFont as brasscribe-band.sf2, its part map and the licence notice. Bandroom points the engine at
-# them with BRASSCRIBE_BAND_SOUNDS_DIR. The SoundFont is not in git: `pixi run fetch-sounds` gets it.
+# them with SCRIBE_BAND_SOUNDS_DIR. The SoundFont is not in git: `pixi run fetch-sounds` gets it.
 # Without it the folder is left out and Bandroom logs that the band sounds are missing; a Release
 # build stops instead.
 #   scripts/stage-band-sounds.sh <destination>

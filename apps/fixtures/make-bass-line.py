@@ -110,12 +110,12 @@ def fixed(job: dict) -> dict:
 
 def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
-        os.environ["BRASSCRIBE_DATA"] = str(Path(tmp) / "data")
+        os.environ["SCRIBE_DATA"] = str(Path(tmp) / "data")
         from fastapi.testclient import TestClient
 
-        from brasscribe_engine.api import create_app
-        from brasscribe_engine.config import Settings
-        from brasscribe_music import musescore
+        from scribe_engine.api import create_app
+        from scribe_engine.config import Settings
+        from scribe_music import musescore
 
         models = Settings(data_dir=HERE.parent.parent / "data").models_dir
         settings = Settings(models_override=models)

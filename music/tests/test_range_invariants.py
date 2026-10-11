@@ -11,10 +11,10 @@ from pathlib import Path
 
 import pytest
 
-from brasscribe_music.arranger import arrange_layers
-from brasscribe_music.difficulty import MODES, mode_range
-from brasscribe_music.instruments import LINEUPS
-from brasscribe_music.score_model import Composition
+from scribe_music.arranger import arrange_layers
+from scribe_music.difficulty import MODES, mode_range
+from scribe_music.instruments import LINEUPS
+from scribe_music.score_model import Composition
 
 GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
 

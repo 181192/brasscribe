@@ -11,9 +11,9 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 from fastapi.testclient import TestClient
 
-from brasscribe_engine import companion
-from brasscribe_engine.api import create_app
-from brasscribe_engine.companion import DeviceRegistry, PairingWindow, PairRequests, clean_name, pairing_uri
+from scribe_engine import companion
+from scribe_engine.api import create_app
+from scribe_engine.companion import DeviceRegistry, PairingWindow, PairRequests, clean_name, pairing_uri
 
 
 class Clock:
@@ -262,7 +262,7 @@ def test_pairing_payload_uri(settings):
 
 
 def test_serve_banner_records_hosts_for_the_payload(settings):
-    from brasscribe_engine.cli import serve_banner
+    from scribe_engine.cli import serve_banner
 
     app = create_app(settings)
     _, lines = serve_banner(app, "0.0.0.0", 8765, ips=["192.0.2.20"])
@@ -276,7 +276,7 @@ def test_serve_keeps_an_idle_connection_for_a_minute(settings, monkeypatch, caps
 
     import uvicorn
 
-    from brasscribe_engine import api, cli
+    from scribe_engine import api, cli
 
     ran = {}
     monkeypatch.setattr(api, "create_app", lambda **_: create_app(settings))

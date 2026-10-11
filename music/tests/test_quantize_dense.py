@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from brasscribe_music.quantize import choose_grids, choose_grids_dense, quantize
+from scribe_music.quantize import choose_grids, choose_grids_dense, quantize
 
 
 def run(bpm: float, per_beat: int, n: int, jitter: float = 0.0, seed: int = 0, start_beat: int = 2):

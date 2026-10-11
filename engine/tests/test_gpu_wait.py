@@ -5,9 +5,9 @@ from __future__ import annotations
 import threading
 import time
 
-from brasscribe_engine import stages as S
-from brasscribe_engine.dag import SOURCE, Executor, Input, Pipeline, Stage
-from brasscribe_engine.gpulock import file_lock, is_locked
+from scribe_engine import stages as S
+from scribe_engine.dag import SOURCE, Executor, Input, Pipeline, Stage
+from scribe_engine.gpulock import file_lock, is_locked
 
 from .test_dag import session
 

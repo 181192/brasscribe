@@ -13,8 +13,8 @@ import mir_eval
 import numpy as np
 import pretty_midi
 
-from brasscribe_eval.lead_sheet import line
-from brasscribe_eval.paths import DATA
+from scribe_eval.lead_sheet import line
+from scribe_eval.paths import DATA
 
 EV = DATA / "eval" / "choralebricks-brass4"
 TOL = 0.10

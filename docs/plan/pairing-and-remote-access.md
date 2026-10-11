@@ -23,7 +23,7 @@ Left (§7): LAN TLS with a pinned key (§4.9), the `--mode home|remote|hosted` s
 
 Line numbers refer to commit `f20ba42`, the state before this work.
 
-- **Discovery.** `brasscribe serve --lan` advertises `_brasscribe._tcp` over mDNS. The service name is `Brasscribe on <host>` and the TXT record is `v`, `api` and `auth=pair` (`engine/src/brasscribe_engine/discovery.py:30-41`). The apps browse for it: Apple `EngineBrowser.swift` (NWBrowser), Android `EngineDiscovery.kt` (NsdManager), Windows `EngineDiscovery.cs`.
+- **Discovery.** `scribe serve --lan` advertises `_brasscribe._tcp` over mDNS. The service name is `Brasscribe on <host>` and the TXT record is `v`, `api` and `auth=pair` (`engine/src/scribe_engine/discovery.py:30-41`). The apps browse for it: Apple `EngineBrowser.swift` (NWBrowser), Android `EngineDiscovery.kt` (NsdManager), Windows `EngineDiscovery.cs`.
 - **Pairing.** At start the engine creates a 6-digit code and prints it (`api.py:59`, `cli.py:126`). `POST /v1/pair {code, device_name}` returns `{token}` (`api.py:135-141`). The request carries `device_name`, and the engine ignores it.
 - **Auth.** Loopback clients are trusted with no token (`api.py:87-89`). Every other request must carry `Authorization: Bearer <token>`, checked against **one** shared token (`api.py:91-96`).
 - **Transport.** Plain HTTP on port 8765, with no TLS.
@@ -33,7 +33,7 @@ Line numbers refer to commit `f20ba42`, the state before this work.
 
 | # | Cause | Where |
 |---|---|---|
-| 1 | **The token is new on every engine start.** `Pairing.token` is `secrets.token_urlsafe(24)`, created once per process, so every restart invalidates every paired device. `BRASSCRIBE_TOKEN` can pin it, but nobody sets it, and then every device shares one secret. | `api.py:58`, `api.py:84`, `config.py:11,40` |
+| 1 | **The token is new on every engine start.** `Pairing.token` is `secrets.token_urlsafe(24)`, created once per process, so every restart invalidates every paired device. `SCRIBE_TOKEN` can pin it, but nobody sets it, and then every device shares one secret. | `api.py:58`, `api.py:84`, `config.py:11,40` |
 | 2 | **A wrong guess can quietly retire the printed code.** After 5 wrong codes the engine picks a new code and prints nothing. The code on screen stops working, the user restarts the engine to get a new one, and cause 1 then logs out every other device. The scheme also doesn't stop brute force. Each code allows 5 tries, and an attacker with an unlimited request rate still gets through about 10⁶ guesses in well under an hour. | `api.py:67-69` |
 | 3 | **Apps remember an IP address, not an engine.** Apple stores the resolved `http://<ipv4>:<port>` (`SettingsView.swift:112`). Android and Windows store `url` / `EngineAddress`. When DHCP gives the computer a new address, or the port changes, the app is pointed at nothing. The user must discover the engine again, and nothing tells the app it is the same engine. | `SettingsView.swift:112`, `AppContainer.kt:25-27`, `SettingsViewModel.cs:28` |
 | 4 | **Windows drops the token when the address changes, and Android pairs on every Connect.** Windows clears `EngineToken` whenever the chosen engine's address differs from the stored one (`SettingsViewModel.cs:81`). Android calls `pair()` every time `health.authRequired` is true, which is always true on the LAN (`PlayViewModel.kt:696-698`). Windows also has the opposite bug. When the stored token is stale after a restart, `ConnectAsync` sees a non-empty token, skips pairing and reports "Connected", and then every call fails with 401 (`SettingsViewModel.cs:95`). | as cited |
@@ -46,7 +46,7 @@ Causes 1, 3 and 4 are the everyday ones. Cause 1 alone logs out every phone each
 
 ## 3. Design goals
 
-1. A device pairs **once**. Only an explicit revoke on the computer, "Unpair" on the device, `brasscribe devices reset`, or 180 days unused ends it.
+1. A device pairs **once**. Only an explicit revoke on the computer, "Unpair" on the device, `scribe devices reset`, or 180 days unused ends it.
 2. **The engine has a stable identity.** It survives restarts, IP and port changes, and renames. Clients pin it.
 3. **Reconnecting is silent.** The app finds its engine by id over mDNS, falls back to the last known address, and never asks for a code while its credential is still valid.
 4. **The owner sees and controls** the paired devices on the computer: name, platform, when paired, last seen.
@@ -61,12 +61,12 @@ Causes 1, 3 and 4 are the everyday ones. Cause 1 alone logs out every phone each
 
 | Thing | What it is | Where it lives | Lifetime |
 |---|---|---|---|
-| **Server id** | 128 random bits, hex. A routing identifier, **not proof of identity**. | `<state>/server.json` | Until `brasscribe devices reset` |
+| **Server id** | 128 random bits, hex. A routing identifier, **not proof of identity**. | `<state>/server.json` | Until `scribe devices reset` |
 | **Server key** (next step) | TLS key pair, self-signed certificate. Its SPKI SHA-256 (base64url) is the **fingerprint**. | `<state>/tls/` (0600) | Same as the server id; regenerated on reset |
-| **Device credential** | 256-bit random bearer token, one per device. The engine stores only the SHA-256. | device keystore; hash in `<state>/devices.json` (0600) | Until revoked, reset, or 180 days unused (`BRASSCRIBE_DEVICE_IDLE_DAYS`) |
+| **Device credential** | 256-bit random bearer token, one per device. The engine stores only the SHA-256. | device keystore; hash in `<state>/devices.json` (0600) | Until revoked, reset, or 180 days unused (`SCRIBE_DEVICE_IDLE_DAYS`) |
 | **Pairing code** | 6 digits, shown as `482 913`. The engine ignores spaces. | engine memory | Start code: until closed. Window opened on the computer: 10 min, single use, can be extended |
 
-`<state>` is `BRASSCRIBE_STATE`, default `<data>/companion`. It is kept apart from caches, so clearing a cache never unpairs anyone. It is gitignored (under `data/`). Give each checkout that runs as a real server its own `BRASSCRIBE_STATE`. Otherwise worktrees split or share the device list without anyone noticing.
+`<state>` is `SCRIBE_STATE`, default `<data>/companion`. It is kept apart from caches, so clearing a cache never unpairs anyone. It is gitignored (under `data/`). Give each checkout that runs as a real server its own `SCRIBE_STATE`. Otherwise worktrees split or share the device list without anyone noticing.
 
 **Why one long-lived bearer, and not access plus refresh tokens.** On a LAN the engine is its own authorization server, and the token never leaves the two devices. A refresh token adds a second secret to store and a second failure mode, and gains nothing without an external issuer. Rotation (§4.6) limits how long a leaked token lives. In hosted mode (§5) real OAuth access and refresh tokens replace this. The API surface stays the same.
 
@@ -200,16 +200,16 @@ Client rules:
 
 | Who | How | Effect |
 |---|---|---|
-| Owner, at the computer | desktop helper list → Remove; `DELETE /v1/devices/{id}` (loopback); `brasscribe devices revoke <id>` | That device gets 401 and must pair again |
+| Owner, at the computer | desktop helper list → Remove; `DELETE /v1/devices/{id}` (loopback); `scribe devices revoke <id>` | That device gets 401 and must pair again |
 | The device itself | Settings → Your computer → Unpair; `DELETE /v1/devices/me` | Same, from the phone |
-| Owner, full reset | `brasscribe devices reset` | All devices forgotten, new server id; every app sees a new engine |
+| Owner, full reset | `scribe devices reset` | All devices forgotten, new server id; every app sees a new engine |
 | Nobody | 180 days unused | Entry dropped |
 
 The CLI edits the state files directly. A running engine re-reads `devices.json` when the file changes on disk, so a revoke takes effect at once. Every write, from the engine or the CLI, holds a lock on `devices.json.lock` and re-reads the file before it writes. The engine's own presence flush therefore never brings back a device the CLI has just revoked.
 
 ### 4.8 What the engine does now
 
-This is implemented in `engine/src/brasscribe_engine/companion.py`, `api.py` and `cli.py`, and tested in `engine/tests/test_companion.py` and `test_presence.py`. "Owner" below means the computer running the engine (§4.10).
+This is implemented in `engine/src/scribe_engine/companion.py`, `api.py` and `cli.py`, and tested in `engine/tests/test_companion.py` and `test_presence.py`. "Owner" below means the computer running the engine (§4.10).
 
 | Endpoint | Who | Purpose |
 |---|---|---|
@@ -226,15 +226,15 @@ Other changes:
 
 - **Wrong codes.** Five wrong codes from one address lock pairing for that address for 30 s, then 60 s, 120 s and so on, up to 15 min. Twenty wrong codes from all addresses together lock it for everyone the same way. Opening a new code on the computer lifts every lock. The code on screen never changes.
 - **Presence.** Every authenticated request updates the device's `last_seen` in memory. It is written to disk at most once a minute, and when the engine stops. A device is `online` when it was seen in the last 60 s. The Play apps call `GET /v1/devices/me` every 20 s while they are open and paired, so `online` means "the app is open and connected".
-- **mDNS and names.** The TXT record carries `id=<server_id>` and `host=<computer name>`. The computer name is `BRASSCRIBE_COMPUTER_NAME` (the desktop helper passes macOS ComputerName or the Windows device name), else the operating system's name for the computer (`scutil --get ComputerName` on macOS), else the short host name, cut to fit one DNS label. `server_name` in `/v1/health`, `/v1/pair`, `/v1/status`, the payload and the mDNS instance name is always `Brasscribe on <computer name>`, word for word what the helper shows. `BRASSCRIBE_SERVER_NAME` replaces the whole name. The mDNS instance name can gain a ` (2)` suffix on a collision, so apps show `host` (localised: "Brasscribe på <host>"), never the instance name.
-- **Static token.** `BRASSCRIBE_TOKEN` still works, as a static token for scripts.
+- **mDNS and names.** The TXT record carries `id=<server_id>` and `host=<computer name>`. The computer name is `SCRIBE_COMPUTER_NAME` (the desktop helper passes macOS ComputerName or the Windows device name), else the operating system's name for the computer (`scutil --get ComputerName` on macOS), else the short host name, cut to fit one DNS label. `server_name` in `/v1/health`, `/v1/pair`, `/v1/status`, the payload and the mDNS instance name is always `Brasscribe on <computer name>`, word for word what the helper shows. `SCRIBE_SERVER_NAME` replaces the whole name. The mDNS instance name can gain a ` (2)` suffix on a collision, so apps show `host` (localised: "Brasscribe på <host>"), never the instance name.
+- **Static token.** `SCRIBE_TOKEN` still works, as a static token for scripts.
 - **Device names.** Names are cleaned: no control characters, one line, at most 64 characters.
 
 **Not done yet: TLS (§4.9).** Until it is, the server id can be spoofed by anyone on the LAN, and a token crosses the network in the clear. Both were already true of the old shared token.
 
 ### 4.9 TLS on the LAN (next engine change)
 
-- **Key and certificate.** On first start, generate an ECDSA P-256 key and a self-signed certificate (CN = server name, SAN = `brasscribe.local`, valid 20 years; clients ignore the validity dates and hostname and check the pin). Store them under `<state>/tls/`. `brasscribe devices reset` regenerates them.
+- **Key and certificate.** On first start, generate an ECDSA P-256 key and a self-signed certificate (CN = server name, SAN = `brasscribe.local`, valid 20 years; clients ignore the validity dates and hostname and check the pin). Store them under `<state>/tls/`. `scribe devices reset` regenerates them.
 - **Fingerprint.** `fp` = base64url(SHA-256(SubjectPublicKeyInfo)). Because the pin is on the public key, a new certificate with the same key keeps working.
 - **Serving.** `serve --lan` listens with TLS on the same port. Plain HTTP on loopback stays for Studio. For one release, a plain-HTTP LAN listener is kept behind `--allow-http-lan`, so old clients have a migration window.
 - **Getting the pin.** The client gets the pin from the QR code. When the user types the code instead, the client pins on first use (TOFU): it shows the first 4 groups of the fingerprint in the pairing confirmation, and the computer shows the same.
@@ -252,14 +252,14 @@ By default the engine trusts loopback. A client on the same computer (Studio, th
 
 | Setting | Default | Effect |
 |---|---|---|
-| `BRASSCRIBE_TRUST_LOCAL=0` (or `serve --no-trust-local`) | `1` | Loopback clients need a token like everyone else: a device token, `BRASSCRIBE_TOKEN` or the admin token. |
-| `BRASSCRIBE_ADMIN_TOKEN=<token>`, or `BRASSCRIBE_ADMIN_TOKEN_FILE=<path>` | unset | The owner credential. While it is set, the owner endpoints (`/v1/status`, `/v1/devices`, `/v1/pairing*`) require `Authorization: Bearer <admin token>`, and loopback alone gets 403. The admin token also works on every other endpoint. |
+| `SCRIBE_TRUST_LOCAL=0` (or `serve --no-trust-local`) | `1` | Loopback clients need a token like everyone else: a device token, `SCRIBE_TOKEN` or the admin token. |
+| `SCRIBE_ADMIN_TOKEN=<token>`, or `SCRIBE_ADMIN_TOKEN_FILE=<path>` | unset | The owner credential. While it is set, the owner endpoints (`/v1/status`, `/v1/devices`, `/v1/pairing*`) require `Authorization: Bearer <admin token>`, and loopback alone gets 403. The admin token also works on every other endpoint. |
 
 - **Admin token file.** It is created with a random token when missing. On POSIX the engine refuses to start when the file is readable by group or others.
-- **Who never gets owner rights.** Device tokens and the static `BRASSCRIBE_TOKEN` never grant owner rights.
-- **What Bandroom does.** The desktop helper generates a 256-bit token at first run. It passes the token as `BRASSCRIBE_ADMIN_TOKEN` when it starts the engine, and sends it on every owner call. Local trust stays on at home, so Studio in the browser keeps working without a token.
-- **Remote mode.** Anyone who puts the engine behind a proxy on the same machine sets `BRASSCRIBE_TRUST_LOCAL=0` and an admin token.
-- **Web pages in a browser on the computer.** Local trust is for programs on the computer, not for whatever page a browser has open. A POST, PUT, PATCH or DELETE whose `Origin` names another site, or whose `Sec-Fetch-Site` is `cross-site` or `same-site`, gets 403. A request trusted by its address must name the engine in `Host` by an IP address, `localhost`, a `.local` name, the computer's host name or a name in `BRASSCRIBE_ALLOWED_HOSTS`, else it gets 400 (`engine/src/brasscribe_engine/guard.py`). Studio is served by the engine and the native apps send no `Origin`, so neither is affected.
+- **Who never gets owner rights.** Device tokens and the static `SCRIBE_TOKEN` never grant owner rights.
+- **What Bandroom does.** The desktop helper generates a 256-bit token at first run. It passes the token as `SCRIBE_ADMIN_TOKEN` when it starts the engine, and sends it on every owner call. Local trust stays on at home, so Studio in the browser keeps working without a token.
+- **Remote mode.** Anyone who puts the engine behind a proxy on the same machine sets `SCRIBE_TRUST_LOCAL=0` and an admin token.
+- **Web pages in a browser on the computer.** Local trust is for programs on the computer, not for whatever page a browser has open. A POST, PUT, PATCH or DELETE whose `Origin` names another site, or whose `Sec-Fetch-Site` is `cross-site` or `same-site`, gets 403. A request trusted by its address must name the engine in `Host` by an IP address, `localhost`, a `.local` name, the computer's host name or a name in `SCRIBE_ALLOWED_HOSTS`, else it gets 400 (`engine/src/scribe_engine/guard.py`). Studio is served by the engine and the native apps send no `Origin`, so neither is affected.
 
 ## 5. The same engine, reachable from outside
 
@@ -293,7 +293,7 @@ Every route already depends on `auth`. That dependency turns into `principal = D
 This is the cheapest path and needs no new auth.
 
 - **Tailscale (or Headscale, or plain WireGuard).**
-  - Install it on the computer and the phones. Run `brasscribe serve --host <tailnet IP>`, which binds the engine to the tailnet address and not to all interfaces. This works safely today: requests arrive from the tailnet address, not from loopback, so they must carry a device token. Only a proxy on the same machine needs the mode switch.
+  - Install it on the computer and the phones. Run `scribe serve --host <tailnet IP>`, which binds the engine to the tailnet address and not to all interfaces. This works safely today: requests arrive from the tailnet address, not from loopback, so they must carry a device token. Only a proxy on the same machine needs the mode switch.
   - The phone reaches it at its MagicDNS name. The pairing payload `h` lists that address as well as the LAN addresses, so one QR code works in both places.
   - Tailnet ACLs limit which devices can reach port 8765.
   - **Don't** put the engine behind `tailscale serve` or `funnel` while loopback trust is on.
@@ -406,7 +406,7 @@ The split to use: the API and job queue on a small always-on CPU instance or a p
 
 | Change | Work | Status |
 |---|---|---|
-| Pair once | Stable server id; per-device hashed credentials; rotation with grace; `/v1/devices*`, `/v1/pairing*`, `/v1/pair/requests*`; lockout instead of silent code replacement; mDNS `id`; `brasscribe devices`; tests | **done** |
+| Pair once | Stable server id; per-device hashed credentials; rotation with grace; `/v1/devices*`, `/v1/pairing*`, `/v1/pair/requests*`; lockout instead of silent code replacement; mDNS `id`; `scribe devices`; tests | **done** |
 | Mode switch | `--mode home\|remote\|hosted`; loopback trust off outside home; owner endpoints via a local Unix socket or an admin role; `h` in the payload includes the tailnet address | next |
 | LAN TLS | Persistent TLS key and self-signed certificate under `<state>/tls`; `fp` in `/v1/pairing` and the QR code; TLS on the LAN listener; `--allow-http-lan` for one release; add `cryptography` to the engine environment | next |
 | Device-bound tokens | Optional device public key at pairing (`jwk` in `PairRequest`); DPoP proofs checked on LAN requests too | later |
@@ -453,7 +453,7 @@ Nothing. `core/` has no networking or storage, and credential handling stays nat
 
 ### Desktop helper (tray / menu bar)
 
-- Starts the engine with `BRASSCRIBE_COMPUTER_NAME` set to the user-visible computer name.
+- Starts the engine with `SCRIBE_COMPUTER_NAME` set to the user-visible computer name.
 - Shows `GET /v1/pairing` as a QR code (the `uri`) and as the code in large type (`482 913`), with the time left. "More time" calls `POST /v1/pairing {extend: true}`.
 - Lists `GET /v1/devices` (name, platform, last seen), with Remove.
 - Polls `GET /v1/pairing/requests` and shows "Allow <name>? <match code>".

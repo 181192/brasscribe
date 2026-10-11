@@ -5,7 +5,7 @@ import Foundation
 /// Hugging Face cache) can be kept for a later reinstall.
 ///
 /// The standard folders (`~/Library/Application Support/Brasscribe`, `~/Library/Logs/Brasscribe`) go whole.
-/// A folder moved elsewhere with BRASSCRIBE_DATA or BRASSCRIBE_LOGS may be one the user keeps other things in,
+/// A folder moved elsewhere with SCRIBE_DATA or SCRIBE_LOGS may be one the user keeps other things in,
 /// so there only what Bandroom and the engine make is deleted, and the folder itself only if that leaves it
 /// empty. It never touches anything else, such as a source checkout's models.
 public struct Uninstaller: Sendable {
@@ -86,7 +86,7 @@ public struct Uninstaller: Sendable {
         if left.isEmpty && fm.fileExists(atPath: dir.path) { try fm.removeItem(at: dir) }
     }
 
-    /// `dir` is the default folder under the home folder, not one BRASSCRIBE_DATA or BRASSCRIBE_LOGS chose.
+    /// `dir` is the default folder under the home folder, not one SCRIBE_DATA or SCRIBE_LOGS chose.
     private func isStandard(_ dir: URL, _ relative: String) -> Bool {
         Self.components(dir) == Self.components(home.appending(path: relative, directoryHint: .isDirectory))
     }

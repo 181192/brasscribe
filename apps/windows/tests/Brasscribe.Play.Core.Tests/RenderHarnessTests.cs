@@ -210,7 +210,7 @@ public class RenderHarnessTests(ITestOutputHelper log)
         var scores = (Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_SCORES") is { Length: > 0 } s
             ? s.Split(':', StringSplitOptions.RemoveEmptyEntries)
             : [TestPaths.RepoFile(TestPaths.GoldenMusicXml)!]).ToList();
-        var repo = Environment.GetEnvironmentVariable("BRASSCRIBE_REPO") ?? TestPaths.RepoRoot!;
+        var repo = Environment.GetEnvironmentVariable("SCRIBE_REPO") ?? TestPaths.RepoRoot!;
         var sf2s = (Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_SF2") is { Length: > 0 } f
                 ? f
                 : $"desktop={repo}/data/sounds/band/brasscribe-band-16bit.sf2,mobile={repo}/data/sounds/band/brasscribe-band-mobile.sf2")

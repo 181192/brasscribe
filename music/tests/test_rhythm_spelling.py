@@ -1,4 +1,4 @@
-from brasscribe_music.rhythm_spelling import SINGLE, TRIPLET, pieces
+from scribe_music.rhythm_spelling import SINGLE, TRIPLET, pieces
 
 BAR = 96  # 4/4
 
@@ -45,7 +45,7 @@ def test_three_four_has_no_middle():
 
 
 def test_mixed_grid_ends_are_moved_to_clean_spans():
-    from brasscribe_music.musicxml import _clean_end, _clean_span
+    from scribe_music.musicxml import _clean_end, _clean_span
     # A triplet quarter from the beat, next onset a 16th later than the triplet grid allows: 16 + 2 would be left.
     e = _clean_end(0, 16, 18)
     assert _clean_span(0, e) and (e == 18 or _clean_span(e, 18))
@@ -57,8 +57,8 @@ def test_mixed_grid_ends_are_moved_to_clean_spans():
 def test_triplet_values_fill_whole_tuplet_groups(tmp_path):
     import xml.etree.ElementTree as ET
 
-    from brasscribe_music.musicxml import PartSpec, _clean_end, _clean_span, build_score, write_musicxml
-    from brasscribe_music.quantize import QNote
+    from scribe_music.musicxml import PartSpec, _clean_end, _clean_span, build_score, write_musicxml
+    from scribe_music.quantize import QNote
 
     # A triplet 8th followed by a plain 8th off the 16th grid: the plain value would leave the bracket open.
     assert not _clean_span(8, 20) and _clean_span(8, 16) and _clean_span(16, 20)

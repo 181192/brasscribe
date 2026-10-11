@@ -147,12 +147,15 @@ public static class Problems
         new(ProblemKind.PixiTooOld, s["Pixi_Title"], s["Pixi_Why"], s["Pixi_Fix"],
             $"pixi {refusal.Found} refused the engine workspace (it requires pixi '{refusal.Required}'): {refusal.Message}");
 
-    /// <summary>The app was updated but its engine couldn't be: the previous one still runs. The fix tries again.</summary>
+    /// <summary>
+    /// The app was updated but its engine couldn't be. The previous one is back, and runs when this app can still
+    /// start it; when it can't, nothing runs. The fix tries the update again.
+    /// </summary>
     public static Problem UpdateFailed(IStrings s, string details) =>
         new(ProblemKind.UpdateFailed, s["Update_Failed_Title"], s["Update_Failed_Why"], s["Primary_TryAgain"], details);
 
     /// <summary>
-    /// The update failed because pixi refused the new workspace (too old for it). The previous engine still runs, so it
+    /// The update failed because pixi refused the new workspace (too old for it). The previous engine is back, so it
     /// is not "can't start"; the fix is a newer Bandroom.
     /// </summary>
     public static Problem UpdateRefused(IStrings s, PixiRefusal refusal) =>

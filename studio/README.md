@@ -1,13 +1,13 @@
 # Brasscribe Studio
 
-The browser workbench that the engine serves at `/` (`brasscribe studio`). It is written in plain TypeScript with web components and bundled with esbuild. Scores render and play with [alphaTab](https://alphatab.net) (MPL-2.0).
+The browser workbench that the engine serves at `/` (`scribe studio`). It is written in plain TypeScript with web components and bundled with esbuild. Scores render and play with [alphaTab](https://alphatab.net) (MPL-2.0).
 
 ## Build
 
 ```sh
 npm ci
 npm run gen:api     # regenerate src/api/schema.d.ts from ../engine/openapi.json
-npm run build       # writes ../engine/src/brasscribe_engine/static/ (committed; the engine serves it)
+npm run build       # writes ../engine/src/scribe_engine/static/ (committed; the engine serves it)
 npm run typecheck
 ```
 
@@ -33,7 +33,7 @@ npm run build                             # the browser tests and the catalogue 
 npm run test:catalogue                    # the screen catalogue and its checks' own tests, no engine
 scripts/screenshots.sh record             # the same, and a screenshot of each view to look at
 npm run test:browser                      # the built bundle as static files, no engine: opens a score in the viewer, appearance, the narrow menu
-npm run e2e                               # starts `brasscribe studio --port 8799` via pixi and runs the e2e suite
+npm run e2e                               # starts `scribe studio --port 8799` via pixi and runs the e2e suite
 STUDIO_URL=http://127.0.0.1:8799 npm run e2e   # against an engine that is already running
 STUDIO_E2E_LIVE=1 npm run e2e             # also start a real pipeline run (runs models)
 STUDIO_E2E_MUSESCORE=1 npm run e2e        # also run the MuseScore round trip from the UI (launches MuseScore once)
@@ -105,7 +105,7 @@ Styling is the Brasscribe design system (`design/system.md` §7, the workbench v
 
 Light, dark, our high-contrast palette (`prefers-contrast: more`), forced colours and reduced motion all come from the tokens. The notation takes its ink and staff colours from them too.
 
-Scores play with the band SoundFont when the engine serves one at `/assets/band/` (`BRASSCRIBE_BAND_SOUNDS_DIR`, set by Bandroom to its bundled phone pack), each part on its preset from `sounds/mapping.json`; otherwise with alphaTab's General MIDI sounds.
+Scores play with the band SoundFont when the engine serves one at `/assets/band/` (`SCRIBE_BAND_SOUNDS_DIR`, set by Bandroom to its bundled phone pack), each part on its preset from `sounds/mapping.json`; otherwise with alphaTab's General MIDI sounds.
 
 Uncertain notes are coloured and marked with a "?" above them. Below 0.4 the "?" is boxed. Every colour is repeated by a shape, a pattern or text. The keyboard shortcuts follow `qa/screen-reader-scripts/keyboard-desktop.md`; press F1 in Studio to see them.
 

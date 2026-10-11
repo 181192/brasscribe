@@ -26,7 +26,7 @@ import soundfile as sf
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "music" / "src"))
-from brasscribe_music.instruments import INSTRUMENTS  # noqa: E402
+from scribe_music.instruments import INSTRUMENTS  # noqa: E402
 
 SR = 44100
 MSBASIC = HERE.parent / "data" / "sounds" / "raw" / "msbasic" / "MS Basic.sf3"

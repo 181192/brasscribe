@@ -10,9 +10,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from brasscribe_engine import bass_tab, profiles, runner, tab, tuning
-from brasscribe_engine import schemas as m
-from brasscribe_engine import stages as S
+from scribe_engine import bass_tab, profiles, runner, tab, tuning
+from scribe_engine import schemas as m
+from scribe_engine import stages as S
 
 REPO = Path(__file__).resolve().parents[2]
 E2, A2, D3, G3, B3, E4 = 40, 45, 50, 55, 59, 64
@@ -947,10 +947,10 @@ def _wait(client, job_id: str, timeout: float = 60) -> dict:
 @needs_core
 def test_a_guitar_job_runs_to_a_tab_and_a_bass_job_of_either_profile_shares_its_stages(settings, audio, monkeypatch):
     """The symbolic stages and the core for real, with the models' outputs written in their place."""
-    from brasscribe_music import musescore
+    from scribe_music import musescore
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
     heard = _strummed([OPEN_E, OPEN_G, OPEN_E, OPEN_G]) + [_note(64 + (i % 4), 4.0 + 0.5 * i, 0.4) for i in range(8)]
     monkeypatch.setattr(musescore, "binary", lambda: None)
@@ -1010,10 +1010,10 @@ def test_a_guitar_job_runs_to_a_tab_and_a_bass_job_of_either_profile_shares_its_
 
 @needs_core
 def test_a_ukulele_job_runs_to_a_tab_on_four_strings_with_the_high_g(settings, audio, monkeypatch):
-    from brasscribe_music import musescore
+    from scribe_music import musescore
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
     heard = _strummed([UKE_C, UKE_G, UKE_C, UKE_G]) + [_note(p, 4.0 + 0.5 * i, 0.4) for i, p in enumerate([67, 69, 72, 69, 67, 64, 60, 64])]
     monkeypatch.setattr(musescore, "binary", lambda: None)
@@ -1048,7 +1048,7 @@ def test_a_ukulele_job_runs_to_a_tab_on_four_strings_with_the_high_g(settings, a
 def test_a_tab_job_without_the_core_is_refused_at_submit_under_both_ids(settings, audio, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from brasscribe_engine.api import create_app
+    from scribe_engine.api import create_app
 
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(settings.data_dir / "no-such-core"))
     with TestClient(create_app(settings)) as c:
@@ -1060,12 +1060,12 @@ def test_a_tab_job_without_the_core_is_refused_at_submit_under_both_ids(settings
 
 
 def test_the_cli_takes_every_instrument_and_checks_the_core_first(monkeypatch, tmp_path, capsys):
-    from brasscribe_engine import cli
+    from scribe_engine import cli
 
     seen = {}
     monkeypatch.setattr(runner, "run", lambda s, audio, profile, **kw: seen.update(kw, profile=profile) or
                         {"run_id": "r", "status": "succeeded", "seconds": 0.0, "devices": [], "stages": []})
-    monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path))
+    monkeypatch.setenv("SCRIBE_DATA", str(tmp_path))
     core = tmp_path / "scribe-core"
     core.write_text("#!/bin/sh\n")
     core.chmod(0o755)

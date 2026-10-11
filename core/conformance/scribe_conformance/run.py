@@ -138,8 +138,8 @@ def musescore_batch(items: list[tuple[str, Path, Path | None]]) -> dict[str, dic
     """Round-trip (case id, musicxml, composition or None) through MuseScore in ONE launch, then
     compare each band score's sounding pitches with the reference arrangement of its composition."""
     sys.path.insert(0, str(REPO / "eval"))
-    from brasscribe_eval import musescore_roundtrip as mr  # noqa: PLC0415
-    from brasscribe_music import musescore  # noqa: PLC0415
+    from scribe_eval import musescore_roundtrip as mr  # noqa: PLC0415
+    from scribe_music import musescore  # noqa: PLC0415
 
     jobs = []
     for _, xml, _ in items:

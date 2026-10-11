@@ -135,13 +135,13 @@ These numbers set a lower bound on the problem. They are not a substitute for re
 - **False-note rate on the traps:** extra notes per second on vibrato, scoops, falls and reverb tails. The gate is zero new false notes on the must-stay-one-note set.
 - **Readability:** tuplets per bar, the smallest written value, notes per beat against the difficulty mode, and a MusicXML round trip through MuseScore.
 - **Regressions:**
-  - `brasscribe bench cpu`, with no metric beyond tolerance.
+  - `scribe bench cpu`, with no metric beyond tolerance.
   - The ChoraleBricks solo suites (slow legato brass) unchanged.
   - The Mikkel golden diff explained note by note, into a **new** golden directory.
 
 **Parity, caches and fixtures**
 - **Segmentation changes touch three implementations:** Python, Kotlin (`NoteSegmenter.kt`) and Swift (`SoloTranscriber.swift`), plus their parity tests. `segment_notes` is third-party (`swift_f0`, pinned). A Python-side change has to live in repo code, as a wrapper or reimplementation in `transcribe.py`, never in a patched venv.
-- **Caches and fixtures.** A segmentation change changes the adapter fingerprint, so every cached SwiftF0 output is invalidated. It also changes the CI fixtures in `eval/fixtures/choralebricks-solo/` and `eval/fixtures/contours/`. Refreshing them needs `python -m brasscribe_eval.ci_data --pin`, with `eval/baselines.json` and doc 10 updated together.
+- **Caches and fixtures.** A segmentation change changes the adapter fingerprint, so every cached SwiftF0 output is invalidated. It also changes the CI fixtures in `eval/fixtures/choralebricks-solo/` and `eval/fixtures/contours/`. Refreshing them needs `python -m scribe_eval.ci_data --pin`, with `eval/baselines.json` and doc 10 updated together.
 - **Quantization changes touch two implementations:** `quantize.py` and `quantize.rs`, plus the conformance suite.
 - **Cost on phones.** A contour oscillation detector must cost O(frames) per note, with no FFT per frame. Measure it on a phone (the S25 is available), within the existing solo-pipeline budget.
 
@@ -260,7 +260,7 @@ The new measurements below come from [`fastnotes/plateau_rule.py`](fastnotes/pla
 
 ### Harness and frozen suite (`0be82714`, `9eb6b87a`)
 
-**Rerun.** I checked out `9eb6b87a` in a detached worktree and ran `brasscribe bench fast-notes` with that tree's own `eval/` and `music/`. All 24 metrics reproduce the baseline exactly, so the suite passes.
+**Rerun.** I checked out `9eb6b87a` in a detached worktree and ran `scribe bench fast-notes` with that tree's own `eval/` and `music/`. All 24 metrics reproduce the baseline exactly, so the suite passes.
 
 **Findings.**
 - **The error path is correct.** On `repeat-i0-t150-s8-tongue-samples`, small0 finds a single beat, and `arrange_layers_song` raises `ValueError: need at least two beats`. The bench scores that clip as empty, which counts as a loss. It is not dropped, so the result is not biased.
@@ -273,7 +273,7 @@ The new measurements below come from [`fastnotes/plateau_rule.py`](fastnotes/pla
 
 **What I reran.** Everything ran in a detached worktree at `206fe1a3`:
 - the music tests (248 pass) and `cargo test -p scribe-core` (all pass);
-- `brasscribe bench cpu`;
+- `scribe bench cpu`;
 - my own adversarial clips ([`fastnotes/adversarial_clips.py`](fastnotes/adversarial_clips.py)), tracked with the fast-notes harness and scored with its bench, at the base `9eb6b87a` and at the head;
 - the Mikkel arrangement, with and without the dense quantizer.
 
@@ -404,7 +404,7 @@ The `readability` suite checks the Mikkel arrangement against `qa/reports/mikkel
 
 **What I reran, at `59ad5309` (before the rebase onto main `740bb417`):**
 - The music tests (252 pass), `cargo test` (pass), and my proposed tests (8 of 8 pass).
-- **`brasscribe bench cpu`: 21 of 21 pass.**
+- **`scribe bench cpu`: 21 of 21 pass.**
   - `readability` now runs all three difficulties.
   - `solo-instruments` has the new `q_missed` gate.
   - `mikkel-golden` matches the sibling golden byte for byte, rebuilt from `e688670f`, the last code change.
