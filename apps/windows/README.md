@@ -12,9 +12,9 @@ src/Brasscribe.Play.Audio.Windows/   WASAPI loopback capture
 src/Brasscribe.Play.Controls/        score and transport controls
 tests/Brasscribe.Play.Core.Tests/    xunit
 tests/Brasscribe.Play.Catalogue/     screen catalogue: the app as its own test host (MSTest), every screen and its checks
-tools/ScreenCheck/                   the catalogues' tool: Axe.Windows and Tab from outside, Bandroom's catalogue, compare
-tools/ScreenCheck.Core/              its checks on pictures and the report (any OS; tests in tools/ScreenCheck.Tests)
-tools/Screenshots/catalogue.ps1      runs the catalogue, compared with the merge base
+tools/ScreenCheck/                   the catalogues' tool: Axe.Windows and Tab from outside, Bandroom's catalogue, the verdict
+tools/ScreenCheck.Core/              its checks on pictures and the findings (any OS; tests in tools/ScreenCheck.Tests)
+tools/Screenshots/catalogue.ps1      runs the catalogue with its checks
 tools/CodeBehindCheck/               type-checks the app's C# without the XAML compiler
 tools/check-macos.sh                 everything that builds off Windows
 ```
@@ -103,7 +103,7 @@ its C header, of `apps/fixtures/` the two scores the tests open), and on every p
 `ci.yml`, which a push of only Markdown, the site or screenshots does not. A release tag does not run these
 checks: `release.yml` calls `windows.yml` for the release builds. It is part of
 `CI result`. The screen catalogue takes every screen in Light, Dark, Pink, bokmål, a contrast theme and 200 % text
-with its checks, and compares the screenshots with the merge base (artefact `windows-screenshots`):
+with its checks; its screenshots are the artefact `windows-screenshots`, to look at:
 [tests/Brasscribe.Play.Catalogue/README.md](tests/Brasscribe.Play.Catalogue/README.md).
 
 ## Test tiers

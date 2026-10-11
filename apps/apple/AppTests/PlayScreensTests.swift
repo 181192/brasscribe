@@ -9,7 +9,7 @@ import TranscriptionKit
 @testable import BrasscribePlay
 
 /// The screen catalogue of Play for Mac (README, Testing): every screen and sheet off screen at one window size, in
-/// light, dark and increased contrast (light and dark), and in bokmål (`scripts/screenshots.sh compare`, which runs
+/// light, dark and increased contrast (light and dark), and in bokmål (`scripts/screenshots.sh record`, which runs
 /// these tests a second time under `-testLanguage nb`), with the shared checks (`ScreenCatalogue`) and a screenshot
 /// each. `ResponsiveLayoutTests` keeps the layout at every window size. A new screen gets an entry here.
 @MainActor
@@ -48,7 +48,6 @@ import TranscriptionKit
     ]
 
     nonisolated static var language: String { Bundle.main.preferredLocalizations.first ?? "en" }
-    nonisolated static var checks: Bool { ProcessInfo.processInfo.environment["CATALOGUE_CHECKS"] != "0" }
 
     /// CATALOGUE_OUT (TEST_RUNNER_CATALOGUE_OUT on the xcodebuild line), or build/catalogue/screenshots.
     static var output: URL {
@@ -70,9 +69,7 @@ import TranscriptionKit
             !(f.kind == .outOfOrder && Self.ownOrder[screen] != nil)
                 && !Self.known.contains { ($0.screen == nil || $0.screen == screen) && $0.kind == f.kind && f.node.contains($0.words) }
         }
-        if Self.checks {
-            #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
-        }
+        #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
         guard Self.unsteady[screen] == nil else { return }
         try Pictures.write(picture, tree: nodes, name: name, to: Self.output)
     }

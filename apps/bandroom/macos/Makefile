@@ -2,7 +2,7 @@
 #   make project   generate BrasscribeBandroom.xcodeproj with XcodeGen
 #   make build     build the app (Debug) into build/DerivedData
 #   make test      BandroomKit unit tests
-#   make screens   the screen catalogue, off screen (scripts/screenshots.sh record; compare [base] for the comparison)
+#   make screens   the screen catalogue, off screen with its checks (scripts/screenshots.sh record)
 #   make strings   rebuild App/Localizable.xcstrings from the last build (en + nb)
 #   make run       build, then run against a checkout: CHECKOUT=/path/to/brasscribe make run
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer

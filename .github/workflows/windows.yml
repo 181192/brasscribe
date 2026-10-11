@@ -1,7 +1,7 @@
 name: windows
 
-# Brasscribe Play for Windows. Checks: core tests, the WinUI 3 app build, a smoke test, an
-# Axe.Windows accessibility scan and screenshots. With `release`: a self-contained x64 build
+# Brasscribe Play for Windows. Checks: core tests, the WinUI 3 app build, a smoke test and the
+# screen catalogue (its checks, an Axe.Windows accessibility scan, Tab; screenshots to look at). With `release`: a self-contained x64 build
 # uploaded as dist-windows-x64.
 # The checks run on pull requests that touch what the Windows apps build from, and on the pushes to main
 # that start ci.yml (it ignores a push of only Markdown, the site or screenshots):
@@ -27,10 +27,6 @@ on:
         description: Build the app for download instead of running checks
         type: boolean
         default: false
-      screenshots_base:
-        description: Compare the screen catalogues' screenshots with this commit (without it, they are only taken)
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -59,15 +55,9 @@ jobs:
     if: ${{ inputs.release || !inputs.skip_play }}
     runs-on: windows-latest
     timeout-minutes: 60
-    outputs:
-      screenshots: ${{ steps.catalogue.outputs.status }}
     steps:
       - uses: actions/checkout@v7
         with:
-          # The base is taken out next to this checkout for the screen catalogue: on a pull request it is the main
-          # the pull request was merged into, the merge commit's first parent (depth 2); a hand-started run may
-          # compare with any commit.
-          fetch-depth: ${{ inputs.release && '1' || (github.event_name == 'pull_request' && '2' || (github.event_name == 'workflow_dispatch' && '0' || '1')) }}
           persist-credentials: false
 
       - uses: actions/setup-dotnet@v6
@@ -144,47 +134,17 @@ jobs:
 
       # The screen catalogue (tests/Brasscribe.Play.Catalogue): every screen on the public-domain Old Hundredth fixture in
       # Light, Dark, Pink light, Pink dark, bokmål, a contrast theme and 200 % text, with its checks (contrast, cut-off
-      # text, Axe.Windows, Tab). On a pull request the screenshots are compared with the same taken on this runner at
-      # the main the pull request was merged into (with screenshots_base, at the merge base with that commit; one
-      # that cannot be found fails the step). Status 1 (screens changed) is decided in the job `screenshots` below,
-      # with the label; 2 (the checks) and 3 (not taken, or a screen that was not the screen asked for) fail here.
+      # text, Axe.Windows, Tab). 2 (the checks found something) and 3 (a screen not taken, or one that was not the
+      # screen asked for) fail the step. The screenshots are an artefact to look at; nothing waits for them.
       - name: Screen catalogue
         id: catalogue
         if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
-        env:
-          GIVEN: ${{ inputs.screenshots_base }}
-          PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          # A hand-started comparison takes the base even when nothing the screens are made from changed.
-          ALWAYS: ${{ inputs.screenshots_base != '' && inputs.screenshots_base != null }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
-          # On a pull request the checkout is the pull request merged into main: its first parent is the main it was
-          # merged into. The event's base can be an older main, which this checkout (depth 2) has no history in common with.
-          $base = $null
-          if ($env:GIVEN) {
-            # A branch, a tag or a commit: what the fetch brought, or a commit this checkout already has.
-            git fetch --no-tags origin $env:GIVEN
-            $given = if ($LASTEXITCODE -eq 0) { git rev-parse --verify --quiet 'FETCH_HEAD^{commit}' } else { git rev-parse --verify --quiet "$($env:GIVEN)^{commit}" }
-            if ($given) { $base = git merge-base HEAD $given }
-            if (-not $base) {
-              Write-Host "::error::screenshots_base '$($env:GIVEN)' is not a commit with history in common with this one, so nothing was compared."
-              "status=3" >> $env:GITHUB_OUTPUT
-              exit 3
-            }
-          } elseif ($env:PULL_REQUEST -eq 'true') {
-            $base = git rev-parse --verify 'HEAD^1^{commit}'
-          }
-          if ($base) {
-            Write-Host "Comparing with $(git log -1 --format='%H %s' $base)"
-            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base $base -FfiDll $env:SCRIBE_FFI_PATH -AlwaysBase:$($env:ALWAYS -eq 'true')
-          } else {
-            ./tools/Screenshots/catalogue.ps1 record -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:SCRIBE_FFI_PATH
-          }
+          ./tools/Screenshots/catalogue.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:SCRIBE_FFI_PATH
           $status = $LASTEXITCODE
-          foreach ($f in @("$out/findings.md", "$out/report/summary.md")) { if (Test-Path $f) { Get-Content $f >> $env:GITHUB_STEP_SUMMARY } }
-          "status=$status" >> $env:GITHUB_OUTPUT
-          if ($status -ge 2) { exit $status }
-          exit 0
+          if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
+          exit $status
 
       # What made the app exit, if it did (App writes unhandled exceptions to crash.log).
       - name: Crash log
@@ -193,14 +153,29 @@ jobs:
           $log = Join-Path $env:LOCALAPPDATA "Brasscribe/Play/crash.log"
           if (Test-Path $log) { Get-Content $log } else { "no crash.log" }
 
-      - name: Upload screenshots
+      # What the pictures were taken with, beside them: after a merge they are compared with the record before
+      # them only when this is the same (screens.yml). Written only when the catalogue passed.
+      - name: What the screenshots were taken with
+        if: ${{ !inputs.release && github.event_name != 'pull_request' && steps.catalogue.outcome == 'success' }}
+        shell: bash
+        working-directory: .
+        env:
+          CATALOGUE: play-windows
+          DIR: ${{ runner.temp }}/catalogue
+        run: |
+          jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
+            --arg toolchain "$(cd apps/windows && dotnet --version)" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
+          cat "$DIR/record.json"
+
+      # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
+      # named by its commit and kept longer, for the comparison with the next record.
+      - uses: actions/upload-artifact@v7
         if: ${{ !inputs.release && !cancelled() }}
-        uses: actions/upload-artifact@v7
         with:
-          name: windows-screenshots
+          name: ${{ github.event_name == 'pull_request' && 'windows-screenshots' || format('screens-play-windows-{0}', github.sha) }}
           path: ${{ runner.temp }}/catalogue
-          retention-days: 14
           if-no-files-found: ignore
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
 
       - name: Upload test and scan results
         if: ${{ !inputs.release && !cancelled() }}
@@ -343,14 +318,12 @@ jobs:
 
   # Brasscribe Bandroom for Windows (apps/bandroom/windows): Core tests, the WinUI 3 tray app build, a smoke
   # test of the real start (admin credential, data folder, window form), the engine test, and the screen catalogue
-  # (screenshots of every view, Axe.Windows and Tab, compared with the main the pull request was merged into).
+  # (every view with its checks, Axe.Windows and Tab; screenshots to look at).
   bandroom:
     name: bandroom (test, build and scan)
     if: ${{ !inputs.release && !inputs.skip_bandroom }}
     runs-on: windows-latest
     timeout-minutes: 90
-    outputs:
-      screenshots: ${{ steps.catalogue.outputs.status }}
     defaults:
       run:
         shell: pwsh
@@ -358,8 +331,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # As for Play above.
-          fetch-depth: ${{ (github.event_name == 'pull_request' && '2' || (github.event_name == 'workflow_dispatch' && '0' || '1')) }}
           persist-credentials: false
 
       - uses: actions/setup-dotnet@v6
@@ -499,43 +470,16 @@ jobs:
           key: ${{ steps.pixi-packages-cache.outputs.cache-primary-key }}
 
       # The screen catalogue (tools/Screenshots/catalogue.ps1): every view in Light, Dark, bokmål, a contrast theme and
-      # 200 % text, with its checks, compared on a pull request with Bandroom built at the main the pull request was
-      # merged into. As for Play, 1 is decided in the job `screenshots` with the label; 2 and 3 fail here.
+      # 200 % text, with its checks. As for Play, 2 and 3 fail the step, and nothing waits for the screenshots.
       - name: Screen catalogue
         id: catalogue
         if: ${{ !cancelled() && steps.exe.outputs.path != '' }}
-        env:
-          GIVEN: ${{ inputs.screenshots_base }}
-          PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          # A hand-started comparison takes the base even when nothing the screens are made from changed.
-          ALWAYS: ${{ inputs.screenshots_base != '' && inputs.screenshots_base != null }}
         run: |
           $out = "$env:RUNNER_TEMP/bandroom-catalogue"
-          # As for Play above: on a pull request, the merge commit's first parent.
-          $base = $null
-          if ($env:GIVEN) {
-            git fetch --no-tags origin $env:GIVEN
-            $given = if ($LASTEXITCODE -eq 0) { git rev-parse --verify --quiet 'FETCH_HEAD^{commit}' } else { git rev-parse --verify --quiet "$($env:GIVEN)^{commit}" }
-            if ($given) { $base = git merge-base HEAD $given }
-            if (-not $base) {
-              Write-Host "::error::screenshots_base '$($env:GIVEN)' is not a commit with history in common with this one, so nothing was compared."
-              "status=3" >> $env:GITHUB_OUTPUT
-              exit 3
-            }
-          } elseif ($env:PULL_REQUEST -eq 'true') {
-            $base = git rev-parse --verify 'HEAD^1^{commit}'
-          }
-          if ($base) {
-            Write-Host "Comparing with $(git log -1 --format='%H %s' $base)"
-            ./tools/Screenshots/catalogue.ps1 compare -Exe "${{ steps.exe.outputs.path }}" -Out $out -Base $base -AlwaysBase:$($env:ALWAYS -eq 'true')
-          } else {
-            ./tools/Screenshots/catalogue.ps1 record -Exe "${{ steps.exe.outputs.path }}" -Out $out
-          }
+          ./tools/Screenshots/catalogue.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out $out
           $status = $LASTEXITCODE
-          foreach ($f in @("$out/findings.md", "$out/report/summary.md")) { if (Test-Path $f) { Get-Content $f >> $env:GITHUB_STEP_SUMMARY } }
-          "status=$status" >> $env:GITHUB_OUTPUT
-          if ($status -ge 2) { exit $status }
-          exit 0
+          if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
+          exit $status
 
       - name: Crash log
         if: ${{ failure() }}
@@ -543,14 +487,29 @@ jobs:
           $log = Join-Path $env:LOCALAPPDATA "Brasscribe/logs/bandroom-crash.log"
           if (Test-Path $log) { Get-Content $log } else { "no bandroom-crash.log" }
 
-      - name: Upload screenshots
+      # What the pictures were taken with, beside them: after a merge they are compared with the record before
+      # them only when this is the same (screens.yml). Written only when the catalogue passed.
+      - name: What the screenshots were taken with
+        if: ${{ github.event_name != 'pull_request' && steps.catalogue.outcome == 'success' }}
+        shell: bash
+        working-directory: .
+        env:
+          CATALOGUE: bandroom-windows
+          DIR: ${{ runner.temp }}/bandroom-catalogue
+        run: |
+          jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
+            --arg toolchain "$(cd apps/windows && dotnet --version)" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
+          cat "$DIR/record.json"
+
+      # To look at. On a pull request under the catalogue's name; otherwise (main after a merge, a hand-started run)
+      # named by its commit and kept longer, for the comparison with the next record.
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
         with:
-          name: bandroom-windows-screenshots
+          name: ${{ github.event_name == 'pull_request' && 'bandroom-windows-screenshots' || format('screens-bandroom-windows-{0}', github.sha) }}
           path: ${{ runner.temp }}/bandroom-catalogue
-          retention-days: 14
           if-no-files-found: ignore
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
 
       - name: Upload test and scan results
         if: ${{ !cancelled() }}
@@ -561,54 +520,3 @@ jobs:
             ${{ runner.temp }}/bandroom-results
           retention-days: 14
           if-no-files-found: ignore
-
-  # Screens of either app changed against the main this was merged into (status 1 of a screen catalogue above; in a
-  # hand-started run, against screenshots_base): that fails here,
-  # unless the pull request has the label screenshots-changed, which says the change is meant. The labels are read as
-  # they are when this job runs (adding or removing the label starts CI again), on a runner that runs none of the pull
-  # request's code. A dispatched run with screenshots_base has no pull request: a change fails.
-  screenshots:
-    name: screenshots changed against the main this was merged into
-    needs: [build, bandroom]
-    if: ${{ always() && !inputs.release && (needs.build.outputs.screenshots == '1' || needs.bandroom.outputs.screenshots == '1') }}
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      pull-requests: read
-    defaults:
-      run:
-        shell: bash
-        working-directory: .
-    steps:
-      - name: Is the change meant (label screenshots-changed)
-        id: label
-        if: github.event_name == 'pull_request'
-        env:
-          PR: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # A few tries: an error from GitHub (a 503) is not the same as no label.
-          names=""; read=false
-          for try in 1 2 3 4 5; do
-            if names=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name'); then read=true; break; fi
-            names=""; sleep $((try * 5))
-          done
-          if [ "$read" = false ]; then
-            echo "The pull request's labels could not be read (GitHub answered with an error five times), so the change is taken as not meant." >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if printf '%s\n' "$names" | grep -qx 'screenshots-changed'; then meant=true; else meant=false; fi
-          echo "meant=$meant" >> "$GITHUB_OUTPUT"
-
-      - name: Screenshot result
-        env:
-          MEANT: ${{ steps.label.outputs.meant }}
-          PLAY: ${{ needs.build.outputs.screenshots }}
-          BANDROOM: ${{ needs.bandroom.outputs.screenshots }}
-        run: |
-          echo "Screens changed against the main this was merged into, or the screenshots_base of a hand-started run (Play: ${PLAY:-not run}, Bandroom: ${BANDROOM:-not run}); the images are in the windows-screenshots and bandroom-windows-screenshots artefacts." >> "$GITHUB_STEP_SUMMARY"
-          if [ "$MEANT" = true ]; then
-            echo "The pull request says that is meant (label screenshots-changed)." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          exit 1
-

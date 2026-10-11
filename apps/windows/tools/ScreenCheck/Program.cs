@@ -5,7 +5,7 @@ using Brasscribe.ScreenCheck;
 //
 //   scan     --pid P --hwnd H --shot NAME --out FILE   Axe.Windows and a walk with Tab on a window; findings to FILE (JSON)
 //   play     --exe EXE --score FILE --out DIR [--scenes a,b]   Axe.Windows and Tab on each of Play's screens, one start each
-//   bandroom --exe EXE --out DIR --run en|nb|contrast|text200 [--themes light,dark] [--scenes a,b:state] [--checks 0]
+//   bandroom --exe EXE --out DIR --run en|nb|contrast|text200 [--themes light,dark] [--scenes a,b:state]
 //                                                       Bandroom's catalogue: one start per view, its screenshots and checks
 //   system   --contrast on|off | --text-scale PERCENT --keep FILE | --text-scale restore --keep FILE
 //            | --animations off --keep FILE | --animations restore --keep FILE
@@ -13,7 +13,6 @@ using Brasscribe.ScreenCheck;
 //                                                       run (this user); what there was before is kept in FILE and put back
 //   verdict  --dir DIR --known FILE --title TEXT [--summary FILE]
 //                                                       the findings of a catalogue's runs: exit 0 none new, 2 new, 3 screens not taken
-//   compare  --before DIR --after DIR --report DIR      screenshots at the merge base against these: exit 0 same, 1 changed
 //
 // Exit 3 when a command could not do its work (nothing was checked); 64 for wrong usage (never 1, 2 or 3, which say
 // what a catalogue found).
@@ -27,7 +26,6 @@ try
         "bandroom" => BandroomCatalogue.Run(options),
         "system" => SystemState.Run(options),
         "verdict" => Verdict(options),
-        "compare" => Compare(options),
         _ => Usage(),
     };
 }
@@ -44,7 +42,7 @@ catch (Exception e)
 
 static int Usage()
 {
-    Console.Error.WriteLine("usage: ScreenCheck scan|play|bandroom|system|verdict|compare [--name value]... (see Program.cs)");
+    Console.Error.WriteLine("usage: ScreenCheck scan|play|bandroom|system|verdict [--name value]... (see Program.cs)");
     return 64;
 }
 
@@ -57,20 +55,6 @@ static int Verdict(Options o)
     Console.WriteLine(md);
     if (o.Get("summary") is { } summary) File.AppendAllText(summary, md);
     return verdict.ExitCode;
-}
-
-static int Compare(Options o)
-{
-    string before = o.Need("before"), after = o.Need("after"), report = o.Need("report");
-    // Screens that were not taken on either side (or, from an older catalogue, did not keep still) are not compared:
-    // a screen the base could not take is not a new screen here.
-    var skip = new[] { before, after }.Where(Directory.Exists)
-        .SelectMany(d => Directory.GetFiles(d, "catalogue-*.json")).Select(CatalogueRun.Load)
-        .SelectMany(r => r.Unsteady.Concat(r.NotTaken())).ToHashSet();
-    Directory.CreateDirectory(report);
-    var result = ScreenshotReport.Write(before, after, report, Png.Load, Png.Save, skip);
-    Console.WriteLine(result.Summary);
-    return result.Any ? 1 : 0;
 }
 
 internal sealed class UsageException(string message) : Exception(message);
