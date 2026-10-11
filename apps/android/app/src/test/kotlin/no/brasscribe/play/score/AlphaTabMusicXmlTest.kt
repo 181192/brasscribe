@@ -19,7 +19,7 @@ import java.io.File
 class AlphaTabMusicXmlTest {
     private val repo = File(System.getProperty("brasscribe.sounds") ?: "../../../sounds").absoluteFile.parentFile
     private val fixture = File(repo, "apps/fixtures/ties-and-trills.musicxml")
-    private val golden = File(repo, "data/golden/mikkel-arranged-band.layer-hits/brass-band.musicxml")
+    private val golden = File(repo, "data/golden/mikkel-arranged-band/brass-band.musicxml")
 
     data class Played(val track: Int, val start: Double, val end: Double, val key: Int)
 

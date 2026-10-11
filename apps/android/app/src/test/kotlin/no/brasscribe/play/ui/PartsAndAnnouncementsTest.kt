@@ -42,7 +42,7 @@ class PartsAndAnnouncementsTest {
     /** Home's "N to check" is what Review opens on: one per engine group, only in the parts it grouped. */
     @Test
     fun homeCountsTheSamePlacesAsReview() {
-        val f = java.io.File("../../../data/golden/mikkel-arranged-band.layer-hits/composition.json")
+        val f = java.io.File("../../../data/golden/mikkel-arranged-band/composition.json")
         org.junit.Assume.assumeTrue(f.exists())
         val c = no.brasscribe.play.model.CompositionJson.decode(f.readText())
         val groups = c.review!!.size

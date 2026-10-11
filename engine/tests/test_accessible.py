@@ -196,7 +196,7 @@ def test_every_brf_line_fits_the_page(tmp_path):
     assert _lines_ok(r.brf)
 
 
-GOLDEN = braille.Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band.layer-hits"
+GOLDEN = braille.Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band"
 
 
 @pytest.mark.skipif(not (GOLDEN / "brass-band.musicxml").exists(), reason="golden output not available")

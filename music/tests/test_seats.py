@@ -11,7 +11,7 @@ from scribe_music.instruments import (BRASS_BAND, LINEUPS, SEAT_IDS, SEAT_PARTS,
 from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLDEN = ROOT / "data" / "golden" / "mikkel-arranged-band.layer-hits" / "composition.json"
+GOLDEN = ROOT / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
 
 # The seat -> part table as the plan writes it: (full band, small band, quartet); None = no part.
 TABLE = {

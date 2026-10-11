@@ -45,7 +45,7 @@ val streamingUploadTest = tasks.register<Test>("streamingUploadTest") {
 tasks.test {
     filter { excludeTestsMatching("no.brasscribe.play.engine.StreamingUploadTest") }
     dependsOn(streamingUploadTest)
-    systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band.layer-hits").absolutePath)
+    systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band").absolutePath)
     systemProperty("brasscribe.openapi", file("openapi.json").absolutePath)
     systemProperty("brasscribe.fixtures", File(repoRoot, "apps/fixtures").absolutePath)
     systemProperty("brasscribe.engine", File(repoRoot, "engine/src/scribe_engine").absolutePath)
@@ -56,7 +56,7 @@ tasks.test {
     inputs.files(fileTree(File(repoRoot, "apps/fixtures/ukulele-line"))).withPropertyName("ukuleleLineFixture")
     inputs.files(File(repoRoot, "engine/src/scribe_engine/profiles.py")).withPropertyName("engineRefusals")
     inputs.files(File(repoRoot, "core/targets/fretted/src/instrument.rs")).withPropertyName("cratePresets")
-    inputs.files(fileTree(File(repoRoot, "data/golden/mikkel-arranged-band.layer-hits"))).withPropertyName("golden")
+    inputs.files(fileTree(File(repoRoot, "data/golden/mikkel-arranged-band"))).withPropertyName("golden")
 }
 
 /**
