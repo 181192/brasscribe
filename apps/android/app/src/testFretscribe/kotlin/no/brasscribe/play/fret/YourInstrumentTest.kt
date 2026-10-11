@@ -93,8 +93,8 @@ class YourInstrumentTest {
     fun theTuningsAreTheCratesPresets() {
         // The repository root is two up from the sounds folder the build passes in.
         val source = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }
-            ?.resolve("core/target-fretted/src/instrument.rs")
-        assumeTrue("core/target-fretted is not in this checkout", source?.isFile == true)
+            ?.resolve("core/targets/fretted/src/instrument.rs")
+        assumeTrue("core/targets/fretted is not in this checkout", source?.isFile == true)
         val list = source!!.readText().substringAfter("pub const PRESET_IDS: &[&str] = &[").substringBefore("];")
         val crate = Regex("\"([^\"]+)\"").findAll(list).map { it.groupValues[1] }.toList()
         assertTrue("no presets found in ${source.name}", crate.isNotEmpty())

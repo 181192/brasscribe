@@ -34,12 +34,12 @@ sounds are missing and Studio plays General MIDI sounds. The SoundFont adds 68 M
 `sounds-2026.09.30` phone build). The engine's MP3 export does not use it: that is MuseScore's own sounds, levelled
 to the band's loudness with `playback-levels.json`, which Bandroom stages next to it.
 
-The engine's `bass-tab` profile runs the Rust core's command line. When `core\target\release\brasscribe-core.exe`
-exists (`cargo build --release --locked -p brasscribe-cli` in `core\`), the build copies it to `core\` next to the
-exe, and Bandroom passes it to the engine as `BRASSCRIBE_CORE_CLI`; the release build in `windows.yml` builds it
+The engine's `bass-tab` profile runs the Rust core's command line. When `core\target\release\scribe-core.exe`
+exists (`cargo build --release --locked -p scribe-cli` in `core\`), the build copies it to `core\` next to the
+exe, and Bandroom passes it to the engine as `SCRIBE_CORE_CLI`; the release build in `windows.yml` builds it
 first, with the C runtime linked in (`RUSTFLAGS=-C target-feature=+crt-static`), so it needs no Visual C++ runtime
 on the PC. Without the exe `engine.log` says it is missing, and the engine refuses `bass-tab` jobs: a
-`BRASSCRIBE_CORE_CLI` set for the user is not passed on, so the engine only ever runs the bundled one.
+`SCRIBE_CORE_CLI` set for the user is not passed on, so the engine only ever runs the bundled one.
 
 On macOS: `tools/check-macos.sh` runs the Core tests and type-checks the app's C# (the XAML compiler only runs
 on Windows; CI builds it: `.github/workflows/windows.yml`, job `bandroom`).

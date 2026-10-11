@@ -61,8 +61,8 @@ object ScreenDevice {
             override fun evaluate() {
                 // The screens are the app's with its native core (the host build of it here): without it they would be
                 // other screens (no What do you play?, no Your instrument, no arranger), so they are not tested then.
-                val core = File(System.getProperty("jna.library.path").orEmpty()).listFiles().orEmpty().any { it.name.startsWith("libbrasscribe_ffi.") }
-                val missing = "the host build of the core is missing: scripts/core-artifacts.sh ensure host (or cargo build --release -p brasscribe-ffi in core/)"
+                val core = File(System.getProperty("jna.library.path").orEmpty()).listFiles().orEmpty().any { it.name.startsWith("libscribe_ffi.") }
+                val missing = "the host build of the core is missing: scripts/core-artifacts.sh ensure host (or cargo build --release -p scribe-ffi in core/)"
                 // In CI a missing core is a broken job, not a reason to test nothing.
                 if (!core && System.getenv("CI") != null) throw AssertionError(missing)
                 Assume.assumeTrue(missing, core)

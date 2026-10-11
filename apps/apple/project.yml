@@ -33,8 +33,8 @@ packages:
     path: Packages/NotationKit
   AudioCapture:
     path: ../../capture
-  BrasscribeCore:
-    path: ../../core/swift/BrasscribeCore
+  ScribeCore:
+    path: ../../core/swift/ScribeCore
   # The screen catalogue's checks, shared with Bandroom for Mac (test code only, macOS).
   ScreenCatalogue:
     path: Packages/ScreenCatalogue
@@ -80,8 +80,8 @@ targets:
         product: OnDeviceKit
       - package: NotationKit
         product: NotationKit
-      - package: BrasscribeCore
-        product: BrasscribeCore
+      - package: ScribeCore
+        product: ScribeCore
       - package: AudioCapture
         product: AudioCapture
         destinationFilters: [macOS]

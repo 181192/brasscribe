@@ -2,15 +2,15 @@
 # Run before generating the Xcode project: the Verovio framework is built locally.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-if [ ! -d "$HERE/../../core/swift/BrasscribeCore/BrasscribeFFI.xcframework" ] && [ -z "${CI:-}" ]; then
+if [ ! -d "$HERE/../../core/swift/ScribeCore/ScribeFFI.xcframework" ] && [ -z "${CI:-}" ]; then
   "$HERE/../../scripts/core-artifacts.sh" ensure apple || true
 fi
 if [ ! -d "$HERE/Frameworks/Verovio.xcframework" ] || [ ! -d "$HERE/Frameworks/VerovioResources" ]; then
   echo "error: Verovio.xcframework missing. Run apps/apple/scripts/build-verovio.sh first." >&2
   exit 1
 fi
-if [ ! -d "$HERE/../../core/swift/BrasscribeCore/BrasscribeFFI.xcframework" ]; then
-  echo "error: BrasscribeFFI.xcframework missing. Run apps/apple/scripts/build-core.sh first." >&2
+if [ ! -d "$HERE/../../core/swift/ScribeCore/ScribeFFI.xcframework" ]; then
+  echo "error: ScribeFFI.xcframework missing. Run apps/apple/scripts/build-core.sh first." >&2
   exit 1
 fi
 # actool does not follow symlinks inside a catalog, so the app icon set from

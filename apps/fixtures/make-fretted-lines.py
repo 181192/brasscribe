@@ -11,7 +11,7 @@ API gave them.
     pixi run python apps/fixtures/make-fretted-lines.py
 
 Needs the model adapters and their weights (`models/`), and the core's command line
-(`cargo build --release -p brasscribe-cli` in core/, or BRASSCRIBE_CORE_CLI).
+(`cargo build --release -p scribe-cli` in core/, or SCRIBE_CORE_CLI).
 
 Writes apps/fixtures/guitar-line/ and apps/fixtures/ukulele-line/, each with:
     request.json      the body of POST /v1/jobs that the engine accepted

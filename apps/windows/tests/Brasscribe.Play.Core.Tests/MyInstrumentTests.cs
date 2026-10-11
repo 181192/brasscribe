@@ -700,7 +700,7 @@ public class MyInstrumentTests
     [Fact]
     public void The_core_answers_the_seat_questions()
     {
-        if (Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }) return;
+        if (Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }) return;
         var core = NativeCoreBridge.TryCreate()!;
         var seats = core.Seats();
         Assert.Equal(19, seats.Count);

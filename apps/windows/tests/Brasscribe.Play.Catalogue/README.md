@@ -84,7 +84,7 @@ every part of the window (finding `theme-at-start`).
 ## What it answers
 
 ```powershell
-tools/Screenshots/catalogue.ps1 -Exe <BrasscribePlay.exe> -Out out -FfiDll <brasscribe_ffi.dll>
+tools/Screenshots/catalogue.ps1 -Exe <BrasscribePlay.exe> -Out out -FfiDll <scribe_ffi.dll>
 ```
 
 `out\` gets `shots\` and `findings.md`. Exit codes: 0 every check passed; 2 a check found something new; 3 the

@@ -1,6 +1,6 @@
 """The band's own soloist: faithful placement as played inside the solo range, and its range check.
 
-Twin of core/target-brass/tests/soloist.rs, plus arrangement-level checks on the Mikkel composition.
+Twin of core/targets/brass/tests/soloist.rs, plus arrangement-level checks on the Mikkel composition.
 """
 
 import os

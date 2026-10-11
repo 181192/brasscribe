@@ -1,0 +1,17 @@
+[package]
+name = "scribe-cli"
+description = "Command-line entry points of scribe-core (the same ones the Python reference exposes)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "scribe-core"
+path = "src/main.rs"
+
+[dependencies]
+scribe-core = { path = "../scribe-core" }
+target-brass = { path = "../targets/brass" }
+target-fretted = { path = "../targets/fretted" }
+serde_json.workspace = true
+zip = { version = "8", default-features = false, features = ["deflate"] }

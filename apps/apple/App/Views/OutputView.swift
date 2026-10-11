@@ -1,4 +1,4 @@
-import BrasscribeCore
+import ScribeCore
 import ScoreKit
 import SwiftUI
 import TranscriptionKit

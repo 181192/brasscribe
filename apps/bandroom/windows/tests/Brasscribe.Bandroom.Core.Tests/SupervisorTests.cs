@@ -261,12 +261,12 @@ public sealed class SupervisorTests : IDisposable
     {
         var app = Path.Combine(_dir, "app-with-core");
         Assert.Null(EngineLaunchConfig.FindCoreCli(app));
-        Assert.False(Config().Build(8765).Environment.ContainsKey("BRASSCRIBE_CORE_CLI"));
-        var exe = Path.Combine(Directory.CreateDirectory(Path.Combine(app, "core")).FullName, "brasscribe-core.exe");
+        Assert.False(Config().Build(8765).Environment.ContainsKey("SCRIBE_CORE_CLI"));
+        var exe = Path.Combine(Directory.CreateDirectory(Path.Combine(app, "core")).FullName, "scribe-core.exe");
         File.WriteAllText(exe, "MZ");
         Assert.Equal(exe, EngineLaunchConfig.FindCoreCli(app));
         var spec = (Config() with { CoreCli = exe }).Build(8765);
-        Assert.Equal(exe, spec.Environment["BRASSCRIBE_CORE_CLI"]);
+        Assert.Equal(exe, spec.Environment["SCRIBE_CORE_CLI"]);
         Assert.Empty(spec.Unset);
     }
 
@@ -274,8 +274,8 @@ public sealed class SupervisorTests : IDisposable
     public async Task Without_the_bundled_core_a_core_set_for_the_user_does_not_reach_the_engine()
     {
         var spec = Config().Build(8765);
-        Assert.False(spec.Environment.ContainsKey("BRASSCRIBE_CORE_CLI"));
-        Assert.Contains("BRASSCRIBE_CORE_CLI", spec.Unset);
+        Assert.False(spec.Environment.ContainsKey("SCRIBE_CORE_CLI"));
+        Assert.Contains("SCRIBE_CORE_CLI", spec.Unset);
 
         // The launcher: a variable of this process that is named in Unset is not inherited; one that is set is.
         const string inherited = "BANDROOM_TEST_INHERITED_CORE", set = "BANDROOM_TEST_SET_CORE";

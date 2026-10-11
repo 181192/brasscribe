@@ -80,7 +80,7 @@ The **false-note trade-off is sharp.** The one knob that recovers trills, a lowe
 | scoop −2 st / 80 ms (1 note) | 1 ✓ | 1 ✓ | 1 ✓ | **2 segs ✗**, F1 0 | 2 ✗ |
 | fall −4 st / 200 ms (1 note) | 2 ✗ | 1 ✓ | 2 ✗ | 3 ✗ | 4 ✗ |
 
-**Quantization alone** (`quant_probe.py`), with exact onsets on a steady grid. The Rust column is `brasscribe-core quantize`, which runs polyphonic with `auto_level`; its distinct-start counts equal Python's in every row.
+**Quantization alone** (`quant_probe.py`), with exact onsets on a steady grid. The Rust column is `scribe-core quantize`, which runs polyphonic with `auto_level`; its distinct-start counts equal Python's in every row.
 
 | Material (24 notes) | Python, monophonic | Python, distinct starts | Rust, distinct starts |
 |---|---|---|---|
@@ -272,7 +272,7 @@ The new measurements below come from [`fastnotes/plateau_rule.py`](fastnotes/pla
 ### F3, F1, F2 and the confidence plumbing (`634a6cf7..206fe1a3`)
 
 **What I reran.** Everything ran in a detached worktree at `206fe1a3`:
-- the music tests (248 pass) and `cargo test -p brasscribe-core` (all pass);
+- the music tests (248 pass) and `cargo test -p scribe-core` (all pass);
 - `brasscribe bench cpu`;
 - my own adversarial clips ([`fastnotes/adversarial_clips.py`](fastnotes/adversarial_clips.py)), tracked with the fast-notes harness and scored with its bench, at the base `9eb6b87a` and at the head;
 - the Mikkel arrangement, with and without the dense quantizer.

@@ -98,7 +98,7 @@ android {
             // MuteWordingTest reads the design's glossary and icon labels.
             it.inputs.files(File(repoRoot, "design/brand/brand.md"), File(repoRoot, "design/system.md"), File(repoRoot, "design/README.md"),
                 File(repoRoot, "design/tokens/icons.json")).withPropertyName("designWording")
-            it.inputs.files(fileTree(File(repoRoot, "core/target/release")) { include("libbrasscribe_ffi.*") }).withPropertyName("hostCore")
+            it.inputs.files(fileTree(File(repoRoot, "core/target/release")) { include("libscribe_ffi.*") }).withPropertyName("hostCore")
             // (Robolectric reaches into the JDK for Android's file descriptors; a newer JDK asks for the export.)
             it.jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
             it.systemProperty("robolectric.graphicsMode", "NATIVE")
@@ -118,7 +118,7 @@ android {
             // Fretscribe's tests ask the engine's own option check about the jobs the app sends, and read the
             // tab fixtures and the crate's presets: a change to any of them runs the tests again.
             it.inputs.files(fileTree(File(repoRoot, "engine/src/brasscribe_engine")) { include("*.py") }).withPropertyName("engineOptionCheck")
-            it.inputs.files(File(repoRoot, "apps/android/scripts/check-tab-options.py"), File(repoRoot, "core/target-fretted/src/instrument.rs"))
+            it.inputs.files(File(repoRoot, "apps/android/scripts/check-tab-options.py"), File(repoRoot, "core/targets/fretted/src/instrument.rs"))
                 .withPropertyName("tabOptionSources")
             it.inputs.files(fileTree(File(repoRoot, "apps/fixtures")) { include("*-line/*") }).withPropertyName("tabFixtures")
         }

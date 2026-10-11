@@ -2,5 +2,5 @@
 # callbacks by reflection.
 -keep class com.sun.jna.** { *; }
 -keep class * implements com.sun.jna.** { *; }
--keep class uniffi.brasscribe_ffi.** { *; }
+-keep class uniffi.scribe_ffi.** { *; }
 -dontwarn java.awt.**

@@ -13,7 +13,7 @@ change touches a device or the UI.
 `origin/main`, plus uncommitted and untracked files). `AREAS="engine core"` picks areas, and
 `make check-all` runs tier 2 everywhere. Both print a timing table at the end. Areas: `engine`,
 `core`, `conformance`, `studio`, `apple`, `android`, `windows`, `core-dotnet`, `bandroom-mac`.
-Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/brasscribe-ffi/` and
+Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/ffi/` and
 `core/bindings/` as `core` and `core-dotnet`, `capture/` as `apple`, and
 `apps/bandroom/macos/` as `bandroom-mac`. `scripts/check.sh fast|full [area...]` is the same without make.
 
@@ -22,7 +22,7 @@ Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/b
 Once per checkout or worktree:
 
 ```sh
-eval "$(scripts/worktree-setup.sh)"      # later shells: source .brasscribe-env
+eval "$(scripts/worktree-setup.sh)"      # later shells: source .scribe-env
 ```
 
 The script is idempotent. `--print-env` only prints the environment, `--no-core` skips the prebuilt
@@ -33,14 +33,19 @@ core, and `--core host,apple` limits it to those components. It does four things
   is set to the worktree itself, since the tests also look up tracked files through it.
 - Copies in the prebuilt Rust core with `scripts/core-artifacts.sh ensure`:
   - the host library in `core/target/release` and `core/dist/macos`
-  - the command line `core/target/release/brasscribe-core`, which the engine's `bass-tab` profile and
+  - the command line `core/target/release/scribe-core`, which the engine's `bass-tab` profile and
     its tests need
-  - `BrasscribeFFI.xcframework`
+  - `ScribeFFI.xcframework`
   - the Android `jniLibs`
 - Clones `studio/node_modules` from the main checkout when the lock files match.
-- Prints the environment, and writes it to `.brasscribe-env`: `BRASSCRIBE_REPO`, `BRASSCRIBE_FFI_PATH`,
-  `BRASSCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
+- Prints the environment, and writes it to `.scribe-env`: `BRASSCRIBE_REPO`, `SCRIBE_FFI_PATH`,
+  `SCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
   `PATH` with rustup and the Android tools.
+  The tests of the native core skip themselves when they cannot find it, so `scripts/check.sh` refuses to run the
+  `windows`, `core-dotnet` and `android` areas when `SCRIBE_FFI_PATH` is not set or names a file that is gone, and
+  the `engine` area likewise for `SCRIBE_CORE_CLI`: run the setup again. For the same reason Windows Play's tests fail
+  when the checkout has a built core that `SCRIBE_FFI_PATH` does not point at, and the Android core bridge's tests
+  fail when the host library is built but does not load.
 
 ### The core artifact cache
 
@@ -54,7 +59,7 @@ core, and `--core host,apple` limits it to those components. It does four things
 The first `ensure` after a core change builds the component into `~/.cache/brasscribe/core-artifacts`,
 through one shared `CARGO_TARGET_DIR` under a lock. Every other checkout then gets an APFS clone in
 about a second. `apps/apple/scripts/build-core.sh` and `apps/android/scripts/build-core.sh` use the
-cache locally. CI, or `BRASSCRIBE_NO_ARTIFACT_CACHE=1`, builds in `core/target` as before.
+cache locally. CI, or `SCRIBE_NO_ARTIFACT_CACHE=1`, builds in `core/target` as before.
 `scripts/core-artifacts.sh status` shows what is cached and installed; `prune [days]` drops old entries.
 
 The artifacts are for the apps. `cargo test` in `core/` still builds in the worktree's own
@@ -73,7 +78,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
 | android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
-| core .NET | `cd core/dotnet/Brasscribe.Core.Tests && dotnet test` | nothing (seconds) |
+| core .NET | `cd core/dotnet/Scribe.Core.Tests && dotnet test` | nothing (seconds) |
 | bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh record`, which builds the app) |
 
 A test that takes seconds gets the slow marker of its framework:
@@ -303,7 +308,7 @@ The shared and seeded targets are fast because they are wrong:
 So `cargo test` keeps a target dir per worktree. There are two wins instead:
 
 - The artifact cache: the apps, bindings and FFI tests of other languages never build the core.
-- The `fast` profile: after an edit to brasscribe-core, `cargo test --profile fast` takes 8 s, against
+- The `fast` profile: after an edit to scribe-core, `cargo test --profile fast` takes 8 s, against
   47 s for `--release`.
 
 `cargo nextest` does not help here. The whole suite runs in about 2 s, and nextest's per-process

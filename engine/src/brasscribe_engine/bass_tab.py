@@ -12,15 +12,15 @@
                                  key, tempo, and the recording's offset from A = 440
     arrange                      a string and a fret for every note, and the tab as MusicXML, as plain text
                                  and as playing instructions in words, all from the Rust crate target-fretted
-                                 (core/target-fretted)
+                                 (core/targets/fretted)
     export                       PDF and MIDI of that MusicXML through MuseScore, as the band profiles'
 
 The instrument (instrument, tuning, capo, style) is a parameter of the last stage only, so choosing
 another tuning for a song fingers it again without transcribing it again. The octave is a parameter of
 the notes stage: `auto` runs the octave check, a number of semitones replaces it.
 
-The engine reaches target-fretted through the core's command line (`brasscribe-core fret` for the
-fingering, `brasscribe-core tab` for the MusicXML), which passes the crate's JSON requests and responses
+The engine reaches target-fretted through the core's command line (`scribe-core fret` for the
+fingering, `scribe-core tab` for the MusicXML), which passes the crate's JSON requests and responses
 through unchanged.
 
 The result is tab.json (schemas.Tab), a composition.json with the one bass voice, tab.musicxml
@@ -116,7 +116,7 @@ UNCONFIRMED = 0.3  # the second transcriber did not hear the note at that pitch
 AMPLITUDE_DOUBT = 0.4  # Basic Pitch's amplitude below which a note is in doubt when nothing else can say
 SECOND_LOWEST = 30  # F#1 (46 Hz): the lowest pitch SwiftF0 hears
 
-CORE_CLI_ENV = "BRASSCRIBE_CORE_CLI"
+CORE_CLI_ENV = "SCRIBE_CORE_CLI"
 # How long one fingering may take before it is stopped. A song takes a fraction of a second; the limit
 # is for a core that hangs.
 FRET_TIMEOUT_S = 600.0
@@ -180,12 +180,12 @@ class CoreCliMissing(RuntimeError):
 
 def _core_cli() -> tuple[Path, str]:
     """Where the core's command line is, or would be, and where that comes from: `env`
-    (BRASSCRIBE_CORE_CLI), `checkout` (its release build) or `path`."""
+    (SCRIBE_CORE_CLI), `checkout` (its release build) or `path`."""
     named = os.environ.get(CORE_CLI_ENV)
     if named:
         return Path(named).expanduser(), "env"
-    built = REPO_ROOT / "core" / "target" / "release" / ("brasscribe-core.exe" if os.name == "nt" else "brasscribe-core")
-    on_path = None if built.is_file() else shutil.which("brasscribe-core")
+    built = REPO_ROOT / "core" / "target" / "release" / ("scribe-core.exe" if os.name == "nt" else "scribe-core")
+    on_path = None if built.is_file() else shutil.which("scribe-core")
     return (Path(on_path), "path") if on_path else (built, "checkout")
 
 
@@ -198,13 +198,13 @@ def core_cli() -> Path:
     cli = core_cli_path()
     if not cli.is_file() or not os.access(cli, os.X_OK):
         # No path in the message: a refused or failed job's error is shown to paired devices too.
-        raise CoreCliMissing(f"brasscribe-core not found ({CORE_CLI_ENV}, core/target/release, PATH): build it with "
-                             f"`cargo build --release -p brasscribe-cli` in core/")
+        raise CoreCliMissing(f"scribe-core not found ({CORE_CLI_ENV}, core/target/release, PATH): build it with "
+                             f"`cargo build --release -p scribe-cli` in core/")
     return cli
 
 
 def solve(request: dict, cancel: threading.Event | None = None, log: Callable[[str], None] | None = None) -> dict:
-    """target-fretted's answer to its fingering request (core/target-fretted/README.md, JSON)."""
+    """target-fretted's answer to its fingering request (core/targets/fretted/README.md, JSON)."""
     return core_call("fret", request, cancel, log)
 
 
@@ -219,8 +219,8 @@ def tab_text(request: dict, fmt: str, lang: str | None = None, cancel: threading
     font, "instructions" the tab in words, in `lang` (TEXT_LANGS)."""
     text = core_call("tab", request, cancel, log, ("--format", fmt, *(("--lang", lang) if lang else ())), parse=False)
     if _answered_in_json(text):
-        raise RuntimeError("brasscribe-core is too old to write the tab as text: build it again with "
-                           "`cargo build --release -p brasscribe-cli` in core/")
+        raise RuntimeError("scribe-core is too old to write the tab as text: build it again with "
+                           "`cargo build --release -p scribe-cli` in core/")
     return text
 
 
@@ -246,8 +246,8 @@ def core_call(command: str, request: dict, cancel: threading.Event | None = None
         # Which binary answered matters when it is not the checkout's own. The job's log says where it came
         # from; the path itself goes to the engine's log only (paired devices read the job's).
         if log:
-            log("brasscribe-core taken from the PATH")
-        print(f"brasscribe-core taken from the PATH: {cli}", file=sys.stderr, flush=True)
+            log("scribe-core taken from the PATH")
+        print(f"scribe-core taken from the PATH: {cli}", file=sys.stderr, flush=True)
     with tempfile.TemporaryDirectory() as tmp:
         req, out = Path(tmp) / "request.json", Path(tmp) / "answer.json"
         req.write_text(json.dumps(request))
@@ -255,8 +255,8 @@ def core_call(command: str, request: dict, cancel: threading.Event | None = None
             proc = subprocess.Popen([str(cli), command, "--request", str(req), "--out", str(out), *args], stdin=subprocess.DEVNULL,
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=child_env())
         except OSError as e:  # not a program this computer can run; the message would name its path
-            raise RuntimeError(f"brasscribe-core could not be started ({type(e).__name__}): build it with "
-                               f"`cargo build --release -p brasscribe-cli` in core/") from None
+            raise RuntimeError(f"scribe-core could not be started ({type(e).__name__}): build it with "
+                               f"`cargo build --release -p scribe-cli` in core/") from None
         end = time.monotonic() + FRET_TIMEOUT_S
         while True:
             try:
@@ -265,15 +265,15 @@ def core_call(command: str, request: dict, cancel: threading.Event | None = None
             except subprocess.TimeoutExpired:
                 if cancel is not None and cancel.is_set():
                     kill_tree(proc)
-                    raise RuntimeError(f"brasscribe-core {command} stopped: the job was cancelled") from None
+                    raise RuntimeError(f"scribe-core {command} stopped: the job was cancelled") from None
                 if time.monotonic() > end:
                     kill_tree(proc)
-                    raise RuntimeError(f"brasscribe-core {command} stopped after {FRET_TIMEOUT_S:.0f} s, its time limit") from None
+                    raise RuntimeError(f"scribe-core {command} stopped after {FRET_TIMEOUT_S:.0f} s, its time limit") from None
             except BaseException:  # e.g. Ctrl-C in `brasscribe run`: leave no process running
                 kill_tree(proc)
                 raise
         if proc.returncode != 0:
-            raise RuntimeError(f"brasscribe-core {command} failed: {stderr.strip()[-2000:].replace(tmp, '.')}")
+            raise RuntimeError(f"scribe-core {command} failed: {stderr.strip()[-2000:].replace(tmp, '.')}")
         text = out.read_text(encoding="utf-8")
         return json.loads(text) if parse else text
 

@@ -52,7 +52,7 @@ Shared tooling:
 
 Bass tab, from a recording to a file:
 
-- `core/target-fretted`: tunings as data for guitar, bass, ukulele and mandolin; string and fret
+- `core/targets/fretted`: tunings as data for guitar, bass, ukulele and mandolin; string and fret
   assignment with a hand span in millimetres; styles, pins, alternatives and a playability check; tuning
   suggestion, playing techniques, chord shapes and staying in position. Bass lines stay low on the neck,
   and isolated high notes are set aside instead of dragging the hand up.

@@ -1,0 +1,11 @@
+[package]
+name = "target-brass"
+description = "Brass-band arranging: instruments, lineups and seats, the arrangers, difficulty levels and the band score"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+scribe-core = { path = "../../scribe-core" }
+serde.workspace = true
+serde_json.workspace = true

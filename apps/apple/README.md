@@ -9,7 +9,7 @@ review, the score, practice and export.
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 brew install xcodegen cmake
 make verovio        # Frameworks/Verovio.xcframework (LGPL-3.0, unmodified, dynamic) + font subset
-scripts/build-core.sh   # core/swift/BrasscribeCore/BrasscribeFFI.xcframework (Rust core, UniFFI)
+scripts/build-core.sh   # core/swift/ScribeCore/ScribeFFI.xcframework (Rust core, UniFFI)
 make soundfont      # data/soundfonts/MuseScore_General.sf2 (MIT, 206 MB, not committed)
 pixi run fetch-sounds   # (repo root) the band SoundFonts into data/sounds/band: needs `gh auth login`
 make project        # BrasscribePlay.xcodeproj from project.yml (not committed); stages the band sounds

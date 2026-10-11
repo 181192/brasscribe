@@ -12,7 +12,7 @@
 # them. After a merge, CI compares main's with those of the main before it (.github/workflows/screens.yml), and
 # that blocks nothing.
 # EXE is the app's own build (BrasscribePlay.exe): Axe.Windows and the walk with Tab run on it, one start per screen.
-# -FfiDll is the Rust core for this checkout (brasscribe_ffi.dll).
+# -FfiDll is the Rust core for this checkout (scribe_ffi.dll).
 param(
     [Parameter(Mandatory)] [string] $Out,
     [string] $FfiDll,
@@ -34,7 +34,7 @@ function Log($text) { Write-Host "catalogue: $text" }
 # The catalogue build of the app: its exe.
 function Build-Catalogue($dir, $ffi) {
     $props = @("-c", $Configuration, "-p:Platform=x64", "-p:RuntimeIdentifier=win-x64", "-p:BrasscribeCatalogue=true")
-    if ($ffi) { $props += "-p:BrasscribeFfiDll=$ffi" }
+    if ($ffi) { $props += "-p:ScribeFfiDll=$ffi" }
     dotnet build (Join-Path $dir "src/Brasscribe.Play") @props | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "the catalogue build failed in $dir" }
     $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe (Join-Path $dir "src/Brasscribe.Play/bin/catalogue") | Select-Object -First 1

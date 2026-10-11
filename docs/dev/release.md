@@ -42,10 +42,10 @@ What a release ships:
 | `fretscribe-android-universal.apk` | Fretscribe for Android, all CPU types |
 | `brasscribe-play-macos-arm64.zip` | Play for Mac (Apple silicon), ad-hoc signed |
 | `brasscribe-play-ios-unsigned.ipa` | Play for iPhone and iPad, unsigned: a tester signs it with their own Apple account |
-| `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` and `brasscribe-core` inside |
-| `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` and `brasscribe-core` inside |
+| `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` and `scribe-core` inside |
+| `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` and `scribe-core` inside |
 | `brasscribe-play-windows-x64.zip` | Play for Windows, self-contained (preview) |
-| `brasscribe-core-*` | the `brasscribe-core` command-line tool, per OS |
+| `scribe-core-*` | the `scribe-core` command-line tool, per OS |
 | `SHA256SUMS` | checksums of the files above |
 
 Bandroom is how the engine is installed: it bundles the engine workspace and `pixi`, and the first run
@@ -77,7 +77,7 @@ workspace stamp records the commit it was built from:
 - `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; Fretscribe takes them too, unless a build is given `-Pfretscribe.versionName` and `-Pfretscribe.versionCode`)
 - `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
 - `apps/windows/Directory.Build.props` and `apps/bandroom/windows/Directory.Build.props`: `<Version>`
-- Leave the core's Cargo version alone: the fixtures embed `brasscribe-core 0.1.0` in their MusicXML.
+- Leave the core's Cargo version alone: the fixtures embed `scribe-core 0.1.0` in their MusicXML.
 
 Commit as `chore(release): X.Y.Z` and merge it through a pull request (`scripts/release.sh X.Y.Z` does this part).
 
@@ -154,7 +154,7 @@ installed app stays up. Without UI automation, a quick crash check is
 ## 4. Bandroom for Mac
 
 ```sh
-(cd core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p brasscribe-cli)   # staged into the app below
+(cd core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p scribe-cli)   # staged into the app below
 cd apps/bandroom/macos && xcodegen generate
 xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
   -destination 'generic/platform=macOS' -derivedDataPath "$S/dd-band" build
@@ -164,9 +164,9 @@ The build's post-build scripts stage what the first run installs from:
 
 - `scripts/stage-band-sounds.sh` copies `data/sounds/band/brasscribe-band-mobile.sf2` into
   `Resources/band/brasscribe-band.sf2`. A Release build fails without it.
-- `scripts/stage-core-cli.sh` copies the core's command line, `core/target/release/brasscribe-core`
-  (the build above, for macOS 14 as Bandroom itself), into `Resources/bin/brasscribe-core`. Bandroom
-  passes it to the installed engine as `BRASSCRIBE_CORE_CLI`: the `bass-tab` profile runs it. A Release
+- `scripts/stage-core-cli.sh` copies the core's command line, `core/target/release/scribe-core`
+  (the build above, for macOS 14 as Bandroom itself), into `Resources/bin/scribe-core`. Bandroom
+  passes it to the installed engine as `SCRIBE_CORE_CLI`: the `bass-tab` profile runs it. A Release
   build fails without it.
 - `scripts/stage-workspace.sh` copies the engine workspace (`pixi.toml`, `pixi.lock`, `engine`, `music`,
   the benchmark package, `ml/adapters` and the pinned MSST code, fetched once into `build/cache`, which
@@ -184,7 +184,7 @@ first when the requirement goes up.
 
 The app bundles `pixi`, so a Mac without it can install the engine. Bandroom takes `BRASSCRIBE_PIXI` when set,
 then the bundled `Contents/Resources/bin/pixi`, then `~/.pixi/bin` and Homebrew. Copy it in,
-then re-sign **pixi and `brasscribe-core` first, then the app**:
+then re-sign **pixi and `scribe-core` first, then the app**:
 
 ```sh
 B="$S/stage/Brasscribe Bandroom.app"
@@ -193,9 +193,9 @@ mkdir -p "$B/Contents/Resources/bin"
 cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
 scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"   # stops unless it and .pixi-version (what CI bundles) meet requires-pixi in pixi.toml
 codesign -d --entitlements - --xml "$B" > "$S/band.entitlements"
-"$B/Contents/Resources/bin/brasscribe-core" version    # staged by the build
+"$B/Contents/Resources/bin/scribe-core" version    # staged by the build
 codesign --force --sign - "$B/Contents/Resources/bin/pixi"
-codesign --force --sign - "$B/Contents/Resources/bin/brasscribe-core"
+codesign --force --sign - "$B/Contents/Resources/bin/scribe-core"
 codesign --force --sign - --entitlements "$S/band.entitlements" "$B"
 codesign --verify --deep --strict "$B"
 (cd "$S/stage" && ditto -c -k --keepParent "Brasscribe Bandroom.app" "$OUT/brasscribe-bandroom-macos-arm64.zip")
@@ -213,8 +213,8 @@ start with the release commit. Its `version` is the engine API version, not the 
 ## 5. The core command-line tool
 
 ```sh
-cd core && cargo build --release --locked -p brasscribe-cli
-tar -czf "$OUT/brasscribe-core-macos-arm64.tar.gz" -C target/release brasscribe-core
+cd core && cargo build --release --locked -p scribe-cli
+tar -czf "$OUT/scribe-core-macos-arm64.tar.gz" -C target/release scribe-core
 ```
 
 ## 6. Checksums and the GitHub release

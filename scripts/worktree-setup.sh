@@ -12,7 +12,7 @@
 #    command line, the Apple xcframework and the Android jniLibs, built once per core change and
 #    shared by all worktrees.
 # 3. Prints the environment to export on stdout (progress goes to stderr), and writes it to
-#    .brasscribe-env for `source .brasscribe-env` in later shells.
+#    .scribe-env for `source .scribe-env` in later shells.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -44,9 +44,9 @@ env_lines() {
   # This checkout, not the main one: tests also look up tracked files (sounds/, design/) through
   # it, and data/ and models/ are linked in.
   echo "export BRASSCRIBE_REPO='$ROOT'"
-  echo "export BRASSCRIBE_FFI_PATH='$ROOT/core/target/release/libbrasscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
+  echo "export SCRIBE_FFI_PATH='$ROOT/core/target/release/libscribe_ffi.$([ "$(uname -s)" = Darwin ] && echo dylib || echo so)'"
   # The core's command line, for the engine's bass-tab profile and the tests that need it.
-  [ -x "$ROOT/core/target/release/brasscribe-core" ] && echo "export BRASSCRIBE_CORE_CLI='$ROOT/core/target/release/brasscribe-core'"
+  [ -x "$ROOT/core/target/release/scribe-core" ] && echo "export SCRIBE_CORE_CLI='$ROOT/core/target/release/scribe-core'"
   # The data is here, so a Rust golden test that cannot find it fails instead of skipping.
   [ -e "$MAIN/data/mikkel/repro/mix.beats" ] && echo "export BRASSCRIBE_REQUIRE_DATA=1"
   echo "export ANDROID_HOME='$ANDROID_HOME'"
@@ -93,7 +93,22 @@ if [ "$ROOT" != "$MAIN" ] && [ ! -d "$ROOT/studio/node_modules" ] && [ -d "$MAIN
     && log "cloned studio/node_modules from $MAIN" || rm -rf "$ROOT/studio/node_modules"
 fi
 
-# 3. Environment
-env_lines > "$ROOT/.brasscribe-env"
-log "environment written to .brasscribe-env (source it in new shells)"
+# 3. What a checkout from before the core took its name still holds. The environment file has this
+# machine's paths in it and is no longer ignored, as are the two folders; the libraries are still
+# ignored, and a debug build of the Android app would pack the old one.
+stale=0
+for old in .brasscribe-env core/swift/BrasscribeCore core/android/brasscribe-core; do
+  [ -e "$ROOT/$old" ] || continue
+  # Only what git does not track: build outputs and the file this script wrote.
+  if [ -z "$(git -C "$ROOT" ls-files -- "$old")" ]; then rm -rf "${ROOT:?}/$old" && stale=1; fi
+done
+for old in "$ROOT"/apps/android/core-bridge/src/main/jniLibs/*/libbrasscribe_ffi.so "$ROOT"/core/dist/*/libbrasscribe_ffi.* \
+           "$ROOT"/core/dist/*/brasscribe_ffi.dll; do
+  [ -e "$old" ] && rm -f "$old" && stale=1
+done
+[ $stale = 1 ] && log "removed what was left under the core's old name (.brasscribe-env, the old wrappers' build folders, old libraries)"
+
+# 4. Environment
+env_lines > "$ROOT/.scribe-env"
+log "environment written to .scribe-env (source it in new shells)"
 env_lines

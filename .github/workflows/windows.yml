@@ -70,7 +70,7 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('apps/windows/Directory.Packages.props', 'apps/windows/**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
-      # The Rust core as brasscribe_ffi.dll (MSVC host build). The app build copies it next to the exe.
+      # The Rust core as scribe_ffi.dll (MSVC host build). The app build copies it next to the exe.
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
@@ -79,21 +79,21 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       # With the C runtime linked in, so a PC without the Visual C++ runtime (vcruntime140.dll) can load it.
-      - name: Build the Rust core (brasscribe_ffi.dll)
+      - name: Build the Rust core (scribe_ffi.dll)
         working-directory: core
         env:
           RUSTFLAGS: -C target-feature=+crt-static
         run: |
-          cargo build --release --locked -p brasscribe-ffi
-          $dll = Resolve-Path target/release/brasscribe_ffi.dll
-          "BRASSCRIBE_FFI_PATH=$dll" >> $env:GITHUB_ENV
+          cargo build --release --locked -p scribe-ffi
+          $dll = Resolve-Path target/release/scribe_ffi.dll
+          "SCRIBE_FFI_PATH=$dll" >> $env:GITHUB_ENV
 
-      - name: brasscribe_ffi.dll needs no C runtime DLL
+      - name: scribe_ffi.dll needs no C runtime DLL
         shell: bash
         working-directory: .
-        run: scripts/check-windows-imports.sh --static core/target/release/brasscribe_ffi.dll
+        run: scripts/check-windows-imports.sh --static core/target/release/scribe_ffi.dll
 
-      # BRASSCRIBE_FFI_PATH makes the native-core tests run (talking-score vectors through the core,
+      # SCRIBE_FFI_PATH makes the native-core tests run (talking-score vectors through the core,
       # the default bridge). Tests that need data/ or models/ (golden score, SwiftF0 ONNX, SoundFonts) skip in CI.
       - name: Core tests
         if: ${{ !inputs.release }}
@@ -103,7 +103,7 @@ jobs:
 
       - name: Build app (WinUI 3, unpackaged, x64)
         if: ${{ !inputs.release }}
-        run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH"
+        run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH"
 
       - name: Locate the exe
         if: ${{ !inputs.release }}
@@ -111,7 +111,7 @@ jobs:
         run: |
           $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe src/Brasscribe.Play/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribePlay.exe was not built" }
-          if (-not (Test-Path (Join-Path $exe.DirectoryName "brasscribe_ffi.dll"))) { throw "brasscribe_ffi.dll is not next to the exe" }
+          if (-not (Test-Path (Join-Path $exe.DirectoryName "scribe_ffi.dll"))) { throw "scribe_ffi.dll is not next to the exe" }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Smoke test (the app starts and shows its window)
@@ -141,7 +141,7 @@ jobs:
         if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
-          ./tools/Screenshots/catalogue.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:BRASSCRIBE_FFI_PATH
+          ./tools/Screenshots/catalogue.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:SCRIBE_FFI_PATH
           $status = $LASTEXITCODE
           if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
           exit $status
@@ -201,7 +201,7 @@ jobs:
         if: ${{ inputs.release }}
         run: |
           $out = "$env:RUNNER_TEMP/publish/BrasscribePlay"
-          dotnet publish src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:BrasscribeFfiDll=$env:BRASSCRIBE_FFI_PATH" -o $out
+          dotnet publish src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH" -o $out
           if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
           if (-not (Test-Path "$out/SoundFonts/brasscribe-band.sf2")) { throw "the app has no band SoundFont" }
           # ONNX Runtime's onnxruntime_providers_shared.dll imports vcruntime140.dll, so it ships app-locally
@@ -221,7 +221,7 @@ jobs:
         working-directory: .
         run: >
           scripts/check-windows-imports.sh --shipped "$(cygpath -u "$RUNNER_TEMP")/publish/BrasscribePlay"
-          BrasscribePlay.exe brasscribe_ffi.dll onnxruntime.dll onnxruntime_providers_shared.dll
+          BrasscribePlay.exe scribe_ffi.dll onnxruntime.dll onnxruntime_providers_shared.dll
 
       - uses: actions/upload-artifact@v7
         if: ${{ inputs.release }}
@@ -233,7 +233,7 @@ jobs:
   # Bandroom for Windows as a download: how the engine is distributed on Windows. Self-contained x64 with
   # the engine workspace (its stamp from this commit) and the band SoundFont next to the exe, and pixi
   # bundled at pixi\pixi.exe (FindPixi looks there first), so the first run can install the engine
-  # without anything installed beforehand. The core's command line (core\brasscribe-core.exe, for bass
+  # without anything installed beforehand. The core's command line (core\scribe-core.exe, for bass
   # tabs) is built first; the project copies it next to the exe.
   bandroom-release:
     name: bandroom release build
@@ -270,19 +270,19 @@ jobs:
         working-directory: core
         env:
           RUSTFLAGS: -C target-feature=+crt-static
-        run: cargo build --release --locked -p brasscribe-cli
+        run: cargo build --release --locked -p scribe-cli
 
-      - name: brasscribe-core.exe needs no C runtime DLL
+      - name: scribe-core.exe needs no C runtime DLL
         shell: bash
         working-directory: .
-        run: scripts/check-windows-imports.sh --static core/target/release/brasscribe-core.exe
+        run: scripts/check-windows-imports.sh --static core/target/release/scribe-core.exe
 
       - name: Release build (self-contained, x64, pixi bundled)
         run: |
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
           dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
           if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
-          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/brasscribe-core.exe")) {
+          foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/scribe-core.exe")) {
             if (-not (Test-Path (Join-Path $out $f))) { throw "$f is not next to the exe" }
           }
           $stamp = Get-Content "$out/workspace/.brasscribe-workspace.json" -Raw
@@ -308,7 +308,7 @@ jobs:
         working-directory: .
         run: >
           scripts/check-windows-imports.sh --shipped "$(cygpath -u "$RUNNER_TEMP")/publish/BrasscribeBandroom"
-          BrasscribeBandroom.exe brasscribe-core.exe pixi.exe
+          BrasscribeBandroom.exe scribe-core.exe pixi.exe
 
       - uses: actions/upload-artifact@v7
         with:

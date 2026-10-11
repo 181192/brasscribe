@@ -7,10 +7,10 @@
 #   scripts/core-artifacts.sh prune [days]                      drop entries unused for N days (default 14)
 #
 # Components (default: all whose toolchain is installed):
-#   host     core/target/release/libbrasscribe_ffi.{dylib,a} and core/dist/macos/ (JVM, .NET and FFI tests),
-#            and the command line core/target/release/brasscribe-core (the engine's bass-tab profile)
-#   apple    core/swift/BrasscribeCore/BrasscribeFFI.xcframework (macOS, iOS, iOS simulator)
-#   android  apps/android/core-bridge/src/main/jniLibs/{arm64-v8a,x86_64}/libbrasscribe_ffi.so
+#   host     core/target/release/libscribe_ffi.{dylib,a} and core/dist/macos/ (JVM, .NET and FFI tests),
+#            and the command line core/target/release/scribe-core (the engine's bass-tab profile)
+#   apple    core/swift/ScribeCore/ScribeFFI.xcframework (macOS, iOS, iOS simulator)
+#   android  apps/android/core-bridge/src/main/jniLibs/{arm64-v8a,x86_64}/libscribe_ffi.so
 #
 # The key is a hash of the core sources (tracked and untracked, not ignored), Cargo.lock, this
 # script, rustc -vV and the component's own toolchain (Xcode, NDK, cargo-ndk). An edit to the core
@@ -69,8 +69,8 @@ sources() {
   git -C "$ROOT" ls-files -co --exclude-standard -z -- \
     core/Cargo.toml core/Cargo.lock core/.cargo \
     $members \
-    core/bindings/swift/brasscribe_ffiFFI.h core/bindings/swift/brasscribe_ffiFFI.modulemap \
-    ':(exclude)core/*/tests/*' \
+    core/bindings/swift/scribe_ffiFFI.h core/bindings/swift/scribe_ffiFFI.modulemap \
+    ':(exclude)core/*/tests/*' ':(exclude)core/targets/*/tests/*' \
     | while IFS= read -r -d '' f; do [ -e "$ROOT/$f" ] && printf '%s\0' "$f"; done
 }
 sources_hash() { (cd "$ROOT" && sources | xargs -0 shasum -a 256); }
@@ -130,31 +130,31 @@ build() {
   cd "$src" || return 1
   case "$comp" in
     host)
-      cargo build --release -q --locked -p brasscribe-ffi || return 1
+      cargo build --release -q --locked -p scribe-ffi || return 1
       local ext=so; [ "$(uname -s)" = Darwin ] && ext=dylib
-      cp "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.$ext" "$CARGO_TARGET_DIR/release/libbrasscribe_ffi.a" "$out/" || return 1
+      cp "$CARGO_TARGET_DIR/release/libscribe_ffi.$ext" "$CARGO_TARGET_DIR/release/libscribe_ffi.a" "$out/" || return 1
       # On its own, so the library is built with the same features as before the command line was added.
-      cargo build --release -q --locked -p brasscribe-cli || return 1
-      cp "$CARGO_TARGET_DIR/release/brasscribe-core" "$out/" || return 1
+      cargo build --release -q --locked -p scribe-cli || return 1
+      cp "$CARGO_TARGET_DIR/release/scribe-core" "$out/" || return 1
       ;;
     apple)
       local t
       for t in aarch64-apple-darwin aarch64-apple-ios aarch64-apple-ios-sim; do
-        env $APPLE_ENV cargo build --release -q --locked -p brasscribe-ffi --target "$t" || return 1
-        mkdir -p "$out/lib/$t" && cp "$CARGO_TARGET_DIR/$t/release/libbrasscribe_ffi.a" "$out/lib/$t/" || return 1
+        env $APPLE_ENV cargo build --release -q --locked -p scribe-ffi --target "$t" || return 1
+        mkdir -p "$out/lib/$t" && cp "$CARGO_TARGET_DIR/$t/release/libscribe_ffi.a" "$out/lib/$t/" || return 1
       done
       local hdr="$out/headers"
       mkdir -p "$hdr" || return 1
-      cp bindings/swift/brasscribe_ffiFFI.h "$hdr/" || return 1
-      cp bindings/swift/brasscribe_ffiFFI.modulemap "$hdr/module.modulemap" || return 1
+      cp bindings/swift/scribe_ffiFFI.h "$hdr/" || return 1
+      cp bindings/swift/scribe_ffiFFI.modulemap "$hdr/module.modulemap" || return 1
       xcodebuild -create-xcframework \
-        -library "$out/lib/aarch64-apple-darwin/libbrasscribe_ffi.a" -headers "$hdr" \
-        -library "$out/lib/aarch64-apple-ios/libbrasscribe_ffi.a" -headers "$hdr" \
-        -library "$out/lib/aarch64-apple-ios-sim/libbrasscribe_ffi.a" -headers "$hdr" \
-        -output "$out/BrasscribeFFI.xcframework" >/dev/null || return 1
+        -library "$out/lib/aarch64-apple-darwin/libscribe_ffi.a" -headers "$hdr" \
+        -library "$out/lib/aarch64-apple-ios/libscribe_ffi.a" -headers "$hdr" \
+        -library "$out/lib/aarch64-apple-ios-sim/libscribe_ffi.a" -headers "$hdr" \
+        -output "$out/ScribeFFI.xcframework" >/dev/null || return 1
       ;;
     android)
-      cargo ndk -t arm64-v8a -t x86_64 -P 29 -o "$out/jniLibs" build --release -q --locked -p brasscribe-ffi || return 1
+      cargo ndk -t arm64-v8a -t x86_64 -P 29 -o "$out/jniLibs" build --release -q --locked -p scribe-ffi || return 1
       ;;
   esac
 }
@@ -163,10 +163,10 @@ build() {
 built() {
   local d="$2"
   case "$1" in
-    host) [ -f "$d/libbrasscribe_ffi.a" ] && { [ -f "$d/libbrasscribe_ffi.so" ] || [ -f "$d/libbrasscribe_ffi.dylib" ]; } \
-      && [ -x "$d/brasscribe-core" ] ;;
-    apple) [ -f "$d/BrasscribeFFI.xcframework/Info.plist" ] ;;
-    android) [ -f "$d/jniLibs/arm64-v8a/libbrasscribe_ffi.so" ] && [ -f "$d/jniLibs/x86_64/libbrasscribe_ffi.so" ] ;;
+    host) [ -f "$d/libscribe_ffi.a" ] && { [ -f "$d/libscribe_ffi.so" ] || [ -f "$d/libscribe_ffi.dylib" ]; } \
+      && [ -x "$d/scribe-core" ] ;;
+    apple) [ -f "$d/ScribeFFI.xcframework/Info.plist" ] ;;
+    android) [ -f "$d/jniLibs/arm64-v8a/libscribe_ffi.so" ] && [ -f "$d/jniLibs/x86_64/libscribe_ffi.so" ] ;;
   esac
 }
 
@@ -203,17 +203,17 @@ install() {
   case "$comp" in
     host)
       local f
-      for f in "$dir"/libbrasscribe_ffi.*; do
+      for f in "$dir"/libscribe_ffi.*; do
         clone "$f" "$CORE/target/release/$(basename "$f")"
         [ "$(uname -s)" = Darwin ] && clone "$f" "$CORE/dist/macos/$(basename "$f")"
       done
-      clone "$dir/brasscribe-core" "$CORE/target/release/brasscribe-core"
+      clone "$dir/scribe-core" "$CORE/target/release/scribe-core"
       ;;
-    apple) clone "$dir/BrasscribeFFI.xcframework" "$CORE/swift/BrasscribeCore/BrasscribeFFI.xcframework" ;;
+    apple) clone "$dir/ScribeFFI.xcframework" "$CORE/swift/ScribeCore/ScribeFFI.xcframework" ;;
     android)
       local abi
       for abi in arm64-v8a x86_64; do
-        clone "$dir/jniLibs/$abi/libbrasscribe_ffi.so" "$ROOT/apps/android/core-bridge/src/main/jniLibs/$abi/libbrasscribe_ffi.so"
+        clone "$dir/jniLibs/$abi/libscribe_ffi.so" "$ROOT/apps/android/core-bridge/src/main/jniLibs/$abi/libscribe_ffi.so"
       done
       ;;
   esac
@@ -223,9 +223,9 @@ install() {
 
 installed() {
   case "$1" in
-    host) ls "$CORE"/target/release/libbrasscribe_ffi.* >/dev/null 2>&1 && [ -x "$CORE/target/release/brasscribe-core" ] ;;
-    apple) [ -d "$CORE/swift/BrasscribeCore/BrasscribeFFI.xcframework" ] ;;
-    android) [ -f "$ROOT/apps/android/core-bridge/src/main/jniLibs/arm64-v8a/libbrasscribe_ffi.so" ] ;;
+    host) ls "$CORE"/target/release/libscribe_ffi.* >/dev/null 2>&1 && [ -x "$CORE/target/release/scribe-core" ] ;;
+    apple) [ -d "$CORE/swift/ScribeCore/ScribeFFI.xcframework" ] ;;
+    android) [ -f "$ROOT/apps/android/core-bridge/src/main/jniLibs/arm64-v8a/libscribe_ffi.so" ] ;;
   esac
 }
 

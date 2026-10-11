@@ -24,7 +24,7 @@ def test_every_part_has_an_nb_name_and_a_bank():
 
 
 def test_rust_nb_names_match():
-    src = (Path(__file__).resolve().parents[2] / "core" / "brasscribe-core" / "src" / "talking_score.rs").read_text()
+    src = (Path(__file__).resolve().parents[2] / "core" / "scribe-core" / "src" / "talking_score.rs").read_text()
     for name, nb in NB_PART_NAMES.items():
         assert f'"{name}" => "{nb}"' in src, name
 

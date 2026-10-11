@@ -152,7 +152,7 @@ jobs:
             done
             files=$(unzip -l "$apk")
             if grep -qiE "brasscribe-band|assets/sounds/.*\.sf2|\.onnx$|libonnxruntime" <<<"$files"; then fail "carries band sounds, models or ONNX Runtime"; fi
-            grep -q "lib/arm64-v8a/libbrasscribe_ffi.so" <<<"$files" || fail "has no Rust core"
+            grep -q "lib/arm64-v8a/libscribe_ffi.so" <<<"$files" || fail "has no Rust core"
             audio=$(awk '$4 == "lib/arm64-v8a/libbrasscribe_audio.so" { print $1 }' <<<"$files")
             [ -n "$audio" ] && [ "$audio" -lt 1000000 ] || fail "its audio library is not the one without sfizz ($audio bytes)"
             cp "$apk" "$RUNNER_TEMP/unsigned/fretscribe-$a-release-unsigned.apk"

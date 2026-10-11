@@ -1,5 +1,5 @@
 """The bass-tab profile: its options, its stages, the notes on the beat grid, the octave check and the
-fingering from the Rust core (target-fretted through `brasscribe-core fret`)."""
+fingering from the Rust core (target-fretted through `scribe-core fret`)."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ needs_core = pytest.mark.skipif(_core_missing() is not None, reason=_core_missin
 @pytest.fixture
 def core_present(monkeypatch, tmp_path):
     """The submit check finds a core, so a test about options does not depend on a built binary."""
-    monkeypatch.setattr(bass_tab, "core_cli", lambda: tmp_path / "brasscribe-core")
+    monkeypatch.setattr(bass_tab, "core_cli", lambda: tmp_path / "scribe-core")
 
 
 # ---------------------------------------------------------------- options
@@ -96,9 +96,9 @@ def test_a_job_that_names_no_fretted_option_has_none_in_its_parameters():
 
 
 def test_the_instrument_table_is_target_fretteds_bass_presets():
-    source = REPO / "core" / "target-fretted" / "src" / "instrument.rs"
+    source = REPO / "core" / "targets" / "fretted" / "src" / "instrument.rs"
     if not source.exists():
-        pytest.skip("core/target-fretted is not in this checkout")
+        pytest.skip("core/targets/fretted is not in this checkout")
     ids = re.search(r"PRESET_IDS: &\[&str\] = &\[(.*?)\];", source.read_text(), re.S).group(1)
     in_crate = [i for i in re.findall(r'"([^"]+)"', ids) if i.startswith("bass-")]
     assert in_crate == [f"{inst}-{t}" for inst, tunings in bass_tab.INSTRUMENTS.items() for t in tunings]
@@ -258,11 +258,11 @@ def test_a_chosen_octave_is_a_parameter_of_the_notes_stage_only():
 
 
 def test_the_profile_is_listed_with_a_title_and_builds_without_the_core(monkeypatch):
-    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, "/nowhere/brasscribe-core")
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, "/nowhere/scribe-core")
     assert profiles.PROFILES["bass-tab"].validated is False
     assert profiles.default_title("bass-tab", Path("my_song.wav")) == "My Song — bass tab (draft)"
     assert profiles.PROFILES["bass-tab"].build("-", {}).stage("arrange").params["title"] == "-"
-    with pytest.raises(bass_tab.CoreCliMissing, match="cargo build --release -p brasscribe-cli"):
+    with pytest.raises(bass_tab.CoreCliMissing, match="cargo build --release -p scribe-cli"):
         bass_tab.core_cli()
 
 
@@ -665,7 +665,7 @@ def test_the_core_gets_the_line_an_octave_lower_and_a_capo_counts_frets_from_its
 
 @needs_core
 def test_a_request_the_core_refuses_fails_with_its_message():
-    with pytest.raises(RuntimeError, match="brasscribe-core fret failed.*bass-9"):
+    with pytest.raises(RuntimeError, match="scribe-core fret failed.*bass-9"):
         bass_tab.solve({"instrument": {"preset": "bass-9"}, "notes": []})
 
 
@@ -750,7 +750,7 @@ def test_the_core_writes_the_tab_as_text_and_as_playing_instructions_in_both_lan
 
 @pytest.mark.skipif(os.name == "nt", reason="a shell script stands in for the core")
 def test_a_core_from_before_the_text_formats_is_told_apart(tmp_path, monkeypatch):
-    core = tmp_path / "brasscribe-core"
+    core = tmp_path / "scribe-core"
     core.write_text('#!/bin/sh\necho \'{"musicxml": "<x/>", "adjusted_notes": 0}\' > "$5"\n')  # it ignores --format
     core.chmod(0o755)
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))
@@ -1023,7 +1023,7 @@ def test_a_job_without_the_core_fails_at_the_fingering_and_says_how_to_get_it(se
     monkeypatch.setattr(S, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(LOW_LINE)))
     manifest = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert manifest["status"] == "failed" and manifest["error"].startswith("arrange: ")
-    assert "cargo build --release -p brasscribe-cli" in manifest["error"]
+    assert "cargo build --release -p scribe-cli" in manifest["error"]
     assert [s["status"] for s in manifest["stages"]] == ["ran", "ran", "ran", "ran", "failed"]
 
 
@@ -1043,7 +1043,7 @@ def test_a_job_is_refused_at_submit_when_the_core_is_missing_and_the_profile_sta
         audio_id = c.post("/v1/audio", files={"file": ("song.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
         r = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab"})
         assert r.status_code == 422 and r.json()["code"] == "core_missing"
-        assert "cargo build --release -p brasscribe-cli" in r.json()["detail"] and str(missing.parent) not in r.text
+        assert "cargo build --release -p scribe-cli" in r.json()["detail"] and str(missing.parent) not in r.text
         assert c.get("/v1/jobs").json() == []  # nothing was started
         # A wrong option is still the first thing said, and the band profiles do not need the core.
         bad = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "instrument": "bass-5", "tuning": "bead"})
@@ -1058,12 +1058,12 @@ def test_the_cli_refuses_the_run_before_any_model_when_the_core_is_missing(monke
     monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path))
     monkeypatch.setattr(runner, "run", lambda *a, **kw: pytest.fail("the run was started"))
     assert cli.main(["run", "song.wav", "--profile", "bass-tab"]) == 3
-    assert "cargo build --release -p brasscribe-cli" in capsys.readouterr().err
+    assert "cargo build --release -p scribe-cli" in capsys.readouterr().err
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permissions and scripts")
 def test_a_core_that_cannot_run_is_missing_and_one_that_cannot_start_fails_without_its_path(tmp_path, monkeypatch):
-    plain = tmp_path / "private-folder" / "brasscribe-core"
+    plain = tmp_path / "private-folder" / "scribe-core"
     plain.parent.mkdir()
     plain.write_text("not a program")
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(plain))
@@ -1081,7 +1081,7 @@ def test_a_core_that_fails_or_hangs_is_reported_and_stopped(tmp_path, monkeypatc
     import threading
     import time
 
-    core = tmp_path / "private-folder" / "brasscribe-core"
+    core = tmp_path / "private-folder" / "scribe-core"
     core.parent.mkdir()
     core.write_text('#!/bin/sh\necho "$3: no such preset" >&2\nexit 1\n')
     core.chmod(0o755)
@@ -1108,7 +1108,7 @@ def test_a_core_that_fails_or_hangs_is_reported_and_stopped(tmp_path, monkeypatc
 
 @pytest.mark.skipif(os.name == "nt", reason="a shell script stands in for the core")
 def test_a_core_from_the_path_is_named_in_the_engines_log_and_only_mentioned_in_the_jobs(tmp_path, monkeypatch, capsys):
-    core = tmp_path / "private-folder" / "brasscribe-core"
+    core = tmp_path / "private-folder" / "scribe-core"
     core.parent.mkdir()
     core.write_text('#!/bin/sh\necho \'{"ok": true}\' > "$5"\n')
     core.chmod(0o755)
@@ -1117,7 +1117,7 @@ def test_a_core_from_the_path_is_named_in_the_engines_log_and_only_mentioned_in_
     monkeypatch.setenv("PATH", f"{core.parent}{os.pathsep}{os.environ['PATH']}")
     said: list[str] = []
     assert bass_tab.solve({"notes": []}, log=said.append) == {"ok": True}
-    assert said == ["brasscribe-core taken from the PATH"]
+    assert said == ["scribe-core taken from the PATH"]
     assert str(core) in capsys.readouterr().err
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))  # named: nothing to say
     said.clear()

@@ -5,7 +5,7 @@ Two applications on one shared engine:
 - **Brasscribe Studio** ("Studio" below): a technical workbench. Inspect every pipeline stage, compare models, run benchmarks, and debug scores.
 - **Brasscribe Play** ("Play" below): a musician app. Recording in, brass-band score out, then read, listen, practise and play along.
 
-**Status (2026-09-29): partly done.** Released as v0.2.0 (Android, Mac, Bandroom for Mac, the `brasscribe-core` CLI).
+**Status (2026-09-29): partly done.** Released as v0.2.0 (Android, Mac, Bandroom for Mac, the `scribe-core` CLI).
 - Done: the engine as a service (pixi workspace, FastAPI, `brasscribe bench`), free-time and durations from audio, Studio, the Rust core with conformance, Play for Apple (macOS; iOS/iPadOS builds but is not released), Play for Android, the on-device solo path (SwiftF0, Basic Pitch and Beat This! small on Apple and Android), the band sounds on every platform, Bandroom for macOS and Windows.
 - Left:
   - Windows Play has no download yet, and `main` lacks the music stand, the Appearance setting and "What do you play?" (they are on unmerged branches, waiting for a Windows test run);

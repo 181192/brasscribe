@@ -241,7 +241,7 @@ data class SongFacts(val strings: Int?, val tuning: String?, val toCheck: Int, v
     companion object {
         private val STEPS = mapOf('C' to 0, 'D' to 2, 'E' to 4, 'F' to 5, 'G' to 7, 'A' to 9, 'B' to 11)
 
-        /** The open strings of each tuning, lowest first (core/target-fretted/src/instrument.rs). */
+        /** The open strings of each tuning, lowest first (core/targets/fretted/src/instrument.rs). */
         val OPEN_STRINGS: Map<String, List<Int>> = mapOf(
             "guitar-standard" to listOf(40, 45, 50, 55, 59, 64),
             "guitar-eb-standard" to listOf(39, 44, 49, 54, 58, 63),
