@@ -251,6 +251,9 @@ object JobFollow {
                 ask()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
+            } catch (e: no.brasscribe.play.engine.InterfaceMismatchException) {
+                // The computer answers with another interface version: it is not asked again, however long the job is.
+                return null
             } catch (e: Exception) {
                 null
             }

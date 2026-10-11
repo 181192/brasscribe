@@ -39,6 +39,15 @@ class UploadRetryTest {
     private fun answer(socket: Socket, drop: Int, status: Int) {
         val input = BufferedInputStream(socket.getInputStream())
         val head = readHead(input) ?: return
+        // After an upload that got no answer, the client asks which engine it is before it sends the upload again.
+        if (head.startsWith("GET /v1/health")) {
+            val health = """{"version":"1","device":"cpu","auth_required":false,"server_id":"s","server_name":"n","interface_version":${Wire.INTERFACE_VERSION}}"""
+            socket.getOutputStream().apply {
+                write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${health.length}\r\nConnection: close\r\n\r\n$health".toByteArray())
+                flush()
+            }
+            return
+        }
         val length = Regex("(?im)^content-length:\\s*(\\d+)").find(head)?.groupValues?.get(1)?.toLong()
         if (length != null) repeat(length.toInt()) { if (input.read() < 0) return }
         if (uploads.incrementAndGet() <= drop) return // the connection closes with no answer
@@ -61,7 +70,7 @@ class UploadRetryTest {
     }
 
     private fun upload(engine: io.ktor.client.engine.HttpClientEngine = OkHttp.create()): AudioRef = runBlocking {
-        KtorEngineApi("http://127.0.0.1:${server.localPort}", engine).use { it.uploadAudio("take.wav", byteArrayOf(1, 2, 3, 4)) }
+        matchingEngine("http://127.0.0.1:${server.localPort}", engine).use { it.uploadAudio("take.wav", byteArrayOf(1, 2, 3, 4)) }
     }
 
     @Test

@@ -44,7 +44,7 @@ sealed interface Check {
 /** What the monitor needs from the app: the stored target and the network. */
 interface ConnectionHost {
     fun target(): Target?
-    /** GET /v1/health at [url] for the engine's interface version, then GET /v1/devices/me with the stored credential. */
+    /** GET /v1/devices/me at [url] with the stored credential (it carries the engine's interface version); GET /v1/health without one. */
     suspend fun check(url: String): Check
     /** The address the engine with [serverId] advertises on the local network now, if it can be found. */
     suspend fun find(serverId: String): String?
@@ -175,6 +175,7 @@ class ConnectionMonitor(
                 }
                 is Check.Mismatch -> {
                     _state.value = ConnectionState.NeedsUpdate(name, r.update)
+                    _lastAnswered.value = now()
                     failingSince = null
                     failures = 0
                     backoff = FIRST_BACKOFF_MS

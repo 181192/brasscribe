@@ -45,7 +45,8 @@ class FixtureEngineApi(
         interfaceVersion = Wire.INTERFACE_VERSION)
     override suspend fun pair(code: String, deviceName: String?, platform: String?) = PairResponse("fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
     override suspend fun thisDevice() = DeviceSelf("fixture-device", "Phone", "android", "2026-01-01T00:00:00+00:00",
-        "2026-01-01T00:00:00+00:00", true, SERVER_ID, "2099-01-01T00:00:00+00:00", "2099-01-01T00:00:00+00:00")
+        "2026-01-01T00:00:00+00:00", true, SERVER_ID, "2099-01-01T00:00:00+00:00", "2099-01-01T00:00:00+00:00",
+        interfaceVersion = Wire.INTERFACE_VERSION)
     override suspend fun rotateToken() = RotateResponse("fixture-token", "fixture-device")
     override suspend fun unpairThisDevice() = Unit
     override suspend fun requestPairing(deviceName: String?, platform: String?) =

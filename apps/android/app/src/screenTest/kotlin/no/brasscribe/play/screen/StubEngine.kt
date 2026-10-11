@@ -9,11 +9,14 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.concurrent.thread
 
 /**
- * An engine on this device that answers `GET /v1/health` with [interfaceVersion] (null: with none, as an engine
- * from before the number did) and remembers every request it got. Anything else it is asked gets 404: a test
- * reads [requests] to see that nothing else was asked.
+ * An engine on this device that answers `GET /v1/health`, and `GET /v1/devices/me` to the phone that holds [TOKEN],
+ * with [interfaceVersion] as its interface version (as it is written in JSON; null: with none, as an engine from
+ * before the number did), and remembers every request it got. Anything else it is asked gets 404: a test reads
+ * [requests] to see that nothing else was asked.
  */
-class StubEngine(private val interfaceVersion: Int?, private val name: String = "Brasscribe on Studio") : Closeable {
+class StubEngine(@Volatile var interfaceVersion: String?, private val serverId: String = SERVER_ID, private val name: String = "Brasscribe on Studio") : Closeable {
+    constructor(interfaceVersion: Int?) : this(interfaceVersion?.toString())
+
     private val server = ServerSocket(0, 16, InetAddress.getByName("127.0.0.1"))
     val url: String = "http://127.0.0.1:${server.localPort}"
     val address: String = "127.0.0.1:${server.localPort}"
@@ -41,15 +44,22 @@ class StubEngine(private val interfaceVersion: Int?, private val name: String = 
                 head.append(b.toChar())
             }
             val lines = head.split("\r\n")
-            val length = lines.firstOrNull { it.startsWith("content-length:", ignoreCase = true) }?.substringAfter(':')?.trim()?.toLong() ?: 0
-            repeat(length.toInt()) { if (input.read() < 0) return }
+            fun header(name: String) = lines.firstOrNull { it.startsWith("$name:", ignoreCase = true) }?.substringAfter(':')?.trim()
+            repeat(header("content-length")?.toInt() ?: 0) { if (input.read() < 0) return }
             val (method, target) = lines.first().split(" ")
             val path = target.substringBefore('?')
             requests += "$method $path"
-            val (status, body) = if (method == "GET" && path == "/v1/health") {
-                val version = interfaceVersion?.let { ""","interface_version":$it""" }.orEmpty()
-                "200 OK" to """{"status":"ok","version":"0.0.0","device":"cpu","auth_required":true,"server_id":"$SERVER_ID","server_name":"$name"$version}"""
-            } else "404 Not Found" to """{"detail":"not found"}"""
+            val version = interfaceVersion?.let { ""","interface_version":$it""" }.orEmpty()
+            val (status, body) = when {
+                method == "GET" && path == "/v1/health" ->
+                    "200 OK" to """{"status":"ok","version":"0.0.0","device":"cpu","auth_required":true,"server_id":"$serverId","server_name":"$name"$version}"""
+                method == "GET" && path == "/v1/devices/me" && header("authorization") == "Bearer $TOKEN" ->
+                    "200 OK" to """{"device_id":"d1","name":"Phone","platform":"android","paired_at":"2026-01-01T00:00:00+00:00",""" +
+                        """"last_seen":"2026-01-01T00:00:00+00:00","online":true,"server_id":"$serverId",""" +
+                        """"rotate_after":"2099-01-01T00:00:00+00:00","expires_if_idle_after":"2099-01-01T00:00:00+00:00"$version}"""
+                method == "GET" && path == "/v1/devices/me" -> "401 Unauthorized" to """{"detail":"unknown token"}"""
+                else -> "404 Not Found" to """{"detail":"not found"}"""
+            }
             val bytes = body.toByteArray()
             out.write("HTTP/1.1 $status\r\nContent-Type: application/json\r\nContent-Length: ${bytes.size}\r\n\r\n".toByteArray())
             out.write(bytes)
@@ -61,5 +71,8 @@ class StubEngine(private val interfaceVersion: Int?, private val name: String = 
 
     companion object {
         const val SERVER_ID = "0123456789abcdef0123456789abcdef"
+
+        /** The credential of the phone this engine knows. */
+        const val TOKEN = "stub-token"
     }
 }

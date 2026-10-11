@@ -635,6 +635,7 @@
     <!-- The computer answers, and its interface version is not this app's: which of the two to update. The same
          sentence in the connection row, on the pairing screen and as the reason a score was not made. -->
     <string name="conn_update_app">Update this app. Bandroom on your computer is newer than this app, and they only work together when both are up to date.</string>
+    <string name="conn_get_app_update">Get the latest version</string>
     <string name="conn_update_computer">Update Bandroom on your computer. This app is newer than Bandroom there, and they only work together when both are up to date.</string>
     <string name="conn_allow">Allow</string>
     <string name="conn_pair_again">Pair this phone again</string>

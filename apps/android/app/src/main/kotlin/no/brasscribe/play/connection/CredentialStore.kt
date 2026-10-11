@@ -19,6 +19,16 @@ interface SecretCipher {
     fun decrypt(sealed: ByteArray): ByteArray
 }
 
+/**
+ * The cipher the app keeps its credentials with: the phone's Keystore ([KeystoreCipher]). The screen tests on the JVM,
+ * where there is no Android Keystore, put their own in before a credential is kept.
+ */
+object CredentialCipher : SecretCipher {
+    @Volatile var cipher: SecretCipher = KeystoreCipher()
+    override fun encrypt(plain: ByteArray): ByteArray = cipher.encrypt(plain)
+    override fun decrypt(sealed: ByteArray): ByteArray = cipher.decrypt(sealed)
+}
+
 /** What this phone keeps per computer it has paired with. */
 @Serializable
 data class Credential(

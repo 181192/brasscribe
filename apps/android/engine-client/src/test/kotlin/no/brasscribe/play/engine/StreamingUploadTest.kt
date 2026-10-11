@@ -70,7 +70,7 @@ class StreamingUploadTest {
             sent = drain(body, null)
             respond(audioRef, HttpStatusCode.Created, json)
         }
-        val api = KtorEngineApi("http://host", engine)
+        val api = matchingEngine("http://host", engine)
         val runtime = Runtime.getRuntime()
         System.gc()
         val before = runtime.totalMemory() - runtime.freeMemory()
@@ -100,7 +100,7 @@ class StreamingUploadTest {
             drain(req.body, received)
             respond("""{"id":"r1","profile":"solo","status":"queued","created":1.5,"stages":[]}""", HttpStatusCode.Accepted, json)
         }
-        val api = KtorEngineApi("http://host", engine)
+        val api = matchingEngine("http://host", engine)
         api.createJobFromUpload(UploadSource.of(file, "take \"1\".m4a"), Profile.SOLO, "Take 1")
         assertEquals("/v1/jobs/upload", path)
         val body = received.toByteArray()
@@ -117,7 +117,7 @@ class StreamingUploadTest {
         var opened = 0
         val bytes = ByteArray(1000) { it.toByte() }
         val source = UploadSource("take.wav", bytes.size.toLong()) { opened++; bytes.inputStream() }
-        val api = KtorEngineApi("http://host", MockEngine { req -> drain(req.body, null); respond(audioRef, HttpStatusCode.Created, json) })
+        val api = matchingEngine("http://host", MockEngine { req -> drain(req.body, null); respond(audioRef, HttpStatusCode.Created, json) })
         api.uploadAudio(source)
         api.uploadAudio(source)
         assertEquals(2, opened)

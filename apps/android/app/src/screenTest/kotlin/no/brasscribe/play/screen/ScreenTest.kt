@@ -190,30 +190,45 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
     protected fun waitForTag(tag: String, ms: Long = 60_000) =
         waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
-    private var olderComputer: StubEngine? = null
+    private var otherComputer: StubEngine? = null
 
+    /** The computer a test paired the phone with is stopped and forgotten, so the next test starts with nothing paired. */
     @After
-    fun stopTheOlderComputer() {
-        olderComputer?.close()
-        olderComputer = null
+    fun forgetTheOtherComputer() {
+        otherComputer?.close()
+        otherComputer = null
+        rule.runOnUiThread {
+            if (container.settings.serverId == StubEngine.SERVER_ID) {
+                container.credentials.remove(StubEngine.SERVER_ID)
+                container.settings.paired = false
+                vm.connection.retry()
+            }
+        }
+    }
+
+    /** A phone paired with the engine at [url], holding the credential that engine knows ([StubEngine.TOKEN]). */
+    protected fun pairedWith(url: String) {
+        rule.runOnUiThread {
+            container.fixtureSource = null
+            container.settings.url = url
+            container.settings.serverId = StubEngine.SERVER_ID
+            container.settings.serverName = "Brasscribe on Studio"
+            container.credentials.put(no.brasscribe.play.connection.Credential(StubEngine.SERVER_ID, StubEngine.TOKEN, "d1", "Brasscribe on Studio", url))
+            container.settings.paired = true
+            vm.connection.retry()
+            vm.home()
+        }
     }
 
     /**
-     * The pairing screen of a phone paired with a computer whose Bandroom is from before this app's interface
-     * version: the connection says to update Bandroom, and nothing else is asked of it.
+     * A phone paired with a computer whose interface version is not this app's: older (its Bandroom is from before
+     * the number: update Bandroom), or with [newer], ahead of the app (update the app). The connection says which,
+     * and nothing else is asked of that computer.
      */
-    protected fun aComputerThatNeedsAnUpdate() {
-        val engine = olderComputer ?: StubEngine(interfaceVersion = null).also { olderComputer = it }
-        rule.runOnUiThread {
-            container.fixtureSource = null
-            container.settings.url = engine.url
-            container.settings.serverId = StubEngine.SERVER_ID
-            container.settings.serverName = "Brasscribe on Studio"
-            container.settings.paired = true
-            vm.connection.retry()
-            vm.navigate(no.brasscribe.play.Screen.SETTINGS)
-            vm.navigate(no.brasscribe.play.Screen.COMPANION)
-        }
+    protected fun aComputerWithAnotherVersion(newer: Boolean = false) {
+        otherComputer?.close()
+        val engine = StubEngine(if (newer) no.brasscribe.play.engine.Wire.INTERFACE_VERSION + 1 else null).also { otherComputer = it }
+        pairedWith(engine.url)
         waitUntil(10_000) { vm.connection.state.value is no.brasscribe.play.connection.ConnectionState.NeedsUpdate }
         rule.waitForIdle()
     }

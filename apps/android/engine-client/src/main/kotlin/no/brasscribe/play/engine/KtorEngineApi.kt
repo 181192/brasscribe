@@ -4,10 +4,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.onUpload
+import io.ktor.client.plugins.plugin
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.forms.ChannelProvider
@@ -28,6 +30,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -47,6 +50,10 @@ import no.brasscribe.play.model.CompositionJson
 /**
  * HTTP client for a scribe engine. Loopback and emulator-host clients are trusted by the engine;
  * LAN clients pair once with the code the engine prints and then send the bearer [token].
+ *
+ * Every request passes one gate ([interfaceMatch]): an engine whose interface version is not this app's is asked
+ * for its health only, and anything else fails with [InterfaceMismatchException] before it is sent. Until the
+ * engine has said its number, the first request asks its health first.
  */
 class KtorEngineApi(
     private val baseUrl: String,
@@ -61,6 +68,34 @@ class KtorEngineApi(
         install(HttpTimeout)
         defaultRequest { url(baseUrl.trimEnd('/') + "/") }
         configure()
+    }
+
+    /**
+     * What this engine's last answer said about its interface version (`GET /v1/health`, or a paired phone's own
+     * `GET /v1/devices/me`). Null until it has answered, and again once a request did not get through: the engine at
+     * the address may then be another one, or the same one after its update.
+     */
+    @Volatile
+    var interfaceMatch: InterfaceMatch? = null
+        internal set
+
+    init {
+        http.plugin(HttpSend).intercept { request ->
+            val path = request.url.buildString().substringBefore('?')
+            val asksHealth = path.endsWith("/v1/health")
+            // A paired phone's heartbeat says the number itself, so it may be the first thing asked.
+            val heartbeat = request.method == HttpMethod.Get && path.endsWith("/v1/devices/me") && interfaceMatch == null
+            if (!asksHealth && !heartbeat) {
+                if (interfaceMatch == null) health()
+                interfaceMatch?.takeIf { it != InterfaceMatch.MATCH }?.let { throw InterfaceMismatchException(it) }
+            }
+            try {
+                execute(request)
+            } catch (e: java.io.IOException) {
+                interfaceMatch = null
+                throw e
+            }
+        }
     }
 
     private fun HttpRequestBuilder.auth() {
@@ -79,7 +114,24 @@ class KtorEngineApi(
         return this
     }
 
-    override suspend fun health(): Health = http.get("v1/health") { auth() }.ok().body()
+    /**
+     * The number is read before the rest of the answer, so an engine whose answer this app cannot read in full is
+     * still known as one with another interface version (and not as one that cannot be reached).
+     */
+    override suspend fun health(): Health {
+        val text = http.get("v1/health") { auth() }.ok().bodyAsText()
+        val version = runCatching {
+            InterfaceVersionSerializer.of((BrasscribeJson.parseToJsonElement(text) as? kotlinx.serialization.json.JsonObject)?.get("interface_version"))
+        }.getOrNull()
+        val match = InterfaceMatch.of(version)
+        interfaceMatch = match
+        return try {
+            BrasscribeJson.decodeFromString(Health.serializer(), text)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            if (match != InterfaceMatch.MATCH) throw InterfaceMismatchException(match)
+            throw e
+        }
+    }
 
     // The current token goes along: the engine then replaces this device's entry instead of adding a second one.
     override suspend fun pair(code: String, deviceName: String?, platform: String?): PairResponse =
@@ -89,7 +141,8 @@ class KtorEngineApi(
             setBody(PairRequest(code, deviceName, platform))
         }.ok().body<PairResponse>().also { token = it.token }
 
-    override suspend fun thisDevice(): DeviceSelf = http.get("v1/devices/me") { auth() }.ok().body()
+    override suspend fun thisDevice(): DeviceSelf =
+        http.get("v1/devices/me") { auth() }.ok().body<DeviceSelf>().also { interfaceMatch = InterfaceMatch.of(it.interfaceVersion) }
 
     override suspend fun rotateToken(): RotateResponse = http.post("v1/devices/me/rotate") { auth() }.ok().body()
 
@@ -197,6 +250,9 @@ class KtorEngineApi(
             } catch (e: Downstream) {
                 throw e.cause!!
             } catch (e: CancellationException) {
+                throw e
+            } catch (e: InterfaceMismatchException) {
+                // The engine that answers now has another interface version: the stream is not asked for again.
                 throw e
             } catch (e: EngineException) {
                 if (e.status != 0) throw e

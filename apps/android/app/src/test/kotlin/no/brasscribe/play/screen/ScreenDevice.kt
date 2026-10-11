@@ -73,6 +73,11 @@ object ScreenDevice {
                     ui.declaredMethods.first { it.name == "setBehavior" }.apply { isAccessible = true }
                         .invoke(display, member("STANDARD_STATUS_BAR"), member("GESTURAL_NAVIGATION"))
                 }
+                // The JVM has no Android Keystore: a credential a test gives the phone is kept as it is.
+                no.brasscribe.play.connection.CredentialCipher.cipher = object : no.brasscribe.play.connection.SecretCipher {
+                    override fun encrypt(plain: ByteArray) = plain
+                    override fun decrypt(sealed: ByteArray) = sealed
+                }
                 // Nothing moves by itself: the phone's animations are off, as they are on the emulators the device tests
                 // run on, so a score is put at its place at once and a screenshot does not catch it on its way.
                 Settings.Global.putFloat(RuntimeEnvironment.getApplication().contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)

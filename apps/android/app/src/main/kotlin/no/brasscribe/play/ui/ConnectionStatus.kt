@@ -21,10 +21,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import no.scribe.design.ScribeSpace
 import no.scribe.design.ScribeTheme
+import no.brasscribe.play.ErrorWords
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.connection.ConnectionState
+import no.brasscribe.play.engine.InterfaceMatch
 
 /** The sentence for [state], in this language. */
 @Composable
@@ -34,7 +36,7 @@ fun connectionText(vm: PlayViewModel, state: ConnectionState): String = when (st
     is ConnectionState.Offline -> stringResource(R.string.conn_offline)
     is ConnectionState.NeedsPairing -> stringResource(R.string.conn_needs_pairing)
     is ConnectionState.NetworkClosed -> stringResource(R.string.conn_network_closed)
-    is ConnectionState.NeedsUpdate -> stringResource(no.brasscribe.play.ErrorWords.update(state.update))
+    is ConnectionState.NeedsUpdate -> stringResource(ErrorWords.update(state.update))
 }
 
 fun connectionIcon(state: ConnectionState): Int = when (state) {
@@ -75,6 +77,16 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
         s is ConnectionState.Offline && s.paired -> stringResource(R.string.companion_connect) to { vm.connection.retry() }
         s is ConnectionState.Offline && !onConnectionScreen -> stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
         s is ConnectionState.NeedsPairing && !onConnectionScreen -> stringResource(R.string.conn_pair_again) to { vm.navigate(Screen.COMPANION) }
+        // The app is the one behind: the page its latest release is on. A phone with no browser says so.
+        s is ConnectionState.NeedsUpdate && s.update == InterfaceMatch.UPDATE_APP -> stringResource(R.string.conn_get_app_update) to {
+            runCatching {
+                context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(BANDROOM_DOWNLOAD))
+                    .addCategory(android.content.Intent.CATEGORY_BROWSABLE))
+            }.onFailure { vm.say(R.string.bandroom_no_browser) }
+            Unit
+        }
+        // Bandroom is the one behind: the pairing screen says where its latest one is, to type on the computer.
+        s is ConnectionState.NeedsUpdate && !onConnectionScreen -> stringResource(R.string.bandroom_get_title) to { vm.navigate(Screen.COMPANION) }
         else -> null
     }
     val words = @Composable { m: Modifier ->

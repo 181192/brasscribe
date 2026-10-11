@@ -1,5 +1,6 @@
 package no.brasscribe.play
 
+import no.brasscribe.play.engine.Wire
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
@@ -124,7 +125,7 @@ class MainActivity : ComponentActivity() {
             intent.getStringExtra(JobNotices.EXTRA_JOB)?.takeIf(JobNotices::isJobId)?.let(vm::openFinishedJob)
             return
         }
-        if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == no.brasscribe.play.engine.Wire.PAIR_SCHEME) {
+        if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == Wire.PAIR_SCHEME) {
             vm.openPairLink(intent.data.toString())
             return
         }

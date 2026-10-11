@@ -17,7 +17,7 @@ import no.brasscribe.play.model.KotlinCoreBridge
 import no.brasscribe.play.core.RustCoreBridge
 import no.brasscribe.play.connection.Credential
 import no.brasscribe.play.connection.CredentialStore
-import no.brasscribe.play.connection.KeystoreCipher
+import no.brasscribe.play.connection.CredentialCipher
 import no.brasscribe.play.connection.PrefsStore
 
 /**
@@ -76,7 +76,7 @@ class EngineSettings(context: Context, val credentials: CredentialStore) {
  * pitch model. Created once by [PlayApplication].
  */
 class AppContainer(private val context: Context) {
-    val credentials = CredentialStore(PrefsStore(context.getSharedPreferences(CREDENTIALS_PREFS, Context.MODE_PRIVATE)), KeystoreCipher())
+    val credentials = CredentialStore(PrefsStore(context.getSharedPreferences(CREDENTIALS_PREFS, Context.MODE_PRIVATE)), CredentialCipher)
     val settings = EngineSettings(context, credentials)
     private val prefs = context.getSharedPreferences("play", Context.MODE_PRIVATE)
     private val appearanceStore = AppearanceStore(PrefsStore(context.getSharedPreferences(AppearanceStore.PREFS, Context.MODE_PRIVATE)))

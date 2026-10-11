@@ -52,7 +52,7 @@ import no.brasscribe.play.capture.CaptureController
 import no.brasscribe.play.engine.EngineException
 import no.brasscribe.play.engine.KtorEngineApi
 import no.brasscribe.play.engine.PairLink
-import no.brasscribe.play.engine.requireSameInterface
+import no.brasscribe.play.engine.InterfaceMismatchException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -343,6 +343,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private val renderedLevel = no.brasscribe.play.playback.LevelMatch()
 
     init {
+        // The computer's scores follow the connection: gone from the list when it cannot be asked for them (not
+        // connected, pair again, one of the two needs an update), and fetched again when it can.
+        viewModelScope.launch {
+            connection.state.map { it::class }.distinctUntilChanged().drop(1).collect { refreshComputerScores() }
+        }
         // Leaving a place stops "Listen to this bar" (and asking the computer), whichever way the user left.
         viewModelScope.launch {
             backStack.map { it.last() }.distinctUntilChanged().drop(1).collect { top ->
@@ -824,6 +829,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             } catch (e: Exception) {
                 transcribe.update { it.copy(running = false, error = e.message ?: e.javaClass.simpleName) }
                 keepRecording(s)
+                refused(e)
                 showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString(),
                     ErrorWords.of(e).takeIf { it != R.string.error_generic })
             }
@@ -1008,6 +1014,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             } catch (e: Exception) {
                 // In the player's words; the engine's or the core's own text goes to the log only.
                 android.util.Log.w(TAG, "re-arrangement failed", e)
+                refused(e)
                 say(ErrorWords.of(e))
             } finally {
                 busy.value = false
@@ -1025,23 +1032,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         !r.onDevice && output.value.seat != null && r.composition != null &&
             (seatFellBack || r.composition.arrangementString("seat") == null)
 
-    /**
-     * The engine to send a job to. Its health is asked first: with another interface version than this app's
-     * nothing is sent, and the connection row says which of the two to update.
-     */
-    internal suspend fun engineForJob(): EngineApi {
-        val engine = container.engine() ?: throw NoCompanionException()
-        try {
-            engine.health().requireSameInterface()
-        } catch (e: no.brasscribe.play.engine.InterfaceMismatchException) {
-            connection.retry()
-            throw e
-        }
-        return engine
-    }
-
     private suspend fun rerunWithEngine(r: TranscriptionResult, opts: OutputOptions): TranscriptionResult {
-        val engine = engineForJob()
+        val engine = container.engine() ?: throw NoCompanionException()
         val core = opts.toCore()
         // Re-arrangements skip the MP3 render: it is one more MuseScore run on the engine's machine.
         seatFellBack = false
@@ -1067,7 +1059,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private fun estimateDeviceSeconds(audio: PcmAudio): Int = maxOf(1, (audio.seconds / 20).toInt())
 
     private suspend fun transcribeWithEngine(s: Source, p: Profile): TranscriptionResult {
-        val engine: EngineApi = engineForJob()
+        val engine: EngineApi = container.engine() ?: throw NoCompanionException()
         val stages = FixtureEngineApi.stagesOf(p).size
         transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, Product.computerName(this)))
@@ -1311,7 +1303,21 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     fun refreshComputerScores() {
         val engine = container.engine()?.takeIf { !container.usingFixture && connection.state.value !is ConnectionState.NeedsUpdate }
             ?: run { computerJobs.value = emptyList(); return }
-        viewModelScope.launch { runCatching { engine.jobs() }.onSuccess { computerJobs.value = it } }
+        viewModelScope.launch {
+            runCatching { engine.jobs() }.onSuccess { computerJobs.value = it }.onFailure(::refused)
+        }
+    }
+
+    /**
+     * The computer refused a request because its interface version is not this app's: its scores are no longer
+     * listed (they cannot be opened), and the connection row says which of the two to update without waiting for the
+     * next heartbeat. True when that was why.
+     */
+    private fun refused(e: Throwable): Boolean {
+        if (e !is InterfaceMismatchException) return false
+        computerJobs.value = emptyList()
+        if (connection.state.value !is ConnectionState.NeedsUpdate) connection.retry()
+        return true
     }
 
     fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
@@ -1344,6 +1350,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // and no score that could not be made: trying again opens it again, and the recording in hand, if there
                 // is one, has nothing to do with it.
                 failedOpen = { openEntry(entry, review, stand) }
+                refused(e)
                 showProblem(Problem.OPEN_FAILED, e.message, ErrorWords.of(e).takeIf { it != R.string.error_generic })
             } finally {
                 openingScore.value = null
@@ -1737,7 +1744,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     throw e
                 } catch (e: EngineException) {
                     if (e.status != 0) { failed(e); return@launch }
-                } catch (e: no.brasscribe.play.engine.InterfaceMismatchException) {
+                } catch (e: InterfaceMismatchException) {
                     failed(e); return@launch
                 } catch (e: Exception) {
                     // Not reachable at this address: try the next one.
@@ -1754,8 +1761,6 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      * neither a valid credential nor a code.
      */
     private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.brasscribe.play.engine.Health, code: String): Boolean {
-        // Another interface version: nothing more is sent to this engine, no code and no request to be let in.
-        health.requireSameInterface()
         val store = container.credentials
         // Only this phone itself or the emulator's host is let in without pairing; any other address that
         // says so pairs all the same.
@@ -1803,7 +1808,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         android.util.Log.w(TAG, "connect failed", e)
         lastConnectError = e.message ?: e.javaClass.simpleName
         val text = when {
-            e is no.brasscribe.play.engine.InterfaceMismatchException -> res.getString(ErrorWords.update(e.update))
+            e is InterfaceMismatchException -> res.getString(ErrorWords.update(e.update))
             (e as? EngineException)?.status == 403 -> res.getString(R.string.pair_code_wrong)
             (e as? EngineException)?.status == 429 -> res.getString(R.string.pair_code_locked)
             else -> res.getString(R.string.companion_failed_plain)

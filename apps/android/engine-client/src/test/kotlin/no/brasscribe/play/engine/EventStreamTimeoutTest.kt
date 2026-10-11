@@ -56,7 +56,7 @@ class EventStreamTimeoutTest {
     @Test
     fun aQuietStretchLongerThanOkHttpsReadTimeoutKeepsTheStream() = runBlocking {
         serve()
-        KtorEngineApi("http://127.0.0.1:${server.localPort}", OkHttp.create()).use { api ->
+        matchingEngine("http://127.0.0.1:${server.localPort}", OkHttp.create()).use { api ->
             val events = api.events("j").toList()
             assertEquals(listOf(0, 1), events.map { it.id })
             assertEquals("one connection for the whole job", 1, eventConnections.get())

@@ -191,7 +191,7 @@ class BassTabTest {
                 else -> respond("""{"detail":"Not Found"}""", HttpStatusCode.NotFound, json)
             }
         }
-        val api = KtorEngineApi("http://host", engine, token = "t")
+        val api = matchingEngine("http://host", engine, token = "t")
         assertEquals(tabOf(text("tab.json")), api.tab("r1"))
         assertEquals(text("tab.musicxml"), api.musicXml("r1"))
         assertEquals("%PDF-1.7", String(api.pdf("r1")))
@@ -209,7 +209,7 @@ class BassTabTest {
             body = String(req.body.toByteArray())
             respond(text("job.json"), HttpStatusCode.Accepted, json)
         }
-        val api = KtorEngineApi("http://host", engine)
+        val api = matchingEngine("http://host", engine)
         fun field(name: String) = Regex("name=\"?$name\"?\\s*\\r\\n(?:[^\\r\\n]+\\r\\n)*\\r\\n([^\\r\\n]*)\\r\\n").find(body)?.groupValues?.get(1)
         val job = api.createJobFromUpload("take.wav", ByteArray(10), Profile.BASS_TAB, "Take 1",
             tab = TabOptions(FrettedInstrument.BASS_5, capo = 2, recording = Recording.INSTRUMENT, octave = Octave.UP))
@@ -225,7 +225,7 @@ class BassTabTest {
     fun aComputerThatCannotWriteTabIsAnErrorTheAppCanName() = runTest {
         // The engine's 422 bodies: the code first, then its English message.
         val refused = """{"code":"core_missing","detail":"this engine cannot write tab: scribe-core is not installed with it (build it with `cargo build --release -p scribe-cli` in core/)"}"""
-        fun api(body: String, status: HttpStatusCode = HttpStatusCode.UnprocessableEntity) = KtorEngineApi("http://host", MockEngine { respond(body, status, json) })
+        fun api(body: String, status: HttpStatusCode = HttpStatusCode.UnprocessableEntity) = matchingEngine("http://host", MockEngine { respond(body, status, json) })
         suspend fun refusal(api: KtorEngineApi) = runCatching { api.createJob(JobCreate.bassTab("a1")) }.exceptionOrNull() as EngineException
 
         val missing = refusal(api(refused))

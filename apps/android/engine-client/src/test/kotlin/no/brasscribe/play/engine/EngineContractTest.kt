@@ -86,7 +86,7 @@ class EngineContractTest {
         }
         // The one exception: the interface version must be readable as missing, since an engine from before the
         // number is told apart by not sending it (InterfaceMatch), and the app then says to update Bandroom.
-        assertEquals("required in the spec but defaulted in Kotlin", listOf("Health.interface_version"), wrong)
+        assertEquals("required in the spec but defaulted in Kotlin", listOf("Health.interface_version", "DeviceSelf.interface_version"), wrong.sortedDescending())
     }
 
     @Test

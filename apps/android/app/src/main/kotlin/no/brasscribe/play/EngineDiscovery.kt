@@ -1,5 +1,6 @@
 package no.brasscribe.play
 
+import no.brasscribe.play.engine.Wire
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
@@ -43,7 +44,7 @@ class EngineDiscovery(private val context: Context) {
             override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
         }
         listener = l
-        runCatching { nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, l) }.onFailure { listener = null }
+        runCatching { nsd.discoverServices(Wire.SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, l) }.onFailure { listener = null }
     }
 
     @Synchronized
@@ -117,8 +118,6 @@ class EngineDiscovery(private val context: Context) {
     }
 
     companion object {
-        const val SERVICE_TYPE = no.brasscribe.play.engine.Wire.SERVICE_TYPE
-
         /**
          * Base URL for a resolved service. Engines also advertise VPN and virtual-adapter addresses, so a private
          * (RFC 1918) IPv4 wins, then any IPv4, then a routable IPv6 (link-local needs a scope a URL can't carry).

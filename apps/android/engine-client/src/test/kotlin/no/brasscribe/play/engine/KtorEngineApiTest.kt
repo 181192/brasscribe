@@ -29,7 +29,7 @@ class KtorEngineApiTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val api = KtorEngineApi("http://10.0.2.2:8765", engine)
+        val api = matchingEngine("http://10.0.2.2:8765", engine)
         api.pair("123456", "Pixel")
         val j = api.job("r1")
         assertEquals(JobStatus.QUEUED, j.status)
@@ -45,7 +45,7 @@ class KtorEngineApiTest {
             body = String(req.body.toByteArray())
             respond("""{"token":"new","device_id":"d1","server_id":"s1","server_name":"Brasscribe on Mac"}""", HttpStatusCode.OK, json)
         }
-        val api = KtorEngineApi("http://host", engine, token = "old")
+        val api = matchingEngine("http://host", engine, token = "old")
         val r = api.pair("123456", "Pixel")
         assertEquals("Bearer old", auth)
         assertTrue(body, body.contains("\"platform\":\"android\""))
@@ -61,7 +61,7 @@ class KtorEngineApiTest {
             when (req.url.encodedPath) {
                 "/v1/devices/me" -> respond("""{"device_id":"d1","name":"Pixel","platform":"android","paired_at":"2026-09-01T10:00:00+00:00",
                     "last_seen":"2026-09-27T10:00:00+00:00","online":true,"server_id":"s1","rotate_after":"2026-10-01T10:00:00+00:00",
-                    "expires_if_idle_after":"2026-12-26T10:00:00+00:00","rotated_at":null}""", HttpStatusCode.OK, json)
+                    "expires_if_idle_after":"2026-12-26T10:00:00+00:00","rotated_at":null,"interface_version":${Wire.INTERFACE_VERSION}}""", HttpStatusCode.OK, json)
                 "/v1/devices/me/rotate" -> respond("""{"token":"t2","device_id":"d1"}""", HttpStatusCode.OK, json)
                 "/v1/pair/requests" -> respond("""{"request_id":"q1","name":"Pixel","platform":"android","match_code":"4821",
                     "created_at":"2026-09-27T10:00:00+00:00","status":"pending"}""", HttpStatusCode.Accepted, json)
@@ -70,7 +70,7 @@ class KtorEngineApiTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val api = KtorEngineApi("http://host", engine, token = "t1")
+        val api = matchingEngine("http://host", engine, token = "t1")
         assertEquals("2026-10-01T10:00:00+00:00", api.thisDevice().rotateAfter)
         assertEquals("t2", api.rotateToken().token)
         assertEquals("4821", api.requestPairing("Pixel").matchCode)
@@ -80,7 +80,7 @@ class KtorEngineApiTest {
 
     @Test
     fun revokedCredentialIs401() = runTest {
-        val api = KtorEngineApi("http://host", MockEngine { respond("""{"detail":"unknown token"}""", HttpStatusCode.Unauthorized, json) }, token = "x")
+        val api = matchingEngine("http://host", MockEngine { respond("""{"detail":"unknown token"}""", HttpStatusCode.Unauthorized, json) }, token = "x")
         assertEquals(401, (runCatching { api.thisDevice() }.exceptionOrNull() as EngineException).status)
     }
 
@@ -93,7 +93,7 @@ class KtorEngineApiTest {
             body = req.body
             respond(job, HttpStatusCode.Accepted, json)
         }
-        val api = KtorEngineApi("http://host:8765/", engine)
+        val api = matchingEngine("http://host:8765/", engine)
         val j = api.createJobFromUpload("take.wav", ByteArray(10), Profile.SOLO, "Take 1")
         assertEquals("r1", j.id)
         assertTrue(body!!.contentType.toString().startsWith("multipart/form-data"))
@@ -101,7 +101,7 @@ class KtorEngineApiTest {
 
     @Test
     fun mapsErrorsToEngineException() = runTest {
-        val api = KtorEngineApi("http://host", MockEngine { respond("""{"detail":"bad code"}""", HttpStatusCode.Forbidden, json) })
+        val api = matchingEngine("http://host", MockEngine { respond("""{"detail":"bad code"}""", HttpStatusCode.Forbidden, json) })
         val e = runCatching { api.pair("0", null) }.exceptionOrNull() as EngineException
         assertEquals(403, e.status)
     }
@@ -120,7 +120,7 @@ class KtorEngineApiTest {
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val api = KtorEngineApi("http://host", engine)
+        val api = matchingEngine("http://host", engine)
         val note = api.evidence("r1").notes.single()
         assertEquals(0.5, note.confidence, 0.0)
         assertEquals(ModelHeard("basic-pitch", "Basic Pitch", false, 69), note.models.single())
@@ -143,7 +143,7 @@ class KtorEngineApiTest {
             afterParam = req.url.parameters["after"]
             respond(stream, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/event-stream"))
         }
-        val events = KtorEngineApi("http://host", engine).events("r1").toList()
+        val events = matchingEngine("http://host", engine).events("r1").toList()
         assertEquals("-1", afterParam)
         assertEquals(listOf(0, 1, 2), events.map { it.id })
         val tracker = ProgressTracker(stagesTotal = 2)
@@ -159,10 +159,11 @@ class KtorEngineApiTest {
             requests += req.url.encodedPath
             throw java.io.IOException("connection refused")
         }
-        val e = runCatching { KtorEngineApi("http://host", engine).events("r1").toList() }.exceptionOrNull()
+        val e = runCatching { matchingEngine("http://host", engine).events("r1").toList() }.exceptionOrNull()
         assertTrue("$e", e is EngineException && e.status == 0)
-        // Each attempt is one stream request; the status check is never reached, and never escapes the retries.
-        assertEquals(List(6) { "/v1/jobs/r1/events" }, requests)
+        // The first attempt is the stream request. After it the engine may be another one, so each further attempt asks
+        // its health first, which does not get through either; the status check is never reached, and never escapes the retries.
+        assertEquals(listOf("/v1/jobs/r1/events") + List(5) { "/v1/health" }, requests)
     }
 
     @Test
@@ -181,10 +182,13 @@ class KtorEngineApiTest {
                 }
                 // The engine drops out for the status check right after the first stream.
                 "/v1/jobs/r1" -> { statusChecks++; throw java.io.IOException("unreachable") }
+                // Back again, it is asked which engine it is before the stream is asked for again.
+                "/v1/health" -> respond("""{"version":"1","device":"cpu","auth_required":false,"server_id":"s1","server_name":"Brasscribe on Mac",
+                    "interface_version":${Wire.INTERFACE_VERSION}}""", HttpStatusCode.OK, json)
                 else -> respond("", HttpStatusCode.NotFound)
             }
         }
-        val events = KtorEngineApi("http://host", engine).events("r1").toList()
+        val events = matchingEngine("http://host", engine).events("r1").toList()
         assertEquals(listOf(2, 3), events.map { it.id })
         assertEquals(1, statusChecks)
         assertEquals(listOf("-1", "2"), afters)
@@ -194,7 +198,7 @@ class KtorEngineApiTest {
     fun anErrorFromTheEngineEndsTheStreamAtOnce() = runTest {
         var requests = 0
         val engine = MockEngine { requests++; respond("""{"detail":"no such job"}""", HttpStatusCode.NotFound, json) }
-        val e = runCatching { KtorEngineApi("http://host", engine).events("r1").toList() }.exceptionOrNull()
+        val e = runCatching { matchingEngine("http://host", engine).events("r1").toList() }.exceptionOrNull()
         assertTrue("$e", e is EngineException && e.status == 404)
         assertEquals(1, requests)
     }
@@ -204,7 +208,7 @@ class KtorEngineApiTest {
         var requests = 0
         val stream = "id: 0\nevent: job\ndata: {\"id\":0,\"type\":\"job\",\"status\":\"queued\",\"time\":1.0}\n\n"
         val engine = MockEngine { requests++; respond(stream, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/event-stream")) }
-        val e = runCatching { KtorEngineApi("http://host", engine).events("r1").collect { error("collector failed") } }.exceptionOrNull()
+        val e = runCatching { matchingEngine("http://host", engine).events("r1").collect { error("collector failed") } }.exceptionOrNull()
         assertEquals("collector failed", e?.message)
         assertEquals(1, requests)
     }
@@ -240,7 +244,7 @@ class KtorEngineApiTest {
                 else -> respond("""{"detail":"input audio no longer exists, or is not in the engine's audio folders"}""", HttpStatusCode.NotFound, json)
             }
         }
-        val api = KtorEngineApi("http://host", engine, token = "t")
+        val api = matchingEngine("http://host", engine, token = "t")
         val file = java.io.File.createTempFile("input", ".wav")
         try {
             api.jobInput("r1", file)
@@ -261,7 +265,7 @@ class KtorEngineApiTest {
                 if (declared) respond(sound, HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, sound.size.toString()))
                 else respond(io.ktor.utils.io.ByteReadChannel(sound), HttpStatusCode.OK)
             }
-            val api = KtorEngineApi("http://host", engine)
+            val api = matchingEngine("http://host", engine)
             val file = java.io.File.createTempFile("input", ".wav")
             try {
                 val refused = runCatching { api.jobInput("r1", file, maxBytes = 10_000) }.exceptionOrNull()

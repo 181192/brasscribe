@@ -617,6 +617,7 @@
     <string name="conn_needs_pairing">Datamaskinen kjenner ikke igjen denne telefonen lenger.</string>
     <string name="conn_network_closed">Appen har ikke lov til å bruke nettverket ditt, så den når ikke datamaskinen.</string>
     <string name="conn_update_app">Oppdater denne appen. Bandroom på datamaskinen er nyere enn appen, og de virker bare sammen når begge er oppdatert.</string>
+    <string name="conn_get_app_update">Hent nyeste versjon</string>
     <string name="conn_update_computer">Oppdater Bandroom på datamaskinen. Denne appen er nyere enn Bandroom der, og de virker bare sammen når begge er oppdatert.</string>
     <string name="conn_allow">Tillat</string>
     <string name="conn_pair_again">Koble til telefonen på nytt</string>

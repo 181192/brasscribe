@@ -130,7 +130,11 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         },
         Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
         Entry("problem-score-not-opened") { rule.runOnUiThread { vm.showProblem(Problem.OPEN_FAILED, null, R.string.error_unreachable) } },
-        // Last: it leaves the phone paired with that computer, which the screens above are not.
-        Entry("computer-update-bandroom") { aComputerThatNeedsAnUpdate() },
+        // The computer's Bandroom is older than this app, or the app is older than it: Home's row says which to update,
+        // and the pairing screen has where to get the latest Bandroom. (The phone is paired with nothing after each.)
+        Entry("home-update-bandroom") { aComputerWithAnotherVersion() },
+        Entry("home-update-app") { aComputerWithAnotherVersion(newer = true) },
+        Entry("computer-update-bandroom") { aComputerWithAnotherVersion(); go(Screen.SETTINGS, Screen.COMPANION) },
+        Entry("computer-update-app") { aComputerWithAnotherVersion(newer = true); go(Screen.SETTINGS, Screen.COMPANION) },
     )
 }
