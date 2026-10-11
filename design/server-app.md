@@ -69,8 +69,8 @@ flowchart LR
 
 ### 3.1 Install
 - **macOS:** a signed, notarised `.dmg` with the usual "drag Brasscribe Bandroom to Applications" window. It needs no administrator password.
-  - It refuses to run on an Intel Mac or on macOS older than 14. `pixi.toml` only solves for `osx-arm64` with macOS 14 or later.
-  - The refusal is one plain sentence: "Brasscribe needs a Mac with Apple silicon (M1 or newer) and macOS 14 or later."
+  - It runs on a Mac with Apple silicon and macOS 26 or newer. `pixi.toml` only solves for `osx-arm64`.
+  - The refusal is one plain sentence: "Brasscribe needs a Mac with Apple silicon (M1 or newer) and macOS 26 or newer."
 - **Windows:** an MSIX package, installed per user with no administrator prompt (§5.3).
   - Windows 11, x64 only. `win-64` is the only Windows platform in `pixi.toml`. On an Arm PC it says so plainly.
 - The installer is small, **about 60 MB (target, not measured)**: a native shell plus the pinned `pixi` binary and the lockfile. Everything else comes in the first run.
@@ -331,7 +331,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 
 | Problem | Title (en) | Why, one sentence | Primary (the fix) | Secondary | Details for the band's tech person |
 |---|---|---|---|---|---|
-| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`; verify the pane URL on macOS 14–26) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_brasscribe._tcp` not advertised." |
+| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`; verify the pane URL on macOS 26 and 27) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_brasscribe._tcp` not advertised." |
 | Windows firewall blocked | Phones can't find this computer | Windows Firewall is blocking Brasscribe on this network. | **Allow on private networks** (runs an elevated helper; Windows asks for permission) | – | "Inbound TCP 8765 blocked for python.exe (profile: Private)." |
 | Network is Public (Windows) | Phones can't find this computer | This network is set to Public, so Windows hides this PC. If it's your home or band-room Wi-Fi, set it to Private. | **Open network settings** (`ms-settings:network-status`) | – | "Active profile: Public." |
 | Low disk | Space is running low | 2.1 GB free. Brasscribe needs 3 GB to make a score. | **Free up space…** (the system storage settings) | Delete old results (1.4 GB) | data folder path and size per folder |
@@ -634,7 +634,7 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | setup.4.heads-up.mac | Next, your Mac asks whether Brasscribe may find devices on your network. Choose **Allow** so phones can connect. | Nå spør Macen om Brasscribe får finne enheter på nettverket. Velg **Tillat** så telefonene kan koble seg til. |
 | setup.4.heads-up.win | Next, Windows may ask whether Brasscribe may use the network. Tick **Private networks** and choose **Allow**. | Nå kan Windows spørre om Brasscribe får bruke nettverket. Kryss av for **Private nettverk** og velg **Tillat**. |
 | setup.4.done | Done | Ferdig |
-| setup.refuse.mac | Brasscribe needs a Mac with Apple silicon (M1 or newer) and macOS 14 or later. | Brasscribe trenger en Mac med Apple-brikke (M1 eller nyere) og macOS 14 eller nyere. |
+| setup.refuse.mac | Brasscribe needs a Mac with Apple silicon (M1 or newer) and macOS 26 or newer. | Brasscribe trenger en Mac med Apple-brikke (M1 eller nyere) og macOS 26 eller nyere. |
 | setup.refuse.win | Brasscribe needs a 64-bit Intel or AMD PC with Windows 11. | Brasscribe trenger en 64-biters PC med Intel eller AMD og Windows 11. |
 
 The macOS Local Network dialog is the system's own, so the heads-up names the button the user will see. That button is **Allow** in English. **Verify** the Norwegian label («Tillat» is assumed) on a Mac set to Norwegian, and the Windows firewall labels, before shipping.

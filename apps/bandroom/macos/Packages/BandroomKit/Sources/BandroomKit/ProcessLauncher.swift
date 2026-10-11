@@ -59,7 +59,7 @@ public final class PosixLauncher: ProcessLauncher, @unchecked Sendable {
         posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0)
         posix_spawn_file_actions_adddup2(&actions, logFD, 1)
         posix_spawn_file_actions_adddup2(&actions, logFD, 2)
-        posix_spawn_file_actions_addchdir_np(&actions, plan.workingDirectory.path)
+        posix_spawn_file_actions_addchdir(&actions, plan.workingDirectory.path)
 
         let argv = [plan.executable.path] + plan.arguments
         let envp = plan.environment.map { "\($0.key)=\($0.value)" }

@@ -29,7 +29,7 @@ scripts/screenshots.sh mac|iphone|ipad [screen …]                 # docs/scree
 Each release has `brasscribe-play-ios-unsigned.ipa`: Brasscribe Play for iPhone and iPad (one file for
 both), built for devices and not signed. The project has no Apple Developer account, so it cannot sign
 the app for others, and an iPhone or iPad does not install an unsigned app. A tester signs it with their
-own Apple Account; a free one is enough.
+own Apple Account; a free one is enough. The app needs iOS or iPadOS 26 or newer.
 
 - **Sign and install.** Use a sideloading tool on a computer: it signs the file with your Apple Account
   and puts the app on the device. Xcode does not sign an existing `.ipa`; with Xcode you build the app
@@ -49,7 +49,8 @@ own Apple Account; a free one is enough.
 
 `make ipa` (`scripts/make-ipa.sh`) builds the same file locally: an archive for `generic/platform=iOS`
 with code signing off, packed as `Payload/BrasscribePlay.app`. The script checks the file before it
-keeps it: iPhone and iPad as device families, the texts iOS shows when it asks for the microphone, the
+keeps it: iPhone and iPad as device families, iOS 26.0 as the oldest system for the app and nothing
+newer for any binary inside, the texts iOS shows when it asks for the microphone, the
 camera and the local network, every binary arm64 for iOS devices (not the simulator), and no signature
 or provisioning profile inside.
 

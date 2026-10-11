@@ -607,7 +607,7 @@ final class AppModel {
         }
     }
 
-    /// System Settings › Menu Bar (macOS 26; Control Centre on 14–15, where menu-bar items are too).
+    /// System Settings › Menu Bar.
     func openMenuBarSettings() {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension")!)
     }
