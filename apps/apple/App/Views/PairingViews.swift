@@ -29,12 +29,25 @@ struct YourComputerSection: View {
         enum Outcome: Equatable { case waiting, expired, denied }
     }
 
+    /// The pairing was refused because one of the two needs an update, and the message still says so: which one, for
+    /// where to get the update. A device that is not paired has no connection row that shows it.
+    private var refusedForUpdate: InterfaceMatch.Update? {
+        // the row shows it already for a paired device
+        if case .mismatch = app.connection.state { return nil }
+        return [InterfaceMatch.Update.app, .computer].first { message == ConnectionCopy.update($0) }
+    }
+
     private var paired: Bool { app.connection.record?.token != nil }
     private var showPairing: Bool {
         switch app.connection.state {
         case .needsPairing: return true
         // Brasscribe on this same Mac needs no pairing
         case .connected: return false
+        // one of the two needs an update first; the pairing it has is kept
+        case .mismatch: return false
+        // The paired computer was not found. It may be there under a new identity (its phones were reset, or its data
+        // folder is new): it then answers as another computer, which this device can only pair with again.
+        case .offline: return true
         default: return !paired
         }
     }
@@ -48,6 +61,7 @@ struct YourComputerSection: View {
             if let message {
                 Text(message).font(Font.Scribe.callout).accessibilityIdentifier("pairingMessage")
             }
+            if let refusedForUpdate { UpdateAction(which: refusedForUpdate, place: "pairing") }
             if app.connection.record?.token != nil {
                 Button(role: .destructive) { confirmForget = true } label: { Text("Forget this computer") }
                     .disabled(busy)
@@ -149,7 +163,7 @@ struct YourComputerSection: View {
                 .accessibilityIdentifier("pairingLink")
             Button("Use link") {
                 if let link = PairingLink(string: linkText) { Task { await pair(link) } }
-                else { message = String(localized: "That isn't a Brasscribe pairing link. It starts with brasscribe://pair.") }
+                else { message = String(localized: "That isn't a Brasscribe pairing link. It starts with scribe://pair.") }
             }
             .disabled(linkText.isEmpty || busy)
         }
@@ -211,7 +225,7 @@ struct YourComputerSection: View {
                 case .pending: continue
                 case .approved(let result):
                     approval = nil
-                    await app.connection.adopt(result, address: url, fallbackName: "Brasscribe on \(name)")
+                    app.connection.adopt(result, address: url)
                     paired(name: app.connection.serverName)
                     return
                 case .denied:
@@ -224,6 +238,10 @@ struct YourComputerSection: View {
                     return
                 }
             }
+        } catch TranscriptionError.interfaceMismatch(let which) {
+            approval = nil
+            message = ConnectionCopy.update(which)
+            app.connection.poke()
         } catch {
             approval = nil
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
@@ -236,11 +254,14 @@ struct YourComputerSection: View {
         let url = URL(string: app.companionURL) ?? URL(string: "http://localhost:8765")!
         do {
             let r = try await CompanionService(baseURL: url).pair(code: code, deviceName: AppModel.deviceName, platform: AppModel.platform)
-            await app.connection.adopt(r, address: url)
+            app.connection.adopt(r, address: url)
             self.code = ""
             paired(name: app.connection.serverName)
         } catch TranscriptionError.pairingRejected {
             message = String(localized: "That code didn't work. Check the six digits on the computer, or choose the computer above and allow it there.")
+        } catch TranscriptionError.interfaceMismatch(let which) {
+            message = ConnectionCopy.update(which)
+            app.connection.poke()
         } catch {
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
         }
@@ -259,6 +280,9 @@ struct YourComputerSection: View {
             }
         } catch TranscriptionError.pairingRejected {
             message = String(localized: "That code has been used or has run out. Show a new one on the computer, or choose the computer above and allow it there.")
+        } catch TranscriptionError.interfaceMismatch(let which) {
+            message = ConnectionCopy.update(which)
+            app.connection.poke()
         } catch {
             message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
         }
@@ -331,7 +355,7 @@ struct QRScannerSheet: View {
 
             func dataScanner(_ scanner: DataScannerViewController, didAdd items: [RecognizedItem], allItems: [RecognizedItem]) {
                 for case let .barcode(code) in items {
-                    guard !done, let text = code.payloadStringValue, text.lowercased().hasPrefix("brasscribe://") else { continue }
+                    guard !done, let text = code.payloadStringValue, text.lowercased().hasPrefix(Wire.pairScheme + "://") else { continue }
                     done = true
                     scanner.stopScanning()
                     found(text)

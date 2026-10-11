@@ -136,9 +136,27 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 TranscriptionFailure.ComputerUnreachable => ErrorKind.ComputerUnreachable,
                 TranscriptionFailure.RecordingUnreadable => ErrorKind.RecordingUnreadable,
+                TranscriptionFailure.UpdateApp => ErrorKind.UpdateApp,
+                TranscriptionFailure.UpdateBandroom => ErrorKind.UpdateBandroom,
                 _ => ErrorKind.ScoreFailed,
             }, Transcription.ErrorDetail);
+            // The status row says the same from now on, without waiting for the next heartbeat.
+            if (failure is TranscriptionFailure.UpdateApp or TranscriptionFailure.UpdateBandroom) Settings.Connection.Kick();
             Screen = Screen.Error;
+        };
+        // Every change of the connection: whichever engine answers next is asked for its interface version first, and
+        // the computer's scores are fetched again when it is connected, and gone from the list when it is not.
+        Settings.Connection.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(ConnectionMonitor.State)) return;
+            _engine = null;
+            if (!Settings.Connection.IsConnected)
+            {
+                _computerJobs = [];
+                RefreshLibrary();
+            }
+            // A state shown as sample content has no computer behind it to ask.
+            else if (!Settings.Connection.IsPreview) _ = RefreshComputerScoresAsync();
         };
 
         Start.SourceReady += async (_, src) =>
@@ -183,15 +201,7 @@ public sealed partial class MainViewModel : ObservableObject
             Output.HasEngineJob = r.AudioId is not null;
             Output.ShowingMade(r.Options ?? ArrangementOptions.Default);
             if (!rearranged) _myPartOverride = null;
-            // An engine from before seats ignores them: say so once, rather than a silent Solo Cornet part.
             Output.StatusText = null;
-            // Only where the seat changes the notes (a solo take, or the tune on the seat): on a band take it changes none.
-            // An engine from before the trumpet refused it and wrote the Solo Cornet part: that is said too.
-            if (r.SeatFellBack || r.Options is { Seat: not null, Lead: "seat" } && Lineups.RecordedSeat(r.Composition) is null)
-            {
-                Output.StatusText = _s["Output_OldComputer"];
-                _announcer.Announce(Output.StatusText, AnnouncementKind.Important);
-            }
             Output.Title = r.Composition.Title;
             Output.LayerSource = r.JobId is { Length: > 0 } jobId && LayerCacheRoot is { } cache
                 ? ct => EngineLayerSource.LoadAsync(Engine, jobId, cache, ct)
@@ -494,8 +504,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     private IReadOnlyList<Job> _computerJobs = [];
 
-    /// <summary>Fetches the computer's finished scores of this app's target (the computer serves other apps too);
-    /// keeps this PC's list when the computer can't be reached.</summary>
+    /// <summary>
+    /// Fetches the computer's finished scores of this app's target (the computer serves other apps too); only this
+    /// PC's are listed when the computer can't be reached or has another interface version (its client asks that
+    /// first, and then sends nothing more).
+    /// </summary>
     public async Task RefreshComputerScoresAsync()
     {
         try
@@ -541,6 +554,11 @@ public sealed partial class MainViewModel : ObservableObject
                 // The engine's score replaces the saved one, without the notes changed here.
                 ForgetReviewChanges();
                 Screen = Screen.Score;
+            }
+            catch (EngineException e) when (e.Interface is { } answer)
+            {
+                Start.ErrorText = SayUpdate(answer, notice: false);
+                return;
             }
             catch (Exception e) when (e is EngineException or HttpRequestException or IOException or FormatException
                                        or System.Xml.XmlException or System.Text.Json.JsonException or Bridge.CoreBridgeException)
@@ -589,6 +607,11 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 if (item.JobId is { } jobId) await Engine.DeleteRunAsync(jobId);
             }
+            catch (EngineException e) when (e.Interface is { } answer)
+            {
+                SayUpdate(answer);
+                return false;
+            }
             catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException)
             {
                 _announcer.Announce(_s.Format("Library_DeleteFailed", item.Title), AnnouncementKind.Important);
@@ -615,6 +638,11 @@ public sealed partial class MainViewModel : ObservableObject
         {
             await Engine.RenameRunAsync(jobId, title);
             return true;
+        }
+        catch (EngineException e) when (e.Interface is { } answer)
+        {
+            SayUpdate(answer);
+            return false;
         }
         catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException)
         {
@@ -693,7 +721,36 @@ public sealed partial class MainViewModel : ObservableObject
         return _s.Format("Library_Subtitle", lineup, e.Bars, WhenText(e.Updated)) + check;
     }
 
-    public IEngineClient Engine => _engine ??= _engineFactory(Settings.EngineUri, Settings.EngineToken);
+    /// <summary>
+    /// The client for the engine in use. It keeps the rule that nothing but the heartbeat is asked of an engine with
+    /// another interface version, and tells the status row the moment it finds one.
+    /// </summary>
+    public IEngineClient Engine
+    {
+        get
+        {
+            if (_engine is null)
+            {
+                _engine = _engineFactory(Settings.EngineUri, Settings.EngineToken);
+                _engine.InterfaceMismatch = Settings.Connection.Kick;
+            }
+            return _engine;
+        }
+    }
+
+    /// <summary>
+    /// A request was refused because the engine has another interface version: says which of the two to update, in the
+    /// status row's words (also in the window's notice bar, unless the screen shows them itself), and the row checks
+    /// again at once.
+    /// </summary>
+    private string SayUpdate(InterfaceAnswer answer, bool notice = true)
+    {
+        string text = Settings.Connection.UpdateText(answer);
+        _announcer.Announce(text, AnnouncementKind.Important);
+        if (notice) ProblemNoticed?.Invoke(this, text);
+        Settings.Connection.Kick();
+        return text;
+    }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OpenExportCommand), nameof(BackCommand))]

@@ -139,14 +139,18 @@ class TabSheet(val musicXml: String, val index: TabIndex, val tab: Tab?, val mar
     val tempo: Int? get() = tab?.tempoBpm?.let { Math.round(it).toInt() } ?: index.tempo
 
     companion object {
-        /** Reads the page, and asks for the data with [tab]; a computer that is away leaves the page's own marks. */
-        suspend fun read(musicXml: String, tab: suspend () -> Tab?): TabSheet {
+        /**
+         * Reads the page, and asks for the data with [tab]; a computer that is away leaves the page's own marks.
+         * [failed] is told why the data did not come, for the one that can say it.
+         */
+        suspend fun read(musicXml: String, failed: (Exception) -> Unit = {}, tab: suspend () -> Tab?): TabSheet {
             val data = try {
                 withContext(Dispatchers.IO) { tab() }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
                 android.util.Log.w(PlayViewModel.TAG, "the tab's notes could not be read; the marks are the page's own", e)
+                failed(e)
                 null
             }
             return withContext(Dispatchers.Default) {
@@ -215,7 +219,8 @@ fun TabScreen(vm: PlayViewModel) {
     val resources = LocalResources.current
     val r = result ?: return
     val sheet by produceState<TabSheet?>(null, r.musicXml, r.jobId) {
-        value = TabSheet.read(r.musicXml) { r.jobId?.let { id -> vm.container.engine()?.tab(id) } }
+        // (A computer that was not asked because one of the two needs an update is said so; the page keeps its own marks.)
+        value = TabSheet.read(r.musicXml, failed = { vm.saidRefused(it) }) { r.jobId?.let { id -> vm.container.engine()?.tab(id) } }
     }
     // The size and the bar being read are kept for the song: through a turn of the phone, a visit to Check the song, and the app being stopped.
     val song = r.jobId ?: r.musicXml.hashCode().toString()

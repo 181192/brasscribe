@@ -10,12 +10,19 @@ public final class EngineSupervisor {
     public private(set) var pid: Int32?
     public private(set) var port: Int?
     public private(set) var serverId: String?
+    /// The running engine's interface version as its health answer gave it (nil: none yet, or an engine from before
+    /// the number), for the tech details.
+    public private(set) var engineInterface: Int?
+    /// Set while the running engine's interface version is not this Bandroom's: which of the two is behind. No
+    /// client is handed out for that engine: after its health, all it is sent is the closing of the pairing code it
+    /// opened at start.
+    public private(set) var interfaceMismatch: InterfaceMatch.Behind?
     public private(set) var lastExitStatus: Int32?
     public var configuration: EngineConfiguration
 
     public var phase: SupervisorPhase { machine.phase }
 
-    /// Called once the engine answers, with a client for it.
+    /// Called once the engine answers with this Bandroom's interface version, with a client for it.
     public var onHealthy: ((any EngineAPI) -> Void)?
     /// Called when the engine is given up on (Error).
     public var onFailure: ((LaunchFailure?) -> Void)?
@@ -57,7 +64,7 @@ public final class EngineSupervisor {
     }
 
     public var client: (any EngineAPI)? {
-        guard case .running = phase, let port else { return nil }
+        guard case .running = phase, interfaceMismatch == nil, let port else { return nil }
         return makeClient(port, configuration.adminToken)
     }
 
@@ -93,6 +100,7 @@ public final class EngineSupervisor {
         let before = machine.phase
         let effects = machine.handle(event, now: now())
         if before != machine.phase { log("engine: \(before) → \(machine.phase) on \(event)") }
+        if before == .running, machine.phase != .running { interfaceMismatch = nil; engineInterface = nil }
         if before != machine.phase { onPhaseChange?(machine.phase) }
         for effect in effects { run(effect) }
     }
@@ -168,8 +176,23 @@ public final class EngineSupervisor {
                     if let pid = self.pid {
                         try? EngineStatusFile(port: port, pid: pid, serverId: h.serverId, version: h.version).write(self.configuration.paths.engineStatus)
                     }
+                    self.engineInterface = h.interfaceVersion
+                    self.interfaceMismatch = InterfaceMatch.of(engine: h.interfaceVersion).behind
                     self.send(.healthy)
-                    self.onHealthy?(client)
+                    // The process is up either way (Stop and Restart apply), but only an engine with this Bandroom's
+                    // interface version is handed on: no pairing is opened on another one and nothing is polled.
+                    if self.interfaceMismatch == nil {
+                        self.onHealthy?(client)
+                    } else {
+                        self.log("engine: its interface version is \(h.interfaceVersion.map(String.init) ?? "not given"), "
+                                 + "this Bandroom is built for \(Wire.interfaceVersion): nothing more is asked of it")
+                        // But for one thing: the engine opens a pairing code at start that works until it is closed,
+                        // and no Pair window will ever close this one. Closing opens nothing; a close that fails is
+                        // logged, since the code then stays open until the engine stops.
+                        do { _ = try await client.closePairing() } catch {
+                            self.log("engine: the pairing code it opened at start could not be closed: \(error)")
+                        }
+                    }
                     return
                 }
                 guard let self, gen == self.generation else { return }

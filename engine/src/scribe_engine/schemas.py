@@ -30,6 +30,10 @@ StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed
 class Health(BaseModel):
     status: Literal["ok"] = "ok"
     version: str
+    interface_version: int = Field(description="one whole number for everything an app and the engine say to each "
+                                               "other. An app is built for one number: when this one differs "
+                                               "it tells the user which of the two to update (this one higher: "
+                                               "the app; lower: the engine) and sends the engine nothing else")
     build: str | None = Field(None, description="which build is running: the commit and workspace stamp of an "
                                                 "installed engine, the commit of a checkout; null when unknown")
     device: str = Field(description="accelerator torch adapters use on this host: cuda, mps or cpu")
@@ -70,6 +74,8 @@ class DeviceInfo(BaseModel):
 
 class DeviceSelf(DeviceInfo):
     server_id: str
+    interface_version: int = Field(description="as in /v1/health, so a paired app's heartbeat (this request) reads "
+                                               "it without a second one")
     rotate_after: str = Field(description="ISO 8601; rotate the token (POST /v1/devices/me/rotate) after this time")
     expires_if_idle_after: str = Field(description="ISO 8601; the credential is forgotten if unused until then")
 
@@ -113,7 +119,7 @@ class PairingState(BaseModel):
     hosts: list[str] = Field(description="ip:port addresses the engine is reachable on")
     fingerprint: str | None = Field(None, description="SHA-256 of the TLS key (SPKI), base64url; null while the "
                                                        "engine serves plain HTTP")
-    uri: str = Field(description="pairing payload: brasscribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]")
+    uri: str = Field(description="pairing payload: scribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]")
     locked_until: str | None = Field(None, description="ISO 8601; set while too many wrong codes have locked "
                                                         "pairing, so the computer can say so. The code stays the same")
 

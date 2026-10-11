@@ -13,9 +13,9 @@ export type Opened = {
   problems: string[];
 };
 
-export async function openView(page: Page, view: Pick<View, "route" | "ready" | "prepare" | "expectedErrors">, variant: Variant): Promise<Opened> {
+export async function openView(page: Page, view: Pick<View, "route" | "ready" | "prepare" | "expectedErrors" | "engine">, variant: Variant): Promise<Opened> {
   const problems: string[] = [];
-  const unanswered = await serveApi(page);
+  const unanswered = await serveApi(page, view.engine);
   page.on("pageerror", (e) => problems.push(`page error: ${e.message}`));
   page.on("console", (m) => {
     if (m.type() !== "error") return;

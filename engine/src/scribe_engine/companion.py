@@ -37,6 +37,8 @@ from pathlib import Path
 from typing import Callable, Iterator, TypeVar
 from urllib.parse import quote, urlencode
 
+from .wire import PAIRING_SCHEME
+
 PAIRING_PAYLOAD_VERSION = 1
 CODE_DIGITS = 6
 WINDOW_S = 600.0  # a pairing window opened on the computer
@@ -539,7 +541,7 @@ class PairRequests:
 
 
 def pairing_uri(server_id: str, name: str, hosts: list[str], code: str | None, fingerprint: str | None = None) -> str:
-    """brasscribe://pair?v=1&id=<server_id>&name=<name>&h=<ip:port>[,<ip:port>]&code=<digits>[&fp=<spki sha256>]"""
+    """scribe://pair?v=1&id=<server_id>&name=<name>&h=<ip:port>[,<ip:port>]&code=<digits>[&fp=<spki sha256>]"""
     q: dict[str, str] = {"v": str(PAIRING_PAYLOAD_VERSION), "id": server_id, "name": name}
     if hosts:
         q["h"] = ",".join(hosts)
@@ -547,4 +549,4 @@ def pairing_uri(server_id: str, name: str, hosts: list[str], code: str | None, f
         q["code"] = code
     if fingerprint:
         q["fp"] = fingerprint
-    return "brasscribe://pair?" + urlencode(q, quote_via=quote, safe=":,")
+    return f"{PAIRING_SCHEME}://pair?" + urlencode(q, quote_via=quote, safe=":,")

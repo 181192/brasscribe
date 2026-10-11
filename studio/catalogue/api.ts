@@ -13,8 +13,11 @@ const fixtures = join(dirname(fileURLToPath(import.meta.url)), "..", "e2e", "fix
 type Entry = { status: number; type?: string; body?: unknown; file?: string };
 const responses = JSON.parse(readFileSync(join(fixtures, "responses.json"), "utf8")) as Record<string, Entry>;
 
-/** Answers /v1 from the fixtures; returns the requests that had no fixture (or were not GETs). */
-export async function serveApi(page: Page): Promise<string[]> {
+/**
+ * Answers /v1 from the fixtures; returns the requests that had no fixture (or were not GETs). `instead` answers
+ * some paths differently for one view (an engine with another interface version).
+ */
+export async function serveApi(page: Page, instead: Record<string, unknown> = {}): Promise<string[]> {
   const unanswered: string[] = [];
   // The band SoundFont is not in git: a checkout may have it in the bundle's folder, CI has not. The
   // catalogue always plays without it, so every machine shows the same.
@@ -23,7 +26,7 @@ export async function serveApi(page: Page): Promise<string[]> {
     const req = route.request();
     const u = new URL(req.url());
     const key = u.pathname + u.search;
-    const e = req.method() === "GET" ? responses[key] : undefined;
+    const e = req.method() !== "GET" ? undefined : key in instead ? { status: 200, body: instead[key] } : responses[key];
     if (!e) {
       unanswered.push(`${req.method()} ${key}`);
       await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: `no fixture for ${key}` }) });

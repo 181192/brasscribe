@@ -7,9 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import no.brasscribe.play.engine.InterfaceMatch
 import java.time.OffsetDateTime
 
-/** The four connection states every Play app shows (the same words on all platforms). */
+/** The connection states every Play app shows (the same words on all platforms). */
 sealed interface ConnectionState {
     /** The last heartbeat was answered. */
     data class Connected(val serverName: String) : ConnectionState
@@ -21,6 +22,11 @@ sealed interface ConnectionState {
     data class NeedsPairing(val serverName: String) : ConnectionState
     /** A computer is paired, and the phone has the local network closed to the app: nothing is tried until it opens. */
     data class NetworkClosed(val serverName: String) : ConnectionState
+    /**
+     * The computer answers, and its interface version is not this app's: [update] says which of the two is
+     * behind (never [InterfaceMatch.MATCH]). Nothing is sent to it until they match; the pairing is kept.
+     */
+    data class NeedsUpdate(val serverName: String, val update: InterfaceMatch) : ConnectionState
 }
 
 /** The computer this phone talks to. [url] is the last address that answered. */
@@ -31,12 +37,14 @@ sealed interface Check {
     data class Ok(val rotateAfter: String? = null) : Check
     data object Unauthorized : Check
     data object Unreachable : Check
+    /** The engine answered with another interface version than this app's. */
+    data class Mismatch(val update: InterfaceMatch) : Check
 }
 
 /** What the monitor needs from the app: the stored target and the network. */
 interface ConnectionHost {
     fun target(): Target?
-    /** GET /v1/devices/me at [url] with the stored credential. */
+    /** GET /v1/devices/me at [url] with the stored credential (it carries the engine's interface version); GET /v1/health without one. */
     suspend fun check(url: String): Check
     /** The address the engine with [serverId] advertises on the local network now, if it can be found. */
     suspend fun find(serverId: String): String?
@@ -52,7 +60,8 @@ interface ConnectionHost {
  * Heartbeat and reconnect (contract: presence). While the app is in front and paired it checks the
  * credential every [heartbeatMs]. When that fails it retries the last address, then the address mDNS
  * gives for the server id, backing off 2, 4, 8 … 30 s, and gives up after [giveUpMs]. Only a 401 means
- * pair again. While the phone has the local network closed to the app it checks nothing and says so
+ * pair again. An engine with another interface version is asked for its health only, at the heartbeat's pace,
+ * so the state clears by itself once the computer is updated ([ConnectionState.NeedsUpdate]). While the phone has the local network closed to the app it checks nothing and says so
  * ([ConnectionState.NetworkClosed]). [start] on foreground, [stop] on background, [retry] for "Connect" and network changes.
  */
 class ConnectionMonitor(
@@ -134,17 +143,7 @@ class ConnectionMonitor(
                 return
             }
             if (_state.value is ConnectionState.NetworkClosed) _state.value = ConnectionState.Reconnecting(t.serverName)
-            var r = host.check(t.url)
-            if (r == Check.Unreachable) {
-                val found = host.find(t.serverId)
-                if (found != null && found != t.url) {
-                    val again = host.check(found)
-                    if (again != Check.Unreachable) {
-                        host.moved(found)
-                        r = again
-                    }
-                }
-            }
+            val r = checked(t)
             // A check can learn the engine's name (a token from an earlier version had none).
             val name = host.target()?.serverName ?: t.serverName
             when (r) {
@@ -164,6 +163,14 @@ class ConnectionMonitor(
                     _state.value = ConnectionState.NeedsPairing(name)
                     return
                 }
+                is Check.Mismatch -> {
+                    _state.value = ConnectionState.NeedsUpdate(name, r.update)
+                    _lastAnswered.value = now()
+                    failingSince = null
+                    failures = 0
+                    backoff = FIRST_BACKOFF_MS
+                    delay(heartbeatMs)
+                }
                 Check.Unreachable -> {
                     if (quiet) return
                     val since = failingSince ?: now().also { failingSince = it }
@@ -178,6 +185,29 @@ class ConnectionMonitor(
                 }
             }
         }
+    }
+
+    /**
+     * One heartbeat: the last address, then the address the engine is found at now. Anything the host throws on the
+     * way (the check, the search, keeping the new address) is a heartbeat that got no answer: the next one goes on.
+     */
+    private suspend fun checked(t: Target): Check = try {
+        var r = host.check(t.url)
+        if (r == Check.Unreachable) {
+            val found = host.find(t.serverId)
+            if (found != null && found != t.url) {
+                val again = host.check(found)
+                if (again != Check.Unreachable) {
+                    host.moved(found)
+                    r = again
+                }
+            }
+        }
+        r
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Check.Unreachable
     }
 
     companion object {

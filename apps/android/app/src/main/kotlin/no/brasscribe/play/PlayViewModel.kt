@@ -42,6 +42,7 @@ import no.brasscribe.play.model.VoiceRole
 import no.brasscribe.play.playback.BarListening
 import no.brasscribe.play.playback.ClipPlayer
 import no.brasscribe.play.connection.ConnectionMonitor
+import no.brasscribe.play.connection.ConnectionState
 import no.brasscribe.play.connection.Credential
 import no.brasscribe.play.connection.CredentialStore
 import no.brasscribe.play.connection.EngineConnection
@@ -51,6 +52,8 @@ import no.brasscribe.play.capture.CaptureController
 import no.brasscribe.play.engine.EngineException
 import no.brasscribe.play.engine.KtorEngineApi
 import no.brasscribe.play.engine.PairLink
+import no.brasscribe.play.engine.InterfaceMatch
+import no.brasscribe.play.engine.InterfaceMismatchException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -308,7 +311,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     /** Connected, looking for, offline or pair again: the status row on Home and in Settings. */
     val connection = ConnectionMonitor(viewModelScope, EngineConnection(container))
-    /** A pairing link (QR code or brasscribe://pair) waiting for the user to press Connect. */
+    /** A pairing link (QR code or scribe://pair) waiting for the user to press Connect. */
     val pendingLink = MutableStateFlow<PairLink?>(null)
     /** The four-digit code both screens show while the computer is asked to allow this phone. */
     val matchCode = MutableStateFlow<String?>(null)
@@ -341,6 +344,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private val renderedLevel = no.brasscribe.play.playback.LevelMatch()
 
     init {
+        // The computer's scores follow the connection: gone from the list when it cannot be asked for them (not
+        // connected, pair again, one of the two needs an update), and fetched again when it can.
+        viewModelScope.launch {
+            connection.state.map { it::class }.distinctUntilChanged().drop(1).collect { refreshComputerScores() }
+        }
         // Leaving a place stops "Listen to this bar" (and asking the computer), whichever way the user left.
         viewModelScope.launch {
             backStack.map { it.last() }.distinctUntilChanged().drop(1).collect { top ->
@@ -822,6 +830,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             } catch (e: Exception) {
                 transcribe.update { it.copy(running = false, error = e.message ?: e.javaClass.simpleName) }
                 keepRecording(s)
+                refused(e)
                 showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString(),
                     ErrorWords.of(e).takeIf { it != R.string.error_generic })
             }
@@ -1006,6 +1015,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             } catch (e: Exception) {
                 // In the player's words; the engine's or the core's own text goes to the log only.
                 android.util.Log.w(TAG, "re-arrangement failed", e)
+                refused(e)
                 say(ErrorWords.of(e))
             } finally {
                 busy.value = false
@@ -1282,19 +1292,56 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             val saved = withContext(storage) { scoreLibrary.list() }.firstOrNull { it.jobId == jobId }
             if (saved != null) { home(); openSavedScore(saved); return@launch }
-            val done = container.engine()?.let { engine -> runCatching { engine.job(jobId) }.getOrNull() }
-            val entry = done?.let { ScoreEntry.merge(emptyList(), listOf(it)).firstOrNull() }
+            val asked = container.engine()?.let { engine -> runCatching { engine.job(jobId) } }
+            val entry = asked?.getOrNull()?.let { ScoreEntry.merge(emptyList(), listOf(it)).firstOrNull() }
             home()
-            // Not on the phone, and the computer can't be reached (or no longer has it): said, not a silent Home.
-            if (entry == null) say(if (container.computerInReach()) R.string.ready_not_here else R.string.pair_network_refused) else openEntry(entry)
+            // Not on the phone, and the computer can't be reached (or no longer has it): said, not a silent Home. A computer
+            // with another interface version is said as that: which of the two to update.
+            val why = asked?.exceptionOrNull()
+            when {
+                entry != null -> openEntry(entry)
+                why != null && refused(why) -> say(ErrorWords.of(why))
+                else -> say(if (container.computerInReach()) R.string.ready_not_here else R.string.pair_network_refused)
+            }
         }
     }
 
-    /** Fetch the computer's finished scores; keeps the phone's list when the computer can't be reached. */
+    /**
+     * Fetches the computer's finished scores. They are listed only while the connection says Connected: with nothing
+     * paired, while it is not connected, and when one of the two needs an update, the list holds the phone's own only.
+     * One request that does not get through while Connected takes nothing away: the heartbeat decides when the
+     * computer is gone, and the scores go with that change.
+     */
     fun refreshComputerScores() {
-        val engine = container.engine()?.takeIf { !container.usingFixture } ?: run { computerJobs.value = emptyList(); return }
-        viewModelScope.launch { runCatching { engine.jobs() }.onSuccess { computerJobs.value = it } }
+        val engine = container.engine()?.takeIf { !container.usingFixture && connection.state.value is ConnectionState.Connected }
+            ?: run { computerJobs.value = emptyList(); return }
+        viewModelScope.launch {
+            runCatching { engine.jobs() }
+                .onSuccess { if (connection.state.value is ConnectionState.Connected) computerJobs.value = it }
+                .onFailure(::refused)
+        }
     }
+
+    /**
+     * The computer refused a request because its interface version is not this app's: its scores are no longer
+     * listed (they cannot be opened), and the connection row says which of the two to update without waiting for the
+     * next heartbeat. True when that was why.
+     */
+    private fun refused(e: Throwable): Boolean {
+        if (e !is InterfaceMismatchException) return false
+        computerJobs.value = emptyList()
+        // (While the computer is being looked for, the search goes on as it is: starting over would start its clock again.)
+        if (connection.state.value !is ConnectionState.NeedsUpdate && connection.state.value !is ConnectionState.Reconnecting) connection.retry()
+        return true
+    }
+
+    /** A request the computer was not sent because one of the two needs an update is said so; any other failure is its caller's. */
+    private fun saidIfRefused(e: Throwable) {
+        if (refused(e)) say(ErrorWords.of(e))
+    }
+
+    /** As [refused], for a screen that asked the computer itself; true when it has said which of the two to update. */
+    fun saidRefused(e: Throwable): Boolean = refused(e).also { if (it) say(ErrorWords.of(e)) }
 
     fun openEntry(entry: ScoreEntry, review: Boolean = false, stand: Boolean = false) {
         val opening = entry.opening(review, stand, Product::makes)
@@ -1326,6 +1373,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // and no score that could not be made: trying again opens it again, and the recording in hand, if there
                 // is one, has nothing to do with it.
                 failedOpen = { openEntry(entry, review, stand) }
+                refused(e)
                 showProblem(Problem.OPEN_FAILED, e.message, ErrorWords.of(e).takeIf { it != R.string.error_generic })
             } finally {
                 openingScore.value = null
@@ -1352,7 +1400,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         entry.saved?.let { renameSavedScore(it.id, cleaned); return }
         val jobId = entry.jobId ?: return
         viewModelScope.launch {
-            runCatching { container.engine()?.renameRun(jobId, cleaned) }
+            runCatching { container.engine()?.renameRun(jobId, cleaned) }.onFailure(::saidIfRefused)
             refreshComputerScores()
         }
     }
@@ -1368,7 +1416,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         }
         val jobId = entry.jobId ?: return
         viewModelScope.launch {
-            runCatching { container.engine()?.deleteRun(jobId) }
+            runCatching { container.engine()?.deleteRun(jobId) }.onFailure(::saidIfRefused)
             refreshComputerScores()
         }
     }
@@ -1431,7 +1479,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             }
             savedScores.value = withContext(storage) { scoreLibrary.list() }
             val (job, composition, xml) = renamed ?: return@launch
-            job?.let { runCatching { container.engine()?.renameRun(it, cleaned) } }
+            job?.let { runCatching { container.engine()?.renameRun(it, cleaned) }.onFailure(::saidIfRefused) }
             if (currentSavedScoreId == id) {
                 result.value = result.value?.copy(composition = composition.first, musicXml = xml, compositionJson = composition.second)
                 source.value = source.value?.copy(name = cleaned)
@@ -1592,12 +1640,15 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // at the band's loudness: the whole recording measured once (off the main thread)
                 withContext(Dispatchers.Default) { recordingLevel.slice(a, span.start, span.endInclusive, r.musicXml) }
             }
-            val score = scoreBarAudio(r, map, bar)
-            BarListening.Clips(listOfNotNull(original, score), withRecording = original != null)
+            var said = false
+            val score = scoreBarAudio(r, map, bar) { said = true }
+            // With the recording's bar in hand it plays; with nothing, what was said (which of the two to update) stands.
+            BarListening.Clips(listOfNotNull(original, score), withRecording = original != null, said = said && original == null)
         }
     }
 
-    private suspend fun scoreBarAudio(r: TranscriptionResult, map: TickMap, bar: Int): PcmAudio? {
+    /** [refusedAndSaid] is called when the computer was not asked because one of the two needs an update, which has then been said. */
+    private suspend fun scoreBarAudio(r: TranscriptionResult, map: TickMap, bar: Int, refusedAndSaid: () -> Unit = {}): PcmAudio? {
         // A note changed on the phone is not in the engine's render: the bar is rendered here, with the new note.
         if (r.changedOnPhone) return withContext(Dispatchers.Default) {
             runCatching { no.brasscribe.play.score.BarAudio.render(getApplication(), r.musicXml, bar) }
@@ -1611,7 +1662,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     val bytes = container.engine()?.renderedAudio(jobId) ?: return@runCatching null
                     f.writeBytes(bytes)
                     AudioDecoder.decode(getApplication(), Uri.fromFile(f)).audio
-                }.getOrNull()
+                    // (The computer was not asked because one of the two needs an update: said, not a bar that stays silent.)
+                }.onFailure { if (saidRefused(it)) refusedAndSaid() }.getOrNull()
             } finally {
                 // Only needed to decode it: the samples are kept, not the file.
                 f.delete()
@@ -1679,7 +1731,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         }
     }
 
-    /** A pairing link from a QR code or brasscribe://pair: shown on the connection screen, connected on Connect. */
+    /** A pairing link from a QR code or scribe://pair: shown on the connection screen, connected on Connect. */
     fun openPairLink(text: String): Boolean {
         val link = PairLink.parse(text)
         if (link == null) {
@@ -1708,7 +1760,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             val urls = link.urls.ifEmpty { listOfNotNull(container.reconnectDiscovery.find(link.serverId)) }
             for (url in urls) {
-                val client = container.newEngineClient(url)
+                // The link names its engine: another engine at one of its addresses is not there, and the next is tried.
+                val client = container.newEngineClient(url).also { it.serverId = link.serverId }
                 try {
                     val health = client.health()
                     if (health.serverId != link.serverId) continue
@@ -1719,6 +1772,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     throw e
                 } catch (e: EngineException) {
                     if (e.status != 0) { failed(e); return@launch }
+                } catch (e: InterfaceMismatchException) {
+                    failed(e); return@launch
                 } catch (e: Exception) {
                     // Not reachable at this address: try the next one.
                 } finally {
@@ -1734,6 +1789,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      * neither a valid credential nor a code.
      */
     private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.brasscribe.play.engine.Health, code: String): Boolean {
+        // The engine's own answer first: with another interface version it is not connected to, trusted address or
+        // not, and it is "update", not "the code is needed".
+        InterfaceMatch.of(health.interfaceVersion).takeIf { it != InterfaceMatch.MATCH }?.let { throw InterfaceMismatchException(it) }
         val store = container.credentials
         // Only this phone itself or the emulator's host is let in without pairing; any other address that
         // says so pairs all the same.
@@ -1780,9 +1838,10 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         // The reason goes to the log and the tech details, never into the sentence.
         android.util.Log.w(TAG, "connect failed", e)
         lastConnectError = e.message ?: e.javaClass.simpleName
-        val text = when ((e as? EngineException)?.status) {
-            403 -> res.getString(R.string.pair_code_wrong)
-            429 -> res.getString(R.string.pair_code_locked)
+        val text = when {
+            e is InterfaceMismatchException -> res.getString(ErrorWords.update(e.update))
+            (e as? EngineException)?.status == 403 -> res.getString(R.string.pair_code_wrong)
+            (e as? EngineException)?.status == 429 -> res.getString(R.string.pair_code_locked)
             else -> res.getString(R.string.companion_failed_plain)
         }
         // Shown on the connection screen already: heard, not shown twice.

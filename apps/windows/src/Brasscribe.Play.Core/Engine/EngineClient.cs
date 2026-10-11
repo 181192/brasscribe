@@ -16,14 +16,33 @@ public sealed class EngineException(string message, HttpStatusCode? status = nul
     /// <summary>The request got no answer in time (not the player's Cancel).</summary>
     public const string Timeout = "timeout";
 
+    /// <summary>The engine's interface version is higher than this app's: the request was not sent.</summary>
+    public const string UpdateApp = "update_app";
+
+    /// <summary>The engine's interface version is lower, missing or not a whole number: the request was not sent.</summary>
+    public const string UpdateBandroom = "update_bandroom";
+
     public HttpStatusCode? Status { get; } = status;
 
     /// <summary>
     /// What went wrong, as a machine code: the engine's <c>code</c> on a refused job
     /// (quartet_needs_group, percussion_solo, seat_no_tune, reads_not_offered, invalid_options),
-    /// or <see cref="JobFailed"/> / <see cref="Timeout"/>; null when there is none.
+    /// or <see cref="JobFailed"/> / <see cref="Timeout"/> / <see cref="UpdateApp"/> / <see cref="UpdateBandroom"/>;
+    /// null when there is none.
     /// </summary>
     public string? Code { get; } = code;
+
+    /// <summary>Which of the two to update, when the request was refused for the engine's interface version; else null.</summary>
+    public InterfaceAnswer? Interface => Code switch
+    {
+        UpdateApp => InterfaceAnswer.UpdateApp,
+        UpdateBandroom => InterfaceAnswer.UpdateBandroom,
+        _ => null,
+    };
+
+    /// <summary>The refusal of a request to an engine with another interface version. The numbers are for technical details only.</summary>
+    public static EngineException Mismatch(InterfaceAnswer answer, int? engineVersion) =>
+        new(InterfaceMatch.Details(engineVersion), code: answer == InterfaceAnswer.UpdateApp ? UpdateApp : UpdateBandroom);
 
     /// <summary>The <c>code</c> of an engine error body (<c>{"detail": ..., "code": ...}</c>), when it has one.</summary>
     public static string? CodeOf(string body)
@@ -50,8 +69,11 @@ public interface IEngineClient
 {
     Uri BaseAddress { get; }
     string? Token { get; set; }
+
+    /// <summary>Called when an answer shows that the engine's interface version is not this app's (the status row checks again at once).</summary>
+    Action? InterfaceMismatch { get => null; set { } }
+
     Task<Health> GetHealthAsync(CancellationToken ct = default);
-    Task<string> PairAsync(string code, string? deviceName, CancellationToken ct = default);
     Task<IReadOnlyList<ProfileInfo>> ListProfilesAsync(CancellationToken ct = default);
     Task<AudioRef> UploadAudioAsync(Stream audio, string filename, CancellationToken ct = default);
     Task<Job> CreateJobAsync(JobCreate request, CancellationToken ct = default);
@@ -113,8 +135,15 @@ public interface IEngineClient
 
 /// <summary>
 /// Client for the companion engine (engine/openapi.json). Loopback clients are trusted; LAN
-/// clients call <see cref="PairAsync"/> with the code the engine prints and then send the token
+/// clients call <see cref="PairDeviceAsync"/> with the code the engine shows and then send the token
 /// as a bearer header on every request.
+///
+/// The app and the engine must have the same interface version, and this is where that is kept. Two answers carry
+/// the engine's number, <see cref="GetHealthAsync"/> and <see cref="GetThisDeviceAsync"/>, and those two are always
+/// asked. Every other request is sent only while the last of those answers had this app's number. Before the first
+/// answer, and after a failure that could mean another engine now answers (unreachable, a dropped stream or
+/// upload), the number is not known and the next request asks health first. With another number the request is
+/// not sent and <see cref="EngineException.Mismatch"/> is thrown.
 /// </summary>
 public sealed class EngineClient : IEngineClient
 {
@@ -131,24 +160,25 @@ public sealed class EngineClient : IEngineClient
 
     public Uri BaseAddress { get; }
     public string? Token { get; set; }
+    public Action? InterfaceMismatch { get; set; }
+
+    /// <summary>What an answer with the engine's interface version meant, and the number it gave.</summary>
+    private sealed record Known(InterfaceAnswer Answer, int? Number)
+    {
+        public static Known Of(int? engineVersion) => new(InterfaceMatch.Of(engineVersion), engineVersion);
+    }
+
+    /// <summary>
+    /// The engine's last answer with its interface version; null while it is not known. One reference, read and
+    /// replaced whole: requests on this client run side by side (a stream, the list, an export).
+    /// </summary>
+    private Known? _known;
+
+    private void Forget() => Volatile.Write(ref _known, null);
 
     public Task<Health> GetHealthAsync(CancellationToken ct = default) =>
-        SendJsonAsync(HttpMethod.Get, "v1/health", null, EngineJsonContext.Default.Health, ct);
-
-    public async Task<string> PairAsync(string code, string? deviceName, CancellationToken ct = default)
-    {
-        var content = JsonContent.Create(new PairRequest(code, deviceName), EngineJsonContext.Default.PairRequest);
-        try
-        {
-            var r = await SendJsonAsync(HttpMethod.Post, "v1/pair", content, EngineJsonContext.Default.PairResponse, ct).ConfigureAwait(false);
-            Token = r.Token;
-            return r.Token;
-        }
-        catch (EngineException e) when (e.Status == HttpStatusCode.Forbidden)
-        {
-            throw new EngineException("The pairing code was not accepted.", e.Status, e);
-        }
-    }
+        SendNumberedAsync("v1/health", EngineJsonContext.Default.Health,
+            (version, id, name) => new Health("", "", AuthRequired: true, ServerId: id, ServerName: name, InterfaceVersion: version), ct);
 
     public async Task<PairResponse> PairDeviceAsync(string code, string? deviceName, string? platform, CancellationToken ct = default)
     {
@@ -164,7 +194,8 @@ public sealed class EngineClient : IEngineClient
     }
 
     public Task<DeviceSelf> GetThisDeviceAsync(CancellationToken ct = default) =>
-        SendJsonAsync(HttpMethod.Get, "v1/devices/me", null, DeviceJsonContext.Default.DeviceSelf, ct);
+        SendNumberedAsync("v1/devices/me", DeviceJsonContext.Default.DeviceSelf,
+            (version, id, _) => new DeviceSelf("", "", "", "", "", id ?? "", "", "", InterfaceVersion: version), ct);
 
     public Task<RotateResponse> RotateTokenAsync(CancellationToken ct = default) =>
         SendJsonAsync(HttpMethod.Post, "v1/devices/me/rotate", null, DeviceJsonContext.Default.RotateResponse, ct);
@@ -259,6 +290,7 @@ public sealed class EngineClient : IEngineClient
 
     private async Task SendNoContentAsync(HttpMethod method, string path, CancellationToken ct)
     {
+        await EnsureInterfaceAsync(ct).ConfigureAwait(false);
         using var req = new HttpRequestMessage(method, new Uri(BaseAddress, path));
         Authorize(req);
         HttpResponseMessage resp;
@@ -298,6 +330,8 @@ public sealed class EngineClient : IEngineClient
             Exception? dropped = null;
             try
             {
+                // After a dropped stream the engine that answers may be another one: its health is asked before the stream is.
+                await EnsureInterfaceAsync(ct).ConfigureAwait(false);
                 resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
                 await EnsureSuccessAsync(resp, ct).ConfigureAwait(false);
                 body = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
@@ -306,6 +340,11 @@ public sealed class EngineClient : IEngineClient
             {
                 resp?.Dispose();
                 dropped = e;
+                Forget();
+            }
+            catch (EngineException e) when (IsUnanswered(e))
+            {
+                dropped = e; // health got no answer: one more failed attempt
             }
 
             if (body is not null)
@@ -319,7 +358,7 @@ public sealed class EngineClient : IEngineClient
                     {
                         bool more;
                         try { more = await events.MoveNextAsync().ConfigureAwait(false); }
-                        catch (Exception e) when (IsTransport(e, ct)) { more = false; dropped = e; }
+                        catch (Exception e) when (IsTransport(e, ct)) { more = false; dropped = e; Forget(); }
                         if (!more) break;
 
                         var sse = events.Current;
@@ -341,11 +380,13 @@ public sealed class EngineClient : IEngineClient
                 }
                 if (terminal) yield break;
 
-                // The stream closed without a terminal event: ask for the job state before reconnecting.
+                // The stream closed without a terminal event: the engine may have been replaced, so its health is asked
+                // again, and then the job state, before reconnecting.
                 // An engine that cannot be reached right now counts as one more failed attempt.
+                Forget();
                 Job? job = null;
                 try { job = await GetJobAsync(jobId, ct).ConfigureAwait(false); }
-                catch (EngineException e) when (e.Status is null) { dropped = e; }
+                catch (EngineException e) when (IsUnanswered(e)) { dropped = e; }
                 if (job?.IsTerminal == true) yield break;
             }
 
@@ -375,10 +416,94 @@ public sealed class EngineClient : IEngineClient
         e is HttpRequestException or IOException or TimeoutException
         || (e is OperationCanceledException && !ct.IsCancellationRequested);
 
-    /// <summary>A transport failure as an <see cref="EngineException"/>: a timeout (HttpClient.Timeout, idle stream) or no connection.</summary>
-    private EngineException Transport(Exception e) => e is OperationCanceledException or TimeoutException
-        ? new EngineException($"The engine at {BaseAddress} did not answer in time.", null, e, EngineException.Timeout)
-        : new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
+    /// <summary>
+    /// A transport failure as an <see cref="EngineException"/>: a timeout (HttpClient.Timeout, idle stream) or no connection.
+    /// Whichever engine answers next is asked for its interface version again.
+    /// </summary>
+    private EngineException Transport(Exception e)
+    {
+        Forget();
+        return e is OperationCanceledException or TimeoutException
+            ? new EngineException($"The engine at {BaseAddress} did not answer in time.", null, e, EngineException.Timeout)
+            : new EngineException($"The engine at {BaseAddress} could not be reached.", null, e);
+    }
+
+    /// <summary>The request got no answer (unreachable or timed out), as opposed to an answer or a refusal for the interface version.</summary>
+    private static bool IsUnanswered(EngineException e) => e.Status is null && e.Code is null or EngineException.Timeout;
+
+    /// <summary>
+    /// Before every request but the two that carry the engine's interface version: asks health when the number is
+    /// not known, and refuses (nothing is sent) when it is not this app's. It decides from the health answer it
+    /// read itself: another request may have made the number unknown again meanwhile.
+    /// </summary>
+    private async Task EnsureInterfaceAsync(CancellationToken ct)
+    {
+        var known = Volatile.Read(ref _known) ?? Known.Of((await GetHealthAsync(ct).ConfigureAwait(false)).InterfaceVersion);
+        if (known.Answer != InterfaceAnswer.Same) throw EngineException.Mismatch(known.Answer, known.Number);
+    }
+
+    private void Note(Known now)
+    {
+        var before = Interlocked.Exchange(ref _known, now);
+        if (now.Answer != InterfaceAnswer.Same && before?.Answer != now.Answer) InterfaceMismatch?.Invoke();
+    }
+
+    /// <summary>
+    /// GET for an answer that carries the engine's interface version (health, this device). The number is read by
+    /// itself first: a float, a string, a bool, a number out of range or none at all is another interface version
+    /// (the computer's side is the one to update), not an unreadable answer. With another version the rest of the
+    /// answer is not read: <paramref name="other"/> makes the result from the number, the server id and the name.
+    /// That holds for an engine's answer only, and an engine always says who it is: an answer without a server id
+    /// (an empty object, some other service at the address) could not be read, like a page of HTML.
+    /// </summary>
+    private async Task<T> SendNumberedAsync<T>(string path, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> type,
+        Func<int?, string?, string?, T> other, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseAddress, path));
+        Authorize(req);
+        HttpResponseMessage resp;
+        try
+        {
+            resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        }
+        catch (Exception e) when (IsTransport(e, ct))
+        {
+            throw Transport(e);
+        }
+        using (resp)
+        {
+            await EnsureSuccessAsync(resp, ct).ConfigureAwait(false);
+            try
+            {
+                string body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                using var doc = JsonDocument.Parse(body);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object) throw new JsonException("not an object");
+                var known = Known.Of(InterfaceMatch.Read(root));
+                if (known.Answer != InterfaceAnswer.Same)
+                {
+                    string id = Text(root, "server_id") ?? throw new JsonException("no server id");
+                    Note(known);
+                    return other(known.Number, id, Text(root, "server_name"));
+                }
+                var value = JsonSerializer.Deserialize(body, type) ?? throw new JsonException("empty");
+                Note(known);
+                return value;
+            }
+            catch (Exception e) when (IsTransport(e, ct))
+            {
+                throw Transport(e);
+            }
+            catch (JsonException e)
+            {
+                Forget();
+                throw new EngineException($"The engine's answer to {path} could not be read.", resp.StatusCode, e);
+            }
+        }
+
+        static string? Text(JsonElement root, string name) =>
+            root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+    }
 
     private void Authorize(HttpRequestMessage req)
     {
@@ -388,6 +513,7 @@ public sealed class EngineClient : IEngineClient
     private async Task<T> SendJsonAsync<T>(HttpMethod method, string path, HttpContent? content,
         System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> type, CancellationToken ct)
     {
+        await EnsureInterfaceAsync(ct).ConfigureAwait(false);
         using var req = new HttpRequestMessage(method, new Uri(BaseAddress, path)) { Content = content };
         Authorize(req);
         HttpResponseMessage resp;
@@ -422,6 +548,7 @@ public sealed class EngineClient : IEngineClient
 
     private async Task<Stream> SendStreamAsync(string path, CancellationToken ct)
     {
+        await EnsureInterfaceAsync(ct).ConfigureAwait(false);
         var req = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseAddress, path));
         Authorize(req);
         HttpResponseMessage resp;

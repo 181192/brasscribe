@@ -303,7 +303,7 @@ public sealed class PairViewModelTests
         Assert.Equal(new PairingOpenRequest(null, true, false), _engine.Opens.Single());
         Assert.Equal("482 914", vm.CodeDisplay);
         Assert.Equal("Code: 4 8 2, 9 1 4", vm.CodeSpoken);
-        Assert.StartsWith("brasscribe://pair?v=1", vm.QrPayload);
+        Assert.StartsWith("scribe://pair?v=1", vm.QrPayload);
         Assert.Equal("QR code for pairing with Brasscribe on Kari's PC. It holds the same code: 482 914.", vm.QrSpoken);
         Assert.Equal("On the phone, open Brasscribe › Settings › Your computer and choose ", vm.Way1Before);
         Assert.Equal("Brasscribe on Kari's PC", vm.Way1Name);
@@ -420,7 +420,7 @@ public sealed class PairViewModelTests
     {
         var s = System.Text.Json.JsonSerializer.Deserialize<PairingState>("""
             {"open":true,"code":"482913","expires_at":null,"single_use":true,"server_id":"x","server_name":"Brasscribe on PC",
-             "hosts":[],"fingerprint":null,"uri":"brasscribe://pair?v=1","locked_until":"2026-09-27T12:00:30+00:00"}
+             "hosts":[],"fingerprint":null,"uri":"scribe://pair?v=1","locked_until":"2026-09-27T12:00:30+00:00"}
             """, EngineJson.Options)!;
         Assert.Equal(DateTimeOffset.Parse("2026-09-27T12:00:30Z"), s.LockedUntilTime);
         var old = System.Text.Json.JsonSerializer.Deserialize<PairingState>("""
@@ -551,7 +551,7 @@ public sealed class ControllerTests
             engine.Devices.Add(new("d1", "Kari's iPhone", "ios", "x", DateTimeOffset.UtcNow.ToString("O"), null, true));
             var launcher = new FakeLauncher();
             var sup = new EngineSupervisor(launcher, new FakePorts(),
-                (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC")),
+                (_, _) => Task.FromResult<HealthInfo?>(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC", InterfaceVersion: Wire.InterfaceVersion)),
                 p => new ProcessSpec("pixi", [], dir, new Dictionary<string, string>()), new EngineLog(null));
             var metrics = new Metrics();
             var ctl = new BandroomController(sup, _ => engine, metrics, Strings.En, new BandroomPaths(dir),

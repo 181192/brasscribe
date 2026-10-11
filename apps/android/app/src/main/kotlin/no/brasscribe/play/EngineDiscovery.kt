@@ -1,5 +1,6 @@
 package no.brasscribe.play
 
+import no.brasscribe.play.engine.Wire
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
@@ -13,7 +14,7 @@ import java.net.InetAddress
 import java.util.concurrent.Executors
 
 /**
- * Finds engines on the local network that advertise `_brasscribe._tcp` (`scribe serve --lan`).
+ * Finds engines on the local network that advertise `_scribe._tcp` (`scribe serve --lan`).
  * Discovery only suggests addresses; the engine still requires pairing. mDNS does not cross the
  * emulator's NAT, so on an emulator the list stays empty and 10.0.2.2 remains the way in.
  */
@@ -43,7 +44,7 @@ class EngineDiscovery(private val context: Context) {
             override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
         }
         listener = l
-        runCatching { nsd.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, l) }.onFailure { listener = null }
+        runCatching { nsd.discoverServices(Wire.SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, l) }.onFailure { listener = null }
     }
 
     @Synchronized
@@ -117,8 +118,6 @@ class EngineDiscovery(private val context: Context) {
     }
 
     companion object {
-        const val SERVICE_TYPE = "_brasscribe._tcp"
-
         /**
          * Base URL for a resolved service. Engines also advertise VPN and virtual-adapter addresses, so a private
          * (RFC 1918) IPv4 wins, then any IPv4, then a routable IPv6 (link-local needs a scope a URL can't carry).

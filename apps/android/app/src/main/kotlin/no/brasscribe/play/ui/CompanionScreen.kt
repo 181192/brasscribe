@@ -168,6 +168,7 @@ fun CompanionScreen(vm: PlayViewModel) {
                     color = c.textMuted,
                 )
                 state?.let { Text(it, color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+                UpdateAppAction(vm, state)
                 PlainButton(stringResource(R.string.cancel), { vm.pendingLink.value = null })
             }
             match != null -> MatchCode(match!!) { vm.cancelAsk() }
@@ -196,11 +197,12 @@ fun CompanionScreen(vm: PlayViewModel) {
                 OutlinedTextField(code, { code = it.trim() }, label = { Text(stringResource(R.string.companion_code)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 state?.let { Text(it, color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+                UpdateAppAction(vm, state)
                 if (askAgain != null) SecondaryButton(stringResource(R.string.pair_ask_again), { vm.askComputer(askAgain!!) }, icon = R.drawable.ic_bc_retry)
                 else PlainButton(stringResource(R.string.pair_ask), { vm.askComputer(url) }, enabled = url.startsWith("http"))
             }
         }
-        // Where to get the program: while nothing is paired, or the paired computer can't be found (Help always has it).
+        // Where to get the program: while nothing is paired, the paired computer can't be found, or its Bandroom needs an update (Help always has it).
         if (pending == null && match == null && showsGetBandroom(settings.paired, connection)) GetBandroom({ vm.say(R.string.bandroom_no_browser) })
         PlainButton(stringResource(if (details) R.string.details_hide else R.string.details_show), { details = !details })
         if (details) {
@@ -327,5 +329,9 @@ private fun VersionRow(vm: PlayViewModel) {
     )
 }
 
-/** The pairing screen offers Get Bandroom while nothing is paired, or while the paired computer can't be found. */
-internal fun showsGetBandroom(paired: Boolean, connection: ConnectionState): Boolean = !paired || connection is ConnectionState.Offline
+/**
+ * The pairing screen offers Get Bandroom while nothing is paired, while the paired computer can't be found, and
+ * while its Bandroom is older than this app: the same address has the latest one.
+ */
+internal fun showsGetBandroom(paired: Boolean, connection: ConnectionState): Boolean = !paired || connection is ConnectionState.Offline ||
+    (connection as? ConnectionState.NeedsUpdate)?.update == no.brasscribe.play.engine.InterfaceMatch.UPDATE_COMPUTER

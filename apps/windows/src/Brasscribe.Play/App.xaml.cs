@@ -109,7 +109,7 @@ public partial class App : Application
         if (catalogue) return;
 
         bool preview = Option("--show") is not null;
-        // A brasscribe://pair link while the app already runs: hand it to that window and quit.
+        // A scribe://pair link while the app already runs: hand it to that window and quit.
         string? pairingLink = PairingLinkFromLaunch();
         if (!preview && await RedirectToRunningAppAsync(pairingLink)) return;
 
@@ -220,7 +220,7 @@ public partial class App : Application
         return (main, settingsVm);
     }
 
-    /// <summary>A brasscribe://pair link this launch was started with (protocol activation, or on the command line).</summary>
+    /// <summary>A scribe://pair link this launch was started with (protocol activation, or on the command line).</summary>
     private static string? PairingLinkFromLaunch()
     {
         try
@@ -239,12 +239,7 @@ public partial class App : Application
         _ => null,
     };
 
-    private static string? LinkIn(string? text)
-    {
-        if (string.IsNullOrEmpty(text)) return null;
-        int at = text.IndexOf(Core.Engine.PairingLink.Scheme + ":", StringComparison.OrdinalIgnoreCase);
-        return at < 0 ? null : text[at..].Trim().Trim('"').Split(' ')[0].Trim('"');
-    }
+    private static string? LinkIn(string? text) => Core.Engine.PairingLink.In(text);
 
     /// <summary>
     /// With a pairing link and another Brasscribe Play already running, the link goes to that window and
@@ -266,7 +261,7 @@ public partial class App : Application
         }
     }
 
-    /// <summary>brasscribe:// opens this app (per user, no installer needed), and links sent from another launch arrive here.</summary>
+    /// <summary>scribe:// opens this app (per user, no installer needed), and links sent from another launch arrive here.</summary>
     private void RegisterPairingLinks(Microsoft.UI.Dispatching.DispatcherQueue queue)
     {
         try
@@ -291,7 +286,7 @@ public partial class App : Application
             try
             {
                 Microsoft.Windows.AppLifecycle.ActivationRegistrationManager.RegisterForProtocolActivation(
-                    Core.Engine.PairingLink.Scheme, "", Strings["AppWindowTitle"], exe);
+                    Core.Engine.Wire.PairScheme, "", Strings["AppWindowTitle"], exe);
             }
             catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException or UnauthorizedAccessException) { }
         });

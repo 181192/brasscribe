@@ -33,10 +33,10 @@ internal sealed class DemoEngine : IEngineApi
 
     private PairingState State() => new(_open, _open ? _code.ToString() : null, null, true, "3f9c2a7e5d1b", "Brasscribe on Kari's PC",
         ["192.0.2.20:8765"], null,
-        $"brasscribe://pair?v=1&id=3f9c2a7e5d1b&name=Brasscribe%20on%20Kari%27s%20PC&h=192.0.2.20:8765&code={_code}");
+        $"scribe://pair?v=1&id=3f9c2a7e5d1b&name=Brasscribe%20on%20Kari%27s%20PC&h=192.0.2.20:8765&code={_code}");
 
     public Task<HealthInfo> GetHealthAsync(CancellationToken ct = default) =>
-        Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e5d1b", "Brasscribe on Kari's PC"));
+        Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e5d1b", "Brasscribe on Kari's PC", InterfaceVersion: Wire.InterfaceVersion));
     public Task<StatusInfo> GetStatusAsync(CancellationToken ct = default) =>
         Task.FromResult(new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kari's PC", "0.9.4", 2, Devices.Count, _open, 0, 0));
     public Task<IReadOnlyList<DeviceInfo>> GetDevicesAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<DeviceInfo>>(Devices.ToList());
@@ -65,7 +65,12 @@ internal sealed class DemoEngine : IEngineApi
         return r;
     }
 
-    /// <summary>The flyout in a given state (--state running|busy|attention|stopped|error|setup|starting).</summary>
+    /// <summary>
+    /// The flyout in a given state (--state running|busy|attention|update|update-bandroom|update-behind|update-dev|
+    /// stopped|error|setup|starting). The four update states are an engine with another interface version, one per
+    /// fix: the update from this app, the latest Bandroom for a newer engine, the latest Bandroom for an older engine
+    /// this app can't update, and none for an engine from a developer's folder.
+    /// </summary>
     public static BandroomSnapshot Snapshot(string state, IStrings s)
     {
         var problems = new List<Problem>();
@@ -76,16 +81,22 @@ internal sealed class DemoEngine : IEngineApi
         {
             case "busy": job = new JobView("Old Hundredth", "Step_Notes", 0.62, 3); break;
             case "attention": problems.Add(Problems.LowDisk(s, 2_100_000_000, @"C:\Users\Kari\AppData\Local\Brasscribe")); break;
+            // The engine runs, but has another interface version than this Bandroom: nothing is asked of it, so there is no status.
+            case "update": problems.Add(Problems.Interface(s, InterfaceAnswer.UpdateEngine, Wire.InterfaceVersion - 1, InterfaceFix.UpdateEngine)); break;
+            case "update-bandroom": problems.Add(Problems.Interface(s, InterfaceAnswer.UpdateBandroom, Wire.InterfaceVersion + 1, InterfaceFix.LatestBandroom)); break;
+            case "update-behind": problems.Add(Problems.Interface(s, InterfaceAnswer.UpdateEngine, Wire.InterfaceVersion - 1, InterfaceFix.LatestBandroom)); break;
+            case "update-dev": problems.Add(Problems.Interface(s, InterfaceAnswer.UpdateEngine, Wire.InterfaceVersion - 1, InterfaceFix.None)); break;
             case "stopped": engine = EngineState.Stopped; break;
             case "error": engine = EngineState.Error; break;
             case "starting": engine = EngineState.Starting; break;
             case "setup": engine = EngineState.Stopped; setup = false; break;
         }
         var running = engine == EngineState.Running;
+        var asked = running && !state.StartsWith("update", StringComparison.Ordinal);
         return new BandroomSnapshot(
-            new StateInputs(engine, setup, 0.32, false, problems, job?.Fraction, running ? 2 : 0),
+            new StateInputs(engine, setup, 0.32, false, problems, job?.Fraction, asked ? 2 : 0),
             s.Format("Header", "Kari's PC"),
-            running ? new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kari's PC", "0.9.4", 2, 3, false, job is null ? 0 : 1, job is null ? 0 : 1) : null,
+            asked ? new StatusInfo("3f9c2a7e5d1b", "Brasscribe on Kari's PC", "0.9.4", 2, 3, false, job is null ? 0 : 1, job is null ? 0 : 1) : null,
             job,
             new HealthSnapshot(job is null ? 18 : 91, 0.2, state == "attention" ? 2_100_000_000 : 86_400_000_000, setup ? [] : [ModelComponent.BandWriter]),
             "Health_Speed_Nvidia",

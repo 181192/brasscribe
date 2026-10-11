@@ -4,7 +4,11 @@ namespace Brasscribe.Play.Core.Engine;
 
 // DTOs for this device's pairing with the engine (engine/openapi.json, tag "devices" and "pairing").
 
-/// <summary>GET /v1/devices/me: this device as the engine knows it. Times are ISO 8601, UTC.</summary>
+/// <summary>
+/// GET /v1/devices/me: this device as the engine knows it. Times are ISO 8601, UTC. <see cref="InterfaceVersion"/> is
+/// the engine's, as in health, so a paired heartbeat is this one request; from an engine with another version only it
+/// and <see cref="ServerId"/> are filled in.
+/// </summary>
 public sealed record DeviceSelf(
     string DeviceId,
     string Name,
@@ -15,7 +19,8 @@ public sealed record DeviceSelf(
     string RotateAfter,
     string ExpiresIfIdleAfter,
     string? RotatedAt = null,
-    bool? Online = null);
+    bool? Online = null,
+    int? InterfaceVersion = null);
 
 /// <summary>POST /v1/devices/me/rotate: the new token; the old one works until the new one is first used.</summary>
 public sealed record RotateResponse(string Token, string DeviceId);

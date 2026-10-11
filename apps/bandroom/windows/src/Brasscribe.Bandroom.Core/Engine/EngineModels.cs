@@ -14,10 +14,13 @@ public sealed record StatusInfo(
     int JobsRunning,
     int JobsQueued);
 
-/// <summary>GET /v1/health.</summary>
-/// <summary>GET /v1/health. <see cref="Build"/> (commit and workspace stamp) is null from engines that don't report it.</summary>
+/// <summary>
+/// GET /v1/health. <see cref="Build"/> (commit and workspace stamp) is null from engines that don't report it;
+/// <see cref="InterfaceVersion"/> is null when the answer has none that is a whole number (<see cref="InterfaceMatch"/>);
+/// from an engine with another version the other fields are read only as far as they can be (<see cref="EngineApi.GetHealthAsync"/>).
+/// </summary>
 public sealed record HealthInfo(string Status, string Version, string Device, bool AuthRequired, string? ServerId, string? ServerName,
-    string? Build = null);
+    string? Build = null, int? InterfaceVersion = null);
 
 /// <summary>GET /v1/devices row. <see cref="Online"/> is null on engines that don't report presence yet.</summary>
 public sealed record DeviceInfo(

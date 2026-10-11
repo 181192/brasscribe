@@ -116,7 +116,8 @@ fun ExportScreen(vm: PlayViewModel) {
             throw e
         } catch (e: Exception) {
             android.util.Log.w(no.brasscribe.play.PlayViewModel.TAG, "export failed", e)
-            vm.say(R.string.export_failed, e.message ?: e.javaClass.simpleName)
+            // The computer was not asked because one of the two needs an update: that sentence, not the exception's own.
+            if (!vm.saidRefused(e)) vm.say(R.string.export_failed, e.message ?: e.javaClass.simpleName)
         } finally {
             laying = null
             making = false

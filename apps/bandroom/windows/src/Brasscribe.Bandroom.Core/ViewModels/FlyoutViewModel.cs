@@ -38,6 +38,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
         _actions = actions;
         _announcer = announcer ?? new NullAnnouncer();
         _time = time ?? TimeProvider.System;
+        EmptyDevicesText = _s["Devices_Empty"];
     }
 
     public IStrings Strings => _s;
@@ -62,7 +63,6 @@ public sealed partial class FlyoutViewModel : ObservableObject
     public string CopyLabel => _s["Tech_Copy"];
     public string BackLabel => _s["Back"];
     public string PairLabel => _s["Primary_Pair"];
-    public string EmptyDevicesText => _s["Devices_Empty"];
     public string RemoveLabel => _s["Devices_Remove"];
 
     // ----- State -----
@@ -94,6 +94,13 @@ public sealed partial class FlyoutViewModel : ObservableObject
     [ObservableProperty] public partial string DevicesSummary { get; set; } = "";
     public ObservableCollection<DeviceRow> Devices { get; } = [];
     [ObservableProperty] public partial bool HasDevices { get; set; }
+    /// <summary>
+    /// Under the heading when no phone is listed: "No phones yet. …", or, while the engine has another interface
+    /// version and so was not asked for its phones, that problem's sentence.
+    /// </summary>
+    [ObservableProperty] public partial string EmptyDevicesText { get; set; } = "";
+    /// <summary>Pair a phone is offered under the list: not while the engine has another interface version.</summary>
+    [ObservableProperty] public partial bool CanPair { get; set; } = true;
 
     // ----- This computer -----
     [ObservableProperty] public partial bool HasHealth { get; set; }
@@ -184,6 +191,16 @@ public sealed partial class FlyoutViewModel : ObservableObject
 
         if (snap.Status is { } st) DevicesSummary = DeviceText.Summary(st.OnlineDevices, st.PairedDevices, _s);
         else DevicesSummary = "";
+        // An engine with another interface version is not asked for its phones: no rows from before (they could not
+        // be acted on), the reason in place of "No phones yet", and no Pair a phone. It need not be the first problem.
+        var mismatch = snap.Inputs.Problems.FirstOrDefault(p => p.IsInterface);
+        CanPair = mismatch is null;
+        EmptyDevicesText = mismatch?.Why ?? _s["Devices_Empty"];
+        if (mismatch is not null && Devices.Count > 0)
+        {
+            Devices.Clear();
+            HasDevices = false;
+        }
 
         if (snap.Health is { } h)
         {
@@ -213,6 +230,8 @@ public sealed partial class FlyoutViewModel : ObservableObject
 
     public void ApplyDevices(IReadOnlyList<DeviceInfo> devices, DateTimeOffset now)
     {
+        // A list read before the engine was found to have another interface version is not shown.
+        if (!CanPair) devices = [];
         var rows = DeviceText.Rows(devices, now, _s);
         Devices.Clear();
         foreach (var r in rows) Devices.Add(r);
@@ -261,7 +280,26 @@ public sealed partial class FlyoutViewModel : ObservableObject
         }
     }
 
-    [RelayCommand] private void Pair() => _actions.OpenPairWindow();
+    /// <summary>
+    /// Pair a phone, from wherever it is offered. While the engine has another interface version there is no pairing:
+    /// the panel goes to the problem, which says which of the two to update, and says it aloud.
+    /// </summary>
+    [RelayCommand]
+    private void Pair()
+    {
+        if (CanPair) _actions.OpenPairWindow();
+        else ShowProblem();
+    }
+
+    /// <summary>Back on the main view, at the problem and its fix (or, with no fix to offer, at the row below it).</summary>
+    public void ShowProblem()
+    {
+        Confirm = ConfirmKind.None;
+        _removing = null;
+        View = FlyoutView.Main;
+        FocusRequested?.Invoke("Primary");
+        if (ProblemTitle.Length > 0) _announcer.Announce(ProblemTitle + ". " + StatusSub);
+    }
 
     [RelayCommand]
     private async Task RestartAsync()

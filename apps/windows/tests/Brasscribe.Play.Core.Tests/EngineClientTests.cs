@@ -11,8 +11,26 @@ internal sealed class FakeHandler(Func<HttpRequestMessage, int, HttpResponseMess
 {
     public List<(HttpRequestMessage Request, string? Body)> Requests { get; } = [];
 
+    /// <summary>The health of an engine with this app's interface version.</summary>
+    public static string CurrentHealth { get; } =
+        $$"""{"version":"0.4.0","interface_version":{{Wire.InterfaceVersion}},"device":"cpu","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef","server_name":"Brasscribe on Studio PC"}""";
+
+    /// <summary>
+    /// When set, GET /v1/health is answered with this and is not listed in <see cref="Requests"/>: for tests of
+    /// one request, which the client sends only after the engine's health said its interface version.
+    /// </summary>
+    public string? Health { get; set; }
+
+    /// <summary>How often <see cref="Health"/> was asked.</summary>
+    public int HealthAsked { get; private set; }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
+        if (Health is not null && request.Method == HttpMethod.Get && request.RequestUri!.AbsolutePath == "/v1/health")
+        {
+            HealthAsked++;
+            return Json(Health);
+        }
         string? body = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
         Requests.Add((request, body));
         return respond(request, Requests.Count - 1);
@@ -29,9 +47,9 @@ public class EngineClientTests
 {
     private const string JobJson = """{"id":"j1","profile":"solo","target":"brass","status":"running","created":1.0,"stages":[{"name":"f0","status":"started"}],"progress":0.5}""";
 
-    private static (EngineClient Client, FakeHandler Handler) Make(Func<HttpRequestMessage, int, HttpResponseMessage> f)
+    private static (EngineClient Client, FakeHandler Handler) Make(Func<HttpRequestMessage, int, HttpResponseMessage> f, bool health = true)
     {
-        var h = new FakeHandler(f);
+        var h = new FakeHandler(f) { Health = health ? FakeHandler.CurrentHealth : null };
         return (new EngineClient(new HttpClient(h), new Uri("http://engine.local:8765")), h);
     }
 
@@ -43,11 +61,11 @@ public class EngineClientTests
             "/v1/pair" => FakeHandler.Json("""{"token":"tok-123"}"""),
             _ => FakeHandler.Json("""[{"name":"solo","target":"brass","pipeline":"A-solo","description":"One brass line","validated":false,"stages":["f0"]}]"""),
         });
-        await c.PairAsync("4821", "Kari-PC");
+        c.Token = (await c.PairDeviceAsync("4821", "Kari-PC", "windows")).Token;
         var profiles = await c.ListProfilesAsync();
 
         Assert.Equal("tok-123", c.Token);
-        Assert.Equal("""{"code":"4821","device_name":"Kari-PC"}""", h.Requests[0].Body);
+        Assert.Equal("""{"code":"4821","device_name":"Kari-PC","platform":"windows"}""", h.Requests[0].Body);
         Assert.Null(h.Requests[0].Request.Headers.Authorization);
         Assert.Equal("Bearer", h.Requests[1].Request.Headers.Authorization!.Scheme);
         Assert.Equal("tok-123", h.Requests[1].Request.Headers.Authorization!.Parameter);
@@ -90,7 +108,7 @@ public class EngineClientTests
     public async Task Rejected_pairing_code_is_a_plain_message()
     {
         var (c, _) = Make((_, _) => new HttpResponseMessage(HttpStatusCode.Forbidden));
-        var e = await Assert.ThrowsAsync<EngineException>(() => c.PairAsync("0000", null));
+        var e = await Assert.ThrowsAsync<EngineException>(() => c.PairDeviceAsync("0000", null, null));
         Assert.Equal(HttpStatusCode.Forbidden, e.Status);
         Assert.Contains("not accepted", e.Message);
     }
@@ -155,7 +173,7 @@ public class EngineClientTests
     [Fact]
     public async Task Unreachable_engine_gives_a_plain_message()
     {
-        var (c, _) = Make((_, _) => throw new HttpRequestException("refused"));
+        var (c, _) = Make((_, _) => throw new HttpRequestException("refused"), health: false);
         var e = await Assert.ThrowsAsync<EngineException>(() => c.GetHealthAsync());
         Assert.Contains("could not be reached", e.Message);
     }
@@ -174,44 +192,5 @@ public class EngineClientTests
         var r = est.Update(0.5)!.Value.TotalSeconds; // raw 20 s, smoothed toward it
         Assert.InRange(r, 20, 30);
         Assert.Equal(TimeSpan.Zero, est.Update(1.0));
-    }
-
-    /// <summary>An engine from before the trumpet seat: it refuses seats it doesn't know with a 422 and no refusal code.</summary>
-    private static (EngineClient Client, FakeHandler Handler) OldEngine(params string[] known) => Make((r, _) =>
-    {
-        var body = r.Content!.ReadAsStringAsync().Result;
-        var seat = JsonDocument.Parse(body).RootElement.TryGetProperty("seat", out var s) ? s.GetString() : null;
-        return seat is not null && !known.Contains(seat)
-            ? FakeHandler.Json("""{"detail":[{"loc":["body","seat"],"msg":"Input should be 'soprano-cornet', ..."}]}""", HttpStatusCode.UnprocessableEntity)
-            : FakeHandler.Json(JobJson, HttpStatusCode.Accepted);
-    });
-
-    private static string? SeatOf(string? body) =>
-        JsonDocument.Parse(body!).RootElement.TryGetProperty("seat", out var s) ? s.GetString() : null;
-
-    [Fact]
-    public async Task An_older_engine_gets_a_trumpet_job_as_solo_cornet()
-    {
-        var (c, h) = OldEngine("solo-cornet");
-        var (job, fellBack) = await ViewModels.EngineSeats.CreateJobAsync(c, new JobCreate("a1", Seat: "trumpet", Reads: "treble", Lead: "seat"));
-        Assert.Equal("j1", job.Id);
-        Assert.True(fellBack);
-        Assert.Equal(["trumpet", "solo-cornet"], h.Requests.Select(x => SeatOf(x.Body)));
-        var again = JsonDocument.Parse(h.Requests[1].Body!).RootElement;
-        Assert.False(again.TryGetProperty("lead", out var lead) && lead.ValueKind != JsonValueKind.Null);
-        Assert.False(again.TryGetProperty("reads", out var reads) && reads.ValueKind != JsonValueKind.Null);
-    }
-
-    [Fact]
-    public async Task A_known_seat_goes_once_and_other_refusals_are_not_retried()
-    {
-        var (c, h) = OldEngine("trumpet");
-        Assert.False((await ViewModels.EngineSeats.CreateJobAsync(c, new JobCreate("a1", Seat: "trumpet"))).FellBack);
-        Assert.Single(h.Requests);
-
-        var (old, oh) = OldEngine();
-        var e = await Assert.ThrowsAsync<EngineException>(() => ViewModels.EngineSeats.CreateJobAsync(old, new JobCreate("a1", Seat: "euphonium")));
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, e.Status);
-        Assert.Single(oh.Requests);
     }
 }

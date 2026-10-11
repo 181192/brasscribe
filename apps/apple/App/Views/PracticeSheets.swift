@@ -453,7 +453,9 @@ struct ExportView: View {
             }
             return out
         } catch {
-            message = String(localized: "These files couldn't be made. Try fewer formats, or try again.")
+            // braille is the computer's: with another interface version there, the words say which of the two to update
+            message = app.refused(error).map(ConnectionCopy.update)
+                ?? String(localized: "These files couldn't be made. Try fewer formats, or try again.")
             return nil
         }
     }

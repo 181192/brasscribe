@@ -1,5 +1,6 @@
 package no.brasscribe.play
 
+import no.brasscribe.play.engine.Wire
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
@@ -126,7 +127,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file; brasscribe://pair pairs; a tap on
+     * Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file; scribe://pair pairs; a tap on
      * "ready" opens that job's score or tab.
      */
     internal fun handleIntent(intent: Intent?) {
@@ -135,7 +136,7 @@ class MainActivity : ComponentActivity() {
             intent.getStringExtra(JobNotices.EXTRA_JOB)?.takeIf(JobNotices::isJobId)?.let(vm::openFinishedJob)
             return
         }
-        if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == no.brasscribe.play.engine.PairLink.SCHEME) {
+        if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == Wire.PAIR_SCHEME) {
             vm.openPairLink(intent.data.toString())
             return
         }

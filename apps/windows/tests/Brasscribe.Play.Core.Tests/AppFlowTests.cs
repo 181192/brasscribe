@@ -69,7 +69,7 @@ public class AppFlowTests
         string path = r.RequestUri!.AbsolutePath;
         return (r.Method.Method, path) switch
         {
-            ("GET", "/v1/health") => FakeHandler.Json("""{"version":"0.1.0","device":"mps","auth_required":false}"""),
+            ("GET", "/v1/health") => FakeHandler.Json($$"""{"version":"0.1.0","interface_version":{{Wire.InterfaceVersion}},"device":"mps","auth_required":false}"""),
             ("GET", "/v1/profiles") => FakeHandler.Json("""[{"name":"solo","target":"brass","pipeline":"A-solo","description":"d","validated":false,"stages":[]},{"name":"brass-band","target":"brass","pipeline":"A","description":"d","validated":false,"stages":[]},{"name":"pop-rock","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]}]"""),
             ("POST", "/v1/audio") => FakeHandler.Json("""{"audio_id":"a1","sha256":"00","filename":"take.wav","bytes":4}""", HttpStatusCode.Created),
             ("POST", "/v1/jobs") => FakeHandler.Json(JobRunning, HttpStatusCode.Accepted),
@@ -101,7 +101,9 @@ public class AppFlowTests
             new ScoreViewModel(core, new PlayerViewModel(player, said, strings, ui), said, strings),
             new ExportViewModel(new ExportService(), new NoDialogs(), said, strings),
             new OutputOptionsViewModel(core, said, strings),
-            new SettingsViewModel(Settings(firstRun), said, strings),
+            // The status row's own checks go to the same fake engine, and find nothing else on the network.
+            new SettingsViewModel(Settings(firstRun), said, strings, new FakeBrowse(() => []),
+                clients: (uri, token) => new EngineClient(new HttpClient(engine), uri) { Token = token }),
             (uri, token) => new EngineClient(new HttpClient(engine), uri) { Token = token },
             said, strings, core, library);
         return (main, said);
@@ -135,6 +137,7 @@ public class AppFlowTests
         string Job(string id = "j1", string? target = "brass") => $$"""{"id":"{{id}}","profile":"solo","target":{{(target is null ? "null" : $"\"{target}\"")}},"status":"succeeded","created":{{DateTimeOffset.Now.ToUnixTimeSeconds()}},"stages":[],"audio_id":"a1","title":"{{title}}","outputs":["solo.musicxml","composition.json"]}""";
         var engine = new FakeHandler((r, _) => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
         {
+            ("GET", "/v1/health") => FakeHandler.Json($$"""{"version":"0.1.0","interface_version":{{Wire.InterfaceVersion}},"device":"cpu","auth_required":false}"""),
             // The computer serves other apps too: a tab, a job of a target this app does not know and one without a target are not this app's.
             ("GET", "/v1/jobs") => FakeHandler.Json(gone ? "[]" : $"[{Job()},{Job("t1", "fretted")},{Job("x1", "choir")},{Job("n1", null)}]"),
             ("GET", "/v1/jobs/j1") => FakeHandler.Json(Job()),
@@ -317,10 +320,14 @@ public class AppFlowTests
     [InlineData("first-run", Screen.FirstRun)]
     [InlineData("home", Screen.Start)]
     [InlineData("home-offline", Screen.Start)]
+    [InlineData("home-update", Screen.Start)]
+    [InlineData("home-update-app", Screen.Start)]
     [InlineData("review-listening", Screen.Review)]
     [InlineData("what-is-this", Screen.SourceKind)]
     [InlineData("transcribing", Screen.Transcribing)]
     [InlineData("error", Screen.Error)]
+    [InlineData("error-update", Screen.Error)]
+    [InlineData("error-update-app", Screen.Error)]
     [InlineData("review", Screen.Review)]
     [InlineData("choose-output", Screen.ChooseOutput)]
     [InlineData("score", Screen.Score)]
@@ -340,6 +347,32 @@ public class AppFlowTests
         if (scene == "review") Assert.Equal("Listen to this bar", main.Review.ListenLabel);
         if (scene == "home") Assert.Equal("Connected to Brasscribe on Studio PC", main.Settings.Connection.StatusText);
         if (scene == "home-offline") Assert.Equal("Connect", main.Settings.Connection.ActionText);
+        if (scene == "home-update")
+        {
+            Assert.StartsWith("Update Brasscribe on Studio PC.", main.Settings.Connection.StatusText);
+            Assert.Equal("Get the update", main.Settings.Connection.ActionText);
+        }
+        if (scene == "home-update-app")
+        {
+            Assert.StartsWith("Update Brasscribe Play. Brasscribe on Studio PC is newer", main.Settings.Connection.StatusText);
+            Assert.Equal("Get the update", main.Settings.Connection.ActionText);
+        }
+        if (scene == "error-update")
+        {
+            Assert.Equal(ErrorKind.UpdateBandroom, main.Error.Kind);
+            Assert.Equal("Update Brasscribe on your computer", main.Error.Title);
+            Assert.Equal("Get the update", main.Error.LinkLabel);
+            Assert.Equal("https://github.com/181192/brasscribe/releases/latest", main.Error.LinkUri!.AbsoluteUri);
+        }
+        if (scene == "error-update-app")
+        {
+            Assert.Equal(ErrorKind.UpdateApp, main.Error.Kind);
+            Assert.Equal("Update Brasscribe Play", main.Error.Title);
+            Assert.True(main.Error.HasLink);
+        }
+        if (scene == "error") Assert.False(main.Error.HasLink);
+        // Every scene is one the Axe.Windows and Tab walk starts too.
+        Assert.Contains(scene, PlayScanScenes());
         if (scene == "transcribing")
         {
             Assert.Equal("Writing down the notes", main.Transcription.StepHeading);
@@ -347,7 +380,22 @@ public class AppFlowTests
             Assert.Equal("62%", Screens.Percent(62, "en-US"));
             Assert.Equal("62\u00A0%", Screens.Percent(62, "nb-NO"));
         }
-        Assert.All(PreviewScenes.Names, n => Assert.Contains(n, PreviewScenes.Names));
+        Assert.Contains(scene, PreviewScenes.Names);
+    }
+
+    /// <summary>The scenes tools/ScreenCheck starts the app with (PlayScan.Scenes), read from its source.</summary>
+    private static string[] PlayScanScenes()
+    {
+        string source = File.ReadAllText(TestPaths.RepoFile("apps/windows/tools/ScreenCheck/PlayScan.cs")!);
+        var m = System.Text.RegularExpressions.Regex.Match(source, "public const string Scenes = \"([^\"]+)\";");
+        Assert.True(m.Success, "PlayScan.Scenes not found");
+        return m.Groups[1].Value.Split(',');
+    }
+
+    [Fact]
+    public void Every_preview_scene_is_scanned_and_every_scanned_scene_exists()
+    {
+        Assert.Equal(PreviewScenes.Names.Append("settings").Order(), PlayScanScenes().Order());
     }
 
     [Fact]
@@ -468,7 +516,7 @@ public class AppFlowTests
         const string detail = "a quartet needs a recording of the whole group: a solo take has no harmony for the other parts";
         var engine = Engine("", first: r => r.Method == HttpMethod.Post && r.RequestUri!.AbsolutePath == "/v1/jobs"
             && (r.Content?.ReadAsStringAsync().Result ?? "").Contains("\"lineup\":\"quartet\"")
-                ? FakeHandler.Json($$"""{"detail":"{{detail}}"}""", HttpStatusCode.UnprocessableEntity)
+                ? FakeHandler.Json($$"""{"detail":"{{detail}}","code":"quartet_needs_group"}""", HttpStatusCode.UnprocessableEntity)
                 : null);
         var (main, said) = Build(engine);
         Assert.True(main.Output.TryChooseLineup(Lineup.Quartet));
@@ -497,7 +545,10 @@ public class AppFlowTests
     {
         var handler = new FakeHandler((r, _) => r.RequestUri!.PathAndQuery == "/v1/jobs/j1/braille?part=2"
             ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("⠼⠁") }
-            : new HttpResponseMessage(HttpStatusCode.NotFound));
+            : new HttpResponseMessage(HttpStatusCode.NotFound))
+        {
+            Health = FakeHandler.CurrentHealth,
+        };
         var engine = new EngineClient(new HttpClient(handler), new Uri("http://e:8765"));
         var xml = File.ReadAllText(TestPaths.Fixture("two-parts.musicxml"));
         var sources = new ExportSources(xml, null, null, engine, "j1", []);
@@ -535,6 +586,141 @@ public class AppFlowTests
         main.BackCommand.Execute(null);
         Assert.Equal(Screen.Start, main.Screen);
         Assert.NotNull(main.Kind.Source); // the recording is kept for another try
+    }
+
+    [Theory]
+    [InlineData("""{"version":"0.1.0","interface_version":0,"device":"mps","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef"}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
+    [InlineData("""{"version":"0.1.0","device":"mps","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef"}""", ErrorKind.UpdateBandroom, "Update Brasscribe on your computer")]
+    [InlineData("""{"version":"9.0.0","interface_version":2,"device":"mps","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef"}""", ErrorKind.UpdateApp, "Update Brasscribe Play")]
+    public async Task An_engine_with_another_interface_version_gets_no_recording_and_no_job(string health, ErrorKind kind, string title)
+    {
+        var engine = Engine("", first: r => r.RequestUri!.AbsolutePath == "/v1/health" ? FakeHandler.Json(health) : null);
+        var (main, said) = Build(engine);
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        main.Kind.Selected = main.Kind.Options[0];
+        main.Kind.ContinueCommand.Execute(null);
+
+        await Until(() => main.Screen == Screen.Error);
+        Assert.False(main.Transcription.IsRunning);
+        Assert.Equal(kind, main.Error.Kind);
+        Assert.Equal(title, main.Error.Title);
+        Assert.StartsWith("Your recording is safe.", main.Error.Reason);
+        Assert.EndsWith("they only work together when both are up to date.", main.Error.Reason);
+        Assert.Equal(2, main.Error.Steps.Count);
+        // The numbers are for the details only.
+        Assert.DoesNotContain("interface", main.Error.Title + main.Error.Reason + string.Join(" ", main.Error.Steps), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("this app is built for 1", main.Error.Details);
+        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Important && a.Text.StartsWith("Stopped: Update "));
+
+        // Only health was asked: no profiles, no upload, no job, no list of jobs.
+        await main.RefreshComputerScoresAsync();
+        Assert.All(engine.Requests, r => Assert.Equal("/v1/health", r.Request.RequestUri!.AbsolutePath));
+        Assert.DoesNotContain(main.LibraryItems, i => i.OnComputer);
+    }
+
+    /// <summary>
+    /// An engine on this PC with a finished score in its list; its health says <paramref name="version"/>() each time it
+    /// is asked, and nothing answers while <paramref name="away"/>() is true.
+    /// </summary>
+    private static FakeHandler EngineWithAScore(Func<int> version, Func<bool>? away = null) => Engine("", first: r => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
+    {
+        _ when away?.Invoke() == true => throw new HttpRequestException("connection refused"),
+        ("GET", "/v1/health") => FakeHandler.Json($$"""{"version":"0.4.0","interface_version":{{version()}},"device":"cpu","auth_required":false,"server_id":"0123456789abcdef0123456789abcdef","server_name":"Brasscribe on Studio PC"}"""),
+        ("GET", "/v1/jobs") => FakeHandler.Json($"[{JobDone}]"),
+        _ => null,
+    });
+
+    private static List<string> Asked(FakeHandler engine) =>
+        engine.Requests.Select(r => $"{r.Request.Method.Method} {r.Request.RequestUri!.AbsolutePath}").ToList();
+
+    [Theory]
+    [InlineData(0, "Update Brasscribe on this PC. It is older than this app, and they only work together when both are up to date.")]
+    [InlineData(2, "Update Brasscribe Play. Brasscribe on this PC is newer than this app, and they only work together when both are up to date.")]
+    public async Task Opening_renaming_and_deleting_a_listed_score_on_an_engine_with_another_version_say_update(int version, string sentence)
+    {
+        var engine = EngineWithAScore(() => version);
+        var (main, said) = Build(engine);
+        var noticed = new List<string>();
+        main.ProblemNoticed += (_, text) => noticed.Add(text);
+        // A row from before the computer's side changed: still on screen when it is chosen.
+        var row = new LibraryItem("job:j1", "Take", "On your computer", OnComputer: true, JobId: "j1");
+
+        await main.OpenLibraryItemAsync(row);
+        Assert.Equal(sentence, main.Start.ErrorText);
+        Assert.Equal(Screen.Start, main.Screen);
+        Assert.Contains(said.Items, a => a.Kind == AnnouncementKind.Important && a.Text == sentence);
+        Assert.DoesNotContain(said.Items, a => a.Text.Contains("couldn't be opened", StringComparison.Ordinal) || a.Text.Contains("Can't reach", StringComparison.Ordinal));
+
+        Assert.False(await main.RenameLibraryItemAsync(row, "Old Hundredth"));
+        Assert.False(await main.DeleteLibraryItemAsync(row));
+        Assert.Equal([sentence, sentence], noticed);
+        Assert.DoesNotContain(said.Items, a => a.Text.StartsWith("Deleted", StringComparison.Ordinal));
+
+        // Nothing but its health was asked of that engine, and once: the client remembers the answer.
+        Assert.Equal(["GET /v1/health"], Asked(engine));
+    }
+
+    [Fact]
+    public async Task The_computers_scores_follow_the_connection()
+    {
+        int version = Wire.InterfaceVersion;
+        bool away = false;
+        var engine = EngineWithAScore(() => version, () => away);
+        var (main, _) = Build(engine);
+        var row = main.Settings.Connection;
+
+        // The status row finds the engine: its scores are fetched without anyone asking for them.
+        Assert.Equal(ConnectionState.Connected, await row.CheckAsync());
+        await Until(() => main.LibraryItems.Any(i => i.OnComputer));
+
+        // The computer is gone: its scores can't be opened, so they are not listed.
+        away = true;
+        Assert.Equal(ConnectionState.Offline, await row.CheckAsync());
+        Assert.DoesNotContain(main.LibraryItems, i => i.OnComputer);
+
+        // Back: fetched again, and whichever engine answers now is asked for its interface version first.
+        away = false;
+        engine.Requests.Clear();
+        Assert.Equal(ConnectionState.Connected, await row.CheckAsync());
+        await Until(() => main.LibraryItems.Any(i => i.OnComputer));
+        Assert.Equal(["GET /v1/health", "GET /v1/health", "GET /v1/jobs"], Asked(engine)); // the row's check, then the list's client
+
+        // The computer's side was updated past this app: the list goes with the state, and is not asked for.
+        version = Wire.InterfaceVersion + 1;
+        Assert.Equal(ConnectionState.UpdateApp, await row.CheckAsync());
+        Assert.DoesNotContain(main.LibraryItems, i => i.OnComputer);
+        engine.Requests.Clear();
+        await main.RefreshComputerScoresAsync();
+        Assert.DoesNotContain(main.LibraryItems, i => i.OnComputer);
+        Assert.Equal(["GET /v1/health"], Asked(engine));
+
+        // After its update: connected again, and the scores are back.
+        version = Wire.InterfaceVersion;
+        Assert.Equal(ConnectionState.Connected, await row.CheckAsync());
+        await Until(() => main.LibraryItems.Any(i => i.OnComputer));
+    }
+
+    [Fact]
+    public void A_connection_state_shown_as_sample_content_asks_no_computer()
+    {
+        var engine = EngineWithAScore(() => Wire.InterfaceVersion);
+        var (main, _) = Build(engine);
+        main.Settings.Connection.Show(ConnectionState.Connected, PreviewScenes.SampleServer);
+        main.Settings.Connection.Show(ConnectionState.UpdateBandroom, PreviewScenes.SampleServer);
+        Assert.Empty(engine.Requests);
+    }
+
+    [Fact]
+    public async Task An_export_from_an_engine_with_another_version_says_update()
+    {
+        var handler = new FakeHandler((_, _) => new HttpResponseMessage(HttpStatusCode.NotFound)) { Health = FakeHandler.CurrentHealth.Replace($"\"interface_version\":{Wire.InterfaceVersion}", "\"interface_version\":0") };
+        var engine = new EngineClient(new HttpClient(handler), new Uri("http://e:8765"));
+        var sources = new ExportSources(File.ReadAllText(TestPaths.Fixture("two-parts.musicxml")), null, null, engine, "j1", []);
+        using var output = new MemoryStream();
+        var refused = await Assert.ThrowsAsync<EngineException>(() => new ExportService().ExportAsync(ExportFormat.Braille, sources, output, 1, new()));
+        Assert.Equal("Update Brasscribe on your computer", EngineErrors.Message(refused, Strings()));
+        Assert.Empty(handler.Requests);
     }
 
     [Fact]

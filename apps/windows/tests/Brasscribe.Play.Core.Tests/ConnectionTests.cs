@@ -21,6 +21,10 @@ internal sealed class FakeLan
         public string ServerName { get; } = "Brasscribe on " + computer;
         public HashSet<string> Tokens { get; } = [];
         public bool AuthRequired { get; set; } = true;
+        /// <summary>What health and this device's answer say the interface version is; null leaves it out.</summary>
+        public int? InterfaceVersion { get; set; } = Wire.InterfaceVersion;
+        /// <summary>The interface version as raw JSON, for answers where it is not a whole number ("1.5", "true", "\"1\"").</summary>
+        public string? RawInterfaceVersion { get; set; }
         public string Code { get; set; } = "482913";
         public string RotateAfter { get; set; } = "2099-01-01T00:00:00Z";
         public int Rotations { get; set; }
@@ -32,7 +36,12 @@ internal sealed class FakeLan
     }
 
     public Dictionary<Uri, Engine> At { get; } = [];
+    /// <summary>Addresses where something that is no engine answers every request with 200 and this body.</summary>
+    public Dictionary<Uri, string> NotAnEngine { get; } = [];
     public List<(Uri Address, string Path, string? Token)> Requests { get; } = [];
+
+    /// <summary>Every request as "GET /v1/health", in the order sent.</summary>
+    public List<string> Calls { get; } = [];
 
     public IEngineClient Client(Uri address, string? token) =>
         new EngineClient(new HttpClient(new FakeHandler((r, _) => Answer(address, r))), address) { Token = token };
@@ -41,21 +50,34 @@ internal sealed class FakeLan
     {
         var path = r.RequestUri!.AbsolutePath;
         string? token = r.Headers.Authorization?.Parameter;
-        Requests.Add((address, path, token));
+        lock (Requests)
+        {
+            Requests.Add((address, path, token));
+            Calls.Add($"{r.Method.Method} {path}");
+        }
+        if (NotAnEngine.TryGetValue(address, out var page)) return FakeHandler.Json(page);
         if (!At.TryGetValue(address, out var e)) throw new HttpRequestException("connection refused");
         bool known = token is not null && e.Tokens.Contains(token);
         string Json(object o) => JsonSerializer.Serialize(o);
+        // The answer with the engine's interface version in it, as the engine has it (left out, or not a whole number).
+        string Numbered(object o)
+        {
+            var answer = JsonSerializer.SerializeToNode(o)!.AsObject();
+            if (e.RawInterfaceVersion is { } raw) answer["interface_version"] = System.Text.Json.Nodes.JsonNode.Parse(raw);
+            else if (e.InterfaceVersion is { } version) answer["interface_version"] = version;
+            return answer.ToJsonString();
+        }
         switch (r.Method.Method, path)
         {
             case ("GET", "/v1/health"):
-                return FakeHandler.Json(Json(new { version = "0.4.0", device = "cpu", auth_required = e.AuthRequired, server_id = e.ServerId, server_name = e.ServerName }));
+                return FakeHandler.Json(Numbered(new { version = "0.4.0", device = "cpu", auth_required = e.AuthRequired, server_id = e.ServerId, server_name = e.ServerName }));
             case ("GET", "/v1/devices/me"):
                 if (!e.AuthRequired && token is null) return FakeHandler.Json("""{"detail":"not a paired device"}""", HttpStatusCode.NotFound);
                 if (!known) return FakeHandler.Json("""{"detail":"unknown token"}""", HttpStatusCode.Unauthorized);
-                return FakeHandler.Json(Json(new
+                return FakeHandler.Json(Numbered(new
                 {
                     device_id = "d1", name = "PC", platform = "windows", paired_at = "2026-09-01T00:00:00Z", last_seen = "2026-09-27T00:00:00Z",
-                    server_id = e.ServerId, rotate_after = e.RotateAfter, expires_if_idle_after = "2027-03-01T00:00:00Z",
+                    online = true, server_id = e.ServerId, rotate_after = e.RotateAfter, expires_if_idle_after = "2027-03-01T00:00:00Z",
                 }));
             case ("POST", "/v1/devices/me/rotate"):
                 if (!known) return FakeHandler.Json("{}", HttpStatusCode.Unauthorized);
@@ -155,13 +177,14 @@ public class ConnectionMonitorTests
     {
         var rig = new Rig();
         rig.Studio(Old);
-        rig.Credentials.Save(new EngineCredential(StudioId, "tok-1"));
+        rig.Credentials.Save(new EngineCredential(StudioId, "tok-1", "Brasscribe on Studio PC"));
 
         Assert.Equal(ConnectionState.Connected, await rig.Monitor.CheckAsync());
         Assert.Equal("Connected to Brasscribe on Studio PC", rig.Monitor.StatusText);
         Assert.False(rig.Monitor.HasAction);
         Assert.Equal(ConnectionMonitor.HeartbeatInterval, rig.Monitor.NextDelay);
-        Assert.Contains(rig.Lan.Requests, r => r.Path == "/v1/devices/me" && r.Token == "tok-1");
+        // A paired heartbeat is one request: this device's answer names the engine and its interface version.
+        Assert.Equal([(Old, "/v1/devices/me", "tok-1")], rig.Lan.Requests);
         var stored = rig.Credentials.Get(StudioId)!;
         Assert.Equal(Old.ToString(), stored.LastAddress);
         Assert.Equal("Brasscribe on Studio PC", stored.ServerName);
@@ -173,7 +196,7 @@ public class ConnectionMonitorTests
     {
         var rig = new Rig("nb-NO");
         rig.Studio(Old);
-        rig.Credentials.Save(new EngineCredential(StudioId, "tok-1"));
+        rig.Credentials.Save(new EngineCredential(StudioId, "tok-1", "Brasscribe on Studio PC"));
         await rig.Monitor.CheckAsync();
         Assert.Equal("Koblet til Brasscribe på Studio PC", rig.Monitor.StatusText);
     }
@@ -329,24 +352,6 @@ public class ConnectionMonitorTests
     }
 
     [Fact]
-    public async Task A_token_moved_from_the_old_settings_file_is_filed_under_its_server_id()
-    {
-        var rig = new Rig();
-        rig.Studio(Old, "tok-old");
-        var settings = new InMemorySettings();
-        settings.Set("EngineToken", "tok-old");
-        settings.Set("EngineAddress", Old.ToString());
-        var credentials = new EngineCredentials(rig.Vault, settings);
-        var monitor = new ConnectionMonitor(credentials, rig.Lan.Client, rig.Browse, () => Old, _ => { }, rig.Said, Strings(), rig.Time);
-
-        Assert.Equal(ConnectionState.Connected, await monitor.CheckAsync());
-        Assert.Equal(StudioId, credentials.CurrentServerId);
-        Assert.Equal("tok-old", credentials.Get(StudioId)!.Token);
-        Assert.Null(credentials.Get(EngineCredentials.LegacyKey));
-        Assert.Equal("Brasscribe on Studio PC", credentials.Get(StudioId)!.ServerName);
-    }
-
-    [Fact]
     public void Shown_state_for_screenshots_does_not_check()
     {
         var rig = new Rig();
@@ -358,66 +363,16 @@ public class ConnectionMonitorTests
     [Fact]
     public void Glyphs_differ_per_state_so_colour_is_never_the_only_cue()
     {
-        var glyphs = Enum.GetValues<ConnectionState>().Select(Screens.ConnectionGlyph).ToList();
+        // The two update states share the update icon: the words say which of the two to update.
+        var glyphs = Enum.GetValues<ConnectionState>().Where(s => s != ConnectionState.UpdateApp).Select(Screens.ConnectionGlyph).ToList();
         Assert.Equal(glyphs.Count, glyphs.Distinct().Count());
+        Assert.Equal(Screens.ConnectionGlyph(ConnectionState.UpdateBandroom), Screens.ConnectionGlyph(ConnectionState.UpdateApp));
     }
 }
 
 public class EngineCredentialsTests
 {
     private const string StudioId = "0123456789abcdef0123456789abcdef";
-
-    [Fact]
-    public void The_old_plain_token_moves_to_the_vault_once_and_the_plain_copy_is_deleted()
-    {
-        var settings = new InMemorySettings();
-        settings.Set("EngineToken", "tok-old");
-        settings.Set("EngineAddress", "http://192.0.2.20:8765/");
-        var vault = new InMemorySecretVault();
-
-        var credentials = new EngineCredentials(vault, settings);
-        Assert.Null(settings.Get<string?>("EngineToken", null));
-        var legacy = credentials.Current!;
-        Assert.Equal(EngineCredentials.LegacyKey, legacy.ServerId);
-        Assert.Equal("tok-old", legacy.Token);
-        Assert.Equal("http://192.0.2.20:8765/", legacy.LastAddress);
-        Assert.Contains(EngineCredentials.LegacyKey, vault.Keys(EngineCredentials.Resource));
-
-        // Again: nothing changes.
-        var again = new EngineCredentials(vault, settings);
-        Assert.Equal(legacy, again.Current);
-    }
-
-    [Fact]
-    public void Migration_never_overwrites_a_newer_record()
-    {
-        var settings = new InMemorySettings();
-        var vault = new InMemorySecretVault();
-        new EngineCredentials(vault, settings).Save(new EngineCredential(StudioId, "tok-new"));
-        settings.Set("EngineToken", "tok-stale"); // an old build wrote it back
-
-        var credentials = new EngineCredentials(vault, settings);
-        Assert.Equal("tok-new", credentials.Current!.Token);
-        Assert.Null(credentials.Get(EngineCredentials.LegacyKey));
-        Assert.Null(settings.Get<string?>("EngineToken", null));
-    }
-
-    private sealed class BrokenVault : ISecretVault
-    {
-        public string? Get(string resource, string key) => null;
-        public void Set(string resource, string key, string secret) => throw new UnauthorizedAccessException();
-        public void Remove(string resource, string key) { }
-        public IReadOnlyList<string> Keys(string resource) => [];
-    }
-
-    [Fact]
-    public void When_the_vault_fails_the_plain_copy_stays_rather_than_losing_the_pairing()
-    {
-        var settings = new InMemorySettings();
-        settings.Set("EngineToken", "tok-old");
-        _ = new EngineCredentials(new BrokenVault(), settings);
-        Assert.Equal("tok-old", settings.Get<string?>("EngineToken", null));
-    }
 
     [Fact]
     public void Several_engines_each_keep_their_own_record()
@@ -439,7 +394,7 @@ public class PairingLinkTests
     public void Parses_the_link_the_computer_shows()
     {
         // As companion.py writes it: urlencode(quote_via=quote, safe=":,").
-        var text = $"brasscribe://pair?v=1&id={Id}&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.0.2.20:8765,[fe80::1]:8765&code=482913";
+        var text = $"scribe://pair?v=1&id={Id}&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.0.2.20:8765,[fe80::1]:8765&code=482913";
         Assert.Equal(PairingLinkProblem.None, PairingLink.TryParse(text, out var link));
         Assert.Equal(Id.ToLowerInvariant(), link!.ServerId);
         Assert.Equal("Brasscribe on Kari’s Mac", link.ServerName);
@@ -451,7 +406,7 @@ public class PairingLinkTests
     [Fact]
     public void Plus_is_a_space_unknown_keys_are_ignored_and_code_and_hosts_are_optional()
     {
-        Assert.Equal(PairingLinkProblem.None, PairingLink.TryParse($"BRASSCRIBE://pair?v=1&id={Id}&name=Brasscribe+on+studio&future=1", out var link));
+        Assert.Equal(PairingLinkProblem.None, PairingLink.TryParse($"SCRIBE://pair?v=1&id={Id}&name=Brasscribe+on+studio&future=1", out var link));
         Assert.Equal("Brasscribe on studio", link!.ServerName);
         Assert.Empty(link.Hosts);
         Assert.Null(link.Code);
@@ -459,18 +414,43 @@ public class PairingLinkTests
 
     [Theory]
     [InlineData("https://example.com/pair?v=1", PairingLinkProblem.NotAPairingLink)]
-    [InlineData("brasscribe://open?v=1&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
-    [InlineData("brasscribe://pair?id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
-    [InlineData("brasscribe://pair?v=2&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NewerVersion)]
-    [InlineData("brasscribe://pair?v=1&id=1234", PairingLinkProblem.BadServerId)]
-    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdeg", PairingLinkProblem.BadServerId)]
-    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef&fp=abc", PairingLinkProblem.NeedsPinning)]
+    [InlineData("scribe://open?v=1&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
+    [InlineData("scribe://pair?id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
+    [InlineData("scribe://pair?v=2&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NewerVersion)]
+    [InlineData("scribe://pair?v=1&id=1234", PairingLinkProblem.BadServerId)]
+    [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdeg", PairingLinkProblem.BadServerId)]
+    [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdef&fp=abc", PairingLinkProblem.NeedsPinning)]
     [InlineData("", PairingLinkProblem.NotAPairingLink)]
+    // The scheme from before this one is not accepted.
+    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef", PairingLinkProblem.NotAPairingLink)]
+    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef&h=192.0.2.20:8765&code=482913", PairingLinkProblem.NotAPairingLink)]
     public void Refuses_what_it_cannot_use_safely(string text, PairingLinkProblem expected)
     {
         Assert.Equal(expected, PairingLink.TryParse(text, out var link));
         Assert.Null(link);
     }
+
+    [Theory]
+    [InlineData("scribe://pair?v=1&id=0123456789abcdef0123456789abcdef", "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    [InlineData("SCRIBE://pair?v=1&id=0123456789abcdef0123456789abcdef", "SCRIBE://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    [InlineData("\"C:\\Program Files\\Play\\Play.exe\" \"scribe://pair?v=1&id=0123456789abcdef0123456789abcdef&code=482913\"",
+        "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef&code=482913")]
+    [InlineData("Play.exe scribe://pair?v=1&id=0123456789abcdef0123456789abcdef --theme dark", "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    // The old scheme ends in this one's letters: it is another scheme, not a pairing link.
+    [InlineData("brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef", null)]
+    [InlineData("Play.exe \"brasscribe://pair?v=1&id=0123456789abcdef0123456789abcdef\"", null)]
+    [InlineData("xscribe://pair?v=1&id=0123456789abcdef0123456789abcdef", null)]
+    // What comes before the link is not part of a scheme's name: the link is found (protocol activation, an option's value).
+    [InlineData("----ms-protocol:scribe://pair?v=1&id=0123456789abcdef0123456789abcdef", "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    [InlineData("Play.exe --link=scribe://pair?v=1&id=0123456789abcdef0123456789abcdef", "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    // A link under the old scheme does not hide the valid one after it.
+    [InlineData("Play.exe brasscribe://pair?v=1&id=ffffffffffffffffffffffffffffffff scribe://pair?v=1&id=0123456789abcdef0123456789abcdef",
+        "scribe://pair?v=1&id=0123456789abcdef0123456789abcdef")]
+    [InlineData("Play.exe --show home", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void The_pairing_link_in_a_command_line(string? text, string? expected) =>
+        Assert.Equal(expected, PairingLink.In(text));
 
     [Theory]
     [InlineData("198.51.100.2:8765", "http://198.51.100.2:8765/")]
@@ -653,7 +633,7 @@ public class PairOnceTests
         lan.At.Remove(Old);
         lan.At[New] = studio;
         lan.At[new Uri("http://198.51.100.5:8765/")] = new FakeLan.Engine("ffffffffffffffffffffffffffffffff", "Other");
-        var link = $"brasscribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&h=198.51.100.5:8765,192.0.2.44:8765&code=482913";
+        var link = $"scribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&h=198.51.100.5:8765,192.0.2.44:8765&code=482913";
 
         Assert.True(await vm.PairFromLinkAsync(link));
         Assert.Equal(New.ToString(), vm.EngineAddress);
@@ -669,7 +649,7 @@ public class PairOnceTests
         lan.At.Remove(Old);
         lan.At[New] = studio;
         network.Add(new DiscoveredEngine("Brasscribe on Studio PC", New, StudioId, "Studio PC"));
-        Assert.True(await vm.PairFromLinkAsync($"brasscribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&code=482913"));
+        Assert.True(await vm.PairFromLinkAsync($"scribe://pair?v=1&id={StudioId}&name=Brasscribe%20on%20Studio%20PC&code=482913"));
         Assert.Equal(New.ToString(), vm.EngineAddress);
         vm.Connection.Stop();
     }
@@ -678,9 +658,9 @@ public class PairOnceTests
     public async Task A_link_from_a_newer_app_or_with_a_pin_is_refused()
     {
         var (vm, lan, _, _, _, _) = Make();
-        Assert.False(await vm.PairFromLinkAsync($"brasscribe://pair?v=2&id={StudioId}"));
+        Assert.False(await vm.PairFromLinkAsync($"scribe://pair?v=2&id={StudioId}"));
         Assert.Equal("That link is from a newer Brasscribe. Update this app, then try again.", vm.EngineStatus);
-        Assert.False(await vm.PairFromLinkAsync($"brasscribe://pair?v=1&id={StudioId}&h=192.0.2.20:8765&code=482913&fp=abc"));
+        Assert.False(await vm.PairFromLinkAsync($"scribe://pair?v=1&id={StudioId}&h=192.0.2.20:8765&code=482913&fp=abc"));
         Assert.Empty(lan.Requests);
     }
 

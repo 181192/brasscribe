@@ -133,6 +133,8 @@
     <string name="notif_ready">Tabben din er klar</string>
     <string name="notif_failed">Tabben kunne ikke lages</string>
     <string name="notif_away">Tabben ligger i Sangene dine når datamaskinen er tilbake</string>
+    <string name="notif_update_app">Oppdater denne appen for å hente tabben fra datamaskinen</string>
+    <string name="notif_update_computer">Oppdater Bandroom på datamaskinen for å hente tabben</string>
     <string name="ready_not_here">Tabben ligger på datamaskinen. Koble til den for å åpne tabben.</string>
     <string name="transcribe_where_companion">%1$s skriver ned tonene</string>
     <string name="transcribe_cancel_title">Slutte å skrive ned tonene?</string>

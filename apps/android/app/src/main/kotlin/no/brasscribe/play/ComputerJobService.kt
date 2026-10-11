@@ -74,11 +74,12 @@ class ComputerJobService : Service() {
         for ((jobId, title) in now.jobs) {
             if (jobId in follows) continue
             val follow = scope.launch(start = CoroutineStart.LAZY) {
-                val ended = JobFollow.untilEnded({ container.engine()?.job(jobId) })
+                var update: no.brasscribe.play.engine.InterfaceMatch? = null
+                val ended = JobFollow.untilEnded({ container.engine()?.job(jobId) }, refused = { update = it })
                 // Still its to say: the view model has not seen the end first, and the player has not stopped the job.
                 if (jobId !in held.value.jobs) return@launch
                 saidFor = jobId
-                JobNotices.afterFollowing(this@ComputerJobService, jobId, ended, title, inFront = AppInFront.now)
+                JobNotices.afterFollowing(this@ComputerJobService, jobId, ended, title, inFront = AppInFront.now, update = update)
                 follows.remove(jobId)
                 held.update { it.copy(jobs = it.jobs - jobId) }
             }
@@ -236,10 +237,12 @@ object JobFollow {
      * Asks [ask] for the job until it has ended, and returns it as it ended. An answer that fails (the phone lost the
      * network, the computer is asleep) or that is null (not paired any more) is asked again; after [patience] ms with
      * no answer it gives up and returns null. It asks every [pauseAt] of the time it has been following: often at
-     * first, then less often for a long job.
+     * first, then less often for a long job. A computer that answers with another interface version is not asked
+     * again: [refused] is told which of the two to update, and null is returned at once.
      */
     suspend fun untilEnded(
         ask: suspend () -> Job?,
+        refused: (no.brasscribe.play.engine.InterfaceMatch) -> Unit = {},
         patience: Long = PATIENCE_MS,
         clock: () -> Long = { System.nanoTime() / 1_000_000 },
         sleep: suspend (Long) -> Unit = { delay(it) },
@@ -251,6 +254,10 @@ object JobFollow {
                 ask()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
+            } catch (e: no.brasscribe.play.engine.InterfaceMismatchException) {
+                // The computer answers with another interface version: it is not asked again, however long the job is.
+                refused(e.update)
+                return null
             } catch (e: Exception) {
                 null
             }
@@ -306,8 +313,12 @@ object JobNotices {
      * shows it); else how [ended] ended, or, when the computer stayed away ([ended] null), that the score will be in
      * Your scores once the computer is back. Returns whether something was posted.
      */
-    fun afterFollowing(context: Context, jobId: String, ended: Job?, title: String, inFront: Boolean): Boolean = when {
+    fun afterFollowing(context: Context, jobId: String, ended: Job?, title: String, inFront: Boolean,
+                       update: no.brasscribe.play.engine.InterfaceMatch? = null): Boolean = when {
         inFront -> false
+        // Not "when your computer is back": it is there, and one of the two needs an update first.
+        ended == null && update != null -> post(context, jobId, context.getString(
+            if (update == no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP) R.string.notif_update_app else R.string.notif_update_computer), title, open = null)
         ended == null -> post(context, jobId, context.getString(R.string.notif_away), title, open = null)
         else -> ended(context, ended, title)
     }

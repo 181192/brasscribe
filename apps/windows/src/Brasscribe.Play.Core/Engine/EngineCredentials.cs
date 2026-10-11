@@ -46,12 +46,7 @@ public sealed class EngineCredentials
 {
     public const string Resource = "Brasscribe engine";
 
-    /// <summary>Holds a token moved from the old settings.json until the engine tells us its server id.</summary>
-    public const string LegacyKey = "legacy";
-
     private const string CurrentKey = "EngineServerId";
-    private const string LegacyTokenKey = "EngineToken";
-    private const string LegacyAddressKey = "EngineAddress";
 
     private readonly ISecretVault _vault;
     private readonly ISettingsStore _settings;
@@ -60,7 +55,6 @@ public sealed class EngineCredentials
     {
         _vault = vault;
         _settings = settings;
-        MigrateLegacy();
     }
 
     /// <summary>The server id of the engine in use; null before the first pairing.</summary>
@@ -93,36 +87,6 @@ public sealed class EngineCredentials
     {
         try { _vault.Remove(Resource, serverId); }
         catch (Exception e) when (e is not OutOfMemoryException) { }
-    }
-
-    /// <summary>
-    /// The first successful check of a moved token tells us its server id: the record moves to that key,
-    /// unless a newer record already sits there.
-    /// </summary>
-    public EngineCredential Adopt(EngineCredential legacy, string serverId, string? serverName)
-    {
-        var record = Get(serverId) ?? legacy with { ServerId = serverId, ServerName = serverName ?? legacy.ServerName };
-        Save(record);
-        if (legacy.ServerId == LegacyKey) Remove(LegacyKey);
-        return record;
-    }
-
-    /// <summary>
-    /// Once: a token from the old plain settings.json moves into the vault (under <see cref="LegacyKey"/>,
-    /// since the old store never knew the server id), and the plain copy is deleted. Running it again
-    /// changes nothing, and it never overwrites a record already in the vault.
-    /// </summary>
-    private void MigrateLegacy()
-    {
-        var token = _settings.Get<string?>(LegacyTokenKey, null);
-        if (string.IsNullOrEmpty(token)) return;
-        if (SafeGet(LegacyKey) is null && CurrentServerId is null)
-        {
-            var address = _settings.Get<string?>(LegacyAddressKey, null);
-            try { Save(new EngineCredential(LegacyKey, token, LastAddress: address)); }
-            catch (Exception e) when (e is not OutOfMemoryException) { return; } // keep the plain copy rather than lose the pairing
-        }
-        _settings.Set<string?>(LegacyTokenKey, null);
     }
 
     private string? SafeGet(string key)

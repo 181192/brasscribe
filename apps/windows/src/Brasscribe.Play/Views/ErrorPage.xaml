@@ -23,6 +23,11 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- Where the update is, when the way forward is a newer app or a newer Brasscribe on the computer. -->
+            <HyperlinkButton x:Name="UpdateLink" Padding="6,4" Margin="-6,0,0,0" MinHeight="44" NavigateUri="{x:Bind ViewModel.LinkUri, Mode=OneWay}"
+                             Content="{x:Bind ViewModel.LinkLabel, Mode=OneWay}"
+                             AutomationProperties.HelpText="{x:Bind ViewModel.LinkHelp, Mode=OneWay}"
+                             Visibility="{x:Bind ViewModel.HasLink, Mode=OneWay}" />
 
             <Grid ColumnSpacing="12" Margin="0,16,0,0">
                 <Grid.ColumnDefinitions>

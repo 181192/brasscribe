@@ -29,7 +29,7 @@ public class EngineDiscoveryTests
         }
 
         var serviceAt = m.Count;
-        m.AddRange([.. Labels("_brasscribe", "_tcp", "local"), 0]);
+        m.AddRange([.. Labels("_scribe", "_tcp", "local"), 0]);
         var instanceAt = Record(12, [.. Labels(instance), 0xC0, (byte)serviceAt]);
         m.AddRange([0xC0, (byte)instanceAt]);
         Record(33, [0, 0, 0, 0, (byte)(port >> 8), (byte)port, .. Labels(host, "local"), 0]);
@@ -50,7 +50,9 @@ public class EngineDiscoveryTests
     public void Ptr_query_asks_for_the_service_with_a_unicast_response()
     {
         var q = DnsSd.BuildPtrQuery(EngineDiscovery.ServiceType);
-        Assert.Equal([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 11], q[..13]);
+        // The first label of the name is the service: "_scribe", its length before it.
+        Assert.Equal([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 7], q[..13]);
+        Assert.Equal("_scribe"u8.ToArray(), q[13..20]);
         Assert.Equal([0, 0, 12, 0x80, 0x01], q[^5..]);
     }
 

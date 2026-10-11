@@ -131,7 +131,7 @@ def test_server_name_override_is_used_everywhere(settings, monkeypatch):
         assert st["server_name"] == "Brasscribe on Band room"
         assert parse_qs(urlsplit(st["uri"]).query)["name"] == ["Brasscribe on Band room"]
     info = discovery.service_info(8765, ["192.0.2.20"])
-    assert info.name == "Brasscribe on Band room._brasscribe._tcp.local."
+    assert info.name == "Brasscribe on Band room._scribe._tcp.local."
     assert info.decoded_properties["host"] == "Band room"
 
 

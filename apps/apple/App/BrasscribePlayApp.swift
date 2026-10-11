@@ -30,7 +30,7 @@ struct BrasscribePlayApp: App {
                 .environment(app)
                 .appAppearance()
                 .onOpenURL { url in
-                    if url.scheme?.lowercased() == "brasscribe" {
+                    if url.scheme?.lowercased() == Wire.pairScheme {
                         if let link = PairingLink(url: url) { app.openPairingLink(link) }
                     } else {
                         Task { await app.accept(url: url) }
@@ -219,7 +219,7 @@ enum LaunchOptions {
     /// `-stand-ignore-keyboard`: a simulator's hardware keyboard does not keep the stand controls (the auto-hide test).
     static var standIgnoreKeyboard: Bool { args.contains("-stand-ignore-keyboard") }
 
-    /// `-connection connected|reconnecting|offline|needs-pairing`: show that connection state without
+    /// `-connection connected|reconnecting|offline|needs-pairing|update-app|update-computer`: show that connection state without
     /// talking to a computer (screenshots and UI tests).
     static var connection: ConnectionState? {
         guard let i = args.firstIndex(of: "-connection"), i + 1 < args.count else { return nil }
@@ -228,6 +228,8 @@ enum LaunchOptions {
         case "connected": return .connected(serverName: name)
         case "reconnecting": return .reconnecting(serverName: name)
         case "needs-pairing": return .needsPairing(serverName: name)
+        case "update-app": return .mismatch(serverName: name, update: .app)
+        case "update-computer": return .mismatch(serverName: name, update: .computer)
         case "offline": return .offline
         default: return nil
         }
@@ -260,6 +262,8 @@ struct ConnectionLifecycle: ViewModifier {
                 }
             }
             .onChange(of: path.generation) { _, _ in app.connection.poke() }
+            // the computer's scores follow the connection: fetched when it is there, gone when it is not
+            .onChange(of: app.connection.state) { _, _ in Task { await app.connectionChanged() } }
             .task { path.start() }
     }
 }

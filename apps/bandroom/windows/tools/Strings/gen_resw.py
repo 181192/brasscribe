@@ -23,10 +23,10 @@ ROWS = [
     ("Status_Updating_Sub", "Back in about a minute. Phones reconnect by themselves.", "Tilbake om et minutt. Telefonene kobler seg til igjen selv."),
     ("Update_Progress", "Updating Brasscribe… {0}%.", "Oppdaterer Brasscribe … {0} %."),  # (+) the engine after an app update
     ("Update_Failed_Title", "Brasscribe couldn't finish updating", "Brasscribe fikk ikke fullført oppdateringen"),  # (+)
-    ("Update_Refused_Why", "The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.",
-     "Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),  # (+)
-    ("Update_Failed_Why", "The previous version is still running, so phones can keep sending recordings.",
-     "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før."),  # (+)
+    ("Update_Refused_Why", "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.",
+     "Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),  # (+)
+    ("Update_Failed_Why", "The update didn't finish, and the previous version was put back.",
+     "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake."),  # (+)
     ("Status_Setup", "Setting up", "Gjøres klar"),
     ("Status_Error", "Stopped unexpectedly", "Stoppet uventet"),
     ("Now_Heading", "Now", "Nå"),
@@ -243,6 +243,20 @@ ROWS = [
     ("Pixi_Why", "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.",
      "Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker."),
     ("Pixi_Fix", "Get the latest Bandroom", "Last ned den nyeste Bandroom"),
+    ("Interface_Bandroom_Title", "Update Bandroom", "Oppdater Bandroom"),  # (+) the engine is newer than this app
+    ("Interface_Bandroom_Why", "Brasscribe on this PC is newer than this copy of Bandroom, and they only work together when both are up to date.",
+     "Brasscribe på denne PC-en er nyere enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert."),  # (+)
+    ("Interface_Engine_Title", "Brasscribe needs to be updated", "Brasscribe må oppdateres"),  # (+) the engine is older than this app
+    ("Interface_Engine_Why", "Brasscribe on this PC is older than this copy of Bandroom, and they only work together when both are up to date.",
+     "Brasscribe på denne PC-en er eldre enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert."),  # (+)
+    ("Interface_Engine_Fix", "Update Brasscribe", "Oppdater Brasscribe"),  # (+)
+    # (+) the engine is older and this copy has no newer one to install (or its update left it older): Pixi_Fix is the button
+    ("Interface_Behind_Why", "Brasscribe on this PC is older than this copy of Bandroom, and this copy can't update it. The latest Bandroom brings both up to date.",
+     "Brasscribe på denne PC-en er eldre enn denne utgaven av Bandroom, og denne utgaven kan ikke oppdatere den. Den nyeste Bandroom oppdaterer begge."),
+    # (+) a developer's own engine folder with another interface version: no button
+    ("Interface_Dev_Title", "Brasscribe and Bandroom don't match", "Brasscribe og Bandroom passer ikke sammen"),
+    ("Interface_Dev_Why", "Brasscribe runs from a development folder here, and it and this copy of Bandroom only work together when both are up to date. Update the folder, or build Bandroom from it.",
+     "Brasscribe kjører fra en utviklingsmappe her, og den og denne utgaven av Bandroom virker bare sammen når begge er oppdatert. Oppdater mappen, eller bygg Bandroom fra den."),
     ("Error_Title", "Brasscribe stopped unexpectedly", "Brasscribe stoppet uventet"),
     ("Error_Why", "It tried to start three times. Recordings on your phones are safe.", "Den prøvde å starte tre ganger. Opptakene på telefonene er trygge."),
     ("Error_Copy", "Copy details for the tech person", "Kopier detaljer til den tekniske i bandet"),

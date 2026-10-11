@@ -21,6 +21,9 @@ data class Health(
     /** Which build is running (the commit and workspace stamp); null when unknown. */
     val build: String? = null,
     val status: String = "ok",
+    /** The engine's interface version; null from an engine that is older than the number ([InterfaceMatch]). */
+    @Serializable(with = InterfaceVersionSerializer::class)
+    @SerialName("interface_version") val interfaceVersion: Int? = null,
 )
 
 @Serializable
@@ -52,6 +55,9 @@ data class DeviceSelf(
     @SerialName("rotate_after") val rotateAfter: String,
     @SerialName("expires_if_idle_after") val expiresIfIdleAfter: String,
     @SerialName("rotated_at") val rotatedAt: String? = null,
+    /** As in [Health]: a paired phone's heartbeat is this one request, and reads the number here. */
+    @Serializable(with = InterfaceVersionSerializer::class)
+    @SerialName("interface_version") val interfaceVersion: Int? = null,
 )
 
 @Serializable

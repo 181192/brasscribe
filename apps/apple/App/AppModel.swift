@@ -31,7 +31,8 @@ final class AppModel {
     var pieces: [Piece] = Piece.loadAll() { didSet { rebuildScores() } }
     /// "Your scores": this device's pieces and the computer's latest finished scores.
     private(set) var scores: [ScoreEntry] = ScoreEntry.merge(pieces: Piece.loadAll(), jobs: [])
-    private var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
+    /// The computer's runs as it last listed them; empty whenever it is not connected (`connectionChanged`).
+    var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
     var openingScore: String?
     /// The part the next score opens on ("Show my part" in Review).
     var showPartOnOpen: String?
@@ -133,7 +134,7 @@ final class AppModel {
         #endif
     }
 
-    /// A `brasscribe://pair` link opened from outside the app (the camera, another app): Settings asks
+    /// A `scribe://pair` link opened from outside the app (the camera, another app): Settings asks
     /// before it pairs, or asks the computer to allow this device when the link has no code.
     var pendingLink: PairingLink?
 
@@ -182,12 +183,12 @@ final class AppModel {
     var computerPaired: Bool { connection.record != nil || connection.localAddress != nil }
 
     /// The computer counts as there when one is paired (or Brasscribe runs on this Mac) and its
-    /// connection is Connected or still Reconnecting; Offline and needs-pairing do not count.
+    /// connection is Connected or still Reconnecting; Offline, needs-pairing and "update …" do not count.
     var computerThere: Bool {
         guard computerPaired else { return false }
         switch connection.state.kind {
         case .connected, .reconnecting: return true
-        case .offline, .needsPairing: return false
+        case .offline, .needsPairing, .mismatch: return false
         }
     }
 
@@ -214,10 +215,59 @@ final class AppModel {
 
     private func rebuildScores() { scores = ScoreEntry.merge(pieces: pieces, jobs: computerJobs) }
 
-    /// Fetch the computer's finished scores; silently keeps the local list when it is not reachable.
+    /// Fetch the computer's finished scores. When they can't be had (the computer is not connected, or has another
+    /// interface version and is not asked), the ones listed from before go: they could not be opened. This device's
+    /// own scores are never touched.
     func refreshComputerScores() async {
         guard !useFixtureService, let svc = service() as? CompanionService else { computerJobs = []; return }
-        if let jobs = try? await svc.jobs() { computerJobs = jobs }
+        let asked = connectionChanges
+        do {
+            let jobs = try await svc.jobs()
+            // the connection changed while the computer answered: that change fetched the scores again, or took them away.
+            // And a fetch begun while not connected (a pull to refresh, the moment after pairing) lists nothing under
+            // "Not connected": the change to Connected fetches them.
+            guard asked == connectionChanges, Self.scoresShow(connection: connection.state.kind) else { return }
+            computerJobs = jobs
+        } catch {
+            let update = refused(error)
+            guard asked == connectionChanges else { return }
+            if Self.scoresGo(refusedForUpdate: update != nil, connection: connection.state.kind) { computerJobs = [] }
+        }
+    }
+
+    /// Whether the scores listed from the computer go when they could not be fetched. While the connection row says
+    /// Connected, one request that did not get through takes nothing away: the heartbeat decides when the computer
+    /// is gone, and the scores go with that change.
+    nonisolated static func scoresGo(refusedForUpdate: Bool, connection: ConnectionState.Kind) -> Bool {
+        refusedForUpdate || connection != .connected
+    }
+
+    /// Whether the computer's scores are listed: only under a connection row that says Connected.
+    nonisolated static func scoresShow(connection: ConnectionState.Kind) -> Bool { connection == .connected }
+
+    /// How many times the connection has changed: an answer asked for before the last change is not about this
+    /// connection.
+    @ObservationIgnored private var connectionChanges = 0
+
+    /// The connection to the computer changed: its scores are fetched again when it is there, and go when it is not.
+    func connectionChanged() async {
+        connectionChanges += 1
+        if case .connected = connection.state { await refreshComputerScores() } else { computerJobs = [] }
+    }
+
+    /// The computer was asked for something and has another interface version than this app's (nothing was sent):
+    /// the connection row is checked at once, so it says which of the two to update. Returns which, nil for any
+    /// other error.
+    @discardableResult
+    func refused(_ error: Error) -> InterfaceMatch.Update? {
+        guard case TranscriptionError.interfaceMismatch(let which) = error else { return nil }
+        connection.poke()
+        return which
+    }
+
+    /// What went wrong with a score on the computer: the update words when its interface version is not this app's.
+    private func showComputerProblem(_ error: Error) {
+        if let which = refused(error) { show(.needsUpdate(which)) } else { show(.cantOpenFile(error.localizedDescription)) }
     }
 
     func open(_ entry: ScoreEntry, review: Bool = false) {
@@ -243,7 +293,7 @@ final class AppModel {
             refresh()
             path = [review ? .review(p) : .score(p)]
         } catch {
-            show(.cantOpenFile(error.localizedDescription))
+            showComputerProblem(error)
         }
     }
 
@@ -256,7 +306,7 @@ final class AppModel {
             Task {
                 guard let svc = service() as? CompanionService else { return }
                 do { try await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
-                catch { show(.cantOpenFile(error.localizedDescription)) }
+                catch { showComputerProblem(error) }
             }
         }
     }
@@ -267,7 +317,7 @@ final class AppModel {
         case .computer(let jobID):
             Task {
                 guard let svc = service() as? CompanionService else { return }
-                try? await svc.deleteRun(jobID: jobID)
+                do { try await svc.deleteRun(jobID: jobID) } catch { if let which = refused(error) { show(.needsUpdate(which)) } }
                 await refreshComputerScores()
             }
         }
@@ -283,7 +333,11 @@ final class AppModel {
             try updated.save()
             pieces[index] = updated
             if let jobID = updated.remoteJobID, let svc = service() as? CompanionService, !useFixtureService {
-                Task { try? await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
+                // the score is renamed on this device either way; the computer's copy follows when it can
+                Task {
+                    do { try await svc.rename(jobID: jobID, title: cleaned) } catch { refused(error) }
+                    await refreshComputerScores()
+                }
             }
         } catch {
             show(.notAScore(error.localizedDescription))
@@ -443,8 +497,8 @@ final class AppModel {
         }
         let job = TranscriptionJob(source: src, profile: profile, output: output,
                                    service: onComputer ? service() : service(for: profile), onComputer: onComputer)
-        // a 401 from the computer turns the connection row into "pair again"
-        job.onUnauthorized = { [weak self] in self?.connection.poke() }
+        // a 401 from the computer turns the connection row into "pair again", another interface version into "update …"
+        job.onRefused = { [weak self] in self?.connection.poke() }
         jobs[job.id] = job
         // the transcribing screen takes the place of "What is this?"
         if case .source = path.last { path[path.count - 1] = .transcribe(job.id) } else { path.append(.transcribe(job.id)) }
@@ -538,11 +592,14 @@ final class TranscriptionJob: Identifiable {
     var failureWords: String?
     /// The failure's title when it is more specific than "The score couldn't be made".
     var failureTitle: String?
+    /// The computer's interface version is not this app's: which of the two to update before the score can be made.
+    var needsUpdate: InterfaceMatch.Update?
     /// The recording was too long for a draft on this device (DraftTooLong).
     var tooLong = false
     var cancelled = false
     private var task: Task<Void, Never>?
-    var onUnauthorized: (@MainActor () -> Void)?
+    /// The computer refused this device (401), or its interface version is not this app's and nothing was sent.
+    var onRefused: (@MainActor () -> Void)?
 
     init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService, onComputer: Bool = false) {
         self.source = source; self.profile = profile; self.output = output; self.service = service; self.onComputer = onComputer
@@ -561,7 +618,8 @@ final class TranscriptionJob: Identifiable {
                 }
             } catch {
                 guard let self else { return }
-                if case TranscriptionError.notPaired = error { self.onUnauthorized?() }
+                if case TranscriptionError.notPaired = error { self.onRefused?() }
+                if case TranscriptionError.interfaceMismatch(let which) = error { self.needsUpdate = which; self.onRefused?() }
                 if case TranscriptionError.cancelled = error { self.cancelled = true } else if case TranscriptionError.needsWholeGroup = error {
                     self.failure = String(localized: "Needs a recording of the whole group")
                 } else if !Task.isCancelled {

@@ -18,8 +18,14 @@ final class AppModel {
     /// Replaces the engine workspace in the data folder after the app itself was updated (design/server-app.md §3.8).
     let updater = Bootstrapper()
     /// Why the last engine update failed; the previous engine runs meanwhile when it can still be started, and Try
-    /// again runs the update once more.
-    private(set) var updateFailure: String?
+    /// again runs the update once more. (Set from outside only by the tests of what the panel then leads with.)
+    var updateFailure: String?
+    /// The installed engine workspace is this build's own: checked and found so, or just updated to it. Updating
+    /// again would put the same engine back.
+    private(set) var workspaceIsThisApps = false
+    /// Update Brasscribe was chosen for an engine that is behind; cleared when an engine with this Bandroom's
+    /// interface version answers. One that is still behind after it is not offered the update again.
+    private(set) var engineUpdateTried = false
     /// The workspace this build of the app ships, and its stamp.
     let bundledWorkspace: URL? = Bundle.main.resourceURL.map { $0.appending(path: "workspace") }
         .flatMap { FileManager.default.fileExists(atPath: $0.appending(path: "pixi.toml").path) ? $0 : nil }
@@ -79,6 +85,10 @@ final class AppModel {
     @ObservationIgnored private let environment = ProcessInfo.processInfo.environment
     /// BANDROOM_DEMO=busy|idle (Debug builds): canned engine data for screenshots, no engine started.
     @ObservationIgnored let demo: Bool
+    /// The demo engine's interface version is not this Bandroom's (BANDROOM_DEMO_INTERFACE).
+    private var demoMismatch: InterfaceMatch.Behind?
+    /// The demo's engine comes from a developer checkout (BANDROOM_DEMO_INTERFACE=older-checkout).
+    private var demoCheckout = false
     /// The settings: the app's own (`.standard`); the screen catalogue's tests give it a store of their own.
     @ObservationIgnored let defaults: UserDefaults
 
@@ -196,8 +206,13 @@ final class AppModel {
         #if DEBUG
         if demo {
             let engine = DemoEngine(busy: environment["BANDROOM_DEMO"] == "busy")
-            monitor.client = engine
-            pairing.client = engine
+            demoMismatch = InterfaceMatch.of(engine: engine.interfaceVersion).behind
+            demoCheckout = environment["BANDROOM_DEMO_INTERFACE"] == "older-checkout"
+            // as with a real engine: one with another interface version gets no client
+            if demoMismatch == nil {
+                monitor.client = engine
+                pairing.client = engine
+            }
             return
         }
         #endif
@@ -241,11 +256,14 @@ final class AppModel {
     /// Compares the installed workspace's stamp with the app's and replaces it when they differ. Stops the engine
     /// first; `pixi install` runs again only when the lockfile changed.
     func updateWorkspaceIfNeeded() async {
-        guard case .installed(let workspace, _) = supervisor.configuration.source, let bundled = bundledWorkspace else { return }
+        guard case .installed(let workspace, _) = supervisor.configuration.source else { return }
+        // an app without a workspace of its own has nothing to update the installed one to
+        guard let bundled = bundledWorkspace else { workspaceIsThisApps = true; return }
         let (check, stamp) = await Task.detached {
             (WorkspaceCheck.atLaunch(bundled: bundled, installed: workspace), WorkspaceStamp.of(bundle: bundled))
         }.value
         bundledStamp = stamp
+        workspaceIsThisApps = check == .upToDate
         guard case .update(let lockChanged) = check else {
             if check == .upToDate { updateFailure = nil }
             return
@@ -256,6 +274,7 @@ final class AppModel {
         let ok = await updater.update(configuration: supervisor.configuration, bundledWorkspace: bundled, lockChanged: lockChanged)
         if ok {
             updateFailure = nil
+            workspaceIsThisApps = true
             logger.write("engine workspace updated to \(stamp?.short ?? "?")")
         } else {
             let why = if case .failed(let e) = updater.phase { e } else { "unknown" }
@@ -268,6 +287,18 @@ final class AppModel {
     func retryUpdate() {
         updateFailure = nil
         updateThenStart()
+    }
+
+    /// The engine is behind this Bandroom: stop it, bring its workspace up to this build of the app, and start it.
+    /// Offered once (`MismatchFix.of`): an engine that is still behind afterwards is not this Bandroom's to fix.
+    func updateEngine() {
+        guard !demo else { return }
+        engineUpdateTried = true
+        updateFailure = nil
+        Task { [weak self] in
+            await self?.stopEngine()
+            self?.updateThenStart()
+        }
     }
 
     private func stopEngine() async {
@@ -285,6 +316,7 @@ final class AppModel {
     }
 
     private func engineAnswered(_ client: any EngineAPI) {
+        engineUpdateTried = false
         monitor.client = client
         pairing.client = client
         // The engine opens a code at start that would stay valid until closed; codes should only work while
@@ -292,7 +324,12 @@ final class AppModel {
         if isPairWindowOpen {
             Task { await pairing.open() }
         } else {
-            Task { _ = try? await client.closePairing() }
+            let log = logger
+            Task {
+                do { _ = try await client.closePairing() } catch {
+                    log.write("the pairing code the engine opened at start could not be closed: \(error)")
+                }
+            }
         }
     }
 
@@ -336,12 +373,55 @@ final class AppModel {
 
     var problems: [Problem] {
         var list: [Problem] = []
+        let failedUpdate: Problem? = updateFailure != nil && !updater.isUpdating ? .afterFailedUpdate(refusal: updater.pixiRefusal) : nil
+        // An update that failed is why the engine is behind: it leads, with its own fix (Try again, or for pixi's
+        // refusal a newer Bandroom and the details to copy).
+        if let failedUpdate, interfaceMismatch == .engine { list.append(failedUpdate) }
+        // Then the mismatch: with it, nothing below about a running engine is true (phones can't use this one
+        // through Bandroom).
+        if let mismatch = mismatchProblem { list.append(mismatch) }
         if case .running = phase, monitor.isUnresponsive { list.append(.notResponding) }
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
         if let refusal = pixiRefusal { list.append(.pixiTooOld(refusal)) }
-        if updateFailure != nil, !updater.isUpdating { list.append(.afterFailedUpdate(refusal: updater.pixiRefusal)) }
+        if let failedUpdate, interfaceMismatch != .engine { list.append(failedUpdate) }
         if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }
         return list
+    }
+
+    /// The running engine's interface version is not this Bandroom's, with what Bandroom offers to do about it.
+    var mismatchProblem: Problem? {
+        guard let behind = interfaceMismatch else { return nil }
+        // the demo's engine is an installed one that an update could replace, or one from a checkout
+        let source: EngineSource = demo ? (demoCheckout ? .checkout(paths.data) : .installed(workspace: paths.workspace, adapters: nil))
+            : supervisor.configuration.source
+        return .interfaceMismatch(behind, fix: MismatchFix.of(behind: behind, source: source, engineIsThisApps: !demo && workspaceIsThisApps,
+                                                              updateTried: engineUpdateTried))
+    }
+
+    /// What stands between this Bandroom and pairing a phone while the engine's interface version is not its own:
+    /// the problem the panel leads with (a failed update before the mismatch itself). Nil when the versions match.
+    var pairingBlocker: Problem? {
+        guard interfaceMismatch != nil else { return nil }
+        return problems.first {
+            switch $0 {
+            case .interfaceMismatch, .updateFailed, .updateRefused: true
+            default: false
+            }
+        }
+    }
+
+    /// The one fix of a Needs-attention problem, from the panel or the Pair window.
+    func fix(_ p: Problem) {
+        switch p {
+        case .lowDisk: openStorageSettings()
+        case .missingDownload: openWindow("setup")
+        case .noFreePort: tryAgain()
+        case .updateFailed: retryUpdate()
+        case .notResponding: restartNow()
+        case .pixiTooOld, .updateRefused, .interfaceMismatch(_, fix: .getBandroom): openLatestRelease()
+        case .interfaceMismatch(_, fix: .updateEngine): updateEngine()
+        case .interfaceMismatch(_, fix: .none): break
+        }
     }
 
     /// pixi refused the engine workspace during first-run setup, so there is no engine to run. (A refused start is the
@@ -364,7 +444,11 @@ final class AppModel {
                                     problems: problems, jobPercent: jobPercent)
     }
 
-    var isRunning: Bool { phase == .running }
+    /// Running, and with this Bandroom's interface version: phones can be paired and its numbers are shown.
+    var isRunning: Bool { phase == .running && interfaceMismatch == nil }
+
+    /// The running engine's interface version is not this Bandroom's: which of the two is behind.
+    var interfaceMismatch: InterfaceMatch.Behind? { demo ? demoMismatch : supervisor.interfaceMismatch }
 
     /// The engine's phase; a screenshot demo pretends it runs.
     var phase: SupervisorPhase { demo ? .running : supervisor.phase }
@@ -421,7 +505,8 @@ final class AppModel {
         NSWorkspace.shared.activateFileViewerSelecting([log])
     }
 
-    /// The latest release, where a Bandroom with a newer pixi is (the fix for `Problem.pixiTooOld`).
+    /// The latest release, where a newer Bandroom is: one with a newer pixi (`Problem.pixiTooOld`), or with this
+    /// engine's interface version or a newer engine (`MismatchFix.getBandroom`).
     func openLatestRelease() {
         NSWorkspace.shared.open(URL(string: "https://github.com/181192/brasscribe/releases/latest")!)
     }
@@ -447,6 +532,7 @@ final class AppModel {
                       "Phones: \(s.onlineDevices) connected, \(s.pairedDevices) paired", "Jobs: \(s.jobsRunning) running, \(s.jobsQueued) waiting"]
         }
         lines.append("Engine build: \(monitor.health?.build ?? "–"); this app's workspace: \(bundledStamp?.short ?? "–")")
+        lines.append("Interface version: engine \(supervisor.engineInterface.map(String.init) ?? "–"), this app \(Wire.interfaceVersion)")
         if let updateFailure { lines.append("Engine update failed: \(updateFailure)") }
         let refusal = pixiRefusal ?? (updateFailure != nil ? updater.pixiRefusal : nil)
             ?? { if case .pixiTooOld(let r) = failure { r } else { nil } }()
@@ -622,6 +708,9 @@ final class AppModel {
         setupComplete = true
         if startAtLogin && environment["BANDROOM_NO_LOGIN_ITEM"] == nil { setLoginItem(true) }
         supervisor.configuration.source = EngineConfiguration.resolveSource(environment: environment, defaults: defaults, paths: paths, bundle: .main)
+        // Setup just installed this build's own workspace: an engine from it that is behind is not helped by
+        // installing it again.
+        if bootstrapper.phase == .done, case .installed = supervisor.configuration.source { workspaceIsThisApps = true }
         if !isRunning { supervisor.start() }
     }
 

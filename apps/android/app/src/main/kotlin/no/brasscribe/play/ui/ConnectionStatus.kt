@@ -21,10 +21,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import no.scribe.design.ScribeSpace
 import no.scribe.design.ScribeTheme
+import no.brasscribe.play.ErrorWords
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
 import no.brasscribe.play.connection.ConnectionState
+import no.brasscribe.play.engine.InterfaceMatch
 
 /** The sentence for [state], in this language. */
 @Composable
@@ -34,6 +36,7 @@ fun connectionText(vm: PlayViewModel, state: ConnectionState): String = when (st
     is ConnectionState.Offline -> stringResource(R.string.conn_offline)
     is ConnectionState.NeedsPairing -> stringResource(R.string.conn_needs_pairing)
     is ConnectionState.NetworkClosed -> stringResource(R.string.conn_network_closed)
+    is ConnectionState.NeedsUpdate -> stringResource(ErrorWords.update(state.update))
 }
 
 fun connectionIcon(state: ConnectionState): Int = when (state) {
@@ -44,6 +47,26 @@ fun connectionIcon(state: ConnectionState): Int = when (state) {
     is ConnectionState.Offline -> if (no.brasscribe.play.Product.MAKES_SCORES_ON_THE_PHONE) R.drawable.ic_bc_info else R.drawable.ic_bc_attention
     is ConnectionState.NeedsPairing -> R.drawable.ic_bc_pair_phone
     is ConnectionState.NetworkClosed -> R.drawable.ic_bc_attention
+    is ConnectionState.NeedsUpdate -> R.drawable.ic_bc_attention
+}
+
+/** Opens the page the latest release of the app (and of Bandroom) is on; a phone with no browser says so. */
+fun openLatestRelease(context: android.content.Context, vm: PlayViewModel) {
+    runCatching {
+        context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(BANDROOM_DOWNLOAD))
+            .addCategory(android.content.Intent.CATEGORY_BROWSABLE))
+    }.onFailure { vm.say(R.string.bandroom_no_browser) }
+}
+
+/**
+ * Under a pairing that stopped because this app is older than the computer's Bandroom: the way to the app's latest
+ * release. (For an older Bandroom the screen has Get Bandroom, with the address to type on the computer.)
+ */
+@Composable
+fun UpdateAppAction(vm: PlayViewModel, said: String?) {
+    if (said == null || said != stringResource(R.string.conn_update_app)) return
+    val context = androidx.compose.ui.platform.LocalContext.current
+    OutlineButton(stringResource(R.string.conn_get_app_update), { openLatestRelease(context, vm) }, Modifier.heightIn(min = 44.dp), fill = false)
 }
 
 /**
@@ -73,6 +96,10 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
         s is ConnectionState.Offline && s.paired -> stringResource(R.string.companion_connect) to { vm.connection.retry() }
         s is ConnectionState.Offline && !onConnectionScreen -> stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
         s is ConnectionState.NeedsPairing && !onConnectionScreen -> stringResource(R.string.conn_pair_again) to { vm.navigate(Screen.COMPANION) }
+        // The app is the one behind: the page its latest release is on. A phone with no browser says so.
+        s is ConnectionState.NeedsUpdate && s.update == InterfaceMatch.UPDATE_APP -> stringResource(R.string.conn_get_app_update) to { openLatestRelease(context, vm) }
+        // Bandroom is the one behind: the pairing screen says where its latest one is, to type on the computer.
+        s is ConnectionState.NeedsUpdate && !onConnectionScreen -> stringResource(R.string.bandroom_get_title) to { vm.navigate(Screen.COMPANION) }
         else -> null
     }
     val words = @Composable { m: Modifier ->

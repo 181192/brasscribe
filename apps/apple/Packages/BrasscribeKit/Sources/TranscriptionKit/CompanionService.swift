@@ -10,6 +10,15 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     public let baseURL: URL
     public private(set) var token: String?
     let session: URLSession
+    private let lock = NSLock()
+    private var lastInterface: InterfaceMatch?
+    /// What this engine last said about its interface version (`GET /v1/health`, or a paired device's
+    /// `GET /v1/devices/me`). Nil until it has answered, and again after a request, stream or upload did not get
+    /// through: another engine may answer at this address by then, so the next request asks first.
+    private var interface: InterfaceMatch? {
+        get { lock.withLock { lastInterface } }
+        set { lock.withLock { lastInterface = newValue } }
+    }
 
     public var displayName: String { baseURL.host() ?? baseURL.absoluteString }
 
@@ -17,43 +26,58 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         self.baseURL = baseURL; self.token = token; self.session = session
     }
 
+    /// `interface_version` as an answer carries it. Anything but a whole number reads as none, so the rest of the
+    /// answer still decodes and the engine counts as the one to update.
+    public struct InterfaceNumber: Decodable, Sendable, Equatable {
+        public let value: Int?
+        public init(from decoder: Decoder) throws { value = try? decoder.singleValueContainer().decode(Int.self) }
+    }
+
     public struct Health: Decodable, Sendable {
         public let status: String
         public let version: String
         public let device: String
         public let authRequired: Bool
-        /// Older engines leave these out.
-        public let serverID: String?
-        public let serverName: String?
+        public let serverID: String
+        public let serverName: String
+        let interface: InterfaceNumber?
+        /// The engine's interface version; nil when it gives none, or one that is not a whole number.
+        public var interfaceVersion: Int? { interface?.value }
         enum CodingKeys: String, CodingKey {
             case status, version, device
             case authRequired = "auth_required", serverID = "server_id", serverName = "server_name"
+            case interface = "interface_version"
         }
     }
 
-    /// `POST /v1/pair` and an approved `GET /v1/pair/requests/{id}`. Older engines send only `token`.
+    /// `POST /v1/pair` and an approved `GET /v1/pair/requests/{id}`.
     public struct PairResult: Decodable, Sendable, Equatable {
         public let token: String
-        public let deviceID: String?
-        public let serverID: String?
-        public let serverName: String?
+        public let deviceID: String
+        public let serverID: String
+        public let serverName: String
         enum CodingKeys: String, CodingKey {
             case token, deviceID = "device_id", serverID = "server_id", serverName = "server_name"
         }
-        public init(token: String, deviceID: String?, serverID: String?, serverName: String?) {
+        public init(token: String, deviceID: String, serverID: String, serverName: String) {
             self.token = token; self.deviceID = deviceID; self.serverID = serverID; self.serverName = serverName
         }
     }
 
-    /// `GET /v1/devices/me`: the heartbeat, and the check that the stored credential still works.
+    /// `GET /v1/devices/me`: a paired device's heartbeat. One request says which engine answers, that the stored
+    /// credential still works, and the engine's interface version.
     public struct DeviceSelf: Decodable, Sendable, Equatable {
         public let deviceID: String
         public let name: String
         public let serverID: String
         public let rotateAfterText: String?
         public var rotateAfter: Date? { EngineDate.parse(rotateAfterText) }
+        let interface: InterfaceNumber?
+        /// As `Health.interfaceVersion`.
+        public var interfaceVersion: Int? { interface?.value }
         enum CodingKeys: String, CodingKey {
             case deviceID = "device_id", name, serverID = "server_id", rotateAfterText = "rotate_after"
+            case interface = "interface_version"
         }
     }
 
@@ -157,18 +181,34 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         return r
     }
 
+    /// Everything but the two requests that say the interface version (`health`, and `thisDevice` for a paired
+    /// device) goes through here first: an engine with another interface version than this app's is sent nothing
+    /// else. While the engine's version is not known, health is asked first.
+    func requireMatch() async throws {
+        // decided from the answer just read: a request that fails meanwhile may have cleared the stored one
+        let match: InterfaceMatch
+        if let known = interface { match = known } else { match = InterfaceMatch.of(engine: try await health(timeout: 5).interfaceVersion) }
+        if case .mismatch(let update) = match { throw TranscriptionError.interfaceMismatch(update) }
+    }
+
     func send(_ r: URLRequest) async throws -> Data {
+        try await requireMatch()
+        return try await sendUnchecked(r)
+    }
+
+    private func sendUnchecked(_ r: URLRequest) async throws -> Data {
         let (data, resp): (Data, URLResponse)
-        do { (data, resp) = try await session.data(for: r) } catch { throw TranscriptionError.unreachable(error.localizedDescription) }
+        do { (data, resp) = try await session.data(for: r) } catch {
+            interface = nil
+            throw TranscriptionError.unreachable(error.localizedDescription)
+        }
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw TranscriptionError.notPaired }
         guard (200..<300).contains(code) else { throw TranscriptionError.http(code, String(decoding: data.prefix(300), as: UTF8.self)) }
         return data
     }
 
-    public func health() async throws -> Health {
-        try JSONDecoder().decode(Health.self, from: try await send(request("v1/health")))
-    }
+    public func health() async throws -> Health { try await health(timeout: nil) }
 
     /// The engine's profiles this app can use: the ones of its own target.
     public func profiles() async throws -> [ProfileInfo] {
@@ -220,17 +260,19 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         catch TranscriptionError.http(404, _) { return .expired }
         switch p.status {
         case "approved":
-            guard let t = p.token else { return .expired }
+            guard let t = p.token, let device = p.device_id, let server = p.server_id, let name = p.server_name else { return .expired }
             token = t
-            return .approved(PairResult(token: t, deviceID: p.device_id, serverID: p.server_id, serverName: p.server_name))
+            return .approved(PairResult(token: t, deviceID: device, serverID: server, serverName: name))
         case "denied": return .denied
         default: return .pending
         }
     }
 
-    /// The heartbeat. Throws `.notPaired` on 401, and `.http(404, …)` for a loopback client without a token.
-    public func thisDevice(timeout: TimeInterval = 5) async throws -> DeviceSelf {
-        try JSONDecoder().decode(DeviceSelf.self, from: try await send(request("v1/devices/me", timeout: timeout)))
+    /// A paired device's heartbeat, sent without asking health first: its answer carries the interface version, which
+    /// is noted for `requireMatch`. Throws `.notPaired` on 401, `.http(404, …)` for a client the engine accepts but
+    /// not as a paired device (loopback, a static token), and `.interfaceMismatch` as `health(timeout:from:)` does.
+    public func thisDevice(timeout: TimeInterval = 5, from serverID: String? = nil) async throws -> DeviceSelf {
+        try noteInterface(DeviceSelf.self, in: try await sendUnchecked(request("v1/devices/me", timeout: timeout)), from: serverID)
     }
 
     /// A new token for this device. Store it before using it: the old one keeps working until then.
@@ -244,8 +286,33 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try await send(request("v1/devices/me", method: "DELETE"))
     }
 
-    public func health(timeout: TimeInterval) async throws -> Health {
-        try JSONDecoder().decode(Health.self, from: try await send(request("v1/health", timeout: timeout)))
+    /// Also notes whether the engine's interface version is this app's (`requireMatch`). `serverID` is the engine the
+    /// caller expects at this address (the paired one, or a pairing link's), nil when any engine will do. Throws
+    /// `.interfaceMismatch` when the answer can't be read in full, is that engine's and its interface version is not
+    /// this app's. An answer that is not an engine's (a network's sign-in page, another program on the port), or is
+    /// another engine's, throws as any answer that can't be read: nothing was reached.
+    public func health(timeout: TimeInterval?, from serverID: String? = nil) async throws -> Health {
+        try noteInterface(Health.self, in: try await sendUnchecked(request("v1/health", timeout: timeout)), from: serverID)
+    }
+
+    /// What says an answer is an engine's, and which: both answers that carry the interface version name the engine.
+    private struct Identity: Decodable {
+        let serverID: String
+        let interface: InterfaceNumber?
+        enum CodingKeys: String, CodingKey { case serverID = "server_id", interface = "interface_version" }
+    }
+
+    /// Reads who answers and `interface_version` on their own before the rest of an answer that carries them. A number
+    /// that is not a whole number, or sits in an answer with other fields missing, still says which of the two to
+    /// update, but only in an answer of the engine expected (any engine, when `expected` is nil).
+    private func noteInterface<T: Decodable>(_ type: T.Type, in data: Data, from expected: String?) throws -> T {
+        let engine = (try? JSONDecoder().decode(Identity.self, from: data)).flatMap { expected == nil || $0.serverID == expected ? $0 : nil }
+        let match = engine.map { InterfaceMatch.of(engine: $0.interface?.value) }
+        interface = match
+        do { return try JSONDecoder().decode(T.self, from: data) } catch {
+            if case .mismatch(let update) = match { throw TranscriptionError.interfaceMismatch(update) }
+            throw error
+        }
     }
 
     public func job(_ id: String) async throws -> Job {
@@ -277,27 +344,9 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try await send(request("v1/runs/\(jobID)", method: "DELETE"))
     }
 
-    /// Seats an engine from before them refuses (422): the seat whose part it writes the same notes for.
-    /// A trumpet takes the Solo Cornet part, written for trumpet.
-    public static let seatFallback = ["trumpet": "solo-cornet"]
-
-    /// Multipart upload streamed from a temporary file, so long recordings never sit in memory. An older
-    /// engine that refuses the seat gets the job once more with `seatFallback`'s seat: the same notes, and
-    /// the score's part notice says which part it is.
+    /// Multipart upload streamed from a temporary file, so long recordings never sit in memory.
     func upload(_ req: TranscriptionRequest) async throws -> Job {
-        do {
-            return try await uploadOnce(req)
-        } catch TranscriptionError.http(422, let body) {
-            guard let s = req.output.seat, let fallback = Self.seatFallback[s] else { throw TranscriptionError.http(422, body) }
-            var again = req
-            again.output.seat = fallback
-            again.output.reads = nil
-            again.output.lead = nil
-            return try await uploadOnce(again)
-        }
-    }
-
-    private func uploadOnce(_ req: TranscriptionRequest) async throws -> Job {
+        try await requireMatch()
         let boundary = "brasscribe-\(UUID().uuidString)"
         let tmp = FileManager.default.temporaryDirectory.appending(path: "upload-\(UUID().uuidString)")
         FileManager.default.createFile(atPath: tmp.path, contents: nil)
@@ -334,7 +383,10 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         var r = request("v1/jobs/upload", method: "POST")
         r.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         let (data, resp): (Data, URLResponse)
-        do { (data, resp) = try await session.upload(for: r, fromFile: tmp) } catch { throw TranscriptionError.unreachable(error.localizedDescription) }
+        do { (data, resp) = try await session.upload(for: r, fromFile: tmp) } catch {
+            interface = nil
+            throw TranscriptionError.unreachable(error.localizedDescription)
+        }
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw TranscriptionError.notPaired }
         // The engine refuses a quartet for a solo take; the app says why in its own words.
@@ -368,6 +420,9 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
                             }
                         } catch is CancellationError {
                             throw CancellationError()
+                        } catch TranscriptionError.interfaceMismatch(let update) {
+                            // the engine was swapped for another version while the job ran: trying again can't help
+                            throw TranscriptionError.interfaceMismatch(update)
                         } catch {
                             attempts += 1
                             if attempts > 3 { throw error }
@@ -420,6 +475,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
+                    try await self.requireMatch()
                     let (bytes, resp) = try await session.bytes(for: req)
                     let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
                     guard (200..<300).contains(code) else { throw TranscriptionError.http(code, "events") }
@@ -429,7 +485,11 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
                     }
                     for ev in parser.feed(line: "") { continuation.yield(ev) }
                     continuation.finish()
-                } catch { continuation.finish(throwing: error) }
+                } catch {
+                    // a stream that did not open or broke off, not one the engine refused or the app stopped
+                    if error is URLError, !Task.isCancelled { self.interface = nil }
+                    continuation.finish(throwing: error)
+                }
             }
             continuation.onTermination = { _ in task.cancel() }
         }

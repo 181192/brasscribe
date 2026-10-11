@@ -97,6 +97,12 @@
             </StackPanel>
             <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind ViewModel.EngineStatus, Mode=OneWay}" TextWrapping="Wrap"
                        AutomationProperties.LiveSetting="Polite" />
+            <!-- Where the update is, when connecting or pairing stopped because one of the two must be updated. -->
+            <HyperlinkButton x:Name="EngineUpdateLink" Padding="6,4" Margin="-6,0,0,0" MinHeight="44"
+                             NavigateUri="{x:Bind ViewModel.EngineStatusLink, Mode=OneWay}"
+                             Content="{x:Bind ViewModel.EngineStatusLinkLabel}"
+                             AutomationProperties.HelpText="{x:Bind ViewModel.EngineStatusLinkHelp}"
+                             Visibility="{x:Bind ViewModel.HasEngineStatusLink, Mode=OneWay}" />
             <Button x:Uid="UnpairButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnUnpair"
                     Visibility="{x:Bind ViewModel.IsPaired, Mode=OneWay}" />
             <!-- Addresses, the server id and when it last answered: only for the band's tech person. -->

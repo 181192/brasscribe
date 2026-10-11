@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Brasscribe.Play.Core.ViewModels;
 
 /// <summary>What went wrong, for the error screen.</summary>
-public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable }
+public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable, UpdateApp, UpdateBandroom }
 
 /// <summary>
 /// An error with a way forward (design/system.md §5, Errors with recovery): the title says what
@@ -23,6 +23,17 @@ public sealed partial class ErrorViewModel(IStrings s) : ObservableObject
     [ObservableProperty] public partial string SecondaryLabel { get; set; } = "";
     [ObservableProperty] public partial string DetailsHeading { get; set; } = "";
     [ObservableProperty] public partial string Details { get; set; } = "";
+
+    /// <summary>"Get the update" when the way forward is a newer app or a newer Brasscribe on the computer; else empty.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLink))]
+    public partial string LinkLabel { get; set; } = "";
+    [ObservableProperty] public partial string LinkHelp { get; set; } = "";
+
+    /// <summary>The page <see cref="LinkLabel"/> opens: where the newest of both is.</summary>
+    [ObservableProperty] public partial Uri? LinkUri { get; set; }
+
+    public bool HasLink => LinkLabel.Length > 0;
 
     public ObservableCollection<string> Steps { get; } = [];
 
@@ -43,6 +54,10 @@ public sealed partial class ErrorViewModel(IStrings s) : ObservableObject
             if (s[$"Error_{k}_Step{n}"] is { Length: > 0 } step && step != $"Error_{k}_Step{n}") Steps.Add($"{n}. {step}");
         PrimaryLabel = s["Error_TryAgain"];
         SecondaryLabel = s["Error_ChooseAnother"];
+        bool update = kind is ErrorKind.UpdateApp or ErrorKind.UpdateBandroom;
+        LinkUri = update ? Engine.ConnectionMonitor.LatestRelease : null;
+        LinkHelp = update ? s["Error_GetUpdate_Help"] : "";
+        LinkLabel = update ? s["Error_GetUpdate"] : "";
         DetailsHeading = s["Error_DetailsHeading"];
         Details = kind == ErrorKind.ComputerUnreachable
             ? s.Format("Error_ComputerUnreachable_Details", technical ?? "")

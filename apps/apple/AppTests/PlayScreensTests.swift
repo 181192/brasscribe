@@ -131,6 +131,11 @@ import TranscriptionKit
         try LayoutFixtures.library(full)
         try await window("home-scores", app: full) { HomeView() }
         try await window("home-offline", app: LayoutFixtures.app(connection: .offline)) { HomeView() }
+        // app and computer on different versions: the row says which of the two to update
+        for (name, update) in [("home-update-computer", InterfaceMatch.Update.computer), ("home-update-app", .app)] {
+            let app = LayoutFixtures.app(connection: .mismatch(serverName: "Brasscribe on Studio Mac", update: update))
+            try await window(name, app: app) { HomeView() }
+        }
 
         let src = PendingSource(audioURL: ScreenshotScenes.sceneRecording, title: "Band practice", name: "Band practice.m4a")
         try await window("source", app: full) { SourceView(source: src) }
@@ -164,8 +169,17 @@ import TranscriptionKit
         try await window("review", app: full) { ReviewView(piece: piece) }
         try piece.saveComposition(composition)
         try await window("problem-silence", app: full) { ProblemView(problem: .silence) }
+        // A score asked of a computer with another version: the update words, and where to get the update
+        for (name, update) in [("problem-update-computer", InterfaceMatch.Update.computer), ("problem-update-app", .app)] {
+            try await window(name, app: full) { ProblemView(problem: .needsUpdate(update)) }
+        }
 
         try await sheet("settings", app: full) { SettingsView() }
+        // Your computer while one of the two needs an update: the words, where to get it, and Forget this computer
+        for (name, update) in [("settings-update-computer", InterfaceMatch.Update.computer), ("settings-update-app", .app)] {
+            let app = LayoutFixtures.app(connection: .mismatch(serverName: "Brasscribe on Studio Mac", update: update))
+            try await sheet(name, app: app) { SettingsView() }
+        }
         try await sheet("what-you-play", app: full) { NavigationStack { WhatDoYouPlayView(mode: .settings, initial: full.seat) { _ in } } }
         let exportModel = try await LayoutFixtures.model(piece)
         try await sheet("export", app: full) { ExportView(model: exportModel) }

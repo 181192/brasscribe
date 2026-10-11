@@ -1278,6 +1278,11 @@ export interface components {
              */
             expires_if_idle_after: string;
             /**
+             * Interface Version
+             * @description as in /v1/health, so a paired app's heartbeat (this request) reads it without a second one
+             */
+            interface_version: number;
+            /**
              * Last Seen
              * @description ISO 8601, UTC; updated on every request the device makes
              */
@@ -1382,6 +1387,11 @@ export interface components {
              * @description accelerator torch adapters use on this host: cuda, mps or cpu
              */
             device: string;
+            /**
+             * Interface Version
+             * @description one whole number for everything an app and the engine say to each other. An app is built for one number: when this one differs it tells the user which of the two to update (this one higher: the app; lower: the engine) and sends the engine nothing else
+             */
+            interface_version: number;
             /**
              * Server Id
              * @description stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.
@@ -1845,7 +1855,7 @@ export interface components {
             single_use: boolean;
             /**
              * Uri
-             * @description pairing payload: brasscribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]
+             * @description pairing payload: scribe://pair?v=1&id=..&name=..&h=..&code=..[&fp=..]
              */
             uri: string;
         };

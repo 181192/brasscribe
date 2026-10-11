@@ -5,6 +5,7 @@ import type {
   JobEvent, Manifest, ParityReport, ProfileInfo, Reference, RoundTrip, Source, StageFiles, SuiteInfo,
   SuiteRun, ValidationIssue, PartSources,
 } from "./types";
+import { interfaceMatch, type InterfaceMatch } from "./wire";
 
 /** The engine answered 404 for a route it does not have (as opposed to a missing resource). */
 export class MissingEndpoint extends Error {
@@ -28,6 +29,44 @@ export class TimedOut extends Error {
     super(`no answer within ${seconds} s`);
   }
 }
+
+/** The engine's interface version is not this Studio's: the request was not sent. `which` is the one to update. */
+export class InterfaceMismatch extends Error {
+  constructor(readonly which: Exclude<InterfaceMatch, "match">) {
+    super(which === "update-studio" ? "The engine is newer than this page." : "The engine is older than this Studio.");
+  }
+}
+
+/**
+ * What the engine's last health answer said about its interface version. Undefined until it has answered, and again
+ * after a request that did not get through (the engine there may then be another one, or the same after its update).
+ */
+let known: InterfaceMatch | undefined;
+const watchers = new Set<(state: InterfaceMatch | undefined) => void>();
+
+function know(state: InterfaceMatch | undefined): void {
+  if (state === known) return;
+  known = state;
+  for (const w of Array.from(watchers)) w(state);
+}
+
+/** The engine's interface against this Studio's, as last heard; undefined while it is not known. */
+export function engineInterface(): InterfaceMatch | undefined {
+  return known;
+}
+
+/** Calls `fn` whenever what is known of the engine's interface changes; returns the way to stop. */
+export function onEngineInterface(fn: (state: InterfaceMatch | undefined) => void): () => void {
+  watchers.add(fn);
+  return () => watchers.delete(fn);
+}
+
+/** For a test whose engine answers the one request it is about and no health: takes the engine's interface as `state`. */
+export function assumeEngineInterface(state: InterfaceMatch | undefined): void {
+  know(state);
+}
+
+const HEALTH = "/v1/health";
 
 /** Default time to wait for an answer; long reads (audio, scores) pass their own. */
 const TIMEOUT_S = 60;
@@ -56,7 +95,16 @@ export interface CallOptions {
   signal?: AbortSignal;
 }
 
+/**
+ * Every request passes here. An engine with another interface version is asked for its health only: anything else
+ * is refused before it is sent (InterfaceMismatch). Until the engine has said its number, health is asked first.
+ */
 async function request(path: string, init: RequestInit = {}, timeoutS = TIMEOUT_S): Promise<Response> {
+  // (What is not the engine's API, the files Studio itself is served with, is not the engine's to refuse.)
+  if (path.startsWith("/v1/") && path !== HEALTH) {
+    if (known === undefined) await api.health();
+    if (known !== undefined && known !== "match") throw new InterfaceMismatch(known);
+  }
   const timeout = AbortSignal.timeout(timeoutS * 1000);
   const own = init.signal ?? null;
   try {
@@ -65,6 +113,7 @@ async function request(path: string, init: RequestInit = {}, timeoutS = TIMEOUT_
     // The caller's own cancel is passed on as an AbortError; only our deadline is a time-out.
     if (own?.aborted) throw new DOMException("The request was cancelled.", "AbortError");
     if (timeout.aborted) throw new TimedOut(timeoutS);
+    know(undefined);
     throw new Unreachable(e instanceof Error ? e.message : String(e));
   }
 }
@@ -131,7 +180,18 @@ export async function fetchText(path: string, endpoint = path, opts: CallOptions
 const enc = encodeURIComponent;
 
 export const api = {
-  health: () => get<Health>("/v1/health"),
+  /** Also notes whether the engine's interface version is this Studio's (engineInterface). */
+  health: async (): Promise<Health> => {
+    const answer = await get<Health>(HEALTH);
+    // An engine's answer says which engine it is. Anything else at the address (an empty object, a list) is no
+    // engine's answer, and says nothing of an interface version: it fails as an answer that cannot be read.
+    if (typeof (answer as { server_id?: unknown } | null)?.server_id !== "string") {
+      know(undefined);
+      throw new ApiError(200, "GET /v1/health did not answer as an engine does.");
+    }
+    know(interfaceMatch((answer as { interface_version?: unknown }).interface_version));
+    return answer;
+  },
   profiles: () => get<ProfileInfo[]>("/v1/profiles"),
   jobs: () => get<Job[]>("/v1/jobs"),
   job: (id: string, opts?: CallOptions) => get<Job>(`/v1/jobs/${enc(id)}`, undefined, undefined, opts),
@@ -199,17 +259,24 @@ export const api = {
 /** The stream's state: connected, trying to reconnect after a drop, or given up by the browser. */
 export type StreamState = "open" | "reconnecting" | "closed";
 
+/** How long after a dropped stream the engine is asked again. */
+export const STREAM_RETRY_MS = 1000;
+
 /**
  * Subscribe to a job's progress. Returns a function that closes the stream.
  *
- * A dropped connection is left to the browser to reopen: the engine resumes after the last event
- * id it sent (Last-Event-ID), and an event seen twice is dropped here. The caller closes the stream
- * when the job ends.
+ * The stream passes the same gate as every request. It is opened once the engine is known to speak this Studio's
+ * interface version. A dropped connection is not left to the browser to reopen (that would go round the gate):
+ * the stream is closed, the engine's health is asked again, and the stream is opened again after the last event
+ * seen, where the engine resumes; an event seen twice is dropped here. With another interface version on the
+ * engine, now or later, the stream is closed for good. The caller closes the stream when the job ends.
  */
 export function subscribe(id: string, onEvent: (e: JobEvent) => void, onState?: (s: StreamState) => void): () => void {
-  const es = new EventSource(api.eventsUrl(id));
+  let es: EventSource | undefined;
   let last = -Infinity;
   let state: StreamState = "open";
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const set = (s: StreamState) => {
     if (s === state) return;
     state = s;
@@ -229,8 +296,53 @@ export function subscribe(id: string, onEvent: (e: JobEvent) => void, onState?: 
     }
     onEvent(e);
   };
-  for (const t of ["message", "job", "stage", "log"]) es.addEventListener(t, handler as EventListener);
-  es.onopen = () => set("open");
-  es.onerror = () => set(es.readyState === EventSource.CLOSED ? "closed" : "reconnecting");
-  return () => es.close();
+  const open = () => {
+    const stream = new EventSource(api.eventsUrl(id, Number.isFinite(last) ? last : -1));
+    es = stream;
+    for (const t of ["message", "job", "stage", "log"]) stream.addEventListener(t, handler as EventListener);
+    stream.onopen = () => set("open");
+    stream.onerror = () => {
+      // The browser gave up (the engine refused the stream): nothing to open again.
+      const gaveUp = stream.readyState === EventSource.CLOSED;
+      stream.close();
+      if (stopped || es !== stream) return;
+      if (gaveUp) return set("closed");
+      set("reconnecting");
+      // Whichever engine answers next says its interface version before the stream is asked of it.
+      know(undefined);
+      again();
+    };
+  };
+  const again = () => {
+    timer = setTimeout(() => void openWhenTheEngineMatches(), STREAM_RETRY_MS);
+  };
+  const openWhenTheEngineMatches = async () => {
+    if (stopped) return;
+    if (known === undefined) {
+      try {
+        await api.health();
+      } catch {
+        if (!stopped) again();
+        return;
+      }
+    }
+    if (stopped) return;
+    if (known === "match") open();
+    else set("closed");
+  };
+  const off = onEngineInterface((now) => {
+    if (now === undefined || now === "match" || stopped) return;
+    es?.close();
+    es = undefined;
+    clearTimeout(timer);
+    set("closed");
+  });
+  if (known === "match") open();
+  else void openWhenTheEngineMatches();
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+    off();
+    es?.close();
+  };
 }

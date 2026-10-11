@@ -361,6 +361,16 @@
         }
       }
     },
+    "Bandroom needs an update": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom må oppdateres"
+          }
+        }
+      }
+    },
     "Brasscribe can't start": {
       "localizations": {
         "nb": {
@@ -471,6 +481,16 @@
         }
       }
     },
+    "Brasscribe needs an update": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe må oppdateres"
+          }
+        }
+      }
+    },
     "Brasscribe needs attention: %@": {
       "localizations": {
         "nb": {
@@ -507,6 +527,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe på denne Macen lytter med Microsofts ONNX Runtime, som sender bruksdata og en enhetsidentifikator til Microsoft, aldri et opptak."
+          }
+        }
+      }
+    },
+    "Brasscribe on this computer is newer than this copy of Bandroom, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på denne datamaskinen er nyere enn denne utgaven av Bandroom, og de virker bare sammen når begge er oppdatert."
           }
         }
       }
@@ -1317,6 +1347,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nå spør Macen om Brasscribe får finne enheter på nettverket. Velg **Tillat** så telefonene kan koble seg til."
+          }
+        }
+      }
+    },
+    "No phone can be paired until the update succeeds.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen telefon kan kobles til før oppdateringen er fullført."
           }
         }
       }
@@ -2171,22 +2211,12 @@
         }
       }
     },
-    "The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update.": {
+    "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
-          }
-        }
-      }
-    },
-    "The previous version is still running, so phones can keep sending recordings.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den forrige versjonen kjører fortsatt, så telefonene kan sende opptak som før."
+            "value": "Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
           }
         }
       }
@@ -2207,6 +2237,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Solistskilleren er ikke lastet ned ennå."
+          }
+        }
+      }
+    },
+    "The update didn't finish, and the previous version was put back.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake."
           }
         }
       }
@@ -2241,6 +2281,36 @@
         }
       }
     },
+    "This copy of Bandroom is newer than the Brasscribe it runs, and has no newer one to put in its place. The latest Bandroom has one that works.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og har ingen nyere å sette inn i stedet. Den nyeste Bandroom har en som virker."
+          }
+        }
+      }
+    },
+    "This copy of Bandroom is newer than the Brasscribe it runs, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører, og de virker bare sammen når begge er oppdatert."
+          }
+        }
+      }
+    },
+    "This copy of Bandroom is newer than the Brasscribe it runs, which comes from a developer checkout. Update the checkout, then restart Brasscribe.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører. Brasscribe kommer fra en utviklerkopi: oppdater kopien, og start så Brasscribe på nytt."
+          }
+        }
+      }
+    },
     "This request has expired. Choose this computer on the phone again.": {
       "localizations": {
         "nb": {
@@ -2267,6 +2337,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prøv igjen"
+          }
+        }
+      }
+    },
+    "Update Brasscribe": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater Brasscribe"
           }
         }
       }

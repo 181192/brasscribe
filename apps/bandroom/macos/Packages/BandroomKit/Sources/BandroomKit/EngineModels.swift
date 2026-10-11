@@ -11,18 +11,37 @@ public struct Health: Codable, Sendable, Equatable {
     public var serverName: String
     /// Which build is running: the commit and workspace stamp of an installed engine; nil from older engines.
     public var build: String?
+    /// The engine's interface version, to compare with `Wire.interfaceVersion`; nil from an engine from before the
+    /// number, and for anything that is not a whole number.
+    public var interfaceVersion: Int?
 
     enum CodingKeys: String, CodingKey {
         case status, version, device, build
         case authRequired = "auth_required"
         case serverId = "server_id"
         case serverName = "server_name"
+        case interfaceVersion = "interface_version"
     }
 
     public init(status: String = "ok", version: String, device: String, authRequired: Bool = false, serverId: String, serverName: String,
-                build: String? = nil) {
+                build: String? = nil, interfaceVersion: Int?) {
         self.status = status; self.version = version; self.device = device
         self.authRequired = authRequired; self.serverId = serverId; self.serverName = serverName; self.build = build
+        self.interfaceVersion = interfaceVersion
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        status = try c.decode(String.self, forKey: .status)
+        version = try c.decode(String.self, forKey: .version)
+        device = try c.decode(String.self, forKey: .device)
+        authRequired = try c.decode(Bool.self, forKey: .authRequired)
+        serverId = try c.decode(String.self, forKey: .serverId)
+        serverName = try c.decode(String.self, forKey: .serverName)
+        build = try c.decodeIfPresent(String.self, forKey: .build)
+        // A number that can't be read is not an engine that doesn't answer: it reads as none, and the engine
+        // counts as the one behind.
+        interfaceVersion = try? c.decode(Int.self, forKey: .interfaceVersion)
     }
 }
 

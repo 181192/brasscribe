@@ -82,9 +82,10 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 1. **Name and applicationId.** `no.fretscribe.play` is permanent once published. Trademark and store
    checks are open; the domains are unregistered.
 2. **Release key.** Brasscribe's, or a separate upload key under Play App Signing (recommended)?
-3. **Pairing link.** Decided: both apps keep the shared `brasscribe://pair` link for now (a phone with both
-   apps asks which one opens it), and the program on the computer is Brasscribe Bandroom, Bandroom for short,
-   in both apps.
+3. **Pairing link.** Decided: the link names the family, `scribe://pair`, and both apps answer it. Pairing
+   normally happens inside an app, which scans the code itself; opened from outside on a phone with both
+   apps, Android asks which one opens it. The program on the computer is Brasscribe Bandroom, Bandroom for
+   short, in both apps.
 4. **First-run copy.** The flows promise "Made on this phone. Nothing goes online", but the first
    version needs a computer for every tab. Reword, or wait for an on-device bass path.
    For now the app says what is true: "Your recordings stay on your phone and your own computer", and

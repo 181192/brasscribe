@@ -84,7 +84,9 @@ class EngineContractTest {
                 if (i >= 0 && d.isElementOptional(i)) wrong += "$name.$r"
             }
         }
-        assertEquals("required in the spec but defaulted in Kotlin", emptyList<String>(), wrong)
+        // The one exception: the interface version must be readable as missing, since an engine from before the
+        // number is told apart by not sending it (InterfaceMatch), and the app then says to update Bandroom.
+        assertEquals("required in the spec but defaulted in Kotlin", listOf("Health.interface_version", "DeviceSelf.interface_version"), wrong.sortedDescending())
     }
 
     @Test

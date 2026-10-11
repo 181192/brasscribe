@@ -6,8 +6,8 @@
     xmlns:vm="using:Brasscribe.Play.Core.ViewModels">
 
     <!-- Brasscribe on your computer, as on every Play app: a bordered row with the state icon and words
-         (never colour alone) on the left, Connect or Pair this PC again on the right. At large text sizes
-         or when narrow the button goes below the words. State changes are announced by the view model. -->
+         (never colour alone) on the left, Connect, Pair this PC again or Get the update on the right. At large
+         text sizes or when narrow the button goes below the words. State changes are announced by the view model. -->
     <Border Style="{StaticResource StatusRowStyle}">
         <Grid x:Name="Row" ColumnSpacing="12" RowSpacing="8">
             <Grid.ColumnDefinitions>
@@ -23,9 +23,10 @@
                       Foreground="{ThemeResource ScribeTextMutedBrush}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
             <TextBlock x:Name="StatusText" Grid.Column="1" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
                        Text="{x:Bind Connection.StatusText, Mode=OneWay}" />
-            <Button x:Name="ActionButton" x:Uid="ConnectionActionButton" Grid.Column="2" Style="{StaticResource ActionButtonStyle}"
+            <Button x:Name="ActionButton" Grid.Column="2" Style="{StaticResource ActionButtonStyle}"
                     MinHeight="44" VerticalAlignment="Center" Click="OnAction"
                     Content="{x:Bind Connection.ActionText, Mode=OneWay}"
+                    AutomationProperties.HelpText="{x:Bind Connection.ActionHelp, Mode=OneWay}"
                     Visibility="{x:Bind Connection.HasAction, Mode=OneWay}" />
         </Grid>
     </Border>

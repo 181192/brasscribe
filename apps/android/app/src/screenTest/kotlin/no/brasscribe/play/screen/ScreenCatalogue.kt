@@ -65,6 +65,7 @@ abstract class ScreenCatalogue : ScreenTest() {
      */
     private fun fromHome() {
         waitUntil(30_000) { !vm.transcribe.value.running }
+        forgetTheOtherComputer()
         rule.runOnUiThread { vm.home() }
         rule.waitForIdle()
     }

@@ -33,6 +33,10 @@ enum class RecordingState {
     GONE,
     /** The computer could not be asked. */
     NO_ANSWER,
+    /** The computer was not asked: this app is older than its Bandroom. */
+    UPDATE_APP,
+    /** The computer was not asked: its Bandroom is older than this app. */
+    UPDATE_COMPUTER,
     /** The phone has no room to keep it. */
     NO_ROOM,
     /** It is larger than the phone takes. */
@@ -107,9 +111,12 @@ class PracticeRecordings(private val dir: File) {
         /**
          * Why a recording did not come from the computer, from what went wrong ([error]) and the [room] left on the
          * phone: the computer does not have it; it is larger than the phone takes; the phone could not keep it
-         * (no room, or the file could not be written); or the computer was not reached.
+         * (no room, or the file could not be written); the computer was not asked because one of the two needs an
+         * update; or the computer was not reached.
          */
         fun whyNot(error: Throwable, room: Long): RecordingState = when {
+            error is no.brasscribe.play.engine.InterfaceMismatchException ->
+                if (error.update == no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP) RecordingState.UPDATE_APP else RecordingState.UPDATE_COMPUTER
             (error as? EngineException)?.status == 404 -> RecordingState.GONE
             (error as? EngineException)?.status == 413 -> RecordingState.TOO_LARGE
             error is EngineException -> RecordingState.NO_ANSWER

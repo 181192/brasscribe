@@ -29,6 +29,13 @@ public sealed class ScreenCatalogue
 
     private static readonly CatalogueRun Run = new();
 
+    /// <summary>
+    /// Icons left out of a reading of the screen because a scrolling edge cut them (<see cref="BoxOf"/>), and icons
+    /// whose contrast was measured on a saved screenshot, over the whole run. An icon in the first set and not in the
+    /// second was on screen and measured nowhere: <see cref="Done"/> reports it.
+    /// </summary>
+    private static readonly HashSet<string> CutIcons = [], MeasuredIcons = [];
+
     [UITestMethod]
     [DynamicData(nameof(Screens))]
     public async Task Screen(string scene)
@@ -88,6 +95,7 @@ public sealed class ScreenCatalogue
                     Save(Path.Combine(Options.Out, shot + ".png"), taken.Picture!);
                     Run.Shots.Add(shot);
                     Run.Findings.AddRange(Contrast.Check(shot, taken.Picture!, taken.Texts));
+                    MeasuredIcons.UnionWith(taken.Texts.Where(t => t.Kind == TextKind.Icon).Select(t => t.Text));
                 }
                 if (dialog is not null && !await CloseDialogsAsync(window))
                     throw new ScreenNotTakenException("screen not taken: its dialog did not close, so the next one could not open");
@@ -132,7 +140,23 @@ public sealed class ScreenCatalogue
     }
 
     [ClassCleanup]
-    public static void Done() => Save();
+    public static void Done()
+    {
+        Run.Findings.AddRange(UnmeasuredIcons());
+        Save();
+    }
+
+    /// <summary>
+    /// An icon that was only ever seen cut by a scrolling edge has had its contrast measured in no screenshot of
+    /// this run: one finding each, named by its code point. Not when the run takes only some of the screens
+    /// (BRASSCRIBE_CATALOGUE_SCENES): the icon may be whole on one that was left out.
+    /// </summary>
+    private static IEnumerable<Finding> UnmeasuredIcons() =>
+        Options.AllScenes
+            ? CutIcons.Except(MeasuredIcons).Order(StringComparer.Ordinal).Select(glyph => new Finding($"all--{Options.Prefix}any", "contrast",
+                $"icon {string.Join(' ', glyph.EnumerateRunes().Select(r => $"U+{r.Value:X4}"))}",
+                "cut by a scrolling edge wherever it shows, so its contrast was measured on no screen of this run"))
+            : [];
 
     private static void Save()
     {
@@ -325,8 +349,9 @@ public sealed class ScreenCatalogue
     // ---- text on screen ----
 
     /// <summary>
-    /// Every text and icon a person sees: visible, not in a disabled control (WCAG leaves those out), clipped to the
-    /// parts that scroll. While a dialog is open only its own (the window behind it is dimmed).
+    /// Every text a person sees, and every icon that shows whole: visible, not in a disabled control (WCAG leaves
+    /// those out). A text is cut to the parts above it that scroll; an icon cut by one is left out and noted in
+    /// <see cref="CutIcons"/> (<see cref="BoxOf"/>). While a dialog is open only its own (the window behind it is dimmed).
     /// </summary>
     private static List<ScreenText> Texts(FrameworkElement root, int width, int height)
     {
@@ -357,10 +382,15 @@ public sealed class ScreenCatalogue
         for (int i = 0, n = VisualTreeHelper.GetChildrenCount(node); i < n; i++) Walk(VisualTreeHelper.GetChild(node, i), scale, width, height, found);
     }
 
-    /// <summary>Where an element is in the picture, cut to every part above it that scrolls; empty when out of view.</summary>
+    /// <summary>
+    /// Where an element is in the picture, cut to every part above it that scrolls. Empty when it is out of view, and
+    /// for an icon that a scrolling edge cuts: such an icon is not measured here, and its glyph goes into
+    /// <see cref="CutIcons"/> so that the run can tell whether it was measured anywhere.
+    /// </summary>
     private static Box BoxOf(FrameworkElement element, double scale, int width, int height)
     {
         var r = element.TransformToVisual(null).TransformBounds(new Windows.Foundation.Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        var whole = r;
         for (var up = VisualTreeHelper.GetParent(element); up is not null; up = VisualTreeHelper.GetParent(up))
         {
             if (up is not ScrollViewer and not Microsoft.UI.Xaml.Controls.Primitives.ScrollPresenter) continue;
@@ -368,6 +398,13 @@ public sealed class ScreenCatalogue
             var view = v.TransformToVisual(null).TransformBounds(new Windows.Foundation.Rect(0, 0, v.ActualWidth, v.ActualHeight));
             r.Intersect(view);
             if (r.IsEmpty) return default;
+        }
+        // An icon on the edge of what is scrolled into view: the slice that shows may hold none of the glyph, only the
+        // tile behind it, so its colours say nothing of the icon's contrast. It is measured where it is whole.
+        if (element is FontIcon icon && (r.Width < whole.Width - 0.5 || r.Height < whole.Height - 0.5))
+        {
+            CutIcons.Add(icon.Glyph);
+            return default;
         }
         return Box.FromDips(r.X, r.Y, r.Width, r.Height, scale).Within(width, height);
     }
@@ -416,5 +453,8 @@ public sealed class ScreenCatalogue
         private static readonly string[]? Only = Env("SCENES")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         public static bool Wanted(string scene) => Only is null || Only.Contains(scene);
+
+        /// <summary>The run takes every screen (BRASSCRIBE_CATALOGUE_SCENES is not set).</summary>
+        public static bool AllScenes => Only is null;
     }
 }

@@ -159,7 +159,7 @@ public sealed class PixiRefusalTests : IDisposable
     private EngineSupervisor RunningSupervisor(FakeLauncher launcher) => new(
         launcher, new FakePorts(),
         (_, _) => Task.FromResult<HealthInfo?>(launcher.Started.Count > 0 && !launcher.Last.WaitForExitAsync().IsCompleted
-            ? new HealthInfo("ok", "0.9.4", "cpu", false, "3f9c2a7e11", "Brasscribe on Kari's PC")
+            ? new HealthInfo("ok", "0.9.4", "cpu", false, "3f9c2a7e11", "Brasscribe on Kari's PC", InterfaceVersion: Wire.InterfaceVersion)
             : null),
         _ => new ProcessSpec("pixi", [], _dir, new Dictionary<string, string>()), new EngineLog(null, _time), _time);
 

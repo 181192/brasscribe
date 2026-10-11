@@ -7,8 +7,12 @@ namespace Brasscribe.Play.Core.Engine;
 // DTOs for the companion engine API (engine/openapi.json, "scribe engine" 0.1.0).
 // Property names map to snake_case through EngineJsonContext.
 
+/// <summary>
+/// GET /v1/health. <see cref="InterfaceVersion"/> is null when the answer has none that is a whole number
+/// (<see cref="InterfaceMatch"/>); from an engine with another version only it, the server id and the name are filled in.
+/// </summary>
 public sealed record Health(string Version, string Device, bool AuthRequired, string Status = "ok",
-    string? ServerId = null, string? ServerName = null, string? Build = null);
+    string? ServerId = null, string? ServerName = null, string? Build = null, int? InterfaceVersion = null);
 
 public sealed record AudioRef(string AudioId, string Sha256, string Filename, long Bytes);
 

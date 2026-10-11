@@ -37,8 +37,23 @@ enum ConnectionCopy {
             case .iPad: String(localized: "The computer no longer recognises this iPad.")
             case .mac: String(localized: "The computer no longer recognises this Mac.")
             }
+        case .mismatch(_, let which): update(which)
         }
     }
+
+    /// The app and Brasscribe on the computer are not the same version: which of the two to update. The sentence is the
+    /// whole message, on the connection row, when pairing and when a score is asked of the computer.
+    static func update(_ which: InterfaceMatch.Update) -> String {
+        switch which {
+        case .app:
+            String(localized: "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.")
+        case .computer:
+            String(localized: "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.")
+        }
+    }
+
+    /// Where the latest Brasscribe Play and Brasscribe Bandroom are downloaded: always the latest release.
+    static let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
 
     static var pairAgain: String {
         switch device {
@@ -54,12 +69,13 @@ enum ConnectionCopy {
         case .reconnecting: BrasscribeIcon.network.systemName
         case .offline: "wifi.slash"
         case .needsPairing: BrasscribeIcon.accessKey.systemName
+        case .mismatch: BrasscribeIcon.download.systemName
         }
     }
 }
 
 /// The compact connection row: an icon and words (never colour alone), plus the one way forward when
-/// there is one ("Connect", "Pair this phone again"). On Home and in Settings.
+/// there is one ("Connect", "Pair this phone again", where to get the update). On Home and in Settings.
 struct ConnectionStatusRow: View {
     @Environment(AppModel.self) private var app
 
@@ -98,8 +114,39 @@ struct ConnectionStatusRow: View {
             Button(ConnectionCopy.pairAgain) { app.showSettings = true }
                 .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
                 .accessibilityIdentifier("connectionPairAgain")
+        case .mismatch(_, let which):
+            UpdateAction(which: which, place: "connection")
         case .connected, .reconnecting:
             EmptyView()
+        }
+    }
+}
+
+/// Where the update is, for the one of the two that needs it. It is made outside the app: this app's from its download
+/// page, the computer's on the computer, from the address to type there. Shown wherever the update words are: the
+/// connection row, a pairing that was refused, and a score asked of the computer.
+struct UpdateAction: View {
+    let which: InterfaceMatch.Update
+    /// Where it is shown, the start of its accessibility identifiers ("connectionGetUpdate", "pairingUpdateAddress").
+    let place: String
+
+    var body: some View {
+        switch which {
+        case .app:
+            Link(destination: ConnectionCopy.downloads) { Text("Open the download page") }
+                .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
+                .accessibilityIdentifier("\(place)GetUpdate")
+        case .computer:
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text("On your computer, download the latest Brasscribe Bandroom from this address:")
+                    .foregroundStyle(Color.Scribe.textMuted)
+                Text(verbatim: ConnectionCopy.downloads.absoluteString)
+                    .foregroundStyle(Color.Scribe.text)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("\(place)UpdateAddress")
+            }
+            .font(Font.Scribe.callout)
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

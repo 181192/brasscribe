@@ -65,6 +65,16 @@ public-domain hymn used for screenshots), or point the app at a
 running engine: start `pixi run serve --lan` in the repo root and enter the
 pairing code the engine prints.
 
+The app and the engine must have the same interface version (`Wire.InterfaceVersion`, the engine's
+`engine/src/scribe_engine/wire.py`). The engine says its own in `GET /v1/health` and, to a paired PC, in
+`GET /v1/devices/me`, which is the heartbeat. `EngineClient` sends any other request only while the last of those
+answers had the app's number, and asks health first when it does not know (at start, and after a request that got
+no answer or a dropped event stream). With another number the request is not sent: the connection row says which
+of the two to update, with **Get the update** (the releases page), the pairing is kept, and Unpair forgets the
+computer on this PC only. A pairing that stops for this reason offers the same page next to its sentence. An
+answer that does not name an engine (no `server_id`: an empty object, a sign-in page) is one that could not be
+read, never a reason to update.
+
 ## Test
 
 ```powershell

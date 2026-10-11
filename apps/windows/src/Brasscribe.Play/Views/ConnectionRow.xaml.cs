@@ -27,7 +27,7 @@ public sealed partial class ConnectionRow : UserControl
 
     public ConnectionMonitor? Connection { get; private set; }
 
-    /// <summary>Connect or Pair this PC again was chosen.</summary>
+    /// <summary>Connect or Pair this PC again was chosen. Get the update is not raised: it opens its page here.</summary>
     public event EventHandler? ActionInvoked;
 
     public void Show(ConnectionMonitor connection)
@@ -36,7 +36,11 @@ public sealed partial class ConnectionRow : UserControl
         Bindings.Update();
     }
 
-    private void OnAction(object sender, RoutedEventArgs e) => ActionInvoked?.Invoke(this, EventArgs.Empty);
+    private async void OnAction(object sender, RoutedEventArgs e)
+    {
+        if (Connection?.ActionUri is { } page) await Windows.System.Launcher.LaunchUriAsync(page);
+        else ActionInvoked?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>Side by side, or the button under the words (aligned with them) at large text or narrow widths.</summary>
     private void Layout()

@@ -631,6 +631,16 @@
         }
       }
     },
+    "An update is needed first": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det trengs en oppdatering først"
+          }
+        }
+      }
+    },
     "any recording.": {
       "localizations": {
         "nb": {
@@ -3011,6 +3021,16 @@
         }
       }
     },
+    "On your computer, download the latest Brasscribe Bandroom from this address:": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last ned nyeste Brasscribe Bandroom på datamaskinen fra denne adressen:"
+          }
+        }
+      }
+    },
     "On your computer. The recording is not sent online.": {
       "localizations": {
         "nb": {
@@ -3187,6 +3207,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Åpne på notestativet"
+          }
+        }
+      }
+    },
+    "Open the download page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne nedlastingssiden"
           }
         }
       }
@@ -4511,12 +4541,12 @@
         }
       }
     },
-    "That isn't a Brasscribe pairing link. It starts with brasscribe://pair.": {
+    "That isn't a Brasscribe pairing link. It starts with scribe://pair.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med brasscribe://pair."
+            "value": "Det er ikke en tilkoblingslenke fra Brasscribe. Den begynner med scribe://pair."
           }
         }
       }
@@ -5317,6 +5347,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "En halvtone opp"
+          }
+        }
+      }
+    },
+    "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater Brasscribe på datamaskinen. Denne appen er nyere enn Brasscribe der, og de virker bare sammen når begge er oppdatert."
+          }
+        }
+      }
+    },
+    "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater Brasscribe Play. Brasscribe på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert."
           }
         }
       }

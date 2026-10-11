@@ -54,6 +54,19 @@ class BarListeningTest {
     }
 
     @Test
+    fun aLoadThatHasSaidWhyThereIsNothingToHearIsNotSaidOver() = runTest {
+        val events = mutableListOf<BarListening.Event>()
+        val l = BarListening(backgroundScope, object : ClipOutput {
+            override fun play(clips: List<PcmAudio>): Long = 0L
+            override fun stop() = Unit
+        }) { events += it }
+        // The computer was not asked (one of the two needs an update), and the player has been told so.
+        l.toggle(5) { BarListening.Clips(emptyList(), withRecording = false, said = true) }; runCurrent()
+        assertNull(l.playing.value)
+        assertEquals(emptyList<BarListening.Event>(), events)
+    }
+
+    @Test
     fun returnsToListenWhenTheBarEnds() = runTest {
         val out = FakeOutput()
         val events = mutableListOf<BarListening.Event>()

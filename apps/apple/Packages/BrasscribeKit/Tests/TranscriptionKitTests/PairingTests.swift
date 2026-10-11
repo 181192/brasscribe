@@ -7,7 +7,7 @@ import Testing
 
 @Test func pairingLinkFromTheEnginesPayload() throws {
     // as engine/src/scribe_engine/companion.py pairing_uri writes it
-    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.168.0.20:8765,100.64.0.2:8765&code=482913"))
+    let link = try #require(PairingLink(string: "scribe://pair?v=1&id=srv-7f3a&name=Brasscribe%20on%20Kari%E2%80%99s%20Mac&h=192.168.0.20:8765,100.64.0.2:8765&code=482913"))
     #expect(link.version == 1)
     #expect(link.serverID == "srv-7f3a")
     #expect(link.serverName == "Brasscribe on Kari’s Mac")
@@ -18,26 +18,44 @@ import Testing
 }
 
 @Test func pairingLinkOptionalPartsAndPastedText() throws {
-    let link = try #require(PairingLink(string: "  brasscribe://pair?v=1&id=abc&name=X&h=[fe80::1]:8765&fp=q83vEjRWeJA\n"))
+    let link = try #require(PairingLink(string: "  scribe://pair?v=1&id=abc&name=X&h=[fe80::1]:8765&fp=q83vEjRWeJA\n"))
     #expect(link.code == nil)
     #expect(link.fingerprint == "q83vEjRWeJA")
     #expect(link.baseURLs.first?.host() == "fe80::1")
     // a code shown as "482 913" still works
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765&code=482%20913")?.code == "482913")
-    #expect(PairingLink(url: URL(string: "brasscribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765")!)?.serverID == "a")
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765&code=482%20913")?.code == "482913")
+    #expect(PairingLink(url: URL(string: "scribe://pair?v=1&id=a&name=n&h=10.0.0.2:8765")!)?.serverID == "a")
 }
 
 @Test func pairingLinkRejectsWhatItCannotUse() {
     #expect(PairingLink(string: "https://pair?v=1&id=a&h=10.0.0.2:8765") == nil)          // other scheme
-    #expect(PairingLink(string: "brasscribe://open?v=1&id=a&h=10.0.0.2:8765") == nil)      // other action
-    #expect(PairingLink(string: "brasscribe://pair?v=2&id=a&h=10.0.0.2:8765") == nil)      // newer version
-    #expect(PairingLink(string: "brasscribe://pair?id=a&h=10.0.0.2:8765") == nil)          // no version
-    #expect(PairingLink(string: "brasscribe://pair?v=1&h=10.0.0.2:8765") == nil)           // no server id
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n") == nil)               // no address
+    #expect(PairingLink(string: "scribe://open?v=1&id=a&h=10.0.0.2:8765") == nil)      // other action
+    #expect(PairingLink(string: "scribe://pair?v=2&id=a&h=10.0.0.2:8765") == nil)      // newer version
+    #expect(PairingLink(string: "scribe://pair?id=a&h=10.0.0.2:8765") == nil)          // no version
+    #expect(PairingLink(string: "scribe://pair?v=1&h=10.0.0.2:8765") == nil)           // no server id
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&name=n") == nil)               // no address
     #expect(PairingLink(string: "482913") == nil)
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=203.0.113.9:8765") == nil)    // not on the local network
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=example.com:8765") == nil)
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=203.0.113.9:8765") == nil)    // not on the local network
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=example.com:8765") == nil)
     #expect(PairingLink(string: "") == nil)
+}
+
+/// The scheme from before the link took the family's name is not a pairing link any more.
+@Test func pairingLinkWithTheOldSchemeIsRejected() {
+    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=10.0.0.2:8765") == nil)
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=10.0.0.2:8765") != nil)
+}
+
+// MARK: interface version
+
+@Test func interfaceMatchSaysWhichOfTheTwoToUpdate() {
+    #expect(InterfaceMatch.of(engine: 3, app: 3) == .match)
+    #expect(InterfaceMatch.of(engine: 4, app: 3) == .mismatch(.app))          // the engine is newer
+    #expect(InterfaceMatch.of(engine: 2, app: 3) == .mismatch(.computer))     // the engine is older
+    #expect(InterfaceMatch.of(engine: nil, app: 3) == .mismatch(.computer))   // an engine from before the number
+    // the app's own number is the one in Wire
+    #expect(InterfaceMatch.of(engine: Wire.interfaceVersion) == .match)
+    #expect(InterfaceMatch.of(engine: nil) == .mismatch(.computer))
 }
 
 // MARK: record and storage
@@ -212,6 +230,30 @@ private func freshDefaults() -> UserDefaults {
     #expect(m.state == .offline)
 }
 
+@Test func connectionWithAnotherInterfaceVersionIsItsOwnStateAndKeepsAsking() {
+    var m = ConnectionMachine()
+    let t0 = Date()
+    m.handle(.start(serverName: "B"), at: t0)
+    m.handle(.heartbeatOK(serverName: "B"), at: t0)
+    // the computer was updated during the session: the next heartbeat says so, and health is asked again later
+    #expect(m.handle(.mismatch(serverName: "B", .app), at: t0 + 20) == 20)
+    #expect(m.state == .mismatch(serverName: "B", update: .app))
+    #expect(m.state.kind == .mismatch)
+    // back in the foreground: the words stay while it is checked again
+    #expect(m.handle(.start(serverName: "B"), at: t0 + 300) == 0)
+    #expect(m.state == .mismatch(serverName: "B", update: .app))
+    // the computer restarting for its update: one missed heartbeat changes nothing, the second is "Looking for …"
+    #expect(m.handle(.heartbeatFailed, at: t0 + 301) == 2)
+    #expect(m.state == .mismatch(serverName: "B", update: .app))
+    m.handle(.heartbeatFailed, at: t0 + 303)
+    #expect(m.state == .reconnecting(serverName: "B"))
+    #expect(m.handle(.mismatch(serverName: "B", .computer), at: t0 + 305) == 20)
+    #expect(m.state == .mismatch(serverName: "B", update: .computer))
+    // both up to date: connected again, with the pairing it had
+    #expect(m.handle(.heartbeatOK(serverName: "B"), at: t0 + 325) == 20)
+    #expect(m.state == .connected(serverName: "B"))
+}
+
 @Test func connectionBackoffSequence() {
     #expect((1...7).map(ConnectionMachine.backoff(attempt:)) == [2, 4, 8, 16, 30, 30, 30])
 }
@@ -229,7 +271,7 @@ func otherHostsAreRefused(host: String) {
 }
 
 @Test func onlyTheLocalAddressesOfALinkAreKept() throws {
-    let link = try #require(PairingLink(string: "brasscribe://pair?v=1&id=a&name=n&h=203.0.113.9:8765,192.168.0.20:8765,[fe80::1]:8765&code=1"))
+    let link = try #require(PairingLink(string: "scribe://pair?v=1&id=a&name=n&h=203.0.113.9:8765,192.168.0.20:8765,[fe80::1]:8765&code=1"))
     #expect(link.hosts == ["192.168.0.20:8765", "[fe80::1]:8765"])
     #expect(link.displayHost == "192.168.0.20")
 }
@@ -240,5 +282,5 @@ func otherHostsAreRefused(host: String) {
     // what a URL would connect to is example.com, whatever the text around it says
     #expect(PairingLink.host(of: "example.com#.local:8765") == nil)
     #expect(PairingLink.host(of: "192.168.0.2@example.com:8765") == nil)
-    #expect(PairingLink(string: "brasscribe://pair?v=1&id=a&h=example.com%23.local:8765") == nil)
+    #expect(PairingLink(string: "scribe://pair?v=1&id=a&h=example.com%23.local:8765") == nil)
 }

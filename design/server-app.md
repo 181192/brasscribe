@@ -134,7 +134,7 @@ The model: each phone pairs **once** and gets its own long-lived credential, whi
 The **Pair a phone** window offers three ways, easiest first. They all end in the same place.
 
 1. **Choose this computer on the phone, then allow it here.** No code at all: this is the WCAG 3.3.8 path, and it also works for VoiceOver and TalkBack users.
-   - The phone lists "Brasscribe on Kari's MacBook", found over the local network (mDNS, `_brasscribe._tcp`).
+   - The phone lists "Brasscribe on Kari's MacBook", found over the local network (mDNS, `_scribe._tcp`).
    - The user taps it, and the computer asks **Allow Kari's iPhone?**
    - The dialog shows a four-digit match number that the phone also shows. The user compares the numbers but never copies one.
    - A request waits 2 minutes, and at most three can wait at once (a phone that asks again replaces its own waiting request). If it lapses, the dialog says "This request has expired. Choose this computer on the phone again."
@@ -285,7 +285,7 @@ WantedBy=default.target
 | macOS format | `.dmg`, drag to Applications, no admin. Not `.pkg`: a `.pkg` needs an admin password and could install a LaunchAgent we don't need. | – |
 | macOS login | `SMAppService.mainApp` (the app itself), not a separate `SMAppService.agent` LaunchAgent for the engine. One process tree, one item in Login Items, and Stop means stop. | If the shell crashes, the engine child goes with it. That is acceptable: the next login or a relaunch restores it. |
 | macOS signing | Developer ID + hardened runtime + notarisation for the shell and the bundled `pixi` binary. | Environments built at runtime by pixi are **not quarantined**, so Gatekeeper doesn't assess them. Verify that nothing in the chain sets `com.apple.quarantine`. The engine runs as a separate process, so library validation in the shell doesn't apply to it. |
-| macOS Local Network | `NSLocalNetworkUsageDescription` and `NSBonjourServices` = `_brasscribe._tcp` in the shell's Info.plist. The setup step warns before the prompt appears. | Verify that the prompt and the permission are attributed to the shell, the responsible process, when the Python child registers the mDNS service and listens on the LAN. |
+| macOS Local Network | `NSLocalNetworkUsageDescription` and `NSBonjourServices` = `_scribe._tcp` in the shell's Info.plist. The setup step warns before the prompt appears. | Verify that the prompt and the permission are attributed to the shell, the responsible process, when the Python child registers the mDNS service and listens on the LAN. |
 | macOS firewall | Off by default. If it is on, the first LAN listen prompts for **python3.12** (unsigned by us), and the prompt names Python, not Brasscribe. | Bad for non-tech users. See "LAN front door" below. |
 | Windows format | MSIX with `runFullTrust`, per user, no admin. `uap5:StartupTask` for login. App Installer (`.appinstaller`) for auto-update; also listed in winget. | The **Microsoft Store is not recommended**: its policy on apps that download and run code that changes their function (pixi environments) is a risk. Distribute signed MSIX from the download page. |
 | Windows data | `%LOCALAPPDATA%\Brasscribe`. MSIX redirects AppData writes into the package's own store, which is **deleted on uninstall**. That is what we want for 10 GB of downloads. | Verify that the redirected path is what the Python child sees (it inherits the package context when launched by the packaged shell) and that the engine's `engine.json` is reachable by Play. |
@@ -331,7 +331,7 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 
 | Problem | Title (en) | Why, one sentence | Primary (the fix) | Secondary | Details for the band's tech person |
 |---|---|---|---|---|---|
-| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`; verify the pane URL on macOS 26 and 27) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_brasscribe._tcp` not advertised." |
+| macOS Local Network denied | Phones can't find this computer | Your Mac isn't letting Brasscribe use the local network. | **Open Privacy settings** (`x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork`; verify the pane URL on macOS 26 and 27) | – | "Local Network permission is off for Brasscribe Bandroom. mDNS `_scribe._tcp` not advertised." |
 | Windows firewall blocked | Phones can't find this computer | Windows Firewall is blocking Brasscribe on this network. | **Allow on private networks** (runs an elevated helper; Windows asks for permission) | – | "Inbound TCP 8765 blocked for python.exe (profile: Private)." |
 | Network is Public (Windows) | Phones can't find this computer | This network is set to Public, so Windows hides this PC. If it's your home or band-room Wi-Fi, set it to Private. | **Open network settings** (`ms-settings:network-status`) | – | "Active profile: Public." |
 | Low disk | Space is running low | 2.1 GB free. Brasscribe needs 3 GB to make a score. | **Free up space…** (the system storage settings) | Delete old results (1.4 GB) | data folder path and size per folder |
@@ -339,9 +339,12 @@ The icon badge is a **shape**, so the state never relies on colour (1.4.1). The 
 | Access key refused | Hugging Face didn't accept the access key | The key may have been deleted or expired. | **Sign in again** | Paste a new key | "HTTP 401 from huggingface.co for MuScriptor/muscriptor-medium." |
 | No free port | Brasscribe can't start | Another program on this computer is in the way. | **Restart** | – | "Ports 8765–8775 in use (8765: pid 4121 node)." |
 | Bundled pixi too old, no engine runs (first-run setup or a start refused) | Brasscribe can't start | This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works. | **Get the latest Bandroom** (the latest release on GitHub) | Copy details for the tech person (Mac; on Windows, Copy diagnostics) | pixi's own words: "this project requires pixi '>=0.80', but you have pixi 0.79.0". Shown at once, without the three retries: starting again can't help. Outranks Setting up. |
-| Bundled pixi too old for an update (the previous engine still runs) | Brasscribe couldn't finish updating | The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update. | **Get the latest Bandroom** | Copy details for the tech person (Mac; on Windows, Copy diagnostics) | pixi's own words, as above. If the previous engine is refused too, nothing runs and the row above is shown instead. |
+| Bundled pixi too old for an update (the previous engine is put back; whether it can be used is its own row: an older one than this Bandroom is not) | Brasscribe couldn't finish updating | The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update. | **Get the latest Bandroom** | Copy details for the tech person (Mac; on Windows, Copy diagnostics) | pixi's own words, as above. If the previous engine is refused too, nothing runs and the row above is shown instead. |
 | Engine not answering (Mac) | Brasscribe isn't answering | It is running but hasn't answered for a while. Restarting it usually helps. | **Restart** | – | the state and the last exit; shown after three status checks in a row get no answer |
+| The engine is newer than this Bandroom (its interface version is higher) | Bandroom needs an update (Mac); Update Bandroom (Windows) | Brasscribe on this computer is newer than this copy of Bandroom, and they only work together when both are up to date. | **Get the latest Bandroom** | – | "The engine's interface version is 2; this Bandroom is built for 1." |
+| The engine is older than this Bandroom (its interface version is lower, or it sends none) | Brasscribe needs an update (Mac); Brasscribe needs to be updated (Windows) | This copy of Bandroom is newer than the Brasscribe it runs, and they only work together when both are up to date. | **Update Brasscribe** (brings the engine's workspace up to this Bandroom and starts it again) | – | the two numbers, as above |
 
+- With another interface version on the engine, Bandroom asks it for its health only: no status, jobs, phones or pair requests, and **Pair a phone** shows the problem in place of the code and the QR code. On the Mac the code the engine opened when it started is closed, so no phone can pair with an engine Bandroom itself will not use. The engine keeps running, so Stop and Restart apply. This problem comes before every other one in the list.
 - The warning thresholds for low disk: warn under **10 GB** free, and stop taking new jobs under **3 GB**. Phones get the error "Your computer is out of space."
 - A busy port is fixed **silently**: the next free port is used and advertised. It only becomes a problem when all ten are taken.
 
@@ -667,7 +670,7 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | pixi.title | Brasscribe can't start | Brasscribe kan ikke starte |
 | pixi.why | This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works. | Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker. |
 | pixi.fix | Get the latest Bandroom | Last ned den nyeste Bandroom |
-| update.refused.why | The previous version is still running, but this copy of Bandroom came with a setup tool that is too old for the update. | Den forrige versjonen kjører fortsatt, men denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen. |
+| update.refused.why | The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update. | Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen. |
 | hung.title | Brasscribe isn't answering | Brasscribe svarer ikke |
 | hung.why | It is running but hasn't answered for a while. Restarting it usually helps. | Den kjører, men har ikke svart på en stund. Som regel hjelper det å starte den på nytt. |
 | hung.fix | Restart | Start på nytt |
@@ -688,7 +691,7 @@ The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` �
   - `extend: true` keeps the code and moves the expiry.
   - `GET /v1/pairing` reads the state; `DELETE /v1/pairing` closes it when the window closes.
   - The engine ignores spaces, so "482 913" can be typed as shown.
-- **The QR** is the `uri`: `brasscribe://pair?v=1&id=<server id>&name=<"Brasscribe on host">&h=<ip:port>[,…]&code=<6 digits>[&fp=<SPKI SHA-256>]`.
+- **The QR** is the `uri`: `scribe://pair?v=1&id=<server id>&name=<"Brasscribe on host">&h=<ip:port>[,…]&code=<6 digits>[&fp=<SPKI SHA-256>]`.
   - `id` is stable across address, port and restart.
   - `fp` appears once the engine serves TLS, and clients pin it.
 - **Wrong codes:** after 5 from one address, code entry is locked for that address for 30 s, doubling up to 15 min (after 20 from all addresses, for everyone; a new code lifts every lock). The engine answers 429 with `Retry-After`. It never swaps the code silently.

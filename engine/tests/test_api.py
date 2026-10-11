@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from scribe_engine import openapi
+from scribe_engine import openapi, wire
 from scribe_engine.api import create_app
 
 ENGINE = Path(__file__).resolve().parents[1]
@@ -40,6 +40,8 @@ def test_health_and_profiles(client):
     h = client.get("/v1/health").json()
     assert h["status"] == "ok" and h["auth_required"] is False
     assert "build" in h  # the commit of this checkout, or null outside one
+    # One whole number, and 1 for this release: every app is built for it and refuses an engine that says another.
+    assert h["interface_version"] == wire.INTERFACE_VERSION == 1 and type(h["interface_version"]) is int
     names = {p["name"]: p for p in client.get("/v1/profiles").json()}
     assert {"solo", "brass-band", "pop-rock", "orchestra-with-soloist"} <= set(names)
     assert names["orchestra-with-soloist"]["validated"] is True

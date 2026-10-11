@@ -48,8 +48,8 @@ minimum=$(value MinimumOSVersion)
 for key in NSMicrophoneUsageDescription NSLocalNetworkUsageDescription NSCameraUsageDescription; do
   [ -n "$(value "$key")" ] || fail "Info.plist has no $key"
 done
-json NSBonjourServices | grep -q '"_brasscribe._tcp"' || fail "NSBonjourServices does not list _brasscribe._tcp"
-json CFBundleURLTypes | grep -q '"brasscribe"' || fail "the brasscribe: address for pairing is not declared"
+json NSBonjourServices | grep -q '"_scribe._tcp"' || fail "NSBonjourServices does not list _scribe._tcp"
+json CFBundleURLTypes | grep -q '"scribe"' || fail "the scribe: address for pairing is not declared"
 
 # lipo cannot tell a device binary from a simulator one (both are arm64): the build version's platform can.
 binaries=("$app/$(value CFBundleExecutable)")

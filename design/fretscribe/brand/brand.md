@@ -27,7 +27,7 @@ other; nobody should mistake one for the other.
   computer. Inside the app, say "Fretscribe" for the app ("Fretscribe isn't sure about these notes") and
   "Bandroom" for the program on the computer ("Bandroom on your computer writes down the notes"). Where the
   player looks for the program (pairing, Help), give its full name once, as the list of programs shows it:
-  **Brasscribe Bandroom**. One Bandroom serves both apps, and both use its pairing link (`brasscribe://pair`).
+  **Brasscribe Bandroom**. One Bandroom serves both apps, and both use its pairing link (`scribe://pair`, named for the family, not for an app).
 - The name is not translated or inflected in Norwegian ("tabben fra Fretscribe", not "Fretscribes tab").
 
 ## Mark

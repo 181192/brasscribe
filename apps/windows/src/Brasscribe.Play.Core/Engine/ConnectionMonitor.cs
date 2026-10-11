@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Brasscribe.Play.Core.Engine;
 
-/// <summary>The four connection states the Play apps show (the same on every platform).</summary>
+/// <summary>The connection states the Play apps show (the same on every platform).</summary>
 public enum ConnectionState
 {
     /// <summary>No engine paired, or it could not be found for 2 minutes.</summary>
@@ -16,14 +16,23 @@ public enum ConnectionState
     Connected,
     /// <summary>The engine answered 401: it forgot this device (revoked, reset or unused for long).</summary>
     NeedsPairing,
+    /// <summary>The engine's interface version is higher than this app's: only its heartbeat is asked until the app is updated.</summary>
+    UpdateApp,
+    /// <summary>The engine's interface version is lower or has none: only its heartbeat is asked until the computer's side is updated.</summary>
+    UpdateBandroom,
 }
 
 /// <summary>
-/// Keeps track of the paired engine while the app is in front: a heartbeat (GET /v1/devices/me) every
-/// 20 s; when that fails, the last address and then the network (mDNS, matched by server id) with
-/// backoff 2, 4, 8, 16, 30 s; after 2 minutes it gives up until <see cref="Kick"/> (Connect, network
-/// change, the app coming back). Only a 401 asks for pairing again; an address change never drops the
-/// credential. Due tokens are rotated, the new one stored before it is used.
+/// Keeps track of the paired engine while the app is in front: a heartbeat every 20 s, which is one request,
+/// GET /v1/devices/me (it names the engine and its interface version). GET /v1/health is asked instead while nothing
+/// is paired, and after a 401 or 404 there, to learn whose answer that was. When the heartbeat fails: the last
+/// address and then the network (mDNS, matched by server id) with backoff 2, 4, 8, 16, 30 s; after 2 minutes it gives
+/// up until <see cref="Kick"/> (Connect, network change, the app coming back). Only a 401 from our own engine asks
+/// for pairing again; an address change never drops the credential. Due tokens are rotated, the new one stored
+/// before it is used. Another engine at the address is not ours, whatever its version: ours is looked for. Our own
+/// engine with another interface version (<see cref="InterfaceMatch"/>) is asked for nothing but that heartbeat:
+/// the row says which of the two to update and where to get it, the credential stays, and the heartbeat goes on,
+/// so it connects again once that is done.
 /// </summary>
 public sealed partial class ConnectionMonitor : ObservableObject
 {
@@ -79,16 +88,28 @@ public sealed partial class ConnectionMonitor : ObservableObject
     /// <summary>The status row's words ("Connected to Brasscribe on studio-mac").</summary>
     [ObservableProperty] public partial string StatusText { get; private set; } = "";
 
-    /// <summary>The label of the row's action: "Connect" when offline, "Pair again" after a 401, else empty.</summary>
+    /// <summary>Where the newest Brasscribe Play and Bandroom are: the row's action while one of the two must be updated.</summary>
+    public static readonly Uri LatestRelease = new("https://github.com/181192/brasscribe/releases/latest");
+
+    /// <summary>The label of the row's action: "Connect" when offline, "Pair again" after a 401, "Get the update" for another interface version, else empty.</summary>
     [ObservableProperty] public partial string ActionText { get; private set; } = "";
+
+    /// <summary>What the action does, for screen readers.</summary>
+    [ObservableProperty] public partial string ActionHelp { get; private set; } = "";
+
+    /// <summary>The page the action opens; null when the action is Connect or Pair again.</summary>
+    public Uri? ActionUri => NeedsUpdate ? LatestRelease : null;
 
     /// <summary>For the band's tech person: address, server id and when the engine last answered.</summary>
     [ObservableProperty] public partial string DetailsText { get; private set; } = "";
 
     [ObservableProperty] public partial DateTimeOffset? LastOk { get; private set; }
 
-    public bool HasAction => State is ConnectionState.Offline or ConnectionState.NeedsPairing;
+    public bool HasAction => State is ConnectionState.Offline or ConnectionState.NeedsPairing || NeedsUpdate;
     public bool IsConnected => State == ConnectionState.Connected;
+
+    /// <summary>The last check found that the app and the engine have different interface versions.</summary>
+    public bool NeedsUpdate => State is ConnectionState.UpdateApp or ConnectionState.UpdateBandroom;
 
     /// <summary>The stored credential changed (paired, rotated, moved to its server id, dropped after a 401).</summary>
     public event EventHandler? CredentialChanged;
@@ -100,7 +121,7 @@ public sealed partial class ConnectionMonitor : ObservableObject
     public TimeSpan? NextDelay => State switch
     {
         ConnectionState.Connected when _failures > 0 => Backoff[0],
-        ConnectionState.Connected => HeartbeatInterval,
+        ConnectionState.Connected or ConnectionState.UpdateApp or ConnectionState.UpdateBandroom => HeartbeatInterval,
         ConnectionState.Reconnecting => Backoff[Math.Clamp(_failures - 1, 0, Backoff.Length - 1)],
         ConnectionState.Offline when _credentials.Current is null => UnpairedInterval,
         _ => null, // gave up, or needs pairing: until Connect, a network change or the app coming back
@@ -124,6 +145,9 @@ public sealed partial class ConnectionMonitor : ObservableObject
 
     public bool IsRunning => _run is not null;
 
+    /// <summary>The row shows a state given with <see cref="Show"/> (sample content): no computer stands behind it, and none is asked.</summary>
+    public bool IsPreview { get; private set; }
+
     /// <summary>Check now, and start over after giving up (Connect, network change).</summary>
     public void Kick()
     {
@@ -132,9 +156,13 @@ public sealed partial class ConnectionMonitor : ObservableObject
         _kick.TrySetResult();
     }
 
-    /// <summary>Shows a fixed state without checking (screenshots and previews).</summary>
+    /// <summary>
+    /// Shows a fixed state without checking (screenshots and previews). The row is about the computer named, wherever
+    /// the address setting points.
+    /// </summary>
     public void Show(ConnectionState state, string? serverName)
     {
+        IsPreview = true;
         ServerName = serverName;
         State = state;
         _checkedOnce = true;
@@ -185,7 +213,8 @@ public sealed partial class ConnectionMonitor : ObservableObject
         if (credential is null)
         {
             // Nothing paired: a local engine that needs no pairing still counts.
-            var health = await HealthAsync(address, null, ct);
+            var health = await HealthAsync(address, ct);
+            if (health is not null && UpdateFor(health.InterfaceVersion) is { } update) return Answered(update, health.ServerName);
             if (health is { AuthRequired: false })
             {
                 Succeeded(address, health.ServerName);
@@ -198,6 +227,7 @@ public sealed partial class ConnectionMonitor : ObservableObject
         var probe = await ProbeAsync(address, credential, ct);
         if (probe == Probe.Ok) return ConnectionState.Connected;
         if (probe == Probe.Unauthorized) return Forget(credential);
+        if (UpdateFor(probe) is { } needed) return Answered(needed, credential.ServerName);
 
         // Unreachable, or another engine at that address: the last known address, then the network by id.
         foreach (var other in await CandidatesAsync(address, credential, ct))
@@ -209,6 +239,11 @@ public sealed partial class ConnectionMonitor : ObservableObject
                 return ConnectionState.Connected;
             }
             if (p == Probe.Unauthorized) return Forget(credential);
+            if (UpdateFor(p) is { } moved)
+            {
+                _setAddress(other);
+                return Answered(moved, credential.ServerName);
+            }
         }
 
         var now = _time.GetUtcNow();
@@ -223,21 +258,23 @@ public sealed partial class ConnectionMonitor : ObservableObject
     {
         var list = new List<Uri>();
         if (credential.LastAddress is { } last && Uri.TryCreate(last, UriKind.Absolute, out var lastUri) && lastUri != tried) list.Add(lastUri);
-        if (credential.ServerId != EngineCredentials.LegacyKey)
-        {
-            IReadOnlyList<DiscoveredEngine> found;
-            try { found = await _discovery.BrowseAsync(BrowseTime, ct); }
-            catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested) { found = []; }
-            foreach (var e in found)
-                if (string.Equals(e.ServerId, credential.ServerId, StringComparison.OrdinalIgnoreCase) && e.BaseAddress != tried && !list.Contains(e.BaseAddress))
-                    list.Add(e.BaseAddress);
-        }
+        IReadOnlyList<DiscoveredEngine> found;
+        try { found = await _discovery.BrowseAsync(BrowseTime, ct); }
+        catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested) { found = []; }
+        foreach (var e in found)
+            if (string.Equals(e.ServerId, credential.ServerId, StringComparison.OrdinalIgnoreCase) && e.BaseAddress != tried && !list.Contains(e.BaseAddress))
+                list.Add(e.BaseAddress);
         return list;
     }
 
-    private enum Probe { Ok, Unauthorized, Failed }
+    private enum Probe { Ok, Unauthorized, Failed, UpdateApp, UpdateBandroom }
 
-    /// <summary>GET /v1/devices/me with the stored token (404 = loopback or a static token: then /v1/health must name the same engine).</summary>
+    /// <summary>
+    /// One request: GET /v1/devices/me with the stored token. Its answer names the engine and its interface version,
+    /// and they are looked at in that order: another engine at this address is not ours (it is not there: ours is
+    /// looked for), and ours with another interface version is asked nothing more. A 401 or a 404 (loopback, or a
+    /// static token) names no engine, so health is asked to learn whose answer it was.
+    /// </summary>
     private async Task<Probe> ProbeAsync(Uri address, EngineCredential credential, CancellationToken ct)
     {
         var client = _clients(address, credential.Token);
@@ -248,17 +285,14 @@ public sealed partial class ConnectionMonitor : ObservableObject
         {
             me = await client.GetThisDeviceAsync(timeout.Token);
         }
-        catch (EngineException e) when (e.Status == HttpStatusCode.Unauthorized)
+        catch (EngineException e) when (e.Status is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
         {
-            // Only our own engine forgetting us counts; another engine at this address never knew us.
-            var health = await HealthAsync(address, null, ct);
-            return health?.ServerId is { } id && !SameEngine(credential, id) ? Probe.Failed : Probe.Unauthorized;
-        }
-        catch (EngineException e) when (e.Status == HttpStatusCode.NotFound)
-        {
-            var health = await HealthAsync(address, credential.Token, ct);
+            // Health needs no token, and is asked without one: an engine that forgot this device must still answer it.
+            var health = await HealthAsync(address, ct);
             if (health is null || !SameEngine(credential, health.ServerId)) return Probe.Failed;
-            Succeeded(address, health.ServerName, credential, health.ServerId);
+            if (UpdateFor(health.InterfaceVersion) is { } update) return ProbeFor(update);
+            if (e.Status == HttpStatusCode.Unauthorized) return Probe.Unauthorized;
+            Succeeded(address, health.ServerName, credential);
             return Probe.Ok;
         }
         catch (Exception e) when (IsUnreachable(e, ct))
@@ -267,22 +301,50 @@ public sealed partial class ConnectionMonitor : ObservableObject
         }
 
         if (!SameEngine(credential, me.ServerId)) return Probe.Failed; // another engine now answers at this address
-        string? name = credential.ServerName;
-        if (name is null || credential.ServerId == EngineCredentials.LegacyKey) name = (await HealthAsync(address, credential.Token, ct))?.ServerName ?? name;
-        var record = Succeeded(address, name, credential, me.ServerId, ParseTime(me.RotateAfter));
+        if (UpdateFor(me.InterfaceVersion) is { } needed) return ProbeFor(needed);
+        var record = Succeeded(address, credential.ServerName, credential, ParseTime(me.RotateAfter));
         if (record is not null) await RotateIfDueAsync(client, record, ct);
         return Probe.Ok;
     }
 
-    private static bool SameEngine(EngineCredential credential, string? serverId) =>
-        credential.ServerId == EngineCredentials.LegacyKey || serverId is null
-        || string.Equals(credential.ServerId, serverId, StringComparison.OrdinalIgnoreCase);
+    /// <summary>The state for an engine whose interface version is not this app's; null when it is the same.</summary>
+    private static ConnectionState? UpdateFor(int? engineVersion) => InterfaceMatch.Of(engineVersion) switch
+    {
+        InterfaceAnswer.UpdateApp => ConnectionState.UpdateApp,
+        InterfaceAnswer.UpdateBandroom => ConnectionState.UpdateBandroom,
+        _ => null,
+    };
 
-    private async Task<Health?> HealthAsync(Uri address, string? token, CancellationToken ct)
+    private static ConnectionState? UpdateFor(Probe probe) => probe switch
+    {
+        Probe.UpdateApp => ConnectionState.UpdateApp,
+        Probe.UpdateBandroom => ConnectionState.UpdateBandroom,
+        _ => null,
+    };
+
+    private static Probe ProbeFor(ConnectionState update) => update == ConnectionState.UpdateApp ? Probe.UpdateApp : Probe.UpdateBandroom;
+
+    /// <summary>
+    /// The engine answered, with another interface version: it is not being looked for, and "Last answered" says now.
+    /// Its credential stays as it was (the stored last good check too: the next launch starts from that).
+    /// </summary>
+    private ConnectionState Answered(ConnectionState update, string? serverName)
+    {
+        _failingSince = null;
+        _failures = 0;
+        LastOk = _time.GetUtcNow();
+        if (serverName is { Length: > 0 }) ServerName = serverName;
+        return update;
+    }
+
+    private static bool SameEngine(EngineCredential credential, string? serverId) =>
+        string.Equals(credential.ServerId, serverId, StringComparison.OrdinalIgnoreCase);
+
+    private async Task<Health?> HealthAsync(Uri address, CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(ProbeTimeout);
-        try { return await _clients(address, token).GetHealthAsync(timeout.Token); }
+        try { return await _clients(address, null).GetHealthAsync(timeout.Token); }
         catch (Exception e) when (IsUnreachable(e, ct)) { return null; }
     }
 
@@ -290,8 +352,8 @@ public sealed partial class ConnectionMonitor : ObservableObject
         e is EngineException or HttpRequestException or System.Text.Json.JsonException or NotSupportedException
         || e is OperationCanceledException && !ct.IsCancellationRequested;
 
-    /// <summary>Records a good check: the address, the time, the name; a moved legacy token gets its server id.</summary>
-    private EngineCredential? Succeeded(Uri address, string? serverName, EngineCredential? credential = null, string? serverId = null, DateTimeOffset? rotateAfter = null)
+    /// <summary>Records a good check: the address, the time, the name.</summary>
+    private EngineCredential? Succeeded(Uri address, string? serverName, EngineCredential? credential = null, DateTimeOffset? rotateAfter = null)
     {
         _failingSince = null;
         _failures = 0;
@@ -306,15 +368,7 @@ public sealed partial class ConnectionMonitor : ObservableObject
             ServerName = ServerName ?? credential.ServerName,
             RotateAfter = rotateAfter ?? credential.RotateAfter,
         };
-        try
-        {
-            if (credential.ServerId == EngineCredentials.LegacyKey && serverId is { Length: > 0 })
-            {
-                record = _credentials.Adopt(record, serverId, ServerName);
-                CredentialChanged?.Invoke(this, EventArgs.Empty);
-            }
-            else _credentials.Save(record);
-        }
+        try { _credentials.Save(record); }
         catch (Exception e) when (e is not OutOfMemoryException) { }
         return record;
     }
@@ -358,6 +412,8 @@ public sealed partial class ConnectionMonitor : ObservableObject
     {
         OnPropertyChanged(nameof(HasAction));
         OnPropertyChanged(nameof(IsConnected));
+        OnPropertyChanged(nameof(NeedsUpdate));
+        OnPropertyChanged(nameof(ActionUri));
     }
 
     /// <summary>The computer part of the name in the app's own sentence ("Brasscribe på studio-mac" in Norwegian).</summary>
@@ -370,20 +426,44 @@ public sealed partial class ConnectionMonitor : ObservableObject
             ConnectionState.Connected => _s.Format("Connection_Connected", ComputerName),
             ConnectionState.Reconnecting => _s.Format("Connection_Reconnecting", ComputerName),
             ConnectionState.NeedsPairing => _s.Format("Connection_NeedsPairing", ComputerName),
+            ConnectionState.UpdateApp => UpdateText(InterfaceAnswer.UpdateApp),
+            ConnectionState.UpdateBandroom => UpdateText(InterfaceAnswer.UpdateBandroom),
             _ => _s["Connection_Offline"],
         };
         ActionText = State switch
         {
             ConnectionState.Offline => _s["Connection_Connect"],
             ConnectionState.NeedsPairing => _s["Connection_PairAgain"],
+            ConnectionState.UpdateApp or ConnectionState.UpdateBandroom => _s["Connection_GetUpdate"],
+            _ => "",
+        };
+        ActionHelp = State switch
+        {
+            ConnectionState.Offline or ConnectionState.NeedsPairing => _s["Connection_ConnectHelp"],
+            ConnectionState.UpdateApp or ConnectionState.UpdateBandroom => _s["Connection_GetUpdateHelp"],
             _ => "",
         };
         var current = _credentials.Current;
         var parts = new List<string> { _s.Format("Connection_DetailsAddress", _address()) };
-        if (current?.ServerId is { } id && id != EngineCredentials.LegacyKey) parts.Add(_s.Format("Connection_DetailsServerId", id));
+        if (current?.ServerId is { } id) parts.Add(_s.Format("Connection_DetailsServerId", id));
         if ((LastOk ?? current?.LastOk) is { } seen)
             parts.Add(_s.Format("Connection_DetailsLastSeen", seen.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)));
         DetailsText = string.Join(Environment.NewLine, parts);
+    }
+
+    /// <summary>"Update Brasscribe on Studio PC. …" or "Update Brasscribe Play. …" for the engine this row is about.</summary>
+    public string UpdateText(InterfaceAnswer answer) => UpdateText(_s, answer, onThisPc: !IsPreview && _address().IsLoopback, ServerName);
+
+    /// <summary>
+    /// The sentence that says which of the two to update, naming the computer as the other rows do: its own name, "this
+    /// PC" for an engine on this PC, "your computer" when it has given no name.
+    /// </summary>
+    public static string UpdateText(IStrings s, InterfaceAnswer answer, bool onThisPc, string? serverName)
+    {
+        if (onThisPc && answer == InterfaceAnswer.UpdateBandroom) return s["Connection_UpdateBandroomHere"];
+        string computer = onThisPc ? s["Connection_ThisPc"]
+            : ServerNames.ComputerName(serverName) is { Length: > 0 } name ? name : s["Connection_YourComputer"];
+        return s.Format(answer == InterfaceAnswer.UpdateApp ? "Connection_UpdateApp" : "Connection_UpdateBandroom", computer);
     }
 
     /// <summary>Refreshes the words after the address or the pairing changed elsewhere.</summary>

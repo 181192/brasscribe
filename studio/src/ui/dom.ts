@@ -1,5 +1,5 @@
 // Small DOM helpers shared by the views.
-import { ApiError, MissingEndpoint, TimedOut, Unreachable } from "../api/client";
+import { ApiError, InterfaceMismatch, MissingEndpoint, TimedOut, Unreachable } from "../api/client";
 import { locale, t } from "../i18n";
 import { icon } from "./icons";
 
@@ -84,6 +84,10 @@ export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement
   if (err instanceof Unreachable) {
     title = t("err.unreachable");
     body = withCode(t("err.unreachableBody"), { serve: "scribe serve", studio: "scribe studio" });
+  } else if (err instanceof InterfaceMismatch) {
+    // The request was not sent: the engine's interface version is not this Studio's. Which of the two to update.
+    title = t(err.which === "update-studio" ? "app.update.studio" : "app.update.engine");
+    body = [t(err.which === "update-studio" ? "app.update.studioBody" : "app.update.engineBody")];
   } else if (err instanceof TimedOut) {
     title = t("err.timeout");
     body = [t("err.timeoutBody", { s: err.seconds })];

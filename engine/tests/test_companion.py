@@ -115,6 +115,8 @@ def test_devices_me_rotate_and_unpair(settings):
     with lan(settings) as c:
         p = pair(c)
         me = c.get("/v1/devices/me", headers=bearer(p["token"])).json()
+        # A paired app's heartbeat is this one request: it carries the interface version health does.
+        assert me["interface_version"] == c.get("/v1/health").json()["interface_version"] == 1
         assert me["device_id"] == p["device_id"] and me["name"] == "Kari's iPhone" and me["platform"] == "ios"
         assert me["rotate_after"] > me["paired_at"] and me["expires_if_idle_after"] > me["last_seen"]
 
@@ -254,7 +256,7 @@ def test_pairing_payload_uri(settings):
             st = c.get("/v1/pairing").json()
     u = urlsplit(st["uri"])
     q = {k: v[0] for k, v in parse_qs(u.query).items()}
-    assert (u.scheme, u.netloc) == ("brasscribe", "pair")
+    assert (u.scheme, u.netloc) == ("scribe", "pair")
     assert q == {"v": "1", "id": st["server_id"], "name": st["server_name"], "h": "192.0.2.20:8765,198.51.100.5:8765",
                  "code": st["code"]}
     assert st["fingerprint"] is None

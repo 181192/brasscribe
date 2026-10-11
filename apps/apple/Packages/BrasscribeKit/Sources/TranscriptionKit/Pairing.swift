@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 /// The pairing link a computer shows as a QR code:
-/// `brasscribe://pair?v=1&id=<server_id>&name=<name>&h=<ip:port>[,<ip:port>]&code=<digits>[&fp=<spki sha256>]`.
+/// `scribe://pair?v=1&id=<server_id>&name=<name>&h=<ip:port>[,<ip:port>]&code=<digits>[&fp=<spki sha256>]`.
 public struct PairingLink: Equatable, Sendable {
     public var version: Int
     public var serverID: String
@@ -25,7 +25,7 @@ public struct PairingLink: Equatable, Sendable {
     /// computer, which App Transport Security allows only there.
     public init?(string: String) {
         let text = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let c = URLComponents(string: text), c.scheme?.lowercased() == "brasscribe",
+        guard let c = URLComponents(string: text), c.scheme?.lowercased() == Wire.pairScheme,
               (c.host?.lowercased() ?? c.path.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "/"))) == "pair"
         else { return nil }
         var q: [String: String] = [:]

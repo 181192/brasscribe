@@ -63,7 +63,27 @@ public sealed class EngineApi : IEngineApi
         throw new EngineHttpException(res.StatusCode, detail);
     }
 
-    public Task<HealthInfo> GetHealthAsync(CancellationToken ct = default) => SendAsync<HealthInfo>(HttpMethod.Get, "v1/health", null, ct);
+    /// <summary>
+    /// GET /v1/health. The interface version is read by itself first: one that is not a whole number is "none"
+    /// (the engine is the one to update), and from an engine with another version the rest of the answer is read only
+    /// as far as it can be, so that such an engine still counts as running and is named for what it is.
+    /// </summary>
+    public async Task<HealthInfo> GetHealthAsync(CancellationToken ct = default)
+    {
+        using var req = Request(HttpMethod.Get, "v1/health");
+        using var res = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        await EnsureAsync(res, ct).ConfigureAwait(false);
+        string body = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        using var doc = System.Text.Json.JsonDocument.Parse(body);
+        var root = doc.RootElement;
+        if (root.ValueKind != System.Text.Json.JsonValueKind.Object) throw new System.Text.Json.JsonException("health is not an object");
+        int? version = InterfaceMatch.Read(root);
+        if (InterfaceMatch.Of(version) == InterfaceAnswer.Same)
+            return System.Text.Json.JsonSerializer.Deserialize<HealthInfo>(body, EngineJson.Options)!;
+        string? Text(string name) => root.TryGetProperty(name, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() : null;
+        return new HealthInfo(Text("status") ?? "ok", Text("version") ?? "–", Text("device") ?? "", false, Text("server_id"), Text("server_name"),
+            Text("build"), version);
+    }
 
     /// <summary>GET /v1/status; an engine without it (404) gets the same numbers from health, devices and jobs.</summary>
     public async Task<StatusInfo> GetStatusAsync(CancellationToken ct = default)
