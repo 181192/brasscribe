@@ -18,10 +18,17 @@ cd "$ROOT"
 # that need data/ would skip without theirs), a package's old folder (Python imports what is left in it as
 # an empty package), or an environment that has the packages installed under the old names.
 old_python() {
+  local d
   { [ -f .scribe-env ] && grep -q 'BRASSCRIBE_' .scribe-env; } && return 0
-  for d in engine/src/brasscribe_engine music/src/brasscribe_music eval/brasscribe_eval; do [ -e "$d" ] && return 0; done
-  ls .pixi/envs/*/lib/python*/site-packages music/.venv/lib/python*/site-packages eval/.venv/lib/python*/site-packages \
-     core/conformance/.venv/lib/python*/site-packages 2>/dev/null | grep -qE '^(_editable_impl_)?brasscribe_'
+  for d in engine/src/brasscribe_engine music/src/brasscribe_music eval/brasscribe_eval; do
+    [ -e "$d" ] || continue
+    # Files git still tracks there are a branch's own (a merge left them at the old path): the setup does not touch them.
+    [ -n "$(git ls-files -- "$d")" ] && { echo "check: git tracks files under $d, the old folder of a package that is now ${d/brasscribe_/scribe_}: move them there (git mv) and change their imports" >&2; exit 2; }
+    return 0
+  done
+  # Not every environment exists in every checkout: ls failing for one of them must not hide a match in another.
+  { ls .pixi/envs/*/lib/python*/site-packages music/.venv/lib/python*/site-packages eval/.venv/lib/python*/site-packages \
+       core/conformance/.venv/lib/python*/site-packages 2>/dev/null || true; } | grep -qE '^(_editable_impl_)?brasscribe_'
 }
 old_python && { echo "check: this checkout still holds the Python packages under their old names (an old .scribe-env, an old package folder or an old install): run scripts/worktree-setup.sh (it removes them)" >&2; exit 2; }
 # shellcheck disable=SC1091

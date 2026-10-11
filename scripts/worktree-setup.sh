@@ -80,14 +80,15 @@ done
 if [ -f "$ROOT/.scribe-env" ] && grep -q 'BRASSCRIBE_' "$ROOT/.scribe-env"; then rm -f "$ROOT/.scribe-env"; stale=1; fi
 for old in engine/src/brasscribe_engine music/src/brasscribe_music eval/brasscribe_eval; do
   [ -e "$ROOT/$old" ] || continue
-  if [ -z "$(git -C "$ROOT" ls-files -- "$old")" ]; then rm -rf "${ROOT:?}/$old" && stale=1; fi
+  if [ -z "$(git -C "$ROOT" ls-files -- "$old")" ]; then rm -rf "${ROOT:?}/$old" && stale=1
+  else log "git tracks files under $old, the old folder of a package that is now ${old/brasscribe_/scribe_}: move them there (git mv) and change their imports; they are left as they are"; fi
 done
 find "$ROOT/engine" "$ROOT/music" "$ROOT/eval" -maxdepth 2 -name 'brasscribe_*.egg-info' -prune -exec rm -rf {} + 2>/dev/null || true
 # Environments that hold the packages under their old names (editable installs: a .pth file and a
 # dist-info each, and the engine's old command). uv makes its environments again on the next
 # `uv run`; pixi installs the engine's again here, and where it cannot, the environment goes and the
 # next `pixi run` makes it.
-old_dists() { ls "$1"/lib/python*/site-packages 2>/dev/null | grep -qE '^(_editable_impl_)?brasscribe_'; }
+old_dists() { { ls "$1"/lib/python*/site-packages 2>/dev/null || true; } | grep -qE '^(_editable_impl_)?brasscribe_'; }
 for venv in music/.venv eval/.venv core/conformance/.venv; do
   old_dists "$ROOT/$venv" && rm -rf "${ROOT:?}/$venv" && stale=1
 done
