@@ -4,6 +4,7 @@ import os
 import sys
 import threading
 import time
+from pathlib import Path
 
 import pytest
 
@@ -86,3 +87,45 @@ def test_musescore_behind_a_launcher_that_stays_is_stopped_too(tmp_path, monkeyp
     else:
         os.kill(pid, 9)
         pytest.fail("MuseScore was left running behind its launcher")
+
+
+STAND_IN = """#!{python}
+# MuseScore as far as a conversion goes: it reads its own folders in the home at start, then writes each output
+# of the job. In the user's own home that first read never returns, as on macOS while the system waits for an
+# answer to "... would like to access files in your Documents folder".
+import json, os, sys, time
+home = os.environ.get("CFFIXED_USER_HOME") or os.path.expanduser("~")
+if os.path.realpath(home) == os.path.realpath({user_home!r}):
+    time.sleep(60)
+os.makedirs(os.path.join(home, "Documents", "MuseScore4", "Plugins"), exist_ok=True)
+for entry in json.load(open(sys.argv[sys.argv.index("-j") + 1])):
+    open(entry["out"], "w").write(home)
+"""
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")
+@pytest.mark.parametrize("platform, own_home", [("darwin", True), ("linux", False)])
+def test_on_macos_musescore_runs_in_a_home_of_its_own(tmp_path, monkeypatch, platform, own_home):
+    """macOS guards the user's Documents folder per app, and MuseScore reads its plugins there at every start:
+    started by an app the user has not answered for, it waits there and writes nothing. In a home of its own it
+    has nothing of the user's to read. Elsewhere it keeps the user's home."""
+    user_home = tmp_path / "user"
+    user_home.mkdir()
+    monkeypatch.setenv("HOME", str(user_home))
+    monkeypatch.delenv("CFFIXED_USER_HOME", raising=False)
+    monkeypatch.setattr(musescore, "LOCK_FILE", tmp_path / "mscore.flock")
+    monkeypatch.setattr(musescore.sys, "platform", platform)
+    exe = tmp_path / "mscore"
+    exe.write_text(STAND_IN.format(python=sys.executable, user_home=str(user_home)))
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    out = tmp_path / "out" / "a.pdf"
+    missing = musescore.convert_many([(tmp_path / "a.musicxml", out)], timeout=30.0 if own_home else 2.0)
+    if not own_home:  # in the user's home the stand-in waits, and the conversion ends at its time limit
+        assert missing == [out.resolve()]
+        return
+    assert missing == []
+    home = Path(out.read_text())
+    assert home != user_home and user_home not in home.parents
+    assert not home.exists()  # it lasts as long as the conversion
+    assert not (user_home / "Documents").exists()

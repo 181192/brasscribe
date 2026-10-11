@@ -7,6 +7,9 @@ and a machine-wide lock keeps at most one instance running at a time.
 MuseScore 4.7 aborts during shutdown after writing its output, so success is
 judged by the output files existing, never by the exit code.
 
+On macOS MuseScore runs with a home folder of its own (see `_environment`), so it never opens the
+user's Documents folder and never waits for the system to ask permission for it.
+
 The binary is `$BRASSCRIBE_MSCORE`, falling back to `mscore` on PATH.
 """
 
@@ -90,11 +93,26 @@ def _lock(cancel: threading.Event | None = None) -> Iterator[None]:
         os.close(fd)
 
 
-def _run(cmd: list[str], timeout: float, cancel: threading.Event | None) -> None:
+def _environment(home: Path) -> dict[str, str] | None:
+    """The environment MuseScore runs in: on macOS with `home` as its home folder, elsewhere the engine's own.
+
+    MuseScore keeps its plugins, styles and soundfonts in the user's Documents folder and reads them at every
+    start, also for a conversion. macOS guards that folder per app, and holds MuseScore's access against the
+    app that started the engine. Until the user has answered the system's question for that app, MuseScore
+    waits in its first read and writes nothing: the conversion ends at its time limit without a file. In a
+    home of its own MuseScore reads nothing of the user's, so there is no question to wait for, and the
+    user's MuseScore settings cannot change what a conversion writes."""
+    if sys.platform != "darwin":
+        return None
+    home.mkdir(parents=True, exist_ok=True)
+    return {**os.environ, "CFFIXED_USER_HOME": str(home)}
+
+
+def _run(cmd: list[str], timeout: float, cancel: threading.Event | None, env: dict[str, str] | None = None) -> None:
     """MuseScore until it exits, `timeout` passes, or `cancel` is set. Then it is killed with every process
     under it: behind a launcher that stays in between (a shell script, `flatpak run`) MuseScore is not the
     process that was started."""
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
     deadline = time.monotonic() + timeout
     try:
         while True:
@@ -137,13 +155,15 @@ def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: 
     # so notation outputs share one launch and each audio output gets its own.
     audio = [e for e in entries if Path(e["out"]).suffix.lower() in AUDIO_SUFFIXES]
     batches = [[e for e in entries if e not in audio]] + [[e] for e in audio]
-    with tempfile.TemporaryDirectory() as tmp:
+    # MuseScore's crash reporter can still be writing into the home when the conversion is over.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        env = _environment(Path(tmp) / "home")
         for i, batch in enumerate(b for b in batches if b):
             job_file = Path(tmp) / f"job{i}.json"
             job_file.write_text(json.dumps(batch))
             cmd = [exe] + (["-S", str(Path(style).resolve())] if style else []) + ["-j", str(job_file)]
             with _lock(cancel):
-                _run(cmd, timeout, cancel)
+                _run(cmd, timeout, cancel, env)
     return [p for p in expected if not p.exists()]
 
 
