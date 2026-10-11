@@ -2,6 +2,26 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.9.0 (2026-10-10)
+
+### New features
+
+- **Android:** Every release carries Fretscribe for Android, to install and update on a phone ([#327](https://github.com/181192/brasscribe/pull/327))
+- **iPhone, iPad and Mac:** Each release has a test build of Brasscribe Play for iPhone and iPad, to sign yourself ([#329](https://github.com/181192/brasscribe/pull/329))
+- **Design:** The design generator writes every brand for every platform, with neutral names shared by all brands ([#330](https://github.com/181192/brasscribe/pull/330))
+
+### Performance
+
+- **Android:** Fretscribe is a 21 MB download instead of 54 MB ([#333](https://github.com/181192/brasscribe/pull/333))
+
+<details><summary>Under the hood (2 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Research:** One core, several apps — the layout, the decisions and the order of work ([#328](https://github.com/181192/brasscribe/pull/328))
+- **Windows:** The screen catalogues take a screen only when it is the screen asked for ([#324](https://github.com/181192/brasscribe/pull/324))
+
+</details>
+
 ## 0.8.1 (2026-10-10)
 
 ### Fixes
