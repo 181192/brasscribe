@@ -12,6 +12,7 @@
 #   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only in the
 #                    macOS VM (scripts/mac-vm.sh test-ui, docs/dev/macos-vm.md) or in CI
 #   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked
+#   make ipa         unsigned Release build for iPhone and iPad (build/brasscribe-play-ios-unsigned.ipa)
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 ROOT := $(abspath ../..)
 FIXTURES ?= $(ROOT)/apps/fixtures/old-hundredth
@@ -28,7 +29,7 @@ XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record|compare, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
-.PHONY: verovio soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac \
+.PHONY: verovio soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
 
 verovio:
@@ -88,6 +89,10 @@ install-mac: project
 size: project
 	$(XCB) -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
 	du -sh "$(DERIVED)/Build/Products/Release-iphoneos/BrasscribePlay.app"
+
+# The file a release attaches for iPhone and iPad: unsigned, for a tester to sign (README, "iPhone and iPad (test build)").
+ipa:
+	./scripts/make-ipa.sh
 
 # Repeat runs without rebuilding (docs/dev/verify.md): build-for-testing once, then run the unit
 # tests from the same DerivedData as often as needed. No UI tests.
