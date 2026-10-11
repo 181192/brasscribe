@@ -6,18 +6,17 @@ reference (`music/`, the `eval/` entry points, `sounds/humanize.py`,
 `engine/.../talking_score.py`); `conformance/` checks that this port produces
 identical Compositions, MusicXML, humanized notes and talking scores.
 
-What turns the shared core's notes into one kind of output is a target crate: `target-brass` arranges
-for a brass band, `target-fretted` places notes on strings. A target depends on the core, the core
+The shared core goes from what the transcribers heard to notes (`transcription`: a Composition, a
+concert-pitch lead sheet). What turns those notes into one kind of output is a target crate: `target-brass`
+arranges for a brass band, `target-fretted` places notes on strings. A target depends on the core, the core
 depends on no target, and targets do not depend on each other; the compiler holds that line, and
 `scribe-core/tests/crate_graph.rs` checks the manifests (dev-dependencies included). A target hands
 the core's MusicXML writer what it needs as data (`notation::score::InstrumentSpec`: a part's names,
 transposition and playback program).
 
-The split is not finished (docs/plan/scribe-platform.md, steps 2b and 2c). The core still holds the
+The split is not finished (docs/plan/scribe-platform.md, step 2c). The core still holds the
 Norwegian names of the brass band's parts and instruments, in `talking_score`, and
-`scribe-core/tests/shared_boundary.rs` keeps its other modules from using that one. The shared
-transcription (`Beats`, the lead sheet, the reference entry points, the transcription half of the
-layered arrangement) sits in `target-brass`'s `pipeline` for now and goes back to the core.
+`scribe-core/tests/shared_boundary.rs` keeps its other modules from using that one.
 
 ```
 scribe-core/       the shared core: pure logic (deps: serde, serde_json, roxmltree)
@@ -36,6 +35,8 @@ scribe-core/       the shared core: pure logic (deps: serde, serde_json, roxmltr
   humanize         deterministic playback humanization (sounds/README.md)
   talking_score    talking score: document from MusicXML, announcer, navigation, text/HTML export
   consensus, lines note voting across transcriptions, monophonic lines
+  transcription    transcriptions + beats -> Composition (`transcribe_layers`, `transcribe_song`), the beat table
+                   (`Beats`), the lead sheet, the reference entry points (reference -> Composition, quantized)
   midi             SMF reading with pretty_midi's note semantics
   py, pyjson       CPython/NumPy rounding, sums and JSON output, bit for bit
   notation/        measures, accidentals, ties, tuplets, beams, stems, transposition, MusicXML
@@ -46,7 +47,7 @@ targets/brass/     the brass-band target, crate `target-brass` (deps: the core, 
                    doubling, figuration); `voice_satb` voices the quartet's alto and tenor
   difficulty       faithful / standard / easier rewrites of the arranged parts
   musicxml         the band score handed to the core's writer: parts in lineup order, sounds, MIDI banks, the kit
-  pipeline         the reference entry points (arrange_layers_song, arrange_song, lead_sheet, reference -> band)
+  pipeline         the core's Composition arranged and written (arrange_layers_song, arrange_song, reference -> band)
 ffi/               crate `scribe-ffi`: UniFFI exports + `sc_*` C ABI (the core, target-brass, and target-fretted as JSON)
 cli/               crate `scribe-cli`, the `scribe-core` binary: the same entry points as the Python scripts, file based
 targets/fretted/   crate `target-fretted`, tab fingering: a string and fret for every note on guitar, bass, ukulele, mandolin

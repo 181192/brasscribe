@@ -15,8 +15,8 @@ import brasscribe_music
 
 # target-brass's modules, by the same names. `musicxml` is brass only in part: its band score
 # (build_band_score, band_sounds, composition_kit) is target-brass's `musicxml`, its writer is the
-# shared core's `notation::score`, which this package has not separated. target-brass's `pipeline` is
-# the entry points in eval/brasscribe_eval, outside this package.
+# shared core's `notation::score`, which this package has not separated. The entry points in
+# eval/brasscribe_eval, outside this package, are the core's `transcription` and target-brass's `pipeline`.
 INSTRUMENT_AWARE = {"instruments", "arranger", "difficulty", "musicxml"}
 
 

@@ -1,6 +1,6 @@
 //! Split notes and rests into readable, tied values that show the beat.
 //!
-//! Brass-band parts show every beat and the middle of a 4/4 bar. A value is
+//! A part shows every beat and the middle of a 4/4 bar. A value is
 //! written as one symbol only when:
 //!   - it is shorter than a beat and stays inside one beat, or is an 8th or
 //!     dotted 8th pushed over one beat (an anticipation, also over mid-bar), or

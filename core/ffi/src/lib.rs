@@ -17,7 +17,8 @@ use scribe_core::energy::Audio;
 use scribe_core::midi::{MidiFile, RawNote};
 use scribe_core::model::Composition;
 use target_brass::musicxml::{band_score, write_score};
-use target_brass::pipeline::{self, Beats, Layers, LayersOptions, SongInputs};
+use scribe_core::transcription::{Beats, Layers, SongInputs};
+use target_brass::pipeline::{self, LayersOptions};
 use scribe_core::quantize::{choose_level, fill_gaps, quantize};
 
 pub mod c_api;

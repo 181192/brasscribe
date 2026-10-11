@@ -1,8 +1,9 @@
 //! The shared core: the symbolic half of the pipeline, for every app.
 //!
 //! Composition model and JSON, beat-grid quantization, free-time planning,
-//! written durations, pitch spelling and key, harmony reduction, note voting
-//! and the MusicXML writer. It reproduces the Python reference
+//! written durations, pitch spelling and key, harmony reduction, note voting,
+//! the transcription that puts them together ([`transcription`]: transcriptions
+//! and beats in, a Composition out) and the MusicXML writer. It reproduces the Python reference
 //! (`brasscribe_music` and the eval entry points) exactly; `core/conformance`
 //! checks that.
 //!
@@ -13,8 +14,7 @@
 //!
 //! The core is not free of instruments yet. [`talking_score`] still holds the Norwegian names of the
 //! brass band's parts and instruments (`tests/shared_boundary.rs` keeps the other modules from using
-//! it), the writer's comments still speak of the band, and the transcription that every target needs
-//! sits in `target-brass`'s `pipeline` (docs/plan/scribe-platform.md, steps 2b and 2c).
+//! it; docs/plan/scribe-platform.md, step 2c).
 
 pub mod structure;
 pub mod separation;
@@ -39,6 +39,7 @@ pub mod quantize;
 pub mod rhythm_spelling;
 pub mod spelling;
 pub mod talking_score;
+pub mod transcription;
 pub mod trills;
 
 pub use model::Composition;
