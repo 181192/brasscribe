@@ -160,7 +160,7 @@ struct AppAppearance: ViewModifier {
     @Environment(\.colorScheme) private var systemScheme
     func body(content: Content) -> some View {
         content
-            .tint(Color.Brasscribe.primary)
+            .tint(Color.Scribe.primary)
             .preferredColorScheme(AppearanceSetting.scheme(stored: stored))
             .onChange(of: stored, initial: true) { _, value in
                 // the old "pink" asks for no scheme, so the one seen here is still the system's
@@ -407,7 +407,7 @@ struct LibrarySidebar: View {
                 SectionLabel(String(localized: "Your scores"))
                     .padding(.horizontal, Space.s3).padding(.top, Space.s5).padding(.bottom, Space.s1)
                 if app.scores.isEmpty {
-                    Text("Your scores appear here.").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text("Your scores appear here.").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                         .padding(.horizontal, Space.s3)
                 }
                 ForEach(app.scores) { entry in
@@ -426,7 +426,7 @@ struct LibrarySidebar: View {
             .padding(Space.s3)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(Color.Brasscribe.surface)
+        .background(Color.Scribe.surface)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Library"))
         .task { await app.refreshComputerScores() }
@@ -439,12 +439,12 @@ struct LibrarySidebar: View {
     private func row(title: String, icon: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(selected ? Font.Brasscribe.headline : Font.Brasscribe.body)
-                .foregroundStyle(Color.Brasscribe.text)
+                .font(selected ? Font.Scribe.headline : Font.Scribe.body)
+                .foregroundStyle(Color.Scribe.text)
                 .padding(.horizontal, Space.s3)
                 .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
-                .background(selected ? Color.Brasscribe.surfaceRaised : Color.clear, in: RoundedRectangle(cornerRadius: Radius.sm))
-                .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(selected ? Color.Brasscribe.border : Color.clear))
+                .background(selected ? Color.Scribe.surfaceRaised : Color.clear, in: RoundedRectangle(cornerRadius: Radius.sm))
+                .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(selected ? Color.Scribe.border : Color.clear))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -26,7 +26,8 @@ Fretscribe it writes into [`../dist`](../dist):
 
 Each of them also has the neutral names (`Color.Scribe.brand`, `ScribeBrandBrush`, `--scribe-brand`,
 `ScribeTheme.colors.brand`), the same as in Brasscribe's files. `$extensions."no.fretscribe"` holds what
-the generator needs beside the tokens: `prefix` (`fs`), `neutral` (the ruled line is `string` here),
+the generator needs beside the tokens: `prefix` (`fs`), `neutral` (the ruled line is `string` here, and
+the neutral `accent`, for links and the progress bar, is `brand-text`; `brand` is identity only),
 `notation` (the `tab` group), `system-colours` for Fretscribe's own roles and `fonts`.
 
 The fonts are Atkinson Hyperlegible Next (titles; a variable font, used at weight 600) and Fretscribe

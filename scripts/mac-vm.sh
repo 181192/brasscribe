@@ -231,7 +231,7 @@ prereq() {
 
 # Everything the Apple builds need that is not in git, built or found on the host.
 host_prereqs() {
-  local xcf="$ROOT/core/swift/BrasscribeCore/BrasscribeFFI.xcframework"
+  local xcf="$ROOT/core/swift/ScribeCore/ScribeFFI.xcframework"
   # the core is always this checkout's: a framework from another core version fails like an app bug
   if [ ! -d "$xcf" ] || [ -n "$(find "$ROOT/core" -path "$ROOT/core/target" -prune -o \( -name '*.rs' -o -name '*.udl' -o -name 'Cargo.toml' \) -newer "$xcf" -print -quit)" ]; then
     log "building the Rust core xcframework on the host (apps/apple/scripts/build-core.sh)"

@@ -10,8 +10,8 @@ using Xunit.Abstractions;
 namespace Brasscribe.Play.Core.Tests;
 
 /// <summary>
-/// The Rust core through its C ABI. Runs when BRASSCRIBE_FFI_PATH points at a built
-/// brasscribe_ffi (libbrasscribe_ffi.dylib, .so or brasscribe_ffi.dll); skipped otherwise.
+/// The Rust core through its C ABI. Runs when SCRIBE_FFI_PATH points at a built
+/// scribe_ffi (libscribe_ffi.dylib, .so or scribe_ffi.dll); skipped otherwise.
 /// </summary>
 [Collection(AlphaTabCollection.Name)]
 public class NativeCoreBridgeTests(ITestOutputHelper log)
@@ -23,7 +23,7 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
 
     private static NativeCoreBridge? Bridge()
     {
-        if (Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }) return null;
+        if (Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }) return null;
         var bridge = NativeCoreBridge.TryCreate();
         Assert.NotNull(bridge); // the path is set: the library must load
         return bridge;

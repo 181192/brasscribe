@@ -3,6 +3,6 @@
     <!-- The generated UniFFI bindings use java.lang.ref.Cleaner (API 33) only after checking at runtime
          that the class exists, and fall back to JNA's cleaner otherwise. -->
     <issue id="NewApi">
-        <ignore path="**/uniffi/brasscribe_ffi/brasscribe_ffi.kt" />
+        <ignore path="**/uniffi/scribe_ffi/scribe_ffi.kt" />
     </issue>
 </lint>

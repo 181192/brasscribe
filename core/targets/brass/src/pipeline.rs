@@ -1,0 +1,1084 @@
+//! End-to-end entry points, mirroring the reference scripts:
+//!
+//! * [`arrange_layers_song`]: layer transcriptions + beats -> solo-with-band score
+//! * [`arrange_song`]: melody/support/bass/harmony transcriptions + beats -> minimal band score
+//! * [`lead_sheet`]: melody/support/bass transcriptions + beats -> two-stave concert lead sheet
+//! * [`composition_from_reference`]: notated reference notes -> Composition (arranger benchmark)
+//!
+//! Inputs are in-memory (parsed MIDI files, beat tables); nothing here touches the file system.
+
+use std::collections::{HashMap, HashSet};
+
+use serde_json::Value;
+
+use crate::arranger::Arrangement;
+use scribe_core::beats::clean_beats_gated;
+use scribe_core::consensus::{cluster, consensus, Sources};
+use scribe_core::durations::{apply_written_with, contour_offsets, Contour, WriteOptions, SEPARATED_STEM};
+use scribe_core::dynamics::{layer_dynamics, Bar};
+use scribe_core::energy::{gate, mono_of, Audio, Envelope, GATE_DB};
+use scribe_core::freetime::{clip_to_regions, mark_fermatas, plan_free_time, unstable_runs, FreeTimePlan};
+use scribe_core::harmony::{harmony_slots, slots_to_notes};
+use scribe_core::keys::{key_plan, CHANGE_PENALTY};
+use scribe_core::lines::{line, MIN_DUR};
+use scribe_core::midi::{MidiFile, RawNote};
+use scribe_core::model::{check_bar_beats, check_span, Composition, Dynamic, KeySig, Meter, Note, Section, Voice, VoiceRole, TICKS_PER_BEAT};
+use crate::musicxml::{band_score, write_score, PartSpec, ScoreSpec};
+use scribe_core::notation::score::write_score_with_parts;
+use scribe_core::py;
+use scribe_core::quantize::{choose_level, fill_gaps, quantize, quantize_coarse, quantize_with, BeatMap, QNote};
+use scribe_core::separation::{check_stem, FAIL_DB as SEPARATION_FAIL_DB};
+use scribe_core::spelling::key_of;
+use scribe_core::structure::{bar_features, letters, section_starts};
+
+/// A beat table as written by the beat tracker: time in seconds and position in the bar (1 = downbeat).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Beats {
+    pub times: Vec<f64>,
+    pub positions: Vec<i64>,
+}
+
+impl Beats {
+    /// Parse whitespace-separated rows `time position` (as `np.loadtxt` reads them).
+    pub fn parse(text: &str) -> Result<Beats, String> {
+        let b = Beats::parse_any(text)?;
+        if b.times.len() < 2 {
+            return Err("need at least two beats".into());
+        }
+        Ok(b)
+    }
+
+    /// [`Beats::parse`], also with fewer than two beats (the layered song estimates a grid then).
+    pub fn parse_any(text: &str) -> Result<Beats, String> {
+        let mut times = Vec::new();
+        let mut positions = Vec::new();
+        for (i, raw) in text.lines().enumerate() {
+            let l = raw.split('#').next().unwrap_or("").trim();
+            if l.is_empty() {
+                continue;
+            }
+            let cols: Vec<&str> = l.split_whitespace().collect();
+            if cols.len() < 2 {
+                return Err(format!("beats line {}: expected two columns", i + 1));
+            }
+            let t: f64 = cols[0].parse().map_err(|e| format!("beats line {}: {e}", i + 1))?;
+            let p: f64 = cols[1].parse().map_err(|e| format!("beats line {}: {e}", i + 1))?;
+            if !t.is_finite() || !p.is_finite() {
+                return Err(format!("beats line {}: not a number", i + 1));
+            }
+            if times.last().is_some_and(|&last| t <= last) {
+                return Err(format!("beats line {}: the beat times must increase", i + 1));
+            }
+            times.push(t);
+            positions.push(p.trunc() as i64);
+        }
+        Ok(Beats { times, positions })
+    }
+
+    /// Most common distance between downbeats (first seen wins a tie).
+    pub fn beats_per_bar(&self) -> Result<i64, String> {
+        let downs: Vec<usize> = self.positions.iter().enumerate().filter(|(_, &p)| p == 1).map(|(i, _)| i).collect();
+        let mut counts: Vec<(i64, usize)> = Vec::new();
+        for w in downs.windows(2) {
+            let d = (w[1] - w[0]) as i64;
+            match counts.iter_mut().find(|(k, _)| *k == d) {
+                Some(e) => e.1 += 1,
+                None => counts.push((d, 1)),
+            }
+        }
+        let mut best: Option<(i64, usize)> = None;
+        for &(k, c) in &counts {
+            if best.map_or(true, |(_, bc)| c > bc) {
+                best = Some((k, c));
+            }
+        }
+        best.map(|b| b.0).ok_or_else(|| "fewer than two downbeats in the beat table".to_string())
+    }
+
+    /// Index of the first downbeat (0 when there is none).
+    pub fn first_downbeat(&self) -> i64 {
+        self.positions.iter().position(|&p| p == 1).unwrap_or(0) as i64
+    }
+}
+
+/// Err when a voice reaches further from tick 0 than a Composition may.
+fn check_notes(notes: &[Note]) -> Result<(), String> {
+    notes.iter().try_for_each(|n| check_span(n.start, n.end()))
+}
+
+/// `n` doubles `line`: the same pitch within the consensus onset tolerance of one of its notes.
+fn doubles(line: &[RawNote], n: &RawNote) -> bool {
+    line.iter().any(|m| m.pitch == n.pitch && (m.onset - n.onset).abs() <= scribe_core::consensus::ONSET_TOL)
+}
+
+fn to_notes(qnotes: &[QNote], pickup: i64, source: &str) -> Vec<Note> {
+    qnotes
+        .iter()
+        .map(|q| Note::new(q.pitch, q.start - pickup, q.end - q.start, q.confidence, vec![source.to_string()]).with_times(Some(q.onset_s), Some(q.offset_s)))
+        .collect()
+}
+
+/// Metrical level and bar origin shared by the song entry points: fix the level
+/// once from all onsets, then put tick 0 on the downbeat at or before the earliest note.
+fn grid(beats: &Beats, onsets: &[f64]) -> Result<(Vec<f64>, i64, i64), String> {
+    let mut bpb = beats.beats_per_bar()?;
+    let mut first_down = beats.first_downbeat();
+    let times = choose_level(&beats.times, onsets);
+    if times.len() != beats.times.len() {
+        bpb *= 2;
+        first_down *= 2;
+    }
+    let min_on = onsets.iter().cloned().fold(f64::INFINITY, f64::min);
+    let earliest = BeatMap::new(&times)?.to_beats(min_on);
+    let first_down = downbeat_at_or_before(first_down, bpb, earliest)?;
+    Ok((times, bpb, first_down))
+}
+
+/// The bar line at or before beat `earliest` (the first note), stepping back from the downbeat
+/// `first_down` by bars of `bpb` beats. A note far before the first beat is reached in one jump
+/// rather than a step per bar; the last steps are the same as before, so is the result.
+fn downbeat_at_or_before(first_down: i64, bpb: i64, earliest: f64) -> Result<i64, String> {
+    if earliest.is_nan() || earliest == f64::NEG_INFINITY || bpb < 1 {
+        return Err("the notes cannot be placed on the beat grid".into());
+    }
+    let mut first_down = first_down;
+    let bars = ((first_down as f64 - (earliest + 1e-6)) / bpb as f64).floor() - 1.0;
+    if bars > 0.0 {
+        if bars * bpb as f64 > 1e15 {
+            return Err("the notes start too long before the first beat".into());
+        }
+        first_down -= bars as i64 * bpb;
+    }
+    while first_down as f64 > earliest + 1e-6 {
+        first_down -= bpb;
+    }
+    Ok(first_down)
+}
+
+fn tonal_key(notes: &[&Note]) -> i32 {
+    let du: Vec<f64> = notes.iter().map(|n| n.dur as f64 / TICKS_PER_BEAT as f64).collect();
+    let ps: Vec<i32> = notes.iter().map(|n| n.pitch).collect();
+    key_of(&du, &ps).1
+}
+
+#[derive(Debug, Clone)]
+pub struct BandResult {
+    pub composition: Composition,
+    pub arrangement: Arrangement,
+    pub musicxml: String,
+    /// Individual parts: (file name, MusicXML), for the layered arrangement.
+    pub parts: Vec<(String, String)>,
+    /// `separation-check.json` text, when the layer audio was given.
+    pub separation_check: Option<String>,
+}
+
+/// Transcribed layers of one recording, with the layers' audio where available.
+#[derive(Debug, Clone)]
+pub struct Layers {
+    pub solo_sw: MidiFile,
+    pub solo_mus: MidiFile,
+    pub solo_bp: MidiFile,
+    pub bass: MidiFile,
+    pub orchestra: MidiFile,
+    pub drums: MidiFile,
+    pub solo_audio: Option<Audio>,
+    pub bass_audio: Option<Audio>,
+    pub drums_audio: Option<Audio>,
+    pub orchestra_audio: Option<Audio>,
+}
+
+/// (hits, lines): short notes sharing an attack with >= 2 others are chordal hits.
+pub fn split_orchestra(notes: Vec<Note>) -> (Vec<Note>, Vec<Note>) {
+    let mut by_start: HashMap<i64, usize> = HashMap::new();
+    for n in &notes {
+        *by_start.entry(n.start).or_default() += 1;
+    }
+    let (hits, lines): (Vec<Note>, Vec<Note>) = notes.into_iter().partition(|n| by_start[&n.start] >= 3 && n.dur <= TICKS_PER_BEAT);
+    (hits, lines)
+}
+
+/// Options of the solo-with-band arrangement.
+#[derive(Debug, Clone, Default)]
+pub struct LayersOptions {
+    /// Frame-level SwiftF0 contour of the solo stem: where sustained solo notes really end.
+    pub solo_contour: Option<Contour>,
+    /// Keep the beat grid through free-time passages.
+    pub no_free_time: bool,
+    /// Notate free-time passages at this BPM instead of estimating one.
+    pub free_tempo: Option<f64>,
+    /// Keep layer notes where the layer's audio is silent.
+    pub no_gate: bool,
+    /// Use the tracked beats as they are.
+    pub no_beat_cleanup: bool,
+    /// One key signature for the whole piece.
+    pub single_key: bool,
+    /// "band" (= "full", the 18-part contest band) or "minimal" (8 parts); empty = band.
+    pub lineup: String,
+    /// "faithful" (default when empty), "standard" or "easier".
+    pub difficulty: String,
+    /// Faithful: write sustained two-note alternations as trills (standard and easier always do).
+    pub trills: bool,
+    /// Target concert key of the first key signature: Bb, F#, Am or FIFTHS[:MODE].
+    pub key: Option<String>,
+    /// Transpose the whole arrangement by this many semitones (instead of `key`).
+    pub transpose: Option<i32>,
+    /// The player's seat (instruments::SEATS): a solo take is written for it (one part, its range, as played).
+    pub seat: Option<String>,
+    /// "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch); None = the band's.
+    pub reads: Option<String>,
+    /// Who plays the tune: "lineup" (default when empty) or "seat" (a solo take always the seat).
+    pub lead: String,
+    /// Language of the source footer on the parts: "en" (default when empty) or "nb".
+    pub lang: String,
+    /// The drum kit the Percussion part plays (instruments::KITS): "band" (default when empty) or "pop".
+    pub kit: String,
+}
+
+/// The solo line's window without a seat: a cornet or trumpet soloist, E3-E6.
+pub const SOLO_WINDOW: (i32, i32) = (52, 88);
+
+/// Detached notes are written as (staccato) 8ths in band parts, not 16ths and rests.
+pub const PART_HOLD_WITHIN: i64 = TICKS_PER_BEAT / 2;
+
+/// One voice with written durations from its performed lengths (held vs detached, staccato).
+fn written_line(qnotes: Vec<QNote>, times: &[f64], pickup: i64, source: &str) -> Result<Vec<Note>, String> {
+    let bm = BeatMap::new(times)?;
+    let o = WriteOptions { hold_within: PART_HOLD_WITHIN, min_detached: PART_HOLD_WITHIN, keep_grid: false };
+    Ok(apply_written_with(qnotes, Some(&bm), o)
+        .into_iter()
+        .map(|(q, w)| {
+            let mut n = to_notes(std::slice::from_ref(&q), pickup, source).remove(0);
+            n.performed_dur = Some(py::round_int(w.performed));
+            if w.staccato {
+                n.articulations.push("staccato".into());
+            }
+            n
+        })
+        .collect())
+}
+
+/// Solo stem against the mix of all layers (the orchestra is the residual, so they sum to it).
+fn separation(l: &Layers) -> Option<String> {
+    let (s, b, d, o) = (l.solo_audio.as_ref()?, l.bass_audio.as_ref()?, l.drums_audio.as_ref()?, l.orchestra_audio.as_ref()?);
+    let all = [s, b, d, o];
+    let n_min = all.iter().map(|a| a.frames()).min().unwrap();
+    let ch = s.channels;
+    if all.iter().any(|a| a.channels != ch) {
+        return None;
+    }
+    // Mono solo and mono mix straight from the stems, without a full-length copy of the solo or of
+    // the interleaved mix (each as large as a decoded stem). The sums run in the same order as
+    // mixing first and then down-mixing, so the result is the same to the bit.
+    let n = n_min * ch;
+    let solo = mono_of(&s.samples[..n], ch);
+    let c = ch.max(1);
+    let mut frame = vec![0f32; c];
+    let mix: Vec<f32> = (0..n / c)
+        .map(|k| {
+            for (j, f) in frame.iter_mut().enumerate() {
+                let i = k * c + j;
+                let mut m = s.samples[i];
+                m += b.samples[i];
+                m += d.samples[i];
+                m += o.samples[i];
+                *f = m;
+            }
+            if c == 1 { frame[0] } else { py::pairwise_sum_f32(&frame) / c as f32 }
+        })
+        .collect();
+    let c = check_stem(&solo, &mix, s.sample_rate, SEPARATION_FAIL_DB);
+    Some(c.to_json_string())
+}
+
+/// Solo-with-band arrangement from textural layers.
+///
+/// Order: energy gate of the layer notes, separation check, gated beat cleanup,
+/// metrical level, free time, written durations (solo contour), key plan,
+/// dynamics, rehearsal marks, clipping and fermatas, arrangement, score, parts.
+///
+/// The solo is SwiftF0's line (notes without SwiftF0 are dropped); each note's
+/// confidence is the calibrated probability that it is right (confidence.rs).
+/// The orchestra residual is split by what the notes do: short notes attacked
+/// together with two or more others are brass-choir hits, the rest strings.
+/// Free-time passages may be notated at a tempo from this range (BPM).
+pub const FREE_TEMPO_RANGE: (f64, f64) = (20.0, 400.0);
+
+/// Err when an option of [`arrange_layers_song`] has no meaning (an unknown lineup, difficulty,
+/// seat, clef, lead, language, kit or key, a key and a transposition together, a transposition
+/// beyond [`MAX_TRANSPOSE`](scribe_core::model::MAX_TRANSPOSE) semitones, a free-time tempo outside
+/// [`FREE_TEMPO_RANGE`]). Checked before anything is read, so the apps can tell a bad option
+/// from a recording that could not be arranged.
+pub fn check_layers_options(opts: &LayersOptions) -> Result<(), String> {
+    let difficulty = if opts.difficulty.is_empty() { "faithful" } else { opts.difficulty.as_str() };
+    if !crate::difficulty::MODES.contains(&difficulty) {
+        return Err(format!("difficulty must be one of {:?}", crate::difficulty::MODES));
+    }
+    crate::instruments::lineup_key(&opts.lineup)?;
+    let lang = if opts.lang.is_empty() { "en" } else { opts.lang.as_str() };
+    if !crate::arranger::FOOTER_LANGS.contains(&lang) {
+        return Err(format!("lang must be one of {:?}", crate::arranger::FOOTER_LANGS));
+    }
+    let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
+    if !crate::instruments::LEADS.contains(&lead) {
+        return Err(format!("lead must be one of {:?}", crate::instruments::LEADS));
+    }
+    if let Some(s) = &opts.seat {
+        crate::instruments::seat_by_id(s)?;
+    } else if lead == "seat" {
+        return Err("lead seat needs a seat".into());
+    }
+    crate::instruments::check_reads(opts.seat.as_deref(), opts.reads.as_deref())?;
+    if opts.key.is_some() && opts.transpose.is_some() {
+        return Err("give a key or a transposition, not both".into());
+    }
+    if let Some(k) = &opts.key {
+        // The key's syntax; the shift itself depends on the key the music turns out to be in.
+        scribe_core::keys::semitones_to(&KeySig { tick: 0, fifths: 0, mode: "major".into() }, k)?;
+    }
+    if let Some(t) = opts.transpose {
+        scribe_core::model::check_transpose(t as i64)?;
+    }
+    if let Some(bpm) = opts.free_tempo {
+        if !(FREE_TEMPO_RANGE.0..=FREE_TEMPO_RANGE.1).contains(&bpm) {
+            return Err(format!("the free-time tempo must be {} to {} BPM", FREE_TEMPO_RANGE.0, FREE_TEMPO_RANGE.1));
+        }
+    }
+    crate::instruments::kit_program(&opts.kit)?;
+    Ok(())
+}
+
+pub fn arrange_layers_song(layers: &Layers, beats: &Beats, title: &str, opts: &LayersOptions) -> Result<BandResult, String> {
+    check_layers_options(opts)?;
+    let difficulty = if opts.difficulty.is_empty() { "faithful" } else { opts.difficulty.as_str() };
+    let lineup_name = crate::instruments::lineup_key(&opts.lineup)?;
+    let lang = if opts.lang.is_empty() { "en" } else { opts.lang.as_str() };
+    let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
+    let solo_mus = layers.solo_mus.pitched();
+    let solo_bp = layers.solo_bp.pitched();
+    let mut bass_raw = layers.bass.pitched();
+    let mut orch_raw = layers.orchestra.pitched();
+    let mut drum_raw = layers.drums.drums();
+    let solo_sw = layers.solo_sw.pitched();
+    if !opts.no_gate {
+        // Drop notes a layer's transcriber found where that layer is (nearly) silent.
+        for (raw, audio) in [(&mut bass_raw, &layers.bass_audio), (&mut orch_raw, &layers.orchestra_audio), (&mut drum_raw, &layers.drums_audio)] {
+            if let Some(a) = audio {
+                let (kept, _) = gate(std::mem::take(raw), &Envelope::of(a), GATE_DB);
+                *raw = kept;
+            }
+        }
+    }
+    let separation_check = separation(layers);
+
+    let onsets: Vec<f64> = solo_sw.iter().chain(bass_raw.iter()).chain(orch_raw.iter()).map(|n| n.onset).collect();
+    // Under two tracked beats (a short, fast take): a grid from the onsets, and the score says so.
+    let tempo_estimated = beats.times.len() < 2;
+    let fallback = tempo_estimated.then(|| {
+        let (times, positions) = scribe_core::beats::fallback_beats(&beats.times, &onsets);
+        Beats { times, positions }
+    });
+    let beats = fallback.as_ref().unwrap_or(beats);
+    // Most common gap between labelled downbeats (1 when there are none).
+    let label_bpb = beats.beats_per_bar().ok();
+    let mut bpb = label_bpb.unwrap_or(1);
+    check_bar_beats(bpb)?;
+    let mut down: Vec<bool> = beats.positions.iter().map(|&p| p == 1).collect();
+    let mut raw_times = beats.times.clone();
+    let mut first_down;
+    if !opts.no_beat_cleanup {
+        // Restore missed and remove inserted beats (outside free time); the bar phase
+        // follows the majority of the tracker's downbeat labels.
+        let cb = clean_beats_gated(&raw_times, &down, bpb, &unstable_runs(&raw_times), Some(&onsets));
+        first_down = cb.phase(bpb);
+        raw_times = cb.times;
+        down = cb.downbeat;
+    } else {
+        first_down = down.iter().position(|&d| d).unwrap_or(0) as i64;
+    }
+    let mut times = choose_level(&raw_times, &onsets);
+    let mut doubled = times.len() != raw_times.len();
+    if doubled {
+        bpb *= 2;
+        first_down *= 2;
+    }
+    if label_bpb.is_none_or(|g| g < 2) {
+        // The tracker's downbeat labels give no bars (one instrument labelled a
+        // downbeat on most beats): infer the meter and bar phase on the final
+        // grid from the labels' periodicity and the solo's note accents, unless
+        // the evidence is too weak (then the grid's own bars stay).
+        let solo_notes = if solo_sw.is_empty() { layers.solo_mus.pitched() } else { solo_sw.clone() };
+        let grid_pos = scribe_core::beats::labels_on(&times, &beats.times, &beats.positions, 0);
+        let grid_down: Vec<bool> = grid_pos.iter().map(|&p| p == 1).collect();
+        let m = scribe_core::beats::solo_meter(
+            &times,
+            &grid_down,
+            &grid_pos,
+            bpb,
+            first_down,
+            &solo_notes.iter().map(|n| n.onset).collect::<Vec<_>>(),
+            &solo_notes.iter().map(|n| n.offset - n.onset).collect::<Vec<_>>(),
+        );
+        if !m.from_labels {
+            times = m.times.clone().unwrap_or(times);
+            bpb = m.beats_per_bar;
+            first_down = m.first_downbeat;
+            down = (0..times.len() as i64).map(|i| (i - first_down).rem_euclid(bpb) == 0).collect();
+            doubled = false; // the labels are replaced by the inferred bars
+        }
+    }
+    let mut plan: Option<FreeTimePlan> = None;
+    if !opts.no_free_time {
+        let sw_onsets: Vec<f64> = solo_sw.iter().map(|n| n.onset).collect();
+        let p = plan_free_time(&times, &onsets, bpb, first_down, if doubled { None } else { Some(&down) }, opts.free_tempo, Some(&sw_onsets));
+        times = p.beat_times.clone();
+        first_down = p.first_downbeat;
+        plan = Some(p);
+    }
+    let coarse: Option<Vec<(f64, f64)>> = plan.as_ref().map(|p| p.beat_ranges());
+    let coarse = coarse.as_deref();
+    let min_on = onsets.iter().cloned().fold(f64::INFINITY, f64::min);
+    let earliest = BeatMap::new(&times)?.to_beats(min_on);
+    first_down = downbeat_at_or_before(first_down, bpb, earliest)?;
+    check_bar_beats(bpb)?;
+    let pickup = first_down * TICKS_PER_BEAT;
+    let half = TICKS_PER_BEAT / 2;
+
+    // A solo take (no other layer has notes) for a seat keeps the seat instrument's range; otherwise
+    // the solo line is the soloist's, a cornet or trumpet (E3-E6).
+    let solo_take = opts.seat.is_some() && bass_raw.is_empty() && orch_raw.is_empty() && drum_raw.is_empty();
+    if let Some(s) = opts.seat.as_deref().filter(|_| solo_take) {
+        if crate::instruments::seat_by_id(s)?.reads.is_empty() {
+            return Err(crate::instruments::PERCUSSION_SOLO.into());
+        }
+    }
+    let (lo, hi) = match &opts.seat {
+        Some(s) if solo_take => crate::instruments::seat_by_id(s)?.own_part().instrument.pro,
+        _ => SOLO_WINDOW,
+    };
+    if let (Some(s), false) = (&opts.seat, solo_take) {
+        if lead == "seat" {
+            crate::instruments::lead_lineup(crate::instruments::lineup_by_name(lineup_name)?, s).map_err(|e| format!("--lead seat: {e}"))?;
+        }
+    }
+    // Faithful: pitch-change onsets the segmentation merged (slurred trills and runs), octave flips and glides,
+    // and a finer grid where the onsets need it. Standard and easier keep the simpler line.
+    let fast_notes = difficulty == "faithful";
+    // Standard and easier: a sustained alternation (a trill) the segmentation merged is one trill note (trills.rs).
+    let solo_sw_f1 = if fast_notes {
+        scribe_core::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp)
+    } else {
+        scribe_core::trills::with_trills(&solo_sw, &scribe_core::onsets::contour_notes(&solo_sw, opts.solo_contour.as_ref(), &solo_bp))
+    };
+    let votes: Sources = vec![
+        ("sw".into(), line(&solo_sw_f1, lo, hi, true, MIN_DUR)),
+        ("mus".into(), line(&solo_mus, lo, hi, true, MIN_DUR)),
+        ("bp".into(), line(&solo_bp, lo, hi, true, MIN_DUR)),
+    ];
+    // Basic Pitch standing in for MuScriptor (the solo path) is one vote for the
+    // confidence, not two; the clustering is unchanged.
+    let key_set = |v: &[RawNote]| {
+        let mut k: Vec<(f64, i32)> = v.iter().map(|n| (n.onset, n.pitch)).collect();
+        k.sort_by(|a, b| py::fcmp(&a.0, &b.0).then(a.1.cmp(&b.1)));
+        k
+    };
+    let mus_is_bp = key_set(&solo_mus) == key_set(&solo_bp);
+    let separated = layers.bass_audio.is_some() || layers.drums_audio.is_some() || layers.orchestra_audio.is_some();
+    let model = scribe_core::confidence::Model::load();
+    let split_onsets: HashSet<u64> = votes[0].1.iter().filter(|n| n.split).map(|n| n.onset.to_bits()).collect();
+    let trill_of: HashMap<u64, (i32, f64)> = votes[0].1.iter().filter(|n| n.trill != 0).map(|n| (n.onset.to_bits(), (n.trill, n.offset))).collect();
+    let cand: Vec<RawNote> = cluster(&votes)
+        .into_iter()
+        .filter(|c| c.sources.contains("sw"))
+        .map(|c| {
+            let (on, off) = (c.median_onset(), c.median_offset());
+            // A trill lasts as long as its alternation, whatever the other transcribers heard.
+            let (trill, trill_end) = c.onsets.iter().find_map(|o| trill_of.get(&o.to_bits()).copied()).unwrap_or((0, off));
+            let off = off.max(trill_end);
+            let mut src = c.sources.clone();
+            if mus_is_bp {
+                src.remove("mus");
+            }
+            let sup = scribe_core::confidence::support(opts.solo_contour.as_ref(), on, c.pitch);
+            let x = scribe_core::confidence::features(&src, off - on, sup, separated);
+            RawNote {
+                pitch: c.pitch,
+                onset: on,
+                offset: off,
+                confidence: Some(py::py_round(scribe_core::confidence::p_correct(&x, &model), 3)),
+                split: c.onsets.iter().any(|o| split_onsets.contains(&o.to_bits())),
+                trill,
+            }
+        })
+        .collect();
+    let mut solo_line = line(&cand, lo, hi, true, MIN_DUR);
+    if let Some(c) = &opts.solo_contour {
+        // Where the note really ends: the SwiftF0 contour, or the longest confirming model offset.
+        let keys: Vec<(f64, i32)> = solo_line.iter().map(|n| (n.onset, n.pitch)).collect();
+        let ends = contour_offsets(c, &keys, SEPARATED_STEM);
+        for (n, e) in solo_line.iter_mut().zip(ends) {
+            if e > n.offset {
+                n.offset = e;
+            }
+        }
+    }
+    let mut solo = written_line(quantize_with(&solo_line, &times, true, false, coarse, fast_notes), &times, pickup, "solo")?;
+    let line_trills: HashMap<u64, i32> = solo_line.iter().filter(|n| n.trill != 0).map(|n| (n.onset.to_bits(), n.trill)).collect();
+    for n in solo.iter_mut() {
+        n.trill = n.onset_s.and_then(|o| line_trills.get(&o.to_bits()).copied());
+    }
+    let mut bass = written_line(quantize_coarse(&line(&bass_raw, 24, 55, false, MIN_DUR), &times, true, false, coarse), &times, pickup, "bass")?;
+
+    // the solo as the orchestra stem plays it too: not part of the orchestra
+    let orch: Vec<RawNote> = orch_raw.iter().filter(|n| 36 <= n.pitch && n.pitch <= 88 && !doubles(&solo_line, n)).cloned().collect();
+    let orch_q: Vec<Note> =
+        to_notes(&quantize_coarse(&orch, &times, false, false, coarse), pickup, "orchestra").into_iter().filter(|n| n.start >= 0).collect();
+    let (mut hits, mut lines) = split_orchestra(orch_q);
+
+    let dq = quantize_coarse(&drum_raw, &times, false, false, coarse);
+    let mut starts: Vec<i64> = dq.iter().map(|q| q.start).collect();
+    starts.sort();
+    starts.dedup();
+    let nxt: HashMap<i64, i64> = starts.windows(2).map(|w| (w[0], w[1])).collect();
+    let mut drums: Vec<Note> = dq
+        .iter()
+        .filter(|q| q.start - pickup >= 0)
+        .map(|q| {
+            let d = (nxt.get(&q.start).copied().unwrap_or(q.start + half) - q.start).min(TICKS_PER_BEAT);
+            Note::new(q.pitch, q.start - pickup, d, 1.0, vec!["drums".into()])
+        })
+        .collect();
+
+    let regions = plan.as_ref().map(|p| p.regions(first_down)).unwrap_or_default();
+    for v in [&mut solo, &mut bass, &mut lines, &mut hits, &mut drums] {
+        clip_to_regions(v, &regions);
+    }
+    mark_fermatas(&mut solo, &regions);
+    for v in [&solo, &bass, &lines, &hits, &drums] {
+        check_notes(v)?;
+    }
+
+    let voice = |id: &str, role, notes: Vec<Note>, hint: &str, layer: &str| Voice {
+        id: id.into(),
+        role,
+        notes,
+        instrument_hint: Some(hint.into()),
+        layer: Some(layer.into()),
+    };
+    let tonal: Vec<&Note> = solo.iter().chain(bass.iter()).chain(lines.iter()).collect();
+    let fifths = tonal_key(&tonal);
+    let bar_ticks = bpb * TICKS_PER_BEAT;
+    let keys = if opts.single_key {
+        vec![KeySig { tick: 0, fifths, mode: "major".into() }]
+    } else {
+        // Key changes where the music modulates (a change must pay for itself over several bars).
+        let mut sl: Vec<Note> = solo.clone();
+        sl.extend(lines.iter().cloned());
+        let penalty = crate::difficulty::key_change_penalty(difficulty).unwrap_or(CHANGE_PENALTY);
+        key_plan(&sl, bar_ticks, penalty, &bass).keys
+    };
+    let mut comp = Composition {
+        title: title.into(),
+        voices: vec![
+            voice("solo", VoiceRole::Melody, solo.clone(), "trumpet/cornet", "solo"),
+            voice("bass", VoiceRole::Bass, bass.clone(), "electric bass", "bass"),
+            voice("strings", VoiceRole::Harmony, lines.clone(), "orchestra", "strings"),
+            voice("brass", VoiceRole::Harmony, hits, "orchestra hits", "brass"),
+            voice("drums", VoiceRole::Rhythm, drums, "drum kit", "drums"),
+        ],
+        meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
+        keys,
+        beat_times: times,
+        first_downbeat: first_down,
+        ticks_per_beat: TICKS_PER_BEAT,
+        free_regions: regions,
+        dynamics: Vec::new(),
+        sections: Vec::new(),
+        review: Vec::new(),
+        arrangement: None,
+        tempo_estimated,
+    };
+    // Dynamics per layer from its own loudness, per bar.
+    let bm = BeatMap::new(&comp.beat_times)?;
+    let n_bars = py::floordiv(comp.end_tick(), bar_ticks) + 1;
+    let edges: Vec<f64> = (0..=n_bars).map(|k| bm.to_seconds((k * bpb + first_down) as f64)).collect();
+    let bars: Vec<Bar> = (0..n_bars as usize).map(|k| (k as i64 * bar_ticks, edges[k], edges[k + 1])).collect();
+    let envs: Vec<(&str, Envelope)> = [("solo", &layers.solo_audio), ("orchestra", &layers.orchestra_audio), ("bass", &layers.bass_audio), ("drums", &layers.drums_audio)]
+        .into_iter()
+        .filter_map(|(n, a)| a.as_ref().map(|a| (n, Envelope::of(a))))
+        .collect();
+    for (layer, wav) in [("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")] {
+        if let Some((_, env)) = envs.iter().find(|(n, _)| *n == wav) {
+            comp.dynamics.extend(layer_dynamics(env, &bars).into_iter().map(|(t, m)| Dynamic { tick: t, layer: layer.into(), mark: m }));
+        }
+    }
+    // Rehearsal letters where the layers' energy changes, and where free time ends.
+    if !envs.is_empty() {
+        let e: Vec<&Envelope> = envs.iter().map(|(_, e)| e).collect();
+        let forced: Vec<i64> = comp.free_regions.iter().map(|r| py::floordiv(r.end, bar_ticks)).collect();
+        let starts = section_starts(&bar_features(&e, &bars), &forced);
+        comp.sections = starts.iter().zip(letters(starts.len())).map(|(b, l)| Section { tick: b * bar_ticks, label: l }).collect();
+    }
+    // Arrangement options: lineup, difficulty, transposition to a concert key.
+    let shift = match (&opts.transpose, &opts.key) {
+        (Some(t), _) => *t,
+        (None, Some(k)) => scribe_core::keys::semitones_to(&comp.keys[0], k)?,
+        _ => 0,
+    };
+    if shift != 0 {
+        comp = comp.transposed(shift)?;
+    }
+    let kit = if crate::instruments::kit_program(&opts.kit)? == 0 { "band" } else { opts.kit.as_str() };
+    if lineup_name != "band" || difficulty != "faithful" || shift != 0 || opts.seat.is_some() || opts.trills || kit != "band" {
+        let mut a = serde_json::Map::new();
+        a.insert("lineup".into(), lineup_name.into());
+        a.insert("difficulty".into(), difficulty.into());
+        a.insert("transpose_semitones".into(), shift.into());
+        if opts.trills {
+            a.insert("trills".into(), true.into());
+        }
+        if let Some(s) = &opts.seat {
+            // The seat's options, like the others; the arrangers read them back (composition_lineup).
+            a.insert("seat".into(), s.as_str().into());
+            if let Some(r) = &opts.reads {
+                a.insert("reads".into(), r.as_str().into());
+            }
+            if solo_take || lead == "seat" {
+                a.insert("lead".into(), "seat".into());
+            }
+        }
+        if kit != "band" {
+            a.insert("kit".into(), kit.into());
+        }
+        comp.arrangement = Some(serde_json::Value::Object(a));
+    }
+    // Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
+    let bar_ticks = bpb * TICKS_PER_BEAT;
+    comp.review = comp
+        .voices
+        .iter()
+        .filter(|v| v.layer.as_deref() != Some("drums"))
+        .flat_map(|v| {
+            let notes: Vec<(i64, i64, f64)> = v.notes.iter().map(|n| (n.start, n.end(), n.confidence)).collect();
+            scribe_core::confidence::review_groups(&notes, bar_ticks, model.mark_below(), model.very_below())
+                .into_iter()
+                .map(|g| scribe_core::model::ReviewItem { voice: v.id.clone(), start: g.start, end: g.end, notes: g.notes, very: g.very })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    let lineup = crate::arranger::composition_lineup(&comp).0;
+    let trills = if opts.trills { Some(true) } else { None };
+    let arrangement = crate::arranger::arrange_layers_opts(&comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty: difficulty.into(), trills, ..Default::default() })?;
+    let (musicxml, parts) = write_score_with_parts(&band_score(&arrangement, &comp), &crate::arranger::part_footers(&comp, lang));
+    Ok(BandResult { composition: comp, arrangement, musicxml, parts, separation_check })
+}
+
+/// The trill option a Composition was arranged with (`arrangement.trills`); None: the difficulty's default.
+pub fn recorded_trills(comp: &Composition) -> Option<bool> {
+    comp.arrangement.as_ref().and_then(|a| a.get("trills")).and_then(|v| v.as_bool())
+}
+
+/// Arrange an existing Composition the way it was made: the layered arranger
+/// when its voices carry layers (with the lineup and difficulty recorded in
+/// `arrangement`), else the minimal arranger.
+pub fn arrange_composition(comp: &Composition) -> Result<Arrangement, String> {
+    let opt = |k: &str| comp.arrangement.as_ref().and_then(|a| a.get(k)).and_then(|v| v.as_str()).map(String::from);
+    let (lineup, layered) = crate::arranger::composition_lineup(comp);
+    if !layered {
+        if lineup != crate::instruments::minimal_band() {
+            let difficulty = opt("difficulty").filter(|d| !d.is_empty()).unwrap_or_else(|| "faithful".into());
+            return crate::arranger::arrange_opts_trills(comp, lineup, &difficulty, recorded_trills(comp));
+        }
+        return crate::arranger::arrange_opts_trills(comp, crate::instruments::minimal_band(), "faithful", recorded_trills(comp));
+    }
+    let difficulty = opt("difficulty").unwrap_or_else(|| "faithful".into());
+    crate::arranger::arrange_layers_opts(comp, lineup, &crate::arranger::LayersArrangeOptions { difficulty, trills: recorded_trills(comp), ..Default::default() })
+}
+
+#[derive(Debug, Clone)]
+pub struct SongInputs {
+    pub melody: MidiFile,
+    pub melody_support: Option<MidiFile>,
+    pub bass: MidiFile,
+    pub harmony: Vec<MidiFile>,
+}
+
+fn melody_votes(melody: &MidiFile, support: Option<&MidiFile>) -> Vec<RawNote> {
+    let mut sources: Sources = vec![("mus".into(), melody.pitched())];
+    if let Some(s) = support {
+        sources.push(("bp".into(), s.pitched()));
+    }
+    let (cand, _) = consensus(&sources, &[("mus", 0.6), ("bp", 0.4)], 0.5);
+    cand.iter().map(|c| c.raw()).collect()
+}
+
+/// Options of the song arrangement.
+#[derive(Debug, Clone, Default)]
+pub struct SongOptions {
+    /// "minimal" (8 parts; the default when empty) or "quartet".
+    pub lineup: String,
+    /// The player's seat (instruments::SEATS): their part; with `lead` "seat", the tune's.
+    pub seat: Option<String>,
+    /// "treble" or "bass": the clef the seat's part is written in (bass: at concert pitch); None = the band's.
+    pub reads: Option<String>,
+    /// Who plays the tune: "lineup" (default when empty) or "seat".
+    pub lead: String,
+    /// The drum kit the Percussion part plays (instruments::KITS): "band" (default when empty) or "pop".
+    pub kit: String,
+}
+
+/// The option value of a song lineup and the lineup ("" -> minimal).
+fn song_lineup(name: &str) -> Result<(&'static str, crate::instruments::Lineup), String> {
+    match name {
+        "" | "minimal" => Ok(("minimal", crate::instruments::minimal_band())),
+        "quartet" => Ok(("quartet", crate::instruments::quartet())),
+        other => Err(format!("unknown song lineup {other} (minimal or quartet)")),
+    }
+}
+
+/// Records a non-default lineup (and kit) of the non-layered arrangers in the composition.
+fn record_lineup(comp: &mut Composition, key: &str, seat: Option<&str>, reads: Option<&str>, lead: &str, kit: &str) {
+    if key != "minimal" || seat.is_some() || kit != "band" {
+        let mut a = serde_json::Map::new();
+        a.insert("lineup".into(), key.into());
+        a.insert("difficulty".into(), "faithful".into());
+        a.insert("transpose_semitones".into(), 0.into());
+        if let Some(s) = seat {
+            a.insert("seat".into(), s.into());
+            if let Some(r) = reads {
+                a.insert("reads".into(), r.into());
+            }
+            if lead == "seat" {
+                a.insert("lead".into(), "seat".into());
+            }
+        }
+        if kit != "band" {
+            a.insert("kit".into(), kit.into());
+        }
+        comp.arrangement = Some(serde_json::Value::Object(a));
+    }
+}
+
+/// Minimal brass-band arrangement: melody (MuScriptor confirmed by Basic Pitch),
+/// bass line, and the accompaniment reduced to a per-beat harmonic rhythm.
+pub fn arrange_song(inp: &SongInputs, beats: &Beats, title: &str) -> Result<BandResult, String> {
+    arrange_song_opts(inp, beats, title, &SongOptions::default())
+}
+
+/// What [`arrange_song_opts`] refuses in its options, before it reads a note: an unknown lineup, lead, seat
+/// or clef, and a tune the seat cannot carry in the lineup. The bindings ask this first, so a refused option
+/// is invalid input there and not a failed arrangement.
+pub fn check_song_options(opts: &SongOptions) -> Result<(), String> {
+    song_window(opts).map(|_| ())
+}
+
+/// The range the melody is taken in, with the lineup as the composition records it; checks the options.
+fn song_window(opts: &SongOptions) -> Result<(&'static str, crate::instruments::Lineup, &'static str, (i32, i32)), String> {
+    let (lineup_key, lineup) = song_lineup(&opts.lineup)?;
+    let lead = if opts.lead.is_empty() { "lineup" } else { opts.lead.as_str() };
+    let lead = *crate::instruments::LEADS
+        .iter()
+        .find(|l| **l == lead)
+        .ok_or_else(|| format!("lead must be one of {:?}", crate::instruments::LEADS))?;
+    crate::instruments::check_reads(opts.seat.as_deref(), opts.reads.as_deref())?;
+    // With the tune on the player's part, the melody is taken in that part's range.
+    let window = match (&opts.seat, lead) {
+        (Some(s), "seat") => crate::instruments::lead_lineup(lineup.clone(), s)?.lead_part().instrument.pro,
+        (None, "seat") => return Err("lead seat needs a seat".into()),
+        (Some(s), _) => {
+            crate::instruments::seat_by_id(s)?;
+            SOLO_WINDOW
+        }
+        _ => SOLO_WINDOW,
+    };
+    Ok((lineup_key, lineup, lead, window))
+}
+
+/// [`arrange_song`] for a lineup (minimal band or quartet), recorded in the composition.
+pub fn arrange_song_opts(inp: &SongInputs, beats: &Beats, title: &str, opts: &SongOptions) -> Result<BandResult, String> {
+    let (lineup_key, lineup, lead, window) = song_window(opts)?;
+    let mel_all = inp.melody.pitched();
+    let bass_all = inp.bass.pitched();
+    let harm_all: Vec<Vec<RawNote>> = inp.harmony.iter().map(|m| m.pitched()).collect();
+    let all_onsets: Vec<f64> = mel_all.iter().chain(bass_all.iter()).chain(harm_all.iter().flatten()).map(|n| n.onset).collect();
+    let (times, bpb, first_down) = grid(beats, &all_onsets)?;
+    let pickup = first_down * TICKS_PER_BEAT;
+    let half = TICKS_PER_BEAT / 2;
+
+    let cand = melody_votes(&inp.melody, inp.melody_support.as_ref());
+    let mel_raw = line(&cand, window.0, window.1, true, MIN_DUR);
+    let melody = to_notes(&fill_gaps(quantize(&mel_raw, &times, true, false), half, 0.0), pickup, "melody");
+    let bass = to_notes(&fill_gaps(quantize(&line(&bass_all, 28, 55, false, MIN_DUR), &times, true, false), half, 0.0), pickup, "bass");
+
+    // the melody as the harmony stems play it too: not part of the harmony
+    let acc: Vec<RawNote> = harm_all.iter().flatten().filter(|n| 40 <= n.pitch && n.pitch <= 84 && !doubles(&mel_raw, n)).cloned().collect();
+    let acc_q = to_notes(&quantize(&acc, &times, false, false), pickup, "accompaniment");
+    check_bar_beats(bpb)?;
+    for v in [&melody, &bass, &acc_q] {
+        check_notes(v)?;
+    }
+    let end = melody.iter().chain(bass.iter()).chain(acc_q.iter()).map(|n| n.end()).max().ok_or("no notes")?;
+    let harm = slots_to_notes(&harmony_slots(&acc_q, end, 4, 0.35), 0.8);
+
+    let plain = |id: &str, role, notes: Vec<Note>| Voice { id: id.into(), role, notes, instrument_hint: None, layer: None };
+    let tonal: Vec<&Note> = melody.iter().chain(bass.iter()).chain(harm.iter()).collect();
+    let fifths = tonal_key(&tonal);
+    let mut comp = Composition {
+        title: title.into(),
+        voices: vec![plain("melody", VoiceRole::Melody, melody.clone()), plain("bass", VoiceRole::Bass, bass.clone()), plain("harmony", VoiceRole::Harmony, harm.clone())],
+        meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
+        keys: vec![KeySig { tick: 0, fifths, mode: "major".into() }],
+        beat_times: times,
+        first_downbeat: first_down,
+        ticks_per_beat: TICKS_PER_BEAT,
+        free_regions: Vec::new(),
+        dynamics: Vec::new(),
+        sections: Vec::new(),
+        review: Vec::new(),
+        arrangement: None,
+        tempo_estimated: false,
+    };
+    let kit = if crate::instruments::kit_program(&opts.kit)? == 0 { "band" } else { opts.kit.as_str() };
+    record_lineup(&mut comp, lineup_key, opts.seat.as_deref(), opts.reads.as_deref(), lead, kit);
+    let arrangement = crate::arranger::arrange_opts(&comp, crate::arranger::composition_lineup(&comp).0, "faithful")?;
+    let musicxml = write_score(&band_score(&arrangement, &comp));
+    Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
+}
+
+/// Draft lead sheet: melody + bass lines as concert-pitch staves, first downbeat at bar 1.
+pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile, beats: &Beats, title: &str) -> Result<String, String> {
+    let bpb = beats.beats_per_bar()?;
+    let diffs: Vec<f64> = beats.times.windows(2).map(|w| w[1] - w[0]).collect();
+    let bpm = 60.0 / py::median(&diffs);
+    let pickup = beats.first_downbeat() * TICKS_PER_BEAT;
+    let half = TICKS_PER_BEAT / 2;
+    let cand = melody_votes(melody, support);
+    let mel = fill_gaps(quantize(&line(&cand, 52, 86, true, MIN_DUR), &beats.times, true, true), half, 0.0);
+    let bas = fill_gaps(quantize(&line(&bass.pitched(), 28, 55, false, MIN_DUR), &beats.times, true, true), half, 0.0);
+    check_bar_beats(bpb)?;
+    for q in mel.iter().chain(bas.iter()) {
+        check_span(q.start.saturating_sub(pickup), q.end.saturating_sub(pickup))?;
+    }
+    let spec = ScoreSpec {
+        parts: vec![PartSpec::concert("Melody", mel, "treble"), PartSpec::concert("Bass", bas, "bass")],
+        beats_per_bar: bpb,
+        bpm,
+        title: title.into(),
+        pickup_ticks: pickup,
+        low_confidence: 0.7,
+        very_below: scribe_core::notation::score::VERY_UNCERTAIN,
+        key_fifths: None,
+        sounds: Vec::new(),
+        free_spans: Vec::new(),
+        key_changes: Vec::new(),
+        rehearsal: Vec::new(),
+        encoding_date: String::new(),
+        tempo_note: None,
+        kit_program: 0,
+        banks: Vec::new(),
+    };
+    Ok(write_score(&spec))
+}
+
+/// Reference notes with notated positions -> Composition (SATB or numbered parts).
+pub fn composition_from_reference(reference: &Value, title: &str) -> Result<Composition, String> {
+    let notes = match reference {
+        Value::Object(m) => m.get("notes").and_then(|v| v.as_array()).ok_or("reference has no notes")?,
+        Value::Array(a) => a,
+        _ => return Err("reference must be an object or array".into()),
+    };
+    let refs: Vec<&serde_json::Map<String, Value>> = notes.iter().filter_map(|v| v.as_object()).filter(|o| o.contains_key("quarter")).collect();
+    let f = |o: &serde_json::Map<String, Value>, k: &str| o.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let mut names: Vec<String> = refs.iter().filter_map(|o| o.get("part").and_then(|v| v.as_str()).map(String::from)).collect();
+    names.sort();
+    names.dedup();
+    let roles: Vec<(String, VoiceRole)> = if names.len() == 4 && ["S", "A", "T", "B"].iter().all(|p| names.iter().any(|n| n == p)) {
+        vec![("S".into(), VoiceRole::Melody), ("A".into(), VoiceRole::Harmony), ("T".into(), VoiceRole::Harmony), ("B".into(), VoiceRole::Bass)]
+    } else {
+        let mut ordered = names.clone();
+        let num = |p: &String| p.split('-').next().and_then(|x| x.parse::<i64>().ok()).unwrap_or(0);
+        ordered.sort_by_key(num);
+        let n = ordered.len();
+        ordered
+            .into_iter()
+            .enumerate()
+            .map(|(i, p)| {
+                let role = if i + 1 == n { VoiceRole::Bass } else if i == 0 { VoiceRole::Melody } else { VoiceRole::Harmony };
+                (p, role)
+            })
+            .collect()
+    };
+    let mut voices = Vec::new();
+    for (part, role) in roles {
+        let mut vn: Vec<Note> = refs
+            .iter()
+            .filter(|o| o.get("part").and_then(|v| v.as_str()) == Some(part.as_str()))
+            .map(|o| {
+                let start = py::round_int(f(o, "quarter") * TICKS_PER_BEAT as f64);
+                let dur = py::round_int(f(o, "dur_quarter") * TICKS_PER_BEAT as f64).max(1);
+                Note::new(o.get("pitch").and_then(|v| v.as_i64()).unwrap_or(0) as i32, start, dur, 1.0, vec!["reference".into()])
+                    .with_times(Some(f(o, "onset")), Some(f(o, "offset")))
+            })
+            .collect();
+        vn.sort_by_key(|n| n.start);
+        voices.push(Voice { id: part.clone(), role, notes: vn, instrument_hint: Some(part.clone()), layer: None });
+    }
+    let ts = refs.iter().find_map(|o| o.get("time_sig").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(String::from));
+    let beats = ts.and_then(|t| t.split('/').next().and_then(|x| x.trim().parse::<i64>().ok())).unwrap_or(4);
+    let all: Vec<&Note> = voices.iter().flat_map(|v| v.notes.iter()).collect();
+    let fifths = tonal_key(&all);
+    let comp = Composition {
+        title: title.into(),
+        voices,
+        meters: vec![Meter { tick: 0, beats, beat_unit: 4 }],
+        keys: vec![KeySig { tick: 0, fifths, mode: "major".into() }],
+        beat_times: Vec::new(),
+        first_downbeat: 0,
+        ticks_per_beat: TICKS_PER_BEAT,
+        free_regions: Vec::new(),
+        dynamics: Vec::new(),
+        sections: Vec::new(),
+        review: Vec::new(),
+        arrangement: None,
+        tempo_estimated: false,
+    };
+    comp.validate()?;
+    Ok(comp)
+}
+
+/// Arranger benchmark path: reference -> Composition -> minimal band score.
+pub fn arrange_reference(reference: &Value, title: &str) -> Result<BandResult, String> {
+    arrange_reference_with(reference, title, "")
+}
+
+/// [`arrange_reference`] for a lineup (minimal band or quartet), recorded in the composition.
+pub fn arrange_reference_with(reference: &Value, title: &str, lineup: &str) -> Result<BandResult, String> {
+    let (lineup_key, lineup) = song_lineup(lineup)?;
+    let mut comp = composition_from_reference(reference, title)?;
+    record_lineup(&mut comp, lineup_key, None, None, "lineup", "band");
+    let arrangement = crate::arranger::arrange_opts(&comp, lineup, "faithful")?;
+    let musicxml = write_score(&band_score(&arrangement, &comp));
+    Ok(BandResult { composition: comp, arrangement, musicxml, parts: Vec::new(), separation_check: None })
+}
+
+/// Reference notes (with "quarter") quantized on a beat table, as rows for comparison.
+pub fn quantize_reference(reference: &Value, beats: &Beats) -> Vec<QNote> {
+    let notes = match reference {
+        Value::Object(m) => m.get("notes").and_then(|v| v.as_array()).cloned().unwrap_or_default(),
+        Value::Array(a) => a.clone(),
+        _ => Vec::new(),
+    };
+    let raw: Vec<RawNote> = notes
+        .iter()
+        .filter_map(|v| v.as_object())
+        .filter(|o| o.contains_key("quarter"))
+        .map(|o| RawNote {
+            pitch: o.get("pitch").and_then(|v| v.as_i64()).unwrap_or(0) as i32,
+            onset: o.get("onset").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            offset: o.get("offset").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            confidence: o.get("confidence").and_then(|v| v.as_f64()),
+            split: false,
+            trill: 0,
+        })
+        .collect();
+    quantize(&raw, &beats.times, false, true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Deterministic pseudo-random samples in [-0.5, 0.5).
+    fn noise(seed: u64, n: usize) -> Vec<f32> {
+        let mut x = seed;
+        (0..n)
+            .map(|_| {
+                x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                ((x >> 40) as f32 / (1u64 << 24) as f32) - 0.5
+            })
+            .collect()
+    }
+
+    fn layers(channels: usize, frames: [usize; 4]) -> Layers {
+        let midi = || MidiFile { resolution: 480, instruments: Vec::new() };
+        let audio = |seed: u64, f: usize| Some(Audio { samples: noise(seed, f * channels), channels, sample_rate: 8000 });
+        Layers {
+            solo_sw: midi(),
+            solo_mus: midi(),
+            solo_bp: midi(),
+            bass: midi(),
+            orchestra: midi(),
+            drums: midi(),
+            solo_audio: audio(1, frames[0]),
+            bass_audio: audio(2, frames[1]),
+            drums_audio: audio(3, frames[2]),
+            orchestra_audio: audio(4, frames[3]),
+        }
+    }
+
+    /// The check as first written: mix the stems, then down-mix solo and mix to mono.
+    fn separation_by_mixing(l: &Layers) -> String {
+        let all = [&l.solo_audio, &l.bass_audio, &l.drums_audio, &l.orchestra_audio].map(|a| a.as_ref().unwrap());
+        let n_min = all.iter().map(|a| a.frames()).min().unwrap();
+        let (s, ch) = (all[0], all[0].channels);
+        let take = |a: &Audio| Audio { samples: a.samples[..n_min * ch].to_vec(), channels: ch, sample_rate: a.sample_rate };
+        let mut mix = take(s);
+        for a in &all[1..] {
+            for (m, v) in mix.samples.iter_mut().zip(a.samples[..n_min * ch].iter()) {
+                *m += *v;
+            }
+        }
+        check_stem(&take(s).mono(), &mix.mono(), s.sample_rate, SEPARATION_FAIL_DB).to_json_string()
+    }
+
+    #[test]
+    fn beat_tables_must_be_numbers_that_increase() {
+        assert!(Beats::parse("0.5 1\n1.0 2\n1.5 3").is_ok());
+        for bad in ["nan 1\n1.0 2", "0.5 1\ninf 2", "0.5 1\n1.0 NaN", "0.5 1\n0.5 2\n1.0 3", "1.0 1\n0.5 2", "-inf 1\n0 2"] {
+            let e = Beats::parse(bad).unwrap_err();
+            assert!(e.starts_with("beats line"), "{bad:?}: {e}");
+        }
+    }
+
+    #[test]
+    fn the_downbeat_jump_lands_where_stepping_does() {
+        let stepped = |mut fd: i64, bpb: i64, earliest: f64| {
+            while fd as f64 > earliest + 1e-6 {
+                fd -= bpb;
+            }
+            fd
+        };
+        for bpb in 1..=12 {
+            for fd in -5..40 {
+                for k in -4000..400 {
+                    let earliest = k as f64 * 0.37 + 1e-7 * (k % 3) as f64;
+                    assert_eq!(downbeat_at_or_before(fd, bpb, earliest).unwrap(), stepped(fd, bpb, earliest), "{fd} {bpb} {earliest}");
+                }
+                for earliest in [fd as f64, fd as f64 - 1e-6, fd as f64 + 1e-6, f64::INFINITY] {
+                    assert_eq!(downbeat_at_or_before(fd, bpb, earliest).unwrap(), stepped(fd, bpb, earliest));
+                }
+            }
+        }
+        // A note a hundred million bars before the first beat: one jump, not a step per bar.
+        assert_eq!(downbeat_at_or_before(0, 4, -4e8), Ok(-400_000_000));
+        assert!(downbeat_at_or_before(0, 4, f64::NEG_INFINITY).is_err());
+        assert!(downbeat_at_or_before(0, 4, f64::NAN).is_err());
+        assert!(downbeat_at_or_before(0, 4, -1e300).is_err());
+    }
+
+    #[test]
+    fn a_reference_with_a_huge_bar_or_note_is_refused() {
+        let r = |ts: &str, quarter: f64| serde_json::json!({"notes": [{"part": "S", "pitch": 60, "quarter": quarter, "dur_quarter": 1.0, "time_sig": ts}]});
+        assert!(composition_from_reference(&r("4/4", 0.0), "t").is_ok());
+        assert!(composition_from_reference(&r("100000/4", 0.0), "t").unwrap_err().contains("beats"));
+        assert!(composition_from_reference(&r("-3/4", 0.0), "t").is_err());
+        assert!(composition_from_reference(&r("4/4", 1e9), "t").unwrap_err().contains("longer"));
+    }
+
+    #[test]
+    fn separation_without_copies_matches_mixing_first() {
+        for ch in [1, 2, 3] {
+            let l = layers(ch, [20_011, 20_000, 19_993, 20_005]);
+            assert_eq!(separation(&l).unwrap(), separation_by_mixing(&l), "{ch} channels");
+        }
+    }
+}

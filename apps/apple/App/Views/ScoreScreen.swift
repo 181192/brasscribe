@@ -151,7 +151,7 @@ struct PracticeView: View {
             .dynamicTypeSize(wide ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2)
             .heightShare(Self.headerShare, of: screenHeight)
             .accessibilitySortPriority(StackedAccessibility.header)
-            Divider().overlay(Color.Brasscribe.border)
+            Divider().overlay(Color.Scribe.border)
             ZStack(alignment: .bottomTrailing) {
                 NotationView(model: model)
                 VStack(alignment: .trailing, spacing: Space.s3) {
@@ -175,7 +175,7 @@ struct PracticeView: View {
             // the phone's chrome grows to about twice the default text size; past that the music keeps its room
             .dynamicTypeSize(wide ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2)
             .heightShare(Self.playerShare, of: screenHeight)
-            .background(Color.Brasscribe.surface.ignoresSafeArea(edges: .bottom))
+            .background(Color.Scribe.surface.ignoresSafeArea(edges: .bottom))
             .accessibilityElement(children: .contain)
             // the score's scroll content runs on under the band: see `StackedAccessibility`
             .accessibilitySortPriority(StackedAccessibility.overlay)
@@ -283,7 +283,7 @@ struct StatusLine: View {
                     Button(action: check) {
                         HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                             UncertainMark(level: .uncertain)
-                            Text("\(Text(count).foregroundStyle(Color.Brasscribe.textMuted)) \(Text(verbatim: "·").foregroundStyle(Color.Brasscribe.textMuted)) \(Text("Check them").underline().foregroundStyle(Color.Brasscribe.text))")
+                            Text("\(Text(count).foregroundStyle(Color.Scribe.textMuted)) \(Text(verbatim: "·").foregroundStyle(Color.Scribe.textMuted)) \(Text("Check them").underline().foregroundStyle(Color.Scribe.text))")
                                 .fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 0)
                         }
@@ -301,7 +301,7 @@ struct StatusLine: View {
                                 : String(localized: "Bars \(free.lowerBound + 1)–\(free.upperBound + 1) have no steady beat (ad lib.). Their rhythms are approximate."))
                 }
             }
-            .font(Font.Brasscribe.callout)
+            .font(Font.Scribe.callout)
             .padding(.horizontal, Space.s5)
             .padding(.bottom, Space.s1)
             // wrapping text measured at zero width is endlessly tall; a floor keeps the window its size
@@ -427,8 +427,8 @@ struct ScoreToolbar: View {
                     Text(shownTitle).lineLimit(1).truncationMode(.tail)
                     Image(systemName: "chevron.up.chevron.down").font(.footnote.weight(.semibold)).accessibilityHidden(true)
                 }
-                .font(Font.Brasscribe.body)
-                .foregroundStyle(Color.Brasscribe.text)
+                .font(Font.Scribe.body)
+                .foregroundStyle(Color.Scribe.text)
                 .frame(minHeight: 44)
                 .contentShape(Rectangle())
             }
@@ -524,7 +524,7 @@ struct ScoreToolbar: View {
             }
         }
         .menuStyle(.button)
-        .tint(Color.Brasscribe.text)
+        .tint(Color.Scribe.text)
         .frame(minHeight: 44)
         .fixedSize()
         .accessibilityIdentifier("viewMenu")
@@ -548,8 +548,8 @@ struct ZoomButtons: View {
                 zoomIn
             }
         }
-        .foregroundStyle(Color.Brasscribe.text)
-        .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
+        .foregroundStyle(Color.Scribe.text)
+        .background(Color.Scribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
         .fixedSize()
     }
 
@@ -586,11 +586,11 @@ struct BandSoundsMissingLine: View {
                 Spacer(minLength: Space.s2)
                 Text("Details").underline()
             }
-            .font(Font.Brasscribe.callout)
-            .foregroundStyle(Color.Brasscribe.text)
+            .font(Font.Scribe.callout)
+            .foregroundStyle(Color.Scribe.text)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .padding(.horizontal, Space.s4)
-            .background(Color.Brasscribe.surface)
+            .background(Color.Scribe.surface)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -601,11 +601,11 @@ struct BandSoundsMissingLine: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s4) {
                         Text("The band sounds are missing. Reinstall Brasscribe Play to hear the band.")
-                            .font(Font.Brasscribe.body)
+                            .font(Font.Scribe.body)
                             .fixedSize(horizontal: false, vertical: true)
                         if !details.isEmpty {
                             SectionLabel(String(localized: "Details for the band's tech person"))
-                            Text(details).font(.footnote.monospaced()).foregroundStyle(Color.Brasscribe.textMuted).textSelection(.enabled)
+                            Text(details).font(.footnote.monospaced()).foregroundStyle(Color.Scribe.textMuted).textSelection(.enabled)
                         }
                     }
                     .padding(Space.s5)
@@ -639,14 +639,14 @@ struct PlayerBar: View {
                 .padding(.horizontal, Space.s6)
                 .padding(.vertical, Space.s3)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.Brasscribe.surface)
-                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+                .background(Color.Scribe.surface)
+                .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
             } else if typeSize >= .accessibility1 {
                 // the largest text sizes: the transport, the bar, and one menu with the practice controls
                 VStack(alignment: .leading, spacing: Space.s1) {
                     HStack(spacing: Space.s3) {
                         transport
-                        Text("Bar \(model.currentBar + 1)").font(Font.Brasscribe.headline).monospacedDigit().lineLimit(1)
+                        Text("Bar \(model.currentBar + 1)").font(Font.Scribe.headline).monospacedDigit().lineLimit(1)
                             .accessibilityLabel(Text(model.positionDescription))
                             .accessibilityIdentifier("position")
                         Spacer(minLength: 0)
@@ -656,8 +656,8 @@ struct PlayerBar: View {
                 .padding(.horizontal, Space.s4)
                 .padding(.vertical, Space.s1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.Brasscribe.surface)
-                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+                .background(Color.Scribe.surface)
+                .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
             } else {
                 VStack(alignment: .leading, spacing: Space.s1) {
                     HStack(spacing: Space.s3) { transport; position; Spacer(minLength: 0) }
@@ -666,8 +666,8 @@ struct PlayerBar: View {
                 .padding(.horizontal, Space.s4)
                 .padding(.vertical, Space.s1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.Brasscribe.surface)
-                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+                .background(Color.Scribe.surface)
+                .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
             }
         }
         .labelStyle(.titleAndIcon)
@@ -684,9 +684,9 @@ struct PlayerBar: View {
             Button { model.togglePlay() } label: {
                 Image(systemName: model.isPlaying ? BrasscribeIcon.pause.systemName : BrasscribeIcon.play.systemName)
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(Color.Brasscribe.onPrimary)
+                    .foregroundStyle(Color.Scribe.onPrimary)
                     .frame(width: wide ? 56 : 48, height: wide ? 56 : 48)
-                    .background(Color.Brasscribe.primary, in: Circle())
+                    .background(Color.Scribe.primary, in: Circle())
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -699,7 +699,7 @@ struct PlayerBar: View {
                 .accessibilityLabel(Text("Next bar"))
                 .accessibilityIdentifier("nextBar")
         }
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
     }
 
     private var position: some View {
@@ -714,17 +714,17 @@ struct PlayerBar: View {
                     } else if wide {
                         Text("Bar \(bar), beat \(Int(beat))")
                     } else {
-                        Text("\(Text("Bar \(bar)").font(Font.Brasscribe.headline)) \(Text("of \(model.score.measures.count)").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted))")
+                        Text("\(Text("Bar \(bar)").font(Font.Scribe.headline)) \(Text("of \(model.score.measures.count)").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted))")
                     }
                 }
-                .font(Font.Brasscribe.headline)
+                .font(Font.Scribe.headline)
                 .monospacedDigit()
                 BeatCounter(beats: beats, current: Int(beat))
             }
             if wide {
                 Text(model.speedPercent == 100 ? String(localized: "of \(model.score.measures.count) · ♩ = \(Int(bpm.rounded()))")
                      : String(localized: "of \(model.score.measures.count) · ♩ = \(Int((bpm * model.speedPercent / 100).rounded())) (slowed from \(Int(bpm.rounded())))"))
-                    .font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted).monospacedDigit()
+                    .font(Font.Scribe.caption).foregroundStyle(Color.Scribe.textMuted).monospacedDigit()
             }
         }
         .fixedSize()
@@ -762,7 +762,7 @@ struct PlayerBar: View {
 
     private var speedSlider: some View {
         HStack(spacing: Space.s2) {
-            Text("Speed").font(Font.Brasscribe.label)
+            Text("Speed").font(Font.Scribe.label)
             Slider(value: $model.speedPercent, in: 25...150, step: 5) { Text("Speed") }
                 .labelsHidden()
                 .macControlSize(.large)
@@ -801,7 +801,7 @@ struct PlayerBar: View {
             // hidden button so plain L repeats the current bar on iPad
             Button("") { model.toggleLoopCurrentBar() }.padShortcut("l").hidden().frame(width: 0).accessibilityHidden(true)
         }
-        .font(Font.Brasscribe.label)
+        .font(Font.Scribe.label)
         .frame(minHeight: 48)
         .fixedSize()
     }
@@ -929,7 +929,7 @@ struct RepeatSheet: View {
             Form {
                 Stepper(value: $model.loopFrom, in: 0...last) { Text("From bar \(model.loopFrom + 1)").monospacedDigit() }
                 Stepper(value: $model.loopTo, in: 0...last) { Text("To bar \(model.loopTo + 1)").monospacedDigit() }
-                Text("Plays these bars over and over.").foregroundStyle(Color.Brasscribe.textMuted)
+                Text("Plays these bars over and over.").foregroundStyle(Color.Scribe.textMuted)
             }
             .navigationTitle(Text("Repeat bars"))
             #if os(iOS)
@@ -952,9 +952,9 @@ struct BeatCounter: View {
         HStack(spacing: Space.s2) {
             ForEach(1...max(1, min(beats, 12)), id: \.self) { b in
                 Text(verbatim: "\(b)")
-                    .font(b == current ? Font.Brasscribe.headline : Font.Brasscribe.callout)
+                    .font(b == current ? Font.Scribe.headline : Font.Scribe.callout)
                     .underline(b == current)
-                    .foregroundStyle(b == current ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                    .foregroundStyle(b == current ? Color.Scribe.text : Color.Scribe.textMuted)
             }
         }
         .monospacedDigit()
@@ -975,7 +975,7 @@ struct PartsPanel: View {
                     ForEach(model.score.parts) { p in row(p) }
                 }
                 Text("Your part is muted with “Mute my part”, so you can play along. “Only this” plays one part alone.")
-                    .font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                    .font(Font.Scribe.caption).foregroundStyle(Color.Scribe.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
 
                 SectionLabel(String(localized: "Sound"))
@@ -992,13 +992,13 @@ struct PartsPanel: View {
                     }
                     Toggle(isOn: $model.room) { Text("Concert hall sound") }
                     if !model.soundDescription.isEmpty {
-                        Text(model.soundDescription).font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                        Text(model.soundDescription).font(Font.Scribe.caption).foregroundStyle(Color.Scribe.textMuted)
                     }
                 }
             }
             .padding(Space.s4)
         }
-        .background(Color.Brasscribe.surface)
+        .background(Color.Scribe.surface)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Parts and sound"))
     }
@@ -1006,10 +1006,10 @@ struct PartsPanel: View {
     private func row(_ p: Part) -> some View {
         let mine = p.id == model.myPart
         return HStack(spacing: Space.s2) {
-            Rectangle().fill(mine ? Color.Brasscribe.text : Color.clear).frame(width: 3).accessibilityHidden(true)
+            Rectangle().fill(mine ? Color.Scribe.text : Color.clear).frame(width: 3).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
                 Text(mine ? String(localized: "\(p.displayName) (you)") : p.displayName)
-                    .font(mine ? Font.Brasscribe.headline : Font.Brasscribe.body)
+                    .font(mine ? Font.Scribe.headline : Font.Scribe.body)
                 if let kind = model.partSources[p.id] { SourceCaption(kind: kind) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1044,14 +1044,14 @@ struct SmallToggleStyle: ToggleStyle {
             .lineLimit(1)
             .fixedSize()
             .font(labelFont)
-            .foregroundStyle(Color.Brasscribe.text)
+            .foregroundStyle(Color.Scribe.text)
             .padding(.horizontal, Space.s2)
             .frame(minHeight: minHeight)
             .background {
                 RoundedRectangle(cornerRadius: Radius.sm)
-                    .fill(configuration.isOn ? Color.Brasscribe.secondary : Color.clear)
+                    .fill(configuration.isOn ? Color.Scribe.secondary : Color.clear)
                     .overlay(RoundedRectangle(cornerRadius: Radius.sm)
-                        .strokeBorder(configuration.isOn ? Color.Brasscribe.text : Color.Brasscribe.borderStrong, lineWidth: configuration.isOn ? 1.5 : 1))
+                        .strokeBorder(configuration.isOn ? Color.Scribe.text : Color.Scribe.borderStrong, lineWidth: configuration.isOn ? 1.5 : 1))
             }
             .contentShape(RoundedRectangle(cornerRadius: Radius.sm))
         }
@@ -1061,7 +1061,7 @@ struct SmallToggleStyle: ToggleStyle {
 
     private var labelFont: Font {
         #if os(iOS)
-        Font.Brasscribe.caption.weight(.semibold)
+        Font.Scribe.caption.weight(.semibold)
         #else
         .system(size: 13, weight: .semibold)
         #endif

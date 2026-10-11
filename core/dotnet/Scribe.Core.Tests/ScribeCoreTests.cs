@@ -1,0 +1,378 @@
+using System.Text.Json;
+using Scribe.Core;
+using Xunit;
+
+public class ScribeCoreTests
+{
+    private const string Composition = """
+        {"title": "Test", "voices": [
+          {"id": "melody", "role": "melody", "notes": [
+            {"pitch": 72, "start": 0, "dur": 24}, {"pitch": 74, "start": 24, "dur": 24}]},
+          {"id": "bass", "role": "bass", "notes": [{"pitch": 48, "start": 0, "dur": 48}]}],
+         "meters": [{"tick": 0, "beats": 4}], "keys": [{"tick": 0, "fifths": 0}]}
+        """;
+
+    [Fact]
+    public void ReportsVersion() => Assert.False(string.IsNullOrEmpty(ScribeCore.Version));
+
+    [Fact]
+    public void ArrangesToTransposedMusicXml()
+    {
+        var xml = ScribeCore.ArrangeMusicXml(Composition);
+        Assert.Contains("<part-name>Solo Cornet</part-name>", xml);
+        Assert.Contains("<step>D</step>", xml); // concert C5 on a B-flat cornet is written D5
+    }
+
+    [Fact]
+    public void ArrangesForTheQuartet()
+    {
+        var xml = ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet");
+        foreach (var part in new[] { "1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium" })
+        {
+            Assert.Contains($"<part-name>{part}</part-name>", xml);
+        }
+        Assert.DoesNotContain("<part-name>Solo Cornet</part-name>", xml);
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "nonet"));
+        Assert.Equal(1, e.Code);
+    }
+
+    [Fact]
+    public void SeatsAndTheirParts()
+    {
+        var seats = ScribeCore.Seats();
+        Assert.Equal(19, seats.Count);
+        var euph = seats.Single(s => s.Id == "euphonium");
+        Assert.Equal("Euphonium", euph.Name);
+        Assert.Equal("Eufonium", euph.NbName);
+        Assert.Equal(new[] { "treble", "bass" }, euph.Reads);
+        Assert.Equal("Solo althorn", seats.Single(s => s.Id == "solo-horn").NbName);
+        // Tune: Role Melody or Solo, not the bass line.
+        Assert.Equal(new[] { "soprano-cornet", "solo-cornet", "repiano-cornet", "2nd-cornet", "3rd-cornet", "flugelhorn", "solo-horn",
+            "1st-horn", "2nd-horn", "1st-trombone", "2nd-trombone", "euphonium", "trumpet" }, seats.Where(s => s.Tune).Select(s => s.Id));
+        // Three spot checks of the seat -> part table.
+        Assert.Equal(new SeatPart("Euphonium", false, true), ScribeCore.SeatPart("minimal", "1st-baritone"));
+        Assert.Equal(new SeatPart("Euphonium", false, false), ScribeCore.SeatPart("quartet", "eb-bass"));
+        Assert.Equal(new SeatPart(null, false, false), ScribeCore.SeatPart("quartet", "percussion"));
+        // A trumpet player takes the lead part, written for trumpet.
+        Assert.Equal(new SeatPart("Trumpet", false, true, "Solo Cornet"), ScribeCore.SeatPart("band", "trumpet"));
+        Assert.Equal("Trompet", ScribeCore.PartNameNb("Trumpet"));
+        Assert.Throws<BrasscribeException>(() => ScribeCore.SeatPart("band", "tuba"));
+        Assert.Equal("Solo althorn", ScribeCore.PartNameNb("Solo Horn"));
+        Assert.Equal("1. kornett", ScribeCore.PartNameNb("1st Cornet"));
+        Assert.Equal("Strings", ScribeCore.PartNameNb("Strings"));
+    }
+
+    [Fact]
+    public void PartSourcesAndBassClefReading()
+    {
+        var sources = ScribeCore.PartSources(Composition);
+        Assert.Equal(new PartSource("Solo Cornet", "recording"), sources[0]);
+        Assert.Contains(new PartSource("Flugelhorn", "arranged"), sources);
+        var xml = ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "minimal", seat: "euphonium", reads: "bass");
+        Assert.Contains("<part-name>Euphonium</part-name>", xml);
+        Assert.Throws<BrasscribeException>(() => ScribeCore.ArrangeMusicXmlWith(Composition, seat: "solo-cornet", reads: "bass"));
+        Assert.Throws<BrasscribeException>(() => ScribeCore.ArrangeMusicXmlWith(Composition, lineup: "quartet", seat: "euphonium", lead: "seat"));
+    }
+
+    [Fact]
+    public void NormalizesComposition()
+    {
+        var json = ScribeCore.NormalizeComposition(Composition);
+        Assert.StartsWith("{\n \"title\": \"Test\"", json);
+        Assert.Contains("\"performed_dur\": null", json);
+    }
+
+    [Fact]
+    public void InvalidJsonThrows()
+    {
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.NormalizeComposition("{"));
+        Assert.Equal(1, e.Code);
+    }
+
+    [SkippableFact]
+    public void ArrangesMikkelLayersWhenDataIsPresent()
+    {
+        var repro = MikkelRepro();
+        Skip.If(repro is null, NoMikkelRepro);
+        string dir = repro;
+        byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
+        var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
+        var (comp, xml) = ScribeCore.ArrangeLayersSong(layers, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel");
+        Assert.Contains("\"free_regions\": [", comp);
+        Assert.Equal(18, xml.Split("<score-part ").Length - 1);
+        Assert.Contains("<words>ad lib.</words>", xml);
+
+        // The arranged parts carry the source footer, in the language asked for.
+        var band = ScribeCore.ArrangeLayersBand(layers, null, File.ReadAllText(Path.Combine(dir, "mix.beats")), "Mikkel",
+            new LayersSongOptions(Lang: "nb"));
+        var sources = ScribeCore.PartSources(band.CompositionJson);
+        Assert.Equal(sources.Count, band.Parts.Count);
+        for (int i = 0; i < sources.Count; i++)
+            Assert.Equal(sources[i].Source == "arranged", band.Parts[i].MusicXml.Contains("Arrangert av Brasscribe ut fra harmoniene i bandet."));
+    }
+
+    /// <summary>data/mikkel/repro in this checkout, or in the one BRASSCRIBE_REPO names; null when neither has it.</summary>
+    private const string NoMikkelRepro =
+        "data/mikkel/repro not found: data/ is not in git (scripts/worktree-setup.sh links it into a worktree, or set BRASSCRIBE_REPO to a checkout that has it)";
+
+    private static string? MikkelRepro() =>
+        new[] { Path.Combine(AppContext.BaseDirectory, "../../../../../.."), Environment.GetEnvironmentVariable("BRASSCRIBE_REPO") }
+            .Where(r => r is { Length: > 0 }).Select(r => Path.Combine(r!, "data/mikkel/repro"))
+            .FirstOrDefault(d => File.Exists(Path.Combine(d, "layers/solo.wav")));
+
+    /// <summary>The stems and the contour go to the core as borrowed arrays; a NaN reads as the JSON form has it.</summary>
+    [SkippableFact]
+    public void ArrangesMikkelWithStemsAndAContourAsArrays()
+    {
+        var repro = MikkelRepro();
+        Skip.If(repro is null, NoMikkelRepro);
+        string dir = repro;
+        byte[] F(string n) => File.ReadAllBytes(Path.Combine(dir, "layers", n));
+        var layers = new LayerMidi(F("solo-sw.mid"), F("solo-mus.mid"), F("solo-bp.mid"), F("bass-mus.mid"), F("orchestra-mus.mid"), F("drums-mus.mid"));
+        var stems = new LayerStems(F("solo.wav"), F("bass.wav"), F("drums.wav"), F("orchestra.wav"));
+        var beats = File.ReadAllText(Path.Combine(dir, "mix.beats"));
+
+        // Bb4 in 2 s phrases with 0.5 s breaths over the first minute; one NaN pitch and one NaN loudness per breath.
+        const int n = 6000;
+        bool Voiced(int k) => k % 250 < 200;
+        var t = Enumerable.Range(0, n).Select(k => k * 0.01).ToArray();
+        var hz = Enumerable.Range(0, n).Select(k => Voiced(k) ? 466.16 : k % 250 == 210 ? double.NaN : 0).ToArray();
+        var db = Enumerable.Range(0, n).Select(k => Voiced(k) ? -18.0 : k % 250 == 220 ? double.NaN : -70).ToArray();
+        var conf = Enumerable.Range(0, n).Select(k => Voiced(k) ? 0.9 : 0.1).ToArray();
+        var withNaN = ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(new SoloContour(t, hz, db, conf)));
+        var clean = new SoloContour(t, hz.Select(x => double.IsFinite(x) ? x : 0).ToArray(), db.Select(x => double.IsFinite(x) ? x : -140).ToArray(), conf);
+        var sanitized = ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel", new LayersSongOptions(clean));
+        var none = ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel");
+
+        Assert.Equal(sanitized.MusicXml, withNaN.MusicXml);
+        Assert.Equal(sanitized.CompositionJson, withNaN.CompositionJson);
+        Assert.NotEqual(none.MusicXml, withNaN.MusicXml);
+        Assert.NotNull(withNaN.SeparationCheckJson);
+        Assert.Equal(18, withNaN.MusicXml.Split("<score-part ").Length - 1);
+        Assert.Throws<ArgumentException>(() => ScribeCore.ArrangeLayersBand(layers, stems, beats, "Mikkel",
+            new LayersSongOptions(new SoloContour(t, hz[..10], db, conf))));
+    }
+
+    [Fact]
+    public void HumanizesWithTheComposition()
+    {
+        var notes = new[] { new ScoreNote(24, 24, 0.5, 1.0, 74, 80), new ScoreNote(0, 24, 0.0, 0.5, 72, 80) };
+        var h = ScribeCore.Humanize(notes, "Solo Cornet", 0, compositionJson: Composition);
+        Assert.Equal([72, 74], h.Notes.Select(n => n.Pitch));
+        Assert.Contains("\"voice\": \"melody\"", h.StatsJson);
+    }
+
+    /// <summary>Every talking-score conformance vector, both languages, through the C ABI.</summary>
+    [SkippableFact]
+    public void PassesEveryTalkingScoreVector()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "../../../../../../docs/accessibility/talking-score-vectors.json");
+        Skip.If(!File.Exists(path), "docs/accessibility/talking-score-vectors.json not found next to the build output: run the tests from a checkout");
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
+        int n = 0;
+        foreach (var c in doc.RootElement.GetProperty("cases").EnumerateArray())
+        {
+            foreach (var lang in new[] { "en", "nb" })
+            {
+                var request = VectorRequest(c, lang);
+                Assert.Equal(c.GetProperty("expected").GetProperty(lang).GetString(), ScribeCore.TalkingAnnounceJson(request));
+                n++;
+            }
+        }
+        Assert.True(n >= 50);
+    }
+
+    /// <summary>A vector read as every app reads it: B-flat cornet, written key 2 sharps and 128 bars unless stated.</summary>
+    private static string VectorRequest(System.Text.Json.JsonElement c, string lang)
+    {
+        var s = c.GetProperty("settings");
+        var cx = c.GetProperty("context");
+        string? Str(System.Text.Json.JsonElement e, string k) => e.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.String ? v.GetString() : null;
+        long? Int(System.Text.Json.JsonElement e, string k) => e.TryGetProperty(k, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.Number ? v.GetInt64() : null;
+        var hasPart = c.TryGetProperty("part", out var pn);
+        var b = c.TryGetProperty("bar", out var bv) ? bv : default;
+        var hasBar = b.ValueKind == System.Text.Json.JsonValueKind.Object;
+        object? region = null;
+        bool entering = false;
+        if (hasBar && b.TryGetProperty("free_region", out var fr))
+        {
+            region = new { start_bar = fr.GetProperty("start_bar").GetInt64(), end_bar = fr.GetProperty("end_bar").GetInt64(),
+                start_s = fr.GetProperty("start_s").GetDouble(), end_s = fr.GetProperty("end_s").GetDouble() };
+            entering = fr.TryGetProperty("entering", out var en) && en.GetBoolean();
+        }
+        var request = new
+        {
+            part = new
+            {
+                name = (hasPart ? Str(pn, "name") : null) ?? Str(cx, "part") ?? "Solo Cornet",
+                name_nb = hasPart ? Str(pn, "name_nb") : null,
+                instrument = (hasPart ? Str(pn, "instrument") : null) ?? "Cornet in B♭",
+                instrument_nb = hasPart ? Str(pn, "instrument_nb") : "kornett i B",
+                transpose = new { chromatic = -2, diatonic = -1 },
+            },
+            bar = new
+            {
+                number = (hasBar ? Int(b, "number") : null) ?? Int(cx, "bar") ?? 1,
+                key_fifths = (hasBar ? Int(b, "key_fifths") : null) ?? 2,
+                tempo_bpm = hasBar && b.TryGetProperty("tempo_bpm", out var t) ? t.GetDouble() : (double?)null,
+                free_region = region,
+                entering_region = entering,
+                a_tempo = hasBar && b.TryGetProperty("a_tempo", out var at) && at.GetBoolean(),
+                total_bars = 128,
+            },
+            @event = c.GetProperty("event"),
+            context = new { part = Str(cx, "part"), bar = Int(cx, "bar"), pitch_mode = Str(cx, "pitch_mode") },
+            settings = new { lang, pitch_mode = Str(s, "pitch_mode") ?? "written", verbosity = Str(s, "verbosity") ?? "standard" },
+        };
+        return System.Text.Json.JsonSerializer.Serialize(request);
+    }
+
+    [Fact]
+    public void TalkingScoreNavigatesAnArrangedScore()
+    {
+        var xml = ScribeCore.ArrangeMusicXml(Composition);
+        using var ts = new TalkingScore(xml, Composition);
+        Assert.Contains("\"total_bars\"", ts.Json);
+        var start = new TalkingCursor(0, 0, 0);
+        var (text, ctx) = ts.Announce(start);
+        Assert.StartsWith("bar 1", text);
+        Assert.Equal(1, ctx.Bar);
+        Assert.NotNull(ts.Navigate(start, "part"));
+        Assert.Contains("Solo Cornet", ts.Export("text"));
+    }
+
+    [Fact]
+    public void TalkingScoreDisposesOnceAndRefusesUseAfterwards()
+    {
+        var ts = new TalkingScore(ScribeCore.ArrangeMusicXml(Composition), Composition);
+        ts.Dispose();
+        ts.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => ts.Json);
+        Assert.Throws<ObjectDisposedException>(() => ts.Export("text"));
+        Assert.Throws<ObjectDisposedException>(() => ts.Navigate(new TalkingCursor(0, 0, 0)));
+    }
+
+    [Fact]
+    public async Task TalkingScoreDisposedWhileInUseFreesAfterTheCall()
+    {
+        var xml = ScribeCore.ArrangeMusicXml(Composition);
+        for (var round = 0; round < 20; round++)
+        {
+            var ts = new TalkingScore(xml, Composition);
+            using var go = new ManualResetEventSlim();
+            var users = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
+            {
+                go.Wait();
+                for (var i = 0; i < 50; i++)
+                {
+                    try
+                    {
+                        Assert.Contains("Solo Cornet", ts.Export("text"));
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return;
+                    }
+                }
+            })).ToList();
+            var disposers = Enumerable.Range(0, 4).Select(_ => Task.Run(() => { go.Wait(); ts.Dispose(); })).ToList();
+            go.Set();
+            await Task.WhenAll([.. users, .. disposers]);
+            Assert.Throws<ObjectDisposedException>(() => ts.Json);
+        }
+    }
+
+    // A sustained alternation of C5 and D5 in 16ths (6 ticks each).
+    private const string Alternation = """
+        {"title": "Trill", "voices": [
+          {"id": "melody", "role": "melody", "notes": [
+            {"pitch": 72, "start": 0, "dur": 6}, {"pitch": 74, "start": 6, "dur": 6}, {"pitch": 72, "start": 12, "dur": 6},
+            {"pitch": 74, "start": 18, "dur": 6}, {"pitch": 72, "start": 24, "dur": 6}, {"pitch": 74, "start": 30, "dur": 6},
+            {"pitch": 72, "start": 36, "dur": 6}, {"pitch": 74, "start": 42, "dur": 6}, {"pitch": 72, "start": 48, "dur": 48}]},
+          {"id": "bass", "role": "bass", "notes": [{"pitch": 48, "start": 0, "dur": 96}]}],
+         "meters": [{"tick": 0, "beats": 4}], "keys": [{"tick": 0, "fifths": 0}]}
+        """;
+
+    [Fact]
+    public void ArrangesWithTrillsOnRequest()
+    {
+        Assert.DoesNotContain("<trill-mark", ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal"));
+        Assert.Contains("<trill-mark", ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", trills: true));
+        Assert.DoesNotContain("<trill-mark",
+            ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard", trills: false));
+        Assert.Contains("<trill-mark", ScribeCore.ArrangeMusicXmlWith(Alternation, lineup: "minimal", difficulty: "standard"));
+    }
+
+    [Fact]
+    public void SpellsPitches()
+    {
+        var s = ScribeCore.SpellPitches([0, 1, 2], [66, 69, 74]);
+        Assert.Equal(["F", "A", "D"], s.Select(p => p.Step));
+        Assert.Equal(1, s[0].Alter);
+    }
+
+    // A bass line down to D1, which a 4-string bass in standard tuning cannot play.
+    private const string BassLine = """
+        {"instrument": {"preset": "bass-4-standard"},
+         "notes": [{"pitch": 26, "start": 0, "dur": 24}, {"pitch": 33, "start": 24, "dur": 24},
+                   {"pitch": 38, "start": 48, "dur": 12}, {"pitch": 40, "start": 60, "dur": 36, "techniques": ["hammer-on"]}],
+         "options": {"style": "open-position", "pins": [{"note": 2, "string": 3}]}}
+        """;
+
+    [Fact]
+    public void FingersABassLineAndWritesItsTab()
+    {
+        using var answer = JsonDocument.Parse(ScribeCore.FrettedFingeringJson(BassLine));
+        var notes = answer.RootElement.GetProperty("fingering").GetProperty("notes");
+        Assert.Equal(4, notes.GetArrayLength());
+        Assert.True(notes[0].GetProperty("out_of_range").GetBoolean());
+        // With D2 pinned at the fifth fret, A1 is played beside it and not on the open string.
+        Assert.Equal((4, 5), (notes[1].GetProperty("string").GetInt32(), notes[1].GetProperty("fret").GetInt32()));
+        // The pin puts D2 on the third string, and the hammer-on follows it there.
+        Assert.Equal((3, 5), (notes[2].GetProperty("string").GetInt32(), notes[2].GetProperty("fret").GetInt32()));
+        Assert.True(notes[2].GetProperty("pinned").GetBoolean());
+        Assert.Equal(3, notes[3].GetProperty("string").GetInt32());
+        Assert.Equal(0, answer.RootElement.GetProperty("violations").GetArrayLength());
+        Assert.Equal("bass-4-drop-d", answer.RootElement.GetProperty("tuning_suggestions")[0].GetProperty("preset").GetString());
+
+        using var tab = JsonDocument.Parse(ScribeCore.FrettedTabJson(BassLine));
+        Assert.Equal(0, tab.RootElement.GetProperty("adjusted_notes").GetInt32());
+        var xml = tab.RootElement.GetProperty("musicxml").GetString()!;
+        Assert.Contains("<sign>TAB</sign>", xml);
+        Assert.Contains("<staff-lines>4</staff-lines>", xml);
+    }
+
+    [Fact]
+    public void WritesABassLineAsTextTabAndAsPlayingInstructions()
+    {
+        var text = ScribeCore.FrettedTabTextJson(BassLine);
+        Assert.StartsWith("Bass\nTuning: Standard (E A D G), bottom line to top\n", text);
+        // D1 has no string; the hammer-on is an h before the fret it leads to.
+        Assert.Contains("\n   !\nG|----------------||\nD|----------------||\nA|---------5h7----||\nE|-----5----------||\n", text);
+        Assert.Contains("bar 1: D1", text);
+
+        var en = ScribeCore.FrettedPlayingInstructionsJson(BassLine);
+        Assert.Contains("\nBar 1\n  Beat 1. D 1, no string to play it on. Quarter note.\n  Beat 2. String 4, fret 5. Quarter note.\n", en);
+        var nb = ScribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"nb\"}, \"options\":"));
+        Assert.Contains("\nTakt 1\n  Slag 1. D 1, ingen streng å spille den på. Fjerdedelsnote.\n  Slag 2. Streng 4, bånd 5. Fjerdedelsnote.\n", nb);
+        Assert.Equal(en.Split('\n').Length, nb.Split('\n').Length);
+
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedTabTextJson("{")).Code);
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedPlayingInstructionsJson(BassLine.Replace("\"options\":", "\"text\": {\"lang\": \"de\"}, \"options\":")));
+        Assert.Equal(1, e.Code);
+        Assert.Contains("en or nb", e.Message);
+    }
+
+    [Fact]
+    public void AFrettedRequestItCannotReadIsInvalidInput()
+    {
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedFingeringJson("{")).Code);
+        Assert.Equal(1, Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedTabJson("{")).Code);
+        // A pin on a string the instrument does not have is refused; one the string cannot sound is reported.
+        var e = Assert.Throws<BrasscribeException>(() => ScribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 9")));
+        Assert.Equal(1, e.Code);
+        Assert.Contains("a pin names string 9 of 4", e.Message);
+        using var answer = JsonDocument.Parse(ScribeCore.FrettedFingeringJson(BassLine.Replace("\"string\": 3", "\"string\": 1")));
+        Assert.Equal("pin-not-honoured", answer.RootElement.GetProperty("violations")[0].GetProperty("kind").GetString());
+    }
+}

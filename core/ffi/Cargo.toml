@@ -1,0 +1,17 @@
+[package]
+name = "scribe-ffi"
+description = "Bindings of scribe-core: UniFFI (Swift, Kotlin) and a C ABI (C#, others)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "staticlib", "lib"]
+name = "scribe_ffi"
+
+[dependencies]
+scribe-core = { path = "../scribe-core" }
+target-brass = { path = "../targets/brass" }
+target-fretted = { path = "../targets/fretted" }
+serde_json.workspace = true
+uniffi = { version = "0.32", default-features = false }

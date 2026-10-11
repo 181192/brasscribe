@@ -58,7 +58,7 @@ data class TabNoPlace(val staff: Int, val bar: Int, val barNumber: String, val o
 
 /**
  * tab.musicxml as the tab view needs it: which drawn note is which note of the tab's data. The core says
- * so in a processing instruction on every note piece (core/target-fretted/README.md, The note index);
+ * so in a processing instruction on every note piece (core/targets/fretted/README.md, The note index);
  * alphaTab drops those when it reads the file, so they are read here, with each piece's measure, start
  * and string, and a drawn note is found again by those.
  */

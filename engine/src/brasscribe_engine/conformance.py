@@ -1,6 +1,6 @@
 """Runs the Rust-core conformance suite (core/conformance) in the background for Studio's "Run conformance".
 
-One run at a time: `uv run --project core/conformance python -m brasscribe_conformance.run --work <dir>`,
+One run at a time: `uv run --project core/conformance python -m scribe_conformance.run --work <dir>`,
 without --musescore (no MuseScore launches). Output goes to <dir>/run.log; the suite itself writes
 <dir>/report.json, which listConformanceReports serves.
 """
@@ -37,10 +37,10 @@ class ConformanceRunner:
 
     @property
     def available(self) -> bool:
-        return (self.project / "brasscribe_conformance" / "run.py").exists()
+        return (self.project / "scribe_conformance" / "run.py").exists()
 
     def command(self) -> list[str]:
-        return ["uv", "run", "--project", str(self.project), "python", "-m", "brasscribe_conformance.run",
+        return ["uv", "run", "--project", str(self.project), "python", "-m", "scribe_conformance.run",
                 "--work", str(self.work)]
 
     def start(self) -> bool:
@@ -51,7 +51,7 @@ class ConformanceRunner:
             self.work.mkdir(parents=True, exist_ok=True)
             log = self.work / "run.log"
             self.state = RunState("running", time.time(), command=self.command(), log=str(log))
-        threading.Thread(target=self._run, args=(log,), daemon=True, name="brasscribe-conformance").start()
+        threading.Thread(target=self._run, args=(log,), daemon=True, name="scribe-conformance").start()
         return True
 
     def _run(self, log: Path) -> None:

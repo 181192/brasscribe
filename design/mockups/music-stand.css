@@ -1,48 +1,48 @@
 /* Music stand mockups (design/music-stand.md). Tokens only; the frames are the iOS idiom,
    Android and Windows use the same structure with their own system bars. */
-.stand { position: relative; overflow: hidden; background: var(--bc-bg); }
+.stand { position: relative; overflow: hidden; background: var(--scribe-bg); }
 .stand-phone { width: 390px; height: 844px; }
 .stand-land { width: 844px; height: 390px; }
-.stand-tab { width: 1194px; height: 834px; background: var(--bc-surface); }
+.stand-tab { width: 1194px; height: 834px; background: var(--scribe-surface); }
 .stand .paper { position: absolute; }
 
 /* device furniture: drawn so the safe areas are visible */
 .island { position: absolute; background: #000; border-radius: 20px; z-index: 5; }
 .stand-phone .island { top: 11px; left: 50%; width: 126px; height: 37px; transform: translateX(-50%); }
 .stand-land .island { left: 11px; top: 50%; width: 37px; height: 126px; transform: translateY(-50%); }
-.homebar-line { position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; border-radius: 3px; background: var(--bc-text); transform: translateX(-50%); z-index: 5; }
+.homebar-line { position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; border-radius: 3px; background: var(--scribe-text); transform: translateX(-50%); z-index: 5; }
 .stand-land .homebar-line { bottom: 6px; }
 .safe { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
-.safe.show { outline: 1px dashed var(--bc-border-strong); outline-offset: -1px; }
+.safe.show { outline: 1px dashed var(--scribe-border-strong); outline-offset: -1px; }
 
 /* the persistent pieces: Leave (always there) and the bar number */
 .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; min-width: 48px; padding: 0 16px 0 12px;
-  border-radius: var(--bc-radius-full); background: var(--bc-surface-raised); color: var(--bc-text);
-  outline: 1px solid var(--bc-border-strong); outline-offset: -1px; box-shadow: var(--bc-elevation-2);
+  border-radius: var(--scribe-radius-full); background: var(--scribe-surface-raised); color: var(--scribe-text);
+  outline: 1px solid var(--scribe-border-strong); outline-offset: -1px; box-shadow: var(--scribe-elevation-2);
   font-weight: 600; font-size: 0.9375rem; white-space: nowrap; border: 0; }
 .pill .i { width: 20px; height: 20px; }
 .standpos { display: inline-flex; align-items: baseline; gap: 6px; min-height: 48px; align-items: center; padding: 0 4px;
-  font-size: 0.9375rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--bc-text); white-space: nowrap; }
+  font-size: 0.9375rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--scribe-text); white-space: nowrap; }
 .standpos .muted { font-weight: 500; }
 .corner { position: absolute; display: flex; gap: 8px; z-index: 3; align-items: center; }
 
 /* the control layer */
-.controls { position: absolute; z-index: 3; background: var(--bc-surface-raised); border-radius: var(--bc-radius-lg);
-  box-shadow: var(--bc-elevation-2); outline: 1px solid var(--bc-border-strong); outline-offset: -1px;
-  padding: var(--bc-space-3); display: flex; flex-direction: column; gap: var(--bc-space-3); }
-.crow { display: flex; align-items: center; gap: var(--bc-space-2); flex-wrap: wrap; }
+.controls { position: absolute; z-index: 3; background: var(--scribe-surface-raised); border-radius: var(--scribe-radius-lg);
+  box-shadow: var(--scribe-elevation-2); outline: 1px solid var(--scribe-border-strong); outline-offset: -1px;
+  padding: var(--scribe-space-3); display: flex; flex-direction: column; gap: var(--scribe-space-3); }
+.crow { display: flex; align-items: center; gap: var(--scribe-space-2); flex-wrap: wrap; }
 .controls .chip { min-height: 48px; }
-.stepper { display: inline-flex; align-items: center; border-radius: var(--bc-radius-sm); box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
-.stepper .icon-btn { border-radius: var(--bc-radius-sm); }
+.stepper { display: inline-flex; align-items: center; border-radius: var(--scribe-radius-sm); box-shadow: inset 0 0 0 1px var(--scribe-border-strong); }
+.stepper .icon-btn { border-radius: var(--scribe-radius-sm); }
 .stepper .v { min-width: 92px; white-space: nowrap; padding: 0 4px; text-align: center; font-weight: 600; font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 .pos2 { line-height: 1.2; font-variant-numeric: tabular-nums; }
 .pos2 b { font-size: 1.0625rem; }
-.pos2 span { font-size: 0.8125rem; color: var(--bc-text-muted); }
-.hint { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); background: var(--bc-surface-raised);
-  color: var(--bc-text); border-radius: var(--bc-radius-md); outline: 1px solid var(--bc-border-strong); outline-offset: -1px;
-  box-shadow: var(--bc-elevation-2); padding: 10px 14px; font-size: 0.9375rem; white-space: nowrap; display: flex; gap: 8px; align-items: center; }
+.pos2 span { font-size: 0.8125rem; color: var(--scribe-text-muted); }
+.hint { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); background: var(--scribe-surface-raised);
+  color: var(--scribe-text); border-radius: var(--scribe-radius-md); outline: 1px solid var(--scribe-border-strong); outline-offset: -1px;
+  box-shadow: var(--scribe-elevation-2); padding: 10px 14px; font-size: 0.9375rem; white-space: nowrap; display: flex; gap: 8px; align-items: center; }
 .hint .i { width: 20px; height: 20px; }
-.note-callout { position: absolute; z-index: 6; font: 600 11px/1.3 var(--bc-font-text); color: var(--bc-text-muted); }
+.note-callout { position: absolute; z-index: 6; font: 600 11px/1.3 var(--scribe-font-text); color: var(--scribe-text-muted); }
 
 /* states: ?state=shown | hidden | locked | turn */
 [data-state="hidden"] .ctl, [data-state="turn"] .ctl { display: none !important; }
@@ -54,5 +54,5 @@
 
 /* tablet: two pages side by side, like an open part on a stand */
 .spread { position: absolute; inset: 72px 24px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.page { background: var(--bc-bg); border-radius: 4px; box-shadow: var(--bc-elevation-1), inset 0 0 0 1px var(--bc-border); padding: 16px 20px; overflow: hidden; position: relative; }
-.page .foot { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8125rem; color: var(--bc-text-muted); }
+.page { background: var(--scribe-bg); border-radius: 4px; box-shadow: var(--scribe-elevation-1), inset 0 0 0 1px var(--scribe-border); padding: 16px 20px; overflow: hidden; position: relative; }
+.page .foot { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8125rem; color: var(--scribe-text-muted); }

@@ -35,16 +35,10 @@ public sealed class CatalogueRun
     public List<string> Shots { get; set; } = [];
 
     /// <summary>
-    /// Screens that did not keep still, from a catalogue that still kept a picture of them (the base of a comparison
-    /// can be one): not compared. A screen that does not keep still is now not taken, and is in <see cref="Failed"/>.
+    /// Screens that could not be shown or captured, with why: "&lt;screenshot name&gt;: &lt;why&gt;". A screen that
+    /// does not keep still is one of them.
     /// </summary>
-    public List<string> Unsteady { get; set; } = [];
-
-    /// <summary>Screens that could not be shown or captured, with why: "&lt;screenshot name&gt;: &lt;why&gt;".</summary>
     public List<string> Failed { get; set; } = [];
-
-    /// <summary>The screenshot names in <see cref="Failed"/>.</summary>
-    public IEnumerable<string> NotTaken() => Failed.Where(f => f.Contains(": ")).Select(f => f[..f.IndexOf(": ", StringComparison.Ordinal)]);
 
     public List<Finding> Findings { get; set; } = [];
 
@@ -72,13 +66,13 @@ public sealed class CatalogueRun
 
 /// <summary>The catalogue's answer over all its runs: what is new, what is known, and which known entries are stale.</summary>
 public sealed record Verdict(int Shots, IReadOnlyList<string> Failed, IReadOnlyList<Finding> New, IReadOnlyList<Finding> Known,
-    IReadOnlyList<KnownFinding> Stale, IReadOnlyList<string> Unsteady)
+    IReadOnlyList<KnownFinding> Stale)
 {
     /// <summary>
     /// 0 when every check passed, 2 when a check found something new, 3 when screens could not be taken (one that
-    /// did not keep still is not taken either: nothing of it is compared).
+    /// did not keep still is not taken either).
     /// </summary>
-    public int ExitCode => Shots == 0 || Failed.Count > 0 || Unsteady.Count > 0 ? 3 : New.Count > 0 ? 2 : 0;
+    public int ExitCode => Shots == 0 || Failed.Count > 0 ? 3 : New.Count > 0 ? 2 : 0;
 
     public static Verdict Of(IEnumerable<CatalogueRun> runs, IReadOnlyList<KnownFinding> known)
     {
@@ -91,19 +85,17 @@ public sealed record Verdict(int Shots, IReadOnlyList<string> Failed, IReadOnlyL
             findings.Where(f => !known.Any(k => k.Matches(f))).ToList(),
             findings.Where(f => known.Any(k => k.Matches(f))).ToList(),
             // Only entries for screenshots this catalogue took can be stale (a partial run says nothing of the rest).
-            known.Where(k => !findings.Any(k.Matches) && shots.Any(s => Regex.IsMatch(s, $"^(?:{k.Shot})$"))).ToList(),
-            all.SelectMany(r => r.Unsteady).ToList());
+            known.Where(k => !findings.Any(k.Matches) && shots.Any(s => Regex.IsMatch(s, $"^(?:{k.Shot})$"))).ToList());
     }
 
     /// <summary>The findings as Markdown, for the job summary.</summary>
     public string Markdown(string title)
     {
-        var lines = new List<string> { $"# {title}", "", $"{Shots} screenshots; {New.Count} new findings, {Known.Count} known, {Failed.Count + Unsteady.Count} screens not taken." };
+        var lines = new List<string> { $"# {title}", "", $"{Shots} screenshots; {New.Count} new findings, {Known.Count} known, {Failed.Count} screens not taken." };
         if (Failed.Count > 0) lines.AddRange(["", "## Not taken", .. Failed.Select(f => $"- {f}")]);
         if (New.Count > 0) lines.AddRange(["", "## New findings", .. New.Select(f => $"- `{f.Shot}` {f.Check}: {f.What}: {f.Detail}")]);
         if (Stale.Count > 0) lines.AddRange(["", "## Known findings that no longer occur (remove them from the list)", .. Stale.Select(k => $"- {k.Check} `{k.Shot}` `{k.What}` (#{k.Issue})")]);
         if (Known.Count > 0) lines.AddRange(["", "## Known findings", .. Known.Select(f => $"- `{f.Shot}` {f.Check}: {f.What}: {f.Detail}")]);
-        if (Unsteady.Count > 0) lines.AddRange(["", "## Not compared (the screen did not keep still)", .. Unsteady.Select(s => $"- `{s}`")]);
         return string.Join("\n", lines) + "\n";
     }
 }

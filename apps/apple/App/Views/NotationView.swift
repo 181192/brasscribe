@@ -23,7 +23,7 @@ struct NotationView: View {
         GeometryReader { geo in
             ScrollViewReader { proxy in
                 ScrollView(.vertical) {
-                    LazyVStack(spacing: BrasscribeDesign.Space.s3) {
+                    LazyVStack(spacing: ScribeDesign.Space.s3) {
                         // the part view's header scrolls with the music, so it never takes the score's room
                         VStack(alignment: .leading, spacing: 0) {
                             if model.piece.isDraft { DraftNotice(piece: model.piece) }
@@ -32,7 +32,7 @@ struct NotationView: View {
                             }
                             PartHeader(model: model)
                         }
-                        .padding(.top, BrasscribeDesign.Space.s1)
+                        .padding(.top, ScribeDesign.Space.s1)
                         // like the phone's other chrome, it grows to about twice the default size
                         .dynamicTypeSize(hsize == .compact ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5)
                         .id("page-top")
@@ -41,7 +41,7 @@ struct NotationView: View {
                                 .id("page-\(page.number)")
                         }
                     }
-                    .padding(.vertical, BrasscribeDesign.Space.s2)
+                    .padding(.vertical, ScribeDesign.Space.s2)
                     // The pages are engraved to this width. Pinning it here keeps the
                     // fixed-width pages from raising the window's minimum size.
                     .frame(width: max(0, geo.size.width), alignment: .topLeading)
@@ -49,7 +49,7 @@ struct NotationView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(Text("Score pages"))
                 }
-                .background(Color.Brasscribe.bg)
+                .background(Color.Scribe.bg)
                 .accessibilityIdentifier("scoreArea")
                 .onAppear {
                     // Engrave once the width is known; phones open on the musician's own
@@ -80,7 +80,7 @@ struct NotationView: View {
                     let page = model.pageNumber(forBar: bar)
                     guard page != lastScrolledBar else { return }
                     lastScrolledBar = page
-                    withAnimation(BrasscribeDesign.Motion.animation(BrasscribeDesign.Motion.slow, reduceMotion: reduceMotion)) {
+                    withAnimation(ScribeDesign.Motion.animation(ScribeDesign.Motion.slow, reduceMotion: reduceMotion)) {
                         proxy.scrollTo(target(page), anchor: .top)
                     }
                 }
@@ -164,7 +164,7 @@ private struct PageView: View {
             }
         }
         .frame(width: doc.size.width, height: doc.size.height)
-        .background(Color.Brasscribe.bg)
+        .background(Color.Scribe.bg)
     }
 
     /// The band behind one bar: the bar's width, from the top staff line of the system to
@@ -215,7 +215,7 @@ struct ScorePaint {
             let inAdLib = adLib.contains { $0.contains(bar) }
             if highContrast {
                 if !inLoop, bar == current || inAdLib {
-                    ctx.stroke(Path(r), with: .color(.Brasscribe.staff),
+                    ctx.stroke(Path(r), with: .color(.Scribe.line),
                                style: StrokeStyle(lineWidth: 1, dash: bar == current ? [] : [4, 3]))
                 }
             } else if inLoop {
@@ -228,8 +228,8 @@ struct ScorePaint {
         }
 
         let env = ctx.environment
-        let ink = Color.Brasscribe.ink.resolve(in: env).cgColor
-        let uncertain = Color.Brasscribe.uncertain.resolve(in: env).cgColor
+        let ink = Color.Scribe.ink.resolve(in: env).cgColor
+        let uncertain = Color.Scribe.uncertain.resolve(in: env).cgColor
         let very = Color.Brasscribe.veryUncertain.resolve(in: env).cgColor
         var highlight: [String: CGColor] = [:]
         for (id, level) in levels { highlight[id] = level == .veryUncertain ? very : uncertain }
@@ -261,7 +261,7 @@ struct ScorePaint {
             let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
             for id in notes {
                 guard let level = levels[id], let f = doc.frames[id] else { continue }
-                let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
+                let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Scribe.uncertain
                 let bottom = min(lines.minY, f.minY) - space * 0.5
                 let center = CGPoint(x: f.midX, y: bottom - size * 0.6)
                 ctx.draw(Text(verbatim: "?").font(.system(size: size, weight: .bold)).foregroundStyle(color), at: center)

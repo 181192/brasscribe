@@ -122,7 +122,7 @@ def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
     entry.mkdir(parents=True)
     (entry / "reference.json").write_text(json.dumps(REF))
     r = suites.run_suite("bass-tab", data=tmp_path)  # a reference without the models' outputs: still skipped, with the file
-    assert r["status"] == "skipped" and ("song.beats" in r["reason"] or "brasscribe-core" in r["reason"])
+    assert r["status"] == "skipped" and ("song.beats" in r["reason"] or "scribe-core" in r["reason"])
 
 
 def test_a_phone_set_not_prepared_whole_is_skipped_not_scored(tmp_path, monkeypatch):

@@ -1,5 +1,5 @@
 """The bass-tab profile: its options, its stages, the notes on the beat grid, the octave check and the
-fingering from the Rust core (target-fretted through `brasscribe-core fret`)."""
+fingering from the Rust core (target-fretted through `scribe-core fret`)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,10 @@ import json
 import os
 import re
 import shutil
+import sys
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 import numpy as np
@@ -40,7 +43,7 @@ needs_core = pytest.mark.skipif(_core_missing() is not None, reason=_core_missin
 @pytest.fixture
 def core_present(monkeypatch, tmp_path):
     """The submit check finds a core, so a test about options does not depend on a built binary."""
-    monkeypatch.setattr(bass_tab, "core_cli", lambda: tmp_path / "brasscribe-core")
+    monkeypatch.setattr(bass_tab, "core_cli", lambda: tmp_path / "scribe-core")
 
 
 # ---------------------------------------------------------------- options
@@ -96,9 +99,9 @@ def test_a_job_that_names_no_fretted_option_has_none_in_its_parameters():
 
 
 def test_the_instrument_table_is_target_fretteds_bass_presets():
-    source = REPO / "core" / "target-fretted" / "src" / "instrument.rs"
+    source = REPO / "core" / "targets" / "fretted" / "src" / "instrument.rs"
     if not source.exists():
-        pytest.skip("core/target-fretted is not in this checkout")
+        pytest.skip("core/targets/fretted is not in this checkout")
     ids = re.search(r"PRESET_IDS: &\[&str\] = &\[(.*?)\];", source.read_text(), re.S).group(1)
     in_crate = [i for i in re.findall(r'"([^"]+)"', ids) if i.startswith("bass-")]
     assert in_crate == [f"{inst}-{t}" for inst, tunings in bass_tab.INSTRUMENTS.items() for t in tunings]
@@ -258,11 +261,11 @@ def test_a_chosen_octave_is_a_parameter_of_the_notes_stage_only():
 
 
 def test_the_profile_is_listed_with_a_title_and_builds_without_the_core(monkeypatch):
-    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, "/nowhere/brasscribe-core")
+    monkeypatch.setenv(bass_tab.CORE_CLI_ENV, "/nowhere/scribe-core")
     assert profiles.PROFILES["bass-tab"].validated is False
     assert profiles.default_title("bass-tab", Path("my_song.wav")) == "My Song — bass tab (draft)"
     assert profiles.PROFILES["bass-tab"].build("-", {}).stage("arrange").params["title"] == "-"
-    with pytest.raises(bass_tab.CoreCliMissing, match="cargo build --release -p brasscribe-cli"):
+    with pytest.raises(bass_tab.CoreCliMissing, match="cargo build --release -p scribe-cli"):
         bass_tab.core_cli()
 
 
@@ -665,7 +668,7 @@ def test_the_core_gets_the_line_an_octave_lower_and_a_capo_counts_frets_from_its
 
 @needs_core
 def test_a_request_the_core_refuses_fails_with_its_message():
-    with pytest.raises(RuntimeError, match="brasscribe-core fret failed.*bass-9"):
+    with pytest.raises(RuntimeError, match="scribe-core fret failed.*bass-9"):
         bass_tab.solve({"instrument": {"preset": "bass-9"}, "notes": []})
 
 
@@ -750,7 +753,7 @@ def test_the_core_writes_the_tab_as_text_and_as_playing_instructions_in_both_lan
 
 @pytest.mark.skipif(os.name == "nt", reason="a shell script stands in for the core")
 def test_a_core_from_before_the_text_formats_is_told_apart(tmp_path, monkeypatch):
-    core = tmp_path / "brasscribe-core"
+    core = tmp_path / "scribe-core"
     core.write_text('#!/bin/sh\necho \'{"musicxml": "<x/>", "adjusted_notes": 0}\' > "$5"\n')  # it ignores --format
     core.chmod(0o755)
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))
@@ -848,7 +851,7 @@ def test_a_run_made_without_musescore_is_rendered_once_it_is_installed(settings,
     exe.write_text("#!/bin/sh\n")
     exe.chmod(0o755)
     monkeypatch.setattr(musescore, "binary", lambda: str(exe))
-    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
     installed = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert {s["stage"]: s["status"] for s in installed["stages"]} == {
         "beats": "cached", "transcribe.bass.basic-pitch": "cached",
@@ -891,20 +894,85 @@ def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch
     (tmp_path / "score" / "tab.musicxml").write_text("<score-partwise/>")
     said: list[str] = []
     ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=said.append, stage=SimpleNamespace(name="export"),
-                          params={"musescore": None})
+                          params={"musescore": None}, executor=SimpleNamespace(cancel=threading.Event()))
     bass_tab.export_stage(ctx)
-    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"]}
+    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"],
+                                                                  "missing": []}
     assert said == ["mscore not found: PDF and MIDI skipped"]
 
-    # With a MuseScore that writes one of the two files, the stage fails and names the other.
     monkeypatch.setattr(musescore, "binary", lambda: "mscore")
     ctx.params = {"musescore": "0123456789abcdef"}
-    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [Path(jobs[0][1][1])])
-    with pytest.raises(bass_tab.StageFailed, match="MuseScore did not write tab.mid"):
-        bass_tab.export_stage(ctx)
-    monkeypatch.setattr(musescore, "convert_many", lambda jobs: [])
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [])
     bass_tab.export_stage(ctx)
-    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": "mscore", "written": ["tab.pdf", "tab.mid"], "skipped": []}
+    assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": "mscore", "written": ["tab.pdf", "tab.mid"], "skipped": [],
+                                                                  "missing": []}
+
+
+@needs_core
+def test_a_tab_job_succeeds_without_the_pdf_and_the_next_job_tries_musescore_again(settings, audio, tmp_path, monkeypatch):
+    """MuseScore that writes no PDF (it did not come back, it broke on the score): the tab is made all the same,
+    so the job succeeds without the PDF, and says so in its log and in export.json. The export is not kept for
+    reuse: the next job of the same recording runs MuseScore again, and gets the PDF once MuseScore writes it."""
+    from brasscribe_music import musescore
+
+    monkeypatch.setattr(S, "beats", lambda ctx: np.savetxt(ctx.out / "mix.beats", _beats(25), fmt=["%.3f", "%d"]))
+    monkeypatch.setattr(tuning, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(TYPICAL_LINE)))
+    exe = tmp_path / "mscore"
+    exe.write_text("#!/bin/sh\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+
+    def no_pdf(jobs, cancel=None):
+        (pdf, mid), = [dsts for _, dsts in jobs]
+        Path(mid).write_bytes(b"midi")
+        return [Path(pdf)]
+
+    monkeypatch.setattr(musescore, "convert_many", no_pdf)
+    first = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert first["status"] == "succeeded"
+    assert "tab.pdf" not in first["outputs"] and {"tab.mid", "tab.musicxml", "tab.json", "tab.txt"} <= set(first["outputs"])
+    run = settings.runs_dir / first["run_id"]
+    export = json.loads((run / "stages" / "export" / "export.json").read_text())
+    assert export["written"] == ["tab.mid"] and export["missing"] == ["tab.pdf"] and export["skipped"] == []
+    logged = [json.loads(line) for line in (run / "events.jsonl").read_text().splitlines()]
+    assert "MuseScore did not write tab.pdf: the tab is there without it" in [e.get("message") for e in logged]
+
+    monkeypatch.setattr(musescore, "convert_many",
+                        lambda jobs, cancel=None: [Path(d).write_bytes(b"rendered") for _, ds in jobs for d in ds] and [])
+    second = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert second["stages"][-1]["stage"] == "export" and second["stages"][-1]["status"] == "ran"
+    assert "tab.pdf" in second["outputs"]
+    third = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
+    assert third["stages"][-1]["status"] == "cached" and "tab.pdf" in third["outputs"]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")
+@pytest.mark.parametrize("profile", ["tab", "band"])
+def test_stopping_a_job_stops_musescore_in_the_export(tmp_path, monkeypatch, profile):
+    """A MuseScore that does not come back (here for 20 s): stopping the job ends the export at once, not when
+    MuseScore is done or at the conversion's time limit."""
+    from types import SimpleNamespace
+
+    from brasscribe_music import musescore
+
+    exe = tmp_path / "mscore"
+    exe.write_text(f"#!{sys.executable}\nimport time\ntime.sleep(20)\n")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+    monkeypatch.setattr(musescore, "LOCK_FILE", tmp_path / "mscore.flock")
+    monkeypatch.setattr(S, "accessible_exports", lambda score, ctx: {"written": []})
+    (tmp_path / "score").mkdir()
+    for name in ("tab.musicxml", "brass-band.musicxml"):
+        (tmp_path / "score" / name).write_text("<score-partwise/>")
+    cancel = threading.Event()
+    ctx = SimpleNamespace(out=tmp_path / "out", inputs={"score": tmp_path / "score"}, log=lambda m: None,
+                          stage=SimpleNamespace(name="export"), params={"audio": False, "musescore": "0123456789abcdef"},
+                          executor=SimpleNamespace(cancel=cancel))
+    threading.Timer(0.5, cancel.set).start()
+    started = time.monotonic()
+    with pytest.raises(musescore.Cancelled):
+        (bass_tab.export_stage if profile == "tab" else S.export)(ctx)
+    assert time.monotonic() - started < 10
 
 
 # ---------------------------------------------------------------- end to end
@@ -1023,7 +1091,7 @@ def test_a_job_without_the_core_fails_at_the_fingering_and_says_how_to_get_it(se
     monkeypatch.setattr(S, "transcribe", lambda ctx: _write_midi(ctx.out / ctx.params["output"], _played(LOW_LINE)))
     manifest = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert manifest["status"] == "failed" and manifest["error"].startswith("arrange: ")
-    assert "cargo build --release -p brasscribe-cli" in manifest["error"]
+    assert "cargo build --release -p scribe-cli" in manifest["error"]
     assert [s["status"] for s in manifest["stages"]] == ["ran", "ran", "ran", "ran", "failed"]
 
 
@@ -1043,7 +1111,7 @@ def test_a_job_is_refused_at_submit_when_the_core_is_missing_and_the_profile_sta
         audio_id = c.post("/v1/audio", files={"file": ("song.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
         r = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab"})
         assert r.status_code == 422 and r.json()["code"] == "core_missing"
-        assert "cargo build --release -p brasscribe-cli" in r.json()["detail"] and str(missing.parent) not in r.text
+        assert "cargo build --release -p scribe-cli" in r.json()["detail"] and str(missing.parent) not in r.text
         assert c.get("/v1/jobs").json() == []  # nothing was started
         # A wrong option is still the first thing said, and the band profiles do not need the core.
         bad = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "instrument": "bass-5", "tuning": "bead"})
@@ -1058,12 +1126,12 @@ def test_the_cli_refuses_the_run_before_any_model_when_the_core_is_missing(monke
     monkeypatch.setenv("BRASSCRIBE_DATA", str(tmp_path))
     monkeypatch.setattr(runner, "run", lambda *a, **kw: pytest.fail("the run was started"))
     assert cli.main(["run", "song.wav", "--profile", "bass-tab"]) == 3
-    assert "cargo build --release -p brasscribe-cli" in capsys.readouterr().err
+    assert "cargo build --release -p scribe-cli" in capsys.readouterr().err
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permissions and scripts")
 def test_a_core_that_cannot_run_is_missing_and_one_that_cannot_start_fails_without_its_path(tmp_path, monkeypatch):
-    plain = tmp_path / "private-folder" / "brasscribe-core"
+    plain = tmp_path / "private-folder" / "scribe-core"
     plain.parent.mkdir()
     plain.write_text("not a program")
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(plain))
@@ -1081,7 +1149,7 @@ def test_a_core_that_fails_or_hangs_is_reported_and_stopped(tmp_path, monkeypatc
     import threading
     import time
 
-    core = tmp_path / "private-folder" / "brasscribe-core"
+    core = tmp_path / "private-folder" / "scribe-core"
     core.parent.mkdir()
     core.write_text('#!/bin/sh\necho "$3: no such preset" >&2\nexit 1\n')
     core.chmod(0o755)
@@ -1108,7 +1176,7 @@ def test_a_core_that_fails_or_hangs_is_reported_and_stopped(tmp_path, monkeypatc
 
 @pytest.mark.skipif(os.name == "nt", reason="a shell script stands in for the core")
 def test_a_core_from_the_path_is_named_in_the_engines_log_and_only_mentioned_in_the_jobs(tmp_path, monkeypatch, capsys):
-    core = tmp_path / "private-folder" / "brasscribe-core"
+    core = tmp_path / "private-folder" / "scribe-core"
     core.parent.mkdir()
     core.write_text('#!/bin/sh\necho \'{"ok": true}\' > "$5"\n')
     core.chmod(0o755)
@@ -1117,7 +1185,7 @@ def test_a_core_from_the_path_is_named_in_the_engines_log_and_only_mentioned_in_
     monkeypatch.setenv("PATH", f"{core.parent}{os.pathsep}{os.environ['PATH']}")
     said: list[str] = []
     assert bass_tab.solve({"notes": []}, log=said.append) == {"ok": True}
-    assert said == ["brasscribe-core taken from the PATH"]
+    assert said == ["scribe-core taken from the PATH"]
     assert str(core) in capsys.readouterr().err
     monkeypatch.setenv(bass_tab.CORE_CLI_ENV, str(core))  # named: nothing to say
     said.clear()

@@ -74,8 +74,8 @@ extension View {
     func card(padding: CGFloat = 12) -> some View {
         self.padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md))
-            .overlay(RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md).strokeBorder(Color.Brasscribe.border))
+            .background(Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: ScribeDesign.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: ScribeDesign.Radius.md).strokeBorder(Color.Scribe.border))
     }
 }
 
@@ -87,7 +87,7 @@ private struct FocusRing: ViewModifier {
     func body(content: Content) -> some View {
         content.overlay(
             RoundedRectangle(cornerRadius: radius + 2)
-                .strokeBorder(Color.Brasscribe.focus, lineWidth: 2)
+                .strokeBorder(Color.Scribe.focus, lineWidth: 2)
                 .padding(-4)
                 .opacity(focused ? 1 : 0)
         )
@@ -105,7 +105,7 @@ struct BRButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
 
     func makeBody(configuration: Configuration) -> some View {
-        let radius = BrasscribeDesign.Radius.md
+        let radius = ScribeDesign.Radius.md
         return configuration.label
             .font(.system(size: 15 * scale, weight: kind == .plain ? .medium : .semibold))
             .lineLimit(2)
@@ -116,11 +116,11 @@ struct BRButtonStyle: ButtonStyle {
             .foregroundStyle(foreground)
             .background {
                 switch kind {
-                case .primary: RoundedRectangle(cornerRadius: radius).fill(Color.Brasscribe.primary)
-                case .secondary: RoundedRectangle(cornerRadius: radius).fill(Color.Brasscribe.secondary)
+                case .primary: RoundedRectangle(cornerRadius: radius).fill(Color.Scribe.primary)
+                case .secondary: RoundedRectangle(cornerRadius: radius).fill(Color.Scribe.secondary)
                 case .outline:
-                    RoundedRectangle(cornerRadius: radius).fill(Color.Brasscribe.surfaceRaised)
-                        .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Color.Brasscribe.borderStrong, lineWidth: 1))
+                    RoundedRectangle(cornerRadius: radius).fill(Color.Scribe.surfaceRaised)
+                        .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(Color.Scribe.borderStrong, lineWidth: 1))
                 case .plain: Color.clear
                 }
             }
@@ -131,9 +131,9 @@ struct BRButtonStyle: ButtonStyle {
 
     private var foreground: Color {
         switch kind {
-        case .primary: Color.Brasscribe.onPrimary
-        case .secondary: Color.Brasscribe.onSecondary
-        case .outline, .plain: Color.Brasscribe.text
+        case .primary: Color.Scribe.onPrimary
+        case .secondary: Color.Scribe.onSecondary
+        case .outline, .plain: Color.Scribe.text
         }
     }
 }
@@ -174,7 +174,7 @@ struct MarkShape: Shape {
 
 struct Mark: View {
     var size: CGFloat = 20
-    var color: Color = Color.Brasscribe.text
+    var color: Color = Color.Scribe.text
     var body: some View {
         MarkShape().fill(color, style: FillStyle(eoFill: true))
             .frame(width: size, height: size)
@@ -189,7 +189,7 @@ struct SectionLabel: View {
         Text(text)
             .textCase(.uppercase)
             .brFont(.sectionLabel)
-            .foregroundStyle(Color.Brasscribe.textMuted)
+            .foregroundStyle(Color.Scribe.textMuted)
             .accessibilityAddTraits(.isHeader)
     }
 }
@@ -200,8 +200,8 @@ struct BrassProgress: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.Brasscribe.secondary)
-                Capsule().fill(Color.Brasscribe.brass).frame(width: max(6, geo.size.width * min(1, max(0, fraction))))
+                Capsule().fill(Color.Scribe.secondary)
+                Capsule().fill(Color.Scribe.brand).frame(width: max(6, geo.size.width * min(1, max(0, fraction))))
             }
         }
         .frame(height: 6)
@@ -216,8 +216,8 @@ struct Meter: View {
         HStack(spacing: 3) {
             ForEach(1...3, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(i <= level ? Color.Brasscribe.textMuted : Color.clear)
-                    .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Color.Brasscribe.textMuted, lineWidth: 1))
+                    .fill(i <= level ? Color.Scribe.textMuted : Color.clear)
+                    .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(Color.Scribe.textMuted, lineWidth: 1))
                     .frame(width: 14, height: 7)
             }
         }
@@ -247,15 +247,15 @@ struct Disclosure<Content: View>: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.Brasscribe.text)
+            .foregroundStyle(Color.Scribe.text)
             .accessibilityValue(isExpanded ? Text("Expanded") : Text("Collapsed"))
             if isExpanded { content.padding(.bottom, 8) }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md))
-        .overlay(RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.md).strokeBorder(Color.Brasscribe.border))
+        .background(Color.Scribe.surface, in: RoundedRectangle(cornerRadius: ScribeDesign.Radius.md))
+        .overlay(RoundedRectangle(cornerRadius: ScribeDesign.Radius.md).strokeBorder(Color.Scribe.border))
     }
 }
 

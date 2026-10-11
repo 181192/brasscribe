@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "brasscribe-conformance"
+name = "scribe-conformance"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -17,7 +17,7 @@ Setup: the solo layer of `data/golden/mikkel-arranged-band/composition.json` (69
 53–84; 14 notes above 82: nine on 83 and five on 84), arranged with `arrange_layers` on
 `BRASS_BAND`. Each source note is compared with the Solo Cornet note at the same onset. The Python
 and Rust arrangers give identical counts in every configuration below. For Rust, a scratch binary
-linked `brasscribe-core` and swapped the lead instrument (`Box::leak`).
+linked `scribe-core` and swapped the lead instrument (`Box::leak`).
 
 | Lead range (reading / limit, sounding) | Mode | Same octave | −12 | +12 | Moved |
 |---|---|---|---|---|---|
@@ -124,7 +124,7 @@ hardcoded, and each would miss or mislabel a trumpet:
 | `engine/src/brasscribe_engine/profiles.py:251` | title "solo cornet & brass band (draft)" | keep "solo cornet" in the title |
 | `apps/windows/tests/.../PartSoundTests.cs:80` | renames "3rd Cornet" → "Trumpet in B♭" and expects the band SF2 to play it | already codifies trumpet = cornet preset, so a separate trumpet preset changes this test |
 | `design/mockups/scores.js`, `design/mockups/music-stand.js`, site `index.html`/`guide`/`nb` | cornet part lists and copy | show no trumpet (docs only) |
-| `core/brasscribe-ffi/src/lib.rs:607` `nb_part_name`, `c_api.rs` | the core's single nb table (good), but `seats()` exposes only `SEATS` | needs the new name here once and in no platform table |
+| `core/ffi/src/lib.rs:607` `nb_part_name`, `c_api.rs` | the core's single nb table (good), but `seats()` exposes only `SEATS` | needs the new name here once and in no platform table |
 
 The Bandroom apps (`apps/bandroom`) and braille (`engine/src/brasscribe_engine/braille.py`, which
 ASCII-folds `partName`) have no instrument tables. They follow whatever name the score carries.
@@ -212,7 +212,7 @@ counts, and §2 keeps the soloist range out of standard, easier and the quartet.
 
 **P1-1: re-saving the golden breaks main and every other worktree.** `data/golden` is one symlinked
 directory for all worktrees. The conformance runner compares the Mikkel case file by file against it
-(`core/conformance/brasscribe_conformance/run.py:180-187`) and exits 1 on any difference (`:224`).
+(`core/conformance/scribe_conformance/run.py:180-187`) and exits 1 on any difference (`:224`).
 The plan re-saves it before the code is merged. From then on, `check.sh conformance` is red on
 main and in every other worktree, and so are the other golden tests (Windows `GoldenNotes`,
 `music/tests/test_seats.py`). Announcing it does not fix that. Fix: write the new output to a new

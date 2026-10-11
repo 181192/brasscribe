@@ -118,7 +118,7 @@
                             <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.LoadLevel, 3), Mode=OneWay}" />
                         </StackPanel>
                     </Grid>
-                    <Rectangle Height="1" Fill="{ThemeResource BcBorderBrush}" />
+                    <Rectangle Height="1" Fill="{ThemeResource ScribeBorderBrush}" />
                     <Grid MinHeight="44" ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" />
@@ -132,7 +132,7 @@
                             <Border Style="{StaticResource MeterSegmentStyle}" Background="{x:Bind Segment(Vm.MemoryLevel, 3), Mode=OneWay}" />
                         </StackPanel>
                     </Grid>
-                    <Rectangle Height="1" Fill="{ThemeResource BcBorderBrush}" />
+                    <Rectangle Height="1" Fill="{ThemeResource ScribeBorderBrush}" />
                     <Grid MinHeight="44" ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
@@ -141,7 +141,7 @@
                         <TextBlock Grid.Column="1" Text="{x:Bind Vm.DiskLabel}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="2" Text="{x:Bind Vm.DiskText, Mode=OneWay}" Style="{StaticResource StrongStyle}" VerticalAlignment="Center" />
                     </Grid>
-                    <Rectangle Height="1" Fill="{ThemeResource BcBorderBrush}" />
+                    <Rectangle Height="1" Fill="{ThemeResource ScribeBorderBrush}" />
                     <Grid MinHeight="44" ColumnSpacing="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
@@ -219,7 +219,7 @@
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:DeviceRow">
-                        <Grid MinHeight="56" Padding="10,6" ColumnSpacing="12" BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,0,1">
+                        <Grid MinHeight="56" Padding="10,6" ColumnSpacing="12" BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,0,0,1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />

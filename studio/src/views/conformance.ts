@@ -160,7 +160,7 @@ function fmtTime(v: string | number): string {
   return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(locale());
 }
 
-const RUN_CMD = "cd core/conformance && uv run python -m brasscribe_conformance.run";
+const RUN_CMD = "cd core/conformance && uv run python -m scribe_conformance.run";
 
 function render(reports: ConformanceReport[]): HTMLElement[] {
   const summaries = reports.filter(isSummary);

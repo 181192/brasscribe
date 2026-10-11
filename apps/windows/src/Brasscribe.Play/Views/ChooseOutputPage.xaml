@@ -99,7 +99,7 @@
                         </Grid>
                     </Border>
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
                         <TextBlock x:Uid="OutputHardTip" Style="{StaticResource MutedStyle}" MaxWidth="360" />
                     </StackPanel>
 
@@ -118,8 +118,8 @@
                                 <TextBlock x:Uid="KeyDownLabel" />
                             </StackPanel>
                         </Button>
-                        <Border Grid.Column="1" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1" CornerRadius="{StaticResource BcRadiusMd}"
-                                Padding="14,8" Background="{ThemeResource BcSurfaceRaisedBrush}" AutomationProperties.LiveSetting="Polite"
+                        <Border Grid.Column="1" BorderBrush="{ThemeResource ScribeBorderStrongBrush}" BorderThickness="1" CornerRadius="{StaticResource ScribeRadiusMd}"
+                                Padding="14,8" Background="{ThemeResource ScribeSurfaceRaisedBrush}" AutomationProperties.LiveSetting="Polite"
                                 AutomationProperties.Name="{x:Bind ViewModel.KeyLabel, Mode=OneWay}">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource LabelStyle}" FontSize="16" Text="{x:Bind ViewModel.KeyLabel, Mode=OneWay}" />

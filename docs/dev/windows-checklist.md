@@ -9,7 +9,7 @@ note the step number and what you saw, and stop at the first crash.
 ## 0. Build
 
 1. In `apps/windows`, build the Rust core as the Windows CI job does, then run
-   `dotnet build src/Brasscribe.Play -c Debug -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:BrasscribeFfiDll=<path to brasscribe_ffi.dll>"`.
+   `dotnet build src/Brasscribe.Play -c Debug -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=<path to scribe_ffi.dll>"`.
    It must compile with no XAML errors. The XAML compiler runs only on Windows, and these files have
    never been compiled there:
    - `Views/ChooseOutputPage.xaml`: "Who played this?", the "Your part" lines and the tune choice

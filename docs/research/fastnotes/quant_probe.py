@@ -1,8 +1,8 @@
 """Quantization of fast notes with exact onsets: Python against the Rust CLI, free time, slow tempo.
 
-    ml/adapters/swift-f0/.venv/bin/python docs/research/fastnotes/quant_probe.py [path/to/brasscribe-core]
+    ml/adapters/swift-f0/.venv/bin/python docs/research/fastnotes/quant_probe.py [path/to/scribe-core]
 
-The Rust half needs `cargo build --release -p brasscribe-cli` in core/ (skipped without it).
+The Rust half needs `cargo build --release -p scribe-cli` in core/ (skipped without it).
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "music" / "src"))
 from brasscribe_music.quantize import quantize  # noqa: E402
 
-CLI = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "core" / "target" / "release" / "brasscribe-core"
+CLI = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "core" / "target" / "release" / "scribe-core"
 LEAD = 1.0
 
 

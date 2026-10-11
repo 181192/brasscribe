@@ -32,35 +32,35 @@
     </ResourceDictionary.ThemeDictionaries>
 
     <!-- ===== Text ===== -->
-    <Style x:Key="PanelHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource BcLabelTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="PanelHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeLabelTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style x:Key="BodyStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCalloutTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="BodyStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeCalloutTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style x:Key="MutedStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCalloutTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+    <Style x:Key="MutedStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeCalloutTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextMutedBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style x:Key="StrongStyle" TargetType="TextBlock" BasedOn="{StaticResource BcLabelTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="StrongStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeLabelTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
-    <Style x:Key="CaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCaptionTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+    <Style x:Key="CaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeCaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextMutedBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
     <!-- Small capitals over a group: "THIS COMPUTER", "NOW". -->
-    <Style x:Key="OverlineStyle" TargetType="TextBlock" BasedOn="{StaticResource BcCaptionTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextMutedBrush}" />
+    <Style x:Key="OverlineStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeCaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextMutedBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="CharacterSpacing" Value="80" />
     </Style>
-    <Style x:Key="DisplayHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource BcDisplayTextBlockStyle}">
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+    <Style x:Key="DisplayHeadingStyle" TargetType="TextBlock" BasedOn="{StaticResource ScribeDisplayTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="FontSize" Value="36" />
         <Setter Property="LineHeight" Value="44" />
     </Style>
@@ -68,7 +68,7 @@
         <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="LineHeight" Value="20" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="IsTextSelectionEnabled" Value="True" />
     </Style>
@@ -79,9 +79,9 @@
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
         <Setter Property="FocusVisualSecondaryThickness" Value="2" />
     </Style>
@@ -90,12 +90,12 @@
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
-        <Setter Property="Foreground" Value="{ThemeResource BcOnSecondaryBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeOnSecondaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
     </Style>
     <!-- Outline: Restart, Stop, Update now, the tech buttons. -->
@@ -106,12 +106,12 @@
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderStrongBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderStrongBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
         <Setter Property="FocusVisualPrimaryThickness" Value="2" />
     </Style>
     <!-- Plain: Open Studio, Remove, Back. -->
@@ -122,11 +122,11 @@
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
     </Style>
     <!-- A card that is a button: the Phones and tablets row. -->
     <Style x:Key="RowButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
@@ -134,31 +134,31 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="MinHeight" Value="52" />
         <Setter Property="Padding" Value="12,8" />
-        <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource BcFocusBrush}" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource ScribeFocusBrush}" />
     </Style>
 
     <!-- ===== Surfaces ===== -->
     <!-- A window's root: the background follows the window's own theme (Appearance, design/system.md §10). -->
     <Style x:Key="WindowRootStyle" TargetType="Grid">
-        <Setter Property="Background" Value="{ThemeResource BcBgBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeBgBrush}" />
     </Style>
     <Style x:Key="CardStyle" TargetType="Border">
-        <Setter Property="Background" Value="{ThemeResource BcSurfaceRaisedBrush}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusMd}" />
         <Setter Property="Padding" Value="12" />
     </Style>
     <Style x:Key="IconWellStyle" TargetType="Border">
         <Setter Property="Width" Value="36" />
         <Setter Property="Height" Value="36" />
-        <Setter Property="Background" Value="{ThemeResource BcSecondaryBrush}" />
-        <Setter Property="CornerRadius" Value="{StaticResource BcRadiusSm}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeSecondaryBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource ScribeRadiusSm}" />
     </Style>
     <!-- One segment of the neutral 3-segment meter; never brass or a status colour. -->
     <Style x:Key="MeterSegmentStyle" TargetType="Border">
@@ -166,12 +166,12 @@
         <Setter Property="Height" Value="7" />
         <Setter Property="CornerRadius" Value="2" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="{ThemeResource BcTextMutedBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ScribeTextMutedBrush}" />
     </Style>
     <!-- The progress bar is the one working brand moment: brass fill. -->
     <Style x:Key="BrassProgressStyle" TargetType="ProgressBar">
-        <Setter Property="Foreground" Value="{ThemeResource BcBrassBrush}" />
-        <Setter Property="Background" Value="{ThemeResource BcBorderBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeBrandBrush}" />
+        <Setter Property="Background" Value="{ThemeResource ScribeBorderBrush}" />
         <Setter Property="Height" Value="6" />
         <Setter Property="MinHeight" Value="6" />
         <Setter Property="CornerRadius" Value="3" />
@@ -179,6 +179,6 @@
     <Style x:Key="IconStyle" TargetType="FontIcon">
         <Setter Property="FontFamily" Value="{ThemeResource SymbolThemeFontFamily}" />
         <Setter Property="FontSize" Value="16" />
-        <Setter Property="Foreground" Value="{ThemeResource BcTextBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ScribeTextBrush}" />
     </Style>
 </ResourceDictionary>

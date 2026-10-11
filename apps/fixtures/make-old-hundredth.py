@@ -8,7 +8,7 @@ of the three solo transcribers, with little pitch-contour support, so the arrang
 low-confidence notes and review items for the Review screens. A silent drum stem, made here and
 thrown away, tells the core the solo was separated from a mix, as it is for a band recording.
 
-    python3 apps/fixtures/make-old-hundredth.py [--cli core/target/release/brasscribe-core]
+    python3 apps/fixtures/make-old-hundredth.py [--cli core/target/release/scribe-core]
 
 Writes apps/fixtures/old-hundredth/ (composition.json, brass-band.musicxml, parts/, talking-score.*).
 Only tests, UI tests and screenshot scripts read this folder; no app build bundles it.
@@ -163,10 +163,10 @@ def sine_stem(notes, total, rate=16000):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cli", default=str(ROOT / "core/target/release/brasscribe-core"))
+    ap.add_argument("--cli", default=str(ROOT / "core/target/release/scribe-core"))
     a = ap.parse_args()
     if not Path(a.cli).exists():
-        sys.exit(f"{a.cli} missing: build it with `cargo build --release -p brasscribe-cli` in core/")
+        sys.exit(f"{a.cli} missing: build it with `cargo build --release -p scribe-cli` in core/")
     evs, total = events()
     with tempfile.TemporaryDirectory() as tmp:
         layers = Path(tmp) / "layers"

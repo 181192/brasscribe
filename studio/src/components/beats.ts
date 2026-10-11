@@ -42,10 +42,10 @@ export class BeatView extends HTMLElement {
     const sums = this.rows.map((r) => ({ r, s: summarise(r.beats) }));
     const level = sums.length === 2 && sums[0].s.beats ? sums[1].s.beats / sums[0].s.beats : null;
     const legend = h("ul", { class: "legend" },
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:1rem;width:3px;border:none;background:var(--ink)" }), t("beats.downbeat")),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:0.5rem;width:1px;border:none;background:var(--staff)" }), t("beats.beat")),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--adlib-tint);border:2px dashed var(--very-uncertain)" }), t("beats.free")),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:transparent;border:2px dotted var(--uncertain)" }), t("beats.irregular")));
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:1rem;width:3px;border:none;background:var(--scribe-ink)" }), t("beats.downbeat")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "height:0.5rem;width:1px;border:none;background:var(--scribe-line)" }), t("beats.beat")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--bc-adlib-tint);border:2px dashed var(--bc-very-uncertain)" }), t("beats.free")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:transparent;border:2px dotted var(--scribe-uncertain)" }), t("beats.irregular")));
     clear(this,
       legend, nav, info, chart.box,
       table(t("beats.tempo"), [t("beats.col.track"), t("beats.col.beats"), t("beats.col.downbeats"), t("beats.col.perBar"), t("beats.col.tempo")],
@@ -77,12 +77,12 @@ export class BeatView extends HTMLElement {
       c.strokeRect(a + 1, 1, b - a - 2, plotH - 2);
       c.setLineDash([]);
     };
-    for (const r of this.free) regionBox(r, token("adlib-tint"), token("very-uncertain"), [6, 3]);
-    for (const r of this.irregular) regionBox(r, "", token("uncertain"), [2, 3]);
+    for (const r of this.free) regionBox(r, token("bc-adlib-tint"), token("bc-very-uncertain"), [6, 3]);
+    for (const r of this.irregular) regionBox(r, "", token("scribe-uncertain"), [2, 3]);
     c.font = "11px system-ui, sans-serif";
     this.rows.forEach((row, i) => {
       const top = 8 + i * 50;
-      c.fillStyle = token("text");
+      c.fillStyle = token("scribe-text");
       c.textBaseline = "top";
       c.fillText(row.label, 4, top);
       let bar = 0;
@@ -91,19 +91,19 @@ export class BeatView extends HTMLElement {
         if (b.time < this.t0 || b.time > t1) continue;
         const bx = Math.round(x(b.time)) + 0.5;
         const down = b.position === 1;
-        c.strokeStyle = down ? token("ink") : token("staff");
+        c.strokeStyle = down ? token("scribe-ink") : token("scribe-line");
         c.lineWidth = down ? 3 : 1;
         c.beginPath();
         c.moveTo(bx, top + (down ? 14 : 26));
         c.lineTo(bx, top + 40);
         c.stroke();
         if (down && (this.span < 60 || bar % 4 === 1)) {
-          c.fillStyle = token("text-muted");
+          c.fillStyle = token("scribe-text-muted");
           c.fillText(String(bar), bx + 3, top + 14);
         }
       }
     });
-    timeAxis(c, w, plotH, this.t0, t1, token("text-muted"));
+    timeAxis(c, w, plotH, this.t0, t1, token("scribe-text-muted"));
   }
 }
 

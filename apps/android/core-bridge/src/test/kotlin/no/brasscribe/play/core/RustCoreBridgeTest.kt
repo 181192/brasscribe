@@ -28,8 +28,8 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The Kotlin side of the Rust core on the JVM, against the host build of libbrasscribe_ffi
- * (`cargo build --release -p brasscribe-ffi` in core/). Skips when that library is missing.
+ * The Kotlin side of the Rust core on the JVM, against the host build of libscribe_ffi
+ * (`cargo build --release -p scribe-ffi` in core/). Skips when that library is missing.
  */
 class RustCoreBridgeTest {
     private val core: RustCoreBridge? = RustCoreBridge.load()

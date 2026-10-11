@@ -12,25 +12,25 @@ using Brasscribe.Play.Core.ViewModels;
 namespace Brasscribe.Play.Core.Bridge;
 
 /// <summary>
-/// Calls the Rust core through its C ABI (library brasscribe_ffi, core/bindings/c/brasscribe.h).
+/// Calls the Rust core through its C ABI (library scribe_ffi, core/bindings/c/scribe.h).
 /// Every call takes UTF-8 NUL-terminated strings and returns 0 ok, 1 invalid input, 2 failed,
-/// 3 null argument or 4 panic; strings come back through out-parameters released with bc_string_free.
-/// The library is looked up next to the app, or at BRASSCRIBE_FFI_PATH; when it is missing or lacks
+/// 3 null argument or 4 panic; strings come back through out-parameters released with sc_string_free.
+/// The library is looked up next to the app, or at SCRIBE_FFI_PATH; when it is missing or lacks
 /// one of the functions used here, <see cref="TryCreate"/> returns null and the managed bridge is used.
 /// </summary>
 public sealed partial class NativeCoreBridge : ICoreBridge
 {
-    private const string Lib = "brasscribe_ffi";
+    private const string Lib = "scribe_ffi";
 
     /// <summary>Every export this bridge calls; an older library without them is not used.</summary>
     internal static readonly string[] RequiredExports =
     [
-        "bc_version", "bc_string_free", "bc_composition_normalize", "bc_arrange_musicxml", "bc_arrange_with", "bc_arrange_layers_band_contour",
-        "bc_humanize_json", "bc_talking_score_new", "bc_talking_score_free", "bc_talking_score_json", "bc_talking_announce_json",
+        "sc_version", "sc_string_free", "sc_composition_normalize", "sc_arrange_musicxml", "sc_arrange_with", "sc_arrange_layers_band_contour",
+        "sc_humanize_json", "sc_talking_score_new", "sc_talking_score_free", "sc_talking_score_json", "sc_talking_announce_json",
     ];
 
     /// <summary>Exports a newer core adds; without one of them that feature is left out, not the whole core.</summary>
-    internal static readonly string[] OptionalExports = ["bc_seats", "bc_seat_part", "bc_part_sources", "bc_part_name_nb"];
+    internal static readonly string[] OptionalExports = ["sc_seats", "sc_seat_part", "sc_part_sources", "sc_part_name_nb"];
 
     private NativeCoreBridge(string version, IReadOnlySet<string> optional)
     {
@@ -52,7 +52,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     /// <summary>Loads the native core if present; null when it is missing or incompatible.</summary>
     public static NativeCoreBridge? TryCreate(string? libraryPath = null)
     {
-        libraryPath ??= Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH");
+        libraryPath ??= Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH");
         lock (Gate)
         {
             if (_handle == 0)
@@ -74,9 +74,9 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         var optional = OptionalExports.Where(e => NativeLibrary.TryGetExport(_handle, e, out _)).ToHashSet();
         try
         {
-            nint v = bc_version();
+            nint v = sc_version();
             try { return new NativeCoreBridge(Marshal.PtrToStringUTF8(v) ?? "native", optional); }
-            finally { bc_string_free(v); }
+            finally { sc_string_free(v); }
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
         {
@@ -86,7 +86,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     public Composition ParseComposition(string json)
     {
-        Check(bc_composition_normalize(json, out var normalised, out var err), err);
+        Check(sc_composition_normalize(json, out var normalised, out var err), err);
         return CompositionJson.Parse(Take(normalised));
     }
 
@@ -120,38 +120,38 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     /// <summary>The talking-score document as the core writes it (spec §6 JSON).</summary>
     public string TalkingScoreDocumentJson(string musicXml, string? compositionJson)
     {
-        Check(bc_talking_score_new(musicXml, compositionJson, out var ts, out var err), err);
+        Check(sc_talking_score_new(musicXml, compositionJson, out var ts, out var err), err);
         try
         {
-            Check(bc_talking_score_json(ts, out var json, out err), err);
+            Check(sc_talking_score_json(ts, out var json, out err), err);
             return Take(json);
         }
         finally
         {
-            bc_talking_score_free(ts);
+            sc_talking_score_free(ts);
         }
     }
 
     public string Announce(AnnouncePart part, AnnounceBar bar, TsEvent ev, AnnounceContext context, TalkingScoreSettings settings, bool byBar = false)
     {
         var request = TalkingScoreJson.AnnounceRequest(part, bar, ev, context, settings, byBar);
-        Check(bc_talking_announce_json(request, out var json, out var err), err);
+        Check(sc_talking_announce_json(request, out var json, out var err), err);
         return Take(json);
     }
 
     public string? ArrangeMusicXml(Composition composition, string arranger = "auto")
     {
-        Check(bc_arrange_musicxml(CompositionJson.Serialize(composition), arranger, out var xml, out var err), err);
+        Check(sc_arrange_musicxml(CompositionJson.Serialize(composition), arranger, out var xml, out var err), err);
         return Take(xml);
     }
 
     public string? ArrangeMusicXmlWith(Composition composition, ArrangementOptions options)
     {
-        Check(bc_arrange_with(CompositionJson.Serialize(composition), ArrangeOptions(options), out var xml, out var err), err);
+        Check(sc_arrange_with(CompositionJson.Serialize(composition), ArrangeOptions(options), out var xml, out var err), err);
         return Take(xml);
     }
 
-    /// <summary>The options JSON of bc_arrange_with: the core's lineup name, the difficulty, a key or a transposition.</summary>
+    /// <summary>The options JSON of sc_arrange_with: the core's lineup name, the difficulty, a key or a transposition.</summary>
     internal static string ArrangeOptions(ArrangementOptions options)
     {
         var o = new JsonObject
@@ -198,7 +198,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
             // JSON form has them.
             nint[]? contour = c is null ? null : [Pin(c.Times), Pin(c.PitchHz), Pin(c.LoudnessDb), Pin(c.Confidence)];
             var json = LayersOptions(contourAsJson ? inputs.Contour : null, options);
-            Check(bc_arrange_layers_band_contour(midi, midiLen, wav, wavLen, contour, (nuint)(c?.Times.Length ?? 0), inputs.Beats, title, json,
+            Check(sc_arrange_layers_band_contour(midi, midiLen, wav, wavLen, contour, (nuint)(c?.Times.Length ?? 0), inputs.Beats, title, json,
                 out var result, out var err), err);
             var o = JsonNode.Parse(Take(result))!.AsObject();
             var parts = o["parts"]?.AsArray().Select(p => (p!["file_name"]!.GetValue<string>(), p["musicxml"]!.GetValue<string>())).ToList() ?? [];
@@ -212,7 +212,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     }
 
     /// <summary>
-    /// The options JSON of bc_arrange_layers_band(_contour). The core calls the full lineup "band". A contour
+    /// The options JSON of sc_arrange_layers_band(_contour). The core calls the full lineup "band". A contour
     /// given here goes into the JSON; <see cref="ArrangeLayersBand(LayerInputs, string, ArrangementOptions)"/> passes it as arrays instead.
     /// </summary>
     internal static string LayersOptions(SoloContour? contour, ArrangementOptions options)
@@ -262,7 +262,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
             ["timing"] = "score",
         };
         if (compositionJson is not null) request["composition"] = JsonNode.Parse(compositionJson);
-        Check(bc_humanize_json(request.ToJsonString(), out var json, out var err), err);
+        Check(sc_humanize_json(request.ToJsonString(), out var json, out var err), err);
         using var doc = JsonDocument.Parse(Take(json));
         var root = doc.RootElement;
         var played = root.GetProperty("notes").EnumerateArray().Select(n => new PlayedNote(
@@ -274,12 +274,12 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     public IReadOnlyList<SeatInfo> Seats()
     {
         if (_seats is not null) return _seats;
-        if (!_optional.Contains("bc_seats")) return _seats = [];
-        Check(bc_seats(out var json, out var err), err);
+        if (!_optional.Contains("sc_seats")) return _seats = [];
+        Check(sc_seats(out var json, out var err), err);
         return _seats = ParseSeats(Take(json));
     }
 
-    /// <summary>The rows of bc_seats: <c>[{"id", "name", "nb_name", "instrument", "clef", "reads": [...], "tune"}]</c>.</summary>
+    /// <summary>The rows of sc_seats: <c>[{"id", "name", "nb_name", "instrument", "clef", "reads": [...], "tune"}]</c>.</summary>
     internal static IReadOnlyList<SeatInfo> ParseSeats(string json)
     {
         using var doc = JsonDocument.Parse(json);
@@ -292,8 +292,8 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     public SeatPart? SeatPartFor(string lineup, string seat)
     {
-        if (!_optional.Contains("bc_seat_part")) return null;
-        Check(bc_seat_part(lineup, seat, out var json, out var err), err);
+        if (!_optional.Contains("sc_seat_part")) return null;
+        Check(sc_seat_part(lineup, seat, out var json, out var err), err);
         using var doc = JsonDocument.Parse(Take(json));
         var r = doc.RootElement;
         var part = r.GetProperty("part");
@@ -305,8 +305,8 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     public IReadOnlyDictionary<string, string> PartSources(string compositionJson)
     {
         var sources = new Dictionary<string, string>();
-        if (!_optional.Contains("bc_part_sources")) return sources;
-        Check(bc_part_sources(compositionJson, out var json, out var err), err);
+        if (!_optional.Contains("sc_part_sources")) return sources;
+        Check(sc_part_sources(compositionJson, out var json, out var err), err);
         using var doc = JsonDocument.Parse(Take(json));
         foreach (var row in doc.RootElement.EnumerateArray())
             sources[row.GetProperty("part").GetString()!] = row.GetProperty("source").GetString()!;
@@ -315,10 +315,10 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     public string PartNameNb(string name)
     {
-        if (!_optional.Contains("bc_part_name_nb")) return name;
+        if (!_optional.Contains("sc_part_name_nb")) return name;
         lock (_nb)
             if (_nb.TryGetValue(name, out var known)) return known;
-        Check(bc_part_name_nb(name, out var nb, out var err), err);
+        Check(sc_part_name_nb(name, out var nb, out var err), err);
         string result = Take(nb);
         lock (_nb) _nb[name] = result;
         return result;
@@ -328,7 +328,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     {
         if (status == 0)
         {
-            if (err != 0) bc_string_free(err);
+            if (err != 0) sc_string_free(err);
             return;
         }
         string kind = status switch { 1 => "invalid input", 2 => "failed", 3 => "missing argument", 4 => "internal error", _ => $"error {status}" };
@@ -339,69 +339,69 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     private static string Take(nint p)
     {
         try { return Marshal.PtrToStringUTF8(p) ?? ""; }
-        finally { if (p != 0) bc_string_free(p); }
+        finally { if (p != 0) sc_string_free(p); }
     }
 
     [LibraryImport(Lib)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial nint bc_version();
+    private static partial nint sc_version();
 
     [LibraryImport(Lib)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial void bc_string_free(nint s);
+    private static partial void sc_string_free(nint s);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_composition_normalize(string json, out nint normalised, out nint err);
+    private static partial int sc_composition_normalize(string json, out nint normalised, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_arrange_musicxml(string compositionJson, string arranger, out nint xml, out nint err);
+    private static partial int sc_arrange_musicxml(string compositionJson, string arranger, out nint xml, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_arrange_with(string compositionJson, string options, out nint xml, out nint err);
+    private static partial int sc_arrange_with(string compositionJson, string options, out nint xml, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_arrange_layers_band_contour(nint[] midi, nuint[] midiLen, nint[] wav, nuint[] wavLen,
+    private static partial int sc_arrange_layers_band_contour(nint[] midi, nuint[] midiLen, nint[] wav, nuint[] wavLen,
         nint[]? contour, nuint contourLen, string beatsText, string title, string options, out nint json, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_humanize_json(string request, out nint json, out nint err);
+    private static partial int sc_humanize_json(string request, out nint json, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_talking_score_new(string musicXml, string? compositionJson, out nint ts, out nint err);
+    private static partial int sc_talking_score_new(string musicXml, string? compositionJson, out nint ts, out nint err);
 
     [LibraryImport(Lib)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial void bc_talking_score_free(nint ts);
+    private static partial void sc_talking_score_free(nint ts);
 
     [LibraryImport(Lib)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_talking_score_json(nint ts, out nint json, out nint err);
+    private static partial int sc_talking_score_json(nint ts, out nint json, out nint err);
 
     [LibraryImport(Lib)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_seats(out nint json, out nint err);
+    private static partial int sc_seats(out nint json, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_seat_part(string lineup, string seat, out nint json, out nint err);
+    private static partial int sc_seat_part(string lineup, string seat, out nint json, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_part_sources(string compositionJson, out nint json, out nint err);
+    private static partial int sc_part_sources(string compositionJson, out nint json, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_part_name_nb(string name, out nint nb, out nint err);
+    private static partial int sc_part_name_nb(string name, out nint nb, out nint err);
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int bc_talking_announce_json(string request, out nint json, out nint err);
+    private static partial int sc_talking_announce_json(string request, out nint json, out nint err);
 }
 
 public sealed class CoreBridgeException(string message, int status) : Exception(message)

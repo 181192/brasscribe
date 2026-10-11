@@ -164,13 +164,13 @@ struct ExportView: View {
                           options: (myPart != nil ? [(Scope.mine, myLabel)] : [])
                             + [(Scope.every, String(localized: "Every part")), (Scope.conductor, scoreLabel)])
                 if scope == .every {
-                    Text("Every part: one PDF per player.").font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text("Every part: one PDF per player.").font(Font.Scribe.caption).foregroundStyle(Color.Scribe.textMuted)
                 }
             } else {
                 VStack(spacing: 0) {
-                    if myPart != nil { radio(myLabel, nil, .mine); Divider().overlay(Color.Brasscribe.border) }
+                    if myPart != nil { radio(myLabel, nil, .mine); Divider().overlay(Color.Scribe.border) }
                     radio(String(localized: "Every part"), String(localized: "one PDF per player"), .every)
-                    Divider().overlay(Color.Brasscribe.border)
+                    Divider().overlay(Color.Scribe.border)
                     radio(scoreLabel, nil, .conductor)
                 }
                 .card(padding: 0)
@@ -182,10 +182,10 @@ struct ExportView: View {
         Button { scope = s } label: {
             HStack(spacing: Space.s3) {
                 Image(systemName: scope == s ? "largecircle.fill.circle" : "circle").font(.title2)
-                    .foregroundStyle(scope == s ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
+                    .foregroundStyle(scope == s ? Color.Scribe.text : Color.Scribe.borderStrong)
                     .accessibilityHidden(true)
-                Text("\(Text(title).font(Font.Brasscribe.headline))\(note.map { Text(verbatim: " · ") + Text($0).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted) } ?? Text(verbatim: ""))")
-                    .foregroundStyle(Color.Brasscribe.text)
+                Text("\(Text(title).font(Font.Scribe.headline))\(note.map { Text(verbatim: " · ") + Text($0).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted) } ?? Text(verbatim: ""))")
+                    .foregroundStyle(Color.Scribe.text)
                 Spacer()
             }
             .padding(.horizontal, Space.s4)
@@ -207,19 +207,19 @@ struct ExportView: View {
             SectionLabel(String(localized: "As"))
             VStack(spacing: 0) {
                 ForEach(Array(shownFormats.enumerated()), id: \.element) { i, f in
-                    if i > 0 { Divider().overlay(Color.Brasscribe.border) }
+                    if i > 0 { Divider().overlay(Color.Scribe.border) }
                     formatRow(f)
                 }
                 if !wide && !moreFormats {
-                    Divider().overlay(Color.Brasscribe.border)
+                    Divider().overlay(Color.Scribe.border)
                     Button { moreFormats = true } label: {
                         HStack(spacing: Space.s3) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("More formats").font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                                Text("MusicXML, MIDI and 2 more").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted).lineLimit(1)
+                                Text("More formats").font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                                Text("MusicXML, MIDI and 2 more").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted).lineLimit(1)
                             }
                             Spacer()
-                            Image(systemName: BrasscribeIcon.open.systemName).foregroundStyle(Color.Brasscribe.textMuted)
+                            Image(systemName: BrasscribeIcon.open.systemName).foregroundStyle(Color.Scribe.textMuted)
                         }
                         .padding(.horizontal, Space.s4).padding(.leading, 40).frame(minHeight: 60).contentShape(Rectangle())
                     }
@@ -238,11 +238,11 @@ struct ExportView: View {
         } label: {
             HStack(spacing: Space.s3) {
                 Image(systemName: on ? "checkmark.square.fill" : "square").font(.title2)
-                    .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
+                    .foregroundStyle(on ? Color.Scribe.text : Color.Scribe.borderStrong)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(f.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    Text(reason ?? f.detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text(f.title).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                    Text(reason ?? f.detail).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                 }
                 Spacer()
             }
@@ -259,12 +259,12 @@ struct ExportView: View {
     private var marksSwitch: some View {
         Toggle(isOn: $marks) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Show ? marks").font(Font.Brasscribe.headline)
-                Text("A note at the bottom of each page explains them").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                Text("Show ? marks").font(Font.Scribe.headline)
+                Text("A note at the bottom of each page explains them").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
             }
         }
         .toggleStyle(.switch)
-        .tint(Color.Brasscribe.primary)
+        .tint(Color.Scribe.primary)
         .card()
     }
 
@@ -283,7 +283,7 @@ struct ExportView: View {
     private var actions: some View {
         let canPrint = formats.contains(.pdf)
         let count = Text(fileCount == 1 ? String(localized: "1 file") : String(localized: "\(fileCount) files"))
-            .font(Font.Brasscribe.caption).foregroundStyle(Color.Brasscribe.textMuted)
+            .font(Font.Scribe.caption).foregroundStyle(Color.Scribe.textMuted)
         return Group {
             if wide {
                 HStack(spacing: Space.s3) {
@@ -324,8 +324,8 @@ struct ExportView: View {
         }
         .overlay { if busy { ProgressView() } }
         .padding(Space.s5)
-        .background(Color.Brasscribe.bg)
-        .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+        .background(Color.Scribe.bg)
+        .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
     }
 
     private var partsInScope: [Part] {

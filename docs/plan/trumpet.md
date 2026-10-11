@@ -80,7 +80,7 @@ The repo's QA tool disagrees for the solo cornet. `qa/tools/musicxml_readability
 
 ### 1.3 Mikkel on the Rust path, and what makes notes move
 
-The setup is `brasscribe-core arrange-layers` on `data/mikkel/repro/layers` with the pinned contour (the conformance `mikkel/layers` case). `lead_octaves.py` compares each solo-layer note with the Solo Cornet note at the same onset. `sweep.sh` edits the B♭ cornet's `reading` and `reading_limit` for each row, then restores the file.
+The setup is `scribe-core arrange-layers` on `data/mikkel/repro/layers` with the pinned contour (the conformance `mikkel/layers` case). `lead_octaves.py` compares each solo-layer note with the Solo Cornet note at the same onset. `sweep.sh` edits the B♭ cornet's `reading` and `reading_limit` for each row, then restores the file.
 
 | Cornet reading / limit (sounding) | Rule | Moved | Top | Note |
 |---|---|---|---|---|
@@ -293,7 +293,7 @@ The Mikkel intro phrases at ticks 0 and 156 (2 notes and 1 note) are the solo li
 
 - **The new output** goes to `data/golden/mikkel-arranged-band.soloist`, with its manifest. The recipe is the one from `14730d0`: orchestra-with-soloist, `--reuse data/mikkel/repro`, no heavy models.
 - **In the same commit**, every consumer that compares *the new code's* output with the golden points at `.soloist`:
-  - `core/conformance/brasscribe_conformance/cases.py:108`
+  - `core/conformance/scribe_conformance/cases.py:108`
   - the Windows `NativeCoreBridgeTests.cs:20` `GoldenNotes` count, and `TestPaths.cs`
   - `music/tests/test_seats.py`
   - `eval/baselines.json`, `eval/brasscribe_eval/difficulty_bench.py`, `suites.py`
@@ -485,11 +485,11 @@ The engine title stays "… solo cornet & brass band (draft)" (`profiles.py:251`
 
 §1.5 lists about 30 copies. The design:
 
-- **One place for the facts.** Add `name_nb`, `label`/`label_nb` (the picker names), `key_label`/`key_label_nb`, `section` → `section_seat`, and `Part.name_nb` to `instruments.rs`/`.py`. A conformance case, `brasscribe-core instruments --json` against the Python dump, keeps the two tables identical.
+- **One place for the facts.** Add `name_nb`, `label`/`label_nb` (the picker names), `key_label`/`key_label_nb`, `section` → `section_seat`, and `Part.name_nb` to `instruments.rs`/`.py`. A conformance case, `scribe-core instruments --json` against the Python dump, keeps the two tables identical.
 - **Export.** Over UniFFI and the C ABI:
   - extend `instruments()` and `seats()`;
   - add `lineup_parts(LineupOptions) -> [PartInfo]`, with the effective range check per part;
-  - add `bc_instruments` and `bc_lineup_parts`.
+  - add `sc_instruments` and `sc_lineup_parts`.
 - **Engine.** `GET /v1/instruments`, and the `Seat` enum built from `SEAT_IDS`.
 - **Clients.**
   - Studio: `validate.ts`, `talkingxml.ts`, `navigator.ts` and `run.ts`.

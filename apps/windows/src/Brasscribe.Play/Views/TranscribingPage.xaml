@@ -31,16 +31,16 @@
                     <DataTemplate x:DataType="vm:TranscriptionStep">
                         <StackPanel Orientation="Horizontal" Spacing="14" Padding="0,8" AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}">
                             <Grid Width="24" Height="24">
-                                <Ellipse Fill="{ThemeResource BcPrimaryBrush}" Visibility="{x:Bind IsDone, Mode=OneWay}" />
-                                <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="12" Foreground="{ThemeResource BcOnPrimaryBrush}"
+                                <Ellipse Fill="{ThemeResource ScribePrimaryBrush}" Visibility="{x:Bind IsDone, Mode=OneWay}" />
+                                <FontIcon Glyph="{StaticResource BcIconDone}" FontSize="12" Foreground="{ThemeResource ScribeOnPrimaryBrush}"
                                           Visibility="{x:Bind IsDone, Mode=OneWay}" />
-                                <Ellipse Stroke="{ThemeResource BcPrimaryBrush}" StrokeThickness="2" Visibility="{x:Bind IsCurrent, Mode=OneWay}" />
-                                <Ellipse Width="8" Height="8" Fill="{ThemeResource BcPrimaryBrush}" Visibility="{x:Bind IsCurrent, Mode=OneWay}" />
-                                <Ellipse Stroke="{ThemeResource BcBorderStrongBrush}" StrokeThickness="1.5" Visibility="{x:Bind IsPending, Mode=OneWay}" />
+                                <Ellipse Stroke="{ThemeResource ScribePrimaryBrush}" StrokeThickness="2" Visibility="{x:Bind IsCurrent, Mode=OneWay}" />
+                                <Ellipse Width="8" Height="8" Fill="{ThemeResource ScribePrimaryBrush}" Visibility="{x:Bind IsCurrent, Mode=OneWay}" />
+                                <Ellipse Stroke="{ThemeResource ScribeBorderStrongBrush}" StrokeThickness="1.5" Visibility="{x:Bind IsPending, Mode=OneWay}" />
                             </Grid>
                             <TextBlock Text="{x:Bind Label}" Style="{StaticResource BodyStyle}" VerticalAlignment="Center"
                                        FontWeight="{x:Bind controls:Bind.Weight(IsCurrent), Mode=OneWay}"
-                                       Foreground="{ThemeResource BcTextBrush}" />
+                                       Foreground="{ThemeResource ScribeTextBrush}" />
                         </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -52,7 +52,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" />
+                    <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
                     <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind Main.Kind.WhereText, Mode=OneWay}" />
                 </StackPanel>
                 <Button x:Name="CancelButton" x:Uid="CancelTranscriptionButton" Grid.Column="1" Style="{StaticResource ActionButtonStyle}"

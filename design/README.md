@@ -29,7 +29,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 uv run design/tokens/build.py            # regenerate every brand's dist and docs/accessibility/design-tokens.json
 uv run design/tokens/build.py --check    # CI: exit 1 if anything is stale
 uv run --with pytest pytest design/tokens
-uv run qa/tools/contrast.py --brands     # every brand in every mode (Brasscribe: 74 pairs x 6 modes), exit 1 on failure
+uv run qa/tools/contrast.py --brands     # every brand in every mode (Brasscribe: 76 pairs x 6 modes), exit 1 on failure
 uv run design/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
 node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
 ```
@@ -43,7 +43,7 @@ uv run design/tokens/build.py --brand fretscribe [--check]
 uv run design/fretscribe/brand/build.py  # Fretscribe's Android launcher icon (needs rsvg-convert)
 ```
 
-**Contrast:** all 444 pairs pass (74 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
+**Contrast:** all 456 pairs pass (76 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
 
 **Accessibility compatibility:**
 - `docs/accessibility/design-tokens.json` is generated from these tokens in its existing shape. The score hues are unchanged; the neutrals are warmer.
@@ -55,17 +55,17 @@ Each app copies (or links) from `design/dist/`. The generator never edits `apps/
 
 | Platform | Copy | Use |
 |---|---|---|
-| Apple | `dist/apple/BrasscribeDesign.xcassets`, `BrasscribeDesign.swift`, `Fonts/InstrumentSerif-Regular.ttf` (add it to `UIAppFonts` / `ATSApplicationFontsPath`), and `dist/icons/apple/AppIcon.appiconset` into the app's asset catalog | `Color.Brasscribe.primary`, `Font.Brasscribe.display`, `BrasscribeDesign.Space.s4`, `BrasscribeDesign.Motion.animation(reduceMotion:)`, `BrasscribeIcon.loop.systemName`. The colour sets carry dark and high-contrast appearances. |
+| Apple | `dist/apple/BrasscribeDesign.xcassets`, `BrasscribeDesign.swift`, `Fonts/InstrumentSerif-Regular.ttf` (add it to `UIAppFonts` / `ATSApplicationFontsPath`), and `dist/icons/apple/AppIcon.appiconset` into the app's asset catalog | `Color.Scribe.primary`, `Font.Scribe.display`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion.animation(reduceMotion:)` for what every brand has; `Color.Brasscribe.cursor`, `BrasscribeDesign.Score`, `BrasscribeIcon.loop.systemName` for Brasscribe's own. The colour sets carry dark and high-contrast appearances. |
 | Android | `dist/android/kotlin/no/brasscribe/design/*.kt`, `dist/android/res/drawable/ic_bc_*.xml`, `res/font/instrument_serif.ttf`, and `dist/icons/android/res/**` (the launcher icons) | `BrasscribeTheme(display = FontFamily(Font(R.font.instrument_serif))) { … }`, `BrasscribeTheme.colors.uncertain`, `BrasscribeButtonShape`, `painterResource(R.drawable.ic_bc_play)` |
-| Windows | `dist/windows/BrasscribeTheme.xaml` → `Themes/`, `Assets/Fonts/…`, and `dist/icons/windows/Assets/*` | Merge the dictionary into `App.xaml`. Use `{ThemeResource BcTextBrush}`, `{StaticResource BcTitle1TextBlockStyle}`, `FontIcon Glyph="{StaticResource BcIconPlay}"`. Contrast themes use the user's system colours. |
-| Studio | `dist/web/brasscribe.css` (+ `fonts.css`, `studio-compat.css`, `icons.js`, `icons/*.svg`) and `dist/icons/web/*` | `var(--bc-text)`. Handles `data-theme`, dark mode, `prefers-contrast`, `forced-colors` and `prefers-reduced-motion`. |
+| Windows | `dist/windows/BrasscribeTheme.xaml` → `Themes/`, `Assets/Fonts/…`, and `dist/icons/windows/Assets/*` | Merge the dictionary into `App.xaml`. Use `{ThemeResource ScribeTextBrush}` and `{StaticResource ScribeTitle1TextBlockStyle}` for what every brand has, `{ThemeResource BcCursorBrush}` and `FontIcon Glyph="{StaticResource BcIconPlay}"` for Brasscribe's own. Contrast themes use the user's system colours. |
+| Studio | `dist/web/brasscribe.css` (+ `fonts.css`, `icons.js`, `icons/*.svg`) and `dist/icons/web/*` | `var(--scribe-text)` for what every brand has, `var(--bc-cursor)` for Brasscribe's own. Handles `data-theme`, dark mode, `prefers-contrast`, `forced-colors` and `prefers-reduced-motion`. |
 
 ## Implementation checklist
 
 These are the changes each app needs. The ones marked **(drift)** are places where the app today differs from the agreed accessibility spec.
 
 ### All apps
-- [ ] Replace the hand-copied colours with the generated tokens (Apple `Color.Brasscribe.*`, Android `BrasscribeTheme`, Windows `BrasscribeTheme.xaml`).
+- [ ] Replace the hand-copied colours with the generated tokens (Apple `Color.Scribe.*`, Android `BrasscribeTheme`, Windows `BrasscribeTheme.xaml`).
 - [ ] Mark uncertainty with a "?" above the note, and a boxed "?" below 0.4, in the note colour. Remove rings, diamonds and brackets. **(drift)**
 - [ ] Use one primary button per screen, with 12 px corners. No pill shapes and no platform accent colour.
 - [ ] Use the display face only for screen titles of 28 pt and up and for the wordmark.
@@ -97,7 +97,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] Align "This decides how the music is taken apart…" with the other platforms' "Your answer decides how Brasscribe listens. It never guesses."
 - [ ] Home: `NavigationSplitView` with the library in the sidebar on iPad and macOS; one primary Import button; the other ways in as list rows.
 - [ ] Make the pairing copy command-free (the command moves under "Details for the band's tech person").
-- [ ] The player bar tint becomes `Color.Brasscribe.primary`, not the system blue.
+- [ ] The player bar tint becomes `Color.Scribe.primary`, not the system blue.
 
 ### Android (`apps/android`)
 - [ ] `strings.xml` and `values-nb`: `legend_uncertain` and `legend_very_uncertain` (rings and brackets) become the "?" legend. **(drift)**
@@ -115,7 +115,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] Mixer toggles are 40 epx tall on touch.
 
 ### Studio (`studio/`)
-- [ ] Load `brasscribe.css` and then `studio-compat.css`, and delete the colour blocks in `styles.css`.
+- [ ] Load `brasscribe.css`, and delete the colour blocks in `styles.css`.
 - [ ] Put the lockup in the header, the favicon set in place, and the page title in the display face.
 - [ ] Map the piano-roll colours onto `model-1` to `model-4`, and keep the patterns.
 - [ ] Validator issues (range, crossing) use the warning icon, not the "?" glyphs, which mean uncertain notes in Play.

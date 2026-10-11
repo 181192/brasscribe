@@ -8,16 +8,16 @@
 <script src="scores.js"></script>
 <script src="mockup.js"></script>
 <style>
-  .sec { margin-top: var(--bc-space-5); }
-  .sec .eyebrow { padding: 0 var(--bc-space-4); }
-  .sec .caption { padding: var(--bc-space-2) var(--bc-space-4) 0; }
-  .val { color: var(--bc-text-muted); font-size: 0.9375rem; }
-  .desk-pane { max-width: 720px; padding: var(--bc-space-8) var(--bc-space-6); }
-  .card-set { background: var(--bc-surface-raised); border-radius: var(--bc-radius-md); box-shadow: inset 0 0 0 1px var(--bc-border); }
-  .card-set .row + .row, .card-set .row + .inner { box-shadow: inset 0 1px 0 var(--bc-border); }
-  .inner { padding: var(--bc-space-3) var(--bc-space-4) var(--bc-space-4) 72px; display: grid; grid-template-columns: 160px 1fr; gap: var(--bc-space-3) var(--bc-space-4); align-items: center; }
+  .sec { margin-top: var(--scribe-space-5); }
+  .sec .eyebrow { padding: 0 var(--scribe-space-4); }
+  .sec .caption { padding: var(--scribe-space-2) var(--scribe-space-4) 0; }
+  .val { color: var(--scribe-text-muted); font-size: 0.9375rem; }
+  .desk-pane { max-width: 720px; padding: var(--scribe-space-8) var(--scribe-space-6); }
+  .card-set { background: var(--scribe-surface-raised); border-radius: var(--scribe-radius-md); box-shadow: inset 0 0 0 1px var(--scribe-border); }
+  .card-set .row + .row, .card-set .row + .inner { box-shadow: inset 0 1px 0 var(--scribe-border); }
+  .inner { padding: var(--scribe-space-3) var(--scribe-space-4) var(--scribe-space-4) 72px; display: grid; grid-template-columns: 160px 1fr; gap: var(--scribe-space-3) var(--scribe-space-4); align-items: center; }
   .inner label { font-weight: 600; font-size: 0.9375rem; }
-  .select { display: inline-flex; align-items: center; justify-content: space-between; gap: var(--bc-space-2); min-height: 40px; min-width: 240px; padding: 0 var(--bc-space-3); border-radius: var(--bc-radius-sm); box-shadow: inset 0 0 0 1px var(--bc-border-strong); background: var(--bc-bg); font-size: 0.9375rem; font-weight: 500; }
+  .select { display: inline-flex; align-items: center; justify-content: space-between; gap: var(--scribe-space-2); min-height: 40px; min-width: 240px; padding: 0 var(--scribe-space-3); border-radius: var(--scribe-radius-sm); box-shadow: inset 0 0 0 1px var(--scribe-border-strong); background: var(--scribe-bg); font-size: 0.9375rem; font-weight: 500; }
   .inner .seg { justify-self: start; }
 </style>
 </head>
@@ -26,8 +26,8 @@
 <div class="phone">
   <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
   <div class="navbar"><span class="back"><i data-i="back"></i>Home</span><span class="ttl">Settings</span><span style="width: 60px"></span></div>
-  <div class="content" style="padding: 0 var(--bc-space-4)">
-    <div class="sec" style="margin-top: var(--bc-space-3)">
+  <div class="content" style="padding: 0 var(--scribe-space-4)">
+    <div class="sec" style="margin-top: var(--scribe-space-3)">
       <h2 class="eyebrow">You</h2>
       <div class="group">
         <div class="row"><span class="well"><i data-i="parts" class="sm"></i></span><div class="grow"><div class="title">What you play</div><div class="sub">1st Baritone · treble clef in B♭</div></div><i data-i="open" class="sm chev"></i></div>
@@ -71,8 +71,8 @@
     <main class="main">
       <div class="desk-pane">
         <h1 class="display" style="font-size: 2.25rem">You</h1>
-        <p class="callout" style="margin-top: var(--bc-space-2); font-size: 1.0625rem">Your part is shown first, muted when you play along, and printed as “(you)”.</p>
-        <div class="card-set" style="margin-top: var(--bc-space-6)">
+        <p class="callout" style="margin-top: var(--scribe-space-2); font-size: 1.0625rem">Your part is shown first, muted when you play along, and printed as “(you)”.</p>
+        <div class="card-set" style="margin-top: var(--scribe-space-6)">
           <div class="row"><span class="well"><i data-i="parts" class="sm"></i></span><div class="grow"><div class="title">What you play</div><div class="sub">1st Baritone · treble clef in B♭</div></div><i data-i="choose" class="sm chev" style="transform: rotate(180deg)"></i></div>
           <div class="inner" role="group" aria-label="What you play">
             <label>Instrument</label><span class="select">Baritone<i data-i="choose" class="sm"></i></span>
@@ -81,7 +81,7 @@
             <span></span><button class="btn plain compact" style="justify-self:start; padding-left: 0">I conduct or listen</button>
           </div>
         </div>
-        <p class="caption" style="margin-top: var(--bc-space-3); display:flex; gap: 6px; align-items: center"><i data-i="info" class="sm"></i>New scores open on your part. Scores you already have keep the part you chose for them.</p>
+        <p class="caption" style="margin-top: var(--scribe-space-3); display:flex; gap: 6px; align-items: center"><i data-i="info" class="sm"></i>New scores open on your part. Scores you already have keep the part you chose for them.</p>
       </div>
     </main>
   </div>

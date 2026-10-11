@@ -43,7 +43,7 @@ It builds in 9 ordered steps (§9) after the connection, pairing and quartet bra
 The solo path is the same on the phone (Rust core, `arrangeLayersBand`) and in the engine's `solo` profile (Python `arrange_layers_song`). It runs in four steps:
 
 1. SwiftF0, Basic Pitch and (on the engine only) MuScriptor each transcribe the take.
-2. Each result is reduced to one line with `line(notes, 52, 88, top=True)`. Every note below E3 is dropped here: `core/brasscribe-core/src/pipeline.rs:331-333`, `eval/brasscribe_eval/arrange_layers_song.py:184-185`.
+2. Each result is reduced to one line with `line(notes, 52, 88, top=True)`. Every note below E3 is dropped here: `core/scribe-core/src/pipeline.rs:331-333`, `eval/brasscribe_eval/arrange_layers_song.py:184-185`.
 3. The notes SwiftF0 found are kept, with a confidence score from how many models agree. The kept line is filtered through the same window again (`pipeline.rs:359`, `arrange_layers_song.py:202`).
 4. The line goes to the Solo Cornet part (`arranger.rs:501-502`, `arranger.py:371`). `_place_line` picks the octave for each phrase that best fits Solo Cornet's reading range, 55–79 sounding.
 
@@ -445,30 +445,30 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 
 | File:line | Change |
 |---|---|
-| `core/brasscribe-core/src/instruments.rs:212-275` | `SEATS`, `seat_part`, the same table, and `Reads` |
-| `core/brasscribe-core/src/pipeline.rs:171-181` `LayersOptions` | `seat: Option<String>`, `reads: Option<String>`, `lead: String` |
+| `core/scribe-core/src/instruments.rs:212-275` | `SEATS`, `seat_part`, the same table, and `Reads` |
+| `core/scribe-core/src/pipeline.rs:171-181` `LayersOptions` | `seat: Option<String>`, `reads: Option<String>`, `lead: String` |
 | `pipeline.rs:239-243` | parse and validate the seat (unknown → `Err`) |
 | `pipeline.rs:331-333,359` | the line window from the seat instrument's `pro` range |
 | `pipeline.rs:464-477` | record `seat`, `reads` and `lead` in `comp.arrangement` when set |
 | `pipeline.rs:494-495,508-513` `arrange_composition` | pass `seat`, `reads` and `lead` to `arrange_layers_opts` and to `arrange_with`, so the phones' re-arrange after an edit keeps them |
 | `pipeline.rs:535-545` `arrange_song` | `SongOptions { seat, lead }` (kvartett adds `SongOptions { lineup }`), and the melody window |
-| `core/brasscribe-core/src/arranger.rs:199,289,501-502,553,574` | the same as Python: `place_as_played`, lead=seat, `part_sources` |
-| `core/brasscribe-core/src/difficulty.rs:24,168` | `SOLO_PART` → the lead part |
-| `core/brasscribe-core/src/notation/score.rs:27,226,652,1441` | clef and `<transpose>` from `reads` for the seat part |
-| `core/brasscribe-core/src/talking_score.rs:811-831` | nothing new (seat names are BRASS_BAND names), but see open question 2 |
-| `core/brasscribe-cli/src/main.rs` | `--seat`, `--reads` and `--lead` for `layers` and `song` |
-| `core/conformance/brasscribe_conformance/cases.py` | solo cases: the chorale stems from §7.1 for each seat group (baritone, trombone, tuba, horn) × (no seat, seat, seat + bass clef). Mikkel with `--lead seat --seat euphonium`. A `seat_part` table fixture. |
-| `core/conformance/brasscribe_conformance/reference.py:69-79` | pass `options` through (kvartett does the same) |
+| `core/scribe-core/src/arranger.rs:199,289,501-502,553,574` | the same as Python: `place_as_played`, lead=seat, `part_sources` |
+| `core/scribe-core/src/difficulty.rs:24,168` | `SOLO_PART` → the lead part |
+| `core/scribe-core/src/notation/score.rs:27,226,652,1441` | clef and `<transpose>` from `reads` for the seat part |
+| `core/scribe-core/src/talking_score.rs:811-831` | nothing new (seat names are BRASS_BAND names), but see open question 2 |
+| `core/cli/src/main.rs` | `--seat`, `--reads` and `--lead` for `layers` and `song` |
+| `core/conformance/scribe_conformance/cases.py` | solo cases: the chorale stems from §7.1 for each seat group (baritone, trombone, tuba, horn) × (no seat, seat, seat + bass clef). Mikkel with `--lead seat --seat euphonium`. A `seat_part` table fixture. |
+| `core/conformance/scribe_conformance/reference.py:69-79` | pass `options` through (kvartett does the same) |
 
 ### 5.3 FFI and bindings
 
 | File:line | Change |
 |---|---|
-| `core/brasscribe-ffi/src/lib.rs:143-164` `LayersSongOptions` | `seat: Option<String>`, `reads: Option<String>`, `lead: Option<String>`. Defaults in `:166-181` are `None`. |
+| `core/ffi/src/lib.rs:143-164` `LayersSongOptions` | `seat: Option<String>`, `reads: Option<String>`, `lead: Option<String>`. Defaults in `:166-181` are `None`. |
 | `lib.rs` (kvartett's new `ArrangeOptions`) | the same three fields, so the re-arrange after an edit keeps the seat |
 | `lib.rs` (new) | `seat_part(lineup: String, seat: String) -> SeatPart`, `part_sources(composition_json: String) -> HashMap<String, String>`, and `seats() -> Vec<SeatInfo>` (id, English name, nb name, instrument, clef, offered readings) so the pickers come from one source |
-| `core/brasscribe-ffi/src/c_api.rs:176-196` `options_of` | the JSON keys `seat`, `reads` and `lead`. New `bc_seat_part`, `bc_part_sources` and `bc_seats`. |
-| `core/dotnet/Brasscribe.Core/BrasscribeCore.cs:28-35,173-199,320-329` | the record fields, the snake_case JSON and the P/Invoke |
+| `core/ffi/src/c_api.rs:176-196` `options_of` | the JSON keys `seat`, `reads` and `lead`. New `sc_seat_part`, `sc_part_sources` and `sc_seats`. |
+| `core/dotnet/Scribe.Core/ScribeCore.cs:28-35,173-199,320-329` | the record fields, the snake_case JSON and the P/Invoke |
 | `core/scripts/bindings.sh` | regenerate the Swift, Kotlin and C bindings |
 
 ### 5.4 Engine and OpenAPI
@@ -626,7 +626,7 @@ This builds on `feat/kvartett`, and it must land after it. The files below are a
 | File | Branch | Likelihood |
 |---|---|---|
 | `music/.../instruments.py`, `arranger.py`, `difficulty.py`, `musicxml.py`; `core/.../instruments.rs`, `arranger.rs`, `difficulty.rs`, `pipeline.rs`, `musicxml.rs`, `notation/score.rs`; `eval/.../arrange_layers_song.py`, `arrange_song.py` | `feat/kvartett` (all already changed there) | **certain**. Start from kvartett's lineup roles, don't merge by hand. |
-| `core/brasscribe-ffi/src/lib.rs`, `c_api.rs`, `BrasscribeCore.cs`, the generated bindings | kvartett (`ArrangeOptions`, `bc_arrange_with`) | high. Regenerate bindings after rebasing. |
+| `core/ffi/src/lib.rs`, `c_api.rs`, `ScribeCore.cs`, the generated bindings | kvartett (`ArrangeOptions`, `sc_arrange_with`) | high. Regenerate bindings after rebasing. |
 | `engine/openapi.json`, `apps/android/engine-client/openapi.json`, the Windows test fixture `openapi.json`, `studio/src/api/schema.d.ts` | engine presence and pairing, kvartett | high. Regenerate, don't merge. |
 | `engine/.../schemas.py`, `api.py`, `profiles.py` | presence and pairing, kvartett | medium |
 | `apps/apple/.../CompanionService.swift`, `AppModel.swift`, `SettingsView.swift` | `feat/apple-listen-stop-connection`, pairing | high (Settings holds "Your computer") |
@@ -668,7 +668,7 @@ Build these once the connection, pairing and quartet branches are on `main`. Eac
    - The option fields, `seat_part`, `part_sources` and `seats()` over UniFFI, C and .NET, then `bindings.sh`.
    - `JobCreate`, `profiles.py`, the CLI and `pixi run openapi`.
    - Studio: `gen:api` and the run summary.
-   - *Done when:* `cargo test`, `dotnet test core/dotnet/Brasscribe.Core.Tests`, `pixi run test` and `(cd studio && npm test)` pass.
+   - *Done when:* `cargo test`, `dotnet test core/dotnet/Scribe.Core.Tests`, `pixi run test` and `(cd studio && npm test)` pass.
 7. **Apple.** Rebase onto `main` first. Apply §5.5: the first run, Settings, the defaults, the per-score override, the source labels, Review, Share, Choose output, and the strings.
    - *Done when:* `(cd apps/apple && make test)` passes, and the screenshots are retaken.
 8. **Android.** Apply §5.6, then `syncOpenApi`.

@@ -7,6 +7,9 @@ and a machine-wide lock keeps at most one instance running at a time.
 MuseScore 4.7 aborts during shutdown after writing its output, so success is
 judged by the output files existing, never by the exit code.
 
+On macOS MuseScore runs with a home folder of its own (see `_environment`), so it never opens the
+user's Documents folder and never waits for the system to ask permission for it.
+
 The binary is `$BRASSCRIBE_MSCORE`, falling back to `mscore` on PATH.
 """
 
@@ -90,11 +93,27 @@ def _lock(cancel: threading.Event | None = None) -> Iterator[None]:
         os.close(fd)
 
 
-def _run(cmd: list[str], timeout: float, cancel: threading.Event | None) -> None:
+def _environment(home: Path) -> dict[str, str] | None:
+    """The environment MuseScore runs in: on macOS with `home` as its home folder, elsewhere the engine's own.
+
+    MuseScore keeps its plugins, styles and soundfonts in the user's Documents folder and reads them at every
+    start, also for a conversion. macOS guards that folder per app, and holds MuseScore's access against the
+    app that started the engine. Until the user has answered the system's question for that app, MuseScore
+    waits in its first read and writes nothing: the conversion ends at its time limit without a file. With a
+    home of its own, MuseScore looks for its Documents and Application Support folders there, and finds them
+    empty. Its preferences are not moved (the system keeps them per user, whatever the home): a preference
+    that names a folder in the user's Documents still leads MuseScore there."""
+    if sys.platform != "darwin":
+        return None
+    home.mkdir(parents=True, exist_ok=True)
+    return {**os.environ, "CFFIXED_USER_HOME": str(home)}
+
+
+def _run(cmd: list[str], timeout: float, cancel: threading.Event | None, env: dict[str, str] | None = None) -> None:
     """MuseScore until it exits, `timeout` passes, or `cancel` is set. Then it is killed with every process
     under it: behind a launcher that stays in between (a shell script, `flatpak run`) MuseScore is not the
     process that was started."""
-    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
     deadline = time.monotonic() + timeout
     try:
         while True:
@@ -112,6 +131,18 @@ def _run(cmd: list[str], timeout: float, cancel: threading.Event | None) -> None
         if proc.poll() is None:
             kill_tree(proc)
         raise
+
+
+def _remove(folder: Path, patience: float = 5.0) -> None:
+    """Delete the conversion's folder. What MuseScore leaves running for a moment after it has exited (its
+    crash reporter, the system's network storage for it) can still write into the home in there, which makes
+    a delete fail or puts a new file there: so it is deleted again until it has stayed gone for a moment."""
+    deadline = time.monotonic() + patience
+    while True:
+        shutil.rmtree(folder, ignore_errors=True)
+        time.sleep(0.2)
+        if not folder.exists() or time.monotonic() > deadline:
+            return
 
 
 def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: float = 600.0,
@@ -137,13 +168,17 @@ def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: 
     # so notation outputs share one launch and each audio output gets its own.
     audio = [e for e in entries if Path(e["out"]).suffix.lower() in AUDIO_SUFFIXES]
     batches = [[e for e in entries if e not in audio]] + [[e] for e in audio]
-    with tempfile.TemporaryDirectory() as tmp:
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        env = _environment(tmp / "home")
         for i, batch in enumerate(b for b in batches if b):
-            job_file = Path(tmp) / f"job{i}.json"
+            job_file = tmp / f"job{i}.json"
             job_file.write_text(json.dumps(batch))
             cmd = [exe] + (["-S", str(Path(style).resolve())] if style else []) + ["-j", str(job_file)]
             with _lock(cancel):
-                _run(cmd, timeout, cancel)
+                _run(cmd, timeout, cancel, env)
+    finally:
+        _remove(tmp)
     return [p for p in expected if not p.exists()]
 
 

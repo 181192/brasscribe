@@ -8,29 +8,29 @@
 <script src="scores.js"></script>
 <script src="mockup.js"></script>
 <style>
-  .os { background: var(--bc-surface); }
+  .os { background: var(--scribe-surface); }
   .grid { position: absolute; inset: 24px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 24px; }
   .win-frame { min-height: 0; }
   .wbody { flex: 1; display: flex; min-height: 0; }
-  .rail { width: 176px; flex: none; background: var(--bc-surface); box-shadow: inset -1px 0 0 var(--bc-border); padding: 16px 12px; }
+  .rail { width: 176px; flex: none; background: var(--scribe-surface); box-shadow: inset -1px 0 0 var(--scribe-border); padding: 16px 12px; }
   .rail .steps li { min-height: 36px; font-size: 0.875rem; gap: 8px; }
   .rail .steps .dot { width: 20px; height: 20px; }
   .rail .steps .dot .i { width: 14px; height: 14px; }
   .rail .steps .now .dot::after { width: 6px; height: 6px; }
   .pagec { flex: 1; min-width: 0; padding: 18px 22px 16px; display: flex; flex-direction: column; gap: 10px; }
-  .pagec h1 { font-family: var(--bc-font-display); font-weight: 400; font-size: 1.875rem; line-height: 1.1; margin: 0; }
+  .pagec h1 { font-family: var(--scribe-font-display); font-weight: 400; font-size: 1.875rem; line-height: 1.1; margin: 0; }
   .pagec p { font-size: 0.9375rem; }
   .foot { margin-top: auto; display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
   .chk { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9375rem; }
-  .chk .i { width: 20px; height: 20px; color: var(--bc-text-muted); margin-top: 1px; }
-  .chk .ok { color: var(--bc-success); }
+  .chk .i { width: 20px; height: 20px; color: var(--scribe-text-muted); margin-top: 1px; }
+  .chk .ok { color: var(--scribe-success); }
   ol.how { margin: 0; padding-left: 1.3em; font-size: 0.9375rem; display: flex; flex-direction: column; gap: 4px; }
   .dl .steps li { min-height: 30px; font-size: 0.9375rem; }
   .dl .steps .dot { width: 20px; height: 20px; }
   .dl .steps .dot .i { width: 14px; height: 14px; }
   .dl .steps .now .dot::after { width: 6px; height: 6px; }
-  a.lnk { color: var(--bc-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; font-size: 0.9375rem; }
-  .menubar-mini { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border); font-size: 0.8125rem; }
+  a.lnk { color: var(--scribe-text); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; font-size: 0.9375rem; }
+  .menubar-mini { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: var(--scribe-surface-raised); box-shadow: inset 0 0 0 1px var(--scribe-border); font-size: 0.8125rem; }
 </style>
 </head>
 <body>
@@ -39,7 +39,7 @@
 
   <!-- 1. Check this computer -->
   <div class="win-frame">
-    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
     <div class="wbody">
       <div class="rail"><ol class="steps">
         <li class="now"><span class="dot"></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>
@@ -48,7 +48,7 @@
         <li class="todo"><span class="dot"></span><span class="label" data-nb="Klar">Ready</span></li>
       </ol></div>
       <div class="pagec">
-        <span data-mark="32" style="color: var(--bc-brass)"></span>
+        <span data-mark="32" style="color: var(--scribe-brand)"></span>
         <h1 data-nb="Lag partitur på denne datamaskinen">Make scores on this computer</h1>
         <p class="muted" data-nb="Brasscribe gjør det tunge arbeidet her, så telefoner og nettbrett kan lage partitur for hele bandet. Opptakene blir på dine egne enheter.">Brasscribe does the heavy work here, so your phones and tablets can make scores for the whole band. Recordings stay on your own devices.</p>
         <div class="chk"><i data-i="workload"></i><div><b>Apple M3 Pro</b> · <span data-nb="Rask: bruker grafikkbrikken">Fast: uses the graphics chip</span></div></div>
@@ -61,7 +61,7 @@
 
   <!-- 2. Accept one licence -->
   <div class="win-frame">
-    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
     <div class="wbody">
       <div class="rail"><ol class="steps">
         <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>
@@ -90,7 +90,7 @@
 
   <!-- 3. Download -->
   <div class="win-frame">
-    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
     <div class="wbody">
       <div class="rail"><ol class="steps">
         <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>
@@ -121,7 +121,7 @@
 
   <!-- 4. Ready -->
   <div class="win-frame">
-    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--bc-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
+    <div class="wbar"><span class="lights" style="display:flex;gap:8px"><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i><i style="width:12px;height:12px;border-radius:50%;background:var(--scribe-border)"></i></span><span class="t">Brasscribe Bandroom</span></div>
     <div class="wbody">
       <div class="rail"><ol class="steps">
         <li class="done"><span class="dot"><i data-i="done"></i></span><span class="label" data-nb="Sjekk datamaskinen">Check this computer</span></li>

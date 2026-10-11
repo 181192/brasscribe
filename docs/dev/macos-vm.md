@@ -137,7 +137,7 @@ Nothing compiles in the VM, and the VMs stay up between runs. `test-ui`:
 1. Builds on the host with `xcodebuild build-for-testing` into `apps/apple/build/DerivedData-vm`.
    This is incremental, and the host has the same Xcode as the VM. It needs the parts of the build
    that are not in git:
-   - the Rust core `BrasscribeFFI.xcframework`: always this checkout's. It is built with
+   - the Rust core `ScribeFFI.xcframework`: always this checkout's. It is built with
      `apps/apple/scripts/build-core.sh` when missing or older than the core's sources
    - Verovio (`apps/apple/Frameworks`): from this checkout, else from the main checkout when this is
      a worktree, else `make verovio`

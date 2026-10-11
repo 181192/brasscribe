@@ -1,0 +1,123 @@
+name: screens
+
+# After a merge: what changed in the screen catalogues' pictures on main. Every ci run on main leaves the
+# pictures of each catalogue that passed as an artefact named by its commit (screens-<catalogue>-<commit>); this
+# compares them with the record before, taken with the same runner image and toolchain, and renders nothing itself
+# (.github/scripts/screens-on-main.sh). No pull request and no merge waits for it.
+# When screens differ, the before, difference and after pictures are this run's artefact screens-changed-<commit>,
+# and the platform's issue ("Screens changed on main: Android", Mac, Windows or Studio) gets a comment with the
+# list, or is opened. The issue is never closed from here: a person closes it after looking. A record that is the
+# same as the one before does nothing.
+# It can be started by hand for a ci run of a push to main (`gh workflow run screens.yml -f run=<id>`); that writes
+# the report and no issue.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run:
+        description: The ci run (of a push to main) whose screen records to compare with those before it
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: screens-${{ github.event.workflow_run.id || inputs.run }}
+  cancel-in-progress: false
+
+jobs:
+  # Runs this repository's scripts and npm packages as they are on main, on pictures: none of a pull request's
+  # code. Its token can read artefacts and nothing else; the issue is written by the job after it.
+  compare:
+    name: screens compared with the record before
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+      sha: ${{ steps.compare.outputs.sha }}
+      artifact: ${{ steps.upload.outputs.artifact-url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+
+      # The comparison draws the pictures in Chromium's canvas (studio/catalogue/compare.mjs).
+      - name: Studio's packages
+        working-directory: studio
+        run: npm ci --no-audit --no-fund
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('studio/package-lock.json') }}
+
+      - name: Chromium
+        working-directory: studio
+        run: npx playwright install --with-deps chromium
+
+      - name: Compare
+        id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.event.workflow_run.id || inputs.run }}
+        run: |
+          .github/scripts/screens-on-main.sh "$RUN" "$RUNNER_TEMP/screens"
+          cat "$RUNNER_TEMP/screens/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN" --jq .head_sha)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          if [ -n "$(ls "$RUNNER_TEMP/screens/issues")" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/upload-artifact@v7
+        id: upload
+        if: steps.compare.outputs.changed == 'true'
+        with:
+          name: screens-changed-${{ steps.compare.outputs.sha }}
+          path: ${{ runner.temp }}/screens
+          retention-days: 90
+
+  # Only this repository's issue script, with the token that may write issues: no npm package runs here. What it
+  # says comes from the job above (the texts in the report's issues folder).
+  report:
+    name: say so in each platform's issue
+    needs: compare
+    if: ${{ needs.compare.outputs.changed == 'true' && github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: screens-changed-${{ needs.compare.outputs.sha }}
+          path: ${{ runner.temp }}/screens
+
+      - name: Open the platform's issue, or add to it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT: ${{ needs.compare.outputs.artifact }}
+        run: |
+          for body in "$RUNNER_TEMP"/screens/issues/*.md; do
+            platform="$(basename "$body" .md)"
+            case "$platform" in Android | Mac | Windows | Studio | Other) ;; *) echo "no platform $platform" >&2; exit 1 ;; esac
+            sed -i "s|ARTIFACT_URL|the artefact $ARTIFACT|" "$body"
+            .github/scripts/tracking-issue.sh failing "Screens changed on main: $platform" "$body"
+          done

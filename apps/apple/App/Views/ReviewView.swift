@@ -137,7 +137,7 @@ struct ReviewView: View {
     private var noteList: some View {
         List(selection: Binding(get: { item?.id }, set: { current = $0 })) {
             Section {
-                UncertaintyLegend().font(Font.Brasscribe.callout)
+                UncertaintyLegend().font(Font.Scribe.callout)
             } header: {
                 SectionLabel(items.count == 1 ? String(localized: "1 note to check") : String(localized: "\(items.count) notes to check"))
             }
@@ -146,12 +146,12 @@ struct ReviewView: View {
                     ForEach(group) { it in
                         HStack(spacing: Space.s3) {
                             if checked.contains(it.id) {
-                                Image(systemName: BrasscribeIcon.done.systemName).foregroundStyle(Color.Brasscribe.textMuted).frame(width: 24)
+                                Image(systemName: BrasscribeIcon.done.systemName).foregroundStyle(Color.Scribe.textMuted).frame(width: 24)
                             } else {
                                 UncertainMark(level: it.level).frame(width: 24)
                             }
                             Text("\(barLabel(it)) · \(pitchName(it))")
-                                .foregroundStyle(checked.contains(it.id) ? Color.Brasscribe.textMuted : Color.Brasscribe.text)
+                                .foregroundStyle(checked.contains(it.id) ? Color.Scribe.textMuted : Color.Scribe.text)
                         }
                         .frame(minHeight: 44)
                         .tag(it.id)
@@ -177,12 +177,12 @@ struct ReviewView: View {
                     SectionLabel(String(localized: "Still to check"))
                     VStack(spacing: 0) {
                         ForEach(Array(rest.prefix(4).enumerated()), id: \.element.id) { i, it in
-                            if i > 0 { Divider().overlay(Color.Brasscribe.border) }
+                            if i > 0 { Divider().overlay(Color.Scribe.border) }
                             Button { current = it.id } label: {
                                 HStack(spacing: Space.s3) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(barLabel(it)).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                                        Text("\(it.partName) · \(noteWords(it))").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                                        Text(barLabel(it)).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                                        Text("\(it.partName) · \(noteWords(it))").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                                     }
                                     Spacer()
                                     UncertainMark(level: it.level)
@@ -192,8 +192,8 @@ struct ReviewView: View {
                             .buttonStyle(.plain)
                         }
                         if rest.count > 4 {
-                            Divider().overlay(Color.Brasscribe.border)
-                            Text("+ \(rest.count - 4) more").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                            Divider().overlay(Color.Scribe.border)
+                            Text("+ \(rest.count - 4) more").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                                 .padding(.horizontal, Space.s4).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
                         }
                     }
@@ -219,11 +219,11 @@ struct ReviewView: View {
             VStack(alignment: .leading, spacing: wide ? Space.s4 : Space.s3) {
                 triage
                 HStack(alignment: .firstTextBaseline) {
-                    Text(barLabel(it)).font(wide ? Font.Brasscribe.display(34) : Font.Brasscribe.title2)
+                    Text(barLabel(it)).font(wide ? Font.Brasscribe.display(34) : Font.Scribe.title2)
                         .accessibilityAddTraits(.isHeader)
                     Spacer()
                     Text("\(index) of \(open.count) · \(it.partName)")
-                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                         .accessibilityIdentifier("reviewPosition")
                 }
                 BarSnippet(xml: xml, partID: it.partID, bar: it.bar, lastBar: it.lastBar ?? it.bar, noteTick: it.tick, level: it.level, score: model.score)
@@ -231,9 +231,9 @@ struct ReviewView: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Space.s1) {
                     Text(it.noteCount > 1 ? String(localized: "\(it.noteCount) notes from written \(noteWords(it))") : String(localized: "Written \(noteWords(it))"))
-                        .font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+                        .font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
                     Text(levelSentence(it))
-                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let was = was(it) { changedRow(it, was: was) }
@@ -274,14 +274,14 @@ struct ReviewView: View {
                 Text(v * 2 > open.count ? String(localized: "Start with the \(v) very unsure ones.")
                      : v > 0 ? String(localized: "Most of these are probably right. Start with the \(v) very unsure ones.")
                      : String(localized: "Most of these are probably right. Listen to a bar, then keep the rest of it."))
-                    .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
+                    .font(Font.Scribe.body).foregroundStyle(Color.Scribe.text)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("reviewLead")
             } else if filter == .mine, let id = myPartID, let part = model?.score.part(id: id), count(.mine) > 0 {
                 let n = count(.mine), v = open.filter { $0.level == .veryUncertain }.count
                 Text(v == 0 ? String(localized: "Your part first: \(n) notes in \(part.displayName).")
                             : String(localized: "Your part first: \(n) notes in \(part.displayName), \(v) very unsure first."))
-                    .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                    .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
             }
             Segmented(label: String(localized: "Which notes"), selection: $filter,
                       options: wide
@@ -310,7 +310,7 @@ struct ReviewView: View {
 
     private func changedText(_ it: ReviewItem, was: SpelledPitch) -> some View {
         Text(Self.changedWords(now: pitchWithOctave(it), was: ReviewWords.name(was) + "\(was.octave)"))
-            .font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+            .font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityFocused($changedFocused)
             .accessibilityIdentifier("noteChanged")
@@ -352,7 +352,7 @@ struct ReviewView: View {
         }
         .padding(.horizontal, wide ? Space.s8 : Space.s5)
         .padding(.vertical, wide ? Space.s3 : Space.s2)
-        .background(Color.Brasscribe.bg)
+        .background(Color.Scribe.bg)
     }
 
     private var finishLaterButton: some View {
@@ -389,7 +389,7 @@ struct ReviewView: View {
                 // the keys, where there's room beside the buttons
                 ViewThatFits(in: .horizontal) {
                     Text(model?.listening != nil ? "Space stops · K keeps" : "Space listens · K keeps")
-                        .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                         .fixedSize()
                     Color.clear.frame(width: 0, height: 0)
                 }
@@ -663,26 +663,26 @@ struct EvidencePanel: View {
         if let note {
             VStack(alignment: .leading, spacing: Space.s3) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("How sure Brasscribe is").font(Font.Brasscribe.headline)
+                    Text("How sure Brasscribe is").font(Font.Scribe.headline)
                     Spacer()
-                    Text(percentText(note.confidence * 100)).font(Font.Brasscribe.headline.monospacedDigit())
+                    Text(percentText(note.confidence * 100)).font(Font.Scribe.headline.monospacedDigit())
                 }
                 ProgressView(value: note.confidence)
-                    .tint(Color.Brasscribe.text)
+                    .tint(Color.Scribe.text)
                     .accessibilityLabel(Text("How sure Brasscribe is"))
                     .accessibilityValue(Text(percentText(note.confidence * 100)))
                 if !note.models.isEmpty {
-                    Divider().overlay(Color.Brasscribe.border)
-                    Text("What each transcriber heard").font(Font.Brasscribe.headline)
+                    Divider().overlay(Color.Scribe.border)
+                    Text("What each transcriber heard").font(Font.Scribe.headline)
                     ForEach(note.models, id: \.model) { m in
                         HStack(spacing: Space.s3) {
                             Image(systemName: m.agrees ? BrasscribeIcon.done.systemName : BrasscribeIcon.info.systemName)
-                                .foregroundStyle(Color.Brasscribe.textMuted)
+                                .foregroundStyle(Color.Scribe.textMuted)
                                 .frame(width: 20)
                                 .accessibilityHidden(true)
-                            Text(m.name).font(Font.Brasscribe.body)
+                            Text(m.name).font(Font.Scribe.body)
                             Spacer()
-                            Text(heardText(m)).font(Font.Brasscribe.body.weight(m.agrees ? .regular : .semibold))
+                            Text(heardText(m)).font(Font.Scribe.body.weight(m.agrees ? .regular : .semibold))
                         }
                         .frame(minHeight: 32)
                         .accessibilityElement(children: .combine)
@@ -722,11 +722,11 @@ struct BarSnippet: View {
                         let s = min(1, size.width / max(1, doc.size.width))
                         ctx.scaleBy(x: s, y: s)
                         let env = ctx.environment
-                        let ink = Color.Brasscribe.ink.resolve(in: env).cgColor
+                        let ink = Color.Scribe.ink.resolve(in: env).cgColor
                         let target = targetNoteID(page)
                         let f = target.flatMap { doc.frames[$0] }
                         let lines = page.firstStaff.flatMap { page.staffLines[$0] } ?? f ?? .zero
-                        let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Brasscribe.uncertain
+                        let color: Color = level == .veryUncertain ? .Brasscribe.veryUncertain : .Scribe.uncertain
                         // selected: a tint column behind the note and a caret under the staff (a box would read as the boxed "?")
                         var column = CGRect.zero
                         if let f {
@@ -744,7 +744,7 @@ struct BarSnippet: View {
                             let y = column.maxY + 3
                             caret.move(to: CGPoint(x: f.midX, y: y)); caret.addLine(to: CGPoint(x: f.midX - 5, y: y + 7))
                             caret.addLine(to: CGPoint(x: f.midX + 5, y: y + 7)); caret.closeSubpath()
-                            ctx.fill(caret, with: .color(.Brasscribe.text))
+                            ctx.fill(caret, with: .color(.Scribe.text))
                             // the "?" at 1.6 staff spaces, above the staff, as in the score
                             let space = max(3, lines.height / 4)
                             let size = space * BrasscribeDesign.Score.markSizeStaffSpaces
@@ -848,7 +848,7 @@ struct ArrangedNotice: View {
             DisplayTitle(text: Self.title(empty: empty), size: 34)
             SourceLabel(kind: empty ? .empty : .arranged)
             Text(Self.body(part, empty: empty))
-                .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
                 .fixedSize(horizontal: false, vertical: true)
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: Space.s3) { othersButton; showButton }

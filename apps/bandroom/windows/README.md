@@ -34,12 +34,12 @@ sounds are missing and Studio plays General MIDI sounds. The SoundFont adds 68 M
 `sounds-2026.09.30` phone build). The engine's MP3 export does not use it: that is MuseScore's own sounds, levelled
 to the band's loudness with `playback-levels.json`, which Bandroom stages next to it.
 
-The engine's `bass-tab` profile runs the Rust core's command line. When `core\target\release\brasscribe-core.exe`
-exists (`cargo build --release --locked -p brasscribe-cli` in `core\`), the build copies it to `core\` next to the
-exe, and Bandroom passes it to the engine as `BRASSCRIBE_CORE_CLI`; the release build in `windows.yml` builds it
+The engine's `bass-tab` profile runs the Rust core's command line. When `core\target\release\scribe-core.exe`
+exists (`cargo build --release --locked -p scribe-cli` in `core\`), the build copies it to `core\` next to the
+exe, and Bandroom passes it to the engine as `SCRIBE_CORE_CLI`; the release build in `windows.yml` builds it
 first, with the C runtime linked in (`RUSTFLAGS=-C target-feature=+crt-static`), so it needs no Visual C++ runtime
 on the PC. Without the exe `engine.log` says it is missing, and the engine refuses `bass-tab` jobs: a
-`BRASSCRIBE_CORE_CLI` set for the user is not passed on, so the engine only ever runs the bundled one.
+`SCRIBE_CORE_CLI` set for the user is not passed on, so the engine only ever runs the bundled one.
 
 On macOS: `tools/check-macos.sh` runs the Core tests and type-checks the app's C# (the XAML compiler only runs
 on Windows; CI builds it: `.github/workflows/windows.yml`, job `bandroom`).
@@ -115,8 +115,8 @@ admin credential ACL); a start with pixi, where the first run installs the `defa
 `pixi.lock`, the engine reaches Running, `engine.json` is written without the credential, health, devices and an
 open-until-closed pairing window answer with the bearer, and the engine's process tree ends with Bandroom; the
 screen catalogue (`tools/Screenshots/catalogue.ps1`: every view in Light, Dark,
-bokmål, a contrast theme and 200 % text, with the contrast of its text, Axe.Windows and a walk with Tab, compared
-with Bandroom built at the merge base; artefact `bandroom-windows-screenshots`). How it works and what its answers
+bokmål, a contrast theme and 200 % text, with the contrast of its text, Axe.Windows and a walk with Tab; its
+screenshots are the artefact `bandroom-windows-screenshots`, to look at). How it works and what its answers
 mean: [apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../windows/tests/Brasscribe.Play.Catalogue/README.md#bandroom-for-windows).
 
 ## Not done yet

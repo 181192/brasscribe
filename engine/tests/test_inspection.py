@@ -177,8 +177,8 @@ def test_conformance_run_lifecycle(settings, monkeypatch, tmp_path):
     from brasscribe_engine import conformance
 
     project = tmp_path / "proj"
-    (project / "brasscribe_conformance").mkdir(parents=True)
-    (project / "brasscribe_conformance" / "run.py").write_text("")
+    (project / "scribe_conformance").mkdir(parents=True)
+    (project / "scribe_conformance" / "run.py").write_text("")
     with TestClient(create_app(settings)) as c:
         runner = c.app.state.conformance
         runner.project = project

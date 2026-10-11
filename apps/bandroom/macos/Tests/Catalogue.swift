@@ -43,9 +43,6 @@ enum Catalogue {
             .appending(path: "build/catalogue/screenshots", directoryHint: .isDirectory)
     }
 
-    /// CATALOGUE_CHECKS=0 takes the screenshots without failing on findings (the base of a comparison).
-    nonisolated static var checks: Bool { ProcessInfo.processInfo.environment["CATALOGUE_CHECKS"] != "0" }
-
     /// The settings the catalogue's models read and write: a store of its own, emptied once per run, never the app's.
     static let defaults: UserDefaults = {
         let name = "no.brasscribe.bandroom.catalogue"
@@ -79,9 +76,7 @@ enum Catalogue {
         let nodes = AXTree.read(r.hosting)
         if let broken = Guards.tree(nodes, screen: name) { Issue.record(Comment(rawValue: broken)) }
         let findings = Checks.run(nodes, bounds: r.hosting.bounds, text: text).filter { !known($0) }
-        if checks {
-            #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
-        }
+        #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
         try Pictures.write(Pictures.bitmap(of: r.hosting), tree: nodes, name: name, to: output)
     }
 

@@ -98,8 +98,8 @@ def option_error_message(code: str) -> str:
         PERCUSSION_SOLO_CODE: PERCUSSION_SOLO,
         SEAT_NO_TUNE_CODE: "the seat's part can't carry the tune in this lineup: choose another lead",
         READS_NOT_OFFERED_CODE: "the seat's part is not offered in that clef",
-        CORE_MISSING_CODE: "this engine cannot write tab: brasscribe-core is not installed with it (build it with "
-                           "`cargo build --release -p brasscribe-cli` in core/)",
+        CORE_MISSING_CODE: "this engine cannot write tab: scribe-core is not installed with it (build it with "
+                           "`cargo build --release -p scribe-cli` in core/)",
     }.get(code, "these job options don't fit together; the engine's log says which one")
 
 

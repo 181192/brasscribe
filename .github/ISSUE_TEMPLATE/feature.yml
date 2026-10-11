@@ -20,7 +20,7 @@ body:
     attributes:
       label: Where
       multiple: true
-      options: [Brasscribe Play, Bandroom, Studio (browser), brasscribe-core (command line), The engine / transcription, The site]
+      options: [Brasscribe Play, Bandroom, Studio (browser), scribe-core (command line), The engine / transcription, The site]
   - type: textarea
     id: acceptance
     attributes:

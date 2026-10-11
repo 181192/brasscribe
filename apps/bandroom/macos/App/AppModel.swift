@@ -104,7 +104,7 @@ final class AppModel {
                      ?? "band sounds missing from the app (Resources/band/brasscribe-band.sf2); Studio plays General MIDI sounds")
         let coreCLI = EngineConfiguration.findCoreCLI(resources: Bundle.main.resourceURL)
         logger.write(coreCLI.map { "core command line: \($0.path)" }
-                     ?? "core command line missing from the app (Resources/bin/brasscribe-core); the installed engine cannot make bass tabs")
+                     ?? "core command line missing from the app (Resources/bin/scribe-core); the installed engine cannot make bass tabs")
         #if DEBUG
         // The demo is always on the same Mac, so its screenshots show neither this one's name nor a different one each time.
         let systemName = env["BANDROOM_DEMO"] != nil ? DemoEngine.computerName : ComputerName.current()

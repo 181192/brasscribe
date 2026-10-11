@@ -5,10 +5,10 @@
 #        SIM_DEVICE=<udid or name> shoots on that simulator instead of the shared "iPhone 17" / iPad Air)
 # Build first (make build, or xcodebuild … build). The macOS build can carry another bundle
 # id (PLAY_BUNDLE_ID=…) so it runs beside another copy of the app.
-# scripts/screenshots.sh record | compare [base] runs the Mac screen catalogue instead: off screen, with its
-# checks, compared with the merge base (scripts/screen-catalogue.sh); nothing goes into docs/.
+# scripts/screenshots.sh record runs the Mac screen catalogue instead: off screen, with its checks
+# (scripts/screen-catalogue.sh); nothing goes into docs/.
 set -uo pipefail
-case "${1:-}" in record|compare) exec "$(dirname "$0")/screen-catalogue.sh" "$@" ;; esac
+case "${1:-}" in record) exec "$(dirname "$0")/screen-catalogue.sh" "$@" ;; esac
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"

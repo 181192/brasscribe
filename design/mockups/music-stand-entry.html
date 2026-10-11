@@ -10,26 +10,26 @@
 <script src="music-stand.js"></script>
 <script src="mockup.js"></script>
 <style>
-  .toolbar { display: flex; align-items: center; gap: var(--bc-space-2); padding: var(--bc-space-2) var(--bc-space-5); flex: none; }
-  .menu-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; min-height: 44px; padding: 0 10px 0 12px; border-radius: var(--bc-radius-sm); background: var(--bc-secondary); font-size: 0.9375rem; }
-  .stand-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; min-height: 44px; padding: 0 14px 0 12px; border-radius: var(--bc-radius-sm); background: transparent; box-shadow: inset 0 0 0 1px var(--bc-border-strong); font-size: 0.9375rem; }
-  .stand-btn kbd { font: 600 0.75rem/1 var(--bc-font-text); color: var(--bc-text-muted); box-shadow: inset 0 0 0 1px var(--bc-border); border-radius: 4px; padding: 3px 6px; margin-left: 4px; }
-  .phone .scorebox { flex: 1; overflow: hidden; padding: 0 var(--bc-space-3); }
-  .phone .player { margin: 0 var(--bc-space-5) var(--bc-space-2); padding: var(--bc-space-3); }
-  .phone .chips { display: grid; grid-template-columns: repeat(2, auto); gap: var(--bc-space-2); justify-content: start; margin-top: var(--bc-space-3); }
-  .zoom { display: inline-flex; align-items: center; gap: 2px; background: var(--bc-secondary); border-radius: var(--bc-radius-sm); padding: 0 2px; }
+  .toolbar { display: flex; align-items: center; gap: var(--scribe-space-2); padding: var(--scribe-space-2) var(--scribe-space-5); flex: none; }
+  .menu-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; min-height: 44px; padding: 0 10px 0 12px; border-radius: var(--scribe-radius-sm); background: var(--scribe-secondary); font-size: 0.9375rem; }
+  .stand-btn { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; min-height: 44px; padding: 0 14px 0 12px; border-radius: var(--scribe-radius-sm); background: transparent; box-shadow: inset 0 0 0 1px var(--scribe-border-strong); font-size: 0.9375rem; }
+  .stand-btn kbd { font: 600 0.75rem/1 var(--scribe-font-text); color: var(--scribe-text-muted); box-shadow: inset 0 0 0 1px var(--scribe-border); border-radius: 4px; padding: 3px 6px; margin-left: 4px; }
+  .phone .scorebox { flex: 1; overflow: hidden; padding: 0 var(--scribe-space-3); }
+  .phone .player { margin: 0 var(--scribe-space-5) var(--scribe-space-2); padding: var(--scribe-space-3); }
+  .phone .chips { display: grid; grid-template-columns: repeat(2, auto); gap: var(--scribe-space-2); justify-content: start; margin-top: var(--scribe-space-3); }
+  .zoom { display: inline-flex; align-items: center; gap: 2px; background: var(--scribe-secondary); border-radius: var(--scribe-radius-sm); padding: 0 2px; }
   .zoom .icon-btn { width: 44px; height: 44px; }
   .zoom span { font-size: 0.875rem; font-variant-numeric: tabular-nums; font-weight: 600; min-width: 44px; text-align: center; }
-  .desktop .scorebox { flex: 1; padding: var(--bc-space-2) var(--bc-space-6); overflow: hidden; position: relative; }
-  .menu { position: absolute; right: 24px; top: 108px; width: 300px; z-index: 5; padding: 6px; background: var(--bc-surface-raised); border-radius: var(--bc-radius-md); box-shadow: var(--bc-elevation-3); outline: 1px solid var(--bc-border-strong); outline-offset: -1px; }
+  .desktop .scorebox { flex: 1; padding: var(--scribe-space-2) var(--scribe-space-6); overflow: hidden; position: relative; }
+  .menu { position: absolute; right: 24px; top: 108px; width: 300px; z-index: 5; padding: 6px; background: var(--scribe-surface-raised); border-radius: var(--scribe-radius-md); box-shadow: var(--scribe-elevation-3); outline: 1px solid var(--scribe-border-strong); outline-offset: -1px; }
   .mi { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; border-radius: 6px; font-size: 0.9375rem; }
   .mi .grow { flex: 1; }
-  .mi.hi { background: var(--bc-secondary); box-shadow: inset 0 0 0 1.5px var(--bc-text); font-weight: 600; }
-  .mi kbd { font: 500 0.8125rem/1 var(--bc-font-text); color: var(--bc-text-muted); }
-  .sep { height: 1px; background: var(--bc-border); margin: 4px 6px; }
-  .dock { flex: none; padding: var(--bc-space-3) var(--bc-space-5); box-shadow: inset 0 1px 0 var(--bc-border); background: var(--bc-surface-raised); display: flex; align-items: center; gap: var(--bc-space-4); }
-  .tip { position: absolute; z-index: 6; background: var(--bc-text); color: var(--bc-bg); font-size: 0.8125rem; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
-  .settings { margin: var(--bc-space-3) var(--bc-space-5) 0; }
+  .mi.hi { background: var(--scribe-secondary); box-shadow: inset 0 0 0 1.5px var(--scribe-text); font-weight: 600; }
+  .mi kbd { font: 500 0.8125rem/1 var(--scribe-font-text); color: var(--scribe-text-muted); }
+  .sep { height: 1px; background: var(--scribe-border); margin: 4px 6px; }
+  .dock { flex: none; padding: var(--scribe-space-3) var(--scribe-space-5); box-shadow: inset 0 1px 0 var(--scribe-border); background: var(--scribe-surface-raised); display: flex; align-items: center; gap: var(--scribe-space-4); }
+  .tip { position: absolute; z-index: 6; background: var(--scribe-text); color: var(--scribe-bg); font-size: 0.8125rem; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
+  .settings { margin: var(--scribe-space-3) var(--scribe-space-5) 0; }
 </style>
 </head>
 <body>
@@ -46,7 +46,7 @@
     <!-- One tap from the score. Outline, not ink: the round Play stays the one primary. -->
     <span class="stand-btn" role="button"><i data-i="music-stand" class="sm"></i><span data-nb="Notestativ">Music stand</span></span>
   </div>
-  <div class="status-line" style="padding: var(--bc-space-1) var(--bc-space-5) 0"><b class="q u">?</b><span class="muted" data-nb="9 toner merket ?">9 notes marked ?</span><span>·</span><a data-nb="Sjekk dem">Check them</a></div>
+  <div class="status-line" style="padding: var(--scribe-space-1) var(--scribe-space-5) 0"><b class="q u">?</b><span class="muted" data-nb="9 toner merket ?">9 notes marked ?</span><span>·</span><a data-nb="Sjekk dem">Check them</a></div>
   <div class="scorebox paper">
     <div data-score="entryPhone0"></div><div data-score="entryPhone1"></div><div data-score="entryPhone2"></div>
   </div>
@@ -55,7 +55,7 @@
       <button class="icon-btn" aria-label="Previous bar"><i data-i="previous-bar"></i></button>
       <button class="play" aria-label="Play"><i data-i="play"></i></button>
       <button class="icon-btn" aria-label="Next bar"><i data-i="next-bar"></i></button>
-      <div class="pos" style="margin-left: var(--bc-space-2); flex:1"><b data-nb="Takt 10">Bar 10</b> <span data-nb="av 132">of 132</span></div>
+      <div class="pos" style="margin-left: var(--scribe-space-2); flex:1"><b data-nb="Takt 10">Bar 10</b> <span data-nb="av 132">of 132</span></div>
     </div>
     <div class="chips">
       <span class="chip"><i data-i="speed" class="sm"></i><span data-nb="Tempo 75 %">Speed 75%</span></span>
@@ -71,7 +71,7 @@
     <span class="lights"><i></i><i></i><i></i></span><span class="wt">Old Hundredth</span><span class="caption">Full band · 132 bars</span><span class="sp"></span>
     <button class="btn outline compact"><i data-i="export" class="sm"></i>Share or print</button>
   </div>
-  <div class="toolbar" style="padding: var(--bc-space-3) var(--bc-space-6); box-shadow: inset 0 -1px 0 var(--bc-border)">
+  <div class="toolbar" style="padding: var(--scribe-space-3) var(--scribe-space-6); box-shadow: inset 0 -1px 0 var(--scribe-border)">
     <span class="menu-btn"><i data-i="parts" class="sm"></i>Solo Cornet<i data-i="choose" class="sm"></i></span>
     <span class="seg" aria-label="Pitch"><span class="on">As written for B♭</span><span>Concert pitch</span></span>
     <span class="zoom"><button class="icon-btn" aria-label="Zoom out"><i data-i="zoom-out" class="sm"></i></button><span>100%</span><button class="icon-btn" aria-label="Zoom in"><i data-i="zoom-in" class="sm"></i></button></span>

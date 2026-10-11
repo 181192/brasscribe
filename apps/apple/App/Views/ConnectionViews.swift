@@ -79,8 +79,8 @@ struct ConnectionStatusRow: View {
         } icon: {
             Image(systemName: ConnectionCopy.systemImage(state)).accessibilityHidden(true)
         }
-        .font(Font.Brasscribe.callout)
-        .foregroundStyle(Color.Brasscribe.text)
+        .font(Font.Scribe.callout)
+        .foregroundStyle(Color.Scribe.text)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(ConnectionCopy.status(state)))
         .accessibilityIdentifier("connectionStatusText")
@@ -118,8 +118,8 @@ struct ConnectionDetails: View {
             detail("This device's id", r?.deviceID ?? "–")
             detail("Last answered", app.connection.lastSeen.map { $0.formatted(date: .abbreviated, time: .standard) } ?? "–")
         }
-        .font(Font.Brasscribe.caption)
-        .foregroundStyle(Color.Brasscribe.textMuted)
+        .font(Font.Scribe.caption)
+        .foregroundStyle(Color.Scribe.textMuted)
         .textSelection(.enabled)
     }
 
@@ -135,7 +135,7 @@ struct MatchCodeView: View {
         Text(verbatim: code)
             .font(.system(size: 44, weight: .semibold, design: .rounded).monospacedDigit())
             .tracking(8)
-            .foregroundStyle(Color.Brasscribe.text)
+            .foregroundStyle(Color.Scribe.text)
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.s3)
             .accessibilityLabel(Text(code.map(String.init).joined(separator: " ")))

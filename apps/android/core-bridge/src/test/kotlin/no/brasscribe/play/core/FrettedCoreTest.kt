@@ -13,11 +13,11 @@ import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
-import uniffi.brasscribe_ffi.CoreException
-import uniffi.brasscribe_ffi.frettedFingeringJson
-import uniffi.brasscribe_ffi.frettedPlayingInstructionsJson
-import uniffi.brasscribe_ffi.frettedTabJson
-import uniffi.brasscribe_ffi.frettedTabTextJson
+import uniffi.scribe_ffi.CoreException
+import uniffi.scribe_ffi.frettedFingeringJson
+import uniffi.scribe_ffi.frettedPlayingInstructionsJson
+import uniffi.scribe_ffi.frettedTabJson
+import uniffi.scribe_ffi.frettedTabTextJson
 
 /** Tab fingering through the core: target-fretted's JSON request in, its JSON answer or its text out. Skips without the host library. */
 class FrettedCoreTest {

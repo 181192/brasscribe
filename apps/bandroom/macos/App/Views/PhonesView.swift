@@ -53,7 +53,7 @@ struct PhonesView: View {
             }
         }
         .padding(14)
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
         .onAppear { focus = .back }
         .overlay { if let removing { confirmRemove(removing) } }
     }
@@ -63,11 +63,11 @@ struct PhonesView: View {
             Image(systemName: d.isTablet ? "ipad" : "iphone")
                 .font(.system(size: 18))
                 .frame(width: 36, height: 36)
-                .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: 8))
+                .background(Color.Scribe.secondary, in: RoundedRectangle(cornerRadius: 8))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(d.name).brFont(.bodyStrong)
-                Text(Strings.lastUsed(d)).brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                Text(Strings.lastUsed(d)).brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
             }
             .accessibilityElement(children: .combine)
             Spacer()
@@ -82,11 +82,11 @@ struct PhonesView: View {
 
     private func confirmRemove(_ d: DeviceInfo) -> some View {
         ZStack {
-            Color.Brasscribe.scrim.ignoresSafeArea().onTapGesture { removing = nil }
+            Color.Scribe.scrim.ignoresSafeArea().onTapGesture { removing = nil }
             VStack(spacing: 12) {
                 Text("Remove \(d.name)?").brFont(.bodyStrong).multilineTextAlignment(.center)
                 Text("It can't send recordings here until it is paired again. Scores already on it stay.")
-                    .brFont(.callout).foregroundStyle(Color.Brasscribe.textMuted).multilineTextAlignment(.center)
+                    .brFont(.callout).foregroundStyle(Color.Scribe.textMuted).multilineTextAlignment(.center)
                 HStack {
                     Button { removing = nil } label: { Text("Cancel") }.buttonStyle(.brOutline).keyboardShortcut(.cancelAction)
                     Button { remove(d) } label: { Text("Remove") }
@@ -94,8 +94,8 @@ struct PhonesView: View {
                 }
             }
             .padding(16)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.lg))
-            .overlay(RoundedRectangle(cornerRadius: BrasscribeDesign.Radius.lg).strokeBorder(Color.Brasscribe.border))
+            .background(Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: ScribeDesign.Radius.lg))
+            .overlay(RoundedRectangle(cornerRadius: ScribeDesign.Radius.lg).strokeBorder(Color.Scribe.border))
             .padding(20)
             .accessibilityAddTraits(.isModal)
         }

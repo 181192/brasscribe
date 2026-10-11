@@ -68,3 +68,25 @@ def test_every_brand_passes_in_every_mode_and_its_report_is_current(capsys):
             for fg, bg, minimum, _ in data["pairs"]:
                 assert c.contrast(theme[fg], theme[bg]) + 1e-9 >= minimum, (brand["name"], mode, fg, bg)
     assert c.main(["--brands"]) == 0, capsys.readouterr().out
+
+
+def test_a_malformed_brand_is_told_what_is_missing(tmp_path, monkeypatch):
+    import pytest
+    listed = tmp_path / "brands.json"
+    monkeypatch.setattr(c, "BRANDS", listed)
+    listed.write_text(json.dumps({"brands": [{"name": "x", "tokens": "design/tokens/tokens.json"}]}))
+    with pytest.raises(SystemExit, match="brand x has no 'contrast-report'"):
+        c.main(["--brands"])
+    listed.write_text(json.dumps({"brands": [{"name": "x", "tokens": "nowhere.json", "contrast-report": "r.md"}]}))
+    with pytest.raises(SystemExit, match="x's token file nowhere.json is not there"):
+        c.main(["--brands"])
+    raw = json.loads((c.ROOT / "design" / "tokens" / "tokens.json").read_text())
+    raw["$extensions"]["no.brasscribe"]["contrast"]["pairs"].append(["glow", "bg", 3.0, "1.4.11"])
+    tokens = tmp_path / "tokens.json"
+    tokens.write_text(json.dumps(raw))
+    with pytest.raises(SystemExit, match="a contrast pair names 'glow', which color.light does not have"):
+        c.load_dtcg(tokens)
+    del raw["$extensions"]["no.brasscribe"]["contrast"]
+    tokens.write_text(json.dumps(raw))
+    with pytest.raises(SystemExit, match=r"tokens.json: expected one \$extensions entry with modes and contrast"):
+        c.load_dtcg(tokens)

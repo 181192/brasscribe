@@ -1,6 +1,6 @@
 // JVM smoke test of the Kotlin bindings against the host library:
 //   core/android/smoke/run.sh
-import uniffi.brasscribe_ffi.*
+import uniffi.scribe_ffi.*
 
 fun main() {
     val composition = """

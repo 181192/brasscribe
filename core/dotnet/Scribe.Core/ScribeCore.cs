@@ -1,0 +1,525 @@
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+
+namespace Scribe.Core;
+
+/// <summary>Error reported by the native core.</summary>
+public sealed class BrasscribeException : Exception
+{
+    public BrasscribeException(int code, string message) : base(message) => Code = code;
+
+    /// <summary>1 invalid input, 2 pipeline failure, 3 null argument, 4 internal error.</summary>
+    public int Code { get; }
+}
+
+/// <summary>A spelled pitch: step "C".."B", alteration in semitones, octave (C4 = middle C).</summary>
+public readonly record struct SpelledPitch(string Step, int Alter, int Octave);
+
+/// <summary>Frame-level SwiftF0 contour of the solo stem; Confidence (per-frame voicing) feeds the notes' calibrated confidence.</summary>
+public sealed record SoloContour(double[] Times, double[] PitchHz, double[] LoudnessDb, double[]? Confidence = null);
+
+/// <summary>The six layer transcriptions (MIDI file bytes) of a recording.</summary>
+public sealed record LayerMidi(byte[] SoloSwiftF0, byte[] SoloMuScriptor, byte[] SoloBasicPitch, byte[] Bass, byte[] Orchestra, byte[] Drums);
+
+/// <summary>WAV file bytes of the separated stems; each may be null.</summary>
+public sealed record LayerStems(byte[]? Solo = null, byte[]? Bass = null, byte[]? Drums = null, byte[]? Orchestra = null);
+
+/// <summary>Options of the solo-with-band arrangement.</summary>
+/// <param name="Lineup">"band" (18 parts), "minimal" (8 parts) or "quartet" (1st Cornet, 2nd Cornet, Tenor Horn, Euphonium).</param>
+/// <param name="Difficulty">"faithful", "standard" or "easier".</param>
+/// <param name="Key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]).</param>
+/// <param name="Transpose">Semitones to transpose the whole arrangement by (instead of Key).</param>
+/// <param name="Seat">The player's seat (an id of <see cref="ScribeCore.Seats"/>): a solo take is written for it, one
+/// part in the octave played; a band take's notes do not change. Null: no seat.</param>
+/// <param name="Reads">"treble" or "bass" (the seat's part at concert pitch in bass clef); null: the band part's own clef.</param>
+/// <param name="Lead">"lineup" (null) or "seat": the tune on the seat's part (band lineups only).</param>
+/// <param name="Lang">Language of the footer on the arranged parts: "en" (null) or "nb".</param>
+/// <param name="Trills">Faithful: write sustained two-note alternations as trills (standard and easier always do).</param>
+public sealed record LayersSongOptions(SoloContour? SoloContour = null, bool FreeTime = true, double? FreeTempo = null,
+    bool Gate = true, bool BeatCleanup = true, bool KeyChanges = true, string Lineup = "band", string Difficulty = "faithful",
+    string? Key = null, int? Transpose = null, string? Seat = null, string? Reads = null, string? Lead = null, string? Lang = null,
+    bool Trills = false);
+
+/// <summary>The player's part in a lineup for their seat.</summary>
+/// <param name="Part">The lineup's part name, or null when the lineup has none (percussion outside the band).</param>
+/// <param name="Exact">The seat's own part.</param>
+/// <param name="SameKey">The part is in the seat's key, so it reads without transposing.</param>
+/// <param name="Takes">The lineup's part the seat's own part replaces ("Solo Cornet" for a trumpet in the bands); null for a band seat.</param>
+public sealed record SeatPart(string? Part, bool Exact, bool SameKey, string? Takes = null);
+
+/// <summary>Where one part comes from: "your-recording", "recording" or "arranged".</summary>
+public readonly record struct PartSource(string Part, string Source);
+
+/// <summary>One seat of the contest band, for the "What do you play?" picker.</summary>
+/// <param name="Id">The seat option value.</param>
+/// <param name="Name">The part's English name ("2nd Cornet").</param>
+/// <param name="NbName">The part's Norwegian name from the core's one table («2. kornett»).</param>
+/// <param name="Instrument">Instrument id.</param>
+/// <param name="Clef">The part's own clef: "treble", "bass" or "percussion".</param>
+/// <param name="Reads">Clefs the player may read it in, the part's own first; empty for percussion.</param>
+/// <param name="Tune">The part can carry the tune (the seats offered "Who plays the tune?").</param>
+public sealed record SeatInfo(string Id, string Name, string NbName, string Instrument, string Clef, IReadOnlyList<string> Reads, bool Tune);
+
+/// <summary>Everything the band arrangement writes.</summary>
+public sealed record BandOutput(string CompositionJson, string MusicXml, IReadOnlyList<(string FileName, string MusicXml)> Parts,
+    string? SeparationCheckJson);
+
+/// <summary>One part note for humanization: Composition ticks (24 per beat), score-tempo seconds, concert MIDI pitch.</summary>
+public readonly record struct ScoreNote(long Tick, long DurTick, double StartS, double EndS, int Pitch, int Velocity);
+
+/// <summary>A humanized note.</summary>
+public readonly record struct PlayedNote(double Start, double End, int Pitch, int Velocity, bool Staccato, bool FromComposition);
+
+/// <summary>Humanized notes of one player, the player's detune in cents, and the statistics as JSON.</summary>
+public sealed record HumanizedPart(IReadOnlyList<PlayedNote> Notes, double DetuneCents, string StatsJson);
+
+/// <summary>Talking-score announcer settings (docs/accessibility/talking-score-spec.md §2).</summary>
+public sealed record TalkingSettings(string Lang = "en", string PitchMode = "written", string Verbosity = "standard",
+    string OctaveStyle = "scientific", bool AnnounceConfident = false);
+
+/// <summary>What the previous announcement left behind.</summary>
+public sealed record TalkingContext(string? Part = null, long? Bar = null, string? PitchMode = null);
+
+/// <summary>Indices of part, bar and event in a talking score.</summary>
+public readonly record struct TalkingCursor(int Part, int Bar, int Event);
+
+/// <summary>
+/// The native talking-score document. The runtime counts the calls using it, so it is freed exactly once, and only after
+/// the last call has returned, whichever thread disposes it.
+/// </summary>
+internal sealed class TalkingScoreHandle : SafeHandle
+{
+    public TalkingScoreHandle() : base(IntPtr.Zero, ownsHandle: true) { }
+
+    public override bool IsInvalid => handle == IntPtr.Zero;
+
+    protected override bool ReleaseHandle()
+    {
+        ScribeCore.NativeTalkingFree(handle);
+        return true;
+    }
+}
+
+/// <summary>A talking score (spec §6), built once per score. Dispose to release the native document; it is safe to call
+/// from any thread, also while another thread uses the score.</summary>
+public sealed class TalkingScore : IDisposable
+{
+    private readonly TalkingScoreHandle _handle;
+
+    /// <summary>From partwise MusicXML plus the Composition JSON when known.</summary>
+    public TalkingScore(string musicXml, string? compositionJson = null)
+    {
+        int code = ScribeCore.NativeTalkingNew(musicXml, compositionJson, out _handle, out var err);
+        if (code != 0)
+        {
+            _handle.Dispose();
+            throw ScribeCore.Error(code, err);
+        }
+    }
+
+    /// <summary>The document as JSON.</summary>
+    public string Json => ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingJson(h, out o, out e));
+
+    /// <summary>The announcement at a cursor and the context it leaves behind.</summary>
+    public (string Text, TalkingContext Context) Announce(TalkingCursor cursor, TalkingContext? context = null, TalkingSettings? settings = null, bool byBar = false)
+    {
+        var request = JsonSerializer.Serialize(new
+        {
+            cursor = new { part = cursor.Part, bar = cursor.Bar, @event = cursor.Event },
+            context = ScribeCore.ContextJson(context ?? new TalkingContext()),
+            settings = ScribeCore.SettingsJson(settings ?? new TalkingSettings()),
+            by_bar = byBar,
+        });
+        var json = ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingAnnounce(h, request, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        var c = doc.RootElement.GetProperty("context");
+        return (doc.RootElement.GetProperty("text").GetString()!,
+            new TalkingContext(c.GetProperty("part").GetString(), c.GetProperty("bar").GetInt64(), c.GetProperty("pitch_mode").GetString()));
+    }
+
+    /// <summary>One step: unit "note", "bar", "part" or "uncertain". Null at either end.</summary>
+    public TalkingCursor? Navigate(TalkingCursor cursor, string unit = "note", bool forward = true)
+    {
+        var request = JsonSerializer.Serialize(new { cursor = new { part = cursor.Part, bar = cursor.Bar, @event = cursor.Event }, unit, forward });
+        var json = ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingNavigate(h, request, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        var r = doc.RootElement;
+        if (r.ValueKind == JsonValueKind.Null) return null;
+        return new TalkingCursor(r.GetProperty("part").GetInt32(), r.GetProperty("bar").GetInt32(), r.GetProperty("event").GetInt32());
+    }
+
+    /// <summary>Export: format "text" or "html".</summary>
+    public string Export(string format = "text", TalkingSettings? settings = null)
+    {
+        var s = JsonSerializer.Serialize(ScribeCore.SettingsJson(settings ?? new TalkingSettings()));
+        return ScribeCore.CallTalking(this, (TalkingScoreHandle h, out IntPtr o, out IntPtr e) => ScribeCore.NativeTalkingExport(h, format, s, out o, out e));
+    }
+
+    internal TalkingScoreHandle Handle => _handle.IsClosed ? throw new ObjectDisposedException(nameof(TalkingScore)) : _handle;
+
+    public void Dispose() => _handle.Dispose();
+}
+
+/// <summary>Managed API over the scribe_ffi C ABI.</summary>
+public static class ScribeCore
+{
+    /// <summary>Version of the native core.</summary>
+    public static string Version => TakeString(Native.sc_version()) ?? "";
+
+    /// <summary>Parse a Composition JSON and return its canonical composition.json text.</summary>
+    public static string NormalizeComposition(string compositionJson) =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_composition_normalize(compositionJson, out o, out e));
+
+    /// <summary>Arrange a Composition for brass band; returns MusicXML at written pitch.</summary>
+    /// <param name="arranger">"auto", "layers" (solo with band) or "minimal".</param>
+    public static string ArrangeMusicXml(string compositionJson, string arranger = "auto") =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_arrange_musicxml(compositionJson, arranger, out o, out e));
+
+    /// <summary>Re-arrange a Composition for a lineup and difficulty (optionally transposed); returns MusicXML at written pitch.</summary>
+    /// <param name="lineup">"band" (18 parts), "minimal" (8 parts) or "quartet". A composition without layers (a whole-band
+    /// take) is arranged for the minimal band or the quartet; "band" gives the minimal band there.</param>
+    /// <param name="difficulty">"faithful", "standard" or "easier".</param>
+    /// <param name="key">Target concert key of the first key signature (Bb, F#, Am or FIFTHS[:MODE]), or null.</param>
+    /// <param name="transpose">Transposition from the recording in semitones (instead of key), or null: the total the
+    /// composition records as arrangement.transpose_semitones, so an already transposed take is not moved again.</param>
+    /// <param name="seat">The player's seat, or null (see <see cref="LayersSongOptions"/>).</param>
+    /// <param name="reads">"treble", "bass" or null.</param>
+    /// <param name="lead">"lineup" (null) or "seat".</param>
+    /// <param name="trills">Write sustained two-note alternations as trills, or not; null: as the composition records it
+    /// (arrangement.trills), else the difficulty's default (faithful writes them out, standard and easier trill).</param>
+    public static string ArrangeMusicXmlWith(string compositionJson, string lineup = "band", string difficulty = "faithful",
+        string? key = null, int? transpose = null, string? seat = null, string? reads = null, string? lead = null, bool? trills = null)
+    {
+        var options = JsonSerializer.Serialize(new { lineup, difficulty, key, transpose, seat, reads, lead, trills });
+        return Call((out IntPtr o, out IntPtr e) => Native.sc_arrange_with(compositionJson, options, out o, out e));
+    }
+
+    /// <summary>Solo-with-band arrangement from layer transcriptions and a beat table ("time position" per line).</summary>
+    /// <param name="soloContour">SwiftF0 contour of the solo stem (frame times, pitch in Hz, loudness in dB), or null.</param>
+    /// <param name="freeTime">Detect free-time passages and notate them proportionally.</param>
+    /// <param name="freeTempo">Notate free-time passages at this BPM instead of estimating one.</param>
+    public static (string CompositionJson, string MusicXml) ArrangeLayersSong(LayerMidi layers, string beatsText, string title,
+        SoloContour? soloContour = null, bool freeTime = true, double? freeTempo = null)
+    {
+        var options = JsonSerializer.Serialize(new
+        {
+            solo_contour = soloContour is null ? null : new { times = soloContour.Times, pitch_hz = soloContour.PitchHz, loudness_db = soloContour.LoudnessDb, confidence = soloContour.Confidence },
+            free_time = freeTime,
+            free_tempo = freeTempo,
+        });
+        byte[][] files = [layers.SoloSwiftF0, layers.SoloMuScriptor, layers.SoloBasicPitch, layers.Bass, layers.Orchestra, layers.Drums];
+        var handles = files.Select(f => GCHandle.Alloc(f, GCHandleType.Pinned)).ToArray();
+        try
+        {
+            var ptrs = handles.Select(h => h.AddrOfPinnedObject()).ToArray();
+            var lens = files.Select(f => (nuint)f.Length).ToArray();
+            int code = Native.sc_arrange_layers_song(ptrs, lens, beatsText, title, options, out var comp, out var xml, out var err);
+            if (code != 0)
+            {
+                throw new BrasscribeException(code, TakeString(err) ?? $"brasscribe core error {code}");
+            }
+            return (TakeString(comp)!, TakeString(xml)!);
+        }
+        finally
+        {
+            foreach (var h in handles) h.Free();
+        }
+    }
+
+    /// <summary>
+    /// Solo-with-band arrangement with the stems' audio: the score, every part, the Composition and the separation check.
+    /// The core borrows the MIDI files, the stems and the contour arrays for the call: they are pinned, never copied.
+    /// </summary>
+    public static BandOutput ArrangeLayersBand(LayerMidi layers, LayerStems? stems, string beatsText, string title, LayersSongOptions? options = null)
+    {
+        var o = options ?? new LayersSongOptions();
+        var c = o.SoloContour;
+        if (c is not null && (c.PitchHz.Length != c.Times.Length || c.LoudnessDb.Length != c.Times.Length
+                              || (c.Confidence is { } conf && conf.Length != c.Times.Length)))
+            throw new ArgumentException("contour arrays differ in length", nameof(options));
+        var optionsJson = JsonSerializer.Serialize(new
+        {
+            free_time = o.FreeTime,
+            free_tempo = o.FreeTempo,
+            gate = o.Gate,
+            beat_cleanup = o.BeatCleanup,
+            key_changes = o.KeyChanges,
+            lineup = o.Lineup,
+            difficulty = o.Difficulty,
+            key = o.Key,
+            transpose = o.Transpose,
+            seat = o.Seat,
+            reads = o.Reads,
+            lead = o.Lead,
+            lang = o.Lang,
+            trills = o.Trills,
+        });
+        var pins = new List<GCHandle>();
+        IntPtr Pin(Array? a)
+        {
+            if (a is null) return IntPtr.Zero;
+            var h = GCHandle.Alloc(a, GCHandleType.Pinned);
+            pins.Add(h);
+            return h.AddrOfPinnedObject();
+        }
+        try
+        {
+            byte[][] files = [layers.SoloSwiftF0, layers.SoloMuScriptor, layers.SoloBasicPitch, layers.Bass, layers.Orchestra, layers.Drums];
+            byte[]?[] wavs = [stems?.Solo, stems?.Bass, stems?.Drums, stems?.Orchestra];
+            var ptrs = files.Select(Pin).ToArray();
+            var lens = files.Select(f => (nuint)f.Length).ToArray();
+            var wptrs = wavs.Select(Pin).ToArray();
+            var wlens = wavs.Select(w => (nuint)(w?.Length ?? 0)).ToArray();
+            IntPtr[]? cptrs = c is null ? null : [Pin(c.Times), Pin(c.PitchHz), Pin(c.LoudnessDb), Pin(c.Confidence)];
+            var clen = (nuint)(c?.Times.Length ?? 0);
+            var json = Call((out IntPtr r, out IntPtr e) =>
+                Native.sc_arrange_layers_band_contour(ptrs, lens, wptrs, wlens, cptrs, clen, beatsText, title, optionsJson, out r, out e));
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var parts = root.GetProperty("parts").EnumerateArray()
+                .Select(p => (p.GetProperty("file_name").GetString()!, p.GetProperty("musicxml").GetString()!)).ToList();
+            var sep = root.GetProperty("separation_check");
+            return new BandOutput(root.GetProperty("composition").GetString()!, root.GetProperty("musicxml").GetString()!, parts,
+                sep.ValueKind == JsonValueKind.Null ? null : sep.GetString());
+        }
+        finally
+        {
+            foreach (var h in pins) h.Free();
+        }
+    }
+
+    /// <summary>Humanize one player's notes (sounds/README.md). performedTiming follows the recording (needs the Composition).</summary>
+    public static HumanizedPart Humanize(IReadOnlyList<ScoreNote> notes, string part, int player, string seed = "brasscribe",
+        string? compositionJson = null, bool performedTiming = false)
+    {
+        JsonElement? comp = compositionJson is null ? null : JsonDocument.Parse(compositionJson).RootElement;
+        var request = JsonSerializer.Serialize(new
+        {
+            notes = notes.Select(n => new { tick = n.Tick, dur_tick = n.DurTick, start_s = n.StartS, end_s = n.EndS, pitch = n.Pitch, velocity = n.Velocity }),
+            part,
+            player,
+            seed,
+            timing = performedTiming ? "performed" : "score",
+            composition = comp,
+        });
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_humanize_json(request, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var played = root.GetProperty("notes").EnumerateArray().Select(x => new PlayedNote(x.GetProperty("start").GetDouble(),
+            x.GetProperty("end").GetDouble(), x.GetProperty("pitch").GetInt32(), x.GetProperty("velocity").GetInt32(),
+            x.GetProperty("staccato").GetBoolean(), x.GetProperty("from_composition").GetBoolean())).ToList();
+        return new HumanizedPart(played, root.GetProperty("detune").GetDouble(), root.GetProperty("stats").GetRawText());
+    }
+
+    /// <summary>Announce one event given as JSON (the conformance-vector form: part, bar, event, context, settings).</summary>
+    public static string TalkingAnnounceJson(string request) =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_talking_announce_json(request, out o, out e));
+
+    /// <summary>A string and a fret for every note on a fretted instrument. The request and the answer are
+    /// target-fretted's own JSON: instrument (a preset or a full instrument), notes and options (style, tempo, hand,
+    /// pins) in; the instrument used, the fingering with each note's alternatives, the violations and the tuning
+    /// suggestions out. A request it cannot read or that names what does not exist is invalid input (code 1).</summary>
+    public static string FrettedFingeringJson(string request) =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_fingering_json(request, out o, out e));
+
+    /// <summary>Tablature as MusicXML for target-fretted's tab request (the fingering request plus title, tempo, meter,
+    /// key, the <c>tab</c> options and optionally a fingering to write as it is): <c>{"musicxml": ..., "adjusted_notes": n}</c>.</summary>
+    public static string FrettedTabJson(string request) =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_tab_json(request, out o, out e));
+
+    /// <summary>Tablature as plain text for a monospace font, for the tab request of <see cref="FrettedTabJson"/>;
+    /// its <c>text.width</c> is the longest line in characters (24 to 400, 72 when left out). The answer is the text
+    /// itself, not JSON.</summary>
+    public static string FrettedTabTextJson(string request) =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_tab_text_json(request, out o, out e));
+
+    /// <summary>Playing instructions: the tab in words, bar by bar and beat by beat, for a screen reader or a braille
+    /// display, for the tab request of <see cref="FrettedTabJson"/>; its <c>text.lang</c> is <c>en</c> (when left
+    /// out) or <c>nb</c>. The answer is the text itself, not JSON.</summary>
+    public static string FrettedPlayingInstructionsJson(string request) =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_fretted_playing_instructions_json(request, out o, out e));
+
+    internal static object SettingsJson(TalkingSettings s) => new
+    {
+        lang = s.Lang, pitch_mode = s.PitchMode, verbosity = s.Verbosity, octave_style = s.OctaveStyle, announce_confident = s.AnnounceConfident,
+    };
+
+    internal static object ContextJson(TalkingContext c) => new { part = c.Part, bar = c.Bar, pitch_mode = c.PitchMode };
+
+    internal static BrasscribeException Error(int code, IntPtr err) => new(code, TakeString(err) ?? $"brasscribe core error {code}");
+
+    internal delegate int TalkingCall(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
+
+    /// <summary>A call on the score's document; the marshaller keeps the handle alive until it returns and throws
+    /// <see cref="ObjectDisposedException"/> once it is disposed.</summary>
+    internal static string CallTalking(TalkingScore ts, TalkingCall call)
+    {
+        int code = call(ts.Handle, out var output, out var error);
+        if (code != 0) throw Error(code, error);
+        return TakeString(output) ?? "";
+    }
+
+    internal static int NativeTalkingNew(string xml, string? comp, out TalkingScoreHandle handle, out IntPtr err) => Native.sc_talking_score_new(xml, comp, out handle, out err);
+    internal static void NativeTalkingFree(IntPtr h) => Native.sc_talking_score_free(h);
+    internal static int NativeTalkingJson(TalkingScoreHandle h, out IntPtr o, out IntPtr e) => Native.sc_talking_score_json(h, out o, out e);
+    internal static int NativeTalkingAnnounce(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.sc_talking_score_announce(h, req, out o, out e);
+    internal static int NativeTalkingNavigate(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.sc_talking_score_navigate(h, req, out o, out e);
+    internal static int NativeTalkingExport(TalkingScoreHandle h, string format, string settings, out IntPtr o, out IntPtr e) => Native.sc_talking_score_export(h, format, settings, out o, out e);
+
+    /// <summary>Spell MIDI pitches from their context (ps13); onsets in beats.</summary>
+    /// <summary>Which part of a lineup ("band", "minimal", "quartet") is the player's, for their seat.</summary>
+    public static SeatPart SeatPart(string lineup, string seat)
+    {
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_seat_part(lineup, seat, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        var r = doc.RootElement;
+        var part = r.GetProperty("part");
+        return new SeatPart(part.ValueKind == JsonValueKind.Null ? null : part.GetString(), r.GetProperty("exact").GetBoolean(),
+            r.GetProperty("same_key").GetBoolean(),
+            r.TryGetProperty("takes", out var takes) && takes.ValueKind == JsonValueKind.String ? takes.GetString() : null);
+    }
+
+    /// <summary>Where each part of a Composition's arrangement comes from, in score order.</summary>
+    public static IReadOnlyList<PartSource> PartSources(string compositionJson)
+    {
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_part_sources(compositionJson, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.EnumerateArray()
+            .Select(x => new PartSource(x.GetProperty("part").GetString()!, x.GetProperty("source").GetString()!)).ToList();
+    }
+
+    /// <summary>A part's name in Norwegian (the core's one table); names it doesn't know come back unchanged.</summary>
+    public static string PartNameNb(string name) =>
+        Call((out IntPtr o, out IntPtr e) => Native.sc_part_name_nb(name, out o, out e));
+
+    /// <summary>The 18 seats of the contest band, in score order.</summary>
+    public static IReadOnlyList<SeatInfo> Seats()
+    {
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_seats(out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.EnumerateArray()
+            .Select(x => new SeatInfo(x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!,
+                x.GetProperty("nb_name").GetString()!, x.GetProperty("instrument").GetString()!, x.GetProperty("clef").GetString()!,
+                x.GetProperty("reads").EnumerateArray().Select(r => r.GetString()!).ToList(), x.GetProperty("tune").GetBoolean()))
+            .ToList();
+    }
+
+    public static IReadOnlyList<SpelledPitch> SpellPitches(IReadOnlyList<double> onsetsBeats, IReadOnlyList<int> pitches)
+    {
+        var request = JsonSerializer.Serialize(new { onsets = onsetsBeats, pitches });
+        var json = Call((out IntPtr o, out IntPtr e) => Native.sc_spell_json(request, out o, out e));
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.EnumerateArray()
+            .Select(x => new SpelledPitch(x.GetProperty("step").GetString()!, x.GetProperty("alter").GetInt32(), x.GetProperty("octave").GetInt32()))
+            .ToList();
+    }
+
+    private delegate int NativeCall(out IntPtr output, out IntPtr error);
+
+    private static string Call(NativeCall call)
+    {
+        int code = call(out var output, out var error);
+        if (code != 0)
+        {
+            throw new BrasscribeException(code, TakeString(error) ?? $"brasscribe core error {code}");
+        }
+        return TakeString(output) ?? "";
+    }
+
+    /// <summary>Copy a UTF-8 string owned by the native library and release it.</summary>
+    private static string? TakeString(IntPtr p)
+    {
+        if (p == IntPtr.Zero) return null;
+        try
+        {
+            return Marshal.PtrToStringUTF8(p);
+        }
+        finally
+        {
+            Native.sc_string_free(p);
+        }
+    }
+
+    private static class Native
+    {
+        private const string Lib = "scribe_ffi";
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void sc_string_free(IntPtr s);
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr sc_version();
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_composition_normalize([MarshalAs(UnmanagedType.LPUTF8Str)] string json, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_arrange_musicxml([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string arranger, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_arrange_with([MarshalAs(UnmanagedType.LPUTF8Str)] string json,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_arrange_layers_song(IntPtr[] midi, nuint[] midiLen,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson,
+            out IntPtr outComposition, out IntPtr outMusicXml, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_spell_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_arrange_layers_band_contour(IntPtr[] midi, nuint[] midiLen, IntPtr[] wav, nuint[] wavLen,
+            IntPtr[]? contour, nuint contourLen, [MarshalAs(UnmanagedType.LPUTF8Str)] string beatsText, [MarshalAs(UnmanagedType.LPUTF8Str)] string title,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? optionsJson, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_humanize_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_talking_score_new([MarshalAs(UnmanagedType.LPUTF8Str)] string musicXml,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? compositionJson, out TalkingScoreHandle handle, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void sc_talking_score_free(IntPtr handle);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern int sc_talking_score_json(TalkingScoreHandle handle, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_talking_score_announce(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_talking_score_navigate(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_talking_score_export(TalkingScoreHandle handle, [MarshalAs(UnmanagedType.LPUTF8Str)] string format,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? settingsJson, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_seat_part([MarshalAs(UnmanagedType.LPUTF8Str)] string lineup,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string seat, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_part_sources([MarshalAs(UnmanagedType.LPUTF8Str)] string compositionJson, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_seats(out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_part_name_nb([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_fretted_fingering_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_fretted_tab_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_fretted_tab_text_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_fretted_playing_instructions_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int sc_talking_announce_json([MarshalAs(UnmanagedType.LPUTF8Str)] string request, out IntPtr output, out IntPtr error);
+    }
+}

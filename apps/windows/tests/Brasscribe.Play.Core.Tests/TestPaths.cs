@@ -42,9 +42,9 @@ internal static class TestPaths
                 ? $"{relative} not found: data/ and models/ are not in git (scripts/worktree-setup.sh links them into a worktree, or set BRASSCRIBE_REPO to a checkout that has them)"
                 : $"{relative} not found: run the tests from a checkout, or set BRASSCRIBE_REPO";
 
-    /// <summary>The skip reason for a test that runs the Rust core through brasscribe_ffi.</summary>
+    /// <summary>The skip reason for a test that runs the Rust core through scribe_ffi.</summary>
     public const string NoNativeCore =
-        "BRASSCRIBE_FFI_PATH is not set: `scripts/core-artifacts.sh ensure host` puts the native core at core/target/release/libbrasscribe_ffi.dylib (.so, .dll); point BRASSCRIBE_FFI_PATH at it";
+        "SCRIBE_FFI_PATH is not set: `scripts/core-artifacts.sh ensure host` puts the native core at core/target/release/libscribe_ffi.dylib (.so, .dll); point SCRIBE_FFI_PATH at it";
 
     /// <summary>The Mikkel golden directory.</summary>
     public const string GoldenDir = "data/golden/mikkel-arranged-band";

@@ -70,8 +70,8 @@ struct MusicStandView: View {
                 hint
             }
         }
-        .animation(BrasscribeDesign.Motion.animation(BrasscribeDesign.Motion.base, reduceMotion: reduceMotion), value: layerVisible)
-        .background(Color.Brasscribe.bg.ignoresSafeArea())
+        .animation(ScribeDesign.Motion.animation(ScribeDesign.Motion.base, reduceMotion: reduceMotion), value: layerVisible)
+        .background(Color.Scribe.bg.ignoresSafeArea())
         .background { keys }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { screen = $0 }
         .onChange(of: model.layoutVersion) { _, _ in
@@ -243,11 +243,11 @@ struct MusicStandView: View {
         Group {
             if form == .phoneUpright {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(stand.partLine(model)).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    Text(positionText).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text(stand.partLine(model)).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                    Text(positionText).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                 }
             } else {
-                Text(positionText).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
+                Text(positionText).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
             }
         }
         .monospacedDigit()
@@ -302,14 +302,14 @@ struct MusicStandView: View {
     private var leaveButton: some View {
         Button(action: leave) {
             Label("Leave", systemImage: "xmark")
-                .font(Font.Brasscribe.label)
-                .foregroundStyle(Color.Brasscribe.text)
+                .font(Font.Scribe.label)
+                .foregroundStyle(Color.Scribe.text)
                 .padding(.horizontal, Space.s4)
                 .frame(minHeight: 48)
                 .background {
-                    Capsule().fill(Color.Brasscribe.surfaceRaised)
+                    Capsule().fill(Color.Scribe.surfaceRaised)
                         .shadow(color: highContrast ? .clear : .black.opacity(0.08), radius: 3, y: 1)
-                        .overlay(Capsule().strokeBorder(Color.Brasscribe.borderStrong, lineWidth: 1))
+                        .overlay(Capsule().strokeBorder(Color.Scribe.borderStrong, lineWidth: 1))
                 }
                 .contentShape(Capsule())
         }
@@ -343,9 +343,9 @@ struct MusicStandView: View {
         }
         .padding(Space.s4)
         .background {
-            RoundedRectangle(cornerRadius: Radius.lg).fill(Color.Brasscribe.surfaceRaised)
+            RoundedRectangle(cornerRadius: Radius.lg).fill(Color.Scribe.surfaceRaised)
                 .shadow(color: highContrast ? .clear : .black.opacity(0.08), radius: 6, y: 2)
-                .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Brasscribe.borderStrong, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Scribe.borderStrong, lineWidth: 1))
         }
         .fixedSize(horizontal: form == .wide, vertical: true)
         .frame(maxWidth: form == .wide ? nil : .infinity)
@@ -367,9 +367,9 @@ struct MusicStandView: View {
             Button { model.togglePlay(); touched() } label: {
                 Image(systemName: model.isPlaying ? BrasscribeIcon.pause.systemName : BrasscribeIcon.play.systemName)
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(Color.Brasscribe.onPrimary)
+                    .foregroundStyle(Color.Scribe.onPrimary)
                     .frame(width: 56, height: 56)
-                    .background(Color.Brasscribe.primary, in: Circle())
+                    .background(Color.Scribe.primary, in: Circle())
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -379,7 +379,7 @@ struct MusicStandView: View {
             iconButton("nextBar", systemImage: BrasscribeIcon.nextBar.systemName, label: Text("Next bar")) { model.nextBar() }
             pageButton(next: true)
         }
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .accessibilityShowsLargeContentViewer()
         .fixedSize()
@@ -391,8 +391,8 @@ struct MusicStandView: View {
             Image(systemName: next ? "chevron.right" : "chevron.left")
                 .font(.body.weight(.semibold))
                 .frame(width: 48, height: 48)
-                .background(Color.Brasscribe.secondary, in: Circle())
-                .overlay { if highContrast { Circle().strokeBorder(Color.Brasscribe.borderStrong) } }
+                .background(Color.Scribe.secondary, in: Circle())
+                .overlay { if highContrast { Circle().strokeBorder(Color.Scribe.borderStrong) } }
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -425,7 +425,7 @@ struct MusicStandView: View {
             .accessibilityLabel(Text("Slower"))
             .accessibilityIdentifier("standSlower")
             Text("Speed \(percentText(model.speedPercent))")
-                .font(Font.Brasscribe.label)
+                .font(Font.Scribe.label)
                 .monospacedDigit()
                 .accessibilityIdentifier("standSpeed")
             Button { model.changeSpeed(by: 5); touched() } label: {
@@ -437,9 +437,9 @@ struct MusicStandView: View {
             .accessibilityLabel(Text("Faster"))
             .accessibilityIdentifier("standFaster")
         }
-        .foregroundStyle(Color.Brasscribe.text)
+        .foregroundStyle(Color.Scribe.text)
         .frame(minHeight: 48)
-        .background(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.borderStrong, lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Scribe.borderStrong, lineWidth: 1))
         .fixedSize()
         .accessibilityElement(children: .contain)
     }
@@ -489,10 +489,10 @@ struct MusicStandView: View {
 
     private var hint: some View {
         Text("Tap the music to show the controls.")
-            .font(Font.Brasscribe.callout)
-            .foregroundStyle(Color.Brasscribe.text)
+            .font(Font.Scribe.callout)
+            .foregroundStyle(Color.Scribe.text)
             .padding(.horizontal, Space.s4).padding(.vertical, Space.s2)
-            .background(Capsule().fill(Color.Brasscribe.surfaceRaised).overlay(Capsule().strokeBorder(Color.Brasscribe.borderStrong)))
+            .background(Capsule().fill(Color.Scribe.surfaceRaised).overlay(Capsule().strokeBorder(Color.Scribe.borderStrong)))
             .padding(.bottom, Space.s5)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
@@ -554,8 +554,8 @@ private struct StandPageView: View {
         .frame(maxWidth: .infinity, alignment: .top)
         .background {
             if framed {
-                RoundedRectangle(cornerRadius: Radius.sm).fill(Color.Brasscribe.surfaceRaised)
-                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.Brasscribe.border))
+                RoundedRectangle(cornerRadius: Radius.sm).fill(Color.Scribe.surfaceRaised)
+                    .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(Color.Scribe.border))
             }
         }
         .accessibilityHidden(true)

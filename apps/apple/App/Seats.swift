@@ -1,4 +1,4 @@
-import BrasscribeCore
+import ScribeCore
 import Foundation
 import ScoreKit
 import TranscriptionKit
@@ -75,7 +75,7 @@ enum SeatChoice: Equatable, Sendable {
 enum Seats {
     static let all: [SeatInfo] = seats()
     private static let instrumentsByID: [String: InstrumentInfo] =
-        Dictionary(BrasscribeCore.instruments().map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        Dictionary(ScribeCore.instruments().map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
 
     static func info(_ id: String) -> SeatInfo? { all.first { $0.id == id } }
     static func info(part name: String) -> SeatInfo? { all.first { $0.name == name } }

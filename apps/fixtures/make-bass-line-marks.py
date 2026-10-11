@@ -9,7 +9,7 @@ functions, with the Rust core): no audio and no models are involved.
     pixi run python apps/fixtures/make-bass-line-marks.py
 
 Needs apps/fixtures/bass-line (make-bass-line.py) and the core's command line
-(`cargo build --release -p brasscribe-cli` in core/, or BRASSCRIBE_CORE_CLI).
+(`cargo build --release -p scribe-cli` in core/, or SCRIBE_CORE_CLI).
 
 The changes (CHANGES below), by the notes' places in tab.json:
     5   heard with little confidence: a doubtful note, marked "?"

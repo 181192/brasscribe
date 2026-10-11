@@ -13,7 +13,7 @@ body:
     id: app
     attributes:
       label: App
-      options: [Brasscribe Play, Bandroom, Studio (browser), brasscribe-core (command line), The engine / transcription, The site, Not sure]
+      options: [Brasscribe Play, Bandroom, Studio (browser), scribe-core (command line), The engine / transcription, The site, Not sure]
     validations: { required: true }
   - type: dropdown
     id: platform

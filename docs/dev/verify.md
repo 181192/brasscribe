@@ -13,7 +13,7 @@ change touches a device or the UI.
 `origin/main`, plus uncommitted and untracked files). `AREAS="engine core"` picks areas, and
 `make check-all` runs tier 2 everywhere. Both print a timing table at the end. Areas: `engine`,
 `core`, `conformance`, `studio`, `apple`, `android`, `windows`, `core-dotnet`, `bandroom-mac`.
-Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/brasscribe-ffi/` and
+Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/ffi/` and
 `core/bindings/` as `core` and `core-dotnet`, `capture/` as `apple`, and
 `apps/bandroom/macos/` as `bandroom-mac`. `scripts/check.sh fast|full [area...]` is the same without make.
 
@@ -22,7 +22,7 @@ Changes under `music/` or `eval/` count as `engine` (and `conformance`), `core/b
 Once per checkout or worktree:
 
 ```sh
-eval "$(scripts/worktree-setup.sh)"      # later shells: source .brasscribe-env
+eval "$(scripts/worktree-setup.sh)"      # later shells: source .scribe-env
 ```
 
 The script is idempotent. `--print-env` only prints the environment, `--no-core` skips the prebuilt
@@ -33,14 +33,19 @@ core, and `--core host,apple` limits it to those components. It does four things
   is set to the worktree itself, since the tests also look up tracked files through it.
 - Copies in the prebuilt Rust core with `scripts/core-artifacts.sh ensure`:
   - the host library in `core/target/release` and `core/dist/macos`
-  - the command line `core/target/release/brasscribe-core`, which the engine's `bass-tab` profile and
+  - the command line `core/target/release/scribe-core`, which the engine's `bass-tab` profile and
     its tests need
-  - `BrasscribeFFI.xcframework`
+  - `ScribeFFI.xcframework`
   - the Android `jniLibs`
 - Clones `studio/node_modules` from the main checkout when the lock files match.
-- Prints the environment, and writes it to `.brasscribe-env`: `BRASSCRIBE_REPO`, `BRASSCRIBE_FFI_PATH`,
-  `BRASSCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
+- Prints the environment, and writes it to `.scribe-env`: `BRASSCRIBE_REPO`, `SCRIBE_FFI_PATH`,
+  `SCRIBE_CORE_CLI`, `BRASSCRIBE_REQUIRE_DATA`, `ANDROID_HOME`, `ANDROID_NDK_HOME`, `DEVELOPER_DIR`, `DOTNET_ROOT`, and
   `PATH` with rustup and the Android tools.
+  The tests of the native core skip themselves when they cannot find it, so `scripts/check.sh` refuses to run the
+  `windows`, `core-dotnet` and `android` areas when `SCRIBE_FFI_PATH` is not set or names a file that is gone, and
+  the `engine` area likewise for `SCRIBE_CORE_CLI`: run the setup again. For the same reason Windows Play's tests fail
+  when the checkout has a built core that `SCRIBE_FFI_PATH` does not point at, and the Android core bridge's tests
+  fail when the host library is built but does not load.
 
 ### The core artifact cache
 
@@ -54,7 +59,7 @@ core, and `--core host,apple` limits it to those components. It does four things
 The first `ensure` after a core change builds the component into `~/.cache/brasscribe/core-artifacts`,
 through one shared `CARGO_TARGET_DIR` under a lock. Every other checkout then gets an APFS clone in
 about a second. `apps/apple/scripts/build-core.sh` and `apps/android/scripts/build-core.sh` use the
-cache locally. CI, or `BRASSCRIBE_NO_ARTIFACT_CACHE=1`, builds in `core/target` as before.
+cache locally. CI, or `SCRIBE_NO_ARTIFACT_CACHE=1`, builds in `core/target` as before.
 `scripts/core-artifacts.sh status` shows what is cached and installed; `prune [days]` drops old entries.
 
 The artifacts are for the apps. `cargo test` in `core/` still builds in the worktree's own
@@ -68,13 +73,13 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | engine, affected only | `pixi run test-affected` | tests the change cannot reach (pytest-testmon; the first run records `.testmondata`) |
 | core | `cd core && cargo test --profile fast` | nothing. The `fast` profile is release without LTO, with parallel and incremental codegen, in `target/fast` |
 | conformance | `scripts/check.sh fast conformance` | every case but Mikkel. With reference outputs from an earlier run in `core/target/conformance` made from the same Python sources (`music/src`, `eval/brasscribe_eval`, the conformance runner; a hash in `.python-reference-stamp`), it also skips the Python side and the extras (`--skip-python --no-extras`) |
-| studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, the screenshot comparison, e2e |
+| studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, e2e |
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
-| android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, the screenshot comparison, instrumented tests |
+| android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
-| core .NET | `cd core/dotnet/Brasscribe.Core.Tests && dotnet test` | nothing (seconds) |
-| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh compare`, which builds the app) |
+| core .NET | `cd core/dotnet/Scribe.Core.Tests && dotnet test` | nothing (seconds) |
+| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh record`, which builds the app) |
 
 A test that takes seconds gets the slow marker of its framework:
 
@@ -95,37 +100,86 @@ build for testing again.
 - `pixi run test`
 - `cargo test --release`
 - conformance on every case
-- vitest, the Playwright browser tests, then `studio/scripts/screenshots.sh compare`: Studio's screen catalogue at the
-  merge base and on the branch, with its checks, and what changed ([studio/README.md](../../studio/README.md#test))
+- vitest, the Playwright browser tests, then `npm run test:catalogue`: Studio's screen catalogue with its checks
+  ([studio/README.md](../../studio/README.md#test))
 - the Swift packages (BrasscribeKit, NotationKit, ScreenCatalogue, `capture`) and the macOS app unit tests, then
-  `apps/apple/scripts/screenshots.sh compare`: the Mac screen catalogue at the merge base and on the branch
+  `apps/apple/scripts/screenshots.sh record`: the Mac screen catalogue with its checks
 - `./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug` (both apps' tests on the JVM, lint
-  for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh compare`: the
-  screen catalogues at the merge base and on the branch, and what changed ([apps/android/README.md](../../apps/android/README.md#testing))
+  for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh record`: the
+  screen catalogues with their checks ([apps/android/README.md](../../apps/android/README.md#testing))
 - `apps/windows/tools/check-macos.sh`
 - the core .NET tests
-- Bandroom for macOS: the BandroomKit tests, then `apps/bandroom/macos/scripts/screenshots.sh compare`: the screen
-  catalogue at the merge base and on the branch, off screen, and what changed ([apps/bandroom/macos/README.md](../../apps/bandroom/macos/README.md#testing))
+- Bandroom for macOS: the BandroomKit tests, then `apps/bandroom/macos/scripts/screenshots.sh record`: the screen
+  catalogue with its checks, off screen ([apps/bandroom/macos/README.md](../../apps/bandroom/macos/README.md#testing))
 
 On a pull request, CI (`ci.yml`) runs the same on Linux for the areas the change touches, and the
 Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`, `apps/bandroom/windows/`,
 `core/`, the design tokens, `sounds/`, or the pixi workspace and engine sources Bandroom bundles: the core
 tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test and both apps'
-screen catalogues, whose screenshots are compared with the merge base on that runner
+screen catalogues
 ([apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../apps/windows/tests/Brasscribe.Play.Catalogue/README.md));
 and the Apple apps on a macOS runner (`apple.yml`) when it touches
 `apps/apple/`, `capture/`, `core/`, the app fixtures, the design files the apps bundle or `sounds/` (Play: the
-Swift packages, the macOS app unit tests, the iPhone simulator app's unit and UI tests, and the Mac screen
-catalogue compared with the merge base), or
-`apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and its screen catalogue, compared
-with the merge base, with the label `screenshots-changed` as for Android). The `changes` job's filters say
+Swift packages, the macOS app unit tests, a build of the iPhone simulator app and its tests, and the Mac screen
+catalogue), or
+`apps/bandroom/macos/` and the pixi files (Bandroom: the BandroomKit tests and its screen catalogue). The `changes` job's filters say
 exactly which paths count. The release builds run only for releases or by hand.
+
+What CI does not run on a pull request, and when it runs instead ([ci-speed.md](ci-speed.md) has the timings
+behind these choices):
+
+- **The iPhone simulator app's unit and UI tests** run every night on `main` (`nightly.yml`), and by hand on a
+  branch: `gh workflow run apple.yml -f iphone_tests=true --ref <branch>`. A pull request builds the app and
+  those tests for the simulator without running them. While a night fails, one issue is open ("Nightly: the
+  iPhone simulator tests fail"); the first night that passes closes it.
+- **A pull request that only sets the version** (what `scripts/release.sh` writes, and `CHANGELOG.md`) starts no
+  platform job. The release run on the tag runs every check before anything is built.
+- **A change to `ci.yml` alone** is checked by actionlint (job `workflows`), not by running every platform.
+  To run every job on a branch: `gh workflow run ci.yml --ref <branch>`.
+- **The screen catalogues' pictures are compared after the merge**, not on the pull request: see
+  [Screenshots](#screenshots).
+
+A run on `main` is never cancelled: a push that arrives while one is running waits, and of several waiting only
+the newest is kept, so merges close together are checked as one batch.
 
 Things that differ from running the suites by hand:
 
 - Conformance writes to `core/target/conformance` in the worktree (`--work`), not to `data/runs`,
   which all worktrees share through the link.
 - The Studio browser tests get a free port (`STUDIO_STATIC_PORT`), not the fixed 8798.
+
+### Screenshots
+
+Every screen catalogue (both Android apps, Play and Bandroom for Mac, Play and Bandroom for Windows, Studio) runs
+once on a pull request, on the pull request's own build, with every check it has: accessible names, target sizes,
+contrast, cut-off text, the keyboard's reach and order, Axe, a screen that is not the one asked for or does not
+keep still. A failed check fails the job. The pictures are an artefact of the run (`android-screenshots-<app>`,
+`play-mac-screenshots`, `bandroom-mac-screenshots`, `windows-screenshots`, `bandroom-windows-screenshots`), to look
+at; Studio takes none on a pull request (below). No check compares them with anything, so there is nothing to approve when a
+screen is meant to change.
+
+Which checks read the picture: on Android the contrast check (the Accessibility Test Framework measures it from a
+picture of the screen); on Windows the contrast check, the rule that a screen is taken only when
+it is the one asked for and keeps still, and the comparison of Home started in a theme with Home switched to it;
+on the Mac the rule that a screen draws the same twice before it is taken. Studio's checks read the page, not the
+picture, so a pull request runs them without taking any (`npm run test:catalogue`);
+`studio/scripts/screenshots.sh record` takes them, locally and on `main`.
+
+After a merge, the run on `main` keeps each catalogue's pictures as the artefact `screens-<catalogue>-<commit>`
+(90 days), with the runner image and toolchain they were taken with. `screens.yml` then compares them with the
+record before, when that was taken with the same image and toolchain (a new image is "no earlier record", not a
+difference), without rendering anything. When screens differ:
+
+- the before, difference and after pictures are that run's artefact `screens-changed-<commit>`;
+- the platform's issue, "Screens changed on main: Android" (or Mac, Windows, Studio), gets a comment with the
+  screens and how much of each changed, or is opened. There is one open issue for each platform at most.
+
+Nothing waits for this and nothing closes the issue: look at the pictures and close it when the change is the one
+that was meant. A record that is the same as the one before does nothing. To compare a run by hand:
+`gh workflow run screens.yml -f run=<ci run id>`.
+
+What this gives up: a change in how a screen looks that breaks no rule (a colour, a spacing, an icon, the engraved
+notation) is seen after the merge, in a batch of one to a few pull requests, instead of before it.
 
 ### Golden tests never pass silently
 
@@ -201,7 +255,6 @@ All times are in seconds.
 | vitest | 13 | 15 | 11 | 15 | 12, then 17 |
 | `test:browser` | 7 | 7 | 7 | 11 | |
 | Studio screen catalogue (`test:catalogue`, 6 workers) | | | | 52 | `fast studio` in all: 55 |
-| `screenshots.sh compare`, Studio (base with a catalogue) | | | | 89 | |
 | `swift test`, BrasscribeKit | 100 | 64 | 65 | 74 | `package-test-fast`, both packages: 115, then 30 |
 | `swift test`, NotationKit | 29 | 10 | 13 | 10 | |
 | macOS app unit tests | 100 | 15 | 22¹ | 14 | `build-for-testing` plus `test-mac-unit`: 69, then 9 |
@@ -255,7 +308,7 @@ The shared and seeded targets are fast because they are wrong:
 So `cargo test` keeps a target dir per worktree. There are two wins instead:
 
 - The artifact cache: the apps, bindings and FFI tests of other languages never build the core.
-- The `fast` profile: after an edit to brasscribe-core, `cargo test --profile fast` takes 8 s, against
+- The `fast` profile: after an edit to scribe-core, `cargo test --profile fast` takes 8 s, against
   47 s for `--release`.
 
 `cargo nextest` does not help here. The whole suite runs in about 2 s, and nextest's per-process

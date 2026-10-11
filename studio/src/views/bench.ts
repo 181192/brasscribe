@@ -148,15 +148,15 @@ function sparkline(metric: string, runs: SuiteRun[]): HTMLElement {
     return el;
   };
   if (base?.baseline != null) {
-    add("rect", { x: 0, y: y(base.baseline + base.tolerance), width: W, height: Math.max(1, y(base.baseline - base.tolerance) - y(base.baseline + base.tolerance)), fill: token("adlib-tint"), stroke: token("staff"), "stroke-dasharray": "4 3" });
-    add("line", { x1: 0, x2: W, y1: y(base.baseline), y2: y(base.baseline), stroke: token("staff"), "stroke-width": 1 });
+    add("rect", { x: 0, y: y(base.baseline + base.tolerance), width: W, height: Math.max(1, y(base.baseline - base.tolerance) - y(base.baseline + base.tolerance)), fill: token("bc-adlib-tint"), stroke: token("scribe-line"), "stroke-dasharray": "4 3" });
+    add("line", { x1: 0, x2: W, y1: y(base.baseline), y2: y(base.baseline), stroke: token("scribe-line"), "stroke-width": 1 });
   }
-  add("polyline", { points: pts.map((p, i) => `${x(i)},${y(p.c!.value!)}`).join(" "), fill: "none", stroke: token("m1"), "stroke-width": 2 });
+  add("polyline", { points: pts.map((p, i) => `${x(i)},${y(p.c!.value!)}`).join(" "), fill: "none", stroke: token("bc-model-1"), "stroke-width": 2 });
   pts.forEach((p, i) => {
     const bad = p.c!.status === "regressed";
     add(bad ? "rect" : "circle", bad
-      ? { x: x(i) - 4, y: y(p.c!.value!) - 4, width: 8, height: 8, fill: token("error") }
-      : { cx: x(i), cy: y(p.c!.value!), r: 3, fill: token("m1") });
+      ? { x: x(i) - 4, y: y(p.c!.value!) - 4, width: 8, height: 8, fill: token("scribe-error") }
+      : { cx: x(i), cy: y(p.c!.value!), r: 3, fill: token("bc-model-1") });
   });
   return svg as unknown as HTMLElement;
 }

@@ -12,8 +12,10 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# The environment file from before the core took its name: it is no longer read, and no longer ignored.
+[ -e .brasscribe-env ] && { echo "check: .brasscribe-env is from before the core was renamed: run scripts/worktree-setup.sh (it removes it and writes .scribe-env)" >&2; exit 2; }
 # shellcheck disable=SC1091
-[ -f .brasscribe-env ] && . ./.brasscribe-env
+[ -f .scribe-env ] && . ./.scribe-env
 export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
@@ -39,14 +41,13 @@ changed_areas() {
       core/dotnet/*) add core-dotnet ;;
       core/conformance/*) add conformance ;;
       # The C ABI and the generated bindings: the .NET wrapper calls them too.
-      core/brasscribe-ffi/*|core/bindings/*) add core; add core-dotnet
+      core/ffi/*|core/bindings/*) add core; add core-dotnet
                          { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
       apps/apple/Packages/ScreenCatalogue/*) add apple; add bandroom-mac ;;
       apps/apple/*|capture/*) add apple ;;
       apps/bandroom/macos/*|.pixi-version) add bandroom-mac ;;
-      scripts/screenshot-compare.swift) add bandroom-mac ;;
       apps/android/*) add android ;;
       apps/windows/*) add windows ;;
     esac
@@ -56,7 +57,7 @@ changed_areas() {
 
 # A hash of the Python reference sources (committed, uncommitted and untracked): the fast
 # conformance tier reuses the Python outputs of an earlier run only while this is unchanged.
-PY_REF_PATHS=(music/src eval/brasscribe_eval core/conformance/brasscribe_conformance)
+PY_REF_PATHS=(music/src eval/brasscribe_eval core/conformance/scribe_conformance)
 py_ref_stamp() {
   { git ls-files -s -- "${PY_REF_PATHS[@]}"; git diff HEAD -- "${PY_REF_PATHS[@]}"
     git ls-files -o --exclude-standard -z -- "${PY_REF_PATHS[@]}" | xargs -0 shasum 2>/dev/null; } | shasum | cut -d' ' -f1
@@ -67,13 +68,37 @@ free_port() { python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",
 
 need_node_modules() { [ -d studio/node_modules ] || (cd studio && npm ci --no-audit --no-fund); }
 
+# The tests of the native core skip themselves when they are not pointed at it, so an environment that
+# is stale (a variable of the core not set) or that names a file that is gone would pass with those tests
+# left out. Refuse it instead. Arguments: the variables the area's tests read.
+native_core_env() {
+  local var path
+  for var in "$@"; do
+    path="${!var:-}"
+    if [ -z "$path" ]; then
+      echo "check: $var is not set, so the tests of the native core would skip: run scripts/worktree-setup.sh (it writes .scribe-env)" >&2
+      return 1
+    elif [ ! -f "$path" ]; then
+      echo "check: $var names $path, which is not there: run scripts/worktree-setup.sh" >&2
+      return 1
+    fi
+  done
+}
+
 run_area() {
   local area="$1"
   # The apps test against the prebuilt core: refresh it first (about a second when nothing changed).
   case "$area" in
-    windows|core-dotnet) scripts/core-artifacts.sh ensure host || return 1 ;;
-    android) scripts/core-artifacts.sh ensure host android || return 1 ;;
+    windows|core-dotnet) scripts/core-artifacts.sh ensure host && native_core_env SCRIBE_FFI_PATH || return 1 ;;
+    android) scripts/core-artifacts.sh ensure host android && native_core_env SCRIBE_FFI_PATH || return 1 ;;
     apple) scripts/core-artifacts.sh ensure apple || return 1 ;;
+    # The tab profile's tests run the core's command line where SCRIBE_CORE_CLI says it is. Without one
+    # built (no Rust toolchain, or a setup with --no-core) they skip, and say so; a variable that names a
+    # file that is gone is a stale environment.
+    engine) if [ -n "${SCRIBE_CORE_CLI:-}" ]; then native_core_env SCRIBE_CORE_CLI || return 1
+            elif [ -x core/target/release/scribe-core ]; then
+              echo "check: core/target/release/scribe-core is built but SCRIBE_CORE_CLI is not set: run scripts/worktree-setup.sh" >&2; return 1
+            else echo "check: no core command line is built: the engine's tab tests that run it will skip" >&2; fi ;;
   esac
   case "$tier:$area" in
     fast:engine) pixi run test-fast ;;
@@ -88,40 +113,39 @@ run_area() {
                       if [ -d core/target/conformance/mikkel ] && [ "$(cat "$PY_REF_STAMP" 2>/dev/null)" = "$stamp" ]; then
                         conf=(--skip-python --no-extras); else conf=(); fi
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
-                         && uv run python -m brasscribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
+                         && uv run python -m scribe_conformance.run --only mikkel ${conf[@]+"${conf[@]}"} \
                          --work "$ROOT/core/target/conformance") && echo "$stamp" > "$PY_REF_STAMP" \
-                      && (cd core/conformance && uv run python -m brasscribe_conformance.run --only talking/ \
+                      && (cd core/conformance && uv run python -m scribe_conformance.run --only talking/ \
                          --work "$ROOT/core/target/conformance-talking") ;;
     full:conformance) stamp=$(py_ref_stamp)
                       (cd core/conformance && uv run python -m unittest discover -s tests -q \
-                         && uv run python -m brasscribe_conformance.run --work "$ROOT/core/target/conformance") \
+                         && uv run python -m scribe_conformance.run --work "$ROOT/core/target/conformance") \
                         && echo "$stamp" > "$PY_REF_STAMP" ;;
-    # The screen catalogue (studio/README.md, Test): fast runs its checks on every view, full adds the
-    # screenshots' comparison with the merge base.
+    # The screen catalogue (studio/README.md, Test): its checks on every view, in both tiers (none reads a
+    # picture; scripts/screenshots.sh record takes the screenshots too). full adds the browser tests.
     fast:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
                    && STUDIO_STATIC_PORT="$(free_port)" npm run test:catalogue) ;;
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
-                   && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser && scripts/screenshots.sh compare) ;;
+                   && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser && npm run test:catalogue) ;;
     fast:apple) make -C apps/apple package-test-fast ;;
     full:apple) (cd apps/apple/Packages/BrasscribeKit && swift test --no-parallel) \
                 && (cd apps/apple/Packages/NotationKit && swift test --no-parallel) \
                 && (cd apps/apple/Packages/ScreenCatalogue && swift test) \
                 && (cd capture && swift test --no-parallel) \
-                && make -C apps/apple build-for-testing-mac test-mac-unit && apps/apple/scripts/screenshots.sh compare ;;
+                && make -C apps/apple build-for-testing-mac test-mac-unit && apps/apple/scripts/screenshots.sh record ;;
     # Both apps' unit tests and their screens on the JVM (apps/android/README.md, Testing); fast leaves out the
-    # Slow ones (the screen catalogues, practice in real time), full adds them through the screenshots' comparison
-    # with the merge base, which also runs every screen's own checks.
+    # Slow ones (the screen catalogues, practice in real time), full adds them through scripts/screenshots.sh,
+    # which runs every screen's own checks and takes its screenshot.
     fast:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast --console=plain -q) ;;
     full:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint lintFretscribeDebug assembleDebug -Pbrasscribe.withoutCatalogues --console=plain \
-                     && scripts/screenshots.sh compare) ;;
+                     && scripts/screenshots.sh record) ;;
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
-    *:core-dotnet) (cd core/dotnet/Brasscribe.Core.Tests && dotnet test) ;;
+    *:core-dotnet) (cd core/dotnet/Scribe.Core.Tests && dotnet test) ;;
     fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/Packages/ScreenCatalogue && swift test) ;;
-    # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen, compared with the merge base;
-    # its build is the app's build.
+    # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen; its build is the app's build.
     full:bandroom-mac) (cd apps/apple/Packages/ScreenCatalogue && swift test) \
-                       && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh compare) ;;
+                       && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh record) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac
 }

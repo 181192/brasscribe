@@ -113,9 +113,9 @@ public class ReviewRound3Tests(ITestOutputHelper log)
     [SkippableFact]
     public void The_golden_is_reviewed_by_group_with_the_native_core()
     {
-        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
+        Skip.If(Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
         var native = NativeCoreBridge.TryCreate();
-        Skip.If(native is null, "BRASSCRIBE_FFI_PATH is set but brasscribe_ffi did not load from it");
+        Skip.If(native is null, "SCRIBE_FFI_PATH is set but scribe_ffi did not load from it");
         var golden = Golden(native);
         Skip.If(golden is null, NoGolden);
         var g = golden.Value;

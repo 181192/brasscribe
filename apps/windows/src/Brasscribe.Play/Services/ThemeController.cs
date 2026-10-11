@@ -150,8 +150,8 @@ public sealed class ThemeController
         }
         bool dark = root.ActualTheme == ElementTheme.Dark;
         // The ink and paper of design/tokens (text, and a hover/pressed wash in the text colour).
-        var fg = PinkColor("BcTextColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xED, 0xEB, 0xE6) : ColorHelper.FromArgb(0xFF, 0x1B, 0x1A, 0x17));
-        var muted = PinkColor("BcTextMutedColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xB4, 0xB0, 0xA7) : ColorHelper.FromArgb(0xFF, 0x5E, 0x5A, 0x52));
+        var fg = PinkColor("ScribeTextColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xED, 0xEB, 0xE6) : ColorHelper.FromArgb(0xFF, 0x1B, 0x1A, 0x17));
+        var muted = PinkColor("ScribeTextMutedColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xB4, 0xB0, 0xA7) : ColorHelper.FromArgb(0xFF, 0x5E, 0x5A, 0x52));
         bar.ButtonBackgroundColor = Colors.Transparent;
         bar.ButtonInactiveBackgroundColor = Colors.Transparent;
         bar.ButtonForegroundColor = fg;

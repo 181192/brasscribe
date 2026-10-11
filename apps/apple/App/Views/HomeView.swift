@@ -22,16 +22,16 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: Space.s3) {
                     DisplayTitle(text: String(localized: "Turn a recording into"), emphasis: String(localized: "a score."), size: wide ? 48 : 40)
                     Text("Play it, record it, or open a file. Brasscribe writes the parts for your band.")
-                        .font(Font.Brasscribe.body)
-                        .foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.body)
+                        .foregroundStyle(Color.Scribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 ConnectionStatusRow()
                     .padding(.horizontal, Space.s4)
                     .padding(.vertical, Space.s2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Brasscribe.border))
+                    .background(Color.Scribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Scribe.border))
                 if wide { wideWaysIn } else { phoneWaysIn }
                 HelperLine(systemImage: BrasscribeIcon.info.systemName,
                            text: String(localized: "Links to streaming sites can't be downloaded. Play the music and record it instead."))
@@ -107,15 +107,15 @@ struct HomeView: View {
             HStack(spacing: Space.s4) {
                 IconWell(systemName: BrasscribeIcon.importFile.systemName)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Drop a recording here").font(Font.Brasscribe.headline)
-                    Text("MP3, WAV, M4A, MP4 and most other formats").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text("Drop a recording here").font(Font.Scribe.headline)
+                    Text("MP3, WAV, M4A, MP4 and most other formats").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                 }
                 Spacer(minLength: Space.s4)
                 openButton.buttonStyle(.primary)
             }
             .padding(Space.s6)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(dropTargeted ? Color.Brasscribe.text : Color.Brasscribe.borderStrong,
+            .background(Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(dropTargeted ? Color.Scribe.text : Color.Scribe.borderStrong,
                                                                              lineWidth: dropTargeted ? 2 : 1))
             .layoutProbe("dropArea")
             LazyVGrid(columns: waysInColumns, spacing: Space.s4) {
@@ -142,19 +142,19 @@ struct HomeView: View {
                 HStack(spacing: Space.s3) {
                     BrandMark(size: 32)
                     Text("Your scores appear here after the first recording.")
-                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
                 }
                 .padding(.vertical, Space.s2)
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(app.scores.enumerated()), id: \.element.id) { i, entry in
-                        if i > 0 { Divider().overlay(Color.Brasscribe.border) }
+                        if i > 0 { Divider().overlay(Color.Scribe.border) }
                         HStack(spacing: Space.s2) {
                             Button { app.open(entry) } label: {
                                 HStack(spacing: Space.s3) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(entry.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                                        Text(entry.summary).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                                        Text(entry.title).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                                        Text(entry.summary).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                                     }
                                     Spacer(minLength: Space.s2)
                                     if app.openingScore == entry.id { ProgressView().controlSize(.small) }
@@ -190,11 +190,11 @@ struct WayInRow: View {
             HStack(spacing: Space.s4) {
                 IconWell(systemName: icon)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    if let subtitle { Text(subtitle).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted) }
+                    Text(title).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                    if let subtitle { Text(subtitle).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted) }
                 }
                 Spacer(minLength: Space.s2)
-                Image(systemName: BrasscribeIcon.open.systemName).foregroundStyle(Color.Brasscribe.textMuted).accessibilityHidden(true)
+                Image(systemName: BrasscribeIcon.open.systemName).foregroundStyle(Color.Scribe.textMuted).accessibilityHidden(true)
             }
             .padding(.horizontal, Space.s4)
             .padding(.vertical, Space.s3)
@@ -216,8 +216,8 @@ struct WayInCard: View {
             VStack(alignment: .leading, spacing: Space.s3) {
                 IconWell(systemName: icon)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    Text(subtitle).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text(title).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                    Text(subtitle).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -267,7 +267,7 @@ struct FirstRunView: View {
                 .padding(.top, Space.s10)
                 .padding(.bottom, Space.s8)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.Brasscribe.brassTint)
+                .background(Color.Scribe.brandTint)
 
                 VStack(alignment: .leading, spacing: Space.s6) {
                     point(icon: Image(systemName: BrasscribeIcon.recordMic.systemName), title: String(localized: "Record or import"),
@@ -288,7 +288,7 @@ struct FirstRunView: View {
             Button { asking = true } label: { Text("Get started") }
             .buttonStyle(.primaryWide)
             .padding(Space.s5)
-            .frame(maxWidth: BrasscribeDesign.Size.contentMaxWidth)
+            .frame(maxWidth: ScribeDesign.Size.contentMaxWidth)
             .accessibilityIdentifier("getStarted")
             .afterTheContentItIsDockedUnder()
         }
@@ -298,13 +298,13 @@ struct FirstRunView: View {
         HStack(alignment: .top, spacing: Space.s4) {
             icon
                 .font(.title3)
-                .foregroundStyle(Color.Brasscribe.text)
+                .foregroundStyle(Color.Scribe.text)
                 .frame(width: 44, height: 44)
-                .background(Color.Brasscribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
+                .background(Color.Scribe.secondary, in: RoundedRectangle(cornerRadius: Radius.md))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text(title).font(Font.Brasscribe.headline)
-                Text(text).font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                Text(title).font(Font.Scribe.headline)
+                Text(text).font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

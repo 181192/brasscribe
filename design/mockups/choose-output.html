@@ -8,35 +8,35 @@
 <script src="scores.js"></script>
 <script src="mockup.js"></script>
 <style>
-  .phone .q-block + .q-block { margin-top: var(--bc-space-4); }
-  .phone .opt { min-height: 52px; padding: var(--bc-space-2) var(--bc-space-4); }
+  .phone .q-block + .q-block { margin-top: var(--scribe-space-4); }
+  .phone .opt { min-height: 52px; padding: var(--scribe-space-2) var(--scribe-space-4); }
   .q-title { font-weight: 600; font-size: 1.125rem; display: flex; align-items: center; gap: 6px; }
-  .opts { display: grid; gap: var(--bc-space-2); margin-top: var(--bc-space-3); }
-  .opt { display: flex; align-items: center; gap: var(--bc-space-3); min-height: 56px; padding: var(--bc-space-3) var(--bc-space-4); border-radius: var(--bc-radius-md); background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
-  .opt.on { box-shadow: inset 0 0 0 2px var(--bc-primary); }
+  .opts { display: grid; gap: var(--scribe-space-2); margin-top: var(--scribe-space-3); }
+  .opt { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 56px; padding: var(--scribe-space-3) var(--scribe-space-4); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); box-shadow: inset 0 0 0 1px var(--scribe-border-strong); }
+  .opt.on { box-shadow: inset 0 0 0 2px var(--scribe-primary); }
   .opt .t { font-weight: 600; }
-  .opt .d { font-size: 0.9375rem; color: var(--bc-text-muted); }
+  .opt .d { font-size: 0.9375rem; color: var(--scribe-text-muted); }
   .opt .grow { flex: 1; }
   .opt .radio { margin-top: 0; }
-  .opt.on .radio { box-shadow: inset 0 0 0 7px var(--bc-primary); }
-  .tip { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9375rem; color: var(--bc-text-muted); margin-top: var(--bc-space-2); }
-  .keyrow { display: flex; align-items: center; gap: var(--bc-space-2); margin-top: var(--bc-space-3); }
-  .keyval { flex: 1; min-height: 52px; display: flex; flex-direction: column; justify-content: center; padding: 0 var(--bc-space-4); border-radius: var(--bc-radius-md); background: var(--bc-surface-raised); box-shadow: inset 0 0 0 1px var(--bc-border-strong); }
+  .opt.on .radio { box-shadow: inset 0 0 0 7px var(--scribe-primary); }
+  .tip { display: flex; gap: 8px; align-items: flex-start; font-size: 0.9375rem; color: var(--scribe-text-muted); margin-top: var(--scribe-space-2); }
+  .keyrow { display: flex; align-items: center; gap: var(--scribe-space-2); margin-top: var(--scribe-space-3); }
+  .keyval { flex: 1; min-height: 52px; display: flex; flex-direction: column; justify-content: center; padding: 0 var(--scribe-space-4); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); box-shadow: inset 0 0 0 1px var(--scribe-border-strong); }
   .keyval b { font-weight: 600; }
-  .keyval span { font-size: 0.875rem; color: var(--bc-text-muted); }
-  .step-btn { width: 52px; height: 52px; border-radius: var(--bc-radius-md); background: var(--bc-secondary); display: grid; place-items: center; font-size: 1.5rem; font-weight: 600; border: 0; }
-  .desktop .cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--bc-space-8); }
+  .keyval span { font-size: 0.875rem; color: var(--scribe-text-muted); }
+  .step-btn { width: 52px; height: 52px; border-radius: var(--scribe-radius-md); background: var(--scribe-secondary); display: grid; place-items: center; font-size: 1.5rem; font-weight: 600; border: 0; }
+  .desktop .cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--scribe-space-8); }
 </style>
 </head>
 <body>
 <div class="phone">
   <div class="status"><span>9:41</span><span class="sys"><span class="batt"></span></span></div>
   <div class="navbar"><span class="back"><i data-i="back"></i><span>Old Hundredth</span></span><span></span><span style="width:72px"></span></div>
-  <div class="content" style="padding-top: var(--bc-space-2); overflow: hidden">
+  <div class="content" style="padding-top: var(--scribe-space-2); overflow: hidden">
     <h1 class="display" style="font-size: 2.25rem" data-nb="Hvordan skal partituret bli?">How should the score be?</h1>
-    <p class="callout" style="margin-top: var(--bc-space-1); font-size: 1rem" data-nb="Du kan endre dette senere. Ingenting går tapt.">You can change this later. Nothing is lost.</p>
+    <p class="callout" style="margin-top: var(--scribe-space-1); font-size: 1rem" data-nb="Du kan endre dette senere. Ingenting går tapt.">You can change this later. Nothing is lost.</p>
 
-    <section class="q-block" style="margin-top: var(--bc-space-4)" aria-labelledby="q1">
+    <section class="q-block" style="margin-top: var(--scribe-space-4)" aria-labelledby="q1">
       <h2 class="q-title" id="q1" data-nb="Hvilket band?">Which band?</h2>
       <div class="opts" role="radiogroup" aria-labelledby="q1">
         <div class="opt on"><div class="grow"><div class="t" data-nb="Fullt brassband">Full brass band</div><div class="d" data-nb="Rundt 25 musikere">About 25 players</div></div><span class="radio"></span></div>
@@ -47,7 +47,7 @@
 
     <section class="q-block" aria-labelledby="q2">
       <h2 class="q-title" id="q2" data-nb="Hvor vanskelig?">How hard?</h2>
-      <span class="seg" style="width:100%; margin-top: var(--bc-space-3)"><span style="flex:1" data-nb="Enklere">Easier</span><span class="on" style="flex:1" data-nb="Som spilt">As played</span></span>
+      <span class="seg" style="width:100%; margin-top: var(--scribe-space-3)"><span style="flex:1" data-nb="Enklere">Easier</span><span class="on" style="flex:1" data-nb="Som spilt">As played</span></span>
       <p class="tip"><i data-i="info" class="sm"></i><span data-nb="Enklere beholder melodien, men unngår høye toner og raske løp.">Easier keeps the tune but avoids high notes and fast runs.</span></p>
     </section>
 
@@ -63,11 +63,11 @@
 <div class="desktop">
   <div class="titlebar"><span class="lights"><i></i><i></i><i></i></span><span class="wt">Old Hundredth</span><span class="sp"></span></div>
   <main class="main">
-    <div class="pane" style="max-width: 920px; padding-top: var(--bc-space-8)">
+    <div class="pane" style="max-width: 920px; padding-top: var(--scribe-space-8)">
       <p class="eyebrow">Last step</p>
       <h1 class="display" style="font-size: 3rem">How should the score be?</h1>
-      <p class="callout" style="margin-top: var(--bc-space-2); font-size: 1.125rem">You can change this later. Nothing is lost.</p>
-      <div class="cols" style="margin-top: var(--bc-space-8)">
+      <p class="callout" style="margin-top: var(--scribe-space-2); font-size: 1.125rem">You can change this later. Nothing is lost.</p>
+      <div class="cols" style="margin-top: var(--scribe-space-8)">
         <section aria-labelledby="dq1">
           <h2 class="q-title" id="dq1">Which band?</h2>
           <div class="opts" role="radiogroup">
@@ -79,16 +79,16 @@
         <div>
           <section aria-labelledby="dq2">
             <h2 class="q-title" id="dq2">How hard?</h2>
-            <span class="seg" style="width:100%; margin-top: var(--bc-space-3)"><span style="flex:1">Easier</span><span class="on" style="flex:1">As played</span></span>
+            <span class="seg" style="width:100%; margin-top: var(--scribe-space-3)"><span style="flex:1">Easier</span><span class="on" style="flex:1">As played</span></span>
             <p class="tip"><i data-i="info" class="sm"></i>Easier keeps the tune but avoids high notes and fast runs.</p>
           </section>
-          <section aria-labelledby="dq3" style="margin-top: var(--bc-space-6)">
+          <section aria-labelledby="dq3" style="margin-top: var(--scribe-space-6)">
             <h2 class="q-title" id="dq3">Key</h2>
             <div class="keyrow"><button class="step-btn" aria-label="Down a semitone">−</button><div class="keyval"><b>D major</b><span>As recorded · concert pitch</span></div><button class="step-btn" aria-label="Up a semitone">+</button></div>
           </section>
         </div>
       </div>
-      <div style="display:flex; justify-content:flex-end; gap: var(--bc-space-3); margin-top: var(--bc-space-10)">
+      <div style="display:flex; justify-content:flex-end; gap: var(--scribe-space-3); margin-top: var(--scribe-space-10)">
         <button class="btn plain">Back</button>
         <button class="btn primary">Show the score</button>
       </div>

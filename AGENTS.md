@@ -30,9 +30,9 @@ on memory or on this file.
   an entry in its app's screen catalogue, and a reviewer's probe is a JVM test. The rules and the list of
   device-only cases are in [apps/android/README.md](apps/android/README.md#testing).
 - **Studio: the catalogue first.** Studio's views are checked on the built bundle with the API answered from
-  committed fixtures, no engine: accessibility, cut-off text, reflow, text spacing, the keyboard and screenshots
-  compared with the merge base. A new view comes with an entry in the catalogue and the fixtures it needs; a
-  live engine and `data/` are for what only they can show. The rules are in [studio/README.md](studio/README.md#test).
+  committed fixtures, no engine: accessibility, cut-off text, reflow, text spacing and the keyboard. A new view
+  comes with an entry in the catalogue and the fixtures it needs; a live engine and `data/` are for what only they
+  can show. The rules are in [studio/README.md](studio/README.md#test).
 - **Change one thing per branch**, on a branch or worktree, never directly on `main` unless told to.
 - **Follow the surrounding code.** Each part has its own language and idioms (Python, Rust, Swift,
   Kotlin, C#, TypeScript); match the file you are in, its naming and its comment density.

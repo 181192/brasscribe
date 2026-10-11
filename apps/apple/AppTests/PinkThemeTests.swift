@@ -20,18 +20,18 @@ import Testing
         defer { BrasscribePalette.shared.isPink = false }
         for dark in [false, true] {
             BrasscribePalette.shared.isPink = false
-            let bg = resolved(Color.Brasscribe.bg, dark: dark), primary = resolved(Color.Brasscribe.primary, dark: dark)
-            let ink = resolved(Color.Brasscribe.ink, dark: dark), uncertain = resolved(Color.Brasscribe.uncertain, dark: dark)
+            let bg = resolved(Color.Scribe.bg, dark: dark), primary = resolved(Color.Scribe.primary, dark: dark)
+            let ink = resolved(Color.Scribe.ink, dark: dark), uncertain = resolved(Color.Scribe.uncertain, dark: dark)
             BrasscribePalette.shared.isPink = true
-            #expect(resolved(Color.Brasscribe.bg, dark: dark) != bg)
-            #expect(resolved(Color.Brasscribe.primary, dark: dark) != primary)
-            #expect(resolved(Color.Brasscribe.ink, dark: dark) == ink)
-            #expect(resolved(Color.Brasscribe.uncertain, dark: dark) == uncertain)
+            #expect(resolved(Color.Scribe.bg, dark: dark) != bg)
+            #expect(resolved(Color.Scribe.primary, dark: dark) != primary)
+            #expect(resolved(Color.Scribe.ink, dark: dark) == ink)
+            #expect(resolved(Color.Scribe.uncertain, dark: dark) == uncertain)
         }
         // the Pink paper is blush in light (#FFF6F9) and aubergine in dark (#1B1017)
-        let light = resolved(Color.Brasscribe.bg, dark: false)
+        let light = resolved(Color.Scribe.bg, dark: false)
         #expect(abs(light.red - 1) < 0.01 && abs(light.blue - Float(0xF9) / 255) < 0.01)
-        let darkBg = resolved(Color.Brasscribe.bg, dark: true)
+        let darkBg = resolved(Color.Scribe.bg, dark: true)
         #expect(abs(darkBg.red - Float(0x1B) / 255) < 0.01)
     }
 
@@ -54,7 +54,7 @@ import Testing
 
     /// Reads the colour in its body, as every screen does.
     private struct Swatch: View {
-        var body: some View { Color.Brasscribe.bg.frame(width: 40, height: 40) }
+        var body: some View { Color.Scribe.bg.frame(width: 40, height: 40) }
     }
 
     // MARK: screenshots
@@ -112,7 +112,7 @@ import Testing
             save(await render(HarnessShell { PracticeView(model: model).pageBackground() }.environment(app), size: window, dark: dark,
                               wait: { !model.pages.isEmpty && !model.engraving }), "apple-score-\(suffix)")
             model.stopAll()
-            let settings = SettingsView().environment(app).tint(Color.Brasscribe.primary).defaultAppStorage(store)
+            let settings = SettingsView().environment(app).tint(Color.Scribe.primary).defaultAppStorage(store)
             save(await render(settings, size: CGSize(width: 600, height: 1100), dark: dark, toEnd: true), "apple-settings-\(suffix)")
         }
         store.removePersistentDomain(forName: "pink-shots")

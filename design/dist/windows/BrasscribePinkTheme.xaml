@@ -7,74 +7,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-            <Color x:Key="BcBgColor">#FFFFF6F9</Color>
-            <Color x:Key="BcSurfaceColor">#FFFCE9F0</Color>
-            <Color x:Key="BcSurfaceRaisedColor">#FFFFFFFF</Color>
-            <Color x:Key="BcTextColor">#FF2B1420</Color>
-            <Color x:Key="BcTextMutedColor">#FF6B4558</Color>
-            <Color x:Key="BcBorderColor">#FFF2D3E0</Color>
-            <Color x:Key="BcBorderStrongColor">#FFA0768A</Color>
-            <Color x:Key="BcPrimaryColor">#FFAD1463</Color>
-            <Color x:Key="BcOnPrimaryColor">#FFFFFFFF</Color>
-            <Color x:Key="BcSecondaryColor">#FFF9DAE7</Color>
-            <Color x:Key="BcOnSecondaryColor">#FF2B1420</Color>
-            <Color x:Key="BcBrassColor">#FFA57A2C</Color>
-            <Color x:Key="BcBrassTextColor">#FF7A5719</Color>
-            <Color x:Key="BcBrassTintColor">#FFFBE4ED</Color>
-            <Color x:Key="BcSuccessColor">#FF2E6B3F</Color>
-            <Color x:Key="BcWarningColor">#FF8A5A00</Color>
-            <Color x:Key="BcErrorColor">#FFB3261E</Color>
-            <Color x:Key="BcFocusColor">#FF2B1420</Color>
-            <Color x:Key="BcScrimColor">#66000000</Color>
-            <Color x:Key="BcInkColor">#FF121110</Color>
-            <Color x:Key="BcStaffColor">#FF57534B</Color>
-            <Color x:Key="BcUncertainColor">#FF0063A6</Color>
-            <Color x:Key="BcVeryUncertainColor">#FFA04300</Color>
-            <Color x:Key="BcAdlibTintColor">#FFF6E8EE</Color>
-            <Color x:Key="BcLoopTintColor">#FFFFF3D6</Color>
-            <Color x:Key="BcLoopEdgeColor">#FF8A5A00</Color>
-            <Color x:Key="BcCursorColor">#FF6B3FA0</Color>
-            <Color x:Key="BcCursorTintColor">#FFE1D1E7</Color>
-            <Color x:Key="BcSelectionTintColor">#FFF3E0E8</Color>
-            <Color x:Key="BcSelectionEdgeColor">#FF2B1420</Color>
-            <Color x:Key="BcModel1Color">#FF0072B2</Color>
-            <Color x:Key="BcModel2Color">#FFA65E00</Color>
-            <Color x:Key="BcModel3Color">#FF007A5A</Color>
-            <Color x:Key="BcModel4Color">#FFA8538A</Color>
-            <SolidColorBrush x:Key="BcBgBrush" Color="{StaticResource BcBgColor}"/>
-            <SolidColorBrush x:Key="BcSurfaceBrush" Color="{StaticResource BcSurfaceColor}"/>
-            <SolidColorBrush x:Key="BcSurfaceRaisedBrush" Color="{StaticResource BcSurfaceRaisedColor}"/>
-            <SolidColorBrush x:Key="BcTextBrush" Color="{StaticResource BcTextColor}"/>
-            <SolidColorBrush x:Key="BcTextMutedBrush" Color="{StaticResource BcTextMutedColor}"/>
-            <SolidColorBrush x:Key="BcBorderBrush" Color="{StaticResource BcBorderColor}"/>
-            <SolidColorBrush x:Key="BcBorderStrongBrush" Color="{StaticResource BcBorderStrongColor}"/>
-            <SolidColorBrush x:Key="BcPrimaryBrush" Color="{StaticResource BcPrimaryColor}"/>
-            <SolidColorBrush x:Key="BcOnPrimaryBrush" Color="{StaticResource BcOnPrimaryColor}"/>
-            <SolidColorBrush x:Key="BcSecondaryBrush" Color="{StaticResource BcSecondaryColor}"/>
-            <SolidColorBrush x:Key="BcOnSecondaryBrush" Color="{StaticResource BcOnSecondaryColor}"/>
-            <SolidColorBrush x:Key="BcBrassBrush" Color="{StaticResource BcBrassColor}"/>
-            <SolidColorBrush x:Key="BcBrassTextBrush" Color="{StaticResource BcBrassTextColor}"/>
-            <SolidColorBrush x:Key="BcBrassTintBrush" Color="{StaticResource BcBrassTintColor}"/>
-            <SolidColorBrush x:Key="BcSuccessBrush" Color="{StaticResource BcSuccessColor}"/>
-            <SolidColorBrush x:Key="BcWarningBrush" Color="{StaticResource BcWarningColor}"/>
-            <SolidColorBrush x:Key="BcErrorBrush" Color="{StaticResource BcErrorColor}"/>
-            <SolidColorBrush x:Key="BcFocusBrush" Color="{StaticResource BcFocusColor}"/>
-            <SolidColorBrush x:Key="BcScrimBrush" Color="{StaticResource BcScrimColor}"/>
-            <SolidColorBrush x:Key="BcInkBrush" Color="{StaticResource BcInkColor}"/>
-            <SolidColorBrush x:Key="BcStaffBrush" Color="{StaticResource BcStaffColor}"/>
-            <SolidColorBrush x:Key="BcUncertainBrush" Color="{StaticResource BcUncertainColor}"/>
-            <SolidColorBrush x:Key="BcVeryUncertainBrush" Color="{StaticResource BcVeryUncertainColor}"/>
-            <SolidColorBrush x:Key="BcAdlibTintBrush" Color="{StaticResource BcAdlibTintColor}"/>
-            <SolidColorBrush x:Key="BcLoopTintBrush" Color="{StaticResource BcLoopTintColor}"/>
-            <SolidColorBrush x:Key="BcLoopEdgeBrush" Color="{StaticResource BcLoopEdgeColor}"/>
-            <SolidColorBrush x:Key="BcCursorBrush" Color="{StaticResource BcCursorColor}"/>
-            <SolidColorBrush x:Key="BcCursorTintBrush" Color="{StaticResource BcCursorTintColor}"/>
-            <SolidColorBrush x:Key="BcSelectionTintBrush" Color="{StaticResource BcSelectionTintColor}"/>
-            <SolidColorBrush x:Key="BcSelectionEdgeBrush" Color="{StaticResource BcSelectionEdgeColor}"/>
-            <SolidColorBrush x:Key="BcModel1Brush" Color="{StaticResource BcModel1Color}"/>
-            <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
-            <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
-            <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
             <Color x:Key="ScribeBgColor">#FFFFF6F9</Color>
             <Color x:Key="ScribeSurfaceColor">#FFFCE9F0</Color>
             <Color x:Key="ScribeSurfaceRaisedColor">#FFFFFFFF</Color>
@@ -86,6 +18,7 @@
             <Color x:Key="ScribeOnPrimaryColor">#FFFFFFFF</Color>
             <Color x:Key="ScribeSecondaryColor">#FFF9DAE7</Color>
             <Color x:Key="ScribeOnSecondaryColor">#FF2B1420</Color>
+            <Color x:Key="ScribeAccentColor">#FF7A5719</Color>
             <Color x:Key="ScribeBrandColor">#FFA57A2C</Color>
             <Color x:Key="ScribeBrandTextColor">#FF7A5719</Color>
             <Color x:Key="ScribeBrandTintColor">#FFFBE4ED</Color>
@@ -108,6 +41,7 @@
             <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
             <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
             <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeAccentBrush" Color="{StaticResource ScribeAccentColor}"/>
             <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
@@ -119,64 +53,18 @@
             <SolidColorBrush x:Key="ScribeInkBrush" Color="{StaticResource ScribeInkColor}"/>
             <SolidColorBrush x:Key="ScribeLineBrush" Color="{StaticResource ScribeLineColor}"/>
             <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{StaticResource ScribeUncertainColor}"/>
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="Dark">
-            <Color x:Key="BcBgColor">#FF1B1017</Color>
-            <Color x:Key="BcSurfaceColor">#FF241620</Color>
-            <Color x:Key="BcSurfaceRaisedColor">#FF2E1D28</Color>
-            <Color x:Key="BcTextColor">#FFF8E9F0</Color>
-            <Color x:Key="BcTextMutedColor">#FFCDAABB</Color>
-            <Color x:Key="BcBorderColor">#FF3F2835</Color>
-            <Color x:Key="BcBorderStrongColor">#FF957082</Color>
-            <Color x:Key="BcPrimaryColor">#FFFF9ECF</Color>
-            <Color x:Key="BcOnPrimaryColor">#FF2B0F1E</Color>
-            <Color x:Key="BcSecondaryColor">#FF44293A</Color>
-            <Color x:Key="BcOnSecondaryColor">#FFF8E9F0</Color>
-            <Color x:Key="BcBrassColor">#FFD2A955</Color>
-            <Color x:Key="BcBrassTextColor">#FFD9B266</Color>
-            <Color x:Key="BcBrassTintColor">#FF33202B</Color>
-            <Color x:Key="BcSuccessColor">#FF8BD39B</Color>
-            <Color x:Key="BcWarningColor">#FFE0B65C</Color>
-            <Color x:Key="BcErrorColor">#FFFF8A7A</Color>
-            <Color x:Key="BcFocusColor">#FFF8E9F0</Color>
-            <Color x:Key="BcScrimColor">#66000000</Color>
-            <Color x:Key="BcInkColor">#FFF2F0EB</Color>
-            <Color x:Key="BcStaffColor">#FFA6A29A</Color>
-            <Color x:Key="BcUncertainColor">#FF56B4E9</Color>
-            <Color x:Key="BcVeryUncertainColor">#FFF0A04B</Color>
-            <Color x:Key="BcAdlibTintColor">#FF261A21</Color>
-            <Color x:Key="BcLoopTintColor">#FF2B2412</Color>
-            <Color x:Key="BcLoopEdgeColor">#FFE0B65C</Color>
-            <Color x:Key="BcCursorColor">#FFC9A7F0</Color>
-            <Color x:Key="BcCursorTintColor">#FF3E2E42</Color>
-            <Color x:Key="BcSelectionTintColor">#FF35242E</Color>
-            <Color x:Key="BcSelectionEdgeColor">#FFF8E9F0</Color>
-            <Color x:Key="BcModel1Color">#FF56B4E9</Color>
-            <Color x:Key="BcModel2Color">#FFE69F00</Color>
-            <Color x:Key="BcModel3Color">#FF3FC49A</Color>
-            <Color x:Key="BcModel4Color">#FFE08AC0</Color>
-            <SolidColorBrush x:Key="BcBgBrush" Color="{StaticResource BcBgColor}"/>
-            <SolidColorBrush x:Key="BcSurfaceBrush" Color="{StaticResource BcSurfaceColor}"/>
-            <SolidColorBrush x:Key="BcSurfaceRaisedBrush" Color="{StaticResource BcSurfaceRaisedColor}"/>
-            <SolidColorBrush x:Key="BcTextBrush" Color="{StaticResource BcTextColor}"/>
-            <SolidColorBrush x:Key="BcTextMutedBrush" Color="{StaticResource BcTextMutedColor}"/>
-            <SolidColorBrush x:Key="BcBorderBrush" Color="{StaticResource BcBorderColor}"/>
-            <SolidColorBrush x:Key="BcBorderStrongBrush" Color="{StaticResource BcBorderStrongColor}"/>
-            <SolidColorBrush x:Key="BcPrimaryBrush" Color="{StaticResource BcPrimaryColor}"/>
-            <SolidColorBrush x:Key="BcOnPrimaryBrush" Color="{StaticResource BcOnPrimaryColor}"/>
-            <SolidColorBrush x:Key="BcSecondaryBrush" Color="{StaticResource BcSecondaryColor}"/>
-            <SolidColorBrush x:Key="BcOnSecondaryBrush" Color="{StaticResource BcOnSecondaryColor}"/>
-            <SolidColorBrush x:Key="BcBrassBrush" Color="{StaticResource BcBrassColor}"/>
-            <SolidColorBrush x:Key="BcBrassTextBrush" Color="{StaticResource BcBrassTextColor}"/>
-            <SolidColorBrush x:Key="BcBrassTintBrush" Color="{StaticResource BcBrassTintColor}"/>
-            <SolidColorBrush x:Key="BcSuccessBrush" Color="{StaticResource BcSuccessColor}"/>
-            <SolidColorBrush x:Key="BcWarningBrush" Color="{StaticResource BcWarningColor}"/>
-            <SolidColorBrush x:Key="BcErrorBrush" Color="{StaticResource BcErrorColor}"/>
-            <SolidColorBrush x:Key="BcFocusBrush" Color="{StaticResource BcFocusColor}"/>
-            <SolidColorBrush x:Key="BcScrimBrush" Color="{StaticResource BcScrimColor}"/>
-            <SolidColorBrush x:Key="BcInkBrush" Color="{StaticResource BcInkColor}"/>
-            <SolidColorBrush x:Key="BcStaffBrush" Color="{StaticResource BcStaffColor}"/>
-            <SolidColorBrush x:Key="BcUncertainBrush" Color="{StaticResource BcUncertainColor}"/>
+            <Color x:Key="BcVeryUncertainColor">#FFA04300</Color>
+            <Color x:Key="BcAdlibTintColor">#FFF6E8EE</Color>
+            <Color x:Key="BcLoopTintColor">#FFFFF3D6</Color>
+            <Color x:Key="BcLoopEdgeColor">#FF8A5A00</Color>
+            <Color x:Key="BcCursorColor">#FF6B3FA0</Color>
+            <Color x:Key="BcCursorTintColor">#FFE1D1E7</Color>
+            <Color x:Key="BcSelectionTintColor">#FFF3E0E8</Color>
+            <Color x:Key="BcSelectionEdgeColor">#FF2B1420</Color>
+            <Color x:Key="BcModel1Color">#FF0072B2</Color>
+            <Color x:Key="BcModel2Color">#FFA65E00</Color>
+            <Color x:Key="BcModel3Color">#FF007A5A</Color>
+            <Color x:Key="BcModel4Color">#FFA8538A</Color>
             <SolidColorBrush x:Key="BcVeryUncertainBrush" Color="{StaticResource BcVeryUncertainColor}"/>
             <SolidColorBrush x:Key="BcAdlibTintBrush" Color="{StaticResource BcAdlibTintColor}"/>
             <SolidColorBrush x:Key="BcLoopTintBrush" Color="{StaticResource BcLoopTintColor}"/>
@@ -189,6 +77,8 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
             <Color x:Key="ScribeBgColor">#FF1B1017</Color>
             <Color x:Key="ScribeSurfaceColor">#FF241620</Color>
             <Color x:Key="ScribeSurfaceRaisedColor">#FF2E1D28</Color>
@@ -200,6 +90,7 @@
             <Color x:Key="ScribeOnPrimaryColor">#FF2B0F1E</Color>
             <Color x:Key="ScribeSecondaryColor">#FF44293A</Color>
             <Color x:Key="ScribeOnSecondaryColor">#FFF8E9F0</Color>
+            <Color x:Key="ScribeAccentColor">#FFD9B266</Color>
             <Color x:Key="ScribeBrandColor">#FFD2A955</Color>
             <Color x:Key="ScribeBrandTextColor">#FFD9B266</Color>
             <Color x:Key="ScribeBrandTintColor">#FF33202B</Color>
@@ -222,6 +113,7 @@
             <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{StaticResource ScribeOnPrimaryColor}"/>
             <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{StaticResource ScribeSecondaryColor}"/>
             <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{StaticResource ScribeOnSecondaryColor}"/>
+            <SolidColorBrush x:Key="ScribeAccentBrush" Color="{StaticResource ScribeAccentColor}"/>
             <SolidColorBrush x:Key="ScribeBrandBrush" Color="{StaticResource ScribeBrandColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{StaticResource ScribeBrandTextColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{StaticResource ScribeBrandTintColor}"/>
@@ -233,76 +125,32 @@
             <SolidColorBrush x:Key="ScribeInkBrush" Color="{StaticResource ScribeInkColor}"/>
             <SolidColorBrush x:Key="ScribeLineBrush" Color="{StaticResource ScribeLineColor}"/>
             <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{StaticResource ScribeUncertainColor}"/>
+            <Color x:Key="BcVeryUncertainColor">#FFF0A04B</Color>
+            <Color x:Key="BcAdlibTintColor">#FF261A21</Color>
+            <Color x:Key="BcLoopTintColor">#FF2B2412</Color>
+            <Color x:Key="BcLoopEdgeColor">#FFE0B65C</Color>
+            <Color x:Key="BcCursorColor">#FFC9A7F0</Color>
+            <Color x:Key="BcCursorTintColor">#FF3E2E42</Color>
+            <Color x:Key="BcSelectionTintColor">#FF35242E</Color>
+            <Color x:Key="BcSelectionEdgeColor">#FFF8E9F0</Color>
+            <Color x:Key="BcModel1Color">#FF56B4E9</Color>
+            <Color x:Key="BcModel2Color">#FFE69F00</Color>
+            <Color x:Key="BcModel3Color">#FF3FC49A</Color>
+            <Color x:Key="BcModel4Color">#FFE08AC0</Color>
+            <SolidColorBrush x:Key="BcVeryUncertainBrush" Color="{StaticResource BcVeryUncertainColor}"/>
+            <SolidColorBrush x:Key="BcAdlibTintBrush" Color="{StaticResource BcAdlibTintColor}"/>
+            <SolidColorBrush x:Key="BcLoopTintBrush" Color="{StaticResource BcLoopTintColor}"/>
+            <SolidColorBrush x:Key="BcLoopEdgeBrush" Color="{StaticResource BcLoopEdgeColor}"/>
+            <SolidColorBrush x:Key="BcCursorBrush" Color="{StaticResource BcCursorColor}"/>
+            <SolidColorBrush x:Key="BcCursorTintBrush" Color="{StaticResource BcCursorTintColor}"/>
+            <SolidColorBrush x:Key="BcSelectionTintBrush" Color="{StaticResource BcSelectionTintColor}"/>
+            <SolidColorBrush x:Key="BcSelectionEdgeBrush" Color="{StaticResource BcSelectionEdgeColor}"/>
+            <SolidColorBrush x:Key="BcModel1Brush" Color="{StaticResource BcModel1Color}"/>
+            <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
+            <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
+            <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
-            <StaticResource x:Key="BcBgColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcSurfaceColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcSurfaceRaisedColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcTextColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcTextMutedColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcBorderColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcBorderStrongColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcPrimaryColor" ResourceKey="SystemColorHighlightColor"/>
-            <StaticResource x:Key="BcOnPrimaryColor" ResourceKey="SystemColorHighlightTextColor"/>
-            <StaticResource x:Key="BcSecondaryColor" ResourceKey="SystemColorButtonFaceColor"/>
-            <StaticResource x:Key="BcOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
-            <StaticResource x:Key="BcBrassColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcBrassTextColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcBrassTintColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcSuccessColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcWarningColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcErrorColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcFocusColor" ResourceKey="SystemColorHighlightColor"/>
-            <StaticResource x:Key="BcScrimColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcInkColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcStaffColor" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcUncertainColor" ResourceKey="SystemColorHotlightColor"/>
-            <StaticResource x:Key="BcVeryUncertainColor" ResourceKey="SystemColorHotlightColor"/>
-            <StaticResource x:Key="BcAdlibTintColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcLoopTintColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcLoopEdgeColor" ResourceKey="SystemColorHighlightColor"/>
-            <StaticResource x:Key="BcCursorColor" ResourceKey="SystemColorHighlightColor"/>
-            <StaticResource x:Key="BcCursorTintColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcSelectionTintColor" ResourceKey="SystemColorWindowColor"/>
-            <StaticResource x:Key="BcSelectionEdgeColor" ResourceKey="SystemColorHighlightColor"/>
-            <StaticResource x:Key="BcModel1Color" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcModel2Color" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcModel3Color" ResourceKey="SystemColorWindowTextColor"/>
-            <StaticResource x:Key="BcModel4Color" ResourceKey="SystemColorWindowTextColor"/>
-            <SolidColorBrush x:Key="BcBgBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcSurfaceBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcSurfaceRaisedBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcTextMutedBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcBorderBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcBorderStrongBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcPrimaryBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
-            <SolidColorBrush x:Key="BcOnPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}"/>
-            <SolidColorBrush x:Key="BcSecondaryBrush" Color="{ThemeResource SystemColorButtonFaceColor}"/>
-            <SolidColorBrush x:Key="BcOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
-            <SolidColorBrush x:Key="BcBrassBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcBrassTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcBrassTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcSuccessBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcWarningBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcErrorBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcFocusBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
-            <SolidColorBrush x:Key="BcScrimBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcInkBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcStaffBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcUncertainBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
-            <SolidColorBrush x:Key="BcVeryUncertainBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
-            <SolidColorBrush x:Key="BcAdlibTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcLoopTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcLoopEdgeBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
-            <SolidColorBrush x:Key="BcCursorBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
-            <SolidColorBrush x:Key="BcCursorTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcSelectionTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
-            <SolidColorBrush x:Key="BcSelectionEdgeBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
-            <SolidColorBrush x:Key="BcModel1Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcModel2Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcModel3Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
-            <SolidColorBrush x:Key="BcModel4Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <StaticResource x:Key="ScribeBgColor" ResourceKey="SystemColorWindowColor"/>
             <StaticResource x:Key="ScribeSurfaceColor" ResourceKey="SystemColorWindowColor"/>
             <StaticResource x:Key="ScribeSurfaceRaisedColor" ResourceKey="SystemColorWindowColor"/>
@@ -314,6 +162,7 @@
             <StaticResource x:Key="ScribeOnPrimaryColor" ResourceKey="SystemColorHighlightTextColor"/>
             <StaticResource x:Key="ScribeSecondaryColor" ResourceKey="SystemColorButtonFaceColor"/>
             <StaticResource x:Key="ScribeOnSecondaryColor" ResourceKey="SystemColorButtonTextColor"/>
+            <StaticResource x:Key="ScribeAccentColor" ResourceKey="SystemColorHotlightColor"/>
             <StaticResource x:Key="ScribeBrandColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>
             <StaticResource x:Key="ScribeBrandTintColor" ResourceKey="SystemColorWindowColor"/>
@@ -336,6 +185,7 @@
             <SolidColorBrush x:Key="ScribeOnPrimaryBrush" Color="{ThemeResource SystemColorHighlightTextColor}"/>
             <SolidColorBrush x:Key="ScribeSecondaryBrush" Color="{ThemeResource SystemColorButtonFaceColor}"/>
             <SolidColorBrush x:Key="ScribeOnSecondaryBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
+            <SolidColorBrush x:Key="ScribeAccentBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
             <SolidColorBrush x:Key="ScribeBrandBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTextBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="ScribeBrandTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
@@ -347,6 +197,30 @@
             <SolidColorBrush x:Key="ScribeInkBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="ScribeLineBrush" Color="{ThemeResource SystemColorWindowTextColor}"/>
             <SolidColorBrush x:Key="ScribeUncertainBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
+            <StaticResource x:Key="BcVeryUncertainColor" ResourceKey="SystemColorHotlightColor"/>
+            <StaticResource x:Key="BcAdlibTintColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="BcLoopTintColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="BcLoopEdgeColor" ResourceKey="SystemColorHighlightColor"/>
+            <StaticResource x:Key="BcCursorColor" ResourceKey="SystemColorHighlightColor"/>
+            <StaticResource x:Key="BcCursorTintColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="BcSelectionTintColor" ResourceKey="SystemColorWindowColor"/>
+            <StaticResource x:Key="BcSelectionEdgeColor" ResourceKey="SystemColorHighlightColor"/>
+            <StaticResource x:Key="BcModel1Color" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="BcModel2Color" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="BcModel3Color" ResourceKey="SystemColorWindowTextColor"/>
+            <StaticResource x:Key="BcModel4Color" ResourceKey="SystemColorWindowTextColor"/>
+            <SolidColorBrush x:Key="BcVeryUncertainBrush" Color="{ThemeResource SystemColorHotlightColor}"/>
+            <SolidColorBrush x:Key="BcAdlibTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="BcLoopTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="BcLoopEdgeBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
+            <SolidColorBrush x:Key="BcCursorBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
+            <SolidColorBrush x:Key="BcCursorTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="BcSelectionTintBrush" Color="{ThemeResource SystemColorWindowColor}"/>
+            <SolidColorBrush x:Key="BcSelectionEdgeBrush" Color="{ThemeResource SystemColorHighlightColor}"/>
+            <SolidColorBrush x:Key="BcModel1Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="BcModel2Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="BcModel3Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
+            <SolidColorBrush x:Key="BcModel4Brush" Color="{ThemeResource SystemColorWindowTextColor}"/>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

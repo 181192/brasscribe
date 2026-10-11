@@ -1,9 +1,9 @@
 """Wall time and peak memory of the Rust CLI on each conformance case, without the Python reference.
 
-    cd core && cargo build --release -p brasscribe-cli && cd ..
-    PYTHONPATH=core/conformance pixi run python qa/perf/core_times.py core/target/release/brasscribe-core [mikkel]
+    cd core && cargo build --release -p scribe-cli && cd ..
+    PYTHONPATH=core/conformance pixi run python qa/perf/core_times.py core/target/release/scribe-core [mikkel]
 
-Uses the conformance suite's own case list and command lines (brasscribe_conformance.run.rust_cmd),
+Uses the conformance suite's own case list and command lines (scribe_conformance.run.rust_cmd),
 writes into a temporary directory, and reports the best of three runs and the peak resident set
 (/usr/bin/time -l on macOS, -v on Linux). Cases whose inputs the full suite synthesises first
 (solo-beats layers) exit with 101 here; run the suite once to create them.
@@ -17,8 +17,8 @@ import tempfile
 import time
 from pathlib import Path
 
-from brasscribe_conformance.cases import all_cases
-from brasscribe_conformance.run import rust_cmd
+from scribe_conformance.cases import all_cases
+from scribe_conformance.run import rust_cmd
 
 binary = Path(sys.argv[1])
 only = sys.argv[2] if len(sys.argv) > 2 else None

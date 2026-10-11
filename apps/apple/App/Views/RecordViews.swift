@@ -10,8 +10,8 @@ struct LevelMeter: View {
     var body: some View {
         GeometryReader { g in
             ZStack(alignment: .leading) {
-                Capsule().fill(Color.Brasscribe.secondary)
-                Capsule().fill(level > 0.9 ? Color.Brasscribe.warning : Color.Brasscribe.text)
+                Capsule().fill(Color.Scribe.secondary)
+                Capsule().fill(level > 0.9 ? Color.Scribe.warning : Color.Scribe.text)
                     .frame(width: g.size.width * CGFloat(min(1, level)))
             }
         }
@@ -38,9 +38,9 @@ struct MicRecordView: View {
                     .accessibilityLabel(Text("Recorded \(Int(rec.seconds)) seconds"))
                 LevelMeter(level: rec.level).frame(maxWidth: 360)
                 if rec.permissionDenied {
-                    Text("Microphone access is off. Turn it on in Settings to record.").foregroundStyle(Color.Brasscribe.error)
+                    Text("Microphone access is off. Turn it on in Settings to record.").foregroundStyle(Color.Scribe.error)
                 }
-                if let error { Text(error).foregroundStyle(Color.Brasscribe.error) }
+                if let error { Text(error).foregroundStyle(Color.Scribe.error) }
                 Button {
                     if rec.isRecording {
                         rec.stop()
@@ -112,7 +112,7 @@ struct CaptureView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 LabeledContent { Text(Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond))).monospacedDigit() } label: { Text("Recorded") }
                 LevelMeter(level: level)
-                if let error { Text(error).foregroundStyle(Color.Brasscribe.error) }
+                if let error { Text(error).foregroundStyle(Color.Scribe.error) }
                 Button(recorder == nil ? String(localized: "Start recording") : String(localized: "Stop")) { toggle() }
                     .buttonStyle(.primary)
                     .keyboardShortcut(.space, modifiers: [])

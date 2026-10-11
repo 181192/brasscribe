@@ -398,7 +398,7 @@ class TabInstrument(BaseModel):
 
 
 class TabViolation(BaseModel):
-    """A hard playability violation (core/target-fretted/README.md, Playability check); the other fields
+    """A hard playability violation (core/targets/fretted/README.md, Playability check); the other fields
     depend on `kind` and name notes by their index in `notes`."""
 
     model_config = ConfigDict(extra="allow")

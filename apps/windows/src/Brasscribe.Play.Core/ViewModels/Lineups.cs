@@ -20,7 +20,7 @@ public static class Lineups
         _ => throw new ArgumentOutOfRangeException(nameof(lineup), lineup, null),
     };
 
-    /// <summary>The core's <c>lineup</c> (bc_arrange_with, bc_arrange_layers_band): band, minimal or quartet.</summary>
+    /// <summary>The core's <c>lineup</c> (sc_arrange_with, sc_arrange_layers_band): band, minimal or quartet.</summary>
     public static string Core(Lineup lineup) => lineup switch
     {
         Lineup.FullBand => "band",

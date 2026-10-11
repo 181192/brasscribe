@@ -10,7 +10,7 @@ struct ScoreOptionsMenu: View {
             ScoreOptionItems(entry: entry)
         } label: {
             Image(systemName: BrasscribeIcon.more.systemName)
-                .foregroundStyle(Color.Brasscribe.textMuted)
+                .foregroundStyle(Color.Scribe.textMuted)
                 .frame(minWidth: 44, minHeight: 44)
                 .contentShape(Rectangle())
         }

@@ -70,9 +70,9 @@ def test_light_high_contrast_is_seven_to_one():
 def test_web_high_contrast_follows_the_resolved_theme():
     css = (build.DIST / "web" / "brasscribe.css").read_text()
     more = "@media (prefers-contrast: more) and (forced-colors: none)"
-    assert f'{more} {{\n  :root:not([data-theme="dark"]) {{\n    color-scheme: light;\n    --bc-bg: #FFFFFF;' in css
-    assert f'{more} and (prefers-color-scheme: dark) {{\n  :root:not([data-theme="light"]) {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css
-    assert f'{more} {{\n  :root[data-theme="dark"] {{\n    color-scheme: dark;\n    --bc-bg: #000000;' in css
+    assert f'{more} {{\n  :root:not([data-theme="dark"]) {{\n    color-scheme: light;\n    --scribe-bg: #FFFFFF;' in css
+    assert f'{more} and (prefers-color-scheme: dark) {{\n  :root:not([data-theme="light"]) {{\n    color-scheme: dark;\n    --scribe-bg: #000000;' in css
+    assert f'{more} {{\n  :root[data-theme="dark"] {{\n    color-scheme: dark;\n    --scribe-bg: #000000;' in css
 
 
 def test_pink_keeps_the_notation_and_its_meaning():
@@ -116,7 +116,7 @@ def test_pink_status_and_primary_stay_apart():
 
 def test_every_platform_gets_the_pink_palette():
     css = (build.DIST / "web" / "brasscribe.css").read_text()
-    assert ':root[data-palette="pink"] {\n    color-scheme: light;\n    --bc-bg: #FFF6F9;' in css
+    assert ':root[data-palette="pink"] {\n    color-scheme: light;\n    --scribe-bg: #FFF6F9;' in css
     assert "(not (prefers-contrast: more))" in css
     kt = (build.DIST / "android" / "kotlin" / "no" / "brasscribe" / "design" / "BrasscribeTheme.kt").read_text()
     assert "val BrasscribePinkColors" in kt and "pink && dark -> BrasscribePinkDarkColors" in kt
@@ -127,8 +127,8 @@ def test_every_platform_gets_the_pink_palette():
     assert "Pink" not in (build.DIST / "windows" / "BrasscribeTheme.xaml").read_text()
     xaml = (build.DIST / "windows" / "BrasscribePinkTheme.xaml").read_text()
     light, dark = xaml.index('x:Key="Light"'), xaml.index('x:Key="Dark"')
-    assert xaml.index('<Color x:Key="BcBgColor">#FFFFF6F9</Color>') in range(light, dark)
-    assert xaml.index('<Color x:Key="BcPrimaryColor">#FFFF9ECF</Color>') > dark
+    assert xaml.index('<Color x:Key="ScribeBgColor">#FFFFF6F9</Color>') in range(light, dark)
+    assert xaml.index('<Color x:Key="ScribePrimaryColor">#FFFF9ECF</Color>') > dark
     assert 'x:Key="HighContrast"' in xaml
 
 
@@ -209,18 +209,45 @@ def test_light_very_uncertain_keeps_its_margin():
 
 # ---------------------------------------------------------------- the neutral names
 
+def swift_types(text: str) -> dict[str, list[str]]:
+    """The members of every type a generated Swift file declares, by the type's full name (Color.Scribe,
+    ScribeDesign.Space): the nesting is read from the braces."""
+    import re
+    found: dict[str, list[str]] = {}
+    stack: list[tuple[str, int]] = []
+    depth = 0
+    for line in text.splitlines():
+        opened = re.match(r"\s*(?:public |private |final )*(?:enum|extension|class) ([\w.]+)[^{]*\{\s*$", line)
+        if opened:
+            stack.append((opened.group(1), depth))
+            found.setdefault(".".join(n for n, _ in stack), [])
+        elif stack:
+            member = re.match(r"\s*(?:public |private )?(?:static let|static var|static func|case|var) (\w+)", line)
+            if member and depth == stack[-1][1] + 1:
+                found[".".join(n for n, _ in stack)].append(member.group(1))
+        depth += line.count("{") - line.count("}")
+        while stack and depth <= stack[-1][1]:
+            stack.pop()
+    return found
+
+
+def swift_neutral(b) -> dict[str, list[str]]:
+    """The neutral types of a brand's Swift file and their members."""
+    types = swift_types((b.DIST / "apple" / f"{b.PRODUCT}Design.swift").read_text())
+    return {k: sorted(v) for k, v in types.items() if "Scribe" in k}
+
+
 def neutral_names(b) -> dict[str, list[str]]:
     """The neutral names each platform's files declare for a brand, in order."""
     import re
     product = b.PRODUCT
-    swift = (b.DIST / "apple" / f"{product}Design.swift").read_text().split("// The neutral names")[1]
     xaml = (b.DIST / "windows" / f"{product}Theme.xaml").read_text()
     css = (b.DIST / "web" / f"{product.lower()}.css").read_text()
     return {
-        "apple": re.findall(r"(?:enum|typealias|static var) (\w+)", swift),
+        "apple": sorted(f"{t}.{m}" for t, ms in swift_neutral(b).items() for m in ms),
         "android": declarations((b.DIST / KOTLIN / "ScribeTheme.kt").read_text()),
         "windows": re.findall(r'x:Key="(Scribe\w+)"', xaml),
-        "web": re.findall(r"^  (--scribe-[\w-]+):", css, re.M),
+        "web": sorted(set(re.findall(r"^\s+(--scribe-[\w-]+):", css, re.M))),
     }
 
 
@@ -239,7 +266,7 @@ def test_neutral_names_cover_the_neutral_roles_and_nothing_of_one_brand():
     for name, b in brands().items():
         found = neutral_names(b)
         for role in build.NEUTRAL["roles"]:
-            assert build.camel(role) in found["apple"], (name, role)
+            assert f"Color.Scribe.{build.camel(role)}" in found["apple"], (name, role)
             assert f"Scribe{build.pascal(role)}Brush" in found["windows"], (name, role)
             assert f"--scribe-{role}" in found["web"], (name, role)
         for platform, names in found.items():
@@ -282,16 +309,80 @@ def test_neutral_colours_have_the_brands_values_in_every_theme():
         themes = {d.get(f"{x}Key"): {e.get(f"{x}Key"): (e.text or e.get("ResourceKey") or e.get("Color")) for e in d}
                   for d in root.iter("{http://schemas.microsoft.com/winfx/2006/xaml/presentation}ResourceDictionary") if d.get(f"{x}Key")}
         assert set(themes) == {"Light", "Dark", "HighContrast"}, name
+        # Windows: a neutral role has its Scribe key with the brand's value (in a contrast theme the neutral
+        # role's system colour) and no key under the brand's prefix; the brand's own roles have only that.
+        modes = {"Light": "light", "Dark": "dark"}
         for theme, keys in themes.items():
             for role, src in b.neutral_roles().items():
-                own, neutral = f"{b.KEY}{b.pascal(src)}", f"Scribe{b.pascal(role)}"
-                assert keys[f"{neutral}Color"] == keys[f"{own}Color"], (name, theme, role)
-                assert keys[f"{neutral}Brush"] == keys[f"{own}Brush"].replace(own, neutral), (name, theme, role)
+                neutral = f"Scribe{b.pascal(role)}"
+                assert f"{b.KEY}{b.pascal(src)}Color" not in keys and f"{b.KEY}{b.pascal(src)}Brush" not in keys, (name, theme, src)
+                if theme == "HighContrast":
+                    assert keys[f"{neutral}Color"] == build.NEUTRAL["roles"][role]["windows"], (name, role)
+                else:
+                    assert keys[f"{neutral}Color"] == f"#{round(b.alpha(modes[theme], src) * 255):02X}{b.hexval(modes[theme], src)[1:]}", (name, theme, role)
+                assert f"{neutral}Brush" in keys, (name, theme, role)
+            for role in b.own_roles():
+                assert f"{b.KEY}{b.pascal(role)}Brush" in keys and f"Scribe{b.pascal(role)}Brush" not in keys, (name, theme, role)
+        rest = {e.get(f"{x}Key") for e in root if e.get(f"{x}Key")}
+        assert {"ScribeSpace4", "ScribePadding4", "ScribeRadiusMd", "ScribeTouchMin", "ScribeDurationFast", "ScribeDisplayFontFamily",
+                "ScribeBodyTextBlockStyle"} <= rest, name
+        view = b.pascal(b.EXT["notation"])
+        assert {f"{b.KEY}{view}CursorWidth", f"{b.KEY}IconPlay"} <= rest, name
+        assert not {k for k in rest if k.startswith(b.KEY) and not k.startswith((f"{b.KEY}{view}", f"{b.KEY}Icon", f"{b.KEY}TabFontFamily"))}, name
         css = (b.DIST / "web" / f"{b.PRODUCT.lower()}.css").read_text()
+        # The web: a neutral role is declared once, under its neutral name, with the brand's value in every
+        # mode; the brand's prefix is left for what is the brand's own.
+        root = css.split(":root {", 1)[1].split("}", 1)[0]
         for role, src in b.neutral_roles().items():
-            assert f"  --scribe-{role}: var(--{b.CSS}-{src});" in css, (name, role)
-        declared = set(re.findall(rf"^\s+(--{b.CSS}-[\w-]+):", css, re.M))
-        assert set(re.findall(rf"var\((--{b.CSS}-[\w-]+)\)", css.split("/* The neutral names")[1])) <= declared, name
+            assert f"  --scribe-{role}: {b.css_color('light', src)};" in root, (name, role)
+            assert f"--{b.CSS}-{src}:" not in css, (name, src)
+        own = set(re.findall(rf"--{b.CSS}-([a-z0-9-]+):", css))
+        assert own and not {o for o in own if o in build.NEUTRAL["roles"] or o.startswith(("space-", "radius-", "duration-", "font-text"))}, name
+        assert set(re.findall(r"var\((--[\w-]+)\)", css)) <= set(re.findall(r"^\s+(--[\w-]+):", css, re.M)), name
+        blocks = [set(re.findall(r"(--[\w-]+):", blk)) for blk in css.split("{")[1:] if "--scribe-bg:" in blk]
+        assert len(blocks) >= 8 and all({f"--scribe-{r}" for r in build.NEUTRAL["roles"]} <= blk for blk in blocks), name
+
+
+def test_system_colours_go_by_the_name_a_role_is_read_under():
+    # A token that two neutral roles read (the accent and brand text) has each role's system colour under
+    # the neutral names, and under the brand's own name the one the brand's tokens say.
+    for name, b in brands().items():
+        token = b.neutral_roles()["accent"]
+        assert token == b.neutral_roles()["brand-text"], name
+        xaml = (b.DIST / "windows" / f"{b.PRODUCT}Theme.xaml").read_text()
+        assert '<StaticResource x:Key="ScribeAccentColor" ResourceKey="SystemColorHotlightColor"/>' in xaml, name
+        assert '<StaticResource x:Key="ScribeBrandTextColor" ResourceKey="SystemColorWindowTextColor"/>' in xaml, name
+        forced = (b.DIST / "web" / f"{b.PRODUCT.lower()}.css").read_text().split("@media (forced-colors: active)")[1]
+        assert "--scribe-accent: LinkText;" in forced and "--scribe-brand-text: CanvasText;" in forced, name
+
+
+def test_every_variable_the_web_clients_read_is_declared():
+    # A style that reads a variable the style sheet does not declare fails silently, so a name that no
+    # longer exists (a brand-named copy of a neutral role) is caught here.
+    import re
+    declared = set(re.findall(r"(--[\w-]+):", (build.DIST / "web" / "brasscribe.css").read_text()))
+    read, checked = {}, 0
+    for folder in ("studio/src", "studio/browser", "site", "design/mockups"):
+        for path in (build.ROOT / folder).rglob("*"):
+            if path.suffix in (".css", ".ts", ".js", ".mjs", ".html") and "_site" not in path.parts and "node_modules" not in path.parts:
+                checked += 1
+                for name in re.findall(r"--(?:bc|scribe)-[a-z0-9]+(?:-[a-z0-9]+)*", path.read_text()):
+                    if name not in declared:
+                        read.setdefault(name, path.relative_to(build.ROOT).as_posix())
+    assert checked > 50 and not read, read
+    # Studio's canvases read variables by name from code: token("scribe-text"), tokenColour("bc-model-2") and
+    # the layers' colour: "…". Each name is a declared variable's, never a short name of Studio's own.
+    named = 0
+    for path in (build.ROOT / "studio" / "src").rglob("*.ts"):
+        text = path.read_text()
+        calls = [m.group(1) for m in re.finditer(r"\btoken(?:Colour)?\(((?:[^()]|\([^()]*\))*)\)", text)]
+        names = [n for call in calls for n in re.findall(r'"([^"]*)"', re.sub(r'[!=]==? "[^"]*"', "", call))]  # not what is compared
+        names += re.findall(r'\b(?:colour|token): "([^"]*)"', text)
+        for name in names:
+            named += 1
+            assert f"--{name}" in declared, (path.name, name)
+    assert named > 40, named
+    assert not (build.ROOT / "studio" / "src" / "tokens.css").exists()
 
 
 def test_pink_follows_into_the_neutral_names_on_windows():
@@ -301,26 +392,142 @@ def test_pink_follows_into_the_neutral_names_on_windows():
     assert xaml.count('x:Key="ScribeBgBrush"') == 3
 
 
-def test_a_neutral_role_the_brand_neither_has_nor_maps_is_an_error(tmp_path):
-    import pytest
-    raw = json.loads((FRETSCRIBE / "tokens" / "tokens.json").read_text())
-    del raw["$extensions"]["no.fretscribe"]["neutral"]["roles"]["line"]
+def test_neutral_types_have_the_same_members_in_every_brand():
+    # A neutral type that only pointed at a brand's would show that brand's own members too (a tab font, a
+    # score metric). So the members are compared, not only the names of the types.
+    import re
+
+    def members(text: str, opening: str) -> list[str]:
+        body = text.split(opening, 1)[1]
+        return sorted(re.findall(r"(?:const val|val) (\w+)", body[:body.index("\n}")]))
+
+    found = {}
+    for name, b in brands().items():
+        kotlin = (b.DIST / KOTLIN / "BrasscribeTheme.kt").read_text()
+        found[name] = {**swift_neutral(b), **{f"Scribe{t}": members(kotlin, "object Brasscribe" + t + " {") for t in ("Space", "Size", "Motion")}}
+        assert set(found[name]) >= {"ScribeDesign", "ScribeDesign.Space", "ScribeDesign.Radius", "ScribeDesign.Size", "ScribeDesign.Motion",
+                                    "Color.Scribe", "Font.Scribe"}, name
+        assert found[name]["Color.Scribe"] == sorted(build.camel(r) for r in build.NEUTRAL["roles"]), name
+        assert "tab" not in found[name]["Font.Scribe"] and "title1" in found[name]["Font.Scribe"], name
+        assert "s4" in found[name]["ScribeDesign.Space"] and "animation" in found[name]["ScribeDesign.Motion"], name
+    for name, theirs in found.items():
+        assert theirs == found["brasscribe"], name
+
+
+def test_swift_has_one_name_for_each_role():
+    # Apple: a neutral role or scale is on the Scribe types only, and a brand's type holds only what is the
+    # brand's own, so code cannot read a neutral role under a brand's name.
+    for name, b in brands().items():
+        types = swift_types((b.DIST / "apple" / f"{b.PRODUCT}Design.swift").read_text())
+        own = sorted(b.camel(r) for r in b.roles() if r not in b.neutral_roles().values())
+        assert sorted(types[f"Color.{b.PRODUCT}"]) == own and own, name
+        assert not set(types[f"Color.{b.PRODUCT}"]) & set(types["Color.Scribe"]), name
+        assert not set(types[f"Font.{b.PRODUCT}"]) & set(types["Font.Scribe"]), name
+        view = b.pascal(b.EXT["notation"])
+        assert [k for k in types if k.startswith(f"{b.PRODUCT}Design")] == [f"{b.PRODUCT}Design", f"{b.PRODUCT}Design.{view}"], name
+        assert types[f"{b.PRODUCT}Design"] == [] and "cursorWidth" in types[f"{b.PRODUCT}Design.{view}"], name
+    fs = swift_types((fretscribe().DIST / "apple" / "FretscribeDesign.swift").read_text())
+    assert fs["Font.Fretscribe"] == ["tab"] and "uncertainTint" in fs["Color.Fretscribe"]
+    assert swift_types((build.DIST / "apple" / "BrasscribeDesign.swift").read_text())["Font.Brasscribe"] == []
+
+
+def test_accent_is_for_what_you_act_on_and_brand_is_identity():
+    # The accent carries links and progress, so it is readable as text on every plain ground, in every mode
+    # of every brand, and each brand lists those pairs. The brand colour is not checked as text.
+    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    import contrast
+    for name, b in brands().items():
+        accent = b.neutral_roles()["accent"]
+        assert accent != b.neutral_roles()["brand"], name
+        for ground in ("bg", "surface", "surface-raised"):
+            assert [p for p in b.EXT["contrast"]["pairs"] if p[:2] == [accent, ground] and p[2] >= 4.5], (name, ground)
+            for mode in b.MODES:
+                assert contrast.contrast(b.hexval(mode, accent), b.hexval(mode, ground)) >= 4.5, (name, mode, ground)
+
+
+# A brand that lacks something is told what, in words, when the generator is set up.
+
+def broken(tmp_path, change, source=None) -> Path:
+    """A copy of a brand's tokens (Fretscribe's) with one thing changed; its font paths still lead to the fonts."""
+    source = source or FRETSCRIBE / "tokens" / "tokens.json"
+    raw = json.loads(source.read_text())
+    ext = next(v for v in raw["$extensions"].values() if isinstance(v, dict) and "modes" in v)
+    for font in [v for k, v in ext["fonts"].items() if not k.startswith("$")]:
+        font["licence"] = str((source.parent / font["licence"]).resolve())
+        for face in font["faces"]:
+            face["file"] = str((source.parent / face["file"]).resolve())
+    for key in ("file", "licence"):
+        if "display-font" in ext.get("android", {}):
+            ext["android"]["display-font"][key] = str((source.parent / ext["android"]["display-font"][key]).resolve())
+    ext["prefix"] = "tmp"  # a copy has the brand's prefix, which no second brand may have
+    change(raw, ext)
     tokens = tmp_path / "tokens.json"
     tokens.write_text(json.dumps(raw))
-    fs = product_build(tokens, tmp_path / "dist", "windows")
-    with pytest.raises(SystemExit, match="neutral role 'line'"):
-        fs.outputs()
+    return tokens
+
+
+def refused(tmp_path, change, message, source=None):
+    import pytest
+    with pytest.raises(SystemExit, match=message):
+        product_build(broken(tmp_path, change, source), tmp_path / "dist")
+
+
+def test_an_unchanged_copy_of_a_brand_is_accepted(tmp_path):
+    fs = product_build(broken(tmp_path, lambda raw, ext: None), tmp_path / "dist")
+    assert len(fs.outputs()) > 100
+
+
+def test_a_neutral_role_the_brand_neither_has_nor_maps_is_an_error(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext["neutral"]["roles"].pop("line"), "no token for the neutral role 'line'")
 
 
 def test_a_brands_own_role_needs_its_system_colour(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext["system-colours"].pop("uncertain-tint"), r"no system colour \(windows\) for 'uncertain-tint'")
+
+
+def test_the_neutral_prefix_is_no_brands(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="scribe"), "'scribe' is the prefix of the neutral names")
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="Fs"), "must be lower-case letters and digits")
+    refused(tmp_path, lambda raw, ext: raw["$extensions"].update({"no.scribe": raw["$extensions"].pop("no.fretscribe")}) or ext.pop("prefix"),
+            "'scribe' is the prefix of the neutral names")
+
+
+def test_two_brands_cannot_have_one_prefix(tmp_path):
+    # Also for a token file that is not in brands.json: a copy of a brand's file has that brand's prefix.
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="bc"), "the prefix 'bc' is brasscribe's too")
+    refused(tmp_path, lambda raw, ext: ext.update(prefix="fs"), "the prefix 'fs' is fretscribe's too")
+
+
+def test_brands_json_is_checked():
     import pytest
-    raw = json.loads((FRETSCRIBE / "tokens" / "tokens.json").read_text())
-    del raw["$extensions"]["no.fretscribe"]["system-colours"]["uncertain-tint"]
-    tokens = tmp_path / "tokens.json"
-    tokens.write_text(json.dumps(raw))
-    fs = product_build(tokens, tmp_path / "dist", "windows")
-    with pytest.raises(SystemExit, match="no system colour for 'uncertain-tint'"):
-        fs.outputs()
+    ok = {"name": "a", "tokens": "design/a/tokens.json", "out": "design/a/dist"}
+    build.check_brands([ok, {"name": "b", "tokens": "design/b/tokens.json", "out": "design/b/dist"}])
+    for key in ("name", "tokens", "out"):
+        with pytest.raises(SystemExit, match=f"has no '{key}'"):
+            build.check_brands([{k: v for k, v in ok.items() if k != key}])
+    with pytest.raises(SystemExit, match="a and A have the same name"):
+        build.check_brands([ok, {**ok, "name": "A", "tokens": "x.json", "out": "x"}])
+    with pytest.raises(SystemExit, match="a and b have the same output folder"):
+        build.check_brands([ok, {**ok, "name": "b", "tokens": "x.json"}])
+    with pytest.raises(SystemExit, match="a and b have the same token file"):
+        build.check_brands([ok, {**ok, "name": "b", "out": "x"}])
+
+
+def test_a_brand_with_something_missing_is_told_what(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext.pop("notation"), r"no \$extensions.\*.notation")
+    refused(tmp_path, lambda raw, ext: ext.update(notation="stave"), "names the group 'stave', which the file does not have")
+    refused(tmp_path, lambda raw, ext: ext["fonts"].pop("display"), r"no \$extensions.\*.fonts.display")
+    refused(tmp_path, lambda raw, ext: ext.pop("fonts"), r"no \$extensions.\*.fonts.display")
+    refused(tmp_path, lambda raw, ext: ext["fonts"]["tab"].pop("licence"), r"fonts.tab has no 'licence'")
+    refused(tmp_path, lambda raw, ext: ext["fonts"]["tab"]["faces"][0].update(file="nowhere.ttf"), "names nowhere.ttf, which is not there")
+    refused(tmp_path, lambda raw, ext: raw["color"]["dark"].pop("focus"), r"color.dark lacks focus")
+    refused(tmp_path, lambda raw, ext: raw["color"]["dark"].update(glow=raw["color"]["dark"]["focus"]), r"color.dark has glow that color.light lacks")
+    refused(tmp_path, lambda raw, ext: ext["modes"].remove("high-contrast-light"), "the mode 'high-contrast-light' is not listed")
+    refused(tmp_path, lambda raw, ext: ext["modes"].append("sepia"), "the mode 'sepia' is listed .* and has no colours")
+    for name in ("typography", "space", "size", "radius", "elevation", "motion", "font", "color"):
+        refused(tmp_path, lambda raw, ext, name=name: raw.pop(name), f"tokens.json: no '{name}' group")
+    refused(tmp_path, lambda raw, ext: ext.pop("modes"), r"tokens.json: expected one \$extensions entry with modes and contrast")
+    refused(tmp_path, lambda raw, ext: ext.pop("contrast"), r"tokens.json: expected one \$extensions entry with modes and contrast")
 
 
 # ---------------------------------------------------------------- Fretscribe
@@ -336,13 +543,12 @@ def test_fretscribe_has_its_own_names_and_none_of_brasscribes():
         body = text.split("\n", 1)[1]  # the header names the generator's path
         assert "rasscribe" not in body and "--bc-" not in body and 'x:Key="Bc' not in body and "Pink" not in body
         assert "Instrument" not in body
-    assert "public static var uncertainTint: Color" in swift and "public static var string: Color" in swift
+    assert "public static var uncertainTint: Color" in swift and 'public static var line: Color { catalogColor("string") }' in swift
     assert "public enum Tab {" in swift and "enum Fretscribe {" in swift
-    assert 'x:Key="FsUncertainTintBrush"' in xaml and 'x:Key="FsStringBrush"' in xaml and 'x:Key="FsTabCursorWidth"' in xaml
-    assert "--fs-uncertain-tint: #FCF0DB;" in css and "--fs-string:" in css and "--fs-tab-cursor-width:" in css
+    assert 'x:Key="FsUncertainTintBrush"' in xaml and 'x:Key="ScribeLineBrush"' in xaml and 'x:Key="FsStringBrush"' not in xaml and 'x:Key="FsTabCursorWidth"' in xaml
+    assert "--fs-uncertain-tint: #FCF0DB;" in css and "--scribe-line: #737983;" in css and "--fs-tab-cursor-width:" in css
     assert "globalThis.FretscribeIcons = {" in js
     assert not (fs.DIST / "windows" / "FretscribePinkTheme.xaml").exists()
-    assert not (fs.DIST / "web" / "studio-compat.css").exists()
     sets = fs.DIST / "apple" / "FretscribeDesign.xcassets"
     assert sorted(p.name for p in sets.iterdir()) == ["Contents.json", "Fretscribe"]
     assert sorted(p.name for p in (sets / "Fretscribe").iterdir() if p.suffix == ".colorset") == \
@@ -441,19 +647,15 @@ def test_another_product_writes_only_into_its_own_folder(tmp_path):
 
 def test_a_brand_cannot_use_another_brands_folder():
     import pytest
-    with pytest.raises(SystemExit, match="its own --out"):
+    # The folder's owner is named, and so is the token file that needs another.
+    with pytest.raises(SystemExit, match=r"design/dist is the output folder of brasscribe .*give design/fretscribe/tokens/tokens.json its own --out"):
         product_build(FRETSCRIBE / "tokens" / "tokens.json", build.DEFAULT_DIST)
-    with pytest.raises(SystemExit, match="its own --out"):
+    with pytest.raises(SystemExit, match=r"design/fretscribe/dist is the output folder of fretscribe .*give design/tokens/tokens.json its own --out"):
         product_build(build.DEFAULT_TOKENS, FRETSCRIBE / "dist")
 
 
 def test_a_role_the_product_neither_has_nor_maps_is_an_error(tmp_path):
     import pytest
-    raw = json.loads((FRETSCRIBE / "tokens" / "tokens.json").read_text())
-    del raw["$extensions"]["no.fretscribe"]["android"]["aliases"]["roles"]["staff"]
-    (tmp_path / "tokens").mkdir()
-    tokens = tmp_path / "tokens" / "tokens.json"
-    tokens.write_text(json.dumps(raw))
-    fs = product_build(tokens, tmp_path / "dist", "android")
+    fs = product_build(broken(tmp_path, lambda raw, ext: ext["android"]["aliases"]["roles"].pop("staff")), tmp_path / "dist", "android")
     with pytest.raises(SystemExit, match="no role for 'staff'"):
         fs.outputs()

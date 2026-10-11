@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Scribe.Core</RootNamespace>
+    <Description>P/Invoke wrapper of the scribe Rust core (scribe_ffi C ABI).</Description>
+    <Copyright>Copyright (c) 2026 Kristoffer-Andre Kalliainen</Copyright>
+    <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <!-- The native library: scribe_ffi.dll (Windows), libscribe_ffi.dylib (macOS), libscribe_ffi.so (Linux).
+       core/scripts/build-all.sh builds the macOS and Windows ones into core/dist/<platform>/; the Linux one is the host
+       build in core/target/release (a cargo release build of scribe-ffi, or scripts/core-artifacts.sh ensure host).
+       No script builds win-arm64 yet. -->
+  <ItemGroup>
+    <None Include="../../target/release/libscribe_ffi.so" Condition="Exists('../../target/release/libscribe_ffi.so')"
+          Link="libscribe_ffi.so" CopyToOutputDirectory="PreserveNewest" Pack="true"
+          PackagePath="runtimes/linux-x64/native" />
+    <None Include="../../dist/macos/libscribe_ffi.dylib" Condition="Exists('../../dist/macos/libscribe_ffi.dylib')"
+          Link="libscribe_ffi.dylib" CopyToOutputDirectory="PreserveNewest" Pack="true"
+          PackagePath="runtimes/osx-arm64/native" />
+    <None Include="../../dist/windows/scribe_ffi.dll" Condition="Exists('../../dist/windows/scribe_ffi.dll')"
+          Link="scribe_ffi.dll" CopyToOutputDirectory="PreserveNewest" Pack="true"
+          PackagePath="runtimes/win-x64/native" />
+  </ItemGroup>
+
+</Project>

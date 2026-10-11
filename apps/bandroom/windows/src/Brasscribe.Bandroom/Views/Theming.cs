@@ -60,7 +60,7 @@ internal static class ThemeBrushes
 
     /// <summary>
     /// The brush for <paramref name="key"/> as the element shows it now. In Light and Dark it is built from the
-    /// theme's colour (BcWarningBrush from BcWarningColor): a theme dictionary's brush that no XAML has used yet
+    /// theme's colour (ScribeWarningBrush from ScribeWarningColor): a theme dictionary's brush that no XAML has used yet
     /// resolves its {StaticResource ...Color} in the app's theme instead of its own, so Dark handed back Light's
     /// status colours. The colours are plain values in each theme. A contrast theme keeps its own brushes.
     /// </summary>

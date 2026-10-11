@@ -71,8 +71,8 @@ export class PianoRoll extends HTMLElement {
         return h("li", {}, h("label", {}, box, swatch(l), `${l.label} (${l.notes.length})`));
       })));
     const confLegend = h("ul", { class: "legend", "aria-label": t("roll.confidence") },
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--ink)" }), t("roll.confident")),
-      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:repeating-linear-gradient(135deg,var(--uncertain) 0 2px,transparent 2px 5px)" }), t("roll.uncertain")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:var(--scribe-ink)" }), t("roll.confident")),
+      h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "background:repeating-linear-gradient(135deg,var(--scribe-uncertain) 0 2px,transparent 2px 5px)" }), t("roll.uncertain")),
       h("li", {}, h("span", { class: "sw", "aria-hidden": "true", style: "border-style:dashed;background:transparent" }), t("roll.veryUncertain")));
     const nav = h("div", { class: "row" },
       h("button", { type: "button", onclick: () => this.pan(-0.8) }, t("common.earlier")),
@@ -134,9 +134,9 @@ export class PianoRoll extends HTMLElement {
     c.textBaseline = "middle";
     for (let p = this.lo; p <= this.hi; p++) {
       if (p % 12 === 0) {
-        c.fillStyle = token("text-muted");
+        c.fillStyle = token("scribe-text-muted");
         c.fillText(pitchName(p), 2, y(p) + rh / 2);
-        c.strokeStyle = token("staff");
+        c.strokeStyle = token("scribe-line");
         c.globalAlpha = 0.35;
         c.beginPath();
         c.moveTo(left, y(p) + rh);
@@ -194,14 +194,14 @@ export class PianoRoll extends HTMLElement {
       }
     }
     c.setLineDash([]);
-    timeAxis(c, pw, plotH, this.t0, this.t0 + this.span, token("text-muted"));
+    timeAxis(c, pw, plotH, this.t0, this.t0 + this.span, token("scribe-text-muted"));
   }
 }
 
 /** Diff marks: a letter beside the note so the kind is readable without colour. */
 function markNote(c: CanvasRenderingContext2D, mark: string, x0: number, top: number, _x1: number, rh: number): void {
   const letter = { added: "+", removed: "−", moved: "↔", octave: "8" }[mark] ?? "?";
-  c.fillStyle = token(mark === "added" ? "ok" : mark === "removed" ? "error" : mark === "moved" ? "uncertain" : "very-uncertain");
+  c.fillStyle = token(mark === "added" ? "scribe-success" : mark === "removed" ? "scribe-error" : mark === "moved" ? "scribe-uncertain" : "bc-very-uncertain");
   c.font = `bold ${Math.max(9, Math.min(13, rh + 4))}px system-ui, sans-serif`;
   c.textBaseline = "bottom";
   c.fillText(letter, x0, top);

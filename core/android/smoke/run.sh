@@ -12,6 +12,6 @@ out=target/kotlin-smoke
 mkdir -p "$out"
 # A failed compile stops here (pipefail) rather than running the jar of an earlier run.
 rm -f "$out/smoke.jar"
-kotlinc -cp "$jna" bindings/kotlin/uniffi/brasscribe_ffi/brasscribe_ffi.kt android/smoke/Smoke.kt -include-runtime -d "$out/smoke.jar" 2>&1 \
+kotlinc -cp "$jna" bindings/kotlin/uniffi/scribe_ffi/scribe_ffi.kt android/smoke/Smoke.kt -include-runtime -d "$out/smoke.jar" 2>&1 \
   | sed '/^warning/d'
 java --enable-native-access=ALL-UNNAMED -Djna.library.path=dist/macos -cp "$out/smoke.jar:$jna" SmokeKt

@@ -131,6 +131,11 @@ class StageContext:
     def log(self, message: str) -> None:
         self.executor.emit({"type": "log", "stage": self.stage.name, "message": message})
 
+    def not_for_reuse(self) -> None:
+        """This run of the stage made less than it should (a file a helper program did not write): its output
+        is kept for the job, but not stored for later jobs, so the next one tries again."""
+        self.executor.not_for_reuse(self.stage.name)
+
     def adapter(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None) -> float:
         return self.executor.adapters.run(name, src, dst, env=env, allow_heavy=self.executor.allow_heavy, log=self.log,
                                           waited=lambda s: self.executor.add_wait(self.stage.name, s),
@@ -154,6 +159,11 @@ class Executor:
         # Stages that may run at once (BRASSCRIBE_STAGE_PARALLELISM); 1 runs them in pipeline order.
         self.parallelism = max(1, int(parallelism))
         self._emit_lock = threading.RLock()
+        self._not_for_reuse: set[str] = set()  # stages whose output of this run is not stored (StageContext.not_for_reuse)
+
+    def not_for_reuse(self, stage: str) -> None:
+        with self._waits_lock:
+            self._not_for_reuse.add(stage)
 
     def add_wait(self, stage: str, seconds: float) -> None:
         """Time a stage spent waiting for the GPU mutex; kept apart from the time it ran."""
@@ -328,6 +338,8 @@ class Executor:
                     if entry:
                         res.matches_cache = self._equivalent(out, res.files, entry)
                         res.provenance = {"compared_with_cache": key}
+                    elif stage.name in self._not_for_reuse:
+                        res.provenance = {"ran": True, "stored": False}
                     else:
                         self.cache.store(key, stage.name, out, list(res.files), {"ran": True})
         except Exception as e:  # noqa: BLE001 - reported on the stage, then re-raised

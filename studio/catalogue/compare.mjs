@@ -1,4 +1,5 @@
-// What changed between two sets of the catalogue's screenshots (scripts/screenshots.sh compare).
+// What changed between two sets of a screen catalogue's screenshots: Studio's, and every other app's. CI runs it on
+// main after a merge, on the pictures of that main and of the one before it (.github/scripts/screens-on-main.sh).
 //
 //   node catalogue/compare.mjs <before dir> <after dir> <report dir>
 //

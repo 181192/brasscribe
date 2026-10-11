@@ -9,8 +9,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from brasscribe_conformance.canon import json_equal, same_json
-from brasscribe_conformance.run import compare
+from scribe_conformance.canon import json_equal, same_json
+from scribe_conformance.run import compare
 
 
 class SameJson(unittest.TestCase):

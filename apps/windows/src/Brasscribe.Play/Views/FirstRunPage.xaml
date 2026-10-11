@@ -13,14 +13,14 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <!-- The brass-tint hero: the mark and the headline with the brass italic. -->
-            <Border Background="{ThemeResource BcBrassTintBrush}" Padding="40,48,40,40">
+            <Border Background="{ThemeResource ScribeBrandTintBrush}" Padding="40,48,40,40">
                 <StackPanel MaxWidth="720" HorizontalAlignment="Center" Spacing="24">
                     <Image Source="ms-appx:///Assets/Brand/mark-brass.svg" Width="56" Height="56" HorizontalAlignment="Left"
                            AutomationProperties.AccessibilityView="Raw" />
                     <TextBlock x:Name="Heading" Style="{StaticResource HeroHeadingStyle}" AutomationProperties.HeadingLevel="Level1" IsTabStop="True">
                         <Run x:Uid="FirstRunHeadingLead" />
                         <Run x:Uid="FirstRunHeadingBrass" FontFamily="{StaticResource BcDisplayItalicFontFamily}" FontStyle="Italic"
-                             Foreground="{ThemeResource BcBrassTextBrush}" />
+                             Foreground="{ThemeResource ScribeBrandTextBrush}" />
                     </TextBlock>
                 </StackPanel>
             </Border>
@@ -75,7 +75,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource BcTextMutedBrush}" />
+                        <FontIcon Glyph="{StaticResource BcIconInfo}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
                         <TextBlock x:Uid="FirstRunPrivacy" Style="{StaticResource MutedStyle}" />
                     </StackPanel>
                     <Button x:Name="GetStartedButton" x:Uid="GetStartedButton" Grid.Column="1" Style="{StaticResource PrimaryButtonStyle}"

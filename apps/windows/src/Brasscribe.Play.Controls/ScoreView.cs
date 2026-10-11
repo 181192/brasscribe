@@ -271,22 +271,22 @@ public sealed partial class ScoreView : UserControl
                 case OverlayKind.CursorLine: Add(over, Fill(b, "BcCursorBrush")); break;
                 case OverlayKind.LoopEdge: AddBracket(over, b, left: !items.Any(o => o.Kind == OverlayKind.LoopEdge && o.Box.Y == b.Y && o.Box.X < b.X)); break;
                 case OverlayKind.Outline:
-                    Add(over, new Rectangle { Width = b.W, Height = b.H, Stroke = Brush("BcInkBrush"), StrokeThickness = 1 }, b.X, b.Y);
+                    Add(over, new Rectangle { Width = b.W, Height = b.H, Stroke = Brush("ScribeInkBrush"), StrokeThickness = 1 }, b.X, b.Y);
                     break;
                 case OverlayKind.DashedBarLine:
-                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1, StrokeDashArray = [4, 3] }, b.X, b.Y);
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("ScribeLineBrush"), StrokeThickness = 1, StrokeDashArray = [4, 3] }, b.X, b.Y);
                     break;
                 case OverlayKind.LoopLabel:
                     Add(over, new TextBlock { Text = item.Text, FontSize = 12, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Foreground = Brush("BcLoopEdgeBrush") }, b.X, b.Y);
                     break;
                 case OverlayKind.AdlibText:
-                    Add(over, new TextBlock { Text = item.Text, FontSize = 17, FontStyle = Windows.UI.Text.FontStyle.Italic, Foreground = Brush("BcInkBrush"),
+                    Add(over, new TextBlock { Text = item.Text, FontSize = 17, FontStyle = Windows.UI.Text.FontStyle.Italic, Foreground = Brush("ScribeInkBrush"),
                         FontFamily = DisplayItalic }, b.X, b.Y);
                     break;
                 case OverlayKind.GroupBracket:
-                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = b.W, Y2 = 0, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1.5, StrokeDashArray = [3, 2] }, b.X, b.Y);
-                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1.5 }, b.X, b.Y);
-                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("BcStaffBrush"), StrokeThickness = 1.5 }, b.X + b.W, b.Y);
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = b.W, Y2 = 0, Stroke = Brush("ScribeLineBrush"), StrokeThickness = 1.5, StrokeDashArray = [3, 2] }, b.X, b.Y);
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("ScribeLineBrush"), StrokeThickness = 1.5 }, b.X, b.Y);
+                    Add(over, new Line { X1 = 0, Y1 = 0, X2 = 0, Y2 = b.H, Stroke = Brush("ScribeLineBrush"), StrokeThickness = 1.5 }, b.X + b.W, b.Y);
                     break;
                 case OverlayKind.SelectionTint: Add(under, Fill(b, "BcSelectionTintBrush")); break;
                 case OverlayKind.SelectionCaret:
@@ -297,7 +297,7 @@ public sealed partial class ScoreView : UserControl
                     }, b.X, b.Y);
                     break;
                 case OverlayKind.UncertainMark:
-                    Add(over, Mark(b, "BcUncertainBrush", boxed: false), b.X, b.Y);
+                    Add(over, Mark(b, "ScribeUncertainBrush", boxed: false), b.X, b.Y);
                     break;
                 case OverlayKind.VeryUncertainMark:
                     Add(over, Mark(b, "BcVeryUncertainBrush", boxed: true), b.X, b.Y);

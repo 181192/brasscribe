@@ -1,5 +1,5 @@
 import AVFoundation
-import BrasscribeCore
+import ScribeCore
 import Foundation
 import OnDeviceKit
 import ScoreKit

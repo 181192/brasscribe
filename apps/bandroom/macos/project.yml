@@ -13,8 +13,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.8.1"
-    CURRENT_PROJECT_VERSION: "12"
+    MARKETING_VERSION: "0.10.1"
+    CURRENT_PROJECT_VERSION: "15"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     CODE_SIGN_IDENTITY: "-"
@@ -56,7 +56,7 @@ targets:
       - name: Band sounds
         script: "\"$SRCROOT/scripts/stage-band-sounds.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/band\""
         basedOnDependencyAnalysis: false
-      # The Rust core's command line, for bass tabs (the engine gets it through BRASSCRIBE_CORE_CLI).
+      # The Rust core's command line, for bass tabs (the engine gets it through SCRIBE_CORE_CLI).
       - name: Core command line
         script: "\"$SRCROOT/scripts/stage-core-cli.sh\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/bin\""
         basedOnDependencyAnalysis: false

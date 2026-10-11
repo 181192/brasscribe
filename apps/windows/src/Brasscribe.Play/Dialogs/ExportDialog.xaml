@@ -6,7 +6,7 @@
     xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
     x:Uid="ExportDialog"
     DefaultButton="Primary"
-    CornerRadius="{StaticResource BcRadiusXl}"
+    CornerRadius="{StaticResource ScribeRadiusXl}"
     PrimaryButtonStyle="{StaticResource PrimaryButtonStyle}"
     SecondaryButtonStyle="{StaticResource SecondaryButtonStyle}"
     PrimaryButtonClick="OnPrint"
@@ -35,12 +35,12 @@
         <TextBlock x:Uid="ExportEveryPartTip" Style="{StaticResource MutedStyle}" FontSize="12" />
 
         <TextBlock x:Uid="ExportAsHeading" Style="{StaticResource OverlineStyle}" Margin="0,12,0,0" AutomationProperties.HeadingLevel="Level2" />
-        <Border BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="1" CornerRadius="{StaticResource BcRadiusLg}"
-                Background="{ThemeResource BcSurfaceRaisedBrush}">
+        <Border BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="1" CornerRadius="{StaticResource ScribeRadiusLg}"
+                Background="{ThemeResource ScribeSurfaceRaisedBrush}">
             <ItemsControl ItemsSource="{x:Bind ViewModel.Formats}" IsTabStop="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ExportChoice">
-                        <Border BorderBrush="{ThemeResource BcBorderBrush}" BorderThickness="0,0,0,1" Padding="14,6">
+                        <Border BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,0,0,1" Padding="14,6">
                             <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" IsEnabled="{x:Bind Available}"
                                       AutomationProperties.Name="{x:Bind Label}" AutomationProperties.HelpText="{x:Bind Detail}">
                                 <StackPanel Spacing="1" Padding="4,2,0,2">

@@ -25,9 +25,9 @@ struct ChangeNoteSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: Space.s5) {
                 VStack(alignment: .leading, spacing: Space.s2) {
-                    Text("\(target.partName) · Bar \(target.bar + 1)").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text("\(target.partName) · Bar \(target.bar + 1)").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                     Text(written.map { "Written \(ReviewWords.name($0))\($0.octave)" } ?? "")
-                        .font(Font.Brasscribe.title2).foregroundStyle(Color.Brasscribe.text)
+                        .font(Font.Scribe.title2).foregroundStyle(Color.Scribe.text)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
                 HStack(spacing: Space.s3) {
@@ -53,7 +53,7 @@ struct ChangeNoteSheet: View {
                 }
                 previewButton
                 Text("Save changes the note in the score. Listen to it, then keep it to take the ? mark away.")
-                    .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    .font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)

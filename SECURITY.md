@@ -10,7 +10,7 @@ could do.
 ## What is in scope
 
 - The apps (Brasscribe Play, Bandroom), the engine and its HTTP API, pairing between devices,
-  Studio, `brasscribe-core`, and the release files on GitHub.
+  Studio, `scribe-core`, and the release files on GitHub.
 - The build and release workflows in `.github/workflows/`.
 
 The latest release is the one that gets fixes.

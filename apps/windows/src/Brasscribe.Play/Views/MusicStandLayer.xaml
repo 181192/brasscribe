@@ -12,14 +12,14 @@
          well so they read differently from the bar buttons. -->
     <Grid>
         <Border x:Name="Card" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="16,0,16,20" Padding="14,10"
-                Background="{ThemeResource BcSurfaceRaisedBrush}" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1"
-                CornerRadius="{StaticResource BcRadiusLg}"
+                Background="{ThemeResource ScribeSurfaceRaisedBrush}" BorderBrush="{ThemeResource ScribeBorderStrongBrush}" BorderThickness="1"
+                CornerRadius="{StaticResource ScribeRadiusLg}"
                 Visibility="{x:Bind views:Shown.If(Score.Stand.IsLayerShown), Mode=OneWay}">
             <Grid x:Name="Controls" x:Uid="StandLayer" AutomationProperties.LandmarkType="Custom">
                 <StackPanel x:Name="Rows" Orientation="Horizontal" Spacing="16">
                     <StackPanel x:Name="Transport" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                         <Button x:Name="PreviousPageButton" x:Uid="StandPreviousPage" Style="{StaticResource IconButtonStyle}" Width="48" Height="48"
-                                CornerRadius="24" Background="{ThemeResource BcSecondaryBrush}" Click="OnPreviousPage">
+                                CornerRadius="24" Background="{ThemeResource ScribeSecondaryBrush}" Click="OnPreviousPage">
                             <FontIcon Glyph="{StaticResource BcIconPagePrevious}" FontSize="16" />
                         </Button>
                         <Button x:Uid="StandPreviousBar" Style="{StaticResource IconButtonStyle}" Width="48" Height="48"
@@ -39,14 +39,14 @@
                             <FontIcon Glyph="{StaticResource BcIconNextBar}" FontSize="16" />
                         </Button>
                         <Button x:Name="NextPageButton" x:Uid="StandNextPage" Style="{StaticResource IconButtonStyle}" Width="48" Height="48"
-                                CornerRadius="24" Background="{ThemeResource BcSecondaryBrush}" Click="OnNextPage">
+                                CornerRadius="24" Background="{ThemeResource ScribeSecondaryBrush}" Click="OnNextPage">
                             <FontIcon Glyph="{StaticResource BcIconPageNext}" FontSize="16" />
                         </Button>
                     </StackPanel>
 
                     <!-- Speed: two steppers around the value, 25 to 150 percent (no slider, WCAG 2.5.7). -->
-                    <Border x:Name="Speed" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1"
-                            CornerRadius="{StaticResource BcRadiusMd}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border x:Name="Speed" BorderBrush="{ThemeResource ScribeBorderStrongBrush}" BorderThickness="1"
+                            CornerRadius="{StaticResource ScribeRadiusMd}" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <Button x:Uid="StandSlower" Style="{StaticResource IconButtonStyle}" Width="48" Height="48" Click="OnSlower">
                                 <FontIcon Glyph="{StaticResource BcIconMinus}" FontSize="14" />
@@ -81,8 +81,8 @@
 
         <!-- The first time the layer hides: how to bring it back. It takes no focus and a tap dismisses it (WCAG 1.4.13). -->
         <Border x:Name="Hint" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="16,0,16,28" Padding="16,10"
-                Background="{ThemeResource BcSurfaceRaisedBrush}" BorderBrush="{ThemeResource BcBorderStrongBrush}" BorderThickness="1"
-                CornerRadius="{StaticResource BcRadiusMd}" IsHitTestVisible="False"
+                Background="{ThemeResource ScribeSurfaceRaisedBrush}" BorderBrush="{ThemeResource ScribeBorderStrongBrush}" BorderThickness="1"
+                CornerRadius="{StaticResource ScribeRadiusMd}" IsHitTestVisible="False"
                 Visibility="{x:Bind views:Shown.If(Score.Stand.IsHintShown), Mode=OneWay}">
             <TextBlock x:Uid="StandHint" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
         </Border>

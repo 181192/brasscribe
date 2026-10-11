@@ -1,7 +1,7 @@
 // The screen catalogue: every view in every variant (light, dark, high contrast light and dark, bokmål,
 // 200 % zoom, 320 px), with axe-core, cut-off text, the page fitting its width, the keyboard walk and text
-// spacing, and a screenshot of each when CATALOGUE_SHOTS names a folder. CATALOGUE_CHECKS=0 only takes the
-// screenshots (the merge base's side of scripts/screenshots.sh compare).
+// spacing, and a screenshot of each when CATALOGUE_SHOTS names a folder (scripts/screenshots.sh record). No check
+// reads the screenshot: they are to look at, and for the comparison CI makes on main after a merge.
 import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -11,7 +11,6 @@ import { openView, stableScreenshot, steady } from "./open";
 import { VARIANTS, VIEWS } from "./views";
 
 const shots = process.env.CATALOGUE_SHOTS;
-const checks = process.env.CATALOGUE_CHECKS !== "0";
 if (shots) mkdirSync(shots, { recursive: true });
 
 for (const variant of VARIANTS) {
@@ -19,11 +18,11 @@ for (const variant of VARIANTS) {
     if (view.only && !view.only.includes(variant.name)) continue;
     test(`${view.name} · ${variant.name}`, async ({ page }) => {
       const opened = await openView(page, view, variant);
+      // The checks run on the page as it is once it has settled, with or without a screenshot of it.
+      await steady(page);
       if (shots) {
-        await steady(page);
         await stableScreenshot(page, join(shots, `${view.name}--${variant.name}.png`));
       }
-      if (!checks) return;
       expect(opened.problems, "errors and requests without a fixture").toEqual([]);
       const findings: Finding[] = [...await axe(page), ...await clipped(page)];
       if (variant.reflow) findings.push(...await reflow(page));

@@ -325,8 +325,8 @@ class TabSongTest {
         assertEquals(Instrument.entries.flatMap { it.kinds }.flatMap { kind -> kind.tunings.map { kind.preset(it) } }, SongFacts.OPEN_STRINGS.keys.toList())
         // No two tunings share their strings, so a tab's staff names its instrument and its tuning.
         assertEquals(SongFacts.OPEN_STRINGS.size, SongFacts.OPEN_STRINGS.values.toSet().size)
-        val source = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("core/target-fretted/src/instrument.rs")
-        assumeTrue("core/target-fretted is not in this checkout", source?.isFile == true)
+        val source = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("core/targets/fretted/src/instrument.rs")
+        assumeTrue("core/targets/fretted is not in this checkout", source?.isFile == true)
         // The crate's own tests list the open strings, highest first.
         val listed = Regex("""assert_eq!\(open\("([^"]+)"\), vec!\[([0-9, ]+)]\);""").findAll(source!!.readText())
             .associate { it.groupValues[1] to it.groupValues[2].split(",").map { p -> p.trim().toInt() }.sorted() }

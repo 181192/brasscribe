@@ -5,7 +5,7 @@
    {
     "time": "2026-01-03T10:00:00+0100",
     "git_sha": "0000003",
-    "core_version": "brasscribe-core 0.1.0",
+    "core_version": "scribe-core 0.1.0",
     "sets": [
      {
       "set": "old-hundredth",

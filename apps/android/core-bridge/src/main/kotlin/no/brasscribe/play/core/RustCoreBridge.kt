@@ -28,34 +28,34 @@ import no.brasscribe.play.model.TsPart
 import no.brasscribe.play.model.TsSettings
 import no.brasscribe.play.model.TsStop
 import no.brasscribe.play.model.Verbosity
-import uniffi.brasscribe_ffi.LayerMidi
-import uniffi.brasscribe_ffi.LayerStems
-import uniffi.brasscribe_ffi.Performance
-import uniffi.brasscribe_ffi.SoloContour
-import uniffi.brasscribe_ffi.TalkingSettings
-import uniffi.brasscribe_ffi.SongArrangeOptions
-import uniffi.brasscribe_ffi.arrangeLayersBand
-import uniffi.brasscribe_ffi.arrangeSongWith
-import uniffi.brasscribe_ffi.arrangeMusicxml
-import uniffi.brasscribe_ffi.arrangeMusicxmlWith
-import uniffi.brasscribe_ffi.coreVersion
-import uniffi.brasscribe_ffi.estimateKey
-import uniffi.brasscribe_ffi.humanizePart
-import uniffi.brasscribe_ffi.layersSongDefaults
-import uniffi.brasscribe_ffi.normalizeComposition
-import uniffi.brasscribe_ffi.spellPitches
-import uniffi.brasscribe_ffi.talkingAnnounceJson
-import uniffi.brasscribe_ffi.instruments
-import uniffi.brasscribe_ffi.partNameNb as corePartNameNb
-import uniffi.brasscribe_ffi.partSources as corePartSources
-import uniffi.brasscribe_ffi.seatPart as coreSeatPart
-import uniffi.brasscribe_ffi.seats as coreSeats
+import uniffi.scribe_ffi.LayerMidi
+import uniffi.scribe_ffi.LayerStems
+import uniffi.scribe_ffi.Performance
+import uniffi.scribe_ffi.SoloContour
+import uniffi.scribe_ffi.TalkingSettings
+import uniffi.scribe_ffi.SongArrangeOptions
+import uniffi.scribe_ffi.arrangeLayersBand
+import uniffi.scribe_ffi.arrangeSongWith
+import uniffi.scribe_ffi.arrangeMusicxml
+import uniffi.scribe_ffi.arrangeMusicxmlWith
+import uniffi.scribe_ffi.coreVersion
+import uniffi.scribe_ffi.estimateKey
+import uniffi.scribe_ffi.humanizePart
+import uniffi.scribe_ffi.layersSongDefaults
+import uniffi.scribe_ffi.normalizeComposition
+import uniffi.scribe_ffi.spellPitches
+import uniffi.scribe_ffi.talkingAnnounceJson
+import uniffi.scribe_ffi.instruments
+import uniffi.scribe_ffi.partNameNb as corePartNameNb
+import uniffi.scribe_ffi.partSources as corePartSources
+import uniffi.scribe_ffi.seatPart as coreSeatPart
+import uniffi.scribe_ffi.seats as coreSeats
 import no.brasscribe.play.model.PartSource
 import no.brasscribe.play.model.Seat
 import no.brasscribe.play.model.SeatPart
-import uniffi.brasscribe_ffi.ArrangeOptions as CoreArrangeOptions
-import uniffi.brasscribe_ffi.ScoreNote as CoreScoreNote
-import uniffi.brasscribe_ffi.TalkingScore as CoreTalkingScore
+import uniffi.scribe_ffi.ArrangeOptions as CoreArrangeOptions
+import uniffi.scribe_ffi.ScoreNote as CoreScoreNote
+import uniffi.scribe_ffi.TalkingScore as CoreTalkingScore
 import no.brasscribe.play.model.PlayedNote as ModelPlayedNote
 import no.brasscribe.play.model.ScoreNote as ModelScoreNote
 

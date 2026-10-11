@@ -48,7 +48,7 @@ struct SettingsView: View {
                     Button("Download the listening files") { Task { await downloadModels() } }
                         .disabled(busy || ModelStore.shared.missing.isEmpty)
                     Button("Remove the listening files", role: .destructive) { ModelStore.shared.removeAll(); modelTick += 1 }
-                    if let status { Text(status).font(Font.Brasscribe.callout) }
+                    if let status { Text(status).font(Font.Scribe.callout) }
                     DisclosureGroup {
                         TextField(text: $app.modelDownloadURL) { Text("Download address") }
                             .textContentType(.URL)
@@ -70,8 +70,8 @@ struct SettingsView: View {
                     if contrast == .increased {
                         // Increase Contrast wins: the choice stays, with the high-contrast colours in either mode
                         Text("Increase contrast is on, so Brasscribe uses its high-contrast colours.")
-                            .font(Font.Brasscribe.callout)
-                            .foregroundStyle(Color.Brasscribe.textMuted)
+                            .font(Font.Scribe.callout)
+                            .foregroundStyle(Color.Scribe.textMuted)
                     }
                     Toggle(isOn: $standTurnPages) { Text("Turn the pages while playing") }
                         .accessibilityIdentifier("settingStandTurnPages")
@@ -100,13 +100,13 @@ struct SettingsView: View {
                         Spacer()
                         VersionButton(unlocked: $pinkUnlocked, justUnlocked: $justUnlocked)
                     }
-                    .listRowBackground(Color.Brasscribe.brassTint)
+                    .listRowBackground(Color.Scribe.brandTint)
                     if justUnlocked {
                         Text("🎺 Pink unlocked")
-                            .font(Font.Brasscribe.callout)
-                            .foregroundStyle(Color.Brasscribe.text)
+                            .font(Font.Scribe.callout)
+                            .foregroundStyle(Color.Scribe.text)
                             .accessibilityIdentifier("pinkUnlocked")
-                            .listRowBackground(Color.Brasscribe.brassTint)
+                            .listRowBackground(Color.Scribe.brandTint)
                             .task {
                                 try? await Task.sleep(for: .seconds(4))
                                 justUnlocked = false
@@ -119,7 +119,7 @@ struct SettingsView: View {
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
-            .background(Color.Brasscribe.bg)
+            .background(Color.Scribe.bg)
             .navigationTitle(Text("Settings"))
             #if os(iOS)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
@@ -131,7 +131,7 @@ struct SettingsView: View {
                     .padding(.top, Space.s5)
                     .padding(.bottom, Space.s1)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.Brasscribe.bg)
+                    .background(Color.Scribe.bg)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 HStack {
@@ -145,8 +145,8 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, Space.s5)
                 .padding(.vertical, Space.s3)
-                .background(Color.Brasscribe.bg)
-                .overlay(alignment: .top) { Divider().overlay(Color.Brasscribe.border) }
+                .background(Color.Scribe.bg)
+                .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
             }
             #endif
         }
@@ -185,7 +185,7 @@ struct VersionButton: View {
 
     var body: some View {
         Button(action: activate) {
-            Text(verbatim: version).foregroundStyle(Color.Brasscribe.textMuted)
+            Text(verbatim: version).foregroundStyle(Color.Scribe.textMuted)
                 // it looks like text, and takes a tap or click on 44 × 44 pt
                 .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
                 .contentShape(Rectangle())

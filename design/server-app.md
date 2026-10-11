@@ -268,7 +268,7 @@ WantedBy=default.target
 | `BRASSCRIBE_DATA` | `~/Library/Application Support/Brasscribe` | `%LOCALAPPDATA%\Brasscribe` |
 | `BRASSCRIBE_MODELS` | `<data>/models` | `<data>\models` |
 | `BRASSCRIBE_ADAPTERS` | `Brasscribe Bandroom.app/Contents/Resources/adapters` | `<package>\adapters` |
-| `BRASSCRIBE_CORE_CLI` | `Brasscribe Bandroom.app/Contents/Resources/bin/brasscribe-core` | `<package>\core\brasscribe-core.exe` |
+| `SCRIBE_CORE_CLI` | `Brasscribe Bandroom.app/Contents/Resources/bin/scribe-core` | `<package>\core\scribe-core.exe` |
 | `BRASSCRIBE_GPU_LOCK` | default (`/tmp/brasscribe-gpu-<uid>.lock`) | default (temp folder) |
 | `BRASSCRIBE_TOKEN` | unset: per-device credentials replace it (§11) | unset |
 | `BRASSCRIBE_COMPUTER_NAME` | `ComputerName` from System Settings › General › About, e.g. "Kari's MacBook"; Settings › Name shown to phones replaces it when it looks machine-made ("ABCD1234EF") | the device name from Settings › System › About; the same setting for "DESKTOP-ABC1234" |

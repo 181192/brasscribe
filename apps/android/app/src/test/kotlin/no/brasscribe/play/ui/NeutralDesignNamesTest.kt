@@ -26,6 +26,7 @@ import no.brasscribe.design.ScribeShapes
 import no.brasscribe.design.ScribeSize
 import no.brasscribe.design.ScribeSpace
 import no.brasscribe.design.ScribeTheme
+import no.brasscribe.design.accent
 import no.brasscribe.design.brand
 import no.brasscribe.design.brandText
 import no.brasscribe.design.brandTint
@@ -53,6 +54,7 @@ class NeutralDesignNamesTest {
             assertSame(own, neutral)
             assertEquals(own.brass, neutral.brand)
             assertEquals(own.brassText, neutral.brandText)
+            assertEquals(own.brassText, neutral.accent)
             assertEquals(own.brassTint, neutral.brandTint)
             assertEquals(own.staff, neutral.line)
             // The roles with one name in both: surfaces, text, edges, fills, status, focus, ink and doubt.

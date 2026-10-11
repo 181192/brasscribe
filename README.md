@@ -32,7 +32,7 @@ The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
   app, then go to **System Settings › Privacy & Security** and choose **Open Anyway**.
 - Bandroom for Windows (x64), and Play for Windows as a preview. They are not signed: if SmartScreen
   stops them, choose **More info › Run anyway**.
-- The `brasscribe-core` command-line tool for Mac, Linux and Windows, and `SHA256SUMS`.
+- The `scribe-core` command-line tool for Mac, Linux and Windows, and `SHA256SUMS`.
 
 Bandroom's first run downloads the engine and its models (about 10 GB on a Mac). The band writer model
 is licensed for non-commercial use only; Bandroom asks you to accept its licence with a free Hugging
@@ -52,7 +52,7 @@ toolchain (Xcode 16+ and `xcodegen`, the Android SDK, the .NET 10 SDK, Rust stab
 in its README.
 
 ```sh
-eval "$(scripts/worktree-setup.sh)"   # once per checkout: prebuilt Rust core, environment in .brasscribe-env
+eval "$(scripts/worktree-setup.sh)"   # once per checkout: prebuilt Rust core, environment in .scribe-env
 pixi install                          # engine, music library, benchmarks, tests
 pixi run test-fast                    # engine + music unit tests
 pixi run studio                       # engine + Studio on http://127.0.0.1:8765/

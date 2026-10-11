@@ -2,6 +2,51 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.10.1 (2026-10-11)
+
+### Fixes
+
+- **Engine:** Stopping a job during the sheet-music export stops it at once, not after MuseScore is done ([#348](https://github.com/181192/brasscribe/pull/348))
+- **Engine:** With Bandroom for Mac, a job no longer fails at the sheet-music export while macOS waits for permission to the Documents folder ([#347](https://github.com/181192/brasscribe/pull/347))
+- **Engine:** A tab job no longer fails when only the PDF is missing ([#350](https://github.com/181192/brasscribe/pull/350))
+
+## 0.10.0 (2026-10-11)
+
+### Breaking changes
+
+- **Core:** **Breaking:** The shared core is scribe-core, with its library, bindings, command line and folders renamed to match ([#340](https://github.com/181192/brasscribe/pull/340))
+The core's command line tool and its downloads are now `scribe-core`. If you downloaded the tool, have `brasscribe-core` on your PATH or set `BRASSCRIBE_CORE_CLI` by hand: fetch `scribe-core-*` and set `SCRIBE_CORE_CLI`. If you run the engine in Docker, build the image again. Bandroom users do nothing.
+
+<details><summary>Under the hood (4 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Core:** The brass-band code is its own crate, and the shared core builds without it ([#331](https://github.com/181192/brasscribe/pull/331))
+- **Core:** **Breaking:** The shared core is scribe-core, with its library, bindings, command line and folders renamed to match ([#340](https://github.com/181192/brasscribe/pull/340))
+- **Design:** A design role has one name on the web, Apple and Windows, and links get their own neutral role ([#341](https://github.com/181192/brasscribe/pull/341))
+- Pull requests wait less — the iPhone simulator tests run at night, each screen catalogue runs once, and screenshots are compared on main after the merge ([#337](https://github.com/181192/brasscribe/pull/337))
+
+</details>
+
+## 0.9.0 (2026-10-11)
+
+### New features
+
+- **Android:** Every release carries Fretscribe for Android, to install and update on a phone ([#327](https://github.com/181192/brasscribe/pull/327))
+- **iPhone, iPad and Mac:** Each release has a test build of Brasscribe Play for iPhone and iPad, to sign yourself ([#329](https://github.com/181192/brasscribe/pull/329))
+- **Design:** The design generator writes every brand for every platform, with neutral names shared by all brands ([#330](https://github.com/181192/brasscribe/pull/330))
+
+### Performance
+
+- **Android:** Fretscribe is a 21 MB download instead of 54 MB ([#333](https://github.com/181192/brasscribe/pull/333))
+
+<details><summary>Under the hood (2 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Research:** One core, several apps — the layout, the decisions and the order of work ([#328](https://github.com/181192/brasscribe/pull/328))
+- **Windows:** The screen catalogues take a screen only when it is the screen asked for ([#324](https://github.com/181192/brasscribe/pull/324))
+
+</details>
+
 ## 0.8.1 (2026-10-10)
 
 ### Fixes
@@ -645,6 +690,15 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 </details>
 
 ## 0.1.0 (2026-09-28)
+
+### Breaking changes
+
+- **Android:** **Breaking:** Remove the built-in reference demo
+debug builds no longer offer the reference demo or the built-in
+sample engine.
+- **iPhone, iPad and Mac:** **Breaking:** Remove the built-in reference demo
+-open-demo-score and -demo-service are now
+-open-fixture-score and -fixture-service.
 
 ### New features
 

@@ -35,7 +35,7 @@ struct SourceView: View {
                 VStack(alignment: .leading, spacing: Space.s2) {
                     DisplayTitle(text: String(localized: "What is this?"))
                     Text("Your answer decides how Brasscribe listens. It never guesses.")
-                        .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.textMuted)
+                        .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
                 }
                 LazyVGrid(columns: wide ? [GridItem(.flexible(), spacing: Space.s4), GridItem(.flexible(), spacing: Space.s4)] : [GridItem(.flexible())],
                           spacing: Space.s4) {
@@ -44,7 +44,7 @@ struct SourceView: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel(Text("What is this?"))
                 Text("Not sure? Choose Brass band.")
-                    .font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    .font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                 if drummer {
                     VStack(alignment: .leading, spacing: Space.s3) {
                         NoticeBox(systemImage: BrasscribeIcon.info.systemName, text: Seats.percussionSoloRefused)
@@ -83,20 +83,20 @@ struct SourceView: View {
         return Button { if !refused { profile = p } } label: {
             HStack(alignment: .top, spacing: Space.s3) {
                 VStack(alignment: .leading, spacing: Space.s1) {
-                    Text(p.title).font(Font.Brasscribe.headline).foregroundStyle(Color.Brasscribe.text)
-                    Text(refused ? String(localized: "Not for percussion yet") : p.detail).font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                    Text(p.title).font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
+                    Text(refused ? String(localized: "Not for percussion yet") : p.detail).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Space.s2)
                 Image(systemName: on ? "largecircle.fill.circle" : "circle")
                     .font(.title2)
-                    .foregroundStyle(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
+                    .foregroundStyle(on ? Color.Scribe.text : Color.Scribe.borderStrong)
                     .accessibilityHidden(true)
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, minHeight: 88, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color.Brasscribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
-            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(on ? Color.Brasscribe.text : Color.Brasscribe.borderStrong,
+            .background(Color.Scribe.surfaceRaised, in: RoundedRectangle(cornerRadius: Radius.lg))
+            .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(on ? Color.Scribe.text : Color.Scribe.borderStrong,
                                                                             lineWidth: on ? 2 : 1))
             .contentShape(RoundedRectangle(cornerRadius: Radius.lg))
         }
@@ -110,7 +110,7 @@ struct SourceView: View {
     /// Change button moves under the text, so the text never squeezes into a column.
     private var whereItRuns: some View {
         let text = Text(app.whereItRuns(for: profile))
-            .font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text)
+            .font(Font.Scribe.body).foregroundStyle(Color.Scribe.text)
             .fixedSize(horizontal: false, vertical: true)
         let change = Button { app.showSettings = true } label: { Text("Change") }
             .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
@@ -138,7 +138,7 @@ struct SourceView: View {
             .padding(.horizontal, wide ? Space.s8 : Space.s5)
             .padding(.vertical, Space.s3)
             .readingColumn()
-            .background(Color.Brasscribe.bg)
+            .background(Color.Scribe.bg)
     }
 
     private var actionButtons: some View {
@@ -151,7 +151,7 @@ struct SourceView: View {
             .accessibilityHint(profile == nil ? Text("Choose one to continue.") : Text(""))
         return VStack(alignment: wide ? .trailing : .center, spacing: Space.s2) {
             if profile == nil {
-                Text("Choose one to continue.").font(Font.Brasscribe.callout).foregroundStyle(Color.Brasscribe.textMuted)
+                Text("Choose one to continue.").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
                     .accessibilityHidden(true)
             }
             if wide {
@@ -272,8 +272,8 @@ struct TranscribeView: View {
                 }
                 VStack(spacing: Space.s2) {
                     ProgressView(value: job.progress.fraction)
-                        .tint(Color.Brasscribe.brass)
-                        .animation(reduceMotion ? nil : BrasscribeDesign.Motion.animation(reduceMotion: false), value: job.progress.fraction)
+                        .tint(Color.Scribe.brand)
+                        .animation(reduceMotion ? nil : ScribeDesign.Motion.animation(reduceMotion: false), value: job.progress.fraction)
                         .accessibilityLabel(Text(job.progress.stage.plain))
                         .accessibilityValue(Text("\(percentText(job.progress.fraction * 100)), \(eta(job.progress))"))
                         .accessibilityIdentifier("transcriptionProgress")
@@ -282,8 +282,8 @@ struct TranscribeView: View {
                         Spacer()
                         Text(eta(job.progress))
                     }
-                    .font(Font.Brasscribe.callout)
-                    .foregroundStyle(Color.Brasscribe.textMuted)
+                    .font(Font.Scribe.callout)
+                    .foregroundStyle(Color.Scribe.textMuted)
                     .accessibilityHidden(true)
                 }
                 VStack(alignment: .leading, spacing: Space.s4) {
@@ -291,11 +291,11 @@ struct TranscribeView: View {
                         HStack(spacing: Space.s3) {
                             Image(systemName: i < current ? "checkmark.circle.fill" : i == current ? "smallcircle.filled.circle" : "circle")
                                 .font(.title2)
-                                .foregroundStyle(i <= current ? Color.Brasscribe.text : Color.Brasscribe.borderStrong)
+                                .foregroundStyle(i <= current ? Color.Scribe.text : Color.Scribe.borderStrong)
                                 .accessibilityHidden(true)
                             Text(s.plain)
-                                .font(i == current ? Font.Brasscribe.headline : Font.Brasscribe.body)
-                                .foregroundStyle(i == current ? Color.Brasscribe.text : Color.Brasscribe.textMuted)
+                                .font(i == current ? Font.Scribe.headline : Font.Scribe.body)
+                                .foregroundStyle(i == current ? Color.Scribe.text : Color.Scribe.textMuted)
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityValue(i < current ? Text("Done") : i == current ? Text("Now") : Text("Next"))
@@ -482,30 +482,30 @@ struct ProblemContent<Actions: View>: View {
             VStack(alignment: .leading, spacing: Space.s5) {
                 Image(systemName: BrasscribeIcon.error.systemName)
                     .font(.title)
-                    .foregroundStyle(Color.Brasscribe.error)
+                    .foregroundStyle(Color.Scribe.error)
                     .frame(width: 56, height: 56)
-                    .background(Color.Brasscribe.surface, in: RoundedRectangle(cornerRadius: Radius.lg))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Brasscribe.border))
+                    .background(Color.Scribe.surface, in: RoundedRectangle(cornerRadius: Radius.lg))
+                    .overlay(RoundedRectangle(cornerRadius: Radius.lg).strokeBorder(Color.Scribe.border))
                     .accessibilityHidden(true)
                 DisplayTitle(text: title)
-                if let lead { Text(lead).font(Font.Brasscribe.body).foregroundStyle(Color.Brasscribe.text) }
+                if let lead { Text(lead).font(Font.Scribe.body).foregroundStyle(Color.Scribe.text) }
                 VStack(alignment: .leading, spacing: Space.s2) {
                     ForEach(reasons, id: \.self) { r in
                         HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                             Text(verbatim: "•").accessibilityHidden(true)
                             Text(r).fixedSize(horizontal: false, vertical: true)
                         }
-                        .font(Font.Brasscribe.body)
-                        .foregroundStyle(reasons.count > 1 || lead != nil ? Color.Brasscribe.textMuted : Color.Brasscribe.text)
+                        .font(Font.Scribe.body)
+                        .foregroundStyle(reasons.count > 1 || lead != nil ? Color.Scribe.textMuted : Color.Scribe.text)
                     }
                 }
                 if let hint { NoticeBox(systemImage: BrasscribeIcon.info.systemName, text: hint) }
                 if let detail {
                     DisclosureGroup {
-                        Text(detail).font(.footnote.monospaced()).foregroundStyle(Color.Brasscribe.textMuted).textSelection(.enabled)
+                        Text(detail).font(.footnote.monospaced()).foregroundStyle(Color.Scribe.textMuted).textSelection(.enabled)
                             .padding(.top, Space.s2)
-                    } label: { Text("Details for the band's tech person").font(Font.Brasscribe.callout) }
-                    .tint(Color.Brasscribe.text)
+                    } label: { Text("Details for the band's tech person").font(Font.Scribe.callout) }
+                    .tint(Color.Scribe.text)
                 }
                 if PageActions.followContent {
                     ActionRow { actions }

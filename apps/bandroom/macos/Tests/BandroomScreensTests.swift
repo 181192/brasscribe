@@ -44,7 +44,7 @@ import Testing
     /// control the tree can report a SwiftUI wrapper's frame, while clicks outside the control itself go nowhere).
     @Test func theMoreMenuTakesClicksOn28Points() async throws {
         let app = await Catalogue.model(busy: false)
-        let r = await Rendering(StatusPanel().background(Color.Brasscribe.bg), width: 360, variant: .light, app: app)
+        let r = await Rendering(StatusPanel().background(Color.Scribe.bg), width: 360, variant: .light, app: app)
         defer { r.close() }
         let more = try #require(AXTree.read(r.hosting).first { ["AXMenuButton", "AXPopUpButton"].contains($0.role) && $0.frame.minX > 280 })
         #expect(more.frame.width >= 28 && more.frame.height >= 28, "\(more)")
@@ -85,10 +85,10 @@ import Testing
         switch screen {
         case .panelBusy, .panelReady, .panelRequest, .panelSettingUp:
             app.panelPage = .status
-            return AnyView(StatusPanel().background(Color.Brasscribe.bg))
+            return AnyView(StatusPanel().background(Color.Scribe.bg))
         case .phones:
             app.panelPage = .phones
-            return AnyView(StatusPanel().background(Color.Brasscribe.bg))
+            return AnyView(StatusPanel().background(Color.Scribe.bg))
         case .pair: return AnyView(PairWindow())
         case .setupCheck: return AnyView(SetupView(step: 0))
         case .setupLicence: return AnyView(SetupView(step: 1))

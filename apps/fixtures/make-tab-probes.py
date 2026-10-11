@@ -8,7 +8,7 @@ under 0.4) and, where it says so, a note below the lowest string.
     pixi run python apps/fixtures/make-tab-probes.py
 
 Needs apps/fixtures/bass-line (the rest of a tab's facts are taken from it) and the core's command line
-(`cargo build --release -p brasscribe-cli` in core/, or BRASSCRIBE_CORE_CLI).
+(`cargo build --release -p scribe-cli` in core/, or SCRIBE_CORE_CLI).
 
 Writes apps/fixtures/tab-probes/<name>/: tab.json, and the page in the three layouts as tab.musicxml,
 tab-and-notation.musicxml and notation.musicxml. Only tests read this folder.

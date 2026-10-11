@@ -20,8 +20,9 @@ file that is not listed (a test, a trial) is built with --tokens FILE --out DIR.
 
 Names. Every brand gets the same neutral names (Scribe*, --scribe-*; design/tokens/neutral.json lists the
 roles), so shared code compiles against any brand, and its own names for everything (its product name and
-its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. design/tokens/README.md has the rule and
-the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
+its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. On the web, Apple and Windows a neutral role has
+its neutral name only; on Android Brasscribe's names still hold it too. design/tokens/README.md has the rule
+and the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
 written under Brasscribe's names, through the map in $extensions.<brand>.android (see android_source).
 
 Inputs:  the brand's tokens.json (DTCG), design/tokens/neutral.json, design/tokens/icons.json,
@@ -30,7 +31,7 @@ Outputs, for Brasscribe (another brand's have its own name and prefix, in its ow
          design/dist/apple/      BrasscribeDesign.xcassets, BrasscribeDesign.swift, Fonts/
          design/dist/android/    kotlin/no/brasscribe/design/*.kt, res/drawable/ic_bc_*.xml, res/font/
          design/dist/windows/    BrasscribeTheme.xaml, BrasscribePinkTheme.xaml, Assets/Fonts/
-         design/dist/web/        brasscribe.css, fonts.css, studio-compat.css, icons/*.svg, fonts/
+         design/dist/web/        brasscribe.css, fonts.css, icons.js, icons/*.svg, fonts/
          design/dist/icon-map.md
          docs/accessibility/design-tokens.json (the accessibility palette, kept in its existing shape)
 
@@ -56,6 +57,25 @@ API = json.loads(DEFAULT_TOKENS.read_text())
 NEUTRAL = json.loads((HERE / "neutral.json").read_text())
 # Every brand: its token file and the folder its outputs go to.
 BRANDS = json.loads((HERE / "brands.json").read_text())["brands"]
+NEUTRAL_PREFIX = "scribe"  # --scribe-text, ScribeTextBrush, ScribeTheme: no brand may take it
+
+
+def check_brands(brands: list[dict]) -> None:
+    """brands.json is well formed: every brand has a name, a token file and a folder, each its own."""
+    for i, brand in enumerate(brands):
+        for key in ("name", "tokens", "out"):
+            if not isinstance(brand.get(key), str) or not brand[key]:
+                raise SystemExit(f"design/tokens/brands.json: brand {brand.get('name') or i + 1} has no '{key}'")
+    for key, what in (("name", "name"), ("tokens", "token file"), ("out", "output folder")):
+        seen: dict[str, str] = {}
+        for brand in brands:
+            value = brand[key].lower() if key == "name" else (ROOT / brand[key]).resolve().as_posix()
+            if value in seen:
+                raise SystemExit(f"design/tokens/brands.json: {seen[value]} and {brand['name']} have the same {what} ({brand[key]})")
+            seen[value] = brand["name"]
+
+
+check_brands(BRANDS)
 ICONS = json.loads((HERE / "icons.json").read_text())["actions"]
 PLATFORMS = ("apple", "android", "windows", "web")
 
@@ -66,12 +86,17 @@ def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else path.as_posix()
 
 
-def product_extension(tokens: dict) -> tuple[str, dict]:
+def product_extension(tokens: dict, file: Path) -> tuple[str, dict]:
     """The product's block under $extensions: the one entry that lists modes and contrast pairs."""
     found = [(k, v) for k, v in tokens.get("$extensions", {}).items() if isinstance(v, dict) and "modes" in v and "contrast" in v]
     if len(found) != 1:
-        raise SystemExit(f"expected one $extensions entry with modes and contrast, found {len(found)}")
+        raise SystemExit(f"{rel(file)}: expected one $extensions entry with modes and contrast (the brand's own), found {len(found)}")
     return found[0]
+
+
+def brand_of(tokens: Path) -> dict | None:
+    """The entry of brands.json a token file belongs to."""
+    return next((b for b in BRANDS if (ROOT / b["tokens"]).resolve() == tokens.resolve()), None)
 
 
 def configure(tokens: Path = DEFAULT_TOKENS, out: Path = DEFAULT_DIST, only: str | None = None) -> None:
@@ -79,11 +104,11 @@ def configure(tokens: Path = DEFAULT_TOKENS, out: Path = DEFAULT_DIST, only: str
     global TOKENS_FILE, TOKENS, EXT, MODES, DIST, HEADER, ONLY, ANDROID, PRODUCT, CSS, KEY, PINK
     TOKENS_FILE, DIST = tokens.resolve(), out.resolve()
     TOKENS = json.loads(TOKENS_FILE.read_text())
-    namespace, EXT = product_extension(TOKENS)
+    namespace, EXT = product_extension(TOKENS, TOKENS_FILE)
     MODES = EXT["modes"]
     ANDROID = EXT.get("android", {})
     PRODUCT = namespace.rsplit(".", 1)[-1].capitalize()
-    # The brand's short prefix: --bc-text in CSS, BcTextBrush in XAML.
+    # The brand's short prefix, for what is its own: --bc-cursor in CSS, BcCursorBrush in XAML.
     CSS = EXT.get("prefix", PRODUCT.lower())
     KEY = CSS.capitalize()
     PINK = "pink" in MODES and "pink-dark" in MODES
@@ -91,10 +116,72 @@ def configure(tokens: Path = DEFAULT_TOKENS, out: Path = DEFAULT_DIST, only: str
     HEADER = f"Generated by design/tokens/build.py from {rel(TOKENS_FILE)}. Do not edit."
     for brand in BRANDS:
         if DIST == (ROOT / brand["out"]).resolve() and TOKENS_FILE != (ROOT / brand["tokens"]).resolve():
-            raise SystemExit(f"{brand['out']} is {brand['name'].capitalize()}'s: give another product its own --out")
+            raise SystemExit(f"{brand['out']} is the output folder of {brand['name']} (design/tokens/brands.json): "
+                             f"give {rel(TOKENS_FILE)} its own --out")
+    check_tokens()
 
 
-configure()
+def fail(message: str):
+    raise SystemExit(f"{rel(TOKENS_FILE)}: {message}")
+
+
+def check_tokens() -> None:
+    """The token file has what the generator reads, so a brand that lacks something is told what, in words."""
+    if not re.fullmatch(r"[a-z][a-z0-9]*", CSS):
+        fail(f"the prefix '{CSS}' must be lower-case letters and digits, starting with a letter")
+    if NEUTRAL_PREFIX in (CSS, PRODUCT.lower()):
+        fail(f"'{NEUTRAL_PREFIX}' is the prefix of the neutral names; a brand needs its own")
+    for brand in BRANDS:  # no two brands with one prefix: their variables and keys would be the same
+        other = (ROOT / brand["tokens"]).resolve()
+        if other != TOKENS_FILE and other.exists():
+            name, ext = product_extension(json.loads(other.read_text()), other)
+            if ext.get("prefix", name.rsplit(".", 1)[-1].lower()) == CSS:
+                fail(f"the prefix '{CSS}' is {brand['name']}'s too; every brand needs its own")
+    for name in ("color", "font", "typography", "space", "size", "radius", "elevation", "motion"):
+        if not isinstance(TOKENS.get(name), dict):
+            fail(f"no '{name}' group; every brand's tokens have color, font, typography, space, size, radius, elevation and motion")
+    if not isinstance(TOKENS["color"].get("light"), dict):
+        fail("no color.light; it names the brand's colour roles")
+    colours = TOKENS["color"]
+    for mode in [*NEUTRAL["modes"], *MODES]:
+        if mode not in MODES:
+            fail(f"the mode '{mode}' is not listed under $extensions.*.modes; every brand has {', '.join(NEUTRAL['modes'])}")
+        if mode not in colours:
+            fail(f"the mode '{mode}' is listed under $extensions.*.modes and has no colours under color.{mode}")
+    light = [k for k in colours["light"] if not k.startswith("$")]
+    for mode in MODES:
+        have = [k for k in colours[mode] if not k.startswith("$")]
+        missing, extra = [r for r in light if r not in have], [r for r in have if r not in light]
+        if missing or extra:
+            fail(f"color.{mode} " + " and ".join(
+                p for p in (f"lacks {', '.join(missing)}" if missing else "", f"has {', '.join(extra)} that color.light lacks" if extra else "") if p))
+    neutral_roles()
+    for role in own_roles():
+        for platform in ("windows", "web"):
+            system_colour(role, platform)
+    name = EXT.get("notation")
+    if not name:
+        fail("no $extensions.*.notation: name the group that holds the notation metrics (Brasscribe's is score)")
+    if not isinstance(TOKENS.get(name), dict):
+        fail(f"$extensions.*.notation names the group '{name}', which the file does not have")
+    display = EXT.get("fonts", {}).get("display")
+    if not display or not display.get("faces"):
+        fail("no $extensions.*.fonts.display with at least one face: the display type role needs its font")
+    for key, font in EXT["fonts"].items():
+        if key.startswith("$"):
+            continue
+        for field in ("family", "licence", "licence-name", "note", "faces"):
+            if field not in font:
+                fail(f"$extensions.*.fonts.{key} has no '{field}'")
+        for face in font["faces"]:
+            for field in ("file", "postscript", "weight", "style"):
+                if field not in face:
+                    fail(f"a face of $extensions.*.fonts.{key} has no '{field}'")
+        for file in [font["licence"], *(face["file"] for face in font["faces"])]:
+            if not (TOKENS_FILE.parent / file).is_file():
+                fail(f"$extensions.*.fonts.{key} names {file}, which is not there")
+
+
 # The accessibility palette (docs/accessibility/design-tokens.json) keeps its three themes;
 # qa/reports/contrast-design-tokens.md checks every mode, high-contrast-light included.
 A11Y_MODES = ("light", "dark", "high-contrast")
@@ -155,27 +242,28 @@ def neutral_roles() -> dict[str, str]:
     for name in NEUTRAL["roles"]:
         src = own.get(name, name)
         if src not in TOKENS["color"]["light"]:
-            raise SystemExit(f"{rel(TOKENS_FILE)}: no token for the neutral role '{name}'; "
-                             f"add it or map it under $extensions.*.neutral.roles")
+            fail(f"no token for the neutral role '{name}'; add it or map it under $extensions.*.neutral.roles")
         found[name] = src
     return found
 
 
+def own_roles() -> list[str]:
+    """The colour roles that are the brand's own: no neutral role reads them."""
+    return [r for r in roles() if r not in neutral_roles().values()]
+
+
 def system_colour(role: str, platform: str) -> str:
-    """The system colour a role takes in a Windows contrast theme ("windows") or under forced-colors ("web"):
-    the neutral role's, or for a brand's own role the one its tokens name under system-colours."""
-    for name, src in neutral_roles().items():
-        if src == role:
-            return NEUTRAL["roles"][name][platform]
-    own = EXT.get("system-colours", {}).get(role)
-    if not own:
-        raise SystemExit(f"{rel(TOKENS_FILE)}: no system colour for '{role}'; add it under $extensions.*.system-colours")
+    """The system colour one of the brand's own roles takes in a Windows contrast theme ("windows") or under
+    forced-colors ("web"): its tokens say it under system-colours. A neutral role takes the one in neutral.json."""
+    own = EXT.get("system-colours", {}).get(role, {})
+    if platform not in own:
+        fail(f"no system colour ({platform}) for '{role}'; add it under $extensions.*.system-colours")
     return own[platform]
 
 
 def notation() -> tuple[str, dict]:
     """The brand's group of notation metrics and its name: Brasscribe's `score`, Fretscribe's `tab`."""
-    name = EXT.get("notation", "score")
+    name = EXT["notation"]
     return name, group(name)
 
 
@@ -309,9 +397,13 @@ def apple_outputs() -> dict[str, str | bytes]:
     faces = {key: (font, found) for key, font, found in fonts("apple")}
     files = [f"Fonts/{Path(face['file']).name}" for _, found in faces.values() for face in found]
     lines = [f"// {HEADER}", "//", f"// Add {PRODUCT}Design.xcassets and {' and '.join(files)} to the same target",
-             f"// as this file, and list the font{'s' if len(files) > 1 else ''} under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).", "",
+             f"// as this file, and list the font{'s' if len(files) > 1 else ''} under UIAppFonts (iOS) / ATSApplicationFontsPath (macOS).",
+             "//",
+             "// Scribe… is what every brand's file declares, under the same names, so code that uses only those compiles",
+             f"// against any brand (design/tokens/README.md). {PRODUCT}… is what is {PRODUCT}'s own. A role has one name.", "",
              "import SwiftUI", "",
-             f"public enum {PRODUCT}Design {{",
+             "/// The scales every brand has.",
+             "public enum ScribeDesign {",
              "    private final class BundleToken {}",
              f"    /// The bundle that holds {PRODUCT}Design.xcassets: the package resources or the target this file is in.",
              "    public static let bundle: Bundle = {",
@@ -337,14 +429,6 @@ def apple_outputs() -> dict[str, str | bytes]:
               f"        public static let contentMaxWidth: CGFloat = {fmt(dimension(TOKENS['size']['content-max']))}",
               f"        public static let sidebarWidth: CGFloat = {fmt(dimension(TOKENS['size']['sidebar']))}",
               "    }", ""]
-    view, sc = notation()
-    lines += [f"    /// {pascal(view)}-view metrics. Colours are in Color.{PRODUCT}.", f"    public enum {pascal(view)} {{"]
-    for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
-        lines.append(f"        public static let {camel(k)}: CGFloat = {fmt(dimension(sc[k]))}")
-    for k in ("zoom-min", "zoom-max", "zoom-step", "single-part-reflow-zoom", "mark-size-staff-spaces", "staff-height-min-phone-mm"):
-        if k in sc:
-            lines.append(f"        public static let {camel(k)}: Double = {fmt(sc[k]['$value'])}")
-    lines += ["    }", ""]
     md = TOKENS["motion"]["duration"]
     ez = TOKENS["motion"]["easing"]
     lines += ["    /// Motion. Every animation goes through `animation(_:reduceMotion:)`.", "    public enum Motion {"]
@@ -361,8 +445,18 @@ def apple_outputs() -> dict[str, str | bytes]:
         "    }",
         "}", ""]
 
+    view, sc = notation()
+    lines += [f"/// {PRODUCT}'s own metrics.", f"public enum {PRODUCT}Design {{",
+              f"    /// {pascal(view)}-view metrics. Its colours are in Color.{PRODUCT}.", f"    public enum {pascal(view)} {{"]
+    for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
+        lines.append(f"        public static let {camel(k)}: CGFloat = {fmt(dimension(sc[k]))}")
+    for k in ("zoom-min", "zoom-max", "zoom-step", "single-part-reflow-zoom", "mark-size-staff-spaces", "staff-height-min-phone-mm"):
+        if k in sc:
+            lines.append(f"        public static let {camel(k)}: Double = {fmt(sc[k]['$value'])}")
+    lines += ["    }", "}", ""]
+
     if PINK:
-        lines += [f"/// Which palette `Color.{PRODUCT}` reads: the standard one, or the hidden Pink one (design/system.md §10).",
+        lines += ["/// Which palette the colours are read from: the standard one, or the hidden Pink one (design/system.md §10).",
                   "/// It is observable, so a view that reads a colour in `body` redraws when the palette changes. Light or",
                   "/// dark still follows the colour scheme, and Increase Contrast still gives the high-contrast colours.",
                   "@Observable",
@@ -374,20 +468,24 @@ def apple_outputs() -> dict[str, str | bytes]:
         namespace = f'({PRODUCT}Palette.shared.isPink ? "{PRODUCT}Pink/" : "{PRODUCT}/")'
     else:
         namespace = f'"{PRODUCT}/"'
-    lines += ["public extension Color {", "    /// Semantic colours with light, dark and high-contrast variants from the asset catalog.",
-              f"    enum {PRODUCT} {{",
-              "        private static func named(_ role: String) -> Color {",
-              f"            Color({namespace} + role, bundle: {PRODUCT}Design.bundle)",
-              "        }", ""]
-    for role in roles():
+    lines += ["/// A colour set of the asset catalog, with its light, dark and high-contrast variants.",
+              "private func catalogColor(_ name: String) -> Color {",
+              f"    Color({namespace} + name, bundle: ScribeDesign.bundle)",
+              "}", "",
+              "public extension Color {", "    /// The colour roles every brand has.", "    enum Scribe {"]
+    for name, src in neutral_roles().items():
+        lines.append(f"        /// {desc(src)}")
+        lines.append(f'        public static var {camel(name)}: Color {{ catalogColor("{camel(src)}") }}')
+    lines += ["    }", "", f"    /// {PRODUCT}'s own colour roles.", f"    enum {PRODUCT} {{"]
+    for role in own_roles():
         lines.append(f"        /// {desc(role)}")
-        lines.append(f'        public static var {camel(role)}: Color {{ named("{camel(role)}") }}')
+        lines.append(f'        public static var {camel(role)}: Color {{ catalogColor("{camel(role)}") }}')
     lines += ["    }", "}", ""]
 
     typo = group("typography")
     weight = {400: "regular", 500: "medium", 600: "semibold", 700: "bold"}
-    lines += ["public extension Font {", "    /// The type ramp, built on Dynamic Type text styles so it scales with the user's text size.",
-              f"    enum {PRODUCT} {{"]
+    lines += ["public extension Font {", "    /// The type ramp every brand has, built on Dynamic Type text styles so it scales with the user's text size.",
+              "    enum Scribe {"]
     for k, v in typo.items():
         plat = v.get("$extensions", {}).get("no.brasscribe.platform")
         if not plat:
@@ -404,11 +502,14 @@ def apple_outputs() -> dict[str, str | bytes]:
                 expr += ".monospacedDigit()"
         lines.append(f"        /// {v.get('$description', '')}")
         lines.append(f"        public static let {camel(k)}: Font = {expr}")
-    for key, (font, found) in faces.items():
-        if key != "display" and found:
-            lines += ["", f"        /// {font['family']}. {font['note']}",
-                      f"        public static func {camel(key)}(size: CGFloat) -> Font {{ .custom(\"{found[0]['postscript']}\", size: size) }}"]
-    lines += ["    }", "}", ""]
+    lines += ["    }"]
+    own_faces = [(key, font, found) for key, (font, found) in faces.items() if key != "display" and found]
+    lines += ["", f"    /// {PRODUCT}'s own faces, and where a {PRODUCT} app adds its own type.", f"    enum {PRODUCT} {{"]
+    for key, font, found in own_faces:
+        lines += [f"        /// {font['family']}. {font['note']}",
+                  f"        public static func {camel(key)}(size: CGFloat) -> Font {{ .custom(\"{found[0]['postscript']}\", size: size) }}"]
+    lines += ["    }"]
+    lines += ["}", ""]
 
     lines += ["/// One SF Symbol per action. The label is the visible text and the accessible name.",
               f"public enum {PRODUCT}Icon: CaseIterable, Sendable {{"]
@@ -418,18 +519,6 @@ def apple_outputs() -> dict[str, str | bytes]:
     for a, v in ICONS.items():
         lines.append(f'        case .{camel(a)}: "{v["apple"]}"')
     lines += ["        }", "    }", "}", ""]
-
-    lines += ["// The neutral names (design/tokens/README.md). Every brand's file declares them, so code that uses only",
-              f"// these compiles against any brand. {PRODUCT}'s own roles and metrics are in the types above.", "",
-              "public enum ScribeDesign {",
-              f"    public static var bundle: Bundle {{ {PRODUCT}Design.bundle }}"]
-    lines += [f"    public typealias {name} = {PRODUCT}Design.{name}" for name in ("Space", "Radius", "Size", "Motion")]
-    lines += ["}", "", "public extension Color {", "    /// The colour roles every brand has.", "    enum Scribe {"]
-    for name, src in neutral_roles().items():
-        lines.append(f"        /// {desc(src)}")
-        lines.append(f"        public static var {camel(name)}: Color {{ {PRODUCT}.{camel(src)} }}")
-    lines += ["    }", "}", "",
-              "public extension Font {", "    /// The type ramp.", f"    typealias Scribe = {PRODUCT}", "}", ""]
     out[f"apple/{PRODUCT}Design.swift"] = "\n".join(lines)
     out.update(font_files("apple", "apple/Fonts"))
     return out
@@ -754,26 +843,25 @@ def android_neutral(pkg: str) -> str:
 # ---------------------------------------------------------------- Windows
 
 def windows_theme_dictionaries(light: str, dark: str) -> list[str]:
-    """The Light, Dark and HighContrast theme dictionaries of every colour role, for two modes of tokens.json."""
-    # Every role under the brand's prefix, then the neutral roles under theirs. The neutral keys carry the
-    # values themselves: a key that pointed at the brand's would not follow a palette merged later (Pink).
-    names = [(KEY + pascal(r), r) for r in roles()]
-    neutral = [("Scribe" + pascal(name), src) for name, src in neutral_roles().items()]
+    """The Light, Dark and HighContrast theme dictionaries of every colour role, for two modes of tokens.json:
+    the neutral roles under Scribe…, then the brand's own under its prefix. A role has one key."""
+    neutral = [("Scribe" + pascal(name), src, NEUTRAL["roles"][name]["windows"]) for name, src in neutral_roles().items()]
+    own = [(KEY + pascal(r), r, system_colour(r, "windows")) for r in own_roles()]
     X = ["    <ResourceDictionary.ThemeDictionaries>"]
     for mode, key in ((light, "Light"), (dark, "Dark")):
         X.append(f'        <ResourceDictionary x:Key="{key}">')
-        for part in (names, neutral):
-            for k, r in part:
+        for part in (neutral, own):
+            for k, r, _ in part:
                 X.append(f'            <Color x:Key="{k}Color">#{round(alpha(mode, r) * 255):02X}{hexval(mode, r)[1:]}</Color>')
-            for k, r in part:
+            for k, r, _ in part:
                 X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{StaticResource {k}Color}}"/>')
         X.append("        </ResourceDictionary>")
     X.append('        <ResourceDictionary x:Key="HighContrast">')
-    for part in (names, neutral):
-        for k, r in part:
-            X.append(f'            <StaticResource x:Key="{k}Color" ResourceKey="{system_colour(r, "windows")}"/>')
-        for k, r in part:
-            X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{ThemeResource {system_colour(r, "windows")}}}"/>')
+    for part in (neutral, own):
+        for k, _, colour in part:
+            X.append(f'            <StaticResource x:Key="{k}Color" ResourceKey="{colour}"/>')
+        for k, _, colour in part:
+            X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{ThemeResource {colour}}}"/>')
     X += ["        </ResourceDictionary>", "    </ResourceDictionary.ThemeDictionaries>"]
     return X
 
@@ -795,7 +883,8 @@ def windows_pink() -> str:
 def windows_outputs() -> dict[str, str | bytes]:
     X = ['<?xml version="1.0" encoding="utf-8"?>', f"<!-- {HEADER} -->",
          f"<!-- Merge into App.xaml: <ResourceDictionary Source=\"ms-appx:///Themes/{PRODUCT}Theme.xaml\"/>.",
-         f"     Use {{ThemeResource {KEY}TextBrush}} etc. Contrast themes map every role to the user's system colours. -->"]
+         f"     Use {{ThemeResource ScribeTextBrush}} etc.: Scribe… is what every brand has (design/tokens/README.md),",
+         f"     {KEY}… is {PRODUCT}'s own. Contrast themes map every role to the user's system colours. -->"]
     X += XAML_OPEN + windows_theme_dictionaries("light", "dark") + [""]
     B = ["    <!-- Spacing (epx), radii, sizes -->"]
     for k, v in group("space").items():
@@ -842,15 +931,9 @@ def windows_outputs() -> dict[str, str | bytes]:
             B.append(f'    <x:String x:Key="{KEY}Icon{pascal(a)}">&#x{v["glyph"]};</x:String>')
         else:
             B.append(f'    <x:String x:Key="{KEY}IconPath{pascal(a)}">{transform_path(v, 20 / 960, 0, 20)}</x:String>')
-    X += B
-    # The same resources under the neutral names, values and all (see windows_theme_dictionaries).
-    X += ["", "    <!-- The neutral names (design/tokens/README.md): the same keys in every brand's theme. The brand's own",
-          "         resources have the keys above only. -->"]
-    named = re.compile(rf'(x:Key="|\{{StaticResource ){KEY}(?=[A-Z0-9])')
-    for line in B:
-        if "<!--" in line or not line or any(f'x:Key="{start}' in line for start in own):
-            continue
-        X.append(named.sub(r"\1Scribe", line))
+    # Written with the brand's prefix above; what every brand has takes the neutral one.
+    named = re.compile(rf'(x:Key="|\{{StaticResource |fall back to ){KEY}(?=[A-Z0-9])')
+    X += [line if any(f'x:Key="{start}' in line for start in own) else named.sub(r"\1Scribe", line) for line in B]
     X += ["</ResourceDictionary>", ""]
     out: dict[str, str | bytes] = {f"windows/{PRODUCT}Theme.xaml": "\n".join(X)}
     if PINK:
@@ -867,18 +950,45 @@ def css_color(mode: str, r: str) -> str:
     return h if a == 1 else f"rgb({int(h[1:3], 16)} {int(h[3:5], 16)} {int(h[5:7], 16)} / {fmt(a)})"
 
 
+def web_names(name: str) -> list[str]:
+    """The CSS variables of one token, by the name the style sheet is written with below (`text`,
+    `brass-text`, `space-4`, `score-cursor-width`): --scribe-… for what every brand has, one for each
+    neutral role that reads a colour, and the brand's prefix for what is its own. Never both."""
+    view, _ = notation()
+    if name in roles():
+        neutral = [n for n, src in neutral_roles().items() if src == name]
+        return [f"--{NEUTRAL_PREFIX}-{n}" for n in neutral] or [f"--{CSS}-{name}"]
+    families = [k for k in TOKENS["font"]["family"] if not k.startswith("$") and k not in ("text", "display", "mono")]
+    # A type role with no native text style on the other platforms (Studio's) is the brand's own.
+    own_type = [k for k, v in group("typography").items() if "no.brasscribe.platform" not in v.get("$extensions", {})]
+    own = (name.startswith(f"{view}-") or name in (f"font-{k}" for k in families)
+           or any(name.startswith(f"type-{k}-") for k in own_type))
+    return [f"--{CSS if own else NEUTRAL_PREFIX}-{name}"]
+
+
+def web_named(lines: list[str]) -> str:
+    """A style sheet written with --bc-<token>, under the names of web_names: a declaration of a colour
+    that two neutral roles read is written once for each."""
+    out = []
+    for line in lines:
+        declared = re.match(r"(\s*)--bc-([\w-]+)(:.*)", line)
+        names = web_names(declared.group(2)) if declared else [""]
+        rest = declared.group(3) if declared else line
+        rest = re.sub(r"--bc-([a-z0-9]+(?:-[a-z0-9]+)*)", lambda m: web_names(m.group(1))[0], rest)  # var() and comments
+        out += [f"{declared.group(1)}{n}{rest}" if declared else rest for n in names]
+    return "\n".join(out)
+
+
 def web_outputs() -> dict[str, str | bytes]:
-    """The style sheets are written with Brasscribe's prefix (--bc-); `own` gives another brand its own."""
+    """The style sheet is written with --bc-<token> and then named by web_names: neutral or the brand's own."""
     rs = roles()
     view, sc = notation()
-
-    def own(lines: list[str]) -> str:
-        return "\n".join(lines).replace("--bc-", f"--{CSS}-")
 
     def block(mode: str, indent: str) -> list[str]:
         return [f"{indent}--bc-{r}: {css_color(mode, r)};" for r in rs]
 
-    C = [f"/* {HEADER} */", "/* Import fonts.css too if the page uses the display face. */", "",
+    C = [f"/* {HEADER} */", "/* Import fonts.css too if the page uses the display face. */",
+         f"/* --{NEUTRAL_PREFIX}-… is what every brand has (design/tokens/README.md); --{CSS}-… is {PRODUCT}'s own. */", "",
          ":root {", "  color-scheme: light;"]
     C += block("light", "  ")
     fam = TOKENS["font"]["family"]
@@ -958,30 +1068,14 @@ def web_outputs() -> dict[str, str | bytes]:
     C += ["",
           "/* Forced colours (Windows contrast themes): system colours only; shape carries the meaning. */",
           "@media (forced-colors: active) {", "  :root {"]
-    C += [f"    --bc-{r}: {system_colour(r, 'web')};" for r in rs]
+    for r in rs:  # a neutral role takes its own system colour, also where two read one token
+        read_by = [n for n, src in neutral_roles().items() if src == r]
+        C += [f"    --{NEUTRAL_PREFIX}-{n}: {NEUTRAL['roles'][n]['web']};" for n in read_by] or [f"    --bc-{r}: {system_colour(r, 'web')};"]
     C += ["    --bc-elevation-1: none;", "    --bc-elevation-2: none;", "    --bc-elevation-3: none;", "  }", "}", "",
           "/* Reduced motion: no movement; state changes cross-fade at most --bc-duration-reduced. */",
           "@media (prefers-reduced-motion: reduce) {", "  :root {",
           "    --bc-duration-fast: 0ms;", "    --bc-duration-base: var(--bc-duration-reduced);", "    --bc-duration-slow: var(--bc-duration-reduced);",
           "  }", "}", ""]
-
-    # The neutral names: one for every variable of the first block that is not the brand's own. var() is
-    # resolved where it is used, so each follows the brand's value in every mode and palette.
-    neutral = {src: name for name, src in neutral_roles().items()}
-    # A type role with no native text style on the other platforms (Studio's) is the brand's own.
-    own_type = [k for k, v in group("typography").items() if "no.brasscribe.platform" not in v.get("$extensions", {})]
-    C += ["/* The neutral names (design/tokens/README.md): the same in every brand's file, so styles that use only",
-          "   these work with any brand. Each follows the value above in every mode. */", ":root {"]
-    for line in C[C.index(":root {") + 1:C.index("}")]:
-        name = line.strip().removeprefix("--bc-").split(":")[0]
-        if not line.startswith("  --bc-") or name.startswith(f"{view}-") or name in (f"font-{k}" for k in extra_fonts):
-            continue
-        if name in rs and name not in neutral:
-            continue
-        if any(name.startswith(f"type-{k}-") for k in own_type):
-            continue
-        C.append(f"  --scribe-{neutral.get(name, name)}: var(--bc-{name});")
-    C += ["}", ""]
 
     F = [f"/* {HEADER} */"]
     for _, font, faces in fonts("web"):
@@ -991,18 +1085,7 @@ def web_outputs() -> dict[str, str | bytes]:
                   f"  font-weight: {face['weight']};", f"  font-style: {face['style']};", "  font-display: swap;", "}"]
     F.append("")
 
-    compat = {"bg": "bg", "surface": "surface", "text": "text", "text-muted": "text-muted", "ink": "ink", "staff": "staff",
-              "uncertain": "uncertain", "very-uncertain": "very-uncertain", "adlib-tint": "adlib-tint", "loop-tint": "loop-tint",
-              "loop-edge": "loop-edge", "cursor": "cursor", "focus": "focus", "error": "error", "ok": "success",
-              "border": "border-strong", "m1": "model-1", "m2": "model-2", "m3": "model-3", "m4": "model-4"}
-    S = [f"/* {HEADER} */", f"/* Maps the variable names in studio/src/styles.css onto the {PRODUCT} tokens.",
-         f"   Load after {PRODUCT.lower()}.css and instead of Studio's own colour blocks. */", ":root {"]
-    S += [f"  --{k}: var(--bc-{v});" for k, v in compat.items()]
-    S += ["  --space: var(--bc-space-4);", "  font-family: var(--bc-font-text);", "}", ""]
-
-    out: dict[str, str | bytes] = {f"web/{PRODUCT.lower()}.css": own(C), "web/fonts.css": "\n".join(F)}
-    if EXT.get("web", {}).get("studio-compat"):
-        out["web/studio-compat.css"] = own(S)
+    out: dict[str, str | bytes] = {f"web/{PRODUCT.lower()}.css": web_named(C), "web/fonts.css": "\n".join(F)}
     out.update(font_files("web", "web/fonts"))
     js = [f"// {HEADER}", "// Path data on the Material Symbols 960 grid (viewBox \"0 -960 960 960\"), keyed by action.",
           f"globalThis.{PRODUCT}Icons = {{"]
@@ -1077,11 +1160,6 @@ def stale() -> list[str]:
     return sorted(bad)
 
 
-def brand_of(tokens: Path) -> dict | None:
-    """The entry of brands.json a token file belongs to."""
-    return next((b for b in BRANDS if (ROOT / b["tokens"]).resolve() == tokens.resolve()), None)
-
-
 def command() -> str:
     """The command that writes this run's outputs, as it is typed from the repository root."""
     brand = brand_of(TOKENS_FILE)
@@ -1130,6 +1208,9 @@ def main(argv: list[str]) -> int:
         else:
             print(f"design outputs are in sync: {rel(DIST)}")
     return 1 if failed else 0
+
+
+configure()
 
 
 if __name__ == "__main__":

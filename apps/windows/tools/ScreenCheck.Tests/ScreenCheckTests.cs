@@ -130,52 +130,6 @@ public class ScreenCheckTests
     }
 
     [Fact]
-    public void Report_lists_changed_new_and_gone_screens_and_writes_its_result_last()
-    {
-        string root = Directory.CreateTempSubdirectory().FullName;
-        string before = Path.Combine(root, "before"), after = Path.Combine(root, "after"), report = Path.Combine(root, "report");
-        Directory.CreateDirectory(before);
-        Directory.CreateDirectory(after);
-        Png.Save(Path.Combine(before, "home--light.png"), Text(White, Black));
-        Png.Save(Path.Combine(after, "home--light.png"), Text(White, 0xFF2E6B3F));
-        Png.Save(Path.Combine(before, "same--light.png"), Text(White, Black));
-        Png.Save(Path.Combine(after, "same--light.png"), Text(White, Black));
-        Png.Save(Path.Combine(before, "gone--light.png"), Text(White, Black));
-        Png.Save(Path.Combine(after, "new--light.png"), Text(White, Black));
-        var r = ScreenshotReport.Write(before, after, report, Png.Load, Png.Save);
-        Assert.Equal(["home--light.png"], r.Changed);
-        Assert.Equal(["new--light.png"], r.Added);
-        Assert.Equal(["gone--light.png"], r.Gone);
-        Assert.True(File.Exists(Path.Combine(report, "images", "home--light-diff.png")));
-        Assert.Contains("\"any\": true", File.ReadAllText(Path.Combine(report, "result.json")));
-    }
-
-    [Fact]
-    public void Without_a_catalogue_at_the_base_nothing_counts_as_new()
-    {
-        string root = Directory.CreateTempSubdirectory().FullName;
-        Directory.CreateDirectory(Path.Combine(root, "after"));
-        Png.Save(Path.Combine(root, "after", "home--light.png"), Text(White, Black));
-        var r = ScreenshotReport.Write(Path.Combine(root, "before"), Path.Combine(root, "after"), Path.Combine(root, "report"), Png.Load, Png.Save);
-        Assert.False(r.Any);
-        Assert.Contains("no screen catalogue", r.Summary);
-    }
-
-    [Fact]
-    public void Screens_that_did_not_keep_still_are_not_compared()
-    {
-        string root = Directory.CreateTempSubdirectory().FullName;
-        foreach (var (dir, ink) in new[] { ("before", Black), ("after", 0xFF2E6B3Fu) })
-        {
-            Directory.CreateDirectory(Path.Combine(root, dir));
-            Png.Save(Path.Combine(root, dir, "transcribing--light.png"), Text(White, ink));
-        }
-        var r = ScreenshotReport.Write(Path.Combine(root, "before"), Path.Combine(root, "after"), Path.Combine(root, "report"), Png.Load, Png.Save,
-            new HashSet<string> { "transcribing--light" });
-        Assert.False(r.Any);
-    }
-
-    [Fact]
     public void Verdict_exit_codes_known_findings_and_stale_entries()
     {
         var run = new CatalogueRun { Shots = ["home--light", "home--dark"] };
@@ -190,8 +144,6 @@ public class ScreenCheckTests
         run.Failed.Add("score: TimeoutException");
         Assert.Equal(3, Verdict.Of([run], [known]).ExitCode);
         Assert.Equal(3, Verdict.Of([], []).ExitCode); // nothing taken is never a pass
-        // A screen that did not keep still was not compared: not a pass either.
-        Assert.Equal(3, Verdict.Of([new CatalogueRun { Shots = ["home--light"], Unsteady = ["home--light"] }], []).ExitCode);
     }
 
     [Fact]
@@ -208,27 +160,10 @@ public class ScreenCheckTests
     public void Runs_round_trip_through_their_file()
     {
         string path = Path.Combine(Directory.CreateTempSubdirectory().FullName, "catalogue-en.json");
-        new CatalogueRun { Shots = ["a--light"], Unsteady = ["a--light"], Findings = [new Finding("a--light", "keyboard", "Button \"Go\"", "Tab never reaches it")] }.Save(path);
+        new CatalogueRun { Shots = ["a--light"], Findings = [new Finding("a--light", "keyboard", "Button \"Go\"", "Tab never reaches it")] }.Save(path);
         var back = CatalogueRun.Load(path);
         Assert.Equal(["a--light"], back.Shots);
         Assert.Equal("Tab never reaches it", Assert.Single(back.Findings).Detail);
-    }
-
-    [Fact]
-    public void A_screen_not_taken_at_the_base_is_not_compared_and_not_a_new_screen()
-    {
-        string root = Directory.CreateTempSubdirectory().FullName;
-        string before = Path.Combine(root, "before"), after = Path.Combine(root, "after"), report = Path.Combine(root, "report");
-        Directory.CreateDirectory(before);
-        Directory.CreateDirectory(after);
-        Png.Save(Path.Combine(before, "home--light.png"), Text(White, Black));
-        Png.Save(Path.Combine(after, "home--light.png"), Text(White, Black));
-        Png.Save(Path.Combine(after, "export--light.png"), Text(White, Black));
-        var run = new CatalogueRun { Shots = ["home--light"], Failed = ["export--light: screen not taken: ExportDialog has not opened (after 0 takes in 30 s)"] };
-        Assert.Equal(["export--light"], run.NotTaken());
-        var result = ScreenshotReport.Write(before, after, report, Png.Load, Png.Save, run.NotTaken().ToHashSet());
-        Assert.False(result.Any);
-        Assert.Contains("not compared, the screen was not taken on one side: `export--light`", result.Summary);
     }
 
     // ---- when a screenshot is taken (SteadyShot) ----

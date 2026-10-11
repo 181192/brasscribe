@@ -976,7 +976,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                                                   "outputs), not only the summary reports")) -> list[dict]:
         """Rust-core conformance summary: every report.json in BRASSCRIBE_CONFORMANCE_REPORTS as written, plus `_file`.
 
-        An empty list means no report yet (run `brasscribe_conformance.run`, or runConformance)."""
+        An empty list means no report yet (run `scribe_conformance.run`, or runConformance)."""
         root = settings.conformance_reports_dir
         return history.reports(root) if all else history.reports(root, "report.json")
 

@@ -60,12 +60,13 @@ const synth = new SharedSynth((url) => soundFontBytes(url));
 let holder: ScoreElement | null = null;
 
 /**
- * A design token as a concrete colour. Tokens can be system colours (forced
- * colours) or use var(), so the value is resolved through a probe element.
+ * A design token as a concrete colour, by its variable's name without the dashes ("scribe-ink",
+ * "bc-very-uncertain"). Tokens can be system colours (forced colours) or use var(), so the value is
+ * resolved through a probe element.
  */
 export function tokenColour(name: string): string {
   const probe = document.createElement("span");
-  probe.style.color = `var(--bc-${name})`;
+  probe.style.color = `var(--${name})`;
   probe.style.display = "none";
   document.body.append(probe);
   const c = getComputedStyle(probe).color;
@@ -230,10 +231,10 @@ export class ScoreElement extends HTMLElement {
 
   /** alphaTab colours from the design tokens (ink, staff), so the notation follows the theme. */
   private resources(): Record<string, string> {
-    const ink = tokenColour("ink");
-    const staff = tokenColour("staff");
-    const muted = tokenColour("text-muted");
-    return { mainGlyphColor: ink, secondaryGlyphColor: ink, scoreInfoColor: tokenColour("text"), staffLineColor: staff, barSeparatorColor: staff, barNumberColor: muted };
+    const ink = tokenColour("scribe-ink");
+    const staff = tokenColour("scribe-line");
+    const muted = tokenColour("scribe-text-muted");
+    return { mainGlyphColor: ink, secondaryGlyphColor: ink, scoreInfoColor: tokenColour("scribe-text"), staffLineColor: staff, barSeparatorColor: staff, barNumberColor: muted };
   }
 
   /** Re-colour the notation when the theme changes (Appearance, dark mode, more contrast, forced colours). */
@@ -474,7 +475,7 @@ export class ScoreElement extends HTMLElement {
   private markNotes(score: AT.model.Score): number {
     if (!this.xml) return 0;
     const M = alphaTab.model;
-    const colours = { u: M.Color.fromJson(tokenColour("uncertain")), vu: M.Color.fromJson(tokenColour("very-uncertain")) };
+    const colours = { u: M.Color.fromJson(tokenColour("scribe-uncertain")), vu: M.Color.fromJson(tokenColour("bc-very-uncertain")) };
     let marked = 0;
     score.tracks.forEach((track, ti) => {
       const part = this.xml!.parts[ti];
