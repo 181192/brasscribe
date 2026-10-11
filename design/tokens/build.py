@@ -19,17 +19,16 @@ file that is not listed (a test, a trial) is built with --tokens FILE --out DIR.
                     accessibility palette are left alone
 
 Names. Every brand gets the same neutral names (Scribe*, --scribe-*; design/tokens/neutral.json lists the
-roles), so shared code compiles against any brand, and its own names for everything (its product name and
-its prefix: Brasscribe*, Bc*, --bc-*), where its own roles live. On the web, Apple and Windows a neutral role has
-its neutral name only; on Android Brasscribe's names still hold it too. design/tokens/README.md has the rule
-and the map. The Android theme is the exception until the Android apps use the neutral names: every brand's is
-written under Brasscribe's names, through the map in $extensions.<brand>.android (see android_source).
+roles), so shared code compiles against any brand, and its own names (its product name and its prefix:
+Brasscribe*, Bc*, --bc-*) for what is its own. A role has one name. design/tokens/README.md has the rule and
+the map.
 
 Inputs:  the brand's tokens.json (DTCG), design/tokens/neutral.json, design/tokens/icons.json,
          design/brand/icons/**, and the fonts the token file names
 Outputs, for Brasscribe (another brand's have its own name and prefix, in its own folder):
          design/dist/apple/      BrasscribeDesign.xcassets, BrasscribeDesign.swift, Fonts/
-         design/dist/android/    kotlin/no/brasscribe/design/*.kt, res/drawable/ic_bc_*.xml, res/font/
+         design/dist/android/    kotlin/no/scribe/design/ScribeTheme.kt, kotlin/no/brasscribe/design/*.kt,
+                                 res/drawable/ic_bc_*.xml, res/font/
          design/dist/windows/    BrasscribeTheme.xaml, BrasscribePinkTheme.xaml, Assets/Fonts/
          design/dist/web/        brasscribe.css, fonts.css, icons.js, icons/*.svg, fonts/
          design/dist/icon-map.md
@@ -51,8 +50,6 @@ ROOT = HERE.parents[1]
 BRAND = ROOT / "design" / "brand"
 DEFAULT_TOKENS = HERE / "tokens.json"
 DEFAULT_DIST = ROOT / "design" / "dist"
-# The default tokens name the roles and groups of the generated Android API, whichever product is built.
-API = json.loads(DEFAULT_TOKENS.read_text())
 # The roles every brand has, under the names shared code uses.
 NEUTRAL = json.loads((HERE / "neutral.json").read_text())
 # Every brand: its token file and the folder its outputs go to.
@@ -101,12 +98,11 @@ def brand_of(tokens: Path) -> dict | None:
 
 def configure(tokens: Path = DEFAULT_TOKENS, out: Path = DEFAULT_DIST, only: str | None = None) -> None:
     """Choose the token file, the output folder and the platform; the defaults are Brasscribe's."""
-    global TOKENS_FILE, TOKENS, EXT, MODES, DIST, HEADER, ONLY, ANDROID, PRODUCT, CSS, KEY, PINK
+    global TOKENS_FILE, TOKENS, EXT, MODES, DIST, HEADER, ONLY, PRODUCT, CSS, KEY, PINK
     TOKENS_FILE, DIST = tokens.resolve(), out.resolve()
     TOKENS = json.loads(TOKENS_FILE.read_text())
     namespace, EXT = product_extension(TOKENS, TOKENS_FILE)
     MODES = EXT["modes"]
-    ANDROID = EXT.get("android", {})
     PRODUCT = namespace.rsplit(".", 1)[-1].capitalize()
     # The brand's short prefix, for what is its own: --bc-cursor in CSS, BcCursorBrush in XAML.
     CSS = EXT.get("prefix", PRODUCT.lower())
@@ -173,6 +169,8 @@ def check_tokens() -> None:
         for field in ("family", "licence", "licence-name", "note", "faces"):
             if field not in font:
                 fail(f"$extensions.*.fonts.{key} has no '{field}'")
+        if key == "display" and not re.fullmatch(r"[a-z][a-z0-9_]*", font.get("android-resource", "")):
+            fail("$extensions.*.fonts.display has no 'android-resource' (the font's name in res/font: lower-case letters, digits and _)")
         for face in font["faces"]:
             for field in ("file", "postscript", "weight", "style"):
                 if field not in face:
@@ -530,59 +528,31 @@ def argb(h: str, a: float = 1.0) -> str:
     return f"0x{round(a * 255):02X}{h[1:].upper()}"
 
 
-def android_source(kind: str, name: str, have) -> str:
-    """The product's own name for a colour role, mode or token group of the Android API.
-
-    $extensions.<product>.android.aliases maps the API's name to the product's, per kind:
-    {"roles": {"brass": "brand"}, "modes": {"pink": "light"}, "groups": {"score": "tab"}}.
-    A name the product neither has nor maps is an error, so the shared screens always compile.
-    """
-    src = ANDROID.get("aliases", {}).get(kind, {}).get(name, name)
-    if src not in have:
-        raise SystemExit(f"{rel(TOKENS_FILE)}: no {kind[:-1]} for '{name}' of the Android theme; "
-                         f"add it or map it under $extensions.*.android.aliases.{kind}")
-    return src
+NEUTRAL_PACKAGE = "no.scribe.design"
 
 
-def android_color(mode: str, role: str) -> str:
-    mode = android_source("modes", mode, TOKENS["color"])
-    role = android_source("roles", role, TOKENS["color"][mode])
-    return argb(hexval(mode, role), alpha(mode, role))
-
-
-def android_group(name: str) -> dict:
-    """A token group under the API's name. A key listed in android.inherit (as "score.zoom-min") that
-    the product does not define keeps the default tokens' value."""
-    own = group(android_source("groups", name, TOKENS))
-    for path in ANDROID.get("inherit", []):
-        g, _, key = path.partition(".")
-        if g == name:
-            own.setdefault(key, API[g][key])
-    return own
-
-
-def android_display_font() -> dict:
-    """The display face in res/font: the file and its licence text (paths from the token file's folder
-    when the product names its own) and the resource name."""
-    font = ANDROID.get("display-font")
-    if not font:
-        return {"file": BRAND / "fonts" / "InstrumentSerif-Regular.ttf", "resource": "instrument_serif",
-                "licence": BRAND / "fonts" / "OFL.txt"}
-    base = TOKENS_FILE.parent
-    return {"file": base / font["file"], "resource": font["resource"], "licence": base / font["licence"]}
+def android_palette(name: str, kind: str, mode: str, tokens: dict[str, str], comment: str = "") -> list[str]:
+    """A palette as a Kotlin value: the fields of `kind`, each with a token's colour in a mode."""
+    lines = ([comment] if comment else []) + [f"val {name} = {kind}("]
+    lines += [f"    {camel(field)} = Color({argb(hexval(mode, token), alpha(mode, token))})," for field, token in tokens.items()]
+    if kind == "ScribeColors":
+        lines.append(f"    isHighContrast = {'true' if mode.startswith('high-contrast') else 'false'},")
+    return lines + [")", ""]
 
 
 def android_outputs() -> dict[str, str | bytes]:
+    """The neutral theme in no.scribe.design, the same declarations for every brand with the brand's values,
+    and the brand's own roles, metrics and theme in its own package. A role has one name."""
     out: dict[str, str | bytes] = {}
-    pkg = "no.brasscribe.design"
-    rs = [k for k in API["color"]["light"] if not k.startswith("$")]
-    font = android_display_font()
+    brand_package = f"no.{PRODUCT.lower()}.design"
+    display = EXT["fonts"]["display"]
+    resource = display["android-resource"]
     dist = rel(DIST)
+    neutral = neutral_roles()
+    own = {r: r for r in own_roles()}
+    modes = (("light", "Light"), ("dark", "Dark"), ("high-contrast", "HighContrast"), ("high-contrast-light", "HighContrastLight"))
 
-    def role_desc(r: str) -> str:
-        src = android_source("roles", r, TOKENS["color"]["light"])
-        return desc(src) if src == r else f"{PRODUCT}'s `{src}`. {desc(src)}"
-    L = [f"// {HEADER}", f"package {pkg}", "",
+    L = [f"// {HEADER}", f"package {NEUTRAL_PACKAGE}", "",
          "import android.app.UiModeManager",
          "import android.os.Build",
          "import androidx.compose.animation.core.CubicBezierEasing",
@@ -607,37 +577,37 @@ def android_outputs() -> dict[str, str | bytes]:
          "import androidx.compose.ui.text.style.TextAlign",
          "import androidx.compose.ui.unit.dp",
          "import androidx.compose.ui.unit.sp", "",
-         "/** Semantic colours. Material components read [ColorScheme]; the score view reads these directly. */",
+         "/*",
+         " * What every brand's theme declares, under the same names (design/tokens/README.md): screens that use only",
+         f" * these compile against any brand. The values here are {PRODUCT}'s. A brand's own roles, metrics and theme",
+         f" * are in its own package ({brand_package}).",
+         " */", "",
+         "/** The colour roles every brand has. Material components read [ColorScheme]; drawing code reads these. */",
          "@Immutable",
-         "data class BrasscribeColors("]
-    for r in rs:
-        L.append(f"    /** {role_desc(r)} */")
-        L.append(f"    val {camel(r)}: Color,")
+         "data class ScribeColors("]
+    for name, src in neutral.items():
+        L.append(f"    /** {desc(src)} */")
+        L.append(f"    val {camel(name)}: Color,")
     L += ["    val isHighContrast: Boolean,", ")", ""]
-    for mode, name in (("light", "BrasscribeLightColors"), ("dark", "BrasscribeDarkColors"),
-                       ("high-contrast", "BrasscribeHighContrastColors"), ("high-contrast-light", "BrasscribeHighContrastLightColors"),
-                       ("pink", "BrasscribePinkColors"), ("pink-dark", "BrasscribePinkDarkColors")):
-        if mode == "high-contrast-light":
-            L.append("/** High contrast on a light ground. Not yet chosen by [BrasscribeTheme], which uses the dark one. */")
-        if mode == "pink" and android_source("modes", mode, TOKENS["color"]) != mode:
-            L.append(f"/** {PRODUCT} has no Pink palette: `pink = true` in [BrasscribeTheme] gives its standard colours. */")
-        elif mode == "pink":
-            L.append("/** The hidden Pink palette (design/system.md §10), chosen by [BrasscribeTheme] with `pink = true`. */")
-        L.append(f"val {name} = BrasscribeColors(")
-        for r in rs:
-            L.append(f"    {camel(r)} = Color({android_color(mode, r)}),")
-        L += [f"    isHighContrast = {'true' if mode.startswith('high-contrast') else 'false'},", ")", ""]
-
-    L += [f"/** Maps the semantic roles onto Material 3 so stock components look like {PRODUCT}. */",
-          "fun BrasscribeColors.toColorScheme(dark: Boolean): ColorScheme {",
+    for mode, name in modes:
+        L += android_palette(f"Scribe{name}Colors", "ScribeColors", mode, neutral,
+                             "/** High contrast on a light ground. Not chosen by [scribeColors], which uses the dark one. */" if mode == "high-contrast-light" else "")
+    L += ["/** The palette for light or dark; the high-contrast one when the system asks for more contrast. */",
+          "fun scribeColors(dark: Boolean, highContrast: Boolean): ScribeColors = when {",
+          "    highContrast -> ScribeHighContrastColors",
+          "    dark -> ScribeDarkColors",
+          "    else -> ScribeLightColors",
+          "}", "",
+          f"/** Maps the roles onto Material 3 so stock components look like {PRODUCT}. */",
+          "fun ScribeColors.toColorScheme(dark: Boolean): ColorScheme {",
           "    val scheme = if (dark) darkColorScheme() else lightColorScheme()",
           "    return scheme.copy(",
           "        primary = primary, onPrimary = onPrimary,",
-          "        primaryContainer = secondary, onPrimaryContainer = onSecondary, inversePrimary = brass,",
+          "        primaryContainer = secondary, onPrimaryContainer = onSecondary, inversePrimary = brand,",
           "        secondary = text, onSecondary = bg,",
           "        secondaryContainer = secondary, onSecondaryContainer = onSecondary,",
-          "        tertiary = brassText, onTertiary = onPrimary,",
-          "        tertiaryContainer = brassTint, onTertiaryContainer = text,",
+          "        tertiary = brandText, onTertiary = onPrimary,",
+          "        tertiaryContainer = brandTint, onTertiaryContainer = text,",
           "        background = bg, onBackground = text,",
           "        surface = bg, onSurface = text, surfaceVariant = surface, onSurfaceVariant = textMuted,",
           "        surfaceTint = bg, inverseSurface = text, inverseOnSurface = bg,",
@@ -652,7 +622,7 @@ def android_outputs() -> dict[str, str | bytes]:
     typo = group("typography")
     weight = {400: "Normal", 500: "Medium", 600: "SemiBold", 700: "Bold"}
     L += ["/** The type ramp as Material 3 roles. Sizes are sp, so they follow the system font scale. */",
-          "fun brasscribeTypography(display: FontFamily = FontFamily.Serif): Typography {",
+          "fun scribeTypography(display: FontFamily = FontFamily.Serif): Typography {",
           "    val base = Typography()", "    return base.copy("]
     used = {}
     for k, v in typo.items():
@@ -669,11 +639,11 @@ def android_outputs() -> dict[str, str | bytes]:
     L += ["    )", "}", ""]
     num = typo["numeric"]["$extensions"]["no.brasscribe.platform"]["material"]
     L += ["/** Bar/beat, speed and tempo readouts: tabular figures so the numbers don't jiggle. */",
-          f"val BrasscribeNumericStyle = TextStyle(fontWeight = FontWeight.Medium, fontSize = {num['sizeSp']}.sp, "
+          f"val ScribeNumericStyle = TextStyle(fontWeight = FontWeight.Medium, fontSize = {num['sizeSp']}.sp, "
           f"lineHeight = {num['lineHeightSp']}.sp, fontFeatureSettings = \"tnum\", textAlign = TextAlign.Start)", ""]
 
     rad = group("radius")
-    L += ["val BrasscribeShapes = Shapes(",
+    L += ["val ScribeShapes = Shapes(",
           f"    extraSmall = RoundedCornerShape({fmt(dimension(rad['xs']))}.dp),",
           f"    small = RoundedCornerShape({fmt(dimension(rad['sm']))}.dp),",
           f"    medium = RoundedCornerShape({fmt(dimension(rad['md']))}.dp),",
@@ -681,34 +651,26 @@ def android_outputs() -> dict[str, str | bytes]:
           f"    extraLarge = RoundedCornerShape({fmt(dimension(rad['xl']))}.dp),",
           ")", "",
           "/** The brand's one button shape. Material buttons default to a pill; pass this instead. */",
-          f"val BrasscribeButtonShape = RoundedCornerShape({fmt(dimension(rad['md']))}.dp)", ""]
+          f"val ScribeButtonShape = RoundedCornerShape({fmt(dimension(rad['md']))}.dp)", ""]
 
-    L += ["object BrasscribeSpace {"]
+    L += ["object ScribeSpace {"]
     for k, v in group("space").items():
         L.append(f"    val s{k} = {fmt(dimension(v))}.dp")
-    L += ["}", "", "object BrasscribeSize {",
+    L += ["}", "", "object ScribeSize {",
           f"    val touchMin = {fmt(dimension(TOKENS['size']['touch-min-android']))}.dp",
           f"    val iconMedium = {fmt(dimension(TOKENS['size']['icon-md']))}.dp",
           f"    val iconLarge = {fmt(dimension(TOKENS['size']['icon-lg']))}.dp",
           f"    val contentMaxWidth = {fmt(dimension(TOKENS['size']['content-max']))}.dp",
           f"    val sidebarWidth = {fmt(dimension(TOKENS['size']['sidebar']))}.dp",
-          "}", ""]
-    sc = android_group("score")
-    L += ["object BrasscribeScore {"]
-    for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
-        L.append(f"    val {camel(k)} = {fmt(dimension(sc[k]))}.dp")
-    for k in ("zoom-min", "zoom-max", "zoom-step", "single-part-reflow-zoom"):
-        L.append(f"    const val {camel(k)} = {int(sc[k]['$value'])}")
-    L += ["}", ""]
-    L += ["/** Durations in ms. With animations off (ANIMATOR_DURATION_SCALE 0) use [reduced] cross-fades or none. */",
-          "object BrasscribeMotion {"]
+          "}", "",
+          "/** Durations in ms. With animations off (ANIMATOR_DURATION_SCALE 0) use [reduced] cross-fades or none. */",
+          "object ScribeMotion {"]
     for k, v in TOKENS["motion"]["duration"].items():
         L.append(f"    const val {camel(k)} = {v['$value']['value']}")
     for k, v in TOKENS["motion"]["easing"].items():
         L.append(f"    val {camel(k)}Easing = CubicBezierEasing({', '.join(fmt(x) + 'f' for x in v['$value'])})")
-    L += ["}", ""]
-
-    L += ["val LocalBrasscribeColors = staticCompositionLocalOf { BrasscribeLightColors }", "",
+    L += ["}", "",
+          "val LocalScribeColors = staticCompositionLocalOf { ScribeLightColors }", "",
           "/** Android 14+ reports the system contrast level; 0.5 and above is treated as high contrast. */",
           "@Composable",
           "fun systemHighContrast(): Boolean {",
@@ -718,57 +680,130 @@ def android_outputs() -> dict[str, str | bytes]:
           "    return ui.contrast >= 0.5f",
           "}", "",
           "/**",
-          f" * {PRODUCT} on Material 3. Dynamic colour is deliberately not used: the score palette is",
-          " * fixed for accessibility and the brand stays the same on every device.",
+          f" * {PRODUCT} on Material 3. Dynamic colour is deliberately not used: the palette is fixed for",
+          " * accessibility and the brand stays the same on every device.",
           " *",
-          f" * @param display the brand display face; pass FontFamily(Font(R.font.{font['resource']})) after copying",
+          f" * @param display the brand display face; pass FontFamily(Font(R.font.{resource})) after copying",
           f" *   {dist}/android/res/font into the app. Defaults to the system serif.",
-          " * @param pink the hidden Pink palette, light or dark by [dark]. The system's high contrast still wins.",
+          " * @param colors the palette: the one for [dark] and [highContrast], or another of the brand's own that it passes.",
           " */",
           "@Composable",
-          "fun BrasscribeTheme(",
+          "fun ScribeTheme(",
           "    dark: Boolean = isSystemInDarkTheme(),",
           "    highContrast: Boolean = systemHighContrast(),",
-          "    pink: Boolean = false,",
           "    display: FontFamily = FontFamily.Serif,",
+          "    colors: ScribeColors = scribeColors(dark, highContrast),",
           "    content: @Composable () -> Unit,",
           ") {",
-          "    val colors = when {",
-          "        highContrast -> BrasscribeHighContrastColors",
-          "        pink && dark -> BrasscribePinkDarkColors",
-          "        pink -> BrasscribePinkColors",
-          "        dark -> BrasscribeDarkColors",
-          "        else -> BrasscribeLightColors",
-          "    }",
-          "    CompositionLocalProvider(LocalBrasscribeColors provides colors) {",
+          "    CompositionLocalProvider(LocalScribeColors provides colors) {",
           "        MaterialTheme(",
           "            colorScheme = colors.toColorScheme(dark = dark || highContrast),",
-          "            typography = brasscribeTypography(display),",
-          "            shapes = BrasscribeShapes,",
+          "            typography = scribeTypography(display),",
+          "            shapes = ScribeShapes,",
           "            content = content,",
           "        )",
           "    }",
           "}", "",
-          "object BrasscribeTheme {",
-          "    val colors: BrasscribeColors",
-          "        @Composable @ReadOnlyComposable get() = LocalBrasscribeColors.current",
+          "object ScribeTheme {",
+          "    val colors: ScribeColors",
+          "        @Composable @ReadOnlyComposable get() = LocalScribeColors.current",
           "}", ""]
-    out["android/kotlin/no/brasscribe/design/BrasscribeTheme.kt"] = "\n".join(L)
+    out[f"android/kotlin/{NEUTRAL_PACKAGE.replace('.', '/')}/ScribeTheme.kt"] = "\n".join(L)
 
-    I = [f"// {HEADER}", f"package {pkg}", "",
+    view, sc = notation()
+    B = [f"// {HEADER}", f"package {brand_package}", "",
+         "import androidx.compose.foundation.isSystemInDarkTheme",
+         "import androidx.compose.runtime.Composable",
+         "import androidx.compose.runtime.CompositionLocalProvider",
+         "import androidx.compose.runtime.Immutable",
+         "import androidx.compose.runtime.ReadOnlyComposable",
+         "import androidx.compose.runtime.staticCompositionLocalOf",
+         "import androidx.compose.ui.graphics.Color",
+         "import androidx.compose.ui.text.font.FontFamily",
+         "import androidx.compose.ui.unit.dp",
+         f"import {NEUTRAL_PACKAGE}.ScribeColors",
+         f"import {NEUTRAL_PACKAGE}.ScribeTheme",
+         f"import {NEUTRAL_PACKAGE}.scribeColors",
+         f"import {NEUTRAL_PACKAGE}.systemHighContrast", "",
+         "/*",
+         f" * What is {PRODUCT}'s own (design/tokens/README.md): its colour roles, its {view} metrics and its theme. The roles",
+         f" * every brand has are in {NEUTRAL_PACKAGE}.",
+         " */", "",
+         f"/** {PRODUCT}'s own colour roles. */",
+         "@Immutable",
+         f"data class {PRODUCT}Colors("]
+    for r in own:
+        B.append(f"    /** {desc(r)} */")
+        B.append(f"    val {camel(r)}: Color,")
+    B += [")", ""]
+    for mode, name in modes:
+        B += android_palette(f"{PRODUCT}{name}Colors", f"{PRODUCT}Colors", mode, own)
+    if PINK:
+        for mode, name in (("pink", "Pink"), ("pink-dark", "PinkDark")):
+            B += android_palette(f"{PRODUCT}{name}Colors", f"{PRODUCT}Colors", mode, own)
+            B += android_palette(f"{PRODUCT}{name}ScribeColors", "ScribeColors", mode, neutral,
+                                 f"/** The hidden Pink palette (design/system.md §10) of the roles every brand has, {'dark' if 'dark' in mode else 'light'}. */")
+    B += [f"/** {pascal(view)}-view metrics. */", f"object {PRODUCT}{pascal(view)} {{"]
+    for k in ("cursor-width", "focus-width", "focus-gap", "loop-edge-width", "selection-edge-width"):
+        B.append(f"    val {camel(k)} = {fmt(dimension(sc[k]))}.dp")
+    for k in ("zoom-min", "zoom-max", "zoom-step", "single-part-reflow-zoom"):
+        if k in sc:
+            B.append(f"    const val {camel(k)} = {int(sc[k]['$value'])}")
+    B += ["}", "",
+          f"val Local{PRODUCT}Colors = staticCompositionLocalOf {{ {PRODUCT}LightColors }}", "",
+          "/**",
+          f" * {PRODUCT}'s theme: [ScribeTheme] with {PRODUCT}'s own roles beside it ([{PRODUCT}Theme.colors]).",
+          " *",
+          f" * @param display the brand display face; see [ScribeTheme]."]
+    if PINK:
+        B.append(" * @param pink the hidden Pink palette, light or dark by [dark]. The system's high contrast still wins.")
+    B += [" */", "@Composable", f"fun {PRODUCT}Theme(",
+          "    dark: Boolean = isSystemInDarkTheme(),",
+          "    highContrast: Boolean = systemHighContrast(),"]
+    if PINK:
+        B.append("    pink: Boolean = false,")
+    B += ["    display: FontFamily = FontFamily.Serif,",
+          "    content: @Composable () -> Unit,",
+          ") {",
+          "    val own = when {",
+          f"        highContrast -> {PRODUCT}HighContrastColors"]
+    if PINK:
+        B += [f"        pink && dark -> {PRODUCT}PinkDarkColors", f"        pink -> {PRODUCT}PinkColors"]
+    B += [f"        dark -> {PRODUCT}DarkColors",
+          f"        else -> {PRODUCT}LightColors",
+          "    }"]
+    if PINK:
+        B += ["    val colors = when {",
+              "        highContrast || !pink -> scribeColors(dark, highContrast)",
+              f"        dark -> {PRODUCT}PinkDarkScribeColors",
+              f"        else -> {PRODUCT}PinkScribeColors",
+              "    }"]
+    else:
+        B.append("    val colors = scribeColors(dark, highContrast)")
+    B += [f"    CompositionLocalProvider(Local{PRODUCT}Colors provides own) {{",
+          "        ScribeTheme(dark = dark, highContrast = highContrast, display = display, colors = colors, content = content)",
+          "    }",
+          "}", "",
+          f"object {PRODUCT}Theme {{",
+          f"    val colors: {PRODUCT}Colors",
+          f"        @Composable @ReadOnlyComposable get() = Local{PRODUCT}Colors.current",
+          "}", ""]
+    folder = f"android/kotlin/{brand_package.replace('.', '/')}"
+    out[f"{folder}/{PRODUCT}Theme.kt"] = "\n".join(B)
+
+    I = [f"// {HEADER}", f"package {brand_package}", "",
          "/**",
          f" * One icon per action. Copy {dist}/android/res/drawable/ic_bc_*.xml into the app and use",
          " * painterResource(R.drawable.<drawable>). [material] names the Material Symbols Rounded source",
          " * (or \"custom\"). The label string is the accessible name; see icons.json for en and nb.",
          " */",
-         "enum class BrasscribeIcon(val drawable: String, val material: String) {"]
+         f"enum class {PRODUCT}Icon(val drawable: String, val material: String) {{"]
     for a, v in ICONS.items():
         m = v["material"]
         src = m if isinstance(m, str) else "custom:" + m["custom"]
         I.append(f'    {upper_snake(a)}("ic_bc_{a.replace("-", "_")}", "{src}"),')
     I += ["}", ""]
-    out["android/kotlin/no/brasscribe/design/BrasscribeIcon.kt"] = "\n".join(I)
-    out["android/kotlin/no/brasscribe/design/ScribeTheme.kt"] = android_neutral(pkg)
+    out[f"{folder}/{PRODUCT}Icon.kt"] = "\n".join(I)
 
     for a in ICONS:
         _, d = icon_source(a, "material")
@@ -781,63 +816,10 @@ def android_outputs() -> dict[str, str | bytes]:
             '    <group android:translateY="960">\n'
             f'        <path android:fillColor="#FF000000" android:pathData="{d}"/>\n'
             "    </group>\n</vector>\n")
-    out[f"android/res/font/{font['resource']}.ttf"] = font["file"].read_bytes()
-    out["android/res/font/OFL.txt"] = font["licence"].read_bytes()
+    face = next(f for f in display["faces"] if "android" in f.get("only", ["android"]))
+    out[f"android/res/font/{resource}.ttf"] = (TOKENS_FILE.parent / face["file"]).read_bytes()
+    out["android/res/font/OFL.txt"] = (TOKENS_FILE.parent / display["licence"]).read_bytes()
     return out
-
-
-def android_neutral(pkg: str) -> str:
-    """The neutral names of the Android theme: other names for the declarations of BrasscribeTheme.kt, which
-    every brand's theme has today. A neutral role that BrasscribeColors names differently gets a property."""
-    api = {name: (API["$extensions"]["no.brasscribe"]["neutral"]["roles"].get(name, name)) for name in NEUTRAL["roles"]}
-    S = [f"// {HEADER}", f"package {pkg}", "",
-         "import androidx.compose.foundation.isSystemInDarkTheme",
-         "import androidx.compose.foundation.shape.RoundedCornerShape",
-         "import androidx.compose.material3.Shapes",
-         "import androidx.compose.material3.Typography",
-         "import androidx.compose.runtime.Composable",
-         "import androidx.compose.runtime.ProvidableCompositionLocal",
-         "import androidx.compose.runtime.ReadOnlyComposable",
-         "import androidx.compose.ui.graphics.Color",
-         "import androidx.compose.ui.text.TextStyle",
-         "import androidx.compose.ui.text.font.FontFamily", "",
-         "/*",
-         " * The neutral names (design/tokens/README.md). Every brand's theme declares them, so screens that use only",
-         f" * these compile against any brand. They are other names for the declarations in BrasscribeTheme.kt, which",
-         f" * holds {PRODUCT}'s values; a brand's own roles are read from there.",
-         " */", "",
-         "/** The colour roles every brand has (and, until the themes are split, the brand's own beside them). */",
-         "typealias ScribeColors = BrasscribeColors", ""]
-    for name, src in api.items():
-        if src != name:
-            own = android_source("roles", src, TOKENS["color"]["light"])
-            S += [f"/** {desc(own)} */", f"val ScribeColors.{camel(name)}: Color get() = {camel(src)}", ""]
-    for mode, name in (("light", "Light"), ("dark", "Dark"), ("high-contrast", "HighContrast"), ("high-contrast-light", "HighContrastLight")):
-        assert mode in NEUTRAL["modes"]
-        S.append(f"val Scribe{name}Colors: ScribeColors get() = Brasscribe{name}Colors")
-    S += ["",
-          "val LocalScribeColors: ProvidableCompositionLocal<ScribeColors> get() = LocalBrasscribeColors", "",
-          "/** The type ramp as Material 3 roles. */",
-          "fun scribeTypography(display: FontFamily = FontFamily.Serif): Typography = brasscribeTypography(display)", "",
-          "val ScribeNumericStyle: TextStyle get() = BrasscribeNumericStyle",
-          "val ScribeShapes: Shapes get() = BrasscribeShapes",
-          "val ScribeButtonShape: RoundedCornerShape get() = BrasscribeButtonShape", "",
-          "typealias ScribeSpace = BrasscribeSpace",
-          "typealias ScribeSize = BrasscribeSize",
-          "typealias ScribeMotion = BrasscribeMotion", "",
-          f"/** {PRODUCT} on Material 3: light or dark by [dark], and the high-contrast colours when the system asks. */",
-          "@Composable",
-          "fun ScribeTheme(",
-          "    dark: Boolean = isSystemInDarkTheme(),",
-          "    highContrast: Boolean = systemHighContrast(),",
-          "    display: FontFamily = FontFamily.Serif,",
-          "    content: @Composable () -> Unit,",
-          ") = BrasscribeTheme(dark = dark, highContrast = highContrast, display = display, content = content)", "",
-          "object ScribeTheme {",
-          "    val colors: ScribeColors",
-          "        @Composable @ReadOnlyComposable get() = LocalBrasscribeColors.current",
-          "}", ""]
-    return "\n".join(S)
 
 
 # ---------------------------------------------------------------- Windows

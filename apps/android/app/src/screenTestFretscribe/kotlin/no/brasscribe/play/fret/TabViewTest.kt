@@ -42,10 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.design.BrasscribeColors
-import no.brasscribe.design.BrasscribeDarkColors
-import no.brasscribe.design.BrasscribeHighContrastColors
-import no.brasscribe.design.BrasscribeLightColors
+import no.scribe.design.ScribeColors
+import no.scribe.design.ScribeDarkColors
+import no.scribe.design.ScribeHighContrastColors
+import no.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.MainActivity
 import no.brasscribe.play.PlayApplication
@@ -140,9 +140,9 @@ class TabViewTest : TabScreenTest() {
      * doubt colour and every other note in ink. (That it then draws them so is theDoubtfulNumeralsAreDrawnInTheDoubtColour's,
      * on a device: alphaSkia's desktop build swaps red and blue.)
      */
-    private fun assertTheDoubtColourIsGiven(tab: TabView, colours: BrasscribeColors) {
+    private fun assertTheDoubtColourIsGiven(tab: TabView, colours: ScribeColors) {
         rule.runOnUiThread {
-            assertEquals(tabPalette(colours), tab.palette)
+            assertEquals(tabPalette(colours, own(colours)), tab.palette)
             val uncertain = colours.uncertain.toArgb()
             val doubtful = tab.placed.flatMap { it.doubtful }
             assertTrue("doubtful notes", doubtful.isNotEmpty())
@@ -158,7 +158,7 @@ class TabViewTest : TabScreenTest() {
     }
 
     /** The marks of the second fixture are over their columns, in [colours]; nothing else on the screen is in the doubt colour. */
-    private fun assertTheMarksAreDrawn(tab: TabView, colours: BrasscribeColors, numeralsToo: Boolean = false) {
+    private fun assertTheMarksAreDrawn(tab: TabView, colours: ScribeColors, numeralsToo: Boolean = false) {
         assertTheDoubtColourIsGiven(tab, colours)
         val uncertain = colours.uncertain.toArgb()
         val ink = colours.ink.toArgb()
@@ -177,7 +177,7 @@ class TabViewTest : TabScreenTest() {
             } else {
                 assertTrue("a ? in the doubt colour above column $i", count(image, glyph, uncertain) > 40)
                 if (numeralsToo) assertTrue("the numeral of column $i in the doubt colour", count(image, numerals, uncertain) > 20)
-                tabPalette(colours).uncertainTint?.let { wash -> assertTrue("the wash behind the numeral of column $i", count(image, numerals, wash, 6) > 40) }
+                tabPalette(colours, own(colours)).uncertainTint?.let { wash -> assertTrue("the wash behind the numeral of column $i", count(image, numerals, wash, 6) > 40) }
             }
             // Nothing in the doubt colour outside the marks on this screen: no second "?" from the page's own words.
             val others = marks.map { bounds(it) }
@@ -195,7 +195,7 @@ class TabViewTest : TabScreenTest() {
         assumeTrue("on a device only: alphaSkia's desktop build swaps red and blue", ScreenDevice.ENGRAVES_IN_COLOUR)
         computer("bass-line-marks")
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
-        assertTheMarksAreDrawn(showTheTab(), BrasscribeLightColors, numeralsToo = true)
+        assertTheMarksAreDrawn(showTheTab(), ScribeLightColors, numeralsToo = true)
     }
 
     /**
@@ -273,7 +273,7 @@ class TabViewTest : TabScreenTest() {
                 assertTrue("the mark is above the staff", box.bottom <= staff.y * density)
             }
         }
-        assertTheMarksAreDrawn(tab, BrasscribeLightColors)
+        assertTheMarksAreDrawn(tab, ScribeLightColors)
         checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-marks-light")
@@ -295,7 +295,7 @@ class TabViewTest : TabScreenTest() {
         val light = tab.engravings
         rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
         waitUntil(20_000) { TabScreenProbe.view?.let { it !== tab || it.engravings > light } == true }
-        assertTheMarksAreDrawn(engraved(), BrasscribeDarkColors)
+        assertTheMarksAreDrawn(engraved(), ScribeDarkColors)
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-marks-dark")
 
@@ -336,7 +336,7 @@ class TabViewTest : TabScreenTest() {
             assertEquals(listOf(2 to 2, 0 to 1), listOf(tab.placed[0], tab.placed[2]).map { it.doubtful.single().let { n -> n.fret.toInt() to n.string.toInt() } })
             assertEquals(alphaTab.TabRhythmMode.Hidden, tab.view.settings.notation.rhythmMode)
         }
-        assertTheMarksAreDrawn(tab, BrasscribeLightColors)
+        assertTheMarksAreDrawn(tab, ScribeLightColors)
         checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-and-notation-light")
@@ -371,7 +371,7 @@ class TabViewTest : TabScreenTest() {
         computer("bass-line-marks")
         val tab = showTheTab()
         rule.runOnUiThread { assertEquals(null, tab.palette.uncertainTint) }
-        assertTheMarksAreDrawn(tab, BrasscribeHighContrastColors)
+        assertTheMarksAreDrawn(tab, ScribeHighContrastColors)
         checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-marks-high-contrast")
@@ -388,7 +388,7 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-marked").assertTextEquals("1 note marked ? · Check it")
         assertTrue(rule.onAllNodesWithTag("fs-tab-no-place").fetchSemanticsNodes().isEmpty())
         val image = still()
-        assertTrue("the ? is drawn", count(image, bounds("fs-tab-mark-0"), BrasscribeLightColors.uncertain.toArgb()) > 60)
+        assertTrue("the ? is drawn", count(image, bounds("fs-tab-mark-0"), ScribeLightColors.uncertain.toArgb()) > 60)
         assertEquals(0, tab.unmatched)
 
         // The second fixture's page has two "?" and a "!"; its data says every note is sure and has a place only for the "!":
@@ -403,7 +403,7 @@ class TabViewTest : TabScreenTest() {
         assertTrue(rule.onAllNodesWithTag("fs-tab-marked").fetchSemanticsNodes().isEmpty())
         rule.onNodeWithTag("fs-tab-no-place").assertTextEquals("1 note with no place")
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        val uncertain = BrasscribeLightColors.uncertain.toArgb()
+        val uncertain = ScribeLightColors.uncertain.toArgb()
         run {
             val seen = still()
             assertEquals("nothing in the doubt colour", 0, count(seen, Rect(0, 0, seen.width, seen.height), uncertain))
@@ -424,7 +424,7 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-mark-2").assertContentDescriptionEquals(expected[2])
         rule.onNodeWithTag("fs-tab-tuning").assertContentDescriptionEquals("Tuning: Standard, no capo")
         rule.onNodeWithTag("fs-tab-marked").assertTextEquals("2 notes marked ? · Check them")
-        assertTheMarksAreDrawn(tab, BrasscribeLightColors)
+        assertTheMarksAreDrawn(tab, ScribeLightColors)
     }
 
     @Test
@@ -448,7 +448,7 @@ class TabViewTest : TabScreenTest() {
 
         // The page is as large as a bar can be across this screen: there is no larger to ask for.
         rule.onNodeWithTag("fs-tab-zoom-in").assertIsNotEnabled()
-        assertTheMarksAreDrawn(tab, BrasscribeLightColors)
+        assertTheMarksAreDrawn(tab, ScribeLightColors)
 
         // At the ordinary text size the same song takes fewer lines; zoomed in more again, never wider than the screen.
         textSize(1.0f)
@@ -466,7 +466,7 @@ class TabViewTest : TabScreenTest() {
         width().let { (surface, view) -> assertTrue("the page is as wide as the screen at 160 % ($surface of $view)", surface <= view) }
         rule.onNodeWithTag("fs-tab-zoom-in").assert(SemanticsMatcher("says the size") { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().any { d -> d.contains("160%") } })
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
-        assertTheMarksAreDrawn(tab, BrasscribeLightColors)
+        assertTheMarksAreDrawn(tab, ScribeLightColors)
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-160-zoom")
 
@@ -481,7 +481,7 @@ class TabViewTest : TabScreenTest() {
         assertTrue("more bars to a line when smaller: $lines50", lines50.max() > lines100.max())
         // The marks are small at 50 %; their elements are not.
         for (i in 0..2) rule.onNodeWithTag("fs-tab-mark-$i").performScrollTo().assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
-        assertTheMarksAreDrawn(tab, BrasscribeLightColors)
+        assertTheMarksAreDrawn(tab, ScribeLightColors)
         checkAccessibility()
         rule.onNodeWithTag("fs-tab-zoom-out").assertIsNotEnabled()
         shotOf("tab-50-zoom")
@@ -527,10 +527,10 @@ class TabViewTest : TabScreenTest() {
     private fun alone(xml: String, layout: TabLayout, index: TabIndex, marks: TabMarks, ownFace: Boolean = true): TabView {
         lateinit var tab: TabView
         rule.runOnUiThread {
-            tab = TabView(rule.activity, TabView.BASE_SCALE, tabPalette(BrasscribeLightColors), ownFace)
+            tab = TabView(rule.activity, TabView.BASE_SCALE, tabPalette(ScribeLightColors, own(ScribeLightColors)), ownFace)
             // (With an empty composition beside it, so the test rule still has one to wait for.)
             rule.activity.setContentView(FrameLayout(rule.activity).apply {
-                setBackgroundColor(BrasscribeLightColors.bg.toArgb())
+                setBackgroundColor(ScribeLightColors.bg.toArgb())
                 addView(androidx.compose.ui.platform.ComposeView(rule.activity).apply { setContent { } }, 1, 1)
                 addView(tab.view)
             })
@@ -612,7 +612,7 @@ class TabViewTest : TabScreenTest() {
         val last = e.boxes.last()
         val image = still()
         val el = element("fs-tab-mark-${last.column}")
-        assertTrue("the last ? of a long song is drawn", count(image, Rect(el.left.toInt(), el.top.toInt(), el.right.toInt(), el.bottom.toInt()), BrasscribeLightColors.uncertain.toArgb()) > 40)
+        assertTrue("the last ? of a long song is drawn", count(image, Rect(el.left.toInt(), el.top.toInt(), el.right.toInt(), el.bottom.toInt()), ScribeLightColors.uncertain.toArgb()) > 40)
         shotOf("tab-long-song-end")
     }
 
@@ -634,7 +634,7 @@ class TabViewTest : TabScreenTest() {
             val pad = (0.2f * tab.lineSpace).toInt()
             val area = Rect(at[0] + (head.x * density).toInt() - pad, at[1] + (head.y * density).toInt() - pad,
                 at[0] + ((head.x + head.w) * density).toInt() + pad, at[1] + ((head.y + head.h) * density).toInt() + pad)
-            val numeral = BrasscribeLightColors.ink.toArgb()
+            val numeral = ScribeLightColors.ink.toArgb()
             for (y in area.top until area.bottom) {
                 val row = (area.left until area.right).filter { x -> near(image.getPixel(x, y), numeral, 70) }
                 // A row of the numeral has more ink than the stem under it or the string line through it is wide.
@@ -757,7 +757,7 @@ class TabViewTest : TabScreenTest() {
             val el = element("fs-tab-mark-${last.column}")
             val mark = drawn(tab, last)
             val glyph = Rect(el.left.toInt(), (mark.top - 3).toInt(), el.right.toInt(), (mark.bottom + 0.3f * tab.lineSpace).toInt())
-            assertTrue("$where: the last ? is drawn where its element is", count(image, glyph, BrasscribeLightColors.uncertain.toArgb()) > 40)
+            assertTrue("$where: the last ? is drawn where its element is", count(image, glyph, ScribeLightColors.uncertain.toArgb()) > 40)
             scrollBy(-scrolled().first)
             assertTheElementsAreOnTheMarks(tab, "$where, at the top")
         }
@@ -777,10 +777,10 @@ class TabViewTest : TabScreenTest() {
      * The page is drawn where the tab is on the screen: string lines and ink numerals, by their pixels. What
      * alphaTab's layout says is no proof of that: a page can be laid out and its lines left undrawn.
      */
-    private fun assertThePageIsDrawn(where: String, colours: BrasscribeColors = BrasscribeLightColors) {
+    private fun assertThePageIsDrawn(where: String, colours: ScribeColors = ScribeLightColors) {
         val image = still()
         val area = bounds("fs-tab")
-        val lines = count(image, area, colours.staff.toArgb(), 24)
+        val lines = count(image, area, colours.line.toArgb(), 24)
         val ink = count(image, area, colours.ink.toArgb(), 24)
         android.util.Log.i("TabViewTest", "drawn, $where: $lines pixels of string lines and $ink of ink in $area")
         assertTrue("$where: the staff is drawn ($lines pixels of string lines)", lines > 3000)

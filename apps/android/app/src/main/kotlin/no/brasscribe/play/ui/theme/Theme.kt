@@ -7,8 +7,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import no.brasscribe.design.BrasscribeTheme
-import no.brasscribe.design.brasscribeTypography
+import no.scribe.design.scribeTypography
+import no.brasscribe.play.Product
 import no.brasscribe.play.R
 
 /**
@@ -20,7 +20,7 @@ import no.brasscribe.play.R
  * axis the font lacks, and then Android applies none of them. The italic is synthesised from the upright,
  * as the design folder ships only that file.
  */
-private val DisplayWeight = brasscribeTypography().displaySmall.fontWeight ?: FontWeight.Normal
+private val DisplayWeight = scribeTypography().displaySmall.fontWeight ?: FontWeight.Normal
 val DisplayFace = FontFamily(
     if (DisplayWeight == FontWeight.Normal) {
         Font(R.font.display, FontWeight.Normal, FontStyle.Normal)
@@ -32,14 +32,14 @@ val DisplayFace = FontFamily(
 
 /**
  * The app's one theme entry point: the product's generated theme (design/dist/android or
- * design/fretscribe/dist/android: colour scheme,
- * type ramp, shapes) with the display face. Colours come from [BrasscribeTheme.colors]; the score
- * palette (uncertain, very uncertain, loop, cursor) is for the notation only. [dark] is the resolved
- * Settings › Display › Appearance: the score and every dialog take their colours from here, never from
- * the phone's night mode directly. [pink] is the hidden Pink palette (light or dark by [dark]). The
- * phone's high contrast still wins over both.
+ * design/fretscribe/dist/android: colour scheme, type ramp, shapes) with the display face. Colours come
+ * from ScribeTheme.colors, the roles every product has, and [productColors], what the shared screens draw
+ * in a product's own (the score's very uncertain, loop and cursor). [dark] is the resolved Settings ›
+ * Display › Appearance: the score and every dialog take their colours from here, never from the phone's
+ * night mode directly. [pink] is Brasscribe's hidden Pink palette (light or dark by [dark]); a product
+ * without one ignores it. The phone's high contrast still wins over both.
  */
 @Composable
 fun PlayTheme(dark: Boolean = isSystemInDarkTheme(), pink: Boolean = false, content: @Composable () -> Unit) {
-    BrasscribeTheme(dark = dark, pink = pink, display = DisplayFace, content = content)
+    Product.Theme(dark = dark, pink = pink, display = DisplayFace, content = content)
 }

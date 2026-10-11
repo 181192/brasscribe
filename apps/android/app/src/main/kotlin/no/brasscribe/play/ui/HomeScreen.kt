@@ -58,8 +58,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.brasscribe.play.ui.theme.productColors
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Problem
 import no.brasscribe.play.R
@@ -156,7 +157,7 @@ fun HomeScreen(vm: PlayViewModel) {
         kotlinx.coroutines.delay(STATUS_MS)
         vm.opensElsewhere.value = null
     }
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val pickFile = rememberFilePicker(vm)
     val pickScore = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::openScoreUri) }
     val recorder = rememberRecorder(vm)
@@ -184,12 +185,12 @@ fun HomeScreen(vm: PlayViewModel) {
     Scaffold(containerColor = c.bg) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin),
-            verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+            verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
         ) {
             // The lockup: the mark and the wordmark in the display face, and Settings.
-            Row(Modifier.fillMaxWidth().padding(top = BrasscribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(top = ScribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
                 BrandMark(36.dp)
-                Spacer(Modifier.size(BrasscribeSpace.s2))
+                Spacer(Modifier.size(ScribeSpace.s2))
                 Text(stringResource(R.string.brand_name), style = MaterialTheme.typography.headlineMedium.copy(fontFamily = MaterialTheme.typography.displaySmall.fontFamily),
                     modifier = Modifier.weight(1f))
                 IconButton({ vm.navigate(Screen.HELP) }, Modifier.size(48.dp)) { BcIcon(R.drawable.ic_bc_help, stringResource(R.string.help)) }
@@ -198,18 +199,18 @@ fun HomeScreen(vm: PlayViewModel) {
             Text(
                 buildAnnotatedString {
                     append(stringResource(R.string.home_hero_start))
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = c.brassText)) { append(stringResource(R.string.home_hero_end)) }
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = c.brandText)) { append(stringResource(R.string.home_hero_end)) }
                 },
                 style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier.padding(top = BrasscribeSpace.s4).focusRequester(titleFocus).focusable().semantics { heading() },
+                modifier = Modifier.padding(top = ScribeSpace.s4).focusRequester(titleFocus).focusable().semantics { heading() },
             )
             Lead(stringResource(R.string.home_tagline))
             ConnectionStatusRow(vm)
             StatusLine(status)
             val importProgress by vm.importProgress.collectAsState()
             if (busy) importProgress.let { p ->
-                if (p != null && p > 0f) LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border, drawStopIndicator = {})
-                else LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+                if (p != null && p > 0f) LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border, drawStopIndicator = {})
+                else LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
             }
             PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, enabled = !busy, icon = R.drawable.ic_bc_import_file)
             RowGroup {
@@ -231,9 +232,9 @@ fun HomeScreen(vm: PlayViewModel) {
             val kept by vm.keptRecordings.collectAsState()
             if (scores.isEmpty() && kept.isEmpty()) {
                 // Empty state: what will appear here, with the mark.
-                Row(Modifier.padding(vertical = BrasscribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.padding(vertical = ScribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
                     BrandMark(32.dp)
-                    Spacer(Modifier.size(BrasscribeSpace.s3))
+                    Spacer(Modifier.size(ScribeSpace.s3))
                     Text(stringResource(R.string.home_scores_empty), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
                 }
             } else {
@@ -264,7 +265,7 @@ fun HomeScreen(vm: PlayViewModel) {
                     }
                 }
             }
-            Spacer(Modifier.height(BrasscribeSpace.s4))
+            Spacer(Modifier.height(ScribeSpace.s4))
         }
     }
 }
@@ -272,12 +273,12 @@ fun HomeScreen(vm: PlayViewModel) {
 /** First launch only: three points and Get started (system.md §5, onboarding). No carousel. */
 @Composable
 fun FirstRunScreen(vm: PlayViewModel) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     Scaffold(
         containerColor = c.bg,
         bottomBar = {
-            Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s3),
-                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+            Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = ScreenMargin, vertical = ScribeSpace.s3),
+                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                 InfoNote(stringResource(R.string.first_run_privacy), boxed = false)
                 PrimaryButton(stringResource(R.string.first_run_start), vm::finishFirstRun)
             }
@@ -285,22 +286,22 @@ fun FirstRunScreen(vm: PlayViewModel) {
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(bottom = padding.calculateBottomPadding()).verticalScroll(rememberScrollState())) {
             Column(
-                Modifier.fillMaxWidth().background(c.brassTint).statusBarsPadding().padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s8),
-                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s6),
+                Modifier.fillMaxWidth().background(c.brandTint).statusBarsPadding().padding(horizontal = ScreenMargin, vertical = ScribeSpace.s8),
+                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s6),
             ) {
                 BrandMark(56.dp)
                 Text(
                     buildAnnotatedString {
                         append(stringResource(R.string.first_run_hero_start))
-                        withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = c.brassText)) { append(stringResource(R.string.first_run_hero_end)) }
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = c.brandText)) { append(stringResource(R.string.first_run_hero_end)) }
                     },
                     style = MaterialTheme.typography.displaySmall,
                     modifier = Modifier.semantics { heading() },
                 )
             }
-            Column(Modifier.padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s6), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s6)) {
+            Column(Modifier.padding(horizontal = ScreenMargin, vertical = ScribeSpace.s6), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s6)) {
                 FirstRunPoint(R.drawable.ic_bc_record_mic, R.string.first_run_1_title, R.string.first_run_1_text)
-                FirstRunPoint(R.drawable.ic_bc_next_uncertain, R.string.first_run_2_title, R.string.first_run_2_text, tint = c.veryUncertain)
+                FirstRunPoint(R.drawable.ic_bc_next_uncertain, R.string.first_run_2_title, R.string.first_run_2_text, tint = productColors.veryUncertain)
                 FirstRunPoint(R.drawable.ic_bc_play_along, R.string.first_run_3_title, R.string.first_run_3_text)
             }
         }
@@ -309,11 +310,11 @@ fun FirstRunScreen(vm: PlayViewModel) {
 
 @Composable
 private fun FirstRunPoint(icon: Int, title: Int, text: Int, tint: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified) {
-    Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4), modifier = Modifier.semantics(mergeDescendants = true) {}) {
+    Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4), modifier = Modifier.semantics(mergeDescendants = true) {}) {
         IconWell(icon, 44.dp, tint)
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
+            Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
         }
     }
 }
@@ -325,7 +326,7 @@ fun RecordScreen(vm: PlayViewModel) {
     val kind by CaptureController.kind.collectAsState()
     val failed by CaptureController.failed.collectAsState()
     val status by vm.status.collectAsState()
-    val t = BrasscribeTheme.colors
+    val t = ScribeTheme.colors
     val device = kind == CaptureKind.DEVICE
     val started = stringResource(R.string.record_started)
     LaunchedEffect(state.recording) { if (state.recording) vm.status.value = no.brasscribe.play.Status(started) }
@@ -388,17 +389,17 @@ fun RecordScreen(vm: PlayViewModel) {
         ScreenTitle(stringResource(if (device) R.string.record_title_device else R.string.record_title_mic))
         Text(
             vm.durationText(state.seconds),
-            style = no.brasscribe.design.BrasscribeNumericStyle.copy(fontSize = MaterialTheme.typography.headlineMedium.fontSize),
+            style = no.scribe.design.ScribeNumericStyle.copy(fontSize = MaterialTheme.typography.headlineMedium.fontSize),
             modifier = Modifier.semantics { contentDescription = vm.durationText(state.seconds) },
         )
         val hours = (TakeSink.MAX_TAKE_SECONDS / 3600).toInt()
         Text(androidx.compose.ui.res.pluralStringResource(R.plurals.record_limit, hours, hours), color = t.textMuted)
         val label = stringResource(R.string.record_level)
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             Text(label, style = MaterialTheme.typography.titleMedium)
             LinearProgressIndicator(
                 progress = { state.level.coerceIn(0f, 1f) },
-                color = t.brass, trackColor = t.border,
+                color = t.brand, trackColor = t.border,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 8.dp).semantics {
                     contentDescription = label
                     stateDescription = levelWord

@@ -36,10 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.design.BrasscribeColors
-import no.brasscribe.design.BrasscribeDarkColors
-import no.brasscribe.design.BrasscribeHighContrastColors
-import no.brasscribe.design.BrasscribeLightColors
+import no.scribe.design.ScribeColors
+import no.scribe.design.ScribeDarkColors
+import no.scribe.design.ScribeHighContrastColors
+import no.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.MainActivity
 import no.brasscribe.play.PlayApplication
@@ -214,16 +214,16 @@ class PracticeTest : ScreenTest() {
     }
 
     /** The cursor's line is on the screen in [colours], at the left edge of its beat's column. */
-    private fun assertTheCursorIsDrawn(tab: TabView, colours: BrasscribeColors, where: String) {
+    private fun assertTheCursorIsDrawn(tab: TabView, colours: ScribeColors, where: String) {
         val image = still()
         val (bar, stop) = cursor(tab) ?: throw AssertionError("$where: no cursor")
         val density = rule.activity.resources.displayMetrics.density
         val line = onScreen(tab, stop.left - TabTokens.CURSOR_DP * density, bar.top, stop.left, bar.bottom)
-        val drawn = count(image, line, colours.cursor.toArgb())
+        val drawn = count(image, line, own(colours).cursor.toArgb())
         assertTrue("$where: the cursor's line is drawn in its colour ($drawn of ${line.width() * line.height()} px in $line)", drawn >= line.width() * line.height() * 0.7)
         // Nothing else in the tab is in the cursor's colour: it is the only blue in it.
         val page = onScreen(tab, 0f, bar.top, tab.view.width.toFloat(), bar.bottom)
-        val elsewhere = count(image, Rect(line.right + 2, page.top, page.right, page.bottom), colours.cursor.toArgb())
+        val elsewhere = count(image, Rect(line.right + 2, page.top, page.right, page.bottom), own(colours).cursor.toArgb())
         assertEquals("$where: the cursor's colour away from the cursor", 0, elsewhere)
     }
 
@@ -251,7 +251,7 @@ class PracticeTest : ScreenTest() {
         assertEquals("Bar 1, beat 1", words("fs-practice-place"))
         // The cursor stands at the first beat before anything plays.
         assertEquals(0, cursor(tab)!!.first.bar)
-        assertTheCursorIsDrawn(tab, BrasscribeLightColors, "at the start")
+        assertTheCursorIsDrawn(tab, ScribeLightColors, "at the start")
         shotOf("practice-light")
 
         rule.onNodeWithTag("fs-practice-play").performClick()
@@ -290,7 +290,7 @@ class PracticeTest : ScreenTest() {
         assertEquals(text(no.brasscribe.play.R.string.fs_practice_bar_beat, index.measures[there.bar].number, clock.beatAt(there)), words("fs-practice-place"))
         assertTrue("the place is announced when the player moves it", isLive("fs-practice-place"))
         assertEquals(there.bar, cursor(tab)!!.first.bar)
-        assertTheCursorIsDrawn(tab, BrasscribeLightColors, "after a pause")
+        assertTheCursorIsDrawn(tab, ScribeLightColors, "after a pause")
         checkAccessibility()
         shotOf("practice-paused")
 
@@ -452,13 +452,13 @@ class PracticeTest : ScreenTest() {
         val last = bars.first { it.bar == 3 }
         val density = rule.activity.resources.displayMetrics.density
         val image = still()
-        val edge = BrasscribeLightColors.loopEdge.toArgb()
+        val edge = own(ScribeLightColors).loopEdge.toArgb()
         val open = onScreen(tab, first.left, first.staffTop, first.left + TabTokens.CURSOR_DP * density, first.bottom)
         val close = onScreen(tab, last.right - TabTokens.CURSOR_DP * density, last.staffTop, last.right, last.bottom)
         assertTrue("the bracket before bar 3", count(image, open, edge) >= open.width() * open.height() * 0.6)
         assertTrue("the bracket after bar 4", count(image, close, edge) >= close.width() * close.height() * 0.6)
         val band = onScreen(tab, first.left + 8 * density, first.top - 0.3f * tab.lineSpace, first.left + 16 * density, first.top - 0.1f * tab.lineSpace)
-        assertTrue("the band behind the bars", count(image, band, BrasscribeLightColors.loopTint.toArgb()) >= band.width() * band.height() * 0.9)
+        assertTrue("the band behind the bars", count(image, band, own(ScribeLightColors).loopTint.toArgb()) >= band.width() * band.height() * 0.9)
         checkAccessibility()
         shotOf("practice-repeat")
 
@@ -897,7 +897,7 @@ class PracticeTest : ScreenTest() {
         }
         settle()
         assertNotNull(cursor(tab))
-        assertTheCursorIsDrawn(tab, BrasscribeHighContrastColors, "in high contrast")
+        assertTheCursorIsDrawn(tab, ScribeHighContrastColors, "in high contrast")
         // A repeat over every line of the tab: each line has the rail under its bars, also the ones between the two brackets.
         val e = tab.engraving.value!!
         assumeTrue("the tab is not three lines here", e.lines.size >= 3)
@@ -913,7 +913,7 @@ class PracticeTest : ScreenTest() {
             val rail = onScreen(tab, first.left + 40 * density, bottom - TabTokens.CURSOR_DP * density, lastOfLine.right - 40 * density, bottom - 1)
             if (rail.bottom > inView) continue
             if (n == 1) middle = true
-            val drawn = count(image, rail, BrasscribeHighContrastColors.loopEdge.toArgb())
+            val drawn = count(image, rail, own(ScribeHighContrastColors).loopEdge.toArgb())
             assertTrue("the rail under bars ${line.firstBar}–${line.lastBar} ($drawn of ${rail.width() * rail.height()} px)", drawn >= rail.width() * rail.height() * 0.8)
         }
         assertTrue("the line between the brackets was in view", middle)
@@ -926,7 +926,7 @@ class PracticeTest : ScreenTest() {
         rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
         var tab = practise()
         rule.runOnUiThread { practice.repeat(RepeatBars(1, 2)) }
-        assertTheCursorIsDrawn(tab, BrasscribeDarkColors, "in the dark")
+        assertTheCursorIsDrawn(tab, ScribeDarkColors, "in the dark")
         assertNoTextIsClipped()
         checkAccessibility()
         shotOf("practice-dark")

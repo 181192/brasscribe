@@ -74,8 +74,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.brasscribe.play.ui.theme.productColors
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.Lineup
 import no.brasscribe.play.fullBandMade
 import no.brasscribe.play.madeFor
@@ -162,7 +163,7 @@ fun ReviewScreen(vm: PlayViewModel) {
     val playingBar by vm.clipPlaying.collectAsState()
     val changes by vm.reviewChanges.collectAsState()
     val r = result ?: return
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     // Review checks a transcription; an opened score has nothing to check against.
     val composition = r.composition ?: return
     val voices = composition.voices.filter { it.notes.isNotEmpty() }
@@ -264,7 +265,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                 // While a third of the notes carry a "?" (review 3, P1-A), a whole bar can be kept at once.
                 val restOfBar = items.filter { it.head.bar == current.bar }
                 val skipButton = @Composable { m: Modifier -> SecondaryButton(stringResource(R.string.review_skip), { advance(current.index) }, m, icon = R.drawable.ic_bc_skip) }
-                if (restOfBar.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                if (restOfBar.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                     skipButton(Modifier.weight(1f))
                     OutlineButton(pluralStringResource(R.plurals.review_keep_bar, restOfBar.size, restOfBar.size), {
                         vm.markCheckedAll(voiceId, restOfBar.flatMap { g -> g.members.map { it.index } }, todo.size - restOfBar.size)
@@ -278,9 +279,9 @@ fun ReviewScreen(vm: PlayViewModel) {
         },
     ) {
         LazyColumn(state = listState, modifier = Modifier.fillMaxSize().semantics { testTag = "review-list" },
-            verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+            verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                     ScreenTitle(when {
                         todo.isEmpty() -> stringResource(R.string.review_all_checked)
                         grouped != null -> pluralStringResource(R.plurals.review_title_places, todo.size, todo.size)
@@ -389,7 +390,7 @@ fun ReviewScreen(vm: PlayViewModel) {
             }
             item {
                 val rest = todo.filter { it != current }
-                if (rest.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                if (rest.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                     SectionLabel(stringResource(R.string.review_still_to_check))
                     RowGroup {
                         rest.take(4).forEachIndexed { i, e ->
@@ -411,7 +412,7 @@ fun ReviewScreen(vm: PlayViewModel) {
             item { SectionLabel(stringResource(R.string.review_all_notes, partName)) }
             itemsIndexed(bars, key = { _, b -> b.number }) { _, bar ->
                 val rest = bar.events.singleOrNull()?.takeIf { it.note == null }
-                Column(Modifier.fillMaxWidth().padding(vertical = BrasscribeSpace.s1)) {
+                Column(Modifier.fillMaxWidth().padding(vertical = ScribeSpace.s1)) {
                     Text(
                         when {
                             // The pickup is named, never numbered (talking-score spec §4.10).
@@ -425,7 +426,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                         style = MaterialTheme.typography.titleSmall, color = c.textMuted,
                         modifier = Modifier.semantics { heading() },
                     )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
                         bar.events.forEach { e ->
                             val fr = remember(focus, e.index) { focus.getOrPut(e.index) { FocusRequester() } }
                             EventChip(
@@ -448,7 +449,7 @@ fun ReviewScreen(vm: PlayViewModel) {
             title = { Text(stringResource(R.string.review_finish_later_title)) },
             text = { Text(pluralStringResource(R.plurals.review_finish_later_text, todo.size, todo.size)) },
             confirmButton = {
-                Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                     PrimaryButton(stringResource(R.string.review_finish_later_confirm), { confirmLater = false; finish() })
                     SecondaryButton(stringResource(R.string.review_keep_checking), { confirmLater = false })
                 }
@@ -482,7 +483,7 @@ private fun PartChips(
     val accompaniment = voices - own.toSet()
     var open by rememberSaveable { mutableStateOf(voiceId in accompaniment.map { it.id }) }
     val name = { v: no.brasscribe.play.model.Voice -> partViewFor(composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName } }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
         val yoursLabel = mine.part?.let { stringResource(R.string.stand_part_yours, PartNames.display(it, lang)) }
         own.forEach { v -> PracticeChip("${yoursLabel ?: name(v)} (${left[v.id] ?: 0})", v.id == voiceId, { choose(v.id) }, role = Role.RadioButton) }
         val n = accompaniment.sumOf { left[it.id] ?: 0 }
@@ -570,7 +571,7 @@ private fun NoteCard(
     neighbours: List<PartEvent>, checked: Set<Int>, snippet: @Composable () -> Unit = {},
     evidence: NoteEvidence?, pitchLabel: (Int) -> String,
 ) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     // While the bar plays, the same button (and TalkBack action) is Stop.
     val listenLabel = stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
@@ -581,7 +582,7 @@ private fun NoteCard(
     val levelSentence = if (alternative != null) stringResource(R.string.review_could_also_be, level, withArticle(alternative, lang))
         else stringResource(R.string.review_listen_side_by_side, level)
     Surface(shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border)) {
-        Column(Modifier.fillMaxWidth().padding(BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+        Column(Modifier.fillMaxWidth().padding(ScribeSpace.s4), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
             Column(
                 Modifier.fillMaxWidth().focusRequester(focus).focusable().semantics(mergeDescendants = true) {
                     contentDescription = listOfNotNull(spoken, changed, levelSentence).joinToString(". ")
@@ -592,7 +593,7 @@ private fun NoteCard(
                         changed?.let { CustomAccessibilityAction(undoLabel) { undo(); true } },
                     )
                 },
-                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -619,17 +620,17 @@ private fun withArticle(name: String, lang: Lang): String =
 /** How sure Brasscribe is, and what each transcriber heard at this note. */
 @Composable
 private fun EvidencePanel(evidence: NoteEvidence, pitchLabel: (Int) -> String) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val howSure = stringResource(R.string.evidence_how_sure)
     val percent = stringResource(R.string.evidence_percent, (evidence.confidence * 100).roundToInt())
     Column(
         Modifier.fillMaxWidth().background(c.surface, MaterialTheme.shapes.medium).border(1.dp, c.border, MaterialTheme.shapes.medium)
-            .padding(BrasscribeSpace.s4),
-        verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+            .padding(ScribeSpace.s4),
+        verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
     ) {
         Row(Modifier.semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
             Text(howSure, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Text(percent, style = no.brasscribe.design.BrasscribeNumericStyle.copy(fontSize = MaterialTheme.typography.titleSmall.fontSize))
+            Text(percent, style = no.scribe.design.ScribeNumericStyle.copy(fontSize = MaterialTheme.typography.titleSmall.fontSize))
         }
         LinearProgressIndicator(
             progress = { evidence.confidence.toFloat().coerceIn(0f, 1f) },
@@ -652,7 +653,7 @@ private fun EvidencePanel(evidence: NoteEvidence, pitchLabel: (Int) -> String) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = 32.dp).semantics(mergeDescendants = true) {},
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+                    horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
                 ) {
                     BcIcon(if (m.agrees) R.drawable.ic_bc_done else R.drawable.ic_bc_info, null, Modifier.size(20.dp), tint = c.textMuted)
                     Text(m.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
@@ -675,12 +676,12 @@ private fun ChangeNoteSheet(
     previewing: Boolean, preview: (Int) -> Unit, stopPreview: () -> Unit,
 ) {
     var shift by remember(written) { mutableIntStateOf(0) }
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     // Fully open, and scrollable, so Save is reachable at large text sizes.
     PlaySheet(dismiss, c.bg) {
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
-            verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = ScribeSpace.s6),
+            verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
         ) {
             ScreenTitle(stringResource(R.string.change_note_title))
             Text(
@@ -689,19 +690,19 @@ private fun ChangeNoteSheet(
                 modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                 OutlineButton(stringResource(R.string.pitch_down), { shift -= 1 }, Modifier.weight(1f), enabled = written + shift > 0)
                 OutlineButton(stringResource(R.string.pitch_up), { shift += 1 }, Modifier.weight(1f), enabled = written + shift < 127)
             }
             // An octave either way: the other common mishearing of a brass note.
-            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                 OutlineButton(stringResource(R.string.octave_down), { shift -= 12 }, Modifier.weight(1f), enabled = written + shift > 11)
                 OutlineButton(stringResource(R.string.octave_up), { shift += 12 }, Modifier.weight(1f), enabled = written + shift < 116)
             }
             val heard = evidence?.models.orEmpty().mapNotNull { m -> m.pitch?.let { m.name to it } }
             if (heard.isNotEmpty()) {
                 SectionLabel(stringResource(R.string.evidence_heard))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                     heard.forEach { (name, pitch) ->
                         PracticeChip("$name: ${pitchLabel(pitch)}", written + shift == pitch, { shift = pitch - written }, role = Role.RadioButton)
                     }
@@ -720,7 +721,7 @@ private fun EventChip(
     e: PartEvent, spoken: String, checked: Boolean, focus: FocusRequester,
     listen: () -> Unit, check: () -> Unit, next: () -> Unit, label: String, playing: Boolean = false,
 ) {
-    val t = BrasscribeTheme.colors
+    val t = ScribeTheme.colors
     val listenLabel = stringResource(if (playing) R.string.listen_stop else R.string.action_listen_bar)
     val checkLabel = stringResource(R.string.action_mark_checked)
     val nextLabel = stringResource(R.string.review_next_uncertain)
@@ -743,7 +744,7 @@ private fun EventChip(
                 }
             },
     ) {
-        Column(Modifier.padding(BrasscribeSpace.s1).width(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.padding(ScribeSpace.s1).width(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             if (e.note != null) NoteGlyph(e.uncertainty, checked, size = 24.dp)
             Text(label, style = MaterialTheme.typography.labelMedium)
         }
@@ -753,16 +754,16 @@ private fun EventChip(
 /** The uncertainty legend: the same "?" glyphs as the score (system.md §5). */
 @Composable
 fun Legend(modifier: Modifier = Modifier) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     Row(
         modifier.semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4), verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             UncertainMark(false, fontSize = androidx.compose.ui.unit.TextUnit(18f, androidx.compose.ui.unit.TextUnitType.Sp))
             Text(stringResource(R.string.legend_uncertain), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             UncertainMark(true, fontSize = androidx.compose.ui.unit.TextUnit(18f, androidx.compose.ui.unit.TextUnitType.Sp))
             Text(stringResource(R.string.legend_very_uncertain), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
@@ -773,12 +774,13 @@ fun Legend(modifier: Modifier = Modifier) {
 @Composable
 private fun BarSnippetView(musicXml: String, bar: Int, offsetQuarters: Double, barCount: Int = 1) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val snippet = remember { no.brasscribe.play.score.BarSnippet(context) }
-    androidx.compose.runtime.LaunchedEffect(c) {
-        snippet.setPalette(no.brasscribe.play.score.ScorePalette(c.surfaceRaised.toArgb(), c.ink.toArgb(), c.staff.toArgb(), c.cursor.toArgb(),
-            c.uncertain.toArgb(), c.veryUncertain.toArgb(), c.loopTint.toArgb(), c.isHighContrast, c.adlibTint.toArgb(),
-            c.selectionTint.toArgb(), c.selectionEdge.toArgb()))
+    val own = productColors
+    androidx.compose.runtime.LaunchedEffect(c, own) {
+        snippet.setPalette(no.brasscribe.play.score.ScorePalette(c.surfaceRaised.toArgb(), c.ink.toArgb(), c.line.toArgb(), own.cursor.toArgb(),
+            c.uncertain.toArgb(), own.veryUncertain.toArgb(), own.loopTint.toArgb(), c.isHighContrast, own.adlibTint.toArgb(),
+            own.selectionTint.toArgb(), own.selectionEdge.toArgb()))
     }
     var height by remember { mutableStateOf(128f) }
     androidx.compose.runtime.DisposableEffect(snippet) {
@@ -814,7 +816,7 @@ fun ListenButton(
                 if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) { if (playing) stop() else listen() }
                 true
             },
-        shape = no.brasscribe.design.BrasscribeButtonShape,
+        shape = no.scribe.design.ScribeButtonShape,
     ) {
         androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
             ListenLabel(listenText, R.drawable.ic_bc_listen_bar, Modifier.alpha(if (playing) 0f else 1f).then(if (playing) Modifier.clearAndSetSemantics { } else Modifier))
@@ -827,7 +829,7 @@ fun ListenButton(
 private fun ListenLabel(text: String, icon: Int, modifier: Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         BcIcon(icon, null)
-        androidx.compose.foundation.layout.Spacer(Modifier.size(BrasscribeSpace.s2))
+        androidx.compose.foundation.layout.Spacer(Modifier.size(ScribeSpace.s2))
         Text(text, textAlign = androidx.compose.ui.text.style.TextAlign.Center, style = MaterialTheme.typography.labelLarge)
     }
 }

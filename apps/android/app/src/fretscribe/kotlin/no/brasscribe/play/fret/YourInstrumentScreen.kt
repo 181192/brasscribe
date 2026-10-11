@@ -50,9 +50,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeScore
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.fretscribe.design.FretscribeTab
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.AppearanceStore
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
@@ -195,7 +195,7 @@ fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
             PrimaryButton(stringResource(if (firstRun) R.string.continue_label else R.string.save), ::keep, Modifier.testTag("fs-keep"))
         },
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             ScreenTitle(stringResource(R.string.fs_instrument_title))
             Lead(stringResource(if (firstRun) R.string.fs_instrument_body else R.string.fs_instrument_body_settings))
         }
@@ -250,11 +250,11 @@ fun YourInstrumentScreen(vm: PlayViewModel, visit: Int = 0) {
  */
 internal fun Modifier.focusRing(focused: Boolean, colour: Color): Modifier = if (!focused) this else drawWithContent {
     drawContent()
-    val width = BrasscribeScore.focusWidth.toPx()
-    val inset = BrasscribeScore.focusGap.toPx() + width / 2
+    val width = FretscribeTab.focusWidth.toPx()
+    val inset = FretscribeTab.focusGap.toPx() + width / 2
     drawRoundRect(
         colour, Offset(inset, inset), Size(size.width - 2 * inset, size.height - 2 * inset),
-        CornerRadius(BrasscribeSpace.s2.toPx()), Stroke(width),
+        CornerRadius(ScribeSpace.s2.toPx()), Stroke(width),
     )
 }
 
@@ -277,7 +277,7 @@ private fun PickerRow(
     note: String? = null, onPick: (String) -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val current = choices.firstOrNull { it.id == selected }
     val spoken = listOfNotNull(label, current?.spoken, note).joinToString(", ")
     val interaction = remember { MutableInteractionSource() }
@@ -315,7 +315,7 @@ private fun PickerRow(
  */
 @Composable
 internal fun PickerDialog(label: String, tag: String, selected: String, choices: List<Choice>, close: () -> Unit, onPick: (String) -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     AlertDialog(
         onDismissRequest = close,
         title = { Text(label) },
@@ -339,9 +339,9 @@ internal fun PickerDialog(label: String, tag: String, selected: String, choices:
                             }
                             .semantics { contentDescription = choice.spoken }
                             .testTag("fs-$tag-${choice.id}")
-                            .padding(horizontal = BrasscribeSpace.s2, vertical = BrasscribeSpace.s1),
+                            .padding(horizontal = ScribeSpace.s2, vertical = ScribeSpace.s1),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+                        horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
                     ) {
                         RadioButton(selected = on, onClick = null,
                             colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))

@@ -30,8 +30,8 @@ import androidx.compose.foundation.selection.toggleable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.Lineup
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.lineup
@@ -62,7 +62,7 @@ fun ExportScreen(vm: PlayViewModel) {
     val source by vm.source.collectAsState()
     val checked by vm.checked.collectAsState()
     val r = result ?: return
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val scope = rememberCoroutineScope()
     val exporter = remember { Exporter(context, vm.container.core) }
     val scoreMidi = remember { vm.scoreController?.midiSource() ?: vm.scoreMidi }
@@ -129,7 +129,7 @@ fun ExportScreen(vm: PlayViewModel) {
         title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
             laying?.let { (done, of) ->
-                androidx.compose.material3.LinearProgressIndicator({ if (of == 0) 0f else done.toFloat() / of }, Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+                androidx.compose.material3.LinearProgressIndicator({ if (of == 0) 0f else done.toFloat() / of }, Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
                 // Not a live region: Every part would be said some 25 times. Its end is said (exported).
                 Text(stringResource(R.string.export_laying_out, minOf(done + 1, of), of), style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.semantics { testTag = "export-progress" })
@@ -158,12 +158,12 @@ fun ExportScreen(vm: PlayViewModel) {
                 OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, m, enabled = formats.isNotEmpty() && !making, icon = R.drawable.ic_bc_folder)
             }
             // On its side the phone has little height: the buttons in one row, so the list keeps the room.
-            if (sideways) Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+            if (sideways) Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                 if (print) printButton(Modifier.weight(1f))
                 shareAndSave(Modifier.weight(1f))
             } else {
                 if (print) printButton(Modifier)
-                Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) { shareAndSave(Modifier.weight(1f)) }
+                Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) { shareAndSave(Modifier.weight(1f)) }
             }
             Text(
                 pluralStringResource(R.plurals.export_count, fileCount, fileCount),

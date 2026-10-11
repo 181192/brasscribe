@@ -112,10 +112,9 @@ unchanged.
    every brand's Apple, Android, Windows and web files, with a small set of neutral names (`Scribe…`)
    that are the same for every brand and each brand's own names for the rest
    ([`design/tokens/README.md`](../../../design/tokens/README.md)). Brasscribe's token roles keep their
-   names (`brass*`); its tokens map them to the neutral `brand*`. Left: the clients move their shared
-   code to the neutral names; Fretscribe's Android theme, still written under Brasscribe's names through
-   the alias map in its tokens, gets its own; the folders move to `design/tooling` and
-   `design/brands/<name>`; the mockup renderer serves both products.
+   names (`brass*`); its tokens map them to the neutral `brand*`. Every client reads the
+   neutral names, and Fretscribe's Android theme has its own. Left: the folders move to `design/tooling`
+   and `design/brands/<name>`; the mockup renderer serves both products.
 
 ## First Fretscribe: bass tab
 

@@ -185,9 +185,9 @@ val soundMap = tasks.register<Sync>("syncSoundMap") {
 
 /*
  * Each product's design system, generated from its tokens by design/tokens/build.py: Brasscribe's in
- * design/dist, Fretscribe's in design/fretscribe/dist. Both have the same Kotlin names, so the shared
- * screens compile against either. The Compose theme and icon enum are compiled from <dist>/android/kotlin
- * as they are; the icon drawables, the display face (as res/font/display, whichever face it is) and the
+ * design/dist, Fretscribe's in design/fretscribe/dist. Both have the neutral theme (no.scribe.design)
+ * under the same names, so the shared screens compile against either, and the product's own roles in its
+ * own package. The Compose themes and icon enum are compiled from <dist>/android/kotlin as they are; the icon drawables, the display face (as res/font/display, whichever face it is) and the
  * launcher icons are synced into one generated res folder per product (res/font may hold only fonts, so
  * the font's licence goes to the assets instead).
  */

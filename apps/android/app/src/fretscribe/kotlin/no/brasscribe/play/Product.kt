@@ -2,12 +2,17 @@ package no.brasscribe.play
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.font.FontFamily
+import no.fretscribe.design.FretscribeTab
+import no.fretscribe.design.FretscribeTheme
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.fret.CheckTheSongScreen
@@ -22,6 +27,8 @@ import no.brasscribe.play.fret.tabJob
 import no.brasscribe.play.fret.tabOptions
 import no.brasscribe.play.fret.yourInstrumentStore
 import no.brasscribe.play.fret.yourInstrumentValue
+import no.brasscribe.play.ui.theme.LocalProductColors
+import no.brasscribe.play.ui.theme.ProductColors
 
 /** What makes this build Fretscribe: its name, its pairing link, the screens it opens with and the tabs it makes. */
 object Product {
@@ -78,6 +85,25 @@ object Product {
      * - a tab's place for Brasscribe's output choices and Check the notes is Check the song;
      * - a tab is shown in the tab view, where Brasscribe shows a score.
      */
+    /**
+     * Fretscribe's theme. It has no Pink palette. The screens it has from Brasscribe draw a score with colours a tab
+     * has no name for: there the one doubt colour stands in for the very doubtful one (and for Delete, which has
+     * that colour), and the repeat's band for the band behind freely played bars.
+     */
+    @Composable
+    fun Theme(dark: Boolean, @Suppress("UNUSED_PARAMETER") pink: Boolean, display: FontFamily, content: @Composable () -> Unit) {
+        FretscribeTheme(dark = dark, display = display) {
+            val own = FretscribeTheme.colors
+            val doubt = ScribeTheme.colors.uncertain
+            val colors = ProductColors(
+                veryUncertain = doubt, adlibTint = own.loopTint, loopTint = own.loopTint, cursor = own.cursor,
+                selectionTint = own.selectionTint, selectionEdge = own.selectionEdge,
+                delete = doubt, focusWidth = FretscribeTab.focusWidth,
+            )
+            CompositionLocalProvider(LocalProductColors provides colors, content = content)
+        }
+    }
+
     @Composable
     fun Root(vm: PlayViewModel) {
         val stack by vm.screen.collectAsState()

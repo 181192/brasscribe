@@ -29,8 +29,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.ErrorWords
 import no.brasscribe.play.NoCompanionException
 import no.brasscribe.play.OnDeviceRouting
@@ -83,7 +83,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
     val result by vm.result.collectAsState()
     val source by vm.source.collectAsState()
     val connection by vm.connection.state.collectAsState()
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val jobId = result?.jobId
     val heard by produceState<Heard>(Heard.Reading, jobId) {
         value = Heard.Reading
@@ -136,7 +136,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
         when (val h = heard) {
             Heard.Reading -> {
                 Lead(stringResource(R.string.fs_check_reading))
-                LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+                LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
             }
             is Heard.Missing -> InfoNote(stringResource(R.string.fs_check_missing, stringResource(h.why)), Modifier.testTag("fs-check-missing"))
             is Heard.Ready -> {
@@ -254,14 +254,14 @@ private fun tagOf(row: SongRow): String = when (row) {
 /** One finding: its name and what was heard, read as one element, and its button under them. */
 @Composable
 private fun SongRowView(row: SongRow, change: Change?, onChange: (Change) -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val (label, shown, spoken) = rowWords(row)
     // A change of capo keeps the sound: the same notes, with the frets counted from the capo. The computer has no
     // other way (the same shapes, sounding higher), so the row says what will happen instead of asking.
     val caption = if (row is SongRow.Capo && change != null) stringResource(R.string.fs_check_capo_keeps) else null
     Column(
-        Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
-        verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+        Modifier.fillMaxWidth().padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3),
+        verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
     ) {
         Column(Modifier.fillMaxWidth().testTag("fs-check-${tagOf(row)}").semantics(mergeDescendants = true) { contentDescription = listOfNotNull("$label: $spoken", caption).joinToString(". ") }) {
             Text(label, style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.clearAndSetSemantics { })

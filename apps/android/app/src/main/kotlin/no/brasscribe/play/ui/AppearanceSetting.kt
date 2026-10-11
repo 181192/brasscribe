@@ -26,9 +26,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
-import no.brasscribe.design.systemHighContrast
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
+import no.scribe.design.systemHighContrast
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.AppearanceStore
 import no.brasscribe.play.PlayViewModel
@@ -63,8 +63,8 @@ fun AppearanceRow(vm: PlayViewModel) {
     if (systemHighContrast()) {
         Text(
             stringResource(R.string.appearance_contrast_note),
-            Modifier.padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s3),
-            style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted,
+            Modifier.padding(start = ScribeSpace.s4, end = ScribeSpace.s4, bottom = ScribeSpace.s3),
+            style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted,
         )
     }
     if (open) {
@@ -81,7 +81,7 @@ fun AppearanceRow(vm: PlayViewModel) {
                                 }
                                 .testTag("appearance-${a.key}"),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+                            horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
                         ) {
                             RadioButton(selected = a == current, onClick = null)
                             Text(appearanceLabel(a), style = MaterialTheme.typography.bodyLarge)

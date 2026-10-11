@@ -16,7 +16,8 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import no.brasscribe.design.BrasscribeTheme
+import no.brasscribe.play.ui.theme.productColors
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.model.Uncertainty
 
 /**
@@ -27,11 +28,11 @@ import no.brasscribe.play.model.Uncertainty
  */
 @Composable
 fun NoteGlyph(level: Uncertainty, checked: Boolean, modifier: Modifier = Modifier, size: Dp = 32.dp) {
-    val t = BrasscribeTheme.colors
+    val t = ScribeTheme.colors
     val shown = if (checked) Uncertainty.CONFIDENT else level
     val color = when (shown) {
         Uncertainty.UNCERTAIN -> t.uncertain
-        Uncertainty.VERY_UNCERTAIN -> t.veryUncertain
+        Uncertainty.VERY_UNCERTAIN -> productColors.veryUncertain
         else -> t.ink
     }
     Column(modifier.width(size), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {

@@ -1,5 +1,6 @@
 package no.brasscribe.play.fret
 
+import androidx.compose.ui.graphics.toArgb
 import no.brasscribe.play.engine.Tab
 import no.brasscribe.play.model.BrasscribeJson
 import org.junit.Assert.assertEquals
@@ -353,8 +354,9 @@ class TabIndexTest {
         assertEquals(number("tab", "numeral-scale"), TabTokens.NUMERAL_SCALE, 0.0)
         assertEquals(number("tab", "mark-size-line-spaces"), TabTokens.MARK_LINE_SPACES.toDouble(), 1e-6)
         assertEquals(number("tab", "uncertain-threshold-default"), TabTokens.UNCERTAIN_THRESHOLD, 0.0)
-        assertEquals(hex("light"), "#%06X".format(TabTokens.UNCERTAIN_TINT_LIGHT and 0xFFFFFF))
-        assertEquals(hex("dark"), "#%06X".format(TabTokens.UNCERTAIN_TINT_DARK and 0xFFFFFF))
+        // The wash behind a doubtful numeral is the generated theme's own role now.
+        assertEquals(hex("light"), "#%06X".format(no.fretscribe.design.FretscribeLightColors.uncertainTint.toArgb() and 0xFFFFFF))
+        assertEquals(hex("dark"), "#%06X".format(no.fretscribe.design.FretscribeDarkColors.uncertainTint.toArgb() and 0xFFFFFF))
         // The engine marks "?" at the same threshold the app reads the data with.
         assertEquals(no.brasscribe.play.engine.TabNote.DOUBT, TabTokens.UNCERTAIN_THRESHOLD, 0.0)
     }

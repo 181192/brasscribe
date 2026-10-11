@@ -33,7 +33,7 @@ into the brand's folder. The files carry the brand's name and its short prefix (
 | Apple | `BrasscribeDesign.swift`, `BrasscribeDesign.xcassets`, `Fonts/` | `FretscribeDesign.swift`, `FretscribeDesign.xcassets`, `Fonts/` |
 | Windows | `BrasscribeTheme.xaml` (`Bc…` keys), `BrasscribePinkTheme.xaml`, `Assets/Fonts/` | `FretscribeTheme.xaml` (`Fs…` keys), `Assets/Fonts/` |
 | Web | `brasscribe.css` (`--scribe-…`, and `--bc-…` for its own), `fonts.css`, `icons.js`, `icons/`, `fonts/` | `fretscribe.css` (`--scribe-…`, and `--fs-…` for its own), `fonts.css`, `icons.js`, `icons/`, `fonts/` |
-| Android | `BrasscribeTheme.kt`, `BrasscribeIcon.kt`, `ScribeTheme.kt`, `res/` | the same file names (see [Android](#android)) |
+| Android | `no/scribe/design/ScribeTheme.kt`, `no/brasscribe/design/BrasscribeTheme.kt` and `BrasscribeIcon.kt`, `res/` | `no/scribe/design/ScribeTheme.kt`, `no/fretscribe/design/FretscribeTheme.kt` and `FretscribeIcon.kt`, `res/` |
 
 The app icons in `dist/icons/` are not from this generator: each brand's `brand/build.py` renders them.
 
@@ -107,7 +107,7 @@ one in `icons.json`.
 
 | | Neutral | Brasscribe's own | Fretscribe's own |
 |---|---|---|---|
-| Kotlin | `ScribeTheme { }`, `ScribeTheme.colors.brand`, `ScribeColors`, `ScribeSpace`, `ScribeSize`, `ScribeMotion`, `ScribeShapes`, `ScribeButtonShape`, `scribeTypography()`, `ScribeNumericStyle` | `BrasscribeTheme`, `BrasscribeColors.veryUncertain`, `BrasscribeScore` | see [Android](#android) |
+| Kotlin | `ScribeTheme { }`, `ScribeTheme.colors.brand`, `ScribeColors`, `ScribeSpace`, `ScribeSize`, `ScribeMotion`, `ScribeShapes`, `ScribeButtonShape`, `scribeTypography()`, `ScribeNumericStyle` | `BrasscribeTheme(pink = …)`, `BrasscribeTheme.colors.veryUncertain`, `BrasscribeScore` | `FretscribeTheme`, `FretscribeTheme.colors.uncertainTint`, `FretscribeTab` |
 | Swift | `Color.Scribe.brand`, `Font.Scribe.title1`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion` | `Color.Brasscribe.cursor`, `BrasscribeDesign.Score`, `BrasscribePalette`, `BrasscribeIcon` | `Color.Fretscribe.uncertainTint`, `FretscribeDesign.Tab`, `Font.Fretscribe.tab(size:)` |
 | XAML | `ScribeBrandBrush`, `ScribeBrandColor`, `ScribeSpace4`, `ScribeTitle1TextBlockStyle` | `BcCursorBrush`, `BcScoreCursorWidth`, `BcIconPlay` | `FsUncertainTintBrush`, `FsTabCursorWidth`, `FsTabFontFamily` |
 | CSS | `--scribe-brand`, `--scribe-line`, `--scribe-space-4`, `--scribe-type-title-1-size` | `--bc-very-uncertain`, `--bc-cursor`, `--bc-score-cursor-width`, `--bc-type-studio-body-size`, `globalThis.BrasscribeIcons` | `--fs-uncertain-tint`, `--fs-tab-cursor-width`, `--fs-font-tab` |
@@ -130,18 +130,23 @@ brand's own, so code cannot read a neutral role under a brand's name.
   metrics, icons and other faces. The Pink dictionary has the same keys. In a contrast theme each key
   takes its role's system colour. Code that looks a key up by name fails only when it runs, so the
   Windows tests check every such name in both apps against the theme.
-- **Android: not yet.** There Brasscribe's names still hold every role, and the neutral names are other
-  names for them.
+- **Android: done.** `ScribeColors`, `ScribeTheme` and the scales are the declarations, in
+  `no.scribe.design`; a brand's package holds only its own. See [Android](#android).
 
 ### Android
 
-The two Android apps are one code base today, and its screens use `BrasscribeTheme` and
-`BrasscribeColors`. So every brand's Android theme is still written under those names, through the map
-in `$extensions.<brand>.android` ([`../fretscribe/tokens/README.md`](../fretscribe/tokens/README.md)),
-and `ScribeTheme.kt` adds the neutral names on top. `ScribeColors` is another name for
-`BrasscribeColors` until the screens are split by product; then each brand's theme is generated under
-its own names like on the other platforms, and Fretscribe's own roles (`uncertain-tint`) get a place on
-Android.
+The neutral theme is `no.scribe.design` (`ScribeTheme.kt`): the same declarations in every brand's
+folder, with that brand's values. A brand's own is in its own package: `no.brasscribe.design` has
+`BrasscribeColors` (its own roles), `BrasscribeScore` and `BrasscribeTheme`, which wraps `ScribeTheme`
+and chooses Pink; `no.fretscribe.design` has `FretscribeColors` (with `uncertainTint`), `FretscribeTab`
+and `FretscribeTheme`. An app is built with one brand's folder.
+
+The two Android apps still share screens that draw with a product's own colours (a score's cursor, the
+very uncertain "?"). Those screens do not read a brand's type: each product hands the colours in
+(`ProductColors` in `apps/android`, given by `Product.Theme`).
+
+The action icons' drawables are `ic_bc_…` in every brand's folder: both apps' screens name them, so the
+resource names wait for the screens to be split by product.
 
 Brasscribe's links are plain text colour with an underline today; its `accent` is the brass that
 carries text, and the site's link hover uses it. Fretscribe's `accent` is what it called `brand` for
@@ -159,7 +164,8 @@ there.
 
 1. Write its `tokens.json`: every colour role in `light`, `dark`, `high-contrast` and
    `high-contrast-light`, and under `$extensions.<brand>`: `modes`, `contrast`, `prefix`, `neutral`
-   (only the roles it names differently), `notation`, `system-colours` for its own roles, and `fonts`.
+   (only the roles it names differently), `notation`, `system-colours` for its own roles, and `fonts`
+   (the display face with its `android-resource`, its name in `res/font`).
 2. Add it to `brands.json` with its own output folder.
 3. Run the generator and `qa/tools/contrast.py --brands --write`. The tests and CI pick the brand up
    from `brands.json`.

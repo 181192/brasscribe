@@ -39,9 +39,9 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeButtonShape
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeButtonShape
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.SeatChoice
@@ -101,7 +101,7 @@ fun seatValue(choice: SeatChoice, seats: List<Seat>): String = when (choice) {
 @Composable
 fun WhatDoYouPlayScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val seats = vm.container.seats
     val mode = vm.seatPicker
     val start = remember { vm.seatPickerStart() }
@@ -148,19 +148,19 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
             if (!short) Extras()
         },
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             ScreenTitle(stringResource(if (mode == SeatPickerMode.WHO_PLAYED) R.string.who_played else R.string.seat_title))
             if (mode != SeatPickerMode.WHO_PLAYED) Lead(stringResource(R.string.seat_body))
         }
         val groupLabel = stringResource(R.string.seat_instrument)
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             Text(groupLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.semantics { heading() })
             val tiles = TILES.filter { t -> seats.any { it.instrument == t.id } }
             Column(Modifier.selectableGroup().semantics { contentDescription = groupLabel },
-                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                 tiles.chunked(if (large) 1 else 2).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                         row.forEach { t -> Tile(t, t.id == instrument, Modifier.weight(1f)) { pickInstrument(t.id) } }
                         if (row.size == 1 && !large) Spacer(Modifier.weight(1f))
                     }
@@ -182,7 +182,7 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
 /** An instrument tile: at least 56 dp, a hairline border, or a 2 dp ink ring and a check when chosen. */
 @Composable
 private fun Tile(t: InstrumentTile, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val name = stringResource(t.name)
     val sub = t.sub?.let { stringResource(it) }
     // The accessible name holds the visible words, with ♭ read as "flat" (2.5.3).
@@ -194,7 +194,7 @@ private fun Tile(t: InstrumentTile, selected: Boolean, modifier: Modifier, onCli
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = spoken }
             .testTag("instrument-${t.id}")
-            .padding(horizontal = BrasscribeSpace.s3, vertical = BrasscribeSpace.s2),
+            .padding(horizontal = ScribeSpace.s3, vertical = ScribeSpace.s2),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f).clearAndSetSemantics { }) {
@@ -211,35 +211,35 @@ private fun Tile(t: InstrumentTile, selected: Boolean, modifier: Modifier, onCli
  */
 @Composable
 private fun Choices(label: String, options: List<Pair<String, String>>, selected: String?, large: Boolean, tag: String, onPick: (String) -> Unit) {
-    val c = BrasscribeTheme.colors
-    Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+    val c = ScribeTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
         Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
         val item = @Composable { id: String, text: String, m: Modifier ->
             val on = id == selected
             Row(
                 m.heightIn(min = 48.dp)
-                    .background(if (on) c.secondary else c.surfaceRaised, BrasscribeButtonShape)
-                    .border(if (on) 1.5.dp else 1.dp, if (on) c.text else c.borderStrong, BrasscribeButtonShape)
+                    .background(if (on) c.secondary else c.surfaceRaised, ScribeButtonShape)
+                    .border(if (on) 1.5.dp else 1.dp, if (on) c.text else c.borderStrong, ScribeButtonShape)
                     .selectable(selected = on, role = Role.RadioButton) { onPick(id) }
                     .testTag("$tag-$id")
-                    .padding(horizontal = BrasscribeSpace.s3, vertical = BrasscribeSpace.s2),
+                    .padding(horizontal = ScribeSpace.s3, vertical = ScribeSpace.s2),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = if (large) Arrangement.Start else Arrangement.Center,
             ) {
                 if (large) {
                     RadioButton(selected = on, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
-                    Spacer(Modifier.size(BrasscribeSpace.s2))
+                    Spacer(Modifier.size(ScribeSpace.s2))
                 } else if (on) {
                     BcIcon(R.drawable.ic_bc_done, null, Modifier.size(18.dp))
-                    Spacer(Modifier.size(BrasscribeSpace.s1))
+                    Spacer(Modifier.size(ScribeSpace.s1))
                 }
                 Text(text, style = MaterialTheme.typography.labelLarge, color = if (on) c.text else c.textMuted,
                     fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium)
             }
         }
-        if (large) Column(Modifier.selectableGroup().semantics { contentDescription = label }, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        if (large) Column(Modifier.selectableGroup().semantics { contentDescription = label }, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             options.forEach { (id, text) -> item(id, text, Modifier.fillMaxWidth()) }
-        } else Row(Modifier.selectableGroup().semantics { contentDescription = label }, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        } else Row(Modifier.selectableGroup().semantics { contentDescription = label }, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             options.forEach { (id, text) -> item(id, text, Modifier.weight(1f)) }
         }
     }
@@ -251,7 +251,7 @@ private fun Choices(label: String, options: List<Pair<String, String>>, selected
  */
 @Composable
 fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier = Modifier, compact: Boolean = false, onExplain: (() -> Unit)? = null) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     var open by rememberSaveable { mutableStateOf(false) }
     val (@StringRes text, @DrawableRes icon) = when (source) {
         no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours to R.drawable.ic_bc_record_mic
@@ -259,15 +259,15 @@ fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier 
         no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged to R.drawable.ic_bc_parts
         no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty to R.drawable.ic_bc_parts
     }
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
         Row(
             Modifier.heightIn(min = 48.dp)
                 .border(1.dp, c.borderStrong, androidx.compose.foundation.shape.RoundedCornerShape(percent = 50))
                 .clickable(role = Role.Button) { if (onExplain != null) onExplain() else open = !open }
                 .testTag("source-${source.id}")
-                .padding(horizontal = if (compact) BrasscribeSpace.s3 else BrasscribeSpace.s4),
+                .padding(horizontal = if (compact) ScribeSpace.s3 else ScribeSpace.s4),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (compact) BrasscribeSpace.s1 else BrasscribeSpace.s2),
+            horizontalArrangement = Arrangement.spacedBy(if (compact) ScribeSpace.s1 else ScribeSpace.s2),
         ) {
             BcIcon(icon, null, Modifier.size(if (compact) 16.dp else 20.dp), tint = c.text)
             Text(stringResource(text), style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, color = c.text)

@@ -21,7 +21,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 
 - **Source:** [`tokens/tokens.json`](tokens/tokens.json), in W3C Design Tokens (DTCG 2025.10) format.
   - Colour roles are sibling groups `color.light`, `color.dark`, `color.high-contrast` (on a dark ground), `color.high-contrast-light` (on a light ground), and the hidden `color.pink` / `color.pink-dark` (§10 of system.md).
-  - Studio's `brasscribe.css` picks the high-contrast palette that matches the resolved theme under `prefers-contrast: more`. Compose gets `BrasscribeHighContrastLightColors`, but `BrasscribeTheme` still chooses the dark one. The Apple asset catalog and WinUI (system colours) are unchanged.
+  - Studio's `brasscribe.css` picks the high-contrast palette that matches the resolved theme under `prefers-contrast: more`. Compose gets `ScribeHighContrastLightColors`, but `ScribeTheme` still chooses the dark one. The Apple asset catalog and WinUI (system colours) are unchanged.
   - Typography roles name their Dynamic Type style, Material role and Windows ramp style.
 - **Icons:** [`tokens/icons.json`](tokens/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
 
@@ -56,7 +56,7 @@ Each app copies (or links) from `design/dist/`. The generator never edits `apps/
 | Platform | Copy | Use |
 |---|---|---|
 | Apple | `dist/apple/BrasscribeDesign.xcassets`, `BrasscribeDesign.swift`, `Fonts/InstrumentSerif-Regular.ttf` (add it to `UIAppFonts` / `ATSApplicationFontsPath`), and `dist/icons/apple/AppIcon.appiconset` into the app's asset catalog | `Color.Scribe.primary`, `Font.Scribe.display`, `ScribeDesign.Space.s4`, `ScribeDesign.Motion.animation(reduceMotion:)` for what every brand has; `Color.Brasscribe.cursor`, `BrasscribeDesign.Score`, `BrasscribeIcon.loop.systemName` for Brasscribe's own. The colour sets carry dark and high-contrast appearances. |
-| Android | `dist/android/kotlin/no/brasscribe/design/*.kt`, `dist/android/res/drawable/ic_bc_*.xml`, `res/font/instrument_serif.ttf`, and `dist/icons/android/res/**` (the launcher icons) | `BrasscribeTheme(display = FontFamily(Font(R.font.instrument_serif))) { … }`, `BrasscribeTheme.colors.uncertain`, `BrasscribeButtonShape`, `painterResource(R.drawable.ic_bc_play)` |
+| Android | `dist/android/kotlin/no/scribe/design/ScribeTheme.kt` and `no/brasscribe/design/*.kt`, `dist/android/res/drawable/ic_bc_*.xml`, `res/font/instrument_serif.ttf`, and `dist/icons/android/res/**` (the launcher icons) | `BrasscribeTheme(display = FontFamily(Font(R.font.instrument_serif))) { … }`, `ScribeTheme.colors.uncertain`, `ScribeButtonShape`; `BrasscribeTheme.colors.cursor` for Brasscribe's own, `painterResource(R.drawable.ic_bc_play)` |
 | Windows | `dist/windows/BrasscribeTheme.xaml` → `Themes/`, `Assets/Fonts/…`, and `dist/icons/windows/Assets/*` | Merge the dictionary into `App.xaml`. Use `{ThemeResource ScribeTextBrush}` and `{StaticResource ScribeTitle1TextBlockStyle}` for what every brand has, `{ThemeResource BcCursorBrush}` and `FontIcon Glyph="{StaticResource BcIconPlay}"` for Brasscribe's own. Contrast themes use the user's system colours. |
 | Studio | `dist/web/brasscribe.css` (+ `fonts.css`, `icons.js`, `icons/*.svg`) and `dist/icons/web/*` | `var(--scribe-text)` for what every brand has, `var(--bc-cursor)` for Brasscribe's own. Handles `data-theme`, dark mode, `prefers-contrast`, `forced-colors` and `prefers-reduced-motion`. |
 
@@ -65,7 +65,7 @@ Each app copies (or links) from `design/dist/`. The generator never edits `apps/
 These are the changes each app needs. The ones marked **(drift)** are places where the app today differs from the agreed accessibility spec.
 
 ### All apps
-- [ ] Replace the hand-copied colours with the generated tokens (Apple `Color.Scribe.*`, Android `BrasscribeTheme`, Windows `BrasscribeTheme.xaml`).
+- [ ] Replace the hand-copied colours with the generated tokens (Apple `Color.Scribe.*`, Android `ScribeTheme`, Windows `BrasscribeTheme.xaml`).
 - [ ] Mark uncertainty with a "?" above the note, and a boxed "?" below 0.4, in the note colour. Remove rings, diamonds and brackets. **(drift)**
 - [ ] Use one primary button per screen, with 12 px corners. No pill shapes and no platform accent colour.
 - [ ] Use the display face only for screen titles of 28 pt and up and for the wordmark.
@@ -123,6 +123,6 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 ## Open questions
 
 1. Do brass-band players read "?" and a boxed "?" as "check this note"? This is carried over from `docs/accessibility/visual-design-tokens.md`.
-2. On Apple and Android, more contrast in light mode still switches to the dark high-contrast palette. `high-contrast-light` now exists (Studio uses it) and is not yet wired into the asset catalog's `high` appearance or `BrasscribeTheme`; test it with low-vision users first.
+2. On Apple and Android, more contrast in light mode still switches to the dark high-contrast palette. `high-contrast-light` now exists (Studio uses it) and is not yet wired into the asset catalog's `high` appearance or `ScribeTheme`; test it with low-vision users first.
 3. Instrument Serif at 28 pt with Dynamic Type AX sizes: confirm on a device that the relative scaling to `largeTitle` stays readable.
 4. The Windows XAML is checked for well-formed XML only; it has not been compiled with WinUI on this machine (no Windows).

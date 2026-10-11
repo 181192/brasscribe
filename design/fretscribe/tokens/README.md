@@ -22,7 +22,7 @@ Fretscribe it writes into [`../dist`](../dist):
   `FretscribeDesign.xcassets`;
 - `windows/`: `FretscribeTheme.xaml` with `Fs…` keys;
 - `web/`: `fretscribe.css` with `--fs-…` variables, `fonts.css`, the icons;
-- `android/`: the theme under the names the shared screens use (below).
+- `android/`: `ScribeTheme.kt` and Fretscribe's own `FretscribeTheme.kt` (below).
 
 Each of them also has the neutral names (`Color.Scribe.brand`, `ScribeBrandBrush`, `--scribe-brand`,
 `ScribeTheme.colors.brand`), the same as in Brasscribe's files. `$extensions."no.fretscribe"` holds what
@@ -36,26 +36,18 @@ licence texts. No Apple or Windows app uses these files yet.
 
 ## The Android theme
 
-The Android app is one code base built as two products, so Fretscribe's generated theme
-([`../dist/android`](../dist/android)) has the same Kotlin names as Brasscribe's (`BrasscribeTheme`,
-`BrasscribeColors.brass`, `BrasscribeSpace` and so on) with Fretscribe's values, and the neutral names
-in `ScribeTheme.kt` beside them. `$extensions."no.fretscribe".android` says where each name the theme
-needs and Fretscribe lacks comes from:
+Fretscribe's Android files ([`../dist/android`](../dist/android)) are the neutral theme,
+`no.scribe.design` with Fretscribe's values, and Fretscribe's own in `no.fretscribe.design`:
+`FretscribeColors` (`uncertainTint`, the cursor, loop and selection colours), `FretscribeTab` (the tab's
+metrics) and `FretscribeTheme`. The tokens no longer say how Fretscribe passes for Brasscribe.
 
-| The theme's name | Fretscribe's token |
-|---|---|
-| `brass`, `brass-text`, `brass-tint` | `brand`, `brand-text`, `brand-tint` |
-| `staff` | `string` |
-| `very-uncertain` | `uncertain` (the tab has one level of doubt) |
-| `adlib-tint` | `loop-tint` |
-| `model-1` to `model-4` | `ink` (Studio's data series; no Fretscribe screen uses them) |
-| the `pink` and `pink-dark` palettes | `light` and `dark` |
-| the `score` group | `tab`; `single-part-reflow-zoom` keeps Brasscribe's value |
+The Fretscribe app still has screens from Brasscribe that draw a score. What they need of a product's
+own, the app gives them (`Product.Theme` in `apps/android/app/src/fretscribe`): the one doubt colour
+where a score has a very doubtful one, the repeat's band where it has a band for freely played bars.
 
-`display-font` names the title face, Atkinson Hyperlegible Next; the app gets it as `res/font/display`,
-set in the weight of the `display` typography token (600, as in [`brand.md`](../brand/brand.md)). A name that is
-neither in the tokens nor in this map stops the generator. `uncertain-tint` has no name in the shared
-theme, so it is not generated for Android; it is in the Apple, Windows and web files.
+`fonts.display` names the title face, Atkinson Hyperlegible Next, and its name in `res/font`
+(`android-resource`); the app gets it as `res/font/display`, set in the weight of the `display`
+typography token (600, as in [`brand.md`](../brand/brand.md)).
 
 ## Contrast check
 

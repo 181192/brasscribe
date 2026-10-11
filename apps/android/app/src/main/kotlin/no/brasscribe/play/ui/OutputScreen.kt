@@ -31,9 +31,9 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.update
-import no.brasscribe.design.BrasscribeButtonShape
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeButtonShape
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.Difficulty
 import no.brasscribe.play.Lineup
 import no.brasscribe.play.fullBandMade
@@ -71,7 +71,7 @@ fun OutputScreen(vm: PlayViewModel) {
     val options by vm.output.collectAsState()
     val result by vm.result.collectAsState()
     val busy by vm.busy.collectAsState()
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val lang = currentLang()
     // Band and difficulty are arranged by the Rust core (on-device results) or by Brasscribe on the
     // computer (a new run with the choices); without either only the key remains.
@@ -95,11 +95,11 @@ fun OutputScreen(vm: PlayViewModel) {
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = r?.composition?.title?.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.back), status = status,
         bottom = {
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
             PrimaryButton(stringResource(R.string.output_apply), { vm.applyOutput { vm.showScore() } }, enabled = !busy)
         },
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             ScreenTitle(stringResource(R.string.output_title))
             Lead(stringResource(R.string.output_lead))
         }
@@ -173,10 +173,10 @@ fun OutputScreen(vm: PlayViewModel) {
             pluralStringResource(R.plurals.key_shift, kotlin.math.abs(options.keyShift), kotlin.math.abs(options.keyShift)))
         // Both keys: the concert key and the one B-flat players read on their parts (review 2, P2-3).
         Column(
-            Modifier.fillMaxWidth().heightIn(min = 56.dp).border(1.dp, c.borderStrong, BrasscribeButtonShape)
-                .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3)
+            Modifier.fillMaxWidth().heightIn(min = 56.dp).border(1.dp, c.borderStrong, ScribeButtonShape)
+                .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3)
                 .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+            verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
         ) {
             if (key != null) {
                 val minor = key.mode == "minor"
@@ -193,7 +193,7 @@ fun OutputScreen(vm: PlayViewModel) {
             Text(shiftText, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
         val semitone = stringResource(R.string.key_semitone_hint)
-        Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
             SecondaryButton(stringResource(R.string.key_lower), { vm.output.update { it.copy(keyShift = (it.keyShift - 1).coerceAtLeast(-6)) } },
                 Modifier.weight(1f).semantics { stateDescription = semitone }, enabled = options.keyShift > -6)
             SecondaryButton(stringResource(R.string.key_higher), { vm.output.update { it.copy(keyShift = (it.keyShift + 1).coerceAtMost(6)) } },
