@@ -11,7 +11,7 @@ from scribe_music.instruments import (BRASS_BAND, LINEUPS, SEAT_IDS, SEAT_PARTS,
 from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
 ROOT = Path(__file__).resolve().parents[2]
-GOLDEN = ROOT / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
+GOLDEN = ROOT / "data" / "golden" / "mikkel-arranged-band.layer-hits" / "composition.json"
 
 # The seat -> part table as the plan writes it: (full band, small band, quartet); None = no part.
 TABLE = {
@@ -149,7 +149,7 @@ def test_reads():
 
 def _comp(layers: dict[str, bool], arrangement: dict | None = None) -> Composition:
     roles = {"solo": VoiceRole.MELODY, "bass": VoiceRole.BASS, "strings": VoiceRole.HARMONY,
-             "brass": VoiceRole.HARMONY, "drums": VoiceRole.RHYTHM}
+             "hits": VoiceRole.HARMONY, "drums": VoiceRole.RHYTHM}
     voices = [Voice(k, roles[k], [Note(60, 0, 24)] if on else [], None, k) for k, on in layers.items()]
     c = Composition("t", voices, [Meter(0, 4)], [KeySig(0, 0)])
     c.arrangement = arrangement
@@ -194,7 +194,7 @@ def test_part_sources_band_job():
 
 
 def test_part_sources_layers():
-    full = {"solo": True, "bass": True, "strings": True, "brass": True, "drums": True}
+    full = {"solo": True, "bass": True, "strings": True, "hits": True, "drums": True}
     quartet = part_sources(_comp(full, {"lineup": "quartet", "difficulty": "faithful", "transpose_semitones": 0}))
     assert quartet == {"1st Cornet": RECORDING, "2nd Cornet": ARRANGED, "Tenor Horn": ARRANGED, "Euphonium": RECORDING}
     no_strings = part_sources(_comp({**full, "strings": False, "drums": False}))
@@ -204,7 +204,7 @@ def test_part_sources_layers():
 
 def test_part_sources_solo_take():
     # A solo take (only the solo layer has notes) without a seat: today's minimal band, the tune is yours.
-    src = part_sources(_comp({"solo": True, "bass": False, "strings": False, "brass": False, "drums": False},
+    src = part_sources(_comp({"solo": True, "bass": False, "strings": False, "hits": False, "drums": False},
                              {"lineup": "minimal", "difficulty": "faithful", "transpose_semitones": 0}))
     assert src["Solo Cornet"] == YOUR_RECORDING
     assert all(v == ARRANGED for k, v in src.items() if k != "Solo Cornet")

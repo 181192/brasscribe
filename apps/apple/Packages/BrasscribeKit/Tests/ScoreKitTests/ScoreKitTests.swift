@@ -11,7 +11,7 @@ func goldenDir() -> URL? {
     }
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<10 {
-        let c = dir.appending(path: "data/golden/mikkel-arranged-band")
+        let c = dir.appending(path: "data/golden/mikkel-arranged-band.layer-hits")
         if FileManager.default.fileExists(atPath: c.appending(path: "brass-band.musicxml").path) { return c }
         dir = dir.deletingLastPathComponent()
     }

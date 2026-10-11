@@ -64,12 +64,12 @@ public sealed partial class SourceKindViewModel : ObservableObject
 
     public event EventHandler<(SourceAudio Source, SourceKindOption Kind)>? Chosen;
 
-    /// <summary>Marks options whose profile the connected engine does not offer.</summary>
+    /// <summary>Marks options whose profile the connected engine does not offer among this app's target's.</summary>
     public async Task RefreshFromEngineAsync(IEngineClient engine, CancellationToken ct = default)
     {
         try
         {
-            var profiles = (await engine.ListProfilesAsync(ct)).Select(p => p.Name).ToHashSet();
+            var profiles = (await engine.ListProfilesAsync(ct)).Where(p => p.Target == Product.Target).Select(p => p.Name).ToHashSet();
             foreach (var o in Options) o.IsAvailable = profiles.Contains(o.Profile);
         }
         catch (EngineException)

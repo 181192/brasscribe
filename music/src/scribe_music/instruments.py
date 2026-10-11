@@ -468,6 +468,9 @@ def reading_instrument(inst: Instrument, reads: str | None) -> Instrument:
     return inst
 
 
+# Who a band score names as its arranger (MusicXML <creator>).
+CREATOR = "arr. Brasscribe"
+
 # A solo take for a seat without a clef (percussion) is refused: the pitch trackers' notes are no drum part.
 PERCUSSION_SOLO = "percussion can't be written down from a solo take yet: record the band; a recording with drums gets a percussion part"
 

@@ -86,6 +86,8 @@ data class PairRequestResult(
 @Serializable
 data class ProfileInfo(
     val name: String,
+    /** The id of the [Target] the profile belongs to. */
+    val target: String,
     val pipeline: String,
     val description: String,
     val validated: Boolean,
@@ -194,6 +196,11 @@ data class StageState(
 data class Job(
     val id: String,
     val profile: String,
+    /**
+     * The target the job belongs to, as the engine says it ([Target.id]): whose job it is. Null only for a run of a
+     * profile the engine no longer lists that wrote no score.
+     */
+    val target: String?,
     val status: JobStatus,
     val created: Double,
     val stages: List<StageState>,
@@ -271,19 +278,27 @@ data class JobEvent(
     val error: String? = null,
 )
 
+/** What the engine makes from a recording: every profile belongs to one target, and an app is for one. */
+enum class Target(val id: String) {
+    /** A score for a brass band. */
+    BRASS("brass"),
+    /** A tab for a fretted instrument. */
+    FRETTED("fretted"),
+}
+
 /** The pipeline profiles the engine offers; the "What is this?" answer picks one. */
-enum class Profile(val id: String) {
-    SOLO("solo"),
-    BRASS_BAND("brass-band"),
-    ORCHESTRA_WITH_SOLOIST("orchestra-with-soloist"),
-    POP_ROCK("pop-rock"),
+enum class Profile(val id: String, val target: Target) {
+    SOLO("solo", Target.BRASS),
+    BRASS_BAND("brass-band", Target.BRASS),
+    ORCHESTRA_WITH_SOLOIST("orchestra-with-soloist", Target.BRASS),
+    POP_ROCK("pop-rock", Target.BRASS),
     /** One fretted instrument as tablature (bass, guitar, ukulele, mandolin): its result is a [Tab], not a band score. */
-    TAB("tab"),
+    TAB("tab", Target.FRETTED),
     /** [TAB] with a bass, under the id older apps sent: jobs made by them still carry it. */
-    BASS_TAB("bass-tab");
+    BASS_TAB("bass-tab", Target.FRETTED);
 
     /** The profile's result is a [Tab]. */
-    val writesTab: Boolean get() = this == TAB || this == BASS_TAB
+    val writesTab: Boolean get() = target == Target.FRETTED
 
     companion object {
         fun of(id: String): Profile? = entries.firstOrNull { it.id == id }

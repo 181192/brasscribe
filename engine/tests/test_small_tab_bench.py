@@ -137,7 +137,7 @@ def test_a_mandolin_tremolo_is_scored_apart_and_skipped_where_it_was_not_rendere
 def test_the_suites_skip_without_their_data_and_are_gated(suite, groups, tmp_path):
     r = suites.run_suite(suite, data=tmp_path)
     assert r["status"] == "skipped" and "eval/small-tab" in r["reason"]
-    base = suites.load_baselines()["suites"][suite]["metrics"]
+    base = suites.baseline(suites.load_baselines(), suite)["metrics"]
     for group in groups:
         assert base[f"{group}.violations"] == {"value": 0, "tolerance": 0, "higher_is_better": False}
         assert f"{group}.onset_f1" in base and f"{group}.string_agreement" in base

@@ -101,16 +101,26 @@ internal sealed class TalkingScoreHandle : SafeHandle
     }
 }
 
+/// <summary>The target a score was written by: it names the score's parts and instruments in a language other
+/// than the score's own.</summary>
+public enum ScoreTarget
+{
+    /// <summary>A brass-band score: the band's names.</summary>
+    Brass = 0,
+    /// <summary>A tab for a fretted instrument: the names the score itself gives.</summary>
+    Fretted = 1,
+}
+
 /// <summary>A talking score (spec §6), built once per score. Dispose to release the native document; it is safe to call
 /// from any thread, also while another thread uses the score.</summary>
 public sealed class TalkingScore : IDisposable
 {
     private readonly TalkingScoreHandle _handle;
 
-    /// <summary>From partwise MusicXML plus the Composition JSON when known.</summary>
-    public TalkingScore(string musicXml, string? compositionJson = null)
+    /// <summary>From partwise MusicXML, the target that wrote it, and the Composition JSON when known.</summary>
+    public TalkingScore(string musicXml, ScoreTarget target, string? compositionJson = null)
     {
-        int code = ScribeCore.NativeTalkingNew(musicXml, compositionJson, out _handle, out var err);
+        int code = ScribeCore.NativeTalkingNew(musicXml, compositionJson, target, out _handle, out var err);
         if (code != 0)
         {
             _handle.Dispose();
@@ -360,7 +370,7 @@ public static class ScribeCore
         return TakeString(output) ?? "";
     }
 
-    internal static int NativeTalkingNew(string xml, string? comp, out TalkingScoreHandle handle, out IntPtr err) => Native.sc_talking_score_new(xml, comp, out handle, out err);
+    internal static int NativeTalkingNew(string xml, string? comp, ScoreTarget target, out TalkingScoreHandle handle, out IntPtr err) => Native.sc_talking_score_new(xml, comp, (int)target, out handle, out err);
     internal static void NativeTalkingFree(IntPtr h) => Native.sc_talking_score_free(h);
     internal static int NativeTalkingJson(TalkingScoreHandle h, out IntPtr o, out IntPtr e) => Native.sc_talking_score_json(h, out o, out e);
     internal static int NativeTalkingAnnounce(TalkingScoreHandle h, string req, out IntPtr o, out IntPtr e) => Native.sc_talking_score_announce(h, req, out o, out e);
@@ -478,7 +488,7 @@ public static class ScribeCore
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         public static extern int sc_talking_score_new([MarshalAs(UnmanagedType.LPUTF8Str)] string musicXml,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string? compositionJson, out TalkingScoreHandle handle, out IntPtr error);
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? compositionJson, int target, out TalkingScoreHandle handle, out IntPtr error);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void sc_talking_score_free(IntPtr handle);
 

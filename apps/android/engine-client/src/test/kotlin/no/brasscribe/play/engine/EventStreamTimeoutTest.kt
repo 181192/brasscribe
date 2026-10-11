@@ -48,7 +48,7 @@ class EventStreamTimeoutTest {
             }
             write("id: 1\nevent: job\ndata: {\"id\":1,\"type\":\"job\",\"status\":\"succeeded\"}\n\n")
         } else {
-            val body = """{"id":"j","profile":"solo","status":"running","created":1.0,"stages":[]}"""
+            val body = """{"id":"j","profile":"solo","target":"brass","status":"running","created":1.0,"stages":[]}"""
             write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body")
         }
     }

@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseMusicXml } from "../src/lib/musicxml";
 import { frettedProgram, makeDrawable, playsGeneral, readable, showsTab, staveLayout, STAVE_PROFILE, type StaffLike } from "../src/lib/stavelayout";
-import type { Job, Manifest, ProfileInfo } from "../src/api/types";
-import { isTabRun } from "../src/views/run";
+import type { Job } from "../src/api/types";
+import { isBandRun } from "../src/views/run";
 
 const fixtures = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "apps", "fixtures");
 const read = (path: string) => readFileSync(join(fixtures, path), "utf8");
@@ -106,19 +106,16 @@ describe("a tab in the MusicXML reader", () => {
   });
 });
 
-describe("which runs are tab runs", () => {
-  const job = (profile: string, outputs: string[]) => ({ id: "x", profile, outputs }) as unknown as Job;
-  const profiles = [{ name: "tab", pipeline: "tab" }, { name: "bass-tab", pipeline: "tab" }, { name: "solo", pipeline: "layered-solo" }] as unknown as ProfileInfo[];
+describe("which runs are band runs", () => {
+  const job = (target: string | null) => ({ id: "x", profile: "p", target, outputs: ["tab.musicxml", "brass-band.musicxml"] }) as unknown as Job;
 
-  it("goes by the profile's pipeline, so a tab run that has written nothing yet is one", () => {
-    expect(isTabRun(job("bass-tab", []), null, profiles)).toBe(true);
-    expect(isTabRun(job("solo", []), null, profiles)).toBe(false);
-    expect(isTabRun(job("renamed", []), { pipeline: "tab" } as unknown as Manifest, profiles)).toBe(true);
-    expect(isTabRun(job("renamed", ["tab.musicxml"]), { pipeline: "A" } as unknown as Manifest, profiles)).toBe(false);
+  it("goes by the target the engine gives the job, and by nothing else", () => {
+    expect(isBandRun(job("brass"))).toBe(true);
+    expect(isBandRun(job("fretted"))).toBe(false);
   });
 
-  it("goes by what the run wrote when neither the manifest nor the profiles say", () => {
-    expect(isTabRun(job("gone", ["tab.musicxml"]))).toBe(true);
-    expect(isTabRun(job("gone", ["brass-band.musicxml"]))).toBe(false);
+  it("does not take a target it does not know, or none, for a band run", () => {
+    expect(isBandRun(job("keys"))).toBe(false);
+    expect(isBandRun(job(null))).toBe(false);
   });
 });

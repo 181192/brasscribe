@@ -156,8 +156,14 @@
             "type": "string"
           },
           "passed": {
+            "description": "every target passed",
             "title": "Passed",
             "type": "boolean"
+          },
+          "ran": {
+            "description": "what was asked for: a suite, several, or a group (cpu, ci, all, brass, fretted)",
+            "title": "Ran",
+            "type": "string"
           },
           "suites": {
             "items": {
@@ -166,18 +172,22 @@
             "title": "Suites",
             "type": "array"
           },
-          "target": {
-            "description": "suite or group that was run",
-            "title": "Target",
-            "type": "string"
+          "targets": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TargetVerdict"
+            },
+            "description": "the verdict per target that had a suite in the run",
+            "title": "Targets",
+            "type": "object"
           }
         },
         "required": [
           "id",
           "created",
-          "target",
+          "ran",
           "mode",
           "passed",
+          "targets",
           "suites"
         ],
         "title": "BenchRun",
@@ -1233,6 +1243,22 @@
             ],
             "title": "Status"
           },
+          "target": {
+            "anyOf": [
+              {
+                "enum": [
+                  "brass",
+                  "fretted"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the target the job belongs to: its profile's, so an app knows its own jobs without knowing every profile. null only for a run kept from a profile the engine no longer lists that wrote no score",
+            "title": "Target"
+          },
           "title": {
             "anyOf": [
               {
@@ -1248,6 +1274,7 @@
         "required": [
           "id",
           "profile",
+          "target",
           "status",
           "created",
           "stages"
@@ -2260,6 +2287,15 @@
             "title": "Stages",
             "type": "array"
           },
+          "target": {
+            "description": "the target the profile belongs to: what it makes (a brass-band score, a tab for a fretted instrument). An app offers the profiles of its own target",
+            "enum": [
+              "brass",
+              "fretted"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
           "validated": {
             "description": "checked end to end against a golden output",
             "title": "Validated",
@@ -2268,6 +2304,7 @@
         },
         "required": [
           "name",
+          "target",
           "pipeline",
           "description",
           "validated",
@@ -2783,6 +2820,11 @@
             "title": "Metrics",
             "type": "object"
           },
+          "ran": {
+            "description": "what the run was asked for: a suite, several, or a group",
+            "title": "Ran",
+            "type": "string"
+          },
           "reason": {
             "anyOf": [
               {
@@ -2813,6 +2855,11 @@
             "type": "string"
           },
           "target": {
+            "description": "the target the suite gates",
+            "enum": [
+              "brass",
+              "fretted"
+            ],
             "title": "Target",
             "type": "string"
           },
@@ -2825,6 +2872,7 @@
         "required": [
           "time",
           "run_id",
+          "ran",
           "target",
           "suite",
           "status",
@@ -2856,10 +2904,20 @@
             },
             "title": "Requires",
             "type": "array"
+          },
+          "target": {
+            "description": "the target the suite gates",
+            "enum": [
+              "brass",
+              "fretted"
+            ],
+            "title": "Target",
+            "type": "string"
           }
         },
         "required": [
           "name",
+          "target",
           "description",
           "cpu",
           "requires"
@@ -2920,10 +2978,20 @@
           "suite": {
             "title": "Suite",
             "type": "string"
+          },
+          "target": {
+            "description": "the target the suite gates",
+            "enum": [
+              "brass",
+              "fretted"
+            ],
+            "title": "Target",
+            "type": "string"
           }
         },
         "required": [
           "suite",
+          "target",
           "status"
         ],
         "title": "SuiteResult",
@@ -2933,7 +3001,7 @@
         "description": "The tab profile's result (and bass-tab's): every note with its string and fret, and what the song check shows\nbefore the tab (tuning, reference pitch, capo, octave, key and tempo).",
         "properties": {
           "adjusted_notes": {
-            "description": "notes whose start or length no note value could spell, written at the nearest one that can; in tab.musicxml only, the notes here are unchanged",
+            "description": "notes whose start or length no note value could spell, written at the nearest one that can; in the MusicXML only, the notes here are unchanged",
             "title": "Adjusted Notes",
             "type": "integer"
           },
@@ -2969,7 +3037,7 @@
             "$ref": "#/components/schemas/TabKey"
           },
           "layout": {
-            "description": "what tab.musicxml (and the PDF made from it) shows",
+            "description": "what the MusicXML of the tab (and the PDF made from it) shows",
             "enum": [
               "tab",
               "tab-and-notation",
@@ -3382,6 +3450,19 @@
           "kind"
         ],
         "title": "TabViolation",
+        "type": "object"
+      },
+      "TargetVerdict": {
+        "properties": {
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "passed"
+        ],
+        "title": "TargetVerdict",
         "type": "object"
       },
       "TuningFit": {
@@ -5781,7 +5862,7 @@
                 }
               }
             },
-            "description": "tab.json as written by the tab profile (and bass-tab). The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts"
+            "description": "tab.json as written by the fretted target's profiles. The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts"
           },
           "404": {
             "description": "the job has no tab: another profile, or not finished"
@@ -7009,7 +7090,7 @@
     },
     "/v1/suites/{name}/run": {
       "post": {
-        "description": "Run a suite or group (cpu, all) against eval/baselines.json; the result is stored in the history.",
+        "description": "Run a suite or a group (cpu, ci, all, or one target's suites: brass, fretted) against\neval/baselines.json. The answer has a verdict per target; the result is stored in the history.",
         "operationId": "runSuite",
         "parameters": [
           {

@@ -405,7 +405,7 @@ def part_sources_cases() -> list[dict]:
     from scribe_music.arranger import part_sources
     from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
-    roles = {"solo": VoiceRole.MELODY, "bass": VoiceRole.BASS, "strings": VoiceRole.HARMONY, "brass": VoiceRole.HARMONY,
+    roles = {"solo": VoiceRole.MELODY, "bass": VoiceRole.BASS, "strings": VoiceRole.HARMONY, "hits": VoiceRole.HARMONY,
              "drums": VoiceRole.RHYTHM}
     out = []
     arrangements = [None, *({"lineup": k, "difficulty": "faithful", "transpose_semitones": 0}

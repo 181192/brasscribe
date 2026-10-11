@@ -94,7 +94,7 @@ def test_a_unison_on_two_strings_agrees_whichever_way_its_notes_are_matched():
 def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
     r = suites.run_suite("guitar-tab", data=tmp_path)
     assert r["status"] == "skipped" and "eval/guitarset" in r["reason"]
-    base = suites.load_baselines()["suites"]["guitar-tab"]["metrics"]
+    base = suites.baseline(suites.load_baselines(), "guitar-tab")["metrics"]
     for group in ("tune.solo", "tune.comp", "report.solo", "report.comp", "song"):
         assert base[f"{group}.violations"] == {"value": 0, "tolerance": 0, "higher_is_better": False}, group
         assert f"{group}.onset_f1" in base and f"{group}.chord_recall" in base

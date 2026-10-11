@@ -19,7 +19,7 @@ class HostCoreIsUsedTest {
         assertNotNull(
             "the core is built (${built.joinToString { it.name }}) but did not load, so every test of the native core would skip: " +
                 "the bindings and the library do not go together; build the core again (scripts/core-artifacts.sh ensure host)",
-            RustCoreBridge.load(),
+            RustCoreBridge.load("brass"),
         )
     }
 }

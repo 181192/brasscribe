@@ -1,6 +1,7 @@
 {
  "id": "bass-line",
  "profile": "bass-tab",
+ "target": "fretted",
  "title": "Bass line",
  "audio_id": "667312049bd6f326",
  "status": "succeeded",

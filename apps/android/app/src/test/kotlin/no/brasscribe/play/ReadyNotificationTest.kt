@@ -360,7 +360,7 @@ class ReadyNotificationTest : ScreenTest() {
 
     @Test
     fun aJobIsFollowedThroughTheTimesTheComputerDoesNotAnswerAndNotForever() = runBlocking {
-        fun job(status: JobStatus) = no.brasscribe.play.engine.Job("j", "tab", status, 0.0, emptyList())
+        fun job(status: JobStatus) = no.brasscribe.play.engine.Job("j", "tab", "fretted", status, 0.0, emptyList())
         // A clock the waits move: no real time passes.
         var now = 0L
         val pauses = mutableListOf<Long>()

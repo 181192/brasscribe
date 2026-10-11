@@ -120,7 +120,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     /// <summary>The talking-score document as the core writes it (spec §6 JSON).</summary>
     public string TalkingScoreDocumentJson(string musicXml, string? compositionJson)
     {
-        Check(sc_talking_score_new(musicXml, compositionJson, out var ts, out var err), err);
+        Check(sc_talking_score_new(musicXml, compositionJson, Product.CoreTarget, out var ts, out var err), err);
         try
         {
             Check(sc_talking_score_json(ts, out var json, out err), err);
@@ -373,7 +373,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
 
     [LibraryImport(Lib, StringMarshalling = StringMarshalling.Utf8)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    private static partial int sc_talking_score_new(string musicXml, string? compositionJson, out nint ts, out nint err);
+    private static partial int sc_talking_score_new(string musicXml, string? compositionJson, int target, out nint ts, out nint err);
 
     [LibraryImport(Lib)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]

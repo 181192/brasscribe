@@ -656,7 +656,7 @@ def layer_of_part(lineup: Lineup, name: str) -> str | None:
     if name in PAD_PARTS or name == "Euphonium":
         return "strings"
     if name in CHOIR_PARTS:
-        return "brass"
+        return "hits"
     if name == "Bass Trombone":
         return "bass"
     if name == "Percussion":
@@ -838,7 +838,7 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
 
     strings = _layer(comp, "strings")
     keys = _layer(comp, "keys")
-    brass = _layer(comp, "brass")
+    hits = _layer(comp, "hits")
 
     # Countermelody: the top strings line where it moves (long held tops belong to the pad).
     top = []
@@ -851,10 +851,10 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
     counter = [n for n in top if n.dur < COUNTER_MIN_MOVE * comp.ticks_per_beat]
     if lineup.satb:
         # One set of harmony slots from the whole accompaniment, voiced as alto and tenor.
-        _outer_difficulty(arr, difficulty, strings + keys + brass, trills)
-        slots = harmony_slots(strings + keys + brass, end)
+        _outer_difficulty(arr, difficulty, strings + keys + hits, trills)
+        slots = harmony_slots(strings + keys + hits, end)
         if figuration:
-            slots = _figurate(slots, [n.start for n in strings + keys + brass])
+            slots = _figurate(slots, [n.start for n in strings + keys + hits])
         _voice_satb_slots(arr, [(s, e, pcs, 0.8) for s, e, pcs in slots], arr.parts[lead], arr.parts[eb.name], difficulty)
         if _layer(comp, "drums"):
             arr.warnings.append(f"{lineup.name}: drums left out (no percussion part)")
@@ -873,9 +873,9 @@ def arrange_layers(comp: Composition, lineup: Lineup | None = None, difficulty: 
         pad_slots = _figurate(pad_slots, [n.start for n in strings + keys])
     _voice_layer(arr, pad_slots, pads, ceiling, arr.parts[eb.name], 76, 0.8)
 
-    choir_slots = harmony_slots(brass, end, max_pcs=3)
+    choir_slots = harmony_slots(hits, end, max_pcs=3)
     if figuration:
-        choir_slots = _figurate(choir_slots, [n.start for n in brass])
+        choir_slots = _figurate(choir_slots, [n.start for n in hits])
     _voice_layer(arr, choir_slots, [p for p in CHOIR_PARTS if p in names and p != lead], ceiling, arr.parts[eb.name],
                  79, 0.8)
 

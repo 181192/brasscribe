@@ -406,13 +406,16 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
                 very_below: float = 0.4,
                 key_changes: list[tuple[int, int]] | None = None,
                 rehearsal: list[tuple[int, str]] | None = None,
-                free_spans: list[FreeSpan] | None = None, tempo_note: str | None = None) -> stream.Score:
-    """`tempo_note`: text above the first tempo mark (TEMPO_ESTIMATED when the beat grid is a guess)."""
+                free_spans: list[FreeSpan] | None = None, tempo_note: str | None = None,
+                creator: str | None = None) -> stream.Score:
+    """`tempo_note`: text above the first tempo mark (TEMPO_ESTIMATED when the beat grid is a guess).
+    `creator`: who the score names as its arranger, which is the caller's to say; None names nobody."""
     score = stream.Score()
     score.metadata = None
     from music21 import metadata
     md = metadata.Metadata(title=title)
-    md.composer = "arr. Brasscribe"
+    if creator:
+        md.composer = creator
     score.insert(0, md)
 
     # Spell every note from the whole ensemble at concert pitch (ps13), and pick the key.
@@ -709,6 +712,7 @@ def _add_instrument_sounds(path: Path, sounds: dict[str, str], kit: str = "band"
 def build_band_score(arrangement, comp) -> stream.Score:
     """Arrangement (concert notes per band part) -> transposing score in lineup order."""
     from .arranger import layer_of_part
+    from .instruments import CREATOR
 
     specs = []
     for part in arrangement.lineup.parts:
@@ -727,7 +731,8 @@ def build_band_score(arrangement, comp) -> stream.Score:
     return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=1 - model.mark_risk,
                        very_below=1 - model.very_risk, key_fifths=fifths, key_changes=changes,
                        rehearsal=[(x.tick, x.label) for x in getattr(comp, "sections", [])],
-                       free_spans=spans, tempo_note=TEMPO_ESTIMATED if getattr(comp, "tempo_estimated", False) else None)
+                       free_spans=spans, tempo_note=TEMPO_ESTIMATED if getattr(comp, "tempo_estimated", False) else None,
+                       creator=CREATOR)
 
 
 def composition_kit(comp) -> str:

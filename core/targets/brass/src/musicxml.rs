@@ -13,6 +13,9 @@ use scribe_core::quantize::QNote;
 pub use scribe_core::notation::parts::split_parts;
 pub use scribe_core::notation::score::{write_score, FreeSpan, InstrumentSpec, PartSpec, ScoreSpec, TRILL};
 
+/// Who a band score names as its arranger (MusicXML `<creator>`).
+pub const CREATOR: &str = "arr. Brasscribe";
+
 /// Arrangement (concert notes per band part) -> transposing score in lineup order.
 /// Above the tempo mark when the beat grid was estimated from the onsets.
 pub const TEMPO_ESTIMATED: &str = "tempo?";
@@ -53,6 +56,7 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
         beats_per_bar: comp.meters.first().map(|m| m.beats).unwrap_or(4),
         bpm: comp.bpm(),
         title: comp.title.clone(),
+        creator: CREATOR.to_string(),
         pickup_ticks: 0,
         low_confidence: scribe_core::confidence::Model::load().mark_below(),
         very_below: scribe_core::confidence::Model::load().very_below(),

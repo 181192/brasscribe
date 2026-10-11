@@ -96,19 +96,22 @@ def test_registry_history_and_reports(settings, monkeypatch, tmp_path):
     monkeypatch.setenv("SCRIBE_PARITY_REPORTS", str(tmp_path / "parity"))
     (tmp_path / "parity").mkdir()
     (tmp_path / "parity" / "swift-f0-coreml.json").write_text(json.dumps({"model": "swift-f0", "f1": 0.99}))
-    history.save(settings, {"passed": True, "suites": [{"suite": "arrange", "status": "pass", "metrics": {"x": 1.0},
+    history.save(settings, {"passed": True, "targets": {"brass": {"passed": True}},
+                            "suites": [{"suite": "arrange", "target": "brass", "status": "pass", "metrics": {"x": 1.0},
                                                           "checks": [], "seconds": 0.1}]}, "arrange", "cached")
     with TestClient(create_app(settings)) as c:
         adapters = {a["name"]: a for a in c.get("/v1/registry/adapters").json()}
         assert adapters["swift-f0"]["version"] == "9.9.9" and adapters["muscriptor"]["licence"] == "CC BY-NC 4.0"
         h = c.get("/v1/suites/history", params={"suite": "arrange"}).json()
         assert h[0]["suite"] == "arrange" and h[0]["metrics"] == {"x": 1.0} and h[0]["time"] > 0
+        assert (h[0]["ran"], h[0]["target"]) == ("arrange", "brass")  # what was asked for, and the suite's target
         assert c.get("/v1/parity").json() == [{"model": "swift-f0", "f1": 0.99, "_file": "swift-f0-coreml.json"}]
         assert c.get("/v1/conformance").json() == []
 
 
 def test_history_skips_files_it_cannot_read(settings):
-    history.save(settings, {"passed": True, "suites": [{"suite": "arrange", "status": "pass", "metrics": {},
+    history.save(settings, {"passed": True, "targets": {"brass": {"passed": True}},
+                            "suites": [{"suite": "arrange", "target": "brass", "status": "pass", "metrics": {},
                                                           "checks": []}]}, "arrange", "cached")
     d = settings.bench_history_dir
     (d / "99990101T000000000000Z.json").write_text("{not json")

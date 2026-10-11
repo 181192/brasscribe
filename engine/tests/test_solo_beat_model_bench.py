@@ -39,7 +39,7 @@ def test_the_suite_skips_without_final0_beats_and_is_gated(tmp_path):
         (song / f).write_text("")
     r = suites.run_suite("solo-beat-model", data=tmp_path)  # small0 beats only: skipped, naming the final0 folder
     assert r["status"] == "skipped" and M.FINAL in r["reason"]
-    base = suites.load_baselines()["suites"]["solo-beat-model"]["metrics"]
+    base = suites.baseline(suites.load_baselines(), "solo-beat-model")["metrics"]
     for set_name in M.SETS:
         assert base[f"{set_name}.parts"]["tolerance"] == 0
         for model in M.MODELS:

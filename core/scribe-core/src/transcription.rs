@@ -520,7 +520,7 @@ pub fn transcribe_layers(
             voice("solo", VoiceRole::Melody, solo.clone(), opts.solo_hint, "solo"),
             voice("bass", VoiceRole::Bass, bass.clone(), "electric bass", "bass"),
             voice("strings", VoiceRole::Harmony, lines.clone(), "orchestra", "strings"),
-            voice("brass", VoiceRole::Harmony, hits, "orchestra hits", "brass"),
+            voice("hits", VoiceRole::Harmony, hits, "orchestra hits", "hits"),
             voice("drums", VoiceRole::Rhythm, drums, "drum kit", "drums"),
         ],
         meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
@@ -544,7 +544,7 @@ pub fn transcribe_layers(
         .into_iter()
         .filter_map(|(n, a)| a.as_ref().map(|a| (n, Envelope::of(a))))
         .collect();
-    for (layer, wav) in [("solo", "solo"), ("strings", "orchestra"), ("brass", "orchestra"), ("bass", "bass"), ("drums", "drums")] {
+    for (layer, wav) in [("solo", "solo"), ("strings", "orchestra"), ("hits", "orchestra"), ("bass", "bass"), ("drums", "drums")] {
         if let Some((_, env)) = envs.iter().find(|(n, _)| *n == wav) {
             comp.dynamics.extend(layer_dynamics(env, &bars).into_iter().map(|(t, m)| Dynamic { tick: t, layer: layer.into(), mark: m }));
         }
@@ -646,8 +646,9 @@ pub fn transcribe_song(inp: &SongInputs, beats: &Beats, title: &str, melody_wind
     Ok(comp)
 }
 
-/// Draft lead sheet: melody + bass lines as concert-pitch staves, first downbeat at bar 1.
-pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile, beats: &Beats, title: &str) -> Result<String, String> {
+/// Draft lead sheet: melody + bass lines as concert-pitch staves, first downbeat at bar 1. `creator` is
+/// who the sheet names as its arranger (empty: nobody).
+pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile, beats: &Beats, title: &str, creator: &str) -> Result<String, String> {
     let bpb = beats.beats_per_bar()?;
     let diffs: Vec<f64> = beats.times.windows(2).map(|w| w[1] - w[0]).collect();
     let bpm = 60.0 / py::median(&diffs);
@@ -665,6 +666,7 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
         beats_per_bar: bpb,
         bpm,
         title: title.into(),
+        creator: creator.into(),
         pickup_ticks: pickup,
         low_confidence: 0.7,
         very_below: crate::notation::score::VERY_UNCERTAIN,

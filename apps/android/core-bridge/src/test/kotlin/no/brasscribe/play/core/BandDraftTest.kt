@@ -69,7 +69,7 @@ class BandDraftTest {
 
     @Test
     fun theChoralesGiveABandScoreLikeTheEngines() {
-        val core = RustCoreBridge.load()
+        val core = RustCoreBridge.load("brass")
         assumeTrue("host core missing", core != null)
         assumeTrue("models missing", File(models, "basic-pitch/nmp-b1.onnx").isFile && File(models, "beat-this/beat-this-small0.onnx").isFile)
         val chorales = File(data, "eval/choralebricks-brass4").listFiles()?.filter { File(it, "mix.wav").isFile }?.sortedBy { it.name }.orEmpty()

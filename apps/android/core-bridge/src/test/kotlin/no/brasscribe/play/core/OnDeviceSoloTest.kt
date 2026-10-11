@@ -19,7 +19,7 @@ import no.brasscribe.play.test.Slow
 import org.junit.experimental.categories.Category
 
 /** The on-device reference clip's directory under data/runs/apple. */
-private const val ONDEVICE_REF = "entertainer-ref"
+private const val ONDEVICE_REF = "entertainer-ref.layer-hits"
 
 /**
  * The phone's offline solo path on the JVM (the same ONNX models and the host build of the core) on
@@ -56,7 +56,7 @@ class OnDeviceSoloTest {
      */
     @Test
     fun entertainerMatchesTheLayeredReference() {
-        val core = RustCoreBridge.load()
+        val core = RustCoreBridge.load("brass")
         assumeTrue("host core missing", core != null)
         assumeTrue("models missing", File(models, "swift-f0/swift-f0-window.onnx").isFile)
         val runs = File(System.getProperty("brasscribe.data") ?: "missing", "runs/apple")
@@ -94,7 +94,7 @@ class OnDeviceSoloTest {
 
     @Test
     fun soloOnThePhoneAgainstTheEngineSoloProfile() {
-        val core = RustCoreBridge.load()
+        val core = RustCoreBridge.load("brass")
         assumeTrue("host core missing", core != null)
         assumeTrue("models missing", File(models, "swift-f0/swift-f0-window.onnx").isFile)
         assumeTrue("URMP clip missing", clip.isFile)

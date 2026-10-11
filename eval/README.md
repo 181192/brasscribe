@@ -5,6 +5,7 @@ Dataset builders, benchmarks and the regression gate behind `scribe bench`.
 ```
 pixi run scribe bench list          # all suites
 pixi run scribe bench cpu           # every CPU suite on the local data directory
+pixi run scribe bench fretted       # one target's suites (brass, fretted)
 pixi run scribe bench <suite>[,<suite>...]
 ```
 
@@ -13,6 +14,10 @@ default). They compare each metric with `eval/baselines.json` (numbers from
 `docs/research/10-benchmark-results.md`, ±0.01 unless a metric sets its own tolerance). A
 suite without its data is reported as skipped, never as passed; `--require-data` turns a skip
 into a failure.
+
+Every suite gates one target: the band score (`brass`) or the tab (`fretted`). The baselines are kept
+under the target (`targets.<target>.suites` in `eval/baselines.json`), the report lists the suites under
+their target with a verdict for each, and the last line is the verdict of the whole run.
 
 ## What gates where
 

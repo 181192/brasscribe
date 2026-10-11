@@ -36,6 +36,8 @@ class TabProfileTest {
     @Test
     fun aTabJobIsOfEitherProfileIdAndABandJobIsNot() {
         assertEquals(listOf(Profile.TAB, Profile.BASS_TAB), Profile.entries.filter { it.writesTab })
+        assertEquals(listOf(Profile.TAB, Profile.BASS_TAB), Profile.entries.filter { it.target == Target.FRETTED })
+        assertEquals(listOf(Profile.SOLO, Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK), Profile.entries.filter { it.target == Target.BRASS })
         assertTrue(Profile.writesTab("tab") && Profile.writesTab("bass-tab"))
         listOf("solo", "brass-band", "orchestra-with-soloist", "pop-rock", "tabs", "", "a-newer-profile").forEach { assertFalse(it, Profile.writesTab(it)) }
         assertEquals("tab", JobCreate.tab("a1").profile)
@@ -202,7 +204,10 @@ class TabProfileTest {
         assertEquals(JobStatus.SUCCEEDED, api.job(job.id).status)
         assertEquals("bass-4-standard", api.tab(job.id).preset)
         // A folder with no such file is a computer with every profile.
-        assertTrue("tab" in FixtureEngineApi(DirectoryFixtureSource(folder)).profiles().map { it.name })
+        val all = FixtureEngineApi(DirectoryFixtureSource(folder)).profiles()
+        assertTrue("tab" in all.map { it.name })
+        // Each says which target it belongs to, so an app can keep its own.
+        assertEquals(Profile.entries.associate { it.id to it.target.id }, all.associate { it.name to it.target })
     }
 
     @Test

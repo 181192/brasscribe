@@ -15,6 +15,26 @@ public class ScribeCoreTests
     [Fact]
     public void ReportsVersion() => Assert.False(string.IsNullOrEmpty(ScribeCore.Version));
 
+    /// <summary>The value of a <c>#define</c> in the core's C header, found from the test's folder upwards.</summary>
+    private static int Defined(string name)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "core", "bindings", "c", "scribe.h"))) dir = dir.Parent;
+        Assert.True(dir is not null, "core/bindings/c/scribe.h not found above the tests");
+        var header = File.ReadAllText(Path.Combine(dir!.FullName, "core", "bindings", "c", "scribe.h"));
+        var m = System.Text.RegularExpressions.Regex.Match(header, $@"^#define {name} (\d+)\s*$", System.Text.RegularExpressions.RegexOptions.Multiline);
+        Assert.True(m.Success, $"{name} is not defined in the header");
+        return int.Parse(m.Groups[1].Value);
+    }
+
+    [Fact]
+    public void TheTargetsAreTheNumbersOfTheCHeader()
+    {
+        Assert.Equal(Defined("SC_TARGET_BRASS"), (int)ScoreTarget.Brass);
+        Assert.Equal(Defined("SC_TARGET_FRETTED"), (int)ScoreTarget.Fretted);
+        Assert.Equal(2, Enum.GetValues<ScoreTarget>().Length);
+    }
+
     [Fact]
     public void ArrangesToTransposedMusicXml()
     {
@@ -231,7 +251,7 @@ public class ScribeCoreTests
     public void TalkingScoreNavigatesAnArrangedScore()
     {
         var xml = ScribeCore.ArrangeMusicXml(Composition);
-        using var ts = new TalkingScore(xml, Composition);
+        using var ts = new TalkingScore(xml, ScoreTarget.Brass, Composition);
         Assert.Contains("\"total_bars\"", ts.Json);
         var start = new TalkingCursor(0, 0, 0);
         var (text, ctx) = ts.Announce(start);
@@ -244,7 +264,7 @@ public class ScribeCoreTests
     [Fact]
     public void TalkingScoreDisposesOnceAndRefusesUseAfterwards()
     {
-        var ts = new TalkingScore(ScribeCore.ArrangeMusicXml(Composition), Composition);
+        var ts = new TalkingScore(ScribeCore.ArrangeMusicXml(Composition), ScoreTarget.Brass, Composition);
         ts.Dispose();
         ts.Dispose();
         Assert.Throws<ObjectDisposedException>(() => ts.Json);
@@ -258,7 +278,7 @@ public class ScribeCoreTests
         var xml = ScribeCore.ArrangeMusicXml(Composition);
         for (var round = 0; round < 20; round++)
         {
-            var ts = new TalkingScore(xml, Composition);
+            var ts = new TalkingScore(xml, ScoreTarget.Brass, Composition);
             using var go = new ManualResetEventSlim();
             var users = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
             {

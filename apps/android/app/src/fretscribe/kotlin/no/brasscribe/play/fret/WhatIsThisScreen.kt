@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import no.scribe.design.ScribeTheme
 import no.brasscribe.play.OnDeviceRouting
 import no.brasscribe.play.PlayViewModel
+import no.brasscribe.play.Product
 import no.brasscribe.play.R
 import no.brasscribe.play.engine.Profile
 import no.brasscribe.play.engine.Recording
@@ -80,7 +81,7 @@ internal fun computerProfiles(vm: PlayViewModel, there: Boolean): ComputerProfil
         // or one that could not be asked, is asked, and until it answers nothing is known.
         if (ComputerProfiles.answer?.let { it.computer == computer && !it.asking && it.listed != null } == true) return@LaunchedEffect
         ComputerProfiles.asking(computer)
-        val listed = withContext(Dispatchers.IO) { runCatching { container.engine()?.profiles()?.map { it.name }?.toSet() }.getOrNull() }
+        val listed = withContext(Dispatchers.IO) { runCatching { container.engine()?.profiles()?.filter { it.target == Product.target.id }?.map { it.name }?.toSet() }.getOrNull() }
         ComputerProfiles.answered(computer, listed)
     }
     // Until the effect has run, an answer for another computer is not this one's.

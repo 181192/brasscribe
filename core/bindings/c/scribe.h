@@ -18,6 +18,12 @@
 
 #define SC_PANIC 4
 
+// The target that wrote a score: a brass-band score.
+#define SC_TARGET_BRASS 0
+
+// The target that wrote a score: a tab for a fretted instrument.
+#define SC_TARGET_FRETTED 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -189,10 +195,13 @@ int32_t sc_fretted_tab_text_json(const char *request, char **out, char **err);
 int32_t sc_fretted_playing_instructions_json(const char *request, char **out, char **err);
 
 // Build a talking score from MusicXML and (optionally, may be null) the
-// Composition JSON. Writes a handle to `*out`; release with
-// [`sc_talking_score_free`].
+// Composition JSON. `target` is the one the score was written by
+// ([`SC_TARGET_BRASS`], [`SC_TARGET_FRETTED`]): it names the score's parts and
+// instruments; any other value is [`SC_INVALID`]. Writes a handle to `*out`;
+// release with [`sc_talking_score_free`].
 int32_t sc_talking_score_new(const char *musicxml,
                              const char *composition_json,
+                             int32_t target,
                              struct ScTalkingScore **out,
                              char **err);
 

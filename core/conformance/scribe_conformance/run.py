@@ -32,7 +32,7 @@ from pathlib import Path
 
 from . import extras
 from .canon import json_equal, musicxml_equal
-from .cases import ARRANGE_INPUTS, REPO, Case, all_cases, missing_files, skipped_lines, synth_layers
+from .cases import ARRANGE_INPUTS, LEAD_CREATOR, REPO, Case, all_cases, missing_files, skipped_lines, synth_layers
 
 CORE = REPO / "core"
 OUTPUTS = {"layers": ["composition.json", "brass-band.musicxml"], "song": ["composition.json", "brass-band.musicxml"],
@@ -59,7 +59,8 @@ def rust_cmd(binary: Path, case: Case, out: Path) -> list[str]:
                 "--title", a["title"], *a.get("options", [])]
     if case.kind == "lead":
         return [b, "lead-sheet", "--beats", str(a["beats"]), "--melody", str(a["melody"]), "--melody-support",
-                str(a["support"]), "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"]]
+                str(a["support"]), "--bass", str(a["bass"]), "--out", str(out / "lead.musicxml"), "--title", a["title"],
+                "--creator", LEAD_CREATOR]
     if case.kind == "bench":
         return [b, "arrange-reference", "--reference", str(a["reference"]), "--out", str(out), "--title", a["title"],
                 *a.get("options", [])]
@@ -229,7 +230,7 @@ def main() -> None:
         if case.golden is not None and p.returncode == 0:
             # The engine's accessible exports: the talking score is ported (written here from the Rust score),
             # braille (music21's translator) is not.
-            subprocess.run([str(binary), "talking-score", "--musicxml", str(rs / "brass-band.musicxml"), "--composition",
+            subprocess.run([str(binary), "talking-score", "--target", "brass", "--musicxml", str(rs / "brass-band.musicxml"), "--composition",
                             str(rs / "composition.json"), "--json-utf8", str(rs / "talking-score.json"),
                             "--html", str(rs / "talking-score.html"), "--text", str(rs / "talking-score.txt")], check=True)
             gold = [n for n in outputs_of(case.golden, case.kind) if (case.golden / n).exists() and not n.endswith(".brf")]

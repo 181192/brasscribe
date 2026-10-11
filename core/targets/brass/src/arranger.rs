@@ -354,7 +354,7 @@ pub fn layer_of_part(lineup: &Lineup, name: &str) -> Option<&'static str> {
     } else if PAD_PARTS.contains(&name) || name == "Euphonium" {
         Some("strings")
     } else if CHOIR_PARTS.contains(&name) {
-        Some("brass")
+        Some("hits")
     } else if name == "Bass Trombone" {
         Some("bass")
     } else if name == "Percussion" {
@@ -909,7 +909,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
 
     let strings = layer(comp, "strings");
     let keys = layer(comp, "keys");
-    let brass = layer(comp, "brass");
+    let hits = layer(comp, "hits");
 
     // Countermelody: the top strings line where it moves (long held tops belong to the pad).
     let mut sorted: Vec<&Note> = strings.iter().collect();
@@ -931,7 +931,7 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         // One set of harmony slots from the whole accompaniment, voiced as alto and tenor.
         let mut acc = strings.clone();
         acc.extend(keys.iter().cloned());
-        acc.extend(brass.iter().cloned());
+        acc.extend(hits.iter().cloned());
         outer_difficulty(&mut arr, &opts.difficulty, &acc, opts.trills)?;
         let mut slots = harmony_slots(&acc, end, 4, 0.35);
         if figuration {
@@ -969,9 +969,9 @@ pub fn arrange_layers_opts(comp: &Composition, lineup: Lineup, opts: &LayersArra
         .collect();
     voice_layer(&mut arr, &pad_slots, &pads, &solo_notes, &eb_notes, 76, 0.8);
 
-    let mut choir_slots = harmony_slots(&brass, end, 3, 0.35);
+    let mut choir_slots = harmony_slots(&hits, end, 3, 0.35);
     if figuration {
-        choir_slots = figurate(&choir_slots, &brass.iter().map(|n| n.start).collect::<Vec<_>>(), 12);
+        choir_slots = figurate(&choir_slots, &hits.iter().map(|n| n.start).collect::<Vec<_>>(), 12);
     }
     let choir: Vec<&str> = CHOIR_PARTS.iter().copied().filter(|p| lineup.has(p) && *p != lead).collect();
     voice_layer(&mut arr, &choir_slots, &choir, &solo_notes, &eb_notes, 79, 0.8);
