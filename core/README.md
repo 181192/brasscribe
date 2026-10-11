@@ -6,15 +6,21 @@ reference (`music/`, the `eval/` entry points, `sounds/humanize.py`,
 `engine/.../talking_score.py`); `conformance/` checks that this port produces
 identical Compositions, MusicXML, humanized notes and talking scores.
 
-The shared core knows no instruments. What turns its notes into one kind of output is a target crate:
-`target-brass` arranges for a brass band, `target-fretted` places notes on strings. A target depends on
-the core, the core depends on no target, and targets do not depend on each other; the compiler holds
-that line, and `brasscribe-core/tests/crate_graph.rs` checks the manifests (dev-dependencies included).
-A target hands the core's MusicXML writer what it needs as data (`notation::score::InstrumentSpec`: a
-part's names, transposition and playback program).
+What turns the shared core's notes into one kind of output is a target crate: `target-brass` arranges
+for a brass band, `target-fretted` places notes on strings. A target depends on the core, the core
+depends on no target, and targets do not depend on each other; the compiler holds that line, and
+`brasscribe-core/tests/crate_graph.rs` checks the manifests (dev-dependencies included). A target hands
+the core's MusicXML writer what it needs as data (`notation::score::InstrumentSpec`: a part's names,
+transposition and playback program).
+
+The split is not finished (docs/plan/scribe-platform.md, steps 2b and 2c). The core still holds the
+Norwegian names of the brass band's parts and instruments, in `talking_score`, and
+`brasscribe-core/tests/shared_boundary.rs` keeps its other modules from using that one. The shared
+transcription (`Beats`, the lead sheet, the reference entry points, the transcription half of the
+layered arrangement) sits in `target-brass`'s `pipeline` for now and goes back to the core.
 
 ```
-brasscribe-core/   the shared core: pure logic, no instruments (deps: serde, serde_json, roxmltree)
+brasscribe-core/   the shared core: pure logic (deps: serde, serde_json, roxmltree)
   model            Composition + composition.json (field order and number format of the reference)
   quantize         beat map, metrical level, grids (free-time grids, dense grids for fast runs), fill_gaps
   onsets           pitch-change onsets from the SwiftF0 contour (trills, runs, octave flips, bends)
