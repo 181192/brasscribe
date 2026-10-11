@@ -9,6 +9,7 @@ struct ReviewView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.colorSchemeContrast) private var contrast
     let piece: Piece
 
     @State private var model: PracticeModel?
@@ -138,11 +139,14 @@ struct ReviewView: View {
         List(selection: Binding(get: { item?.id }, set: { current = $0 })) {
             Section {
                 UncertaintyLegend().font(Font.Scribe.callout)
+                    #if os(macOS)
+                    .listRowBackground(SelectedRow.backgroundOnPage(false))
+                    #endif
             } header: {
                 SectionLabel(items.count == 1 ? String(localized: "1 note to check") : String(localized: "\(items.count) notes to check"))
             }
             ForEach(Dictionary(grouping: items, by: \.partIndex).sorted { $0.key < $1.key }, id: \.key) { _, group in
-                Section(group[0].partName) {
+                Section {
                     ForEach(group) { it in
                         HStack(spacing: Space.s3) {
                             if checked.contains(it.id) {
@@ -158,14 +162,37 @@ struct ReviewView: View {
                         // the row draws its own selection, as the library sidebar does: the system's
                         // highlight fills with the tint (primary, near black in light), under text
                         // that keeps the page's colour
+                        #if os(macOS)
+                        .listRowBackground(SelectedRow.backgroundOnPage(it.id == item?.id))
+                        #else
                         .listRowBackground(SelectedRow.background(it.id == item?.id))
+                        #endif
                         .accessibilityLabel(Text("\(barLabel(it)), \(pitchName(it)), \(levelWords(it))"))
                     }
+                } header: {
+                    #if os(macOS)
+                    // the part's name in the page's muted text: a heading the list draws itself takes the system's
+                    // colour, which is not one of the page's
+                    Text(group[0].partName)
+                        .font(Font.Scribe.caption.weight(.semibold))
+                        .foregroundStyle(Color.Scribe.textMuted)
+                    #else
+                    Text(group[0].partName)
+                    #endif
                 }
             }
         }
         #if os(macOS)
         .listStyle(.sidebar)
+        // On the page's own surface, not the system's list ground: every colour in the list is then drawn on a
+        // ground the design tokens check it against. The library's sidebar beside it is on the same surface, so a
+        // rule tells the two apart. (The iPad keeps the system's list.)
+        .scrollContentBackground(.hidden)
+        .background(Color.Scribe.surface)
+        .overlay(alignment: .leading) {
+            Rectangle().fill(contrast == .increased ? Color.Scribe.borderStrong : Color.Scribe.border).frame(width: 1)
+                .accessibilityHidden(true)
+        }
         #endif
     }
 

@@ -35,6 +35,21 @@ import no.brasscribe.play.ui.ReviewScreen
 import no.brasscribe.play.ui.ScoreScreen
 import no.brasscribe.play.ui.TranscribeScreen
 import no.brasscribe.play.ui.theme.PlayTheme
+import no.scribe.design.systemHighContrast
+
+/**
+ * The colour of the window behind Compose: the product's token bg of the palette the app draws in (its
+ * res/values/themes.xml); the window theme starts from the same. The phone's high contrast wins over
+ * Pink, as it does in the theme.
+ */
+internal fun windowColor(dark: Boolean, pink: Boolean, highContrast: Boolean): Int = when {
+    highContrast && dark -> R.color.window_contrast_dark
+    highContrast -> R.color.window_contrast_light
+    pink && dark -> R.color.window_pink_dark
+    pink -> R.color.window_pink
+    dark -> R.color.window_dark
+    else -> R.color.window_light
+}
 
 class MainActivity : ComponentActivity() {
     private val vm: PlayViewModel by viewModels()
@@ -47,7 +62,8 @@ class MainActivity : ComponentActivity() {
             // Settings › Display › Appearance: read before the first frame, so there is no flash.
             val appearance = vm.container.appearance
             val dark = appearance.isDark(isSystemInDarkTheme())
-            SideEffect { applyWindowTheme(dark, appearance.isPink) }
+            val highContrast = systemHighContrast()
+            SideEffect { applyWindowTheme(dark, appearance.isPink, highContrast) }
             PlayTheme(dark = dark, pink = appearance.isPink) { Product.Root(vm) }
             AskForLocalNetwork(vm)
         }
@@ -55,23 +71,18 @@ class MainActivity : ComponentActivity() {
 
     /**
      * The window behind Compose and the system bar icons follow the app's appearance, not the phone's
-     * night mode. Nothing is recreated, so playback and the score position stay as they are.
+     * night mode, and the phone's high contrast as the theme does. Nothing is recreated, so playback and
+     * the score position stay as they are.
      */
-    private var windowTheme: Pair<Boolean, Boolean>? = null
-    private fun applyWindowTheme(dark: Boolean, pink: Boolean) {
-        if (windowTheme == dark to pink) return
-        windowTheme = dark to pink
+    private var windowTheme: Triple<Boolean, Boolean, Boolean>? = null
+    private fun applyWindowTheme(dark: Boolean, pink: Boolean, highContrast: Boolean) {
+        val theme = Triple(dark, pink, highContrast)
+        if (windowTheme == theme) return
+        windowTheme = theme
         val scrim = android.graphics.Color.TRANSPARENT
         val bars = if (dark) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim)
         enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
-        // The product's token bg per palette (its res/values/themes.xml); the window theme starts from the same.
-        val background = when {
-            pink && dark -> R.color.window_pink_dark
-            pink -> R.color.window_pink
-            dark -> R.color.window_dark
-            else -> R.color.window_light
-        }
-        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(getColor(background)))
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(getColor(windowColor(dark, pink, highContrast))))
     }
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null

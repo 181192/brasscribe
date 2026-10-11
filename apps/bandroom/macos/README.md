@@ -81,11 +81,12 @@ so it runs on a Mac in use and on CI's macOS runner.
   ([apps/apple/README.md](../../apple/README.md#screen-catalogue-mac)): the window is the screen's, at its content's
   height; the appearance and language are the ones asked for, in the window, the process and the screen's own
   views; what the screen waits for is there (the pairing code, the request, the phones) and nothing is still
-  loading; every text in view is drawn; and five takes in a row have the same pixels. A screen that does not get
+  loading; every text in view is drawn and can be read (7:1 to its ground under Increase Contrast, 4.5:1
+  otherwise, measured in the picture); and five takes in a row have the same pixels. A screen that does not get
   there in 30 s is not taken and fails the run (`screen not taken: …`, its last picture in `not-taken/`); after
   three, the catalogue stops.
-  `takes-<language>.log` says what each screen waited for. Every text is asked to be in the picture, in each
-  appearance; a text known to be drawn in the colour of what is behind it can be listed for a while, under its
+  `takes-<language>.log` says what each screen waited for. Every text is asked to be readable in the picture, in each
+  appearance; a text known to fall short can be listed for a while, under its
   issue, in an `Unreadable` list (see [the Play apps' README](../../apple/README.md#screen-catalogue-mac)).
 - **The checks** (the Mac apps' shared package `apps/apple/Packages/ScreenCatalogue`), on the
   accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own

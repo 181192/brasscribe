@@ -498,8 +498,18 @@ struct UncertaintyLegend: View {
     }
 
     @ViewBuilder private var items: some View {
-        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); Text("Brasscribe wasn't sure") }
-        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); Text("Very unsure") }
+        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); caption(Text("Brasscribe wasn't sure")) }
+        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); caption(Text("Very unsure")) }
+    }
+
+    /// On the Mac in the page's muted text: left to the list it is in, a caption takes the system's colour, and the
+    /// Mac's list is on the page's surface. The iPad's list is the system's, with its colours.
+    @ViewBuilder private func caption(_ text: Text) -> some View {
+        #if os(macOS)
+        text.foregroundStyle(Color.Scribe.textMuted)
+        #else
+        text
+        #endif
     }
 }
 
@@ -535,4 +545,8 @@ enum SelectedRow {
                 .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(edge, lineWidth: 1))
         )
     }
+
+    /// The same in a list on a ground of the page's: a row that is not selected has no ground of its own, so it
+    /// lies on the list's (the system's row ground is not one of the page's colours).
+    static func backgroundOnPage(_ selected: Bool) -> AnyView { background(selected) ?? AnyView(Color.clear) }
 }

@@ -700,11 +700,13 @@ def test_android_window_colours_are_the_token_backgrounds():
     import re
     app = build.ROOT / "apps" / "android" / "app" / "src"
     fs = fretscribe()
-    for product, tokens, modes in (("brasscribe", build, ("light", "dark", "pink", "pink-dark")),
-                                   ("fretscribe", fs, ("light", "dark", "light", "dark"))):
+    contrast = ("high-contrast-light", "high-contrast")
+    for product, tokens, modes in (("brasscribe", build, ("light", "dark", "pink", "pink-dark") + contrast),
+                                   ("fretscribe", fs, ("light", "dark", "light", "dark") + contrast)):
         xml = (app / product / "res" / "values" / "themes.xml").read_text()
         found = dict(re.findall(r'<color name="(window_\w+)">#FF([0-9A-F]{6})</color>', xml))
-        want = dict(zip(("window_light", "window_dark", "window_pink", "window_pink_dark"),
+        want = dict(zip(("window_light", "window_dark", "window_pink", "window_pink_dark", "window_contrast_light",
+                         "window_contrast_dark"),
                         (tokens.hexval(m, "bg")[1:] for m in modes)))
         assert found == want, product
 
