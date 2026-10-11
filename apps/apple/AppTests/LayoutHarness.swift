@@ -19,15 +19,32 @@ final class OffscreenHost {
 
     let window: NSWindow
     let hosting: NSHostingView<AnyView>
+    /// The appearance asked for, the size last asked for, and what the content says it is drawn in.
+    let asked: Asked
+    private(set) var size: CGSize
+    let witness: AppearanceWitness
 
-    /// Light by default; the screen catalogue also draws it dark and with increased contrast.
-    init(_ view: some View, size: CGSize, dark: Bool = false, increasedContrast: Bool = false) {
+    /// Light by default; the screen catalogue also draws it dark and with increased contrast. The appearance is the
+    /// window's, as on a Mac set that way: SwiftUI and AppKit both read it from there (and Increase Contrast from
+    /// `SystemContrast`, which every host tells what it asks for, on or off), in every hosting view of
+    /// the screen. `witness` is given when the caller has put it where the screen's own views are (`catalogueWitness`);
+    /// otherwise it sits at the root.
+    init(_ view: some View, size: CGSize, dark: Bool = false, increasedContrast: Bool = false, witness: AppearanceWitness? = nil) {
+        asked = Asked(dark: dark, increasedContrast: increasedContrast)
+        self.size = size
+        SystemContrast.set(increasedContrast)
         window = NSWindow(contentRect: CGRect(origin: CGPoint(x: -30_000, y: -30_000), size: size),
                           styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
-        window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        let schemed = view.environment(\.colorScheme, dark ? .dark : .light)
-        hosting = NSHostingView(rootView: increasedContrast ? AnyView(schemed.catalogueContrast(increased: true)) : AnyView(schemed))
+        window.appearance = NSAppearance(named: asked.appearance)
+        if let witness {
+            self.witness = witness
+            hosting = NSHostingView(rootView: AnyView(view))
+        } else {
+            let own = AppearanceWitness()
+            self.witness = own
+            hosting = NSHostingView(rootView: AnyView(view.catalogueWitness(own)))
+        }
         // SwiftUI hands the window its content minimum (`contentMinSize`), as in the app; the test still
         // sets the size itself
         hosting.sizingOptions = .minSize
@@ -43,6 +60,7 @@ final class OffscreenHost {
     func holdWindowSize() { hosting.sizingOptions = [] }
 
     func resize(_ size: CGSize) async {
+        self.size = size
         window.setContentSize(size)
         hosting.frame = CGRect(origin: .zero, size: size)
         await settle(0.15)
@@ -62,9 +80,25 @@ final class OffscreenHost {
         await settle(0.3)
     }
 
+    /// The screen's picture and tree for the catalogue, taken by its rule (`ScreenTake`): only once the window is
+    /// this one at its size, in the appearance and language asked for, with its content in place (`ready` says what
+    /// the screen itself still waits for, `shows` the same of its tree) and drawn, and keeping still.
+    func take(_ name: String, controls: Bool = true, ready: () -> String? = { nil }, shows: ([AXNode]) -> String? = { _ in nil },
+              unreadable: Unreadable? = nil, output: URL) async throws -> ScreenTake {
+        try await ScreenTake.take(name, window: window, view: hosting, size: { self.size }, asked: asked, witness: witness, controls: controls,
+                                  ready: ready, shows: shows, unreadable: unreadable, picture: { self.bitmap() }, output: output)
+    }
+
     /// The window's pixels. On macOS 26 the sidebar and the inspector float in glass that only the
-    /// window server draws; their SwiftUI content is drawn here on a plain panel in its place.
+    /// window server draws; their SwiftUI content is drawn here on a plain panel in its place, in the
+    /// window's appearance.
     func bitmap() -> NSBitmapImageRep {
+        var rep: NSBitmapImageRep!
+        window.effectiveAppearance.performAsCurrentDrawingAppearance { rep = draw() }
+        return rep
+    }
+
+    private func draw() -> NSBitmapImageRep {
         hosting.layoutSubtreeIfNeeded()
         let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds)!
         hosting.cacheDisplay(in: hosting.bounds, to: rep)
