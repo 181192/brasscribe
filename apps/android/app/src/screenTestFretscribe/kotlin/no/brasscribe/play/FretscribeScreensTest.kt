@@ -92,11 +92,24 @@ class FretscribeScreensTest : ScreenCatalogue() {
 
     private fun go(vararg to: Screen) = rule.runOnUiThread { to.forEach(vm::navigate) }
 
+    /** Home with a song, and the menu of its row open. */
+    private fun theSongsOptions() {
+        checkTheSong()
+        waitUntil(10_000) { vm.savedScores.value.isNotEmpty() }
+        rule.runOnUiThread { vm.home() }
+        rest()
+        rule.onAllNodesWithTag("score-options")[0].performScrollTo().performClick()
+        waitForTag("score-delete", 5_000)
+        rest()
+    }
+
     override val screens = listOf(
         Entry("first-run") { rule.runOnUiThread { container.firstRunDone = false; vm.navigate(Screen.FIRST_RUN) } },
         Entry("your-instrument") { rule.runOnUiThread { vm.navigate(Screen.SETTINGS); vm.openSeatPicker(SeatPickerMode.SETTINGS) }; waitForTag("fs-keep", 5_000) },
         Entry("home") { },
         Entry("home-with-a-song") { checkTheSong(); waitUntil(10_000) { vm.savedScores.value.isNotEmpty() }; rule.runOnUiThread { vm.home() }; rest() },
+        Entry("home-song-options") { theSongsOptions() },
+        Entry("home-song-delete") { theSongsOptions(); rule.onNodeWithTag("score-delete").performClick(); rest() },
         Entry("what-is-this") { whatIsThis() },
         Entry("writing-down", steady = false) {
             whatIsThis()

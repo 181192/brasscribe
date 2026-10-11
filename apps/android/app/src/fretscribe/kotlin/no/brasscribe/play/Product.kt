@@ -78,17 +78,9 @@ object Product {
     fun beforeStart() = Unit
 
     /**
-     * Brasscribe's screens under Fretscribe's name, but for four:
-     * - where Brasscribe asks "What do you play?" (after the first run, and from Settings), Fretscribe asks
-     *   Your instrument ("Who played this?" on a finished take is still Brasscribe's);
-     * - What is this? has Fretscribe's two choices;
-     * - a tab's place for Brasscribe's output choices and Check the notes is Check the song;
-     * - a tab is shown in the tab view, where Brasscribe shows a score.
-     */
-    /**
      * Fretscribe's theme. It has no Pink palette. The screens it has from Brasscribe draw a score with colours a tab
-     * has no name for: there the one doubt colour stands in for the very doubtful one (and for Delete, which has
-     * that colour), and the repeat's band for the band behind freely played bars.
+     * has no name for: there the one doubt colour stands in for the very doubtful one, and the repeat's band for the
+     * band behind freely played bars.
      */
     @Composable
     fun Theme(dark: Boolean, @Suppress("UNUSED_PARAMETER") pink: Boolean, display: FontFamily, content: @Composable () -> Unit) {
@@ -98,12 +90,20 @@ object Product {
             val colors = ProductColors(
                 veryUncertain = doubt, adlibTint = own.loopTint, loopTint = own.loopTint, cursor = own.cursor,
                 selectionTint = own.selectionTint, selectionEdge = own.selectionEdge,
-                delete = doubt, focusWidth = FretscribeTab.focusWidth,
+                focusWidth = FretscribeTab.focusWidth,
             )
             CompositionLocalProvider(LocalProductColors provides colors, content = content)
         }
     }
 
+    /**
+     * Brasscribe's screens under Fretscribe's name, but for four:
+     * - where Brasscribe asks "What do you play?" (after the first run, and from Settings), Fretscribe asks
+     *   Your instrument ("Who played this?" on a finished take is still Brasscribe's);
+     * - What is this? has Fretscribe's two choices;
+     * - a tab's place for Brasscribe's output choices and Check the notes is Check the song;
+     * - a tab is shown in the tab view, where Brasscribe shows a score.
+     */
     @Composable
     fun Root(vm: PlayViewModel) {
         val stack by vm.screen.collectAsState()

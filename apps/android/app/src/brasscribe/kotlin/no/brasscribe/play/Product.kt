@@ -63,7 +63,7 @@ object Product {
             val colors = ProductColors(
                 veryUncertain = own.veryUncertain, adlibTint = own.adlibTint, loopTint = own.loopTint, cursor = own.cursor,
                 selectionTint = own.selectionTint, selectionEdge = own.selectionEdge,
-                delete = own.veryUncertain, focusWidth = BrasscribeScore.focusWidth,
+                focusWidth = BrasscribeScore.focusWidth,
             )
             CompositionLocalProvider(LocalProductColors provides colors, content = content)
         }

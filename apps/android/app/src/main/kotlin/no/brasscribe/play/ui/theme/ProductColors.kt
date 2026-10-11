@@ -26,8 +26,6 @@ data class ProductColors(
     /** Selected notes, and the box around them. */
     val selectionTint: Color,
     val selectionEdge: Color,
-    /** Delete, in a menu and in its dialog. */
-    val delete: Color,
     /** The focus ring around the score. */
     val focusWidth: Dp,
 )
