@@ -214,11 +214,11 @@ The screenshot is the last of five such takes in a row with the same pixels. A s
 picture in `not-taken/`, instead of keeping a picture of something else. `takes-<language>.log` beside the
 screenshots says how long each screen took and what it waited for.
 
-`unreadable` lists, under their issue, the texts a screen draws in the colour of what is behind them, each by its
-exact words (and by which of them it is, where a screen has the words twice): those texts, and no others, are not
-asked to be in its picture. An entry whose text is drawn, or is no longer on the screen, fails the run, so the list
-goes when the fault does. The list is of CI's runner: on another macOS a few of these texts are drawn and a few
-others are not, and the run there fails naming them.
+Every text of every screen is asked to be in its picture, in each appearance. Should a screen draw a text in the
+colour of what is behind it, and the fix has to wait, the take can be given an `Unreadable` list (in the
+`ScreenCatalogue` package): the texts, under their issue, each by its exact words (and by which of them it is, where
+a screen has the words twice). Those texts, and no others, are then not asked to be in the picture, and an entry
+whose text is drawn, or is no longer on the screen, fails the run, so the list goes when the fault does.
 
 A screen that is not taken still gets its checks, on the tree it had. After three screens not taken the catalogue
 stops (`catalogue stopped: …`) instead of waiting 30 s for each of the rest.

@@ -44,7 +44,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import no.scribe.design.ScribeColors
 import no.scribe.design.ScribeDarkColors
-import no.scribe.design.ScribeHighContrastColors
+import no.scribe.design.ScribeHighContrastLightColors
 import no.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.MainActivity
@@ -371,7 +371,7 @@ class TabViewTest : TabScreenTest() {
         computer("bass-line-marks")
         val tab = showTheTab()
         rule.runOnUiThread { assertEquals(null, tab.palette.uncertainTint) }
-        assertTheMarksAreDrawn(tab, ScribeHighContrastColors)
+        assertTheMarksAreDrawn(tab, ScribeHighContrastLightColors)
         checkAccessibility()
         rule.onNodeWithTag("fs-tab-mark-0").performScrollTo()
         shotOf("tab-marks-high-contrast")

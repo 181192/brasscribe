@@ -59,25 +59,6 @@ import TranscriptionKit
     /// The faces Play draws text in: the system font and Instrument Serif (titles, the score's title).
     static let text = TextFit(fonts: ["InstrumentSerif-Regular", "InstrumentSerif-Italic"])
 
-    /// Texts drawn in the colour of what is behind them in light with Increase Contrast: black, the system's text colour
-    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture; an
-    /// entry whose text is drawn, or gone, fails the run. The list is of CI's runner (its macOS, and no listening files
-    /// downloaded): another macOS draws a few of these and misses a few others, and says which.
-    static let unreadable = Unreadable(issue: "#368", screens: [
-        "home-empty-contrast": ["Drop a recording here"], "home-scores-contrast": ["Drop a recording here"],
-        "home-offline-contrast": ["Drop a recording here"],
-        "home-update-computer-contrast": ["Drop a recording here"], "home-update-app-contrast": ["Drop a recording here"],
-        "output-contrast": ["Which band?", "How hard?", "Key"],
-        // the second "1" is the repeat's first bar; the first is the speed, which is drawn
-        "score-contrast": ["Speed", "Repeat bars", .init("1", nth: 2), "to", "4", "Soprano Cornet", "Solo Cornet (you)", "Repiano Cornet",
-                           "2nd Cornet", "3rd Cornet", "Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn"],
-        "review-contrast": ["Bar 2"],
-        "sheet-settings-contrast": ["Your instrument", "New scores open on your part. Scores you already have keep the part you chose for them.",
-                                    "Your computer", "On this device", "Write down solos on this device", "Make band drafts on this device",
-                                    "Listening files", "6 MB to download"],
-        "sheet-what-you-play-contrast": ["Instrument"],
-    ])
-
     /// Takes the screen on `host` by the catalogue's rule (`ScreenTake`), checks it, and writes its screenshot and tree.
     /// A screen that does not become the one asked for is not taken, and fails the run; after three, the catalogue stops.
     private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true, ready: () -> String? = { nil },
@@ -87,7 +68,7 @@ import TranscriptionKit
         var picture: NSBitmapImageRep?
         if Self.unsteady[screen] == nil {
             do {
-                let take = try await host.take(name, controls: controls, ready: ready, shows: shows, unreadable: Self.unreadable, output: Self.output)
+                let take = try await host.take(name, controls: controls, ready: ready, shows: shows, output: Self.output)
                 nodes = take.nodes
                 picture = take.picture
                 if let stale = take.stale { Issue.record(Comment(rawValue: stale)) }

@@ -106,7 +106,8 @@ fun FretscribeTheme(
     content: @Composable () -> Unit,
 ) {
     val own = when {
-        highContrast -> FretscribeHighContrastColors
+        highContrast && dark -> FretscribeHighContrastColors
+        highContrast -> FretscribeHighContrastLightColors
         dark -> FretscribeDarkColors
         else -> FretscribeLightColors
     }

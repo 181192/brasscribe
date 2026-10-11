@@ -137,6 +137,7 @@ val ScribeDarkColors = ScribeColors(
     isHighContrast = false,
 )
 
+/** High contrast on a dark ground. */
 val ScribeHighContrastColors = ScribeColors(
     bg = Color(0xFF000000),
     surface = Color(0xFF000000),
@@ -164,7 +165,7 @@ val ScribeHighContrastColors = ScribeColors(
     isHighContrast = true,
 )
 
-/** High contrast on a light ground. Not chosen by [scribeColors], which uses the dark one. */
+/** High contrast on a light ground. */
 val ScribeHighContrastLightColors = ScribeColors(
     bg = Color(0xFFFFFFFF),
     surface = Color(0xFFFFFFFF),
@@ -192,9 +193,10 @@ val ScribeHighContrastLightColors = ScribeColors(
     isHighContrast = true,
 )
 
-/** The palette for light or dark; the high-contrast one when the system asks for more contrast. */
+/** The palette for light or dark; its high-contrast one when the system asks for more contrast. */
 fun scribeColors(dark: Boolean, highContrast: Boolean): ScribeColors = when {
-    highContrast -> ScribeHighContrastColors
+    highContrast && dark -> ScribeHighContrastColors
+    highContrast -> ScribeHighContrastLightColors
     dark -> ScribeDarkColors
     else -> ScribeLightColors
 }
@@ -311,7 +313,7 @@ fun ScribeTheme(
 ) {
     CompositionLocalProvider(LocalScribeColors provides colors) {
         MaterialTheme(
-            colorScheme = colors.toColorScheme(dark = dark || highContrast),
+            colorScheme = colors.toColorScheme(dark = dark),
             typography = scribeTypography(display),
             shapes = ScribeShapes,
             content = content,

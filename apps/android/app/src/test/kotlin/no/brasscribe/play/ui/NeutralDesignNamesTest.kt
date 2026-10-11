@@ -2,6 +2,7 @@ package no.brasscribe.play.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import no.scribe.design.ScribeButtonShape
 import no.scribe.design.ScribeColors
 import no.scribe.design.ScribeDarkColors
@@ -38,14 +39,18 @@ class NeutralDesignNamesTest {
             assertEquals(23, roles.size)
             assertNotEquals(colours.bg, colours.text)
         }
-        assertTrue(ScribeHighContrastColors.isHighContrast && !ScribeLightColors.isHighContrast)
+        assertTrue(ScribeHighContrastColors.isHighContrast && ScribeHighContrastLightColors.isHighContrast)
+        assertTrue(!ScribeLightColors.isHighContrast && !ScribeDarkColors.isHighContrast)
     }
 
     @Test fun thePaletteFollowsDarkAndTheSystemsContrast() {
         assertSame(ScribeLightColors, scribeColors(dark = false, highContrast = false))
         assertSame(ScribeDarkColors, scribeColors(dark = true, highContrast = false))
-        assertSame(ScribeHighContrastColors, scribeColors(dark = false, highContrast = true))
+        // More contrast keeps light or dark: a light ground with dark ink, or the other way round.
+        assertSame(ScribeHighContrastLightColors, scribeColors(dark = false, highContrast = true))
         assertSame(ScribeHighContrastColors, scribeColors(dark = true, highContrast = true))
+        assertTrue(ScribeHighContrastLightColors.bg.luminance() > 0.8f && ScribeHighContrastLightColors.text.luminance() < 0.05f)
+        assertTrue(ScribeHighContrastColors.bg.luminance() < 0.05f && ScribeHighContrastColors.text.luminance() > 0.8f)
     }
 
     @Test fun everyProductHasTheNeutralScales() {
