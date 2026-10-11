@@ -40,7 +40,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutText.Text" xml:space="preserve">
-    <value>Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1).</value>
+    <value>Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1). Listening on this PC uses Microsoft's ONNX Runtime (MIT), which sends usage data to Microsoft through Windows' diagnostic data, never the recording.</value>
   </data>
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Some bars have no steady beat (ad lib.). Their rhythms are approximate.</value>
@@ -685,10 +685,10 @@
     <value>{0} · {1}</value>
   </data>
   <data name="Kind_WhereComputer" xml:space="preserve">
-    <value>Made by Brasscribe on your computer. Nothing goes online.</value>
+    <value>Made by Brasscribe on your computer. The recording is not sent online.</value>
   </data>
   <data name="Kind_WhereThisPc" xml:space="preserve">
-    <value>Made on this PC. Nothing goes online.</value>
+    <value>Made on this PC. The recording is not sent online.</value>
   </data>
   <data name="LanguageBox.Header" xml:space="preserve">
     <value>App language</value>

@@ -13,11 +13,6 @@ Run with the Basic Pitch conversion env (it has onnxruntime and basic-pitch 0.4)
     convert/basic-pitch/.venv/bin/python apps/android/pitch/src/test/python/make_basic_pitch_reference.py
 """
 
-import os
-
-# ONNX Runtime reports to Microsoft unless this is set before it starts.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
 import json
 import math
 import sys

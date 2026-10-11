@@ -160,23 +160,6 @@ def test_programs_the_engine_starts_do_not_get_its_credentials(settings, audio, 
     env = json.loads((tmp_path / "env.json").read_text())
     assert not set(config.CREDENTIAL_ENV) & set(env) and env["BRASSCRIBE_DEVICE"] == "cpu"
     assert not set(config.CREDENTIAL_ENV) & set(config.child_env({"X": "1"}))
-    # ONNX Runtime in an adapter must not report to Microsoft.
-    assert env["ORT_DISABLE_TELEMETRY"] == "1"
-
-
-def test_every_adapter_command_runs_onnx_runtime_without_its_telemetry(monkeypatch):
-    """run_adapter.py sets ORT_DISABLE_TELEMETRY for the adapter commands, also when the engine is not the caller."""
-    import subprocess
-    import sys
-
-    from brasscribe_engine import config
-
-    monkeypatch.delenv("ORT_DISABLE_TELEMETRY", raising=False)
-    probe = ("import importlib.util, os, sys; s = importlib.util.spec_from_file_location('r', sys.argv[1]); "
-             "s.loader.exec_module(importlib.util.module_from_spec(s)); print(os.environ.get('ORT_DISABLE_TELEMETRY'))")
-    out = subprocess.run([sys.executable, "-c", probe, str(config.REPO_ROOT / "ml" / "adapters" / "run_adapter.py")],
-                         capture_output=True, text=True, check=True).stdout
-    assert out.strip() == "1"
 
 
 def test_adapters_read_the_models_folder_the_engine_hashes(settings, audio, tmp_path, monkeypatch):

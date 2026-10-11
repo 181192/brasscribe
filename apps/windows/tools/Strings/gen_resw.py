@@ -275,8 +275,10 @@ prop("PairingCodeBox", "PlaceholderText", "The six digits your computer shows", 
 text_button("ConnectButton", "Connect", "Koble til", "Open Brasscribe on your computer and choose Pair a device, then type the code here", "Åpne Brasscribe på datamaskinen og velg Koble til en enhet, og skriv inn koden her")
 prop("SettingsAboutHeading", "Text", "About", "Om")
 prop("AboutText", "Text",
-     "Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1).",
-     "Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1).")
+     "Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1). "
+     "Listening on this PC uses Microsoft's ONNX Runtime (MIT), which sends usage data to Microsoft through Windows' diagnostic data, never the recording.",
+     "Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1). "
+     "Lyttingen på denne PC-en bruker Microsofts ONNX Runtime (MIT), som sender bruksdata til Microsoft gjennom Windows' diagnostikkdata, aldri opptaket.")
 name("ErrorSteps", "What to do", "Hva du kan gjøre")
 name("LineupQuartetChoice", "Quartet", "Kvartett")
 prop("LineupQuartetTitle", "Text", "Quartet", "Kvartett")
@@ -337,8 +339,8 @@ code = {
     "Kind_PopRock_Label": ("Pop or rock", "Pop eller rock"),
     "Kind_PopRock_Description": ("Singing, guitars, keys, bass and drums.", "Sang, gitarer, tangenter, bass og trommer."),
     "Kind_SourceLine": ("{0} · {1}", "{0} · {1}"),
-    "Kind_WhereThisPc": ("Made on this PC. Nothing goes online.", "Lages på denne PC-en. Ingenting sendes til nettet."),
-    "Kind_WhereComputer": ("Made by Brasscribe on your computer. Nothing goes online.", "Lages av Brasscribe på datamaskinen din. Ingenting sendes til nettet."),
+    "Kind_WhereThisPc": ("Made on this PC. The recording is not sent online.", "Lages på denne PC-en. Opptaket sendes ikke til nettet."),
+    "Kind_WhereComputer": ("Made by Brasscribe on your computer. The recording is not sent online.", "Lages av Brasscribe på datamaskinen din. Opptaket sendes ikke til nettet."),
     "Transcribe_Started": ("Making a score of {0} as {1}", "Lager partitur av {0} som {1}"),
     "Transcribe_Stage_Upload": ("Getting the recording ready", "Gjør opptaket klart"),
     "Transcribe_Stage_Separate": ("Separating the instruments", "Skiller instrumentene"),

@@ -40,7 +40,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutText.Text" xml:space="preserve">
-    <value>Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1).</value>
+    <value>Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1). Lyttingen på denne PC-en bruker Microsofts ONNX Runtime (MIT), som sender bruksdata til Microsoft gjennom Windows' diagnostikkdata, aldri opptaket.</value>
   </data>
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Noen takter har ingen fast puls (ad lib.). Rytmene der er omtrentlige.</value>
@@ -685,10 +685,10 @@
     <value>{0} · {1}</value>
   </data>
   <data name="Kind_WhereComputer" xml:space="preserve">
-    <value>Lages av Brasscribe på datamaskinen din. Ingenting sendes til nettet.</value>
+    <value>Lages av Brasscribe på datamaskinen din. Opptaket sendes ikke til nettet.</value>
   </data>
   <data name="Kind_WhereThisPc" xml:space="preserve">
-    <value>Lages på denne PC-en. Ingenting sendes til nettet.</value>
+    <value>Lages på denne PC-en. Opptaket sendes ikke til nettet.</value>
   </data>
   <data name="LanguageBox.Header" xml:space="preserve">
     <value>Appspråk</value>

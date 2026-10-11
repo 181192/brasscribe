@@ -128,7 +128,7 @@
     <string name="fs_what_instrument_desc">One instrument playing, with nothing else.</string>
     <string name="fs_what_song">A full song</string>
     <string name="fs_what_song_desc">A band or a record. Fretscribe picks out the bass.</string>
-    <string name="fs_where_desc">Bandroom on your computer writes down the notes. Nothing goes online.</string>
+    <string name="fs_where_desc">Bandroom on your computer writes down the notes. The recording is not sent online.</string>
     <string name="fs_where_needed">Bandroom on your computer writes down the notes.</string>
     <string name="fs_what_connect_first">Connect your computer to continue.</string>
     <string name="where_companion_missing">Connect Bandroom on your computer first.</string>
