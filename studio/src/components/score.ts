@@ -8,7 +8,7 @@ import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
 import { SharedSynth, type ApiLike } from "../lib/sharedsynth";
 import { soundFontBytes } from "../lib/soundfontstore";
-import { frettedProgram, makeDrawable, showsTab, staveLayout, STAVE_PROFILE, type StaveLayout } from "../lib/stavelayout";
+import { frettedProgram, makeDrawable, playsGeneral, readable, showsTab, staveLayout, STAVE_PROFILE, type StaveLayout } from "../lib/stavelayout";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, percussionKits, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import { PICKUP_BAR, type PitchMode, type Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
@@ -413,6 +413,9 @@ export class ScoreElement extends HTMLElement {
     this.rendered = false;
     this.uncertainCount = 0;
     this.position = { tick: 0, time: 0, endTime: 0 };
+    this.layout = "notation";
+    this.partIndex = 0;
+    this.syncReading();
     clear(this.partSelect);
     clear(this.mixer);
     this.setEnabled(false);
@@ -437,20 +440,21 @@ export class ScoreElement extends HTMLElement {
       this.generalPrograms(score);
       return;
     }
+    const percussion = score.tracks.map((track) => track.staves.some((st) => st.isPercussion));
     const sounds = score.tracks.map((track, i) => {
       // A fretted part is no band instrument, whatever it is called (a bass guitar is not an E♭ bass).
       if (track.staves.some(showsTab)) return null;
-      const drums = track.staves.some((st) => st.isPercussion);
-      return this.band!.resolve(track.name, null, drums ? this.kits[i] ?? track.playbackInfo.program : track.playbackInfo.program)?.sound ?? null;
+      return this.band!.resolve(track.name, null, percussion[i] ? this.kits[i] ?? track.playbackInfo.program : track.playbackInfo.program)?.sound ?? null;
     });
-    // A score with no band part in it (a guitar or bass tab) plays with the General MIDI set: the
-    // band SoundFont has no sound for it. A score with any band part keeps the band's sounds.
-    if (sounds.every((x) => !x)) {
+    // A score with no band instrument among its pitched parts (a guitar or bass tab, with or without
+    // drums) plays with the General MIDI set: the band SoundFont has no sound for it. A score with
+    // any pitched band part keeps the band's sounds.
+    if (playsGeneral(sounds.map((x, i) => ({ percussion: percussion[i], band: !!x })))) {
       this.general = true;
       this.generalPrograms(score);
       return;
     }
-    const channels = playbackChannels(score.tracks.map((t) => t.staves.some((st) => st.isPercussion)));
+    const channels = playbackChannels(percussion);
     score.tracks.forEach((track, i) => {
       const sound = sounds[i];
       this.trackSounds.push(sound);
@@ -473,12 +477,15 @@ export class ScoreElement extends HTMLElement {
 
   /**
    * With the General MIDI set: a fretted part whose file names no instrument (the engine's tab
-   * writes none) plays as a guitar or a bass, not as alphaTab's default piano.
+   * writes none) plays as a guitar or a bass, not as alphaTab's default piano. A part whose file
+   * names one keeps it.
    */
   private generalPrograms(score: AT.model.Score): void {
     score.tracks.forEach((track, i) => {
       const staff = track.staves.find(showsTab);
-      if (staff && (this.kits[i] ?? null) === null) track.playbackInfo.program = frettedProgram(track.name, staff.tuning);
+      // `kits` has the file's <midi-program> per part; it is empty when the file was not read as text (.mxl).
+      const named = this.kits.length ? this.kits[i] ?? null : undefined;
+      if (staff) track.playbackInfo.program = frettedProgram(track.name, staff.tuning, named, track.playbackInfo.program);
     });
   }
 
@@ -516,18 +523,10 @@ export class ScoreElement extends HTMLElement {
     this.barInput.max = String(this.bars.length);
     this.loopFrom.max = this.loopTo.max = String(this.bars.length);
     this.uncertainCount = this.markNotes(score);
-    // The talking score reads notation; it has no reading of tablature (string and fret) yet.
-    const readable = this.layout === "notation";
-    if (!readable) {
-      this.talking = null;
-      this.nav = null;
-    }
-    this.talkPanel.hidden = !readable;
-    this.talkOff.hidden = readable;
-    this.helpEl.textContent = t(readable ? "score.help" : "score.helpTab");
     const firstWithNotes = this.tracks?.[0] ?? this.xml?.parts.findIndex((p) => p.notes.length > 0) ?? -1;
     this.partIndex = firstWithNotes >= 0 && firstWithNotes < score.tracks.length ? firstWithNotes : 0;
     this.nav?.setPart(this.partIndex);
+    this.syncReading();
     clear(this.partSelect,
       h("option", { value: "all" }, t("score.allParts")),
       score.tracks.map((_, i) => h("option", { value: String(i), selected: this.tracks?.length === 1 && this.tracks[0] === i }, this.partLabel(i))));
@@ -816,7 +815,7 @@ export class ScoreElement extends HTMLElement {
   goBar(index: number, announceIt = true): void {
     if (!this.api || !this.bars.length) return;
     const i = Math.max(0, Math.min(this.bars.length - 1, index));
-    if (this.nav && this.talking?.parts[this.partIndex]?.bars[i]) {
+    if (this.nav && this.canRead() && this.talking?.parts[this.partIndex]?.bars[i]) {
       const s = this.nav.goBar(i);
       if (announceIt) this.speak(s);
       else this.seek(this.bars[i].start);
@@ -919,6 +918,7 @@ export class ScoreElement extends HTMLElement {
     if (!n) return;
     this.partIndex = (i + n) % n;
     this.nav?.setPart(this.partIndex);
+    this.syncReading();
     for (const el of Array.from(this.mixer.children)) el.classList.toggle("current", Number((el as HTMLElement).dataset.track) === this.partIndex);
     if (announceIt) announce(t("score.part", { name: this.partLabel(this.partIndex) }));
     if (this.talkPanel.open) this.renderTalkingText();
@@ -973,7 +973,8 @@ export class ScoreElement extends HTMLElement {
 
   private onKey(e: KeyboardEvent): void {
     const k = e.key;
-    const nav = this.nav;
+    // The reading keys read the current part; on a tablature part they say that it cannot be read.
+    const nav = this.canRead() ? this.nav : null;
     const handled = () => {
       e.preventDefault();
       e.stopPropagation();
@@ -1055,7 +1056,24 @@ export class ScoreElement extends HTMLElement {
 
   /** A reading key on a score the talking score cannot read: say why, instead of nothing. */
   private noReading(): void {
-    if (this.api?.score && this.layout !== "notation") announce(t("score.noReadingTab"));
+    if (this.api?.score && !this.canRead()) announce(t("score.noReadingTab"));
+  }
+
+  /**
+   * Whether the current part can be read aloud: the talking score reads notation, and has no
+   * reading of tablature (string and fret) yet. A band part beside a tab part is still read.
+   */
+  private canRead(): boolean {
+    const track = this.api?.score?.tracks[this.partIndex];
+    return !track || readable(track);
+  }
+
+  /** The reading panel, or the sentence that stands in for it, and the key help, for the current part. */
+  private syncReading(): void {
+    const on = this.canRead();
+    this.talkPanel.hidden = !on;
+    this.talkOff.hidden = on;
+    this.helpEl.textContent = t(on ? "score.help" : "score.helpTab");
   }
 
   private updateStatus(): void {

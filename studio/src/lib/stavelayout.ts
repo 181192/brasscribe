@@ -52,12 +52,31 @@ export const STAVE_PROFILE: Record<StaveLayout, "Score" | "Tab" | "ScoreTab"> = 
   "tab-and-notation": "ScoreTab",
 };
 
+/** A part can be read aloud when it has no tablature: the talking score reads notation only. */
+export function readable(track: TrackLike): boolean {
+  return !track.staves.some(showsTab);
+}
+
 /**
- * General MIDI program (0-based) for a fretted part whose file names no instrument: a fingered bass
- * for a part called a bass or whose lowest string is a bass guitar's E or lower, else a steel-string
- * guitar.
+ * Whether a score plays with the General MIDI set instead of the band's sounds: when none of its
+ * pitched parts is a band instrument (a guitar tab, with or without a drum part: the band has a
+ * kit for any drum part, so percussion does not decide). A score of percussion alone goes by that.
  */
-export function frettedProgram(name: string, tuning: number[]): number {
+export function playsGeneral(parts: { percussion: boolean; band: boolean }[]): boolean {
+  const pitched = parts.filter((p) => !p.percussion);
+  return !(pitched.length ? pitched : parts).some((p) => p.band);
+}
+
+/**
+ * General MIDI program (0-based) for a fretted part: the file's own instrument when it names one,
+ * else a fingered bass for a part called a bass or whose lowest string is a bass guitar's E or
+ * lower, else a steel-string guitar. `named` is the part's <midi-program> (null when the file has
+ * none, undefined when the file could not be read for it, as with compressed MusicXML: then a
+ * loaded program other than alphaTab's default 0 counts as named).
+ */
+export function frettedProgram(name: string, tuning: number[], named?: number | null, loaded = 0): number {
+  if (named != null) return named;
+  if (named === undefined && loaded !== 0) return loaded;
   const BASS_LOW_E = 28;
   return /bass/i.test(name) || Math.min(...tuning) <= BASS_LOW_E ? 33 : 25;
 }

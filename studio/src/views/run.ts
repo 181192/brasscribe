@@ -1,6 +1,6 @@
 // One run: live stage graph over SSE and the stage inspector.
 import { api, fetchBytes, fetchText, isAbort, subscribe, type StreamState } from "../api/client";
-import type { Composition, FileRef, Job, Manifest, Reference, StageFiles, ValidationIssue } from "../api/types";
+import type { Composition, FileRef, Job, Manifest, ProfileInfo, Reference, StageFiles, ValidationIssue } from "../api/types";
 import { audioPanel, type AudioSource } from "../components/audio";
 import { BeatView } from "../components/beats";
 import { PianoRoll, type RollLayer } from "../components/pianoroll";
@@ -34,6 +34,8 @@ const AUDIO = /\.(wav|flac|mp3|ogg|m4a|aiff?)$/i;
 interface Ctx {
   id: string;
   job: Job;
+  /** The run's profile is a tablature pipeline. */
+  tab: boolean;
   stages: StageFiles[] | Error;
   composition: Promise<Composition>;
   musicxml: Promise<string>;
@@ -192,7 +194,8 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     if (signal.aborted) return;
     view = fromJob(job);
     graph.update(view);
-    const [m, st] = await Promise.all([api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error)]);
+    const [m, st, profiles] = await Promise.all([api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error),
+      api.profiles().catch(() => [])]);
     if (signal.aborted) return;
     stages = st;
     renderHeader(job, m);
@@ -209,7 +212,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       }, (s) => showStream(s));
     }
     const ctx: Ctx = {
-      id, job, stages: st,
+      id, job, stages: st, tab: isTabRun(job, m, profiles),
       composition: api.composition(id, { signal }),
       musicxml: fetchText(`/v1/jobs/${encodeURIComponent(id)}/musicxml`, undefined, { signal }),
     };
@@ -287,9 +290,14 @@ export function hasScoreFile(job: Job, ext: "musicxml" | "pdf" | "mid"): boolean
   return !!job.outputs?.some((o) => o === `brass-band.${ext}` || o === `tab.${ext}`);
 }
 
-/** The run made a tablature (the tab pipelines), not a band score. */
-export function isTabRun(job: Job): boolean {
-  return !!job.outputs?.includes("tab.musicxml");
+/**
+ * The run is of a tablature pipeline, not a band score: by its profile's pipeline (so a run that has
+ * written nothing yet is known too), from the manifest or the engine's profiles; without either, by
+ * what it wrote.
+ */
+export function isTabRun(job: Job, m?: Manifest | null, profiles: ProfileInfo[] = []): boolean {
+  const pipeline = m?.pipeline ?? profiles.find((p) => p.name === job.profile)?.pipeline;
+  return pipeline ? pipeline === "tab" : !!job.outputs?.includes("tab.musicxml");
 }
 
 /** The link that opens a run's score in the viewer, where a tablature is shown as well as a score. */
@@ -298,13 +306,18 @@ export function viewerLink(job: Job): string {
 }
 
 function scoreTab(p: HTMLElement, ctx: Ctx): void {
-  if (isTabRun(ctx.job)) {
+  if (ctx.tab && hasScoreFile(ctx.job, "musicxml")) {
     // The run view's score, checks and part table are made for a band score. Until it has a view
     // of a tab of its own, the tab opens in the viewer, which shows and plays it.
     clear(p, h("div", { class: "empty", role: "note" },
       h("p", {}, h("strong", {}, t("run.tab"))),
       h("p", { class: "hint" }, t("run.tabBody")),
       h("p", {}, h("a", { class: "button primary", href: viewerLink(ctx.job) }, t("run.tabOpen")))));
+    return;
+  }
+  if (ctx.tab && !TERMINAL.has(ctx.job.status)) {
+    // Still running: there is no tab to link to yet (the page loads again when the run ends).
+    clear(p, h("div", { class: "empty", role: "note" }, h("p", {}, h("strong", {}, t("run.tabPending"))), h("p", { class: "hint" }, t("run.tabPendingBody"))));
     return;
   }
   if (TERMINAL.has(ctx.job.status) && !hasScoreFile(ctx.job, "musicxml")) {
@@ -598,7 +611,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   const parts = h("section", { "aria-labelledby": "parts-h" }, h("h3", { id: "parts-h" }, t("mx.partsTitle")), loading());
   const golden = h("section", { "aria-labelledby": "gold-h" }, h("h3", { id: "gold-h" }, t("mx.reference")), loading());
   // The references are band scores: a tab run has nothing to be compared with among them.
-  const tab = isTabRun(ctx.job);
+  const tab = ctx.tab;
   clear(p, rt, tab ? null : golden, parts);
 
   const renderRt = async (run = false) => {

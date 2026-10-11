@@ -18,8 +18,6 @@ export interface XmlPart {
   name: string;
   transpose: number; // semitones written -> sounding
   percussion: boolean;
-  /** The part has a tablature staff (a staff with the strings' tuning). */
-  tab: boolean;
   notes: XmlNote[];
   bars: number;
 }
@@ -163,11 +161,11 @@ export function parseMusicXml(xml: string): XmlScore {
     if (both) {
       for (const n of notes) {
         const q = n.first ? qAt.get(`${n.barIndex}:${n.at}`) : undefined;
-        if (q && !n.level) n.level = n.color && q === "vu" ? "vu" : "u";
+        if (q && !n.level) n.level = "u"; // a coloured note has its level already
       }
     }
     parts.push({
-      id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id), tab: tabStaves.size > 0,
+      id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id),
       notes: (both ? notes.filter((n) => !tabStaves.has(n.staff)) : notes).map(({ staff: _staff, at: _at, first: _first, ...n }) => n), bars: measures.length,
     });
   }

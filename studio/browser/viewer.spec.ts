@@ -133,3 +133,44 @@ test("a file that cannot be shown says what to do, keeps the message under Detai
   await expect(page.locator("#main .notice")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Play", exact: true })).toBeEnabled();
 });
+
+/** A cornet part in notation and a guitar part in tablature, two bars each (made up for this test). */
+function bandAndTab(): string {
+  const note = (step: string, octave: number, extra = "") =>
+    `<note><pitch><step>${step}</step><octave>${octave}</octave></pitch><duration>2</duration><voice>1</voice><type>half</type>${extra}</note>`;
+  const fret = (string: number, n: number) => `<notations><technical><string>${string}</string><fret>${n}</fret></technical></notations>`;
+  const tuning = [["E", 2], ["A", 2], ["D", 3], ["G", 3], ["B", 3], ["E", 4]]
+    .map(([s, o], i) => `<staff-tuning line="${i + 1}"><tuning-step>${s}</tuning-step><tuning-octave>${o}</tuning-octave></staff-tuning>`).join("");
+  const attrs = (clef: string, more = "") => `<attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time>${clef}${more}</attributes>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0"><work><work-title>Band and tab</work-title></work>
+<part-list><score-part id="P1"><part-name>Solo Cornet</part-name></score-part><score-part id="P2"><part-name>Guitar</part-name></score-part></part-list>
+<part id="P1"><measure number="1">${attrs("<clef><sign>G</sign><line>2</line></clef>")}${note("C", 5)}${note("D", 5)}</measure><measure number="2">${note("E", 5)}${note("C", 5)}</measure></part>
+<part id="P2"><measure number="1">${attrs("<clef><sign>TAB</sign><line>5</line></clef>", `<staff-details><staff-lines>6</staff-lines>${tuning}</staff-details>`)}${note("C", 3, fret(5, 3))}${note("D", 3, fret(4, 0))}</measure><measure number="2">${note("E", 3, fret(4, 2))}${note("C", 3, fret(5, 3))}</measure></part>
+</score-partwise>`;
+}
+
+test("in a score with a band part and a tab part, the band part is still read aloud and the tab part says why not", async ({ page }) => {
+  const errors = pageErrors(page);
+  await page.goto("/#/viewer");
+  await page.setInputFiles("#open-musicxml", { name: "band-and-tab.musicxml", mimeType: "application/xml", buffer: Buffer.from(bandAndTab()) });
+  await expect.poll(() => score(page, (s) => s.rendered && s.layout)).toBe("tab-and-notation");
+  await expect(page.locator("#main .notice")).toHaveCount(0);
+  // The cornet part is the current one: the reading panel is there, and R reads its bar.
+  await expect(page.locator("bs-score details.talking")).toBeVisible();
+  await expect(page.locator("bs-score .talking-off")).toBeHidden();
+  await page.locator("bs-score .score-view").focus();
+  await page.keyboard.press("r");
+  await expect.poll(() => score(page, (s) => (s as unknown as { lastAnnouncement: string }).lastAnnouncement)).toMatch(/C/);
+  // The guitar part: the panel gives way to the reason, and R says it.
+  await page.locator("bs-score .transport select").selectOption({ label: "Guitar" });
+  await expect(page.locator("bs-score details.talking")).toBeHidden();
+  await expect(page.locator("bs-score .talking-off")).toHaveText(/Tablature cannot be read aloud yet/);
+  await page.locator("bs-score .score-view").focus();
+  await page.keyboard.press("r");
+  await expect(page.locator("[aria-live]").filter({ hasText: "Tablature cannot be read aloud yet" }).first()).toBeAttached();
+  // And back.
+  await page.locator("bs-score .transport select").selectOption({ label: "Solo Cornet" });
+  await expect(page.locator("bs-score details.talking")).toBeVisible();
+  expect(errors).toEqual([]);
+});
