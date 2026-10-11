@@ -233,12 +233,10 @@ fun SettingsScreen(vm: PlayViewModel) {
         RowGroup {
             AppearanceRow(vm)
             RowDivider()
-            // Per-app language is a system setting from Android 13; before that the app follows the phone.
-            if (android.os.Build.VERSION.SDK_INT >= 33) {
-                ListRow(stringResource(R.string.settings_language), { open(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS, withPackage = true) },
-                    icon = R.drawable.ic_bc_info, subtitle = stringResource(R.string.settings_language_desc))
-                RowDivider()
-            }
+            // Per-app language is a system setting.
+            ListRow(stringResource(R.string.settings_language), { open(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS, withPackage = true) },
+                icon = R.drawable.ic_bc_info, subtitle = stringResource(R.string.settings_language_desc))
+            RowDivider()
             ListRow(stringResource(R.string.settings_text_motion), { open(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS) },
                 icon = R.drawable.ic_bc_text_size, subtitle = stringResource(R.string.settings_text_motion_desc))
         }

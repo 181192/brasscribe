@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
-import android.os.Build
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -57,7 +56,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import no.brasscribe.play.ui.theme.productColors
 import no.scribe.design.ScribeSpace
 import no.scribe.design.ScribeTheme
@@ -101,7 +99,7 @@ fun rememberRecorder(vm: PlayViewModel): Recorder {
 
     fun withMicGranted(device: Boolean) {
         pendingDevice = device
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             if (device) {
                 pendingDevice = false
                 projectionConsent.launch(context.getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent())
@@ -117,9 +115,7 @@ fun rememberRecorder(vm: PlayViewModel): Recorder {
     val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { withMicGranted(pendingDevice) }
 
     fun withMic(device: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             pendingDevice = device
             notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else withMicGranted(device)

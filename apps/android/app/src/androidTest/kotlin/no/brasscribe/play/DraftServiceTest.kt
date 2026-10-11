@@ -31,8 +31,7 @@ class DraftServiceTest {
     // Without the permission the system keeps the notification out of sight, and out of the list read here.
     @org.junit.Before
     fun allowNotifications() {
-        if (android.os.Build.VERSION.SDK_INT >= 33)
-            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun waitFor(ms: Long, what: () -> Boolean): Boolean {

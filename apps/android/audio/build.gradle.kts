@@ -14,7 +14,7 @@ android {
     ndkVersion = "28.2.13676358"
 
     defaultConfig {
-        minSdk = 29
+        minSdk = 36
         consumerProguardFiles("consumer-rules.pro")
         externalNativeBuild {
             cmake {

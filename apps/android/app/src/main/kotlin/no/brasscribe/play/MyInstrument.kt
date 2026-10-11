@@ -27,7 +27,7 @@ sealed interface SeatChoice {
 
 /**
  * Keeps the answer on this phone. It lives in the per-device preferences, which backup and device
- * transfer leave out (res/xml/backup_rules.xml), like Appearance.
+ * transfer leave out (res/xml/data_extraction_rules.xml), like Appearance.
  */
 class SeatStore(private val store: KeyValueStore) {
     fun load(): SeatChoice = when (val s = store.get(SEAT)) {

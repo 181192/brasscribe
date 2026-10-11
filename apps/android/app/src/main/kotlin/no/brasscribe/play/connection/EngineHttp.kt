@@ -2,6 +2,7 @@ package no.brasscribe.play.connection
 
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
+import no.brasscribe.play.LocalNetworkClosedException
 import okhttp3.ConnectionPool
 import java.util.concurrent.TimeUnit
 import javax.net.SocketFactory
@@ -18,11 +19,19 @@ object EngineHttp {
      */
     const val KEEP_ALIVE_MS = 3_000L
 
-    /** OkHttp for the computer, its sockets made by [socketFactory] when given (a network to bind to). */
-    fun engine(socketFactory: SocketFactory? = null): HttpClientEngine = OkHttp.create {
+    /**
+     * OkHttp for the computer, its sockets made by [socketFactory] when given (a network to bind to). A request to
+     * an address the phone has closed to the app ([reaches] says no: Android 17's local network) fails at once with
+     * [LocalNetworkClosedException], and not after the connection has timed out.
+     */
+    fun engine(socketFactory: SocketFactory? = null, reaches: (String) -> Boolean = { true }): HttpClientEngine = OkHttp.create {
         config {
             connectionPool(ConnectionPool(MAX_IDLE, KEEP_ALIVE_MS, TimeUnit.MILLISECONDS))
             if (socketFactory != null) socketFactory(socketFactory)
+            addInterceptor { chain ->
+                if (!reaches(chain.request().url.toString())) throw LocalNetworkClosedException()
+                chain.proceed(chain.request())
+            }
         }
     }
 

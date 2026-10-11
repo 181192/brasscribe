@@ -123,7 +123,7 @@ class MicRecorder(override val file: File, private val requestedRate: Int = 4800
 }
 
 /**
- * Records what other apps play (Android 10+ AudioPlaybackCapture) through a MediaProjection the user
+ * Records what other apps play (AudioPlaybackCapture) through a MediaProjection the user
  * consented to. Apps can opt out, and DRM playback is never captured: both give silence, which
  * [CaptureState.silentFor] exposes so the UI can say so instead of recording nothing. Written to
  * [file] as it is recorded, as [MicRecorder] does.

@@ -1286,7 +1286,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val entry = done?.let { ScoreEntry.merge(emptyList(), listOf(it)).firstOrNull() }
             home()
             // Not on the phone, and the computer can't be reached (or no longer has it): said, not a silent Home.
-            if (entry == null) say(R.string.ready_not_here) else openEntry(entry)
+            if (entry == null) say(if (container.computerInReach()) R.string.ready_not_here else R.string.pair_network_refused) else openEntry(entry)
         }
     }
 

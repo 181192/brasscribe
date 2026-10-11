@@ -862,8 +862,7 @@ class ScoreController(
         focusHeld = playing
         if (playing) {
             val granted = audio?.requestAudioFocus(focusRequest) != android.media.AudioManager.AUDIOFOCUS_REQUEST_FAILED
-            androidx.core.content.ContextCompat.registerReceiver(appContext, noisy,
-                android.content.IntentFilter(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+            appContext.registerReceiver(noisy, android.content.IntentFilter(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY), Context.RECEIVER_NOT_EXPORTED)
             // During a phone call the focus is refused: the score does not play over it.
             if (!granted) pauseForSystem()
         } else {

@@ -44,7 +44,7 @@ The mark is drawn on a 64-unit grid as a single even-odd path, so every platform
 | Platform | Files |
 |---|---|
 | Apple | `apple/AppIcon.appiconset/`: iOS 1024 single-size, macOS 16–512 @1x/@2x, `Contents.json`. Compiles with `actool`. |
-| Android | `android/res/`: adaptive icon (vector foreground inside the 66 dp safe zone, `@color/ic_launcher_background`, monochrome layer for themed icons), legacy `mipmap-*/ic_launcher.png`, and `play-store-512.png` |
+| Android | `android/res/`: adaptive icon (vector foreground inside the 66 dp safe zone, `@color/ic_launcher_background`, monochrome layer for themed icons) and `play-store-512.png` |
 | Windows | `windows/Assets/`: `Square44x44Logo` at scale-100 to 400, plus `targetsize-16` to `256` including `altform-unplated` and `altform-lightunplated`. Also `Square150x150Logo`, `Wide310x150Logo`, `SmallTile`, `LargeTile`, `StoreLogo` and `AppIcon.ico`. |
 | Web | `web/`: `favicon.svg`, `favicon.ico`, 16/32/48 PNG, `apple-touch-icon.png` (180), 192/512 |
 

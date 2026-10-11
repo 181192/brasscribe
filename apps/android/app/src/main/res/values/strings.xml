@@ -631,6 +631,8 @@
     <string name="conn_reconnecting">Looking for %1$s …</string>
     <string name="conn_offline">Not connected. You can still make scores on this phone.</string>
     <string name="conn_needs_pairing">The computer no longer recognises this phone.</string>
+    <string name="conn_network_closed">The app isn\'t allowed on your network, so it can\'t reach your computer.</string>
+    <string name="conn_allow">Allow</string>
     <string name="conn_pair_again">Pair this phone again</string>
     <string name="server_name_format">Brasscribe on %1$s</string>
     <string name="listen_stop">Stop</string>
@@ -643,6 +645,7 @@
     <string name="pair_scan_camera">Camera view for the code</string>
     <string name="pair_camera_refused">The camera isn\'t allowed, so the code can\'t be scanned. Type the code instead, or allow the camera in the phone\'s settings.</string>
     <string name="pair_camera_settings">Open the phone\'s settings for this app</string>
+    <string name="pair_network_refused">The app isn\'t allowed to reach devices on your network, so it can\'t find or connect to your computer. Allow nearby devices in the phone\'s settings.</string>
     <string name="pair_link_invalid">That code isn\'t from Brasscribe Bandroom.</string>
     <string name="pair_link_title">Connect to %1$s?</string>
     <string name="pair_link_address">Address on your network: %1$s</string>

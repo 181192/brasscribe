@@ -237,7 +237,10 @@ class AppContainer(private val context: Context) {
 
     fun newEngineClient(url: String, token: String? = null): KtorEngineApi = KtorEngineApi(url, httpEngine(lanNetwork(url)), token)
 
-    private fun httpEngine(network: Network?) = no.brasscribe.play.connection.EngineHttp.engine(network?.socketFactory)
+    private fun httpEngine(network: Network?) = no.brasscribe.play.connection.EngineHttp.engine(network?.socketFactory) { LocalNetwork.reaches(context, it) }
+
+    /** Whether the phone lets the app reach the paired computer (Android 17's local network); true with nothing paired. */
+    fun computerInReach(): Boolean = usingFixture || !settings.paired || LocalNetwork.reaches(context, settings.url)
 
     /**
      * The network whose link owns a private engine address. When Wi-Fi is weak, Android can make mobile
@@ -295,7 +298,7 @@ class AppContainer(private val context: Context) {
     val deviceName: String get() = "${Build.MANUFACTURER} ${Build.MODEL}"
 
     companion object {
-        /** Encrypted credentials; excluded from backup (res/xml/backup_rules.xml, data_extraction_rules.xml). */
+        /** Encrypted credentials; excluded from backup (res/xml/data_extraction_rules.xml). */
         const val CREDENTIALS_PREFS = "credentials"
     }
 }

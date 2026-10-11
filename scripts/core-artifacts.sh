@@ -100,7 +100,7 @@ key() {
     rustc -vV
     case "$comp" in
       apple) xcodebuild -version; echo "$APPLE_ENV" ;;
-      android) cargo ndk --version; basename "$ANDROID_NDK_HOME"; echo "api 29" ;;
+      android) cargo ndk --version; basename "$ANDROID_NDK_HOME"; echo "api 35" ;;
     esac
   } | hash
 }
@@ -154,7 +154,7 @@ build() {
         -output "$out/ScribeFFI.xcframework" >/dev/null || return 1
       ;;
     android)
-      cargo ndk -t arm64-v8a -t x86_64 -P 29 -o "$out/jniLibs" build --release -q --locked -p scribe-ffi || return 1
+      cargo ndk -t arm64-v8a -t x86_64 -P 35 -o "$out/jniLibs" build --release -q --locked -p scribe-ffi || return 1
       ;;
   esac
 }

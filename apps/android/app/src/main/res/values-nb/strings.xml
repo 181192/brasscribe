@@ -615,6 +615,8 @@
     <string name="conn_reconnecting">Leter etter %1$s …</string>
     <string name="conn_offline">Ikke tilkoblet. Du kan fortsatt lage partitur på denne telefonen.</string>
     <string name="conn_needs_pairing">Datamaskinen kjenner ikke igjen denne telefonen lenger.</string>
+    <string name="conn_network_closed">Appen har ikke lov til å bruke nettverket ditt, så den når ikke datamaskinen.</string>
+    <string name="conn_allow">Tillat</string>
     <string name="conn_pair_again">Koble til telefonen på nytt</string>
     <string name="server_name_format">Brasscribe på %1$s</string>
     <string name="listen_stop">Stopp</string>
@@ -627,6 +629,7 @@
     <string name="pair_scan_camera">Kamerabilde for koden</string>
     <string name="pair_camera_refused">Kameraet er ikke tillatt, så koden kan ikke skannes. Skriv inn koden i stedet, eller tillat kameraet i telefonens innstillinger.</string>
     <string name="pair_camera_settings">Åpne telefonens innstillinger for appen</string>
+    <string name="pair_network_refused">Appen har ikke lov til å nå enheter på nettverket ditt, så den kan ikke finne eller koble til datamaskinen. Tillat enheter i nærheten i telefonens innstillinger.</string>
     <string name="pair_link_invalid">Den koden er ikke fra Brasscribe Bandroom.</string>
     <string name="pair_link_title">Koble til %1$s?</string>
     <string name="pair_link_address">Adresse på nettverket ditt: %1$s</string>

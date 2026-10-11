@@ -10,12 +10,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +54,7 @@ class ComputerJobService : Service() {
         // Always first: a service started with startForegroundService that never reaches the foreground ends the app.
         // A refusal (the type's time for the day is used up) leaves the job to the view model while the app is in front.
         val entered = runCatching {
-            ServiceCompat.startForeground(this, NOTIFICATION_ID, working(title), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            startForeground(NOTIFICATION_ID, working(title), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         }.onFailure { android.util.Log.w("BrasscribePlay", "job service not in the foreground", it) }
         starting = false
         if (entered.isFailure) { held.value = Held(); stopSelf(); return START_NOT_STICKY }
@@ -114,7 +110,7 @@ class ComputerJobService : Service() {
         watching = null
         follows.clear()
         scope.coroutineContext.cancelChildren()
-        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
@@ -300,11 +296,10 @@ object JobNotices {
         nm.createNotificationChannel(NotificationChannel(CHANNEL_DONE, context.getString(R.string.notif_ready_channel), NotificationManager.IMPORTANCE_DEFAULT))
     }
 
-    /** Whether the phone lets the app post notifications (asked for from Android 13). */
+    /** Whether the phone lets the app post notifications. */
     fun allowed(context: Context): Boolean =
-        (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
-            NotificationManagerCompat.from(context).areNotificationsEnabled()
+        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED &&
+            context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
 
     /**
      * What the service says once it stops following [jobId]: nothing while the app is in front ([inFront]: the screen

@@ -7,6 +7,10 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -16,7 +20,6 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.core.content.IntentCompat
 import no.brasscribe.play.ui.AboutScreen
 import no.brasscribe.play.ui.CompanionScreen
 import no.brasscribe.play.ui.ExportScreen
@@ -45,6 +48,7 @@ class MainActivity : ComponentActivity() {
             val dark = appearance.isDark(isSystemInDarkTheme())
             SideEffect { applyWindowTheme(dark, appearance.isPink) }
             PlayTheme(dark = dark, pink = appearance.isPink) { Product.Root(vm) }
+            AskForLocalNetwork(vm)
         }
     }
 
@@ -76,6 +80,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         AppInFront.started()
         JobNotices.clearDone(this)
+        // (A network the player opened in the phone's settings meanwhile is found here: start runs the check again.)
         vm.connection.start()
         val cm = getSystemService(ConnectivityManager::class.java) ?: return
         val cb = object : ConnectivityManager.NetworkCallback() {
@@ -87,6 +92,12 @@ class MainActivity : ComponentActivity() {
             }
         }
         runCatching { cm.registerDefaultNetworkCallback(cb) }.onSuccess { networkCallback = cb }
+    }
+
+    // Back from the phone's question (answered, or left): no question of the app's is on screen now.
+    override fun onResume() {
+        super.onResume()
+        LocalNetwork.asking = false
     }
 
     override fun onStop() {
@@ -118,13 +129,33 @@ class MainActivity : ComponentActivity() {
             return
         }
         val uri: Uri? = when (intent?.action) {
-            Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+            Intent.ACTION_SEND -> intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
             Intent.ACTION_VIEW -> intent.data
             else -> null
         }
         if (uri != null) {
             vm.home()
             vm.importUri(uri)
+        }
+    }
+}
+
+/**
+ * A paired phone that may not reach the local network (Android 17: the app was updated to ask, or the player took
+ * the leave back) is asked when the app opens, so the computer is found again. A phone that is not paired is asked
+ * on the pairing screen, which asks for itself.
+ */
+@Composable
+private fun AskForLocalNetwork(vm: PlayViewModel) {
+    val context = LocalContext.current
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        LocalNetwork.asking = false
+        if (LocalNetwork.allowed(context)) vm.connection.networkChanged()
+    }
+    LaunchedEffect(Unit) {
+        if (!vm.container.computerInReach() && vm.screen.value.last() != Screen.COMPANION && !LocalNetwork.asking) {
+            LocalNetwork.asking = true
+            ask.launch(LocalNetwork.PERMISSION)
         }
     }
 }

@@ -6,17 +6,14 @@
 
     uv run design/fretscribe/brand/build.py
 
-Reads logo-mark.svg (the strings and the tile colour) and app-icon-fullbleed.svg, and writes
+Reads logo-mark.svg (the strings and the tile colour) and writes
 design/fretscribe/dist/icons/android/res, laid out like Brasscribe's design/dist/icons/android/res
 (design/brand/build.py):
 
-  mipmap-anydpi-v26/ic_launcher.xml      the adaptive icon
+  mipmap-anydpi/ic_launcher.xml          the adaptive icon
   drawable/ic_launcher_foreground.xml    the strings in paper, the art at 64% of the 108 dp canvas
   drawable/ic_launcher_monochrome.xml    the same strings in one colour, for themed icons
   values/ic_launcher_background.xml      the tile's ink
-  mipmap-*/ic_launcher.png               legacy square icons, from the full-bleed master
-
-The PNGs need `rsvg-convert` (librsvg) on PATH. They are rendered, not diffed.
 """
 
 from __future__ import annotations
@@ -24,7 +21,6 @@ from __future__ import annotations
 import math
 import re
 import shutil
-import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -87,7 +83,7 @@ def build() -> None:
     if RES.exists():
         shutil.rmtree(RES)
     files = {
-        "mipmap-anydpi-v26/ic_launcher.xml": (
+        "mipmap-anydpi/ic_launcher.xml": (
             '<?xml version="1.0" encoding="utf-8"?>\n'
             '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
             '    <background android:drawable="@color/ic_launcher_background"/>\n'
@@ -102,11 +98,6 @@ def build() -> None:
     for name, text in files.items():
         (RES / name).parent.mkdir(parents=True, exist_ok=True)
         (RES / name).write_text(text)
-    for density, k in {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}.items():
-        out = RES / f"mipmap-{density}" / "ic_launcher.png"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        px = str(round(48 * k))
-        subprocess.run(["rsvg-convert", "-w", px, "-h", px, str(HERE / "app-icon-fullbleed.svg"), "-o", str(out)], check=True)
     print(f"launcher icon written to {RES.relative_to(HERE.parents[2])}: art at {ART:.0%}, scale {scale:g}, offset {offset:g} dp")
 
 

@@ -17,6 +17,8 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
         return Target(settings.serverId ?: CredentialStore.LEGACY_ID, settings.serverName, settings.url)
     }
 
+    override fun networkOpen(): Boolean = container.computerInReach()
+
     override suspend fun check(url: String): Check {
         val current = url == settings.url
         val client = (if (current) container.engine() as? KtorEngineApi else null) ?: container.newEngineClient(url, settings.token)

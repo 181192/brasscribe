@@ -13,7 +13,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -46,7 +45,7 @@ object PhoneQrCamera : QrCamera {
         val currentOnUnavailable by rememberUpdatedState(onUnavailable)
         val preview = remember { PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER } }
         DisposableEffect(owner) {
-            val main = ContextCompat.getMainExecutor(context)
+            val main = context.mainExecutor
             val worker = Executors.newSingleThreadExecutor()
             val decoder = QrDecoder()
             val done = AtomicBoolean(false)

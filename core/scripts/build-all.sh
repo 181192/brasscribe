@@ -32,7 +32,7 @@ if build aarch64-apple-ios-sim; then
 else result aarch64-apple-ios-sim fail; fi
 
 jni=android/scribe-core/src/main/jniLibs
-if cargo ndk -t arm64-v8a -t x86_64 -o "$jni" build --release -q -p scribe-ffi 2>dist/logs/android.log; then
+if cargo ndk -t arm64-v8a -t x86_64 -P 35 -o "$jni" build --release -q -p scribe-ffi 2>dist/logs/android.log; then
   result "android arm64-v8a+x86_64" pass
 else result "android arm64-v8a+x86_64" fail; fi
 

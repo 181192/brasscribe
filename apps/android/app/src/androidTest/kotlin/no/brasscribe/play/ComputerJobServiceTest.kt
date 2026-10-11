@@ -38,8 +38,7 @@ class ComputerJobServiceTest : ScreenTest() {
     // Without the permission the system keeps the notifications out of sight, and out of the list read here.
     @Before
     fun allowNotifications() {
-        if (android.os.Build.VERSION.SDK_INT >= 33)
-            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
+        instrumentation.uiAutomation.grantRuntimePermission(context.packageName, android.Manifest.permission.POST_NOTIFICATIONS)
         instrumentation.runOnMainSync { ComputerJobService.forget() }
     }
 

@@ -13,5 +13,6 @@ export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetool
 export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/28.2.13676358}"
 out="$here/core-bridge/src/main/jniLibs"
 mkdir -p "$out"
-(cd "$core" && cargo ndk -t arm64-v8a -t x86_64 -P 29 -o "$out" build --release -q -p scribe-ffi)
+# API 35 is the newest this NDK builds for; the apps' floor is 36.
+(cd "$core" && cargo ndk -t arm64-v8a -t x86_64 -P 35 -o "$out" build --release -q -p scribe-ffi)
 ls -l "$out"/*/libscribe_ffi.so
