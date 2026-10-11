@@ -361,6 +361,7 @@ public sealed class ScreenCatalogue
     private static Box BoxOf(FrameworkElement element, double scale, int width, int height)
     {
         var r = element.TransformToVisual(null).TransformBounds(new Windows.Foundation.Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        var whole = r;
         for (var up = VisualTreeHelper.GetParent(element); up is not null; up = VisualTreeHelper.GetParent(up))
         {
             if (up is not ScrollViewer and not Microsoft.UI.Xaml.Controls.Primitives.ScrollPresenter) continue;
@@ -369,6 +370,9 @@ public sealed class ScreenCatalogue
             r.Intersect(view);
             if (r.IsEmpty) return default;
         }
+        // An icon on the edge of what is scrolled into view: the slice that shows may hold none of the glyph, only the
+        // tile behind it, so its colours say nothing of the icon's contrast. It is measured where it is whole.
+        if (element is FontIcon && (r.Width < whole.Width - 0.5 || r.Height < whole.Height - 0.5)) return default;
         return Box.FromDips(r.X, r.Y, r.Width, r.Height, scale).Within(width, height);
     }
 
