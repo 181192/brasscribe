@@ -103,6 +103,8 @@ ROWS = [
     ("Settings_Hf_Saved", "The key is saved in Credential Manager.", "Nøkkelen er lagret i Legitimasjonsbehandling."),  # (+)
     ("Settings_Hf_FromEnvironment", "Brasscribe uses the HF_TOKEN key set on this PC.", "Brasscribe bruker HF_TOKEN-nøkkelen som er satt på denne PC-en."),  # (+)
     ("Settings_Save", "Save", "Lagre"),  # (+)
+    ("Settings_About", "Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime, which sends usage data to Microsoft through Windows’ diagnostic data, never a recording.",
+     "Brasscribe Bandroom er et ikke-kommersielt prosjekt. På denne PC-en lytter den med Microsofts ONNX Runtime, som sender bruksdata til Microsoft gjennom Windows’ diagnostikkdata, aldri et opptak."),  # (+)
     ("Appearance_Title", "Appearance", "Utseende"),  # (+) design/system.md §10
     ("Appearance_System", "Match system", "Følg systemet"),  # (+)
     ("Appearance_Light", "Light", "Lyst"),  # (+)

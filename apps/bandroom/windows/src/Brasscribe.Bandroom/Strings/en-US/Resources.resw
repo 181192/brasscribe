@@ -275,6 +275,9 @@
   <data name="Settings_Save" xml:space="preserve">
     <value>Save</value>
   </data>
+  <data name="Settings_About" xml:space="preserve">
+    <value>Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime, which sends usage data to Microsoft through Windows’ diagnostic data, never a recording.</value>
+  </data>
   <data name="Appearance_Title" xml:space="preserve">
     <value>Appearance</value>
   </data>

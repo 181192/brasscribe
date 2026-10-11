@@ -560,7 +560,9 @@ struct MoreMenu: View {
             Toggle("Start when I log in", isOn: Binding(get: { app.loginItemEnabled }, set: { app.setLoginItem($0) }))
             Button("About Brasscribe Bandroom") {
                 NSApp.activate()
-                NSApp.orderFrontStandardAboutPanel(nil)
+                NSApp.orderFrontStandardAboutPanel(options: [.credits: NSAttributedString(
+                    string: String(localized: "Brasscribe on this Mac listens with Microsoft’s ONNX Runtime, which sends usage data and a device identifier to Microsoft, never a recording."),
+                    attributes: [.font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize), .foregroundColor: NSColor.labelColor])])
             }
             Divider()
             Button("Remove Brasscribe from this Mac…") { onRemove() }

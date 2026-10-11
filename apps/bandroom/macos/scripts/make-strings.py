@@ -63,6 +63,7 @@ NB = {
     "Brasscribe isn't answering": "Brasscribe svarer ikke",
     "Brasscribe needs attention: %@": "Brasscribe må sjekkes: %@",
     "Brasscribe on %@": "Brasscribe på %@",
+    "Brasscribe on this Mac listens with Microsoft’s ONNX Runtime, which sends usage data and a device identifier to Microsoft, never a recording.": "Brasscribe på denne Macen lytter med Microsofts ONNX Runtime, som sender bruksdata og en enhetsidentifikator til Microsoft, aldri et opptak.",
     "Brasscribe on this Mac": "Brasscribe på denne Macen",
     "Brasscribe stopped unexpectedly": "Brasscribe stoppet uventet",
     "Brasscribe uses the key only to download the band writer from Hugging Face, and keeps it in your Keychain.":
