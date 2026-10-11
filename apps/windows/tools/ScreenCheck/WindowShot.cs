@@ -76,7 +76,7 @@ internal static class WindowShot
             {
                 var p = e.Properties;
                 var r = e.BoundingRectangle;
-                if (p.IsOffscreen.ValueOrDefault || r.IsEmpty || string.IsNullOrWhiteSpace(p.Name.ValueOrDefault) || InDisabled(e)) continue;
+                if (p.IsOffscreen.ValueOrDefault || r.IsEmpty || string.IsNullOrWhiteSpace(p.Name.ValueOrDefault) || InDisabled(e) || CutByScrolling(e, r)) continue;
                 found.Add(new ScreenText(p.Name.Value.Trim(), new Box(r.X - area.Left, r.Y - area.Top, r.Width, r.Height), KindOf(e)));
             }
             catch (Exception x) when (x is System.Runtime.InteropServices.COMException or FlaUI.Core.Exceptions.PropertyNotSupportedException) { }
@@ -89,6 +89,23 @@ internal static class WindowShot
     {
         for (var up = e.Parent; up is not null; up = up.Parent)
             if (up.Properties.IsEnabled.TryGetValue(out bool enabled) && !enabled) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Text that the scrolling part it is in shows only a slice of (it sits on the edge of what is scrolled into view):
+    /// the slice may hold none of the glyph, only what is behind it, so its colours say nothing of its contrast.
+    /// </summary>
+    private static bool CutByScrolling(AutomationElement e, System.Drawing.Rectangle r)
+    {
+        for (var up = e.Parent; up is not null; up = up.Parent)
+        {
+            if (!up.Patterns.Scroll.IsSupported) continue;
+            var view = up.BoundingRectangle;
+            if (view.IsEmpty) continue;
+            view.Inflate(1, 1);
+            if (!view.Contains(r)) return true;
+        }
         return false;
     }
 
