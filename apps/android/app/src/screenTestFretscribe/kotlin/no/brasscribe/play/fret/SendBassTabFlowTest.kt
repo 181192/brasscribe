@@ -363,16 +363,16 @@ class SendBassTabFlowTest : ScreenTest() {
     fun aBandScoreOnTheComputerOpensInBrasscribeNotHere() {
         language("en-GB")
         computer()
-        rule.runOnUiThread { vm.openEntry(ScoreEntry("job:band-1", "Old Hundredth", System.currentTimeMillis(), "brass-band", jobId = "band-1")) }
+        rule.runOnUiThread { vm.openEntry(ScoreEntry("job:band-1", "Old Hundredth", System.currentTimeMillis(), "brass-band", jobId = "band-1", target = "brass")) }
         waitUntil(5_000) { rule.onAllNodesWithText("This is a band score. Open it in Brasscribe.").fetchSemanticsNodes().isNotEmpty() }
         assertEquals(listOf(Screen.HOME), vm.screen.value)
         assertEquals(null, vm.result.value)
         assertEquals(null, vm.standFromLibrary.value)
         // Its row's menu has none of the actions that would open it; a tab's row has them.
         val now = System.currentTimeMillis()
-        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:band-1", "Old Hundredth", now, "brass-band", jobId = "band-1")))
+        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:band-1", "Old Hundredth", now, "brass-band", jobId = "band-1", target = "brass")))
         assertEquals(listOf("Edit title", "Open on the music stand", "Check the song", "Delete"),
-            menuOf(ScoreEntry("job:tab-1", "Bass line", now, "bass-tab", jobId = "tab-1")))
+            menuOf(ScoreEntry("job:tab-1", "Bass line", now, "bass-tab", jobId = "tab-1", target = "fretted")))
     }
 
     /** The row menu of [entry], opened: the actions it offers. */

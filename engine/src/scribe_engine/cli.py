@@ -279,7 +279,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--check-golden", type=Path, help="compare outputs with a reference directory; exit 2 on difference")
     r.set_defaults(fn=cmd_run)
 
-    b = sub.add_parser("bench", help="run a benchmark suite (or group: cpu, all) against eval/baselines.json")
+    b = sub.add_parser("bench", help="run a benchmark suite (or group: cpu, ci, all, or one target's: brass, fretted) against "
+                                    "eval/baselines.json; the verdict is given per target")
     b.add_argument("suite")
     b.add_argument("--mode", choices=["cached", "live"], default="cached",
                    help="cached: score existing model outputs only; live: run adapters for missing outputs")
@@ -328,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
 
     p = sub.add_parser("profiles", help="list profiles")
     p.set_defaults(fn=lambda a: print("\n".join(
-        f"{x.name:24s} {x.pipeline:8s} {'validated' if x.validated else 'unvalidated'}  {x.description}"
+        f"{x.name:24s} {x.target.id:8s} {x.pipeline:8s} {'validated' if x.validated else 'unvalidated'}  {x.description}"
         for x in profiles.PROFILES.values())) or 0)
 
     args = ap.parse_args(argv)

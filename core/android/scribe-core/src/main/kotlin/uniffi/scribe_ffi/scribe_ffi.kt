@@ -785,7 +785,7 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_scribe_ffi_fn_free_talkingscore(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
-    external fun uniffi_scribe_ffi_fn_constructor_talkingscore_new(`musicxml`: RustBuffer.ByValue,`compositionJson`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_scribe_ffi_fn_constructor_talkingscore_new(`musicxml`: RustBuffer.ByValue,`compositionJson`: RustBuffer.ByValue,`target`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_scribe_ffi_fn_method_talkingscore_announce(`ptr`: Long,`cursor`: RustBuffer.ByValue,`context`: RustBuffer.ByValue,`settings`: RustBuffer.ByValue,`byBar`: Byte,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -1099,7 +1099,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if ((lib.uniffi_scribe_ffi_checksum_constructor_performance_new() and 0xFFFF) != 3702) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if ((lib.uniffi_scribe_ffi_checksum_constructor_talkingscore_new() and 0xFFFF) != 23438) {
+    if ((lib.uniffi_scribe_ffi_checksum_constructor_talkingscore_new() and 0xFFFF) != 29839) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -1910,16 +1910,18 @@ open class TalkingScore: Disposable, AutoCloseable, TalkingScoreInterface
     }
     /**
      * From partwise MusicXML text plus the Composition JSON when known
-     * (confidence, sources, performed time, free regions).
+     * (confidence, sources, performed time, free regions). `target` is the one the score was written
+     * by, which names its parts and instruments.
      */
-    constructor(`musicxml`: kotlin.String, `compositionJson`: kotlin.String?) :
+    constructor(`musicxml`: kotlin.String, `compositionJson`: kotlin.String?, `target`: Target) :
         this(UniffiWithHandle, 
     uniffiRustCallWithError(CoreException) { _status ->
     UniffiLib.uniffi_scribe_ffi_fn_constructor_talkingscore_new(
     
         
         FfiConverterString.lower(`musicxml`),
-        FfiConverterOptionalString.lower(`compositionJson`),_status)
+        FfiConverterOptionalString.lower(`compositionJson`),
+        FfiConverterTypeTarget.lower(`target`),_status)
 }
     )
 
@@ -3897,6 +3899,50 @@ public object FfiConverterTypeTalkingUnit: FfiConverterRustBuffer<TalkingUnit> {
     override fun allocationSize(value: TalkingUnit) = 4UL
 
     override fun write(value: TalkingUnit, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * The target a score was written by: it is the target that knows what its parts and instruments are
+ * called in a language other than the score's own.
+ */
+
+enum class Target {
+    
+    /**
+     * A brass-band score: the band's names.
+     */
+    BRASS,
+    /**
+     * A tab for a fretted instrument: the names the score itself gives.
+     */
+    FRETTED;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeTarget: FfiConverterRustBuffer<Target> {
+    override fun read(buf: ByteBuffer) = try {
+        Target.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: Target) = 4UL
+
+    override fun write(value: Target, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }

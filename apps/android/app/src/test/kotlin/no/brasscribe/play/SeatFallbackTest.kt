@@ -16,7 +16,7 @@ private class OldEngine(private val known: Set<String>, val seen: MutableList<St
     override suspend fun createJob(request: JobCreate): Job {
         seen += request.seat
         if (request.seat != null && request.seat !in known) throw EngineException(422, "seat: input should be one of …")
-        return Job("j", request.profile, no.brasscribe.play.engine.JobStatus.QUEUED, 0.0, emptyList())
+        return Job("j", request.profile, "brass", no.brasscribe.play.engine.JobStatus.QUEUED, 0.0, emptyList())
     }
 }
 

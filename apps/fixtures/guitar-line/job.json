@@ -1,6 +1,7 @@
 {
  "id": "guitar-line",
  "profile": "tab",
+ "target": "fretted",
  "title": "Guitar line",
  "audio_id": "ae3be0fa611d53ec",
  "status": "succeeded",

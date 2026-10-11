@@ -79,7 +79,7 @@ fun tabOptions(instrument: YourInstrument, answer: SongAnswer): TabOptions {
 fun startingAnswer(instrument: YourInstrument): Recording? = instrument.valid().kind.let { if (it.aloneByDefault) it.defaultRecording else null }
 
 /**
- * The profile ids the computer in use says it has. What is this? and Check the song ask when they open and
+ * The profile ids of this app's target that the computer in use says it has. What is this? and Check the song ask when they open and
  * whenever the computer changes; the answer is kept for that [computer] only, and is gone while it is asked again.
  */
 object ComputerProfiles {

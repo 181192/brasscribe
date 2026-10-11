@@ -74,7 +74,7 @@ class Voice:
     role: VoiceRole
     notes: list[Note] = field(default_factory=list)
     instrument_hint: str | None = None  # what the source instrument seemed to be; never binding
-    layer: str | None = None  # textural layer it came from: solo, strings, brass, keys, bass, drums
+    layer: str | None = None  # textural layer it came from: solo, strings, hits, keys, bass, drums
 
 
 @dataclass

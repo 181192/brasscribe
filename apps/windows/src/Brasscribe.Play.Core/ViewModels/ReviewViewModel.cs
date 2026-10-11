@@ -278,10 +278,10 @@ public sealed partial class ReviewViewModel : ObservableObject
         Select(ordered.FirstOrDefault(i => !i.IsKept) ?? ordered.FirstOrDefault());
     }
 
-    /// <summary>Accompaniment: drum parts, and notes that come only from the backing layers (orchestra, strings, drums).</summary>
+    /// <summary>Accompaniment: drum parts, and notes that come only from the backing layers (orchestra, strings, hits, drums).</summary>
     private static bool IsAccompaniment(TsPart part, TsEvent ev) =>
         part.Percussion || ev.Kind == EventKind.Unpitched
-        || ev.Sources.Count > 0 && ev.Sources.All(src => src is "strings" or "drums" or "brass" or "orchestra" or "harmony");
+        || ev.Sources.Count > 0 && ev.Sources.All(src => src is "strings" or "drums" or "hits" or "orchestra" or "harmony");
 
     public void Select(ReviewItem? item)
     {

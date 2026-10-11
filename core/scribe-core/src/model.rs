@@ -23,7 +23,7 @@ pub const MAX_BAR_BEATS: i64 = 32;
 /// Err unless [start, end) ticks lie within [`MAX_TICKS`] of tick 0.
 pub fn check_span(start: i64, end: i64) -> Result<(), String> {
     if start < -MAX_TICKS || end > MAX_TICKS {
-        return Err(format!("the music is longer than the {MAX_BEATS} beats Brasscribe arranges"));
+        return Err(format!("the music is longer than the {MAX_BEATS} beats a score holds"));
     }
     Ok(())
 }
@@ -114,7 +114,7 @@ pub struct Voice {
     /// What the source instrument seemed to be; never binding.
     #[serde(default)]
     pub instrument_hint: Option<String>,
-    /// Textural layer it came from: solo, strings, brass, keys, bass, drums.
+    /// Textural layer it came from: solo, strings, hits, keys, bass, drums.
     #[serde(default)]
     pub layer: Option<String>,
 }

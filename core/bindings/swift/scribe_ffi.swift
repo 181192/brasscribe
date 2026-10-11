@@ -853,15 +853,17 @@ open class TalkingScore: TalkingScoreProtocol, @unchecked Sendable {
     }
     /**
      * From partwise MusicXML text plus the Composition JSON when known
-     * (confidence, sources, performed time, free regions).
+     * (confidence, sources, performed time, free regions). `target` is the one the score was written
+     * by, which names its parts and instruments.
      */
-public convenience init(musicxml: String, compositionJson: String?)throws  {
+public convenience init(musicxml: String, compositionJson: String?, target: Target)throws  {
     let handle =
         try rustCallWithError(FfiConverterTypeCoreError_lift) {
         uniffiCallStatus in
     uniffi_scribe_ffi_fn_constructor_talkingscore_new(
         FfiConverterString.lower(musicxml),
-        FfiConverterOptionString.lower(compositionJson),uniffiCallStatus
+        FfiConverterOptionString.lower(compositionJson),
+        FfiConverterTypeTarget_lower(target),uniffiCallStatus
     )
 }
     self.init(unsafeFromHandle: handle)
@@ -3287,6 +3289,82 @@ public func FfiConverterTypeTalkingUnit_lower(_ value: TalkingUnit) -> RustBuffe
 }
 
 
+
+/**
+ * The target a score was written by: it is the target that knows what its parts and instruments are
+ * called in a language other than the score's own.
+ */
+
+public enum Target: Equatable, Hashable {
+    
+    /**
+     * A brass-band score: the band's names.
+     */
+    case brass
+    /**
+     * A tab for a fretted instrument: the names the score itself gives.
+     */
+    case fretted
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension Target: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeTarget: FfiConverterRustBuffer {
+    typealias SwiftType = Target
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Target {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .brass
+        
+        case 2: return .fretted
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: Target, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .brass:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .fretted:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTarget_lift(_ buf: RustBuffer) throws -> Target {
+    return try FfiConverterTypeTarget.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeTarget_lower(_ value: Target) -> RustBuffer {
+    return FfiConverterTypeTarget.lower(value)
+}
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -4415,7 +4493,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_scribe_ffi_checksum_constructor_performance_new() != 3702) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_scribe_ffi_checksum_constructor_talkingscore_new() != 23438) {
+    if (uniffi_scribe_ffi_checksum_constructor_talkingscore_new() != 29839) {
         return InitializationResult.apiChecksumMismatch
     }
 

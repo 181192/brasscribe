@@ -104,7 +104,7 @@ class RestoredTakeTest : ScreenTest() {
     fun openOnTheMusicStandOnABassTabsRowOpensNothingAndLeavesNoStandBehind() {
         // A tab of any instrument, and a bass tab an older app made: neither is this app's.
         for (profile in listOf("bass-tab", "tab")) {
-            val tab = ScoreEntry("job:$profile-1", "Riff", System.currentTimeMillis(), profile, jobId = "$profile-1")
+            val tab = ScoreEntry("job:$profile-1", "Riff", System.currentTimeMillis(), profile, jobId = "$profile-1", target = "fretted")
             rule.runOnUiThread { vm.openEntry(tab, stand = true) }
             waitUntil(5_000) { rule.onAllNodesWithText("This is a tab. Open it in Fretscribe.").fetchSemanticsNodes().isNotEmpty() }
             assertEquals(profile, listOf(Screen.HOME), vm.screen.value)
@@ -130,10 +130,10 @@ class RestoredTakeTest : ScreenTest() {
     @Test
     fun aBassTabsRowOffersNeitherTheMusicStandNorCheckTheNotes() {
         val now = System.currentTimeMillis()
-        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:tab-1", "Bass line", now, "bass-tab", jobId = "tab-1")))
-        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:tab-2", "Guitar line", now, "tab", jobId = "tab-2")))
+        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:tab-1", "Bass line", now, "bass-tab", jobId = "tab-1", target = "fretted")))
+        assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:tab-2", "Guitar line", now, "tab", jobId = "tab-2", target = "fretted")))
         // A band score in the same list has them all, as before.
         assertEquals(listOf("Edit title", "Open on the music stand", "Check the notes", "Delete"),
-            menuOf(ScoreEntry("job:band-1", "Old Hundredth", now, "brass-band", jobId = "band-1")))
+            menuOf(ScoreEntry("job:band-1", "Old Hundredth", now, "brass-band", jobId = "band-1", target = "brass")))
     }
 }

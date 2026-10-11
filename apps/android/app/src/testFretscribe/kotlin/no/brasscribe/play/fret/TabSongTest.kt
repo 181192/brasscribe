@@ -19,6 +19,7 @@ import no.brasscribe.play.engine.Refusal
 import no.brasscribe.play.engine.Tab
 import no.brasscribe.play.engine.TabLayout
 import no.brasscribe.play.engine.TabOptions
+import no.brasscribe.play.engine.Target
 import no.brasscribe.play.model.BrasscribeJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -204,13 +205,11 @@ class TabSongTest {
         assertEquals(Screen.REVIEW, Product.afterTranscription(result(Profile.SOLO)))
         // After Check the notes, the output choices for every take, a solo too (Brasscribe opens a solo's score).
         for (p in Profile.entries) assertEquals(p.id, Screen.OUTPUT, Product.afterReview(result(p)))
-        assertTrue(Product.makes("tab"))
-        assertTrue(Product.makes("bass-tab"))
-        val band = listOf(Profile.SOLO, Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK)
-        assertEquals(Profile.entries.toSet(), (band + Profile.TAB + Profile.BASS_TAB).toSet())
-        band.forEach { assertFalse(it.id, Product.makes(it.id)) }
-        // Not this app's to open: also a profile a newer computer has and this app has never heard of.
-        assertFalse(Product.makes("big-band"))
+        assertEquals(Target.FRETTED, Product.target)
+        // Whose a job is goes by the target the engine gives it: a tab's are this app's, and the band's, a target
+        // this app has never heard of and a job without one are not.
+        assertTrue(Product.makes("fretted"))
+        listOf("brass", "choir", "", null).forEach { assertFalse("$it", Product.makes(it)) }
         Profile.entries.forEach { assertFalse(it.id, Product.arranges(it)) }
     }
 

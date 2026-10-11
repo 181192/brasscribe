@@ -290,8 +290,9 @@ private fun SongRowView(row: SongRow, change: Change?, onChange: (Change) -> Uni
  */
 @Composable
 fun songRowSubtitle(entry: ScoreEntry): String? {
-    val tab = Profile.writesTab(entry.profile)
     val saved = entry.saved
+    // A song on this phone is known by the profile it was made with; one in the computer's list by its job's target.
+    val tab = if (saved != null) Profile.writesTab(entry.profile) else no.brasscribe.play.Product.makes(entry.target)
     if (!tab && saved != null) return null
     if (!tab) return stringResource(R.string.other_product_row)
     val date = android.text.format.DateUtils.getRelativeTimeSpanString(entry.updated, System.currentTimeMillis(),

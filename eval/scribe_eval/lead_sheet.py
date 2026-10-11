@@ -53,6 +53,7 @@ def main() -> None:
     ap.add_argument("--bass", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True, help="output .musicxml")
     ap.add_argument("--title", default="Draft")
+    ap.add_argument("--creator", help="who the sheet names as its arranger (default: nobody)")
     ap.add_argument("--melody-range", default="52,86", help="MIDI lo,hi (default E3..D6, trumpet)")
     ap.add_argument("--bass-range", default="28,55")
     ap.add_argument("--pdf", action="store_true")
@@ -77,7 +78,8 @@ def main() -> None:
     bass = fill_gaps(quantize(line(load_notes(args.bass), blo, bhi, top=False), times, monophonic=True), TICKS_PER_BEAT // 2)
 
     score = build_score([PartSpec("Melody", melody), PartSpec("Bass", bass, clef="bass")],
-                        beats_per_bar=int(beats_per_bar), bpm=float(bpm), title=args.title, pickup_ticks=pickup, low_confidence=0.7)
+                        beats_per_bar=int(beats_per_bar), bpm=float(bpm), title=args.title, pickup_ticks=pickup, low_confidence=0.7,
+                        creator=args.creator)
     write_musicxml(score, args.out)
     print(f"{args.out}: {len(melody)} melody / {len(bass)} bass notes, {beats_per_bar}/4 at {bpm:.0f} BPM")
     if args.pdf:

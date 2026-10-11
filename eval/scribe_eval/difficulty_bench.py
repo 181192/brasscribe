@@ -98,7 +98,7 @@ def mikkel(comp_path: Path) -> dict:
     bar = comp.meters[0].beats * comp.ticks_per_beat
     tonal = [n for v in comp.voices if v.layer in ("solo", "strings") for n in v.notes]
     bass = [n for v in comp.voices if v.layer == "bass" for n in v.notes]
-    src_on = sorted({n.start for v in comp.voices if v.layer in ("strings", "brass") for n in v.notes if n.start % 12 == 0})
+    src_on = sorted({n.start for v in comp.voices if v.layer in ("strings", "hits") for n in v.notes if n.start % 12 == 0})
     res = {}
     for lname, lineup in (("band", BRASS_BAND), ("minimal", MINIMAL_BAND), ("quartet", QUARTET)):
         faithful_solo = None

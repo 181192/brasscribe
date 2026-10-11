@@ -9,6 +9,7 @@ import { lang, t } from "../i18n";
 import { tickTime } from "../lib/beats";
 import { diffCompositions, type ChangeKind, type CompositionDiff } from "../lib/diff";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
+import { scoreFile } from "../lib/targets";
 import { partNameNb } from "../lib/talkingxml";
 import { pitchName } from "../lib/validate";
 import { diffParts, type MarkKind } from "../lib/xmldiff";
@@ -35,7 +36,7 @@ async function loadSide(key: string, jobs: Job[], signal: AbortSignal): Promise<
     const name = key.slice(4);
     const [c, x] = await Promise.all([
       fetchText(api.referenceFileUrl(name, "composition.json"), undefined, { signal }).then((s) => JSON.parse(s) as Composition),
-      fetchText(api.referenceFileUrl(name, "brass-band.musicxml"), undefined, { signal }).catch(() => null),
+      fetchText(api.referenceFileUrl(name, scoreFile("brass", "musicxml")), undefined, { signal }).catch(() => null),
     ]);
     return { key, label: t("cmp.reference", { name }), composition: c, xmlText: x, xml: parse(x) };
   }

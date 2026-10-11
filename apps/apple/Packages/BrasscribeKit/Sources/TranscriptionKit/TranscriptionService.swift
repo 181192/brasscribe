@@ -9,6 +9,8 @@ public enum SourceProfile: String, CaseIterable, Codable, Sendable, Identifiable
     case orchestraWithSoloist = "orchestra-with-soloist"
     case popRock = "pop-rock"
     public var id: String { rawValue }
+    /// The engine's target these profiles belong to: this app makes band scores.
+    public static let target = "brass"
 }
 
 /// What the musician wants out, sent along when the engine supports it.

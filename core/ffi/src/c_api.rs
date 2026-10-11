@@ -18,6 +18,11 @@ pub const SC_FAILED: i32 = 2;
 pub const SC_NULL: i32 = 3;
 pub const SC_PANIC: i32 = 4;
 
+/// The target that wrote a score: a brass-band score.
+pub const SC_TARGET_BRASS: i32 = 0;
+/// The target that wrote a score: a tab for a fretted instrument.
+pub const SC_TARGET_FRETTED: i32 = 1;
+
 fn to_c(s: String) -> *mut c_char {
     CString::new(s.replace('\0', " ")).unwrap_or_default().into_raw()
 }
@@ -485,10 +490,12 @@ pub unsafe extern "C" fn sc_fretted_playing_instructions_json(request: *const c_
 pub struct ScTalkingScore(crate::talking::TalkingScore);
 
 /// Build a talking score from MusicXML and (optionally, may be null) the
-/// Composition JSON. Writes a handle to `*out`; release with
-/// [`sc_talking_score_free`].
+/// Composition JSON. `target` is the one the score was written by
+/// ([`SC_TARGET_BRASS`], [`SC_TARGET_FRETTED`]): it names the score's parts and
+/// instruments; any other value is [`SC_INVALID`]. Writes a handle to `*out`;
+/// release with [`sc_talking_score_free`].
 #[no_mangle]
-pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, composition_json: *const c_char, out: *mut *mut ScTalkingScore, err: *mut *mut c_char) -> i32 {
+pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, composition_json: *const c_char, target: i32, out: *mut *mut ScTalkingScore, err: *mut *mut c_char) -> i32 {
     let Some(xml) = from_c(musicxml) else { return SC_NULL };
     if out.is_null() {
         return SC_NULL;
@@ -496,7 +503,12 @@ pub unsafe extern "C" fn sc_talking_score_new(musicxml: *const c_char, compositi
     let comp = from_c(composition_json);
     let r = catch_unwind(AssertUnwindSafe(|| -> Result<serde_json::Value, (i32, String)> {
         let c: Option<serde_json::Value> = comp.map(|c| serde_json::from_str(&c)).transpose().map_err(|e| (SC_INVALID, e.to_string()))?;
-        scribe_core::talking_score::build(&xml, c.as_ref(), &target_brass::names::BandNames).map_err(|e| (SC_INVALID, e))
+        let target = match target {
+            SC_TARGET_BRASS => crate::talking::Target::Brass,
+            SC_TARGET_FRETTED => crate::talking::Target::Fretted,
+            other => return Err((SC_INVALID, format!("unknown target {other}"))),
+        };
+        scribe_core::talking_score::build(&xml, c.as_ref(), target.names()).map_err(|e| (SC_INVALID, e))
     }));
     match r {
         Ok(Ok(doc)) => {

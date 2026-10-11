@@ -98,7 +98,7 @@ class StreamingUploadTest {
         val engine = MockEngine { req ->
             path = req.url.encodedPath
             drain(req.body, received)
-            respond("""{"id":"r1","profile":"solo","status":"queued","created":1.5,"stages":[]}""", HttpStatusCode.Accepted, json)
+            respond("""{"id":"r1","profile":"solo","target":"brass","status":"queued","created":1.5,"stages":[]}""", HttpStatusCode.Accepted, json)
         }
         val api = matchingEngine("http://host", engine)
         api.createJobFromUpload(UploadSource.of(file, "take \"1\".m4a"), Profile.SOLO, "Take 1")

@@ -20,6 +20,8 @@ DATA = REPO / "data"
 MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band"
 # The on-device reference clip.
 ONDEVICE_REF = DATA / "runs" / "apple" / "entertainer-ref"
+# Who the lead sheets of the cases name as their arranger, in the reference and in the core alike.
+LEAD_CREATOR = "arr. Brasscribe"
 MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
 # SwiftF0 contour of the Mikkel solo stem that the golden output was made with (sha256 prefix).
 MIKKEL_CONTOUR_SHA = "06d60fa5aae3"

@@ -38,7 +38,7 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
             BcIcon(R.drawable.ic_bc_more, stringResource(R.string.score_options, entry.title), tint = c.textMuted)
         }
         // The other app's score is not opened here: its row keeps only what is about the row itself.
-        val opensHere = !entry.onComputer || no.brasscribe.play.Product.makes(entry.profile)
+        val opensHere = !entry.onComputer || no.brasscribe.play.Product.makes(entry.target)
         DropdownMenu(menu, { menu = false }) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.edit_title)) },

@@ -37,7 +37,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, 
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, bass_tab, build_info, history, inspection, profiles, tab, wire
+from . import __version__, bass_tab, build_info, history, inspection, profiles, tab, targets, wire
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
 from .adapters import host_device
@@ -61,23 +61,14 @@ HEARTBEAT_S = 15.0
 STREAM_WAITERS = 256
 ROTATE_AFTER_S = 30 * 86400.0  # clients are asked to rotate their token monthly
 
-MEDIA = {
-    "composition.json": "application/json",
-    "brass-band.musicxml": "application/vnd.recordare.musicxml+xml",
-    "tab.musicxml": "application/vnd.recordare.musicxml+xml",
-    "brass-band.pdf": "application/pdf",
-    "brass-band.mid": "audio/midi",
-    "brass-band.mp3": "audio/mpeg",
-    "manifest.json": "application/json",
-}
-SUFFIX_MEDIA = {".json": "application/json", ".musicxml": MEDIA["brass-band.musicxml"], ".pdf": "application/pdf",
+SUFFIX_MEDIA = {".json": "application/json", ".musicxml": "application/vnd.recordare.musicxml+xml", ".pdf": "application/pdf",
                 ".mid": "audio/midi", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac",
                 ".beats": "text/plain", ".brf": "text/plain; charset=us-ascii", ".html": "text/html; charset=utf-8",
                 ".txt": "text/plain; charset=utf-8"}
 
 
 def media_type(name: str) -> str:
-    return MEDIA.get(name) or SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
+    return SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
 
 
 class CachedStaticFiles(StaticFiles):
@@ -212,13 +203,19 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return m.Job(id=job.id, profile=job.profile, title=job.title, audio_id=job.audio_id, status=job.status,
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
-                     device_name=job.device_name,
+                     device_name=job.device_name, target=getattr(target_of(job), "id", None),
                      stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job))
 
+    def target_of(job: Job) -> targets.Target | None:
+        return targets.of_run(job.profile, jobs.run_dir(job.id) / "outputs")
+
     def score_file(job_id: str, suffix: str) -> FileResponse:
-        """The job's score in one format: the band score, or the tab of a tablature job."""
-        stem = "tab" if tab.is_tab(job_or_404(job_id).profile) else "brass-band"
-        return output_file(job_id, f"{stem}.{suffix}")
+        """The job's score in one format, under the name its target gives it."""
+        job = job_or_404(job_id)
+        target = target_of(job)
+        if target is None:
+            raise HTTPException(404, f"no score available for job {job_id} (status {job.status})")
+        return output_file(job_id, target.file(suffix))
 
     def output_file(job_id: str, name: str) -> FileResponse:
         job = job_or_404(job_id)
@@ -380,8 +377,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         out = []
         for p in profiles.PROFILES.values():
             pipe = p.build("-", {})
-            out.append(m.ProfileInfo(name=p.name, pipeline=p.pipeline, description=p.description, validated=p.validated,
-                                     stages=[s.name for s in pipe.stages]))
+            out.append(m.ProfileInfo(name=p.name, target=p.target.id, pipeline=p.pipeline, description=p.description,
+                                     validated=p.validated, stages=[s.name for s in pipe.stages]))
         return out
 
     # ------------------------------------------------------------ audio + jobs
@@ -653,14 +650,13 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/jobs/{job_id}/tab", operation_id="getTab", tags=["results"], dependencies=[Depends(auth)],
              response_model=m.Tab,
-             responses={200: {"description": "tab.json as written by the tab profile (and bass-tab). The tab as plain "
-                                             "text (tab.txt) and as playing instructions in words "
-                                             "(tab-instructions.en.txt, tab-instructions.nb.txt) are among the "
-                                             "job's artifacts"},
+             responses={200: {"description": f"{bass_tab.TAB_JSON} as written by the fretted target's profiles. The tab "
+                                             f"as plain text ({bass_tab.TEXT_TAB}) and as playing instructions in words "
+                                             f"({', '.join(bass_tab.TEXT_OUTPUTS[1:])}) are among the job's artifacts"},
                         404: {"description": "the job has no tab: another profile, or not finished"}})
     def get_tab(job_id: str):
         """The tab of a tab job: a string and fret for every note, and what the song check asks about."""
-        return output_file(job_id, "tab.json")
+        return output_file(job_id, bass_tab.TAB_JSON)
 
     @app.get("/v1/jobs/{job_id}/musicxml", operation_id="getMusicXml", tags=["results"], dependencies=[Depends(auth)],
              response_class=FileResponse,
@@ -684,7 +680,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
              response_class=FileResponse,
              responses={200: {"content": {"audio/mpeg": {"schema": {"type": "string", "format": "binary"}}}}})
     def get_audio(job_id: str):
-        return output_file(job_id, "brass-band.mp3")
+        return score_file(job_id, "mp3")
 
     def part_file(job_id: str, part: str, suffix: str) -> str:
         """Output name of one part's file: part is its 1-based number in score order or its name."""
@@ -705,7 +701,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def get_braille(job_id: str, part: str | None = Query(None, description="part number (1-based, score order) or "
                                                                              "name, e.g. 2 or Solo Cornet; omit for the score")):
         """Braille music (BRF) of the score or of one part, transcribed by music21."""
-        return output_file(job_id, part_file(job_id, part, ".brf") if part else "brass-band.brf")
+        return output_file(job_id, part_file(job_id, part, ".brf")) if part else score_file(job_id, "brf")
 
     @app.get("/v1/jobs/{job_id}/talking-score", operation_id="getTalkingScore", tags=["results"],
              dependencies=[Depends(auth)],
@@ -757,13 +753,14 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def list_suites() -> list[m.SuiteInfo]:
         from scribe_eval import suites
 
-        return [m.SuiteInfo(name=s.name, description=s.description, cpu=s.cpu, requires=list(s.requires))
+        return [m.SuiteInfo(name=s.name, target=s.target, description=s.description, cpu=s.cpu, requires=list(s.requires))
                 for s in suites.SUITES.values()]
 
     @app.post("/v1/suites/{name}/run", response_model=m.BenchRun, operation_id="runSuite", tags=["benchmarks"],
               dependencies=[Depends(auth)])
     def run_suite(name: str, mode: str = Query("cached", pattern="^(cached|live)$")) -> m.BenchRun:
-        """Run a suite or group (cpu, all) against eval/baselines.json; the result is stored in the history."""
+        """Run a suite or a group (cpu, ci, all, or one target's suites: brass, fretted) against
+        eval/baselines.json. The answer has a verdict per target; the result is stored in the history."""
         from scribe_eval import suites
 
         if name not in suites.SUITES and name not in suites.GROUPS:
@@ -877,7 +874,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             raise HTTPException(404, f"no reference {reference}")
         other = settings.golden_dir / reference if reference else jobs.run_dir(job_or_404(job).id) / "outputs"
         for d in (this, other):
-            if not (d / "composition.json").exists() or not (d / "brass-band.musicxml").exists():
+            if not (d / "composition.json").exists() or not (d / targets.BRASS.musicxml).exists():
                 raise HTTPException(404, f"no score output in {d.name}")
         return m.Comparison(**compare(this, other).to_dict())
 
@@ -901,7 +898,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def run_roundtrip(job_id: str, request: Request) -> m.Roundtrip:
         """Re-export the job's MusicXML through MuseScore and compare every part's sounding pitches (takes seconds)."""
         outputs = jobs.run_dir(job_or_404(job_id).id) / "outputs"
-        if not (outputs / "brass-band.musicxml").exists():
+        if not (outputs / targets.BRASS.musicxml).exists():
             raise HTTPException(404, "job has no MusicXML output")
         r = inspection.roundtrip(outputs)
         if r["status"] != "not_run":

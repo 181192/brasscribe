@@ -1690,11 +1690,11 @@
    "layer": "strings"
   },
   {
-   "id": "brass",
+   "id": "hits",
    "role": "harmony",
    "notes": [],
    "instrument_hint": "orchestra hits",
-   "layer": "brass"
+   "layer": "hits"
   },
   {
    "id": "drums",

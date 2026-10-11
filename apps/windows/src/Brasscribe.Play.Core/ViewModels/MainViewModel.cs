@@ -505,14 +505,15 @@ public sealed partial class MainViewModel : ObservableObject
     private IReadOnlyList<Job> _computerJobs = [];
 
     /// <summary>
-    /// Fetches the computer's finished scores; only this PC's are listed when the computer can't be reached or has
-    /// another interface version (its client asks that first, and then sends nothing more).
+    /// Fetches the computer's finished scores of this app's target (the computer serves other apps too); only this
+    /// PC's are listed when the computer can't be reached or has another interface version (its client asks that
+    /// first, and then sends nothing more).
     /// </summary>
     public async Task RefreshComputerScoresAsync()
     {
         try
         {
-            _computerJobs = await Engine.ListJobsAsync();
+            _computerJobs = [.. (await Engine.ListJobsAsync()).Where(j => j.IsOurs)];
         }
         catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException or TaskCanceledException
                                    or System.Text.Json.JsonException)

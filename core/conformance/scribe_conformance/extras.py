@@ -80,7 +80,7 @@ def talking_rows(binary: Path, src: Path, py: Path, rs: Path) -> list[tuple[str,
         st = T.Settings(**s)
         (py / "talking" / f"{label}.txt").write_text(T.to_text(doc, st))
         (py / "talking" / f"{label}.html").write_text(T.to_html(doc, st))
-        cmd = [str(binary), "talking-score", "--musicxml", str(xml), *(["--composition", str(comp_p)] if comp else []),
+        cmd = [str(binary), "talking-score", "--target", "brass", "--musicxml", str(xml), *(["--composition", str(comp_p)] if comp else []),
                "--text", str(rs / "talking" / f"{label}.txt"), "--html", str(rs / "talking" / f"{label}.html"),
                *(["--json", str(rs / "talking" / "doc.json")] if i == 0 else []), *_cli_settings(s)]
         p = subprocess.run(cmd, capture_output=True, text=True)

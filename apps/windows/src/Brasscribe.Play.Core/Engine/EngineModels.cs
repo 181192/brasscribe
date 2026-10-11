@@ -72,8 +72,14 @@ public sealed record Job(
     double Progress = 0.0,
     IReadOnlyList<string>? Outputs = null,
     string? PreviousRunId = null,
-    string? DeviceName = null)
+    string? DeviceName = null,
+    string? Target = null)
 {
+    /// <summary>The job belongs to this app: its target is the app's. A job without a target, or of a target
+    /// this app does not know, is not.</summary>
+    [JsonIgnore]
+    public bool IsOurs => Target == Product.Target;
+
     [JsonIgnore]
     public bool IsTerminal => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;
 }
@@ -97,7 +103,8 @@ public sealed record FileRef(string Name, long Bytes, string MediaType, string U
 public sealed record StageArtifacts(string Stage, string Status, IReadOnlyList<FileRef> Files, string? Kind = null,
     string? Key = null, string? Device = null, double? Seconds = null, double? QueueWaitS = null, double? RunS = null);
 
-public sealed record ProfileInfo(string Name, string Pipeline, string Description, bool Validated, IReadOnlyList<string> Stages);
+/// <summary>Target: the target the profile belongs to ("brass", "fretted"); an app offers the profiles of its own.</summary>
+public sealed record ProfileInfo(string Name, string Target, string Pipeline, string Description, bool Validated, IReadOnlyList<string> Stages);
 
 public sealed record PairRequest(string Code, string? DeviceName = null, string? Platform = null);
 

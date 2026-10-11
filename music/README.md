@@ -42,7 +42,7 @@ defaults: files written before a field existed stay valid.
 | `role` | `melody` \| `countermelody` \| `harmony` \| `bass` \| `rhythm` | |
 | `notes` | Note[] | |
 | `instrument_hint` | string \| null | what the source instrument seemed to be; never binding |
-| `layer` | string \| null | textural layer: `solo`, `strings`, `brass`, `keys`, `bass`, `drums` |
+| `layer` | string \| null | textural layer, named for what was heard: `solo`, `strings`, `hits` (the orchestra's short chords), `keys`, `bass`, `drums` |
 
 ### Note
 

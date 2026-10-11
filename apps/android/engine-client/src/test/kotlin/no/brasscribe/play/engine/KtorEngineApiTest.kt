@@ -16,7 +16,7 @@ import org.junit.Test
 class KtorEngineApiTest {
     private val json = headersOf(HttpHeaders.ContentType, "application/json")
 
-    private val job = """{"id":"r1","profile":"solo","status":"queued","created":1.5,"stages":[{"name":"beats","status":"pending"}],"unknown_field":1}"""
+    private val job = """{"id":"r1","profile":"solo","target":"brass","status":"queued","created":1.5,"stages":[{"name":"beats","status":"pending"}],"unknown_field":1}"""
 
     @Test
     fun sendsBearerTokenAndDecodesJob() = runTest {

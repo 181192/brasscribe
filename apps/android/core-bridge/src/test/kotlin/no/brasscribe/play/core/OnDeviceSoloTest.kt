@@ -56,7 +56,7 @@ class OnDeviceSoloTest {
      */
     @Test
     fun entertainerMatchesTheLayeredReference() {
-        val core = RustCoreBridge.load()
+        val core = RustCoreBridge.load("brass")
         assumeTrue("host core missing", core != null)
         assumeTrue("models missing", File(models, "swift-f0/swift-f0-window.onnx").isFile)
         val runs = File(System.getProperty("brasscribe.data") ?: "missing", "runs/apple")
@@ -94,7 +94,7 @@ class OnDeviceSoloTest {
 
     @Test
     fun soloOnThePhoneAgainstTheEngineSoloProfile() {
-        val core = RustCoreBridge.load()
+        val core = RustCoreBridge.load("brass")
         assumeTrue("host core missing", core != null)
         assumeTrue("models missing", File(models, "swift-f0/swift-f0-window.onnx").isFile)
         assumeTrue("URMP clip missing", clip.isFile)

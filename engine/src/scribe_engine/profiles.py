@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import stages as S
-from . import tuning
+from . import targets, tuning
 from .dag import SOURCE, Input, Pipeline, Stage
 from .stages import EVAL_SRC, SYMBOLIC_CODE, THIS
 
@@ -41,6 +41,11 @@ class Profile:
     description: str
     validated: bool
     build: callable  # (title, params) -> list[Stage] and outputs
+
+    @property
+    def target(self) -> targets.Target:
+        """The target the profile belongs to (targets.py)."""
+        return targets.of(self.name)
 
 
 ARRANGEMENT_DEFAULTS = {"lineup": "full", "difficulty": "faithful", "key": None, "transpose": None,
@@ -209,17 +214,20 @@ def _export(arrange: str, audio: bool) -> Stage:
                  outputs=("export.json",))
 
 
+# What every band profile's arrange stage writes.
+ARRANGED = ("composition.json", targets.BRASS.musicxml)
+
+
 def _outputs(arrange: str) -> dict[str, tuple[str, str]]:
+    band = targets.BRASS
     return {
         "composition.json": (arrange, "composition.json"),
-        "brass-band.musicxml": (arrange, "brass-band.musicxml"),
-        "brass-band.pdf": ("export", "brass-band.pdf"),
-        "brass-band.mid": ("export", "brass-band.mid"),
-        "brass-band.mp3": ("export", "brass-band.mp3"),
+        band.musicxml: (arrange, band.musicxml),
+        **{name: ("export", name) for name in (*band.rendered, band.file("mp3"))},
         "separation-check.json": (arrange, "separation-check.json"),
         "parts/": (arrange, "parts/"),  # a trailing slash copies every file under that directory
         "parts-pdf/": ("export", "parts/"),  # part PDFs and BRF land next to the part MusicXML
-        "brass-band.brf": ("export", "brass-band.brf"),
+        band.file("brf"): ("export", band.file("brf")),
         "talking-score.json": ("export", "talking-score.json"),
         "talking-score.html": ("export", "talking-score.html"),
         "talking-score.txt": ("export", "talking-score.txt"),
@@ -262,7 +270,7 @@ def layered(title: str, params: dict) -> Pipeline:
     for layer in LAYER_TOOLS:
         arrange_inputs[f"{layer}.wav"] = Input("layers", f"{layer}.wav")
     st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params),
-                    code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+                    code=SYMBOLIC_CODE, outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("orchestra-with-soloist", "layered", st, _outputs("arrange"), params)
 
@@ -286,7 +294,7 @@ def brass_band(title: str, params: dict) -> Pipeline:
         notes, support = Input("transcribe.mix.basic-pitch", "mix-bp.mid"), {}
     st.append(Stage("arrange", "arrange", {
         "beats": Input("beats", "mix.beats"), "melody": notes, **support, "bass": notes, "harmony0": notes},
-        S.arrange_band, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+        S.arrange_band, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("brass-band", "A", st, _outputs("arrange"), params)
 
@@ -329,7 +337,7 @@ def solo(title: str, params: dict) -> Pipeline:
     if params.get("seat"):
         params = {**params, "lead": "seat"}
     st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params, "minimal"),
-                    code=SYMBOLIC_CODE, outputs=("composition.json", "brass-band.musicxml")))
+                    code=SYMBOLIC_CODE, outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("solo", "layered-solo", st, _outputs("arrange"), params)
 
@@ -352,7 +360,7 @@ def pop_rock(title: str, params: dict) -> Pipeline:
         "melody_support": Input(f"transcribe.{melody_stem}.basic-pitch", f"{melody_stem}-bp.mid"),
         "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid"), **harmony},
         S.arrange_band, params=_arrange_params(title, params, kit="pop"), code=SYMBOLIC_CODE,
-        outputs=("composition.json", "brass-band.musicxml")))
+        outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("pop-rock", "B", st, _outputs("arrange"), params)
 
@@ -366,7 +374,7 @@ PROFILES: dict[str, Profile] = {p.name: p for p in [
             "Soloist with orchestra; Mega-53 solo/bass/drums + orchestra residual, 18-part brass band", True, layered),
 ]}
 
-# Tablature. Registered after the brass-band profiles; its options are its own (bass_tab.options).
+# Tablature. Registered after the band's profiles; its options are its own (bass_tab.options).
 from . import bass_tab  # noqa: E402 - it reads this module's stage helpers when it builds
 
 from . import tab  # noqa: E402 - the same
@@ -378,18 +386,9 @@ PROFILES[bass_tab.PROFILE] = Profile(bass_tab.PROFILE, "tab", "The bass line as 
                                      "recording itself), Basic Pitch, a string and fret per note. Kept for older apps: it is "
                                      "the tab profile with a bass", False, bass_tab.build)
 
-DEFAULT_TITLES = {
-    "orchestra-with-soloist": "{name} — solo cornet & brass band (draft)",
-    "solo": "{name} — solo (draft)",
-    "brass-band": "{name} — brass band (draft)",
-    "pop-rock": "{name} — brass band (draft)",
-    bass_tab.PROFILE: "{name} — bass tab (draft)",
-    tab.PROFILE: "{name} — tab (draft)",
-}
-
 
 def default_title(profile: str, audio: Path) -> str:
-    return DEFAULT_TITLES[profile].format(name=Path(audio).stem.replace("_", " ").replace("-", " ").title())
+    return targets.of(profile).titles[profile].format(name=Path(audio).stem.replace("_", " ").replace("-", " ").title())
 
 
 def build(profile: str, audio: Path, title: str | None = None, params: dict | None = None) -> Pipeline:

@@ -1478,7 +1478,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         })
         val updatedComposition = composition.copy(voices = composition.voices.map { if (it.id == voiceId) updatedVoice else it })
         val parts = updatedComposition.voices.map { v ->
-            val name = when (v.id) { "solo" -> "Solo Cornet"; "brass" -> "Brass"; "strings" -> "Strings"; "bass" -> "Bass"; "drums" -> "Drums"; else -> v.id }
+            val name = when (v.id) { "solo" -> "Solo Cornet"; "hits" -> "Chord hits"; "strings" -> "Strings"; "bass" -> "Bass"; "drums" -> "Drums"; else -> v.id }
             PartSpec(v.id, name, if (v.role == VoiceRole.MELODY) Instrument.CORNET else Instrument.CONCERT)
         }
         // The same lineup and difficulty as the score came from (the golden Composition re-arranges to the

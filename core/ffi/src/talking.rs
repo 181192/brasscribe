@@ -96,6 +96,25 @@ impl From<TalkingUnit> for ts::Unit {
     }
 }
 
+/// The target a score was written by: it is the target that knows what its parts and instruments are
+/// called in a language other than the score's own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum Target {
+    /// A brass-band score: the band's names.
+    Brass,
+    /// A tab for a fretted instrument: the names the score itself gives.
+    Fretted,
+}
+
+impl Target {
+    pub(crate) fn names(self) -> &'static dyn ts::Names {
+        match self {
+            Target::Brass => &target_brass::names::BandNames,
+            Target::Fretted => &ts::ScoreNames,
+        }
+    }
+}
+
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct TalkingBarLines {
     pub heading: String,
@@ -111,11 +130,12 @@ pub struct TalkingScore {
 #[uniffi::export]
 impl TalkingScore {
     /// From partwise MusicXML text plus the Composition JSON when known
-    /// (confidence, sources, performed time, free regions).
+    /// (confidence, sources, performed time, free regions). `target` is the one the score was written
+    /// by, which names its parts and instruments.
     #[uniffi::constructor]
-    pub fn new(musicxml: String, composition_json: Option<String>) -> Result<Arc<Self>, CoreError> {
+    pub fn new(musicxml: String, composition_json: Option<String>, target: Target) -> Result<Arc<Self>, CoreError> {
         let comp: Option<Value> = composition_json.map(|c| serde_json::from_str(&c)).transpose().map_err(invalid)?;
-        Ok(Arc::new(TalkingScore { doc: ts::build(&musicxml, comp.as_ref(), &target_brass::names::BandNames).map_err(invalid)? }))
+        Ok(Arc::new(TalkingScore { doc: ts::build(&musicxml, comp.as_ref(), target.names()).map_err(invalid)? }))
     }
 
     /// The document as JSON (spec §6 shape).

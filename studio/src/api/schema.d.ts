@@ -958,7 +958,8 @@ export interface paths {
         put?: never;
         /**
          * Run Suite
-         * @description Run a suite or group (cpu, all) against eval/baselines.json; the result is stored in the history.
+         * @description Run a suite or a group (cpu, ci, all, or one target's suites: brass, fretted) against
+         *     eval/baselines.json. The answer has a verdict per target; the result is stored in the history.
          */
         post: operations["runSuite"];
         delete?: never;
@@ -1025,15 +1026,25 @@ export interface components {
              * @enum {string}
              */
             mode: "cached" | "live";
-            /** Passed */
+            /**
+             * Passed
+             * @description every target passed
+             */
             passed: boolean;
+            /**
+             * Ran
+             * @description what was asked for: a suite, several, or a group (cpu, ci, all, brass, fretted)
+             */
+            ran: string;
             /** Suites */
             suites: components["schemas"]["SuiteResult"][];
             /**
-             * Target
-             * @description suite or group that was run
+             * Targets
+             * @description the verdict per target that had a suite in the run
              */
-            target: string;
+            targets: {
+                [key: string]: components["schemas"]["TargetVerdict"];
+            };
         };
         /** Body_createJobFromUpload */
         Body_createJobFromUpload: {
@@ -1441,6 +1452,11 @@ export interface components {
             started?: number | null;
             /** Status */
             status: ("queued" | "running" | "succeeded" | "failed" | "cancelled") | "unknown";
+            /**
+             * Target
+             * @description the target the job belongs to: its profile's, so an app knows its own jobs without knowing every profile. null only for a run kept from a profile the engine no longer lists that wrote no score
+             */
+            target: ("brass" | "fretted") | null;
             /** Title */
             title?: string | null;
         };
@@ -1878,6 +1894,12 @@ export interface components {
             /** Stages */
             stages: string[];
             /**
+             * Target
+             * @description the target the profile belongs to: what it makes (a brass-band score, a tab for a fretted instrument). An app offers the profiles of its own target
+             * @enum {string}
+             */
+            target: "brass" | "fretted";
+            /**
              * Validated
              * @description checked end to end against a golden output
              */
@@ -2070,6 +2092,11 @@ export interface components {
             metrics: {
                 [key: string]: number;
             };
+            /**
+             * Ran
+             * @description what the run was asked for: a suite, several, or a group
+             */
+            ran: string;
             /** Reason */
             reason?: string | null;
             /** Run Id */
@@ -2081,8 +2108,12 @@ export interface components {
             status: "pass" | "fail" | "skipped" | "error";
             /** Suite */
             suite: string;
-            /** Target */
-            target: string;
+            /**
+             * Target
+             * @description the target the suite gates
+             * @enum {string}
+             */
+            target: "brass" | "fretted";
             /**
              * Time
              * @description unix seconds
@@ -2105,6 +2136,12 @@ export interface components {
              * @description data paths the suite reads, relative to the data directory
              */
             requires: string[];
+            /**
+             * Target
+             * @description the target the suite gates
+             * @enum {string}
+             */
+            target: "brass" | "fretted";
         };
         /** SuiteResult */
         SuiteResult: {
@@ -2133,6 +2170,12 @@ export interface components {
             status: "pass" | "fail" | "skipped" | "error";
             /** Suite */
             suite: string;
+            /**
+             * Target
+             * @description the target the suite gates
+             * @enum {string}
+             */
+            target: "brass" | "fretted";
         };
         /**
          * Tab
@@ -2142,7 +2185,7 @@ export interface components {
         Tab: {
             /**
              * Adjusted Notes
-             * @description notes whose start or length no note value could spell, written at the nearest one that can; in tab.musicxml only, the notes here are unchanged
+             * @description notes whose start or length no note value could spell, written at the nearest one that can; in the MusicXML only, the notes here are unchanged
              */
             adjusted_notes: number;
             /**
@@ -2171,7 +2214,7 @@ export interface components {
             key: components["schemas"]["TabKey"];
             /**
              * Layout
-             * @description what tab.musicxml (and the PDF made from it) shows
+             * @description what the MusicXML of the tab (and the PDF made from it) shows
              * @enum {string}
              */
             layout: "tab" | "tab-and-notation" | "notation";
@@ -2409,6 +2452,11 @@ export interface components {
             kind: string;
         } & {
             [key: string]: unknown;
+        };
+        /** TargetVerdict */
+        TargetVerdict: {
+            /** Passed */
+            passed: boolean;
         };
         /**
          * TuningFit
@@ -3713,7 +3761,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description tab.json as written by the tab profile (and bass-tab). The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts */
+            /** @description tab.json as written by the fretted target's profiles. The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts */
             200: {
                 headers: {
                     [name: string]: unknown;

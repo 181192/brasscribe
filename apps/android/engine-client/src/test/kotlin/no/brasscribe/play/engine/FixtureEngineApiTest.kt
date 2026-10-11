@@ -23,7 +23,7 @@ class FixtureEngineApiTest {
         assertEquals(JobStatus.SUCCEEDED, api.job(job.id).status)
 
         val c = api.composition(job.id)
-        assertEquals(listOf("solo", "bass", "strings", "brass", "drums"), c.voices.map { it.id })
+        assertEquals(listOf("solo", "bass", "strings", "hits", "drums"), c.voices.map { it.id })
         assertTrue(c.voices.sumOf { it.notes.size } > 1000)
         val xml = api.musicXml(job.id)
         assertEquals(18, Regex("<score-part ").findAll(xml).count())
