@@ -14,8 +14,7 @@ name: apple
 # started by hand.
 # Started by hand with `noise_play` or `noise_bandroom`, it runs only that app's Mac screen catalogue, twice on one
 # runner, and compares the two takes' pictures file by file: with nothing changed between them, a picture that
-# differs was taken in the wrong state. `noise_ref` is the commit the catalogue is taken of (this workflow's own by
-# default), so the main before a change can be measured with the same steps.
+# differs was taken in the wrong state. It takes the commit it is started on (`gh workflow run apple.yml --ref …`).
 on:
   workflow_call:
     inputs:
@@ -50,10 +49,6 @@ on:
         description: Only take Bandroom for Mac's screen catalogue twice and compare take against take
         type: boolean
         default: false
-      noise_ref:
-        description: The branch or commit a noise run takes the catalogue of (default, the one this is started on)
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -219,7 +214,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.noise_ref }}
           persist-credentials: false
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}
@@ -344,7 +338,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.noise_ref }}
           persist-credentials: false
 
       - name: Select Xcode ${{ env.XCODE_VERSION }}

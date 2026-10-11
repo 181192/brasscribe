@@ -237,4 +237,4 @@ job `play-screens`) runs it on every pull request that reaches Play, and the pic
 
 To measure the catalogue itself, `apple.yml` started by hand with `noise_play` (or `noise_bandroom`) takes it twice
 on one runner and compares the two takes file by file: nothing changed between them, so a picture that differs was
-taken in the wrong state. `noise_ref` names another commit to take.
+taken in the wrong state (`gh workflow run apple.yml --ref <branch> -f noise_play=true`).
