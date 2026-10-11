@@ -129,3 +129,29 @@ def test_on_macos_musescore_runs_in_a_home_of_its_own(tmp_path, monkeypatch, pla
     assert home != user_home and user_home not in home.parents
     assert not home.exists()  # it lasts as long as the conversion
     assert not (user_home / "Documents").exists()
+
+
+def test_the_conversions_folder_is_deleted_although_something_still_writes_into_it(tmp_path):
+    """MuseScore's helpers can outlive it for a moment and write into the home once more: the delete is tried
+    again until the folder is gone, rather than leaving the late file behind."""
+    folder = tmp_path / "conversion"
+    (folder / "home").mkdir(parents=True)
+    stop = threading.Event()
+
+    def late_writer():
+        n = 0
+        while not stop.is_set():
+            try:
+                (folder / "home").mkdir(parents=True, exist_ok=True)
+                (folder / "home" / f"late{n}").write_text("x")
+            except OSError:
+                pass
+            n += 1
+            time.sleep(0.01)
+
+    writer = threading.Thread(target=late_writer, daemon=True)
+    writer.start()
+    threading.Timer(0.5, stop.set).start()
+    musescore._remove(folder)
+    writer.join(5)
+    assert not folder.exists()

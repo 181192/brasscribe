@@ -99,9 +99,10 @@ def _environment(home: Path) -> dict[str, str] | None:
     MuseScore keeps its plugins, styles and soundfonts in the user's Documents folder and reads them at every
     start, also for a conversion. macOS guards that folder per app, and holds MuseScore's access against the
     app that started the engine. Until the user has answered the system's question for that app, MuseScore
-    waits in its first read and writes nothing: the conversion ends at its time limit without a file. In a
-    home of its own MuseScore reads nothing of the user's, so there is no question to wait for, and the
-    user's MuseScore settings cannot change what a conversion writes."""
+    waits in its first read and writes nothing: the conversion ends at its time limit without a file. With a
+    home of its own, MuseScore looks for its Documents and Application Support folders there, and finds them
+    empty. Its preferences are not moved (the system keeps them per user, whatever the home): a preference
+    that names a folder in the user's Documents still leads MuseScore there."""
     if sys.platform != "darwin":
         return None
     home.mkdir(parents=True, exist_ok=True)
@@ -132,6 +133,18 @@ def _run(cmd: list[str], timeout: float, cancel: threading.Event | None, env: di
         raise
 
 
+def _remove(folder: Path, patience: float = 5.0) -> None:
+    """Delete the conversion's folder. What MuseScore leaves running for a moment after it has exited (its
+    crash reporter, the system's network storage for it) can still write into the home in there, which makes
+    a delete fail or puts a new file there: so it is deleted again until it has stayed gone for a moment."""
+    deadline = time.monotonic() + patience
+    while True:
+        shutil.rmtree(folder, ignore_errors=True)
+        time.sleep(0.2)
+        if not folder.exists() or time.monotonic() > deadline:
+            return
+
+
 def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: float = 600.0,
                  cancel: threading.Event | None = None) -> list[Path]:
     """Run all conversions in one MuseScore launch. Returns the outputs that are missing afterwards.
@@ -155,15 +168,17 @@ def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: 
     # so notation outputs share one launch and each audio output gets its own.
     audio = [e for e in entries if Path(e["out"]).suffix.lower() in AUDIO_SUFFIXES]
     batches = [[e for e in entries if e not in audio]] + [[e] for e in audio]
-    # MuseScore's crash reporter can still be writing into the home when the conversion is over.
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
-        env = _environment(Path(tmp) / "home")
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        env = _environment(tmp / "home")
         for i, batch in enumerate(b for b in batches if b):
-            job_file = Path(tmp) / f"job{i}.json"
+            job_file = tmp / f"job{i}.json"
             job_file.write_text(json.dumps(batch))
             cmd = [exe] + (["-S", str(Path(style).resolve())] if style else []) + ["-j", str(job_file)]
             with _lock(cancel):
                 _run(cmd, timeout, cancel, env)
+    finally:
+        _remove(tmp)
     return [p for p in expected if not p.exists()]
 
 
