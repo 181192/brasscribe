@@ -53,8 +53,8 @@ TARGETS = ("brass", "fretted")
 
 
 # The Mikkel golden output (data/golden), and the on-device reference clip's layered output.
-MIKKEL_GOLDEN = "golden/mikkel-arranged-band.layer-hits"
-ONDEVICE_REF = "runs/apple/entertainer-ref.layer-hits"
+MIKKEL_GOLDEN = "golden/mikkel-arranged-band"
+ONDEVICE_REF = "runs/apple/entertainer-ref"
 
 def _run_adapter(tool: str, src: Path, dst: Path) -> None:
     """Live mode: run an adapter; heavy models wait for the machine-wide GPU mutex."""

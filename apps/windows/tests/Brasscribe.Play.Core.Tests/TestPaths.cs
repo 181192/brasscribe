@@ -54,7 +54,7 @@ internal static class TestPaths
         "SCRIBE_FFI_PATH is not set: `scripts/core-artifacts.sh ensure host` puts the native core at core/target/release/libscribe_ffi.dylib (.so, .dll); point SCRIBE_FFI_PATH at it";
 
     /// <summary>The Mikkel golden directory.</summary>
-    public const string GoldenDir = "data/golden/mikkel-arranged-band.layer-hits";
+    public const string GoldenDir = "data/golden/mikkel-arranged-band";
     public static string GoldenMusicXml => $"{GoldenDir}/brass-band.musicxml";
     public static string GoldenComposition => $"{GoldenDir}/composition.json";
     public static string SwiftF0Stream => "models/converted/swift-f0/swift-f0-stream.onnx";

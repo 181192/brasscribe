@@ -109,7 +109,7 @@ def test_build_and_export_small_score():
     assert "Solokornett\n===========" in text and "  takt 3 til 4: pause, 2 takter" in text
 
 
-GOLDEN = ROOT / "data" / "golden" / "mikkel-arranged-band.layer-hits"
+GOLDEN = ROOT / "data" / "golden" / "mikkel-arranged-band"
 
 
 @pytest.mark.skipif(not (GOLDEN / "brass-band.musicxml").exists(), reason="golden output not available")

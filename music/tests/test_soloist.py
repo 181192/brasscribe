@@ -14,7 +14,7 @@ from scribe_music.instruments import (BRASS_BAND, INSTRUMENTS, MINIMAL_BAND, QUA
                                           validate_part)
 from scribe_music.score_model import Composition, Note
 
-GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band.layer-hits" / "composition.json"
+GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
 CORNET = INSTRUMENTS["bb-cornet"]
 
 

@@ -36,7 +36,7 @@ android {
         unitTests.all {
             // JVM tests load the host build of the core (cargo build --release -p scribe-ffi).
             it.systemProperty("jna.library.path", File(coreRoot, "target/release").absolutePath)
-            it.systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band.layer-hits").absolutePath)
+            it.systemProperty("brasscribe.golden", File(repoRoot, "data/golden/mikkel-arranged-band").absolutePath)
             it.jvmArgs("--enable-native-access=ALL-UNNAMED")
             // ONNX Runtime without its telemetry uploader, as in :pitch (an upload answered at exit aborts the JVM).
             it.environment("ORT_DISABLE_TELEMETRY", "1")

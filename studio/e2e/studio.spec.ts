@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const shots = join(here, "..", "docs", "screenshots");
 const repo = join(here, "..", "..");
-const golden = join(repo, "data", "golden", "mikkel-arranged-band.layer-hits");
+const golden = join(repo, "data", "golden", "mikkel-arranged-band");
 // The public-domain score the viewer's screenshots show (they are on the website).
 const fixtureScore = join(repo, "apps", "fixtures", "old-hundredth", "brass-band.musicxml");
 mkdirSync(shots, { recursive: true });
@@ -85,7 +85,7 @@ async function mikkelRun(page: Page): Promise<JobLite> {
   expect(runs.length, "a finished Mikkel run in the data directory").toBeGreaterThan(0);
   // Prefer the newest run that reproduces data/golden note for note.
   for (const r of runs) {
-    const c = await page.request.get(`/v1/jobs/${r.id}/compare?reference=mikkel-arranged-band.layer-hits`);
+    const c = await page.request.get(`/v1/jobs/${r.id}/compare?reference=mikkel-arranged-band`);
     if (c.ok() && (await c.json()).ok) return { ...r, golden: true };
   }
   return { ...runs[0], golden: false };
@@ -224,7 +224,7 @@ test("score viewer opens data/golden and plays", async ({ page }) => {
 
 test("compare the Mikkel run with data/golden", async ({ page }) => {
   const run = await mikkelRun(page);
-  await page.goto(`/#/compare?a=${run.id}&b=ref:mikkel-arranged-band.layer-hits`);
+  await page.goto(`/#/compare?a=${run.id}&b=ref:mikkel-arranged-band`);
   const summary = page.getByText(/notes identical, \d+ added, \d+ removed, \d+ moved, \d+ octave/);
   await expect(summary).toBeVisible({ timeout: 60_000 });
   console.log(`compare ${run.id} with data/golden: ${await summary.textContent()}`);
@@ -333,7 +333,7 @@ test("reflow at 320 px, 200 % zoom and text spacing", async ({ page }) => {
   const run = await mikkelRun(page);
   const routes: [string, string][] = [
     ["runs", "runs"], [`runs/${run.id}/score`, "run"], [`runs/${run.id}/manifest`, "run-manifest"], ["viewer", "viewer"],
-    [`compare?a=${run.id}&b=ref:mikkel-arranged-band.layer-hits`, "compare"], ["bench", "bench"], ["parity", "parity"], ["conformance", "conformance"], ["registry", "registry"],
+    [`compare?a=${run.id}&b=ref:mikkel-arranged-band`, "compare"], ["bench", "bench"], ["parity", "parity"], ["conformance", "conformance"], ["registry", "registry"],
   ];
   const zoom = join(shots, "zoom");
   mkdirSync(zoom, { recursive: true });
@@ -438,7 +438,7 @@ test("every view in light, dark, high contrast and Norwegian passes axe", async 
     { name: "run-beats", route: `runs/${run.id}/beats` },
     { name: "run-manifest", route: `runs/${run.id}/manifest` },
     VIEWER,
-    { name: "compare", route: `compare?a=${run.id}&b=ref:mikkel-arranged-band.layer-hits` },
+    { name: "compare", route: `compare?a=${run.id}&b=ref:mikkel-arranged-band` },
     { name: "bench", route: "bench" },
     { name: "parity", route: "parity" },
     { name: "conformance", route: "conformance" },

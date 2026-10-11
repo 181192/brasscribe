@@ -6,7 +6,7 @@ import pytest
 from scribe_music.score_model import (Articulation, Composition, FreeNotation, FreeRegion, KeySig, Meter, Note,
                                           Voice, VoiceRole)
 
-GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band.layer-hits" / "composition.json"
+GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
 GOLDEN_V1 = GOLDEN.parents[1] / "mikkel-arranged-band.v1" / "composition.json"  # written before free time and durations
 
 

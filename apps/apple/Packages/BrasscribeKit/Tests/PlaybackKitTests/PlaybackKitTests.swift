@@ -8,7 +8,7 @@ func goldenDir() -> URL? {
     if let env = ProcessInfo.processInfo.environment["BRASSCRIBE_FIXTURES"] { return URL(fileURLWithPath: env) }
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<10 {
-        let c = dir.appending(path: "data/golden/mikkel-arranged-band.layer-hits")
+        let c = dir.appending(path: "data/golden/mikkel-arranged-band")
         if FileManager.default.fileExists(atPath: c.appending(path: "brass-band.musicxml").path) { return c }
         dir = dir.deletingLastPathComponent()
     }

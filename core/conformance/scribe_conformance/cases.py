@@ -17,9 +17,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 DATA = REPO / "data"
 # The Mikkel golden output.
-MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band.layer-hits"
+MIKKEL_GOLDEN = DATA / "golden/mikkel-arranged-band"
 # The on-device reference clip.
-ONDEVICE_REF = DATA / "runs" / "apple" / "entertainer-ref.layer-hits"
+ONDEVICE_REF = DATA / "runs" / "apple" / "entertainer-ref"
 # Who the lead sheets of the cases name as their arranger, in the reference and in the core alike.
 LEAD_CREATOR = "arr. Brasscribe"
 MIKKEL_TITLE = "Mikkel — solo cornet & brass band (draft)"
@@ -57,7 +57,7 @@ MIKKEL_VARIANTS = [
 ]
 # Variants with a golden output of their own: the case name -> its directory under data/golden, or, until it is
 # promoted there, under data-pending/golden next to data/.
-VARIANT_GOLDENS = {"layers-kit-pop": "mikkel-arranged-band-kit-pop.layer-hits"}
+VARIANT_GOLDENS = {"layers-kit-pop": "mikkel-arranged-band-kit-pop"}
 PENDING_GOLDEN = DATA.resolve().parent / "data-pending" / "golden"
 
 
