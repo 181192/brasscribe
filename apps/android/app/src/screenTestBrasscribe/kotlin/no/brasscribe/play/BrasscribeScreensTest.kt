@@ -1,6 +1,7 @@
 package no.brasscribe.play
 
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -70,6 +71,16 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         waitUntil(20_000) { vm.screen.value.last() == Screen.PROBLEM && vm.keptRecordings.value.isNotEmpty() }
     }
 
+    /** Home with a score, and the menu of its row open: Edit title, the ways to open it, Delete. */
+    private fun theScoresOptions() {
+        theScore()
+        rule.runOnUiThread { vm.home() }
+        rest()
+        rule.onAllNodesWithTag("score-options")[0].performScrollTo().performClick()
+        waitForTag("score-delete", 5_000)
+        rest()
+    }
+
     private fun more() {
         rule.onNodeWithTag("top-more").performClick()
         waitForTag("performance", 5_000)
@@ -83,6 +94,8 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         },
         Entry("home") { },
         Entry("home-with-a-score") { theScore(); rule.runOnUiThread { vm.home() }; rest() },
+        Entry("home-score-options") { theScoresOptions() },
+        Entry("home-score-delete") { theScoresOptions(); rule.onNodeWithTag("score-delete").performClick(); rest() },
         Entry("record") { go(Screen.RECORD) },
         Entry("what-is-this") { whatIsThis() },
         Entry("transcribing", steady = false) {
@@ -111,6 +124,10 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },
         Entry("problem-recording-kept") { aRecordingWithoutItsScore() },
         Entry("home-with-a-kept-recording") { aRecordingWithoutItsScore(); rule.runOnUiThread { vm.home() }; rest() },
+        Entry("home-kept-recording-options") {
+            aRecordingWithoutItsScore(); rule.runOnUiThread { vm.home() }; rest()
+            rule.onAllNodesWithTag("kept-options")[0].performScrollTo().performClick(); waitForTag("kept-delete", 5_000); rest()
+        },
         Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
         Entry("problem-score-not-opened") { rule.runOnUiThread { vm.showProblem(Problem.OPEN_FAILED, null, R.string.error_unreachable) } },
     )

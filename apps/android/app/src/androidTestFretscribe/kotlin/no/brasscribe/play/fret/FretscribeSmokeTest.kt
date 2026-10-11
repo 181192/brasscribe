@@ -11,7 +11,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.brasscribe.design.BrasscribeLightColors
+import no.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.Screen
 import no.brasscribe.play.screen.ScreenDevice
@@ -37,7 +37,7 @@ class FretscribeSmokeTest : ScreenTest() {
     private fun ink(): Int {
         val image: Bitmap = screen()
         val area = rule.onNodeWithTag("fs-tab").fetchSemanticsNode().boundsInWindow.let { Rect(it.left.toInt(), it.top.toInt(), it.right.toInt(), it.bottom.toInt()) }
-        val ink = BrasscribeLightColors.ink.toArgb()
+        val ink = ScribeLightColors.ink.toArgb()
         var n = 0
         for (y in maxOf(0, area.top) until minOf(image.height, area.bottom) step 2) for (x in maxOf(0, area.left) until minOf(image.width, area.right) step 2) {
             val p = image.getPixel(x, y)

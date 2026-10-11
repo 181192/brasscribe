@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.design.BrasscribeDarkColors
-import no.brasscribe.design.BrasscribeLightColors
+import no.scribe.design.ScribeDarkColors
+import no.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.AppearanceStore
 import no.brasscribe.play.MainActivity
@@ -341,7 +341,7 @@ class YourInstrumentScreenTest : ScreenTest() {
         language("en-GB")
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         getStarted()
-        val focus = BrasscribeLightColors.focus
+        val focus = ScribeLightColors.focus
         val rows = listOf("instrument", "strings", "tuning", "hand", "reads").map { "fs-row-$it" }
         assertFalse("no ring before the keyboard is used", ringed(rows[0], focus))
         // Tab reaches Not now in the top bar, the five rows in reading order, and then Continue, docked under them
@@ -614,12 +614,12 @@ class YourInstrumentScreenTest : ScreenTest() {
                 assertTrue(shown, shown.contains("Fretscribe") && shown.contains(if (lang == "en-GB") "Tab from any recording." else "Tab fra et hvilket som helst opptak."))
                 assertFalse(shown, BRASSCRIBE_WORDS.containsMatchIn(shown))
                 // The first run is a brand moment: the tinted band with the mark in blue ink, on Fretscribe's paper.
-                val colours = if (appearance == Appearance.DARK) BrasscribeDarkColors else BrasscribeLightColors
+                val colours = if (appearance == Appearance.DARK) ScribeDarkColors else ScribeLightColors
                 val first = shotOf("first-run-$tag")
                 val all = first.width * first.height
                 assertTrue("$tag: the first run is on Fretscribe's paper", first.count(colours.bg) > all / 3)
-                assertTrue("$tag: the band is the brand tint", first.count(colours.brassTint) > all / 10)
-                assertTrue("$tag: the mark is in blue ink", first.count(colours.brass) > 200)
+                assertTrue("$tag: the band is the brand tint", first.count(colours.brandTint) > all / 10)
+                assertTrue("$tag: the mark is in blue ink", first.count(colours.brand) > 200)
                 rule.onNodeWithText(text(R.string.first_run_start)).performClick()
                 waitUntil(5_000) { rule.onAllNodesWithTag("fs-keep").fetchSemanticsNodes().isNotEmpty() }
                 // Your instrument: paper, the rows on the raised surface, and one primary button in ink.
@@ -627,7 +627,7 @@ class YourInstrumentScreenTest : ScreenTest() {
                 assertTrue("$tag: Your instrument is on Fretscribe's paper", yours.count(colours.bg) > all / 3)
                 assertTrue("$tag: the rows are a raised group", yours.count(colours.surfaceRaised) > all / 10)
                 assertTrue("$tag: the primary button is ink", yours.count(colours.primary) > all / 50)
-                assertEquals("$tag: no brand colour outside brand moments", 0, yours.count(colours.brass))
+                assertEquals("$tag: no brand colour outside brand moments", 0, yours.count(colours.brand))
                 open("tuning", "standard")
                 shot("your-instrument-tuning-$tag")
                 closePicker()

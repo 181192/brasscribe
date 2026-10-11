@@ -97,9 +97,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import no.brasscribe.design.BrasscribeButtonShape
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeButtonShape
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.R
 import no.brasscribe.play.score.ScoreController
 import no.brasscribe.play.score.ScoreUiState
@@ -331,13 +331,13 @@ fun MusicStandBand(
     position: StandPosition, shape: StandShape, ms: MusicStandState, onlyMine: Boolean,
     onOnlyMine: () -> Unit, onLock: () -> Unit, onLeave: () -> Unit,
 ) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     Row(
         Modifier.fillMaxWidth().background(c.bg)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
-            .padding(horizontal = ScreenMargin, vertical = BrasscribeSpace.s2),
+            .padding(horizontal = ScreenMargin, vertical = ScribeSpace.s2),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+        horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
     ) {
         if (shape.landscape) {
             Text(
@@ -352,7 +352,7 @@ fun MusicStandBand(
             )
             if (ms.layer && shape.phoneLandscape) Row(
                 Modifier.onFocusChanged { ms.focusInBand = it.hasFocus },
-                horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+                horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
             ) {
                 if (onlyMine) OnlyMineToggle(ms.onlyMine, onOnlyMine)
                 LockToggle(ms.locked, onLock)
@@ -370,7 +370,7 @@ fun MusicStandBand(
 /** ✕ Leave: always there. Its accessible name contains the visible word (WCAG 2.5.3). */
 @Composable
 private fun LeaveButton(onLeave: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val name = stringResource(R.string.stand_leave_name)
     val pill = RoundedCornerShape(percent = 50)
     Surface(
@@ -382,8 +382,8 @@ private fun LeaveButton(onLeave: () -> Unit) {
             // The name replaces the icon's and the word's own semantics, and is set inside the clickable: set outside it,
             // it would clear the clickable's too, and with them whether the button has the keyboard's focus.
             Modifier.clickable(role = Role.Button, onClick = onLeave).clearAndSetSemantics { contentDescription = name }
-                .heightIn(min = 48.dp).padding(horizontal = BrasscribeSpace.s4),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+                .heightIn(min = 48.dp).padding(horizontal = ScribeSpace.s4),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
         ) {
             BcIcon(R.drawable.ic_bc_close, null, Modifier.size(20.dp))
             Text(stringResource(R.string.stand_leave), style = MaterialTheme.typography.labelLarge)
@@ -414,7 +414,7 @@ fun BoxScope.MusicStandOverlay(
     onPage: (Int) -> Unit, onBar: (Int) -> Unit, onTap: () -> Unit,
     onSpeed: (Int) -> Unit, onRepeat: () -> Unit, onOnlyMine: () -> Unit, onLock: () -> Unit,
 ) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val density = LocalDensity.current
     val slop = LocalViewConfiguration.current.touchSlop
     val edge = with(density) { MusicStandRules.EDGE_DP.dp.toPx() }
@@ -501,18 +501,18 @@ fun BoxScope.MusicStandOverlay(
     if (ms.hint && !ms.layer) Surface(
         Modifier.align(Alignment.BottomCenter)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-            .padding(bottom = BrasscribeSpace.s8, start = ScreenMargin, end = ScreenMargin),
+            .padding(bottom = ScribeSpace.s8, start = ScreenMargin, end = ScreenMargin),
         shape = MaterialTheme.shapes.medium, color = c.text, contentColor = c.bg,
     ) {
         Text(stringResource(R.string.stand_hint), style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3))
+            modifier = Modifier.padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3))
     }
 
     // With the layer hidden, Turn the music floats low over the music; with it shown, it is in the layer,
     // so it never sits on the current system.
     if (turnPill && !ms.layer) TurnMusicPill(onTurnMusic, Modifier.align(Alignment.BottomCenter)
         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
-        .padding(bottom = BrasscribeSpace.s6))
+        .padding(bottom = ScribeSpace.s6))
 
     if (ms.layer) StandLayer(
         controller, st, ms, shape, onlyMine, onPage, onBar, onSpeed, onRepeat, onOnlyMine, onLock, if (turnPill) onTurnMusic else null,
@@ -523,7 +523,7 @@ fun BoxScope.MusicStandOverlay(
 /** Turn the music (§4.4): the stand's own rotate button while it hides the system's. */
 @Composable
 private fun TurnMusicPill(onClick: () -> Unit, modifier: Modifier) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val name = stringResource(R.string.stand_turn_name)
     Surface(
         modifier.heightIn(min = 48.dp).semantics { testTag = "stand-turn" },
@@ -533,8 +533,8 @@ private fun TurnMusicPill(onClick: () -> Unit, modifier: Modifier) {
         Row(
             // (As Leave: the name inside the clickable, so its focus is in its semantics.)
             Modifier.clickable(role = Role.Button, onClick = onClick).clearAndSetSemantics { contentDescription = name }
-                .heightIn(min = 48.dp).padding(horizontal = BrasscribeSpace.s5),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+                .heightIn(min = 48.dp).padding(horizontal = ScribeSpace.s5),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
         ) {
             BcIcon(R.drawable.ic_stand_rotate, null, Modifier.size(20.dp))
             Text(stringResource(R.string.stand_turn), style = MaterialTheme.typography.labelLarge)
@@ -554,11 +554,11 @@ private fun StandLayer(
     onPage: (Int) -> Unit, onBar: (Int) -> Unit, onSpeed: (Int) -> Unit, onRepeat: () -> Unit,
     onOnlyMine: () -> Unit, onLock: () -> Unit, onTurnMusic: (() -> Unit)?, modifier: Modifier,
 ) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val page = ms.page
     Surface(
         modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
-            .padding(horizontal = if (shape.tablet) BrasscribeSpace.s6 else BrasscribeSpace.s3, vertical = BrasscribeSpace.s3)
+            .padding(horizontal = if (shape.tablet) ScribeSpace.s6 else ScribeSpace.s3, vertical = ScribeSpace.s3)
             .then(if (shape.tablet) Modifier.widthIn(max = 900.dp) else Modifier.fillMaxWidth())
             .onFocusChanged { ms.focusInLayer = it.hasFocus }
             .semantics { testTag = "stand-layer" }
@@ -592,8 +592,8 @@ private fun StandLayer(
                     color = c.textMuted, modifier = Modifier.semantics { testTag = "stand-pedals" })
             }
         }
-        val gap = Arrangement.spacedBy(BrasscribeSpace.s3)
-        if (!shape.landscape) Column(Modifier.padding(BrasscribeSpace.s3), verticalArrangement = gap) {
+        val gap = Arrangement.spacedBy(ScribeSpace.s3)
+        if (!shape.landscape) Column(Modifier.padding(ScribeSpace.s3), verticalArrangement = gap) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) { transport() }
             FlowRow(horizontalArrangement = gap, verticalArrangement = gap) {
                 SpeedStepper(st.speed, onSpeed) { ms.touches++ }
@@ -606,11 +606,11 @@ private fun StandLayer(
                 onTurnMusic?.let { TurnMusicPill(it, Modifier) }
             }
         } else FlowRow(
-            Modifier.padding(BrasscribeSpace.s3), horizontalArrangement = gap, verticalArrangement = gap,
+            Modifier.padding(ScribeSpace.s3), horizontalArrangement = gap, verticalArrangement = gap,
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalAlignment = Alignment.CenterVertically) { transport() }
-            Spacer(Modifier.size(BrasscribeSpace.s2))
+            Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalAlignment = Alignment.CenterVertically) { transport() }
+            Spacer(Modifier.size(ScribeSpace.s2))
             SpeedStepper(st.speed, onSpeed) { ms.touches++ }
             repeat()
             pedals()
@@ -623,7 +623,7 @@ private fun StandLayer(
 /** ‹ and › page buttons: a tonal well, so they read differently from the bar buttons. */
 @Composable
 private fun PageButton(icon: Int, label: String, enabled: Boolean, tag: String, onClick: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     androidx.compose.material3.FilledTonalIconButton(
         onClick, Modifier.size(48.dp).semantics { testTag = tag }, enabled = enabled,
         colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = c.secondary, contentColor = c.text,
@@ -637,17 +637,17 @@ private fun PageButton(icon: Int, label: String, enabled: Boolean, tag: String, 
  */
 @Composable
 private fun SpeedStepper(speed: Int, onSpeed: (Int) -> Unit, held: () -> Unit = {}) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val now by rememberUpdatedState(speed)
     Row(
-        Modifier.heightIn(min = 48.dp).border(1.dp, c.borderStrong, BrasscribeButtonShape).background(c.surfaceRaised, BrasscribeButtonShape),
+        Modifier.heightIn(min = 48.dp).border(1.dp, c.borderStrong, ScribeButtonShape).background(c.surfaceRaised, ScribeButtonShape),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         HoldStepper(R.drawable.ic_stand_minus, stringResource(R.string.stand_slower), "stand-slower", speed > MusicStandRules.SPEED_MIN, held) {
             onSpeed(now - MusicStandRules.SPEED_STEP)
         }
         Text(stringResource(R.string.speed_chip, speed), style = MaterialTheme.typography.labelLarge, color = c.text,
-            modifier = Modifier.padding(horizontal = BrasscribeSpace.s1))
+            modifier = Modifier.padding(horizontal = ScribeSpace.s1))
         HoldStepper(R.drawable.ic_stand_plus, stringResource(R.string.stand_faster), "stand-faster", speed < MusicStandRules.SPEED_MAX, held) {
             onSpeed(now + MusicStandRules.SPEED_STEP)
         }

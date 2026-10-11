@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.R
 
 /** Where Brasscribe Bandroom, the program for the computer, is downloaded: always its latest release. */
@@ -27,8 +27,8 @@ const val BANDROOM_DOWNLOAD = "https://github.com/181192/brasscribe/releases/lat
 @Composable
 fun GetBandroom(onNoBrowser: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val c = BrasscribeTheme.colors
-    Column(modifier.testTag("get-bandroom"), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+    val c = ScribeTheme.colors
+    Column(modifier.testTag("get-bandroom"), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
         SubHeading(stringResource(R.string.bandroom_get_title))
         Text(stringResource(R.string.bandroom_get_text), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
         SelectionContainer {

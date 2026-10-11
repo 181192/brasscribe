@@ -28,8 +28,8 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Problem
 import no.brasscribe.play.R
@@ -61,7 +61,7 @@ fun ProblemScreen(vm: PlayViewModel) {
     val problem by vm.problem.collectAsState()
     val p = problem ?: Problem.SCORE_FAILED
     val copy = COPY.getValue(p)
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val pickFile = rememberFilePicker(vm)
     val recorder = rememberRecorder(vm)
     var details by rememberSaveable { mutableStateOf(false) }
@@ -150,9 +150,9 @@ fun ProblemScreen(vm: PlayViewModel) {
             else -> R.string.draft_too_long_body_unpaired
         }
         Text(stringResource(body), style = MaterialTheme.typography.bodyLarge)
-        if (copy.reasons.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        if (copy.reasons.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             copy.reasons.forEach { reason ->
-                Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                     Text("•", style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
                     Text(stringResource(reason), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
                 }
@@ -212,7 +212,7 @@ fun SettingsScreen(vm: PlayViewModel) {
                     subtitle = value, icon = R.drawable.ic_bc_parts)
             }
             Text(stringResource(R.string.settings_seat_caption), style = MaterialTheme.typography.bodyMedium,
-                color = no.brasscribe.design.BrasscribeTheme.colors.textMuted, modifier = Modifier.padding(horizontal = BrasscribeSpace.s4))
+                color = no.scribe.design.ScribeTheme.colors.textMuted, modifier = Modifier.padding(horizontal = ScribeSpace.s4))
         }
         RowGroup {
             ListRow(
@@ -254,8 +254,8 @@ fun SettingsScreen(vm: PlayViewModel) {
         // Recordings are large: what the ones kept in Your scores take, and where they are deleted.
         val keptBytes by vm.keptBytes.collectAsState()
         if (keptBytes > 0) Text(stringResource(R.string.kept_storage, android.text.format.Formatter.formatShortFileSize(context, keptBytes)),
-            style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted,
-            modifier = Modifier.padding(horizontal = BrasscribeSpace.s4).semantics { testTag = "kept-storage" })
+            style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted,
+            modifier = Modifier.padding(horizontal = ScribeSpace.s4).semantics { testTag = "kept-storage" })
         RowGroup {
             ListRow(stringResource(R.string.help), { vm.navigate(no.brasscribe.play.Screen.HELP) }, icon = R.drawable.ic_bc_help)
             RowDivider()
@@ -268,7 +268,7 @@ fun SettingsScreen(vm: PlayViewModel) {
 @Composable
 fun HelpScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     PlayScaffold(title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status) {
         ScreenTitle(stringResource(R.string.help))
         listOf(
@@ -276,7 +276,7 @@ fun HelpScreen(vm: PlayViewModel) {
             R.string.help_3_title to R.string.help_3_text, R.string.help_4_title to R.string.help_4_text,
             R.string.help_5_title to R.string.help_5_text, R.string.help_6_title to R.string.help_6_text,
         ).forEach { (t, body) ->
-            Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+            Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
                 SubHeading(stringResource(t))
                 Text(stringResource(body), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             }
@@ -284,7 +284,7 @@ fun HelpScreen(vm: PlayViewModel) {
             if (t == R.string.help_5_title) GetBandroom({ vm.say(R.string.bandroom_no_browser) })
         }
         // The music stand: page turners, and how to keep a tablet one way up (it has no Lock rotation).
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             SubHeading(stringResource(R.string.help_stand_title))
             Text(stringResource(R.string.help_stand_pedal), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
             if (androidx.compose.ui.platform.LocalConfiguration.current.smallestScreenWidthDp >= 600)
@@ -296,14 +296,14 @@ fun HelpScreen(vm: PlayViewModel) {
 /** A setting that is on or off: the whole row is the switch, at least 60 dp tall. */
 @Composable
 private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, tag: String, onChange: (Boolean) -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     androidx.compose.foundation.layout.Row(
         Modifier.fillMaxWidth().heightIn(min = 60.dp)
             .toggleable(value = checked, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = onChange)
             .semantics { testTag = tag }
-            .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
+            .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4),
+        horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = c.text)

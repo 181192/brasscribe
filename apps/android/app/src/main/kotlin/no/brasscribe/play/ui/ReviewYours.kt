@@ -20,8 +20,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.SeatChoice
@@ -65,15 +65,15 @@ fun yoursInReview(vm: PlayViewModel, r: TranscriptionResult, composition: Compos
 /** In place of an empty Yours list: why there is nothing of yours to check, and where to go (§3.6). */
 @Composable
 fun ArrangedNotice(part: String, checkOthers: () -> Unit, showMine: () -> Unit, empty: Boolean = false) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     Column(
         Modifier.fillMaxWidth().background(c.surface, MaterialTheme.shapes.medium).border(1.dp, c.border, MaterialTheme.shapes.medium)
-            .padding(BrasscribeSpace.s4).semantics { testTag = "review-arranged" },
-        verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+            .padding(ScribeSpace.s4).semantics { testTag = "review-arranged" },
+        verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
     ) {
         SourceLabel(if (empty) PartSource.EMPTY else PartSource.ARRANGED)
         // Announced once, politely, when Review opens (4.1.3); nothing is drawn over the controls.
-        Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+        Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             Text(stringResource(if (empty) R.string.review_empty_title else R.string.review_arranged_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             Text(stringResource(if (empty) R.string.review_empty_body else R.string.review_arranged_body, PartNames.display(part)), style = MaterialTheme.typography.bodyMedium, color = c.text)
         }

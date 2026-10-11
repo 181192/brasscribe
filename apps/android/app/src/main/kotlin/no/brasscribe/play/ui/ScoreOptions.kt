@@ -19,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.ScoreEntry
@@ -31,10 +31,10 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
     var renaming by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf(entry.title) }
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
 
     Box {
-        IconButton({ menu = true }, Modifier.size(48.dp)) {
+        IconButton({ menu = true }, Modifier.size(48.dp).semantics { testTag = "score-options" }) {
             BcIcon(R.drawable.ic_bc_more, stringResource(R.string.score_options, entry.title), tint = c.textMuted)
         }
         // The other app's score is not opened here: its row keeps only what is about the row itself.
@@ -57,9 +57,10 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
                 onClick = { menu = false; vm.openEntry(entry, review = true) },
             )
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.delete), color = c.veryUncertain) },
-                leadingIcon = { BcIcon(R.drawable.ic_bc_delete, null, tint = c.veryUncertain) },
+                text = { Text(stringResource(R.string.delete), color = c.error) },
+                leadingIcon = { BcIcon(R.drawable.ic_bc_delete, null, tint = c.error) },
                 onClick = { menu = false; deleting = true },
+                modifier = Modifier.semantics { testTag = "score-delete" },
             )
         }
     }
@@ -83,7 +84,7 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
             title = { Text(stringResource(R.string.delete_score_title, entry.title)) },
             text = { Text(stringResource(if (entry.onComputer) R.string.delete_score_computer else R.string.delete_score_phone)) },
             confirmButton = {
-                TextButton({ vm.deleteEntry(entry); deleting = false }) { Text(stringResource(R.string.delete), color = c.veryUncertain) }
+                TextButton({ vm.deleteEntry(entry); deleting = false }) { Text(stringResource(R.string.delete), color = c.error) }
             },
             dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } },
         )
@@ -98,7 +99,7 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
 fun KeptRecordingRow(vm: PlayViewModel, k: no.brasscribe.play.KeptRecording, enabled: Boolean) {
     var menu by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     // The recording's name as Your scores shows names: without its file's extension.
     val name = no.brasscribe.play.ScoreTitles.display(k.title, k.updated)
     ListRow(
@@ -110,13 +111,13 @@ fun KeptRecordingRow(vm: PlayViewModel, k: no.brasscribe.play.KeptRecording, ena
         enabled = enabled,
         trailing = {
             Box {
-                IconButton({ menu = true }, Modifier.size(48.dp)) {
+                IconButton({ menu = true }, Modifier.size(48.dp).semantics { testTag = "kept-options" }) {
                     BcIcon(R.drawable.ic_bc_more, stringResource(R.string.score_options, name), tint = c.textMuted)
                 }
                 DropdownMenu(menu, { menu = false }) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete), color = c.veryUncertain) },
-                        leadingIcon = { BcIcon(R.drawable.ic_bc_delete, null, tint = c.veryUncertain) },
+                        text = { Text(stringResource(R.string.delete), color = c.error) },
+                        leadingIcon = { BcIcon(R.drawable.ic_bc_delete, null, tint = c.error) },
                         onClick = { menu = false; deleting = true },
                         modifier = Modifier.semantics { testTag = "kept-delete" },
                     )
@@ -131,7 +132,7 @@ fun KeptRecordingRow(vm: PlayViewModel, k: no.brasscribe.play.KeptRecording, ena
             text = { Text(stringResource(R.string.kept_delete_text)) },
             confirmButton = {
                 TextButton({ vm.deleteKept(k); deleting = false }, Modifier.semantics { testTag = "kept-delete-confirm" }) {
-                    Text(stringResource(R.string.delete), color = c.veryUncertain)
+                    Text(stringResource(R.string.delete), color = c.error)
                 }
             },
             dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } },

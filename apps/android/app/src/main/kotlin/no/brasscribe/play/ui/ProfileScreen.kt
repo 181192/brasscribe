@@ -54,8 +54,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Step
@@ -80,7 +80,7 @@ private val CHOICES = listOf(
  */
 @Composable
 fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean, index: Int, disabledReason: String? = null, onClick: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val available = enabled && disabledReason == null
     Row(
         Modifier.fillMaxWidth().heightIn(min = 64.dp)
@@ -91,10 +91,10 @@ fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean
                 collectionItemInfo = CollectionItemInfo(index, 1, 0, 1)
                 if (disabledReason != null) { disabled(); stateDescription = disabledReason }
             }
-            .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3),
+            .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3),
         verticalAlignment = Alignment.Top,
     ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = if (available) c.text else c.textMuted)
             val line = disabledReason ?: desc
             // The reason is already the card's state: not read twice.
@@ -102,7 +102,7 @@ fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean
                 modifier = if (disabledReason != null) Modifier.clearAndSetSemantics { } else Modifier)
         }
         // The radio has its own column, top-aligned, so large text never runs under it (review 3, P2-D).
-        Box(Modifier.padding(start = BrasscribeSpace.s2).width(40.dp), contentAlignment = Alignment.TopEnd) {
+        Box(Modifier.padding(start = ScribeSpace.s2).width(40.dp), contentAlignment = Alignment.TopEnd) {
             RadioButton(selected = selected, onClick = null, enabled = available,
                 colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
         }
@@ -113,7 +113,7 @@ fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean
 fun ChoiceGroup(count: Int, content: @Composable () -> Unit) {
     Column(
         Modifier.selectableGroup().semantics { collectionInfo = CollectionInfo(count, 1) },
-        verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+        verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
     ) { content() }
 }
 
@@ -139,7 +139,7 @@ fun ProfileScreen(vm: PlayViewModel) {
         onBack = vm::back, backLabel = stringResource(R.string.home), status = status,
         bottom = {
             if (profile == null) Text(stringResource(R.string.profile_choose_one), style = MaterialTheme.typography.bodyMedium,
-                color = BrasscribeTheme.colors.textMuted)
+                color = ScribeTheme.colors.textMuted)
             PrimaryButton(stringResource(R.string.continue_label), vm::startTranscription, enabled = ready, modifier = Modifier.semantics { testTag = "continue" })
         },
     ) {
@@ -156,7 +156,7 @@ fun ProfileScreen(vm: PlayViewModel) {
             InfoNote(stringResource(R.string.percussion_solo_refused), Modifier.semantics { testTag = "percussion-solo" })
             OutlineButton(stringResource(R.string.change_what_i_play), { vm.openSeatPicker(no.brasscribe.play.SeatPickerMode.SETTINGS) })
         }
-        Text(stringResource(R.string.profile_not_sure), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
+        Text(stringResource(R.string.profile_not_sure), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
         if (profile != null) {
             val onPhone = where == Where.DEVICE
             RowGroup {
@@ -172,15 +172,15 @@ fun ProfileScreen(vm: PlayViewModel) {
                 )
                 // Large text: Change goes under the card's text so the text keeps its width.
                 if (largeText()) OutlineButton(stringResource(R.string.change), { changeWhere = true },
-                    Modifier.padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s3))
+                    Modifier.padding(start = ScribeSpace.s4, end = ScribeSpace.s4, bottom = ScribeSpace.s3))
             }
         }
     }
 
     if (changeWhere) {
-        PlaySheet({ changeWhere = false }, BrasscribeTheme.colors.surfaceRaised, dragHandle = false) {
-            Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = BrasscribeSpace.s6),
-                verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+        PlaySheet({ changeWhere = false }, ScribeTheme.colors.surfaceRaised, dragHandle = false) {
+            Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = ScribeSpace.s6),
+                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                 SubHeading(stringResource(R.string.where_title))
                 val deviceDesc = no.brasscribe.play.OnDeviceRouting.deviceCard(profile, vm.container.hasPitchModel,
                     vm.container.hasBandModels, source?.audio != null)
@@ -212,7 +212,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val s by vm.transcribe.collectAsState()
     val source by vm.source.collectAsState()
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     var confirmCancel by remember { mutableStateOf(false) }
     val percent = (s.fraction * 100).toInt()
     val onPhone = s.where == stringResource(R.string.transcribe_where_device) || s.where == stringResource(R.string.transcribe_where_device_draft)
@@ -271,7 +271,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
         },
     ) {
         BrandMark(48.dp)
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             SectionLabel(stringResource(R.string.step_of, current + 1, steps.size))
             ScreenTitle(stepText, Modifier.semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite })
         }
@@ -279,7 +279,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
         val percentText = stringResource(R.string.progress_percent, percent)
         LinearProgressIndicator(
             progress = { s.fraction.toFloat() },
-            color = c.brass, trackColor = c.border, drawStopIndicator = {},
+            color = c.brand, trackColor = c.border, drawStopIndicator = {},
             modifier = Modifier.fillMaxWidth().heightIn(min = 8.dp).semantics {
                 contentDescription = label
                 stateDescription = percentText
@@ -287,10 +287,10 @@ fun TranscribeScreen(vm: PlayViewModel) {
             },
         )
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text(percentText, style = no.brasscribe.design.BrasscribeNumericStyle, color = c.textMuted)
+            Text(percentText, style = no.scribe.design.ScribeNumericStyle, color = c.textMuted)
             if (eta != null) Text(eta, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
-        Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
             steps.forEachIndexed { i, step ->
                 StepRow(stringResource(step.text), done = i < current, now = i == current)
             }
@@ -310,10 +310,10 @@ fun TranscribeScreen(vm: PlayViewModel) {
 
 @Composable
 private fun StepRow(text: String, done: Boolean, now: Boolean) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val state = stringResource(when { done -> R.string.step_done; now -> R.string.step_now; else -> R.string.step_waiting })
     Row(
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
         modifier = Modifier.semantics(mergeDescendants = true) { stateDescription = state },
     ) {
         Box(

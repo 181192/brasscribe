@@ -1,9 +1,15 @@
 package no.brasscribe.play
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import no.brasscribe.design.BrasscribeScore
+import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Profile
+import no.brasscribe.play.ui.theme.LocalProductColors
+import no.brasscribe.play.ui.theme.ProductColors
 
 /** What makes this build Brasscribe: its name, its pairing link, the screens it opens with and the scores it makes. */
 object Product {
@@ -45,6 +51,20 @@ object Product {
 
     @Composable
     fun Root(vm: PlayViewModel) = PlayRoot(vm)
+
+    /** Brasscribe's theme, with its own colours for the screens both apps are built with. */
+    @Composable
+    fun Theme(dark: Boolean, pink: Boolean, display: FontFamily, content: @Composable () -> Unit) {
+        BrasscribeTheme(dark = dark, pink = pink, display = display) {
+            val own = BrasscribeTheme.colors
+            val colors = ProductColors(
+                veryUncertain = own.veryUncertain, adlibTint = own.adlibTint, loopTint = own.loopTint, cursor = own.cursor,
+                selectionTint = own.selectionTint, selectionEdge = own.selectionEdge,
+                focusWidth = BrasscribeScore.focusWidth,
+            )
+            CompositionLocalProvider(LocalProductColors provides colors, content = content)
+        }
+    }
 
     /** Settings: what the "What you play" row shows as its value. */
     @Composable

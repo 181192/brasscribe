@@ -96,11 +96,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.brasscribe.design.BrasscribeButtonShape
-import no.brasscribe.design.BrasscribeColors
-import no.brasscribe.design.BrasscribeScore
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeButtonShape
+import no.scribe.design.ScribeColors
+import no.fretscribe.design.FretscribeColors
+import no.fretscribe.design.FretscribeTab
+import no.fretscribe.design.FretscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
@@ -183,15 +185,12 @@ internal object TabScreenProbe {
 }
 
 /** The tab's colours from the theme: ink numerals, the lines in the string colour, the doubt colour and its wash. */
-internal fun tabPalette(c: BrasscribeColors) = TabPalette(
-    paper = c.bg.toArgb(), ink = c.ink.toArgb(), string = c.staff.toArgb(), uncertain = c.uncertain.toArgb(),
-    uncertainTint = when {
-        c.isHighContrast -> null
-        c.bg.luminance() > 0.5f -> TabTokens.UNCERTAIN_TINT_LIGHT
-        else -> TabTokens.UNCERTAIN_TINT_DARK
-    },
-    cursor = c.cursor.toArgb(), cursorTint = c.cursorTint.toArgb().takeIf { !c.isHighContrast },
-    repeat = c.loopEdge.toArgb(), repeatBand = c.loopTint.toArgb().takeIf { !c.isHighContrast },
+internal fun tabPalette(c: ScribeColors, own: FretscribeColors) = TabPalette(
+    paper = c.bg.toArgb(), ink = c.ink.toArgb(), string = c.line.toArgb(), uncertain = c.uncertain.toArgb(),
+    // High contrast has shapes only, so no wash and no tints.
+    uncertainTint = own.uncertainTint.toArgb().takeIf { !c.isHighContrast },
+    cursor = own.cursor.toArgb(), cursorTint = own.cursorTint.toArgb().takeIf { !c.isHighContrast },
+    repeat = own.loopEdge.toArgb(), repeatBand = own.loopTint.toArgb().takeIf { !c.isHighContrast },
 )
 
 /**
@@ -211,7 +210,7 @@ internal fun tabPalette(c: BrasscribeColors) = TabPalette(
 fun TabScreen(vm: PlayViewModel) {
     val result by vm.result.collectAsState()
     val source by vm.source.collectAsState()
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val context = LocalContext.current
     val resources = LocalResources.current
     val r = result ?: return
@@ -236,7 +235,7 @@ fun TabScreen(vm: PlayViewModel) {
     val density = LocalDensity.current
     val fontScale = density.fontScale
     val scope = rememberCoroutineScope()
-    val palette = tabPalette(c)
+    val palette = tabPalette(c, FretscribeTheme.colors)
 
     fun checkTheSong() {
         val stack = vm.screen.value
@@ -311,7 +310,7 @@ fun TabScreen(vm: PlayViewModel) {
             TextButton({ next?.let(::showMark) }, Modifier.heightIn(min = 48.dp).testTag("fs-tab-note-next").semantics {
                 contentDescription = nextName
                 if (next == null) { disabled(); stateDescription = lastState }
-            }, shape = BrasscribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = if (next == null) c.text.copy(alpha = 0.38f) else c.text)) {
+            }, shape = ScribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = if (next == null) c.text.copy(alpha = 0.38f) else c.text)) {
                 Text(stringResource(R.string.fs_tab_note_next), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
             }
         }
@@ -321,8 +320,8 @@ fun TabScreen(vm: PlayViewModel) {
         if (noteInOneRow) {
             // Low on height (a phone on its side): one row, Play this bar slowly as an icon that keeps its name.
             Row(
-                Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+                Modifier.fillMaxWidth().padding(start = ScribeSpace.s4, end = ScribeSpace.s1),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
             ) {
                 note(Modifier.weight(1f))
                 if (canPlay) IconButton({ practice.playBarSlowly(column.bar) }, Modifier.size(48.dp).testTag("fs-tab-note-slowly")) {
@@ -333,15 +332,15 @@ fun TabScreen(vm: PlayViewModel) {
             }
         } else {
             Row(
-                Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s1, top = BrasscribeSpace.s2),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2),
+                Modifier.fillMaxWidth().padding(start = ScribeSpace.s4, end = ScribeSpace.s1, top = ScribeSpace.s2),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
             ) {
                 note(Modifier.weight(1f))
                 close()
             }
             FlowRow(
-                Modifier.fillMaxWidth().padding(start = BrasscribeSpace.s4, end = BrasscribeSpace.s4, bottom = BrasscribeSpace.s2),
-                horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+                Modifier.fillMaxWidth().padding(start = ScribeSpace.s4, end = ScribeSpace.s4, bottom = ScribeSpace.s2),
+                horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
             ) {
                 if (canPlay) OutlineButton(slowly, { practice.playBarSlowly(column.bar) },
                     Modifier.testTag("fs-tab-note-slowly"), icon = R.drawable.ic_bc_play, fill = false)
@@ -361,12 +360,12 @@ fun TabScreen(vm: PlayViewModel) {
             PlayTopBar(title, vm::back, stringResource(R.string.back), titleIsHeading = true) {
                 val percent = stringResource(R.string.fs_tab_zoom, zoom)
                 fun set(to: Int) { zoom = to; TabPlaces.zoom = to }
-                IconButton({ set((zoom - BrasscribeScore.zoomStep).coerceAtLeast(BrasscribeScore.zoomMin)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-out"),
-                    enabled = zoom > BrasscribeScore.zoomMin) {
+                IconButton({ set((zoom - FretscribeTab.zoomStep).coerceAtLeast(FretscribeTab.zoomMin)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-out"),
+                    enabled = zoom > FretscribeTab.zoomMin) {
                     BcIcon(R.drawable.ic_bc_zoom_out, stringResource(R.string.zoom_out) + ". " + percent)
                 }
-                IconButton({ set((zoom + BrasscribeScore.zoomStep).coerceAtMost(BrasscribeScore.zoomMax)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-in"),
-                    enabled = zoom < BrasscribeScore.zoomMax && canZoomIn) {
+                IconButton({ set((zoom + FretscribeTab.zoomStep).coerceAtMost(FretscribeTab.zoomMax)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-in"),
+                    enabled = zoom < FretscribeTab.zoomMax && canZoomIn) {
                     BcIcon(R.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in) + ". " + percent)
                 }
             }
@@ -408,9 +407,9 @@ fun TabScreen(vm: PlayViewModel) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().onKeyEvent { it.type == KeyEventType.KeyDown && (page(it.key) || bar(it.key)) }
             .focusRequester(keys).onFocusChanged { screenFocused = it.isFocused }.focusable()) {
             if (s == null) {
-                Column(Modifier.padding(horizontal = BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+                Column(Modifier.padding(horizontal = ScribeSpace.s4), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                     Text(stringResource(R.string.fs_tab_reading), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
-                    LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+                    LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
                 }
                 return@BoxWithConstraints
             }
@@ -423,7 +422,7 @@ fun TabScreen(vm: PlayViewModel) {
             val lineUnits = TabSize.lineUnits(s.strings, s.layout)
             fun scaleAt(percent: Int) = TabSize.scale(TabView.BASE_SCALE, percent, fontScale, width, room, landscape, lineUnits)
             val wanted = scaleAt(zoom)
-            val larger = scaleAt(zoom + BrasscribeScore.zoomStep) > wanted
+            val larger = scaleAt(zoom + FretscribeTab.zoomStep) > wanted
             SideEffect {
                 canZoomIn = larger
                 TabScreenProbe.wanted = wanted
@@ -462,14 +461,14 @@ fun TabScreen(vm: PlayViewModel) {
             val pinned = !landscape && headerHeight * 3 <= area - playerHeight
             val inset = if (pinned) 0 else headerHeight
             val header: @Composable () -> Unit = {
-                Column(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }.padding(horizontal = BrasscribeSpace.s4), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4)) {
+                Column(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }.padding(horizontal = ScribeSpace.s4), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
                         // The tuning chip: a button whose name reads the whole state. The tuning and capo sheet comes later; for now it opens Check the song.
                         Box(
                             Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-tuning")
-                                .background(c.surfaceRaised, BrasscribeButtonShape).border(1.dp, c.borderStrong, BrasscribeButtonShape)
+                                .background(c.surfaceRaised, ScribeButtonShape).border(1.dp, c.borderStrong, ScribeButtonShape)
                                 .clickable(role = Role.Button, onClick = ::checkTheSong)
-                                .padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s2)
+                                .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s2)
                                 .semantics { contentDescription = chipName },
                             contentAlignment = Alignment.CenterStart,
                         ) {
@@ -484,20 +483,20 @@ fun TabScreen(vm: PlayViewModel) {
                         // To the first "?" on the page, with its note open (Check the song only counts them).
                         Modifier.fillMaxWidth().sizeIn(minHeight = 48.dp).testTag("fs-tab-marked")
                             .clickable(role = Role.Button) { doubts.firstOrNull()?.let(::showMark) ?: checkTheSong() },
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
                     ) {
                         Text(pluralStringResource(R.plurals.fs_tab_marked, s.marks.doubtful, s.marks.doubtful),
                             style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.weight(1f))
                         BcIcon(R.drawable.ic_bc_open, null, tint = c.textMuted)
                     }
                     if (s.marks.noPlace > 0) Text(pluralStringResource(R.plurals.fs_tab_no_place_count, s.marks.noPlace, s.marks.noPlace),
-                        style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.testTag("fs-tab-no-place").padding(vertical = BrasscribeSpace.s1))
+                        style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.testTag("fs-tab-no-place").padding(vertical = ScribeSpace.s1))
                 }
             }
             if (s.index.bars == 0) {
                 Column {
                     header()
-                    InfoNote(stringResource(R.string.fs_tab_failed), Modifier.padding(BrasscribeSpace.s4).testTag("fs-tab-failed"))
+                    InfoNote(stringResource(R.string.fs_tab_failed), Modifier.padding(ScribeSpace.s4).testTag("fs-tab-failed"))
                 }
                 return@BoxWithConstraints
             }
@@ -638,7 +637,7 @@ fun TabScreen(vm: PlayViewModel) {
                                         .size(with(density) { wide.toDp() }, with(density) { maxOf(target, tall).toDp() })
                                         .testTag("fs-tab-mark-${box.column}")
                                         .onFocusChanged { focused = it.isFocused }
-                                        .then(if (focused) Modifier.border(BrasscribeScore.focusWidth, c.focus, RoundedCornerShape(6.dp)) else Modifier)
+                                        .then(if (focused) Modifier.border(FretscribeTab.focusWidth, c.focus, RoundedCornerShape(6.dp)) else Modifier)
                                         .clickable(role = Role.Button) { told = box.column }
                                         .semantics { contentDescription = words },
                                 )

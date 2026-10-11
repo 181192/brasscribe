@@ -19,8 +19,8 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
@@ -54,7 +54,7 @@ fun connectionIcon(state: ConnectionState): Int = when (state) {
 @Composable
 fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConnectionScreen: Boolean = false) {
     val state by vm.connection.state.collectAsState()
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val s = state
     val action: Pair<String, () -> Unit>? = when {
         s is ConnectionState.Offline && s.paired -> stringResource(R.string.companion_connect) to { vm.connection.retry() }
@@ -63,7 +63,7 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
         else -> null
     }
     val words = @Composable { m: Modifier ->
-        Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+        Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
             BcIcon(connectionIcon(state), null, tint = c.text)
             Text(
                 connectionText(vm, state), style = MaterialTheme.typography.bodyMedium, color = c.text,
@@ -78,9 +78,9 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
         modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = c.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, c.border),
     ) {
-        val inner = Modifier.padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3).heightIn(min = 44.dp)
+        val inner = Modifier.padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3).heightIn(min = 44.dp)
         if (action == null) words(inner.fillMaxWidth())
-        else ActionBeside(inner.fillMaxWidth(), stack = largeText(), gap = BrasscribeSpace.s3, words = { words(Modifier) }, action = button)
+        else ActionBeside(inner.fillMaxWidth(), stack = largeText(), gap = ScribeSpace.s3, words = { words(Modifier) }, action = button)
     }
 }
 

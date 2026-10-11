@@ -57,9 +57,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import no.brasscribe.design.BrasscribeButtonShape
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeButtonShape
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.R
 import no.brasscribe.play.ui.BcIcon
 import no.brasscribe.play.ui.OutlineButton
@@ -84,7 +84,7 @@ private const val DISABLED_ALPHA = 0.38f
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, place: Pair<Int, Int>?, follows: Boolean, canFetch: Boolean, onFetch: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val state = practice.recording
     if (follows && state == RecordingState.LOOKING) return
     Column(Modifier.fillMaxWidth().background(c.bg).testTag("fs-practice")) {
@@ -101,11 +101,11 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 canFetch -> R.string.fs_practice_not_here
                 else -> R.string.fs_practice_not_here_alone
             })
-            Column(Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s4, vertical = BrasscribeSpace.s3), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                 // What became of the recording is said once when it changes: getting it, and how that went.
                 Text(words, style = MaterialTheme.typography.bodyLarge, color = c.text,
                     modifier = Modifier.testTag("fs-practice-says").semantics { liveRegion = LiveRegionMode.Polite })
-                if (follows && state == RecordingState.GETTING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brass, trackColor = c.border)
+                if (follows && state == RecordingState.GETTING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
                 if (follows && canFetch && (state == RecordingState.NOT_HERE || state == RecordingState.NO_ANSWER || state == RecordingState.NO_ROOM)) OutlineButton(
                     stringResource(if (state == RecordingState.NOT_HERE) R.string.fs_practice_get else R.string.retry), onFetch,
                     Modifier.testTag("fs-practice-get"), icon = R.drawable.ic_bc_download, fill = false)
@@ -116,8 +116,8 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
         val repeat = practice.repeat
         fun number(bar: Int) = measures.getOrNull(bar)?.number ?: (bar + 1).toString()
         FlowRow(
-            Modifier.fillMaxWidth().padding(horizontal = BrasscribeSpace.s3, vertical = BrasscribeSpace.s2),
-            horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s1),
+            Modifier.fillMaxWidth().padding(horizontal = ScribeSpace.s3, vertical = ScribeSpace.s2),
+            horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -167,7 +167,7 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 // The word is for the eye: the value's own name already says "Speed 100 %". With large text it is left out,
                 // as the top bar leaves out the back button's word: the player would take another row for it.
                 if (LocalDensity.current.fontScale < 1.3f) Text(stringResource(R.string.fs_practice_speed), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
-                    modifier = Modifier.padding(end = BrasscribeSpace.s1).testTag("fs-practice-speed-label").semantics { hideFromAccessibility() })
+                    modifier = Modifier.padding(end = ScribeSpace.s1).testTag("fs-practice-speed-label").semantics { hideFromAccessibility() })
                 StepButton("−", stringResource(R.string.fs_practice_slower), "fs-practice-slower", practice.speed > PracticeSpeed.MIN, repeats = true, onClick = practice::slower)
                 Text(stringResource(R.string.speed_value, practice.speed), style = MaterialTheme.typography.bodyLarge, color = c.text, textAlign = TextAlign.Center,
                     modifier = Modifier.widthIn(min = 56.dp).testTag("fs-practice-speed").semantics { contentDescription = speed; liveRegion = LiveRegionMode.Polite })
@@ -233,7 +233,7 @@ private fun StepButton(sign: String, name: String, tag: String, enabled: Boolean
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: Int, onSet: (RepeatBars?) -> Unit, close: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val last = measures.lastIndex.coerceAtLeast(0)
     var from by rememberSaveable { mutableIntStateOf((repeat?.first ?: bar).coerceIn(0, last)) }
     var to by rememberSaveable { mutableIntStateOf((repeat?.last ?: (bar + 3)).coerceIn(from, last)) }
@@ -242,7 +242,7 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
         onDismissRequest = close,
         title = { Text(stringResource(R.string.fs_practice_repeat), Modifier.semantics { heading() }) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                 Text(stringResource(R.string.fs_practice_repeat_tip), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 BarStepper(stringResource(R.string.loop_from), number(from), "from", from > 0, from < last,
                     { from--; }, { from++; if (to < from) to = from })
@@ -250,11 +250,11 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
                     { to--; if (from > to) from = to }, { to++ })
                 if (measures.firstOrNull()?.pickup == true) Text(stringResource(R.string.fs_practice_repeat_pickup), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 // The buttons scroll with the rest: with large text on a phone on its side the dialog is taller than the screen.
-                Button({ onSet(RepeatBars(from, to)) }, Modifier.fillMaxWidth().padding(top = BrasscribeSpace.s2).heightIn(min = 52.dp).testTag("fs-practice-repeat-set"), shape = BrasscribeButtonShape) {
+                Button({ onSet(RepeatBars(from, to)) }, Modifier.fillMaxWidth().padding(top = ScribeSpace.s2).heightIn(min = 52.dp).testTag("fs-practice-repeat-set"), shape = ScribeButtonShape) {
                     Text(if (from == to) stringResource(R.string.fs_practice_repeat_set_one, number(from)) else stringResource(R.string.fs_practice_repeat_set, number(from), number(to)),
                         style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
                 }
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s2, Alignment.End)) {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2, Alignment.End)) {
                     if (repeat != null) PlainButton(stringResource(R.string.loop_clear), { onSet(null) }, Modifier.testTag("fs-practice-repeat-stop"))
                     PlainButton(stringResource(R.string.cancel), close, Modifier.testTag("fs-practice-repeat-cancel"))
                 }
@@ -267,7 +267,7 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
 /** One end of the repeat: its name, a bar earlier, the bar's number (said when it changes), a bar later. */
 @Composable
 private fun BarStepper(label: String, value: String, tag: String, canGoDown: Boolean, canGoUp: Boolean, down: () -> Unit, up: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val spoken = stringResource(R.string.fs_practice_bar_value, label, value)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f).clearAndSetSemantics { }, style = MaterialTheme.typography.bodyLarge, color = c.text)

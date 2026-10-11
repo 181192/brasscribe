@@ -2,81 +2,59 @@ package no.brasscribe.play.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import no.brasscribe.design.BrasscribeButtonShape
-import no.brasscribe.design.BrasscribeDarkColors
-import no.brasscribe.design.BrasscribeHighContrastColors
-import no.brasscribe.design.BrasscribeHighContrastLightColors
-import no.brasscribe.design.BrasscribeLightColors
-import no.brasscribe.design.BrasscribeMotion
-import no.brasscribe.design.BrasscribeNumericStyle
-import no.brasscribe.design.BrasscribeShapes
-import no.brasscribe.design.BrasscribeSize
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.LocalBrasscribeColors
-import no.brasscribe.design.LocalScribeColors
-import no.brasscribe.design.ScribeButtonShape
-import no.brasscribe.design.ScribeColors
-import no.brasscribe.design.ScribeDarkColors
-import no.brasscribe.design.ScribeHighContrastColors
-import no.brasscribe.design.ScribeHighContrastLightColors
-import no.brasscribe.design.ScribeLightColors
-import no.brasscribe.design.ScribeMotion
-import no.brasscribe.design.ScribeNumericStyle
-import no.brasscribe.design.ScribeShapes
-import no.brasscribe.design.ScribeSize
-import no.brasscribe.design.ScribeSpace
-import no.brasscribe.design.ScribeTheme
-import no.brasscribe.design.accent
-import no.brasscribe.design.brand
-import no.brasscribe.design.brandText
-import no.brasscribe.design.brandTint
-import no.brasscribe.design.brasscribeTypography
-import no.brasscribe.design.line
-import no.brasscribe.design.scribeTypography
+import no.scribe.design.ScribeButtonShape
+import no.scribe.design.ScribeColors
+import no.scribe.design.ScribeDarkColors
+import no.scribe.design.ScribeHighContrastColors
+import no.scribe.design.ScribeHighContrastLightColors
+import no.scribe.design.ScribeLightColors
+import no.scribe.design.ScribeMotion
+import no.scribe.design.ScribeNumericStyle
+import no.scribe.design.ScribeShapes
+import no.scribe.design.ScribeSize
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
+import no.scribe.design.scribeColors
+import no.scribe.design.scribeTypography
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * The design system's neutral names (design/tokens/README.md) are the same in every product's generated
- * theme. This is compiled for each product, so a neutral name that one of them lacks fails its build, and it
- * checks that each name reads the product's own theme.
+ * theme. This is compiled for each product, so a neutral name that one of them lacks fails its build.
  */
 class NeutralDesignNamesTest {
-    @Test fun theNeutralColoursAreTheProductsOwn() {
-        val modes = listOf(
-            ScribeLightColors to BrasscribeLightColors,
-            ScribeDarkColors to BrasscribeDarkColors,
-            ScribeHighContrastColors to BrasscribeHighContrastColors,
-            ScribeHighContrastLightColors to BrasscribeHighContrastLightColors,
-        )
-        for ((neutral, own) in modes) {
-            assertSame(own, neutral)
-            assertEquals(own.brass, neutral.brand)
-            assertEquals(own.brassText, neutral.brandText)
-            assertEquals(own.brassText, neutral.accent)
-            assertEquals(own.brassTint, neutral.brandTint)
-            assertEquals(own.staff, neutral.line)
-            // The roles with one name in both: surfaces, text, edges, fills, status, focus, ink and doubt.
-            val shared: List<Color> = listOf(
-                neutral.bg, neutral.surface, neutral.surfaceRaised, neutral.text, neutral.textMuted, neutral.border,
-                neutral.borderStrong, neutral.primary, neutral.onPrimary, neutral.secondary, neutral.onSecondary,
-                neutral.success, neutral.warning, neutral.error, neutral.focus, neutral.scrim, neutral.ink, neutral.uncertain,
+    @Test fun everyProductHasTheNeutralRolesInEveryMode() {
+        for (colours in listOf(ScribeLightColors, ScribeDarkColors, ScribeHighContrastColors, ScribeHighContrastLightColors)) {
+            val roles: List<Color> = listOf(
+                colours.bg, colours.surface, colours.surfaceRaised, colours.text, colours.textMuted, colours.border,
+                colours.borderStrong, colours.primary, colours.onPrimary, colours.secondary, colours.onSecondary,
+                colours.accent, colours.brand, colours.brandText, colours.brandTint, colours.success, colours.warning,
+                colours.error, colours.focus, colours.scrim, colours.ink, colours.line, colours.uncertain,
             )
-            assertEquals(18, shared.size)
+            assertEquals(23, roles.size)
+            assertNotEquals(colours.bg, colours.text)
         }
-        assertSame(LocalBrasscribeColors, LocalScribeColors)
+        assertTrue(ScribeHighContrastColors.isHighContrast && !ScribeLightColors.isHighContrast)
     }
 
-    @Test fun theNeutralScalesAreTheProductsOwn() {
-        assertEquals(BrasscribeSpace.s4, ScribeSpace.s4)
-        assertEquals(BrasscribeSize.touchMin, ScribeSize.touchMin)
-        assertEquals(BrasscribeMotion.base, ScribeMotion.base)
-        assertSame(BrasscribeMotion.standardEasing, ScribeMotion.standardEasing)
-        assertSame(BrasscribeShapes, ScribeShapes)
-        assertSame(BrasscribeButtonShape, ScribeButtonShape)
-        assertSame(BrasscribeNumericStyle, ScribeNumericStyle)
-        assertEquals(brasscribeTypography().bodyLarge, scribeTypography().bodyLarge)
+    @Test fun thePaletteFollowsDarkAndTheSystemsContrast() {
+        assertSame(ScribeLightColors, scribeColors(dark = false, highContrast = false))
+        assertSame(ScribeDarkColors, scribeColors(dark = true, highContrast = false))
+        assertSame(ScribeHighContrastColors, scribeColors(dark = false, highContrast = true))
+        assertSame(ScribeHighContrastColors, scribeColors(dark = true, highContrast = true))
+    }
+
+    @Test fun everyProductHasTheNeutralScales() {
+        assertTrue(ScribeSpace.s4 > ScribeSpace.s2)
+        assertTrue(ScribeSize.touchMin >= ScribeSize.iconLarge)
+        assertTrue(ScribeMotion.base > ScribeMotion.fast)
+        assertEquals(ScribeShapes.medium, ScribeButtonShape)
+        assertEquals("tnum", ScribeNumericStyle.fontFeatureSettings)
+        assertTrue(scribeTypography().displaySmall.fontSize.value > scribeTypography().bodyLarge.fontSize.value)
     }
 }
 

@@ -14,9 +14,6 @@ object TabTokens {
     const val MARK_LINE_SPACES = 1.4f
     /** `tab.uncertain-threshold-default`: a note below this confidence gets a "?". */
     const val UNCERTAIN_THRESHOLD = 0.4
-    /** `color.*.uncertain-tint`: the wash behind a doubtful numeral. High contrast has shapes only, so no wash. */
-    const val UNCERTAIN_TINT_LIGHT = 0xFFFCF0DB.toInt()
-    const val UNCERTAIN_TINT_DARK = 0xFF3B3325.toInt()
     /** The playback cursor's line and a repeat's brackets, in dp. */
     const val CURSOR_DP = 3f
 }

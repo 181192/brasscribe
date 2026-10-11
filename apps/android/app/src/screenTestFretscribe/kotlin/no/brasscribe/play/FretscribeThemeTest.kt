@@ -4,10 +4,10 @@ import android.graphics.Bitmap
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.brasscribe.design.BrasscribeDarkColors
-import no.brasscribe.design.BrasscribeHighContrastColors
-import no.brasscribe.design.BrasscribeLightColors
-import no.brasscribe.design.brasscribeTypography
+import no.scribe.design.ScribeDarkColors
+import no.scribe.design.ScribeHighContrastColors
+import no.scribe.design.ScribeLightColors
+import no.scribe.design.scribeTypography
 import no.brasscribe.play.screen.ScreenDevice
 import no.brasscribe.play.screen.ScreenTest
 import org.junit.Assert.assertEquals
@@ -39,11 +39,11 @@ class FretscribeThemeTest : ScreenTest() {
         return pixels.count { it == want }
     }
 
-    private fun assertWears(shot: Bitmap, colours: no.brasscribe.design.BrasscribeColors, mode: String) {
+    private fun assertWears(shot: Bitmap, colours: no.scribe.design.ScribeColors, mode: String) {
         val all = shot.width * shot.height
         assertTrue("$mode: the ground is Fretscribe's paper", shot.count(colours.bg) > all / 3)
         // The mark beside the wordmark is drawn in the brand colour: blue ink, never brass.
-        assertTrue("$mode: the mark is in blue ink", shot.count(colours.brass) > 200)
+        assertTrue("$mode: the mark is in blue ink", shot.count(colours.brand) > 200)
     }
 
     @Test
@@ -53,21 +53,21 @@ class FretscribeThemeTest : ScreenTest() {
         val font = rule.activity.resources.openRawResource(R.font.display).use { it.readBytes() }
         val name = "Atkinson Hyperlegible Next".toByteArray(Charsets.UTF_16BE)
         assertTrue("res/font/display is Atkinson Hyperlegible Next", font.asList().windowed(name.size).any { it == name.asList() })
-        assertEquals(FontWeight.SemiBold, brasscribeTypography().displaySmall.fontWeight)
+        assertEquals(FontWeight.SemiBold, scribeTypography().displaySmall.fontWeight)
         // Blue ink in every palette, and no Pink: its palettes are the standard ones.
-        assertEquals(androidx.compose.ui.graphics.Color(0xFF1F5FAD), BrasscribeLightColors.brass)
-        assertEquals(androidx.compose.ui.graphics.Color(0xFF8AB8F2), BrasscribeDarkColors.brass)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF1F5FAD), ScribeLightColors.brand)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF8AB8F2), ScribeDarkColors.brand)
 
         ScreenDevice.night(rule, false)
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
-        assertWears(home("home-light"), BrasscribeLightColors, "light")
+        assertWears(home("home-light"), ScribeLightColors, "light")
 
         // Dark from the app's own Appearance setting, whatever the phone says.
         rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
-        assertWears(home("home-dark"), BrasscribeDarkColors, "dark")
+        assertWears(home("home-dark"), ScribeDarkColors, "dark")
 
         // The phone's contrast setting (Android 14 and later) wins over both.
         assumeTrue("this device does not take the contrast setting", ScreenDevice.highContrast(rule, true))
-        assertWears(home("home-high-contrast"), BrasscribeHighContrastColors, "high contrast")
+        assertWears(home("home-high-contrast"), ScribeHighContrastColors, "high contrast")
     }
 }

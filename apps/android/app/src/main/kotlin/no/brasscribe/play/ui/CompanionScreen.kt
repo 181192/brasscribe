@@ -53,8 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import no.brasscribe.design.BrasscribeSpace
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeSpace
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.PinkUnlock
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
@@ -76,7 +76,7 @@ fun CompanionScreen(vm: PlayViewModel) {
     val connection by vm.connection.state.collectAsState()
     val lastAnswered by vm.connection.lastAnswered.collectAsState()
     val settings = vm.container.settings
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val context = LocalContext.current
     var url by rememberSaveable { mutableStateOf(settings.url) }
     var code by rememberSaveable { mutableStateOf("") }
@@ -204,7 +204,7 @@ fun CompanionScreen(vm: PlayViewModel) {
  */
 @Composable
 private fun Scanner(camera: QrCamera, allowed: Boolean, found: (String) -> Unit, unavailable: () -> Unit, cancel: () -> Unit) {
-    val c = BrasscribeTheme.colors
+    val c = ScribeTheme.colors
     val described = stringResource(R.string.pair_scan_camera)
     val window = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.let { it.width.toDp() to it.height.toDp() } }
     // Square, and never more than 40 % of the window's height (30 % at large text), so Cancel stays near. On its side
@@ -228,15 +228,15 @@ private fun Scanner(camera: QrCamera, allowed: Boolean, found: (String) -> Unit,
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val side = minOf(if (wide) maxWidth * 0.45f else maxWidth, window.second * share)
         if (wide) {
-            Row(horizontalArrangement = Arrangement.spacedBy(BrasscribeSpace.s4), verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                     Words()
                     PlainButton(stringResource(R.string.cancel), cancel)
                 }
                 Camera(side)
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+            Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                 Words()
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Camera(side) }
                 PlainButton(stringResource(R.string.cancel), cancel)
@@ -248,14 +248,14 @@ private fun Scanner(camera: QrCamera, allowed: Boolean, found: (String) -> Unit,
 /** The four digits both screens show, large; read out one digit at a time. */
 @Composable
 private fun MatchCode(code: String, cancel: () -> Unit) {
-    val c = BrasscribeTheme.colors
-    Column(verticalArrangement = Arrangement.spacedBy(BrasscribeSpace.s3)) {
+    val c = ScribeTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
         Text(stringResource(R.string.pair_ask_waiting), style = MaterialTheme.typography.bodyLarge)
         Surface(shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border)) {
             Text(
                 code.toList().joinToString(" "),
                 style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 4.sp),
-                modifier = Modifier.fillMaxWidth().padding(BrasscribeSpace.s4).semantics { contentDescription = code.toList().joinToString(", ") },
+                modifier = Modifier.fillMaxWidth().padding(ScribeSpace.s4).semantics { contentDescription = code.toList().joinToString(", ") },
             )
         }
         PlainButton(stringResource(R.string.cancel), cancel)
@@ -269,8 +269,8 @@ fun AboutScreen(vm: PlayViewModel) {
         BrandMark(androidx.compose.ui.unit.Dp(56f))
         ScreenTitle(stringResource(R.string.about_title))
         Text(stringResource(R.string.about_text), style = MaterialTheme.typography.bodyLarge)
-        Text(stringResource(R.string.about_font), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
-        Text("CoreBridge: ${vm.container.core.name}", style = MaterialTheme.typography.bodySmall, color = BrasscribeTheme.colors.textMuted)
+        Text(stringResource(R.string.about_font), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
+        Text("CoreBridge: ${vm.container.core.name}", style = MaterialTheme.typography.bodySmall, color = ScribeTheme.colors.textMuted)
         VersionRow(vm)
     }
 }
@@ -286,7 +286,7 @@ private fun VersionRow(vm: PlayViewModel) {
     Text(
         stringResource(R.string.about_version, vm.container.shownVersion),
         style = MaterialTheme.typography.bodyMedium,
-        color = BrasscribeTheme.colors.textMuted,
+        color = ScribeTheme.colors.textMuted,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)

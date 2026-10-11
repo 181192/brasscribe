@@ -119,8 +119,11 @@ def test_every_platform_gets_the_pink_palette():
     assert ':root[data-palette="pink"] {\n    color-scheme: light;\n    --scribe-bg: #FFF6F9;' in css
     assert "(not (prefers-contrast: more))" in css
     kt = (build.DIST / "android" / "kotlin" / "no" / "brasscribe" / "design" / "BrasscribeTheme.kt").read_text()
-    assert "val BrasscribePinkColors" in kt and "pink && dark -> BrasscribePinkDarkColors" in kt
+    # Android: Pink of Brasscribe's own roles and of the roles every brand has, and high contrast wins over both.
+    assert "val BrasscribePinkColors = BrasscribeColors(" in kt and "pink && dark -> BrasscribePinkDarkColors" in kt
+    assert "val BrasscribePinkScribeColors = ScribeColors(\n    bg = Color(0xFFFFF6F9)," in kt
     assert kt.index("highContrast -> ") < kt.index("pink && dark -> ")
+    assert "highContrast || !pink -> scribeColors(dark, highContrast)" in kt
     cs = json.loads((build.DIST / "apple" / "BrasscribeDesign.xcassets" / "BrasscribePink" / "bg.colorset" / "Contents.json").read_text())
     assert [c["color"]["components"]["red"] for c in cs["colors"]][:1] == [build.rgb_components("#FFF6F9")[0]]
     assert len(cs["colors"]) == 4  # light, dark and both high-contrast appearances
@@ -135,7 +138,12 @@ def test_every_platform_gets_the_pink_palette():
 # ---------------------------------------------------------------- every brand, every platform
 
 FRETSCRIBE = build.ROOT / "design" / "fretscribe"
-KOTLIN = Path("android") / "kotlin" / "no" / "brasscribe" / "design"
+NEUTRAL_KOTLIN = Path("android") / "kotlin" / "no" / "scribe" / "design" / "ScribeTheme.kt"
+
+
+def brand_kotlin(b) -> Path:
+    """The brand's own Kotlin: its package under android/kotlin."""
+    return b.DIST / "android" / "kotlin" / "no" / b.PRODUCT.lower() / "design"
 # Words that belong to one brand's idea of its product; no neutral name may carry them.
 BRAND_WORDS = ("brass", "staff", "score", "string", "tab", "fret", "pink", "adlib", "model")
 
@@ -245,7 +253,7 @@ def neutral_names(b) -> dict[str, list[str]]:
     css = (b.DIST / "web" / f"{product.lower()}.css").read_text()
     return {
         "apple": sorted(f"{t}.{m}" for t, ms in swift_neutral(b).items() for m in ms),
-        "android": declarations((b.DIST / KOTLIN / "ScribeTheme.kt").read_text()),
+        "android": declarations((b.DIST / NEUTRAL_KOTLIN).read_text()),
         "windows": re.findall(r'x:Key="(Scribe\w+)"', xaml),
         "web": sorted(set(re.findall(r"^\s+(--scribe-[\w-]+):", css, re.M))),
     }
@@ -281,7 +289,7 @@ def test_the_action_icons_have_no_neutral_name():
     # The actions of icons.json are one product's so far (the talking score, the music stand), so the icons
     # stay under each brand's own name.
     for name, b in brands().items():
-        for path in (b.DIST / "apple" / f"{b.PRODUCT}Design.swift", b.DIST / KOTLIN / "ScribeTheme.kt",
+        for path in (b.DIST / "apple" / f"{b.PRODUCT}Design.swift", b.DIST / NEUTRAL_KOTLIN,
                      b.DIST / "windows" / f"{b.PRODUCT}Theme.xaml", b.DIST / "web" / "icons.js"):
             assert "ScribeIcon" not in path.read_text(), (name, path.name)
 
@@ -403,8 +411,10 @@ def test_neutral_types_have_the_same_members_in_every_brand():
 
     found = {}
     for name, b in brands().items():
-        kotlin = (b.DIST / KOTLIN / "BrasscribeTheme.kt").read_text()
-        found[name] = {**swift_neutral(b), **{f"Scribe{t}": members(kotlin, "object Brasscribe" + t + " {") for t in ("Space", "Size", "Motion")}}
+        kotlin = (b.DIST / NEUTRAL_KOTLIN).read_text()
+        found[name] = {**swift_neutral(b), **{f"Scribe{t}": members(kotlin, "object Scribe" + t + " {") for t in ("Space", "Size", "Motion")},
+                       "ScribeColors": members(kotlin, "data class ScribeColors(")[:0] + sorted(re.findall(r"^    val (\w+): Color,", kotlin, re.M))}
+        assert found[name]["ScribeColors"] == sorted(build.camel(r) for r in build.NEUTRAL["roles"]), name
         assert set(found[name]) >= {"ScribeDesign", "ScribeDesign.Space", "ScribeDesign.Radius", "ScribeDesign.Size", "ScribeDesign.Motion",
                                     "Color.Scribe", "Font.Scribe"}, name
         assert found[name]["Color.Scribe"] == sorted(build.camel(r) for r in build.NEUTRAL["roles"]), name
@@ -456,9 +466,6 @@ def broken(tmp_path, change, source=None) -> Path:
         font["licence"] = str((source.parent / font["licence"]).resolve())
         for face in font["faces"]:
             face["file"] = str((source.parent / face["file"]).resolve())
-    for key in ("file", "licence"):
-        if "display-font" in ext.get("android", {}):
-            ext["android"]["display-font"][key] = str((source.parent / ext["android"]["display-font"][key]).resolve())
     ext["prefix"] = "tmp"  # a copy has the brand's prefix, which no second brand may have
     change(raw, ext)
     tokens = tmp_path / "tokens.json"
@@ -582,44 +589,67 @@ def test_brasscribe_fonts_are_staged_as_before():
         assert sorted(p.name for p in (build.DIST / folder).iterdir()) == ["InstrumentSerif-Regular.ttf", "OFL.txt"], folder
 
 
-# The Android theme: every brand's is written under Brasscribe's names until the Android apps use the neutral ones.
+# Android: the neutral theme in no.scribe.design, the same declarations for every brand, and the brand's own in its package.
 
-def test_fretscribe_theme_has_the_names_the_shared_screens_use():
-    # The apps share their screens, so both generated themes declare exactly the same names.
-    for name in ("BrasscribeTheme.kt", "BrasscribeIcon.kt", "ScribeTheme.kt"):
-        ours = (build.DIST / KOTLIN / name).read_text()
-        theirs = (FRETSCRIBE / "dist" / KOTLIN / name).read_text()
-        assert len(declarations(ours)) > 15, name
+def test_android_has_the_same_neutral_theme_for_every_brand():
+    ours = (build.DIST / NEUTRAL_KOTLIN).read_text()
+    assert len(declarations(ours)) > 60 and ours.startswith("// Generated") and "package no.scribe.design\n" in ours
+    for name, b in brands().items():
+        theirs = (b.DIST / NEUTRAL_KOTLIN).read_text()
         assert declarations(theirs) == declarations(ours), name
+        light = theirs.split("val ScribeLightColors = ScribeColors(")[1].split(")\n\n")[0]
+        for role, src in b.neutral_roles().items():
+            assert f"    {b.camel(role)} = Color({b.argb(b.hexval('light', src), b.alpha('light', src))})," in light, (name, role)
+        # Nothing of a brand's own is in it: no own role, no notation metrics, no Pink.
+        for role in b.own_roles():
+            assert f"val {b.camel(role)}:" not in theirs, (name, role)
+        named = " ".join(declarations(theirs)).lower()
+        assert not [w for w in ("pink", "score", "zoom", "tab") if w in named], name
     assert sorted(p.name for p in (FRETSCRIBE / "dist" / "android" / "res" / "drawable").iterdir()) == \
         sorted(p.name for p in (build.DIST / "android" / "res" / "drawable").iterdir() if not p.name.startswith("ic_launcher"))
 
 
-def test_fretscribe_roles_come_through_the_alias_map():
+def test_android_has_each_brands_own_in_its_own_package():
+    import re
+    for name, b in brands().items():
+        folder = brand_kotlin(b)
+        assert sorted(p.name for p in folder.iterdir()) == [f"{b.PRODUCT}Icon.kt", f"{b.PRODUCT}Theme.kt"], name
+        kt = (folder / f"{b.PRODUCT}Theme.kt").read_text()
+        assert f"package no.{b.PRODUCT.lower()}.design\n" in kt, name
+        own = re.findall(r"^    val (\w+): Color,", kt.split(f"data class {b.PRODUCT}Colors(")[1].split("\n)\n")[0], re.M)
+        assert own == [b.camel(r) for r in b.own_roles()] and own, name
+        assert not set(own) & {b.camel(r) for r in build.NEUTRAL["roles"]}, name
+        view = b.pascal(b.EXT["notation"])
+        assert f"object {b.PRODUCT}{view} {{\n    val cursorWidth = " in kt, name
+        assert f"fun {b.PRODUCT}Theme(" in kt and "ScribeTheme(dark = dark, highContrast = highContrast, display = display, colors = colors, content = content)" in kt, name
+    # Only these two packages are generated; nothing is left under another brand's name.
+    for name, b in brands().items():
+        packages = sorted(p.relative_to(b.DIST / "android" / "kotlin").as_posix() for p in (b.DIST / "android" / "kotlin").rglob("*.kt"))
+        assert packages == sorted([f"no/{b.PRODUCT.lower()}/design/{b.PRODUCT}Icon.kt", f"no/{b.PRODUCT.lower()}/design/{b.PRODUCT}Theme.kt",
+                                   "no/scribe/design/ScribeTheme.kt"]), name
+
+
+def test_fretscribe_on_android_has_its_own_names_and_values():
     fs = fretscribe()
-    kt = (FRETSCRIBE / "dist" / KOTLIN / "BrasscribeTheme.kt").read_text()
-    light = kt.split("val BrasscribeLightColors = BrasscribeColors(")[1].split(")\n\n")[0]
-    for field, role in (("brass", "brand"), ("brassText", "brand-text"), ("brassTint", "brand-tint"), ("staff", "string"),
-                        ("veryUncertain", "uncertain"), ("adlibTint", "loop-tint"), ("primary", "primary")):
+    kt = (brand_kotlin(fs) / "FretscribeTheme.kt").read_text()
+    assert "rasscribe" not in kt.split("\n", 1)[1] and "Pink" not in kt and "pink" not in kt
+    light = kt.split("val FretscribeLightColors = FretscribeColors(")[1].split(")\n\n")[0]
+    for field, role in (("uncertainTint", "uncertain-tint"), ("cursor", "cursor"), ("loopEdge", "loop-edge")):
         assert f"    {field} = Color({fs.argb(fs.hexval('light', role), fs.alpha('light', role))})," in light, field
-    # No Pink palette: the pink values are the standard ones.
-    pink = kt.split("val BrasscribePinkColors = BrasscribeColors(")[1].split(")\n\n")[0]
-    dark = kt.split("val BrasscribeDarkColors = BrasscribeColors(")[1].split(")\n\n")[0]
-    pink_dark = kt.split("val BrasscribePinkDarkColors = BrasscribeColors(")[1].split(")\n\n")[0]
-    assert pink == light and pink_dark == dark and light != dark
+    assert "object FretscribeTab {" in kt and "singlePartReflowZoom" not in kt
+    neutral = (fs.DIST / NEUTRAL_KOTLIN).read_text()
+    assert "    line = Color(0xFF737983)," in neutral.split("val ScribeLightColors = ScribeColors(")[1].split(")\n\n")[0]
     # The titles: the brand's own face, at the weight its display token names.
-    assert "displaySmall = base.displaySmall.copy(fontFamily = display, fontWeight = FontWeight.SemiBold," in kt
+    assert "displaySmall = base.displaySmall.copy(fontFamily = display, fontWeight = FontWeight.SemiBold," in neutral
     font = FRETSCRIBE / "dist" / "android" / "res" / "font" / "atkinson_hyperlegible_next.ttf"
     assert font.read_bytes() == (FRETSCRIBE / "brand" / "fonts" / "AtkinsonHyperlegibleNext-wght.ttf").read_bytes()
+    # The tokens no longer say how to pass for Brasscribe.
+    assert "android" not in fs.EXT and not hasattr(fs, "API") and not hasattr(fs, "ANDROID")
 
 
-def test_android_neutral_names_read_the_theme():
-    for b in brands().values():
-        kt = (b.DIST / KOTLIN / "ScribeTheme.kt").read_text()
-        assert "typealias ScribeColors = BrasscribeColors" in kt
-        for neutral, own in (("brand", "brass"), ("brandText", "brassText"), ("brandTint", "brassTint"), ("line", "staff")):
-            assert f"val ScribeColors.{neutral}: Color get() = {own}\n" in kt
-        assert "get() = LocalBrasscribeColors.current" in kt and "pink" not in kt.lower()
+def test_the_display_font_needs_its_android_name(tmp_path):
+    refused(tmp_path, lambda raw, ext: ext["fonts"]["display"].pop("android-resource"), r"fonts.display has no 'android-resource'")
+    refused(tmp_path, lambda raw, ext: ext["fonts"]["display"].update({"android-resource": "Atkinson-Next"}), r"fonts.display has no 'android-resource'")
 
 
 def test_android_window_colours_are_the_token_backgrounds():
@@ -652,10 +682,3 @@ def test_a_brand_cannot_use_another_brands_folder():
         product_build(FRETSCRIBE / "tokens" / "tokens.json", build.DEFAULT_DIST)
     with pytest.raises(SystemExit, match=r"design/fretscribe/dist is the output folder of fretscribe .*give design/tokens/tokens.json its own --out"):
         product_build(build.DEFAULT_TOKENS, FRETSCRIBE / "dist")
-
-
-def test_a_role_the_product_neither_has_nor_maps_is_an_error(tmp_path):
-    import pytest
-    fs = product_build(broken(tmp_path, lambda raw, ext: ext["android"]["aliases"]["roles"].pop("staff")), tmp_path / "dist", "android")
-    with pytest.raises(SystemExit, match="no role for 'staff'"):
-        fs.outputs()

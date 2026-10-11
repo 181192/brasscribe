@@ -22,7 +22,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import no.brasscribe.design.BrasscribeTheme
+import no.scribe.design.ScribeTheme
 import no.brasscribe.play.OnDeviceRouting
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
@@ -136,7 +136,7 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
             val why = missing?.let { stringResource(it) }
             // The line can change while the screen is open (the computer answers): a screen reader is told, without interrupting.
             if (why != null) Text(why, Modifier.testTag("fs-what-missing").semantics { liveRegion = LiveRegionMode.Polite },
-                style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
+                style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
             PrimaryButton(stringResource(R.string.continue_label), {
                 // From here the recording is written down afresh, for the player's instrument as it is now.
                 SongAnswers.set(source, SongAnswer(answer.recording))
@@ -161,7 +161,7 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
         if (there) RowGroup(Modifier.testTag("fs-what-where")) {
             ListRow(stringResource(R.string.where_companion), null, subtitle = stringResource(R.string.fs_where_desc), icon = R.drawable.ic_bc_computer)
         } else {
-            Text(stringResource(R.string.fs_where_needed), style = MaterialTheme.typography.bodyMedium, color = BrasscribeTheme.colors.textMuted)
+            Text(stringResource(R.string.fs_where_needed), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
             // Connect or Pair this phone again, as on Home: the pairing screen, or another try at a paired computer.
             ConnectionStatusRow(vm, Modifier.testTag("fs-what-connect"))
         }
