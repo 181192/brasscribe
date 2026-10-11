@@ -197,9 +197,8 @@ mod tests {
     #[test]
     fn shipped_calibration_matches_the_reference_file() {
         let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../music/src/scribe_music/calibration.json");
-        if let Ok(s) = std::fs::read_to_string(p) {
-            assert_eq!(s, CALIBRATION_JSON, "core/scribe-core/src/calibration.json is out of date");
-        }
+        let s = std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("the reference's calibration file {}: {e}", p.display()));
+        assert_eq!(s, CALIBRATION_JSON, "core/scribe-core/src/calibration.json is out of date");
         let m = Model::load();
         assert_eq!((m.mark_risk, m.very_risk), (0.241, 0.6));
     }

@@ -22,7 +22,11 @@ internal static class TestPaths
         }
     }
 
-    /// <summary>A file under data/ or models/ in the repo, or null when it is not there.</summary>
+    /// <summary>
+    /// A file in the repo, or null when it is not there. Only data/ and models/ can be missing from a checkout
+    /// (they are not in git): any other path that is not found there has gone stale (a folder was renamed), and
+    /// that fails the test instead of skipping it.
+    /// </summary>
     public static string? RepoFile(string relative)
     {
         var env = Environment.GetEnvironmentVariable("SCRIBE_REPO");
@@ -31,6 +35,9 @@ internal static class TestPaths
             var p = Path.Combine(root!, relative);
             if (File.Exists(p)) return p;
         }
+        bool outsideGit = relative.StartsWith("data/", StringComparison.Ordinal) || relative.StartsWith("models/", StringComparison.Ordinal);
+        if (!outsideGit && RepoRoot is { } checkout)
+            throw new FileNotFoundException($"{relative} is not in the checkout at {checkout}: the repository tracks every file outside data/ and models/, so this test names a path that no longer exists");
         return null;
     }
 

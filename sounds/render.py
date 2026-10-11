@@ -56,7 +56,7 @@ from dsp import SR, apply_eq  # noqa: E402
 import importlib.util  # noqa: E402
 
 _ms_spec = importlib.util.spec_from_file_location(
-    "brasscribe_musescore", Path(__file__).resolve().parents[1] / "music/src/scribe_music/musescore.py")
+    "scribe_musescore", Path(__file__).resolve().parents[1] / "music/src/scribe_music/musescore.py")
 musescore = importlib.util.module_from_spec(_ms_spec)
 _ms_spec.loader.exec_module(musescore)
 from humanize import TPB, Performance, ScoreNote, humanize  # noqa: E402

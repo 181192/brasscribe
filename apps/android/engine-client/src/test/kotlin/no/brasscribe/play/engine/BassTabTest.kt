@@ -246,8 +246,9 @@ class BassTabTest {
 
     @Test
     fun theRefusalCodesAreTheEngines() {
-        val profiles = File(System.getProperty("brasscribe.engine") ?: "missing", "profiles.py")
-        assumeTrue("the engine is not in this checkout", profiles.isFile)
+        // The engine's package is in git: not finding it means the path the build passes in has gone stale.
+        val profiles = File(checkNotNull(System.getProperty("brasscribe.engine")) { "brasscribe.engine is not set by the build" }, "profiles.py")
+        assertTrue("$profiles is not there", profiles.isFile)
         val codes = Regex("^[A-Z_]+_CODE = \"([a-z_]+)\"", RegexOption.MULTILINE).findAll(profiles.readText()).map { it.groupValues[1] }.toSet()
         assertEquals(codes, Refusal.entries.map { it.code }.toSet())
     }
