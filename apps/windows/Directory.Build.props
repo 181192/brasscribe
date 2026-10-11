@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- The app version, bumped with the others by scripts/release.sh. -->
-    <Version>0.10.1</Version>
+    <Version>0.10.2</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -13,9 +13,9 @@
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
     <!-- Lets the Windows-only projects compile against reference assemblies on macOS and Linux. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <!-- Windows target. Per-app loopback additionally checks for OS build 20348 at run time. -->
-    <BrasscribeWindowsTfm>net10.0-windows10.0.20348.0</BrasscribeWindowsTfm>
-    <BrasscribeWindowsMinVersion>10.0.19041.0</BrasscribeWindowsMinVersion>
+    <!-- Windows target: Windows 11 (build 22000) is the oldest system the app runs on. -->
+    <BrasscribeWindowsTfm>net10.0-windows10.0.22000.0</BrasscribeWindowsTfm>
+    <BrasscribeWindowsMinVersion>10.0.22000.0</BrasscribeWindowsMinVersion>
   </PropertyGroup>
   <!-- The screen catalogue (tests/Brasscribe.Play.Catalogue) is the app built with -p:BrasscribeCatalogue=true: it
        builds into bin/catalogue and obj/catalogue, so it never mixes with the app's own build, and leaves the app's

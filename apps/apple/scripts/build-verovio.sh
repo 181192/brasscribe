@@ -12,8 +12,8 @@ set -euo pipefail
 
 VERSION=6.3.0
 COMMIT=425dd7b6ba26edcecbe345c10b15586d095743d9
-MACOS_MIN=15.0
-IOS_MIN=18.0
+MACOS_MIN=26.0
+IOS_MIN=26.0
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$HERE/build/verovio"

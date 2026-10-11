@@ -55,8 +55,7 @@ struct SettingsView: View {
                             .autocorrectionDisabled()
                     } label: { Text("Details for the band's tech person") }
                 } header: { Text("On this device") } footer: {
-                    Text("One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.")
-                    + Text(verbatim: " ") + Text("A brass band gets a quick draft here when your computer isn't there; your computer makes a better score.")
+                    Text("\(Text("One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.")) \(Text("A brass band gets a quick draft here when your computer isn't there; your computer makes a better score."))")
                 }
 
                 Section {

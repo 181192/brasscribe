@@ -11,7 +11,7 @@ namespace Brasscribe.Play.Core.Playback;
 /// </summary>
 public static class ScorePreview
 {
-    private static string[] _sans = ["Segoe UI Variable Text", "Segoe UI", "Helvetica Neue", "Arial"];
+    private static string[] _sans = ["Segoe UI Variable Text", "Helvetica Neue", "Arial"];
     private static string[] _serif = ["Instrument Serif", "Georgia", "Times New Roman"];
     private static bool _fontsReady;
 
@@ -21,6 +21,12 @@ public static class ScorePreview
         if (italic is null) return;
         var face = AlphaSkiaTypeface.Register(italic);
         if (face is not null) _serif = [face.FamilyName, .. _serif];
+    }
+
+    /// <summary>The families the loop label and the "?" marks are asked for, in order; with the system's fonts switched on.</summary>
+    internal static IReadOnlyList<string> SansFamilies
+    {
+        get { EnsureFonts(); return _sans; }
     }
 
     /// <summary>

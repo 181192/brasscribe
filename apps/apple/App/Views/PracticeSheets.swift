@@ -184,7 +184,7 @@ struct ExportView: View {
                 Image(systemName: scope == s ? "largecircle.fill.circle" : "circle").font(.title2)
                     .foregroundStyle(scope == s ? Color.Scribe.text : Color.Scribe.borderStrong)
                     .accessibilityHidden(true)
-                Text("\(Text(title).font(Font.Scribe.headline))\(note.map { Text(verbatim: " · ") + Text($0).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted) } ?? Text(verbatim: ""))")
+                Text("\(Text(title).font(Font.Scribe.headline))\(note.map { Text("\(Text(verbatim: " · "))\(Text($0).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted))") } ?? Text(verbatim: ""))")
                     .foregroundStyle(Color.Scribe.text)
                 Spacer()
             }

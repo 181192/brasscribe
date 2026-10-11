@@ -587,9 +587,6 @@
   <data name="Setup_4_Where" xml:space="preserve">
     <value>Den kjører i det stille i hjørnet av oppgavelinjen. Ser du den ikke, velger du ^ (Vis skjulte ikoner).</value>
   </data>
-  <data name="Setup_Refuse" xml:space="preserve">
-    <value>Brasscribe trenger en 64-biters PC med Intel eller AMD og Windows 10 (22H2) eller Windows 11.</value>
-  </data>
   <data name="Notify_Ready" xml:space="preserve">
     <value>Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå.</value>
   </data>

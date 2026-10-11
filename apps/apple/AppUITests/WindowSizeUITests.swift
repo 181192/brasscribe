@@ -71,7 +71,7 @@ final class WindowSizeUITests: XCTestCase {
 
     func testWindowMenuSizesStayInsideTheVisibleFrame() throws {
         launch()
-        // Window › Zoom, Fill, Center, and the halves where the system has them (macOS 15 and later)
+        // Window › Zoom, Fill, Center, and the halves
         for item in ["Zoom", "Fill", "Center", "Top", "Bottom", "Left", "Right", "Zoom"] {
             guard windowMenu(item) else { continue }
             assertInsideVisibleFrame("Window › \(item)")

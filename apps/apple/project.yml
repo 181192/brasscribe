@@ -4,8 +4,8 @@ name: BrasscribePlay
 options:
   bundleIdPrefix: no.brasscribe
   deploymentTarget:
-    iOS: "18.0"
-    macOS: "15.0"
+    iOS: "26.0"
+    macOS: "26.0"
   developmentLanguage: en
   knownRegions: [en, nb]
   createIntermediateGroups: true
@@ -14,10 +14,10 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.10.1"
+    MARKETING_VERSION: "0.10.2"
     # override on the command line (PLAY_BUNDLE_ID=…) to run beside another build of the app
     PLAY_BUNDLE_ID: no.brasscribe.play
-    CURRENT_PROJECT_VERSION: "15"
+    CURRENT_PROJECT_VERSION: "16"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     CODE_SIGN_IDENTITY: "-"
