@@ -22,7 +22,7 @@
 | focus | `#1B1A17` | `#EDEBE6` | `#FFFFFF` | Keyboard focus ring: ink / paper, so it is never confused with the uncertain blue or the very-uncertain yellow (usability review, P2-11) |
 | error | `#B3261E` | `#F2B8B5` | `#FF8080` | Error text |
 | cursor-tint | `#DED5E6` | `#37303D` | none (`#000000`) | The 20% cursor tint on the current bar (design tokens only) |
-| selection-tint / selection-edge | `#E8E5DE` / `#1B1A17` | `#2C2A26` / `#EDEBE6` | none / `#FFFFFF` | Selected bar range before it becomes a loop (design tokens only) |
+| selection-tint / selection-edge | `#ECE9E2` / `#1B1A17` | `#2C2A26` / `#EDEBE6` | none / `#FFFFFF` | Selected bar range before it becomes a loop (design tokens only) |
 
 The neutrals are warm (paper and ink rather than pure grey) for the Brasscribe look; the score hues are unchanged. Tints never stack: inside an ad lib passage the loop tint replaces the ad lib tint, and the ad lib text and dashed bar lines remain.
 

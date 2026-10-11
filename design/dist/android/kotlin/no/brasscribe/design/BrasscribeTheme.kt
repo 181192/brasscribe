@@ -35,7 +35,7 @@ data class BrasscribeColors(
     val cursor: Color,
     /** Tint of the bar under the playback cursor: the cursor colour at 20% over the paper. */
     val cursorTint: Color,
-    /** Band behind a selected bar range (before it becomes a loop). */
+    /** Band behind a selected bar range (before it becomes a loop), and the fill of a selected row. Light enough that the boxed ? reads on it as text. */
     val selectionTint: Color,
     /** 1 px outline of a selected bar range. */
     val selectionEdge: Color,
@@ -56,7 +56,7 @@ val BrasscribeLightColors = BrasscribeColors(
     loopEdge = Color(0xFF8A5A00),
     cursor = Color(0xFF6B3FA0),
     cursorTint = Color(0xFFDED5E6),
-    selectionTint = Color(0xFFE8E5DE),
+    selectionTint = Color(0xFFECE9E2),
     selectionEdge = Color(0xFF1B1A17),
     model1 = Color(0xFF0072B2),
     model2 = Color(0xFFA65E00),

@@ -36,6 +36,24 @@ public enum Guards {
     }
 }
 
+/// Pixels of nearly one colour in a picture, added up.
+private extension Pictures {
+    struct Group {
+        var count = 0, r = 0, g = 0, b = 0, a = 0
+        mutating func add(_ red: UInt8, _ green: UInt8, _ blue: UInt8, _ alpha: UInt8) {
+            count += 1; r += Int(red); g += Int(green); b += Int(blue); a += Int(alpha)
+        }
+        /// The relative luminance of their mean colour (WCAG 2, sRGB), as `qa/tools/contrast.py` has it.
+        var luminance: Double {
+            func linear(_ sum: Int) -> Double {
+                let v = Double(sum) / Double(count) / 255
+                return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+        }
+    }
+}
+
 /// Screenshots and the accessibility tree beside them.
 @MainActor
 public enum Pictures {
@@ -71,6 +89,44 @@ public enum Pictures {
             }
         }
         return true
+    }
+
+    /// How well what is drawn in `rect` (in pixels, origin top left) stands out from what it is drawn on: the WCAG
+    /// contrast ratio between the ground (the colour most of the pixels have) and the colour furthest from it that at
+    /// least `share` of the pixels reach (and at least three: one stray pixel of a neighbour's edge is not text).
+    /// A glyph's edges blend into the ground, so its core is what counts. 1 when nothing is drawn there; nil when the
+    /// ground is not in the picture (it is see-through there: whatever is behind the view on a Mac decides).
+    public static func contrast(_ rep: NSBitmapImageRep, in rect: CGRect, share: Double = 0.004) -> Double? {
+        guard let data = rep.bitmapData else { return 1 }
+        let x0 = max(0, Int(rect.minX.rounded(.down))), x1 = min(rep.pixelsWide, Int(rect.maxX.rounded(.up)))
+        let y0 = max(0, Int(rect.minY.rounded(.down))), y1 = min(rep.pixelsHigh, Int(rect.maxY.rounded(.up)))
+        let size = rep.bitsPerPixel / 8
+        guard x1 > x0, y1 > y0, size >= 3, rep.bitsPerSample == 8 else { return 1 }
+        let alphaFirst = size >= 4 && rep.bitmapFormat.contains(.alphaFirst)
+        let colour = alphaFirst ? 1 : 0, alpha = size >= 4 && rep.hasAlpha ? (alphaFirst ? 0 : 3) : nil
+        // Colours a few steps apart (dithering, a faint gradient) count as one: each is told by its upper six bits a
+        // channel, and is the mean of its pixels.
+        var groups: [UInt32: Group] = [:]
+        for y in y0..<y1 {
+            var p = data + y * rep.bytesPerRow + x0 * size
+            for _ in x0..<x1 {
+                let r = p[colour], g = p[colour + 1], b = p[colour + 2], a = alpha.map { p[$0] } ?? 255
+                groups[UInt32(r >> 2) << 24 | UInt32(g >> 2) << 16 | UInt32(b >> 2) << 8 | UInt32(a >> 2), default: Group()].add(r, g, b, a)
+                p += size
+            }
+        }
+        guard let ground = groups.values.max(by: { ($0.count, $0.r) < ($1.count, $1.r) }) else { return 1 }
+        if ground.a < 250 * ground.count { return nil }
+        let on = ground.luminance
+        let ratios = groups.values.map { (ratio: (max($0.luminance, on) + 0.05) / (min($0.luminance, on) + 0.05), count: $0.count) }
+            .sorted { $0.ratio > $1.ratio }
+        let needed = max(3, Int((Double((x1 - x0) * (y1 - y0)) * share).rounded(.up)))
+        var seen = 0
+        for r in ratios {
+            seen += r.count
+            if seen >= needed { return r.ratio }
+        }
+        return 1
     }
 
     /// A line of `takes-<language>.log` in `directory`: how long each screen took and what it waited for.

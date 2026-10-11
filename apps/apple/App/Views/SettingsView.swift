@@ -21,6 +21,8 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var app = app
         NavigationStack {
+            // On the page's ground, with every footer and row value in the page's muted text: left to the form, they
+            // take the system's secondary colour, which is too faint on this ground in the light appearance.
             Form {
                 Section {
                     NavigationLink {
@@ -29,13 +31,14 @@ struct SettingsView: View {
                         }
                         .navigationTitle(Text("What you play"))
                     } label: {
-                        LabeledContent { Text(app.seat.summary) } label: {
+                        LabeledContent { Text(app.seat.summary).foregroundStyle(Color.Scribe.textMuted) } label: {
                             Label { Text("What you play") } icon: { Image(systemName: BrasscribeIcon.parts.systemName) }
                         }
                     }
                     .accessibilityIdentifier("settingWhatYouPlay")
                 } header: { Text("Your instrument") } footer: {
                     Text("New scores open on your part. Scores you already have keep the part you chose for them.")
+                        .foregroundStyle(Color.Scribe.textMuted)
                 }
 
                 YourComputerSection()
@@ -44,7 +47,7 @@ struct SettingsView: View {
                     Toggle(isOn: $app.soloOnDevice) { Text("Write down solos on this device") }
                     Toggle(isOn: $app.bandDraftOnDevice) { Text("Make band drafts on this device") }
                         .accessibilityIdentifier("settingBandDraft")
-                    LabeledContent { Text(modelStatus) } label: { Text("Listening files") }
+                    LabeledContent { Text(modelStatus).foregroundStyle(Color.Scribe.textMuted) } label: { Text("Listening files") }
                     Button("Download the listening files") { Task { await downloadModels() } }
                         .disabled(busy || ModelStore.shared.missing.isEmpty)
                     Button("Remove the listening files", role: .destructive) { ModelStore.shared.removeAll(); modelTick += 1 }
@@ -56,6 +59,7 @@ struct SettingsView: View {
                     } label: { Text("Details for the band's tech person") }
                 } header: { Text("On this device") } footer: {
                     Text("\(Text("One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.")) \(Text("A brass band gets a quick draft here when your computer isn't there; your computer makes a better score."))")
+                        .foregroundStyle(Color.Scribe.textMuted)
                 }
 
                 Section {
@@ -85,12 +89,14 @@ struct SettingsView: View {
                         }
                         #endif
                     }
+                    .foregroundStyle(Color.Scribe.textMuted)
                 }
 
                 Section {
                     Toggle(isOn: $singleKeys) { Text("Single-key shortcuts") }
                 } header: { Text("Keyboard") } footer: {
                     Text("Space plays and pauses, the arrow keys move by bar, F opens the music stand, and L, C, M, A and O switch the practice controls. Turn this off if you use speech control or a switch.")
+                        .foregroundStyle(Color.Scribe.textMuted)
                 }
 
                 Section {

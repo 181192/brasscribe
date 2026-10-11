@@ -498,9 +498,12 @@ struct UncertaintyLegend: View {
     }
 
     @ViewBuilder private var items: some View {
-        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); Text("Brasscribe wasn't sure") }
-        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); Text("Very unsure") }
+        HStack(spacing: Space.s2) { UncertainMark(level: .uncertain); caption(Text("Brasscribe wasn't sure")) }
+        HStack(spacing: Space.s2) { UncertainMark(level: .veryUncertain); caption(Text("Very unsure")) }
     }
+
+    /// In the page's muted text: left to the list it is in, a caption takes the system's colour.
+    private func caption(_ text: Text) -> some View { text.foregroundStyle(Color.Scribe.textMuted) }
 }
 
 extension View {
@@ -526,9 +529,10 @@ enum SelectedRow {
     static let edge = Color.Brasscribe.selectionEdge
     static let text = Color.Scribe.text
 
-    /// The row background: this for the selected row, the list's own for the rest.
+    /// The row background: this for the selected row, and none for the rest, which leaves them on the ground the
+    /// list is given (the system's own row ground is not one of the page's colours).
     static func background(_ selected: Bool) -> AnyView? {
-        guard selected else { return nil }
+        guard selected else { return AnyView(Color.clear) }
         return AnyView(
             RoundedRectangle(cornerRadius: Radius.sm)
                 .fill(fill)

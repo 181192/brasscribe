@@ -65,7 +65,7 @@ struct YourComputerSection: View {
                     .autocorrectionDisabled()
             } label: { Text("Details for the band's tech person") }
         } header: { Text("Your computer") } footer: {
-            if showPairing { Text("Do this once. This device stays paired, also when the computer restarts or gets a new address.") }
+            if showPairing { Text("Do this once. This device stays paired, also when the computer restarts or gets a new address.").foregroundStyle(Color.Scribe.textMuted) }
         }
         .onAppear { if showPairing { browser.start() } }
         .onDisappear { browser.stop() }

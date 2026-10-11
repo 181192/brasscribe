@@ -138,11 +138,12 @@ struct ReviewView: View {
         List(selection: Binding(get: { item?.id }, set: { current = $0 })) {
             Section {
                 UncertaintyLegend().font(Font.Scribe.callout)
+                    .listRowBackground(SelectedRow.background(false))
             } header: {
                 SectionLabel(items.count == 1 ? String(localized: "1 note to check") : String(localized: "\(items.count) notes to check"))
             }
             ForEach(Dictionary(grouping: items, by: \.partIndex).sorted { $0.key < $1.key }, id: \.key) { _, group in
-                Section(group[0].partName) {
+                Section {
                     ForEach(group) { it in
                         HStack(spacing: Space.s3) {
                             if checked.contains(it.id) {
@@ -161,12 +162,22 @@ struct ReviewView: View {
                         .listRowBackground(SelectedRow.background(it.id == item?.id))
                         .accessibilityLabel(Text("\(barLabel(it)), \(pitchName(it)), \(levelWords(it))"))
                     }
+                } header: {
+                    // the part's name in the page's muted text: a heading the list draws itself takes the system's
+                    // colour, which is not one of the page's
+                    Text(group[0].partName)
+                        .font(Font.Scribe.caption.weight(.semibold))
+                        .foregroundStyle(Color.Scribe.textMuted)
                 }
             }
         }
         #if os(macOS)
         .listStyle(.sidebar)
         #endif
+        // on the page's own surface, not the system's list ground: every colour in the list is then drawn on a
+        // ground the design tokens check it against
+        .scrollContentBackground(.hidden)
+        .background(Color.Scribe.surface)
     }
 
     private var stillToCheck: some View {

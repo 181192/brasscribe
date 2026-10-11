@@ -206,19 +206,31 @@ answer both times:
   stand open), the screen's controls in the tree, and no spinner;
 - two display frames were committed since the take before (the window is never on a screen, so a frame is a turn
   of the main run loop, then layout, drawing and the layer tree committed);
-- the picture shows it: it is not one flat colour, and every text in view has something drawn in its frame (a
-  list has its rows' words in the tree before they are on the screen).
+- the picture shows it: it is not one flat colour, and every text in view is drawn in its frame (a list has its
+  rows' words in the tree before they are on the screen) so that it can be read: the contrast between the text and
+  the ground it is drawn on, measured in the picture, is at least 7:1 under Increase Contrast and 4.5:1 otherwise.
 
 The screenshot is the last of five such takes in a row with the same pixels. A screen that does not get there in
 30 s is **not taken**: the run fails with `screen not taken: <screen>: <what it waited for>` and keeps its last
 picture in `not-taken/`, instead of keeping a picture of something else. `takes-<language>.log` beside the
 screenshots says how long each screen took and what it waited for.
 
-Every text of every screen is asked to be in its picture, in each appearance. Should a screen draw a text in the
-colour of what is behind it, and the fix has to wait, the take can be given an `Unreadable` list (in the
-`ScreenCatalogue` package): the texts, under their issue, each by its exact words (and by which of them it is, where
-a screen has the words twice). Those texts, and no others, are then not asked to be in the picture, and an entry
-whose text is drawn, or is no longer on the screen, fails the run, so the list goes when the fault does.
+**Readable, measured in the picture.** For each text the tree has in view, the ground is the colour most of its
+frame has, and the text is the colour furthest from it that the frame has more than a few pixels of (the core of
+the glyphs, not their blended edges). The ratio between the two is the WCAG contrast ratio, the one
+`qa/tools/contrast.py` computes for the design tokens. The tree does not say how large a text is, so large text gets
+no lower bar. A text that falls short fails the take by name, with its ratio: `its text “Very unsure” is 4.65:1 on
+its ground, under 7:1`. A text drawn with nothing behind it in the picture (a view without a ground of its own, which
+on a Mac lies on whatever the system puts behind it) has no ratio and fails too. This is what checks a token colour
+on a ground the system draws (a form's row, a list), which the token pairs cannot. What it does not see: a text
+that is not in the tree off screen (the rows of a `List` on the Mac), and marks that are not text.
+
+Every text of every screen is asked to be readable in its picture, in each appearance. Should a screen draw a text
+too faint, or in the colour of what is behind it, and the fix has to wait (a control the system draws), the take can
+be given an `Unreadable` list (in the `ScreenCatalogue` package): the texts, under their issue, each by its exact
+words (and by which of them it is, where a screen has the words twice). Those texts, and no others, are then not
+asked to be readable, and an entry whose text can be read, or is no longer on the screen, fails the run, so the list
+goes when the fault does.
 
 A screen that is not taken still gets its checks, on the tree it had. After three screens not taken the catalogue
 stops (`catalogue stopped: …`) instead of waiting 30 s for each of the rest.

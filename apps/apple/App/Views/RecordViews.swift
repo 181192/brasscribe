@@ -5,14 +5,18 @@ import TranscriptionKit
 import AudioCapture
 #endif
 
+/// The input level. Under Increase Contrast the track's fill is the colour of the ground it lies on, so the track
+/// gets an edge in the strong border colour.
 struct LevelMeter: View {
     let level: Float
+    @Environment(\.colorSchemeContrast) private var contrast
     var body: some View {
         GeometryReader { g in
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.Scribe.secondary)
                 Capsule().fill(level > 0.9 ? Color.Scribe.warning : Color.Scribe.text)
                     .frame(width: g.size.width * CGFloat(min(1, level)))
+                if contrast == .increased { Capsule().strokeBorder(Color.Scribe.borderStrong, lineWidth: 1) }
             }
         }
         .frame(height: 10)
@@ -58,7 +62,14 @@ struct MicRecordView: View {
                 .keyboardShortcut(.space, modifiers: [])
             }
             .padding()
-            .formStyle(.grouped)
+            .foregroundStyle(Color.Scribe.text)
+            .frame(maxWidth: .infinity)
+            #if os(iOS)
+            // the phone's sheet is taller than the content
+            .frame(maxHeight: .infinity)
+            #endif
+            // the page's ground, not the sheet's own: the meter and the messages are in the page's colours
+            .pageBackground()
             .navigationTitle(Text("Record"))
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { rec.discard(); dismiss() } } }
         }
@@ -109,8 +120,10 @@ struct CaptureView: View {
                 } label: { Text("Record from") }
                 .disabled(recorder != nil)
                 Text("Streaming apps usually block recording. You hear the music, but the recording stays silent.")
-                    .font(.caption).foregroundStyle(.secondary)
-                LabeledContent { Text(Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond))).monospacedDigit() } label: { Text("Recorded") }
+                    .font(.caption).foregroundStyle(Color.Scribe.textMuted)
+                LabeledContent {
+                    Text(Duration.seconds(seconds).formatted(.time(pattern: .minuteSecond))).monospacedDigit().foregroundStyle(Color.Scribe.textMuted)
+                } label: { Text("Recorded") }
                 LevelMeter(level: level)
                 if let error { Text(error).foregroundStyle(Color.Scribe.error) }
                 Button(recorder == nil ? String(localized: "Start recording") : String(localized: "Stop")) { toggle() }
@@ -119,6 +132,9 @@ struct CaptureView: View {
             }
             .padding()
             .formStyle(.grouped)
+            // the page's ground, as in Settings: the meter and the messages are in the page's colours
+            .scrollContentBackground(.hidden)
+            .pageBackground()
             .navigationTitle(Text("Record what's playing"))
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { cancel() } } }
             .onAppear { apps = ProcessTapRecorder.audioApps() }

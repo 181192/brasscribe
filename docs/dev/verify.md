@@ -167,7 +167,7 @@ Which checks read the picture: on Android the contrast check (the Accessibility 
 picture of the screen); on Windows the contrast check, the rule that a screen is taken only when
 it is the one asked for and keeps still, and the comparison of Home started in a theme with Home switched to it;
 on the Mac the same rule (a screen is taken only when it is the one asked for, in the appearance asked for, with its
-text drawn, and keeps still; [apps/apple/README.md](../../apps/apple/README.md#screen-catalogue-mac)). Studio's checks read the page, not the
+text drawn with the contrast its appearance asks for, and keeps still; [apps/apple/README.md](../../apps/apple/README.md#screen-catalogue-mac)). Studio's checks read the page, not the
 picture, so a pull request runs them without taking any (`npm run test:catalogue`);
 `studio/scripts/screenshots.sh record` takes them, locally and on `main`.
 

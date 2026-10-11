@@ -130,7 +130,7 @@ public enum SteadyTake {
 public struct ScreenTake {
     public let picture: NSBitmapImageRep
     public let nodes: [AXNode]
-    /// The entries of `unreadable` for this screen that name no text missing from the picture, as a finding, or nil.
+    /// The entries of `unreadable` for this screen that name no text falling short in the picture, as a finding, or nil.
     public let stale: String?
 
     /// The screens not taken so far in this process: after three, the catalogue stops.
@@ -140,7 +140,8 @@ public struct ScreenTake {
     /// before and after each picture: the window and its size (`size`, read each time, for a window that follows its
     /// content), the appearance and language (`asked`, `witness`), the screen's own readiness (`ready`: what it still
     /// waits for, or nil; `shows`: the same, asked of the tree) and its content (`Conditions.content`); and in each
-    /// picture, that its texts are drawn, but for those `unreadable` names for this screen.
+    /// picture, that its texts are drawn and can be read (7:1 to their ground under Increase Contrast, 4.5:1
+    /// otherwise), but for those `unreadable` names for this screen.
     /// `frames` lets two display frames go by; before each, the process is told again what contrast this screen asked
     /// for (a view of another suite, drawn meanwhile, may have asked for its own). A line goes to
     /// `takes-<language>.log` in `output`; a screen that is not taken leaves its last picture in `not-taken/` there
@@ -154,6 +155,7 @@ public struct ScreenTake {
         var nodes: [AXNode] = []
         var last: NSBitmapImageRep?
         let language = Bundle.main.preferredLocalizations.first ?? "en"
+        let minimum = Conditions.minimumContrast(increased: asked.increasedContrast)
         func read() -> Reading {
             let wanted = size()
             if let unmet = Conditions.window(window, shows: view, at: wanted) ?? Conditions.appearance(asked, window: window, witness: witness)
@@ -167,10 +169,11 @@ public struct ScreenTake {
                 SystemContrast.set(asked.increasedContrast)
                 if let frames { await frames() } else { await SteadyTake.frames(of: view) }
             }, read: read, picture: picture, drawn: {
-                Conditions.drawn($0, nodes: nodes, bounds: view.bounds, unreadable: unreadable?.covers(name, in: nodes) ?? { _ in false })
+                Conditions.drawn($0, nodes: nodes, bounds: view.bounds, minimum: minimum,
+                                 unreadable: unreadable?.covers(name, in: nodes) ?? { _ in false })
             }, lastPicture: { last = $0 })
             Pictures.log(taken.line(name), to: output, language: language)
-            let stale = unreadable?.stale(name, picture: taken.picture, nodes: nodes, bounds: view.bounds)
+            let stale = unreadable?.stale(name, picture: taken.picture, nodes: nodes, bounds: view.bounds, minimum: minimum)
             if let stale { Pictures.log(stale, to: output, language: language) }
             return ScreenTake(picture: taken.picture, nodes: nodes, stale: stale)
         } catch var failed as ScreenNotTaken {
@@ -324,37 +327,78 @@ public enum Conditions {
     /// The tree as text: two readings with the same text have the same elements with the same words in the same places.
     public nonisolated static func state(_ nodes: [AXNode]) -> String { nodes.map(\.description).joined(separator: "\n") }
 
-    /// The picture shows the tree's texts: every text in view has something drawn in its frame. A window that has
-    /// not drawn yet, or a list whose rows have their words in the tree before they are on the screen, has frames of
-    /// one flat colour. `unreadable` names texts known to be drawn in their background's colour (`Unreadable`).
-    public static func drawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
+    /// The least contrast a text must have with its ground: 7:1 under Increase Contrast (WCAG 1.4.6), 4.5:1 otherwise
+    /// (1.4.3). The tree does not say how large a text is, so large text gets no lower bar of its own.
+    public nonisolated static func minimumContrast(increased: Bool) -> Double { increased ? 7 : 4.5 }
+
+    /// The picture shows the tree's texts so that they can be read: every text in view has something drawn in its
+    /// frame, with at least `minimum` contrast to the ground it is drawn on. A window that has not drawn yet, or a
+    /// list whose rows have their words in the tree before they are on the screen, has frames of one flat colour.
+    /// `unreadable` names texts known to fall short (`Unreadable`).
+    public static func drawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double = 4.5,
+                             unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
         if Pictures.isFlat(rep, in: CGRect(x: 0, y: 0, width: rep.pixelsWide, height: rep.pixelsHigh)) { return "nothing is drawn in its picture yet" }
         let missing = undrawn(rep, nodes: nodes, bounds: bounds).filter { !unreadable($0) }.map { Unreadable.text(of: $0, in: nodes).description }
-        if missing.isEmpty { return nil }
         // All of them, each as `Unreadable` would name it, so that a screen that is not taken says everything it lacks in one run.
-        return "its text\(missing.count == 1 ? "" : "s") \(missing.prefix(24).joined(separator: ", ")) \(missing.count == 1 ? "is" : "are") not drawn in its picture yet"
+        if !missing.isEmpty {
+            return "its text\(missing.count == 1 ? "" : "s") \(missing.prefix(24).joined(separator: ", ")) \(missing.count == 1 ? "is" : "are") not drawn in its picture yet"
+        }
+        let faint = faint(rep, nodes: nodes, bounds: bounds, minimum: minimum).filter { !unreadable($0.node) }
+        if faint.isEmpty { return nil }
+        let least = ratio(minimum)
+        let named = faint.prefix(24).map { f in (name: Unreadable.text(of: f.node, in: nodes).description, ratio: f.ratio.map(ratio)) }
+        if named.count == 1, let one = named.first {
+            return one.ratio.map { "its text \(one.name) is \($0) on its ground, under \(least)" }
+                ?? "its text \(one.name) has no ground drawn behind it, so nothing gives it \(least)"
+        }
+        return "its texts \(named.map { "\($0.name) (\($0.ratio ?? "no ground drawn behind it"))" }.joined(separator: ", ")) are under \(least) on their ground"
+    }
+
+    /// A contrast ratio as it is written: "4.65:1", "4.5:1", "7:1".
+    public nonisolated static func ratio(_ value: Double) -> String {
+        let hundredths = Int((value * 100).rounded())
+        let decimals = hundredths % 100 == 0 ? "" : hundredths % 10 == 0 ? ".\(hundredths % 100 / 10)" : String(format: ".%02d", hundredths % 100)
+        return "\(hundredths / 100)\(decimals):1"
+    }
+
+    /// The texts in view, each with its frame in the picture's pixels.
+    private static func textsInView(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> [(node: AXNode, pixels: CGRect)] {
+        let scale = CGFloat(rep.pixelsWide) / max(bounds.width, 1)
+        // A text under something docked over its scroll area (a sheet's footer) is in the tree and not in the picture.
+        let docked = nodes.filter { !$0.inScrollArea && !$0.isText && $0.isLeaf && $0.frame.width >= 1 && $0.frame.height >= 1 }
+        return nodes.compactMap { n in
+            guard n.isText, !n.words.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+            let frame = n.frame.intersection(bounds)
+            guard frame.width >= 4, frame.height >= 4, n.viewport.map({ $0.contains(n.frame) }) ?? true else { return nil }
+            if n.inScrollArea, docked.contains(where: { $0.frame.intersects(n.frame) }) { return nil }
+            return (n, CGRect(x: frame.minX * scale, y: frame.minY * scale, width: frame.width * scale, height: frame.height * scale))
+        }
     }
 
     /// The texts in view that have nothing drawn in their frame in the picture.
     public static func undrawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> [AXNode] {
-        let scale = CGFloat(rep.pixelsWide) / max(bounds.width, 1)
-        // A text under something docked over its scroll area (a sheet's footer) is in the tree and not in the picture.
-        let docked = nodes.filter { !$0.inScrollArea && !$0.isText && $0.isLeaf && $0.frame.width >= 1 && $0.frame.height >= 1 }
-        return nodes.filter { n in
-            guard n.isText, !n.words.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-            let frame = n.frame.intersection(bounds)
-            guard frame.width >= 4, frame.height >= 4, n.viewport.map({ $0.contains(n.frame) }) ?? true else { return false }
-            if n.inScrollArea, docked.contains(where: { $0.frame.intersects(n.frame) }) { return false }
-            return Pictures.isFlat(rep, in: CGRect(x: frame.minX * scale, y: frame.minY * scale, width: frame.width * scale, height: frame.height * scale))
+        textsInView(rep, nodes: nodes, bounds: bounds).filter { Pictures.isFlat(rep, in: $0.pixels) }.map(\.node)
+    }
+
+    /// The texts in view that are drawn with less than `minimum` contrast to their ground, each with the ratio measured
+    /// in the picture (`Pictures.contrast`, to two decimals, as it is reported); nil for a text whose ground is not in
+    /// the picture.
+    public static func faint(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double) -> [(node: AXNode, ratio: Double?)] {
+        textsInView(rep, nodes: nodes, bounds: bounds).compactMap { text in
+            if Pictures.isFlat(rep, in: text.pixels) { return nil }
+            guard let measured = Pictures.contrast(rep, in: text.pixels) else { return (text.node, nil) }
+            let ratio = (measured * 100).rounded() / 100
+            return ratio < minimum ? (text.node, ratio) : nil
         }
     }
 }
 
-/// Texts known to be drawn in the colour of what is behind them, under one issue: for each screen (with its variant),
-/// each such text by its exact words, and by which of the screen's texts with those words it is when there are
-/// several. Those texts, and no others, are not asked to be in the screen's picture. The list is of the macOS the
-/// catalogue is taken on in CI. An entry that names no text missing from the picture (the text is drawn, or is not in
-/// the tree) is stale and fails the run (`stale`), so the list cannot outlive the fault it stands for.
+/// Texts known not to be readable in their picture (drawn in the colour of what is behind them, or with less contrast
+/// than is asked for), under one issue: for each screen (with its variant), each such text by its exact words, and by
+/// which of the screen's texts with those words it is when there are several. Those texts, and no others, are not
+/// asked to be readable in the screen's picture. The list is of the macOS the catalogue is taken on in CI. An entry
+/// that names no text falling short in the picture (the text can be read, or is not in the tree) is stale and fails
+/// the run (`stale`), so the list cannot outlive the fault it stands for.
 public struct Unreadable: Sendable {
     /// One text: its words, and which of the texts with those words in the tree's order (1, the first).
     public struct Text: Sendable, Hashable, ExpressibleByStringLiteral, CustomStringConvertible {
@@ -383,13 +427,16 @@ public struct Unreadable: Sendable {
         return { node in node.isText && listed.contains(Self.text(of: node, in: nodes)) }
     }
 
-    /// The entries of `screen` that name no text missing from `picture`: what to take out of the list, or nil.
+    /// The entries of `screen` that name no text falling short in `picture` (not drawn, or under `minimum`): what to
+    /// take out of the list, or nil.
     @MainActor
-    public func stale(_ screen: String, picture: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> String? {
+    public func stale(_ screen: String, picture: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double = 4.5) -> String? {
         guard let listed = screens[screen] else { return nil }
-        let missing = Set(Conditions.undrawn(picture, nodes: nodes, bounds: bounds).map { Self.text(of: $0, in: nodes) })
+        let short = Conditions.undrawn(picture, nodes: nodes, bounds: bounds)
+            + Conditions.faint(picture, nodes: nodes, bounds: bounds, minimum: minimum).map(\.node)
+        let missing = Set(short.map { Self.text(of: $0, in: nodes) })
         let stale = listed.filter { !missing.contains($0) }
         return stale.isEmpty ? nil
-            : "\(screen): listed as unreadable (\(issue)), but drawn or not on the screen: \(stale.map(\.description).joined(separator: ", ")). Take \(stale.count == 1 ? "it" : "them") out of the list."
+            : "\(screen): listed as unreadable (\(issue)), but readable or not on the screen: \(stale.map(\.description).joined(separator: ", ")). Take \(stale.count == 1 ? "it" : "them") out of the list."
     }
 }

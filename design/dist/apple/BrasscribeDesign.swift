@@ -168,7 +168,7 @@ public extension Color {
         public static var cursor: Color { catalogColor("cursor") }
         /// Tint of the bar under the playback cursor: the cursor colour at 20% over the paper.
         public static var cursorTint: Color { catalogColor("cursorTint") }
-        /// Band behind a selected bar range (before it becomes a loop).
+        /// Band behind a selected bar range (before it becomes a loop), and the fill of a selected row. Light enough that the boxed ? reads on it as text.
         public static var selectionTint: Color { catalogColor("selectionTint") }
         /// 1 px outline of a selected bar range.
         public static var selectionEdge: Color { catalogColor("selectionEdge") }
