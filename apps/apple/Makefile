@@ -26,7 +26,7 @@ DERIVED := build/DerivedData
 # Swift suites the fast tier skips (swift test --skip takes a regular expression; see docs/dev/verify.md).
 APPLE_SLOW ?= ArrangementLevelTests|DynamicsLevelTests|RecordingLevelTests
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
-# The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record|compare, not with the unit tests.
+# The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
 .PHONY: verovio soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
