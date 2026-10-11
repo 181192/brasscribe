@@ -423,6 +423,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 .talk-text ul { margin: 0; }
 .score-legend { display: flex; flex-wrap: wrap; gap: var(--scribe-space-1) var(--scribe-space-6); align-items: center; margin: 0; padding: var(--scribe-space-2) var(--scribe-space-3); font-size: var(--meta); color: var(--scribe-text-muted); max-width: none; }
 .score-legend .q { margin-right: var(--scribe-space-1); }
+.score-shell .talking-off { margin: 0; padding: var(--scribe-space-2) var(--scribe-space-3); max-width: none; }
 
 /* ---------------------------------------------------------------- dialog, misc */
 dialog { border: 0; border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); color: var(--scribe-text); max-width: min(48rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; padding: var(--scribe-space-4) var(--scribe-space-6); box-shadow: var(--scribe-elevation-3), inset 0 0 0 1px var(--scribe-border); }

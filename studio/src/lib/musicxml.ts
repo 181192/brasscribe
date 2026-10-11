@@ -62,7 +62,12 @@ export function parseMusicXml(xml: string): XmlScore {
     let beatType = 4;
     let barStart = 0; // quarters
     let percussion = false;
-    const notes: XmlNote[] = [];
+    // Staves (1-based) written as tablature, and how many staves the part has.
+    const tabStaves = new Set<number>();
+    let staves = 1;
+    const notes: (XmlNote & { staff: number; at: number; first: boolean })[] = [];
+    // Where a "?" stands: "bar index:divisions from the bar's start".
+    const qAt = new Map<string, "u" | "vu">();
     const measures = Array.from(p.children).filter((c) => c.nodeName === "measure");
     measures.forEach((m, barIndex) => {
       const bar = Number(m.getAttribute("number")) || barIndex + 1;
@@ -95,6 +100,10 @@ export function parseMusicXml(xml: string): XmlScore {
             if (b) beats = Number(b) || beats;
             if (bt) beatType = Number(bt) || beatType;
             if (text(el, "clef > sign") === "percussion") percussion = true;
+            staves = Math.max(staves, Number(text(el, "staves") ?? 1) || 1);
+            for (const sd of Array.from(el.querySelectorAll(":scope > staff-details"))) {
+              if (sd.querySelector("staff-tuning")) tabStaves.add(Number(sd.getAttribute("number") ?? 1) || 1);
+            }
             break;
           }
           case "backup":
@@ -121,6 +130,7 @@ export function parseMusicXml(xml: string): XmlScore {
             const nh = el.querySelector(":scope > notehead");
             const color = el.getAttribute("color") ?? nh?.getAttribute("color") ?? undefined;
             const level: XmlNote["level"] = color?.toLowerCase() === VERY_UNCERTAIN || (color && qMark === "vu") ? "vu" : color || qMark ? "u" : undefined;
+            if (!chord && qMark) qAt.set(`${barIndex}:${onsetDiv}`, qMark);
             if (!chord) qMark = null;
             notes.push({
               bar,
@@ -132,6 +142,9 @@ export function parseMusicXml(xml: string): XmlScore {
               color,
               parenthesised: nh?.getAttribute("parentheses") === "yes",
               level,
+              staff: Number(text(el, "staff") ?? 1) || 1,
+              at: onsetDiv,
+              first: !chord,
             });
             break;
           }
@@ -141,7 +154,20 @@ export function parseMusicXml(xml: string): XmlScore {
       barStart += Math.max(nominal, maxPos / divisions);
     });
     maxBars = Math.max(maxBars, measures.length);
-    parts.push({ id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id), notes, bars: measures.length });
+    // Tablature under a notation staff writes every note twice: the notes are those of the notation staff.
+    // The "?" of an uncertain note is written once, over the tablature: it marks the note at that
+    // place on the notation staff too. (Only there: a band part's marks are read as they always were.)
+    const both = tabStaves.size > 0 && staves > tabStaves.size;
+    if (both) {
+      for (const n of notes) {
+        const q = n.first ? qAt.get(`${n.barIndex}:${n.at}`) : undefined;
+        if (q && !n.level) n.level = "u"; // a coloured note has its level already
+      }
+    }
+    parts.push({
+      id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id),
+      notes: (both ? notes.filter((n) => !tabStaves.has(n.staff)) : notes).map(({ staff: _staff, at: _at, first: _first, ...n }) => n), bars: measures.length,
+    });
   }
   return { title, parts, bars: maxBars, adlib };
 }

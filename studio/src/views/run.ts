@@ -1,6 +1,6 @@
 // One run: live stage graph over SSE and the stage inspector.
 import { api, fetchBytes, fetchText, isAbort, subscribe, type StreamState } from "../api/client";
-import type { Composition, FileRef, Job, Manifest, Reference, StageFiles, ValidationIssue } from "../api/types";
+import type { Composition, FileRef, Job, Manifest, ProfileInfo, Reference, StageFiles, ValidationIssue } from "../api/types";
 import { audioPanel, type AudioSource } from "../components/audio";
 import { BeatView } from "../components/beats";
 import { PianoRoll, type RollLayer } from "../components/pianoroll";
@@ -34,6 +34,8 @@ const AUDIO = /\.(wav|flac|mp3|ogg|m4a|aiff?)$/i;
 interface Ctx {
   id: string;
   job: Job;
+  /** The run's profile is a tablature pipeline. */
+  tab: boolean;
   stages: StageFiles[] | Error;
   composition: Promise<Composition>;
   musicxml: Promise<string>;
@@ -118,16 +120,16 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       more(t("run.details"), h("dl", { class: "kv run-details" },
         h("dt", {}, t("run.kv.id")), h("dd", { class: "mono" }, job.id),
         h("dt", {}, t("runs.profile")), h("dd", {}, job.profile),
-        m?.git ? [h("dt", {}, "Git"), h("dd", { class: "mono" }, fmt.hash(m.git.sha).slice(0, 7), m.git.dirty ? t("run.dirty") : "")] : null,
+        m?.git?.sha ? [h("dt", {}, "Git"), h("dd", { class: "mono" }, fmt.hash(m.git.sha).slice(0, 7), m.git.dirty ? t("run.dirty") : "")] : null,
         m?.devices?.length ? [h("dt", {}, t("manifest.kv.devices")), h("dd", {}, m.devices.join(", "))] : null,
         lineupRow(job.profile, m?.params),
         seatRows(m?.params),
         h("dt", {}, t("run.kv.created")), h("dd", {}, fmt.date(job.created)))));
     // Built on demand: the same links also sit in More on narrow screens, and a node lives in one place only.
     const downloads = (cls = "") => [
-      job.outputs?.includes("brass-band.musicxml") ? h("a", { class: `button ${cls}`, href: api.musicxmlUrl(job.id), download: "" }, icon("file"), t("run.dl.musicxml")) : null,
-      job.outputs?.includes("brass-band.pdf") ? h("a", { class: `button ${cls}`, href: api.pdfUrl(job.id) }, icon("file"), t("run.dl.pdf")) : null,
-      job.outputs?.includes("brass-band.mid") ? h("a", { class: `button ${cls}`, href: api.midiUrl(job.id), download: "" }, icon("file"), t("run.dl.midi")) : null,
+      hasScoreFile(job, "musicxml") ? h("a", { class: `button ${cls}`, href: api.musicxmlUrl(job.id), download: "" }, icon("file"), t("run.dl.musicxml")) : null,
+      hasScoreFile(job, "pdf") ? h("a", { class: `button ${cls}`, href: api.pdfUrl(job.id) }, icon("file"), t("run.dl.pdf")) : null,
+      hasScoreFile(job, "mid") ? h("a", { class: `button ${cls}`, href: api.midiUrl(job.id), download: "" }, icon("file"), t("run.dl.midi")) : null,
     ].filter(Boolean);
     const compare = (cls = "") => h("a", { class: `button ${cls === "narrow-only" ? "" : "ghost"} ${cls}`, href: `#/compare?a=${encodeURIComponent(job.id)}` }, t("run.compare"));
     // Re-run is the page's primary only when the run failed; otherwise Play (in the score) is.
@@ -192,7 +194,8 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     if (signal.aborted) return;
     view = fromJob(job);
     graph.update(view);
-    const [m, st] = await Promise.all([api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error)]);
+    const [m, st, profiles] = await Promise.all([api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error),
+      api.profiles().catch(() => [])]);
     if (signal.aborted) return;
     stages = st;
     renderHeader(job, m);
@@ -209,7 +212,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       }, (s) => showStream(s));
     }
     const ctx: Ctx = {
-      id, job, stages: st,
+      id, job, stages: st, tab: isTabRun(job, m, profiles),
       composition: api.composition(id, { signal }),
       musicxml: fetchText(`/v1/jobs/${encodeURIComponent(id)}/musicxml`, undefined, { signal }),
     };
@@ -279,8 +282,45 @@ function stageFiles(ctx: Ctx, pred: (s: StageFiles) => boolean): { stage: StageF
 
 // ---------------------------------------------------------------- tabs
 
+/**
+ * Whether the run wrote its score in this format. A band run names its files brass-band.*, a
+ * tablature run tab.*; the engine serves either at the same address (/v1/jobs/{id}/musicxml, /pdf, /midi).
+ */
+export function hasScoreFile(job: Job, ext: "musicxml" | "pdf" | "mid"): boolean {
+  return !!job.outputs?.some((o) => o === `brass-band.${ext}` || o === `tab.${ext}`);
+}
+
+/**
+ * The run is of a tablature pipeline, not a band score: by its profile's pipeline (so a run that has
+ * written nothing yet is known too), from the manifest or the engine's profiles; without either, by
+ * what it wrote.
+ */
+export function isTabRun(job: Job, m?: Manifest | null, profiles: ProfileInfo[] = []): boolean {
+  const pipeline = m?.pipeline ?? profiles.find((p) => p.name === job.profile)?.pipeline;
+  return pipeline ? pipeline === "tab" : !!job.outputs?.includes("tab.musicxml");
+}
+
+/** The link that opens a run's score in the viewer, where a tablature is shown as well as a score. */
+export function viewerLink(job: Job): string {
+  return `#/viewer?src=${encodeURIComponent(`/v1/jobs/${job.id}/musicxml`)}&name=${encodeURIComponent(job.title ?? job.id)}`;
+}
+
 function scoreTab(p: HTMLElement, ctx: Ctx): void {
-  if (TERMINAL.has(ctx.job.status) && !ctx.job.outputs?.includes("brass-band.musicxml")) {
+  if (ctx.tab && hasScoreFile(ctx.job, "musicxml")) {
+    // The run view's score, checks and part table are made for a band score. Until it has a view
+    // of a tab of its own, the tab opens in the viewer, which shows and plays it.
+    clear(p, h("div", { class: "empty", role: "note" },
+      h("p", {}, h("strong", {}, t("run.tab"))),
+      h("p", { class: "hint" }, t("run.tabBody")),
+      h("p", {}, h("a", { class: "button primary", href: viewerLink(ctx.job) }, t("run.tabOpen")))));
+    return;
+  }
+  if (ctx.tab && !TERMINAL.has(ctx.job.status)) {
+    // Still running: there is no tab to link to yet (the page loads again when the run ends).
+    clear(p, h("div", { class: "empty", role: "note" }, h("p", {}, h("strong", {}, t("run.tabPending"))), h("p", { class: "hint" }, t("run.tabPendingBody"))));
+    return;
+  }
+  if (TERMINAL.has(ctx.job.status) && !hasScoreFile(ctx.job, "musicxml")) {
     clear(p, h("div", { class: "empty", role: "note" }, h("p", {}, h("strong", {}, t("run.noScore"))), h("p", { class: "hint" }, t("run.noScoreBody"))));
     return;
   }
@@ -570,7 +610,9 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   const rt = h("section", { "aria-labelledby": "rt-h" }, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading());
   const parts = h("section", { "aria-labelledby": "parts-h" }, h("h3", { id: "parts-h" }, t("mx.partsTitle")), loading());
   const golden = h("section", { "aria-labelledby": "gold-h" }, h("h3", { id: "gold-h" }, t("mx.reference")), loading());
-  clear(p, rt, golden, parts);
+  // The references are band scores: a tab run has nothing to be compared with among them.
+  const tab = ctx.tab;
+  clear(p, rt, tab ? null : golden, parts);
 
   const renderRt = async (run = false) => {
     clear(rt, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading(run ? t("mx.running") : undefined));
@@ -590,7 +632,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   };
   void renderRt();
 
-  const refs = await api.references().catch((e) => e as Error);
+  const refs = tab ? [] : await api.references().catch((e) => e as Error);
   const renderGolden = async (ref: Reference) => {
     const out = h("div", {}, loading());
     const sel = h("select", { id: "gold-ref", onchange: () => { const r = (refs as Reference[]).find((x) => x.name === sel.value); if (r) void renderGolden(r); } },
@@ -609,14 +651,14 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
       clear(out, errorNotice(e));
     }
   };
-  if (Array.isArray(refs) && refs.length) void renderGolden(refs.find((r) => r.name.includes("mikkel")) ?? refs[0]);
+  if (tab) { /* no reference section */ } else if (Array.isArray(refs) && refs.length) void renderGolden(refs.find((r) => r.name.includes("mikkel")) ?? refs[0]);
   else clear(golden, h("h3", { id: "gold-h" }, t("mx.reference")), Array.isArray(refs) ? h("p", {}, t("mx.noRefs")) : errorNotice(refs));
 
   try {
     const xml = parseMusicXml(await ctx.musicxml);
     clear(parts, h("h3", { id: "parts-h" }, t("mx.partsTitle")),
       h("p", {}, t("mx.partsSummary", { parts: xml.parts.length, bars: xml.bars }), h("a", { href: api.musicxmlUrl(ctx.id), download: "" }, t("mx.download")), " · ",
-        h("a", { href: `#/viewer?src=${encodeURIComponent(`/v1/jobs/${ctx.id}/musicxml`)}&name=${encodeURIComponent(ctx.job.title ?? ctx.id)}` }, t("mx.openViewer"))),
+        h("a", { href: viewerLink(ctx.job) }, t("mx.openViewer"))),
       table(t("mx.partsTitle"), [t("mx.col.part"), t("mx.col.transpose"), t("mx.col.bars"), t("mx.col.notes"), t("mx.col.uncertain"), t("mx.col.range")],
         xml.parts.map((pt) => {
           const w = pt.notes.map((n) => n.written);
@@ -663,7 +705,7 @@ function manifestTab(p: HTMLElement, ctx: Ctx, m: Manifest | null): void {
     h("dl", { class: "kv" },
       kv(t("manifest.kv.run"), m.run_id, true), kv(t("manifest.kv.profile"), `${m.profile} (${m.pipeline ?? "?"})`), kv(t("manifest.kv.status"), m.status),
       kv(t("manifest.kv.input"), m.input ? `${fmt.path(m.input.path)} (${fmt.bytes(m.input.bytes)})` : undefined),
-      kv(t("manifest.kv.git"), m.git ? `${m.git.branch ? t("manifest.gitOn", { sha: m.git.sha.slice(0, 12), branch: m.git.branch }) : m.git.sha.slice(0, 12)}${m.git.dirty ? t("run.dirty") : ""}` : undefined),
+      kv(t("manifest.kv.git"), m.git?.sha ? `${m.git.branch ? t("manifest.gitOn", { sha: m.git.sha.slice(0, 12), branch: m.git.branch }) : m.git.sha.slice(0, 12)}${m.git.dirty ? t("run.dirty") : ""}` : undefined),
       kv(t("manifest.kv.time"), fmt.seconds(m.seconds))),
     more(t("manifest.moreDetails"), h("dl", { class: "kv" },
       kv(t("manifest.kv.inputSha"), m.input?.sha256, true),

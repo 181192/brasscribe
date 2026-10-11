@@ -38,8 +38,38 @@ describe("which scores a viewer link may open", () => {
     viewerView(root, new URLSearchParams({ src: "/v1/jobs/gone/musicxml", name: "Gone" }));
     await vi.waitFor(() => expect(root.querySelector(".notice-error")).not.toBeNull());
     expect(root.querySelector("#viewer-status")?.textContent).toBe("Could not open Gone.");
+    // What the reader can do, in the page's words; the engine's own under Details.
+    const notice = root.querySelector(".notice-error")!;
+    expect(notice.querySelector(":scope > p:not(.notice-title)")?.textContent).toContain("Open the run from Runs");
+    expect(notice.querySelector("details")?.textContent).toContain("no such run");
     expect(root.querySelector("bs-score")).not.toBeNull();
     expect(root.querySelector("#open-musicxml")).not.toBeNull();
+  });
+
+  it("says what to do when a file cannot be shown, with the technical message under Details", async () => {
+    setLang("nb");
+    vi.stubGlobal("fetch", () => Promise.resolve(new Response("<not-a-score/>", { status: 200 })));
+    const root = document.createElement("main");
+    document.body.append(root);
+    // <bs-score> is not defined here, so loading the file fails with a message from the code.
+    viewerView(root, new URLSearchParams({ src: "/v1/jobs/odd/musicxml", name: "Mix" }));
+    await vi.waitFor(() => expect(root.querySelector(".notice-error")).not.toBeNull());
+    const notice = root.querySelector(".notice-error")!;
+    expect(notice.querySelector(".notice-title")?.textContent).toBe("Mix kunne ikke vises.");
+    expect(notice.querySelector(":scope > p:not(.notice-title)")?.textContent).toContain("Sjekk at det er en MusicXML-fil");
+    const details = notice.querySelector("details")!;
+    expect(details.open).toBe(false);
+    expect(details.querySelector("summary")?.textContent).toBe("Detaljer");
+    expect(details.textContent).toContain("is not a function");
+    // The raw message is nowhere outside Details.
+    const outside = notice.cloneNode(true) as HTMLElement;
+    outside.querySelector("details")!.remove();
+    expect(outside.textContent).not.toContain("is not a function");
+    expect(notice.querySelector("button")?.textContent).toBe("Prøv igjen");
+    // No player under the notice: the chooser is the page's primary again.
+    expect((root.querySelector("bs-score")!.parentElement as HTMLElement).hidden).toBe(true);
+    expect(root.querySelector(".drop-zone .button")?.classList.contains("primary")).toBe(true);
+    expect(root.querySelector("#viewer-status")?.textContent).toBe("Kunne ikke åpne Mix.");
   });
 
   it("opens the bundled example, and only that, by its id", () => {

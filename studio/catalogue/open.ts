@@ -13,7 +13,7 @@ export type Opened = {
   problems: string[];
 };
 
-export async function openView(page: Page, view: Pick<View, "route" | "ready" | "prepare">, variant: Variant): Promise<Opened> {
+export async function openView(page: Page, view: Pick<View, "route" | "ready" | "prepare" | "expectedErrors">, variant: Variant): Promise<Opened> {
   const problems: string[] = [];
   const unanswered = await serveApi(page);
   page.on("pageerror", (e) => problems.push(`page error: ${e.message}`));
@@ -21,6 +21,7 @@ export async function openView(page: Page, view: Pick<View, "route" | "ready" | 
     if (m.type() !== "error") return;
     const url = m.location().url ?? "";
     if (/status of 404/.test(m.text()) && EXPECTED_404.some((r) => r.test(new URL(url, "http://x").pathname))) return;
+    if (view.expectedErrors?.some((r) => r.test(m.text()))) return;
     problems.push(`console error: ${m.text()}${url ? ` (${url})` : ""}`);
   });
   // Dates shown are the fixtures' own; a fixed clock keeps anything relative to now still.

@@ -83,7 +83,8 @@ export type Manifest = Record<string, unknown> & {
   title?: string;
   status?: string;
   input?: { path: string; sha256: string; bytes: number };
-  git?: { sha: string; branch?: string; dirty?: boolean };
+  /** An installed engine is not a checkout: it writes the fields with null. */
+  git?: { sha: string | null; branch?: string | null; dirty?: boolean | null };
   host?: Record<string, string>;
   seconds?: number;
   devices?: string[];
