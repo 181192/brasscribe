@@ -456,7 +456,7 @@ struct Lockup: View {
     var body: some View {
         HStack(spacing: Space.s2) {
             BrandMark(size: 24)
-            Text("\(Text(verbatim: "Brasscribe").font(.custom("InstrumentSerif-Regular", size: 24, relativeTo: .title2)))\(product ? Text(verbatim: " ") + Text(verbatim: "Play").font(.custom("InstrumentSerif-Italic", size: 24, relativeTo: .title2)).foregroundStyle(Color.Scribe.brandText) : Text(verbatim: ""))")
+            Text("\(Text(verbatim: "Brasscribe").font(.custom("InstrumentSerif-Regular", size: 24, relativeTo: .title2)))\(product ? Text("\(Text(verbatim: " "))\(Text(verbatim: "Play").font(.custom("InstrumentSerif-Italic", size: 24, relativeTo: .title2)).foregroundStyle(Color.Scribe.brandText))") : Text(verbatim: ""))")
                 .foregroundStyle(Color.Scribe.text)
         }
         .accessibilityElement(children: .ignore)

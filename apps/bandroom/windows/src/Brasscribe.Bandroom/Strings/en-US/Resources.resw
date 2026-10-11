@@ -587,9 +587,6 @@
   <data name="Setup_4_Where" xml:space="preserve">
     <value>It runs quietly in the corner of the taskbar. If you don't see it, choose ^ (Show hidden icons).</value>
   </data>
-  <data name="Setup_Refuse" xml:space="preserve">
-    <value>Brasscribe needs a 64-bit Intel or AMD PC with Windows 11.</value>
-  </data>
   <data name="Notify_Ready" xml:space="preserve">
     <value>Brasscribe is ready. Phones and tablets can make full-band scores now.</value>
   </data>

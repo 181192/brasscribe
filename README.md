@@ -29,7 +29,7 @@ The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
   `-universal.apk` for all): a recording written down as a tab for guitar, bass, ukulele or mandolin,
   by Bandroom on your computer.
 - Play for Mac and Bandroom for Mac (Apple silicon). They are not notarised: the first time, open the
-  app, then go to **System Settings › Privacy & Security** and choose **Open Anyway**.
+  app, then go to **System Settings › Privacy & Security** and choose **Open Anyway**. They need macOS 26 or newer.
 - Bandroom for Windows (x64), and Play for Windows as a preview. They are not signed: if SmartScreen
   stops them, choose **More info › Run anyway**. They need Windows 11.
 - The `scribe-core` command-line tool for Mac, Linux and Windows, and `SHA256SUMS`.
@@ -39,7 +39,7 @@ is licensed for non-commercial use only; Bandroom asks you to accept its licence
 Face account. Its makers add one condition: only have Brasscribe write down music you have the rights
 to, and you take responsibility for that.
 
-For iPhone and iPad there is a test build, `brasscribe-play-ios-unsigned.ipa`. It is not signed (the
+For iPhone and iPad (iOS or iPadOS 26 or newer) there is a test build, `brasscribe-play-ios-unsigned.ipa`. It is not signed (the
 project has no Apple Developer account), so you sign it with your own Apple Account, using a
 sideloading tool, to put it on your device: see
 [apps/apple](apps/apple/README.md#iphone-and-ipad-test-build). With Xcode you build the app from the
@@ -48,7 +48,7 @@ source instead.
 ## Developing
 
 Python goes through [pixi](https://pixi.sh), which pins the numeric stack; each app needs its own
-toolchain (Xcode 16+ and `xcodegen`, the Android SDK, the .NET 10 SDK, Rust stable, Node 20+), listed
+toolchain (Xcode 26+ and `xcodegen`, the Android SDK, the .NET 10 SDK, Rust stable, Node 20+), listed
 in its README.
 
 ```sh

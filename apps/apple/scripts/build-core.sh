@@ -11,7 +11,7 @@ if [ -z "${CI:-}" ] && [ -z "${SCRIBE_NO_ARTIFACT_CACHE:-}" ]; then exec "$ROOT/
 cd "$ROOT/core"
 export PATH="/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
-export IPHONEOS_DEPLOYMENT_TARGET=18.0 MACOSX_DEPLOYMENT_TARGET=15.0
+export IPHONEOS_DEPLOYMENT_TARGET=26.0 MACOSX_DEPLOYMENT_TARGET=26.0
 hdr=dist/xcframework-headers
 rm -rf "$hdr" && mkdir -p "$hdr"
 cp bindings/swift/scribe_ffiFFI.h "$hdr/"

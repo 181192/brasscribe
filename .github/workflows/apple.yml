@@ -424,7 +424,7 @@ jobs:
         if: ${{ inputs.release }}
         working-directory: apps/bandroom/macos
         run: |
-          (cd ../../../core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p scribe-cli)
+          (cd ../../../core && MACOSX_DEPLOYMENT_TARGET=26.0 cargo build --release --locked -p scribe-cli)
           xcodegen generate
           xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
             -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData build

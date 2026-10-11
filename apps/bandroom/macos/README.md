@@ -37,7 +37,7 @@ Data lives in `~/Library/Application Support/Brasscribe` (`BRASSCRIBE_DATA` over
 
 ## Build and run
 
-Needs Xcode 16+ and `xcodegen` (`brew install xcodegen`). The band SoundFont comes from
+Needs macOS 26 or newer, Xcode 26+ and `xcodegen` (`brew install xcodegen`). The band SoundFont comes from
 `pixi run fetch-sounds`; without it a Debug build leaves the band sounds out and a Release build stops.
 The same goes for `scribe-core`: `scripts/worktree-setup.sh` at the repository root installs it
 (or `cargo build --release --locked -p scribe-cli` in `core/`).

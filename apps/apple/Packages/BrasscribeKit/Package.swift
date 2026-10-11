@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.2
 // Pure logic and audio for Brasscribe Play. Nothing here needs Verovio, a sound font
 // or the network, so `swift test` runs anywhere.
 import PackageDescription
@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "BrasscribeKit",
     defaultLocalization: "en",
-    platforms: [.macOS(.v15), .iOS(.v18)],
+    platforms: [.macOS(.v26), .iOS(.v26)],
     products: [
         .library(name: "ScoreKit", targets: ["ScoreKit"]),
         .library(name: "TranscriptionKit", targets: ["TranscriptionKit"]),

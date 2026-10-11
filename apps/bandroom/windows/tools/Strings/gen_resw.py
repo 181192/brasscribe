@@ -214,7 +214,6 @@ ROWS = [
     ("Setup_Item_BeatFinder", "Beat finder", "Taktfinner"),
     ("Setup_Failed", "The download stopped. Check the internet connection, then try again.", "Nedlastingen stoppet. Sjekk internettforbindelsen, og prøv igjen."),  # (+)
     ("Setup_4_Where", "It runs quietly in the corner of the taskbar. If you don't see it, choose ^ (Show hidden icons).", "Den kjører i det stille i hjørnet av oppgavelinjen. Ser du den ikke, velger du ^ (Vis skjulte ikoner)."),
-    ("Setup_Refuse", "Brasscribe needs a 64-bit Intel or AMD PC with Windows 11.", "Brasscribe trenger en 64-biters PC med Intel eller AMD og Windows 11."),
     ("Notify_Ready", "Brasscribe is ready. Phones and tablets can make full-band scores now.", "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå."),
     # 10.5 Needs attention and errors
     ("Lan_Title", "Phones can't find this computer", "Telefoner finner ikke denne datamaskinen"),

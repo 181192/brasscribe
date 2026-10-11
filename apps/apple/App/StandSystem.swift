@@ -41,9 +41,7 @@ enum StandSystem {
     static func lockRotation(_ on: Bool) {
         #if os(iOS)
         guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
-        let now: UIInterfaceOrientation
-        if #available(iOS 26, *) { now = scene.effectiveGeometry.interfaceOrientation } else { now = scene.interfaceOrientation }
-        OrientationLock.mask = on ? mask(for: now) : .all
+        OrientationLock.mask = on ? mask(for: scene.effectiveGeometry.interfaceOrientation) : .all
         scene.keyWindow?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
         if on { scene.requestGeometryUpdate(.iOS(interfaceOrientations: OrientationLock.mask)) }
         #endif

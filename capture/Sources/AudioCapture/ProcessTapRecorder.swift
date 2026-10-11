@@ -28,7 +28,7 @@ public struct AudioApp: Hashable, Sendable, Identifiable {
 public enum CaptureSource: Sendable, Equatable {
     /// Everything playing on the Mac, mixed to stereo.
     case system
-    /// One app's output, identified by bundle id (macOS 26 or later).
+    /// One app's output, identified by bundle id.
     case app(bundleID: String)
 }
 
@@ -81,7 +81,6 @@ public final class ProcessTapRecorder: @unchecked Sendable {
         case .system:
             desc = CATapDescription(stereoGlobalTapButExcludeProcesses: [])
         case .app(let bundleID):
-            guard #available(macOS 26.0, *) else { throw CaptureError("recording a single app needs macOS 26") }
             desc = CATapDescription(stereoMixdownOfProcesses: [])
             desc.bundleIDs = [bundleID]
             desc.isProcessRestoreEnabled = true
