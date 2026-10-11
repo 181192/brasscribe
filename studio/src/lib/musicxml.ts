@@ -18,6 +18,8 @@ export interface XmlPart {
   name: string;
   transpose: number; // semitones written -> sounding
   percussion: boolean;
+  /** The part has a tablature staff (a staff with the strings' tuning). */
+  tab: boolean;
   notes: XmlNote[];
   bars: number;
 }
@@ -62,7 +64,10 @@ export function parseMusicXml(xml: string): XmlScore {
     let beatType = 4;
     let barStart = 0; // quarters
     let percussion = false;
-    const notes: XmlNote[] = [];
+    // Staves (1-based) written as tablature, and how many staves the part has.
+    const tabStaves = new Set<number>();
+    let staves = 1;
+    const notes: (XmlNote & { staff: number })[] = [];
     const measures = Array.from(p.children).filter((c) => c.nodeName === "measure");
     measures.forEach((m, barIndex) => {
       const bar = Number(m.getAttribute("number")) || barIndex + 1;
@@ -95,6 +100,10 @@ export function parseMusicXml(xml: string): XmlScore {
             if (b) beats = Number(b) || beats;
             if (bt) beatType = Number(bt) || beatType;
             if (text(el, "clef > sign") === "percussion") percussion = true;
+            staves = Math.max(staves, Number(text(el, "staves") ?? 1) || 1);
+            for (const sd of Array.from(el.querySelectorAll(":scope > staff-details"))) {
+              if (sd.querySelector("staff-tuning")) tabStaves.add(Number(sd.getAttribute("number") ?? 1) || 1);
+            }
             break;
           }
           case "backup":
@@ -132,6 +141,7 @@ export function parseMusicXml(xml: string): XmlScore {
               color,
               parenthesised: nh?.getAttribute("parentheses") === "yes",
               level,
+              staff: Number(text(el, "staff") ?? 1) || 1,
             });
             break;
           }
@@ -141,7 +151,12 @@ export function parseMusicXml(xml: string): XmlScore {
       barStart += Math.max(nominal, maxPos / divisions);
     });
     maxBars = Math.max(maxBars, measures.length);
-    parts.push({ id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id), notes, bars: measures.length });
+    // Tablature under a notation staff writes every note twice: the notes are those of the notation staff.
+    const both = tabStaves.size > 0 && staves > tabStaves.size;
+    parts.push({
+      id, name: names.get(id) ?? id, transpose, percussion: percussion || unpitched.has(id), tab: tabStaves.size > 0,
+      notes: (both ? notes.filter((n) => !tabStaves.has(n.staff)) : notes).map(({ staff: _staff, ...n }) => n), bars: measures.length,
+    });
   }
   return { title, parts, bars: maxBars, adlib };
 }

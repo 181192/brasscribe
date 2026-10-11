@@ -46,7 +46,7 @@ STUDIO_E2E_MUSESCORE=1 npm run e2e        # also run the MuseScore round trip fr
 | `browser/` | the viewer, appearance, Pink and the SoundFont on the built bundle | the built bundle and Chromium |
 | `e2e/` | a live engine: runs, the pipeline, benchmarks, MuseScore, the Mikkel run | an engine and `data/` |
 
-**The screen catalogue** (`catalogue/`, `npm run test:catalogue`) opens the built bundle as static files and answers the engine's API with `page.route` from `e2e/fixtures/api/responses.json`: responses an engine gave for the public-domain runs in `e2e/fixtures/compare`, a failed run, a short benchmark history and a conformance report written for it. A request the fixtures do not answer, a page error or a console error fails the view. Every view (`catalogue/views.ts`: the runs, a run's score and each of its tabs, a failed run, the viewer empty and with a score, Compare, Benchmarks, Parity, Conformance, Datasets and models, the shortcut sheet and the narrow menu) is opened in every variant: light, dark, high contrast light and dark (`prefers-contrast: more`), bokmål, 200 % zoom (720 × 500 CSS px), 320 px, and bokmål at 320 px; the narrow ones are reached the way a reader gets there, by narrowing the window after the view opened wide. Each runs these checks:
+**The screen catalogue** (`catalogue/`, `npm run test:catalogue`) opens the built bundle as static files and answers the engine's API with `page.route` from `e2e/fixtures/api/responses.json`: responses an engine gave for the public-domain runs in `e2e/fixtures/compare`, the tab run in `apps/fixtures/guitar-line`, a failed run, a short benchmark history and a conformance report written for it. A request the fixtures do not answer, a page error or a console error fails the view (a view that is there to show a failure names the console errors it expects, `expectedErrors`). Every view (`catalogue/views.ts`: the runs, a run's score and each of its tabs, a failed run, a tab run, the viewer empty, with a score, with a tab and with a file it cannot show, Compare, Benchmarks, Parity, Conformance, Datasets and models, the shortcut sheet and the narrow menu) is opened in every variant: light, dark, high contrast light and dark (`prefers-contrast: more`), bokmål, 200 % zoom (720 × 500 CSS px), 320 px, and bokmål at 320 px; the narrow ones are reached the way a reader gets there, by narrowing the window after the view opened wide. Each runs these checks:
 - axe-core with the WCAG 2.2 AA tags (every view and variant; serious and critical fail)
 - no text cut off: by its own box or by a box around it that hides what overflows (an ellipsis too), on either axis; text a part that scrolls has out of view is not cut, but what it shows can still be cut by a box further out (every view and variant)
 - the page does not scroll sideways (light, bokmål, 200 %, 320 px and bokmål at 320 px); at 320 px neither does a part of it that scrolls (a dialog, a panel), unless it needs both directions: a data table in its wrapper (`.table-wrap`), `pre` and `code`, and the engraved score
@@ -92,8 +92,9 @@ Screenshots go to `docs/screenshots/`.
   - FFT, spectrogram and energy
   - the talking score (`talking.ts`, checked against `docs/accessibility/talking-score-vectors.json`), built from MusicXML (`talkingxml.ts`) and navigated by note, beat, bar, part and uncertain note (`navigator.ts`)
   - the notation diff that marks changed notes in Compare (`xmldiff.ts`)
+  - what a score's staves show (notation, tablature or both) and the alphaTab stave profile that draws it (`stavelayout.ts`)
 - `src/components/`: custom elements:
-  - `bs-score`: alphaTab with transport, loop, speed, zoom, parts, mute and solo, and keyboard navigation
+  - `bs-score`: alphaTab with transport, loop, speed, zoom, parts, mute and solo, and keyboard navigation; a score, a tab, or a tab under its notation, as the file has it
   - `bs-stage-graph`
   - `bs-audio-ab`
   - `bs-stems`

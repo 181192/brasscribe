@@ -40,13 +40,25 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
     h("p", { class: "hint" }, t("viewer.orRun"), " ", h("a", { href: "#/runs" }, t("nav.runs")), " · ",
       t("viewer.shortcut"), h("kbd", {}, "Ctrl"), "/", h("kbd", {}, "⌘"), " + ", h("kbd", {}, "O")));
 
+  /** With a score open, Play is the primary and the chooser steps back; without one the chooser is. */
+  const showPlayer = (on: boolean) => {
+    holder.hidden = !on;
+    const button = picker.querySelector(".button");
+    if (on) button?.classList.replace("primary", "ghost");
+    else button?.classList.replace("ghost", "primary");
+    drop.classList.toggle("compact", on);
+  };
+  /** The file could not be read or drawn: what the reader can do, and the player put away. */
+  const failed = (name: string, e: unknown, retry: () => void) => {
+    showPlayer(false);
+    clear(notice, errorNotice(e, { retry, title: t("viewer.unreadable", { name }), body: t("viewer.unreadableBody") }));
+    status.textContent = t("viewer.failed", { name });
+  };
+
   const open = async (name: string, data: ArrayBuffer | string) => {
     status.textContent = t("viewer.rendering", { name });
     clear(notice);
-    holder.hidden = false;
-    // Once a score is open, Play is the primary; the chooser steps back.
-    picker.querySelector(".button")?.classList.replace("primary", "ghost");
-    drop.classList.add("compact");
+    showPlayer(true);
     try {
       const t0 = performance.now();
       await score.load(data, name);
@@ -55,17 +67,13 @@ export function viewerView(root: HTMLElement, params: URLSearchParams): void {
       announce(t("viewer.opened", { name }));
       score.focusScore();
     } catch (e) {
-      clear(notice, errorNotice(e));
-      status.textContent = t("viewer.failed", { name });
+      failed(name, e, () => void open(name, data));
     }
   };
   /** Open a score the engine serves; a failure is shown beside the (still usable) viewer. */
   const openUrl = (path: string, name: string) => {
     status.textContent = t("viewer.rendering", { name });
-    fetchText(path).then((txt) => open(name, txt)).catch((e) => {
-      clear(notice, errorNotice(e));
-      status.textContent = t("viewer.failed", { name });
-    });
+    fetchText(path).then((txt) => open(name, txt), (e) => failed(name, e, () => openUrl(path, name)));
   };
   const openFile = async (f: File) => {
     // Compressed MusicXML (.mxl) goes to alphaTab as bytes.

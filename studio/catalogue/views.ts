@@ -12,6 +12,8 @@ export type View = {
   only?: string[];
   /** The keyboard walk starts on this element instead of the top of the page. */
   walkFrom?: string;
+  /** Console errors this view is there to show (a file that cannot be drawn), which are not problems of it. */
+  expectedErrors?: RegExp[];
 };
 
 export type Variant = {
@@ -63,9 +65,19 @@ export const VIEWS: View[] = [
   { name: "run-voices", route: `${run}/voices` },
   { name: "run-musicxml", route: `${run}/musicxml` },
   { name: "run-manifest", route: `${run}/manifest` },
+  // A tab run: the run view links its tab to the viewer.
+  { name: "run-tab", route: "runs/guitar-line/score", ready: async (p) => { await expect(p.locator("#main .empty a.button")).toBeVisible(); } },
   { name: "run-failed", route: "runs/old-hundredth-failed", ready: async (p) => { await expect(p.locator(".notice-error").first()).toBeVisible(); } },
   { name: "viewer", route: "viewer" },
   { name: "viewer-score", route: "viewer?example=old-hundredth", ready: scoreRendered("#main bs-score") },
+  // A tab run's notes, opened the way the run links to them: tablature only, as the engine's tab profiles write it.
+  { name: "viewer-tab", route: `viewer?src=${encodeURIComponent("/v1/jobs/guitar-line/musicxml")}&name=${encodeURIComponent("Guitar line")}`, ready: scoreRendered("#main bs-score") },
+  // A file that is no score: what the reader can do, the technical message under Details, and no player.
+  {
+    name: "viewer-failed", route: `viewer?src=${encodeURIComponent("/v1/jobs/not-a-score/musicxml")}&name=${encodeURIComponent("Not a score")}`,
+    expectedErrors: [/\[AlphaTab\]/],
+    ready: async (p) => { await expect(p.locator("#main .notice-error")).toBeVisible(); },
+  },
   { name: "compare", route: "compare?a=old-hundredth-a&b=old-hundredth-b", ready: scoreRendered("#main bs-score", false) },
   { name: "bench", route: "bench" },
   { name: "parity", route: "parity" },

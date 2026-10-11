@@ -8,6 +8,7 @@ import { parseMusicXml, type XmlNote, type XmlScore } from "../lib/musicxml";
 import { Navigator, type Stop } from "../lib/navigator";
 import { SharedSynth, type ApiLike } from "../lib/sharedsynth";
 import { soundFontBytes } from "../lib/soundfontstore";
+import { frettedProgram, makeDrawable, showsTab, staveLayout, STAVE_PROFILE, type StaveLayout } from "../lib/stavelayout";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, percussionKits, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import { PICKUP_BAR, type PitchMode, type Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
@@ -76,6 +77,9 @@ export function tokenColour(name: string): string {
   return `#${m.slice(0, 3).map((x) => Math.round(Number(x)).toString(16).padStart(2, "0")).join("")}`;
 }
 
+/** A notehead's height as a share of a fret number's, so a "?" is the same size over either. */
+const FRET_TO_NOTEHEAD = 0.65;
+
 /** Label text inside an icon button, so the label can change without losing the icon. */
 function labelled(name: string, text: string): [SVGSVGElement, HTMLSpanElement] {
   return [icon(name), h("span", { class: "label" }, text)];
@@ -104,6 +108,14 @@ export class ScoreElement extends HTMLElement {
   decorate: ((track: number, note: number, n: XmlNote) => NoteMark | null) | null = null;
   /** Last talking-score announcement (also shown in the panel). */
   lastAnnouncement = "";
+  /** What the loaded score's staves show; the stave profile and reading aloud follow it. */
+  layout: StaveLayout = "notation";
+  /** The transport's controls: disabled while no score is shown. */
+  private controls: (HTMLButtonElement | HTMLInputElement | HTMLSelectElement)[] = [];
+  private helpEl!: HTMLElement;
+  private talkOff!: HTMLElement;
+  /** No part of the score has a band sound (a tab), so it plays with the General MIDI set. */
+  private general = false;
   private view!: HTMLDivElement;
   private statusEl!: HTMLElement;
   /** Band sounds, or null when they are missing (undefined before the first load). */
@@ -196,7 +208,9 @@ export class ScoreElement extends HTMLElement {
           this.zoomOut,
           h("button", { type: "button", class: "icon-only", "aria-label": t("common.zoomIn"), onclick: () => this.zoom(this.scale + 0.1) }, icon("zoom-in"))),
       ]));
-    const help = h("p", { id: `${id}-help`, class: "visually-hidden" }, t("score.help"));
+    const help = this.helpEl = h("p", { id: `${id}-help`, class: "visually-hidden" }, t("score.help"));
+    this.controls = Array.from(transport.querySelectorAll<HTMLButtonElement | HTMLInputElement | HTMLSelectElement>("button, input, select"));
+    this.setEnabled(false);
 
     // Talking score panel.
     this.pitchSel = h("select", { id: `${id}-pm`, onchange: () => this.setPitchMode(this.pitchSel.value as PitchMode) },
@@ -215,8 +229,10 @@ export class ScoreElement extends HTMLElement {
     this.talkPanel.addEventListener("toggle", () => {
       if (this.talkPanel.open) this.renderTalkingText();
     });
+    // Shown in the panel's place for a score it cannot read (tablature).
+    this.talkOff = h("p", { class: "hint talking-off", hidden: true }, icon("talking-score"), " ", t("score.noReadingTab"));
     this.legend = h("p", { class: "score-legend" });
-    this.append(transport, this.view, this.statusEl, this.legend, help, this.talkPanel,
+    this.append(transport, this.view, this.statusEl, this.legend, help, this.talkPanel, this.talkOff,
       h("details", { class: "card" }, h("summary", {}, icon("parts"), " ", t("score.mixer")), this.mixer));
   }
 
@@ -276,6 +292,7 @@ export class ScoreElement extends HTMLElement {
     this.view.setAttribute("aria-label", t("score.label", { title: this.xml?.title || label }));
     const seq = ++this.loadSeq;
     this.dropApi();
+    this.setEnabled(false);
     clear(this.view);
     this.ready = false;
     this.rendered = false;
@@ -291,7 +308,8 @@ export class ScoreElement extends HTMLElement {
     this.band = band;
     const settings: AT.json.SettingsJson = {
       core: { fontDirectory: `${ASSETS}font/`, logLevel: "warning", includeNoteBounds: true, enableLazyLoading: false },
-      display: { layoutMode: "page", scale: this.scale, staveProfile: "score", resources: this.resources() },
+      // The stave profile is set once the score is read (scoreLoaded, below), from what its staves show.
+      display: { layoutMode: "page", scale: this.scale, staveProfile: "default", resources: this.resources() },
       player: {
         // No synth of its own: the page's shared one is attached below (claimPlayer).
         playerMode: "disabled",
@@ -317,7 +335,15 @@ export class ScoreElement extends HTMLElement {
       api.error.on((e: Error) => reject(e));
     });
     api.scoreLoaded.on((score: AT.model.Score) => {
+      // Before the first render: notation, tablature or both, as the file has it.
+      makeDrawable(score.tracks);
+      this.layout = staveLayout(score.tracks);
+      api.settings.display.staveProfile = alphaTab.StaveProfile[STAVE_PROFILE[this.layout]];
+      api.updateSettings();
       this.applyBandSounds(score);
+      this.soundFontUrl = band && !this.general ? `${BAND}brasscribe-band.sf2` : `${ASSETS}soundfont/sonivox.sf2`;
+      // The first score on the page takes the synth; in Compare the other one takes it on Play.
+      if (!holder || !holder.isConnected || holder === this) this.claimPlayer();
       this.onScore(score);
     });
     api.midiLoad.on((midi: AT.midi.MidiFile) => addReleaseTail(midi));
@@ -361,13 +387,43 @@ export class ScoreElement extends HTMLElement {
       if (!e.isSeek && this.playing) this.nav?.syncToTick(e.currentTick);
       this.updateStatus();
     });
-    this.soundFontUrl = band ? `${BAND}brasscribe-band.sf2` : `${ASSETS}soundfont/sonivox.sf2`;
-    // The first score on the page takes the synth; in Compare the other one takes it on Play.
-    if (!holder || !holder.isConnected || holder === this) this.claimPlayer();
-    else this.updateStatus();
     const indexes = this.tracks ?? (this.xml ? this.xml.parts.map((_, i) => i) : undefined);
     api.load(bytes, indexes);
-    await rendered;
+    try {
+      await rendered;
+    } catch (e) {
+      // Nothing to show or play: back to "no score", unless a newer load has taken over.
+      if (seq === this.loadSeq) this.unload();
+      throw e;
+    }
+    if (seq === this.loadSeq) this.setEnabled(true);
+  }
+
+  /** Back to the state before any score was loaded: nothing drawn, no player, the controls disabled. */
+  private unload(): void {
+    this.dropApi();
+    clear(this.view);
+    this.marks = this.bands = null;
+    this.xml = null;
+    this.talking = null;
+    this.nav = null;
+    this.bars = [];
+    this.current = 0;
+    this.loop = null;
+    this.rendered = false;
+    this.uncertainCount = 0;
+    this.position = { tick: 0, time: 0, endTime: 0 };
+    clear(this.partSelect);
+    clear(this.mixer);
+    this.setEnabled(false);
+    this.updateStatus();
+  }
+
+  /** The transport can be used only while a score is shown. */
+  private setEnabled(on: boolean): void {
+    for (const c of this.controls) c.disabled = !on;
+    // The score's own keys act on a score: without one it is not a stop for the Tab key.
+    this.view.tabIndex = on ? 0 : -1;
   }
 
   /**
@@ -376,12 +432,27 @@ export class ScoreElement extends HTMLElement {
    */
   private applyBandSounds(score: AT.model.Score): void {
     this.trackSounds = [];
-    if (!this.band) return;
+    this.general = false;
+    if (!this.band) {
+      this.generalPrograms(score);
+      return;
+    }
+    const sounds = score.tracks.map((track, i) => {
+      // A fretted part is no band instrument, whatever it is called (a bass guitar is not an E♭ bass).
+      if (track.staves.some(showsTab)) return null;
+      const drums = track.staves.some((st) => st.isPercussion);
+      return this.band!.resolve(track.name, null, drums ? this.kits[i] ?? track.playbackInfo.program : track.playbackInfo.program)?.sound ?? null;
+    });
+    // A score with no band part in it (a guitar or bass tab) plays with the General MIDI set: the
+    // band SoundFont has no sound for it. A score with any band part keeps the band's sounds.
+    if (sounds.every((x) => !x)) {
+      this.general = true;
+      this.generalPrograms(score);
+      return;
+    }
     const channels = playbackChannels(score.tracks.map((t) => t.staves.some((st) => st.isPercussion)));
     score.tracks.forEach((track, i) => {
-      const drums = track.staves.some((st) => st.isPercussion);
-      const program = drums ? this.kits[i] ?? track.playbackInfo.program : track.playbackInfo.program;
-      const sound = this.band!.resolve(track.name, null, program)?.sound ?? null;
+      const sound = sounds[i];
       this.trackSounds.push(sound);
       track.playbackInfo.primaryChannel = channels[i];
       track.playbackInfo.secondaryChannel = channels[i];
@@ -397,6 +468,17 @@ export class ScoreElement extends HTMLElement {
             for (const beat of voice.beats)
               beat.automations = beat.automations.filter(
                 (a) => a.type !== alphaTab.model.AutomationType.Instrument && a.type !== alphaTab.model.AutomationType.Bank);
+    });
+  }
+
+  /**
+   * With the General MIDI set: a fretted part whose file names no instrument (the engine's tab
+   * writes none) plays as a guitar or a bass, not as alphaTab's default piano.
+   */
+  private generalPrograms(score: AT.model.Score): void {
+    score.tracks.forEach((track, i) => {
+      const staff = track.staves.find(showsTab);
+      if (staff && (this.kits[i] ?? null) === null) track.playbackInfo.program = frettedProgram(track.name, staff.tuning);
     });
   }
 
@@ -434,6 +516,15 @@ export class ScoreElement extends HTMLElement {
     this.barInput.max = String(this.bars.length);
     this.loopFrom.max = this.loopTo.max = String(this.bars.length);
     this.uncertainCount = this.markNotes(score);
+    // The talking score reads notation; it has no reading of tablature (string and fret) yet.
+    const readable = this.layout === "notation";
+    if (!readable) {
+      this.talking = null;
+      this.nav = null;
+    }
+    this.talkPanel.hidden = !readable;
+    this.talkOff.hidden = readable;
+    this.helpEl.textContent = t(readable ? "score.help" : "score.helpTab");
     const firstWithNotes = this.tracks?.[0] ?? this.xml?.parts.findIndex((p) => p.notes.length > 0) ?? -1;
     this.partIndex = firstWithNotes >= 0 && firstWithNotes < score.tracks.length ? firstWithNotes : 0;
     this.nav?.setPart(this.partIndex);
@@ -500,7 +591,10 @@ export class ScoreElement extends HTMLElement {
           }
           const style = new M.NoteStyle();
           if (xn.level) marked++;
-          style.colors.set(M.NoteSubElement.StandardNotationNoteHead, extra ? M.Color.fromJson(extra.colour) : colours[xn.level!]);
+          const colour = extra ? M.Color.fromJson(extra.colour) : colours[xn.level!];
+          style.colors.set(M.NoteSubElement.StandardNotationNoteHead, colour);
+          // On a tablature staff the note is its fret number.
+          style.colors.set(M.NoteSubElement.GuitarTabFretNumber, colour);
           if (extra?.head && extra.head !== "paren") {
             const d = note.beat.duration as number; // 1 whole, 2 half, 4 quarter …
             const kind = d <= 1 ? "Whole" : d === 2 ? "Half" : "Black";
@@ -547,12 +641,16 @@ export class ScoreElement extends HTMLElement {
       if (!part?.notes.some((n) => n.level)) return;
       const byBar = new Map<number, number[]>();
       part.notes.forEach((n, i) => (byBar.get(n.barIndex) ?? byBar.set(n.barIndex, []).get(n.barIndex)!).push(i));
-      track.staves[0]?.bars.forEach((bar, bi) => {
+      const staff = track.staves[0];
+      // On a tablature-only staff the note's box is its fret number, taller than a notehead.
+      const fret = !!staff && showsTab(staff) && !staff.showStandardNotation;
+      staff?.bars.forEach((bar, bi) => {
         const idx = byBar.get(bi);
         if (!idx) return;
         const notes = bar.voices.flatMap((v) => v.beats.flatMap((b) => b.notes));
         if (notes.length !== idx.length) return;
         let lastX = -1e9;
+        let lastBeat: AT.model.Beat | null = null;
         notes.forEach((note, k) => {
           const level = part.notes[idx[k]].level;
           if (!level) return;
@@ -560,9 +658,10 @@ export class ScoreElement extends HTMLElement {
           const nb = bb?.notes?.find((x) => x.note === note);
           if (!bb || !nb) return;
           const x = nb.noteHeadBounds.x + nb.noteHeadBounds.w / 2;
-          if (Math.abs(x - lastX) < 4) return; // one mark per chord
+          if (Math.abs(x - lastX) < 4 || note.beat === lastBeat) return; // one mark per chord
           lastX = x;
-          const space = Math.max(6, nb.noteHeadBounds.h);
+          lastBeat = note.beat;
+          const space = Math.max(6, nb.noteHeadBounds.h * (fret ? FRET_TO_NOTEHEAD : 1));
           const glyph = 1.6 * space; // cap height of the "?"
           const font = Math.round(glyph / 0.72);
           const staffTop = bb.barBounds.visualBounds.y;
@@ -893,6 +992,7 @@ export class ScoreElement extends HTMLElement {
     } else if ((e.ctrlKey || e.altKey) && !e.shiftKey && (k === "ArrowRight" || k === "ArrowLeft")) {
       handled();
       if (nav) this.speak(nav.nextBeat(k === "ArrowRight" ? 1 : -1), k === "ArrowRight" ? t("score.end") : t("score.start"));
+      else this.noReading();
     } else if (k === "Home" || k === "End") {
       handled();
       this.goBar(k === "Home" ? 0 : this.bars.length - 1);
@@ -908,6 +1008,7 @@ export class ScoreElement extends HTMLElement {
     } else if (k === "u" || k === "U") {
       handled();
       if (nav) this.speak(nav.nextUncertain(e.shiftKey ? -1 : 1), t("score.noUncertain"));
+      else this.noReading();
     } else if (k === "p" || k === "P") {
       handled();
       this.playBar();
@@ -935,10 +1036,11 @@ export class ScoreElement extends HTMLElement {
       if (nav) {
         nav.syncToTick(this.bars[this.current]?.start ?? 0);
         this.speak(nav.readBar());
-      }
+      } else this.noReading();
     } else if (k === "w" || k === "W") {
       handled();
       if (nav) this.speak(nav.whereAmI());
+      else this.noReading();
     } else if (k === "m" || k === "M" || k === "s" || k === "S") {
       handled();
       this.toggleMute(k === "s" || k === "S");
@@ -948,7 +1050,17 @@ export class ScoreElement extends HTMLElement {
     }
   }
 
+  /** A reading key on a score the talking score cannot read: say why, instead of nothing. */
+  private noReading(): void {
+    if (this.api?.score && this.layout !== "notation") announce(t("score.noReadingTab"));
+  }
+
   private updateStatus(): void {
+    if (!this.api) {
+      this.statusEl.textContent = t("score.none");
+      this.legend.hidden = true;
+      return;
+    }
     const mmss = (ms: number) => {
       const s = Math.max(0, Math.round(ms / 1000));
       return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -959,7 +1071,7 @@ export class ScoreElement extends HTMLElement {
       this.playing ? t("score.status.playing") : this.ready ? t("score.status.stopped")
         : this.playerFailed ? t("score.status.playerFailed")
         : this.api && !this.ownsPlayer ? t("score.status.playerElsewhere") : t("score.status.loadingPlayer"),
-      this.api && this.band === null ? t("score.status.basicSounds") : "",
+      this.band === null ? t("score.status.basicSounds") : this.general ? t("score.status.generalSounds") : "",
       t("score.status.speed", { v: this.speedOut?.textContent ?? "100%" }),
       this.loop ? t("score.loopRange", { a: this.loop.from + 1, b: this.loop.to + 1 }) : "",
       this.api?.score ? t("score.status.part", { name: this.partLabel(this.partIndex) }) : "",

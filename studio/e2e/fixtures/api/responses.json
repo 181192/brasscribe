@@ -133,8 +133,317 @@
      "brass-band.musicxml",
      "composition.json"
     ]
+   },
+   {
+    "id": "guitar-line",
+    "profile": "tab",
+    "title": "Guitar line",
+    "audio_id": "ae3be0fa611d53ec",
+    "status": "succeeded",
+    "created": 1767225600.0,
+    "started": 1767225600.0,
+    "finished": 1767225606.0,
+    "error": null,
+    "progress": 1.0,
+    "previous_run_id": null,
+    "device_name": null,
+    "stages": [
+     {
+      "name": "beats",
+      "kind": "beats",
+      "status": "ran",
+      "seconds": 1.0,
+      "queue_wait_s": 0.0,
+      "run_s": 1.0,
+      "device": null
+     },
+     {
+      "name": "transcribe.guitar.basic-pitch",
+      "kind": "transcribe",
+      "status": "ran",
+      "seconds": 1.0,
+      "queue_wait_s": 0.0,
+      "run_s": 1.0,
+      "device": null
+     },
+     {
+      "name": "transcribe.guitar.swift-f0",
+      "kind": "transcribe",
+      "status": "ran",
+      "seconds": 1.0,
+      "queue_wait_s": 0.0,
+      "run_s": 1.0,
+      "device": null
+     },
+     {
+      "name": "notes",
+      "kind": "notes",
+      "status": "ran",
+      "seconds": 1.0,
+      "queue_wait_s": 0.0,
+      "run_s": 1.0,
+      "device": null
+     },
+     {
+      "name": "arrange",
+      "kind": "arrange",
+      "status": "ran",
+      "seconds": 1.0,
+      "queue_wait_s": 0.0,
+      "run_s": 1.0,
+      "device": null
+     },
+     {
+      "name": "export",
+      "kind": "export",
+      "status": "ran",
+      "seconds": 1.0,
+      "queue_wait_s": 0.0,
+      "run_s": 1.0,
+      "device": null
+     }
+    ],
+    "outputs": [
+     "composition.json",
+     "tab-instructions.en.txt",
+     "tab-instructions.nb.txt",
+     "tab.json",
+     "tab.musicxml",
+     "tab.txt"
+    ]
    }
   ]
+ },
+ "/v1/jobs/guitar-line": {
+  "status": 200,
+  "body": {
+   "id": "guitar-line",
+   "profile": "tab",
+   "title": "Guitar line",
+   "audio_id": "ae3be0fa611d53ec",
+   "status": "succeeded",
+   "created": 1767225600.0,
+   "started": 1767225600.0,
+   "finished": 1767225606.0,
+   "error": null,
+   "progress": 1.0,
+   "previous_run_id": null,
+   "device_name": null,
+   "stages": [
+    {
+     "name": "beats",
+     "kind": "beats",
+     "status": "ran",
+     "seconds": 1.0,
+     "queue_wait_s": 0.0,
+     "run_s": 1.0,
+     "device": null
+    },
+    {
+     "name": "transcribe.guitar.basic-pitch",
+     "kind": "transcribe",
+     "status": "ran",
+     "seconds": 1.0,
+     "queue_wait_s": 0.0,
+     "run_s": 1.0,
+     "device": null
+    },
+    {
+     "name": "transcribe.guitar.swift-f0",
+     "kind": "transcribe",
+     "status": "ran",
+     "seconds": 1.0,
+     "queue_wait_s": 0.0,
+     "run_s": 1.0,
+     "device": null
+    },
+    {
+     "name": "notes",
+     "kind": "notes",
+     "status": "ran",
+     "seconds": 1.0,
+     "queue_wait_s": 0.0,
+     "run_s": 1.0,
+     "device": null
+    },
+    {
+     "name": "arrange",
+     "kind": "arrange",
+     "status": "ran",
+     "seconds": 1.0,
+     "queue_wait_s": 0.0,
+     "run_s": 1.0,
+     "device": null
+    },
+    {
+     "name": "export",
+     "kind": "export",
+     "status": "ran",
+     "seconds": 1.0,
+     "queue_wait_s": 0.0,
+     "run_s": 1.0,
+     "device": null
+    }
+   ],
+   "outputs": [
+    "composition.json",
+    "tab-instructions.en.txt",
+    "tab-instructions.nb.txt",
+    "tab.json",
+    "tab.musicxml",
+    "tab.txt"
+   ]
+  }
+ },
+ "/v1/jobs/guitar-line/composition": {
+  "status": 200,
+  "file": "../../../../apps/fixtures/guitar-line/composition.json"
+ },
+ "/v1/jobs/guitar-line/input": {
+  "status": 404,
+  "body": {
+   "detail": "no input audio for job guitar-line"
+  }
+ },
+ "/v1/jobs/guitar-line/manifest": {
+  "status": 200,
+  "body": {
+   "schema": 1,
+   "run_id": "guitar-line",
+   "created": "2026-01-01T00:00:00+00:00",
+   "profile": "tab",
+   "pipeline": "tab",
+   "title": "Guitar line",
+   "params": {},
+   "options": {
+    "allow_heavy": false,
+    "cold": []
+   },
+   "input": {
+    "path": "apps/fixtures/guitar-line"
+   },
+   "status": "succeeded",
+   "error": null,
+   "stages": [
+    {
+     "stage": "beats",
+     "kind": "beats",
+     "status": "ran",
+     "seconds": 1.0
+    },
+    {
+     "stage": "transcribe.guitar.basic-pitch",
+     "kind": "transcribe",
+     "status": "ran",
+     "seconds": 1.0
+    },
+    {
+     "stage": "transcribe.guitar.swift-f0",
+     "kind": "transcribe",
+     "status": "ran",
+     "seconds": 1.0
+    },
+    {
+     "stage": "notes",
+     "kind": "notes",
+     "status": "ran",
+     "seconds": 1.0
+    },
+    {
+     "stage": "arrange",
+     "kind": "arrange",
+     "status": "ran",
+     "seconds": 1.0
+    },
+    {
+     "stage": "export",
+     "kind": "export",
+     "status": "ran",
+     "seconds": 1.0
+    }
+   ]
+  }
+ },
+ "/v1/jobs/guitar-line/musicxml": {
+  "status": 200,
+  "type": "application/vnd.recordare.musicxml+xml",
+  "file": "../../../../apps/fixtures/guitar-line/tab.musicxml"
+ },
+ "/v1/jobs/guitar-line/stages": {
+  "status": 200,
+  "body": [
+   {
+    "stage": "beats",
+    "kind": "beats",
+    "status": "ran",
+    "key": null,
+    "seconds": 1.0,
+    "queue_wait_s": 0.0,
+    "run_s": 1.0,
+    "device": null,
+    "files": []
+   },
+   {
+    "stage": "transcribe.guitar.basic-pitch",
+    "kind": "transcribe",
+    "status": "ran",
+    "key": null,
+    "seconds": 1.0,
+    "queue_wait_s": 0.0,
+    "run_s": 1.0,
+    "device": null,
+    "files": []
+   },
+   {
+    "stage": "transcribe.guitar.swift-f0",
+    "kind": "transcribe",
+    "status": "ran",
+    "key": null,
+    "seconds": 1.0,
+    "queue_wait_s": 0.0,
+    "run_s": 1.0,
+    "device": null,
+    "files": []
+   },
+   {
+    "stage": "notes",
+    "kind": "notes",
+    "status": "ran",
+    "key": null,
+    "seconds": 1.0,
+    "queue_wait_s": 0.0,
+    "run_s": 1.0,
+    "device": null,
+    "files": []
+   },
+   {
+    "stage": "arrange",
+    "kind": "arrange",
+    "status": "ran",
+    "key": null,
+    "seconds": 1.0,
+    "queue_wait_s": 0.0,
+    "run_s": 1.0,
+    "device": null,
+    "files": []
+   },
+   {
+    "stage": "export",
+    "kind": "export",
+    "status": "ran",
+    "key": null,
+    "seconds": 1.0,
+    "queue_wait_s": 0.0,
+    "run_s": 1.0,
+    "device": null,
+    "files": []
+   }
+  ]
+ },
+ "/v1/jobs/not-a-score/musicxml": {
+  "status": 200,
+  "type": "application/vnd.recordare.musicxml+xml",
+  "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<not-a-score/>\n"
  },
  "/v1/jobs/old-hundredth-a": {
   "status": 200,

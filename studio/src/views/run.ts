@@ -125,9 +125,9 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
         h("dt", {}, t("run.kv.created")), h("dd", {}, fmt.date(job.created)))));
     // Built on demand: the same links also sit in More on narrow screens, and a node lives in one place only.
     const downloads = (cls = "") => [
-      job.outputs?.includes("brass-band.musicxml") ? h("a", { class: `button ${cls}`, href: api.musicxmlUrl(job.id), download: "" }, icon("file"), t("run.dl.musicxml")) : null,
-      job.outputs?.includes("brass-band.pdf") ? h("a", { class: `button ${cls}`, href: api.pdfUrl(job.id) }, icon("file"), t("run.dl.pdf")) : null,
-      job.outputs?.includes("brass-band.mid") ? h("a", { class: `button ${cls}`, href: api.midiUrl(job.id), download: "" }, icon("file"), t("run.dl.midi")) : null,
+      hasScoreFile(job, "musicxml") ? h("a", { class: `button ${cls}`, href: api.musicxmlUrl(job.id), download: "" }, icon("file"), t("run.dl.musicxml")) : null,
+      hasScoreFile(job, "pdf") ? h("a", { class: `button ${cls}`, href: api.pdfUrl(job.id) }, icon("file"), t("run.dl.pdf")) : null,
+      hasScoreFile(job, "mid") ? h("a", { class: `button ${cls}`, href: api.midiUrl(job.id), download: "" }, icon("file"), t("run.dl.midi")) : null,
     ].filter(Boolean);
     const compare = (cls = "") => h("a", { class: `button ${cls === "narrow-only" ? "" : "ghost"} ${cls}`, href: `#/compare?a=${encodeURIComponent(job.id)}` }, t("run.compare"));
     // Re-run is the page's primary only when the run failed; otherwise Play (in the score) is.
@@ -279,8 +279,35 @@ function stageFiles(ctx: Ctx, pred: (s: StageFiles) => boolean): { stage: StageF
 
 // ---------------------------------------------------------------- tabs
 
+/**
+ * Whether the run wrote its score in this format. A band run names its files brass-band.*, a
+ * tablature run tab.*; the engine serves either at the same address (/v1/jobs/{id}/musicxml, /pdf, /midi).
+ */
+export function hasScoreFile(job: Job, ext: "musicxml" | "pdf" | "mid"): boolean {
+  return !!job.outputs?.some((o) => o === `brass-band.${ext}` || o === `tab.${ext}`);
+}
+
+/** The run made a tablature (the tab pipelines), not a band score. */
+export function isTabRun(job: Job): boolean {
+  return !!job.outputs?.includes("tab.musicxml");
+}
+
+/** The link that opens a run's score in the viewer, where a tablature is shown as well as a score. */
+export function viewerLink(job: Job): string {
+  return `#/viewer?src=${encodeURIComponent(`/v1/jobs/${job.id}/musicxml`)}&name=${encodeURIComponent(job.title ?? job.id)}`;
+}
+
 function scoreTab(p: HTMLElement, ctx: Ctx): void {
-  if (TERMINAL.has(ctx.job.status) && !ctx.job.outputs?.includes("brass-band.musicxml")) {
+  if (isTabRun(ctx.job)) {
+    // The run view's score, checks and part table are made for a band score. Until it has a view
+    // of a tab of its own, the tab opens in the viewer, which shows and plays it.
+    clear(p, h("div", { class: "empty", role: "note" },
+      h("p", {}, h("strong", {}, t("run.tab"))),
+      h("p", { class: "hint" }, t("run.tabBody")),
+      h("p", {}, h("a", { class: "button primary", href: viewerLink(ctx.job) }, t("run.tabOpen")))));
+    return;
+  }
+  if (TERMINAL.has(ctx.job.status) && !hasScoreFile(ctx.job, "musicxml")) {
     clear(p, h("div", { class: "empty", role: "note" }, h("p", {}, h("strong", {}, t("run.noScore"))), h("p", { class: "hint" }, t("run.noScoreBody"))));
     return;
   }
@@ -616,7 +643,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
     const xml = parseMusicXml(await ctx.musicxml);
     clear(parts, h("h3", { id: "parts-h" }, t("mx.partsTitle")),
       h("p", {}, t("mx.partsSummary", { parts: xml.parts.length, bars: xml.bars }), h("a", { href: api.musicxmlUrl(ctx.id), download: "" }, t("mx.download")), " · ",
-        h("a", { href: `#/viewer?src=${encodeURIComponent(`/v1/jobs/${ctx.id}/musicxml`)}&name=${encodeURIComponent(ctx.job.title ?? ctx.id)}` }, t("mx.openViewer"))),
+        h("a", { href: viewerLink(ctx.job) }, t("mx.openViewer"))),
       table(t("mx.partsTitle"), [t("mx.col.part"), t("mx.col.transpose"), t("mx.col.bars"), t("mx.col.notes"), t("mx.col.uncertain"), t("mx.col.range")],
         xml.parts.map((pt) => {
           const w = pt.notes.map((n) => n.written);
