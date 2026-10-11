@@ -10,7 +10,7 @@ import no.brasscribe.play.engine.Profile
  * there, and is otherwise made on the phone as a quick draft. The other band choices need the computer.
  */
 object OnDeviceRouting {
-    /** The computer is there: paired, and its connection is Connected or Reconnecting. */
+    /** The computer is there: paired, and its connection is Connected or Reconnecting (not when one of the two needs an update). */
     fun computerThere(state: ConnectionState): Boolean =
         state is ConnectionState.Connected || state is ConnectionState.Reconnecting
 

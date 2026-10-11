@@ -2,6 +2,7 @@ package no.brasscribe.play.connection
 
 import no.brasscribe.play.AppContainer
 import no.brasscribe.play.engine.EngineException
+import no.brasscribe.play.engine.InterfaceMatch
 import no.brasscribe.play.engine.KtorEngineApi
 import no.brasscribe.play.engine.LocalHosts
 
@@ -21,11 +22,16 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
 
     override suspend fun check(url: String): Check {
         val current = url == settings.url
-        val client = (if (current) container.engine() as? KtorEngineApi else null) ?: container.newEngineClient(url, settings.token)
+        val shared = if (current) container.engine() as? KtorEngineApi else null
+        val client = shared ?: container.newEngineClient(url, settings.token)
         try {
+            // First of all, and at every heartbeat: an engine with another interface version is asked nothing else.
+            val health = client.health()
+            val match = InterfaceMatch.of(health.interfaceVersion)
+            if (match != InterfaceMatch.MATCH) return Check.Mismatch(match)
             // A token from an earlier version has no server id yet: ask the engine for it once.
             if (settings.serverId == null) {
-                val h = client.health()
+                val h = health
                 settings.serverId = h.serverId
                 settings.serverName = h.serverName
                 container.credentials.adopt(h.serverId, h.serverName)
@@ -33,7 +39,7 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
             if (settings.token == null) {
                 // A trusted client (the emulator's host alias, loopback) has no credential: health is the heartbeat.
                 // Anywhere else no credential means pairing again (a restored backup, a reset Keystore), not "connected".
-                val h = client.health()
+                val h = health
                 return noCredential(h.authRequired, LocalHosts.hostOf(url)?.let(LocalHosts::isTrusted) == true, h.serverId == settings.serverId)
             }
             return Check.Ok(client.thisDevice().rotateAfter)
@@ -51,7 +57,7 @@ class EngineConnection(private val container: AppContainer) : ConnectionHost {
             android.util.Log.i("BrasscribePlay", "heartbeat to $url failed: $e")
             return Check.Unreachable
         } finally {
-            if (!current) client.close()
+            if (client !== shared) client.close()
         }
     }
 

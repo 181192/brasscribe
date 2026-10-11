@@ -21,6 +21,8 @@ data class Health(
     /** Which build is running (the commit and workspace stamp); null when unknown. */
     val build: String? = null,
     val status: String = "ok",
+    /** The engine's interface version; null from an engine that is older than the number ([InterfaceMatch]). */
+    @SerialName("interface_version") val interfaceVersion: Int? = null,
 )
 
 @Serializable

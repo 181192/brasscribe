@@ -25,11 +25,17 @@ object ErrorWords {
     fun networkClosed(e: Throwable): Boolean = generateSequence(e) { it.cause }.take(8)
         .any { it is LocalNetworkClosedException || it.message?.contains(LocalNetworkClosedException.MESSAGE) == true }
 
+    /** Which of the two to update when the computer's interface version is not this app's. */
+    @StringRes
+    fun update(which: no.brasscribe.play.engine.InterfaceMatch): Int =
+        if (which == no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP) R.string.conn_update_app else R.string.conn_update_computer
+
     @StringRes
     fun of(e: Throwable): Int = if (networkClosed(e)) R.string.pair_network_refused else when (e) {
         is QuartetNeedsGroupException -> R.string.lineup_quartet_needs_group
         is LeadSeatRefusedException -> R.string.lead_seat_refused
         is NoCompanionException -> R.string.where_companion_missing
+        is no.brasscribe.play.engine.InterfaceMismatchException -> update(e.update)
         is EngineJobFailedException -> R.string.error_engine_failed
         is RecordingGoneException -> R.string.error_recording_gone
         is EngineException -> when (e.code) {

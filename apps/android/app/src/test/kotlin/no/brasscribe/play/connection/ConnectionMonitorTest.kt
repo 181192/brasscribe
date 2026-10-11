@@ -99,6 +99,31 @@ class ConnectionMonitorTest {
     }
 
     @Test
+    fun anotherInterfaceVersionSaysWhichToUpdateAndClearsOnceTheyMatch() = runTest {
+        val behind = no.brasscribe.play.engine.InterfaceMatch.UPDATE_COMPUTER
+        val host = FakeHost(Target("s1", name, "http://a")) { Check.Mismatch(behind) }
+        val m = monitor(host)
+        m.start(); runCurrent()
+        assertEquals(ConnectionState.NeedsUpdate(name, behind), m.state.value)
+        // It keeps asking at the heartbeat's pace, without looking for the computer elsewhere: it is there.
+        advanceTimeBy(40_001)
+        assertEquals(3, host.checks.size)
+        assertEquals(0, host.finds)
+        assertEquals(ConnectionState.NeedsUpdate(name, behind), m.state.value)
+        // A network change leaves what is said as it is.
+        m.networkChanged(); runCurrent()
+        assertEquals(ConnectionState.NeedsUpdate(name, behind), m.state.value)
+        // Bandroom was updated: the next heartbeat connects, with the pairing it had.
+        host.answer = { Check.Ok() }
+        advanceTimeBy(20_001)
+        assertEquals(ConnectionState.Connected(name), m.state.value)
+        // And an app that fell behind while connected is told at the next heartbeat.
+        host.answer = { Check.Mismatch(no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP) }
+        advanceTimeBy(20_001)
+        assertEquals(ConnectionState.NeedsUpdate(name, no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP), m.state.value)
+    }
+
+    @Test
     fun only401MeansPairAgainAndItStopsTheHeartbeat() = runTest {
         val host = FakeHost(Target("s1", name, "http://a")) { Check.Unauthorized }
         val m = monitor(host)

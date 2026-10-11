@@ -22,6 +22,8 @@ class OnDeviceRoutingTest {
         assertFalse(R_.computerThere(ConnectionState.Offline(paired = false)))
         assertFalse(R_.computerThere(ConnectionState.NeedsPairing("Mac")))
         assertFalse(R_.computerThere(ConnectionState.NetworkClosed("Mac")))
+        assertFalse(R_.computerThere(ConnectionState.NeedsUpdate("Mac", no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP)))
+        assertFalse(R_.computerThere(ConnectionState.NeedsUpdate("Mac", no.brasscribe.play.engine.InterfaceMatch.UPDATE_COMPUTER)))
     }
 
     @Test

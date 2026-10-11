@@ -128,7 +128,11 @@ fun ProfileScreen(vm: PlayViewModel) {
     var changeWhere by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
     val deviceOk = vm.canTranscribeOnDevice()
-    val companionOk = vm.container.engine() != null
+    // With another interface version on the computer nothing goes there, and the card says which of the two to update.
+    val connection by vm.connection.state.collectAsState()
+    val update = (connection as? no.brasscribe.play.connection.ConnectionState.NeedsUpdate)?.takeIf { !vm.container.usingFixture }
+    val companionOk = vm.container.engine() != null && update == null
+    val companionMissing = stringResource(update?.let { no.brasscribe.play.ErrorWords.update(it.update) } ?: R.string.where_companion_missing)
     // A drummer's solo take is no drum part: One instrument is refused for the percussion seat, with why and what to do.
     val drummer = no.brasscribe.play.percussionSeat(vm.container.seat, vm.container.seats)
     val ready = profile != null && !(drummer && profile == Profile.SOLO) &&
@@ -166,7 +170,7 @@ fun ProfileScreen(vm: PlayViewModel) {
                     icon = if (onPhone) R.drawable.ic_bc_record_mic else R.drawable.ic_bc_computer,
                     subtitle = if (onPhone) stringResource(no.brasscribe.play.OnDeviceRouting.deviceSubtitle(profile))
                     else if (companionOk) stringResource(R.string.where_companion_desc, vm.container.engineLabel())
-                    else stringResource(R.string.where_companion_missing),
+                    else companionMissing,
                     chevron = false,
                     trailing = if (largeText()) null else ({ OutlineButton(stringResource(R.string.change), { changeWhere = true }, fill = false) }),
                 )
@@ -192,7 +196,7 @@ fun ProfileScreen(vm: PlayViewModel) {
                     }
                     ChoiceCard(
                         stringResource(R.string.where_companion),
-                        if (companionOk) stringResource(R.string.where_companion_desc, vm.container.engineLabel()) else stringResource(R.string.where_companion_missing),
+                        if (companionOk) stringResource(R.string.where_companion_desc, vm.container.engineLabel()) else companionMissing,
                         where == Where.COMPANION, companionOk, 1,
                     ) { vm.where.value = Where.COMPANION; changeWhere = false }
                 }

@@ -68,6 +68,8 @@ class PairLinkTest {
         listOf(
             "https://pair?v=1&id=a&h=1.2.3.4:1&code=1",
             "scribe://other?v=1&id=a&h=1.2.3.4:1&code=1",
+            // The link's name before it took the family's: not accepted.
+            "brasscribe://pair?v=1&id=a&h=10.0.0.2:8765&code=1",
             "scribe://pair?v=2&id=a&h=1.2.3.4:1&code=1",
             "scribe://pair?id=a&h=1.2.3.4:1&code=1",
             "scribe://pair?v=1&h=1.2.3.4:1&code=1",

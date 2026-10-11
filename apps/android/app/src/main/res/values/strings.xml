@@ -632,6 +632,10 @@
     <string name="conn_offline">Not connected. You can still make scores on this phone.</string>
     <string name="conn_needs_pairing">The computer no longer recognises this phone.</string>
     <string name="conn_network_closed">The app isn\'t allowed on your network, so it can\'t reach your computer.</string>
+    <!-- The computer answers, and its interface version is not this app's: which of the two to update. The same
+         sentence in the connection row, on the pairing screen and as the reason a score was not made. -->
+    <string name="conn_update_app">Update this app. Bandroom on your computer is newer than this app, and they only work together when both are up to date.</string>
+    <string name="conn_update_computer">Update Bandroom on your computer. This app is newer than Bandroom there, and they only work together when both are up to date.</string>
     <string name="conn_allow">Allow</string>
     <string name="conn_pair_again">Pair this phone again</string>
     <string name="server_name_format">Brasscribe on %1$s</string>

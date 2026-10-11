@@ -34,6 +34,7 @@ fun connectionText(vm: PlayViewModel, state: ConnectionState): String = when (st
     is ConnectionState.Offline -> stringResource(R.string.conn_offline)
     is ConnectionState.NeedsPairing -> stringResource(R.string.conn_needs_pairing)
     is ConnectionState.NetworkClosed -> stringResource(R.string.conn_network_closed)
+    is ConnectionState.NeedsUpdate -> stringResource(no.brasscribe.play.ErrorWords.update(state.update))
 }
 
 fun connectionIcon(state: ConnectionState): Int = when (state) {
@@ -44,6 +45,7 @@ fun connectionIcon(state: ConnectionState): Int = when (state) {
     is ConnectionState.Offline -> if (no.brasscribe.play.Product.MAKES_SCORES_ON_THE_PHONE) R.drawable.ic_bc_info else R.drawable.ic_bc_attention
     is ConnectionState.NeedsPairing -> R.drawable.ic_bc_pair_phone
     is ConnectionState.NetworkClosed -> R.drawable.ic_bc_attention
+    is ConnectionState.NeedsUpdate -> R.drawable.ic_bc_attention
 }
 
 /**

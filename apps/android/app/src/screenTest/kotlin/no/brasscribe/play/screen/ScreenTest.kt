@@ -190,6 +190,34 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
     protected fun waitForTag(tag: String, ms: Long = 60_000) =
         waitUntil(ms) { rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty() }
 
+    private var olderComputer: StubEngine? = null
+
+    @After
+    fun stopTheOlderComputer() {
+        olderComputer?.close()
+        olderComputer = null
+    }
+
+    /**
+     * The pairing screen of a phone paired with a computer whose Bandroom is from before this app's interface
+     * version: the connection says to update Bandroom, and nothing else is asked of it.
+     */
+    protected fun aComputerThatNeedsAnUpdate() {
+        val engine = olderComputer ?: StubEngine(interfaceVersion = null).also { olderComputer = it }
+        rule.runOnUiThread {
+            container.fixtureSource = null
+            container.settings.url = engine.url
+            container.settings.serverId = StubEngine.SERVER_ID
+            container.settings.serverName = "Brasscribe on Studio"
+            container.settings.paired = true
+            vm.connection.retry()
+            vm.navigate(no.brasscribe.play.Screen.SETTINGS)
+            vm.navigate(no.brasscribe.play.Screen.COMPANION)
+        }
+        waitUntil(10_000) { vm.connection.state.value is no.brasscribe.play.connection.ConnectionState.NeedsUpdate }
+        rule.waitForIdle()
+    }
+
     /** The fixture computer: the files of [folder] in apps/fixtures, each changed by [change] on the way when it answers one. */
     protected fun computer(folder: String, change: (name: String, bytes: ByteArray?) -> ByteArray? = { _, bytes -> bytes }) {
         container.fixtureSource = FixtureSource { name -> change(name, ScreenDevice.fixture("$folder/$name")) }
