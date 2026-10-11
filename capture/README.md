@@ -5,7 +5,7 @@ transcription can start from the sound card instead of a microphone. Brasscribe
 Play for macOS uses the `AudioCapture` library; `brasscribe-capture` is the same
 code as a command-line tool.
 
-macOS 15 or newer, Xcode 16 or newer.
+macOS 26 or newer, Xcode 26 or newer.
 
 ## Build
 

@@ -9,7 +9,8 @@
 # Needs what `make project` needs (Verovio and the core with their iOS device slices), and the phone
 # band SoundFont in data/sounds/band unless IPA_ALLOW_NO_BAND_SOUNDS=1 (a local try-out; never a release).
 #
-# The file is checked before it is kept: one app for iPhone and iPad, the texts iOS shows when it asks
+# The file is checked before it is kept: one app for iPhone and iPad, iOS 26.0 as the oldest system it
+# runs on (and no binary inside that needs a newer one), the texts iOS shows when it asks
 # for the microphone and the local network, every binary built for iOS devices on arm64 (not the
 # simulator), and no signature or provisioning profile left inside.
 set -euo pipefail
@@ -19,6 +20,7 @@ case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 cd "$HERE"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 WORK="$HERE/build/ipa"
+IOS_MIN=26.0   # the deployment target in project.yml
 fail() { echo "error: $*" >&2; exit 1; }
 
 xcodegen generate
@@ -41,6 +43,8 @@ id=$(value CFBundleIdentifier); version=$(value CFBundleShortVersionString); bui
 [ -n "$id" ] && [ -n "$version" ] && [ -n "$build" ] || fail "Info.plist has no bundle id or version"
 family=$(json UIDeviceFamily)
 [ "$family" = "[1,2]" ] || fail "UIDeviceFamily is ${family:-missing}, expected [1,2] (iPhone and iPad)"
+minimum=$(value MinimumOSVersion)
+[ "$minimum" = "$IOS_MIN" ] || fail "MinimumOSVersion is ${minimum:-missing}, expected $IOS_MIN"
 for key in NSMicrophoneUsageDescription NSLocalNetworkUsageDescription NSCameraUsageDescription; do
   [ -n "$(value "$key")" ] || fail "Info.plist has no $key"
 done
@@ -59,7 +63,10 @@ for bin in "${binaries[@]}"; do
   [ "$archs" = arm64 ] || fail "${bin#"$WORK/"} is built for '$archs', expected arm64 only"
   platform=$(xcrun vtool -show-build "$bin" | awk '$1 == "platform" { print $2 }' | sort -u | tr '\n' ' ')
   [ "$platform" = "IOS " ] || fail "${bin#"$WORK/"} is built for platform '$platform', expected IOS (a device)"
-  echo "ok: ${bin#"$WORK/Payload/"} (arm64, iOS device)"
+  minos=$(xcrun vtool -show-build "$bin" | awk '$1 == "minos" { print $2 }' | sort -uV | tail -1)
+  [ -n "$minos" ] && [ "$(printf '%s\n' "$minos" "$IOS_MIN" | sort -V | tail -1)" = "$IOS_MIN" ] \
+    || fail "${bin#"$WORK/"} needs iOS '$minos', newer than the app's $IOS_MIN"
+  echo "ok: ${bin#"$WORK/Payload/"} (arm64, iOS device, runs on iOS $IOS_MIN)"
 done
 
 signed=$(find "$app" \( -name _CodeSignature -o -name embedded.mobileprovision -o -name '*.entitlements' \) -print)

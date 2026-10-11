@@ -154,7 +154,7 @@ installed app stays up. Without UI automation, a quick crash check is
 ## 4. Bandroom for Mac
 
 ```sh
-(cd core && MACOSX_DEPLOYMENT_TARGET=14.0 cargo build --release --locked -p scribe-cli)   # staged into the app below
+(cd core && MACOSX_DEPLOYMENT_TARGET=26.0 cargo build --release --locked -p scribe-cli)   # staged into the app below
 cd apps/bandroom/macos && xcodegen generate
 xcodebuild -project BrasscribeBandroom.xcodeproj -scheme BrasscribeBandroom -configuration Release \
   -destination 'generic/platform=macOS' -derivedDataPath "$S/dd-band" build
@@ -165,7 +165,7 @@ The build's post-build scripts stage what the first run installs from:
 - `scripts/stage-band-sounds.sh` copies `data/sounds/band/brasscribe-band-mobile.sf2` into
   `Resources/band/brasscribe-band.sf2`. A Release build fails without it.
 - `scripts/stage-core-cli.sh` copies the core's command line, `core/target/release/scribe-core`
-  (the build above, for macOS 14 as Bandroom itself), into `Resources/bin/scribe-core`. Bandroom
+  (the build above, for macOS 26 as Bandroom itself), into `Resources/bin/scribe-core`. Bandroom
   passes it to the installed engine as `SCRIBE_CORE_CLI`: the `bass-tab` profile runs it. A Release
   build fails without it.
 - `scripts/stage-workspace.sh` copies the engine workspace (`pixi.toml`, `pixi.lock`, `engine`, `music`,
@@ -234,7 +234,7 @@ gh release view vX.Y.Z --json assets     # every asset "uploaded", digests match
 This creates the tag on GitHub. Don't push tags or dispatch workflows yourself. Release notes follow
 the site's rules: plain words, no internal names, no model names outside the research page (the band
 writer's CC BY-NC 4.0 notice stays), and the install notes (Android: allow installs, it updates in place;
-Mac: System Settings › Privacy & Security › Open Anyway (right-click › Open no longer bypasses Gatekeeper since macOS 15), the one-time keychain prompt, Bandroom's first run of about 10 GB and its
+Mac: System Settings › Privacy & Security › Open Anyway (right-click › Open does not bypass Gatekeeper), the one-time keychain prompt, Bandroom's first run of about 10 GB and its
 Hugging Face key). See `gh release view v0.2.0` for the shape.
 
 ## 7. Installing on the owner's devices

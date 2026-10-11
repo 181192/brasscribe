@@ -1,11 +1,11 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.2
 // Verovio-backed notation. Needs apps/apple/Frameworks/Verovio.xcframework, built by
 // apps/apple/scripts/build-verovio.sh (not committed; LGPL-3.0 dynamic framework).
 import PackageDescription
 
 let package = Package(
     name: "NotationKit",
-    platforms: [.macOS(.v15), .iOS(.v18)],
+    platforms: [.macOS(.v26), .iOS(.v26)],
     products: [.library(name: "NotationKit", targets: ["NotationKit"])],
     dependencies: [.package(path: "../BrasscribeKit")],
     targets: [
