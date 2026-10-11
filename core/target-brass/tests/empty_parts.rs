@@ -1,9 +1,9 @@
 //! part_sources calls a part `empty` exactly when the arranger leaves it without notes: the
 //! Percussion part of a recording without drums, the Soprano Cornet with no climax to double.
 
-use brasscribe_core::arranger::{part_footers, part_sources, ARRANGED, EMPTY, RECORDING};
+use target_brass::arranger::{part_footers, part_sources, ARRANGED, EMPTY, RECORDING};
 use brasscribe_core::model::Composition;
-use brasscribe_core::pipeline::arrange_composition;
+use target_brass::pipeline::arrange_composition;
 
 /// A layered take: solo, bass, strings and brass, drums optional; the solo ff over strings f in the
 /// second bar (a climax the Soprano Cornet doubles unless faithful).

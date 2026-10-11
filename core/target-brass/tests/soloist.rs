@@ -1,7 +1,7 @@
 //! The band's own soloist: faithful placement as played inside the solo range, and its range check.
 
-use brasscribe_core::arranger::{in_register, place_soloist};
-use brasscribe_core::instruments::{brass_band, lead_lineup, minimal_band, quartet, seat_lineup, RangeCheck, CORNET};
+use target_brass::arranger::{in_register, place_soloist};
+use target_brass::instruments::{brass_band, lead_lineup, minimal_band, quartet, seat_lineup, RangeCheck, CORNET};
 use brasscribe_core::model::Note;
 
 fn line(pitches: &[i32]) -> Vec<Note> {

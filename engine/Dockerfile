@@ -27,6 +27,7 @@ COPY core/.cargo .cargo
 COPY core/brasscribe-core brasscribe-core
 COPY core/brasscribe-ffi brasscribe-ffi
 COPY core/brasscribe-cli brasscribe-cli
+COPY core/target-brass target-brass
 COPY core/target-fretted target-fretted
 COPY core/tools tools
 RUN cargo build --release --locked -p brasscribe-cli

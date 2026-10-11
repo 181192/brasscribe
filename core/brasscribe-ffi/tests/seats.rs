@@ -44,7 +44,7 @@ fn seats_carry_the_core_names() {
     let json = c_call(|o, e| unsafe { brasscribe_ffi::c_api::bc_seats(o, e) }).unwrap();
     assert!(json.contains(r#""nb_name":"Sopran-kornett""#));
     // tune: the core's roles, over UniFFI and the C ABI alike
-    let core = brasscribe_core::instruments::SEATS.iter().map(|x| (x.id.to_string(), x.tune())).collect::<Vec<_>>();
+    let core = target_brass::instruments::SEATS.iter().map(|x| (x.id.to_string(), x.tune())).collect::<Vec<_>>();
     assert_eq!(s.iter().map(|x| (x.id.clone(), x.tune)).collect::<Vec<_>>(), core);
     assert!(horn.tune && !s.iter().find(|x| x.id == "eb-bass").unwrap().tune);
     let rows: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -90,7 +90,7 @@ fn seat_options_are_checked() {
     let bad = |o: ArrangeOptions| arrange_musicxml_with(SOLO.into(), o).is_err();
     // A drummer's solo take is no drum part: refused, not drawn as hits.
     let e = arrange_musicxml_with(SOLO.into(), ArrangeOptions { lineup: "minimal".into(), seat: Some("percussion".into()), ..Default::default() });
-    assert!(e.unwrap_err().to_string().contains(brasscribe_core::instruments::PERCUSSION_SOLO));
+    assert!(e.unwrap_err().to_string().contains(target_brass::instruments::PERCUSSION_SOLO));
     assert!(bad(ArrangeOptions { seat: Some("tuba".into()), ..Default::default() }));
     assert!(bad(ArrangeOptions { reads: Some("bass".into()), ..Default::default() }));
     assert!(bad(ArrangeOptions { lead: Some("seat".into()), ..Default::default() }));
