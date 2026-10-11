@@ -1,7 +1,6 @@
 package no.brasscribe.play
 
 import android.content.Context
-import android.system.Os
 import no.brasscribe.play.model.ArrangeOptions
 import no.brasscribe.play.model.BandTake
 import no.brasscribe.play.model.CoreBridge
@@ -70,15 +69,5 @@ class OnPhoneModels(private val context: Context, private val core: CoreBridge) 
         const val MODEL_ASSET = "models/swift-f0-window.onnx"
         const val BASIC_PITCH_ASSET = "models/nmp-b1.onnx"
         const val BEAT_THIS_ASSET = "models/beat-this-small0.onnx"
-        const val ORT_DISABLE_TELEMETRY = "ORT_DISABLE_TELEMETRY"
-
-        /**
-         * ONNX Runtime reports to Microsoft unless this is set when it starts (the first OrtEnvironment). The
-         * manifest already removes the provider that sets up its uploader; this keeps the runtime's telemetry
-         * off whatever else brings it in. Called before any content provider runs.
-         */
-        fun telemetryOff() {
-            Os.setenv(ORT_DISABLE_TELEMETRY, "1", true)
-        }
     }
 }

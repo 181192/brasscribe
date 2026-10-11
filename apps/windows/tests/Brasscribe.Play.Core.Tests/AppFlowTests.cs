@@ -254,7 +254,7 @@ public class AppFlowTests
         await Until(() => main.Screen == Screen.SourceKind);
         Assert.Contains(said.Items, a => a.Text.StartsWith("Opened take-") && a.Text.EndsWith("1 min 5 s"));
         Assert.StartsWith("take-", main.Kind.SourceLine);
-        Assert.Equal("Made on this PC. Nothing goes online.", main.Kind.WhereText);
+        Assert.Equal("Made on this PC. The recording is not sent online.", main.Kind.WhereText);
         Assert.False(main.Kind.ContinueCommand.CanExecute(null)); // nothing chosen yet: the app never guesses
         await Until(() => !main.Kind.Options.Single(o => o.Kind == SourceKind.PopRock).IsAvailable); // engine lists no pop-rock
 

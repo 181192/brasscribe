@@ -35,10 +35,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-# ONNX Runtime (swift-f0, basic-pitch outside macOS, separator) reports to Microsoft unless this is set when
-# it starts; every adapter command inherits it. Windows builds report through ETW instead and ignore it.
-os.environ["ORT_DISABLE_TELEMETRY"] = "1"
-
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 MODELS = Path(os.environ.get("BRASSCRIBE_MODELS") or ROOT / "models")

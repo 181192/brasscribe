@@ -107,7 +107,7 @@ public sealed partial class SourceKindViewModel : ObservableObject
     /// <summary>"Band practice.m4a · 3 min 5 s".</summary>
     [ObservableProperty] public partial string SourceLine { get; set; } = "";
 
-    /// <summary>Where the score is made: "Made on this PC. Nothing goes online."</summary>
+    /// <summary>Where the score is made: "Made on this PC. The recording is not sent online."</summary>
     [ObservableProperty] public partial string WhereText { get; set; } = "";
 
     /// <summary>Sets <see cref="WhereText"/> for the engine address: this PC, or your other computer.</summary>

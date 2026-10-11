@@ -3,11 +3,6 @@
 A recording in which it hears no note (silence, noise, chords it cannot follow) gets a MIDI file with no
 notes: the adapter's contract is an output file, and "no notes" is an answer, not a failure.
 """
-import os
-
-# ONNX Runtime reports to Microsoft unless this is set before it starts.
-os.environ.setdefault("ORT_DISABLE_TELEMETRY", "1")
-
 import sys
 
 
@@ -23,20 +18,9 @@ def write_notes(notes, dst: str) -> None:
         pretty_midi.PrettyMIDI().write(dst)
 
 
-def quiet_onnxruntime() -> None:
-    """Turns ONNX Runtime's telemetry events off for the rest of the process. This matters on Windows, which
-    does not read ORT_DISABLE_TELEMETRY and reports through ETW: the event the runtime sends when it starts
-    has gone before this call, and an ETW session that enables the runtime's provider later turns its
-    events on again."""
-    import onnxruntime
-
-    getattr(onnxruntime, "disable_telemetry_events", lambda: None)()
-
-
 def main(src: str, dst: str) -> None:
     from swift_f0 import SwiftF0, segment_notes
 
-    quiet_onnxruntime()
     result = SwiftF0().detect_file(src)
     notes = segment_notes(result, pitch_hold_ms=80.0)
     write_notes(notes, dst)

@@ -134,6 +134,7 @@ internal sealed class SettingsWindow : Window
         AutomationProperties.SetLabeledBy(login, loginHeader);
         login.Toggled += (_, _) => { host.StartAtLogin = login.IsOn; login.IsOn = host.StartAtLogin; };
 
+        var about = new TextBlock { Text = s["Settings_About"], Style = S("MutedStyle"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
         var title = new TextBlock { Text = s["Settings_Title"], Style = S("DisplayHeadingStyle") };
         AutomationProperties.SetHeadingLevel(title, Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level1);
         var root = new Grid
@@ -155,6 +156,7 @@ internal sealed class SettingsWindow : Window
                             hfCard,
                             Card(new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center, Children = { appearanceHeader, contrastNote } }, picker),
                             Card(loginHeader, login),
+                            about,
                         },
                     },
                 },

@@ -80,7 +80,7 @@ class OnDeviceRoutingTest {
         val en = strings("values"); val nb = strings("values-nb")
         assertEquals("On this phone: a quick draft", en["where_device_draft"])
         assertEquals("Your computer makes a better score.", en["where_device_draft_desc"])
-        assertEquals("A quick draft. Nothing leaves the phone.", en["where_device_draft_card"])
+        assertEquals("A quick draft. The recording stays on the phone.", en["where_device_draft_card"])
         assertEquals("Only for one instrument or a brass band.", en["where_device_solo_only"])
         assertEquals("On this phone, as a draft", en["transcribe_where_device_draft"])
         assertEquals("Make the full score", en["draft_make_full"])

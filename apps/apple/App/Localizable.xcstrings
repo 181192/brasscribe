@@ -2341,12 +2341,12 @@
         }
       }
     },
-    "Made on this Mac. Nothing goes online.": {
+    "Made on this Mac. The recording is not sent online.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lages på denne Macen. Ingenting sendes til nettet."
+            "value": "Lages på denne Macen. Opptaket sendes ikke til nettet."
           }
         }
       }
@@ -3011,12 +3011,12 @@
         }
       }
     },
-    "On your computer. Nothing goes online.": {
+    "On your computer. The recording is not sent online.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "På datamaskinen din. Ingenting sendes til nettet."
+            "value": "På datamaskinen din. Opptaket sendes ikke til nettet."
           }
         }
       }

@@ -501,6 +501,16 @@
         }
       }
     },
+    "Brasscribe on this Mac listens with Microsoft’s ONNX Runtime, which sends usage data and a device identifier to Microsoft, never a recording.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på denne Macen lytter med Microsofts ONNX Runtime, som sender bruksdata og en enhetsidentifikator til Microsoft, aldri et opptak."
+          }
+        }
+      }
+    },
     "Brasscribe stopped unexpectedly": {
       "localizations": {
         "nb": {

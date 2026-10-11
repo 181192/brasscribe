@@ -16,9 +16,6 @@ requires-pixi = ">=0.80"
 # UTF-8 file and console I/O on Windows too (MusicXML, braille and talking-score text use ♭, ⠼, å).
 [activation.env]
 PYTHONUTF8 = "1"
-# ONNX Runtime (swift-f0, basic-pitch, separator) reports to Microsoft unless this is set; every environment
-# gets it. Windows builds report through ETW and ignore it.
-ORT_DISABLE_TELEMETRY = "1"
 
 # The band SoundFonts every app bundles (not in git): the pack pinned in sounds/band-sounds.json,
 # downloaded into data/sounds/band and verified. Needs the GitHub CLI, logged in (gh auth login).

@@ -44,7 +44,10 @@ android {
     // (fretscribe.versionName, fretscribe.versionCode). The namespace (R, packages) is shared.
     flavorDimensions += "product"
     productFlavors {
-        create("brasscribe") { isDefault = true }
+        create("brasscribe") {
+            isDefault = true
+            proguardFile("proguard-brasscribe.pro")
+        }
         create("fretscribe") {
             applicationId = "no.fretscribe.play"
             fretscribeVersionName?.let { versionName = it }
@@ -229,14 +232,12 @@ val tabFont = tasks.register<Sync>("syncFretscribeTabFont") {
 }
 
 /**
- * Fails when a component that reports off the phone is in a variant's merged manifest: ONNX Runtime's (its AAR adds a
- * telemetry provider, which the app's manifest removes with tools:node="remove"), and Google's ML Kit, Play services,
- * Firebase and datatransport (Firelog) ones, which the Play services code scanner brought in and which logged ML Kit
- * usage to Google. Those four are not to be in the app at all, so a library of theirs on the variant's runtime
- * classpath fails it too, components or not. A new AAR, a renamed class, a lost line or a new dependency would bring
- * them, or something like them, back.
+ * Fails when Google's ML Kit, Play services, Firebase or datatransport (Firelog) is in a variant: a component of
+ * theirs in its merged manifest, or a library of theirs on its runtime classpath. The Play services code scanner
+ * brought them in, and they logged ML Kit usage to Google and were handed the pairing code; the app reads the code
+ * itself instead. A new dependency would bring them back.
  */
-abstract class VerifyNoTelemetry : DefaultTask() {
+abstract class VerifyNoGoogleServices : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val mergedManifest: RegularFileProperty
@@ -250,32 +251,31 @@ abstract class VerifyNoTelemetry : DefaultTask() {
 
     @TaskAction
     fun verify() {
-        val libraries = modules.get().filter { module -> REPORTERS.any { module.startsWith("$it:") || module.startsWith("$it.") } }
+        val libraries = modules.get().filter { module -> GOOGLE.any { module.startsWith("$it:") || module.startsWith("$it.") } }
         check(libraries.isEmpty()) {
-            "Libraries that report off the phone are on the runtime classpath: $libraries. Remove the dependency that brings them " +
+            "Google's services are on the runtime classpath: $libraries. Remove the dependency that brings them " +
                 "(./gradlew :app:dependencies shows which)."
         }
         val manifest = mergedManifest.get().asFile.readText()
         val found = Regex("""android:(?:name|authorities)="([^"]*)"""").findAll(manifest).map { it.groupValues[1] }
-            .filter { name -> "onnxruntime" in name || REPORTERS.any { name.startsWith(it) } }.toList()
+            .filter { name -> GOOGLE.any { name.startsWith(it) } }.toList()
         check(found.isEmpty()) {
-            "Components that report off the phone are in ${mergedManifest.get().asFile}: $found. " +
-                "Remove the dependency that brings them, or remove them in app/src/main/AndroidManifest.xml (tools:node=\"remove\")."
+            "Components of Google's services are in ${mergedManifest.get().asFile}: $found. Remove the dependency that brings them."
         }
-        report.get().asFile.writeText("no ONNX Runtime, ML Kit, Play services, Firebase or datatransport component\n")
+        report.get().asFile.writeText("no ML Kit, Play services, Firebase or datatransport component\n")
     }
 
     companion object {
-        val REPORTERS = listOf("com.google.mlkit", "com.google.android.datatransport", "com.google.android.gms", "com.google.firebase")
+        val GOOGLE = listOf("com.google.mlkit", "com.google.android.datatransport", "com.google.android.gms", "com.google.firebase")
     }
 }
 
 androidComponents {
     onVariants { variant ->
         val variantName = variant.name.replaceFirstChar(Char::uppercase)
-        val verifyNoTelemetry = tasks.register<VerifyNoTelemetry>("verifyNoTelemetry$variantName") {
+        val verifyNoGoogleServices = tasks.register<VerifyNoGoogleServices>("verifyNoGoogleServices$variantName") {
             mergedManifest.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
-            report.set(layout.buildDirectory.file("reports/no-telemetry/${variant.name}.txt"))
+            report.set(layout.buildDirectory.file("reports/no-google-services/${variant.name}.txt"))
             modules.set(variant.runtimeConfiguration.incoming.resolutionResult.rootComponent.map { root ->
                 val seen = mutableSetOf(root.id)
                 val queue = ArrayDeque(listOf(root))
@@ -292,7 +292,7 @@ androidComponents {
         // Every APK and bundle, every install, and every unit-test run (the fast checks) goes through the check.
         val checked = setOf("assemble", "package", "bundle", "install").map { "$it$variantName" }.toSet() +
             "test${variantName}UnitTest"
-        tasks.matching { it.name in checked }.configureEach { dependsOn(verifyNoTelemetry) }
+        tasks.matching { it.name in checked }.configureEach { dependsOn(verifyNoGoogleServices) }
         val product = variant.productFlavors.single { it.first == "product" }.second
         fun generated(path: String) = layout.buildDirectory.dir("generated/$path").get().asFile.path
         variant.sources.kotlin?.addStaticSourceDirectory(File(designs.getValue(product).dist, "android/kotlin").path)

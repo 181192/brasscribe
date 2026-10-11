@@ -95,15 +95,16 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   NAudio (MIT), CommunityToolkit.Mvvm (MIT). Play for Windows also ships `vcruntime140.dll`, a
   redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
   needs.
-- **ONNX Runtime's telemetry.** Microsoft's builds of ONNX Runtime report to Microsoft by default
-  (its `Privacy.md`): on Android, macOS and Linux through their own uploader, on Windows through ETW.
-  On Android, macOS and Linux Brasscribe turns it off: Play and Fretscribe for Android remove the AAR's telemetry
-  provider and set `ORT_DISABLE_TELEMETRY=1`, and the engine, Bandroom and the pixi environments set
-  `ORT_DISABLE_TELEMETRY=1` for every adapter. On Windows it is not fully off. Windows builds do not
-  read that variable. Play for Windows and the swift-f0 adapter switch the runtime's telemetry events
-  off before their first session, but the runtime emits a start-up event to Windows diagnostics before
-  it can be switched off. The basic-pitch and audio-separator adapters have no off-switch on Windows
-  at all. Their events go to Windows' diagnostic data as far as the PC's settings allow.
+- **ONNX Runtime sends data to Microsoft.** It is Microsoft's, and Brasscribe uses Microsoft's builds as
+  they are, with their telemetry on: in Play for Android, in Play for Windows, and in the engine's swift-f0
+  and separator adapters and, outside macOS, its basic-pitch adapter (the `onnxruntime` package from PyPI,
+  on the computer Bandroom or a checkout runs on). Its `Privacy.md` says it collects "information about you
+  and your use of the software" and sends it to Microsoft. On Android, macOS and Linux its own uploader
+  sends events about the runtime's use to Microsoft's telemetry service
+  (`mobile.events.data.microsoft.com`) with a device identifier that it keeps between runs; on Android
+  it also reads the device's id (`ANDROID_ID`), maker and model. On Windows the events go through ETW to
+  Windows' diagnostic data, as far as the PC's settings allow. A recording, or the notes written from it,
+  is not part of what it sends. Microsoft's privacy statement: https://go.microsoft.com/fwlink/?LinkID=824704.
 - **Studio:** alphaTab (above); build and test tools only in development.
 
 ## Not distributed

@@ -11,20 +11,9 @@ public enum ExecutionTarget { Cpu, DirectMl }
 /// </summary>
 public static class OnnxSessions
 {
-    private static readonly Lazy<bool> Quiet = new(() =>
-    {
-        // ONNX Runtime on Windows reports to Microsoft through ETW, which Windows collects as the computer's
-        // diagnostic data setting allows. This turns its events off before the first session. Its first event,
-        // when the runtime starts, comes before this call can, and an ETW session that enables the runtime's
-        // provider later turns its events on again.
-        OrtEnv.Instance().DisableTelemetryEvents();
-        return true;
-    });
-
     /// <remarks>The session keeps what it needs from its options, so they are released once it exists.</remarks>
     public static (InferenceSession Session, ExecutionTarget Target) Create(string modelPath, bool preferGpu = true, int deviceId = 0)
     {
-        _ = Quiet.Value;
         if (preferGpu && OperatingSystem.IsWindows())
         {
             using var dml = new SessionOptions

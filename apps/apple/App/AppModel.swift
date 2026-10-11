@@ -318,10 +318,10 @@ final class AppModel {
         }
         #if os(macOS)
         if let host = engineURL.host(), ["localhost", "127.0.0.1"].contains(host) {
-            return String(localized: "Made on this Mac. Nothing goes online.")
+            return String(localized: "Made on this Mac. The recording is not sent online.")
         }
         #endif
-        return String(localized: "On your computer. Nothing goes online.")
+        return String(localized: "On your computer. The recording is not sent online.")
     }
 
     /// Where a running job is being made: by its service, since a full score from a draft goes to the

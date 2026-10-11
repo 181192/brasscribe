@@ -104,7 +104,7 @@ A brass band recording can be written down on the phone, tablet or Mac without t
 |---|---|---|
 | What is this?, where-it-runs row (Apple, one line) | A quick draft on this device. Your computer makes a better score. | Et raskt utkast på denne enheten. Datamaskinen lager et bedre partitur. |
 | What is this?, where-it-runs row (Android title · subtitle) | On this phone: a quick draft · Your computer makes a better score. | På telefonen: et raskt utkast · Datamaskinen lager et bedre partitur. |
-| Change sheet, the device card for a band (Android) | A quick draft. Nothing leaves the phone. | Et raskt utkast. Ingenting forlater telefonen. |
+| Change sheet, the device card for a band (Android) | A quick draft. The recording stays on the phone. | Et raskt utkast. Opptaket blir på telefonen. |
 | Change sheet, a choice the device can't make (pop, soloist) | Only for one instrument or a brass band. | Bare for ett instrument eller et brassband. |
 | Transcribing, where it runs | Android: On this phone, as a draft · Apple: On this device, as a draft. | Android: På telefonen, som utkast · Apple: På denne enheten, som utkast. |
 | Transcribing, iPhone and iPad only | Keep Brasscribe open until the draft is ready. | Hold Brasscribe åpen til utkastet er klart. |

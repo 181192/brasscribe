@@ -67,9 +67,6 @@ object Product {
     @Suppress("UNUSED_PARAMETER")
     fun onPhone(context: android.content.Context, core: no.brasscribe.play.model.CoreBridge): OnPhone = OnPhone.None
 
-    /** Nothing in this app needs anything set before it starts. */
-    fun beforeStart() = Unit
-
     /**
      * Brasscribe's screens under Fretscribe's name, but for four:
      * - where Brasscribe asks "What do you play?" (after the first run, and from Settings), Fretscribe asks
