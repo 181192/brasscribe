@@ -244,8 +244,10 @@ fun TranscribeScreen(vm: PlayViewModel) {
     val askToNotify = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
     ) { notifies = no.brasscribe.play.JobNotices.allowed(context) }
-    LaunchedEffect(onComputer) {
-        if (!onComputer || notifies || vm.container.notificationsAsked) return@LaunchedEffect
+    // One question at a time: while the phone asks about the local network, a second question would be dropped unseen.
+    val otherQuestion = no.brasscribe.play.LocalNetwork.asking
+    LaunchedEffect(onComputer, otherQuestion) {
+        if (!onComputer || notifies || otherQuestion || vm.container.notificationsAsked) return@LaunchedEffect
         vm.container.notificationsAsked = true
         askToNotify.launch(android.Manifest.permission.POST_NOTIFICATIONS)
     }

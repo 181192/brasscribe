@@ -26,6 +26,8 @@ class ConnectionMonitorTest {
         override suspend fun find(serverId: String): String? { finds++; return findResult }
         override fun moved(url: String) { target = target?.copy(url = url) }
         override suspend fun rotate() { rotations++ }
+        var open = true
+        override fun networkOpen() = open
     }
 
     private fun TestScope.monitor(host: FakeHost) =
@@ -150,6 +152,55 @@ class ConnectionMonitorTest {
         host.answer = { Check.Ok() }
         m.networkChanged(); runCurrent()
         assertEquals(ConnectionState.Connected(name), m.state.value)
+    }
+
+    @Test
+    fun aClosedNetworkIsSaidAtOnceAndNothingIsChecked() = runTest {
+        val host = FakeHost(Target("s1", name, "http://a")) { Check.Unreachable }.apply { open = false }
+        val m = monitor(host)
+        // Before the first check, and after any number of starts: never "connected", never "looking for".
+        assertEquals(ConnectionState.NetworkClosed(name), m.state.value)
+        m.start(); runCurrent()
+        advanceTimeBy(130_000)
+        m.stop(); m.start(); runCurrent()
+        m.retry(); runCurrent()
+        assertEquals(ConnectionState.NetworkClosed(name), m.state.value)
+        assertEquals("no heartbeat while the network is closed", 0, host.checks.size)
+        assertEquals(0, host.finds)
+    }
+
+    @Test
+    fun aNetworkThatOpensIsTriedAtOnce() = runTest {
+        val host = FakeHost(Target("s1", name, "http://a")) { Check.Ok() }.apply { open = false }
+        val m = monitor(host)
+        m.start(); runCurrent()
+        assertEquals(ConnectionState.NetworkClosed(name), m.state.value)
+        host.open = true
+        m.networkChanged(); runCurrent()
+        assertEquals(ConnectionState.Connected(name), m.state.value)
+        assertEquals(1, host.checks.size)
+    }
+
+    @Test
+    fun aNetworkOpenedInThePhonesSettingsIsFoundBackInFront() = runTest {
+        val host = FakeHost(Target("s1", name, "http://a")) { Check.Ok() }.apply { open = false }
+        val m = monitor(host)
+        m.start(); runCurrent()
+        host.open = true
+        m.stop(); m.start(); runCurrent()
+        assertEquals(ConnectionState.Connected(name), m.state.value)
+    }
+
+    @Test
+    fun aNetworkClosedWhileConnectedIsSaidAtTheNextHeartbeat() = runTest {
+        val host = FakeHost(Target("s1", name, "http://a")) { Check.Ok() }
+        val m = monitor(host)
+        m.start(); runCurrent()
+        assertEquals(ConnectionState.Connected(name), m.state.value)
+        host.open = false
+        advanceTimeBy(20_001)
+        assertEquals(ConnectionState.NetworkClosed(name), m.state.value)
+        assertEquals(1, host.checks.size)
     }
 
     @Test

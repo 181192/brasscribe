@@ -80,6 +80,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         AppInFront.started()
         JobNotices.clearDone(this)
+        // (A network the player opened in the phone's settings meanwhile is found here: start runs the check again.)
         vm.connection.start()
         val cm = getSystemService(ConnectivityManager::class.java) ?: return
         val cb = object : ConnectivityManager.NetworkCallback() {
@@ -91,6 +92,12 @@ class MainActivity : ComponentActivity() {
             }
         }
         runCatching { cm.registerDefaultNetworkCallback(cb) }.onSuccess { networkCallback = cb }
+    }
+
+    // Back from the phone's question (answered, or left): no question of the app's is on screen now.
+    override fun onResume() {
+        super.onResume()
+        LocalNetwork.asking = false
     }
 
     override fun onStop() {
@@ -141,9 +148,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AskForLocalNetwork(vm: PlayViewModel) {
     val context = LocalContext.current
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (LocalNetwork.allowed(context)) vm.connection.networkChanged() }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        LocalNetwork.asking = false
+        if (LocalNetwork.allowed(context)) vm.connection.networkChanged()
+    }
     LaunchedEffect(Unit) {
-        if (vm.container.settings.paired && vm.screen.value.last() != Screen.COMPANION && !LocalNetwork.allowed(context)) ask.launch(LocalNetwork.PERMISSION)
+        if (!vm.container.computerInReach() && vm.screen.value.last() != Screen.COMPANION && !LocalNetwork.asking) {
+            LocalNetwork.asking = true
+            ask.launch(LocalNetwork.PERMISSION)
+        }
     }
 }
 

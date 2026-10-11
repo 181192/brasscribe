@@ -268,6 +268,18 @@ jobs:
             done
           done
 
+      # No key here either. What a phone installs: aligning and signing kept the floor, the target, and every
+      # native library at a 16 KB offset. Only the script is checked out.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: apps/android/scripts
+          path: checks
+          persist-credentials: false
+
+      - name: The signed APKs install on Android 16 and load on 16 KB pages
+        working-directory: .
+        run: checks/apps/android/scripts/check-apk.sh "$RUNNER_TEMP"/out/*.apk
+
       - uses: actions/upload-artifact@v7
         with:
           name: dist-android

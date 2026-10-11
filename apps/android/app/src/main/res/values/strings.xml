@@ -631,6 +631,8 @@
     <string name="conn_reconnecting">Looking for %1$s …</string>
     <string name="conn_offline">Not connected. You can still make scores on this phone.</string>
     <string name="conn_needs_pairing">The computer no longer recognises this phone.</string>
+    <string name="conn_network_closed">The app isn\'t allowed on your network, so it can\'t reach your computer.</string>
+    <string name="conn_allow">Allow</string>
     <string name="conn_pair_again">Pair this phone again</string>
     <string name="server_name_format">Brasscribe on %1$s</string>
     <string name="listen_stop">Stop</string>

@@ -7,7 +7,7 @@
 # - Every native library loads on a phone with 16 KB memory pages: its segments are aligned to 16 KB
 #   (read with the NDK's llvm-readelf), and it lies uncompressed at a 16 KB offset in the APK (zipalign).
 #
-# Needs ANDROID_HOME with build-tools and the NDK. Exits non-zero at the first APK that fails.
+# Needs ANDROID_HOME with build-tools, and the NDK or a readelf on PATH. Exits non-zero at the first APK that fails.
 set -euo pipefail
 
 SDK="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
@@ -15,10 +15,12 @@ MIN_SDK=36
 TARGET_SDK=37
 PAGE=16384
 
-newest() { find "$SDK/$1" -name "$2" \( -type f -o -type l \) 2>/dev/null | sort -V | tail -1; }
+newest() { find "$SDK/$1" -name "$2" \( -type f -o -type l \) 2>/dev/null | sort -V | tail -1 || true; }
 aapt2=$(newest build-tools aapt2)
 zipalign=$(newest build-tools zipalign)
+# The NDK's llvm-readelf; where there is no NDK (the signing job), the system's llvm-readelf or readelf.
 readelf=$(newest ndk llvm-readelf)
+[ -n "$readelf" ] || readelf=$(command -v llvm-readelf || command -v readelf || true)
 for tool in aapt2 zipalign readelf; do
   [ -n "${!tool}" ] || { echo "check-apk: no $tool under $SDK" >&2; exit 2; }
 done
@@ -33,7 +35,8 @@ for apk in "$@"; do
   "$zipalign" -c -P 16 4 "$apk" >/dev/null || fail "a native library is not at a 16 KB offset (zipalign -c -P 16 -v 4 shows which)"
 
   libs=$(mktemp -d)
-  unzip -q "$apk" 'lib/*.so' -d "$libs"
+  # (unzip exits non-zero when nothing matches: an APK without libraries is told so below.)
+  unzip -q "$apk" 'lib/*.so' -d "$libs" 2>/dev/null || true
   count=0
   while IFS= read -r so; do
     count=$((count + 1))

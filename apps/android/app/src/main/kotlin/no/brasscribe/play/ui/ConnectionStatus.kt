@@ -33,6 +33,7 @@ fun connectionText(vm: PlayViewModel, state: ConnectionState): String = when (st
     is ConnectionState.Reconnecting -> stringResource(R.string.conn_reconnecting, vm.serverDisplayName(state.serverName))
     is ConnectionState.Offline -> stringResource(R.string.conn_offline)
     is ConnectionState.NeedsPairing -> stringResource(R.string.conn_needs_pairing)
+    is ConnectionState.NetworkClosed -> stringResource(R.string.conn_network_closed)
 }
 
 fun connectionIcon(state: ConnectionState): Int = when (state) {
@@ -42,6 +43,7 @@ fun connectionIcon(state: ConnectionState): Int = when (state) {
     // itself, nothing is wrong without the computer: an ⓘ, not a warning.
     is ConnectionState.Offline -> if (no.brasscribe.play.Product.MAKES_SCORES_ON_THE_PHONE) R.drawable.ic_bc_info else R.drawable.ic_bc_attention
     is ConnectionState.NeedsPairing -> R.drawable.ic_bc_pair_phone
+    is ConnectionState.NetworkClosed -> R.drawable.ic_bc_attention
 }
 
 /**
@@ -58,9 +60,16 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
     val context = androidx.compose.ui.platform.LocalContext.current
     val s = state
     val action: Pair<String, () -> Unit>? = when {
-        // The network is closed to the app (Android 17): the pairing screen asks for it, and says so when refused.
-        s is ConnectionState.Offline && s.paired && !onConnectionScreen && !no.brasscribe.play.LocalNetwork.allowed(context) ->
-            stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
+        // The network is closed to the app (Android 17). The pairing screen asks for it again; there, where the
+        // phone no longer asks, the way on is the phone's settings for the app.
+        s is ConnectionState.NetworkClosed && !onConnectionScreen -> stringResource(R.string.conn_allow) to { vm.navigate(Screen.COMPANION) }
+        s is ConnectionState.NetworkClosed -> stringResource(R.string.conn_allow) to {
+            runCatching {
+                context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.fromParts("package", context.packageName, null)))
+            }
+            Unit
+        }
         s is ConnectionState.Offline && s.paired -> stringResource(R.string.companion_connect) to { vm.connection.retry() }
         s is ConnectionState.Offline && !onConnectionScreen -> stringResource(R.string.companion_connect) to { vm.navigate(Screen.COMPANION) }
         s is ConnectionState.NeedsPairing && !onConnectionScreen -> stringResource(R.string.conn_pair_again) to { vm.navigate(Screen.COMPANION) }

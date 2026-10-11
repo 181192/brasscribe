@@ -19,6 +19,8 @@ sealed interface ConnectionState {
     data class Offline(val paired: Boolean) : ConnectionState
     /** The computer answered 401 to the stored credential: only pairing again helps. */
     data class NeedsPairing(val serverName: String) : ConnectionState
+    /** A computer is paired, and the phone has the local network closed to the app: nothing is tried until it opens. */
+    data class NetworkClosed(val serverName: String) : ConnectionState
 }
 
 /** The computer this phone talks to. [url] is the last address that answered. */
@@ -42,13 +44,16 @@ interface ConnectionHost {
     fun moved(url: String)
     /** Gets a new token (POST /v1/devices/me/rotate) and stores it before it is used. */
     suspend fun rotate()
+    /** Whether the phone lets the app reach the computer at all (Android 17 asks the player about the local network). */
+    fun networkOpen(): Boolean = true
 }
 
 /**
  * Heartbeat and reconnect (contract: presence). While the app is in front and paired it checks the
  * credential every [heartbeatMs]. When that fails it retries the last address, then the address mDNS
  * gives for the server id, backing off 2, 4, 8 … 30 s, and gives up after [giveUpMs]. Only a 401 means
- * pair again. [start] on foreground, [stop] on background, [retry] for "Connect" and network changes.
+ * pair again. While the phone has the local network closed to the app it checks nothing and says so
+ * ([ConnectionState.NetworkClosed]). [start] on foreground, [stop] on background, [retry] for "Connect" and network changes.
  */
 class ConnectionMonitor(
     private val scope: CoroutineScope,
@@ -58,7 +63,10 @@ class ConnectionMonitor(
     private val giveUpMs: Long = 120_000,
 ) {
     // Until the first check answers, the last known state is kept; at launch that is "connected" when paired.
-    private val _state = MutableStateFlow(host.target()?.let { ConnectionState.Connected(it.serverName) } ?: ConnectionState.Offline(paired = false))
+    private val _state = MutableStateFlow(
+        host.target()?.let { if (host.networkOpen()) ConnectionState.Connected(it.serverName) else ConnectionState.NetworkClosed(it.serverName) }
+            ?: ConnectionState.Offline(paired = false),
+    )
     val state: StateFlow<ConnectionState> = _state.asStateFlow()
     private val _lastAnswered = MutableStateFlow<Long?>(null)
     /** When the engine last answered a heartbeat (for the tech details). */
@@ -92,8 +100,9 @@ class ConnectionMonitor(
         val t = host.target()
         _state.value = when {
             t == null -> ConnectionState.Offline(paired = false)
-            // "Connect" after giving up: say it is looking.
-            _state.value == ConnectionState.Offline(paired = true) -> ConnectionState.Reconnecting(t.serverName)
+            !host.networkOpen() -> ConnectionState.NetworkClosed(t.serverName)
+            // "Connect" after giving up, or the network just opened: say it is looking.
+            _state.value == ConnectionState.Offline(paired = true) || _state.value is ConnectionState.NetworkClosed -> ConnectionState.Reconnecting(t.serverName)
             // Just paired: the check that follows confirms it.
             _state.value is ConnectionState.Offline || _state.value is ConnectionState.NeedsPairing -> ConnectionState.Connected(t.serverName)
             else -> _state.value
@@ -104,7 +113,7 @@ class ConnectionMonitor(
     /** The network changed: worth trying at once unless all is well or pairing is needed. */
     fun networkChanged() {
         when (_state.value) {
-            is ConnectionState.Reconnecting, is ConnectionState.Offline -> if (host.target() != null) retry()
+            is ConnectionState.Reconnecting, is ConnectionState.Offline, is ConnectionState.NetworkClosed -> if (host.target() != null) retry()
             else -> Unit
         }
     }
@@ -119,6 +128,12 @@ class ConnectionMonitor(
                 _state.value = ConnectionState.Offline(paired = false)
                 return
             }
+            // Closed by the phone: said at once, and no heartbeat until it opens ([networkChanged], or back in front).
+            if (!host.networkOpen()) {
+                _state.value = ConnectionState.NetworkClosed(t.serverName)
+                return
+            }
+            if (_state.value is ConnectionState.NetworkClosed) _state.value = ConnectionState.Reconnecting(t.serverName)
             var r = host.check(t.url)
             if (r == Check.Unreachable) {
                 val found = host.find(t.serverId)

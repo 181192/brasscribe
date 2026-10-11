@@ -21,8 +21,12 @@ object ErrorWords {
     /** The core's refusal of a drummer's solo take (instruments.rs PERCUSSION_SOLO). */
     private const val CORE_PERCUSSION_SOLO = "percussion can't be written down from a solo take"
 
+    /** The request was never sent: the phone has the local network closed to the app (also when another exception wraps it). */
+    fun networkClosed(e: Throwable): Boolean = generateSequence(e) { it.cause }.take(8)
+        .any { it is LocalNetworkClosedException || it.message?.contains(LocalNetworkClosedException.MESSAGE) == true }
+
     @StringRes
-    fun of(e: Throwable): Int = when (e) {
+    fun of(e: Throwable): Int = if (networkClosed(e)) R.string.pair_network_refused else when (e) {
         is QuartetNeedsGroupException -> R.string.lineup_quartet_needs_group
         is LeadSeatRefusedException -> R.string.lead_seat_refused
         is NoCompanionException -> R.string.where_companion_missing

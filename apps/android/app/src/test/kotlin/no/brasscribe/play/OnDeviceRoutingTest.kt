@@ -21,6 +21,7 @@ class OnDeviceRoutingTest {
         assertFalse(R_.computerThere(ConnectionState.Offline(paired = true)))
         assertFalse(R_.computerThere(ConnectionState.Offline(paired = false)))
         assertFalse(R_.computerThere(ConnectionState.NeedsPairing("Mac")))
+        assertFalse(R_.computerThere(ConnectionState.NetworkClosed("Mac")))
     }
 
     @Test

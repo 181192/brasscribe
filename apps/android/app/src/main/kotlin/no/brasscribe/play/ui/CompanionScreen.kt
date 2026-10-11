@@ -88,12 +88,15 @@ fun CompanionScreen(vm: PlayViewModel) {
     var networkOk by remember { mutableStateOf(LocalNetwork.allowed(context)) }
     var networkRefused by rememberSaveable { mutableStateOf(false) }
     val networkPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        LocalNetwork.asking = false
         // What the phone says now, not what the answer says: only that opens the network.
         networkOk = LocalNetwork.allowed(context)
         networkRefused = !networkOk
         if (networkOk) vm.connection.networkChanged()
     }
-    LaunchedEffect(Unit) { if (!networkOk) networkPermission.launch(LocalNetwork.PERMISSION) }
+    LaunchedEffect(Unit) {
+        if (!networkOk && !LocalNetwork.asking) { LocalNetwork.asking = true; networkPermission.launch(LocalNetwork.PERMISSION) }
+    }
     DisposableEffect(discovery, networkOk) {
         discovery.start()
         // Asking the computer survives rotation; the view model ends it when the user leaves this place.
@@ -124,8 +127,11 @@ fun CompanionScreen(vm: PlayViewModel) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         cameraOk = cameraAllowed()
         if (cameraOk) cameraRefused = false
+        val was = networkOk
         networkOk = LocalNetwork.allowed(context)
         if (networkOk) networkRefused = false
+        // Allowed in the phone's settings meanwhile: the computer is looked for again.
+        if (networkOk && !was) vm.connection.networkChanged()
     }
     fun scanned(text: String) {
         scanning = false
@@ -148,7 +154,7 @@ fun CompanionScreen(vm: PlayViewModel) {
         ScreenTitle(stringResource(R.string.companion_title))
         ConnectionStatusRow(vm, onConnectionScreen = true)
         // Whichever way the player pairs, the computer is out of reach until the phone lets the app onto the network.
-        if (networkRefused && !scanning) {
+        if (networkRefused && !scanning && connection !is ConnectionState.NetworkClosed) {
             Text(stringResource(R.string.pair_network_refused), color = c.text, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             PlainButton(stringResource(R.string.pair_camera_settings), ::appSettings)
         }

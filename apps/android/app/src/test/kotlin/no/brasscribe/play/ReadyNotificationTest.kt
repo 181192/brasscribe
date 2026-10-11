@@ -121,6 +121,28 @@ class ReadyNotificationTest : ScreenTest() {
     }
 
     @Test
+    fun theNotificationQuestionWaitsWhileThePhoneAsksAboutTheNetwork() {
+        phoneRunsTheService()
+        container.notificationsAsked = false
+        shadowOf(app).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        // The phone's question about the local network is on screen (Android 17, a paired phone opened from the share sheet).
+        rule.runOnUiThread { LocalNetwork.asking = true }
+        try {
+            send(slow = true)
+            // A second question now would be dropped unseen: it is not asked, and not counted as asked.
+            assertEquals(null, shadowOf(rule.activity).lastRequestedPermission)
+            assertFalse(container.notificationsAsked)
+            // The first one is answered: now it is asked.
+            rule.runOnUiThread { LocalNetwork.asking = false }
+            rule.waitForIdle()
+            assertEquals(Manifest.permission.POST_NOTIFICATIONS, shadowOf(rule.activity).lastRequestedPermission?.requestedPermissions?.single())
+            assertTrue(container.notificationsAsked)
+        } finally {
+            rule.runOnUiThread { LocalNetwork.asking = false }
+        }
+    }
+
+    @Test
     fun theFirstJobOnTheComputerAsksOnceAndSaysThePlayerMayLeave() {
         phoneRunsTheService()
         container.notificationsAsked = false
