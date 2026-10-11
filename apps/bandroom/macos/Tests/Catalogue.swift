@@ -74,22 +74,21 @@ enum Catalogue {
     /// The screen taken by the catalogue's rule (`ScreenTake`: the window at its size, the appearance and language asked
     /// for, its content in place and drawn, keeping still; `ready` says what the screen itself still waits for), its
     /// tree checked, and its screenshot and tree written as `name`. A screen that does not become the one asked for is
-    /// not taken, and fails the run. `unreadable` is the issue of a screen known to draw some text in the colour of what
-    /// is behind it: its texts are not asked to be in the picture, and the takes log says so once they all are.
-    static func record(_ r: Rendering, name: String, ready: () -> String? = { nil }, unreadable: String? = nil,
+    /// not taken, and fails the run. `unreadable` lists the texts known to be drawn in the colour of what is behind
+    /// them: those are not asked to be in the picture.
+    static func record(_ r: Rendering, name: String, ready: () -> String? = { nil }, unreadable: Unreadable? = nil,
                        known: (Finding) -> Bool = { _ in false }) async throws {
         let take: ScreenTake
         do {
             take = try await ScreenTake.take(name, window: r.window, view: r.hosting, size: { r.size }, asked: r.asked, witness: r.witness,
-                                             ready: ready, unreadable: { _ in unreadable != nil }, frames: { await r.frames() },
+                                             ready: ready, unreadable: unreadable?.covers(name) ?? { _ in false }, frames: { await r.frames() },
                                              picture: { Pictures.bitmap(of: r.hosting) }, output: output)
         } catch let notTaken as ScreenNotTaken {
             Issue.record(Comment(rawValue: notTaken.description))
             return
         }
-        if let unreadable, Conditions.drawn(take.picture, nodes: take.nodes, bounds: r.hosting.bounds) == nil {
-            Pictures.log("\(name): draws all its text here; its entry in `unreadable` (\(unreadable)) is not needed on this macOS",
-                         to: output, language: language)
+        if let line = unreadable?.drawnAfterAll(name, picture: take.picture, nodes: take.nodes, bounds: r.hosting.bounds) {
+            Pictures.log(line, to: output, language: language)
         }
         if let broken = Guards.tree(take.nodes, screen: name) { Issue.record(Comment(rawValue: broken)) }
         let findings = Checks.run(take.nodes, bounds: r.hosting.bounds, text: text).filter { !known($0) }

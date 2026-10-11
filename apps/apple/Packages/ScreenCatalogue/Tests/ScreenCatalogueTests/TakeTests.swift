@@ -161,8 +161,26 @@ struct TakeTests {
         let below = AXNode(role: "AXStaticText", label: "", value: "Bar 40", frame: CGRect(x: 2, y: 30, width: 8, height: 4),
                            viewport: CGRect(x: 0, y: 0, width: 20, height: 10))
         #expect(Conditions.drawn(done, nodes: [row, mark, below], bounds: bounds) == nil)
-        // a text known to be unreadable is not asked for
-        #expect(Conditions.drawn(early, nodes: [row, mark], bounds: bounds, unreadable: { _ in true }) == nil)
+        // every text that is missing is named
+        let second = AXNode(role: "AXStaticText", label: "", value: "Bar 2", frame: CGRect(x: 2, y: 6, width: 8, height: 4))
+        #expect(Conditions.drawn(early, nodes: [row, second, mark], bounds: bounds) == "its texts “Bar 1, Solo Cornet”, “Bar 2” are not drawn in its picture yet")
+    }
+
+    @Test func onlyTheTextsListedAsUnreadableAreNotAskedFor() {
+        let bounds = CGRect(x: 0, y: 0, width: 20, height: 10)
+        let title = AXNode(role: "AXStaticText", label: "", value: "Speed", frame: CGRect(x: 2, y: 0, width: 8, height: 4))
+        let row = AXNode(role: "AXStaticText", label: "", value: "Bar 1", frame: CGRect(x: 2, y: 5, width: 8, height: 4))
+        let known = Unreadable(issue: "#1", screens: ["score-contrast": ["Speed"]])
+        let neither = picture(marks: [CGRect(x: 30, y: 2, width: 4, height: 4)])
+        // the listed text is not asked for; another text of the same screen still is
+        #expect(Conditions.drawn(neither, nodes: [title, row], bounds: bounds, unreadable: known.covers("score-contrast")) == "its text “Bar 1” is not drawn in its picture yet")
+        #expect(Conditions.drawn(neither, nodes: [title], bounds: bounds, unreadable: known.covers("score-contrast")) == nil)
+        // and it is asked for on a screen it is not listed for
+        #expect(Conditions.drawn(neither, nodes: [title], bounds: bounds, unreadable: known.covers("score-dark")) != nil)
+        // a listed text that is drawn here is named for the log
+        let both = picture(marks: [CGRect(x: 6, y: 3, width: 6, height: 2), CGRect(x: 6, y: 13, width: 6, height: 2), CGRect(x: 30, y: 2, width: 4, height: 4)])
+        #expect(known.drawnAfterAll("score-contrast", picture: both, nodes: [title, row], bounds: bounds)?.contains("“Speed”") == true)
+        #expect(known.drawnAfterAll("score-contrast", picture: neither, nodes: [title, row], bounds: bounds) == nil)
     }
 
     @Test func anAreaOfOneColourIsFlat() {

@@ -214,8 +214,8 @@ The screenshot is the last of five such takes in a row with the same pixels. A s
 picture in `not-taken/`, instead of keeping a picture of something else. `takes-<language>.log` beside the
 screenshots says how long each screen took and what it waited for.
 
-`unreadable` lists the screens that draw some text in the colour of what is behind it, each with its issue: their
-texts are not asked to be in the picture. The takes log says when a listed screen draws all its text (which texts
+`unreadable` lists, under their issue, the texts a screen draws in the colour of what is behind them: those texts,
+and no others, are not asked to be in its picture. The takes log names a listed text that is drawn (which texts
 are affected differs between macOS versions).
 
 There is no large-text variant on the Mac: macOS has no Dynamic Type for an app's windows (a `dynamicTypeSize` of

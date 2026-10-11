@@ -26,9 +26,9 @@ import Testing
     /// Findings that are known and not yet fixed, each with its issue: the screen, the kind, and words the finding names.
     static let known: [(screen: Screen?, kind: Finding.Kind, words: String, issue: String)] = []
 
-    /// Screens (with their variant) that draw some text in the colour of what is behind it, each with its issue: their
-    /// texts are not asked to be in the picture. An entry whose screen draws all its text is noted in the takes log.
-    static let unreadable: [String: String] = ["panel-setting-up-contrast": "#368"]
+    /// Texts drawn in the colour of what is behind them in light with Increase Contrast: black, the system's text colour
+    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture.
+    static let unreadable = Unreadable(issue: "#368", screens: ["panel-setting-up-contrast": ["Setting up"]])
 
     @Test(arguments: Screen.allCases)
     func screen(_ screen: Screen) async throws {
@@ -37,7 +37,7 @@ import Testing
             let r = await Rendering(view(for: screen, app: app), width: width(of: screen), variant: variant, app: app)
             defer { r.close() }
             let name = Catalogue.name(screen.rawValue, variant)
-            try await Catalogue.record(r, name: name, ready: { waitsFor(screen, app) }, unreadable: Self.unreadable[name]) { f in
+            try await Catalogue.record(r, name: name, ready: { waitsFor(screen, app) }, unreadable: Self.unreadable) { f in
                 Self.known.contains { ($0.screen == nil || $0.screen == screen) && $0.kind == f.kind && f.node.contains($0.words) }
             }
         }

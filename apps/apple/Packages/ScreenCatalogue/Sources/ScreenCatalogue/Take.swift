@@ -290,20 +290,51 @@ public enum Conditions {
 
     /// The picture shows the tree's texts: every text in view has something drawn in its frame. A window that has
     /// not drawn yet, or a list whose rows have their words in the tree before they are on the screen, has frames of
-    /// one flat colour. `unreadable` names texts known to be drawn in their background's colour (each with an issue).
+    /// one flat colour. `unreadable` names texts known to be drawn in their background's colour (`Unreadable`).
     public static func drawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
-        let scale = CGFloat(rep.pixelsWide) / max(bounds.width, 1)
         if Pictures.isFlat(rep, in: CGRect(x: 0, y: 0, width: rep.pixelsWide, height: rep.pixelsHigh)) { return "nothing is drawn in its picture yet" }
+        let missing = undrawn(rep, nodes: nodes, bounds: bounds).filter { !unreadable($0) }.map { "“\($0.words.prefix(40))”" }
+        if missing.isEmpty { return nil }
+        // All of them, so that a screen that is not taken says everything it lacks in one run.
+        return "its text\(missing.count == 1 ? "" : "s") \(missing.prefix(24).joined(separator: ", ")) \(missing.count == 1 ? "is" : "are") not drawn in its picture yet"
+    }
+
+    /// The texts in view that have nothing drawn in their frame in the picture.
+    public static func undrawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> [AXNode] {
+        let scale = CGFloat(rep.pixelsWide) / max(bounds.width, 1)
         // A text under something docked over its scroll area (a sheet's footer) is in the tree and not in the picture.
         let docked = nodes.filter { !$0.inScrollArea && !$0.isText && $0.isLeaf && $0.frame.width >= 1 && $0.frame.height >= 1 }
-        for n in nodes where n.isText && !n.words.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        return nodes.filter { n in
+            guard n.isText, !n.words.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
             let frame = n.frame.intersection(bounds)
-            guard frame.width >= 4, frame.height >= 4, n.viewport.map({ $0.contains(n.frame) }) ?? true else { continue }
-            if n.inScrollArea, docked.contains(where: { $0.frame.intersects(n.frame) }) { continue }
-            if unreadable(n) { continue }
-            let pixels = CGRect(x: frame.minX * scale, y: frame.minY * scale, width: frame.width * scale, height: frame.height * scale)
-            if Pictures.isFlat(rep, in: pixels) { return "its text “\(n.words.prefix(40))” is not drawn in its picture yet" }
+            guard frame.width >= 4, frame.height >= 4, n.viewport.map({ $0.contains(n.frame) }) ?? true else { return false }
+            if n.inScrollArea, docked.contains(where: { $0.frame.intersects(n.frame) }) { return false }
+            return Pictures.isFlat(rep, in: CGRect(x: frame.minX * scale, y: frame.minY * scale, width: frame.width * scale, height: frame.height * scale))
         }
-        return nil
+    }
+}
+
+/// Texts known to be drawn in the colour of what is behind them, under one issue: for each screen (with its variant),
+/// how each such text begins (as a screen that is not taken names it). Those texts, and no others, are not asked to be
+/// in the screen's picture. Which texts they are differs between macOS versions, so a listed text that is drawn fails
+/// nothing: `drawnAfterAll` names them for the takes log.
+public struct Unreadable: Sendable {
+    public let issue: String
+    public let screens: [String: [String]]
+    public init(issue: String, screens: [String: [String]]) { self.issue = issue; self.screens = screens }
+
+    /// Whether a text of `screen` is one of the listed ones.
+    public func covers(_ screen: String) -> @Sendable (AXNode) -> Bool {
+        let listed = screens[screen] ?? []
+        return { node in listed.contains { node.words.hasPrefix($0) } }
+    }
+
+    /// A line for the takes log when texts listed for `screen` are drawn in its picture after all, or nil.
+    @MainActor
+    public func drawnAfterAll(_ screen: String, picture: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> String? {
+        guard let listed = screens[screen] else { return nil }
+        let missing = Conditions.undrawn(picture, nodes: nodes, bounds: bounds).map(\.words)
+        let drawn = listed.filter { start in !missing.contains { $0.hasPrefix(start) } }
+        return drawn.isEmpty ? nil : "\(screen): listed as unreadable (\(issue)) and drawn on this macOS: " + drawn.map { "“\($0)”" }.joined(separator: ", ")
     }
 }

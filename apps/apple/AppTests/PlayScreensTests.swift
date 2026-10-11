@@ -59,14 +59,21 @@ import TranscriptionKit
     /// The faces Play draws text in: the system font and Instrument Serif (titles, the score's title).
     static let text = TextFit(fonts: ["InstrumentSerif-Regular", "InstrumentSerif-Italic"])
 
-    /// Screens (with their variant) that draw some text in the colour of what is behind it, each with its issue: their
-    /// texts are not asked to be in the picture. Which texts differs between macOS versions (the export sheet's are all
-    /// drawn on macOS 26), so an entry whose screen draws all its text is only noted in the takes log.
-    static let unreadable: [String: String] = [
-        "home-empty-contrast": "#368", "home-scores-contrast": "#368", "home-offline-contrast": "#368", "output-contrast": "#368",
-        "score-contrast": "#368", "review-contrast": "#368", "sheet-settings-contrast": "#368", "sheet-what-you-play-contrast": "#368",
-        "sheet-export-contrast": "#368",
-    ]
+    /// Texts drawn in the colour of what is behind them in light with Increase Contrast: black, the system's text colour
+    /// there, on the black of the high-contrast colours. These, and no others, are not asked to be in the picture.
+    static let unreadable = Unreadable(issue: "#368", screens: [
+        "home-empty-contrast": ["Drop a recording here"], "home-scores-contrast": ["Drop a recording here"],
+        "home-offline-contrast": ["Drop a recording here"],
+        "output-contrast": ["Which band?", "How hard?", "Key"],
+        "score-contrast": ["Speed", "Repeat bars", "1", "to", "4", "Soprano Cornet", "Solo Cornet (you)", "Repiano Cornet", "2nd Cornet",
+                           "3rd Cornet", "Flugelhorn", "Solo Horn", "1st Horn", "2nd Horn", "1st Baritone", "2nd Baritone"],
+        "review-contrast": ["Bar 2"],
+        "sheet-settings-contrast": ["Your instrument", "New scores open on your part.", "Your computer", "On this device",
+                                    "Write down solos on this device", "Make band drafts on this device", "Listening files", "Ready",
+                                    "One instrument on its own can be written"],
+        "sheet-what-you-play-contrast": ["Instrument"],
+        "sheet-export-contrast": ["Show ? marks"],
+    ])
 
     /// Takes the screen on `host` by the catalogue's rule (`ScreenTake`), checks it, and writes its screenshot and tree.
     /// A screen that does not become the one asked for is not taken, and fails the run.
@@ -77,14 +84,12 @@ import TranscriptionKit
         var picture: NSBitmapImageRep?
         if Self.unsteady[screen] == nil {
             do {
-                let listed = Self.unreadable[name]
-                let take = try await host.take(name, controls: controls, ready: ready, shows: shows, unreadable: { _ in listed != nil },
+                let take = try await host.take(name, controls: controls, ready: ready, shows: shows, unreadable: Self.unreadable.covers(name),
                                                output: Self.output)
                 nodes = take.nodes
                 picture = take.picture
-                if let listed, Conditions.drawn(take.picture, nodes: nodes, bounds: host.hosting.bounds) == nil {
-                    Pictures.log("\(name): draws all its text here; its entry in `unreadable` (\(listed)) is not needed on this macOS",
-                                 to: Self.output, language: Self.language)
+                if let line = Self.unreadable.drawnAfterAll(name, picture: take.picture, nodes: nodes, bounds: host.hosting.bounds) {
+                    Pictures.log(line, to: Self.output, language: Self.language)
                 }
             } catch let notTaken as ScreenNotTaken {
                 Issue.record(Comment(rawValue: notTaken.description))

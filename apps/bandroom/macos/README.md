@@ -83,8 +83,8 @@ so it runs on a Mac in use and on CI's macOS runner.
   views; what the screen waits for is there (the pairing code, the request, the phones) and nothing is still
   loading; every text in view is drawn; and five takes in a row have the same pixels. A screen that does not get
   there in 30 s is not taken and fails the run (`screen not taken: …`, its last picture in `not-taken/`).
-  `takes-<language>.log` says what each screen waited for. `BandroomScreensTests.unreadable` lists screens that
-  draw some text in the colour of what is behind it, each with its issue.
+  `takes-<language>.log` says what each screen waited for. `BandroomScreensTests.unreadable` lists, under their
+  issue, the texts drawn in the colour of what is behind them, which are not asked to be in the picture.
 - **The checks** (the Mac apps' shared package `apps/apple/Packages/ScreenCatalogue`), on the
   accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own
   buttons, menus and links are at least 24 × 24 pt, and the system's standard controls (switches, checkboxes, radio
