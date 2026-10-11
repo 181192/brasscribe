@@ -59,44 +59,58 @@ import TranscriptionKit
     /// The faces Play draws text in: the system font and Instrument Serif (titles, the score's title).
     static let text = TextFit(fonts: ["InstrumentSerif-Regular", "InstrumentSerif-Italic"])
 
-    /// Checks the screen on `host`, then writes its screenshot and tree.
-    private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true) async throws {
+    /// Screens (with their variant) that draw some text in the colour of what is behind it, each with its issue: their
+    /// texts are not asked to be in the picture. An entry whose screen draws all its text fails the run.
+    static let unreadable: [String: String] = [
+        "home-empty-contrast": "#368", "home-scores-contrast": "#368", "home-offline-contrast": "#368", "output-contrast": "#368",
+        "score-contrast": "#368", "review-contrast": "#368", "sheet-settings-contrast": "#368", "sheet-what-you-play-contrast": "#368",
+        "sheet-export-contrast": "#368",
+    ]
+
+    /// Takes the screen on `host` by the catalogue's rule (`ScreenTake`), checks it, and writes its screenshot and tree.
+    /// A screen that does not become the one asked for is not taken, and fails the run.
+    private func record(_ host: OffscreenHost, _ screen: String, _ v: Variant, controls: Bool = true, ready: () -> String? = { nil }) async throws {
         let name = Self.language == "en" ? "\(screen)-\(v.name)" : "\(screen)-\(v.name)-\(Self.language)"
-        let picture = await steady(host)
-        let nodes = AXTree.read(host.hosting)
+        let nodes: [AXNode]
+        var picture: NSBitmapImageRep?
+        if Self.unsteady[screen] == nil {
+            do {
+                let listed = Self.unreadable[name]
+                let take = try await host.take(name, controls: controls, ready: ready, unreadable: { _ in listed != nil }, output: Self.output)
+                nodes = take.nodes
+                picture = take.picture
+                if let listed, Conditions.drawn(take.picture, nodes: nodes, bounds: host.hosting.bounds) == nil {
+                    Issue.record("\(name) draws all its text now: take it out of `unreadable` (\(listed))")
+                }
+            } catch let notTaken as ScreenNotTaken {
+                Issue.record(Comment(rawValue: notTaken.description))
+                return
+            }
+        } else {
+            await host.settle(0.8)
+            nodes = AXTree.read(host.hosting)
+        }
         if let broken = Guards.tree(nodes, screen: name, controls: controls) { Issue.record(Comment(rawValue: broken)) }
         let findings = Checks.run(nodes, bounds: host.hosting.bounds, text: Self.text).filter { f in
             !(f.kind == .outOfOrder && Self.ownOrder[screen] != nil)
                 && !Self.known.contains { ($0.screen == nil || $0.screen == screen) && $0.kind == f.kind && f.node.contains($0.words) }
         }
         #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
-        guard Self.unsteady[screen] == nil else { return }
-        try Pictures.write(picture, tree: nodes, name: name, to: Self.output)
+        if let picture { try Pictures.write(picture, tree: nodes, name: name, to: Self.output) }
     }
 
-    /// The picture once it stops changing (a score scrolling to its note, a list settling), or the last of a few tries:
-    /// the same screen must give the same pixels every time.
-    private func steady(_ host: OffscreenHost) async -> NSBitmapImageRep {
-        var rep = host.bitmap()
-        for _ in 0..<10 {
-            await host.settle(0.3)
-            let next = host.bitmap()
-            if next.tiffRepresentation == rep.tiffRepresentation { return next }
-            rep = next
-        }
-        return rep
-    }
-
-    /// A screen in the window, the library beside it, as `RootView` lays it out.
+    /// A screen in the window, the library beside it, as `RootView` lays it out. `opened` is run once the screen is
+    /// up; `ready` says what the screen still waits for (nil when it is the screen to take).
     private func window(_ screen: String, app: AppModel, sidebar: Bool = true, opened: (() -> Void)? = nil,
-                        wait: (() -> Bool)? = nil, @ViewBuilder _ content: () -> some View) async throws {
+                        ready: () -> String? = { nil }, @ViewBuilder _ content: () -> some View) async throws {
         for v in Self.variants {
-            let host = OffscreenHost(HarnessShell(sidebar: sidebar) { content() }.environment(app), size: Self.window,
-                                     dark: v.dark, increasedContrast: v.increasedContrast)
+            // Where the screen's own views are: in the detail column's navigation stack.
+            let witness = AppearanceWitness()
+            let host = OffscreenHost(HarnessShell(sidebar: sidebar) { content().catalogueWitness(witness) }.environment(app), size: Self.window,
+                                     dark: v.dark, increasedContrast: v.increasedContrast, witness: witness)
+            defer { host.close() }
             if let opened { await host.settle(0.8); opened() }
-            if let wait { await host.settle(until: wait) } else { await host.settle(0.8) }
-            try await record(host, screen, v)
-            host.close()
+            try await record(host, screen, v, ready: ready)
         }
     }
 
@@ -108,9 +122,8 @@ import TranscriptionKit
                           height: min(max(measured.ideal.height, measured.min.height), measured.max.height))
         for v in Self.variants {
             let host = OffscreenHost(root, size: size, dark: v.dark, increasedContrast: v.increasedContrast)
-            await host.settle(0.8)
+            defer { host.close() }
             try await record(host, "sheet-\(screen)", v, controls: controls)
-            host.close()
         }
     }
 
@@ -135,11 +148,15 @@ import TranscriptionKit
         let piece = try LayoutFixtures.piece()
         try await window("output", app: full) { OutputView(piece: piece) }
         let score = try await LayoutFixtures.model(piece)
-        try await window("score", app: full, wait: { !score.pages.isEmpty && !score.engraving }) { PracticeView(model: score).pageBackground() }
+        try await window("score", app: full, ready: { !score.pages.isEmpty && !score.engraving ? nil : "its score is not engraved yet" }) {
+            PracticeView(model: score).pageBackground()
+        }
         score.stopAll()
         let stand = try await LayoutFixtures.model(piece)
         try await window("stand", app: full, opened: { if stand.stand == nil { stand.enterStand(from: .toolbar) } },
-                         wait: { stand.stand != nil && !stand.pages.isEmpty && !stand.engraving }) { ScoreOrStand(model: stand) }
+                         ready: { stand.stand != nil && !stand.pages.isEmpty && !stand.engraving ? nil : "its score is not on the stand yet" }) {
+            ScoreOrStand(model: stand)
+        }
         stand.leaveStand()
         stand.stopAll()
         try await window("review", app: full) { ReviewView(piece: piece) }
@@ -156,12 +173,12 @@ import TranscriptionKit
         try await sheet("match-code", app: full, controls: false) { MatchCodeView(code: "4821").padding(Space.s5) }
     }
 
-    /// The undocumented hooks still do what the catalogue needs, and the run is in the language it says.
+    /// The hooks still do what the catalogue needs, and the run is in the language it says.
     @Test func hooksStillWork() async {
         if let wrong = Guards.language(Self.language, localized: String(localized: "Record with the microphone"), english: "Record with the microphone") {
             Issue.record(Comment(rawValue: wrong))
         }
-        let host = OffscreenHost(ContrastProbe().frame(width: 20, height: 20), size: CGSize(width: 20, height: 20), increasedContrast: true)
+        let host = OffscreenHost(NavigationStack { ContrastProbe() }, size: CGSize(width: 200, height: 200), increasedContrast: true)
         await host.settle(0.2)
         if let broken = Guards.contrast(Pictures.bitmap(of: host.hosting)) { Issue.record(Comment(rawValue: broken)) }
         host.close()

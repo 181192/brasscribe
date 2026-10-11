@@ -193,16 +193,47 @@ the stand put the controls drawn over the score first (above), which `ownOrder` 
 not yet fixed, each with its issue; `unsteady` the screens checked without a screenshot because they do not yet draw
 the same twice, each with its issue. `ResponsiveLayoutTests` keeps the layout at every window size.
 
+**When a picture counts** (`Packages/ScreenCatalogue`, `ScreenTake`; the same rule as the Windows catalogues'). A
+screenshot is taken only when all of this holds, read off the screen before and after the picture with the same
+answer both times:
+
+- the view is the content of its window, shown, at the size asked for;
+- the appearance is the one asked for: the window's effective appearance (light or dark, the system's
+  high-contrast one under Increase Contrast), Increase Contrast as the process is told it, and what the screen's
+  own views are drawn in, read where they are (inside the split view's column and its navigation stack); and the
+  run is in the language the script asked for;
+- the content is in place: what the screen itself waits for (the score engraved, the stand open), the screen's
+  controls in the tree, and no spinner;
+- two display frames were committed since the take before (the window is never on a screen, so a frame is a turn
+  of the main run loop, then layout, drawing and the layer tree committed);
+- the picture shows it: it is not one flat colour, and every text in view has something drawn in its frame (a
+  list has its rows' words in the tree before they are on the screen).
+
+The screenshot is the last of five such takes in a row with the same pixels. A screen that does not get there in
+30 s is **not taken**: the run fails with `screen not taken: <screen>: <what it waited for>` and keeps its last
+picture in `not-taken/`, instead of keeping a picture of something else. `takes-<language>.log` beside the
+screenshots says how long each screen took and what it waited for.
+
+`unreadable` lists the screens that draw some text in the colour of what is behind it, each with its issue: their
+texts are not asked to be in the picture, and an entry fails the run once its screen draws all its text.
+
 There is no large-text variant on the Mac: macOS has no Dynamic Type for an app's windows (a `dynamicTypeSize` of
-`accessibility3` draws the same pixels), and Play has no text size of its own. The two undocumented hooks
-(`AXEnhancedUserInterface`, `_colorSchemeContrast`) are checked on every run (`hooksStillWork`). What the catalogue
+`accessibility3` draws the same pixels), and Play has no text size of its own. Two hooks, in the tests only, are
+checked on every run (`hooksStillWork`): `AXEnhancedUserInterface` on `NSApp` makes SwiftUI build its accessibility
+tree in the process, and `SystemContrast` answers `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` in the
+test process, which is where every hosting view of a screen (a split view's columns, a list's rows) reads Increase
+Contrast from; an environment value on the root view reaches only what the root draws itself. What the catalogue
 does not do: a real Tab walk (SwiftUI moves focus only in a key window on a screen), multi-line text cut at its last
 line, the colour contrast of each text, and iOS and iPadOS.
 
 `scripts/screenshots.sh record` builds the macOS app's tests and runs the catalogue with its checks; it fails when
-a screen fails one. The screenshots and each screen's tree go into `build/catalogue/screenshots/`. CI (`apple.yml`,
+a screen fails one or is not taken. The screenshots and each screen's tree go into `build/catalogue/screenshots/`. CI (`apple.yml`,
 job `play-screens`) runs it on every pull request that reaches Play, and the pictures are in the
 `play-mac-screenshots` artefact, to look at: no check waits for them. After a merge, CI compares the pictures on
 `main` with those of the `main` before it and lists changed screens in an issue
 ([docs/dev/verify.md](../../docs/dev/verify.md#screenshots)). The catalogue is left out of `make test` and
 `make test-mac-unit`. No images are committed.
+
+To measure the catalogue itself, `apple.yml` started by hand with `noise_play` (or `noise_bandroom`) takes it twice
+on one runner and compares the two takes file by file: nothing changed between them, so a picture that differs was
+taken in the wrong state. `noise_ref` names another commit to take.

@@ -71,13 +71,29 @@ enum Catalogue {
         return app
     }
 
-    /// The screen's tree, checked, and its screenshot and tree written as `name`.
-    static func record(_ r: Rendering, name: String, known: (Finding) -> Bool = { _ in false }) throws {
-        let nodes = AXTree.read(r.hosting)
-        if let broken = Guards.tree(nodes, screen: name) { Issue.record(Comment(rawValue: broken)) }
-        let findings = Checks.run(nodes, bounds: r.hosting.bounds, text: text).filter { !known($0) }
+    /// The screen taken by the catalogue's rule (`ScreenTake`: the window at its size, the appearance and language asked
+    /// for, its content in place and drawn, keeping still; `ready` says what the screen itself still waits for), its
+    /// tree checked, and its screenshot and tree written as `name`. A screen that does not become the one asked for is
+    /// not taken, and fails the run. `unreadable` is the issue of a screen known to draw some text in the colour of what
+    /// is behind it: its texts are not asked to be in the picture, and it fails the run once they all are.
+    static func record(_ r: Rendering, name: String, ready: () -> String? = { nil }, unreadable: String? = nil,
+                       known: (Finding) -> Bool = { _ in false }) async throws {
+        let take: ScreenTake
+        do {
+            take = try await ScreenTake.take(name, window: r.window, view: r.hosting, size: { r.size }, asked: r.asked, witness: r.witness,
+                                             ready: ready, unreadable: { _ in unreadable != nil }, frames: { await r.frames() },
+                                             picture: { Pictures.bitmap(of: r.hosting) }, output: output)
+        } catch let notTaken as ScreenNotTaken {
+            Issue.record(Comment(rawValue: notTaken.description))
+            return
+        }
+        if let unreadable, Conditions.drawn(take.picture, nodes: take.nodes, bounds: r.hosting.bounds) == nil {
+            Issue.record("\(name) draws all its text now: take it out of `unreadable` (\(unreadable))")
+        }
+        if let broken = Guards.tree(take.nodes, screen: name) { Issue.record(Comment(rawValue: broken)) }
+        let findings = Checks.run(take.nodes, bounds: r.hosting.bounds, text: text).filter { !known($0) }
         #expect(findings.isEmpty, "\(name):\n\(findings.map { "  \($0)" }.joined(separator: "\n"))")
-        try Pictures.write(Pictures.bitmap(of: r.hosting), tree: nodes, name: name, to: output)
+        try Pictures.write(take.picture, tree: take.nodes, name: name, to: output)
     }
 
     /// `<screen>-<variant>[-<language>]`.
@@ -91,14 +107,22 @@ enum Catalogue {
 final class Rendering {
     let window: NSWindow
     let hosting: NSHostingView<AnyView>
+    /// The appearance asked for, and what the content says it is drawn in.
+    let asked: Asked
+    let witness = AppearanceWitness()
+    private let height: CGFloat?
 
-    /// Draws `view` at `width` points wide and its own height (or `height`), in `variant`.
+    /// Draws `view` at `width` points wide and its own height (or `height`), in `variant`. The appearance is the
+    /// window's, as on a Mac set that way: SwiftUI and AppKit both read it from there, and Increase Contrast from
+    /// `SystemContrast`, which a variant with increased contrast turns on until `close()`.
     init(_ view: some View, width: CGFloat, height: CGFloat? = nil, variant: Variant, app: AppModel) async {
+        asked = Asked(dark: variant.dark, increasedContrast: variant.increasedContrast)
+        self.height = height
+        if variant.increasedContrast { SystemContrast.set(true) }
         let root = view
+            .catalogueWitness(witness)
             .environment(app)
             .environment(\.textScale, variant.textSize.scale)
-            .environment(\.colorScheme, variant.dark ? .dark : .light)
-            .catalogueContrast(increased: variant.increasedContrast)
             .defaultAppStorage(Catalogue.defaults)
             .frame(width: width)
             .frame(height: height)
@@ -107,7 +131,7 @@ final class Rendering {
         window = NSWindow(contentRect: CGRect(x: -30_000, y: -30_000, width: width, height: height ?? 800), styleMask: [.borderless],
                           backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
-        window.appearance = NSAppearance(named: variant.dark ? .darkAqua : .aqua)
+        window.appearance = NSAppearance(named: asked.appearance)
         window.contentView = hosting
         await fit()
     }
@@ -129,15 +153,27 @@ final class Rendering {
         }
     }
 
-    /// Settles until `done` holds, or the timeout.
-    func settle(until done: () -> Bool, timeout: TimeInterval = 5) async {
-        let end = Date().addingTimeInterval(timeout)
-        while !done(), Date() < end { try? await Task.sleep(for: .milliseconds(30)) }
-        await fit()
+    /// The size the window is to have now: its width, and the height given or the view's own.
+    var size: CGSize {
+        CGSize(width: window.frame.width, height: height ?? max(hosting.fittingSize.height, 40))
+    }
+
+    /// Two display frames, and the window at the view's height after each.
+    func frames() async {
+        for _ in 0..<2 {
+            await SteadyTake.frames(of: hosting, count: 1)
+            let wanted = size
+            if abs(window.frame.height - wanted.height) > 0.5 || abs(hosting.frame.height - wanted.height) > 0.5 {
+                window.setContentSize(wanted)
+                hosting.frame = CGRect(origin: .zero, size: wanted)
+                hosting.layoutSubtreeIfNeeded()
+            }
+        }
     }
 
     func close() {
         window.contentView = nil
         window.close()
+        if asked.increasedContrast { SystemContrast.set(false) }
     }
 }

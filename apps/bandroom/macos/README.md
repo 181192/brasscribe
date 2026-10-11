@@ -77,6 +77,14 @@ so it runs on a Mac in use and on CI's macOS runner.
   Pair a phone; the four setup steps; Settings) in light, dark, increased contrast (light and dark) and Bandroom's
   largest text size, and in bokmål (`xcodebuild -testLanguage nb`) in light and the largest text size. A screenshot
   of each, at 2 pixels a point, and its accessibility tree beside it (`<name>.ax.txt`).
+- **When a picture counts.** By the Mac catalogues' shared rule
+  ([apps/apple/README.md](../../apple/README.md#screen-catalogue-mac)): the window is the screen's, at its content's
+  height; the appearance and language are the ones asked for, in the window, the process and the screen's own
+  views; what the screen waits for is there (the pairing code, the request, the phones) and nothing is still
+  loading; every text in view is drawn; and five takes in a row have the same pixels. A screen that does not get
+  there in 30 s is not taken and fails the run (`screen not taken: …`, its last picture in `not-taken/`).
+  `takes-<language>.log` says what each screen waited for. `BandroomScreensTests.unreadable` lists screens that
+  draw some text in the colour of what is behind it, each with its issue.
 - **The checks** (the Mac apps' shared package `apps/apple/Packages/ScreenCatalogue`), on the
   accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own
   buttons, menus and links are at least 24 × 24 pt, and the system's standard controls (switches, checkboxes, radio
@@ -86,11 +94,13 @@ so it runs on a Mac in use and on CI's macOS runner.
   fail it. `BandroomScreensTests.known` lists findings not yet fixed, each with its issue. The target size is read from
   the tree; for a control drawn by AppKit the tree can report a SwiftUI wrapper's frame while clicks reach only the
   control, so the ⋯ menu also has a test of the control under it (`theMoreMenuTakesClicksOn28Points`).
-- **Two undocumented hooks**, in the tests only: `AXEnhancedUserInterface` on `NSApp` makes SwiftUI build its
-  accessibility tree without an assistive app running, and the environment key `_colorSchemeContrast` sets increased
-  contrast. Each is checked on every run (`Guards`): a tree without controls, a contrast probe drawn as standard
-  contrast, or English strings under `-testLanguage nb` fail the run, so an Xcode or macOS update that changes them
-  is noticed instead of passing quietly.
+- **Two hooks**, in the tests only: `AXEnhancedUserInterface` on `NSApp` makes SwiftUI build its
+  accessibility tree without an assistive app running, and `SystemContrast` answers
+  `NSWorkspace.accessibilityDisplayShouldIncreaseContrast` in the test process, where every hosting view of a
+  screen reads Increase Contrast from (nothing outside the process is changed). Each is checked on every run
+  (`Guards`): a tree without controls, a contrast probe inside a navigation stack drawn as standard contrast, or
+  English strings under `-testLanguage nb` fail the run, so an Xcode or macOS update that changes them is noticed
+  instead of passing quietly.
 
 What it does not check: a real Tab walk (SwiftUI moves focus only in a key window on a screen, with keyboard
 navigation turned on in System Settings), a text of several lines cut at its last line (the tree gives a text's
@@ -100,7 +110,7 @@ CI), the menu-bar item and its popover window, notifications, the keychain, the 
 ([docs/dev/macos-vm.md](../../../docs/dev/macos-vm.md)).
 
 **Screenshots** are not kept in git, and no check waits for them. `scripts/screenshots.sh record` builds the app for
-testing and runs the catalogue with its checks; it fails when a screen fails one. The screenshots and each screen's
+testing and runs the catalogue with its checks; it fails when a screen fails one or is not taken. The screenshots and each screen's
 tree go into `build/catalogue/screenshots/`. CI does the same on every pull request that reaches Bandroom
 (`apple.yml`), and the pictures are in the `bandroom-mac-screenshots` artefact, to look at. After a merge, CI
 compares the pictures on `main` with those of the `main` before it and lists changed screens in an issue
