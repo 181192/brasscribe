@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# One issue for one thing that a scheduled or after-merge run watches, found by its exact title.
+# One issue for one thing that a scheduled or after-merge run watches, found by its exact title among the issues
+# that GitHub Actions opened: an issue someone else opens with the same title is never touched.
 #
 #   .github/scripts/tracking-issue.sh failing TITLE BODY_FILE   open the issue with that body, or add the body as
 #                                                               a comment to the one already open
@@ -14,9 +15,11 @@ repo="${GITHUB_REPOSITORY:?}"
 
 run() { if [ -n "${DRY_RUN:-}" ]; then printf 'would run:'; printf ' %q' "$@"; printf '\n'; else "$@"; fi; }
 
-# The open issues, newest first; the title must be the same, not only alike.
-number="$(gh issue list --repo "$repo" --state open --limit 500 --json number,title \
-  | jq -r --arg title "$title" '[.[] | select(.title == $title)][0].number // empty')"
+# The open issues that this workflow's own account opened; the title must be the same, not only alike.
+author="${TRACKING_ISSUE_AUTHOR:-github-actions[bot]}"
+number="$(gh api --paginate "repos/$repo/issues?state=open&per_page=100" \
+  | jq -r --arg title "$title" --arg author "$author" \
+      '.[] | select(.pull_request | not) | select(.user.login == $author and .title == $title) | .number' | head -1)"
 
 case "$state" in
   failing)

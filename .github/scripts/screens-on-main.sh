@@ -13,9 +13,12 @@
 # after; summary.md; the images), and issues/<platform>.md: what to say in that platform's issue, with
 # ARTIFACT_URL where the link to OUT, uploaded, goes. summary.md in OUT says what was compared with what.
 #
+# RUN must be a run of this repository itself (not of a fork's pull request) for a push to main: anything else is
+# refused, since its artefacts are files someone else made. Symbolic links in an artefact are dropped.
+#
 # Needs gh (GH_TOKEN with actions: read), jq, node, and studio's npm packages with Playwright's Chromium.
-# BRANCH and EVENT (default main and push) say which runs are records: to try it on a branch's hand-started runs,
-# BRANCH=<branch> EVENT=workflow_dispatch.
+# BRANCH and EVENT (default main and push; the workflow never sets them) say which runs are records: to try the
+# script by hand on a branch's hand-started runs, BRANCH=<branch> EVENT=workflow_dispatch.
 set -euo pipefail
 run="$1" out="$2"
 repo="${GITHUB_REPOSITORY:?}"
@@ -74,6 +77,8 @@ fetch() {
   done
   unzip -q -o "$2.zip" -d "$2"
   rm -f "$2.zip"
+  # Only files and folders: a link could point anywhere on this machine.
+  find "$2" -type l -delete
 }
 
 # The pictures of a record, side by side in one folder: "home/light.png" as "home--light.png". Not the pictures a
@@ -88,6 +93,11 @@ flat() {
 info="$(api "repos/$repo/actions/runs/$run")"
 sha="$(jq -r .head_sha <<< "$info")"
 created="$(jq -r .created_at <<< "$info")"
+from="$(jq -r '.head_repository.full_name // ""' <<< "$info")"
+if [ "$from" != "$repo" ] || [ "$(jq -r .event <<< "$info")" != "$event" ] || [ "$(jq -r .head_branch <<< "$info")" != "$branch" ]; then
+  echo "screens-on-main: run $run is not a $event run on $branch of $repo (it is a $(jq -r .event <<< "$info") run on $(jq -r .head_branch <<< "$info") of ${from:-an unknown repository}): refused" >&2
+  exit 2
+fi
 say "Screens of ${sha:0:12} (run $run), compared with the record before each."
 say ""
 
@@ -96,7 +106,7 @@ if [ ! -s "$work/now.txt" ]; then say "The run has no screen records: nothing to
 
 # Earlier runs of the same kind, newest first; their records are listed once, when first asked for.
 api "repos/$repo/actions/workflows/ci.yml/runs?branch=$branch&event=$event&per_page=30" \
-  --jq ".workflow_runs[] | select(.created_at < \"$created\") | \"\(.id) \(.head_sha)\"" > "$work/earlier.txt"
+  --jq ".workflow_runs[] | select(.created_at < \"$created\") | select(.head_repository.full_name == \"$repo\") | \"\(.id) \(.head_sha)\"" > "$work/earlier.txt"
 
 while read -r name id; do
   catalogue="${name#screens-}"; catalogue="${catalogue%-*}"

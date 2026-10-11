@@ -29,7 +29,8 @@ jobs:
   report:
     name: issue for a failing night
     needs: iphone
-    if: ${{ always() && github.ref == 'refs/heads/main' && (needs.iphone.result == 'success' || needs.iphone.result == 'failure') }}
+    # Anything but a pass is a failing night: a simulator that hangs until the job's time limit ends as cancelled.
+    if: ${{ always() && github.ref == 'refs/heads/main' && needs.iphone.result != 'skipped' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -51,7 +52,7 @@ jobs:
             .github/scripts/tracking-issue.sh passing "$title" body.md
           else
             {
-              printf 'The iPhone simulator app'"'"'s unit or UI tests failed on main at %s: %s\n\n' "${GITHUB_SHA:0:12}" "$RUN"
+              printf 'The iPhone simulator app'"'"'s unit or UI tests did not pass on main at %s (the job ended as %s): %s\n\n' "${GITHUB_SHA:0:12}" "$RESULT" "$RUN"
               printf 'The result bundle is the artefact `apple-play-iphone-test-results` of that run. '
               printf 'Pull requests build these tests and do not run them, so this is where a failure first shows. '
               printf 'To run them on a branch: `gh workflow run apple.yml -f iphone_tests=true --ref <branch>`.\n'

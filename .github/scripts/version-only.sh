@@ -9,7 +9,7 @@
 set -euo pipefail
 base="$1" head="$2"
 
-files="$(git diff --name-only "$base" "$head")"
+files="$(git diff --name-only --no-renames "$base" "$head")"
 [ -n "$files" ] || exit 1
 while IFS= read -r file; do
   case "$file" in
@@ -19,7 +19,10 @@ while IFS= read -r file; do
     apps/windows/Directory.Build.props | apps/bandroom/windows/Directory.Build.props) line='^[+-] *<Version>[0-9A-Za-z.+-]+</Version>$' ;;
     *) exit 1 ;;
   esac
-  # The changed lines, without the two file headers.
-  if git diff -U0 "$base" "$head" -- "$file" | grep -E '^[+-]' | grep -vE '^(\+\+\+|---) ' | grep -qvE "$line"; then exit 1; fi
+  # The changed lines: what follows the first hunk header, so no line of the file can pass for a file header. Read
+  # whole before it is judged: a reader that stops early would end the pipe, and that must not read as "nothing else".
+  changed="$(git diff -U0 --no-renames "$base" "$head" -- "$file" | sed '1,/^@@/d' | grep -E '^[+-]' || true)"
+  [ -n "$changed" ] || exit 1
+  [ "$(grep -cvE "$line" <<< "$changed" || true)" = 0 ] || exit 1
 done <<< "$files"
 exit 0

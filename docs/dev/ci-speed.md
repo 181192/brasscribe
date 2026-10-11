@@ -66,7 +66,7 @@ release builds (only on tags), CodeQL (already per language).
 | Studio | 5.2 | npm, unit tests, build, browser tests 0.9; base 1.4; head 2.8 |
 | Rust core and .NET | 6.6 | `cargo test --release` 3.6; the FFI library 0.55; bindings check 1.2; four `dotnet test` projects 0.9 |
 
-### After the first changes (2026-10-10, one run each)
+### After the changes marked done below (2026-10-10 and 11, one to four runs each)
 
 | Job | Before | After | What changed |
 |---|---|---|---|
@@ -74,6 +74,12 @@ release builds (only on tags), CodeQL (already per language).
 | The iPhone simulator tests, at night | in the job above | 15.3 | a job of their own: core 2.6, build and tests 12.1 |
 | Play for Mac catalogue, the core's build | 2.2 to 2.9 | 1.4 | the Mac's slice alone, still without a cache; with the Play job's cache from `main` only the workspace's own crates are compiled |
 | An edit to `ci.yml`, for the platforms nothing else in the pull request reaches | every platform (about 97 job-minutes) | 0.5 | `what changed` and actionlint; that pull request also changed `apple.yml`, so the Apple jobs ran and the others did not |
+| Play for Windows, the whole job | 16.4 | 11.6 to 12.3 | no screenshots taken at the base |
+| Play for Mac catalogue | 12.6 | 4.9 to 6.7 | the same, and the core for the Mac only |
+| Bandroom for Mac | 8.8 | 3.7 to 4.8 | no screenshots taken at the base |
+| Android catalogue, each app | 5.8 to 6.2 | 3.5 to 4.9 | the same |
+| Studio | 5.2 | 3.1 | no base, and no screenshots on a pull request |
+| Bandroom for Windows | 8.5 | 8.3 to 9.4 | nothing that shows: its base was already skipped when its inputs were unchanged |
 
 ## The floor per platform
 

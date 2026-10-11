@@ -8,8 +8,8 @@ name: screens
 # and the platform's issue ("Screens changed on main: Android", Mac, Windows or Studio) gets a comment with the
 # list, or is opened. The issue is never closed from here: a person closes it after looking. A record that is the
 # same as the one before does nothing.
-# It can be started by hand for any ci run (`gh workflow run screens.yml -f run=<id>`); that writes the report and
-# no issue.
+# It can be started by hand for a ci run of a push to main (`gh workflow run screens.yml -f run=<id>`); that writes
+# the report and no issue.
 on:
   workflow_run:
     workflows: [ci]
@@ -18,17 +18,9 @@ on:
   workflow_dispatch:
     inputs:
       run:
-        description: The ci run whose screen records to compare with those before it
+        description: The ci run (of a push to main) whose screen records to compare with those before it
         type: string
         required: true
-      branch:
-        description: The branch whose runs are the records
-        type: string
-        default: main
-      event:
-        description: The kind of run that is a record (push, or workflow_dispatch for hand-started runs on a branch)
-        type: string
-        default: push
 
 permissions:
   contents: read
@@ -38,7 +30,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Runs this repository's scripts as they are on main, on pictures: none of a pull request's code.
+  # Runs this repository's scripts and npm packages as they are on main, on pictures: none of a pull request's
+  # code. Its token can read artefacts and nothing else; the issue is written by the job after it.
   compare:
     name: screens compared with the record before
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'push' }}
@@ -47,7 +40,10 @@ jobs:
     permissions:
       actions: read
       contents: read
-      issues: write
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+      sha: ${{ steps.compare.outputs.sha }}
+      artifact: ${{ steps.upload.outputs.artifact-url }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -78,8 +74,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN: ${{ github.event.workflow_run.id || inputs.run }}
-          BRANCH: ${{ inputs.branch || 'main' }}
-          EVENT: ${{ inputs.event || 'push' }}
         run: |
           .github/scripts/screens-on-main.sh "$RUN" "$RUNNER_TEMP/screens"
           cat "$RUNNER_TEMP/screens/summary.md" >> "$GITHUB_STEP_SUMMARY"
@@ -95,14 +89,35 @@ jobs:
           path: ${{ runner.temp }}/screens
           retention-days: 90
 
-      - name: Say so in each platform's issue
-        if: steps.compare.outputs.changed == 'true' && github.event_name == 'workflow_run'
+  # Only this repository's issue script, with the token that may write issues: no npm package runs here. What it
+  # says comes from the job above (the texts in the report's issues folder).
+  report:
+    name: say so in each platform's issue
+    needs: compare
+    if: ${{ needs.compare.outputs.changed == 'true' && github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: screens-changed-${{ needs.compare.outputs.sha }}
+          path: ${{ runner.temp }}/screens
+
+      - name: Open the platform's issue, or add to it
         env:
           GH_TOKEN: ${{ github.token }}
-          ARTIFACT: ${{ steps.upload.outputs.artifact-url }}
+          ARTIFACT: ${{ needs.compare.outputs.artifact }}
         run: |
           for body in "$RUNNER_TEMP"/screens/issues/*.md; do
             platform="$(basename "$body" .md)"
+            case "$platform" in Android | Mac | Windows | Studio | Other) ;; *) echo "no platform $platform" >&2; exit 1 ;; esac
             sed -i "s|ARTIFACT_URL|the artefact $ARTIFACT|" "$body"
             .github/scripts/tracking-issue.sh failing "Screens changed on main: $platform" "$body"
           done

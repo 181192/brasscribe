@@ -18,8 +18,9 @@ for (const variant of VARIANTS) {
     if (view.only && !view.only.includes(variant.name)) continue;
     test(`${view.name} · ${variant.name}`, async ({ page }) => {
       const opened = await openView(page, view, variant);
+      // The checks run on the page as it is once it has settled, with or without a screenshot of it.
+      await steady(page);
       if (shots) {
-        await steady(page);
         await stableScreenshot(page, join(shots, `${view.name}--${variant.name}.png`));
       }
       expect(opened.problems, "errors and requests without a fixture").toEqual([]);
