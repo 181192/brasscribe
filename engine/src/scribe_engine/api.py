@@ -296,6 +296,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         not counted as an online device."""
         rotate_from = device.rotated_at or device.paired_at
         return m.DeviceSelf(**app.state.devices.public(device), server_id=app.state.identity.server_id,
+                            interface_version=wire.INTERFACE_VERSION,
                             rotate_after=iso(rotate_from + ROTATE_AFTER_S),
                             expires_if_idle_after=iso(device.last_seen + app.state.devices.idle_s))
 

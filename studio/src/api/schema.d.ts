@@ -1267,6 +1267,11 @@ export interface components {
              */
             expires_if_idle_after: string;
             /**
+             * Interface Version
+             * @description as in /v1/health, so a paired app's heartbeat (this request) reads it without a second one
+             */
+            interface_version: number;
+            /**
              * Last Seen
              * @description ISO 8601, UTC; updated on every request the device makes
              */

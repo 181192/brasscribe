@@ -74,6 +74,8 @@ class DeviceInfo(BaseModel):
 
 class DeviceSelf(DeviceInfo):
     server_id: str
+    interface_version: int = Field(description="as in /v1/health, so a paired app's heartbeat (this request) reads "
+                                               "it without a second one")
     rotate_after: str = Field(description="ISO 8601; rotate the token (POST /v1/devices/me/rotate) after this time")
     expires_if_idle_after: str = Field(description="ISO 8601; the credential is forgotten if unused until then")
 
