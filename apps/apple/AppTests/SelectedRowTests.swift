@@ -35,12 +35,19 @@ import Testing
                     let fill = resolved(SelectedRow.fill, dark: dark, contrast: contrast)
                     let text = resolved(SelectedRow.text, dark: dark, contrast: contrast)
                     let edge = resolved(SelectedRow.edge, dark: dark, contrast: contrast)
-                    let page = resolved(Color.Scribe.surfaceRaised, dark: dark, contrast: contrast)
-                    #expect(Self.ratio(text, fill) >= 4.5, "text on the selected row, \(name): \(Self.ratio(text, fill))")
-                    // the "?" marks are bold glyphs: 3:1 as for large text and graphics
+                    // the note list's ground
+                    let page = resolved(Color.Scribe.surface, dark: dark, contrast: contrast)
+                    let muted = resolved(Color.Scribe.textMuted, dark: dark, contrast: contrast)
+                    // text: 4.5:1, and 7:1 under Increase Contrast
+                    let least: Double = contrast ? 7 : 4.5
+                    #expect(Self.ratio(text, fill) >= least, "text on the selected row, \(name): \(Self.ratio(text, fill))")
+                    #expect(Self.ratio(muted, fill) >= least, "muted text on the selected row, \(name): \(Self.ratio(muted, fill))")
+                    #expect(Self.ratio(muted, page) >= least, "muted text on the list, \(name): \(Self.ratio(muted, page))")
+                    // the "?" marks are text too, on a selected row and on the list
                     for mark in [Color.Scribe.uncertain, Color.Brasscribe.veryUncertain] {
                         let m = resolved(mark, dark: dark, contrast: contrast)
-                        #expect(Self.ratio(m, fill) >= 3, "? mark on the selected row, \(name): \(Self.ratio(m, fill))")
+                        #expect(Self.ratio(m, fill) >= least, "? mark on the selected row, \(name): \(Self.ratio(m, fill))")
+                        #expect(Self.ratio(m, page) >= least, "? mark on the list, \(name): \(Self.ratio(m, page))")
                     }
                     // the row is told apart from the others by its edge
                     #expect(Self.ratio(edge, page) >= 3, "selected row edge, \(name): \(Self.ratio(edge, page))")

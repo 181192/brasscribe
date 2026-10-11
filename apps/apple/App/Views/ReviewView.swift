@@ -138,7 +138,7 @@ struct ReviewView: View {
         List(selection: Binding(get: { item?.id }, set: { current = $0 })) {
             Section {
                 UncertaintyLegend().font(Font.Scribe.callout)
-                    .listRowBackground(SelectedRow.background(false))
+                    .listRowBackground(SelectedRow.backgroundOnPage(false))
             } header: {
                 SectionLabel(items.count == 1 ? String(localized: "1 note to check") : String(localized: "\(items.count) notes to check"))
             }
@@ -159,7 +159,7 @@ struct ReviewView: View {
                         // the row draws its own selection, as the library sidebar does: the system's
                         // highlight fills with the tint (primary, near black in light), under text
                         // that keeps the page's colour
-                        .listRowBackground(SelectedRow.background(it.id == item?.id))
+                        .listRowBackground(SelectedRow.backgroundOnPage(it.id == item?.id))
                         .accessibilityLabel(Text("\(barLabel(it)), \(pitchName(it)), \(levelWords(it))"))
                     }
                 } header: {

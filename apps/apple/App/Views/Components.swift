@@ -529,14 +529,17 @@ enum SelectedRow {
     static let edge = Color.Brasscribe.selectionEdge
     static let text = Color.Scribe.text
 
-    /// The row background: this for the selected row, and none for the rest, which leaves them on the ground the
-    /// list is given (the system's own row ground is not one of the page's colours).
+    /// The row background: this for the selected row, the list's own for the rest.
     static func background(_ selected: Bool) -> AnyView? {
-        guard selected else { return AnyView(Color.clear) }
+        guard selected else { return nil }
         return AnyView(
             RoundedRectangle(cornerRadius: Radius.sm)
                 .fill(fill)
                 .overlay(RoundedRectangle(cornerRadius: Radius.sm).strokeBorder(edge, lineWidth: 1))
         )
     }
+
+    /// The same in a list on a ground of the page's: a row that is not selected has no ground of its own, so it
+    /// lies on the list's (the system's row ground is not one of the page's colours).
+    static func backgroundOnPage(_ selected: Bool) -> AnyView { background(selected) ?? AnyView(Color.clear) }
 }
