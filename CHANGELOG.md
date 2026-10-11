@@ -2,7 +2,24 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
-## 0.9.0 (2026-10-10)
+## 0.10.0 (2026-10-11)
+
+### Breaking changes
+
+- **Core:** **Breaking:** The shared core is scribe-core, with its library, bindings, command line and folders renamed to match ([#340](https://github.com/181192/brasscribe/pull/340))
+The core's command line tool and its downloads are now `scribe-core`. If you downloaded the tool, have `brasscribe-core` on your PATH or set `BRASSCRIBE_CORE_CLI` by hand: fetch `scribe-core-*` and set `SCRIBE_CORE_CLI`. If you run the engine in Docker, build the image again. Bandroom users do nothing.
+
+<details><summary>Under the hood (4 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Core:** The brass-band code is its own crate, and the shared core builds without it ([#331](https://github.com/181192/brasscribe/pull/331))
+- **Core:** **Breaking:** The shared core is scribe-core, with its library, bindings, command line and folders renamed to match ([#340](https://github.com/181192/brasscribe/pull/340))
+- **Design:** A design role has one name on the web, Apple and Windows, and links get their own neutral role ([#341](https://github.com/181192/brasscribe/pull/341))
+- Pull requests wait less — the iPhone simulator tests run at night, each screen catalogue runs once, and screenshots are compared on main after the merge ([#337](https://github.com/181192/brasscribe/pull/337))
+
+</details>
+
+## 0.9.0 (2026-10-11)
 
 ### New features
 
@@ -665,6 +682,15 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 </details>
 
 ## 0.1.0 (2026-09-28)
+
+### Breaking changes
+
+- **Android:** **Breaking:** Remove the built-in reference demo
+debug builds no longer offer the reference demo or the built-in
+sample engine.
+- **iPhone, iPad and Mac:** **Breaking:** Remove the built-in reference demo
+-open-demo-score and -demo-service are now
+-open-fixture-score and -fixture-service.
 
 ### New features
 
